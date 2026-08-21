@@ -1,0 +1,1547 @@
+diff --git a/.agents/commands/cicd-clean-code-audit.md b/.agents/commands/cicd-clean-code-audit.md
+index b639b7f..dd3a2d5 100644
+--- a/.agents/commands/cicd-clean-code-audit.md
++++ b/.agents/commands/cicd-clean-code-audit.md
+@@ -37,7 +37,9 @@ Run from the **command center** (the lobby), this command operates on exactly ON
+ 3. **Ask** — else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"*.
+ 
+ Set `PROJECT_ROOT = Projects/<name>` and **echo exactly** `Target: Projects/<name>` before any work.
+-Every bare path and every command below resolves **under `PROJECT_ROOT`**.
++Every bare path and every command below resolves **under `PROJECT_ROOT`** (per
++`.agents/rules/smh-target-resolution.md` §STD + §BIND); a needed path missing under `PROJECT_ROOT` →
++STOP, never fall back to the lobby.
+ 
+ ## Step 0.5 — Resolve the diff (worktree-aware)
+ 
+@@ -56,6 +58,7 @@ env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin   # a bare ref is this c
+ BASE=$(git for-each-ref --format='%(refname:short)' \
+          refs/remotes/origin/epic/* refs/heads/epic/* | head -1); BASE=${BASE:-origin/main}
+ git diff --name-only "${BASE}...HEAD"           # story branch vs the branch it forked from
++git diff --name-only                            # plus uncommitted - saved edits nobody staged yet
+ git diff --name-only --cached                   # plus staged, if mid-work
+ ```
+ 
+@@ -63,6 +66,14 @@ If `$ARGUMENTS` names an explicit base ref, use it instead. Echo the file count.
+ STOP, not a pass** — say so and stop; a vacuous green here is the exact failure this gate exists to
+ prevent (`tests-must-gate-for-real` §2).
+ 
++<!-- twin-law: memory-sweep -->
++⛔ **Never sweep another session's memory into this diff** (`artifacts-always-first` §"The memory
++store"). Dirty files under `_artifacts/_memory/` belong to whatever wrote them — the store is shared
++and two-tier since SCC-73, the lobby's index plus each project's own, so a sibling lane's uncommitted
++entry shows up in a `git status` here. Report them as present and out of scope; they are parked or
++left, never committed under this lane's key.
++<!-- /twin-law -->
++
+ ---
+ 
+ ## Step 1 — The Machine Floor  *(objective — these can FAIL)*
+@@ -100,12 +111,23 @@ did not run is not a check that passed.
+ If a tool is missing (e.g. `No module named ruff`), that is a **finding, not a skip** — the floor is
+ unrunnable and the project violates `tests-must-gate-for-real` §2. Report it and say what installs it.
+ 
+-**Also scan the changed lines for the §2 banned patterns that linters miss:**
++**Also scan the changed lines for what no linter catches:**
+ - bare `except:` / `except Exception` with no re-raise and no logged reason
+ - `any` in TypeScript
+ - a committed secret, key, or token
+ - leftover debug prints / `console.log`
+ - commented-out code
++- **Does it run on both machines?** (`code-standards` §5) A hardcoded absolute or `C:/…` path where
++  `Path(__file__).parent` belongs, a `;` path separator, `robocopy`, `chmod` assumed present, or a
++  bare `python`/`python3` hardcoded in a committed script — each works where it was written and dies
++  on the other machine. This is a finding, not a nitpick.
++- **A gate that cannot fail?** A report-only job, `|| true`, `continue-on-error`, or a check whose
++  EMPTY input reads as a pass. See the FAIL ladder below — this one is not a judgment call.
++
++⛔ **These two rows live HERE, in the always-run floor, and not in Step 2's judgment pass** — Step 2B
++is skipped wholesale when this audit runs embedded as `/cicd-code-review` Step 3.5, and a
++both-machines break or a vacuous gate is exactly as real on an embedded run as on a standalone one
++(SCC-212).
+ 
+ ## Step 2 — The Judgment Pass  *(taste — caps at CONCERNS)*
+ 
+@@ -127,11 +149,6 @@ Step 3.5 this part is satisfied by importing the Step-1 adversarial review's dri
+   most common real finding. Grep the obvious neighbours; use GitNexus `context({name})` if the repo is
+   indexed.
+ - Defensive `try`/`except` around code that cannot fail?
+-- **Does it run on both machines?** (`code-standards` §5) A `C:/…` path, a `;` path separator,
+-  `robocopy`, `chmod` assumed present, or a bare `python`/`python3` hardcoded in a committed script —
+-  each works where it was written and dies on the other machine. This is a finding, not a nitpick.
+-- **A gate that cannot fail?** A report-only job, `|| true`, `continue-on-error`, or a check whose
+-  EMPTY input reads as a pass. See the FAIL ladder below — this one is not a judgment call.
+ - Unused params, dead branches, a new file where an existing module was the home?
+ - Scope creep — changes outside what the story required?
+ 
+diff --git a/.agents/commands/cicd-code-review.md b/.agents/commands/cicd-code-review.md
+index 2374207..2792a72 100644
+--- a/.agents/commands/cicd-code-review.md
++++ b/.agents/commands/cicd-code-review.md
+@@ -59,6 +59,32 @@ diff); echo `Worktree: reviewing in <path>`. None → review in `PROJECT_ROOT` a
+ this story's plan/walkthrough/verdict live in THIS tree — absent here = that step never ran; a lookalike
+ in the shared checkout is a SIBLING lane's, not evidence. Echo the story's ①②③ step-state before Step 1.
+ 
++## Step 0.6 — Resolve the diff (committed work only)
++
++Bind the two strings every step below reads — from command output, before anything measures:
++
++```bash
++WORKTREE=<the story tree Step 0.5 resolved, or "$PROJECT_ROOT" when none exists>
++EPIC=<epic/JIRA-KEY-slug>      # from `git -C "$PROJECT_ROOT" branch -a --list '*epic/*'`, or the story's epic in the plan
++env -u GITHUB_TOKEN git -C "$WORKTREE" fetch origin "$EPIC"        # a bare `$EPIC` is this checkout's LAST PULL
++git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD          # the story's committed work
++git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD | wc -l  # echo this count
++git -C "$WORKTREE" status --short                                  # anything uncommitted (report it; it is not reviewed)
++```
++
++Echo the file count. **An empty set is a STOP, not a pass** — Step 3.5 restates it at the gate, but by
++then the engine, the acceptance audit and the whole test gate have already run on nothing.
++
++⛔ **`git -C ""` does NOT error** — git documents it as "leave the current working directory
++unchanged" — so an unassigned `$WORKTREE` silently measures whatever tree the shell is standing in:
++the shared checkout Step 0.5 just told you is empty or stale, and the redirects in Step 0.7 still
++create their two `/tmp` files, so the overlap reads clean (`preflight-resolves-repo-from-cwd`).
++⛔ The ref is `origin/$EPIC`, never the trunk (SCC-165 — Step 0.7 says why).
++
++Dirty files under `_artifacts/_memory/` are **named separately and left alone** — another session's
++memory store is never swept, deleted, or committed under this story (`artifacts-always-first`
++§ "The memory store": the project store is git-tracked, so it materialises in every story worktree).
++
+ ## Step 0.7 — ⭐ Re-derive the blast radius against the **current epic branch** (MANDATORY)
+ 
+ **The pre-work audit expires.** `/cicd-self-audit` traced this story's blast radius against the epic
+@@ -76,14 +102,7 @@ swept out of this command family — do not re-plant it here.
+ ```bash
+ env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin
+ git -C "$PROJECT_ROOT" branch -a --list '*epic/*'        # normally exactly one live epic branch
+-EPIC=<epic/JIRA-KEY-slug>                                # from that list, or the story's epic in the plan
+-# ⛔ BIND THE TREE — Step 0.5 said "cd into it" in prose and assigned nothing. `git -C ""` does
+-# NOT error: git documents it as "leave the current working directory unchanged", so every line
+-# below would silently measure whatever tree the shell is standing in — the shared checkout,
+-# whose diff Step 0.5 just told you is empty or stale — and the redirects still create the two
+-# /tmp files, so the overlap reads clean. A vacuous green inside the step that exists to prevent
+-# vacuous greens (`preflight-resolves-repo-from-cwd`).
+-WORKTREE=<the story tree Step 0.5 resolved, or "$PROJECT_ROOT" when none exists>
++# $WORKTREE and $EPIC — bound in Step 0.6 from command output; reuse them, never re-derive from cwd
+ BASE=$(git -C "$WORKTREE" merge-base HEAD "origin/$EPIC")
+ git -C "$WORKTREE" diff --name-only "$BASE".."origin/$EPIC" | sort > /tmp/theirs.txt  # landed while you built
+ git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD | sort > /tmp/mine.txt      # what you changed
+@@ -129,9 +148,9 @@ sha is a verdict about code that will never exist.
+ 
+ **Can this session fan out to subagents?** Answer it from this runtime, not from what usually
+ happens: a headless pipeline or a platform without a subagent tool makes the answer `inline`, and
+-both are invisible until a lens fails to launch. This is also the story lane's only recording
+-point — the dev-side commands do not carry this header, so if this step skips it the story's
+-walkthrough never gets one (F24).
++both are invisible until a lens fails to launch. ② (`/cicd-dev-story-tests` Step 0.8) records its own
++runtime into the same header; this step **re-probes in ③'s session and overwrites the line** when the
++two differ, and a ② that skipped its probe leaves this as the only recording point (F24).
+ 
+ ⛔ **The question is a **capability**, never a **policy** — and conflating the two silently gutted a
+ review on SCC-197 (SCC-203).** *Does a subagent tool exist in this runtime?* is the whole question.
+@@ -175,8 +194,8 @@ required input is a stop, not a guess:**
+ |---|---|
+ | `REPO` | `PROJECT_ROOT` from Step 0 |
+ | `WORKTREE` | the tree Step 0.5 resolved (the story tree when one exists — the built code often lives ONLY there) |
+-| `DIFF` | the story's diff, taken in that worktree |
+-| `HEAD_SHA` | `git rev-parse HEAD` in that worktree, taken **now** — this is the sha the engine records the review against, **not** necessarily the sha your verdict cites: you apply fixes below, and Step 4's verdict must cite the FINAL sha its full-suite evidence was measured on |
++| `DIFF` | the `origin/$EPIC...HEAD` diff from Step 0.6, **re-taken in that worktree after Step 0.7 absorbed `origin/$EPIC`** — committed work only |
++| `HEAD_SHA` | `git rev-parse HEAD` in that worktree, taken **now, after Step 0.7's absorb** — this is the sha the engine records the review against, **not** necessarily the sha your verdict cites: you apply fixes below, and Step 4's verdict must cite the FINAL sha its full-suite evidence was measured on |
+ | `review_mode` | `full` when the story file exists; `no-spec` when it does not |
+ | `STORY_FILE` | the story file (`full` mode) |
+ | `ARTIFACT_DIR` | `_artifacts/epic_<E>/<story>/` **inside that worktree** |
+@@ -184,6 +203,11 @@ required input is a stop, not a guess:**
+ | `lens_budget` | `standard` — the interactive budget, because a human is sitting in front of this review. **This command does not define what the caps are; step-01 of the engine does, once** — a cap each caller repeats is a cap that drifts. Naming nothing is not neutral: it silently selects the autopilot's budget, which is why this row is explicit (SCC-147) |
+ | `review_runtime` | `fan-out` or `inline` — **what you PROBED at Step 0.9, never what you expect.** Pass it down and write the same value into the walkthrough header, so the roster the engine returns can be checked against the runtime that produced it |
+ 
++⚠ **Step 0 read `HEAD_SHA` from `PROJECT_ROOT` — the shared checkout — and before Step 0.7 absorbed
++`origin/$EPIC`.** Re-read both it and the diff here, in `$WORKTREE`, or the engine reviews a tree that
++no longer exists and your verdict cites a commit that is no longer the tip — the exact invariant Step
++0.7 opens by stating.
++
+ **Ordering (deliberate): the engine hunts the DIFF first — open ②'s `walkthrough.md` and plan only
+ AFTER its summary comes back**, for claimed evidence, plan-vs-built deviations, and the `## Your
+ Actions` rows. Reading the builder's story before the hunt imports exactly the bias the Blind Hunter
+@@ -318,7 +342,7 @@ distinct from `fail`, because per Step 3.5 a missing tool is a **finding, not a
+      measured on a DIFFERENT (pre-fix) SHA — the new invariant is strictly stronger.
+    - **Append your suite runs to the walkthrough's `## Suite Ledger`** (the table is per STORY, ②+③) —
+      `scope · command · duration · result · why this run`.
+-   Compare against the red baseline; only failures NEW to this story count (legacy red is grandfathered). **Two guards (per
++   Compare against the red baseline; only failures NEW to this story count (legacy red is grandfathered). **Three guards (per
+    `tests-must-gate-for-real`):** (a) **CI-entrypoint audit — change-triggered, not per-story.** Run it only
+    when the diff touches `.github/workflows/**` or a test-runner config, when `sudo-tests.yaml` has no
+    `ci_audit:` record, or when `git log -1 --format=%H -- .github/workflows/` differs from the recorded
+@@ -328,6 +352,9 @@ distinct from `fail`, because per Step 3.5 a missing tool is a **finding, not a
+    `sudo-tests.yaml`. When skipped, state `CI audit current as of <sha>` in the verdict. (b) Grandfathering is for *owned* legacy red
+    only (known-flaky / quarantined-with-ticket) — a red that asserts strings, selectors, or preconditions
+    absent from real source is **fiction, not legacy debt**; do not grandfather it, FAIL and fix/delete it.
++   (c) **A check that cannot fail is a finding.** If the diff adds a gate, a guard or a CI step, prove
++   it **rejects** the case it must reject *and* **allows** the case it must allow —
++   `tests-must-gate-for-real` § Mutation Testing (INVERT the decision). One half is not a gate.
+ 2. **`bmad-testarch-trace`** — gate coverage vs `l1_coverage_min`.
+ 3. **`bmad-testarch-nfr`** — when `nfr: true` or `agent_bearing: true`.
+ 4. **`bmad-testarch-test-review`**. Also scan the CI pipeline for
+@@ -443,6 +470,14 @@ new one. The section carries:
+   Run `gate_receipt.py list --story <id>` and paste the block; an `unrunnable` row is a finding that
+   caps the verdict at CONCERNS, and a gate with no receipt was not run, whatever the prose says,
+ - a `### Clean-Code Gate` subsection carrying Step 3.5's findings table and its pasted tool output.
++- the acceptance matrix from Step 1.5 — every acceptance item → its proving assertion;
++<!-- twin-law: rederive-record -->
++- **Step 0.7's re-derivation**, under its own `### Step 0.7 — re-derivation` sub-heading as three
++  numbered lines — what the landing ref moved under this diff, the true overlap + `merge-tree` result,
++  and any sibling-lane landing-order dependency. "Nothing moved" is a reportable result; silence is
++  not — `walkthrough_roster.py --gate` counts list rows under a heading matching `0.7`/`re-deriv`
++  (E7) and refuses fewer than three.
++<!-- /twin-law -->
+ - **FAIL** = a new test regression, a required tier missing, **or** a Step 3.5 machine-floor error on a
+   changed line / a banned pattern shipped (bare `except:`, `any`, a committed secret).
+ - **CONCERNS** = soft issues only — including Step 3.5's judgment findings (missing story provenance, a
+@@ -465,13 +500,18 @@ of truth** — your Step 4 section is part of it, and the body around it must no
+   missing artifact link, a doc fix — and tick it with a one-line note. Leave ONLY genuine human calls
+   (product decisions, live checks — things only they can DECIDE). Refresh the branch/commit summary
+   after your worktree commits.
+-  ⛔ **And NEVER the ceremony's own steps** (SCC-193). "Click Merge on the PR", "then re-invoke
+-  `/smh-close-task-merge-tree --after-merge <KEY>`", "run the preflight" — the operator's
+-  **decision to proceed** is the sign-off (the word `approved`, or invoking one of the two doors),
+-  and from that word on every step is the ceremony's and the agent runs it. `jira_feed.py`
+-  **refuses** a close-out on such a row, at `check-actions` and again at `finish`. The one
+-  merge-shaped row that belongs is the door's ledger line, `- [x] The merge itself — lands via
+-  this branch's PR`, which SCC-175 checks against ancestry rather than against its tick.
++  ⛔ **And NEVER the ceremony's own steps** (SCC-193). "Land the branch on the epic", "then
++  re-invoke `/cicd-close-story-merge-tree <story>`", "run the preflight" — the operator's
++  **decision to proceed** is the sign-off (the word `approved`, or invoking the door —
++  `/cicd-close-story-merge-tree`, or `/cicd-merge-epic-workingtrees` for a set), and from that word
++  on every step is the ceremony's and the agent runs it. On this lane the door enforces it
++  twice: its Step 2 runs `jira_feed.py check-actions` before the close-out commit, and its Step 4b
++  runs `jira_feed.py finish --landing-ref "origin/$EPIC"` after the landing (SCC-210, SCC-242) —
++  both **refuse** such a row. Nothing earlier does: neither this command nor `closeout_preflight.py`
++  reads the rows, so a ceremony row you leave here is caught, but at the price of a branch already
++  landed on the epic. The story door writes no PR ledger row; a row that names a door or opens with
++  `the merge itself` is judged by `finish` against the ancestry of `origin/$EPIC`, never against its
++  tick.
+   ⛔ A row assigning ANY ticket born from review findings — a residue ticket ("One follow-on
+   ticket for the N deferred items"), a "proposed" ticket, a "decided" ticket to rule on — is the
+   retired defect (operator rulings 2026-08-15, both), never a valid action row: the survivors were
+diff --git a/.agents/commands/cicd-create-epic-sprint.md b/.agents/commands/cicd-create-epic-sprint.md
+index de93747..1f5abf1 100644
+--- a/.agents/commands/cicd-create-epic-sprint.md
++++ b/.agents/commands/cicd-create-epic-sprint.md
+@@ -5,6 +5,24 @@ platforms: [opencode, antigravity]
+ 
+ # /cicd-create-epic-sprint — Epic Kickoff: Stories + Sprint + Risk-Score (Phase A)
+ 
++> **Rules in force for this command:**
++> - `.agents/rules/000-PLAN-FIRST-GATE.md` — `epics.md` and `sprint-status.yaml` are project files.
++>   The Step 2 checkpoint is this command's gate: it opens on the operator's word alone, and a
++>   correction restarts the wait
++> - `.agents/rules/artifacts-always-first.md` § Hard Stops — no project file is edited for a
++>   commit-producing lane before its lane is open; that is why the branch is cut in Step 1, before
++>   the epic is written
++> - `.agents/rules/git-policy.md` — the epic branch is cut from `origin/main` at kickoff; explicit
++>   paths only, never `git add -A`; `git status --short` empty + `0 0` before the work is called
++>   finished; backticks in `-m "…"` EXECUTE, so commit with `-F <file>`
++> - `.agents/rules/worktree-per-story.md` § "cwd is not intent" — every git call below is bound with
++>   `-C "$PROJECT_ROOT"`, and the branch is echoed from command output, never from belief
++> - `.agents/rules/jira.md` — the acli reference: the Epic is created bare, with an outline (SCC-49),
++>   and its key is read from output, never invented
++> - `.agents/rules/work-consolidation.md` rule 1 — look for a home before you mint: the Epic dedupe
++>   search in Step 1 and the one-line "what I looked at" sentence
++> - `.agents/rules/smh-target-resolution.md` §STD + §BIND — Step 0 binds `PROJECT_ROOT`
++
+ Thin orchestrator — calls three existing BMAD/TEA skills back-to-back so a batch of requirements arrives as
+ an epic, a populated sprint board, AND a Daniel-confirmed P0–P3 risk map in ONE pass. Runs BEFORE the
+ per-story dev loop. Project-scoped (targets THIS repo).
+@@ -20,11 +38,65 @@ else **STOP and ask** — never guess, never operate on the lobby. Set `PROJECT_
+ `bmad-*` skills bind their `{project-root}` to it); a needed path missing under `PROJECT_ROOT` → STOP and
+ say so, never fall back to the lobby.
+ 
+-## Step 1 — Create the epic and its stories
++## Step 1 — Key the epic and cut its branch (BEFORE any project file is written)
++<!-- JIRA-HOOK: epic/story tickets mint here when the branch is cut (epic + stories → Jira, ids recorded on the sprint board). Separate story; not built yet. -->
++Per `git-policy.md`, every epic integrates on its own short-lived branch; per
++`artifacts-always-first.md` § Hard Stops, no project file is edited for a commit-producing lane before
++its lane is open. So the branch comes FIRST, and **every artifact from here on — `epics.md`, the board,
++the test design — is authored on that branch, inside `$PROJECT_ROOT`.**
++
++**1a. The key — look before you mint.** `<JIRA-KEY>` is the EPIC's Jira ticket (one of the repo's keys
++in `.agents/jira.conf` — the armed commit-msg hook rejects the wrong project's key). A re-run (this
++command has two human stops, so a stall and restart is the normal case) or a backfilled board already
++has the row, and a second Epic for the same BMAD epic is two rows, one of which nothing will ever move
++again. `jira_feed.py mint` does this search for stories; the Epic mint has no script, so the look is
++written here (`work-consolidation.md` rule 1):
++
++```bash
++acli jira workitem search --jql "project = <PROJ> AND type = Epic AND statusCategory != Done" \
++     --fields key,summary --limit 50
++```
++
++**Say in ONE line what you looked at and why no open Epic covers this one** — or which key does, in
++which case reuse it and skip the mint. That sentence is the whole enforcement mechanism. If no ticket
++exists, **mint it now** (operator ruling 2026-08-07 — the human is already in the room at kickoff, no
++separate ask), bare (no `--assignee`), carrying the requirements source as its description:
++
++```bash
++acli jira workitem create --project <PROJ> --type Epic --summary "Epic <N> — <title>" \
++     --description "Epic <N> — <title>. Source: <requirements path from \$ARGUMENTS>. Outline follows at Step 2."
++```
++
++Read the key from the create output — **never invent a key, never cut the branch unkeyed.** The full
++outline is backfilled in Step 2, once `epics.md` carries the Epic (SCC-49 — a summary-only ticket is a
++title, not a ticket; it is complete by the end of Step 2, never left that way). Story tickets are NOT
++minted here: ① `/cicd-write-story-tests` mints each story's ticket at pickup (its Step 1.6, through
++`jira_feed.py mint`), so the board fills as work actually starts. Full acli reference: `.agents/rules/jira.md`.
++
++**1b. The branch.** Cut it from up-to-date `origin/main` and push it so it lives on origin. Every call
++is bound to the repo Step 0 resolved — a bare `git checkout -b` acts on whatever tree the shell is
++standing in, which is the lobby checkout (`worktree-per-story.md` § "cwd is not intent"):
++
++```bash
++git -C "$PROJECT_ROOT" fetch origin
++git -C "$PROJECT_ROOT" checkout -b epic/<JIRA-KEY>-<slug> origin/main   # re-run and origin/epic/<JIRA-KEY>-<slug> exists? `checkout epic/<JIRA-KEY>-<slug>` instead — never a second cut
++git -C "$PROJECT_ROOT" push -u origin epic/<JIRA-KEY>-<slug>
++BRANCH=$(git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD); echo "Epic branch: $BRANCH"
++```
++
++The echoed line must read `Epic branch: epic/<JIRA-KEY>-<slug>` — anything else → STOP. Story worktrees
++(`/cicd-write-story-tests` ①) branch FROM this branch — it must exist, with the kickoff's output pushed
++onto it, before the first one opens. The epic reaches `main` only via `/cicd-push-e2e`, which deletes
++the branch after the merge.
++
++## Step 2 — Create the epic and its stories — then STOP
+ Invoke the **`bmad-create-epics-and-stories`** skill for the requirements in `$ARGUMENTS` (a PRD, a
+-fix-list path, or a described scope — e.g. `_my_resources/open_tasks/fix_list_admin_sudoadmin.md`). It writes
+-the epic + its user stories with acceptance criteria. Confirm the epic + story files exist before continuing.
+-If the skill stops for input (missing requirements source, ambiguous scope), surface it and STOP — never guess.
++fix-list path, or a described scope — e.g. `_my_resources/open_tasks/fix_list_admin_sudoadmin.md`). It
++writes the epic + its user stories with acceptance criteria into
++`_bmad-output/planning-artifacts/epics.md` (stories live in that file; **no per-story files are written
++here** — ① creates those). Confirm the new `## Epic <N>` section and its stories are in `epics.md`
++before continuing. If the skill stops for input (missing requirements source, ambiguous scope), surface
++it and STOP — never guess.
+ 
+ **FLOW CONTRACT (how this orchestration runs):** the nested BMAD skill
+ is a 4-step workflow whose step files each end in their own `[C]`-continue menu. Those menus exist for
+@@ -33,55 +105,53 @@ kickoff into five stalls. When `$ARGUMENTS` names an already-approved requiremen
+ plan / fix-list), drive the skill's internal steps straight through (auto-continue its menus), appending per
+ the brownfield precedent (namespaced `E<N>-FR*` requirements; Epic 17/18 section format in `epics.md`).
+ This command has exactly **TWO human checkpoints**:
+-  1. ONE consolidated review after Step 1 — epic definition + full story list + AC digest in a single
+-     message (correction loops happen here), then proceed to Step 2 with no further menus;
+-  2. the Step 3 per-story risk-scoring (the designed hard stop).
++  1. ONE consolidated review after the epic is written — epic definition + full story list + AC digest
++     in a single message — then **STOP and wait.** The operator's word opens Step 3; nothing else
++     does. Per `000-PLAN-FIRST-GATE`, these are **not** approval: "ok" · "looks good" · "continue" ·
++     clicking an option you wrote · being told to do the work · answering your clarifying question ·
++     the operator **correcting** the epic + story set (a correction narrows it — edit `epics.md`,
++     re-present the set, and stop again). Do not write the board on any of them;
++  2. the Step 4 per-story risk-scoring (the designed hard stop).
+ A nested skill stopping on a REAL gap (missing source, contradictory scope) still surfaces + STOPs — this
+ contract removes ceremony, never judgment.
+-
+-## Step 1.5 — Cut the epic branch (before any story worktree can open)
+-<!-- JIRA-HOOK: epic/story tickets mint here when the branch is cut (epic + stories → Jira, ids recorded on the sprint board). Separate story; not built yet. -->
+-Per `git-policy.md`, every epic integrates on its own short-lived branch. Cut it now from up-to-date
+-`main` and push it so it lives on origin:
+-
+-```bash
+-git fetch origin
+-git checkout -b epic/<JIRA-KEY>-<slug> origin/main
+-git push -u origin epic/<JIRA-KEY>-<slug>
+-```
+-
+-`<JIRA-KEY>` is the EPIC's Jira ticket (one of the repo's keys in `.agents/jira.conf` — the armed
+-commit-msg hook rejects the wrong project's key). If no ticket exists for this epic yet, **mint it
+-now** (operator ruling 2026-08-07 — the human is already in the room at kickoff, no separate ask),
+-**with its outline** (SCC-49 — a summary-only ticket is a title, not a ticket):
++**On the operator's word — backfill the outline, then commit and push** (explicit paths, the Jira key
++leads the subject, `-F` never `-m` — backticks in `-m "…"` EXECUTE):
+ 
+ ```bash
+-python3 .agents/scripts/jira_feed.py outline --epic <N> --project <PROJECT> --out epic-outline.txt
+-acli jira workitem create --project <PROJ> --type Epic --summary "Epic <N> — <title>" \
+-     --description-file epic-outline.txt
++python3 .agents/scripts/jira_feed.py outline --epic <N> --project <PROJECT> --out epic-outline.txt   # PC: `python`
++acli jira workitem edit --key <JIRA-KEY> --yes --description-file epic-outline.txt
++rm epic-outline.txt
++printf '%s\n' "<JIRA-KEY> docs(epic): Epic <N> — <title>: epic + stories" > epic-commit-msg.txt
++git -C "$PROJECT_ROOT" add _bmad-output/planning-artifacts/epics.md
++git -C "$PROJECT_ROOT" diff --cached --stat                       # ONLY epics.md; anything else → unstage it
++git -C "$PROJECT_ROOT" commit -F epic-commit-msg.txt
++git -C "$PROJECT_ROOT" push origin HEAD:epic/<JIRA-KEY>-<slug>
+ ```
+ 
+-`outline --epic` renders the goal and the story list straight out of `epics.md` — nothing invented.
+-Summary carries the BMAD number, created bare (no `--assignee`); delete the temp file after. Read the
+-key from the create output — **never invent a key, never cut the branch unkeyed.** Story tickets are
+-NOT minted here: ① `/cicd-write-story-tests` mints each story's ticket at pickup (its Step 1.6,
+-through `jira_feed.py mint`), so the board fills as work actually starts. Full acli reference:
+-`.agents/rules/jira.md`.
+-
+-Story worktrees (`/cicd-write-story-tests` ①) branch FROM this branch — it must exist before the first
+-one opens. The epic reaches `main` only via `/cicd-push-e2e`, which deletes the branch after the merge.
++`outline --epic` renders the goal and the story list straight out of `epics.md` — nothing invented, and
++it **requires the `## Epic <N>` heading to exist**, which is why the mint at Step 1a is bare and the
++outline lands here. ⛔ Never `git add -A` / `.` / `-u` — the shared checkout may carry the operator's
++own uncommitted work.
+ 
+-## Step 2 — Generate the sprint board
++## Step 3 — Generate the sprint board — then commit and push it
+ Land the new epic + story keys in `_bmad-output/implementation-artifacts/sprint-status.yaml` as **`backlog`**
+ — NOT `ready-for-dev` (the board's state machine: a story flips to `ready-for-dev` only when
+ `/cicd-write-story-tests` ① creates its story file). Follow house style: the epic's
+ comment block (STATUS · Source · order/deps), one commented line per story key (P-levels appended after
+-Step 3), `epic-<N>-retrospective: optional`, and a dated entry PREPENDED to the `# last_updated:` journal
++Step 4), `epic-<N>-retrospective: optional`, and a dated entry PREPENDED to the `# last_updated:` journal
+ line. For a single-epic append, edit the YAML directly per house style — invoking the full
+-`bmad-sprint-planning` skill is only warranted when regenerating the whole board. Confirm the keys appear
+-before Step 3.
++`bmad-sprint-planning` skill is only warranted when regenerating the whole board. Confirm the keys appear,
++then:
+ 
+-## Step 3 — Risk-score the backlog (test levels) — INTERACTIVE HARD STOP
++```bash
++printf '%s\n' "<JIRA-KEY> chore(board): Epic <N> rows on sprint-status.yaml (backlog)" > epic-commit-msg.txt
++git -C "$PROJECT_ROOT" add _bmad-output/implementation-artifacts/sprint-status.yaml
++git -C "$PROJECT_ROOT" diff --cached --stat                       # ONLY the board
++git -C "$PROJECT_ROOT" commit -F epic-commit-msg.txt
++git -C "$PROJECT_ROOT" push origin HEAD:epic/<JIRA-KEY>-<slug>
++```
++
++## Step 4 — Risk-score the backlog (test levels) — INTERACTIVE HARD STOP
+ This is the final step and a **hard stop** — you WORK WITH Daniel to label every story, one at a time.
+ 
+ 1. Invoke the **`bmad-testarch-test-design`** skill to risk-analyze the epic's stories (Risk = Probability ×
+@@ -100,12 +170,34 @@ This is the final step and a **hard stop** — you WORK WITH Daniel to label eve
+    behalf: never record a P-level that wasn't explicitly confirmed. **STOP and wait** for the decisions.
+    This is the hard stop.
+ 4. Record the confirmed P-levels + test-level allocation into the test-design artifact
+-   (`_bmad-output/test-artifacts/test-design/…`) and reflect the P-level onto each story.
++   (`_bmad-output/test-artifacts/test-design-epic-<N>.md` — the skill's epic-level output) and reflect
++   the P-level onto each story in `epics.md` and onto its board line. Then commit and push all three:
++
++   ```bash
++   printf '%s\n' "<JIRA-KEY> docs(tea): Epic <N> risk-scored - P-levels on test design, epics and board" > epic-commit-msg.txt
++   git -C "$PROJECT_ROOT" add _bmad-output/test-artifacts/test-design-epic-<N>.md \
++                             _bmad-output/planning-artifacts/epics.md \
++                             _bmad-output/implementation-artifacts/sprint-status.yaml
++   git -C "$PROJECT_ROOT" diff --cached --stat                    # ONLY those three
++   git -C "$PROJECT_ROOT" commit -F epic-commit-msg.txt
++   git -C "$PROJECT_ROOT" push origin HEAD:epic/<JIRA-KEY>-<slug>
++   rm epic-commit-msg.txt
++   ```
+ 
+ ## Done
+-Report: the epic id + title, the stories created (ids + titles), sprint-status counts, and the confirmed
++Report: the epic id + title, the epic branch + commit range pushed, the stories created (ids + titles), sprint-status counts, and the confirmed
+ **P-level map** (story → P0–P3 + levels earned). Point to the next step:
+ > "Backlog risk-scored and sprint-ready. Next: `/cicd-write-story-tests <story>` for the top P0 (e.g. `<id>`)."
+ Leave it there — **do NOT start writing tests or code** (that's `/cicd-write-story-tests`).
+ 
++Before the report, prove the kickoff is on origin (`git-policy.md` — `0 0` + clean, or the work is not
++finished; an unverified "pushed" is how this hides):
++
++```bash
++git -C "$PROJECT_ROOT" status --short                                              # must be empty
++git -C "$PROJECT_ROOT" rev-list --left-right --count epic/<JIRA-KEY>-<slug>...origin/epic/<JIRA-KEY>-<slug>   # must be "0 0"
++```
++
++State both results in the report, with `Epic branch: <from rev-parse>` and the commit range landed.
++
+ Optional additional input: $ARGUMENTS
+diff --git a/.agents/commands/cicd-dev-story-tests.md b/.agents/commands/cicd-dev-story-tests.md
+index 320e936..eaffdb4 100644
+--- a/.agents/commands/cicd-dev-story-tests.md
++++ b/.agents/commands/cicd-dev-story-tests.md
+@@ -6,7 +6,23 @@ platforms: [opencode, antigravity]
+ # /cicd-dev-story-tests — Plan → Self-Audit → Implement → Automate (②)
+ 
+ > **Rules in force for this command:**
+-> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
++> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`,
++>   never force-push; every commit leads with the repo's Jira key; ⛔ backticks in `-m "…"` EXECUTE — use `-F <file>`
++> - `.agents/rules/worktree-per-story.md` — the story builds in a `claude/<JIRA-KEY>-<story-slug>` tree cut
++>   from the EPIC branch, never `main`; §"Resuming" is why Step 0.6 re-enters, absorbs and links BEFORE it plans
++> - `.agents/rules/000-PLAN-FIRST-GATE.md` — no project file is modified before the plan exists and the Step 2
++>   stop has been answered; a fired Step 3.5 eject re-arms it in full
++> - `.agents/rules/artifacts-always-first.md` — §2 the story folder + the plan's `## Declared Change Set`;
++>   §5 the walkthrough outline; §7 the audit is appended INTO the plan, never a standalone file
++> - `.agents/rules/tests-must-gate-for-real.md` — ①'s reds must fail for the RIGHT reason (Rule 1), Step 4.5
++>   certifies at the shipping SHA (Rule 4), and Step 4's mutants follow its **§ Mutation Testing**. Loaded
++>   HERE, at the command that writes the assertions — it used to arrive only at ③ (SCC-145)
++> - `.agents/rules/reproduce-before-you-fix.md` — **when the story is a BUG fix**: reproduce → minimize → pin
++>   a test seen red → falsify one hypothesis at a time → minimal fix → prove by reverting
++> - `.agents/rules/work-consolidation.md` — rule 1, where a defect met while building GOES: this story's own
++>   checklist → an open thematic parent → the open rolling ticket (found by LABEL) → mint, and say what you looked at
++> - `.agents/rules/code-standards.md` — the AI-drift ban *no scope creep beyond the story* (surgical changes),
++>   and §6.5 disposition: act on a finding only if it is REAL, changes BEHAVIOUR and is in THIS diff
+ 
+ Thin orchestrator — builds the story against ①'s red tests and ends with expanded coverage. Project-scoped
+ (targets THIS repo).
+@@ -30,12 +46,40 @@ now: numeric `E.S` → `ARTIFACT_DIR = PROJECT_ROOT/_artifacts/epic_<E>/story-<E
+ before Step 1; pass it explicitly to each sub-skill and **never** let one mint its own root-level or
+ date-stamped folder.
+ 
+-## Step 0.6 — Re-enter the story worktree if one already exists (fresh-chat resume)
+-Before any planning or edit: `git worktree list` under `PROJECT_ROOT` (`worktree-per-story` → "Resuming").
++## Step 0.6 — Re-enter the story worktree, absorb the epic branch, link assets, read the siblings (fresh-chat resume)
++Before any planning or edit: `git -C "$PROJECT_ROOT" worktree list` (`worktree-per-story` → "Resuming").
+ A `claude/<JIRA-KEY>-<story-slug>` tree exists → **cd into it and re-bind everything below under it** — story file,
+ ① red tests, `ARTIFACT_DIR`, test commands (they commonly live ONLY in that tree; skipping this plans
+-blind or opens a duplicate). None → first work session; `bmad-dev-story` opens one at first edit. Echo the
+-case (`Worktree: reused <path>` / `none yet — opens at first edit`).
++blind or opens a duplicate). None → first work session; `bmad-dev-story` opens one at first edit, off the
++EPIC branch. Echo the case (`Worktree: reused <path>` / `none yet — opens at first edit`). Then, in order:
++
++1. **Reusing a tree cut earlier? Absorb the EPIC branch FIRST, before the first edit.** A tree cut at ①
++   and picked up days later is branched from an epic branch its sibling lanes have since moved:
++   ```bash
++   git -C <tree> fetch origin && git -C <tree> merge --no-edit origin/epic/<JIRA-KEY>-<slug>
++   ```
++   Conflicts here are cheap and yours; the same conflicts at ③'s absorb are on the epic branch's
++   doorstep. A conflict → resolve it in the tree and note it in the plan; never `--hard`, never force
++   (`git-policy`).
++2. **Link the gitignored assets.** A worktree inherits no `.env`, `backend/.venv`, `auth_keys/` or
++   `node_modules`, and pytest / uvicorn / `next dev` / the emulators resolve them relative to CWD — so
++   Step 3's scoped suites and Step 4.5's certification cannot run in an unlinked tree, and running them
++   in the shared checkout certifies the wrong tree. Idempotent: a resumed lane re-runs it safely; the
++   prune's `--unlink` (`/cicd-prune-worktree`) is its pair.
++   ```bash
++   python3 .agents/scripts/link-worktree-assets.py "$PROJECT_ROOT"/.claude/worktrees/<story-slug>   # PC: `python`
++   ```
++   On the none-yet path, run it the moment `bmad-dev-story` opens the tree.
++3. **Read the sibling lanes NOW, not at review time.** Other `claude/*` trees on this epic carry
++   uncommitted work `grep` cannot see:
++   ```bash
++   git -C "$PROJECT_ROOT" worktree list
++   git -C <each-other-tree> diff --name-only origin/epic/<JIRA-KEY>-<slug>...HEAD
++   git -C <each-other-tree> status --short
++   ```
++   Any file in both their set and your intended set is a **landing-order dependency**: say which lane
++   should land first and what happens to your work if it does not, and carry it into the plan (Step 1's
++   `## Declared Change Set` is the list it is checked against).
+ 
+ ## Step 0.7 — BDD contract gate (HARD — before any planning or code)
+ The BDD Vision Lock is a standing phase of this flow: **a story may not be planned or implemented without
+@@ -50,6 +94,27 @@ flag with no file behind it fails the gate):
+   **`/cicd-bdd-tests`** now (interactive — human in the loop); continue only once the story carries a real
+   contract or waiver. Never grandfather silently, never author the "lock" yourself.
+ 
++## Step 0.8 — ⭐ Probe the review runtime and RECORD it (before any plan — SCC-177 / SCC-203)
++**Can this session fan out to subagents?** Answer from THIS runtime, never from what usually happens — a
++headless pipeline or a platform with no subagent tool is `inline`, and both are invisible until a lens
++fails to launch. ⛔ **The probe is a capability, never a policy.** *Does a subagent tool exist here?* is
++the whole question; *am I permitted to use it?* is a different one, and answering it here is how a
++session directive (*"do not spawn subagents unless asked"*) got read as *"this runtime is inline"* and a
++whole review ran inside the builder's own context (SCC-203). ⭐ **Subagents are the DEFAULT, and
++invoking an audit or a review IS that request** — never stop to ask for them, never quietly downgrade
++to `inline`. Only a runtime with no subagent tool at all is `inline`.
++
++Write the answer as the **first line of the walkthrough header** Step 5 creates:
++
++```
++review-runtime: fan-out
++```
++
++It records ②'s runtime. ③ (`/cicd-code-review` Step 0.9) re-probes in its own session and overwrites
++the line if its runtime differs; a ③ that skips its probe inherits this one, and `walkthrough_roster.py`
++blocks the close-out when the roster disagrees with the header (`inline` + a lens reporting `ok`, or
++`fan-out` + a lens `recovered-inline`).
++
+ ## Step 1 — Plan
+ Invoke **`bmad-dev-story`** in PLAN mode for the story in `$ARGUMENTS`. Produce its `implementation_plan.md`
+ **into `ARTIFACT_DIR`** — not the BMAD stories dir, not the `_artifacts/` root. The plan carries the
+@@ -73,8 +138,10 @@ Then **WAIT — modify NO project file, write NO code.** The reply IS the trigge
+ - **`continue`** — no model change. Run **`/cicd-self-audit`** on the plan here (pre-dev adversarial
+   stress-test). **Persist by appending `## Self-Audit (<date>)` INTO the plan** (with its
+   `Audit verdict:` line) — inline-only findings do NOT satisfy the protocol, and a standalone audit
+-  file is retired (`artifacts-always-first` §7). Then go straight on (Step 2.5 → 3 → 4 → 5) — **no
+-  second gate**.
++  file is retired (`artifacts-always-first` §7). ⛔ **Then READ the `Audit verdict:` line. A `NO-GO`
++  stops the lane** — fix the plan and re-audit; do not proceed on a `NO-GO` and do not re-run it hoping
++  for a different answer; a `NO-GO` the plan cannot cure without re-scoping fires Step 3.5. On **`GO`**
++  go straight on (Step 2.5 → 3 → 4 → 5) — **no second gate**.
+ - **`changed`** — the human ALREADY switched the model; the audit lane. Run **`/cicd-self-audit`** now (on
+   the switched model), persist + fold as above — then **STOP AGAIN**: *"Audit done — switch back, then say
+   `continue`."* WAIT before Step 2.5/3 — **never implement on the audit-switched model.** This switch-back
+@@ -86,8 +153,9 @@ Then **WAIT — modify NO project file, write NO code.** The reply IS the trigge
+   the plan — `Audit: skipped by human decision (<date>)` — so the Step 5 checklist stays honest, and
+   proceed.
+ 
+-**`continue` always means: run the remainder (Step 2.5 → 3 → 4 → 5) without further stops** — subject only
+-to Step 2.5's real-questions rule and the `changed`-path switch-back stop above.
++**`continue` always means: on a `GO` verdict, run the remainder (Step 2.5 → 3 → 4 → 5) without further
++stops** — subject only to Step 2.5's real-questions rule and the `changed`-path switch-back stop above.
++The verdict is read on every path (`continue`, `changed`, a pasted audit); a `NO-GO` is never run past.
+ 
+ ## Step 2.5 — Gate: ask first, but ONLY if you have questions
+ A **conditional** gate — not a mandatory approval stop. After the plan + audit, decide honestly whether you
+@@ -105,6 +173,12 @@ while you iterate (the story's files + touched modules), and finish this step wi
+ **blast-radius pass** over the suites your changed files share — fail fast on collateral while context is
+ hot. If a test fails, find root cause before fixing.
+ 
++**Run the ① reds FIRST and paste the actual RED output — before the first edit.** Then read WHICH LINE
++RAISED: a red that dies in setup (a fixture that throws, a missing conftest env var, a bad import) looks
++identical to one that fails its assertion, and only the second is a real red. A setup death is a fixture
++defect — fix it, re-run, see the red on its assertion, and only then drive it green
++(`tests-must-gate-for-real` Rule 1; memory `red-test-can-die-before-its-assertion`).
++
+ **Do NOT run the full suite in this step** (`tests-must-gate-for-real` Rule 4 — scoped runs are *feedback*,
+ the full suite is *certification*). Step 4 adds tests, which stales any totals produced now; **Step 4.5 owns
+ the one certification run.**
+@@ -114,6 +188,30 @@ can't go green is the tell ① handed you **fiction** — it asserts what the de
+ source, an auth-gated page assumed "public"). Fix it to the real contract or drop it with a one-line note;
+ never delete-to-force-green.
+ 
++> ⭐ **A defect met while building is NOT automatically a new ticket (`work-consolidation.md` rule 1).**
++> Look for a home, in order, before you mint: (1) **this story's own scope** — a line in the story file's
++> `Tasks / Subtasks` checklist, fixed here; (2) an **open thematic parent** on the project's board (the
++> project from `.agents/jira.conf`); (3) the project's **open rolling `Bugs and Updates` ticket, found by
++> LABEL** (`labels IN (bugs-and-updates, running-bug-list)`), never by a remembered key; (4) mint — only
++> for a lane in its own right, and only after saying in ONE line what you looked at. ⛔ **Never a
++> `Subtask` under the story** — `jira.md` §Subtasks: a BMAD Story's breakdown lives in its story file
++> and board row (**NEVER** subtasks); rungs 2–3 file under a Task, rung 1 is a checklist line. Judgment,
++> not a gate — the unstated choice is what is banned. Record the decision in the walkthrough under the
++> task that met it.
++
++## Step 3.5 — ⛔ EJECT TRIPWIRE (check here, and again as you go)
++**STOP and hand the work over if any of these is true:**
++- **The work is Task-shaped** — no story id, no board row, no epic branch (toolkit, rules, docs, config).
++  Hand it to `/smh-quick-dev` (it acts on the repo you are standing in).
++- **The audit returned `NO-GO` and the plan cannot be fixed without re-scoping** (Step 2), or **the
++  built scope has diverged from the story's ACs** — they no longer describe what can be built. Route to
++  `bmad-correct-course`; never re-scope silently inside the story.
++- **A finding is bigger than a trivial patch** — a Step 4 coverage gap, a Step 4.5 red, or a
++  blast-radius failure that needs design rather than a fix.
++
++Report the one-line reason; keep the worktree and everything written. Discard nothing. A fired eject
++re-arms `000-PLAN-FIRST-GATE` in full — the re-scoped story needs a new plan and a new Step 2 stop.
++
+ ## Step 4 — Automate (expand coverage)
+ Invoke **`bmad-testarch-automate`** to expand API / UI / contract coverage around what was built — closing
+ gaps the ATDD pass missed. **Leave evidence:** persist its summary as
+@@ -122,9 +220,26 @@ gaps the ATDD pass missed. **Leave evidence:** persist its summary as
+ Step 4 — the Step 5 checklist and the ③ gate verify this.
+ 
+ **Structural reds are wiring proofs, never behavior proofs.** If ① left structural-only guard/wiring reds
+-(source-contains asserts), behavioral coverage is **owed here**, not optional — and you prove it non-vacuous
+-by **RELOCATING** the guard, never by deleting it, with a **positive control** on every scenario. Full
+-contract → `tests-must-gate-for-real` Rule 4.
++(source-contains asserts), behavioral coverage is **owed here**, not optional, with a **positive control**
++on every scenario — and a test you have never seen fail is a claim, not a check. Prove every new check
++non-vacuous by **mutation**, per `tests-must-gate-for-real` **§ Mutation Testing**:
++- **Declare the mutant table BEFORE you mutate** — one row per mutant: the mutant · the file · **the NAMED
++  case it must kill** — and run it as **ONE sweep**, never one mutant at a time.
++- **Draw every mutant from a decision in the source under test, never from your own cases** —
++  case-derived mutants prove only that the suite agrees with itself (SCC-144: 14 case-derived all
++  killed, 24 of 25 code-derived survived). Pick the technique by shape: **RELOCATE** a guard below the
++  write it protects (same-file structural + behavioral; never DELETE it); **INVERT** one decision for a
++  gate, hook or shell check; sweep **narrowings** too, not only deletions.
++- **Restore in a `finally`/trap and re-check `git status` when the sweep ends**, then run the affected
++  test files **bare, unfiltered, once** — the closing green is not the kills.
++- **A surviving mutant is a finding; a mutant whose edit is not in the original text is DEFECTIVE** and
++  counts as a survivor until re-aimed. Record the finished table (mutant · file · case · outcome) in
++  the walkthrough. (`mutation_sweep.py` is bound to the lobby harness — `--case`, exit 3, `FAILED:`
++  lines — and does not drive pytest/vitest; the declared table and the sweep discipline are what you owe.)
++
++⛔ **Never write an assertion after the edit and present it as a red.** A characterization check written
++green is honest — label it `characterization` in the walkthrough's `## Evidence`; a green check
++presented as a red is not.
+ 
+ ## Step 4.5 — Certify at the shipping SHA (the ONE full-suite run)
+ Governed by `tests-must-gate-for-real` Rule 4 — certification is measured at the SHA that ships, and nothing
+@@ -134,13 +249,28 @@ before this step counts. In order:
+    gates lint WHOLE files, so inherited debt in a file you touched is yours). If `--fix` altered anything,
+    re-run the story contract set.
+ 2. **Commit** (explicit paths, never `git add -A`) — the SHA has to exist before a run can name it.
+-3. **ONE full-suite run per touched stack** — backend: `backend/.venv` pytest with the project's canonical
+-   runner flags (the runner AIDEV-NOTE in `backend/requirements.txt` is the ONE source of truth). E2E tier
+-   touched → the **FULL-TREE** emulator run; `-k`/single-file emulator runs are debug-only and **never
+-   citable**. Red here → fix, re-commit, re-run: only the LAST run is the certification.
+-4. **Emit the certification handoff** — `_bmad-output/test-artifacts/certification-<story>.json`, one
+-   `stacks` entry per stack you ran:
+-   `{"story","sha","utc","stacks":{"<stack>":{"cmd","passed","skipped","failed","seconds"}}}` — **and**
++   ⛔ **Backticks in `-m "…"` EXECUTE.** A message quoting a shell command runs it. Use `git commit -F
++   <file>` whenever the message contains a backtick.
++3. **ONE full-suite run per touched stack — THROUGH THE RECEIPT WRITER, stamp-first.** The first full
++   run of the landing code goes through `gate_receipt.py`; ⛔ do **not** run the runner bare "to check"
++   and then again through the writer — one suite paid for twice, and only the second run is evidence.
++   ```bash
++   python3 .agents/scripts/gate_receipt.py run --story <id> --gate suite --cwd <worktree> \
++          -- <the canonical runner>     # EVERY flag precedes `--`; after it is the command verbatim
++   ```
++   backend: `backend/.venv` pytest with the project's canonical runner flags (the runner AIDEV-NOTE in
++   `backend/requirements.txt` is the ONE source of truth). E2E tier touched → the **FULL-TREE** emulator
++   run; `-k`/single-file emulator runs are debug-only and **never citable**. The receipt records the
++   true exit code, the totals parsed from the tool's own summary line, the SHA, and whether the tree was
++   DIRTY — commit it with the story. **A red receipt is the mechanism working**: fix, re-commit,
++   re-stamp; only the LAST receipt is the certification. Stamp on a clean tree (item 2 first) — a
++   receipt over uncommitted code records `DIRTY` and inherits as invalid, correctly. Still **paste the
++   actual output** — the receipt is additional evidence, never a substitute for reading the run.
++4. **Emit the certification handoff — DERIVED from the receipt, never typed** —
++   `_bmad-output/test-artifacts/certification-<story>.json`, one `stacks` entry per stack you ran:
++   `{"story","sha","utc","stacks":{"<stack>":{"cmd","passed","skipped","failed","seconds"}}}`, every
++   number copied from the receipt's totals and `sha` (③ reads this file AND `gate_receipt.py list
++   --story <id>`; a pair that disagrees is a finding) — **and**
+    paste the actual output + `git rev-parse HEAD` into the walkthrough. **INVARIANT: the totals MUST come
+    from a run at exactly that SHA.** Any code or test change after it voids the pair (repeat from 2);
+    artifact/doc-only changes are exempt. ③ compares this `sha` to the HEAD under review — match → it
+@@ -157,10 +287,13 @@ MUST hold the TWO living docs, each carrying the `IsArtifact: true` + `ArtifactM
+ - [ ] **`implementation_plan.md`** (`type: implementation_plan`) — from Step 1, frontmatter present
+       (§2), **including its `## Self-Audit (<date>)` section** with the `Audit verdict:` line (appended
+       at Step 2 — a standalone audit file is retired per §7; a missing section = Step 2 never ran).
+-- [ ] **`walkthrough.md`** (`type: walkthrough`) — the ONE closing doc, outline-first (§5): header →
++- [ ] **`walkthrough.md`** (`type: walkthrough`) — the ONE closing doc, outline-first (§5):
++      `review-runtime: fan-out|inline` as the header's first line (Step 0.8) → header →
+       **`## Task Checklist`** (final TodoWrite snapshot as the outline — pitfalls, findings, and
+       plan-vs-built deviations indented ONLY under the tasks that fought back; clean tasks bare) →
+-      **`## Evidence`** (the ONE AC→evidence matrix + the **actual pasted** certification totals + SHA)
++      **`## Evidence`** (the ONE AC→evidence matrix — each AC row carries its ① RED output (the line
++      that raised) then the GREEN output, or `characterization` where a check was born green — + the
++      **actual pasted** certification totals + SHA)
+       → a **`## Suite Ledger`** section (below) → **`## Your Actions`** (what landed — worktree branch +
+       commits — plus anything still on the human). ③ appends `## Code Review` later — never pre-write
+       it. **Required even when told to "skip the plan, just do it" — the walkthrough is never
+@@ -182,7 +315,8 @@ Report: plan-vs-built deltas, audit findings applied, tests now green (paste out
+ the two Step-5 artifact links. Hand to `cicd-code-review`. The dev step **may advance the story to
+ `review`** — bmad-dev-story's Step 9 does this and we let it. **Never flip to `done`** — Daniel's call at
+ close-out via `/cicd-close-story-merge-tree`, whose `/cicd-update-sprint-memory` save owns the flip.
+-**Git:** commit freely inside the story worktree (explicit paths, never `git add -A`); do NOT land it on
++**Git:** commit freely inside the story worktree (explicit paths, never `git add -A`; `-F <file>` when
++the message holds a backtick); do NOT land it on
+ the epic branch — Step 3 of `/cicd-close-story-merge-tree` owns that push (→ `worktree-per-story`).
+ 
+ Optional additional input: $ARGUMENTS
+diff --git a/.agents/commands/cicd-merge-epic-workingtrees.md b/.agents/commands/cicd-merge-epic-workingtrees.md
+index ffd1151..f690125 100644
+--- a/.agents/commands/cicd-merge-epic-workingtrees.md
++++ b/.agents/commands/cicd-merge-epic-workingtrees.md
+@@ -11,6 +11,10 @@ platforms: [opencode, antigravity]
+ >   force-push; every branch and every commit carries the repo's Jira key (armed 2026-08-07).
+ >   This command merges every live lane and pushes to the shared epic branch, so it is the one
+ >   place where a single `git add -A` sweeps another lane's in-flight work into your commit.
++>   §"Pin the merge TARGET, not just the source" — `-C` on every call, assert before you merge: with N
++>   trees open, a bare `git` after a `cd` runs in whichever checkout the shell reset to (see Step 4)
++> - `.agents/rules/jira.md` — the Dev Record contract and `jira_feed.py finish` (ticket moves are the
++>   agent's, inside this operator-invoked close-out)
+ 
+ Up to four story lanes (sometimes more) run at once, and lanes of one epic descend on the same
+ surfaces. Closing them one-by-one without looking sideways ships what no single lane ever saw: two
+@@ -40,48 +44,112 @@ Echo exactly `Target: Projects/<name>` before any work.
+    pitfalls before trusting its test runs). **`claude/incident-*` matches are EXCLUDED from the
+    inventory:** they are the incident pipeline's (`/cicd-mobile-error-team`), never story lanes —
+    never fix, merge, land or PRUNE one here (SCC-149).
+-2. Map each lane → story id → board row + story frontmatter status → review verdict: the
++2. Map each lane → story id → **commits ahead** (`git -C <project> rev-list --count
++   origin/epic/<JIRA-KEY>-<slug>..claude/<JIRA-KEY>-<slug>` — from output, never memory) → board row +
++   story frontmatter status → review verdict: the
+    `Verdict: … @ <sha>` line in the lane's `_artifacts/epic_<E>/<story>/walkthrough.md`
+    `## Code Review` section (pre-2026-08-02 stories: fall back to
+    `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`; either may be absent). Read the
+    sprint map's **LANDING RULE** if one is posted — it may already name the set and the order.
++   **⚠ "Ready" does not mean committed.** A lane reported finished can have **zero commits**, its work
++   sitting uncommitted in a tree. `rev-list --count … == 0` with a dirty tree means the lane has not
++   been built yet in any sense git can see — it needs commit, artifacts and `/cicd-code-review` before
++   it is in the set at all. That is not the "trailing artifacts" case Step 2 commits for you.
+ 3. Present the set (lane · story · status · verdict · proposed order) and **confirm with the
+    operator**: membership default = every live lane of the named epic. Excluded lanes stay
+    untouched. A lane whose change a sibling already carries (same fix shipped twice) is flagged
+    now and lands as a verified no-op or is dropped — the operator's call.
+ 
+-## Step 2 — Check each tree: pre-flight per lane
+-Inside each worktree:
+-- `git status` clean — uncommitted work gets committed HERE first (explicit paths; this command
+-  never commits one lane's files from another lane's tree).
++## Step 2 — Check each tree: pre-flight per lane (mechanical, AUTOMATIC — the same script the solo door runs)
++Inside each worktree, `TREE` pinned from Step 1's `git worktree list` output:
++- `git -C "$TREE" status` clean — uncommitted work gets committed HERE first (explicit paths; this
++  command never commits one lane's files from another lane's tree). A lane at **0 commits ahead**
++  (Step 1's column) is the exception: it was never built — send it back, do not commit it into the set.
++- **Run the preflight, every target pinned:**
++
++  ```bash
++  python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> \
++         --expect-key <JIRA-KEY> --branch claude/<JIRA-KEY>-<slug> --worktree "$TREE"
++  ```
++
++  `--expect-key` is required — the resolved branch must carry the key you named, because with N trees
++  open `cwd` is not intent — and `--branch`/`--worktree` are not optional here either. **Check the
++  target line it echoes against the lane you meant BEFORE reading its verdict**; a mismatch is a STOP,
++  not a lane to skip. **Exit 2 = BLOCKED — that lane leaves the landing order. Exit 1 = warnings: read
++  them, they do not block.**
++  ⛔ **ONE exit-2 row is EXPECTED at this step and is NOT a block: `landed`.** It asks whether the lane
++  is already an ancestor of the epic branch, and it is not — Step 4 is what lands it. If the ONLY error
++  is `landed` naming the branch you pinned, the lane proceeds. `landed` naming a **different** branch is
++  the wrong-lane case; an `intent`, `sync`, `worktrees`, `artifacts`, `status` or `gates` error blocks.
+ - **Close-out eligibility, per the close-out contract:** story at `ready-for-dev`/`in-progress`/
+   `review` advances; `done` lanes are prune-only. Verdict **FAIL** (objectively red) → that lane is
+   BLOCKED: report it, keep it out of the landing order, close out the rest. PASS / CONCERNS /
+-  WAIVED / missing verdict → proceeds (CONCERNS recorded on its board line).
++  WAIVED → proceeds (CONCERNS recorded on its board line). **No `Verdict:` line → BLOCKED** — the
++  preflight's `artifacts` row says so (its only exemption is the pre-2026-08-02 standalone-file
++  fallback); name `/cicd-code-review` as what produces it.
++
++<!-- twin-law: merge-empty-set-stop -->
++⛔ **An empty eligible set is a STOP with a named reason, never a pass.** "All lanes landed" after
++zero merges is the gate that cannot fail.
++<!-- /twin-law -->
++Print zero lanes landed and why per lane; Steps 3–7 do not run and the set is never reported closed.
+ 
+ ## Step 3 — The overlap map (BEFORE any merge)
+-Pairwise across the set (`git diff --name-only <A>...<B>` per pair, plus each lane vs
+-`origin/epic/<JIRA-KEY>-<slug>` — the epic's own branch), classify every file touched by ≥2 lanes:
+-- **Code overlaps** — read both hunks; same-function edits get an owner + resolution decided NOW,
+-  not mid-conflict. Dependency edges (one lane creates a module/predicate a sibling imports)
+-  dictate order: **creator lands before importer**; an operator ruling on the board outranks any
+-  guess.
+-- **Board files** — `sprint-status.yaml`, `active-context.md`, the sprint map collide by
+-  construction. Resolution is always: **keep BOTH sides' facts** — parallel lanes record different
+-  true things; picking a winner erases someone's work (the 2026-07-31 committed-conflict-marker
+-  incident on active-context.md is the standing example).
+-- **Test surfaces** — sibling red files are per-story and safe; shared fixtures, conftest,
+-  registration files (the `registry.py` class) entangle. Note which suites re-run after which
+-  landings; a sibling's **green-first tripwires must STAY green** through every landing.
+-Output: one table — lane → order → overlaps → owner/resolution. Fewest-overlaps-first where
+-dependencies don't dictate.
++Pairwise across the set (`git -C <project> diff --name-only <A>...<B>` per pair, plus each lane vs
++`origin/epic/<JIRA-KEY>-<slug>` — the epic's own branch), classify every file touched by ≥2 lanes.
++**Seven classes, and only the board one is mechanical:**
++
++| Class | Looks like | Resolution law |
++|---|---|---|
++| **code overlap** | two lanes edit one function / module | Read both hunks; same-function edits get an owner + resolution decided NOW, not mid-conflict. Dependency edges (one lane creates a module/predicate a sibling imports) dictate order: **creator lands before importer**; an operator ruling on the board outranks any guess. |
++| **board file** | `sprint-status.yaml` · `active-context.md` · the sprint map · `_bmad-output/history/CHANGELOG.md` | Collide by construction. **Keep BOTH sides' facts, never pick a winner** — parallel lanes record different true things; picking a winner erases someone's work (the 2026-07-31 committed-conflict-marker incident on active-context.md is the standing example). |
++| **test surface** | sibling red files · shared fixtures, `conftest`, registration files (the `registry.py` class) | Sibling red files are per-story and safe; shared fixtures entangle. Note which suites re-run after which landings; a sibling's **green-first tripwires must STAY green** through every landing. |
++| **rewrite vs edit** | one lane rewrote a doc another lane edited a paragraph of | ⚠ **NOT mechanical, and git cannot tell you.** The paragraph the edit changed no longer exists, so *both* automatic resolutions are wrong. **Re-author** the edit into the new structure. |
++| **modify / delete** | one lane deletes a file another lane edited | ⚠ **A decision, not a strategy.** Ordering does not rescue it — both orders end with the file deleted. Rule which side wins, and **prove the surviving content exists at its destination BEFORE accepting the deletion** (`git show <branch>:<path>`, or the named replacement). |
++| **gate or script** | `.githooks/` · `.github/workflows/` · hook config · the project's test-runner entry point · gate scripts · anything a gate imports | ORDER MATTERS. State which version must win BEFORE merging, and re-run the gate that file feeds after each landing that touches it. |
++| **generated** | lockfiles, sync manifests, mirrors, tool-written INDEXes | Resolved by **REGENERATING**, never by hand-merge. |
++
++**⚠ `git diff` cannot see untracked files, so this map UNDERCOUNTS.** Run `git -C "$TREE" status
++--porcelain` per lane and fold anything untracked into the map **as if it were already committed**,
++because at merge time it will be.
++
++Output: one table — lane → commits ahead → order → overlaps (class) → owner/resolution → cross-repo
++dependency. Fewest-overlaps-first where dependencies don't dictate — with two overrides that outrank
++the count:
++
++<!-- twin-law: merge-machinery-last -->
++**⭐ A lane that changes commit or push machinery lands LAST.** Once it lands it changes the rules
++for every merge after it — a pre-push approval hook landed mid-sequence turns the rest of the
++session into a different procedure.
++<!-- /twin-law -->
++Here that is the **gate or script** class above (`.githooks/`, `.github/workflows/`, the runner every
++4.2 gate calls); the gate it feeds re-runs after it lands.
++
++<!-- twin-law: merge-cross-repo-order -->
++**Cross-repo dependencies are part of the order.** A lane whose deletion's destination is an
++**unmerged branch in another repo** lands AFTER that branch merges there. Get this wrong and the
++content exists on no merged branch in either repo, and nothing says so.
++<!-- /twin-law -->
++Name that other repo's branch and its merge state in the table row.
++
++Dump the table, the order and every conflict decision to the set's artifact folder before Step 4 — a
++landing runs long enough to be compacted.
+ 
+ ## Step 4 — Fix, close, land — sequentially, verified INSIDE each worktree
+-For each eligible lane, in the Step 3 order:
+-1. **Merge the epic branch into the lane, in the lane:** `git merge origin/epic/<JIRA-KEY>-<slug>` — it now
+-   carries every previously-landed sibling, so each merge is the rolling reconcile. Resolve conflicts
+-   HERE per the Step 3 plan. ⛔ Never check the epic branch out in the shared checkout to resolve
+-   anything.
++For each eligible lane, in the Step 3 order — `TREE=<that lane's worktree path>`, copied from Step 1's
++`git worktree list` output, and **`git -C "$TREE"` on EVERY git call in this step; never a bare `git`
++after a `cd`** (`git-policy.md` §"Pin the merge TARGET"). The cwd resets to the shared checkout between
++tool calls, and that checkout stands on `main`: a bare merge here merges the epic branch into `main`,
++and the bare push in 4.4 lands `main`'s tip on the shared epic branch every sibling then absorbs —
++reporting success both times. That is the 2026-08-11 shape that put a merge commit on a sibling's
++branch, and the output is indistinguishable from a correct one.
++
++1. **Merge the epic branch into the lane, in the lane:** `git -C "$TREE" merge origin/epic/<JIRA-KEY>-<slug> --no-edit`
++   — it now carries every previously-landed sibling, so each merge is the rolling reconcile. Resolve
++   conflicts HERE using the Step 3 table. **A conflict in a file the Step 3 map did not classify is a
++   finding, not a judgement call: STOP, re-derive the map for the remaining lanes (the untracked
++   fold-in is the usual cause), and only then continue.** ⛔ Never check the epic branch out in the
++   shared checkout to resolve anything.
+    **Expect ONE conflict block spanning the set's story-status lines in `sprint-status.yaml` at
+    every lane merge** — adjacent lines, different lanes, by construction (the one-line-per-entry
+    CHANGE LOG in `_bmad-output/history/CHANGELOG.md` auto-merges; the status lines don't — and
+@@ -99,6 +167,28 @@ For each eligible lane, in the Step 3 order:
+    **sequentially, never several lanes' at once** (concurrent runs starve each other and fake
+    failures). **Red → fix in THIS worktree** (explicit paths), commit, re-run; a lane that cannot
+    go green is skipped per Step 2 and the set continues.
++   **Run every gate BARE and read its exit code** — piping to `tail`/`head` returns the *pipe's*
++   status, so a red suite reads as green.
++   An **artifacts-only** absorb at 4.1 keeps the lane's `Verdict:` valid. A code, script **or doc**
++   change during the absorb — only `_artifacts/` is exempt; a `docs/` commit invalidates (SCC-154) —
++   **VOIDS it**, and this gate is the re-measurement: it was measured against an epic branch that no
++   longer exists. **Append the re-measurement to the walkthrough; never edit the old verdict away** —
++   a pre-absorb `FAIL` left standing is the most useful line in the record. The shape:
++
++   ```markdown
++   ## Post-absorb re-measurement (<date>, landing set <story ids in order>)
++
++   **Verdict: <PASS|CONCERNS> @ <post-absorb sha>** — re-measured after absorbing
++   `origin/epic/<JIRA-KEY>-<slug>` at <sha> (<what landed there>). The pre-absorb `Verdict: … @ <sha>`
++   above is **left standing on purpose**.
++
++   <Artifacts-only absorb? say so and stop here. Otherwise one bullet per conflicted file naming the
++   resolution and WHY.>
++
++       <the canonical runner, scoped>   -> <files>, N/N cases, exit 0
++   ```
++
++   4.3's flip and 4.5's Dev Record read **this** verdict.
+ 3. **Close the story out, in the worktree, so the edits ride its landing** — the per-story
+    obligations of `/cicd-update-sprint-memory` Steps 1–4 + 6, scoped to this story: verify the
+    claimed work on disk (grep-check); flip the story to `done` in BOTH the story frontmatter and
+@@ -106,11 +196,47 @@ For each eligible lane, in the Step 3 order:
+    line to `_bmad-output/history/CHANGELOG.md` (own line, newest-first, never re-joined — the log
+    left the board in the Wave 4 split); reduce its active-context entry to a ≤3-line
+    pointer; route learnings to their homes and queue memory writes; confirm the walkthrough's
+-   `## Your Actions` records what lands. Commit — EXPLICIT PATHS ONLY, `git diff --cached --stat`
+-   shows only this story's files.
+-4. **Land:** `git push origin HEAD:epic/<JIRA-KEY>-<slug>`; verify the remote moved. Rejected (remote moved
+-   again) → re-merge, re-gate, re-land — never force. ⛔ Do NOT push the `claude/*` branch itself;
+-   it is the rollback point until Step 6 deletes it.
++   `## Your Actions` records what lands — and passes
++   `python3 .agents/scripts/jira_feed.py check-actions --walkthrough <this lane's walkthrough>`
++   **now, before the commit**: 4.5's `finish` refuses (exit 2) on the same rows, and after 4.4 the
++   only fix is a commit on a branch that has already landed. Commit with `git -C "$TREE" add <paths>`
++   and `git -C "$TREE" commit -F <msg-file>` — EXPLICIT PATHS ONLY, `git -C "$TREE" diff --cached
++   --stat` shows only this story's files.
++4. **Land — assert the tree, then push, then prove the remote moved:**
++
++   ```bash
++   test "$(git -C "$TREE" rev-parse --abbrev-ref HEAD)" = "claude/<JIRA-KEY>-<slug>" || { echo 'WRONG TREE — STOP'; exit 1; }
++   git -C "$TREE" push origin HEAD:epic/<JIRA-KEY>-<slug>
++   git -C "$TREE" log --oneline -1 origin/epic/<JIRA-KEY>-<slug>     # must be THIS lane's merge sha
++   ```
++
++   Rejected (remote moved again) → re-merge, re-gate, re-land — never force. ⛔ Do NOT push the
++   `claude/*` branch itself; it is the rollback point until Step 6 deletes it. ⛔ A push that did not
++   return 0 means 4.5 does not run — the ticket never moves ahead of the landing.
++5. **Dev Record, then the ticket — per lane, at ITS landing, never batched** (the order the solo
++   door's Step 4 runs: a ticket reading `Done` over a stopped landing is a lie on the board; a
++   landing whose record lags is one command from correct). Read `jira_key:` from the story frontmatter:
++
++   ```bash
++   python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <id> --project <PROJECT> \
++          --outcome "review -> done, landed on epic/<JIRA-KEY>-<slug> @ <sha>" \
++          --decision "<…>" --pitfall "<…>" --followon "<…>" \
++          --evidence "<4.2 totals @ post-absorb sha>" --closing --apply      # updates in place — never --append-new
++   python3 .agents/scripts/jira_feed.py finish --key <KEY> --apply \
++          --walkthrough "<this lane's walkthrough>" --landing-ref "origin/epic/<JIRA-KEY>-<slug>" --status Done
++   python3 .agents/scripts/jira_feed.py check --key <KEY> --story <id>          # scoped: this lane filed one
++   python3 .agents/scripts/jira_feed.py check --key <KEY> --project <PROJECT>   # unscoped: the only run that sees a FORKED record (SCC-174)
++   ```
++
++   ⛔ **`--landing-ref` is not optional on a story lane.** `finish` defaults to `origin/main`, where no
++   story is an ancestor until the epic ships, so a bare `finish` HOLDS a finished story forever
++   (SCC-242). **`finish` writes the `Done`, and per lane it may refuse to:** exit `0` closed · `3`
++   **HELD** (open `- [ ]` rows under `## Your Actions`, posted to the ticket with the `user-tasks`
++   label) · `2` the walkthrough is wrong, nothing written — fix it · `4` transport, retry. **A held
++   lane does not stop the run** — its code is on the epic; carry it into the Step 7 report as
++   *landed, ticket awaiting the operator* and go on to the next lane. ⛔ Never fall back to a bare
++   `acli … transition --status "Done"` on a held lane. One Dev Record per ticket; a story with no
++   `jira_key` skips this item and says so in the report — never invent a key.
+ 
+ ## Step 5 — Combined gate on the reconciled epic branch
+ *(No shared-checkout reconcile is owed — it stands on `main` and only moves when the epic merges;
+@@ -120,6 +246,11 @@ the old "N stories behind" fast-forward died with `main_debug` on 2026-08-07.)*
+    integration break no single lane caused is fixed HERE — directly on the epic branch, explicit
+    paths, follow-on-fix convention (no new story, no new worktree) — and the combined surface
+    re-run to green.
++   Run it **BARE** — never through `tail`/`head`; the pipe's exit code is what you would read. Then
++   the arithmetic: **the case totals must be additive — `<epic branch before the set> + <each lane's
++   4.2 delta> = <combined>`** — or name which lane displaced which and why that was correct. It is the
++   cheapest real check in the step: non-additive totals mean one lane's tests displaced another's at a
++   4.1 resolution, and the merge ate coverage no review would ever see.
+ 2. Run `/cicd-prune-context` ONCE for the whole set (not per lane); write the queued memory files +
+    `MEMORY.md` pointers; then the close-out catch question — **once, and only if the set routed
+    ZERO learnings automatically (SCC-133)**: *"Set closed. Any manual learnings, new bugs, or
+@@ -139,8 +270,21 @@ For each landed lane: `/cicd-prune-worktree <story-slug>` — verify merged, rem
+ combined gate is green — the worktrees are the rollback points. Blocked/skipped lanes keep their
+ trees and are reported, not pruned.
+ 
+-## Done — the one-shot report
+-Per story: landed SHA range · verdict · `→ done` flip · pruned ✓. Set-level: overlaps resolved
++## Step 7 — Verify, THEN report (never report an unverified success)
++Every ✓ below comes from a command you ran HERE, not from intent. `<project>` is the project's shared
++checkout; it holds no local `epic/*` branch by contract, so compare against the REMOTE ref:
++
++```bash
++git -C <project> fetch origin
++git -C <project> log --oneline -1 origin/epic/<JIRA-KEY>-<slug>          # the LAST lane's merge sha, by name
++git -C <project> merge-base --is-ancestor <each landed lane's tip> origin/epic/<JIRA-KEY>-<slug> && echo landed
++git -C <project> status --short                                          # empty — nothing rode into the shared checkout
++git -C <project> worktree list                                           # only expected trees; a HUSK here blocks the next `worktree add`
++git -C <project> branch -a --list 'claude/*'                             # only deliberately-retained lanes (`claude/incident-*` excluded)
++```
++
++Per story: landed SHA range · pre- and post-absorb verdict · `→ done` flip · Jira: Dev Record filed,
++`<KEY> → Done` or *HELD — <rows>* · pruned ✓. Set-level: overlaps resolved
+ (file → resolution) · per-lane and combined test evidence · memory writes · anything skipped and
+ WHY (a blocked lane, an excluded lane, a live-QA carryover). **This command ends at the epic
+ branch — it does NOT merge to `main`.** The epic reaches `main` exactly one way: `/cicd-push-e2e`
+diff --git a/.agents/commands/cicd-quick-dev.md b/.agents/commands/cicd-quick-dev.md
+index fa42e97..be4eedb 100644
+--- a/.agents/commands/cicd-quick-dev.md
++++ b/.agents/commands/cicd-quick-dev.md
+@@ -41,20 +41,94 @@ override → `.agents/active-project.txt` → else **STOP and ask** — never gu
+ lobby. Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>` before any work; every path and
+ child tool call resolves under `PROJECT_ROOT`.
+ 
+-## Step 0.5 — Worktree (before the first edit)
+-Per `worktree-per-story`: run `git worktree list` under `PROJECT_ROOT`; reuse an existing
+-`claude/<JIRA-KEY>-<slug>` tree for this fix, else open one off the story's EPIC branch (`epic/<JIRA-KEY>-<slug>`).
+-No epic applies — a truly ad-hoc fix outside any sprint — then mirror `git-policy.md`'s chore lane
+-instead: a short-lived `chore/<JIRA-KEY>-<slug>` branch off `main`, **in its own worktree**. Echo the
+-case. Quick fixes are NOT exempt — this is what keeps them tangle-free, rollbackable, and landable
+-through the normal close-out.
++## Step 0.5 — Key, worktree, branch, ticket (before the first edit)
++
++**Pin the ticket key you are working, before any tool has answered anything.** Every branch and every
++commit must carry the repo's key (`.agents/jira.conf`), or the armed `commit-msg` hook refuses the
++commit. Story lane: the story's `jira_key:` frontmatter. Ad-hoc lane: the ticket you were handed —
++read its `ACCEPTANCE` block, it is Step 1's first AC source there:
++
++```bash
++EXPECTED_KEY="AVCH-00"     # the ticket you MEAN
++acli jira workitem view "$EXPECTED_KEY"
++```
++
++No ticket at all → **STOP and ask.** Never invent a key; a keyless branch cannot be committed, closed,
++or found again.
++
++Per `worktree-per-story`: reuse an existing `claude/<JIRA-KEY>-<slug>` tree for this fix, else open
++one. The base is a **remote-tracking ref after a fetch, never a bare local `main` or epic ref** — a
++local ref is a cache a sibling lane has already moved past:
++
++```bash
++git -C "$PROJECT_ROOT" worktree list                      # reuse this fix's tree if it exists
++git -C "$PROJECT_ROOT" fetch origin                       # ⛔ the base is origin/…, never a bare local ref
++# story lane — off the story's EPIC branch:
++git -C "$PROJECT_ROOT" worktree add .claude/worktrees/<slug> -b claude/<KEY>-<slug> origin/epic/<KEY>-<epic-slug>
++# ad-hoc lane — no epic applies (a truly ad-hoc fix outside any sprint): git-policy.md's chore lane, off main:
++git -C "$PROJECT_ROOT" worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
++git -C "<the new tree>" branch --unset-upstream           # an origin/… start-point sets upstream to the BASE branch
++python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
++BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
++echo "Lane: $BRANCH"
++```
++
++Echo the case and the branch **from `rev-parse`, never from memory.** Every path and command from here
++binds to that tree. Quick fixes are NOT exempt — this is what keeps them tangle-free, rollbackable,
++and landable through a door.
++
++`link-worktree-assets.py` links `node_modules`, `auth_keys/`, `.venv`, `.env` — at the repo root and
++one level down (`backend/.env`, `frontend/node_modules`) — into the tree. Without them pytest,
++uvicorn, `next dev` and the emulators fail on cwd-relative lookups, and Step 3 reports an
++environmental red as a real one. A linked `.env` is **shared state**: re-run with `--copy-env` if this
++lane will change it. ⛔ `--unlink` runs BEFORE any `git worktree remove` — a recursive delete through a
++junction eats the shared targets (`/cicd-prune-worktree` does this).
++
++**Write the lane's manifest — `task.yaml` beside the walkthrough folder, on the AD-HOC lane** (the
++story lane's spec is its story file). It is what makes Step 4.5's slug a read rather than a retype,
++and the door reads the same file:
++
++```yaml
++task_key: <KEY>
++primary_repo: Projects/<name>
++branch: chore/<KEY>-<slug>
++close_command: smh-close-task-merge-tree
++secondary_repos: []
++```
++
++**Move the ticket to `In Progress` — now, at the tree, not at the merge (SCC-113):**
++
++```bash
++python3 .agents/scripts/jira_feed.py start --key <KEY> --apply    # PC: `python`
++```
++
++Idempotent, so a re-run or a resumed lane is a no-op. **Read its exit code — four outcomes:**
++
++| Exit | Means | What you do |
++|---|---|---|
++| `0` | moved, or already `In Progress` | carry on |
++| `3` | **left alone** — the ticket is `Blocking` / `In Review` / `Deferred` | **stop and ask.** You are opening a lane on a ticket that is waiting on something; say which and confirm that is intended |
++| `2` | **the board refused it** — a `Done` key (so the key is wrong), or a move that did not land | **stop.** Never work a closed ticket's key; mint one at the `jira.md` §Who-mints-tickets seam |
++| `4` | **the board was unreachable** — transport, not a verdict | **carry on and retry later.** ⛔ Do *not* mint a ticket: nothing here says your key is wrong. Sandboxed shells cannot reach the credential store (`jira.md` top), and the operator commits from planes |
++
++**⭐ Read the sibling lanes now, not at merge time.** Several lanes run at once and their uncommitted
++work is invisible to `grep`:
++
++```bash
++git -C "$PROJECT_ROOT" worktree list
++git -C <each-other-tree> diff --name-only <that lane's base>...HEAD   # origin/epic/<…> for a story tree, origin/main for a chore tree
++git -C <each-other-tree> status --short
++```
++
++Any file in both their set and your intended set is a **landing-order dependency**. Say which lane
++should land first and what happens to your work if it does not. Carry it into the walkthrough's
++`## Evidence`.
+ 
+ ⛔ **A worktree is not optional on either case, and this line used to say `no worktree`.**
+ `worktree-per-story` has required one for **every commit-producing lane** since SCC-62, and its lane
+ table names `chore/<JIRA-KEY>-<slug>` explicitly. Worse, the exemption that lets this command skip the
+ plan at all — `artifacts-always-first` § When to Skip, the `/cicd-quick-dev` bullet — is **conditional on the worktree/chore
+-branch existing**, so working without one voids this lane's own carve-out. Link the gitignored assets
+-into a fresh tree (`node_modules`, `.env`, `auth_keys`), or Step 3's scoped tests cannot run.
++branch existing**, so working without one voids this lane's own carve-out.
+ 
+ ⛔ **This lane does not merge, and it never touches `main`.** Step 4 is the end: branch pushed, work
+ reported, and the landing is a **separate, operator-invoked act through a door**. Invoking a door IS
+@@ -64,20 +138,54 @@ the sign-off; a spoken "looks good" is not, and no agent merges to `main` on its
+ | Lane | Door |
+ |---|---|
+ | story lane on `claude/*` | the epic branch, at close-out — `/cicd-close-story-merge-tree`, then the epic ships via `/cicd-push-e2e` |
+-| chore lane in a **project repo** | ⚠ **there is none — state that and hand back** |
++| chore lane in a **project repo**, diff reaches a deployable path (`backend/ frontend/ firebase/ functions/ mobile/ .github/`) | `/cicd-push-e2e` — `ship_preflight.py` admits the `chore/*` under the **light gate** (SCC-211); nothing deployable → it refuses and names the PR door |
++| chore lane in a **project repo**, nothing deployable in the diff | `/smh-close-task-merge-tree Projects/<name>` — the PR door, with the project named in `$ARGUMENTS`. `task_preflight.py` derives `LANE: LOCAL`, and it opens the PR and STOPS (`git-policy.md` § The write gate, `main` row) |
++
++⚠ **Which door is derived from the DIFF, not chosen:** both doors read the same deployable-path list
++and refuse each other's lane, so the branch decides. Project repos publish no `main-write-gate`, so
++the PR merge there is the operator's click with no server-side gate — still the operator's, still
++never yours.
+ 
+-⛔ **There is no command-centre row, and that is not an omission.** This command binds
++⛔ **There is still no command-centre row, and that is not an omission.** This command binds
+ `smh-target-resolution.md` — exactly ONE project, **never the lobby** — so command-centre chore work
+-is unreachable from here by construction. It belongs to `/smh-quick-dev` or `/smh-quick-fix`, whose
+-door is `/smh-close-task-merge-tree`. Naming that door in a routing table an agent reads from a
+-`cicd-*` lane is an invitation to bind the lobby, which is the one thing target resolution forbids.
++is unreachable from here by construction; it belongs to `/smh-quick-dev` or `/smh-quick-fix`. The
++`smh-` door appears above **only with `Projects/<name>` as its argument** (its Step 0 takes a
++`Projects/` path and the subject stays `PROJECT_ROOT`): a bare invocation binds the lobby, which is
++the one thing target resolution forbids.
++
++⭐ **The gap SCC-205 recorded here is CLOSED (SCC-211).** This paragraph used to say a project repo's
++ad-hoc `chore/*` lane had no door of its own. `ship_preflight.py` now admits a deployable `chore/*`
++under the light gate and refuses the rest by name, and `task_preflight.py` takes the non-deployable
++half as `LANE: LOCAL` — two doors, selected by the diff. Report the pushed branch and the door its
++diff selects; **still never merge by hand.**
++
++## Step 0.7 — Probe the review runtime, and record it (SCC-177)
++
++Ask this runtime whether it can fan out to subagents — do not answer from what usually happens,
++because a headless pipeline or a platform with no subagent tool makes the answer `inline`, and both
++are invisible until a lens fails to launch three steps later. The answer goes into the walkthrough
++header Step 4 writes, on its own line, above everything else, and into the engine's `review_runtime`
++input in Step 3:
++
++<!-- twin-law: review-runtime-probe -->
++⛔ **The probe is a **capability**, never a **policy** (SCC-203).** *Does a subagent tool exist in
++this runtime?* is the whole question; *am I permitted to use it?* is a different one, and answering
++it here is how a session directive — *"do not spawn subagents unless the user asks"* — got read as
++*"this runtime is inline"*, ran an entire review inside the builder's own context, and had the flow
++record it as legitimate. ⭐ **Subagents are the DEFAULT, and invoking a review IS that request** —
++you never stop to ask for them, and never quietly downgrade to `inline` to avoid asking. Only a
++runtime with no subagent tool at all is `inline`.
++<!-- /twin-law -->
++
++```
++review-runtime: fan-out
++```
+ 
+-⚠ **The gap, recorded rather than filled:** `/cicd-push-e2e` ships an `epic/*` branch, and
+-`/smh-close-task-merge-tree` refuses a diff touching `backend/`, `frontend/`, `firebase/`,
+-`functions/`, `mobile/` or `.github/` and hands it to `/cicd-push-e2e` — so a project repo's ad-hoc
+-`chore/*` lane has **no close-out door of its own**. Report the pushed branch and the gap; **do not
+-invent a command to fill it, and do not merge by hand.** Closing it is its own decision, and its own
+-ticket.
++⛔ **Here, not at Step 4 — the probe must precede the review it describes.** Recorded afterwards it is
++read off the roster that already exists, which makes the check circular: the header can only ever
++agree with the states it was derived from. Recorded here it is an independent claim, and
++`walkthrough_roster.py` blocks the close-out when the roster disagrees with it (`inline` + a lens
++reporting `ok` is the contradiction it catches).
+ 
+ ## Step 1 — Clarify, fix the ACs, and route
+ Invoke the **`bmad-quick-dev`** skill with `$ARGUMENTS`. Its `step-01-clarify-and-route` does the
+@@ -114,7 +222,8 @@ modified. Ejecting is not a licence to keep editing under the fast lane's carve-
+ Let the skill's `step-oneshot.md` run: implement the clarified intent directly, then its own review and
+ spec trace. Commits happen **inside the worktree, explicit paths only** — never `git add -A` — and every
+ commit subject leads with the repo's Jira key from `.agents/jira.conf`, or the armed `commit-msg` hook
+-refuses it. Never push `main`.
++refuses it. ⛔ **Backticks in `-m "…"` EXECUTE.** A message quoting a shell command runs it. Use
++`git commit -F <file>` whenever the message contains a backtick. Never push `main`.
+ 
+ ## Step 3 — ⭐ Review gate (mandatory — never skipped, never "assumed clean")
+ Runs **after** the work. **Pin the diff first, from command output** — `step-oneshot.md` writes no
+@@ -158,7 +267,7 @@ an agent reviewing its own reasoning anchors on it), verifies what they find, th
+ | `ARTIFACT_DIR` | the Step 4 walkthrough's folder |
+ | `DEFERRED_WORK` | the project's `deferred-work.md`, when it has one |
+ | `lens_budget` | `standard` — the interactive budget; a human is sitting in front of this lane. **This command does not define the caps; step-01 of the engine does, once.** Naming nothing is not neutral: it silently selects the autopilot's budget (SCC-147) |
+-| `review_runtime` | `fan-out` or `inline` — **what you PROBED, never what you expect.** Try one throwaway subagent; if subagents are unavailable the engine runs inline and DROPS the Blind Hunter rather than faking it |
++| `review_runtime` | `fan-out` or `inline` — **the Step 0.7 answer, never what you expect.** If subagents are unavailable the engine runs inline and DROPS the Blind Hunter rather than faking it |
+ 
+ ⛔ **`no-spec` DOES NOT AUDIT YOUR ACs — it drops that lens entirely.** step-01 § *Skipped-by-mode
+ is not the same as dead*: the Acceptance Auditor runs in `review_mode: full` **only**, and a
+@@ -222,16 +331,17 @@ patch → HALT** (and see Step 1.5). Re-run the affected check after applying fi
+   `epic_<E>/<story>/`; ad-hoc → `quick_fixes/quick-fix-<track>.<n>-<slug>/` (read that folder's
+   `INDEX.md` for the next free number and append the row by hand; **create the folder + its `INDEX.md`
+   if this is the repo's first quick fix** — the lobby has none yet, AviationChat does). It **links** the spec rather than
+-  restating it, and carries `## Task Checklist` → `## Evidence` (AC→evidence + pasted totals + SHA) →
++  restating it, and carries `review-runtime:` (the header from Step 0.7, one line) →
++  `## Task Checklist` → `## Evidence` (AC→evidence + pasted totals + SHA) →
+   `## Code Review (<date>)` with the canonical **`Verdict: PASS|CONCERNS|FAIL|WAIVED @ <sha>`** line →
+   `## Your Actions`. Post clickable Markdown links to every artifact in the chat.
+ 
+ ## Step 4.5 — File the Dev Record on the ticket (AUTOMATIC, never ask)
+ This lane **closes its own branch**, and the ad-hoc chore lane never reaches
+ `/cicd-close-story-merge-tree` at all — so this is the only place its knowledge gets recorded. Before
+-SCC-49 it died in the walkthrough. Runs AFTER Step 4 so the walkthrough it points at exists. The key is
+-already in hand: the story's `jira_key:` frontmatter on the story lane, or the `<JIRA-KEY>` in the
+-`chore/<JIRA-KEY>-<slug>` branch name on the ad-hoc lane.
++SCC-49 it died in the walkthrough. Runs AFTER Step 4 so the walkthrough it points at exists. The key
++was **pinned at Step 0.5 as `EXPECTED_KEY`** and is read back from there — the story's `jira_key:`
++frontmatter on the story lane, the ad-hoc lane's `task.yaml` on the other. Never re-derive it here.
+ 
+ ```bash
+ python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <THE ONE SLUG> \
+@@ -252,16 +362,21 @@ measured 2026-08-15. `/cicd-close-story-merge-tree` passes `--story <id>`, meani
+ so this step must pass **the same story id, character for character** — never the branch slug, never a
+ free-text description. On the ad-hoc lane there is no story id: pass the **branch slug** from
+ `chore/<JIRA-KEY>-<slug>`, and pass that identical string at every later surface.
+-⚠ **The durable fix is not here.** On the `smh-` side the slug is read from the lane's `task.yaml`
+-so no one types it twice, and **no `cicd-*` command writes a `task.yaml` at all** (grep: zero hits) —
+-so `devrecord`'s anti-fork default cannot fire on this side and the guard is inert. Recorded, not
+-fixed here: it is a change to the story lane's manifest, and it belongs with the close-out rebalance.
++⭐ **On the ad-hoc lane, READ it — do not retype it.** Step 0.5 writes that lane a `task.yaml`
++carrying `branch: chore/<KEY>-<slug>`, which is the same file `/smh-close-task-merge-tree` reads and
++the same source `devrecord` defaults from — so the slug is typed once, at the tree, and every later
++surface reads it. That is what makes the anti-fork guard live on this side (AVCH-59 was one ticket
++with two records because two surfaces spelled one lane differently). The story lane has no
++`task.yaml` and needs none: its story id IS the shared identifier.
+ 
+ **`jira_feed.py devrecord` reads the ticket back** and exits 2 if the comment is not there; a non-zero exit means the record did NOT land, so report that rather than
+ success. No ticket key at all (a fix outside any ticket) → say so in the Done report and skip;
+ **never invent a key.** Full acli reference: `.agents/rules/jira.md`.
+ 
+ ## Done
+-Stop here. Do **NOT** run `/cicd-close-story-merge-tree`, never land on the epic branch (close-out's job),
+-never touch `main`. Display the spec path, the walkthrough link, the key changes, and the review-gate
+-output, then invite Daniel to review and run `/cicd-close-story-merge-tree` himself when satisfied.
++Stop here. Never land on the epic branch (close-out's job), never touch `main`, never transition the
++ticket. Display the spec path, the walkthrough link, the key changes, the review-gate output, and the
++branch + its push state. Then invite the operator to review and invoke **the door Step 0.5's table
++names for this lane** — `/cicd-close-story-merge-tree` on the story lane; `/cicd-push-e2e` or
++`/smh-close-task-merge-tree Projects/<name>` on the ad-hoc lane, by what the diff touched. Invoking it
++IS the sign-off.
+diff --git a/.agents/commands/cicd-self-audit.md b/.agents/commands/cicd-self-audit.md
+index d56ba59..2a39240 100644
+--- a/.agents/commands/cicd-self-audit.md
++++ b/.agents/commands/cicd-self-audit.md
+@@ -153,9 +153,15 @@ as the normal fallback:
+   command output, or **NO-GO**.
+ - **Twins and doors:** a paired surface (cicd/smh command, generated door) → divergence stated or
+   ported.
+-- **Sibling lanes:** fetch the base first (a stale remote ref inflates every sibling's apparent
+-  set), then `git worktree list` + per-tree `diff --name-only` — a file in both sets is a
+-  landing-order dependency: name the order and the cost of violating it.
++- **Sibling lanes** (`worktree-per-story` §"Am I alone in this repo?"): story lanes are `claude/*`
++  worktrees off ONE epic branch, several at a time, and a sibling's uncommitted tree is invisible to
++  grep from here. **Bind every call — a bare `git` here reads the lobby, not the project:**
++  `env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin <epic-branch>` first (a stale remote ref
++  inflates every sibling's apparent set), then `git -C "$PROJECT_ROOT" worktree list`, then per tree
++  `git -C <tree> status --short` + `git -C <tree> diff --name-only origin/<epic-branch>...HEAD`. The
++  ref is the story's EPIC branch (`epic/<KEY>-<slug>`), never `origin/main` (SCC-165). A file in both
++  their set and this plan's declared set is a **landing-order dependency**: name which lane lands
++  first and what happens to this work if it does not.
+ - **Risk context (SCC-228 seam):** `python3 .agents/scripts/risk_seam.py classify <declared
+   paths>` *(PC: `python`)* informs this lens's depth. **Informs, never gates** — `gates_audit()`
+   is False for every return by pinned contract, so audit semantics are identical under the
+diff --git a/.agents/commands/cicd-write-story-tests.md b/.agents/commands/cicd-write-story-tests.md
+index 7c5e63f..5ccc072 100644
+--- a/.agents/commands/cicd-write-story-tests.md
++++ b/.agents/commands/cicd-write-story-tests.md
+@@ -27,6 +27,11 @@ STOP and say so, never fall back to the lobby.
+    `/cicd-create-epic-sprint` — missing → go back and run it) and HEAD is on it (**never** `main`),
+    then open `.claude/worktrees/<story-slug>` on `claude/<JIRA-KEY>-<story-slug>` off it — slug
+    `story-<id-dashed>-<short-name>`, e.g. `story-21-3-student-archive`.
++3. **Either way, link the gitignored assets** — `python3 .agents/scripts/link-worktree-assets.py
++   "$PROJECT_ROOT"/.claude/worktrees/<story-slug>` (PC: `python`). A tree has no `.env`,
++   `backend/.venv`, `auth_keys/` or `node_modules` of its own and the runners resolve them relative to
++   CWD, so Step 3's reds cannot even be run red without it. Idempotent on a re-entered tree;
++   `/cicd-prune-worktree` runs the `--unlink` half before the tree is removed.
+ 
+ **Ordering caveat:** the slug depends on the story id, which Step 1 may be the thing that resolves ("the
+ next story"). Resolve the id first, then open the tree — still before the story file is written; never
+diff --git a/.agents/commands/smh-clean-code-audit.md b/.agents/commands/smh-clean-code-audit.md
+index 99afe4d..d10b171 100644
+--- a/.agents/commands/smh-clean-code-audit.md
++++ b/.agents/commands/smh-clean-code-audit.md
+@@ -71,9 +71,13 @@ If `$ARGUMENTS` names an explicit base ref, use it instead. **Echo the file coun
+ ⛔ **An empty set is a STOP, not a pass** — say so and stop. A vacuous green here is the exact failure
+ this gate exists to prevent (`tests-must-gate-for-real` §2).
+ 
+-⛔ **Never sweep another session's memory into this diff.** Dirty files under `_artifacts/_memory/`
+-belong to whatever wrote them; report them as present and out of scope. They are parked or left, never
+-committed under this task.
++<!-- twin-law: memory-sweep -->
++⛔ **Never sweep another session's memory into this diff** (`artifacts-always-first` §"The memory
++store"). Dirty files under `_artifacts/_memory/` belong to whatever wrote them — the store is shared
++and two-tier since SCC-73, the lobby's index plus each project's own, so a sibling lane's uncommitted
++entry shows up in a `git status` here. Report them as present and out of scope; they are parked or
++left, never committed under this lane's key.
++<!-- /twin-law -->
+ 
+ ---
+ 
+diff --git a/.agents/commands/smh-code-review.md b/.agents/commands/smh-code-review.md
+index 82dae45..b838757 100644
+--- a/.agents/commands/smh-code-review.md
++++ b/.agents/commands/smh-code-review.md
+@@ -182,6 +182,7 @@ stop, not a guess:**
+ | `review_mode` | `full` when the task's `implementation_plan.md` exists; `no-spec` when it does not |
+ | `STORY_FILE` | that `implementation_plan.md` — on this lane the plan's acceptance list **is** the spec |
+ | `ARTIFACT_DIR` | `_artifacts/_main/<YYYY-MM-DD>_<slug>/` inside this tree |
++| `DEFERRED_WORK` | `_artifacts/_main/deferred-work.md` — the same file Step 1 names as the only legal sink for a `defer` |
+ | `lens_budget` | `standard` — the interactive budget; this lane is typed by hand. **This command does not define what the caps are; step-01 of the engine does, once** — a cap each caller repeats is a cap that drifts. Naming nothing is not neutral: it silently selects the autopilot's budget, which is why this row is explicit (SCC-147) |
+ | `review_runtime` | `fan-out` or `inline` — **what you PROBED at Step 0.9, never what you expect.** Pass it down and write the same value into the walkthrough header, so the roster the engine returns can be checked against the runtime that produced it |
+ 
+@@ -437,9 +438,13 @@ The section carries:
+ - each gate's result in one line with its **actual** output;
+ - the acceptance matrix from Step 2 — every item → its proving assertion;
+ - a `### Clean-Code Gate` subsection carrying Step 3.5's table and pasted output;
+-- **Step 0.7's re-derivation**, in three lines — what `main` moved under this diff, the true overlap +
+-  `merge-tree` result, and any **sibling-lane landing-order dependency**. "Nothing moved" is a
+-  reportable result; silence is not.
++<!-- twin-law: rederive-record -->
++- **Step 0.7's re-derivation**, under its own `### Step 0.7 — re-derivation` sub-heading as three
++  numbered lines — what the landing ref moved under this diff, the true overlap + `merge-tree` result,
++  and any sibling-lane landing-order dependency. "Nothing moved" is a reportable result; silence is
++  not — `walkthrough_roster.py --gate` counts list rows under a heading matching `0.7`/`re-deriv`
++  (E7) and refuses fewer than three.
++<!-- /twin-law -->
+ 
+ **Verdict rules:**
+ 
+diff --git a/.agents/commands/smh-merge-multiple-workingtrees.md b/.agents/commands/smh-merge-multiple-workingtrees.md
+index a55c512..bc3958a 100644
+--- a/.agents/commands/smh-merge-multiple-workingtrees.md
++++ b/.agents/commands/smh-merge-multiple-workingtrees.md
+@@ -110,8 +110,10 @@ set at all.
+ - `FAIL`, no verdict, or a voided verdict → **not eligible**. Name what is missing and the command
+   that produces it (`/smh-code-review`).
+ 
++<!-- twin-law: merge-empty-set-stop -->
+ ⛔ **An empty eligible set is a STOP with a named reason, never a pass.** "All lanes landed" after
+ zero merges is the gate that cannot fail.
++<!-- /twin-law -->
+ 
+ ## Step 2 — Preflight each eligible lane
+ 
+@@ -175,13 +177,17 @@ already committed**, because at merge time it will be.
+ **The lane that lands later goes on top** — that keeps the file's newest-first semantics true
+ against merge history, and anyone can re-derive it from `git log` afterwards.
+ 
++<!-- twin-law: merge-machinery-last -->
+ **⭐ A lane that changes commit or push machinery lands LAST.** Once it lands it changes the rules
+ for every merge after it — a pre-push approval hook landed mid-sequence turns the rest of the
+ session into a different procedure.
++<!-- /twin-law -->
+ 
++<!-- twin-law: merge-cross-repo-order -->
+ **Cross-repo dependencies are part of the order.** A lane whose deletion's destination is an
+ **unmerged branch in another repo** lands AFTER that branch merges there. Get this wrong and the
+ content exists on no merged branch in either repo, and nothing says so.
++<!-- /twin-law -->
+ 
+ State the full landing order and every dependency in writing. **Dump the eligibility table, the
+ landing order and every conflict decision to a scratch file** (`_artifacts/_main/<date>_<slug>/`, or
+diff --git a/.agents/commands/smh-quick-dev.md b/.agents/commands/smh-quick-dev.md
+index fdbc9f6..b0409b5 100644
+--- a/.agents/commands/smh-quick-dev.md
++++ b/.agents/commands/smh-quick-dev.md
+@@ -71,6 +71,7 @@ a platform with no subagent tool makes the answer `inline`, and both are invisib
+ fails to launch three steps later. The answer goes into the
+ walkthrough header Step 5 writes, on its own line, above everything else:
+ 
++<!-- twin-law: review-runtime-probe -->
+ ⛔ **The probe is a **capability**, never a **policy** (SCC-203).** *Does a subagent tool exist in
+ this runtime?* is the whole question; *am I permitted to use it?* is a different one, and answering
+ it here is how a session directive — *"do not spawn subagents unless the user asks"* — got read as
+@@ -78,6 +79,7 @@ it here is how a session directive — *"do not spawn subagents unless the user
+ record it as legitimate. ⭐ **Subagents are the DEFAULT, and invoking a review IS that request** —
+ you never stop to ask for them, and never quietly downgrade to `inline` to avoid asking. Only a
+ runtime with no subagent tool at all is `inline`.
++<!-- /twin-law -->
+ 
+ ```
+ review-runtime: fan-out
+diff --git a/.agents/rules/git-policy.md b/.agents/rules/git-policy.md
+index dedfae4..7411319 100644
+--- a/.agents/rules/git-policy.md
++++ b/.agents/rules/git-policy.md
+@@ -28,8 +28,10 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
+ - **Story work happens in a worktree on a `claude/<JIRA-KEY>-<slug>` branch cut from the epic
+   branch**, and lands back on the epic branch at close-out (see "The landing").
+ - **Ad-hoc work outside any epic** — quick fixes, toolkit/system maintenance — takes a short-lived
+-  `chore/<JIRA-KEY>-<slug>` branch off `main`, merged back to `main` in the same session with
+-  Daniel's per-action sign-off. The gate is per-repo: the lobby runs
++  `chore/<JIRA-KEY>-<slug>` branch off `origin/main`, **in its own worktree**, closed out through its
++  door — `/smh-close-task-merge-tree` (a pull request the operator merges) or, when the diff reaches a
++  deployable path, `/cicd-push-e2e`; **invoking the door IS the sign-off** (see the write gate below,
++  and SCC-211 for which diff selects which). The gate is per-repo: the lobby runs
+   `python3 .agents/scripts/tests/run_all.py` (it has **no E2E suite and never will** — no
+   `frontend/`); deploying repos run the light gate (tests + build), and epic merges add `/cicd-e2e`.
+   **The command that does this is `/smh-close-task-merge-tree`** (SCC-49) — invoking it IS the
+@@ -298,6 +300,10 @@ checkout boring: it is always exactly production.
+   else appears, unstage it (`git restore --staged <path>`) before committing.
+ - **Scope the commit message** to your task/story only, and **lead the subject with the repo's Jira
+   key** (`SCC-11 fix(sync): …`). The `commit-msg` hook rejects a subject without one.
++- ⛔ **Backticks in `-m "…"` EXECUTE.** The shell expands `` `…` `` inside double quotes before git ever
++  sees the message, so a subject that quotes a command name runs it. Use `git commit -F <file>` (or a
++  single-quoted `-m`) whenever the message contains a backtick. Recorded house incident —
++  `_artifacts/_memory/commit-message-backticks-execute.md`.
+ - **Hook output is invisible in VS Code's Source Control panel** — it goes to `View → Output → Git`.
+   A commit made from the panel that a hook merely *warns* about looks like a clean success. This is
+   how a wrong-key commit reached AviationChat's `main` on 2026-08-07, and it is why the gate is
+diff --git a/.agents/scripts/tests/test_command_surfaces.py b/.agents/scripts/tests/test_command_surfaces.py
+index e91b657..516eac4 100644
+--- a/.agents/scripts/tests/test_command_surfaces.py
++++ b/.agents/scripts/tests/test_command_surfaces.py
+@@ -816,14 +816,15 @@ def main() -> int:
+         # by name. Both helpers above fail closed on an empty search space.
+         RULE_STEM = "tests-must-gate-for-real"
+ 
+-        # The TASK-lane commands that write or judge assertions. Story-lane commands
+-        # (`cicd-dev-story-tests`, `cicd-write-story-tests`, `cicd-code-review`, both clean-code
+-        # audits) bake the rule into the STEP BODIES that route the work instead — the stronger form
+-        # per `restate-alwayson-obligations-in-command-bodies` — and two of them carry no
+-        # rules-in-force block at all. Widening those five is a change to five contracts and two `-AP`
+-        # twins; it is deliberately not this ticket. `smh-code-review` is listed because it already
+-        # complies, and an unpinned compliance is one edit from being gone.
+-        LOADERS = ("smh-quick-dev.md", "smh-self-audit.md", "smh-code-review.md")
++        # Every command that WRITES OR JUDGES assertions must LOAD the rule, not merely act on it.
++        # `cicd-dev-story-tests` joined in SCC-212: it is the story lane's ②, where the reds are
++        # driven and Step 4's mutants are designed, and it carried a one-rule block that named only
++        # git-policy - so the mutation doctrine reached it nowhere. The remaining story-lane
++        # commands (`cicd-write-story-tests`, `cicd-code-review`, both clean-code audits) bake the
++        # rule into the STEP BODIES that route the work - the stronger form per
++        # `restate-alwayson-obligations-in-command-bodies` - and widening those is its own ticket.
++        LOADERS = ("smh-quick-dev.md", "smh-self-audit.md", "smh-code-review.md",
++                   "cicd-dev-story-tests.md")
+         unloaded = [n for n in LOADERS
+                     if RULE_STEM not in rif_block(read(ROOT / ".agents/commands" / n))]
+         c.check("the mutation rule is LOADED (in the rules-in-force block) by every task-lane "
+@@ -964,12 +965,15 @@ def main() -> int:
+         # Restating a literal is normally circular; here it is what converts a silently mutable knob
+         # into a decision that has to be argued for in a diff - the same reason `hand` and `SOURCELESS`
+         # above are spelled out rather than derived.
+-        c.check("the LOADERS sweep still covers BOTH task-lane commands (its scope cannot be "
+-            "narrowed silently)",
+-                {"smh-quick-dev.md", "smh-self-audit.md"} <= set(LOADERS),
+-                f"LOADERS={LOADERS} - `/smh-quick-dev` WRITES the assertions and `/smh-self-audit` "
+-            f"judges the plan that picks them. Dropping either restores the exact gap this "
+-            f"section exists to close, with every other case here still green")
++        c.check("the LOADERS sweep still covers BOTH dev lanes and the plan audit (its scope "
++            "cannot be narrowed silently)",
++                {"smh-quick-dev.md", "smh-self-audit.md",
++                 "cicd-dev-story-tests.md"} <= set(LOADERS),
++                f"LOADERS={LOADERS} - `/smh-quick-dev` and `/cicd-dev-story-tests` WRITE the "
++            f"assertions (one per family) and `/smh-self-audit` judges the plan that picks them. "
++            f"Dropping any restores the exact gap this section exists to close, with every other "
++            f"case here still green - and the row above cannot catch it, because it LOOPS over "
++            f"LOADERS: remove a name and its own check has nothing left to fail on (SCC-212)")
+         obligations = {n for n, _ in STEP3_OBLIGATIONS}
+         techniques = {n for n, _ in TECHNIQUES}
+         c.check("the obligation and technique lists still name what they are supposed to pin",
+diff --git a/.agents/scripts/tests/test_twin_parity.py b/.agents/scripts/tests/test_twin_parity.py
+index 687c858..9c3f8b7 100644
+--- a/.agents/scripts/tests/test_twin_parity.py
++++ b/.agents/scripts/tests/test_twin_parity.py
+@@ -166,9 +166,14 @@ NOT_PAIRED = {
+ # code-review pair's NEW shared law (review_level derivation, declared-set drift) joined
+ # the roster fence it already carried.
+ FENCED_TODAY = (
+-    "cicd-clean-code-audit.md", "smh-clean-code-audit.md",   # twin-law: disposition
+-    "cicd-code-review.md", "smh-code-review.md",             # twin-law: roster, review-level, declared-drift
++    "cicd-clean-code-audit.md", "smh-clean-code-audit.md",   # twin-law: disposition, memory-sweep
++    "cicd-code-review.md", "smh-code-review.md",             # twin-law: roster, review-level, declared-drift, record-lines, rederive-record
+     "cicd-self-audit.md", "smh-self-audit.md",               # twin-law: audit-* (amendment, coverage, corroboration, levels-shape)
++    # SCC-212 promoted these two pairs when the CONTENT ports landed: the runtime probe and the
++    # three landing laws are subject-neutral in full, so they are held byte-identical rather than
++    # ported once and left to drift again - which is the failure the whole ticket exists to close.
++    "cicd-quick-dev.md", "smh-quick-dev.md",                 # twin-law: review-runtime-probe
++    "cicd-merge-epic-workingtrees.md", "smh-merge-multiple-workingtrees.md",  # twin-law: merge-empty-set-stop, merge-machinery-last, merge-cross-repo-order
+ )
+ 
+ LAW_OPEN = re.compile(r"^<!-- twin-law:\s*([a-z0-9-]+)\s*-->$", re.M)
+@@ -481,12 +486,19 @@ def main() -> int:
+         # ⛔ THE SCOPE ROW'S OWN COUNTER-EXAMPLE. `B*` declares which pairs carry a fenced law;
+         # weakening it to a bare truthiness survived the sweep because nothing exercised the
+         # comparison it makes. Un-fencing a file must change the computed set.
+-        unfenced = read(CMDS / "cicd-clean-code-audit.md").replace(
+-            "<!-- twin-law: disposition -->", "", 1)
++        #
++        # ⛔ STRIP EVERY OPENER, NEVER ONE NAMED ONE (SCC-212). This row used to delete the
++        # single literal `<!-- twin-law: disposition -->` and assert the computed set went
++        # EMPTY - true only while that file carried exactly ONE law. B* keys on `law_map(...)`
++        # being truthy per FILE, so the moment a second law is fenced into this pair (SCC-212
++        # fenced `memory-sweep` here) removing one marker leaves the file still fenced and this
++        # row went red with nothing wrong: a counter-example that breaks when the tree it
++        # describes grows is a gate people delete rather than read.
++        fenced_file = read(CMDS / "cicd-clean-code-audit.md")
++        unfenced = LAW_OPEN.sub("", fenced_file)
+         c.check("F11 the fenced-set row is computed, not asserted true",
+-                bool(law_map(read(CMDS / "cicd-clean-code-audit.md")))
+-                and not law_map(unfenced),
+-                "removing a fence left the computed set unchanged - B* proves nothing")
++                bool(law_map(fenced_file)) and not law_map(unfenced),
++                "removing every fence left the computed set unchanged - B* proves nothing")
+ 
+     return c.finish()
+ 
+diff --git a/docs/_scc_sops_prds/workflows_testing_SOP.md b/docs/_scc_sops_prds/workflows_testing_SOP.md
+index 3458a22..d58f926 100644
+--- a/docs/_scc_sops_prds/workflows_testing_SOP.md
++++ b/docs/_scc_sops_prds/workflows_testing_SOP.md
+@@ -471,7 +471,18 @@ pre-build audit gets appended into it) and the **walkthrough** (the review gets
+ Writes the epic and its stories, generates the sprint board, then risk-scores every story with you
+ P0–P3. That score decides how much testing each story earns ([§14](#14-how-we-test)). It mints the
+ epic's **Jira ticket** itself at kickoff — never an invented key: it reads the key from the ticket it
+-just created, and the branch is never cut unkeyed.
++just created, and the branch is never cut unkeyed. Before it mints, it **searches the board for an
++open Epic** and says in one line what it looked at — a re-run after a stall is the normal case, and a
++second Epic row for one BMAD epic is a row nothing will ever move again.
++
++**The order is: branch first, then the epic.** Nothing is written into the project until the epic
++branch exists, and every artifact the kickoff produces — `epics.md`, the board, the test design — is
++**committed and pushed onto that branch** as it is made. The story worktrees are cut from that branch
++later, so anything left uncommitted here is invisible to every story that follows. The kickoff ends
++by proving it: `git status` empty and `0 0` against origin.
++
++**It stops once before it writes the board.** The consolidated epic + story digest is a hard stop,
++and only your word opens the next step — a correction re-presents the set and stops again.
+ 
+ ### ⭐ `/cicd-label-tasks <EPIC-KEY>` — run it once the stories are written
+ 
+@@ -517,9 +528,17 @@ the model before the audit, or hand the plan to another team blind. **The agent
+ model itself and must never offer to.** Step 0.7 refuses to plan at all without a BDD lock (with its
+ contract files actually on disk) or a recorded waiver.
+ 
++**Two more things now stop this command.** It **reads the audit's verdict** rather than merely
++filing it — a `NO-GO` halts the lane until the plan is fixed — and it carries an **eject tripwire**
++(Step 3.5): work that turns out to be Task-shaped, a story whose ACs no longer describe what can be
++built, or a finding bigger than a trivial patch gets handed to the right door instead of quietly
++re-scoped inside the story. Nothing is discarded when it fires.
++
+ **Step 4.5 is why ③ is fast.** The certification file records the exact SHA the full suite was green
+ on. If ③ finds that SHA still matches HEAD, it inherits the green instead of paying for the suite
+-again. Any code or test change after it voids the pair.
++again. Any code or test change after it voids the pair. That one full-suite run now goes **through
++`gate_receipt.py`**, so the totals in the certification file are copied from a receipt rather than
++typed — and the suite is paid for once, not once to check and again to record.
+ 
+ ### ③ `/cicd-code-review` — hunt blind, then gate
+ 
+@@ -1933,7 +1952,7 @@ flowchart LR
+ | ⤷ `ap_reconciled:` | **RETIRED (SCC-209, 2026-08-18).** The `*-AP.md` robot-lane commands are abandoned pending a rewrite, so the linter no longer compares them to their primaries and the frontmatter stamp is gone. Each `*-AP.md` now carries an `UNMAINTAINED` marker instead — do not diff, port to, or restamp them. The twin relationship the toolkit still maintains is `cicd-*` ↔ `smh-*`. |
+ | ⤷ `check_both_machines` | **A tool invocation that works where it was written and dies on the other machine.** This system runs on a Mac AND a PC, and the venv bin dir is the one path that differs on every single tool call — `Scripts/` on Windows, `bin/` on POSIX. Since SCC-205 the lint warns on a hardcoded `.venv/Scripts` with **no real POSIX path within four lines**, across `.agents/{commands,rules,skills,scripts}` (markdown *and* committed `.py`/`.ps1`/`.sh`). ⛔ The off-switch is a genuine `.venv/bin` path and **never the bare word “POSIX”** — measured: delete the first clause of a two-arm conditional and the surviving trailing comment (`# POSIX first, then Windows`) used to exempt what was left. Files that name the Windows path as **data** (an allow-list key, a fixture) have no POSIX twin to sit beside them and take the auditable file-level opt-out `wf-lint: allow-windows-venv`, which carries its reason in the file — the same shape as `allow-encoding-literals`. **Generated mirrors are deliberately out of scope**: their fix is a re-sync, never an edit, and door parity is what keeps them honest. Five authored surfaces carried the defect, the worst being the story janitor's Step 4 — now `cicd-prune-worktree` — whose probe guards an irreversible delete and on the Mac reported a destroyed shared venv that was never touched. |
+ | ⤷ the rule-pointer rows | **A command that produces findings with no rule saying how to DISPOSE of them.** Since SCC-205 the pointer check carries a row for `code-standards.md` §6.5 — the three-question test — keyed on the machinery a finding-producer actually emits (the `applied / deferred / dismissed` triage vocabulary, the FAIL/CONCERNS ladder), never on the word "disposition". A concept-keyed row matches half the tree, names the wrong files, and gets ignored. |
+-| `tests/test_twin_parity.py` | **The `/cicd-*` and `/smh-*` families drifting apart in silence** — the failure that produced SCC-205, where 172 confirmed findings sat in the tree with the lint at exit 0 because *nothing in the repo compared the two families*. A command fences a region of SHARED law with `<!-- twin-law: <id> -->` … `<!-- /twin-law -->`, and this asserts **symmetry** (a law marked in one twin has a counterpart in the other — the layer that catches one-sided law, which byte-identity cannot see) **and identity** (where both mark it, the regions match after whitespace normalisation). ⛔ Deliberately NARROW: never widened to whole files, which would force subject-specific law to match and break both commands. The escape hatch is auditable — `<!-- twin-divergence: <id> — <reason> -->` is honoured, counted and printed. **The guard is SYMMETRIC on purpose**: the law was ahead on the smh side in 2026 only because that is where the operator was working, and the direction is inverting toward cicd. |
++| `tests/test_twin_parity.py` | **The `/cicd-*` and `/smh-*` families drifting apart in silence** — the failure that produced SCC-205, where 172 confirmed findings sat in the tree with the lint at exit 0 because *nothing in the repo compared the two families*. A command fences a region of SHARED law with `<!-- twin-law: <id> -->` … `<!-- /twin-law -->`, and this asserts **symmetry** (a law marked in one twin has a counterpart in the other — the layer that catches one-sided law, which byte-identity cannot see) **and identity** (where both mark it, the regions match after whitespace normalisation). ⛔ Deliberately NARROW: never widened to whole files, which would force subject-specific law to match and break both commands. The escape hatch is auditable — `<!-- twin-divergence: <id> — <reason> -->` is honoured, counted and printed. **The guard is SYMMETRIC on purpose**: the law was ahead on the smh side in 2026 only because that is where the operator was working, and the direction is inverting toward cicd. **Six laws are fenced across four pairs today (SCC-212):** `disposition` + `memory-sweep` (clean-code) · `roster`, `review-level`, `declared-drift`, `record-lines` + `rederive-record` (code-review) · the four `audit-*` (self-audit) · `review-runtime-probe` (quick-dev) · `merge-empty-set-stop`, `merge-machinery-last` + `merge-cross-repo-order` (multi-lane). The fenced SET is itself declared in the test, so a pair joining or leaving it is a decision in a diff, never drift. |
+ | `commit-msg-jira.sh` | **A commit with no ticket.** Each repo declares its Jira project in `.agents/jira.conf`; a commit whose message carries no valid key for *that* repo — or the wrong project's key — is refused outright. A rejected commit is a no-op: your staged files are untouched, nothing to undo. Merges, reverts, and rebases are exempt (the branch name carries the key for them). ⛔ **That exemption was blind inside a worktree until SCC-144** — it probed for a MERGE_HEAD file under a hardcoded .git *directory*, and inside a worktree .git is a **file** pointing elsewhere — so that probe was always false there, and every lane in this system is a worktree. It asks git where its git dir actually is now. |
+ | `sop_currency.py` | **This page falling behind the system it describes.** Change a `/` command, a rule, a safety-net script, a commit gate, or the root `AGENTS.md`, and the commit is refused unless this file is staged with it. Say `[sop-ok]` in the message when a change genuinely alters no usage — that stays in the git log as the record of the call. It checks only that the two moved together; no program can judge whether the *edit* was right, and the point is to make you look while you still have the context. ⛔ **It shares the merge carve-out above, and shared the same worktree blindness until SCC-144** — which bit harder here: a merge cannot sanely be asked to stage the SOP doc, so an absorb-`main` merge inside a lane was being refused on a condition no author could satisfy, while the identical merge in the shared checkout sailed through. |
+ | `merge-target-guard.sh` | **A merge landing on a branch you did not mean.** Every other check on this page guards the branch you merge *from*; this is the only one that guards the branch you merge *into*. It refuses a merge whose target is not a legal destination for its source under the branch model — a `chore/*` lane landing on **another** `chore/*` lane is the SCC-97 signature and is named as such in the refusal, which also prints the target, the source, the rule and `git merge --abort`. — *and the history behind it, below.* |

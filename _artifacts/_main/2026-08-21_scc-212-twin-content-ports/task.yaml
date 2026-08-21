@@ -1,0 +1,8 @@
+task_key: SCC-212
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-212-twin-content-ports
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# Standalone Task (no subtasks). The ticket's 84-finding backlog (66 unique) is the spec;
+# implementation_plan.md re-measures every finding against origin/main @ 295abe5 and
+# edit-spec.md carries the anchor + ready-to-paste text for each one still live.

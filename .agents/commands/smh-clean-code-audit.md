@@ -71,9 +71,13 @@ If `$ARGUMENTS` names an explicit base ref, use it instead. **Echo the file coun
 ⛔ **An empty set is a STOP, not a pass** — say so and stop. A vacuous green here is the exact failure
 this gate exists to prevent (`tests-must-gate-for-real` §2).
 
-⛔ **Never sweep another session's memory into this diff.** Dirty files under `_artifacts/_memory/`
-belong to whatever wrote them; report them as present and out of scope. They are parked or left, never
-committed under this task.
+<!-- twin-law: memory-sweep -->
+⛔ **Never sweep another session's memory into this diff** (`artifacts-always-first` §"The memory
+store"). Dirty files under `_artifacts/_memory/` belong to whatever wrote them — the store is shared
+and two-tier since SCC-73, the lobby's index plus each project's own, so a sibling lane's uncommitted
+entry shows up in a `git status` here. Report them as present and out of scope; they are parked or
+left, never committed under this lane's key.
+<!-- /twin-law -->
 
 ---
 

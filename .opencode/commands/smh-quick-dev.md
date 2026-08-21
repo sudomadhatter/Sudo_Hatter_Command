@@ -71,6 +71,7 @@ a platform with no subagent tool makes the answer `inline`, and both are invisib
 fails to launch three steps later. The answer goes into the
 walkthrough header Step 5 writes, on its own line, above everything else:
 
+<!-- twin-law: review-runtime-probe -->
 ⛔ **The probe is a **capability**, never a **policy** (SCC-203).** *Does a subagent tool exist in
 this runtime?* is the whole question; *am I permitted to use it?* is a different one, and answering
 it here is how a session directive — *"do not spawn subagents unless the user asks"* — got read as
@@ -78,6 +79,7 @@ it here is how a session directive — *"do not spawn subagents unless the user 
 record it as legitimate. ⭐ **Subagents are the DEFAULT, and invoking a review IS that request** —
 you never stop to ask for them, and never quietly downgrade to `inline` to avoid asking. Only a
 runtime with no subagent tool at all is `inline`.
+<!-- /twin-law -->
 
 ```
 review-runtime: fan-out

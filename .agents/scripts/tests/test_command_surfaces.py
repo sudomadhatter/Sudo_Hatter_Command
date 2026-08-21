@@ -816,18 +816,19 @@ def main() -> int:
         # by name. Both helpers above fail closed on an empty search space.
         RULE_STEM = "tests-must-gate-for-real"
 
-        # The TASK-lane commands that write or judge assertions. Story-lane commands
-        # (`cicd-dev-story-tests`, `cicd-write-story-tests`, `cicd-code-review`, both clean-code
-        # audits) bake the rule into the STEP BODIES that route the work instead — the stronger form
-        # per `restate-alwayson-obligations-in-command-bodies` — and two of them carry no
-        # rules-in-force block at all. Widening those five is a change to five contracts and two `-AP`
-        # twins; it is deliberately not this ticket. `smh-code-review` is listed because it already
-        # complies, and an unpinned compliance is one edit from being gone.
-        LOADERS = ("smh-quick-dev.md", "smh-self-audit.md", "smh-code-review.md")
+        # Every command that WRITES OR JUDGES assertions must LOAD the rule, not merely act on it.
+        # `cicd-dev-story-tests` joined in SCC-212: it is the story lane's ②, where the reds are
+        # driven and Step 4's mutants are designed, and it carried a one-rule block that named only
+        # git-policy - so the mutation doctrine reached it nowhere. The remaining story-lane
+        # commands (`cicd-write-story-tests`, `cicd-code-review`, both clean-code audits) bake the
+        # rule into the STEP BODIES that route the work - the stronger form per
+        # `restate-alwayson-obligations-in-command-bodies` - and widening those is its own ticket.
+        LOADERS = ("smh-quick-dev.md", "smh-self-audit.md", "smh-code-review.md",
+                   "cicd-dev-story-tests.md")
         unloaded = [n for n in LOADERS
                     if RULE_STEM not in rif_block(read(ROOT / ".agents/commands" / n))]
-        c.check("the mutation rule is LOADED (in the rules-in-force block) by every task-lane "
-            "command that writes or judges assertions",
+        c.check("the mutation rule is LOADED (in the rules-in-force block) by every command that "
+            "writes or judges assertions - Task lane AND story lane (SCC-212)",
                 not unloaded,
                 f"{unloaded} - cite `.agents/rules/{RULE_STEM}.md` INSIDE the block, not in step "
             f"prose. The block is what an agent reads as standing law before Step 0; SCC-144 "
@@ -964,12 +965,15 @@ def main() -> int:
         # Restating a literal is normally circular; here it is what converts a silently mutable knob
         # into a decision that has to be argued for in a diff - the same reason `hand` and `SOURCELESS`
         # above are spelled out rather than derived.
-        c.check("the LOADERS sweep still covers BOTH task-lane commands (its scope cannot be "
-            "narrowed silently)",
-                {"smh-quick-dev.md", "smh-self-audit.md"} <= set(LOADERS),
-                f"LOADERS={LOADERS} - `/smh-quick-dev` WRITES the assertions and `/smh-self-audit` "
-            f"judges the plan that picks them. Dropping either restores the exact gap this "
-            f"section exists to close, with every other case here still green")
+        c.check("the LOADERS sweep still covers BOTH dev lanes and the plan audit (its scope "
+            "cannot be narrowed silently)",
+                {"smh-quick-dev.md", "smh-self-audit.md",
+                 "cicd-dev-story-tests.md"} <= set(LOADERS),
+                f"LOADERS={LOADERS} - `/smh-quick-dev` and `/cicd-dev-story-tests` WRITE the "
+            f"assertions (one per family) and `/smh-self-audit` judges the plan that picks them. "
+            f"Dropping any restores the exact gap this section exists to close, with every other "
+            f"case here still green - and the row above cannot catch it, because it LOOPS over "
+            f"LOADERS: remove a name and its own check has nothing left to fail on (SCC-212)")
         obligations = {n for n, _ in STEP3_OBLIGATIONS}
         techniques = {n for n, _ in TECHNIQUES}
         c.check("the obligation and technique lists still name what they are supposed to pin",
@@ -2236,6 +2240,94 @@ def main() -> int:
                 f"{push_at or 'ABSENT'} (step opening line {landing_sec}); 'SCC-71' "
                 f"{'present' if 'SCC-71' in steps_text else 'ABSENT'}"
                 + ("" if in_landing else " — the clause has to be where the push is"))
+
+    if c.block("CS-14 · SCC-212 · the twin content ports: the obligations that must OUTLIVE "
+               "the lane that added them"):
+        # ⛔ WHY THIS BLOCK EXISTS. SCC-212 ported 55 findings into the `cicd-*` bodies and held
+        # each one with a case in `_artifacts/…/assert-scc212.py`. Those ~115 rows are LANE-LOCAL:
+        # they live in a dated artifacts folder, nothing in `run_all.py` calls them, and when the
+        # folder is archived the ports are protected by six twin-law fences and one `LOADERS`
+        # entry. Everything else could be silently reverted with every gate green — which is the
+        # exact drift the ticket was raised to close, re-created one level up.
+        #
+        # Not every row belongs here; a durable pin has a cost. These are the ones whose loss is a
+        # LIVE HAZARD rather than a wording regression: a gate that would then run on nothing, a
+        # command that would run against the wrong tree, or a call that writes to the wrong place.
+        CMDS14 = ROOT / ".agents/commands"
+
+        def body(name: str) -> str:
+            return (CMDS14 / name).read_text(encoding="utf-8")
+
+        # 1. THE GATE THAT CANNOT FAIL. With this STOP gone, the engine, the acceptance audit and
+        #    the whole test gate run on an empty diff and still emit a verdict. Both twins.
+        for name in ("cicd-code-review.md", "smh-code-review.md"):
+            c.check(f"CS-14 A {name} STOPS on an empty diff",
+                    "empty set is a STOP" in body(name) or "empty diff" in body(name).lower(),
+                    "a review that measures nothing must refuse, not verdict")
+
+        # 2. THE PATHS THAT MUST BE BOUND. A `cicd-*` command's shell stands in the LOBBY while
+        #    its subject is `Projects/<name>`, so an unbound relative path silently reads the
+        #    wrong tree — `link-worktree-assets` died with `error: not a directory`, and
+        #    `gate_receipt` wrote a receipt into a checkout that did not contain the sha.
+        c.check("CS-14 B1 cicd-quick-dev binds PROJECT_ROOT on link-worktree-assets",
+                'link-worktree-assets.py "$PROJECT_ROOT"' in body("cicd-quick-dev.md"),
+                "an unbound worktree path resolves against the lobby cwd")
+        c.check("CS-14 B2 cicd-dev-story-tests binds PROJECT_ROOT on link-worktree-assets",
+                'link-worktree-assets.py "$PROJECT_ROOT"' in body("cicd-dev-story-tests.md"),
+                "an unbound worktree path resolves against the lobby cwd")
+        c.check("CS-14 B3 the receipt is written where the sha lives (`--project`, not just `--cwd`)",
+                "--project" in body("cicd-dev-story-tests.md").split(
+                    "gate_receipt.py run", 1)[-1][:400],
+                "--cwd says where the runner RUNS; --project says where the receipt LANDS. "
+                "Without it ③'s `list` prints (no receipts) over a run that happened")
+
+        # 3. THE FLAG THAT MAKES A BLOCKING CLASS EXIST. `check_gates` returns at its first line
+        #    without `--require-gates`, emitting NO row — so the merge door's strictest-sounding
+        #    error can never fire. Structurally inert, and invisible in a green transcript.
+        #    ⛔ PIN THE FLAG TO THE CALL, NOT TO THE FILE — M20 SURVIVED the first sweep exactly
+        #    here. The paragraph explaining WHY the flag is required also contains the flag, so
+        #    striking it out of the invocation left a file-wide row green. The call is what an
+        #    agent copies; the prose is what it skims. (Same shape as `MERGE-03b` and `QD-C3-cr`,
+        #    caught the same way: by a mutant drawn from the code rather than from the cases.)
+        merge_body = body("cicd-merge-epic-workingtrees.md").splitlines()
+
+        def joined_invocation(lines: list[str], script: str) -> str:
+            """The whole shell command, following `\\` continuations - never the whole file."""
+            for i, ln in enumerate(lines):
+                if script not in ln:
+                    continue
+                cmd, j = ln, i
+                while cmd.rstrip().endswith("\\") and j + 1 < len(lines):
+                    j += 1
+                    cmd += " " + lines[j]
+                return cmd
+            return ""
+
+        call = joined_invocation(merge_body, "closeout_preflight.py")
+        c.check("CS-14 C the multi-lane door passes --require-gates in the preflight INVOCATION",
+                bool(call) and "--require-gates" in call,
+                f"the resolved call was {call!r} — without the flag ON THE CALL, `check_gates` "
+                "returns immediately and files no row at all; prose naming the flag is not the flag")
+
+        # 4. THE MESSAGE FILE THAT MUST LIVE OUTSIDE BOTH TREES. `printf … > f` writes to the
+        #    shell's cwd; `git -C <dir> commit -F f` reads it under <dir>. Every kickoff commit
+        #    block died `fatal: could not read log file`, exit 128 — and the push on the next
+        #    line then reported success over a commit that never happened.
+        kickoff = body("cicd-create-epic-sprint.md")
+        c.check("CS-14 D the kickoff's commit messages go through mktemp, never a relative file",
+                kickoff.count("MSG=$(mktemp)") >= 3
+                and kickoff.count('commit -F "$MSG"') >= 3
+                and "-F epic-commit-msg.txt" not in kickoff,
+                f"mktemp x{kickoff.count('MSG=$(mktemp)')}, "
+                f"commit -F \"$MSG\" x{kickoff.count('commit -F ' + chr(34) + '$MSG' + chr(34))} "
+                "— `git -C <dir> -F <relative>` resolves under <dir>, not your cwd")
+
+        # 5. THE REF THAT OUTLIVES ITS BRANCH. Step 6 deletes every `claude/*` branch; Step 7 then
+        #    verified them by NAME, so `merge-base --is-ancestor` died on a dead ref, the `&&`
+        #    short-circuited, and a landed lane reported as unlanded.
+        c.check("CS-14 E the multi-lane door verifies landing by SHA, not by a deleted branch name",
+                "4.4 SHA" in body("cicd-merge-epic-workingtrees.md"),
+                "Step 6 deletes the branch Step 7 would name; capture the tip sha at 4.4")
 
     return c.finish()
 

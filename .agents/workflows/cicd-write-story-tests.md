@@ -27,6 +27,11 @@ STOP and say so, never fall back to the lobby.
    `/cicd-create-epic-sprint` — missing → go back and run it) and HEAD is on it (**never** `main`),
    then open `.claude/worktrees/<story-slug>` on `claude/<JIRA-KEY>-<story-slug>` off it — slug
    `story-<id-dashed>-<short-name>`, e.g. `story-21-3-student-archive`.
+3. **Either way, link the gitignored assets** — `python3 .agents/scripts/link-worktree-assets.py
+   "$PROJECT_ROOT"/.claude/worktrees/<story-slug>` (PC: `python`). A tree has no `.env`,
+   `backend/.venv`, `auth_keys/` or `node_modules` of its own and the runners resolve them relative to
+   CWD, so Step 3's reds cannot even be run red without it. Idempotent on a re-entered tree;
+   `/cicd-prune-worktree` runs the `--unlink` half before the tree is removed.
 
 **Ordering caveat:** the slug depends on the story id, which Step 1 may be the thing that resolves ("the
 next story"). Resolve the id first, then open the tree — still before the story file is written; never
