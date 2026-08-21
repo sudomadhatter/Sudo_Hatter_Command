@@ -1,0 +1,32 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_task_preflight.py"
+ ],
+ "mutants": [
+  {
+   "id": "M48 the task door measures only the path --repo named",
+   "file": ".agents/scripts/task_preflight.py",
+   "original": "    for tree_label, tree in wf.trees_to_measure(repo, branch):\n        _check_tree_dirt(tree, tree_label, manifest, rep)",
+   "mutated": "    for tree_label, tree in [(\"the checkout\", repo)]:\n        _check_tree_dirt(tree, tree_label, manifest, rep)",
+   "case": "SCC-211 ...and the message names the LANE's tree, not the checkout",
+   "block": "SCC-211 · a dirty LANE worktree is seen from the main checkout"
+  },
+  {
+   "id": "M49 the shared helper never finds the tree holding the branch",
+   "file": ".agents/scripts/wf_common.py",
+   "original": "    if held is not None and held.resolve() not in seen:",
+   "mutated": "    if held is not None and held.resolve() not in seen and False:",
+   "case": "SCC-211 the lane's dirt is found from the main checkout",
+   "block": "SCC-211 · a dirty LANE worktree is seen from the main checkout"
+  },
+  {
+   "id": "M50 memory dirt in a second tree loses its own ruling",
+   "file": ".agents/scripts/task_preflight.py",
+   "original": "        mem = [ln for ln in lines if ln[3:].startswith(\"_artifacts/_memory/\")]",
+   "mutated": "        mem = []",
+   "case": "SCC-211 memory dirt in the LANE tree keeps its own ruling",
+   "block": "SCC-211 · a dirty LANE worktree is seen from the main checkout"
+  }
+ ]
+}
