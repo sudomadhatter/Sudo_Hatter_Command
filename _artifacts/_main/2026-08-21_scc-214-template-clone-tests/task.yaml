@@ -1,0 +1,7 @@
+task_key: SCC-214
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-214-template-clone-tests
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# Standalone Task (no subtasks). Both files convert in ONE change (ticket: both or neither);
+# the BEFORE/AFTER comparison the ticket demands lives in measure/ (monotonic clock, same machine).

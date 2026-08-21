@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import json
 import os
-import stat
 import subprocess
 import sys
 from pathlib import Path
 
+import _repo_template
 from _harness import run_script
 
 JIRA_CONF = '# test fixture\nJIRA_KEYS="SCC"\n'
@@ -69,10 +69,41 @@ MANIFEST = ("task_key: SCC-11\nprimary_repo: repo\nbranch: chore/SCC-11-thing\n"
             "close_command: smh-close-task-merge-tree\nsecondary_repos: []\n")
 
 
-def make_repo(root: Path, *, deployable: bool = False, remote: bool = True,
-              walkthrough: bool = True, manifest: bool = True, hooks: bool = True,
-              ci: bool = False, jira_conf: bool = True) -> Path:
-    """A repo standing on `main`, optionally with a bare origin it is in sync with."""
+# Every keyword `_build_repo` takes, with its default — the template cache key is the RESOLVED
+# option set, so `make_repo(t)` and `make_repo(t, deployable=False)` share one template and
+# `ci=True` gets its own. ⛔ A new keyword MUST be added here too: left out, it would not reach the
+# key, and every shape that differs only by it would silently receive the first one's template.
+_REPO_DEFAULTS = {"deployable": False, "remote": True, "walkthrough": True, "manifest": True,
+                  "hooks": True, "ci": False, "jira_conf": True}
+
+
+def make_repo(root: Path, **kw: bool) -> Path:
+    """A repo standing on `main`, optionally with a bare origin it is in sync with.
+
+    Built ONCE per option set per process and cloned per scenario (SCC-214) — the signature, the
+    defaults and the returned path are exactly what they were when every call built from scratch.
+    The clone carries the template's absolute origin URL, so the remote is re-pointed at THIS
+    scenario's own bare: without that line a push in one scenario would land on the template's
+    bare and the next scenario would fetch it (`test_repo_template.py`, case "a push from one
+    scenario is invisible to the next scenario's origin").
+    """
+    opts = {**_REPO_DEFAULTS, **kw}
+    unknown = set(opts) - set(_REPO_DEFAULTS)
+    if unknown:                                  # a typo'd keyword used to be a TypeError; keep it loud
+        raise TypeError(f"make_repo() got an unexpected keyword argument {sorted(unknown)[0]!r}")
+    root = Path(root)
+    _repo_template.clone(("pf.make_repo", tuple(sorted(opts.items()))),
+                         lambda tpl: _build_repo(tpl, **opts), root)
+    repo = root / "repo"
+    if opts["remote"]:
+        git(repo, "remote", "set-url", "origin", str(root / "origin.git"))
+    return repo
+
+
+def _build_repo(root: Path, *, deployable: bool = False, remote: bool = True,
+                walkthrough: bool = True, manifest: bool = True, hooks: bool = True,
+                ci: bool = False, jira_conf: bool = True) -> Path:
+    """The template build — the body `make_repo` had before SCC-214, unchanged."""
     repo = root / "repo"
     repo.mkdir(parents=True)
     git(repo, "init", "-q", "-b", "main")
@@ -164,19 +195,47 @@ print(json.dumps([{"key": k, "fields": {"status": {"name": s}, "summary": "child
 '''
 
 
+_LAUNCHER: Path | None = None
+
+
+def _launcher() -> Path:
+    """The stub `acli`, written once per process into the shared template root.
+
+    ⭐ ONCE, not once per block (SCC-214). The launcher is a brand-new executable, and this Mac
+    assesses each of those on its first launch — measured at 0.73 s against 0.34 s for a warm one,
+    across 88 blocks. Nothing about it varies per scenario: the STATE does, and that stays a
+    per-scenario file. Keeping it out of the scenario's own directory is also what lets it survive
+    the `TempDir` that dies at the end of each block.
+    """
+    global _LAUNCHER
+    if _LAUNCHER is None:
+        shared = _repo_template.shared_root()
+        stub_py = shared / "board_stub.py"
+        stub_py.write_text(BOARD_STUB, encoding="utf-8")
+        if os.name == "nt":
+            launcher = shared / "acli.bat"
+            launcher.write_text(f'@echo off\r\n"{sys.executable}" "{stub_py}" %*\r\n',
+                                encoding="utf-8")
+        else:
+            launcher = shared / "acli"
+            launcher.write_text(f'#!/bin/sh\nexec "{sys.executable}" "{stub_py}" "$@"\n',
+                                encoding="utf-8")
+            launcher.chmod(0o555)
+        # ⛔ FROZEN, like every other shared executable (`_repo_template._seal`). This is the
+        # most widely shared object here - one file, one fixed path, `ACLI_BIN` for ~88 blocks -
+        # and unlike a scenario repo it does NOT die with its TempDir. Left owner-writable
+        # (`0o644 | S_IXUSR | S_IXGRP` = `0o754`, which is what this line used to compute)
+        # anything opening `$ACLI_BIN` for writing would poison every later block in the
+        # process, N cases downstream of the writer. `stub_py` is frozen for the same reason:
+        # the launcher only execs it, so a rewrite of the stub is the same blast radius.
+        stub_py.chmod(0o555)
+        _LAUNCHER = launcher
+    return _LAUNCHER
+
+
 def board(root: Path, children: object = (), fail: bool = False) -> None:
     """Point ACLI_BIN at a stub board holding `children` = [(key, status), ...]."""
-    stub_py = root / "board_stub.py"
-    stub_py.write_text(BOARD_STUB, encoding="utf-8")
-    if os.name == "nt":
-        launcher = root / "acli.bat"
-        launcher.write_text(f'@echo off\r\n"{sys.executable}" "{stub_py}" %*\r\n',
-                            encoding="utf-8")
-    else:
-        launcher = root / "acli"
-        launcher.write_text(f'#!/bin/sh\nexec "{sys.executable}" "{stub_py}" "$@"\n',
-                            encoding="utf-8")
-        launcher.chmod(launcher.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    launcher = _launcher()
     state = root / "board_state.json"
     state.write_text(json.dumps({"children": list(children), "fail": fail}),
                      encoding="utf-8")

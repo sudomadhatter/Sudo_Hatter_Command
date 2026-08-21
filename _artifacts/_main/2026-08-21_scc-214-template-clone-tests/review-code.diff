@@ -1,0 +1,691 @@
+diff --git a/.agents/scripts/INDEX.md b/.agents/scripts/INDEX.md
+index 99205cc..79788bb 100644
+--- a/.agents/scripts/INDEX.md
++++ b/.agents/scripts/INDEX.md
+@@ -58,7 +58,7 @@ A file that legitimately **carries** those bytes as data — the detector's own
+ 
+ `lane_qualify.py` (SCC-162) answers *"is this work light enough to just do?"* and exists as a script for one reason: **the previous version of this rule was prose, and an agent talked itself past it.** It backs `/smh-quick-fix` at Step 0 (the paths you intend) and again at Step 3.5 (the paths you actually changed — an under-declared scope is caught by the diff rather than by the agent's honesty). Four refusals, in the order they are checked, each one a hole found before it shipped. **NOT-COMMAND-CENTRE first, before paths are read at all** — the operator's scope ruling was *"only for the smh / commands… not normal cicd work"*, and it is derived rather than asserted: the centre owns workflow law and projects are thin, so `.agents/commands/` masters exist in exactly one repo, and a hard-coded folder name would be wrong the first time it is cloned. A **contradicted declaration** (`--no-file-changes` alongside named paths) resolves to `TASK`, because the safe reading of a self-contradiction is never the permissive one. **Silence is `TASK`** — no paths is *unknown* scope, not *empty* scope, and "a check whose empty input reads as a pass" is the one input an agent controls completely; the escape for the operator's own git-hygiene example, which really does change zero files, is the explicit `--no-file-changes` → `LIGHT-VCS`. **Deployable** comes from `task_preflight.PRODUCT_DIRS` by import, never re-typed — ⛔ and **never `DEPLOY_DIRS`**, which is `PRODUCT_DIRS + (".github/",)`. That difference is a shipped incident (SCC-118): the command centre HAS a `.github/` and ships nothing, so the combined list routed an unshippable repo to `/cicd-push-e2e`. `.github/` reaches this script as a TOOLKIT prefix (⇒ `TASK`), not a deployable one. This line said `DEPLOY_DIRS` until 2026-08-20 (SCC-243) while the code said the opposite in a ⛔ two lines above the import — a router describing the trap backwards is how the next reader re-opens it. ⛔ Its toolkit rule is deliberately **blunter than `sop_currency.classify()`** — anything under `.agents/` is never `LIGHT` — because that function exempts `.agents/scripts/tests/`, correctly for *its* question and fatally for this one: reusing it would have rated an edit to the **enforcement suite** as safe. `test_lane_qualify.py` pins that divergence and cross-checks that this script is never the more permissive of the two, so a future widening there fails a case here instead of quietly widening the lane. It reads and prints; it is never the authority for a merge, which stays `task_preflight.py`.
+ 
+-Tests: **`python3 .agents/scripts/tests/run_all.py`** (stdlib only, no pytest; files are auto-discovered, so a new `test_*.py` joins with no wiring — which is also why any case count written here rots silently: adding a test file is exempt from the SOP gate, so nothing challenges the number). Since SCC-156 the files run **concurrently** — threads over the same per-file subprocesses, `--jobs N` to fix the width, `--serial` to rule out an interaction; the summary line, the `FAILED:` list, the exit code and the alphabetical transcript order are identical either way, because CI, four command bodies and `gate_receipt`'s classifier all read them. The two big files also declare `--case` blocks (`_harness.py`), so a mutation sweep can run one named case instead of the whole file — exit 3 means the filter matched nothing, which is a sweep error and never a kill. `test_task_preflight.py` was split at its SCC-146 seam in the same ticket — the verdict/receipt half is `test_task_preflight_receipts.py` and both halves build their fixtures from `_pf_fixtures.py` (not `test_*`, so the runner does not collect it). That file was 1,557 lines and 105 s, the single slowest thing in the suite, so it set the floor for every parallel run; the halves measure 58 s and 42 s. ⚠ Do not read those two numbers as the suite wall — the whole run is **~69 s parallel against ~213 s serial** (measured 2026-08-14, `cpu_count` 10), because the slowest file is slower under contention than it is solo. SCC-156's own target was ≤ 60 s and the measured wall misses it; the remaining lever (per-run template repos for the git fixtures) was descoped, so that gap is open, not closed. **⚠ Two machines, two spellings:** the Mac has **only `python3`** (no bare `python`, script or login shell); a python.org install on the PC has **only `python`**. Docs here are written `python3` — on the PC, drop the `3`. **Never hardcode either name in a script or hook** — probe `python3 → python → py`, as `git-hooks/sop-currency.sh` does; that is what makes a gate work on both boxes untouched. One test file per script. Each script is covered by the defect that motivated it, plus a positive control — a checker that reports nothing looks identical whether it is clean or dead, and a checker that reports *everything* gets muted. Both failures are represented.
++Tests: **`python3 .agents/scripts/tests/run_all.py`** (stdlib only, no pytest; files are auto-discovered, so a new `test_*.py` joins with no wiring — which is also why any case count written here rots silently: adding a test file is exempt from the SOP gate, so nothing challenges the number). Since SCC-156 the files run **concurrently** — threads over the same per-file subprocesses, `--jobs N` to fix the width, `--serial` to rule out an interaction; the summary line, the `FAILED:` list, the exit code and the alphabetical transcript order are identical either way, because CI, four command bodies and `gate_receipt`'s classifier all read them. The two big files also declare `--case` blocks (`_harness.py`), so a mutation sweep can run one named case instead of the whole file — exit 3 means the filter matched nothing, which is a sweep error and never a kill. `test_task_preflight.py` was split at its SCC-146 seam in the same ticket — the verdict/receipt half is `test_task_preflight_receipts.py` and both halves build their fixtures from `_pf_fixtures.py` (not `test_*`, so the runner does not collect it). That file was 1,557 lines and 105 s, the single slowest thing in the suite, so it set the floor for every parallel run. ⚠ Never read a single file's solo time as the suite wall — the slowest file is slower under contention than it is solo, which is also why every number here carries the machine state it was taken in. **The template lever SCC-156 descoped is now built (SCC-214):** `_repo_template.py` builds each fixture repo ONCE per shape and clones it per scenario, and `_pf_fixtures.board()` writes its stub `acli` once per process. ⭐ The win is only half repo construction: measurement found macOS **assesses every newly created executable on its first launch** — 0.2 s idle, 1.6–2.8 s under this suite's own parallel load — and the assessment is per INODE, so 88 fresh `acli` stubs and 72 fresh hook sets cost ~58 s of the two files' 191 s. The clone therefore HARD-LINKS executables to a **read-only (`0o555`)** template inode: the link pays the assessment once, and the freeze is what stops a shared inode from being shared state (an in-place write raises; git renames rather than writing in place, so every checkout and merge stays isolated). `HARD_LINKS` is False on Windows on purpose — `_harness.TempDir`'s rmtree handler chmods read-only files, which through a link would unfreeze the template. Measured on one Mac, `cpu_count` 10, monotonic clock, 2026-08-21: the full run **135.6 s → 99.7 s**, `test_task_preflight.py` 113.7 → 79.6 s, `test_git_hooks.py` 77.8 → 44.9 s, `test_task_preflight_receipts.py` 49.0 → 39.7 s. ⚠ The BEFORE ran at load ~3-5 and the AFTER at load ~4-13 (a sibling lane was running its own full suite), so the AFTER is the CONSERVATIVE number, not the flattering one. The older ~69 s parallel / ~213 s serial pair (2026-08-14) was a different machine state and is kept only as history. ⛔ `test_repo_template.py` is what the speed rests on: it fails if a commit, a config key, an untracked file or a pushed ref crosses between two scenarios, because the ticket's constraint is reset-from-template, never a shared mutable repo — `test_git_hooks.py` guards the merge gate and cross-test coupling there would trade a real safety property for seconds. **⚠ Two machines, two spellings:** the Mac has **only `python3`** (no bare `python`, script or login shell); a python.org install on the PC has **only `python`**. Docs here are written `python3` — on the PC, drop the `3`. **Never hardcode either name in a script or hook** — probe `python3 → python → py`, as `git-hooks/sop-currency.sh` does; that is what makes a gate work on both boxes untouched. One test file per script. Each script is covered by the defect that motivated it, plus a positive control — a checker that reports nothing looks identical whether it is clean or dead, and a checker that reports *everything* gets muted. Both failures are represented.
+ 
+ ## Top-level contents
+ <!-- auto-listed by /smh-update-maps-indexes — refresh via /smh-update-maps-indexes; do not hand-edit entries -->
+diff --git a/.agents/scripts/tests/_pf_fixtures.py b/.agents/scripts/tests/_pf_fixtures.py
+index 261d382..a3e3d59 100644
+--- a/.agents/scripts/tests/_pf_fixtures.py
++++ b/.agents/scripts/tests/_pf_fixtures.py
+@@ -17,6 +17,7 @@ import subprocess
+ import sys
+ from pathlib import Path
+ 
++import _repo_template
+ from _harness import run_script
+ 
+ JIRA_CONF = '# test fixture\nJIRA_KEYS="SCC"\n'
+@@ -69,10 +70,41 @@ MANIFEST = ("task_key: SCC-11\nprimary_repo: repo\nbranch: chore/SCC-11-thing\n"
+             "close_command: smh-close-task-merge-tree\nsecondary_repos: []\n")
+ 
+ 
+-def make_repo(root: Path, *, deployable: bool = False, remote: bool = True,
+-              walkthrough: bool = True, manifest: bool = True, hooks: bool = True,
+-              ci: bool = False, jira_conf: bool = True) -> Path:
+-    """A repo standing on `main`, optionally with a bare origin it is in sync with."""
++# Every keyword `_build_repo` takes, with its default — the template cache key is the RESOLVED
++# option set, so `make_repo(t)` and `make_repo(t, deployable=False)` share one template and
++# `ci=True` gets its own. ⛔ A new keyword MUST be added here too: left out, it would not reach the
++# key, and every shape that differs only by it would silently receive the first one's template.
++_REPO_DEFAULTS = {"deployable": False, "remote": True, "walkthrough": True, "manifest": True,
++                  "hooks": True, "ci": False, "jira_conf": True}
++
++
++def make_repo(root: Path, **kw: bool) -> Path:
++    """A repo standing on `main`, optionally with a bare origin it is in sync with.
++
++    Built ONCE per option set per process and cloned per scenario (SCC-214) — the signature, the
++    defaults and the returned path are exactly what they were when every call built from scratch.
++    The clone carries the template's absolute origin URL, so the remote is re-pointed at THIS
++    scenario's own bare: without that line a push in one scenario would land on the template's
++    bare and the next scenario would fetch it (`test_repo_template.py`, case "a push from one
++    scenario is invisible to the next scenario's origin").
++    """
++    opts = {**_REPO_DEFAULTS, **kw}
++    unknown = set(opts) - set(_REPO_DEFAULTS)
++    if unknown:                                  # a typo'd keyword used to be a TypeError; keep it loud
++        raise TypeError(f"make_repo() got an unexpected keyword argument {sorted(unknown)[0]!r}")
++    root = Path(root)
++    _repo_template.clone(("pf.make_repo", tuple(sorted(opts.items()))),
++                         lambda tpl: _build_repo(tpl, **opts), root)
++    repo = root / "repo"
++    if opts["remote"]:
++        git(repo, "remote", "set-url", "origin", str(root / "origin.git"))
++    return repo
++
++
++def _build_repo(root: Path, *, deployable: bool = False, remote: bool = True,
++                walkthrough: bool = True, manifest: bool = True, hooks: bool = True,
++                ci: bool = False, jira_conf: bool = True) -> Path:
++    """The template build — the body `make_repo` had before SCC-214, unchanged."""
+     repo = root / "repo"
+     repo.mkdir(parents=True)
+     git(repo, "init", "-q", "-b", "main")
+@@ -164,19 +196,39 @@ print(json.dumps([{"key": k, "fields": {"status": {"name": s}, "summary": "child
+ '''
+ 
+ 
++_LAUNCHER: Path | None = None
++
++
++def _launcher() -> Path:
++    """The stub `acli`, written once per process into the shared template root.
++
++    ⭐ ONCE, not once per block (SCC-214). The launcher is a brand-new executable, and this Mac
++    assesses each of those on its first launch — measured at 0.73 s against 0.34 s for a warm one,
++    across 88 blocks. Nothing about it varies per scenario: the STATE does, and that stays a
++    per-scenario file. Keeping it out of the scenario's own directory is also what lets it survive
++    the `TempDir` that dies at the end of each block.
++    """
++    global _LAUNCHER
++    if _LAUNCHER is None:
++        shared = _repo_template.shared_root()
++        stub_py = shared / "board_stub.py"
++        stub_py.write_text(BOARD_STUB, encoding="utf-8")
++        if os.name == "nt":
++            launcher = shared / "acli.bat"
++            launcher.write_text(f'@echo off\r\n"{sys.executable}" "{stub_py}" %*\r\n',
++                                encoding="utf-8")
++        else:
++            launcher = shared / "acli"
++            launcher.write_text(f'#!/bin/sh\nexec "{sys.executable}" "{stub_py}" "$@"\n',
++                                encoding="utf-8")
++            launcher.chmod(launcher.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
++        _LAUNCHER = launcher
++    return _LAUNCHER
++
++
+ def board(root: Path, children: object = (), fail: bool = False) -> None:
+     """Point ACLI_BIN at a stub board holding `children` = [(key, status), ...]."""
+-    stub_py = root / "board_stub.py"
+-    stub_py.write_text(BOARD_STUB, encoding="utf-8")
+-    if os.name == "nt":
+-        launcher = root / "acli.bat"
+-        launcher.write_text(f'@echo off\r\n"{sys.executable}" "{stub_py}" %*\r\n',
+-                            encoding="utf-8")
+-    else:
+-        launcher = root / "acli"
+-        launcher.write_text(f'#!/bin/sh\nexec "{sys.executable}" "{stub_py}" "$@"\n',
+-                            encoding="utf-8")
+-        launcher.chmod(launcher.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
++    launcher = _launcher()
+     state = root / "board_state.json"
+     state.write_text(json.dumps({"children": list(children), "fail": fail}),
+                      encoding="utf-8")
+diff --git a/.agents/scripts/tests/_repo_template.py b/.agents/scripts/tests/_repo_template.py
+new file mode 100644
+index 0000000..556f7f8
+--- /dev/null
++++ b/.agents/scripts/tests/_repo_template.py
+@@ -0,0 +1,167 @@
++"""Build a fixture repo ONCE per shape, then hand every scenario a clean CLONE of it. (SCC-214)
++
++`test_task_preflight.py` and `test_git_hooks.py` each build a real throwaway git repo per
++scenario — `git init`, config, commits, hooks — and between them they set the wall clock of the
++whole enforcement suite. This module replaces the construction with a reset from a template,
++under the ticket's non-negotiable constraint:
++
++    RESET-FROM-TEMPLATE, NEVER A SHARED MUTABLE REPO. `test_git_hooks.py` guards the merge gate;
++    scenario N seeing state left by scenario N-1 trades a real safety property for seconds.
++
++So a scenario never touches the template: it gets its own byte-identical copy, in its own
++`TempDir`, and `test_repo_template.py` fails if anything crosses between two of them.
++
++⭐ WHY EXECUTABLES ARE HARD-LINKED AND THE TEMPLATE'S COPIES ARE FROZEN. Measured on this Mac
++(2026-08-21, `_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/`): the OS assesses
++every NEWLY CREATED executable once, on its first launch — 0.19-0.28 s idle, 1.6-2.8 s under the
++suite's own parallel load, because the assessor serialises. It is keyed by INODE: a hard link to
++an already-launched file costs 0.006 s, while a byte copy, an APFS clone and a byte-identical new
++file each pay in full. Both suites create fresh executables per scenario (a fresh `acli` launcher
++per preflight block, two to five hook scripts per git_hooks repo) — 88 + 72 first launches, about
++58 s of the two files' 191 s. Linking pays it once per shape.
++
++A shared inode is only safe because the template's executables are frozen `0o555`: an in-place
++write raises `PermissionError` instead of reaching every other scenario. Git never writes a file
++in place (it writes a temp file and renames), so checkouts, merges and branch switches over a
++linked hook are isolated by construction — the rename replaces the directory entry and leaves the
++template's inode untouched.
++
++⛔ `HARD_LINKS` IS FALSE ON WINDOWS, DELIBERATELY. `_harness.TempDir.__exit__` cleans up with an
++`rmtree` handler that chmods read-only files (`0o700`) so Windows can delete them — and a chmod
++through a hard link would unfreeze the TEMPLATE, so the freeze would last exactly one scenario
++there. The PC copies executables instead: identical semantics, and it has no assessor to save time
++with. Any `os.link` failure (cross-device, a filesystem that refuses) falls back to `copy2` the
++same way — correctness never depends on the link, only speed does.
++
++Stdlib only, no pytest, matching everything else here. Single-threaded by contract: `run_all.py`
++gives each test file its own process, and cases inside a file are sequential, so the cache needs
++no lock.
++"""
++from __future__ import annotations
++
++import os
++import shutil
++import tempfile
++from pathlib import Path
++from typing import Callable, Hashable
++
++TEMPLATE_PREFIX = "wfscripts-tpl-"
++"""Marks every template directory. `test_repo_template.py` greps a clone for it: a clone carrying
++an absolute path back into a template is a leak, however clean its `git status` reads."""
++
++_ROOT: Path | None = None
++_CACHE: dict[Hashable, Path] = {}
++
++
++def _force(func, path, _info):  # read-only files (and .git objects) on Windows
++    Path(path).chmod(0o700)
++    func(path)
++
++
++def _links_work() -> bool:
++    if os.name == "nt":                      # see the module docstring: the rmtree handler
++        return False
++    probe = Path(tempfile.mkdtemp(prefix=TEMPLATE_PREFIX + "probe-"))
++    try:
++        a = probe / "a"
++        a.write_text("x", encoding="utf-8")
++        a.chmod(0o555)
++        b = probe / "b"
++        os.link(a, b)
++        return a.stat().st_ino == b.stat().st_ino
++    except OSError:
++        return False
++    finally:
++        shutil.rmtree(probe, onerror=_force)
++
++
++HARD_LINKS = _links_work()
++
++
++def shared_root() -> Path:
++    """The one directory this process keeps its templates in, removed at exit.
++
++    Lazily created, so importing this module costs nothing. A SIGKILL leaks one small directory
++    under TMPDIR; `run_all.stop_running` sends SIGINT first, which unwinds normally.
++    """
++    global _ROOT
++    if _ROOT is None:
++        _ROOT = Path(tempfile.mkdtemp(prefix=TEMPLATE_PREFIX))
++        import atexit
++        atexit.register(_cleanup)
++    return _ROOT
++
++
++def _cleanup() -> None:
++    global _ROOT
++    if _ROOT is not None and _ROOT.exists():
++        shutil.rmtree(_ROOT, onerror=_force)
++    _ROOT = None
++
++
++def _seal(root: Path) -> None:
++    """Make a finished template safe to share: no path back to itself, no writable executable."""
++    for fetch_head in root.rglob("FETCH_HEAD"):
++        # Written by `git fetch`, and it records the ABSOLUTE URL it fetched from - the one file
++        # in these fixtures that would carry the template's path into every clone.
++        fetch_head.unlink()
++    for p in root.rglob("*"):
++        if p.is_file() and not p.is_symlink() and (p.stat().st_mode & 0o111):
++            p.chmod(0o555)
++
++
++def _template(key: Hashable, build: Callable[[Path], object]) -> Path:
++    cached = _CACHE.get(key)
++    if cached is not None:
++        return cached
++    root = Path(tempfile.mkdtemp(prefix=TEMPLATE_PREFIX, dir=shared_root()))
++    try:
++        build(root)
++    except BaseException:
++        # ⛔ A HALF-BUILT TEMPLATE IS NEVER CACHED. Cached, it would be handed to every later
++        # scenario of this shape, and the failure would present as N mystery cases rather than
++        # the one builder that raised.
++        shutil.rmtree(root, onerror=_force)
++        raise
++    _seal(root)
++    _CACHE[key] = root
++    return root
++
++
++def _copy_entry(src: Path, dst: Path) -> None:
++    if src.is_symlink():
++        os.symlink(os.readlink(src), dst)
++    elif src.is_dir():
++        dst.mkdir(parents=True, exist_ok=True)
++        for child in sorted(src.iterdir()):
++            _copy_entry(child, dst / child.name)
++    elif HARD_LINKS and (src.stat().st_mode & 0o111):
++        try:
++            os.link(src, dst)
++        except OSError:
++            shutil.copy2(src, dst)
++    else:
++        shutil.copy2(src, dst)
++
++
++def clone(key: Hashable, build: Callable[[Path], object], dest: Path) -> Path:
++    """Return `dest`, holding a fresh copy of the template `build` makes for `key`.
++
++    `build(root)` writes whatever the fixture is into `root`; it runs at most once per key per
++    process. `dest` may be missing or an EMPTY directory — `test_task_preflight_receipts.py`
++    creates its scenario root before calling the builder, so "the directory exists" cannot be the
++    refusal. What IS refused is a `dest` already holding one of the template's own entries: that
++    is a second fixture landing on top of a live one, which the builders' `mkdir()` refused before
++    this module existed.
++    """
++    tpl = _template(key, build)
++    dest = Path(dest)
++    if dest.exists():
++        clash = [e.name for e in sorted(tpl.iterdir()) if (dest / e.name).exists()]
++        if clash:
++            raise FileExistsError(f"{dest} already holds {', '.join(clash)} - "
++                                  f"a second fixture is landing on a live one")
++    dest.mkdir(parents=True, exist_ok=True)
++    for entry in sorted(tpl.iterdir()):
++        _copy_entry(entry, dest / entry.name)
++    return dest
+diff --git a/.agents/scripts/tests/test_git_hooks.py b/.agents/scripts/tests/test_git_hooks.py
+index d7a9176..46c06c2 100644
+--- a/.agents/scripts/tests/test_git_hooks.py
++++ b/.agents/scripts/tests/test_git_hooks.py
+@@ -27,6 +27,7 @@ import subprocess
+ import sys
+ from pathlib import Path
+ 
++import _repo_template
+ from _harness import Cases, TempDir
+ 
+ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+@@ -61,10 +62,35 @@ def head(d: Path) -> str:
+     return sh("git", "rev-parse", "HEAD", cwd=d)[1].strip()
+ 
+ 
++def _key(paths) -> tuple:
++    """The cache half of a builder's file arguments — names, never Path objects.
++
++    ⛔ Paths are absolute and this process's own, so they key correctly here; NAMES are what make
++    the key readable in a failure and stable across worktrees. Both halves of a template's
++    identity must be in its key or two different fixtures share one template.
++    """
++    return tuple(p.name for p in paths)
++
++
+ def make_repo(tmp: Path, *, name: str = "work",
+               scripts=(GUARD,), hooks=(MERGE_DISPATCH,), arm: bool = True) -> Path:
+     """A real repo carrying the REAL hook files, armed the way this system arms them.
+ 
++    Built once per shape and CLONED per scenario (SCC-214): same signature, same return, same
++    isolation — a scenario's repo is its own copy, and the hook scripts are hard links to a
++    read-only template inode so the OS assesses each executable once instead of 72 times.
++    """
++    _repo_template.clone(
++        ("gh.make_repo", name, _key(scripts), _key(hooks), arm),
++        lambda tpl: _build_repo(tpl, name=name, scripts=scripts, hooks=hooks, arm=arm),
++        tmp)
++    return tmp / name
++
++
++def _build_repo(tmp: Path, *, name: str = "work",
++                scripts=(GUARD,), hooks=(MERGE_DISPATCH,), arm: bool = True) -> Path:
++    """The template build — the body `make_repo` had before SCC-214, unchanged.
++
+     ⛔ Missing files are COPIED IF PRESENT, never demanded. A `shutil.copy2` on a script that does
+     not exist yet raises in SETUP, and a test that dies in setup looks identical to one that failed
+     its assertion — only one of those is a real red. Before the guard is built these fixtures come
+@@ -98,12 +124,32 @@ def make_pushable(tmp: Path, *, push_main: bool = True,
+                   scripts=(GUARD, BACKSTOP, APPROVAL), extra_flags=()) -> tuple[Path, Path]:
+     """A repo with a REAL bare remote, so the push cases drive `git push` and not a stub.
+ 
++    Built once per shape and CLONED per scenario (SCC-214). The clone carries the template's
++    absolute remote URL, so `origin` is re-pointed at THIS scenario's own bare — otherwise a push
++    here would land on the template's bare and the next scenario would fetch it.
++    """
++    _repo_template.clone(
++        # ⛔ `extra_flags` is already a tuple of NAMES ("MAIN-PUSH-ENFORCE"), not Paths — it goes
++        # into the key as-is. `_key` is for the Path tuples (`scripts`, `hooks`) only.
++        ("gh.make_pushable", push_main, _key(scripts), tuple(extra_flags)),
++        lambda tpl: _build_pushable(tpl, push_main=push_main, scripts=scripts,
++                                    extra_flags=extra_flags),
++        tmp)
++    d, bare = tmp / "work", tmp / "remote.git"
++    sh("git", "remote", "set-url", "origin", str(bare), cwd=d)
++    return d, bare
++
++
++def _build_pushable(tmp: Path, *, push_main: bool = True,
++                    scripts=(GUARD, BACKSTOP, APPROVAL), extra_flags=()) -> tuple[Path, Path]:
++    """The template build — the body `make_pushable` had before SCC-214, unchanged.
++
+     Everything the push gates need can be faked at the script level; whether git actually invokes
+     the dispatcher, and whether the dispatcher actually feeds both gates, cannot. That is the
+     whole point of these fixtures — `test_main_push_gate.py` learned the same lesson ("if this
+     passes, git is not running the hook — the whole gate is decorative").
+     """
+-    d = make_repo(tmp, scripts=scripts, hooks=(MERGE_DISPATCH, PUSH_DISPATCH))
++    d = _build_repo(tmp, scripts=scripts, hooks=(MERGE_DISPATCH, PUSH_DISPATCH))
+     for f in extra_flags:
+         (d / ".agents/scripts/git-hooks" / f).write_text("armed\n", encoding="utf-8")
+     bare = tmp / "remote.git"
+@@ -118,6 +164,16 @@ def make_pushable(tmp: Path, *, push_main: bool = True,
+ def make_carveout_repo(tmp: Path, *, flag: str, script: str) -> Path:
+     """A repo carrying ONE of the two merge-exempting gates, armed, plus what it needs to run.
+ 
++    Built once per (flag, script) and CLONED per scenario (SCC-214).
++    """
++    _repo_template.clone(("gh.make_carveout_repo", flag, script),
++                         lambda tpl: _build_carveout_repo(tpl, flag=flag, script=script), tmp)
++    return tmp / "carveout"
++
++
++def _build_carveout_repo(tmp: Path, *, flag: str, script: str) -> Path:
++    """The template build — the body `make_carveout_repo` had before SCC-214, unchanged.
++
+     Deliberately one gate at a time: with both armed, a message satisfying the Jira gate would
+     mask whether the SOP gate ran at all, and the failure being measured is a shared carve-out
+     that either of them can be blind to independently.
+diff --git a/.agents/scripts/tests/test_repo_template.py b/.agents/scripts/tests/test_repo_template.py
+new file mode 100644
+index 0000000..d25efc2
+--- /dev/null
++++ b/.agents/scripts/tests/test_repo_template.py
+@@ -0,0 +1,291 @@
++"""_repo_template.py — every scenario repo is a CLONE, and a clone is not shared state. (SCC-214)
++
++`test_task_preflight.py` and `test_git_hooks.py` build a real throwaway git repo per scenario.
++SCC-214 replaces the construction with a reset from a template clone, and the ticket's constraint
++is the whole reason this file exists:
++
++    RESET-FROM-TEMPLATE, NEVER A SHARED MUTABLE REPO. `test_git_hooks.py` guards the merge gate;
++    introducing cross-test coupling there — scenario N seeing state left by scenario N-1 — trades
++    a real safety property for seconds.
++
++⛔ SO THE ISOLATION IS PROVEN BY A TEST THAT FAILS WHEN IT LEAKS, never by inspection (ticket
++acceptance 2). Every case below drives the REAL builders or the real helper: a commit, a config
++key, an untracked file, an in-place edit and a pushed ref made in one clone must be invisible in
++the next, and in one cut afterwards.
++
++⭐ THE SPEED PROPERTY IS A CASE TOO, and it is the one measurement found. This Mac assesses every
++newly created executable ONCE, on its first launch — 0.2 s idle, 1.6–2.8 s under the suite's own
++parallel load — and the assessment is per INODE: a hard link to an assessed file is instant, a
++byte-copy pays again. Both suites create fresh executables per scenario (a fresh `acli` launcher
++per preflight block, two to five hook scripts per git_hooks repo). So the clone HARD-LINKS
++executables to the template's inode and FREEZES the template's copies read-only: the link is what
++carries the assessment, and the freeze is what stops a shared inode from being shared state — an
++in-place write raises instead of leaking. Git never writes a file in place (temp + rename), so
++every git operation on a scenario's hook is isolated by construction. `HARD_LINKS` is False on
++Windows on purpose: `_harness.TempDir.__exit__`'s rmtree handler chmods read-only files, which
++through a link would unfreeze the template (and the PC has no assessor to save time with anyway).
++
++Stdlib only, no pytest, matching every other file here.
++"""
++from __future__ import annotations
++
++import os
++import subprocess
++import sys
++from pathlib import Path
++
++from _harness import Cases, TempDir
++
++sys.path.insert(0, str(Path(__file__).resolve().parent))
++
++# ⛔ A MISSING MODULE IS A FAILING ROW, NEVER A SETUP DEATH. Before `_repo_template.py` exists this
++# file must come up and fail where it ASSERTS — a test that dies on import looks identical to one
++# that failed its assertion, and only one of those is a real red (`smh-quick-dev` Step 2).
++try:
++    import _repo_template as rt
++    RT_ERR = ""
++except Exception as exc:                       # noqa: BLE001 — any import failure, reported not raised
++    rt = None
++    RT_ERR = repr(exc)
++
++import _pf_fixtures as pf                       # noqa: E402 — after the guarded import, deliberately
++import test_git_hooks as gh                     # noqa: E402
++
++# ⭐ THE BUILDER BLOCKS BELOW RUN WITH OR WITHOUT THE MODULE, and that is the point: T2 and T3
++# assert what the REAL builders must do, so before `_repo_template.py` exists they run against
++# today's builders and the rows that must change go red where they assert. Only the rows that
++# call `rt.clone` directly (T1, T4 — the helper's own contract) can be skipped by its absence.
++TEMPLATE_PREFIX = getattr(rt, "TEMPLATE_PREFIX", "wfscripts-tpl-")
++HARD_LINKS = getattr(rt, "HARD_LINKS", os.name != "nt")
++
++
++def sh(*args: str, cwd: Path) -> str:
++    r = subprocess.run(list(args), cwd=str(cwd), capture_output=True, text=True, errors="replace")
++    return (r.stdout or "") + (r.stderr or "")
++
++
++def build_repo(root: Path) -> None:
++    """A minimal real repo + a real executable, standing in for the suites' builders."""
++    d = root / "repo"
++    d.mkdir(parents=True)
++    sh("git", "init", "-q", "-b", "main", cwd=d)
++    sh("git", "config", "user.email", "t@t.t", cwd=d)
++    sh("git", "config", "user.name", "t", cwd=d)
++    (d / "README").write_text("base\n", encoding="utf-8")
++    hook = d / "hook.sh"
++    hook.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
++    hook.chmod(0o755)
++    sh("git", "add", "README", "hook.sh", cwd=d)
++    sh("git", "commit", "-qm", "SCC-214 base", cwd=d)
++
++
++def leaks(clone: Path) -> list[str]:
++    """Every file under `clone` carrying an absolute path into a template root."""
++    hits = []
++    for p in clone.rglob("*"):
++        if p.is_file() and p.stat().st_size < 200_000:
++            try:
++                if TEMPLATE_PREFIX in p.read_text(errors="replace"):
++                    hits.append(str(p.relative_to(clone)))
++            except OSError:
++                pass
++    return hits
++
++
++def main() -> int:
++    c = Cases("repo template clones (SCC-214)")
++
++    if c.block("T1 · the helper contract — build once, clone clean, freeze what is shared"):
++        c.check("the module imports", rt is not None, RT_ERR)
++
++        if rt is not None:
++            with TempDir() as t:
++                builds = []
++                key = ("t1", "build-once")
++                for i in range(3):
++                    rt.clone(key, lambda tpl: (builds.append(1), build_repo(tpl))[1], t / f"s{i}")
++                c.check("clone builds the template ONCE per key", len(builds) == 1,
++                        f"built {len(builds)} times for 3 clones")
++
++            with TempDir() as t:
++                key = ("t1", "leak")
++                a = rt.clone(key, build_repo, t / "a") / "repo"
++                (a / "new.md").write_text("x\n", encoding="utf-8")
++                sh("git", "add", "new.md", cwd=a)
++                sh("git", "commit", "-qm", "SCC-214 scenario A", cwd=a)
++                sh("git", "config", "scc214.left", "behind", cwd=a)
++                (a / "untracked.txt").write_text("dropped\n", encoding="utf-8")
++                b = rt.clone(key, build_repo, t / "b") / "repo"
++                log = sh("git", "log", "--format=%s", cwd=b)
++                c.check("a clone does not see its predecessor's commit",
++                        "scenario A" not in log, log.strip()[:200])
++                c.check("a clone does not see its predecessor's config",
++                        not sh("git", "config", "scc214.left", cwd=b).strip(), "config leaked")
++                c.check("a clone does not see its predecessor's untracked file",
++                        not (b / "untracked.txt").exists(), "untracked file leaked")
++                c.check("a fresh clone reads git-clean",
++                        not sh("git", "status", "--porcelain", cwd=b).strip(),
++                        sh("git", "status", "--porcelain", cwd=b).strip()[:200])
++
++            with TempDir() as t:
++                key = ("t1", "regular-vs-exec")
++                a = rt.clone(key, build_repo, t / "a") / "repo"
++                b = rt.clone(key, build_repo, t / "b") / "repo"
++                (a / "README").write_text("A rewrote this\n", encoding="utf-8")
++                c.check("editing a regular file in one clone leaves the other untouched",
++                        (b / "README").read_text(encoding="utf-8") == "base\n",
++                        (b / "README").read_text(encoding="utf-8")[:80])
++                try:
++                    with open(a / "hook.sh", "w", encoding="utf-8") as fh:
++                        fh.write("mutated\n")
++                    wrote = True
++                except PermissionError:
++                    wrote = False
++                c.check("an in-place write through a shared executable raises",
++                        not wrote, "the write SUCCEEDED — the freeze is not holding")
++                c.check("the executable is still the template's bytes in the other clone",
++                        (b / "hook.sh").read_text(encoding="utf-8") == "#!/bin/sh\nexit 0\n",
++                        (b / "hook.sh").read_text(encoding="utf-8")[:80])
++
++            with TempDir() as t:
++                key = ("t1", "occupied")
++                dest = t / "d"
++                rt.clone(key, build_repo, dest)
++                # ⛔ CATCH EVERYTHING, THEN ASSERT THE TYPE. A bare `except FileExistsError`
++                # lets any other error escape and abort the whole file — and a file that dies
++                # in a traceback prints no `FAILED:` line, which `mutation_sweep.judge()`
++                # refuses to score, so the mutant aimed here would read as a survivor.
++                err: BaseException | None = None
++                try:
++                    rt.clone(key, build_repo, dest)
++                except BaseException as exc:                      # noqa: BLE001 — see above
++                    err = exc
++                c.check("a second clone into an occupied root refuses",
++                        isinstance(err, FileExistsError),
++                        f"raised {err!r} — a clone landed on top of an existing scenario")
++                empty = t / "empty"
++                empty.mkdir()
++                ok = rt.clone(key, build_repo, empty)
++                c.check("an EMPTY destination directory is accepted",
++                        (ok / "repo/README").is_file(), "the receipts fixture shape was refused")
++
++    if c.block("T2 · the preflight builders — isolation, the shared launcher, the key"):
++        if True:
++            with TempDir() as t:
++                r1 = pf.make_repo(t / "s1")
++                pf.write(r1, "docs/leak.md", "x\n")
++                pf.commit(r1, "SCC-11 scenario one")
++                pf.git(r1, "push", "-q", "origin", "main")
++                r2 = pf.make_repo(t / "s2")
++                log = pf.git(r2, "log", "--format=%s").stdout
++                c.check("a preflight scenario does not see its predecessor's commit",
++                        "scenario one" not in log, log.strip()[:200])
++                # ⛔ FETCH FIRST. `refs/remotes/origin/main` was copied from the template and
++                # sits at base whatever the remote holds, so reading it without fetching passes
++                # even when `origin` still points at the TEMPLATE's bare — the exact leak this
++                # row exists to catch. Found by aiming a mutant at it (SCC-214 sweep, M5).
++                pf.git(r2, "fetch", "-q", "origin")
++                remote = pf.git(r2, "log", "--format=%s", "origin/main").stdout
++                c.check("a push from one scenario is invisible to the next scenario's origin",
++                        "scenario one" not in remote, remote.strip()[:200])
++                c.check("no clone carries a path into the template root (preflight)",
++                        leaks(t / "s2") == [], str(leaks(t / "s2"))[:200])
++
++            with TempDir() as t:
++                plain = pf.make_repo(t / "plain")
++                withci = pf.make_repo(t / "ci", ci=True)
++                c.check("make_repo(ci=True) after make_repo() carries the workflow file",
++                        (withci / ".github/workflows/gate.yml").is_file()
++                        and not (plain / ".github/workflows/gate.yml").exists(),
++                        "the template key is not distinguishing ci=True")
++
++            with TempDir() as t:
++                # ⛔ (inode, mtime), never inode alone. The launcher lives at a FIXED path, so a
++                # `board()` that rewrote it every call would truncate-and-rewrite the SAME inode
++                # and an inode-only assertion would read that as one launcher — while the OS
++                # re-assessed the changed file all 88 times, which is the entire cost this
++                # memo exists to remove. The pair pins both halves: written once, and written
++                # somewhere that outlives the scenario's TempDir.
++                stamps = set()
++                for i in range(3):
++                    d = t / f"b{i}"
++                    d.mkdir()
++                    pf.board(d)
++                    st = Path(os.environ["ACLI_BIN"]).stat()
++                    stamps.add((st.st_ino, st.st_mtime_ns))
++                c.check("one launcher per process", len(stamps) == 1,
++                        f"{len(stamps)} distinct (inode, mtime) launchers for 3 board() calls")
++                c.check("each board() still points PF_BOARD_STATE at its own state file",
++                        Path(os.environ["PF_BOARD_STATE"]).parent == t / "b2",
++                        os.environ["PF_BOARD_STATE"])
++
++    if c.block("T3 · the git_hooks builders — the inode share, the key, the real merge"):
++        if True:
++            with TempDir() as t:
++                (t / "s1").mkdir()
++                (t / "s2").mkdir()
++                d1, _ = gh.make_pushable(t / "s1")
++                gh.lane(d1, "chore/SCC-144-a")
++                d2, _ = gh.make_pushable(t / "s2")
++                branches = gh.sh("git", "branch", "--list", cwd=d2)[1]
++                c.check("a git_hooks scenario does not see its predecessor's branch",
++                        "SCC-144-a" not in branches, branches.strip()[:200])
++                c.check("no clone carries a path into the template root (git_hooks)",
++                        leaks(t / "s2") == [], str(leaks(t / "s2"))[:200])
++                if HARD_LINKS:
++                    c.check("a hook shares the template inode",
++                            (d1 / ".githooks/commit-msg").stat().st_ino
++                            == (d2 / ".githooks/commit-msg").stat().st_ino,
++                            "the hook was copied, not linked — the assessment is paid twice")
++                else:
++                    c.check("a hook shares the template inode", True,
++                            "SKIPPED: HARD_LINKS is False on this platform (by design on Windows)")
++
++            with TempDir() as t:
++                (t / "armed").mkdir()
++                (t / "bare").mkdir()
++                armed = gh.make_repo(t / "armed")
++                bare = gh.make_repo(t / "bare", arm=False)
++                c.check("make_repo(arm=False) after make_repo() carries no flag",
++                        (armed / ".agents/scripts/git-hooks/MERGE-TARGET-ENFORCE").is_file()
++                        and not (bare / ".agents/scripts/git-hooks/MERGE-TARGET-ENFORCE").exists(),
++                        "the template key is not distinguishing arm=False")
++
++            with TempDir() as t:
++                (t / "merge").mkdir()
++                d = gh.make_repo(t / "merge")
++                gh.lane(d, "chore/SCC-144-x")
++                rc, out, moved = gh.merge(d, "main", "chore/SCC-144-x")
++                c.check("a real merge still runs through the linked, frozen hooks",
++                        rc == 0 and moved, f"rc={rc} moved={moved} {out.strip()[-200:]}")
++
++    if c.block("T4 · a build that raises caches NOTHING"):
++        if rt is not None:
++            with TempDir() as t:
++                key = ("t4", "boom")
++                calls = []
++
++                def boom(tpl: Path) -> None:
++                    calls.append(1)
++                    build_repo(tpl)
++                    raise RuntimeError("SCC-214 build failed on purpose")
++
++                for i in range(2):
++                    try:
++                        rt.clone(key, boom, t / f"s{i}")
++                    except BaseException:                          # noqa: BLE001, S110 — a cached
++                        pass                                       # dead template raises here too
++                c.check("a failed build caches nothing", len(calls) == 2,
++                        f"the build ran {len(calls)} times — a failed template was cached")
++                try:
++                    good = rt.clone(key, build_repo, t / "after")
++                    later, why = (good / "repo/README").is_file(), "the failed key stayed poisoned"
++                except BaseException as exc:                       # noqa: BLE001
++                    later, why = False, f"raised {exc!r}"
++                c.check("a key whose build failed can still be built later", later, why)
++
++    return c.finish()
++
++
++if __name__ == "__main__":
++    sys.exit(main())

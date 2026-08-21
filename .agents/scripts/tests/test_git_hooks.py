@@ -27,6 +27,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import _repo_template
 from _harness import Cases, TempDir
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -61,9 +62,38 @@ def head(d: Path) -> str:
     return sh("git", "rev-parse", "HEAD", cwd=d)[1].strip()
 
 
+def _key(paths) -> tuple:
+    """The cache half of a builder's file arguments — the FULL path of each.
+
+    ⛔ FULL PATHS, not basenames. Both halves of a template's identity must be in its key or two
+    different fixtures share one template, and basenames throw half of it away: two entries of
+    `scripts` or `hooks` sharing a name in different directories would collapse to one key and
+    be served one template, silently. Today's five constants have distinct basenames so nothing
+    is currently mis-keyed — which is exactly why the narrowing would have shipped unnoticed.
+    `_CACHE` never leaves this process (`run_all.py` gives each test file its own), so an
+    absolute path is a correct key; readability belongs in the failure message, not the key.
+    """
+    return tuple(str(p) for p in paths)
+
+
 def make_repo(tmp: Path, *, name: str = "work",
               scripts=(GUARD,), hooks=(MERGE_DISPATCH,), arm: bool = True) -> Path:
     """A real repo carrying the REAL hook files, armed the way this system arms them.
+
+    Built once per shape and CLONED per scenario (SCC-214): same signature, same return, same
+    isolation — a scenario's repo is its own copy, and the hook scripts are hard links to a
+    read-only template inode so the OS assesses each executable once instead of 72 times.
+    """
+    _repo_template.clone(
+        ("gh.make_repo", name, _key(scripts), _key(hooks), arm),
+        lambda tpl: _build_repo(tpl, name=name, scripts=scripts, hooks=hooks, arm=arm),
+        tmp)
+    return tmp / name
+
+
+def _build_repo(tmp: Path, *, name: str = "work",
+                scripts=(GUARD,), hooks=(MERGE_DISPATCH,), arm: bool = True) -> Path:
+    """The template build — the body `make_repo` had before SCC-214, unchanged.
 
     ⛔ Missing files are COPIED IF PRESENT, never demanded. A `shutil.copy2` on a script that does
     not exist yet raises in SETUP, and a test that dies in setup looks identical to one that failed
@@ -98,12 +128,32 @@ def make_pushable(tmp: Path, *, push_main: bool = True,
                   scripts=(GUARD, BACKSTOP, APPROVAL), extra_flags=()) -> tuple[Path, Path]:
     """A repo with a REAL bare remote, so the push cases drive `git push` and not a stub.
 
+    Built once per shape and CLONED per scenario (SCC-214). The clone carries the template's
+    absolute remote URL, so `origin` is re-pointed at THIS scenario's own bare — otherwise a push
+    here would land on the template's bare and the next scenario would fetch it.
+    """
+    _repo_template.clone(
+        # ⛔ `extra_flags` is already a tuple of NAMES ("MAIN-PUSH-ENFORCE"), not Paths — it goes
+        # into the key as-is. `_key` is for the Path tuples (`scripts`, `hooks`) only.
+        ("gh.make_pushable", push_main, _key(scripts), tuple(extra_flags)),
+        lambda tpl: _build_pushable(tpl, push_main=push_main, scripts=scripts,
+                                    extra_flags=extra_flags),
+        tmp)
+    d, bare = tmp / "work", tmp / "remote.git"
+    sh("git", "remote", "set-url", "origin", str(bare), cwd=d)
+    return d, bare
+
+
+def _build_pushable(tmp: Path, *, push_main: bool = True,
+                    scripts=(GUARD, BACKSTOP, APPROVAL), extra_flags=()) -> tuple[Path, Path]:
+    """The template build — the body `make_pushable` had before SCC-214, unchanged.
+
     Everything the push gates need can be faked at the script level; whether git actually invokes
     the dispatcher, and whether the dispatcher actually feeds both gates, cannot. That is the
     whole point of these fixtures — `test_main_push_gate.py` learned the same lesson ("if this
     passes, git is not running the hook — the whole gate is decorative").
     """
-    d = make_repo(tmp, scripts=scripts, hooks=(MERGE_DISPATCH, PUSH_DISPATCH))
+    d = _build_repo(tmp, scripts=scripts, hooks=(MERGE_DISPATCH, PUSH_DISPATCH))
     for f in extra_flags:
         (d / ".agents/scripts/git-hooks" / f).write_text("armed\n", encoding="utf-8")
     bare = tmp / "remote.git"
@@ -117,6 +167,16 @@ def make_pushable(tmp: Path, *, push_main: bool = True,
 
 def make_carveout_repo(tmp: Path, *, flag: str, script: str) -> Path:
     """A repo carrying ONE of the two merge-exempting gates, armed, plus what it needs to run.
+
+    Built once per (flag, script) and CLONED per scenario (SCC-214).
+    """
+    _repo_template.clone(("gh.make_carveout_repo", flag, script),
+                         lambda tpl: _build_carveout_repo(tpl, flag=flag, script=script), tmp)
+    return tmp / "carveout"
+
+
+def _build_carveout_repo(tmp: Path, *, flag: str, script: str) -> Path:
+    """The template build — the body `make_carveout_repo` had before SCC-214, unchanged.
 
     Deliberately one gate at a time: with both armed, a message satisfying the Jira gate would
     mask whether the SOP gate ran at all, and the failure being measured is a shared carve-out

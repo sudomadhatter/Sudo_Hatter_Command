@@ -1,0 +1,20 @@
+gh: rc=0 total=44.8s  -- 151/151 passed --
+  gh.make_pushable (incl make_repo)    n= 25     2.4s  ( 5.3% of wall)
+  gh.make_repo                         n= 42     1.0s  ( 2.3% of wall)
+  gh.make_carveout_repo                n=  2     0.4s  ( 0.9% of wall)
+  sh calls: n=713 total=41.5s
+    git commit             scenario   n=124   14.5s
+    git push               scenario   n= 34    8.4s
+    git merge              scenario   n= 68    6.5s
+    git checkout           scenario   n=185    5.1s
+    git add                scenario   n=122    2.8s
+    git rev-parse          scenario   n= 91    2.0s
+    git remote             in-builder n= 28    0.6s
+    git config             in-builder n= 21    0.4s
+    git init               in-builder n= 10    0.3s
+    git fetch              scenario   n=  4    0.2s
+    git commit             in-builder n=  7    0.2s
+    git add                in-builder n=  7    0.2s
+  first hook-running op per repo: n=72 avg=0.17s total=12.0s | later: n=154 avg=0.11s total=17.4s
+
+--- stderr ---
