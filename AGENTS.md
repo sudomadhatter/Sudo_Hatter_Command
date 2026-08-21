@@ -28,7 +28,7 @@ and its `Load` column states this same classification; if the two ever disagree,
 until reconciled. A rule's own frontmatter does **not** declare its load class.
 
 **FLOOR — load now, every session:** `.agents/rules/operator-profile.md` (**who you're talking to** —
-Daniel is the visionary/chair, you are the engineer; the eight speaking obligations that govern every
+Daniel is the visionary/chair, you are the engineer; the **nine** speaking obligations that govern every
 reply), `.agents/rules/constitution.md` (hard stops + gates), and `.agents/rules/karpathy-guidelines.md`
 (how to work).
 

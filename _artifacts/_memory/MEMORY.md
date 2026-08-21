@@ -68,6 +68,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [coverage `source` ignores paths](coverage-source-silently-ignores-file-paths.md) — use source_pkgs, never file paths.
 - **Risk + certification** — [priorities matrix](test-priorities-matrix.md) (P0 100% / P1 80% / P2 50% / P3 20%; P0+P1 need E2E) · [certification at shipping SHA](test-certification-at-shipping-sha.md) (②→③ certification-<story>.json).
 - **Secrets in tests** — lesson from closed Gemini-key leak: **`setdefault` is wrong idiom for secrets** — assign unconditionally in conftest.
+- [⛔ Review lenses die on suite output](review-lenses-die-on-suite-output.md) — never hand a subagent a bare `run_all.py`; filter it, and hand a code-only diff.
 - [full-suite contention](vitest-full-suite-contends-across-lanes.md) — locks per-stack; bg shells die on chat close.
 - **Spec + fixture conventions** — [eval negative controls](eval-harness-negative-control-convention.md) (_negative_control:true + NC_ id) · [E2E gate fiction](e2e-gate-fiction-test-guardrails.md) (report-only gate hid fiction spec) · [ATDD mocks match contract](atdd-mock-shape-must-match-backend-contract.md) · [domain-gated fixtures](domain-gated-fixtures-web-verify.md) (verify against primary sources).
 - [Windows-authored code hides POSIX bugs](windows-authored-code-hides-posix-bugs.md) — chmod, C:/ paths, ;, robocopy, bare python fail on POSIX.
@@ -106,7 +107,9 @@ this section is the signpost. Working in one? Read its store too; it is not load
 ## Working style
 - [⭐ Lightweight lane for specific, can't-break work](lightweight-lane-for-specific-no-break-work.md) — doc-only / operator-directed ask is ticket -> edit -> push (SCC-162).
 - [Naming a ticket ≠ mint order](naming-a-ticket-is-not-a-mint-order.md) — "fix it now with ticket X" = file under the CURRENT lane; mint only on the explicit word.
+- [⭐⛔ Close the loop; don't hand back decisions](close-the-loop-dont-hand-back-decisions.md) — no new-concern tails, no menus; pick the default, say it, keep going (SCC-201).
 - [Own it plainly](own-it-plainly-dont-make-excuses.md) — own issues in one line, then act.
+- [⛔ Grep for the existing mechanism BEFORE proposing a fix](propose-a-fix-only-after-grepping-for-the-existing-one.md) — SCC-190 guard already existed; every concern ships with its solution in the same plan.
 - [Writes for a big-picture operator](writes-for-big-picture-operator.md) — consequence before mechanism; explain terms clearly.
 - [Daniel sells Hormozi-style](daniel-sells-hormozi-style.md) — direct, prove-it, value-first copy.
 - [Operator chairs the board](operator-chairs-the-board.md) — multi-voice boards advance on operator word; voices ask.

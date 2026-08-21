@@ -1,0 +1,9 @@
+task_key: SCC-245
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-245-closing-obligation
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: []
+# Lightweight shape on a Task-qualified path: lane_qualify says TASK (.agents/** is toolkit),
+# so the ticket and the gates are required - but the plan/audit/RED ceremony is not, per the
+# operator's lightweight-lane ruling (SCC-162) for a word-for-word approved doc edit.

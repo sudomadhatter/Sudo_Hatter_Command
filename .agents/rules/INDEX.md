@@ -21,7 +21,7 @@ from here by every session. A project carries only its OWN rules, routed from it
 
 | Rule | Load | Trigger — reach for it when… |
 |---|---|---|
-| `operator-profile.md` | floor | always — who Daniel is, the Jobs/Woz division of labor, and the eight speaking obligations. The upstream WHY behind `prose-formatting`, `mermaid-diagram-preferences`, `collaborative-debug-first`, and the clickable-links / inline-key-points rules. |
+| `operator-profile.md` | floor | always — who Daniel is, the Jobs/Woz division of labor, and the **nine** speaking obligations - #9 (close the loop; a finding without a fix is a bill) is the one the house breaks most, and it binds every reply, not just a review. The upstream WHY behind `prose-formatting`, `mermaid-diagram-preferences`, `collaborative-debug-first`, and the clickable-links / inline-key-points rules. |
 | `constitution.md` | floor | always — hard stops, confirmation gates, partnership boundaries (shared). |
 | `karpathy-guidelines.md` | floor | always — behavioral coding principles (think first, simplicity, surgical, verify). |
 | `artifacts-always-first.md` | protocol | any session that may modify files — the plan-first artifact protocol (plan→approve→build→walkthrough). |

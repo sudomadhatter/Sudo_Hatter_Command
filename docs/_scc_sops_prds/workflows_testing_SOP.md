@@ -213,6 +213,26 @@ Two more you'll see constantly:
 - **Preflight** — a script that answers, mechanically, every "is this actually safe?" question a
   close-out used to answer by hand. **Exit 2 means blocked.**
 
+⭐ **And one rule about how every agent TALKS to you, because it is the one they break most
+(SCC-245).** `.agents/rules/operator-profile.md` is FLOOR — loaded by every agent, every session,
+on both machines — and it now carries a **ninth speaking obligation: close the loop; never end on
+a new problem.** The line that does the work is *"a finding without a fix is not a contribution;
+it is a bill."*
+
+**What changes for you.** A reply may no longer end with a list of things the agent noticed. If a
+defect is inside the lane's own subject it gets **fixed in the lane** and reported as fixed. If it
+genuinely is not, it arrives **once, in one line, with the remedy named** — never as a tail, never
+as *"want me to look into it?"* Three unfixed observations is not thoroughness; it is the work
+refusing to converge, and you pay for it in schedule.
+
+**Why it had to be new law rather than a reminder.** The existing ruling — *review findings are
+not a work queue* (2026-08-15) — binds only **inside a code review**. Ordinary conversation was
+unbound, which is exactly where it leaked: two different agents produced the identical failure a
+day apart, so the gap was in the law, not the agent. The rule's self-check also grew a second
+pass: it used to check only a reply's **opening**, and this obligation is broken at the **end**.
+
+⛔ **If an agent hands you a tail of new concerns, that is now a rule violation — say so.**
+
 ## 3. The two laws above every command
 
 Everything else is downstream of these.
