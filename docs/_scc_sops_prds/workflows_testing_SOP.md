@@ -46,10 +46,10 @@ glossary if a word gets away from you.
 You're in the **command center** (also called the lobby). It has no sprint of its own — it holds the
 shared toolkit and drives the child projects under `Projects/`.
 
-**One home, since 2026-08-07.** Every shared rule, `/` command, skill, workflow, and the BMAD
-machinery lives here and *only* here. Nothing is copied into a project any more. A project carries
-just its own law — its `rules/`, its `skills/`, and the `.agents/INDEX.md` that routes them — plus
-the enforcement that has to sit in the repo to work at all (its git hooks and its `jira.conf`).
+**One home.** Every shared rule, `/` command, skill, workflow, and the BMAD machinery lives here
+and *only* here — nothing is copied into a project. A project carries just its own law — its
+`rules/`, its `skills/`, and the `.agents/INDEX.md` that routes them — plus the enforcement that
+has to sit in the repo to work at all (its git hooks and its `jira.conf`).
 
 Two consequences worth holding: **you edit a shared rule in exactly one place and every project has
 it instantly**, and **binding a project means reading its `.agents/INDEX.md` first**, because that
@@ -65,9 +65,9 @@ file is now the only thing that tells you what's local to it.
 | Projects this **lints** | the [maintained list](../../.agents/maintained-projects.txt) — AGY_AVIATIONCHAT · NEXgen-VR-Director. It is a lint worklist, **not** a sync target: nothing is pushed into a project. |
 
 AGY_AVIATIONCHAT keeps a copy of this page (its `_my_resources/_quick_reference/` folder, file
-`sudo_workflows_testing.md`, last synced 2026-08-07 as an AVCH-41 twin). It has **not** followed this page since — it is a fifth of the
-size — and it sits in that project's `_my_resources/`, which agents do not scan. **This page is canonical**;
-re-syncing the twin is an AVCH ticket of its own, not something a lobby lane may do.
+`sudo_workflows_testing.md`). That copy is **stale** — a fifth of this page's size — and it sits in
+that project's `_my_resources/`, which agents do not scan. **This page is canonical**; re-syncing
+the twin is an AVCH ticket of its own, not something a lobby lane may do.
 
 ---
 
@@ -87,11 +87,11 @@ re-syncing the twin is an AVCH ticket of its own, not something a lobby lane may
 | land a story that passed review | `/cicd-close-story-merge-tree` — the door; it runs the save for you ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | land every lane of one epic at once | `/cicd-merge-epic-workingtrees <epic>` ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | fix something small in a project | `/cicd-quick-dev <slug>` — **low-risk work only** ([§8](#8-the-fast-lane--cicd-quick-dev)) |
-| ⭐ **push routine project docs/notes to PR** | `/cicd-non-crit-pr-push` — **standing ticket & branch directly to PR** ([§8a](#8a-the-project-standing-push-lane--cicd-non-crit-pr-push)) |
+| **push routine project docs/notes to PR** | `/cicd-non-crit-pr-push` — **standing ticket & branch directly to PR** ([§8a](#8a-the-project-standing-push-lane--cicd-non-crit-pr-push)) |
 | **plan** a big Task — subtasks, lanes, the parallel table | `/smh-plan-task <TASK-KEY>`, then `/smh-label-tasks <TASK-KEY>` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
 | **build** a Task — a command, a rule, a gate, the docs | `/smh-quick-dev <KEY>` → `/smh-code-review` → `/smh-close-task-merge-tree` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
-| ⭐ **just get one specific thing done** — write me a guide, fix a reference, tidy a branch mess | `/smh-quick-fix "<the ask>"` — **no plan, no `approved`, no review**; it does not stop to ask whether to start ([§9a](#the-lightweight-lane--smh-quick-fix)) |
-| ⭐ **push routine docs/notes to PR** — standing push under SCC-186 | `/smh-non-crit-pr-push` — **qualifies `LIGHT`, stages, commits `SCC-186`, pushes, opens PR** ([§9a](#the-lightweight-lane--smh-quick-fix)) |
+| **just get one specific thing done** — write me a guide, fix a reference, tidy a branch mess | `/smh-quick-fix "<the ask>"` — **no plan, no `approved`, no review**; it does not stop to ask whether to start ([§9a](#the-lightweight-lane--smh-quick-fix)) |
+| **push routine docs/notes to PR** — the standing ticket `SCC-186` | `/smh-non-crit-pr-push` — **qualifies `LIGHT`, stages, commits `SCC-186`, pushes, opens PR** ([§9a](#the-lightweight-lane--smh-quick-fix)) |
 | land **several** finished Tasks at once | `/smh-merge-multiple-workingtrees` — one sign-off per lane ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | see what a command will do before typing it | [Part VI — the command atlas](#18-every-command-one-diagram) |
 | know whether a review still counts | [§11 — the decision tree](#11-is-this-review-still-valid) |
@@ -102,7 +102,7 @@ re-syncing the twin is an AVCH ticket of its own, not something a lobby lane may
 | free up a heavy session | `/cicd-prune-context` |
 | **change the system itself** | edit it in `.agents/` (the only copy), then **update this page in the same commit** — a gate enforces it ([§10](#10-the-safety-net--what-checks-your-work)) |
 
-### ⭐ `To Do Next` — the column that answers "what's next?"
+### `To Do Next` — the column that answers "what's next?"
 
 **Drag a card into `To Do Next` and every agent picks it up from there.** No file to edit, no command
 to run — the column *is* the instruction. Ask any agent "what's next?", or boot a session, and the
@@ -120,8 +120,8 @@ start.
   Create the column in the Jira UI on any other board and it starts working there immediately. A
   board without it is silently skipped, not an error.
 
-⛔ **`_my_resources/open_tasks/todo_list.md` is retired as an agent source** (2026-08-09). Keep it as
-personal notes if you like; agents no longer read it, and it is never quoted as "what's next".
+⛔ **`_my_resources/open_tasks/todo_list.md` is not an agent source.** Keep it as personal notes if
+you like; agents do not read it, and it is never quoted as "what's next".
 
 ---
 
@@ -141,7 +141,7 @@ personal notes if you like; agents no longer read it, and it is never quoted as 
 [7 Landing and shipping](#7-landing-and-shipping--the-close-out-family) ·
 [8 The fast lane](#8-the-fast-lane--cicd-quick-dev) ·
 [9 The Task lane](#9-the-task-lane--work-on-the-system-itself) ·
-[9a ⭐ The lightweight lane](#the-lightweight-lane--smh-quick-fix)
+[9a The lightweight lane](#the-lightweight-lane--smh-quick-fix)
 
 **Part IV — The machinery**
 [10 The safety net](#10-the-safety-net--what-checks-your-work) ·
@@ -210,46 +210,34 @@ Two more you'll see constantly:
   **plan** (`implementation_plan.md`) and the **walkthrough** (`walkthrough.md`). Audits get appended
   into the plan; reviews get appended into the walkthrough. If you're hunting for what an audit or a
   review said, it's inside one of those two, never a separate file.
-  **⭐ You should never have to ask for either of them (SCC-200).** Your ruling, 2026-08-17: *"I cant
-  see the artifacts unless you give me the hyper link in the chat."* Every artifact now comes back as
-  a **clickable link** the same turn it is written — and specifically **with the approval request**,
-  since being asked to approve a plan you were never handed is the whole defect. The duty was already
-  written down; it sat in one place at the top of the rule and did not fire, so it now sits at each of
-  the three moments an artifact is produced. If you get a bare path, that is a bug — say so.
+  **You should never have to ask for either of them.** Every artifact comes back as a **clickable
+  link** the same turn it is written — and specifically **with the approval request**, since being
+  asked to approve a plan you were never handed defeats the gate. If you get a bare path, that is a
+  bug — say so.
 - **Preflight** — a script that answers, mechanically, every "is this actually safe?" question a
   close-out used to answer by hand. **Exit 2 means blocked.**
 
-⭐ **And one rule about how every agent TALKS to you, because it is the one they break most
-(SCC-245).** `.agents/rules/operator-profile.md` is FLOOR — loaded by every agent, every session,
-on both machines — and it now carries a **ninth speaking obligation: close the loop; never end on
-a new problem.** The line that does the work is *"a finding without a fix is not a contribution;
-it is a bill."*
+**And one rule about how every agent TALKS to you, because it is the one they break most.**
+`.agents/rules/operator-profile.md` is FLOOR — loaded by every agent, every session, on both
+machines — and among its nine speaking obligations is **close the loop; never end on a new
+problem.** The line that does the work is *"a finding without a fix is not a contribution; it is a
+bill."* A reply may not end with a list of things the agent noticed: a defect inside the lane's own
+subject gets **fixed in the lane** and reported as fixed; one genuinely outside it arrives **once,
+in one line, with the remedy named** — never as a tail, never as *"want me to look into it?"*
 
-**What changes for you.** A reply may no longer end with a list of things the agent noticed. If a
-defect is inside the lane's own subject it gets **fixed in the lane** and reported as fixed. If it
-genuinely is not, it arrives **once, in one line, with the remedy named** — never as a tail, never
-as *"want me to look into it?"* Three unfixed observations is not thoroughness; it is the work
-refusing to converge, and you pay for it in schedule.
+⛔ **If an agent hands you a tail of new concerns, that is a rule violation — say so.**
 
-**Why it had to be new law rather than a reminder.** The existing ruling — *review findings are
-not a work queue* (2026-08-15) — binds only **inside a code review**. Ordinary conversation was
-unbound, which is exactly where it leaked: two different agents produced the identical failure a
-day apart, so the gap was in the law, not the agent. The rule's self-check also grew a second
-pass: it used to check only a reply's **opening**, and this obligation is broken at the **end**.
+> ⓘ **Why it works this way.** The narrower ruling — *review findings are not a work queue* —
+> bound only code reviews; ordinary conversation was unbound, and two agents produced the identical
+> failure a day apart. The gap was in the law, not the agent.
 
-⛔ **If an agent hands you a tail of new concerns, that is now a rule violation — say so.**
-
-⭐ **And the reason `main` kept coming back dirty with memory files (SCC-246).** Claude's memory
-path — `~/.claude/projects/<slug>/memory` — is a per-machine symlink to `_artifacts/_memory` in the
-**main working tree**, hardcoded. An agent working in a lane worktree therefore writes its memory
-into `main`'s tree: it never rides that lane's PR, and it sits uncommitted until a later session
-finds it and cleans it up as a separate chore. Measured 2026-08-21: after one lane closed, `main`
-carried three untracked memory files and a modified index from two different sessions.
-
-**What changes:** a memory written during a lane now goes **on the lane** — copied into the
-worktree's own `_artifacts/_memory/`, the shared checkout restored, and committed with explicit
-paths so it lands with the PR (`AGENTS.md` §7 carries the four steps; the close-out door's `sync`
-row enforces the split).
+**A memory written during a lane goes ON the lane.** Claude's memory path —
+`~/.claude/projects/<slug>/memory` — is a per-machine symlink to `_artifacts/_memory` in the
+**main working tree**, hardcoded, so the harness writes an agent's memory into `main`'s tree even
+when the agent works in a lane worktree — where it would never ride that lane's PR. So the agent
+copies the memory into the worktree's own `_artifacts/_memory/`, restores the shared checkout, and
+commits it with explicit paths so it lands with the PR (`AGENTS.md` §7 carries the four steps; the
+close-out door's `sync` row enforces the split).
 
 ⛔ **The split is by AUTHORSHIP, never tidiness.** *Your* memory has a home — this lane. *Another
 session's* uncommitted memory is work in flight and is still **never swept, deleted, or committed
@@ -283,7 +271,7 @@ gate only means something if it's one specific word.
 > ②'s Step 2 posts the plan link and waits — but the reply it is written to accept is `continue`
 > (or `changed`, or a pasted audit path), and it treats that as the go once you have read the plan.
 > The `approved` law and that command wording have not been reconciled; this page describes what the
-> command actually does, and the reconciliation is flagged as open (2026-08-15).
+> command actually does, and the reconciliation is flagged as open.
 
 ### Law 2 — You alone mark work `done`.
 
