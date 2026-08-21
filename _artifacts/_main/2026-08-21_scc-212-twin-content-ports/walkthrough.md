@@ -396,5 +396,8 @@ skims**, and only a mutant drawn from the code ever finds the difference.
       `/smh-code-review` contract. Nothing was minted, nothing was deferred, nothing was left as a
       note for later. `## Code Review` says why the verdict is CONCERNS with every finding closed.
 
-**Nothing is owed.** The lane is committed and pushed; the door is `/smh-close-task-merge-tree`, and
-invoking it is the sign-off.
+- [x] The merge itself — lands via this branch's PR. `LANE: LOCAL` (this repo has no deployable
+      surface), so the road is the pull request, not `/cicd-push-e2e`.
+
+**Nothing is owed.** The lane is committed and pushed, the preflight reads *clear to close out and
+merge*, and the door is `/smh-close-task-merge-tree` — invoking it is the sign-off.
