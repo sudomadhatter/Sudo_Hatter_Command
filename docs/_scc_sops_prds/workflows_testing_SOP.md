@@ -1389,6 +1389,15 @@ by design and the description carries the operator's own cycle prompt — so bot
 cycle from the un-started successor, which is the one thing you came to the query to find out.
 `--fields` is a whitelist: what you do not name, you do not get.
 
+**⭐ The clone now tells you the three edits it did NOT make (SCC-242).** The copy is verbatim on
+purpose and stays that way — the description carries the operator's own cycle prompt, and building a
+`--description` is how backticks execute. But a word-for-word copy is wrong in three specific places
+the instant it exists, and the run used to announce the clone and stop: **the summary still names the
+old cycle**, **the `INDEX` still lists the predecessor's subtasks**, and **`PREDECESSOR` still names
+the cycle before it**. `start` now prints all three, names the ticket that owes them, and says to
+write the description with `--description-file`. This is not hypothetical — SCC-244 was corrected by
+hand on 2026-08-20 because nothing said those edits were owed.
+
 It works this way because a marker that *moves* can only fire once — after the hand-off there is no
 trigger left, so nothing can mint a duplicate, and no board lookup has to be right for that to hold.
 Cloning happens at **start** rather than close-out because running the rolling ticket is exactly the
@@ -1458,6 +1467,15 @@ python3 .agents/scripts/jira_feed.py index-row --key <PARENT> --line "  Part M  
 ```
 
 It appends the row, reads the description back, and exits 2 naming any prior line that went missing.
+
+**⭐ …and it now files the row INSIDE the `INDEX` section (SCC-242).** It used to append at the end
+of the *field*, which landed in `INDEX` only because `INDEX` happens to be the last section — put one
+after it and every row filed under the wrong heading, silently, exit 0. The read-back guard could not
+see it: it watches for a line going **missing**, and none does. Measured on SCC-201 itself on
+2026-08-20, where the section read `INDEX / (empty - this ticket is fresh)` followed by two rows.
+The first append now **replaces that placeholder** and indents to the section. ⛔ **A description with
+no `INDEX` section is left exactly as before** — most tickets are not rolling tickets, and a command
+whose job is to file one row must not reshape a description it does not understand.
 
 ### The lightweight lane — /smh-quick-fix
 

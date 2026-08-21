@@ -1379,6 +1379,22 @@ def roll_the_cycle(binary: str, key: str, timeout: int) -> None:
             return
         say(f"jira-feed: {key} cloned the next rolling ticket - "
             f"{(r.stdout or '').strip().splitlines()[-1][:120] if (r.stdout or '').strip() else 'created'}")
+        # ⛔ SCC-242 row H · SAY WHAT THE CLONE DID NOT DO. The copy above is verbatim on
+        # purpose and stays that way - the description carries the operator's own cycle
+        # prompt, and building a `--description` is how backticks execute (see the ruling
+        # directly above). But a word-for-word copy is WRONG in three specific places the
+        # instant it exists, and until this line the run announced the clone and stopped.
+        # Measured: SCC-244 had to be corrected by hand on 2026-08-20 for exactly these
+        # three, because nothing told the agent they were owed.
+        new_keys = [k for k in re.findall(r"\b[A-Z][A-Z0-9]+-\d+\b", r.stdout or "")
+                    if k != key]
+        who = new_keys[-1] if new_keys else "the new ticket"
+        say(f"jira-feed: ⛔ {who} is a VERBATIM copy and three edits are still OWED on it - "
+            f"nothing below is automatic:\n"
+            f"  1. the summary still names the OLD cycle - bump it to the next number\n"
+            f"  2. the INDEX still lists {key}'s subtasks - clear it to the empty placeholder\n"
+            f"  3. PREDECESSOR still names the cycle before {key} - add {key} at the top\n"
+            f"  Write the whole description with `--description-file`, never `--description`.")
 
     # ⛔ `--labels` ADDS and `--remove-labels` REMOVES - measured against the live board on
     # 2026-08-17, and acli honours BOTH in one call. Writing this as a read-modify-write
@@ -2552,6 +2568,64 @@ def cmd_flag(args) -> int:
     return 0
 
 
+# SCC-242 row G · the INDEX section of a rolling ticket, and the placeholder a fresh clone
+# carries. Both are plain text in the description - there is no field, no markup and no API.
+_INDEX_HEADING = "INDEX"
+_INDEX_PLACEHOLDER_RE = re.compile(r"^\s*\(empty\b[^)]*\)\s*$")
+_INDEX_INDENT = "  "
+
+
+def index_append(before: str, row: str) -> str:
+    """Put `row` at the end of the INDEX **section**, not at the end of the field.
+
+    ⛔ THE DEFECT THIS CLOSES, MEASURED ON SCC-201 ITSELF (2026-08-20). The old composer was
+    `before.rstrip() + row`, so two things went wrong at once and neither was visible to the
+    read-back guard above - which watches for a line going MISSING, and no line does:
+
+      INDEX
+        (empty - this ticket is fresh)      <- survived its own falsification
+      SCC-242 - ...                         <- outside the section, at a different indent
+
+    A section that says "empty" while listing rows is a ticket nobody can read at a glance,
+    and rows land inside INDEX only because INDEX happens to be last today. Put one section
+    after it and every row files under the wrong heading, silently, exit 0.
+
+    ⭐ NO INDEX SECTION -> TODAY'S BEHAVIOUR, UNCHANGED. Most tickets are not rolling tickets,
+    and a command whose whole job is to file one row must not reshape a description it does
+    not understand. That control is row G5, and it is why this returns early rather than
+    inventing a heading.
+    """
+    lines = before.rstrip("\n").splitlines()
+    heads = [i for i, ln in enumerate(lines) if ln.strip() == _INDEX_HEADING]
+    if not heads:
+        return before.rstrip("\n") + "\n" + row + "\n"
+
+    # The LAST such heading: a description that quotes the word in prose above its own index
+    # would otherwise file every row into the quotation.
+    start = heads[-1]
+    # The section runs until the next heading - a non-blank line at column 0, which is how
+    # every other section in these descriptions is written (PREDECESSOR, INDEX, NOTES).
+    end = len(lines)
+    for i in range(start + 1, len(lines)):
+        s = lines[i]
+        if s.strip() and not s[:1].isspace():
+            end = i
+            break
+
+    body = lines[start + 1:end]
+    # Match the indent the section already uses, so a hand-written index keeps its shape.
+    existing = [ln for ln in body if ln.strip()]
+    indent = (existing[0][:len(existing[0]) - len(existing[0].lstrip())]
+              if existing else _INDEX_INDENT) or _INDEX_INDENT
+    kept = [ln for ln in body if not _INDEX_PLACEHOLDER_RE.match(ln)]
+    while kept and not kept[-1].strip():
+        kept.pop()
+    kept.append(indent + row.strip())
+
+    out = lines[:start + 1] + kept + lines[end:]
+    return "\n".join(out).rstrip("\n") + "\n"
+
+
 def cmd_index_row(args) -> int:
     """Append ONE row to a parent ticket's index description, and PROVE it survived (SCC-170).
 
@@ -2597,7 +2671,7 @@ def cmd_index_row(args) -> int:
             f"(this step is re-run safe)")
         return 0
 
-    after = before.rstrip("\n") + "\n" + row + "\n"
+    after = index_append(before, row)
     if not args.apply:
         say(f"jira-feed: DRY RUN - would append to {args.key}:\n  {row}\n"
             f"(re-run with --apply; the read-back check runs then)")

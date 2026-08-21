@@ -2903,6 +2903,30 @@ Nothing is actually owed.
             c.check("A1c the ORIGINAL gives the baton up and takes the identity label",
                     lab.get("TEST-7") == [ROLL], f"TEST-7 labels={lab.get('TEST-7')}")
 
+            # ── SCC-242 row H · a clone must announce what it did NOT do ──────────────
+            # ⛔ THE COPY IS VERBATIM ON PURPOSE and nothing here asks to change it: the
+            # description carries the operator's own cycle prompt, and building a
+            # `--description` is how backticks execute (the ruling is at jira_feed.py
+            # :1364-1370). The defect is the SILENCE. A fresh clone is word-for-word its
+            # predecessor, so three things are wrong the instant it exists - the summary
+            # still says the OLD cycle number, the INDEX still lists the predecessor's
+            # subtasks, and PREDECESSOR still names the cycle before that - and the run
+            # says only "cloned the next rolling ticket".
+            #
+            # ⭐ NOT HYPOTHETICAL: SCC-244 was corrected BY HAND on 2026-08-20, in this
+            # session, precisely because nothing told the agent those edits were owed.
+            OWED = ("summary", "INDEX", "PREDECESSOR")
+            missing = [w for w in OWED if w.lower() not in out.lower()]
+            c.check("A1f the clone NAMES the three edits it left owed",
+                    not missing,
+                    f"the run announced a clone and said nothing about {missing}. A "
+                    f"verbatim copy is correct; a verbatim copy nobody is told to finish "
+                    f"is a ticket that reads as the wrong cycle. Output was: "
+                    + out.strip()[-300:])
+            # ...and it must say which TICKET owes them, or the reader edits the wrong one.
+            c.check("A1g ...and it says which ticket carries them",
+                    "TEST-CLONE" in out, out.strip()[-300:])
+
         # ⛔ A1d · THE PREMISE THIS CASE SHIPPED WITH WAS FALSE, and it is the lane's own thesis.
         # It read "`--labels` REPLACES the whole set on the real acli", citing a pin that no longer
         # pins that. Measured 2026-08-17: `--labels` ADDS. So under the corrected stub NO `--labels`
@@ -3402,6 +3426,86 @@ Nothing is actually owed.
                 jira_feed.open_actions(sect("- [x] **Done**", "      wrapped")) == [],
                 "nothing open means nothing owed - and the wrapped line has no item to "
                 "attach to, so it must not resurrect one")
+
+
+    # ── SCC-242 row G · an INDEX that is actually an index ───────────────────────────────
+    # ⛔ MEASURED ON THE LIVE TICKET, 2026-08-20. SCC-201's description reads:
+    #
+    #     INDEX
+    #       (empty - this ticket is fresh)
+    #     SCC-242 - jira_feed finish cannot close a story lane...
+    #     SCC-243 - /cicd-non-crit-pr-push Step 0.5 calls lane_qualify...
+    #
+    # The placeholder outlived its own falsification, and the rows sit OUTSIDE the section at
+    # a different indent. They land in the right place only because INDEX happens to be last;
+    # add one section after it and every row files under the wrong heading. The read-back
+    # guard (SCC-170) was watching for data LOSS and saw none - every row is there. What it
+    # cannot see is a row in the wrong place, which is the same ticket unreadable.
+    if c.block("SCC-242 row G · index-row files INTO the INDEX section"):
+        import jira_feed  # noqa: E402
+
+        BASE = ("THE ROLLING TICKET\n"
+                "\n"
+                "PREDECESSOR\n"
+                "  Cycle 2 was SCC-197.\n"
+                "\n"
+                "INDEX\n"
+                "  (empty - this ticket is fresh)\n")
+
+        def append(before, row):
+            try:
+                return jira_feed.index_append(before, row), None
+            except AttributeError as e:
+                return None, f"index_append does not exist yet: {e}"
+
+        # G1 · the first row REPLACES the placeholder. A section that says "empty" while
+        # listing rows is a ticket nobody can read at a glance.
+        g1, e1 = append(BASE, "SCC-206 - open_actions folds a ticked item's prose upward.")
+        c.check("G1 the first append REPLACES the `(empty ...)` placeholder",
+                e1 is None and g1 is not None and "(empty" not in g1,
+                e1 or f"the placeholder outlived its own falsification:\n{g1}")
+        c.check("G1 ...and the row is INDENTED to the section, like the placeholder was",
+                e1 is None and g1 is not None
+                and any(ln.startswith("  SCC-206") for ln in g1.splitlines()),
+                e1 or f"a flush-left row is not in the section:\n{g1}")
+
+        # G2 · the second append keeps the first. This is the read-back guard's own promise,
+        # asserted on the composer rather than on the board.
+        g2, e2 = append(g1 or BASE, "SCC-242 - the closer cannot answer for a story lane.")
+        c.check("G2 a second append keeps BOTH rows, in order",
+                e2 is None and g2 is not None
+                and [ln.strip()[:7] for ln in g2.splitlines() if ln.strip().startswith("SCC-2")]
+                == ["SCC-206", "SCC-242"],
+                e2 or str(g2))
+
+        # ⛔ G3 · THE ROW THAT PROVES THE SECTION IS FOUND RATHER THAN GUESSED. Today's code
+        # appends at the very END of the description, which lands inside INDEX only because
+        # INDEX is last. Put a section after it and the same code files the row under the
+        # wrong heading - silently, and the read-back still sees no loss.
+        TRAILING = BASE + "\nNOTES\n  keep this last\n"
+        g3, e3 = append(TRAILING, "SCC-238 - the walkthrough roster drifts.")
+        idx = g3.splitlines().index("INDEX") if e3 is None else -1
+        nts = g3.splitlines().index("NOTES") if e3 is None else -1
+        rows_at = ([n for n, ln in enumerate(g3.splitlines())
+                    if ln.strip().startswith("SCC-238")] if e3 is None else [])
+        c.check("G3 the row lands INSIDE the INDEX section, not at the end of the field",
+                e3 is None and rows_at and idx < rows_at[0] < nts,
+                e3 or f"INDEX@{idx} NOTES@{nts} row@{rows_at} - the section is being "
+                      f"guessed from position:\n{g3}")
+
+        # G4 · CONTROL. Everything outside the section is untouched, byte for byte.
+        c.check("G4 (control) no other line of the description is disturbed",
+                e3 is None and all(ln in g3.splitlines()
+                                   for ln in TRAILING.splitlines() if "(empty" not in ln),
+                e3 or "this command REPLACES the whole field - every other line must survive")
+
+        # G5 · CONTROL. No INDEX section at all -> today's behaviour, unchanged. A ticket that
+        # is not a rolling ticket must not be reshaped by a command that only files rows.
+        NOIDX = "THE TICKET\n\nSCOPE\n  do the thing\n"
+        g5, e5 = append(NOIDX, "SCC-999 - something.")
+        c.check("G5 (control) a description with no INDEX section still appends at the end",
+                e5 is None and g5 is not None and g5.rstrip().endswith("SCC-999 - something."),
+                e5 or str(g5))
 
     return c.finish()
 
