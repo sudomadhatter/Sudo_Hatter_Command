@@ -55,11 +55,18 @@ def ship(repo: Path, br: str, *extra: str, expect: str = "SCC-11") -> tuple[int,
 def main() -> int:
     c = Cases("ship preflight (SCC-211 — the production door's mechanical precheck)")
 
-    # A legible red while the script does not exist yet: without this the whole file reports
-    # eight identical "can't open file" failures and the reason is buried in each one.
-    if not (SCRIPTS / SCRIPT).is_file():
-        c.check(f"the script exists at .agents/scripts/{SCRIPT}", False,
-                "RED: /cicd-push-e2e still has no mechanical precheck (SCC-211 finding 1)")
+    # A legible red if the script goes missing: without it every case below reports the same
+    # "can't open file" and the reason is buried in each one.
+    #
+    # ⛔ GUARDED, like every other check here, and it did not start that way. Written bare, it
+    # ran under EVERY `--case` filter and counted toward every filtered tally — so a mutant it
+    # killed would be attributed to whichever case the sweep happened to name, which is
+    # exactly the corruption `mutation_sweep.py` refuses to score. `test_suite_runner.py`'s
+    # ORPHAN walker caught it in this lane's own first full run.
+    if c.block("SP-0 · the script the door depends on exists"):
+        c.check(f"SP-0 .agents/scripts/{SCRIPT} exists", (SCRIPTS / SCRIPT).is_file(),
+                "/cicd-push-e2e Step 1.5 calls it; without it the door has no precheck at "
+                "all, which is the SCC-211 defect restored")
 
     # ── SP-A · THE POSITIVE CONTROL ───────────────────────────────────────────────────────
     # A preflight that reports a problem on correct work is a preflight nobody runs twice,
