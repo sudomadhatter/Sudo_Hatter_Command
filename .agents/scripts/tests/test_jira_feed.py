@@ -3388,6 +3388,16 @@ Nothing is actually owed.
         c.check("J2 ...and a MULTI-LINE comment folds in no part of itself",
                 got_j2 == ["**Decide the landing order**"], str(got_j2))
 
+        # ⛔ J3 · AN UNTERMINATED COMMENT MUST NOT EAT THE SECTION. Found by this lane's own
+        # review: `<!-- note` with no `-->` swallowed every item below it, so a typo in a
+        # walkthrough silently dropped owed operator work and `finish` closed the ticket over
+        # it - SCC-206's own fail-open shape, reintroduced by SCC-206's fix.
+        c.check("J3 an UNTERMINATED comment does not swallow the items below it",
+                jira_feed.open_actions(sect(
+                    "- [ ] **A**", "  <!-- a note nobody closed", "- [ ] **B**"))
+                == ["**A**", "**B**"],
+                "over-reporting holds a ticket; under-reporting closes one that should hold")
+
         # ⛔ K · THE CONTROL THAT FORBIDS THE LAZY FIX. Deleting the fold entirely makes I, J
         # and J2 green in one edit - and truncates every genuine multi-line instruction to its
         # first line, which is the half that never says WHY. `smh-quick-dev.md` publishes

@@ -1668,8 +1668,18 @@ def _collect(live: list[tuple[int, str]], start: int, items: list[str]) -> None:
         # across lines because the long ones are written that way; a comment that opens and
         # closes on one line never sets the flag.
         if in_comment:
-            in_comment = "-->" not in s
-            continue
+            # ⛔ AN UNTERMINATED COMMENT MUST NOT EAT THE REST OF THE SECTION. Found in this
+            # lane's own review: `<!-- note` with no `-->` swallowed every item below it, so
+            # a typo in a walkthrough silently dropped owed operator work and the ticket
+            # closed over it - the exact fail-open shape SCC-206 exists to close, reintroduced
+            # by its own fix. An item line ENDS the comment: forgiving here can only ever
+            # over-report work, and over-reporting holds a ticket while under-reporting closes
+            # one that should have held.
+            if _ANY_ITEM_RE.match(ln):
+                in_comment = False
+            else:
+                in_comment = "-->" not in s
+                continue
         if s.startswith("<!--"):
             in_comment = "-->" not in s
             continue
