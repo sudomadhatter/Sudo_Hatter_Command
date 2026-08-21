@@ -37,7 +37,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from _harness import Cases, TempDir, run_script
+from _harness import SCRIPTS, Cases, TempDir, run_script
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import sop_currency
@@ -167,5 +167,104 @@ with TempDir() as tmp:
         c.check("no usage surface classifies as LIGHT", not leaked, f"leaked: {leaked}")
         c.check("every usage surface returns a KNOWN verdict (not an error)",
                 not unreadable, f"unreadable: {unreadable}")
+
+# ══ SCC-243 · a table can never fall behind the script again ═══════════════════════════
+# ⭐ THIS IS THE ROW THAT STOPS RECURRENCE, and every other row on this ticket is a repair.
+# `lane_qualify.py` grew `LIGHT-VCS` and `NOT-COMMAND-CENTRE` after its callers' tables were
+# written, and nothing in the tree noticed: the script returns a verdict the command that ran
+# it has no instruction for, so the agent improvises - which is exactly what putting the
+# question in a script was meant to prevent.
+#
+# ⛔ THE CALLER LIST IS DISCOVERED, NEVER HARDCODED. A hardcoded list is the same defect one
+# level up: the fourth command to call this script would be invisible to the guard written to
+# protect it. Discovery is by INVOCATION (`lane_qualify.py --repo`), not by mention -
+# `commands/INDEX.md` describes the verdicts in prose and calls nothing, and indicting a
+# router for not carrying a table would teach the next person to delete the check.
+if c.block("SCC-243 · every caller's verdict table lists every verdict the script can return"):
+    import re as _re
+    import lane_qualify  # noqa: E402
+
+    # SCRIPTS is `.agents/scripts`; the commands live beside it.
+    CMDS = SCRIPTS.parent / "commands"
+    INVOKES = "lane_qualify.py " + "--repo"
+    ROW = _re.compile(r"^\|\s*`([A-Z][A-Z0-9-]*)`\s*\|")
+
+    def table_verdicts(text: str) -> set:
+        """Every verdict this command's body documents an answer for."""
+        return {m.group(1) for m in (ROW.match(ln) for ln in text.splitlines()) if m}
+
+    callers = sorted(f for f in CMDS.glob("*.md")
+                     if INVOKES in f.read_text(encoding="utf-8"))
+    known = set(lane_qualify.VERDICTS)
+
+    # P0 · ANTI-VACUITY, both ends. An empty caller list makes P1 pass by having nothing to
+    # check, and an empty verdict set makes every table "complete". Neither is evidence.
+    c.check("P0 the sweep found real callers, by invocation",
+            len(callers) >= 3, f"found {len(callers)}: {[f.name for f in callers]}")
+    c.check("P0 ...and the script really exposes a verdict set to compare against",
+            len(known) >= 3, f"VERDICTS={known}")
+
+    missing = {}
+    for f in callers:
+        gap = known - table_verdicts(f.read_text(encoding="utf-8"))
+        if gap:
+            missing[f.name] = sorted(gap)
+    c.check("P1 no caller's table is missing a verdict the script can return",
+            not missing,
+            f"a command that runs this script and cannot read its answer: {missing}. "
+            f"The script returns {sorted(known)}")
+
+    # P2 · the parser itself, over synthetic bodies - because "no gaps found" is also what a
+    # parser that reads nothing reports. Same function the live check runs.
+    FULL = "\n".join(f"| `{v}` | do the thing |" for v in sorted(known))
+    c.check("P2 CONTROL: a table listing all five reads complete",
+            not (known - table_verdicts(FULL)), str(table_verdicts(FULL)))
+    THIN = "\n".join(f"| `{v}` | do the thing |" for v in sorted(known)[:-1])
+    c.check("P2 CONTROL: ...and dropping one row is CAUGHT",
+            known - table_verdicts(THIN) == {sorted(known)[-1]},
+            f"the parser must see the gap: {known - table_verdicts(THIN)}")
+    c.check("P2 CONTROL: prose naming a verdict is not a table row",
+            not table_verdicts("The script may answer `LIGHT-VCS` for git hygiene.\n"),
+            "only a leading table cell counts, or documentation of the check satisfies it")
+
+
+# ══ SCC-243 · the cicd- lane names what it refuses, from the AUTHORITY ═════════════════
+# ⛔ THE VERDICT TABLE ABOVE CANNOT DO THIS JOB IN A CHILD PROJECT, and that is why this
+# block exists. `NOT-COMMAND-CENTRE` is returned BEFORE any path is read (lane_qualify.py
+# :107-112), so in the repo `/cicd-non-crit-pr-push` actually runs in, `TASK` and `HANDOFF`
+# are unreachable - measured 2026-08-20: `--paths backend/api.py` and `--paths docs/notes.md`
+# return the identical answer against the same project. The command therefore carries its own
+# deployable-path check, and this is the row that keeps that check's list honest.
+#
+# ⭐ IMPORTED, NEVER RE-TYPED. A prose copy of a constant is a copy that goes stale in
+# silence: add `worker/` to PRODUCT_DIRS and the command keeps refusing four of five.
+if c.block("SCC-243 · the cicd- lane names every deployable prefix it will refuse"):
+    import task_preflight  # noqa: E402
+
+    body = (SCRIPTS.parent / "commands" / "cicd-non-crit-pr-push.md").read_text(
+        encoding="utf-8")
+    expected = tuple(task_preflight.PRODUCT_DIRS) + (task_preflight.CI_DIR,)
+
+    # N0 · ANTI-VACUITY. An empty constant makes N1 pass by asking nothing.
+    c.check("N0 the authority really exposes prefixes to name",
+            len(expected) >= 5, f"{expected}")
+    unnamed = [d for d in expected if d not in body]
+    c.check("N1 every member of PRODUCT_DIRS (+ CI_DIR) is named in the command body",
+            not unnamed,
+            f"the lane refuses these and never says so: {unnamed}. Name them, or the "
+            f"agent reads the check's output without knowing what it covers")
+
+    # N2 · the body must cite the CONSTANT, not just happen to contain the strings - so the
+    # next reader knows where the list came from and does not maintain a second copy.
+    c.check("N2 ...and it says WHERE the list comes from",
+            "PRODUCT_DIRS" in body and "task_preflight" in body,
+            "a list with no cited authority is a list someone will edit in place")
+
+    # N3 · the check the command tells you to run must actually be runnable from here.
+    # ⛔ Without this the body could name a script that does not exist and N1/N2 stay green.
+    c.check("N3 the constants the body cites are importable by the command's own snippet",
+            hasattr(task_preflight, "PRODUCT_DIRS") and hasattr(task_preflight, "CI_DIR"),
+            "the snippet imports both names; if either moves, the command breaks silently")
+
 
 raise SystemExit(c.finish())

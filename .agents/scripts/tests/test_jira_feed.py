@@ -2903,6 +2903,30 @@ Nothing is actually owed.
             c.check("A1c the ORIGINAL gives the baton up and takes the identity label",
                     lab.get("TEST-7") == [ROLL], f"TEST-7 labels={lab.get('TEST-7')}")
 
+            # ── SCC-242 row H · a clone must announce what it did NOT do ──────────────
+            # ⛔ THE COPY IS VERBATIM ON PURPOSE and nothing here asks to change it: the
+            # description carries the operator's own cycle prompt, and building a
+            # `--description` is how backticks execute (the ruling is at jira_feed.py
+            # :1364-1370). The defect is the SILENCE. A fresh clone is word-for-word its
+            # predecessor, so three things are wrong the instant it exists - the summary
+            # still says the OLD cycle number, the INDEX still lists the predecessor's
+            # subtasks, and PREDECESSOR still names the cycle before that - and the run
+            # says only "cloned the next rolling ticket".
+            #
+            # ⭐ NOT HYPOTHETICAL: SCC-244 was corrected BY HAND on 2026-08-20, in this
+            # session, precisely because nothing told the agent those edits were owed.
+            OWED = ("summary", "INDEX", "PREDECESSOR")
+            missing = [w for w in OWED if w.lower() not in out.lower()]
+            c.check("A1f the clone NAMES the three edits it left owed",
+                    not missing,
+                    f"the run announced a clone and said nothing about {missing}. A "
+                    f"verbatim copy is correct; a verbatim copy nobody is told to finish "
+                    f"is a ticket that reads as the wrong cycle. Output was: "
+                    + out.strip()[-300:])
+            # ...and it must say which TICKET owes them, or the reader edits the wrong one.
+            c.check("A1g ...and it says which ticket carries them",
+                    "TEST-CLONE" in out, out.strip()[-300:])
+
         # ⛔ A1d · THE PREMISE THIS CASE SHIPPED WITH WAS FALSE, and it is the lane's own thesis.
         # It read "`--labels` REPLACES the whole set on the real acli", citing a pin that no longer
         # pins that. Measured 2026-08-17: `--labels` ADDS. So under the corrected stub NO `--labels`
@@ -3153,6 +3177,345 @@ Nothing is actually owed.
                     _os.environ.pop("GITHUB_TOKEN", None)
                 else:
                     _os.environ["GITHUB_TOKEN"] = had
+
+    # ── SCC-242 · the closer cannot answer for a STORY lane ──────────────────────────────
+    #
+    # ⛔ THE DEFECT, AND WHY THE OBVIOUS FIX IS A NO-OP.
+    #
+    # `merge_row_state` compares the lane tip against a LITERAL `origin/main` (:1789-1790).
+    # A Task lands on main, so that is right for Tasks. A STORY lands on `epic/<KEY>-<slug>`
+    # and is not an ancestor of main until the epic itself ships - so `finish` would answer
+    # "held" forever while the story status file already read `done`. That is why
+    # `cicd-close-story-merge-tree.md:320-324` BANS `finish` and transitions with raw `acli`,
+    # and why that lane gets none of the `## Your Actions` refusal this reader exists to give.
+    #
+    # ⭐ But teaching it a landing ref ALONE changes nothing, and case A2 is why: `MERGE_DOORS`
+    # (:1666) does not contain `/cicd-close-story-merge-tree`, so a story walkthrough's merge
+    # row is not recognised as a merge row at all and `merge_row_state` returns None before the
+    # comparison is ever reached. Both halves, or neither half does anything.
+    if c.block("SCC-242 · the closer answers for a STORY lane, and knows the story door"):
+        import jira_feed  # noqa: E402
+
+        def git(repo, *a):
+            return subprocess.run(["git", *a], cwd=str(repo), capture_output=True, text=True)
+
+        # ⛔ THIS ROW MUST NOT CARRY THE CANONICAL PHRASE, and the first cut of this block
+        # did. `is_merge_row` is `any(door in low) OR MERGE_PHRASE in low`, so a row opening
+        # `**The merge itself**` matches on the PHRASE and case A2 passed green while
+        # `MERGE_DOORS` was still missing the story door - a vacuous green that would have
+        # let the no-op ship. The row names the DOOR and nothing else, so A2 isolates exactly
+        # the one term under test, and A1/A3/A5 genuinely depend on it.
+        STORY_ROW = "**Land the story on its epic** - run `/cicd-close-story-merge-tree`"
+        EPIC = "epic/SCC-33-toolkit"
+
+        def story_lane(name: str, *, land_on_epic: bool = True):
+            """A story lane merged onto its EPIC branch - never onto main.
+
+            main exists and is pushed, so `origin/main` resolves; the point is that the tip
+            is NOT an ancestor of it. Only the epic ref can answer for this shape.
+            """
+            repo = tmp / name
+            repo.mkdir()
+            bare = tmp / f"{name}.git"
+            git(repo, "init", "-q", "-b", "main")
+            git(repo, "config", "user.email", "t@t.t")
+            git(repo, "config", "user.name", "t")
+            (repo / "README").write_text("x\n")
+            git(repo, "add", "-A"), git(repo, "commit", "-qm", "base", "--no-verify")
+            git(repo, "init", "--bare", "-q", str(bare))
+            git(repo, "remote", "add", "origin", str(bare))
+            git(repo, "push", "-q", "--no-verify", "origin", "main")
+
+            git(repo, "checkout", "-q", "-b", EPIC)
+            git(repo, "push", "-q", "--no-verify", "origin", EPIC)
+
+            branch = "claude/SCC-77-widget-archive"
+            git(repo, "checkout", "-q", "-b", branch)
+            d = repo / "_artifacts/_main/2026-08-20_story"
+            d.mkdir(parents=True)
+            (d / "task.yaml").write_text(f"task_key: SCC-77\nbranch: {branch}\n")
+            (d / "walkthrough.md").write_text(
+                f"# W\n\n## Your Actions\n\n- [ ] {STORY_ROW}\n")
+            git(repo, "add", "-A"), git(repo, "commit", "-qm", "story work", "--no-verify")
+
+            if land_on_epic:
+                git(repo, "checkout", "-q", EPIC)
+                git(repo, "merge", "-q", "--no-ff", "--no-verify", branch, "-m", "land")
+                git(repo, "push", "-q", "--no-verify", "origin", EPIC)
+                git(repo, "checkout", "-q", branch)
+            git(repo, "fetch", "-q", "origin")
+            return d / "walkthrough.md"
+
+        def state(wt, **kw):
+            """Call the reader, turning 'the parameter does not exist' into a real failure.
+
+            ⛔ A bare TypeError would die in SETUP and look identical to a failed assertion
+            (`tests-must-gate-for-real`). Catching it here makes the red say WHY.
+            """
+            try:
+                return jira_feed.merge_row_state(wt, **kw), None
+            except TypeError as e:
+                return None, f"merge_row_state does not accept that yet: {e}"
+
+        with TempDir() as tmp:
+            # A2 (row D) · the recogniser must know the story door. Checked FIRST because
+            # every case below it is unreachable while this is False.
+            c.check("A2 · a row naming /cicd-close-story-merge-tree IS a merge row",
+                    jira_feed.is_merge_row(STORY_ROW),
+                    "MERGE_DOORS omits the story door, so merge_row_state returns None "
+                    "before any comparison - the landing-ref fix alone is a no-op")
+
+            # A1 (row A) · the whole point: a tip that is an ancestor of the EPIC, not of main.
+            wt = story_lane("s1")
+            st, err = state(wt, landing_ref=f"origin/{EPIC}")
+            c.check("A1 · a lane landed on its EPIC branch reads as MERGED",
+                    err is None and st is not None and st["satisfied"],
+                    err or str(st))
+
+            # A3 (row E) · the message must name the ref it actually compared against.
+            c.check("A3 · ...and the reason NAMES that ref, not a hardcoded origin/main",
+                    err is None and st is not None and EPIC in st["why"],
+                    err or f"why must carry the resolved ref: {st}")
+
+            # A4 (row B) · CONTROL. No ref, no manifest key -> today's behaviour, exactly.
+            # This is the assertion that says the lane cannot silently change how every
+            # existing Task lane closes.
+            st4, err4 = state(story_lane("s2"))
+            c.check("A4 · (control) with NO landing ref the default is still origin/main",
+                    err4 is None and st4 is not None and not st4["satisfied"]
+                    and "origin/main" in st4["why"],
+                    err4 or str(st4))
+
+            # A6 · ⭐ THE FIXTURE'S OWN CONTROL - GREEN TODAY, and it must stay green.
+            # Everything above is red, so nothing above proves the harness is sound rather
+            # than simply broken. This runs the UNCHANGED path - a Task row on a lane merged
+            # to main, no landing ref - through the same helpers. Red here means the fixture
+            # is wrong; red above with this green means the DEFECT is real.
+            task_wt = story_lane("s4", land_on_epic=False)
+            (task_wt).write_text(
+                "# W\n\n## Your Actions\n\n"
+                "- [ ] **The merge itself** - lands via this branch's PR\n", encoding="utf-8")
+            git(task_wt.parents[3], "add", "-A")
+            git(task_wt.parents[3], "commit", "-qm", "task row", "--no-verify")
+            st6, err6 = state(task_wt)
+            c.check("A6 · (control, green today) a Task-shaped row still resolves unchanged",
+                    err6 is None and st6 is not None and not st6["satisfied"]
+                    and "origin/main" in st6["why"],
+                    err6 or f"the UNCHANGED path must be unaffected by this lane: {st6}")
+
+            # A5 (row C) · fail CLOSED. An unresolvable ref is not evidence of a merge.
+            st5, err5 = state(story_lane("s3"), landing_ref="origin/epic/SCC-00-does-not-exist")
+            c.check("A5 · an UNRESOLVABLE landing ref HOLDS, and says which ref it tried",
+                    err5 is None and st5 is not None and not st5["satisfied"]
+                    and "SCC-00-does-not-exist" in st5["why"],
+                    err5 or f"a ref git cannot resolve must never pass: {st5}")
+
+            # ── row F · THE FLAG THE STORY DOOR WILL ACTUALLY CALL ────────────────────
+            # A1-A5 exercise `merge_row_state` directly. That is not what
+            # `cicd-close-story-merge-tree.md` runs - it runs the CLI, and a parameter that
+            # exists on the function but is unreachable from `finish` leaves the door with
+            # nothing to call and the ban block correct as written. A7/A8 run the real verb.
+            #
+            # DRY RUN on purpose: the merge check happens before the board write, so the exit
+            # code alone answers the question (0 = the section is clear, 3 = HELD) and no
+            # transition has to be stubbed to read it.
+            cli_repo, cli_acli, cli_state = build(tmp / "cli")
+            set_state(cli_state, types={"SCC-77": "Story"},
+                      statuses={"SCC-77": "In Progress"})
+            os.environ["STUB_STATE"] = str(cli_state)
+            story_wt = story_lane("s5")
+
+            def finish_on(wt, *extra):
+                return run_script("jira_feed.py", "finish", "--key", "SCC-77",
+                                  "--project", str(cli_repo), "--acli", str(cli_acli),
+                                  "--walkthrough", str(wt), *extra)
+
+            rc7, out7 = finish_on(story_wt, "--landing-ref", f"origin/{EPIC}")
+            c.check("A7 (row F) · `finish --landing-ref` answers for the story lane",
+                    rc7 == 0 and "SATISFIED" in out7 and EPIC in out7,
+                    f"exit={rc7} (2 = argparse rejected the flag; 3 = it never reached the "
+                    f"comparison): " + out7.strip()[-400:])
+
+            # A8 · CONTROL, GREEN TODAY. The same walkthrough with NO flag must still HOLD.
+            # Without this, A7 could be made green by making `finish` stop checking at all.
+            rc8, out8 = finish_on(story_wt)
+            c.check("A8 · (control, green today) with NO flag that same lane still HOLDS",
+                    rc8 == 3 and "origin/main" in out8,
+                    f"exit={rc8}: " + out8.strip()[-400:])
+
+
+    # ── SCC-206 · the continuation window has to CLOSE ───────────────────────────────────
+    # ⛔ THE DEFECT, IN ONE LINE: `_collect` folds an indented line into `items[-1]` without
+    # ever asking whether the item above it is still open. A `- [x]` is skipped (it matches
+    # `_ANY_ITEM_RE`, so it appends nothing) - but its own WRAPPED LINES do not match, so they
+    # land on the last OPEN item. The operator is then shown work they already did, glued onto
+    # a row that says something else, and `finish` posts that to the board as owed.
+    if c.block("SCC-206 · a ticked item ENDS the continuation window"):
+        import jira_feed  # noqa: E402
+
+        def sect(*rows: str) -> str:
+            return "# W\n\n## Your Actions\n\n" + "\n".join(rows) + "\n"
+
+        # I · the reproduction. A wrapped `- [x]` under a `- [ ]`.
+        BLED = sect(
+            "- [ ] **Install the board column** - the `user-tasks` filter needs it",
+            "- [x] **Run the memory audit** - the index passed 90% of the 25 KB cap",
+            "      and was compacted on 2026-08-19, so this one is genuinely done",
+        )
+        got = jira_feed.open_actions(BLED)
+        c.check("I a ticked item's wrapped prose does NOT land on the open item above it",
+                got == ["**Install the board column** - the `user-tasks` filter needs it"],
+                f"the open row was contaminated by the DONE row's second line: {got}")
+
+        # J · an HTML comment is invisible. Authors leave them in walkthroughs constantly;
+        # indented under an item, every one of them is currently owed work.
+        COMMENTED = sect(
+            "- [ ] **Decide the landing order**",
+            "  <!-- agent note: SCC-240 lands first per the operator, 2026-08-20 -->",
+        )
+        got_j = jira_feed.open_actions(COMMENTED)
+        c.check("J an indented HTML comment folds into NO item",
+                got_j == ["**Decide the landing order**"],
+                f"a comment is not the operator's instruction: {got_j}")
+
+        # J2 · ...including a comment that spans lines, which is how the long ones are written.
+        MULTI = sect(
+            "- [ ] **Decide the landing order**",
+            "  <!-- agent note:",
+            "       SCC-240 lands first per the operator -->",
+        )
+        got_j2 = jira_feed.open_actions(MULTI)
+        c.check("J2 ...and a MULTI-LINE comment folds in no part of itself",
+                got_j2 == ["**Decide the landing order**"], str(got_j2))
+
+        # ⛔ J3 · AN UNTERMINATED COMMENT MUST NOT EAT THE SECTION. Found by this lane's own
+        # review: `<!-- note` with no `-->` swallowed every item below it, so a typo in a
+        # walkthrough silently dropped owed operator work and `finish` closed the ticket over
+        # it - SCC-206's own fail-open shape, reintroduced by SCC-206's fix.
+        c.check("J3 an UNTERMINATED comment does not swallow the items below it",
+                jira_feed.open_actions(sect(
+                    "- [ ] **A**", "  <!-- a note nobody closed", "- [ ] **B**"))
+                == ["**A**", "**B**"],
+                "over-reporting holds a ticket; under-reporting closes one that should hold")
+
+        # ⛔ K · THE CONTROL THAT FORBIDS THE LAZY FIX. Deleting the fold entirely makes I, J
+        # and J2 green in one edit - and truncates every genuine multi-line instruction to its
+        # first line, which is the half that never says WHY. `smh-quick-dev.md` publishes
+        # ride-along as a MACHINE CONTRACT. This row is green today and must stay green.
+        RIDES = sect(
+            "- [ ] **Install the board column**",
+            "      because the `user-tasks` filter has nowhere to render without it",
+        )
+        got_k = jira_feed.open_actions(RIDES)
+        c.check("K (control, green today) a real continuation still rides along",
+                got_k == ["**Install the board column** because the `user-tasks` filter "
+                          "has nowhere to render without it"], str(got_k))
+
+        # K2 · and the window REOPENS on the next open item - a ticked row must end the
+        # window, not disable folding for the rest of the section.
+        REOPEN = sect(
+            "- [ ] **First**",
+            "- [x] **Done** - with a wrapped line",
+            "      that must vanish",
+            "- [ ] **Second**",
+            "      and its own continuation, which must survive",
+        )
+        got_k2 = jira_feed.open_actions(REOPEN)
+        c.check("K2 the window REOPENS on the next open item",
+                got_k2 == ["**First**",
+                           "**Second** and its own continuation, which must survive"],
+                str(got_k2))
+
+        # ⛔ L · THE REFUSAL PATH MUST NOT SHIFT. `None` (no section) and `[]` (a section with
+        # nothing open) mean different things upstream - one refuses, one closes the ticket.
+        c.check("L (control) no section at all is still None, never []",
+                jira_feed.open_actions("# W\n\nnothing here\n") is None,
+                "an absent section is a REFUSAL, and collapsing it into 'nothing owed' "
+                "closes a ticket over work the operator was promised")
+        c.check("L (control) a section with only TICKED items is still []",
+                jira_feed.open_actions(sect("- [x] **Done**", "      wrapped")) == [],
+                "nothing open means nothing owed - and the wrapped line has no item to "
+                "attach to, so it must not resurrect one")
+
+
+    # ── SCC-242 row G · an INDEX that is actually an index ───────────────────────────────
+    # ⛔ MEASURED ON THE LIVE TICKET, 2026-08-20. SCC-201's description reads:
+    #
+    #     INDEX
+    #       (empty - this ticket is fresh)
+    #     SCC-242 - jira_feed finish cannot close a story lane...
+    #     SCC-243 - /cicd-non-crit-pr-push Step 0.5 calls lane_qualify...
+    #
+    # The placeholder outlived its own falsification, and the rows sit OUTSIDE the section at
+    # a different indent. They land in the right place only because INDEX happens to be last;
+    # add one section after it and every row files under the wrong heading. The read-back
+    # guard (SCC-170) was watching for data LOSS and saw none - every row is there. What it
+    # cannot see is a row in the wrong place, which is the same ticket unreadable.
+    if c.block("SCC-242 row G · index-row files INTO the INDEX section"):
+        import jira_feed  # noqa: E402
+
+        BASE = ("THE ROLLING TICKET\n"
+                "\n"
+                "PREDECESSOR\n"
+                "  Cycle 2 was SCC-197.\n"
+                "\n"
+                "INDEX\n"
+                "  (empty - this ticket is fresh)\n")
+
+        def append(before, row):
+            try:
+                return jira_feed.index_append(before, row), None
+            except AttributeError as e:
+                return None, f"index_append does not exist yet: {e}"
+
+        # G1 · the first row REPLACES the placeholder. A section that says "empty" while
+        # listing rows is a ticket nobody can read at a glance.
+        g1, e1 = append(BASE, "SCC-206 - open_actions folds a ticked item's prose upward.")
+        c.check("G1 the first append REPLACES the `(empty ...)` placeholder",
+                e1 is None and g1 is not None and "(empty" not in g1,
+                e1 or f"the placeholder outlived its own falsification:\n{g1}")
+        c.check("G1 ...and the row is INDENTED to the section, like the placeholder was",
+                e1 is None and g1 is not None
+                and any(ln.startswith("  SCC-206") for ln in g1.splitlines()),
+                e1 or f"a flush-left row is not in the section:\n{g1}")
+
+        # G2 · the second append keeps the first. This is the read-back guard's own promise,
+        # asserted on the composer rather than on the board.
+        g2, e2 = append(g1 or BASE, "SCC-242 - the closer cannot answer for a story lane.")
+        c.check("G2 a second append keeps BOTH rows, in order",
+                e2 is None and g2 is not None
+                and [ln.strip()[:7] for ln in g2.splitlines() if ln.strip().startswith("SCC-2")]
+                == ["SCC-206", "SCC-242"],
+                e2 or str(g2))
+
+        # ⛔ G3 · THE ROW THAT PROVES THE SECTION IS FOUND RATHER THAN GUESSED. Today's code
+        # appends at the very END of the description, which lands inside INDEX only because
+        # INDEX is last. Put a section after it and the same code files the row under the
+        # wrong heading - silently, and the read-back still sees no loss.
+        TRAILING = BASE + "\nNOTES\n  keep this last\n"
+        g3, e3 = append(TRAILING, "SCC-238 - the walkthrough roster drifts.")
+        idx = g3.splitlines().index("INDEX") if e3 is None else -1
+        nts = g3.splitlines().index("NOTES") if e3 is None else -1
+        rows_at = ([n for n, ln in enumerate(g3.splitlines())
+                    if ln.strip().startswith("SCC-238")] if e3 is None else [])
+        c.check("G3 the row lands INSIDE the INDEX section, not at the end of the field",
+                e3 is None and rows_at and idx < rows_at[0] < nts,
+                e3 or f"INDEX@{idx} NOTES@{nts} row@{rows_at} - the section is being "
+                      f"guessed from position:\n{g3}")
+
+        # G4 · CONTROL. Everything outside the section is untouched, byte for byte.
+        c.check("G4 (control) no other line of the description is disturbed",
+                e3 is None and all(ln in g3.splitlines()
+                                   for ln in TRAILING.splitlines() if "(empty" not in ln),
+                e3 or "this command REPLACES the whole field - every other line must survive")
+
+        # G5 · CONTROL. No INDEX section at all -> today's behaviour, unchanged. A ticket that
+        # is not a rolling ticket must not be reshaped by a command that only files rows.
+        NOIDX = "THE TICKET\n\nSCOPE\n  do the thing\n"
+        g5, e5 = append(NOIDX, "SCC-999 - something.")
+        c.check("G5 (control) a description with no INDEX section still appends at the end",
+                e5 is None and g5 is not None and g5.rstrip().endswith("SCC-999 - something."),
+                e5 or str(g5))
 
     return c.finish()
 

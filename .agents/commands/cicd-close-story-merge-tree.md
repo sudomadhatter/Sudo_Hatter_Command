@@ -156,12 +156,11 @@ It refuses a row that hands the operator **ticket work** (SCC-163) or **the cere
 run, not theirs to do. `/cicd-code-review` promises this refusal happens on the close-out path; until SCC-210
 no step on that path performed it.
 
-⛔ **This is the ONLY place it fires — there is no second pass, so do not treat this one as optional.** Step 4's
-three commands (`devrecord`, the `acli` transition, `check`) read the ticket and the Dev Record; **none of them
-reads `## Your Actions`**, and the one verb that would — `jira_feed.py finish` — is banned on this lane at
-Step 4 for the reason recorded there. On the Task lane a second refusal genuinely does fire at close-out, which
-is where the expectation comes from; porting the sentence without porting the mechanism would tell you a net
-exists under a wire that has none. After this point a bad row costs a commit on a landed branch.
+⛔ **Fix it HERE anyway, even though a second pass now exists.** Step 4b runs `jira_feed.py finish`, which reads
+`## Your Actions` again and refuses on the same two families — so this lane is no longer the single point it was
+before SCC-242, when `finish` was banned here and this really was the only pass. What has not changed is the
+**price**: this refusal costs an edit to an uncommitted file, and Step 4's costs a commit on a branch that has
+already landed on the epic. The net below is real; it is just an expensive one to fall into.
 
 **Then the branch precondition, BEFORE the commit — because a commit is the thing you cannot take back.**
 
@@ -289,40 +288,72 @@ filed one for this story, this UPDATES it in place rather than stacking a second
 empty renders `(none recorded)` and warns — that is honest, but on a story that fought back it means
 Step 1's routing was thin, so go back and read the walkthrough before accepting it.
 
-**b. Move the ticket** to match the flip — `Done` for a close-out, `In Review` for a story left at `review`:
+**b. Move the ticket** to match the flip — `Done` for a close-out, `In Review` for a story left at `review`.
+**Run the closer, and give it the ref this story actually landed on** (SCC-242):
 
 ```bash
-acli jira workitem transition --key <KEY> --status "<Status>" --yes \
-  || { echo "STOP: the transition FAILED — the code has landed and the ticket has not moved"; exit 1; }
-acli jira workitem view <KEY> --fields status      # READ IT BACK — the write is not the proof
+python3 .agents/scripts/jira_feed.py finish --key <KEY> --apply \
+  --walkthrough "<the story walkthrough>" \
+  --landing-ref "origin/epic/<JIRA-KEY>-<slug>" \
+  --status "<Status>"
 ```
 
-⛔ **`--yes` or acli stops on an interactive confirm no agent shell can answer.** Three shipped call sites
-omitted it and `Done` was landing on luck until SCC-113; `tests/test_jira_feed.py` fails if any
-`workitem transition` under `.agents/` is missing it.
+| exit | what it means | what you do |
+|---|---|---|
+| `0` | closed — `## Your Actions` was clear and the merge row is satisfied by the repo | report `<KEY> → <Status>` |
+| `3` | **HELD** — open operator rows, posted to the ticket, status moved along the review ladder | report *awaiting you*, and name the rows |
+| `2` | the **artifact** is wrong (no walkthrough, no section, a banned or ceremony row) — **nothing was written** | fix the walkthrough, re-run |
+| `4` | the **board** would not take the write | transport, not a verdict — retry |
 
-⛔ **Check the exit code, then read the status back — because nothing downstream does.** This command exists
-so the board cannot read `Done` over unlanded code; the mirror failure is just as real and, until this line,
-just as unguarded. A transition can fail for ordinary reasons — no workflow path from the current status, an
-expired credential, a sandboxed shell that cannot reach the OS keychain. Step 4c's `jira_feed.py check` does
-**not** close the gap: it reads the description and the Dev Record comments and never looks at `status`. So a
-failed transition would sail past it, Step 5 would prune the tree and the branch, and Step 6 would print
-`<KEY> → Done` — with the ticket still at `In Review` and the rollback point deleted. This is the same
-doctrine the Dev Record above already states for itself (*"an acli call that silently no-ops is
-indistinguishable from one that worked"*), applied to the write this whole rebalance was built to protect.
+⛔ **`--landing-ref` is not optional on this lane, and omitting it is worse than not running the
+verb at all.** Its default is `origin/main`, and a story's tip is not an ancestor of `main` until the
+epic itself ships — so a bare `finish` answers **HELD** forever while the story file already reads
+`done`, which is a two-surface divergence dressed as a gate. That defect is why this step used to ban
+the verb outright. Pass the epic ref and the same check becomes the one that can actually see this
+landing. An unresolvable ref **HOLDS and names itself** — it never reads as a merge.
 
-If the transition fails, **stop with the code landed and say so plainly.** That state is one command from
+⛔ **This is also the SECOND `## Your Actions` refusal, and it is the reason to run the verb rather
+than transition by hand.** Step 2's `check-actions` is cheap and early; this one reads the walkthrough
+*as it landed*. Between them a row can be added by the very commits Step 2 approved.
+
+If the story has no Jira key, skip this verb entirely and say so in the Step 6 summary — `finish`
+requires a key and there is nothing here to invent one from.
+
+⭐ **`--yes` and the read-back are now the script's, not yours — that is the point of running the verb.**
+`finish` sends `--yes` (without it acli stops on an interactive confirm no agent shell can answer; three
+shipped call sites omitted it and `Done` was landing on luck until SCC-113, and `tests/test_jira_feed.py`
+fails if any `workitem transition` under `.agents/` is missing it), then **re-reads `status` and returns `4`
+if it did not move**. Hand-transitioning here gives up both guards.
+
+⛔ **Read the exit code — because nothing downstream does.** This command exists so the board cannot read
+`Done` over unlanded code; the mirror failure is just as real. A transition can fail for ordinary reasons — no
+workflow path from the current status, an expired credential, a sandboxed shell that cannot reach the OS
+keychain. Step 4c's `jira_feed.py check` does **not** close the gap: it reads the description and the Dev
+Record comments and never looks at `status`. So a failed transition would sail past it, Step 5 would prune the
+tree and the branch, and Step 6 would print `<KEY> → Done` — with the ticket still at `In Review` and the
+rollback point deleted. The exit-code table above is what stands between those two states.
+
+⛔ **`4` and `2` are not the same failure and must not be reported the same way.** `4` is transport: the
+walkthrough is fine, nothing is wrong to fix, retry when the board is reachable. `2` means the artifact is
+wrong and **nothing was written**. Collapsing them sends you hunting for a defect in a file that is correct.
+
+If the close does not land, **stop with the code landed and say so plainly.** That state is one command from
 correct and is recoverable; a pruned worktree over a wrong board is not.
 
 ⛔ **And it happens HERE, after Step 3's push returned 0 — never earlier.** This transition is the one write in
-the whole close-out that rides no branch, so it is the one write a later STOP cannot undo.
+the whole close-out that rides no branch, so it is the one write a later STOP cannot undo. It is also why
+`--landing-ref` must name the epic: run before the push, or pointed at `main`, the merge row cannot be
+satisfied and the verb holds a story that is finished.
 
-⛔ **Do NOT use `jira_feed.py finish` here.** It is the Task lane's closer and its merge check is hardcoded to
-`origin/main`: it fetches `origin main` and asks whether the lane's tip is an ancestor of it. A story lands on
-`epic/<KEY>-<slug>`, so the tip is **not** an ancestor until the epic ships — the call would return "held"
-forever while the story status file already read `done`, which is a two-surface divergence dressed as a gate.
-Teaching that script a landing-target argument is a separate follow-on; until it exists, this door transitions
-with `acli` and the `## Your Actions` refusal it would have given you is Step 2's `check-actions`.
+⭐ **`jira_feed.py finish` was BANNED here until 2026-08-20, and the ban is lifted (SCC-242).** The reason
+was real: its merge check was hardcoded to `origin/main`, so on a lane that lands on `epic/<KEY>-<slug>` it
+answered "held" forever while the story status file already read `done`. The door routed around it with raw
+`acli`, and the `## Your Actions` refusal that came with the verb was lost with it. `finish` now takes
+`--landing-ref` and **resolves** its target — explicit flag, then the manifest's `landing_ref:`, then
+`origin/main` — so Step 4b above calls it. ⛔ **Two things had to change, not one:** the ref alone was a no-op,
+because `MERGE_DOORS` did not recognise a row naming `/cicd-close-story-merge-tree` and `merge_row_state`
+returned `None` before any comparison ran. If you ever see this door's merge row silently ignored, check that
+list first.
 
 **c. Verify — twice, and the second one is not redundant:**
 

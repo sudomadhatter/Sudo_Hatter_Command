@@ -29,9 +29,15 @@ python3 .agents/scripts/lane_qualify.py --repo "$REPO" --paths <every path you w
 | Verdict | What you do |
 |---|---|
 | `LIGHT` | carry on |
+| `LIGHT-VCS` | carry on — a **declared** git-hygiene action (`--no-file-changes`) that edits no files |
 | `TASK` | **stop.** This touches toolkit/code paths (`.agents/**`, `tests/**`) — use `/smh-quick-dev` or standard task lane |
 | `HANDOFF` | **stop.** Deployable code — route to product lane (`/cicd-push-e2e`) |
 | `NOT-COMMAND-CENTRE` | **stop.** You are in a child project — use `/cicd-non-crit-pr-push` |
+
+⛔ **All five, because the script returns five** (SCC-243). A verdict the table does not list is a
+verdict this command has no instruction for, and the agent then answers by judgement — which is the
+one thing putting the question in a script was meant to prevent. `tests/test_lane_qualify.py` fails
+if `lane_qualify.VERDICTS` ever grows a sixth and this table does not.
 
 ---
 

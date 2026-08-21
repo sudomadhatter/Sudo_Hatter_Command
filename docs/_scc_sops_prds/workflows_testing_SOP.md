@@ -895,9 +895,10 @@ carries a row for the merge, and left open it used to HOLD a ticket whose only o
 merge, on `main`, in a commit the write gate then refused, and that refusal is what put `git reset
 --hard` in front of the agent that destroyed three sessions' work. Two changes retired it: the door
 now requires the tick committed **on the lane before the PR opens** (SCC-183), and `finish` no longer
-reads the box at all. It **computes**: is the lane's tip an ancestor of `origin/main`? A row counts as
-the merge row only if it names a door (`/smh-close-task-merge-tree`, `/cicd-push-e2e`) or carries the
-canonical phrase *"the merge itself"* — measured against 145 walkthroughs, because five open rows say
+reads the box at all. It **computes**: is the lane's tip an ancestor of **where the lane was supposed
+to land**? A row counts as the merge row only if it names a door (`/smh-close-task-merge-tree`,
+`/cicd-push-e2e`, `/cicd-close-story-merge-tree`) or carries the canonical phrase *"the merge itself"*
+— measured against 145 walkthroughs, because five open rows say
 *merge* or *land* while being real operator decisions (*"Rule the landing order"*), and a bare keyword
 would have cleared all of them. ⛔ **A tick therefore no longer closes a ticket on its own**, which is
 the point: `finish --apply` writes `Done`, and an unverified `- [x]` is the agent certifying its own
@@ -906,7 +907,47 @@ nothing — SCC-169's was left uncommitted and later wiped by a reset. If the la
 row is put **back** on the owed list with the reason. Every other open box is untouched; those are
 yours.
 
+**⭐ The landing target is resolved, not assumed (SCC-242).** It was hardcoded to `origin/main`, which
+is right for a **Task** — a Task lands on `main` — and wrong for a **story**, which lands on
+`epic/<KEY>-<slug>` and is not an ancestor of `main` until the epic itself ships. `finish` would have
+answered *"held"* forever while the story file already read `done`, so `/cicd-close-story-merge-tree`
+banned this reader outright and moved its ticket with raw `acli` — getting none of the `## Your
+Actions` refusal `finish` exists to give. The target now resolves **explicit flag → the lane's
+`task.yaml` `landing_ref:` → `origin/main`**, so every lane that says nothing behaves exactly as
+before. ⛔ **A landing ref that does not resolve HOLDS the row and names itself** — `merge-base
+--is-ancestor` exits non-zero for *"not an ancestor"* and for *"no such ref"* alike, and reading a
+typo'd target as *"simply has not landed"* is a hold nobody can act on. ⛔ And the ref fix alone was
+a **no-op**: `/cicd-close-story-merge-tree` was missing from the door list above, so a story's merge
+row was not recognised as a merge row at all and the comparison was never reached. Both halves, or
+neither does anything.
+
+**⭐ …and the story door calls the closer again (SCC-242, same lane).** `/cicd-close-story-merge-tree`
+Step 4b no longer transitions with raw `acli`. It runs:
+
+```bash
+python3 .agents/scripts/jira_feed.py finish --key <KEY> --apply \
+  --walkthrough "<the story walkthrough>" --landing-ref "origin/epic/<JIRA-KEY>-<slug>"
+```
+
+Three things you get back by typing that instead of `acli`: the `--yes` flag and the **status
+read-back** are the script's rather than yours, the four exit codes distinguish a broken **artifact**
+(`2`, nothing written — fix and re-run) from a broken **board** (`4`, transport — retry), and the
+`## Your Actions` refusal fires a **second** time, on the walkthrough as it landed. ⛔ **Pass the
+epic ref.** Its default is `origin/main`, and a bare `finish` on a story lane holds a finished story
+forever. ⛔ **What Step 2 says has changed with it:** its `check-actions` used to be the *only* pass
+on this lane and its text said so. Fix rows there anyway — that refusal costs an edit to an
+uncommitted file, and the one at Step 4b costs a commit on a branch that has already landed.
+
 ⭐ **SCC-193 · `## Your Actions` now has a CONTENT rule, and it refuses the ceremony's own steps.** On SCC-164's landing the agent wrote *"Click **Merge** on the PR"* and *"Then re-invoke `/smh-close-task-merge-tree --after-merge SCC-164`"* into that section as **your** tasks — and the machine contract dutifully held the ticket on work that was the agent's. Both are now refused, with the sentence *"this section holds what only the operator decides; the ceremony's steps are not entries."* **The rule, in one line:** your **decision to proceed** is the sign-off — the word `approved`, or invoking one of the two doors — and from that word on every step is the ceremony's and the agent runs it. What stays in the section is what only you can **decide**. Three things are deliberately NOT flagged: the door's own ledger row (`- [x] The merge itself — lands via this branch's PR`, which SCC-175 checks against ancestry), a bare door invocation (*"Land it — `/cicd-push-e2e`"*, which is one of the forms your decision takes), and any product decision that happens to mention a merge. It runs at `jira_feed.py check-actions` (the close-out's Step 3, **before** the PR opens, where fixing it costs nothing) and again at `finish`, before anything is written to the board. `--warn-actions` is the one logged opt-out for both row families.
+
+**⭐ …and what the reader shows you is now only what you wrote (SCC-206).** A `- [ ]` item takes the
+indented lines under it — that ride-along is a machine contract, and it is how an instruction keeps
+the half that says *why*. What it never did was **stop**: a `- [x]` row appends nothing itself, but
+its own wrapped lines matched no pattern, so they folded onto the last **open** row above. The board
+was then posted a row that read half one instruction and half another, and every word of it was real.
+The window now closes on any list item and reopens on the next open one, and **HTML comments are
+invisible** — `<!-- … -->`, single or multi-line, indented under an item, was previously read out to
+you as work you owed.
 
 **⭐ The close-out now leaves a flight event behind (SCC-133, under SCC-38).** Between the gate and
 the merge, Step 2.5 runs `flight_recorder.py record`: one small file per lane under
@@ -1363,6 +1404,15 @@ by design and the description carries the operator's own cycle prompt — so bot
 cycle from the un-started successor, which is the one thing you came to the query to find out.
 `--fields` is a whitelist: what you do not name, you do not get.
 
+**⭐ The clone now tells you the three edits it did NOT make (SCC-242).** The copy is verbatim on
+purpose and stays that way — the description carries the operator's own cycle prompt, and building a
+`--description` is how backticks execute. But a word-for-word copy is wrong in three specific places
+the instant it exists, and the run used to announce the clone and stop: **the summary still names the
+old cycle**, **the `INDEX` still lists the predecessor's subtasks**, and **`PREDECESSOR` still names
+the cycle before it**. `start` now prints all three, names the ticket that owes them, and says to
+write the description with `--description-file`. This is not hypothetical — SCC-244 was corrected by
+hand on 2026-08-20 because nothing said those edits were owed.
+
 It works this way because a marker that *moves* can only fire once — after the hand-off there is no
 trigger left, so nothing can mint a duplicate, and no board lookup has to be right for that to hold.
 Cloning happens at **start** rather than close-out because running the rolling ticket is exactly the
@@ -1433,6 +1483,15 @@ python3 .agents/scripts/jira_feed.py index-row --key <PARENT> --line "  Part M  
 
 It appends the row, reads the description back, and exits 2 naming any prior line that went missing.
 
+**⭐ …and it now files the row INSIDE the `INDEX` section (SCC-242).** It used to append at the end
+of the *field*, which landed in `INDEX` only because `INDEX` happens to be the last section — put one
+after it and every row filed under the wrong heading, silently, exit 0. The read-back guard could not
+see it: it watches for a line going **missing**, and none does. Measured on SCC-201 itself on
+2026-08-20, where the section read `INDEX / (empty - this ticket is fresh)` followed by two rows.
+The first append now **replaces that placeholder** and indents to the section. ⛔ **A description with
+no `INDEX` section is left exactly as before** — most tickets are not rolling tickets, and a command
+whose job is to file one row must not reshape a description it does not understand.
+
 ### The lightweight lane — /smh-quick-fix
 
 **Not everything on this side of the fence is a full Task.** Sometimes you want one specific thing
@@ -1473,6 +1532,29 @@ otherwise be handed the lane. And the check is deliberately **blunter than the c
 commit gate exempts the test suite (correctly — editing a test changes nothing *you* type), but
 "needs a doc update" and "can break something" are different questions, and reusing one for the
 other would have let this lane rewrite the enforcement suite.
+
+**⭐ Every command that runs this script now lists every answer it can give (SCC-243).** Three
+commands call it — `/smh-quick-fix`, `/smh-non-crit-pr-push`, `/cicd-non-crit-pr-push` — and two of
+their tables were short: `LIGHT-VCS` was missing from both non-crit lanes, and `NOT-COMMAND-CENTRE`
+from the `cicd-` one. A verdict a command does not list is a verdict it has no instruction for, so
+the agent answers by judgement — the exact thing putting the question in a script prevents.
+`tests/test_lane_qualify.py` now **discovers the callers by invocation** and fails if any table is
+missing a verdict, so a sixth verdict cannot be added without every caller learning it.
+
+⛔ **And `NOT-COMMAND-CENTRE` means opposite things in the two non-crit twins, on purpose.** In
+`/smh-non-crit-pr-push` it is a STOP — you are in a child project, use the other lane. In
+`/cicd-non-crit-pr-push` it is the **EXPECTED** answer, because a child project is exactly where that
+lane runs and a thin project carries no `.agents/commands/`. The asymmetry is declared with the
+repo's own auditable marker (`<!-- twin-divergence: … -->`), which `test_twin_parity.py` counts and
+prints. ⛔ **The centre-only scope is a settled operator ruling** (`.agents/scripts/INDEX.md:57`) —
+the qualifier is not given a project arm.
+
+⛔ **What that costs, measured 2026-08-20:** `NOT-COMMAND-CENTRE` is returned *before any path is
+read*, so inside a child project `--paths backend/api.py` and `--paths docs/notes.md` produce the
+**identical** answer. The `TASK` and `HANDOFF` rows in `/cicd-non-crit-pr-push` could never fire in
+the repo that command runs in — its Step 0.5 qualified nothing. It now carries its own deployable-
+path check immediately after, importing `PRODUCT_DIRS` and `CI_DIR` from `task_preflight` rather
+than re-typing them, and the test fails if the body stops naming any member.
 
 **It still lands the normal way.** `/smh-close-task-merge-tree`, unchanged — there is no lighter door
 to `main`, and there was never going to be one. A lane with no review verdict simply means that

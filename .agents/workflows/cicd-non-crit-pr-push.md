@@ -38,9 +38,42 @@ python3 .agents/scripts/lane_qualify.py --repo "$REPO" --paths <every path you w
 
 | Verdict | What you do |
 |---|---|
+| `NOT-COMMAND-CENTRE` | **expected here — carry on to the path check below.** This IS a `cicd-*` lane |
 | `LIGHT` | carry on |
+| `LIGHT-VCS` | carry on — a **declared** git-hygiene action (`--no-file-changes`) that edits no files |
 | `TASK` | **stop.** This touches product code or build tooling — use `/cicd-quick-dev` or the story loop |
 | `HANDOFF` | **stop.** Deployable product change — route to `/cicd-push-e2e` |
+
+<!-- twin-divergence: lane-verdict-not-command-centre — the smh- twin reads NOT-COMMAND-CENTRE as a STOP ("you are in a child project"); here it is the EXPECTED answer, because a child project is exactly where this lane runs. Same verdict, opposite instruction, on purpose (SCC-243). -->
+
+⛔ **`NOT-COMMAND-CENTRE` is what you will get, every time, and it is NOT a refusal.** Its own reason
+says *"Product work uses the cicd-\* lanes"* — and this **is** a `cicd-*` lane. A thin project carries
+`.agents/rules/`, `.agents/skills/` and an `INDEX.md` but **no `.agents/commands/`**, and that absence
+is the whole test `lane_qualify` applies. The centre-only scope is a settled operator ruling
+(`.agents/scripts/INDEX.md:57`); do not ask for the script to be taught a project arm.
+
+⛔ **But read what that costs, because it is the real hazard here.** That verdict is returned
+**before a single path is examined** (`lane_qualify.py:107-112`), so in a child project the `TASK`
+and `HANDOFF` rows above **cannot fire** — measured 2026-08-20: `--paths backend/api.py` and
+`--paths docs/notes.md` return the identical answer against the same project. Step 0.5 alone
+qualifies **nothing** here. The check below is the one that actually runs:
+
+```bash
+python3 -c "import sys; sys.path.insert(0, '.agents/scripts'); \
+from task_preflight import PRODUCT_DIRS, CI_DIR; \
+h=[p for p in sys.argv[1:] if p.startswith(PRODUCT_DIRS + (CI_DIR,))]; \
+print('HANDOFF: ' + ', '.join(h) if h else 'no deployable path — carry on'); \
+sys.exit(1 if h else 0)" <every path you will touch/commit>
+```
+
+*(PC: `python`, not `python3`. Run it from the command centre — the constants live there, not in the
+thin project.)*
+
+**Any output starting `HANDOFF:` and this lane is over** — route to `/cicd-push-e2e` and say so in
+one line. ⛔ **The prefixes are IMPORTED, never re-typed here.** They are
+`backend/` · `frontend/` · `firebase/` · `functions/` · `mobile/` (`task_preflight.PRODUCT_DIRS`)
+plus `.github/` (`CI_DIR`), and a copy of that list in prose is a list that goes stale in silence —
+`tests/test_lane_qualify.py` imports the constant and fails if any member goes unnamed above.
 
 ---
 

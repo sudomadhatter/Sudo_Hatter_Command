@@ -606,6 +606,9 @@ def record_story_id(comment: dict) -> str:
 # behind. Everything below answers exactly that and nothing else.
 
 _MANIFEST_BRANCH_RE = re.compile(r"^branch:\s*(\S+)\s*$", re.M)
+# SCC-242: where this lane was supposed to LAND. Absent on every Task lane, and that
+# absence is the default - see `resolve_landing_ref()`.
+_MANIFEST_LANDING_RE = re.compile(r"^landing_ref:\s*(\S+)\s*$", re.M)
 
 
 def manifest_branches(repo: Path, include_new: bool = False) -> list[str]:
@@ -1376,6 +1379,22 @@ def roll_the_cycle(binary: str, key: str, timeout: int) -> None:
             return
         say(f"jira-feed: {key} cloned the next rolling ticket - "
             f"{(r.stdout or '').strip().splitlines()[-1][:120] if (r.stdout or '').strip() else 'created'}")
+        # ⛔ SCC-242 row H · SAY WHAT THE CLONE DID NOT DO. The copy above is verbatim on
+        # purpose and stays that way - the description carries the operator's own cycle
+        # prompt, and building a `--description` is how backticks execute (see the ruling
+        # directly above). But a word-for-word copy is WRONG in three specific places the
+        # instant it exists, and until this line the run announced the clone and stopped.
+        # Measured: SCC-244 had to be corrected by hand on 2026-08-20 for exactly these
+        # three, because nothing told the agent they were owed.
+        new_keys = [k for k in re.findall(r"\b[A-Z][A-Z0-9]+-\d+\b", r.stdout or "")
+                    if k != key]
+        who = new_keys[-1] if new_keys else "the new ticket"
+        say(f"jira-feed: ⛔ {who} is a VERBATIM copy and three edits are still OWED on it - "
+            f"nothing below is automatic:\n"
+            f"  1. the summary still names the OLD cycle - bump it to the next number\n"
+            f"  2. the INDEX still lists {key}'s subtasks - clear it to the empty placeholder\n"
+            f"  3. PREDECESSOR still names the cycle before {key} - add {key} at the top\n"
+            f"  Write the whole description with `--description-file`, never `--description`.")
 
     # ⛔ `--labels` ADDS and `--remove-labels` REMOVES - measured against the live board on
     # 2026-08-17, and acli honours BOTH in one call. Writing this as a read-modify-write
@@ -1619,6 +1638,20 @@ def open_actions(text: str) -> list[str] | None:
 
 
 def _collect(live: list[tuple[int, str]], start: int, items: list[str]) -> None:
+    """Append this section's OPEN items to `items`, continuations folded in.
+
+    ⛔ SCC-206 · THE CONTINUATION WINDOW IS STATE, AND IT HAS TO CLOSE. The first version
+    folded any indented line into `items[-1]` without asking whether the item above it was
+    still open. A `- [x]` appends nothing (it matches `_ANY_ITEM_RE`), but its own WRAPPED
+    lines match neither pattern - so the DONE row's prose landed on the last OPEN row, and
+    `finish` posted the result to the board as work the operator still owed. The list looked
+    right, every row was real, and one of them said something nobody wrote.
+
+    So `open_window` tracks whether the most recent item can still take continuations. An
+    open item opens it; ANY other list item closes it; the next open item opens it again.
+    """
+    open_window = False
+    in_comment = False
     for i, ln in live:
         if i <= start:
             continue
@@ -1629,10 +1662,36 @@ def _collect(live: list[tuple[int, str]], start: int, items: list[str]) -> None:
         s = ln.strip()
         if s.startswith("## ") or s.startswith("# "):
             break
+        # ⛔ SCC-206 · AN HTML COMMENT IS NOT AN INSTRUCTION. Walkthroughs carry them by the
+        # dozen (`<!-- JIRA-HOOK: ... -->`, agent notes), and indented under an item every
+        # one of them was being read out to the operator as part of what they owed. Tracked
+        # across lines because the long ones are written that way; a comment that opens and
+        # closes on one line never sets the flag.
+        if in_comment:
+            # ⛔ AN UNTERMINATED COMMENT MUST NOT EAT THE REST OF THE SECTION. Found in this
+            # lane's own review: `<!-- note` with no `-->` swallowed every item below it, so
+            # a typo in a walkthrough silently dropped owed operator work and the ticket
+            # closed over it - the exact fail-open shape SCC-206 exists to close, reintroduced
+            # by its own fix. An item line ENDS the comment: forgiving here can only ever
+            # over-report work, and over-reporting holds a ticket while under-reporting closes
+            # one that should have held.
+            if _ANY_ITEM_RE.match(ln):
+                in_comment = False
+            else:
+                in_comment = "-->" not in s
+                continue
+        if s.startswith("<!--"):
+            in_comment = "-->" not in s
+            continue
         m = _OPEN_ITEM_RE.match(ln)
         if m:
             items.append(m.group(1).strip())
-        elif items and s and not _ANY_ITEM_RE.match(ln) and ln[:1].isspace():
+            open_window = True
+        elif _ANY_ITEM_RE.match(ln):
+            # A ticked item, or any other list row. It owns nothing here, and it ENDS the
+            # previous item's window - that is the whole of SCC-206.
+            open_window = False
+        elif open_window and items and s and ln[:1].isspace():
             # A continuation line indented under the item it belongs to. `smh-quick-dev.md`
             # publishes this as a MACHINE CONTRACT ("Continuation lines indented under it
             # ride along"), and dropping them truncated the operator's own instructions to
@@ -1663,7 +1722,8 @@ def _collect(live: list[tuple[int, str]], start: int, items: list[str]) -> None:
 # UNCOMMITTED tick satisfies the check — the exact SCC-169 shape, where the tick was left
 # uncommitted in the main checkout and later wiped by a reset. The committed copy is the only
 # one that survives the session that wrote it.
-MERGE_DOORS = ("/smh-close-task-merge-tree", "/cicd-push-e2e")
+MERGE_DOORS = ("/smh-close-task-merge-tree", "/cicd-push-e2e",
+               "/cicd-close-story-merge-tree")
 MERGE_PHRASE = "the merge itself"
 
 # ⛔ THE RECOGNISER IS DOOR-NAMED-OR-CANONICAL-PHRASE, AND THAT IS FROM THE CORPUS, NOT TASTE.
@@ -1751,7 +1811,30 @@ def lane_tip(wt: Path) -> tuple[str | None, list[str]]:
     return None, tried
 
 
-def merge_row_state(wt: Path) -> dict | None:
+DEFAULT_LANDING_REF = "origin/main"
+
+
+def resolve_landing_ref(wt: Path, explicit: str | None = None) -> str:
+    """Where this lane was supposed to land. Explicit wins, then the manifest, then main.
+
+    ⛔ SCC-242 · THE DEFAULT IS LOAD-BEARING AND MUST NOT MOVE. A Task lands on `main`, so
+    `origin/main` is correct for every lane that says nothing - which is all of them today.
+    The arm exists for a STORY, which lands on `epic/<KEY>-<slug>` and is not an ancestor of
+    main until the epic itself ships; without it `finish` answers "held" forever while the
+    story file already reads `done`, which is why `cicd-close-story-merge-tree.md` had to ban
+    this reader outright and transition with raw `acli` instead.
+    """
+    if explicit:
+        return explicit
+    manifest = wt.parent / "task.yaml"
+    if manifest.is_file():
+        m = _MANIFEST_LANDING_RE.search(wf.read_text(manifest))
+        if m and m.group(1).strip():
+            return m.group(1).strip()
+    return DEFAULT_LANDING_REF
+
+
+def merge_row_state(wt: Path, landing_ref: str | None = None) -> dict | None:
     """None when the walkthrough has no merge row at all. Otherwise the verdict and why.
 
     ⛔ Rows are taken from `HEAD`'s copy and BOTH `- [ ]` and `- [x]` count. A ticked row is
@@ -1783,16 +1866,33 @@ def merge_row_state(wt: Path) -> dict | None:
                        f"An unresolvable tip is not evidence of a merge, so the row HOLDS."}
 
     root = Path((wf.git(["rev-parse", "--show-toplevel"], wt.parent).stdout or "").strip())
-    # Best effort — a stale `origin/main` would answer "not merged" for a lane that IS merged,
-    # which holds a ticket that should close. Failure here is not fatal: the ancestry check
-    # below still runs against whatever ref this repo has.
-    wf.git(["fetch", "origin", "main"], root)
-    anc = wf.git(["merge-base", "--is-ancestor", tip, "origin/main"], root)
+    ref = resolve_landing_ref(wt, landing_ref)
+    # Best effort — a stale target would answer "not merged" for a lane that IS merged, which
+    # holds a ticket that should close. Failure here is not fatal: the ancestry check below
+    # still runs against whatever ref this repo has. `origin/epic/x` fetches `epic/x` from
+    # `origin`; anything else is fetched by name from `origin` unchanged.
+    remote, _, branch = ref.partition("/")
+    if branch:
+        wf.git(["fetch", remote, branch], root)
+    else:
+        wf.git(["fetch", "origin"], root)
+
+    # ⛔ RESOLVE BEFORE COMPARING, and this is the fail-CLOSED seam. `merge-base
+    # --is-ancestor` exits non-zero for "not an ancestor" AND for "that ref does not exist",
+    # and collapsing those two reports a typo'd ref as a lane that simply has not landed.
+    # Naming the ref is the whole difference between a hold you can fix and one you cannot.
+    if wf.git(["rev-parse", "--verify", "--quiet", ref], root).returncode != 0:
+        return {"row": row, "satisfied": False, "source": source, "tip": tip, "ref": ref,
+                "why": f"the landing ref {ref} does not resolve in this repo, so nothing can "
+                       f"be compared against it. An unresolvable target is not evidence of a "
+                       f"merge, so the row HOLDS."}
+
+    anc = wf.git(["merge-base", "--is-ancestor", tip, ref], root)
     if anc.returncode == 0:
-        return {"row": row, "satisfied": True, "source": source, "tip": tip,
-                "why": f"{tip[:9]} is an ancestor of origin/main"}
-    return {"row": row, "satisfied": False, "source": source, "tip": tip,
-            "why": f"{tip[:9]} is NOT an ancestor of origin/main - the lane has not landed"}
+        return {"row": row, "satisfied": True, "source": source, "tip": tip, "ref": ref,
+                "why": f"{tip[:9]} is an ancestor of {ref}"}
+    return {"row": row, "satisfied": False, "source": source, "tip": tip, "ref": ref,
+            "why": f"{tip[:9]} is NOT an ancestor of {ref} - the lane has not landed"}
 
 
 # ── SCC-163 Part B: what may go in `## Your Actions` ──────────────────────────
@@ -2169,7 +2269,7 @@ def cmd_finish(args) -> int:
     # Runs before anything else looks at `items`, and it moves the count in BOTH directions:
     # a merge that landed stops holding the ticket, and a merge row TICKED without a merge
     # (in the working tree, or by hand) is put back on the list it was taken off.
-    merge = merge_row_state(wt)
+    merge = merge_row_state(wt, getattr(args, "landing_ref", None))
     if merge is not None:
         was_open = [i for i in items if is_merge_row(i)]
         if merge["satisfied"]:
@@ -2478,6 +2578,64 @@ def cmd_flag(args) -> int:
     return 0
 
 
+# SCC-242 row G · the INDEX section of a rolling ticket, and the placeholder a fresh clone
+# carries. Both are plain text in the description - there is no field, no markup and no API.
+_INDEX_HEADING = "INDEX"
+_INDEX_PLACEHOLDER_RE = re.compile(r"^\s*\(empty\b[^)]*\)\s*$")
+_INDEX_INDENT = "  "
+
+
+def index_append(before: str, row: str) -> str:
+    """Put `row` at the end of the INDEX **section**, not at the end of the field.
+
+    ⛔ THE DEFECT THIS CLOSES, MEASURED ON SCC-201 ITSELF (2026-08-20). The old composer was
+    `before.rstrip() + row`, so two things went wrong at once and neither was visible to the
+    read-back guard above - which watches for a line going MISSING, and no line does:
+
+      INDEX
+        (empty - this ticket is fresh)      <- survived its own falsification
+      SCC-242 - ...                         <- outside the section, at a different indent
+
+    A section that says "empty" while listing rows is a ticket nobody can read at a glance,
+    and rows land inside INDEX only because INDEX happens to be last today. Put one section
+    after it and every row files under the wrong heading, silently, exit 0.
+
+    ⭐ NO INDEX SECTION -> TODAY'S BEHAVIOUR, UNCHANGED. Most tickets are not rolling tickets,
+    and a command whose whole job is to file one row must not reshape a description it does
+    not understand. That control is row G5, and it is why this returns early rather than
+    inventing a heading.
+    """
+    lines = before.rstrip("\n").splitlines()
+    heads = [i for i, ln in enumerate(lines) if ln.strip() == _INDEX_HEADING]
+    if not heads:
+        return before.rstrip("\n") + "\n" + row + "\n"
+
+    # The LAST such heading: a description that quotes the word in prose above its own index
+    # would otherwise file every row into the quotation.
+    start = heads[-1]
+    # The section runs until the next heading - a non-blank line at column 0, which is how
+    # every other section in these descriptions is written (PREDECESSOR, INDEX, NOTES).
+    end = len(lines)
+    for i in range(start + 1, len(lines)):
+        s = lines[i]
+        if s.strip() and not s[:1].isspace():
+            end = i
+            break
+
+    body = lines[start + 1:end]
+    # Match the indent the section already uses, so a hand-written index keeps its shape.
+    existing = [ln for ln in body if ln.strip()]
+    indent = (existing[0][:len(existing[0]) - len(existing[0].lstrip())]
+              if existing else _INDEX_INDENT) or _INDEX_INDENT
+    kept = [ln for ln in body if not _INDEX_PLACEHOLDER_RE.match(ln)]
+    while kept and not kept[-1].strip():
+        kept.pop()
+    kept.append(indent + row.strip())
+
+    out = lines[:start + 1] + kept + lines[end:]
+    return "\n".join(out).rstrip("\n") + "\n"
+
+
 def cmd_index_row(args) -> int:
     """Append ONE row to a parent ticket's index description, and PROVE it survived (SCC-170).
 
@@ -2523,7 +2681,7 @@ def cmd_index_row(args) -> int:
             f"(this step is re-run safe)")
         return 0
 
-    after = before.rstrip("\n") + "\n" + row + "\n"
+    after = index_append(before, row)
     if not args.apply:
         say(f"jira-feed: DRY RUN - would append to {args.key}:\n  {row}\n"
             f"(re-run with --apply; the read-back check runs then)")
@@ -2779,6 +2937,14 @@ def main() -> int:
     p_fin.add_argument("--timeout", type=int, default=90, metavar="SEC")
     p_fin.add_argument("--date", default=date.today().isoformat())
     p_fin.add_argument("--apply", action="store_true", help="without this, renders only")
+    # SCC-242 · WHERE THIS LANE WAS SUPPOSED TO LAND. Omit it and the answer is `origin/main`,
+    # which is right for every Task lane and wrong for exactly one caller: a STORY lands on
+    # `epic/<KEY>-<slug>`. `/cicd-close-story-merge-tree` had to ban this verb outright and
+    # transition with raw `acli` because the target was hardcoded; this flag is what lets that
+    # door call the closer again, and get the `## Your Actions` refusal that came with it.
+    p_fin.add_argument("--landing-ref", metavar="REF",
+                       help="the ref this lane was supposed to land on (default: the "
+                            "manifest's `landing_ref:`, else origin/main)")
     # ⭐ ARMED 2026-08-16 (SCC-164 § ARMING clause 3), and the condition it waited on was
     # MEASURED, not assumed. The operator's ruling of 2026-08-15 armed this "when the count is
     # clean" — re-run the detector over the post-cutoff walkthrough corpus, record the
