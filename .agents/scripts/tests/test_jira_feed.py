@@ -3154,6 +3154,138 @@ Nothing is actually owed.
                 else:
                     _os.environ["GITHUB_TOKEN"] = had
 
+    # ── SCC-242 · the closer cannot answer for a STORY lane ──────────────────────────────
+    #
+    # ⛔ THE DEFECT, AND WHY THE OBVIOUS FIX IS A NO-OP.
+    #
+    # `merge_row_state` compares the lane tip against a LITERAL `origin/main` (:1789-1790).
+    # A Task lands on main, so that is right for Tasks. A STORY lands on `epic/<KEY>-<slug>`
+    # and is not an ancestor of main until the epic itself ships - so `finish` would answer
+    # "held" forever while the story status file already read `done`. That is why
+    # `cicd-close-story-merge-tree.md:320-324` BANS `finish` and transitions with raw `acli`,
+    # and why that lane gets none of the `## Your Actions` refusal this reader exists to give.
+    #
+    # ⭐ But teaching it a landing ref ALONE changes nothing, and case A2 is why: `MERGE_DOORS`
+    # (:1666) does not contain `/cicd-close-story-merge-tree`, so a story walkthrough's merge
+    # row is not recognised as a merge row at all and `merge_row_state` returns None before the
+    # comparison is ever reached. Both halves, or neither half does anything.
+    if c.block("SCC-242 · the closer answers for a STORY lane, and knows the story door"):
+        import jira_feed  # noqa: E402
+
+        def git(repo, *a):
+            return subprocess.run(["git", *a], cwd=str(repo), capture_output=True, text=True)
+
+        # ⛔ THIS ROW MUST NOT CARRY THE CANONICAL PHRASE, and the first cut of this block
+        # did. `is_merge_row` is `any(door in low) OR MERGE_PHRASE in low`, so a row opening
+        # `**The merge itself**` matches on the PHRASE and case A2 passed green while
+        # `MERGE_DOORS` was still missing the story door - a vacuous green that would have
+        # let the no-op ship. The row names the DOOR and nothing else, so A2 isolates exactly
+        # the one term under test, and A1/A3/A5 genuinely depend on it.
+        STORY_ROW = "**Land the story on its epic** - run `/cicd-close-story-merge-tree`"
+        EPIC = "epic/SCC-33-toolkit"
+
+        def story_lane(name: str, *, land_on_epic: bool = True):
+            """A story lane merged onto its EPIC branch - never onto main.
+
+            main exists and is pushed, so `origin/main` resolves; the point is that the tip
+            is NOT an ancestor of it. Only the epic ref can answer for this shape.
+            """
+            repo = tmp / name
+            repo.mkdir()
+            bare = tmp / f"{name}.git"
+            git(repo, "init", "-q", "-b", "main")
+            git(repo, "config", "user.email", "t@t.t")
+            git(repo, "config", "user.name", "t")
+            (repo / "README").write_text("x\n")
+            git(repo, "add", "-A"), git(repo, "commit", "-qm", "base", "--no-verify")
+            git(repo, "init", "--bare", "-q", str(bare))
+            git(repo, "remote", "add", "origin", str(bare))
+            git(repo, "push", "-q", "--no-verify", "origin", "main")
+
+            git(repo, "checkout", "-q", "-b", EPIC)
+            git(repo, "push", "-q", "--no-verify", "origin", EPIC)
+
+            branch = "claude/SCC-77-widget-archive"
+            git(repo, "checkout", "-q", "-b", branch)
+            d = repo / "_artifacts/_main/2026-08-20_story"
+            d.mkdir(parents=True)
+            (d / "task.yaml").write_text(f"task_key: SCC-77\nbranch: {branch}\n")
+            (d / "walkthrough.md").write_text(
+                f"# W\n\n## Your Actions\n\n- [ ] {STORY_ROW}\n")
+            git(repo, "add", "-A"), git(repo, "commit", "-qm", "story work", "--no-verify")
+
+            if land_on_epic:
+                git(repo, "checkout", "-q", EPIC)
+                git(repo, "merge", "-q", "--no-ff", "--no-verify", branch, "-m", "land")
+                git(repo, "push", "-q", "--no-verify", "origin", EPIC)
+                git(repo, "checkout", "-q", branch)
+            git(repo, "fetch", "-q", "origin")
+            return d / "walkthrough.md"
+
+        def state(wt, **kw):
+            """Call the reader, turning 'the parameter does not exist' into a real failure.
+
+            ⛔ A bare TypeError would die in SETUP and look identical to a failed assertion
+            (`tests-must-gate-for-real`). Catching it here makes the red say WHY.
+            """
+            try:
+                return jira_feed.merge_row_state(wt, **kw), None
+            except TypeError as e:
+                return None, f"merge_row_state does not accept that yet: {e}"
+
+        with TempDir() as tmp:
+            # A2 (row D) · the recogniser must know the story door. Checked FIRST because
+            # every case below it is unreachable while this is False.
+            c.check("A2 · a row naming /cicd-close-story-merge-tree IS a merge row",
+                    jira_feed.is_merge_row(STORY_ROW),
+                    "MERGE_DOORS omits the story door, so merge_row_state returns None "
+                    "before any comparison - the landing-ref fix alone is a no-op")
+
+            # A1 (row A) · the whole point: a tip that is an ancestor of the EPIC, not of main.
+            wt = story_lane("s1")
+            st, err = state(wt, landing_ref=f"origin/{EPIC}")
+            c.check("A1 · a lane landed on its EPIC branch reads as MERGED",
+                    err is None and st is not None and st["satisfied"],
+                    err or str(st))
+
+            # A3 (row E) · the message must name the ref it actually compared against.
+            c.check("A3 · ...and the reason NAMES that ref, not a hardcoded origin/main",
+                    err is None and st is not None and EPIC in st["why"],
+                    err or f"why must carry the resolved ref: {st}")
+
+            # A4 (row B) · CONTROL. No ref, no manifest key -> today's behaviour, exactly.
+            # This is the assertion that says the lane cannot silently change how every
+            # existing Task lane closes.
+            st4, err4 = state(story_lane("s2"))
+            c.check("A4 · (control) with NO landing ref the default is still origin/main",
+                    err4 is None and st4 is not None and not st4["satisfied"]
+                    and "origin/main" in st4["why"],
+                    err4 or str(st4))
+
+            # A6 · ⭐ THE FIXTURE'S OWN CONTROL - GREEN TODAY, and it must stay green.
+            # Everything above is red, so nothing above proves the harness is sound rather
+            # than simply broken. This runs the UNCHANGED path - a Task row on a lane merged
+            # to main, no landing ref - through the same helpers. Red here means the fixture
+            # is wrong; red above with this green means the DEFECT is real.
+            task_wt = story_lane("s4", land_on_epic=False)
+            (task_wt).write_text(
+                "# W\n\n## Your Actions\n\n"
+                "- [ ] **The merge itself** - lands via this branch's PR\n", encoding="utf-8")
+            git(task_wt.parents[3], "add", "-A")
+            git(task_wt.parents[3], "commit", "-qm", "task row", "--no-verify")
+            st6, err6 = state(task_wt)
+            c.check("A6 · (control, green today) a Task-shaped row still resolves unchanged",
+                    err6 is None and st6 is not None and not st6["satisfied"]
+                    and "origin/main" in st6["why"],
+                    err6 or f"the UNCHANGED path must be unaffected by this lane: {st6}")
+
+            # A5 (row C) · fail CLOSED. An unresolvable ref is not evidence of a merge.
+            st5, err5 = state(story_lane("s3"), landing_ref="origin/epic/SCC-00-does-not-exist")
+            c.check("A5 · an UNRESOLVABLE landing ref HOLDS, and says which ref it tried",
+                    err5 is None and st5 is not None and not st5["satisfied"]
+                    and "SCC-00-does-not-exist" in st5["why"],
+                    err5 or f"a ref git cannot resolve must never pass: {st5}")
+
     return c.finish()
 
 

@@ -880,9 +880,10 @@ carries a row for the merge, and left open it used to HOLD a ticket whose only o
 merge, on `main`, in a commit the write gate then refused, and that refusal is what put `git reset
 --hard` in front of the agent that destroyed three sessions' work. Two changes retired it: the door
 now requires the tick committed **on the lane before the PR opens** (SCC-183), and `finish` no longer
-reads the box at all. It **computes**: is the lane's tip an ancestor of `origin/main`? A row counts as
-the merge row only if it names a door (`/smh-close-task-merge-tree`, `/cicd-push-e2e`) or carries the
-canonical phrase *"the merge itself"* — measured against 145 walkthroughs, because five open rows say
+reads the box at all. It **computes**: is the lane's tip an ancestor of **where the lane was supposed
+to land**? A row counts as the merge row only if it names a door (`/smh-close-task-merge-tree`,
+`/cicd-push-e2e`, `/cicd-close-story-merge-tree`) or carries the canonical phrase *"the merge itself"*
+— measured against 145 walkthroughs, because five open rows say
 *merge* or *land* while being real operator decisions (*"Rule the landing order"*), and a bare keyword
 would have cleared all of them. ⛔ **A tick therefore no longer closes a ticket on its own**, which is
 the point: `finish --apply` writes `Done`, and an unverified `- [x]` is the agent certifying its own
@@ -890,6 +891,20 @@ merge. It reads the row from **`HEAD`**, never the working tree, so an uncommitt
 nothing — SCC-169's was left uncommitted and later wiped by a reset. If the lane has not landed, the
 row is put **back** on the owed list with the reason. Every other open box is untouched; those are
 yours.
+
+**⭐ The landing target is resolved, not assumed (SCC-242).** It was hardcoded to `origin/main`, which
+is right for a **Task** — a Task lands on `main` — and wrong for a **story**, which lands on
+`epic/<KEY>-<slug>` and is not an ancestor of `main` until the epic itself ships. `finish` would have
+answered *"held"* forever while the story file already read `done`, so `/cicd-close-story-merge-tree`
+banned this reader outright and moved its ticket with raw `acli` — getting none of the `## Your
+Actions` refusal `finish` exists to give. The target now resolves **explicit flag → the lane's
+`task.yaml` `landing_ref:` → `origin/main`**, so every lane that says nothing behaves exactly as
+before. ⛔ **A landing ref that does not resolve HOLDS the row and names itself** — `merge-base
+--is-ancestor` exits non-zero for *"not an ancestor"* and for *"no such ref"* alike, and reading a
+typo'd target as *"simply has not landed"* is a hold nobody can act on. ⛔ And the ref fix alone was
+a **no-op**: `/cicd-close-story-merge-tree` was missing from the door list above, so a story's merge
+row was not recognised as a merge row at all and the comparison was never reached. Both halves, or
+neither does anything.
 
 ⭐ **SCC-193 · `## Your Actions` now has a CONTENT rule, and it refuses the ceremony's own steps.** On SCC-164's landing the agent wrote *"Click **Merge** on the PR"* and *"Then re-invoke `/smh-close-task-merge-tree --after-merge SCC-164`"* into that section as **your** tasks — and the machine contract dutifully held the ticket on work that was the agent's. Both are now refused, with the sentence *"this section holds what only the operator decides; the ceremony's steps are not entries."* **The rule, in one line:** your **decision to proceed** is the sign-off — the word `approved`, or invoking one of the two doors — and from that word on every step is the ceremony's and the agent runs it. What stays in the section is what only you can **decide**. Three things are deliberately NOT flagged: the door's own ledger row (`- [x] The merge itself — lands via this branch's PR`, which SCC-175 checks against ancestry), a bare door invocation (*"Land it — `/cicd-push-e2e`"*, which is one of the forms your decision takes), and any product decision that happens to mention a merge. It runs at `jira_feed.py check-actions` (the close-out's Step 3, **before** the PR opens, where fixing it costs nothing) and again at `finish`, before anything is written to the board. `--warn-actions` is the one logged opt-out for both row families.
 

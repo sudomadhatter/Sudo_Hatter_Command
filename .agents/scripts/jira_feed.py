@@ -606,6 +606,9 @@ def record_story_id(comment: dict) -> str:
 # behind. Everything below answers exactly that and nothing else.
 
 _MANIFEST_BRANCH_RE = re.compile(r"^branch:\s*(\S+)\s*$", re.M)
+# SCC-242: where this lane was supposed to LAND. Absent on every Task lane, and that
+# absence is the default - see `resolve_landing_ref()`.
+_MANIFEST_LANDING_RE = re.compile(r"^landing_ref:\s*(\S+)\s*$", re.M)
 
 
 def manifest_branches(repo: Path, include_new: bool = False) -> list[str]:
@@ -1663,7 +1666,8 @@ def _collect(live: list[tuple[int, str]], start: int, items: list[str]) -> None:
 # UNCOMMITTED tick satisfies the check — the exact SCC-169 shape, where the tick was left
 # uncommitted in the main checkout and later wiped by a reset. The committed copy is the only
 # one that survives the session that wrote it.
-MERGE_DOORS = ("/smh-close-task-merge-tree", "/cicd-push-e2e")
+MERGE_DOORS = ("/smh-close-task-merge-tree", "/cicd-push-e2e",
+               "/cicd-close-story-merge-tree")
 MERGE_PHRASE = "the merge itself"
 
 # ⛔ THE RECOGNISER IS DOOR-NAMED-OR-CANONICAL-PHRASE, AND THAT IS FROM THE CORPUS, NOT TASTE.
@@ -1751,7 +1755,30 @@ def lane_tip(wt: Path) -> tuple[str | None, list[str]]:
     return None, tried
 
 
-def merge_row_state(wt: Path) -> dict | None:
+DEFAULT_LANDING_REF = "origin/main"
+
+
+def resolve_landing_ref(wt: Path, explicit: str | None = None) -> str:
+    """Where this lane was supposed to land. Explicit wins, then the manifest, then main.
+
+    ⛔ SCC-242 · THE DEFAULT IS LOAD-BEARING AND MUST NOT MOVE. A Task lands on `main`, so
+    `origin/main` is correct for every lane that says nothing - which is all of them today.
+    The arm exists for a STORY, which lands on `epic/<KEY>-<slug>` and is not an ancestor of
+    main until the epic itself ships; without it `finish` answers "held" forever while the
+    story file already reads `done`, which is why `cicd-close-story-merge-tree.md` had to ban
+    this reader outright and transition with raw `acli` instead.
+    """
+    if explicit:
+        return explicit
+    manifest = wt.parent / "task.yaml"
+    if manifest.is_file():
+        m = _MANIFEST_LANDING_RE.search(wf.read_text(manifest))
+        if m and m.group(1).strip():
+            return m.group(1).strip()
+    return DEFAULT_LANDING_REF
+
+
+def merge_row_state(wt: Path, landing_ref: str | None = None) -> dict | None:
     """None when the walkthrough has no merge row at all. Otherwise the verdict and why.
 
     ⛔ Rows are taken from `HEAD`'s copy and BOTH `- [ ]` and `- [x]` count. A ticked row is
@@ -1783,16 +1810,33 @@ def merge_row_state(wt: Path) -> dict | None:
                        f"An unresolvable tip is not evidence of a merge, so the row HOLDS."}
 
     root = Path((wf.git(["rev-parse", "--show-toplevel"], wt.parent).stdout or "").strip())
-    # Best effort — a stale `origin/main` would answer "not merged" for a lane that IS merged,
-    # which holds a ticket that should close. Failure here is not fatal: the ancestry check
-    # below still runs against whatever ref this repo has.
-    wf.git(["fetch", "origin", "main"], root)
-    anc = wf.git(["merge-base", "--is-ancestor", tip, "origin/main"], root)
+    ref = resolve_landing_ref(wt, landing_ref)
+    # Best effort — a stale target would answer "not merged" for a lane that IS merged, which
+    # holds a ticket that should close. Failure here is not fatal: the ancestry check below
+    # still runs against whatever ref this repo has. `origin/epic/x` fetches `epic/x` from
+    # `origin`; anything else is fetched by name from `origin` unchanged.
+    remote, _, branch = ref.partition("/")
+    if branch:
+        wf.git(["fetch", remote, branch], root)
+    else:
+        wf.git(["fetch", "origin"], root)
+
+    # ⛔ RESOLVE BEFORE COMPARING, and this is the fail-CLOSED seam. `merge-base
+    # --is-ancestor` exits non-zero for "not an ancestor" AND for "that ref does not exist",
+    # and collapsing those two reports a typo'd ref as a lane that simply has not landed.
+    # Naming the ref is the whole difference between a hold you can fix and one you cannot.
+    if wf.git(["rev-parse", "--verify", "--quiet", ref], root).returncode != 0:
+        return {"row": row, "satisfied": False, "source": source, "tip": tip, "ref": ref,
+                "why": f"the landing ref {ref} does not resolve in this repo, so nothing can "
+                       f"be compared against it. An unresolvable target is not evidence of a "
+                       f"merge, so the row HOLDS."}
+
+    anc = wf.git(["merge-base", "--is-ancestor", tip, ref], root)
     if anc.returncode == 0:
-        return {"row": row, "satisfied": True, "source": source, "tip": tip,
-                "why": f"{tip[:9]} is an ancestor of origin/main"}
-    return {"row": row, "satisfied": False, "source": source, "tip": tip,
-            "why": f"{tip[:9]} is NOT an ancestor of origin/main - the lane has not landed"}
+        return {"row": row, "satisfied": True, "source": source, "tip": tip, "ref": ref,
+                "why": f"{tip[:9]} is an ancestor of {ref}"}
+    return {"row": row, "satisfied": False, "source": source, "tip": tip, "ref": ref,
+            "why": f"{tip[:9]} is NOT an ancestor of {ref} - the lane has not landed"}
 
 
 # ── SCC-163 Part B: what may go in `## Your Actions` ──────────────────────────
