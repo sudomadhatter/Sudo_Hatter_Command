@@ -18,6 +18,7 @@ of `—` means the page recorded the ticket but not the day; the ticket's sessio
 
 | Date | Ticket | What changed for the operator |
 |---|---|---|
+| 2026-08-21 | — | The SOP de-cluttered: the page states the current system in present tense; the change story moved here; `sop-currency.md` habit 4 codifies the shape. Navigation added — a per-command jump table opens §18, and every Part ends with a back-to-Contents link. |
 | 2026-08-21 | SCC-246 | A memory written during a lane is copied into the lane's worktree and rides its PR; the shared checkout is restored (authorship still protects other sessions' memory). |
 | 2026-08-21 | SCC-245 | Ninth speaking obligation (FLOOR): close the loop — a reply never ends on a new problem; a finding without a fix is a bill. |
 | 2026-08-21 | SCC-211 | `/cicd-push-e2e` pre-flights (`ship_preflight.py` at Step 1.5, ticket pinned at Step 0.6); all three close-out doors derive which tree gets gated (`wf_common.trees_to_measure`); a `chore/*` branch is admitted only when its diff reaches deployable code. |

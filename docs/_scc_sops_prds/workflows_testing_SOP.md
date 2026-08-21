@@ -156,7 +156,8 @@ you like; agents do not read it, and it is never quoted as "what's next".
 
 **Part VI — The command atlas** (one diagram per command)
 [17 How the commands interact](#17-how-the-commands-interact) ·
-[18 Every command, one diagram](#18-every-command-one-diagram)
+[18 Every command, one diagram](#18-every-command-one-diagram) — §18 opens with a
+**jump table**: every command name links straight to its diagram
 
 **Part VII — Reference**
 [19 Where the depth lives](#19-where-the-depth-lives)
@@ -333,6 +334,8 @@ chore branch → `/smh-close-task-merge-tree` (or, for a set of lanes, `/smh-mer
 → `main`. Which road you're on is decided in §5, and a machine check enforces it so you can't get it
 wrong by accident. **Every box on this map has its own diagram in [Part VI](#18-every-command-one-diagram).**
 
+*[↑ back to Contents](#contents)*
+
 ---
 ---
 
@@ -401,6 +404,8 @@ that fire mid-build and send the work back to the full loop. You do not get to a
 > *build* one. And the prefix carries the permission — every `/cicd-*` command binds *"operate on
 > exactly one project, never the command centre,"* so toolkit work needs the `smh-*` family, the one
 > allowed to act on the repo you are standing in.
+
+*[↑ back to Contents](#contents)*
 
 ---
 ---
@@ -1802,6 +1807,8 @@ claims). Its judgment half checks the conventions **this page** defines.
 > measured on, recorded in the walkthrough. Same invariant, held by hand instead of by machine. If a
 > code change lands after that commit, the verdict is void.
 
+*[↑ back to Contents](#contents)*
+
 ---
 ---
 
@@ -2194,6 +2201,8 @@ the fix lands, close-out        ->  back to Story or Task. The bug is gone.
 **One override worth knowing:** if a story has a live working folder on disk, it is in flight no
 matter what the status file says. The status file lags by design — only close-out writes it.
 
+*[↑ back to Contents](#contents)*
+
 ---
 ---
 
@@ -2418,6 +2427,8 @@ first guess is a lead, not a diagnosis. It stops twice for you and never merges 
 **you** click around, files researched bug reports, writes no code, and traces each bug back to the
 ticket that shipped it ([§12](#12-the-board--what-runs-next)).
 
+*[↑ back to Contents](#contents)*
+
 ---
 ---
 
@@ -2567,6 +2578,18 @@ speak; "refuses" means it will not proceed at all and names the fix.*
 *Grouped the way you meet them: session and planning → the story lane → the fast lane → the Task
 lane → landing and shipping → operations → toolkit upkeep. Each entry names what it calls, what calls
 it, and where the longer explanation lives.*
+
+**Find your command** — every name below jumps straight to its diagram:
+
+| Family | Commands |
+|---|---|
+| **Session & planning** | [`/cicd-boot-sprint-memory`](#cicd-boot-sprint-memory) · [`/cicd-create-epic-sprint`](#cicd-create-epic-sprint) · [`/cicd-label-tasks` + `/smh-label-tasks`](#cicd-label-tasks-and-smh-label-tasks) · [`/smh-plan-task`](#smh-plan-task) |
+| **Story lane** | [`/cicd-write-story-tests`](#cicd-write-story-tests) · [`/cicd-bdd-tests`](#cicd-bdd-tests) · [`/cicd-dev-story-tests`](#cicd-dev-story-tests) · [`/cicd-self-audit`](#cicd-self-audit) · [`/cicd-code-review`](#cicd-code-review) · [`code-review-engine`](#code-review-engine-the-shared-reviewer) · [`/cicd-clean-code-audit` + `/smh-clean-code-audit`](#cicd-clean-code-audit-and-smh-clean-code-audit) |
+| **Fast lane** | [`/cicd-quick-dev`](#cicd-quick-dev) |
+| **Task lane** | [`/smh-quick-fix`](#smh-quick-fix) · [`/smh-quick-dev`](#smh-quick-dev) · [`/smh-self-audit`](#smh-self-audit) · [`/smh-code-review`](#smh-code-review) |
+| **Landing & shipping** | [`/cicd-close-story-merge-tree`](#cicd-close-story-merge-tree) · [`/cicd-update-sprint-memory`](#cicd-update-sprint-memory) · [`/cicd-merge-epic-workingtrees`](#cicd-merge-epic-workingtrees) · [`/cicd-prune-worktree`](#cicd-prune-worktree) · [`/cicd-e2e`](#cicd-e2e) · [`/cicd-push-e2e`](#cicd-push-e2e) · [`/smh-close-task-merge-tree`](#smh-close-task-merge-tree) · [`/smh-merge-multiple-workingtrees`](#smh-merge-multiple-workingtrees) |
+| **Operations** | [`/cicd-park` + `/cicd-resume`](#cicd-park-and-cicd-resume) · [`/cicd-prune-context`](#cicd-prune-context) · [`/cicd-autopilot-claude` (and its lanes)](#cicd-autopilot-claude-and-its-lanes) · [`/cicd-live-testing-team`](#cicd-live-testing-team) · [`/cicd-mobile-error-team`](#cicd-mobile-error-team) |
+| **Toolkit upkeep** | [`/smh-sync-agents`](#smh-sync-agents) · [`/smh-memory-audit`](#smh-memory-audit) · [`/smh-update-maps-indexes`](#smh-update-maps-indexes) |
 
 ### Session and planning
 
@@ -3503,6 +3526,8 @@ flowchart TD
     S5 --> S6["Step 6 — close out: re-run the linter, report"]
 ```
 
+*[↑ back to Contents](#contents)*
+
 ---
 ---
 
@@ -3698,3 +3723,5 @@ This page is the how-to. Everything longer lives elsewhere.
 | A new machine in sixty seconds — arm the gates, restore what git does not carry | [machine_setup_card.md](../migrations/install_guides/machine_setup_card.md) |
 | Workspace layout plus artifact rules | [docs/workspace-standard.md](../../docs/workspace-standard.md) |
 | The toolkit's front door | [AGENTS.md](../../AGENTS.md) |
+
+*[↑ back to Contents](#contents)*
