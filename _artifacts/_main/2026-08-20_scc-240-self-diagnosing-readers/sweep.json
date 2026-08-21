@@ -10,15 +10,15 @@
 
     {"id": "M2 the two diagnostic branches swap, so each case gets the other's answer",
      "file": ".agents/scripts/walkthrough_roster.py",
-     "original": "        if data[\"roster_header_empty\"]:",
-     "mutated":  "        if data[\"roster_header_fenced\"]:",
+     "original": "    if data[\"roster_header_empty\"]:",
+     "mutated":  "    if data[\"roster_header_fenced\"]:",
      "case":  "F3",
      "block": "F · the refusal says WHY"},
 
-    {"id": "M3 the CLI always exits 0, so a self-check can never fail",
+    {"id": "M3 the bare CLI exits 0 on a roster it could not read, so the Step-4 self-check can never fail",
      "file": ".agents/scripts/walkthrough_roster.py",
-     "original": "    return 0 if ok else 1",
-     "mutated":  "    return 0",
+     "original": "        print(\"REFUSED: \" + defect, file=sys.stderr)\n        return 1",
+     "mutated":  "        print(\"REFUSED: \" + defect, file=sys.stderr)\n        return 0",
      "case":  "F1c",
      "block": "F · the refusal says WHY"},
 
