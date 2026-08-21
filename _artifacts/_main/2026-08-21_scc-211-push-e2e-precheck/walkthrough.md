@@ -99,40 +99,24 @@ epic is never subjected to the question), P3, P4; mutants M9, M10, M16, M17.
 
 ### AC5 · mutation-proven — 18 mutants, every one drawn from the code
 
-| # | mutant | file | killed by |
-|---|---|---|---|
-| M1 | dirty-checkout refusal inverted | `ship_preflight.py` | SP-B …says UNCOMMITTED |
-| M2 | `0 0` test narrowed `or`→`and` (width) | `ship_preflight.py` | SP-C …names ahead/behind |
-| M3 | never-pushed ERROR → INFO | `ship_preflight.py` | SP-C never pushed → exit 2 |
-| M4 | pinned-key comparison inverted | `ship_preflight.py` | SP-D wrong --expect-key |
-| M5 | repo-project membership arm never fires | `ship_preflight.py` | SP-D …names the repo's projects |
-| M6 | `WRONG_LANE` loses its story-branch row | `ship_preflight.py` | SP-E story branch → close-out |
-| M7 | standing-on-main narrowed to `HEAD` (width) | `ship_preflight.py` | SP-E …merges INTO main |
-| M8 | epic lane never recognised | `ship_preflight.py` | SP-A …takes the FULL gate |
-| M9 | deployable-diff decision inverted | `ship_preflight.py` | SP-F deployable chore ADMITTED |
-| M10 | no-deployable-surface arm removed | `ship_preflight.py` | SP-F …naming the REASON |
-| M11 | staleness stops riding the VERDICT | `ship_preflight.py` | SP-G …stale is ON it |
-| **M19** | the remote-only arm removed | `ship_preflight.py` | SP-C remote-only is CLEAR |
-| **M20** | a nowhere-branch reported as unpushed | `ship_preflight.py` | SP-C …absent, not unpushed |
-| **M21** | the lane diff stops checking it ran | `ship_preflight.py` | SP-K …unanswerable, not empty |
-| **M22** | the lane diff stops falling back to origin | `ship_preflight.py` | SP-K the diff is still SEEN |
-| **M23** | the empty-operand guard never fires | `ship_preflight.py` | SP-I …the PIN that never arrived |
-| **M24** | the resolved repo stops being echoed | `ship_preflight.py` | SP-J …names the repo PATH |
-| M12 | **RELOCATE** a write above the pre-flight | `cicd-push-e2e.md` | P2 ORDER |
-| M13 | the pre-flight becomes a fenced COMMENT | `cicd-push-e2e.md` | P1 RUNS it |
-| M14 | the pinned key commented out | `cicd-push-e2e.md` | P6 ORDER |
-| M15 | the sign-off contradiction restored | `cicd-push-e2e.md` | P5 no longer demands |
-| M16 | Step 1 loses the Task-door hand-off | `cicd-push-e2e.md` | P3 hands the rest |
-| M17 | admitted chore shape loses its procedure | `cicd-push-e2e.md` | P4 written procedure |
-| M18 | the ruling deleted from this door | `cicd-push-e2e.md` | S5 states it positively |
+**39 declared · 39 killed** — 29 against `ship_preflight.py` (`sweep-script.json`) and 10 against
+the door (`sweep-door.json`). The full table lives in those two files; grouped by what they attack:
 
-**24 declared · 24 killed** (17 script + 7 door). Bold rows were added during the review, for
-the arms the review's own fixes created.
+| group | mutants | killed by |
+|---|---|---|
+| the four checks the script exists for — dirty tree, `0 0`, the pinned key, the lane | M1 · M2 · M4 · M9 | SP-B · SP-C · SP-D · SP-F |
+| the refusals that must name the right command | M5 · M6 · M7 · M8 · M10 · M20 · M36 | SP-D · SP-E · SP-A · SP-F · SP-C · SP-M |
+| **width, not just existence** — a narrowing rather than a deletion | M2 · M7 · M30 · M31 | SP-C · SP-E · SP-M |
+| the three ref states, and the diff that must actually run | M3 · M19 · M21 · M22 | SP-C · SP-K |
+| the operands the script refuses to guess at | M23 · M24 · M25 · M33 · M35 | SP-I · SP-J · SP-M |
+| the lane table's membership **and its order** | M26 · M27 · M28 | SP-L · SP-M |
+| the outcome-not-the-flag rules | M11 · M29 · M32 · M34 | SP-G · SP-M |
+| the door: order, teeth, and the operands of its fenced call | M12–M18 · M37 · M38 · M39 | P1–P7 · S5 |
 
 ```
 -- restore verified: bytes match, nothing was committed, and `git diff --quiet` is clean --
--- full file, unfiltered: test_ship_preflight.py        -> exit 0   -- 56/56 passed --
--- full file, unfiltered: test_door_preflight_order.py  -> exit 0   -- 45/45 passed --
+-- full file, unfiltered: test_ship_preflight.py        -> exit 0   -- 92/92 passed --
+-- full file, unfiltered: test_door_preflight_order.py  -> exit 0   -- 49/49 passed --
 ```
 
 ⭐ **The sweep did its job twice, and both are recorded rather than tidied away:**
@@ -145,6 +129,12 @@ the arms the review's own fixes created.
 - **M7 was killed by a SIBLING case**, so the sweep refused to score it — correctly, because a kill
   attributed to the wrong case is not evidence about the declared one. The **declaration** was
   re-aimed; the code was not touched.
+- ⭐ **Round 2 was an independent lens running its OWN 15-mutant sweep — and all fifteen
+  survived this suite.** Every one was a real hole: the arms existed and behaved correctly,
+  but nothing checked them, so nothing would have noticed them break. One turned out to be a
+  live defect rather than only a gap (the `remotes/origin/…` spelling — see the Code Review
+  section). The suite went 54 → 92 cases and the door test 45 → 49; all fifteen mutants were
+  adopted into the declared tables so they are now certified rather than merely fixed.
 - One mutant was refused outright at declaration time (an empty `mutated` field reads as
   "never filled in", not "delete this") and was re-aimed as a comment.
 - **A second real survivor came out of the review round: M21.** The `diff.returncode` arm had
