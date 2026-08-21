@@ -112,6 +112,12 @@ epic is never subjected to the question), P3, P4; mutants M9, M10, M16, M17.
 | M9 | deployable-diff decision inverted | `ship_preflight.py` | SP-F deployable chore ADMITTED |
 | M10 | no-deployable-surface arm removed | `ship_preflight.py` | SP-F …naming the REASON |
 | M11 | staleness stops riding the VERDICT | `ship_preflight.py` | SP-G …stale is ON it |
+| **M19** | the remote-only arm removed | `ship_preflight.py` | SP-C remote-only is CLEAR |
+| **M20** | a nowhere-branch reported as unpushed | `ship_preflight.py` | SP-C …absent, not unpushed |
+| **M21** | the lane diff stops checking it ran | `ship_preflight.py` | SP-K …unanswerable, not empty |
+| **M22** | the lane diff stops falling back to origin | `ship_preflight.py` | SP-K the diff is still SEEN |
+| **M23** | the empty-operand guard never fires | `ship_preflight.py` | SP-I …the PIN that never arrived |
+| **M24** | the resolved repo stops being echoed | `ship_preflight.py` | SP-J …names the repo PATH |
 | M12 | **RELOCATE** a write above the pre-flight | `cicd-push-e2e.md` | P2 ORDER |
 | M13 | the pre-flight becomes a fenced COMMENT | `cicd-push-e2e.md` | P1 RUNS it |
 | M14 | the pinned key commented out | `cicd-push-e2e.md` | P6 ORDER |
@@ -120,9 +126,12 @@ epic is never subjected to the question), P3, P4; mutants M9, M10, M16, M17.
 | M17 | admitted chore shape loses its procedure | `cicd-push-e2e.md` | P4 written procedure |
 | M18 | the ruling deleted from this door | `cicd-push-e2e.md` | S5 states it positively |
 
+**24 declared · 24 killed** (17 script + 7 door). Bold rows were added during the review, for
+the arms the review's own fixes created.
+
 ```
 -- restore verified: bytes match, nothing was committed, and `git diff --quiet` is clean --
--- full file, unfiltered: test_ship_preflight.py        -> exit 0   -- 41/41 passed --
+-- full file, unfiltered: test_ship_preflight.py        -> exit 0   -- 56/56 passed --
 -- full file, unfiltered: test_door_preflight_order.py  -> exit 0   -- 45/45 passed --
 ```
 
@@ -138,6 +147,11 @@ epic is never subjected to the question), P3, P4; mutants M9, M10, M16, M17.
   re-aimed; the code was not touched.
 - One mutant was refused outright at declaration time (an empty `mutated` field reads as
   "never filled in", not "delete this") and was re-aimed as a comment.
+- **A second real survivor came out of the review round: M21.** The `diff.returncode` arm had
+  **no covering case at all** — the ref-fallback fix that landed beside it removed the arm's
+  only trigger, leaving defensive code nobody had exercised. The arm is right (a repo with
+  neither `main` nor `origin/main` cannot resolve a base), so the answer was a case, not a
+  deletion. M23 repeated M7's shape: killed by sibling cases, declaration re-aimed.
 
 ### Gates
 
