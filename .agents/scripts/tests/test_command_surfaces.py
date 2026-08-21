@@ -827,8 +827,8 @@ def main() -> int:
                    "cicd-dev-story-tests.md")
         unloaded = [n for n in LOADERS
                     if RULE_STEM not in rif_block(read(ROOT / ".agents/commands" / n))]
-        c.check("the mutation rule is LOADED (in the rules-in-force block) by every task-lane "
-            "command that writes or judges assertions",
+        c.check("the mutation rule is LOADED (in the rules-in-force block) by every command that "
+            "writes or judges assertions - Task lane AND story lane (SCC-212)",
                 not unloaded,
                 f"{unloaded} - cite `.agents/rules/{RULE_STEM}.md` INSIDE the block, not in step "
             f"prose. The block is what an agent reads as standing law before Step 0; SCC-144 "

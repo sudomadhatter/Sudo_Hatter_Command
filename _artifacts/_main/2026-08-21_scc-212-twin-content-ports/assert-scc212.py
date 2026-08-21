@@ -15,7 +15,9 @@ is not a finding — it is already-settled work, and it belongs in the walkthrou
 SETTLED instead of here.
 
 ⛔ Absence rows (`gone()`) are the ones that need `--red` most: they pass trivially against any
-file that never had the text, which is every file that does not exist. `exists()` guards them.
+file that never had the text, which is every file that does not exist. `gone()` guards itself
+against that one case — an unreadable path makes it FAIL, never pass — and `--red` is what proves
+the text was there to begin with.
 """
 from __future__ import annotations
 
@@ -48,10 +50,21 @@ CS = ".agents/scripts/tests/test_command_surfaces.py"
 REF = ""
 _argv = sys.argv[1:]
 for _i, _a in enumerate(_argv):
+    # ⛔ A LOST VALUE IS A REFUSAL, NEVER A DEFAULT. `--red` with nothing after it, `--red=` or
+    # `--red ""` used to leave REF falsy — which is exactly how `src()` spells "read the working
+    # tree". The run then measured HEAD, printed `109/109`, and dropped the `[RED @ …]` marker from
+    # the banner, so the transcript was byte-identical to a genuine green. A RED pass that silently
+    # becomes a green pass is the whole failure mode this file exists to prevent
+    # (`_harness._case_filter` took the same scar; do not re-plant it).
     if _a == "--red":
-        REF = _argv[_i + 1] if _i + 1 < len(_argv) else ""
+        if _i + 1 >= len(_argv) or not _argv[_i + 1].strip() or _argv[_i + 1].startswith("--"):
+            sys.exit("--red needs a ref (e.g. --red origin/main); refusing to measure the "
+                     "working tree under a RED flag")
+        REF = _argv[_i + 1]
     elif _a.startswith("--red="):
         REF = _a.split("=", 1)[1]
+        if not REF.strip():
+            sys.exit("--red= needs a ref; refusing to measure the working tree under a RED flag")
 
 _cache: dict[str, str] = {}
 
@@ -133,7 +146,9 @@ def main() -> int:
         has("DEV-01-rule", GP, "Backticks in `-m")
         has("DEV-02", DS, "gate_receipt.py run --story")
         has("DEV-03a", DS, "§ Mutation Testing")
-        has("DEV-03b", DS, "DEFECTIVE")
+        # ⛔ T3: a single generic word is not a pin — `DEFECTIVE` alone survives the sentence
+        # being gutted. Key on the DECISION the finding is about, never on its vocabulary.
+        has("DEV-03b", DS, "counts as a survivor until re-aimed")
         has("DEV-04a", DS, "review-runtime:")
         has("DEV-04b", DS, "capability, never a policy")
         has("DEV-05a", DS, "WHICH LINE RAISED")
@@ -144,7 +159,10 @@ def main() -> int:
         has("DEV-11", DS, "merge --no-edit origin/epic/")
         has("DEV-12", DS, "link-worktree-assets.py")
         has("DEV-12b", WS, "link-worktree-assets.py")
-        has("DEV-17", DS, "characterization")
+        has("DEV-17", DS, "Never write an assertion after the edit and present it as a red")
+        # ⛔ T2 — both mutation-doctrine bullets were portable and unasserted.
+        has("DEV-03c", DS, "the closing green is not the kills")
+        has("DEV-03d", DS, "Restore in a `finally`/trap")
         # The rule-side residue of the same law QD-C1 removed from the command (SCC-211).
         gone("QD-C1-rule", GP, "merged back to `main` in the same session")
 
@@ -161,7 +179,7 @@ def main() -> int:
         has("MERGE-03b", ME, "--expect-key <JIRA-KEY> --branch claude/<JIRA-KEY>-<slug> --worktree")
         has("MERGE-04a", ME, "VOIDS it")
         has("MERGE-04b", ME, "Post-absorb re-measurement")
-        has("MERGE-05", ME, "lands LAST")
+        has("MERGE-05", ME, "A lane that changes commit or push machinery lands LAST")
         has("MERGE-06", ME, "Verify, THEN report")
         has("MERGE-07a", ME, "rewrite vs edit")
         has("MERGE-07b", ME, "gate or script")
@@ -169,7 +187,12 @@ def main() -> int:
         has("MERGE-08a", ME, "jira_feed.py devrecord")
         has("MERGE-08b", ME, "--landing-ref")
         has("MERGE-09", ME, "empty eligible set is a STOP")
-        has("MERGE-11", ME, "additive")
+        # ⛔ T2 — the `landed` exemption is the one row this step tells you to wave through, so it
+        # is the one an agent will over-apply. It was portable and unasserted; both halves are
+        # pinned now — the carve-out AND the sentence that stops it swallowing the second error.
+        has("MERGE-09b", ME, "it is a ROW, not a section")
+        has("MERGE-09c", ME, "Do NOT wave through the whole `landed` section")
+        has("MERGE-11", ME, "the case totals must be additive")
         # ⛔ NOT the bare word `BARE` — it already appears at :88 ("BARE `key: status` rows"),
         # so that row was green before the edit. Keyed on the instruction instead.
         has("MERGE-12", ME, "gate BARE")
@@ -190,7 +213,7 @@ def main() -> int:
         has("QD-C9b", QD, "jira_feed.py start --key")
         has("QD-C10", QD, "Backticks in `-m")
         has("QD-C11", QD, "link-worktree-assets.py")
-        has("QD-C12", QD, "task_key: ")
+        has("QD-C12", QD, "close_command:")
         has("QD-C14", QD, "smh-close-task-merge-tree Projects/")
         # The pins this lane must NOT break (SCC-226 / SCC-119).
         has("QD-pin1", QD, "RE-ARMS the plan-first gate")
@@ -213,11 +236,20 @@ def main() -> int:
 
     # ── 5 · cicd-clean-code-audit (clean-code QD-*) ───────────────────────────────────
     if c.block("CC · the clean-code audit"):
+        # ⛔ The predicate must key on the SHAPE, not on a trailing space. `startswith("git diff
+        # --name-only ")` reds on a semantically identical line whose comment was removed (false
+        # red) and greens on `git diff --name-only origin/main`, which reads a REF and never the
+        # worktree (false green). Split the arguments and look at what is actually there.
+        def _bare_diff(line: str) -> bool:
+            code = line.split("#", 1)[0].strip()
+            if not code.startswith("git diff --name-only"):
+                return False
+            rest = code[len("git diff --name-only"):].split()
+            return not rest                       # no ref, no --cached, no paths = the worktree
         c.check("QD-C5 — cicd-clean-code-audit reads UNSTAGED edits too",
-                any(ln.strip().startswith("git diff --name-only ")
-                    and "..." not in ln and "--cached" not in ln
-                    for ln in src(CC).splitlines()),
-                "a bare `git diff --name-only` line is what sees saved-but-unstaged work")
+                any(_bare_diff(ln) for ln in src(CC).splitlines()),
+                "a bare `git diff --name-only` with NO arguments is what sees saved-but-unstaged "
+                "work; one carrying a ref reads that ref instead")
         has("QD-C4b-cc", CC, "never fall back to the lobby")
         has("QD-C3-cc", CC, "twin-law: memory-sweep")
         has("QD-C3-sc", SC, "twin-law: memory-sweep")
@@ -253,8 +285,18 @@ def main() -> int:
         # which names WHICH door enforces it and WHEN (SCC-210/242 made the claim true).
         has("QD-C2-cr", CR, "twice: its Step 2 runs")
         has("QD-C9-sr", SR, "DEFERRED_WORK")
+        # ⛔ T2 — the highest-consequence port in the whole lane had NO assertion anywhere. This is
+        # the gate-that-cannot-fail class the ticket exists to close: with the STOP deleted, the
+        # engine, the acceptance audit and the entire test gate run on an empty set and report a
+        # verdict. Pinned at Step 0.6 (where it is derived) AND at Step 3.5 (where it is enforced).
+        has("CR-emptydiff-a", CR, "An empty set is a STOP, not a pass")
+        has("CR-emptydiff-b", CR, "Step 3.5 restates it at the gate")
         # The Step 0.7 answer list CS-11 pins — proof the F24 edit landed on the right lines.
-        has("CR-pin", CR, "merge-tree")
+        # ⛔ NOT the bare word `merge-tree`: it occurs five times as the NAME of a command
+        # (`/cicd-close-story-merge-tree`, `/smh-close-task-merge-tree`), so deleting the whole of
+        # Step 0.7 left that row PASS. Keyed on the invocation Step 0.7 actually makes — the same
+        # call-not-prose rule MERGE-03b and QD-C3-cr were re-aimed for.
+        has("CR-pin", CR, 'merge-tree --write-tree --messages HEAD "origin/$EPIC"')
 
     # ── 7 · cicd-self-audit ───────────────────────────────────────────────────────────
     if c.block("SA · the pre-work audit"):
@@ -277,11 +319,19 @@ def main() -> int:
             both = open_ in ta and open_ in tb
             c.check(f"FENCE {law} — marked on BOTH twins", both,
                     f"{Path(a).name}={open_ in ta} {Path(b).name}={open_ in tb}")
+            # ⛔ The identity row runs on EVERY path, including the one where the fence is
+            # missing. Guarding it with `if both:` made six checks DISAPPEAR under `--red`
+            # (103 rows instead of 109) with nothing saying so — and a check that is absent
+            # reads in a transcript exactly like a check that passed.
             if both:
                 ra = " ".join(ta.split(open_, 1)[1].split(close, 1)[0].split())
                 rb = " ".join(tb.split(open_, 1)[1].split(close, 1)[0].split())
                 c.check(f"FENCE {law} — byte-identical after whitespace normalisation",
                         bool(ra) and ra == rb, f"cicd={len(ra)}b smh={len(rb)}b")
+            else:
+                c.check(f"FENCE {law} — byte-identical after whitespace normalisation", False,
+                        "not fenced on both twins, so there is nothing to compare - the row is "
+                        "RED, never absent")
         # ⛔ Read the FENCED_TODAY TUPLE, not the file: every pair name also appears in `PAIRS`
         # thirty lines above, so a file-wide grep was green before the edit (measured, first run).
         # ⛔ Close on a `)` AT THE START OF A LINE, never the first `)` in the text: the tuple's
@@ -300,10 +350,15 @@ def main() -> int:
         # LOADERS gains the story lane; the :969 scope set must gain it too, or M15's mutant
         # (deleting the rule line from the block) survives — the loop would iterate a set the
         # file is no longer in. Both are asserted.
+        # ⛔ Bind BEFORE the predicate, never with a walrus inside a conditional expression's true
+        # arm: when the guard is False the name is never bound, and the NEXT row dies with
+        # `UnboundLocalError` — which raises out of `main()` instead of printing a `FAILED:` line,
+        # so `mutation_sweep.judge` scores the run a SWEEP ERROR rather than a kill. A row that
+        # cannot report its own failure is worse than a red one.
+        _cs = src(CS)
+        _loaders = _cs.split("LOADERS = (", 1)[-1].split("\n)", 1)[0] if "LOADERS = (" in _cs else ""
         c.check("LOADERS-devstory — cicd-dev-story-tests.md is in LOADERS",
-                '"cicd-dev-story-tests.md"' in (
-                    _cs := src(CS)).split("LOADERS = (", 1)[-1].split(")", 1)[0]
-                if "LOADERS = (" in src(CS) else False,
+                '"cicd-dev-story-tests.md"' in _loaders,
                 "the mutation-rule row iterates LOADERS")
         c.check("LOADERS-scope — the LOADERS scope pin covers the story lane too",
                 _cs.count('"cicd-dev-story-tests.md"') >= 2,

@@ -157,9 +157,10 @@ NOT_PAIRED = {
     "smh-review.md": _ONE_SUBJECT + " (ad-hoc read-only review)",
 }
 
-# The pairs that carry a fenced shared law TODAY. Three of the seven still carry none - a
-# real and defensible starting scope, but it must be STATED: an aggregate "at least one law
-# exists" row is green while the unfenced pairs' symmetry rows compare nothing at all.
+# The pairs that carry a fenced shared law TODAY: FIVE of the seven, after SCC-212 promoted the
+# quick-dev and merge pairs. TWO still carry none - a real and defensible remaining scope, but it
+# must be STATED: an aggregate "at least one law exists" row is green while the unfenced pairs'
+# symmetry rows compare nothing at all.
 # SCC-225 review wave: the self-audit pair was rewritten with ZERO fences while parity sat
 # green - the structural zero this file's docstring calls "the bug" - so its shared law
 # (amendment rule, coverage schema, corroboration, levels shape) is now fenced, and the
@@ -487,18 +488,35 @@ def main() -> int:
         # weakening it to a bare truthiness survived the sweep because nothing exercised the
         # comparison it makes. Un-fencing a file must change the computed set.
         #
-        # ⛔ STRIP EVERY OPENER, NEVER ONE NAMED ONE (SCC-212). This row used to delete the
-        # single literal `<!-- twin-law: disposition -->` and assert the computed set went
-        # EMPTY - true only while that file carried exactly ONE law. B* keys on `law_map(...)`
-        # being truthy per FILE, so the moment a second law is fenced into this pair (SCC-212
-        # fenced `memory-sweep` here) removing one marker leaves the file still fenced and this
-        # row went red with nothing wrong: a counter-example that breaks when the tree it
-        # describes grows is a gate people delete rather than read.
+        # ⛔ REMOVE EXACTLY ONE OPENER AND ASSERT A STRICT SUBSET (SCC-212, twice).
+        #
+        # First shape: delete the single literal `<!-- twin-law: disposition -->` and assert the
+        # computed set went EMPTY. True only while that file carried exactly ONE law - so the
+        # moment `memory-sweep` was fenced into the same pair, the row went red with nothing
+        # wrong. A counter-example that breaks when the tree it describes grows is a gate people
+        # delete rather than read.
+        #
+        # Second shape, and the reason this comment exists: the fix was `LAW_OPEN.sub("", t)` -
+        # strip EVERY opener. That is VACUOUS BY CONSTRUCTION. `law_map()` finds laws with the
+        # same `LAW_OPEN` regex, so a text with every match removed has an empty map for ANY
+        # input, including a file that never carried a fence at all. The row then re-asserted
+        # the bare truthiness its own first line condemns, and it would stay green if `laws()`
+        # stopped working entirely.
+        #
+        # What the row actually has to prove is SENSITIVITY: removing ONE marker drops exactly
+        # that law from the computed set, and leaves the others alone. That holds at one law and
+        # at ten.
         fenced_file = read(CMDS / "cicd-clean-code-audit.md")
-        unfenced = LAW_OPEN.sub("", fenced_file)
+        before = law_map(fenced_file)
+        dropped = LAW_OPEN.search(fenced_file)
+        one_gone = law_map(fenced_file[:dropped.start()] + fenced_file[dropped.end():]) \
+            if dropped else before
         c.check("F11 the fenced-set row is computed, not asserted true",
-                bool(law_map(fenced_file)) and not law_map(unfenced),
-                "removing every fence left the computed set unchanged - B* proves nothing")
+                bool(before) and dropped is not None
+                and set(one_gone) == set(before) - {dropped.group(1)}
+                and len(one_gone) == len(before) - 1,
+                f"removing one opener must drop exactly that law: before={sorted(before)} "
+                f"after={sorted(one_gone)} dropped={dropped.group(1) if dropped else None}")
 
     return c.finish()
 

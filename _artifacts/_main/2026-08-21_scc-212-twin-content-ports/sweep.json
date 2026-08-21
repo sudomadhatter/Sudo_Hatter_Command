@@ -1,5 +1,5 @@
 {
-  "_comment": "SCC-212 declared mutant table — written BEFORE the sweep ran. Every mutant is drawn from the SHIPPED text or the guard's own predicates, never from the cases. M1-M8 attack the parity guard (identity, symmetry, the declared set); M9-M14 revert a ported obligation; M15 deletes the loaded rule from the block the LOADERS row iterates. ⛔ mutation_sweep validates with `not m.get(k)`, so an EMPTY `mutated` reads as MISSING and the table is refused: a pure deletion is inexpressible. Deletions are spelled as a replacement with a neutral line that carries none of the law.",
+  "_comment": "SCC-212 declared mutant table — written BEFORE the sweep ran. Every mutant is drawn from the SHIPPED text or the guard's own predicates, never from the cases. M1-M8 attack the parity guard (identity, symmetry, the declared set); M9-M14 revert a ported obligation; M15 deletes the loaded rule from the block the LOADERS row iterates. ⛔ mutation_sweep validates with `not m.get(k)`, so an EMPTY `mutated` reads as MISSING and the table is refused: a pure deletion is inexpressible. Deletions are spelled as a replacement with a neutral line that carries none of the law. — SCC-212 REVIEW PASS: M16 is the negative control the plan declared and the first sweep omitted; M17 re-plants the vacuous-by-construction F11 the review found; M18 attacks the empty-diff STOP, the highest-consequence port that had no assertion in any tier.",
   "test": [
     "python3",
     ".agents/scripts/tests/test_twin_parity.py"
@@ -152,6 +152,42 @@
         "python3",
         ".agents/scripts/tests/test_command_surfaces.py"
       ]
+    },
+    {
+      "id": "M16 teach the `## Declared Change Set` template inside the fast lane (the negative control the plan declared and the first sweep never ran)",
+      "file": ".agents/commands/cicd-quick-dev.md",
+      "original": "## Step 1 — Clarify, fix the ACs, and route",
+      "mutated": "## Declared Change Set\n\n## Step 1 — Clarify, fix the ACs, and route",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_declared_change_set.py"
+      ],
+      "block": "S7",
+      "case": "cicd-quick-dev stays a NON-emitter"
+    },
+    {
+      "id": "M17 make F11's sensitivity row vacuous again - strip EVERY opener instead of one (the exact shape the review caught)",
+      "file": ".agents/scripts/tests/test_twin_parity.py",
+      "original": "        dropped = LAW_OPEN.search(fenced_file)",
+      "mutated": "        dropped = LAW_OPEN.search(fenced_file); fenced_file = LAW_OPEN.sub('', fenced_file) + '<!-- twin-law: x -->'",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_twin_parity.py"
+      ],
+      "block": "F · the guard's own counter-examples",
+      "case": "F11 the fenced-set row is computed"
+    },
+    {
+      "id": "M18 delete the empty-diff STOP from the review command (the gate-that-cannot-fail class this ticket exists to close)",
+      "file": ".agents/commands/cicd-code-review.md",
+      "original": "**An empty set is a STOP, not a pass**",
+      "mutated": "Report the count and carry on",
+      "test": [
+        "python3",
+        "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/assert-scc212.py"
+      ],
+      "block": "CR · the review command",
+      "case": "CR-emptydiff-a"
     }
   ]
 }
