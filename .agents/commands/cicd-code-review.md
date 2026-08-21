@@ -59,6 +59,32 @@ diff); echo `Worktree: reviewing in <path>`. None → review in `PROJECT_ROOT` a
 this story's plan/walkthrough/verdict live in THIS tree — absent here = that step never ran; a lookalike
 in the shared checkout is a SIBLING lane's, not evidence. Echo the story's ①②③ step-state before Step 1.
 
+## Step 0.6 — Resolve the diff (committed work only)
+
+Bind the two strings every step below reads — from command output, before anything measures:
+
+```bash
+WORKTREE=<the story tree Step 0.5 resolved, or "$PROJECT_ROOT" when none exists>
+EPIC=<epic/JIRA-KEY-slug>      # from `git -C "$PROJECT_ROOT" branch -a --list '*epic/*'`, or the story's epic in the plan
+env -u GITHUB_TOKEN git -C "$WORKTREE" fetch origin "$EPIC"        # a bare `$EPIC` is this checkout's LAST PULL
+git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD          # the story's committed work
+git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD | wc -l  # echo this count
+git -C "$WORKTREE" status --short                                  # anything uncommitted (report it; it is not reviewed)
+```
+
+Echo the file count. **An empty set is a STOP, not a pass** — Step 3.5 restates it at the gate, but by
+then the engine, the acceptance audit and the whole test gate have already run on nothing.
+
+⛔ **`git -C ""` does NOT error** — git documents it as "leave the current working directory
+unchanged" — so an unassigned `$WORKTREE` silently measures whatever tree the shell is standing in:
+the shared checkout Step 0.5 just told you is empty or stale, and the redirects in Step 0.7 still
+create their two `/tmp` files, so the overlap reads clean (`preflight-resolves-repo-from-cwd`).
+⛔ The ref is `origin/$EPIC`, never the trunk (SCC-165 — Step 0.7 says why).
+
+Dirty files under `_artifacts/_memory/` are **named separately and left alone** — another session's
+memory store is never swept, deleted, or committed under this story (`artifacts-always-first`
+§ "The memory store": the project store is git-tracked, so it materialises in every story worktree).
+
 ## Step 0.7 — ⭐ Re-derive the blast radius against the **current epic branch** (MANDATORY)
 
 **The pre-work audit expires.** `/cicd-self-audit` traced this story's blast radius against the epic
@@ -76,14 +102,7 @@ swept out of this command family — do not re-plant it here.
 ```bash
 env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin
 git -C "$PROJECT_ROOT" branch -a --list '*epic/*'        # normally exactly one live epic branch
-EPIC=<epic/JIRA-KEY-slug>                                # from that list, or the story's epic in the plan
-# ⛔ BIND THE TREE — Step 0.5 said "cd into it" in prose and assigned nothing. `git -C ""` does
-# NOT error: git documents it as "leave the current working directory unchanged", so every line
-# below would silently measure whatever tree the shell is standing in — the shared checkout,
-# whose diff Step 0.5 just told you is empty or stale — and the redirects still create the two
-# /tmp files, so the overlap reads clean. A vacuous green inside the step that exists to prevent
-# vacuous greens (`preflight-resolves-repo-from-cwd`).
-WORKTREE=<the story tree Step 0.5 resolved, or "$PROJECT_ROOT" when none exists>
+# $WORKTREE and $EPIC — bound in Step 0.6 from command output; reuse them, never re-derive from cwd
 BASE=$(git -C "$WORKTREE" merge-base HEAD "origin/$EPIC")
 git -C "$WORKTREE" diff --name-only "$BASE".."origin/$EPIC" | sort > /tmp/theirs.txt  # landed while you built
 git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD | sort > /tmp/mine.txt      # what you changed
@@ -129,9 +148,9 @@ sha is a verdict about code that will never exist.
 
 **Can this session fan out to subagents?** Answer it from this runtime, not from what usually
 happens: a headless pipeline or a platform without a subagent tool makes the answer `inline`, and
-both are invisible until a lens fails to launch. This is also the story lane's only recording
-point — the dev-side commands do not carry this header, so if this step skips it the story's
-walkthrough never gets one (F24).
+both are invisible until a lens fails to launch. ② (`/cicd-dev-story-tests` Step 0.8) records its own
+runtime into the same header; this step **re-probes in ③'s session and overwrites the line** when the
+two differ, and a ② that skipped its probe leaves this as the only recording point (F24).
 
 ⛔ **The question is a **capability**, never a **policy** — and conflating the two silently gutted a
 review on SCC-197 (SCC-203).** *Does a subagent tool exist in this runtime?* is the whole question.
@@ -175,14 +194,19 @@ required input is a stop, not a guess:**
 |---|---|
 | `REPO` | `PROJECT_ROOT` from Step 0 |
 | `WORKTREE` | the tree Step 0.5 resolved (the story tree when one exists — the built code often lives ONLY there) |
-| `DIFF` | the story's diff, taken in that worktree |
-| `HEAD_SHA` | `git rev-parse HEAD` in that worktree, taken **now** — this is the sha the engine records the review against, **not** necessarily the sha your verdict cites: you apply fixes below, and Step 4's verdict must cite the FINAL sha its full-suite evidence was measured on |
+| `DIFF` | the `origin/$EPIC...HEAD` diff from Step 0.6, **re-taken in that worktree after Step 0.7 absorbed `origin/$EPIC`** — committed work only |
+| `HEAD_SHA` | `git rev-parse HEAD` in that worktree, taken **now, after Step 0.7's absorb** — this is the sha the engine records the review against, **not** necessarily the sha your verdict cites: you apply fixes below, and Step 4's verdict must cite the FINAL sha its full-suite evidence was measured on |
 | `review_mode` | `full` when the story file exists; `no-spec` when it does not |
 | `STORY_FILE` | the story file (`full` mode) |
 | `ARTIFACT_DIR` | `_artifacts/epic_<E>/<story>/` **inside that worktree** |
 | `DEFERRED_WORK` | the project's `deferred-work.md`, when it has one |
 | `lens_budget` | `standard` — the interactive budget, because a human is sitting in front of this review. **This command does not define what the caps are; step-01 of the engine does, once** — a cap each caller repeats is a cap that drifts. Naming nothing is not neutral: it silently selects the autopilot's budget, which is why this row is explicit (SCC-147) |
 | `review_runtime` | `fan-out` or `inline` — **what you PROBED at Step 0.9, never what you expect.** Pass it down and write the same value into the walkthrough header, so the roster the engine returns can be checked against the runtime that produced it |
+
+⚠ **Step 0 read `HEAD_SHA` from `PROJECT_ROOT` — the shared checkout — and before Step 0.7 absorbed
+`origin/$EPIC`.** Re-read both it and the diff here, in `$WORKTREE`, or the engine reviews a tree that
+no longer exists and your verdict cites a commit that is no longer the tip — the exact invariant Step
+0.7 opens by stating.
 
 **Ordering (deliberate): the engine hunts the DIFF first — open ②'s `walkthrough.md` and plan only
 AFTER its summary comes back**, for claimed evidence, plan-vs-built deviations, and the `## Your
@@ -318,7 +342,7 @@ distinct from `fail`, because per Step 3.5 a missing tool is a **finding, not a 
      measured on a DIFFERENT (pre-fix) SHA — the new invariant is strictly stronger.
    - **Append your suite runs to the walkthrough's `## Suite Ledger`** (the table is per STORY, ②+③) —
      `scope · command · duration · result · why this run`.
-   Compare against the red baseline; only failures NEW to this story count (legacy red is grandfathered). **Two guards (per
+   Compare against the red baseline; only failures NEW to this story count (legacy red is grandfathered). **Three guards (per
    `tests-must-gate-for-real`):** (a) **CI-entrypoint audit — change-triggered, not per-story.** Run it only
    when the diff touches `.github/workflows/**` or a test-runner config, when `sudo-tests.yaml` has no
    `ci_audit:` record, or when `git log -1 --format=%H -- .github/workflows/` differs from the recorded
@@ -328,6 +352,9 @@ distinct from `fail`, because per Step 3.5 a missing tool is a **finding, not a 
    `sudo-tests.yaml`. When skipped, state `CI audit current as of <sha>` in the verdict. (b) Grandfathering is for *owned* legacy red
    only (known-flaky / quarantined-with-ticket) — a red that asserts strings, selectors, or preconditions
    absent from real source is **fiction, not legacy debt**; do not grandfather it, FAIL and fix/delete it.
+   (c) **A check that cannot fail is a finding.** If the diff adds a gate, a guard or a CI step, prove
+   it **rejects** the case it must reject *and* **allows** the case it must allow —
+   `tests-must-gate-for-real` § Mutation Testing (INVERT the decision). One half is not a gate.
 2. **`bmad-testarch-trace`** — gate coverage vs `l1_coverage_min`.
 3. **`bmad-testarch-nfr`** — when `nfr: true` or `agent_bearing: true`.
 4. **`bmad-testarch-test-review`**. Also scan the CI pipeline for
@@ -443,6 +470,14 @@ new one. The section carries:
   Run `gate_receipt.py list --story <id>` and paste the block; an `unrunnable` row is a finding that
   caps the verdict at CONCERNS, and a gate with no receipt was not run, whatever the prose says,
 - a `### Clean-Code Gate` subsection carrying Step 3.5's findings table and its pasted tool output.
+- the acceptance matrix from Step 1.5 — every acceptance item → its proving assertion;
+<!-- twin-law: rederive-record -->
+- **Step 0.7's re-derivation**, under its own `### Step 0.7 — re-derivation` sub-heading as three
+  numbered lines — what the landing ref moved under this diff, the true overlap + `merge-tree` result,
+  and any sibling-lane landing-order dependency. "Nothing moved" is a reportable result; silence is
+  not — `walkthrough_roster.py --gate` counts list rows under a heading matching `0.7`/`re-deriv`
+  (E7) and refuses fewer than three.
+<!-- /twin-law -->
 - **FAIL** = a new test regression, a required tier missing, **or** a Step 3.5 machine-floor error on a
   changed line / a banned pattern shipped (bare `except:`, `any`, a committed secret).
 - **CONCERNS** = soft issues only — including Step 3.5's judgment findings (missing story provenance, a
@@ -465,13 +500,18 @@ of truth** — your Step 4 section is part of it, and the body around it must no
   missing artifact link, a doc fix — and tick it with a one-line note. Leave ONLY genuine human calls
   (product decisions, live checks — things only they can DECIDE). Refresh the branch/commit summary
   after your worktree commits.
-  ⛔ **And NEVER the ceremony's own steps** (SCC-193). "Click Merge on the PR", "then re-invoke
-  `/smh-close-task-merge-tree --after-merge <KEY>`", "run the preflight" — the operator's
-  **decision to proceed** is the sign-off (the word `approved`, or invoking one of the two doors),
-  and from that word on every step is the ceremony's and the agent runs it. `jira_feed.py`
-  **refuses** a close-out on such a row, at `check-actions` and again at `finish`. The one
-  merge-shaped row that belongs is the door's ledger line, `- [x] The merge itself — lands via
-  this branch's PR`, which SCC-175 checks against ancestry rather than against its tick.
+  ⛔ **And NEVER the ceremony's own steps** (SCC-193). "Land the branch on the epic", "then
+  re-invoke `/cicd-close-story-merge-tree <story>`", "run the preflight" — the operator's
+  **decision to proceed** is the sign-off (the word `approved`, or invoking the door —
+  `/cicd-close-story-merge-tree`, or `/cicd-merge-epic-workingtrees` for a set), and from that word
+  on every step is the ceremony's and the agent runs it. On this lane the door enforces it
+  twice: its Step 2 runs `jira_feed.py check-actions` before the close-out commit, and its Step 4b
+  runs `jira_feed.py finish --landing-ref "origin/$EPIC"` after the landing (SCC-210, SCC-242) —
+  both **refuse** such a row. Nothing earlier does: neither this command nor `closeout_preflight.py`
+  reads the rows, so a ceremony row you leave here is caught, but at the price of a branch already
+  landed on the epic. The story door writes no PR ledger row; a row that names a door or opens with
+  `the merge itself` is judged by `finish` against the ancestry of `origin/$EPIC`, never against its
+  tick.
   ⛔ A row assigning ANY ticket born from review findings — a residue ticket ("One follow-on
   ticket for the N deferred items"), a "proposed" ticket, a "decided" ticket to rule on — is the
   retired defect (operator rulings 2026-08-15, both), never a valid action row: the survivors were

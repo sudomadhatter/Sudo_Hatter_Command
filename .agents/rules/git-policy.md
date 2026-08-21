@@ -28,8 +28,10 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
 - **Story work happens in a worktree on a `claude/<JIRA-KEY>-<slug>` branch cut from the epic
   branch**, and lands back on the epic branch at close-out (see "The landing").
 - **Ad-hoc work outside any epic** — quick fixes, toolkit/system maintenance — takes a short-lived
-  `chore/<JIRA-KEY>-<slug>` branch off `main`, merged back to `main` in the same session with
-  Daniel's per-action sign-off. The gate is per-repo: the lobby runs
+  `chore/<JIRA-KEY>-<slug>` branch off `origin/main`, **in its own worktree**, closed out through its
+  door — `/smh-close-task-merge-tree` (a pull request the operator merges) or, when the diff reaches a
+  deployable path, `/cicd-push-e2e`; **invoking the door IS the sign-off** (see the write gate below,
+  and SCC-211 for which diff selects which). The gate is per-repo: the lobby runs
   `python3 .agents/scripts/tests/run_all.py` (it has **no E2E suite and never will** — no
   `frontend/`); deploying repos run the light gate (tests + build), and epic merges add `/cicd-e2e`.
   **The command that does this is `/smh-close-task-merge-tree`** (SCC-49) — invoking it IS the
@@ -298,6 +300,10 @@ checkout boring: it is always exactly production.
   else appears, unstage it (`git restore --staged <path>`) before committing.
 - **Scope the commit message** to your task/story only, and **lead the subject with the repo's Jira
   key** (`SCC-11 fix(sync): …`). The `commit-msg` hook rejects a subject without one.
+- ⛔ **Backticks in `-m "…"` EXECUTE.** The shell expands `` `…` `` inside double quotes before git ever
+  sees the message, so a subject that quotes a command name runs it. Use `git commit -F <file>` (or a
+  single-quoted `-m`) whenever the message contains a backtick. Recorded house incident —
+  `_artifacts/_memory/commit-message-backticks-execute.md`.
 - **Hook output is invisible in VS Code's Source Control panel** — it goes to `View → Output → Git`.
   A commit made from the panel that a hook merely *warns* about looks like a clean success. This is
   how a wrong-key commit reached AviationChat's `main` on 2026-08-07, and it is why the gate is

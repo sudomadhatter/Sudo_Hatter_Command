@@ -816,14 +816,15 @@ def main() -> int:
         # by name. Both helpers above fail closed on an empty search space.
         RULE_STEM = "tests-must-gate-for-real"
 
-        # The TASK-lane commands that write or judge assertions. Story-lane commands
-        # (`cicd-dev-story-tests`, `cicd-write-story-tests`, `cicd-code-review`, both clean-code
-        # audits) bake the rule into the STEP BODIES that route the work instead — the stronger form
-        # per `restate-alwayson-obligations-in-command-bodies` — and two of them carry no
-        # rules-in-force block at all. Widening those five is a change to five contracts and two `-AP`
-        # twins; it is deliberately not this ticket. `smh-code-review` is listed because it already
-        # complies, and an unpinned compliance is one edit from being gone.
-        LOADERS = ("smh-quick-dev.md", "smh-self-audit.md", "smh-code-review.md")
+        # Every command that WRITES OR JUDGES assertions must LOAD the rule, not merely act on it.
+        # `cicd-dev-story-tests` joined in SCC-212: it is the story lane's ②, where the reds are
+        # driven and Step 4's mutants are designed, and it carried a one-rule block that named only
+        # git-policy - so the mutation doctrine reached it nowhere. The remaining story-lane
+        # commands (`cicd-write-story-tests`, `cicd-code-review`, both clean-code audits) bake the
+        # rule into the STEP BODIES that route the work - the stronger form per
+        # `restate-alwayson-obligations-in-command-bodies` - and widening those is its own ticket.
+        LOADERS = ("smh-quick-dev.md", "smh-self-audit.md", "smh-code-review.md",
+                   "cicd-dev-story-tests.md")
         unloaded = [n for n in LOADERS
                     if RULE_STEM not in rif_block(read(ROOT / ".agents/commands" / n))]
         c.check("the mutation rule is LOADED (in the rules-in-force block) by every task-lane "
@@ -964,12 +965,15 @@ def main() -> int:
         # Restating a literal is normally circular; here it is what converts a silently mutable knob
         # into a decision that has to be argued for in a diff - the same reason `hand` and `SOURCELESS`
         # above are spelled out rather than derived.
-        c.check("the LOADERS sweep still covers BOTH task-lane commands (its scope cannot be "
-            "narrowed silently)",
-                {"smh-quick-dev.md", "smh-self-audit.md"} <= set(LOADERS),
-                f"LOADERS={LOADERS} - `/smh-quick-dev` WRITES the assertions and `/smh-self-audit` "
-            f"judges the plan that picks them. Dropping either restores the exact gap this "
-            f"section exists to close, with every other case here still green")
+        c.check("the LOADERS sweep still covers BOTH dev lanes and the plan audit (its scope "
+            "cannot be narrowed silently)",
+                {"smh-quick-dev.md", "smh-self-audit.md",
+                 "cicd-dev-story-tests.md"} <= set(LOADERS),
+                f"LOADERS={LOADERS} - `/smh-quick-dev` and `/cicd-dev-story-tests` WRITE the "
+            f"assertions (one per family) and `/smh-self-audit` judges the plan that picks them. "
+            f"Dropping any restores the exact gap this section exists to close, with every other "
+            f"case here still green - and the row above cannot catch it, because it LOOPS over "
+            f"LOADERS: remove a name and its own check has nothing left to fail on (SCC-212)")
         obligations = {n for n, _ in STEP3_OBLIGATIONS}
         techniques = {n for n, _ in TECHNIQUES}
         c.check("the obligation and technique lists still name what they are supposed to pin",

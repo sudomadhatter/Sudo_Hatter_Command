@@ -166,9 +166,14 @@ NOT_PAIRED = {
 # code-review pair's NEW shared law (review_level derivation, declared-set drift) joined
 # the roster fence it already carried.
 FENCED_TODAY = (
-    "cicd-clean-code-audit.md", "smh-clean-code-audit.md",   # twin-law: disposition
-    "cicd-code-review.md", "smh-code-review.md",             # twin-law: roster, review-level, declared-drift
+    "cicd-clean-code-audit.md", "smh-clean-code-audit.md",   # twin-law: disposition, memory-sweep
+    "cicd-code-review.md", "smh-code-review.md",             # twin-law: roster, review-level, declared-drift, record-lines, rederive-record
     "cicd-self-audit.md", "smh-self-audit.md",               # twin-law: audit-* (amendment, coverage, corroboration, levels-shape)
+    # SCC-212 promoted these two pairs when the CONTENT ports landed: the runtime probe and the
+    # three landing laws are subject-neutral in full, so they are held byte-identical rather than
+    # ported once and left to drift again - which is the failure the whole ticket exists to close.
+    "cicd-quick-dev.md", "smh-quick-dev.md",                 # twin-law: review-runtime-probe
+    "cicd-merge-epic-workingtrees.md", "smh-merge-multiple-workingtrees.md",  # twin-law: merge-empty-set-stop, merge-machinery-last, merge-cross-repo-order
 )
 
 LAW_OPEN = re.compile(r"^<!-- twin-law:\s*([a-z0-9-]+)\s*-->$", re.M)
@@ -481,12 +486,19 @@ def main() -> int:
         # ⛔ THE SCOPE ROW'S OWN COUNTER-EXAMPLE. `B*` declares which pairs carry a fenced law;
         # weakening it to a bare truthiness survived the sweep because nothing exercised the
         # comparison it makes. Un-fencing a file must change the computed set.
-        unfenced = read(CMDS / "cicd-clean-code-audit.md").replace(
-            "<!-- twin-law: disposition -->", "", 1)
+        #
+        # ⛔ STRIP EVERY OPENER, NEVER ONE NAMED ONE (SCC-212). This row used to delete the
+        # single literal `<!-- twin-law: disposition -->` and assert the computed set went
+        # EMPTY - true only while that file carried exactly ONE law. B* keys on `law_map(...)`
+        # being truthy per FILE, so the moment a second law is fenced into this pair (SCC-212
+        # fenced `memory-sweep` here) removing one marker leaves the file still fenced and this
+        # row went red with nothing wrong: a counter-example that breaks when the tree it
+        # describes grows is a gate people delete rather than read.
+        fenced_file = read(CMDS / "cicd-clean-code-audit.md")
+        unfenced = LAW_OPEN.sub("", fenced_file)
         c.check("F11 the fenced-set row is computed, not asserted true",
-                bool(law_map(read(CMDS / "cicd-clean-code-audit.md")))
-                and not law_map(unfenced),
-                "removing a fence left the computed set unchanged - B* proves nothing")
+                bool(law_map(fenced_file)) and not law_map(unfenced),
+                "removing every fence left the computed set unchanged - B* proves nothing")
 
     return c.finish()
 

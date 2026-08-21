@@ -110,8 +110,10 @@ set at all.
 - `FAIL`, no verdict, or a voided verdict → **not eligible**. Name what is missing and the command
   that produces it (`/smh-code-review`).
 
+<!-- twin-law: merge-empty-set-stop -->
 ⛔ **An empty eligible set is a STOP with a named reason, never a pass.** "All lanes landed" after
 zero merges is the gate that cannot fail.
+<!-- /twin-law -->
 
 ## Step 2 — Preflight each eligible lane
 
@@ -175,13 +177,17 @@ already committed**, because at merge time it will be.
 **The lane that lands later goes on top** — that keeps the file's newest-first semantics true
 against merge history, and anyone can re-derive it from `git log` afterwards.
 
+<!-- twin-law: merge-machinery-last -->
 **⭐ A lane that changes commit or push machinery lands LAST.** Once it lands it changes the rules
 for every merge after it — a pre-push approval hook landed mid-sequence turns the rest of the
 session into a different procedure.
+<!-- /twin-law -->
 
+<!-- twin-law: merge-cross-repo-order -->
 **Cross-repo dependencies are part of the order.** A lane whose deletion's destination is an
 **unmerged branch in another repo** lands AFTER that branch merges there. Get this wrong and the
 content exists on no merged branch in either repo, and nothing says so.
+<!-- /twin-law -->
 
 State the full landing order and every dependency in writing. **Dump the eligibility table, the
 landing order and every conflict decision to a scratch file** (`_artifacts/_main/<date>_<slug>/`, or
