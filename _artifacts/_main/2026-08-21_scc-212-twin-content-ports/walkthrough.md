@@ -302,7 +302,7 @@ changed, because the validation is also what catches a genuinely malformed row.
 
 ## Code Review (2026-08-21)
 
-**Verdict: CONCERNS @ `448ba5cf`**
+Verdict: CONCERNS @ 448ba5cf
 
 review-runtime: fan-out
 lenses_run:
