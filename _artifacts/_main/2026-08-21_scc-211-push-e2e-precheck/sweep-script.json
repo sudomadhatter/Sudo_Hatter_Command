@@ -139,6 +139,102 @@
    "mutated": "    rep.info(\"repo\", \"(not shown)\")",
    "case": "SP-J the human output names the resolved repo PATH",
    "block": "SP-J · the resolved repo is echoed on the human path too"
+  },
+  {
+   "id": "M25 the remote-ref prefix is no longer normalised",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    local_name = REMOTE_PREFIX_RE.sub(\"\", branch)",
+   "mutated": "    local_name = branch",
+   "case": "SP-M `git branch -a`'s own spelling is understood, not refused",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M26 WRONG_LANE's two rows are swapped (the literal SCC-148 shape)",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    \"claude/incident-\": (\"/cicd-mobile-error-team\",\n                         \"an incident branch has its own lane and its own pipeline\"),\n    \"claude/\": (\"/cicd-close-story-merge-tree\",\n                \"a story branch lands on its EPIC branch at close-out, never on main\"),\n",
+   "mutated": "    \"claude/\": (\"/cicd-close-story-merge-tree\",\n                \"a story branch lands on its EPIC branch at close-out, never on main\"),\n    \"claude/incident-\": (\"/cicd-mobile-error-team\",\n                         \"an incident branch has its own lane and its own pipeline\"),\n",
+   "case": "SP-L no WRONG_LANE entry is shadowed by an earlier prefix",
+   "block": "SP-L · WRONG_LANE and BRANCH_RE, pinned structurally"
+  },
+  {
+   "id": "M27 the lane scan becomes a substring search instead of anchored",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        if branch.startswith(prefix):",
+   "mutated": "        if prefix in branch:",
+   "case": "SP-M a lane word INSIDE a slug is not a lane match (anchored scan)",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M28 BRANCH_RE allows a segment before the key (epic/thin-KEY-x)",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "BRANCH_RE = re.compile(r\"^(epic|chore)/([A-Z][A-Z0-9]*)-(\\d+)-(.+)$\")",
+   "mutated": "BRANCH_RE = re.compile(r\"^(epic|chore)/(?:[a-z-]+-)?([A-Z][A-Z0-9]*)-(\\d+)-(.+)$\")",
+   "case": "SP-L BRANCH_RE refuses epic/thin-SCC-11-toolkit",
+   "block": "SP-L · WRONG_LANE and BRANCH_RE, pinned structurally"
+  },
+  {
+   "id": "M29 the fetch OUTCOME is ignored; asking is treated as succeeding",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        if _fetch(repo):\n            fresh = True",
+   "mutated": "        _fetch(repo)\n        fresh = True",
+   "case": "SP-M ...and the staleness rides the VERDICT line",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M30 the 0/0 read drops its BEHIND half",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "if ahead != \"0\" or behind != \"0\":",
+   "mutated": "if ahead != \"0\":",
+   "case": "SP-M a branch BEHIND origin -> exit 2",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M31 the --left-right columns are swapped",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        behind, ahead = (counts.stdout.split() + [\"?\", \"?\"])[:2]",
+   "mutated": "        ahead, behind = (counts.stdout.split() + [\"?\", \"?\"])[:2]",
+   "case": "SP-M ...with the counts the right way round: `0 ahead / 1 behind`",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M32 the no-jira.conf WARN arm never fires",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if not allowed:",
+   "mutated": "    if allowed and False:",
+   "case": "SP-M no .agents/jira.conf WARNS, never blocks",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M33 --expect-key stops being normalised to upper case",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    expect = args.expect_key.strip().upper()",
+   "mutated": "    expect = args.expect_key.strip()",
+   "case": "SP-M a lowercase --expect-key still matches",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M34 the standing-on-another-branch notice is dropped",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if standing and standing != branch:",
+   "mutated": "    if standing and standing != branch and False:",
+   "case": "SP-M it says which branch the checkout is STANDING on",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M35 the --json exit is hardcoded to 0",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "                          \"exit\": code,",
+   "mutated": "                          \"exit\": 0,",
+   "case": "SP-M --json carries the REAL exit, lane and verdict on a refusal",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M36 origin/main drops out of the standing-on-main guard",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "if branch in (\"main\", \"HEAD\", \"origin/main\"):",
+   "mutated": "if branch in (\"main\", \"HEAD\"):",
+   "case": "SP-L remote prefix: origin/main -> origin/main",
+   "block": "SP-L · WRONG_LANE and BRANCH_RE, pinned structurally"
   }
  ]
 }
