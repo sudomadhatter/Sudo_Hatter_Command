@@ -281,12 +281,18 @@ def main() -> int:
         # verifier group". Nothing here is machine-wired - the fix is a document saying who
         # and when - so these are doc-truth pins, the weakest tier, and mutant M6 is what
         # proves they can fail.
-        t = (ROOT / ".agents/skills/code-review-engine/steps/step-02-verify.md"
-             ).read_text(encoding="utf-8")
+        raw = (ROOT / ".agents/skills/code-review-engine/steps/step-02-verify.md"
+               ).read_text(encoding="utf-8")
+        # ⛔ WHITESPACE-NORMALISED, ON PURPOSE. These sentences are prose in a wrapped markdown
+        # file, so where the line breaks fall is an editor's decision and not the contract. A
+        # pin that reads the raw text is really asserting a line width: re-wrapping a paragraph
+        # - which every edit to it does - turns it red for a reason nobody can act on, and the
+        # cure people reach for is deleting the check. What is pinned is the WORDS and their
+        # ORDER; both survive a re-wrap, and neither survives the rule being removed.
+        t = re.sub(r"\s+", " ", raw)
         c.check("G1 · the dossier bullet says the caller groups BEFORE it serialises",
-                re.search(r"Group first, then serialise", t) is not None
-                and re.search(r"AFTER the self-gate has read the raw count and BEFORE you\s*\n?\s*serialise",
-                              t) is not None,
+                "Group first, then serialise" in t
+                and "AFTER the self-gate has read the raw count and BEFORE you serialise" in t,
                 "the ordering is unstated - an agent reads 'serialize the findings' first "
                 "and groups afterwards, or not at all")
         c.check("G2 · the 1:1 JSON contract is stated where the grouping is, not only "
@@ -300,7 +306,8 @@ def main() -> int:
         # The structural claim, and the one a mutant cannot dodge by keeping the words while
         # moving them: the owner is named BEFORE the serialise instruction, inside the same
         # bullet. Order is what made the old text ambiguous, so order is what is pinned.
-        i_group, i_ser = t.find("Group first, then serialise"), t.find("Serialize the step-1 findings")
+        i_group = t.find("Group first, then serialise")
+        i_ser = t.lower().find("serialize the step-1 findings")
         c.check("G4 · ...and it is named BEFORE the serialise instruction it governs",
                 0 <= i_group < i_ser,
                 f"group@{i_group} serialise@{i_ser} - stated after, it is a correction "

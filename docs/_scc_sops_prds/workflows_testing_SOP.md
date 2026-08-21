@@ -489,6 +489,19 @@ again. Any code or test change after it voids the pair.
 
 ▶ **Diagram:** [`/cicd-code-review` in the command atlas](#cicd-code-review) — every step, stop and refusal, checked against the live command.
 
+> ⭐ **What changed at Step 4 (SCC-240): the roster example is no longer shown in a code box, and
+> you check the paste on the spot.** Both review commands used to print the `lenses_run:` block
+> inside a fenced code block and tell you to paste it VERBATIM — and `walkthrough_roster.py`
+> strips code fences before it reads anything, so doing exactly what the instruction said produced
+> a roster the close-out could not see, then refused the lane saying there was no roster. The
+> example is now plain lines, because the bytes you are shown have to be the bytes that work.
+> Right after pasting, run `python3 .agents/scripts/walkthrough_roster.py <the walkthrough>`
+> *(PC: `python`)*: it prints the rows it actually read and exits 0, or exits 1 naming which of
+> three things went wrong. **That is the whole point — the close-out reads this file with the same
+> parser, so a clean run here is the answer to the question it will ask.** Measured on SCC-210,
+> before this existed: two preflight round trips, about 12 minutes, on one lane that had done
+> nothing wrong.
+
 **Why ③ hunts the diff before reading ②'s notes:** opening the builder's write-up first imports the
 builder's framing — the exact blind spot the review exists to remove. Order is always *hunt cold,
 then read the story.*
@@ -1633,6 +1646,19 @@ tree?**
 ### `/smh-code-review` — the Task lane's verdict
 
 ▶ **Diagram:** [`/smh-code-review` in the command atlas](#smh-code-review) — every step, stop and refusal, checked against the live command.
+
+> ⭐ **What changed at Step 4 (SCC-240): the roster example is no longer shown in a code box, and
+> you check the paste on the spot.** Both review commands used to print the `lenses_run:` block
+> inside a fenced code block and tell you to paste it VERBATIM — and `walkthrough_roster.py`
+> strips code fences before it reads anything, so doing exactly what the instruction said produced
+> a roster the close-out could not see, then refused the lane saying there was no roster. The
+> example is now plain lines, because the bytes you are shown have to be the bytes that work.
+> Right after pasting, run `python3 .agents/scripts/walkthrough_roster.py <the walkthrough>`
+> *(PC: `python`)*: it prints the rows it actually read and exits 0, or exits 1 naming which of
+> three things went wrong. **That is the whole point — the close-out reads this file with the same
+> parser, so a clean run here is the answer to the question it will ask.** Measured on SCC-210,
+> before this existed: two preflight round trips, about 12 minutes, on one lane that had done
+> nothing wrong.
 
 > ⓘ **Why the review re-checks `main` before it reviews anything (2026-08-10).** The audit you run
 > *before* building traces its blast radius against the repo as it was that morning. Task lanes run

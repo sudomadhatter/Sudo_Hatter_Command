@@ -78,6 +78,12 @@ severity_floor:  none | CONCERNS | FAIL
 notes:           <degradations, absent optional inputs, verification state>
 ```
 
+⛔ **Return these as PLAIN LINES — the fence above is illustration and must NOT be copied
+(SCC-240).** The caller pastes your return verbatim into the walkthrough, and
+`walkthrough_roster.py` strips code fences before it reads anything (SCC-154), so a roster
+handed back inside a fence is a roster the close-out gate cannot see — and until this was
+written, the refusal it produced said only that the roster was absent.
+
 ⛔ **`lenses_run:` is a BLOCK, and its rows are the evidence the review happened.** It was one
 counted line until SCC-173: `lenses_run: 5/5` is the engine's *claim* about itself, in exactly the
 way `Verdict: PASS` is the caller's — and a walkthrough carrying only a verdict merged clean with

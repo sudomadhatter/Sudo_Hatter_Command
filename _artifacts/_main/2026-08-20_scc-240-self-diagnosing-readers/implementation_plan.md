@@ -59,8 +59,14 @@ Measured line numbers below were re-grepped on this lane's base (`db253fc`) — 
 - EDIT `.agents/skills/code-review-engine/steps/step-02-verify.md` — one grouping owner, one place → 7
 - EDIT (generated) `.opencode/commands/smh-code-review.md` — sync output → 6
 - EDIT (generated) `.opencode/commands/cicd-code-review.md` — sync output → 6
-- EDIT (generated) `.agents/workflows/smh-code-review.md` — sync output → 6
-- EDIT (generated) `.agents/workflows/cicd-code-review.md` — sync output → 6
+- EDIT (generated) `.agents/.sync-manifest.json` — sync bookkeeping, rewritten by the same run → 6
+
+*(Amendment, 2026-08-20, after the sync ran — inside this one block, per SCC-226. **Removed:**
+`.agents/workflows/{smh,cicd}-code-review.md`. Both were declared as EDIT and both are correctly
+UNCHANGED: each command body exceeds Antigravity's 12,000-char workflow cap, so the sync writes a
+**thin launcher** there instead of a mirror, and a launcher carries none of the body this lane
+edited. **Added:** `.agents/.sync-manifest.json`, which the same sync run rewrites (its `generated`
+timestamp) and which the plan did not anticipate.)*
 - EDIT (generated) `.claude/skills/code-review-engine/SKILL.md` — sync output → 6
 - EDIT (generated) `.claude/skills/code-review-engine/steps/step-04-record.md` — sync output → 6
 - EDIT (generated) `.claude/skills/code-review-engine/steps/step-02-verify.md` — sync output → 7

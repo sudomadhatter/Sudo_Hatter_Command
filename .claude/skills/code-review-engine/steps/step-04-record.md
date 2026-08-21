@@ -61,6 +61,12 @@ severity_floor:  none | CONCERNS | FAIL
 notes:           <degradations, absent optional inputs, verification state>
 ```
 
+⛔ **Return these as PLAIN LINES — the fence above is illustration and must NOT be copied
+(SCC-240).** The caller pastes your return verbatim into the walkthrough, and
+`walkthrough_roster.py` strips code fences before it reads anything (SCC-154), so a roster
+handed back inside a fence is a roster the close-out gate cannot see — and until this was
+written, the refusal it produced said only that the roster was absent.
+
 ⛔ This block and SKILL.md's "What the engine returns" are the SAME contract — `lenses_run:` is a
 BLOCK of per-lens rows (SCC-173), never the retired counted line, because the caller pastes it
 verbatim into the walkthrough where `walkthrough_roster.py` reads it. Until this review wave the
