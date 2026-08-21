@@ -805,6 +805,10 @@ use it and one thing got an answer:
   command.** The check that earns the step is the clean one: uncommitted work in the epic checkout
   meant Step 3 gated *that tree* while Step 4 merged *the branch*, so what reached production was
   never what went green — and nothing in the file would have told you.
+  **You can paste the branch name exactly as Step 1 printed it.** `git branch -a` spells a remote
+  branch `remotes/origin/epic/KEY-slug`, and that is the only spelling available for an epic pushed
+  from your other machine; the pre-flight reads it as the lane name and says so on its own line. An
+  epic that lives only on `origin` is fine here — Step 2's checkout is what creates it locally.
 - **A `chore/*` branch is admitted here only when its diff reaches deployable code.** It used to be
   admitted on your ask alone and then had no written procedure at all: every operative line after the
   admission named only `epic/*`, including the token's `--branch`. Now the diff decides, and a

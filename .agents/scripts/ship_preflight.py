@@ -67,6 +67,18 @@ WRONG_LANE = {
 }
 
 
+# A remote-tracking spelling of a lane branch: `origin/epic/…` or `remotes/origin/epic/…`.
+# ⛔ THIS IS THE DOOR'S OWN OUTPUT, NOT A TYPO. `/cicd-push-e2e` Step 1 discovers branches with
+# `git branch -a --list '*epic/*'`, which prints remote refs as `remotes/origin/epic/KEY-slug`
+# — so the operator pasting exactly what the door just showed them is the ordinary path, and
+# it is the ONLY path for an epic pushed from the other machine. Left unnormalised those
+# strings miss `BRANCH_RE` and earn the keyless-epic refusal, whose remedy is *"rename it to
+# carry the epic's REAL key"* — advice to rename a branch that already carries its key.
+# `closeout_preflight.REMOTE_PREFIX_RE` solved the same problem for the story door; the
+# lookahead is what keeps it from eating a legitimate first segment.
+REMOTE_PREFIX_RE = re.compile(r"^(?:remotes/)?[^/]+/(?=(?:epic|chore|claude)/)")
+
+
 def check_shape(branch: str, rep: wf.Report) -> tuple[str | None, str | None]:
     """-> (prefix, key). Either may be None; a None key means every later check declines."""
     if branch in ("main", "HEAD", "origin/main"):
@@ -325,12 +337,20 @@ def main() -> int:
 
     repo = tp.git_root(args.repo)
     branch = args.branch.strip()
+    # Normalised ONCE, here, so every later check — the shape scan, `refs/heads/<branch>`,
+    # `origin/<branch>`, the diff ref — sees one spelling. Announced rather than silent: the
+    # operator pasted what the door printed, and they should see what it was read as.
+    local_name = REMOTE_PREFIX_RE.sub("", branch)
     expect = args.expect_key.strip().upper()
     rep = wf.Report()
     # The door says "read the header before the verdict" because a verdict about another lane
     # reads exactly like a verdict about yours. That is just as true of the REPO — `--repo`
     # exists because cwd is not intent — and it used to appear only under `--json`.
     rep.info("repo", str(repo))
+    if local_name != branch:
+        rep.info("branch", f"read '{branch}' as the local lane name '{local_name}' - "
+                           f"`git branch -a` prints remote refs that way")
+        branch = local_name
 
     prefix, key = check_shape(branch, rep)
     check_intent(repo, branch, key, expect, rep)

@@ -577,10 +577,34 @@ def main() -> int:
         c.check("P1 the door RUNS ship_preflight.py (fenced, not prose)",
                 idx(lines, "ship_preflight.py") >= 0,
                 "prose describing a check is not a check: " + " | ".join(lines[:4]))
-        c.check("P1 ...and passes --expect-key, so a wrong lane fails the key match",
-                any("ship_preflight.py" in ln and "--expect-key" in ln for ln in logical),
-                "cwd is not intent - without the pinned key the script can only ever return "
-                "an honest verdict about the WRONG branch")
+        # ⛔ ALL THREE OPERANDS, not just the pinned key. The script REQUIRES `--repo`,
+        # `--branch` and `--expect-key`, so a door that drops one has written a fenced command
+        # that dies on argparse the first time anyone runs it — and the order checks below
+        # would stay green, because the needle they look for is the script name. Two mutants
+        # survived this block before these rows existed: one deleting `--branch "$BRANCH" \`,
+        # one swapping `--repo "$PROJECT_ROOT"` for `--repo .` (which re-opens "cwd is not
+        # intent" in the one command that writes production).
+        for flag, why in (("--expect-key", "without the pinned key the script can only ever "
+                                           "return an honest verdict about the WRONG branch"),
+                          ("--branch", "the script requires it; a door missing it has written "
+                                       "a command that cannot run"),
+                          ("--repo", "`--repo .` is cwd, and cwd is not intent - the door "
+                                     "runs from the lobby and must name PROJECT_ROOT")):
+            c.check(f"P1 ...and passes {flag}",
+                    any("ship_preflight.py" in ln and flag in ln for ln in logical), why)
+        c.check("P1 ...and it is PROJECT_ROOT that is passed, never a bare cwd",
+                any("ship_preflight.py" in ln and "PROJECT_ROOT" in ln for ln in logical),
+                "a preflight aimed at the wrong repo returns an honest verdict about it")
+
+        # P7 · the STOP is the gate's teeth, and it was unpinned: replacing
+        # `Exit 2 → STOP.` with "It is informational." left this whole block green, which
+        # would ship a door that RUNS the precheck and then ignores it — the SCC-211 defect
+        # wearing the fix's clothes.
+        step15 = section(text, "Step 1.5")
+        c.check("P7 Step 1.5 says a refusal STOPS the command",
+                "exit 2" in step15.lower() and "STOP" in step15,
+                "a precheck whose refusal is advisory is not a precheck: "
+                + step15.strip()[:160])
 
         # P2 · the ordering claim, the whole reason this is a preflight.
         ok, detail = order_ok(lines, "ship_preflight.py", "git merge origin/main",

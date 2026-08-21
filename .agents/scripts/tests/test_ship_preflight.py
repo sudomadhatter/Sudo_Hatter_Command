@@ -364,6 +364,180 @@ def main() -> int:
                     "file(s) changed, none of them deployable" not in out,
                     out.strip()[-400:])
 
+    # ── SP-L · the TABLE and the REGEX, read directly — the fast tier ─────────────────────
+    # Everything else here costs a subprocess, a temp repo and a real git round trip, which is
+    # why the branch-shape gaps clustered: each extra shape cost a repo. These are the two
+    # pure structures, imported and asserted, the way `test_task_preflight.py` pins the same
+    # table for the sibling. Structural pins cannot see behaviour, so the behavioural cases
+    # below still exist — this block makes them cheap, it does not replace them.
+    if c.block("SP-L · WRONG_LANE and BRANCH_RE, pinned structurally"):
+        sys.path.insert(0, str(SCRIPTS))
+        import ship_preflight as _sp
+
+        keys = list(_sp.WRONG_LANE)
+        c.check("SP-L WRONG_LANE holds exactly the prefixes real commands create",
+                set(keys) == {"claude/incident-", "claude/"}, f"got {sorted(keys)}")
+        # ⛔ ORDER, and it is load-bearing: the scan is first-match `startswith` over insertion
+        # order, so a generic prefix listed before a specific one makes the specific entry
+        # UNREACHABLE. That is the literal SCC-148 defect — `claude/` before
+        # `claude/incident-` routed a live incident branch to the story close-out, confidently,
+        # on the one path that runs under production pressure. A set pin is order-blind, and
+        # order is exactly what a future alphabetical tidy would break.
+        shadowed = [(a, b) for i, a in enumerate(keys) for b in keys[i + 1:]
+                    if b.startswith(a)]
+        c.check("SP-L no WRONG_LANE entry is shadowed by an earlier prefix",
+                not shadowed, f"unreachable: {shadowed}")
+        c.check("SP-L every WRONG_LANE row names the command that IS right",
+                all(v[0].startswith("/") for v in _sp.WRONG_LANE.values()),
+                str(_sp.WRONG_LANE))
+
+        # BRANCH_RE: the key sits IMMEDIATELY after the prefix, because Atlassian's GitHub app
+        # joins on the key as a literal string in the branch NAME. `epic/thin-AVCH-23-x` is
+        # git-legal and would link nothing.
+        for good in ("epic/SCC-11-thing", "chore/SCC-11-thing", "epic/AVCH-9-x-y/z"):
+            c.check(f"SP-L BRANCH_RE accepts {good}", bool(_sp.BRANCH_RE.match(good)))
+        for bad in ("epic/thin-SCC-11-toolkit", "epic/scc-11-thing", "epic/SCC11-thing",
+                    "epic/legacy-thing", "release/SCC-11-thing", "epic/SCC-11"):
+            c.check(f"SP-L BRANCH_RE refuses {bad}", not _sp.BRANCH_RE.match(bad))
+
+        # The remote-ref spellings `git branch -a` actually prints.
+        for raw, want in (("remotes/origin/epic/SCC-11-x", "epic/SCC-11-x"),
+                          ("origin/epic/SCC-11-x", "epic/SCC-11-x"),
+                          ("upstream/chore/SCC-11-x", "chore/SCC-11-x"),
+                          ("epic/SCC-11-x", "epic/SCC-11-x"),
+                          ("origin/main", "origin/main")):
+            got = _sp.REMOTE_PREFIX_RE.sub("", raw)
+            c.check(f"SP-L remote prefix: {raw} -> {want}", got == want, f"got {got}")
+
+    # ── SP-M · the shapes and states the fixtures could not reach ─────────────────────────
+    # Every case here was added because a mutant SURVIVED the suite: an independent lens ran
+    # its own 15-mutant sweep against this file and every one lived. They are grouped rather
+    # than scattered so the reason stays legible.
+    if c.block("SP-M · gaps a surviving mutant proved were uncovered"):
+        # (1) the door's own Step 1 output, pasted verbatim
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            git(repo, "checkout", "-q", "main")
+            git(repo, "branch", "-D", "epic/SCC-11-thing")
+            code, out = ship(repo, "remotes/origin/epic/SCC-11-thing")
+            c.check("SP-M `git branch -a`'s own spelling is understood, not refused",
+                    code == 0, out.strip()[-400:])
+            c.check("SP-M ...and it SAYS what it read the name as",
+                    "read 'remotes/origin/epic/SCC-11-thing' as" in out, out.strip()[-400:])
+            c.check("SP-M ...never advising a rename of a branch that carries its key",
+                    "never invent" not in out.lower(), out.strip()[-400:])
+
+        # (2) the incident lane — the sibling's SCC-148 guard, ported
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "claude/incident-abc123", {"backend/app.py": "x = 2\n"})
+            code, out = ship(repo, "claude/incident-abc123")
+            c.check("SP-M claude/incident-* is refused", code == 2, f"exit {code}")
+            c.check("SP-M ...naming the incident lane, never the story close-out",
+                    "/cicd-mobile-error-team" in out
+                    and "/cicd-close-story-merge-tree" not in out, out.strip()[-300:])
+
+        # (2b) the scan must be ANCHORED at position 0, not a substring search. `BRANCH_RE`'s
+        # slug group is `.+`, which matches slashes, so a chore branch embedding a lane word
+        # mid-name is both git-legal and shape-legal — and a `prefix in branch` scan would
+        # wrong-lane it to a command that has no business with it. The sibling carries this
+        # exact guard for the same table.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "chore/SCC-11-notes-on-claude/incident-triage",
+                   {"backend/app.py": "x = 2\n"})
+            code, out = ship(repo, "chore/SCC-11-notes-on-claude/incident-triage")
+            c.check("SP-M a lane word INSIDE a slug is not a lane match (anchored scan)",
+                    "/cicd-mobile-error-team" not in out
+                    and "/cicd-close-story-merge-tree" not in out, out.strip()[-300:])
+
+        # (3) a fetch that is ASKED FOR and FAILS — the outcome, not the flag
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            git(repo, "remote", "set-url", "origin", str(t / "no-such-remote.git"))
+            code, out = ship(repo, "epic/SCC-11-thing")          # no --no-fetch
+            verdict = [ln for ln in out.splitlines() if ln.startswith("VERDICT:")]
+            c.check("SP-M a FAILED fetch is not a fresh comparison",
+                    "fetch failed" in out.lower(), out.strip()[-400:])
+            c.check("SP-M ...and the staleness rides the VERDICT line",
+                    bool(verdict) and "stale" in verdict[0].lower(),
+                    (verdict[0] if verdict else out.strip()[-200:]))
+            c.check("SP-M ...and the exit is non-zero", code != 0, f"exit {code}")
+
+        # (4) BEHIND, and the counts pinned VERBATIM. `"ahead" in out` was satisfied by the
+        # message template itself, so swapping the --left-right columns survived.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            write(repo, "backend/app.py", "x = 4\n")
+            commit(repo, "SCC-11 chore: pushed, then rewound locally")
+            git(repo, "push", "-q", "origin", "epic/SCC-11-thing")
+            git(repo, "reset", "-q", "--hard", "HEAD~1")            # local now 1 BEHIND
+            code, out = ship(repo, "epic/SCC-11-thing")
+            c.check("SP-M a branch BEHIND origin -> exit 2", code == 2, out.strip()[-300:])
+            c.check("SP-M ...with the counts the right way round: `0 ahead / 1 behind`",
+                    "0 ahead / 1 behind" in out, out.strip()[-300:])
+
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            write(repo, "backend/app.py", "x = 4\n")
+            commit(repo, "SCC-11 chore: local only")
+            code, out = ship(repo, "epic/SCC-11-thing")
+            c.check("SP-M ...and AHEAD reads `1 ahead / 0 behind`, verbatim",
+                    "1 ahead / 0 behind" in out, out.strip()[-300:])
+
+        # (5) a repo declaring no Jira project at all — the WARN arm
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True, jira_conf=False)
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            code, out = ship(repo, "epic/SCC-11-thing")
+            c.check("SP-M no .agents/jira.conf WARNS, never blocks",
+                    code == 1 and "no .agents/jira.conf" in out, out.strip()[-300:])
+
+        # (6) the key is normalised, so the operator's lowercase is not an accusation
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            code, out = ship(repo, "epic/SCC-11-thing", expect="scc-11")
+            c.check("SP-M a lowercase --expect-key still matches", code == 0,
+                    out.strip()[-300:])
+
+        # (7) the branch shape the key-linking rule forbids
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/thin-SCC-11-toolkit", {"backend/app.py": "x = 2\n"})
+            code, out = ship(repo, "epic/thin-SCC-11-toolkit")
+            c.check("SP-M a key NOT immediately after the prefix is refused", code == 2,
+                    out.strip()[-300:])
+            c.check("SP-M ...naming the rule Atlassian actually joins on",
+                    "immediately after" in out.lower(), out.strip()[-300:])
+
+        # (8) the notice describing the state the door really calls this in
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            git(repo, "checkout", "-q", "main")
+            code, out = ship(repo, "epic/SCC-11-thing")
+            c.check("SP-M it says which branch the checkout is STANDING on",
+                    "standing on 'main'" in out, out.strip()[-400:])
+
+        # (9) --json on a REFUSAL: the values, not just the keys
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            write(repo, "backend/app.py", "x = 3\n")
+            code, out = ship(repo, "epic/SCC-11-thing", "--json")
+            try:
+                doc = json.loads(out)
+            except ValueError:
+                doc = {}
+            c.check("SP-M --json carries the REAL exit, lane and verdict on a refusal",
+                    doc.get("exit") == 2 and doc.get("lane") == "full"
+                    and "BLOCKED" in str(doc.get("verdict")), json.dumps(doc)[:220])
+
     # ── SP-G · an unfetched comparison is not a fresh one ──────────────────────────────────
     # SCC-193's finding, one door over: a note saying the comparison was stale sat under a
     # VERDICT reading "clear to close out and merge", and the verdict line is the only line
