@@ -114,18 +114,20 @@ The table carried **14** mutants written before the review. Every guard the revi
 
 ⛔ **One mutant SURVIVED on its first attempt, and it was a real defect in my own fix.** `unplaceable += 1 → pass` stayed green because the report read `len(assets)` instead of the count it had just measured — dead state dressed as a counter. The count is load-bearing now and B2e asserts the **number** (`1 asset(s) FOUND in this repo`), not the phrase. A second mutant **crashed** instead of failing: `.index()` on a missing label raises, and a crashed run prints no `FAILED:` line, which is the only thing the sweep scores — so it would have been recorded as SURVIVED. Those two order checks compute positions first and assert second.
 
-### Gates, run bare, at the shipping sha `ead8c831`
+### Gates, run bare, at the shipping sha `d9d9a9d9`
+
+(The review's own gate run was at `ead8c831`; every row below was re-run after rider SCC-253's `INDEX.md` edit landed.)
 
 | Gate | Result |
 |---|---|
-| Enforcement suite (through `gate_receipt.py`) | `[PASS] suite exit=0 67.3s @ ead8c831` — `gates/suite.json`: `"result": "pass"`, `47/47 files passed`, `"dirty_tree": false` |
+| Enforcement suite (through `gate_receipt.py`) | `[PASS] suite exit=0 66.9s @ d9d9a9d9` — `gates/suite.json`: `"result": "pass"`, `47/47 files passed`, `"dirty_tree": false` |
 | `workflow_lint.py --toolkit-only` | exit 0 — `-- 0 error(s), 0 warning(s), 8 info --` (the 8 are a pre-existing UTF-8 BOM on `testarch-*.md`, untouched here) |
 | `sop_currency.py --paths <40> --message …` | exit 0 |
 | `check_maps.py --depth3-only --strict` | exit 0 |
 | Declared-set drift | `{"present": true, "incomplete": [], "undeclared": [], "unimplemented": []}` — 41 declared entries against the 40-file shipping diff |
 | `py_compile` (12 changed `.py`) | exit 0 — ⚠️ run **per file**; zsh does not word-split an unquoted `$PYS` |
 | Link + anchor sweep (24 changed `.md`) | **0** dead relative links, **0** out-of-range `#L` anchors |
-| Mutation sweep | **27/27 killed by their declared case**, restore verified against `2be3fb66` |
+| Mutation sweep | **27/27 killed by their declared case**, restore verified against `2be3fb66`. Not re-run for SCC-253 — that edit touches no swept file and no decision in one |
 | Door parity | every command is a MODIFY — no add, rename or delete; `platforms:` lines untouched. The final `sync-agents -NoGlobals` moved **only** the manifest timestamp, which is the check that the per-batch syncs were complete |
 
 ### Acceptance matrix
@@ -150,7 +152,7 @@ The table carried **14** mutants written before the review. Every guard the revi
 | H1 | SCC-253 | The `test_jira_feed.py` sentence in `.agents/scripts/INDEX.md` is replaced with the measured position: no single file is the next lever, the suite is work-bound, packing limit ~39 s | **PASS** — the clause is rewritten; `test_jira_feed.py` is third by wall clock behind `test_task_preflight.py` (~49.5 s) and `test_task_preflight_contract.py` (~46.1 s), so it cannot move the floor |
 | H2 | SCC-253 | The number is cited with **how it was obtained**, so the next reader can re-run it rather than trust it | **PASS** — "the same pool run with that file excluded entirely … 59.5 s wall against 61.7 s", plus the instruction to re-run it that way before believing any successor sentence |
 | H3 | SCC-253 | Enforcement suite green | **PASS** — see Z1; the receipt was re-stamped after this edit, because `.agents/scripts/INDEX.md` is not `_artifacts/` and the freshness rule correctly went stale |
-| Z1 | all | Enforcement suite green at the shipping sha, through the receipt writer | **PASS** — `gates/suite.json`, 47/47, exit 0, 67.3 s @ `ead8c831` |
+| Z1 | all | Enforcement suite green at the shipping sha, through the receipt writer | **PASS** — `gates/suite.json`, 47/47, exit 0, 66.9 s @ `d9d9a9d9` |
 | Z2 | riders | The two memory files ride **this** PR, and `main` is clean | **PARTIAL, and reported rather than swept** — both memory files are in this branch's diff (`_artifacts/_memory/MEMORY.md`, `exercise-the-real-cicd-doors.md`). `main`'s working tree is **not** empty: it carries `M .claude/settings.json` and `?? .claude/hooks/allow-scratchpad.py`, written today by a **concurrent session**, unrelated to this lane and deliberately untouched. Neither path is in this diff, so the merge does not contend with them. See § Your Actions |
 
 ## Code Review (2026-08-21)
