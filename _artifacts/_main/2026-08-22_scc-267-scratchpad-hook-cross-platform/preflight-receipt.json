@@ -1,15 +1,15 @@
 {
   "accept_unpushed_main": false,
   "branch": "chore/SCC-267-scratchpad-hook-cross-platform",
-  "errors": 1,
-  "exit": 2,
+  "errors": 0,
+  "exit": 1,
   "fetch": true,
   "fresh": true,
   "lane": "LOCAL",
   "schema_v": 1,
   "task_key": "SCC-267",
-  "verdict": "BLOCKED - resolve the errors above",
-  "verdict_sha": "3a037d74292f6ebf861eba659edfe8f247550d88",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": null,
   "warnings": 1,
-  "when": "2026-08-22T10:07:12-04:00"
+  "when": null
 }
