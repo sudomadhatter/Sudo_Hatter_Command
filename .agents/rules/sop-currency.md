@@ -88,7 +88,7 @@ plumbing. Three habits keep it honest:
 - [`living-template-sync.md`](living-template-sync.md) — change the **front door or folder layout**,
   mirror it into the `sudo-project-skeleton` clone source. Same shape, different target: that rule
   keeps *new projects* from being born stale, this one keeps *the operator's manual* from going stale.
-- [`project-law.md`](project-law.md) — which tier a rule or skill belongs to. This page describes the
+- [`project-law.md`](../../.agents/rules/project-law.md) — which tier a rule or skill belongs to. This page describes the
   centralized system that rule defines; a change to the tier model is always a usage change.
 
 ## Known drift (open — widened by SCC-74)

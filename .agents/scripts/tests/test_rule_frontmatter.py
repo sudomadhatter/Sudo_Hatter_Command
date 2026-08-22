@@ -140,6 +140,25 @@ def main() -> int:
     c.check(".claude/rules/ mirrors exactly the path-scoped masters",
             want == have, f"missing={sorted(want - have)} extra={sorted(have - want)}")
 
+    # ⛔ A RELATIVE LINK THAT RESOLVES IN THE MASTER CAN DANGLE IN THE MIRROR, and the mirror is the
+    # copy Claude Code actually loads. `.agents/rules/` holds all 25 rules; `.claude/rules/` holds
+    # only the path-scoped ones, so `[x](project-law.md)` resolves beside the master and points at
+    # nothing beside the copy. Found by SCC-270's own review, in the six mirrors that lane created.
+    # Both directories sit two levels below the repo root, so `../../.agents/rules/<x>.md` is the
+    # one spelling that resolves from BOTH — which is what this pins.
+    link = re.compile(r"\[[^\]]*\]\(([^)\s#]+)")
+    dangling = []
+    for mirror in sorted(claude_rules.glob("*.md")) if claude_rules.is_dir() else []:
+        for i, line in enumerate(mirror.read_text(encoding="utf-8").splitlines(), 1):
+            for m in link.finditer(line):
+                target = m.group(1)
+                if target.startswith(("http", "mailto:", "#")) or "<" in target:
+                    continue
+                if not (mirror.parent / target).resolve().exists():
+                    dangling.append(f"{mirror.name}:{i} -> {target}")
+    c.check("⛔ no relative link in a GENERATED .claude/rules/ copy dangles",
+            not dangling, str(dangling))
+
     return c.finish()
 
 

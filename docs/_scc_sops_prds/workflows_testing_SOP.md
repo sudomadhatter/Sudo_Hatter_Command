@@ -1449,6 +1449,13 @@ Nothing to type, and nothing to maintain by hand: the classification lives in on
 (`.agents/rules/INDEX.md`), the per-rule markers mirror it, and a test fails if the two ever
 disagree. `/smh-sync-agents` writes the copies Claude Code reads.
 
+⚠ **Those copies are a second home for the same text, and only the path-scoped rules move in.** A
+rule that links to a sibling by bare filename resolves next to the master and points at nothing next
+to the copy — which is the copy Claude Code actually loads. Write cross-rule links as
+`../../.agents/rules/<name>.md`: both folders sit two levels below the repo root, so that one
+spelling works in both. A test now fails on any dangling link in a generated copy, so this is a rule
+about how to write the link, not a thing to remember to check.
+
 **If you ever want to see it actually happen**, `_routing-canary/README.md` § "Probe 2" has two
 one-line checks: one prints the pointer a prompt produces, the other shows a log of every rule the
 tool loaded on its own. Worth running after a fresh clone or a new machine, because both mechanisms
