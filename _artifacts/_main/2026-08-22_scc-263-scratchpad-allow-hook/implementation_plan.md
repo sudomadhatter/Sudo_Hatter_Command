@@ -33,13 +33,14 @@ this touches is disposable". So the hook answers exactly that and nothing wider.
 
 | # | Statement | How it is checked |
 |---|---|---|
-| A1 | Emits `permissionDecision: allow` when ≥1 absolute path is inside the scratchpad root and **every** absolute path is inside it or a read-only system prefix | `test_allow_scratchpad.py` block A, the eight real harness shapes |
-| A2 | Emits **nothing** for each of the seven decline rules: no sandbox path · an absolute path outside · a `..` segment · an unexpanded `$`/`~`/`$(…)` · a deny-listed command · `git` with no `-C` or a `-C` outside · **a redirect or `tee` target that is not an absolute sandbox path** | blocks B–G and J, one block per rule |
-| A3 | **Never** emits `ask`, and always exits 0 — including on malformed, empty and non-Bash stdin | block H |
-| A4 | The test fails when the hook's rule constants are mutated | `mutation_sweep.py` over the six constants |
-| A5 | `.claude/settings.json` wires it **first** in the `PreToolUse` Bash matcher, and `.claude/hooks/` byte-matches the `.agents/hooks/` master | block I, reading the real repo files |
+| A1 | Emits `permissionDecision: allow` for one simple command whose executable is an allow-listed bare name and whose every non-flag token is an absolute path inside **this session's** scratchpad | `test_allow_scratchpad.py` block A, 11 real harness shapes |
+| A2 | Emits **nothing** for each of the four decline rules — a shell metacharacter · an executable that is not an allow-listed bare name · a non-flag token that is not a sandboxed absolute path · a path outside this session's scratchpad — **and for all twelve escapes the review reproduced against v1** | blocks B, C, D, E and ESCAPES |
+| A3 | **Never** emits `ask` or `deny`, and always exits 0 — malformed, empty, null and non-Bash stdin are all SILENT, asserted as silence rather than merely not-`ask` | block G |
+| A4 | The suite fails when any of the hook's rule constants is mutated | `mutation_sweep.py` over `sweep.json` — 15 mutants, each killed by its declared case |
+| A5 | `.claude/settings.json` wires it **first** in the `PreToolUse` Bash matcher and dispatches it through `run-hook.sh` (never a named interpreter), and `.claude/hooks/` byte-matches the `.agents/hooks/` master | blocks WIRING and E2E, reading the real repo files |
 | A6 | `python3 .agents/scripts/tests/run_all.py` passes | the gate itself |
 | A7 | The lane's artifact folder holds an `implementation_plan.md` carrying a parsing `## Declared Change Set` and an audit verdict, and a `walkthrough.md` carrying a `Verdict:` line | `declared_change_set.py parse` exits clean; `/smh-close-task-merge-tree` preflight reads both |
+| A8 | The review-runtime probe law states that a `/` command **is** a user request, and names a third door — a blocked `inline` must say what blocked it — in all five carriers and their five mirrored `.opencode/` doors | `test_review_engine.py` pins all four clauses and twin-agreement; `test_twin_parity.py` holds the two fenced copies byte-identical |
 
 **A3 is the load-bearing one.** `ask` is auto-DENY in non-interactive mode (memory:
 `hook-ask-becomes-autodeny-in-auto-mode`). A convenience hook that can deny would break the very
@@ -68,10 +69,24 @@ lane it exists to unblock, so this hook has exactly two legal outputs: `allow`, 
 - NEW `.agents/hooks/allow-scratchpad.py` — the hook itself, the canonical master → A1, A2, A3
 - NEW `.claude/hooks/allow-scratchpad.py` — the deployed copy settings.json actually loads → A5
 - EDIT `.agents/hooks/INDEX.md` — one row, keeping the auto-listed contents honest → A5
+- EDIT `.claude/hooks/INDEX.md` — the deployed copy of that index, re-paired with its master → A5
 - EDIT `.claude/settings.json` — wires the hook first in the PreToolUse Bash matcher → A5
-- NEW `.agents/scripts/tests/test_allow_scratchpad.py` — the retrofit suite → A1, A2, A3, A4
+- NEW `.agents/scripts/tests/test_allow_scratchpad.py` — the suite → A1, A2, A3, A4
+- EDIT `.agents/scripts/tests/test_review_engine.py` — re-pins the probe law to its new clauses → A8
+- EDIT `.agents/commands/smh-code-review.md` — the probe law, long form → A8
+- EDIT `.agents/commands/cicd-code-review.md` — the probe law, long form, twin of the above → A8
+- EDIT `.agents/commands/smh-quick-dev.md` — the probe law, twin-fenced short form → A8
+- EDIT `.agents/commands/cicd-quick-dev.md` — the probe law, twin-fenced short form → A8
+- EDIT `.agents/commands/cicd-dev-story-tests.md` — the probe law, compact form → A8
+- EDIT `.opencode/commands/smh-code-review.md` — mirrored door, byte-identical → A8
+- EDIT `.opencode/commands/cicd-code-review.md` — mirrored door, byte-identical → A8
+- EDIT `.opencode/commands/smh-quick-dev.md` — mirrored door, byte-identical → A8
+- EDIT `.opencode/commands/cicd-quick-dev.md` — mirrored door, byte-identical → A8
+- EDIT `.opencode/commands/cicd-dev-story-tests.md` — mirrored door, byte-identical → A8
 - NEW `_artifacts/_main/2026-08-22_scc-263-scratchpad-allow-hook/implementation_plan.md` — this plan → A7
 - NEW `_artifacts/_main/2026-08-22_scc-263-scratchpad-allow-hook/walkthrough.md` — the closing record → A7
+- NEW `_artifacts/_main/2026-08-22_scc-263-scratchpad-allow-hook/sweep.json` — the mutant table → A4
+- EDIT `_artifacts/_main/INDEX.md` — the session row → A7
 
 ---
 
@@ -82,11 +97,10 @@ verified before the ticket existed — the operator hit the friction live and as
 chat, so the code preceded the ceremony. The test therefore passes green on first run, which is the
 `test-debt-stories-are-characterization` convention, not the `tests-must-gate-for-real` RED.
 
-**What replaces the red, so the suite is not vacuous:** Step 6's mutation sweep. Each of the six
-rule constants is mutated in turn and the suite must fail for each. A retrofit test that cannot kill
-a mutant is a test that pins nothing, and this is the only evidence available once the green came
-first. The operator chose this over reverting-and-re-adding the hook, to avoid churning a
-verified-working fix.
+**Superseded by the Amendment below.** v1's suite was a retrofit; v2's `ESCAPES` block is a
+genuine red — every one of its sixteen cases returned `allow` against the code that shipped as
+`8479bc8`, and they were written from reproductions the review lenses executed, not from
+imagination. The mutation sweep remains the guard against vacuity for the rest of the suite.
 
 ## Landing-order dependency
 
@@ -197,3 +211,76 @@ Audit verdict: GO
 
 Both findings are answerable inside this plan — F1 is already fixed, F2 is one rule and one test
 block. Neither breaks a hard gate.
+
+---
+
+## Amendment (2026-08-22) — the review threw the first hook away
+
+**`/smh-code-review` returned FAIL on the v1 hook. Five lenses reproduced twelve escapes, every
+one in the granting direction, and the operator's call was to rewrite rather than patch.** The
+plan above described v1; this section is what replaced it, and the acceptance rows A1–A6 are now
+read against the new design.
+
+**What every escape had in common.** v1 asked *"are all the ABSOLUTE PATHS I can find inside the
+sandbox?"* — a deny-list over a surface it had to recognise first. Anything not recognised AS a
+path was treated as harmless:
+
+| Reproduced escape | Why v1 allowed it |
+|---|---|
+| `rm -rf /<sb>/rt .agents` | `.agents` is relative; nothing collected it |
+| `rm -rf .git # cleanup /<sb>` | a path in a **comment** satisfied "a sandbox path is present" |
+| `bash /<sb>/r.sh > "out.txt"` | the redirect regex excluded quote characters, so it matched nothing and `all([])` is True |
+| `bash /<sb>/r.sh >\| out.txt` | same, for `\|` |
+| `bash /<sb>/r.sh >&out.txt` | `>&FILE` writes a **file**; `writable()` read the `&` as an fd duplication |
+| `tar -C/<repo> -xf /<sb>/p.tar` | `ABS_PATH`'s lookbehind hides a path glued to a flag |
+| `python3 /<sb>/h.py --out=/<repo>/x` | same, for `=` |
+| `"curl"` · `\curl` · `/usr/bin/curl` | `DENY_WORDS` needed a delimiter immediately before the word |
+| `/usr/bin/git clean -fdx` | `GIT_CALL` needed the same delimiter, so an absolute git skipped rule 6 |
+| `git -C /<sb>/r log && git reset --hard` | rule 6 checked *every `-C` is sandboxed*, never *every git has one* |
+| `cp /<sb>/x /opt/homebrew/bin/git` | `SAFE_PREFIXES` was reasoned about as read-only but enforced that way only for redirects |
+| `rm -rf /private/tmp/claude-501/` | the root stopped at the **uid**, two levels above the session |
+
+⭐ **That is not twelve bugs. It is what a deny-list over shell syntax always degrades into** — the
+parser becomes the security boundary, and a regex is not a shell parser. Rule 7 is the proof: the
+self-audit correctly generalised to *"a write target need not be absolute"*, and the fix covered
+the two syntactic forms its author happened to think of.
+
+**v2 inverts it into an allow-list of SHAPES.** Four rules, and anything not positively recognised
+is refused:
+
+1. **No shell metacharacters at all** — one simple command per call. This kills the comment escape,
+   both redirect escapes, every quoting escape and every chaining escape at once, because none of
+   those constructs survives to be misparsed. It costs less than it looks: `chmod +x X && bash X`
+   becomes two Bash calls and **both** are auto-allowed.
+2. **The executable is a bare name from a literal list** — never a path, so the whole
+   `/usr/bin/<anything>` class is unreachable by construction. `SAFE_PREFIXES` is gone entirely,
+   which removes the read/write asymmetry that leaked write permission into `/opt/homebrew`.
+3. **Every non-flag token is an absolute path inside the sandbox** — relative arguments are refused
+   outright, and a `--flag=VALUE` is split so its value is checked rather than hidden.
+4. **The sandbox is this SESSION's scratchpad**, pinned against the payload's `session_id` when one
+   arrives, so one lane can no longer delete another's harness.
+
+**Evidence.** All 18 replayed escapes refused · all 11 real harness shapes still allowed · suite
+**107/107** · sweep **15/15 killed**, restore verified · full floor **44/44 files**.
+
+⭐ **The sweep earned its place twice over.** It rejected four of my own mutant attributions — three
+where a *different* rule caught the mutant first (so the declared case proved nothing about the
+rule it named), and one, `M2`, that was an **equivalent mutant**: `SANDBOX_RE` starts with `^`, so
+`search()` and `match()` cannot differ and no test could ever kill it. Replacing it with the
+`scratchpad` word-boundary mutant found a real uncovered constant.
+
+### A8 — the review-runtime probe law (folded in on operator instruction)
+
+The probe law forbade both stopping to ask AND downgrading to `inline`, while naming **no third
+move**. An agent that believed itself forbidden had no legal option, and the cheapest illegal one
+is a silent `inline` that reads exactly like a runtime with no subagent tool — SCC-203 again. Two
+changes, in all five carriers plus their five mirrored `.opencode/` doors:
+
+- ***"Am I permitted?"* is answered by the invocation** — a `/` command **is** a user request, so a
+  session directive gating subagent use on being asked is satisfied by it.
+- **A third door that is legal but visible:** `inline (blocked: <what blocked you>)`. A bare
+  `inline` from a runtime that has the tool is a false record; naming the blocker puts the belief
+  where `walkthrough_roster.py` can see it instead of laundering it into a clean-looking `inline`.
+
+⛔ **This lane hit that exact ambiguity live** — the builder stopped and asked the operator, which
+the law forbids, because the law offered nothing else. The fix is the finding.
