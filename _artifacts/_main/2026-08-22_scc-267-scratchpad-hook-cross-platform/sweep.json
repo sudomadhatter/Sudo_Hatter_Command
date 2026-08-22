@@ -5,11 +5,11 @@
   ],
   "mutants": [
     {
-      "id": "M1 · read os.getuid directly again — the Windows import crash returns",
+      "id": "M1 · evaluate the uid at MODULE level again — the Windows import crash returns",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    getuid = getattr(os, \"getuid\", None)",
-      "mutated": "    getuid = os.getuid",
-      "case": "PLATFORM · the silence is a refusal, not an import failure",
+      "original": "ROOT_FILE = (\".claude\", \"scratchpad-root\")",
+      "mutated": "ROOT_FILE = (\".claude\", \"scratchpad-root\"); _UID = os.getuid()",
+      "case": "PLATFORM · exit 0 where there is no uid",
       "block": "PLATFORM"
     },
     {
@@ -45,6 +45,10 @@
     {
       "mutant": "if not line.startswith(\"/\") or FORBIDDEN & set(line): -> if False:",
       "why_no_test_can_kill_it": "Both halves are defence in depth over a check that already holds downstream. A relative root yields a pattern with no leading slash, and sandboxed() refuses any token that does not start with one before it ever matches. A metacharacter survives re.escape as a literal, so it can only ever match a path spelled with that literal. The guard STAYS: it is what keeps this file correct if sandboxed()'s own leading-slash check is ever relaxed."
+    },
+    {
+      "mutant": "getuid = getattr(os, \"getuid\", None) -> getuid = os.getuid",
+      "why_no_test_can_kill_it": "Inside a function the raise is absorbed by sandbox_root()'s own try/except, which answers None - the same silence the getattr gives. It is only a crash when it runs at MODULE level, before the wrapper exists, which is what M1 now mutates. The getattr stays as the honest spelling of 'this platform may not have a uid'."
     }
   ]
 }
