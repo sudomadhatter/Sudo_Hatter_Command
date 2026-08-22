@@ -107,6 +107,12 @@ boundary being drawn is "SOP vs setup," never "watched vs unwatched."
 | [sharing_keys_secrets_secure.md](sharing_keys_secrets_secure.md) | **How to get a key onto a teammate's machine without it ever existing in a chat message.** The Keyway vault: install per machine, `keyway login` + `keyway init` per repo, and the daily loop — `keyway run` injects secrets into RAM so nothing durable lands on disk. The team half is the point: GitHub repo access decides **who is in at all**, production is a permission boundary rather than a label, and **offboarding is three steps — revoke, clear the dashboard role, then rotate**, because cutting GitHub access cannot un-copy a `.env` someone already pulled. Documents the flags that destroy data (`push --prune` against a stale file silently deletes your teammates' keys; `sync` is bidirectional and the one command defaulting to **production**; `-e` means `--exclude` on `scan` alone) and ⛔ **the hazard the tool creates itself: `keyway push` appends `.env*` to your `.gitignore` unprompted** — observed live, which is why `git diff .gitignore` after a first push is in the card. Also records why Keyway over GCP Secret Manager or Vault. Flags checked command-by-command against the live 0.5.3 binary (SCC-37). |
 | [smh-adviser-board-REFERENCE.md](smh-adviser-board-REFERENCE.md) | The `/smh-adviser-board` roster: every mind with a full cognitive signature, so any bench mind can be subbed into a seat with a copy-paste. |
 
+## Frontend & UI/UX design
+
+| Doc | What it is |
+|---|---|
+| [frontend_UI_design_guide.md](frontend_UI_design_guide.md) | **The unified house frontend design and animation guide** — the three pillars of UI craft: visual intelligence and design systems ([`.agents/skills/ui-ux-pro-max`](../../.agents/skills/ui-ux-pro-max/SKILL.md)), fluid motion and spring physics (the Emil Kowalski animation skills suite: `emil-design-eng`, `apple-design`, `animate`, `review-animations`, `find-animation-opportunities`), and rich transparent video overlays ([`.agents/skills/webm-alpha-video`](../../.agents/skills/webm-alpha-video/SKILL.md)). Carries the agent routing matrix and the pre-delivery UI quality checklist. |
+
 ## A note inherited from the toolkit's retired reference folder
 
 That folder existed to hold long-form docs **deliberately off every command surface** — anything
