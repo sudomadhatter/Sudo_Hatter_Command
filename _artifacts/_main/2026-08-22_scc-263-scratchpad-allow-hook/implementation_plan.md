@@ -36,7 +36,7 @@ this touches is disposable". So the hook answers exactly that and nothing wider.
 | A1 | Emits `permissionDecision: allow` for one simple command whose executable is an allow-listed bare name and whose every non-flag token is an absolute path inside **this session's** scratchpad | `test_allow_scratchpad.py` block A, 11 real harness shapes |
 | A2 | Emits **nothing** for each of the four decline rules — a shell metacharacter · an executable that is not an allow-listed bare name · a non-flag token that is not a sandboxed absolute path · a path outside this session's scratchpad — **and for every escape the two review rounds reproduced** | blocks B, C, D, E, `ESCAPES` (16 v1 escapes) and `TRAVERSAL` (9 round-2 escapes) |
 | A3 | **Never** emits `ask` or `deny`, and always exits 0 — malformed, empty, null and non-Bash stdin are all SILENT, asserted as silence rather than merely not-`ask` | block G |
-| A4 | The suite fails when any of the hook's rule constants is mutated | `mutation_sweep.py` over `sweep.json` — 23 mutants, each killed by its declared case |
+| A4 | The suite fails when any of the hook's rule constants is mutated | `mutation_sweep.py` over `sweep.json` — 24 mutants, each killed by its declared case |
 | A5 | `.claude/settings.json` wires it **first** in the `PreToolUse` Bash matcher and dispatches it through `run-hook.sh` (never a named interpreter), and `.claude/hooks/` byte-matches the `.agents/hooks/` master | blocks WIRING and E2E, reading the real repo files |
 | A6 | `python3 .agents/scripts/tests/run_all.py` passes | the gate itself |
 | A7 | The lane's artifact folder holds an `implementation_plan.md` carrying a parsing `## Declared Change Set` and an audit verdict, and a `walkthrough.md` carrying a `Verdict:` line | `declared_change_set.py parse` exits clean; `/smh-close-task-merge-tree` preflight reads both |
@@ -263,11 +263,17 @@ is refused:
 4. **The sandbox is this SESSION's scratchpad**, pinned against the payload's `session_id` when one
    arrives, so one lane can no longer delete another's harness.
 
-**Evidence at the shipping sha `7ba2d09`.** All **16 replayed v1 escapes** refused (block
-`ESCAPES`) · all **9 round-2 escapes** refused and the legal interior `..` still allowed (block
-`TRAVERSAL`) · all **15 real harness shapes** still allowed (block `A`) · suite **163/163** ·
-sweep **23/23 killed**, restore verified · full floor **48/48 files** · twin parity **65/65** ·
-engine contract **868/868**.
+**Evidence.** All **16 replayed v1 escapes** refused (block `ESCAPES`) · all **9 round-2 escapes**
+refused and the legal interior `..` still allowed (block `TRAVERSAL`) · all **15 real harness
+shapes** still allowed (block `A`) · suite **165/165**, and **165/165 again under a simulated
+foreign uid** · sweep **24/24 killed**, restore verified · full floor **48/48 files** both ways ·
+twin parity **65/65** · engine contract **868/868**.
+
+⛔ **The "both ways" is not decoration — it is the round-3 finding.** The fixtures hardcoded
+`claude-501` while the hook reads `os.getuid()`, so every ALLOW case failed on CI and the suite
+could not pass on any machine but the one that wrote it. `163/163` and `sweep 23/23` were true only
+on uid 501. Fixed by deriving the uid, and pinned by a case that runs the hook under an overridden
+`os.getuid()` (sweep mutant M24).
 
 ⭐ **The sweep earned its place twice over.** It rejected four of my own mutant attributions — three
 where a *different* rule caught the mutant first (so the declared case proved nothing about the

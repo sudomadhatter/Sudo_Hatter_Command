@@ -260,6 +260,40 @@ isolates rule 1 is one where the second command **is itself** a sandbox path —
 
 ---
 
+## Round 3 — CI found what neither review round could (2026-08-22, `main-write-gate` on PR #47)
+
+⛔ **`main-write-gate` went red: 47/48 files, `test_allow_scratchpad.py` FAILED.** Every one of the
+fifteen block-A shapes, the interior-`..` positive case, the symbolic-mode case and all twenty
+closed-set positives returned **silence** on the runner. Every refusal case passed.
+
+**Cause: the fixture hardcoded `claude-501`; the hook reads `os.getuid()`.** Pinning the uid to the
+running process was a round-2 fix — a foreign account's tree is not our sandbox — and the fixtures
+were never moved with it. On the machine that wrote them the two agree **for the wrong reason**, so
+nothing local could ever show it.
+
+⭐ **What that means about the evidence, stated plainly:** `163/163` and `sweep 23/23` were true
+only on uid 501. The suite could not pass on any other machine, and a mutation sweep run against a
+machine-pinned suite inherits the same limit. **CI is the first thing that ever ran this suite
+somewhere else, and it is the reason this was caught before the merge rather than by the next
+person to clone the repo.**
+
+**Fix:** `UID = os.getuid()` and `FOREIGN_UID = UID + 1` at the top; every `claude-501` literal in
+the file now derives from them, so the "foreign uid" case stays foreign wherever it runs.
+
+**And a new case, because the fix alone would still be invisible on a uid-501 machine.** Every
+other uid assertion here is written in terms of `os.getuid()`, so a re-hardcode would agree with
+them again on the operator's Mac. The new case runs the hook in a child whose `os.getuid()` is
+overridden — `sitecustomize` on `PYTHONPATH`, which subprocesses inherit, and the hook *is* a
+subprocess — then asserts the sandbox **moves with it**: the uid-4242 root becomes grantable and
+our own real one stops being. Verified non-vacuous by hand (`_UID = re.escape("claude-501")` fails
+both directions) and declared as sweep mutant **M24**.
+
+**Re-measured:** suite **165/165** natively **and 165/165 under a simulated foreign uid** · sweep
+**24/24 killed** · floor **48/48 both ways** — the whole enforcement suite was re-run under the
+simulated uid too, so no other test in it carries the same pin.
+
+---
+
 ## Verdict
 
 Verdict: PASS @ 7ba2d09
@@ -270,8 +304,9 @@ Verdict: PASS @ 7ba2d09
 - **The evidence is no longer builder-run over its own design.** Sixteen v1 escapes and nine
   round-2 escapes are replayed as tests; the sweep is 23/23 killed with restore verified; the three
   sets that carry the security guarantee are pinned closed, not by example.
-- **Gates at `7ba2d09`:** suite **163/163** · sweep **23/23 killed** · floor **48/48 files**
-  (`run_all.py`, 59/59 tests) · twin parity **65/65** · engine contract **868/868**.
+- **Gates at the shipping sha:** suite **165/165**, and **165/165 again under a simulated foreign
+  uid** · sweep **24/24 killed** · floor **48/48 files** (`run_all.py`, 59/59 tests) · twin parity
+  **65/65** · engine contract **868/868**.
 
 ⚠️ **What PASS does not claim.** This hook grants permission, and its guarantee is *"every argument
 resolves inside a directory that dies with the session"* — not *"this command is safe"*. Running
