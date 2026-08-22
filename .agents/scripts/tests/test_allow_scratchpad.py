@@ -26,7 +26,6 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from pathlib import Path
 
 from _harness import SCRIPTS, Cases
 
@@ -212,6 +211,10 @@ def main() -> int:
             ("a relative combined redirect", f"bash {SB}/rt/run.sh &> all.txt"),
             ("tee to a relative path", f"bash {SB}/rt/run.sh | tee out.txt"),
             ("a redirect into the repo", f"bash {SB}/rt/run.sh > {REPO}/out.txt"),
+            # ⛔ `/usr/` is in SAFE_PREFIXES, so rule 2 waves this through: those prefixes exist
+            # so an absolute interpreter can be READ. Only rule 7's separate, narrower WRITE_OK
+            # stops it, and this case is the only thing that proves the two lists stayed apart.
+            ("a redirect into a system prefix", f"bash {SB}/rt/run.sh > /usr/local/lib/x"),
         ]:
             _, out = call(cmd)
             c.check(f"J · silent on {label}", silent(out), out.strip()[:160])
