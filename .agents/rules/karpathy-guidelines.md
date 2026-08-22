@@ -1,6 +1,11 @@
 ---
 name: karpathy-guidelines
 description: "Universal behavioral principles to reduce common LLM coding mistakes. Derived from Andrej Karpathy's observations, adapted with project-specific lessons."
+trigger: always_on
+# Floor tier (rules/INDEX.md): loaded every session, unconditionally. No `paths:` —
+# a path-scoped rule is on-demand by definition, and this one must bind before the
+# first reply, not after the file that would have triggered it.
+
 ---
 
 # Behavioral Principles

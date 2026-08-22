@@ -1,6 +1,12 @@
 ---
 name: mobile-mode
 description: "The web/mobile lane. Activates automatically when env `CLAUDE_CODE_REMOTE=true` (Claude Code on the web or phone), or when Daniel says 'mobile'. Adapts git, the approval gate, artifacts, and verification for a phone — where there is no terminal to paste into and typing is expensive. This rule is the single source of truth for the lane boundary (when mobile is on vs. desktop). Overrides the desktop defaults in git-policy.md and artifacts-always-first.md for the duration of the session."
+trigger: model_decision
+triggers: [mobile, phone, web session, remote container, on my phone]
+# Intent-shaped: no glob can catch it, because the trigger is what the operator ASKS,
+# not what gets opened. Antigravity judges `description:` against the request;
+# `.agents/hooks/rule-trigger.py` matches these keywords and injects a pointer.
+
 ---
 
 # Mobile Mode

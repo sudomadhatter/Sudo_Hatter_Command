@@ -1,6 +1,12 @@
 ---
 name: mermaid-diagram-preferences
 description: "Activates whenever you generate a Mermaid diagram. Never use sequenceDiagram (Daniel finds them noise); use flowchart TD or LR instead."
+trigger: model_decision
+triggers: [mermaid, diagram, flowchart, sequence diagram, chart the flow]
+# Intent-shaped: no glob can catch it, because the trigger is what the operator ASKS,
+# not what gets opened. Antigravity judges `description:` against the request;
+# `.agents/hooks/rule-trigger.py` matches these keywords and injects a pointer.
+
 ---
 
 # Mermaid Diagram Preferences

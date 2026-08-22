@@ -108,3 +108,4 @@ of `—` means the page recorded the ticket but not the day; the ticket's sessio
 | — | SCC-203 | The runtime probe asks capability, never policy; a contaminated Blind Hunter is dropped (`n/a` + reason), not faked. |
 | 2026-08-22 | SCC-270 | The code graph the reviews and audits consult is now `code-review-graph` (MIT), installed per machine with `pipx`. It can finally see `.agents/`, so the toolkit itself is reviewable. New section in §8; full reference in `docs/code-review-graph.md`. |
 | 2026-08-22 | SCC-270 | `/smh-update-maps-indexes` reports a stale code graph and hands you `code-review-graph update` to run after committing; it never rebuilds one for you. |
+| 2026-08-22 | SCC-270 | Rules now say when they apply: file-shaped rules load when a matching file is opened, request-shaped rules are surfaced by a prompt hook. Floor and protocol tiers unchanged. |

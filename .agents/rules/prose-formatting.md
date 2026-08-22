@@ -1,6 +1,12 @@
 ---
 name: prose-formatting
 description: "Activates on conversational chat replies. Prefer prose over bullets and scaffolding; minimum formatting for clarity. Does not govern structured deliverable docs (artifacts, specs, tables)."
+trigger: model_decision
+triggers: [chat reply, write it up, prose, formatting, bullet points]
+# Intent-shaped: no glob can catch it, because the trigger is what the operator ASKS,
+# not what gets opened. Antigravity judges `description:` against the request;
+# `.agents/hooks/rule-trigger.py` matches these keywords and injects a pointer.
+
 ---
 
 # Chat Response Formatting — Prose Over Scaffolding

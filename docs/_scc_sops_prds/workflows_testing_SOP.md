@@ -1426,6 +1426,29 @@ doc and index edits, memory files, `_artifacts` INDEX rows, notes, and quick ref
 
 ---
 
+### Rules that show up when they are needed
+
+The system's law lives in `.agents/rules/`. You do not load it — the agent does, and until now
+"loading" meant it had to *decide* to go and read the right file. Two of the four tools can now do
+that themselves, so each rule states when it applies:
+
+- **A rule about a kind of file** — the code standard, the dependency rule, the PowerShell encoding
+  rule, the testing rule — names the files it governs. Claude Code loads it the moment it opens a
+  matching file, and not before. So the Python standard arrives when Python is touched, and stays
+  out of the way when you are writing a document.
+- **A rule about a kind of request** — "something is broken", "the board", "this is a port" — cannot
+  be caught by a filename, so it carries a short list of words instead. Antigravity weighs the rule's
+  own description against what you asked; in Claude Code a small hook watches your prompt and, when
+  one of those words appears, tells the agent which rule to open. It only ever points; it never
+  blocks and it never edits.
+- **The three always-on rules and the four protocol rules are unchanged.** They bind the same way
+  they always did, and their gates remain written into the front door as well, so nothing depends on
+  a file being loaded at the right moment.
+
+Nothing to type, and nothing to maintain by hand: the classification lives in one table
+(`.agents/rules/INDEX.md`), the per-rule markers mirror it, and a test fails if the two ever
+disagree. `/smh-sync-agents` writes the copies Claude Code reads.
+
 ### The code graph — what the review commands ask before they judge
 
 The command centre and each project carry a **local code graph**: a small SQLite index built by

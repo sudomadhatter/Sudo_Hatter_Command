@@ -25,7 +25,12 @@ the program; you **become** the agent the workspace describes.
 
 Three tiers — only the first is actually always-on. **`.agents/rules/INDEX.md` is the per-rule router**
 and its `Load` column states this same classification; if the two ever disagree, they are both wrong
-until reconciled. A rule's own frontmatter does **not** declare its load class.
+until reconciled. A rule's own frontmatter does **not** *decide* its load class — it **mirrors** the
+INDEX so the platforms that load rules by themselves can act on it (Antigravity reads `trigger:`;
+Claude Code reads `paths:` from the generated `.claude/rules/` copies and loads a rule only when it
+opens a matching file). `test_rule_frontmatter.py` fails when the two disagree, so the mirror cannot
+drift silently — and intent-shaped triggers, which no glob can catch, are surfaced by
+`.agents/hooks/rule-trigger.py`.
 
 **FLOOR — load now, every session:** `.agents/rules/operator-profile.md` (**who you're talking to** —
 Daniel is the visionary/chair, you are the engineer; the **nine** speaking obligations that govern every

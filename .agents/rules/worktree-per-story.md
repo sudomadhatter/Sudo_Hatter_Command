@@ -1,6 +1,12 @@
 ---
 name: worktree-per-story
 description: "Fires when ANY lane starts work that will produce commits — the trigger is concurrency, not work type (SCC-62, 2026-08-09). One lane, one worktree, opened BEFORE the first edit, committed freely inside, landed and pruned by its own close-out. The BASE still differs by lane: a sudo story lane takes `claude/<KEY>-<slug>` off the story's EPIC branch (never main) and is pruned by /cicd-close-story-merge-tree Step 5 (which calls /cicd-prune-worktree); ad-hoc/Task work takes `chore/<KEY>-<slug>` off main and is pruned by /smh-close-task-merge-tree Step 5. Carries the `⛔ Your tree is your world` hard stop (never touch or report another lane's files) and `⛔ cwd is not intent`. Read-only sessions and a single watched trivial edit are exempt. Pairs with git-policy.md."
+trigger: model_decision
+# Protocol tier (rules/INDEX.md): conditional, not floor. Every gate it carries is ALSO
+# stated inline in AGENTS.md and constitution.md, so the stop binds even in a session
+# that never opens this file — which is what makes it safe to leave conditional rather
+# than load ~44 KB of protocol prose into every read-only session.
+
 ---
 
 # Worktree Per Story

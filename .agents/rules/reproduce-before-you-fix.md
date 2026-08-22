@@ -1,6 +1,12 @@
 ---
 name: reproduce-before-you-fix
 description: "Activates the moment something is reported broken — a bug, a red suite, an incident, 'it's not working', a Sentry alert. The house debug loop: reproduce → pin with a failing test SEEN red → falsify one hypothesis at a time → minimal fix at the cause → prove the test catches it by reverting the fix. No fix without a reproduction; no bug fix without a pinning test."
+trigger: model_decision
+triggers: [broken, bug, failing, red suite, not working, incident, regression, crash]
+# Intent-shaped: no glob can catch it, because the trigger is what the operator ASKS,
+# not what gets opened. Antigravity judges `description:` against the request;
+# `.agents/hooks/rule-trigger.py` matches these keywords and injects a pointer.
+
 ---
 
 # Reproduce Before You Fix
