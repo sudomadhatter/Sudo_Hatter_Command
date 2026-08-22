@@ -121,6 +121,7 @@ lenses_counted:  5/5
 lenses_na:       none
 findings:        0 decision · 20 patch · 0 defer   (0 noise-dismissed · 8 relevance kills)
 dispositions:    per-lens: Blind Hunter=9/0/1 · Edge Case Hunter=8/0/0 · Literal-Correctness Hunter=11/0/1 · Acceptance Auditor=9/0/0 · Test-Adequacy Auditor=6/0/6
+drift:           undeclared=2 · unimplemented=0 · incomplete=0 — `sweep.json` and `_artifacts/_main/INDEX.md` were in the diff and not in the block; both added to the ledger in-lane (dispositions in the findings table)
 severity_floor:  FAIL
 notes:           Reviewed at 141a6ff1. All five lenses ran in clean contexts; none degraded.
                  Every hunter reproduced its findings by executing the hook rather than
@@ -185,6 +186,7 @@ lenses_counted:  5/5
 lenses_na:       none
 findings:        0 decision · 14 patch · 0 defer   (0 noise-dismissed · 3 relevance kills)
 dispositions:    per-lens: Blind Hunter=4/0/1 · Edge Case Hunter=3/0/0 · Literal-Correctness Hunter=3/0/1 · Acceptance Auditor=2/0/1 · Test-Adequacy Auditor=2/0/0
+drift:           undeclared=0 · unimplemented=0 · incomplete=0 — 22 declared, 22 in the diff, exact match (dispositions in the findings table)
 severity_floor:  FAIL
 notes:           Reviewed at 46a67bb6, in clean contexts, none degraded. The floor is FAIL on
                  the reviewed sha: two NEW escape classes, both in the granting direction and
