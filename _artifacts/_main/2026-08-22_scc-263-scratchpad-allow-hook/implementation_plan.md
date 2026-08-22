@@ -34,7 +34,7 @@ this touches is disposable". So the hook answers exactly that and nothing wider.
 | # | Statement | How it is checked |
 |---|---|---|
 | A1 | Emits `permissionDecision: allow` when ≥1 absolute path is inside the scratchpad root and **every** absolute path is inside it or a read-only system prefix | `test_allow_scratchpad.py` block A, the eight real harness shapes |
-| A2 | Emits **nothing** for each of the six decline rules: no sandbox path · an absolute path outside · a `..` segment · an unexpanded `$`/`~`/`$(…)` · a deny-listed command · `git` with no `-C` or a `-C` outside | blocks B–G, one block per rule |
+| A2 | Emits **nothing** for each of the seven decline rules: no sandbox path · an absolute path outside · a `..` segment · an unexpanded `$`/`~`/`$(…)` · a deny-listed command · `git` with no `-C` or a `-C` outside · **a redirect or `tee` target that is not an absolute sandbox path** | blocks B–G and J, one block per rule |
 | A3 | **Never** emits `ask`, and always exits 0 — including on malformed, empty and non-Bash stdin | block H |
 | A4 | The test fails when the hook's rule constants are mutated | `mutation_sweep.py` over the six constants |
 | A5 | `.claude/settings.json` wires it **first** in the `PreToolUse` Bash matcher, and `.claude/hooks/` byte-matches the `.agents/hooks/` master | block I, reading the real repo files |
@@ -49,7 +49,8 @@ lane it exists to unblock, so this hook has exactly two legal outputs: `allow`, 
 
 ## Steps
 
-1. **`.agents/hooks/allow-scratchpad.py`** — the hook. Six rules, all must hold or it stays silent.
+1. **`.agents/hooks/allow-scratchpad.py`** — the hook. Seven rules (the seventh added by this
+   plan's own self-audit, below), all must hold or it stays silent.
    Wrapped in a bare `except: pass` + `sys.exit(0)`: it may only ever *remove* a prompt it is
    certain about, never *add* one. → A1, A2, A3
 2. **`.claude/hooks/allow-scratchpad.py`** — the deployed copy, byte-identical. Mirrors the
@@ -59,7 +60,8 @@ lane it exists to unblock, so this hook has exactly two legal outputs: `allow`, 
    is recorded before the later gates speak; a sibling `ask`/`deny` still wins, which is correct. → A5
 5. **`.agents/scripts/tests/test_allow_scratchpad.py`** — the retrofit suite, `_harness.Cases`,
    stdlib only, one `c.block` per rule. → A1–A3
-6. **Mutation sweep** over the hook's six rule constants; every mutant must die. → A4
+6. **Mutation sweep** over the hook's seven rule constants plus the two safety guarantees (the
+   `ask` ban and the fail-silent wrapper); every mutant must die. Table: `sweep.json`. → A4
 
 ## Declared Change Set
 
