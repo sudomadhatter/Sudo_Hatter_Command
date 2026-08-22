@@ -18,6 +18,8 @@ of `—` means the page recorded the ticket but not the day; the ticket's sessio
 
 | Date | Ticket | What changed for the operator |
 |---|---|---|
+| 2026-08-22 | SCC-267 | The scratchpad allow-hook no longer crashes on Windows — the uid was read at import, outside its own fail-safe wrapper, so it exited 1 with a traceback on every Bash call there. Nothing that can raise runs at module level now. |
+| 2026-08-22 | SCC-267 | The scratchpad root is per-machine (a gitignored `scratchpad-root` file under `.claude/`, root only — the session-pinned shape is unchanged). Setup guide added under `docs/migrations/install_guides/`. |
 | 2026-08-22 | SCC-263 | `allow-scratchpad.py`: a `PreToolUse` hook auto-allows the narrow shape of Bash command that can only touch this session's scratchpad, so a review stops asking twenty-odd times to run its own throwaway harness. Allow-list of shapes; two legal outputs, `allow` or silence. Lobby-only, Mac-only. |
 | 2026-08-22 | SCC-263 | The review-runtime probe law says outright that a `/` command IS a user request, and gives the third door — a blocked `inline` must name what blocked it. |
 | 2026-08-21 | SCC-244 | `mutation_sweep.py` accepts `"unfiltered": true` on a mutant, for a test file that declares no `c.block()` — without it every such mutant returns a sweep error and the file gets no coverage. `unfiltered` + `block` together is refused. |

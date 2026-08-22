@@ -80,6 +80,7 @@ to use it — read the guides, run the scripts. Nothing here is read-only-protec
 | 8 | **Link the Claude auto-memory store** so memory travels via git instead of dying on this box | `.agents/scripts/link-memory.ps1` · macOS → `link-memory.sh` | ✅ | ✅ **use the `.sh`** |
 | 9 | Carry the **Antigravity IDE extensions** across (export on the old box, import on the new one) | [`antigravity-ide-extension-migration.md`](install_guides/antigravity-ide-extension-migration.md) | ✅ export | ✅ import |
 | 10 | Carry the **Gemini/Antigravity plugins + skills** via the repo | [`gemini-extensions-sync-guide.md`](gemini_extensions/gemini-extensions-sync-guide.md) | ✅ | ✅ |
+| 11 | **Point the scratchpad allow-hook at this machine's scratchpad** — otherwise every verification lane asks for twenty-odd approvals per run, for a directory that dies with the session. Measured, never assumed; the file is gitignored and never travels | [`scratchpad-allow-hook-per-machine.md`](install_guides/scratchpad-allow-hook-per-machine.md) | ✅ **read its §3 first** | ⚪ not needed (the built-in root already matches) |
 
 ```powershell
 # step 8 — Windows, from the LOBBY ROOT. Dry run first; -Apply only once the plan reads right.
