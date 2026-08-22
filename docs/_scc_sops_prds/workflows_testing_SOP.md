@@ -2742,15 +2742,19 @@ flowchart TD
   and pushes; nothing reaches the epic until ③. Grounding reads the lane's own branch when the
   checkout has none — the same way the Task lane reads its plan. Reading only the checkout returns
   `[NO-STORY]` for every story *still in flight*, which is every story you would ever ask about, and
-  tells you to go and write a file that already exists on the branch being labelled.
+  tells you to go and write a file that already exists on the branch being labelled. **A source read
+  that way carries a `ref`, and the doors say to open it with `git show "<ref>:<path>"`** — the
+  checkout does not have that file, and an agent that hits the ENOENT and reads it as "no source"
+  throws away the rung the packet just called authoritative.
 - **A lane with only its RED tests written is not "code written".** That would be rung 1, the top of
   the ladder, decided on a touch-set that is the test files and nothing else — which understates
   where the code is about to land, and an understated touch-set is what manufactures a false 🟢. A
   tests-only diff keeps its paths but ranks *below* whatever can see further. **A diff with any real
   source file in it is unaffected.**
-- **🔒 names every declared blocker, not just the first.** One name for four declared blockers costs
-  you four rounds — land it, re-run, hear about the next one — for an answer the engine already has,
-  and the row *reads* like a single dependency.
+- **🔒 names every declared blocker, not just the first** — in the engine, in the legend, and in the
+  chat report, which is the surface you actually read. One name for four declared blockers costs you
+  four rounds — land it, re-run, hear about the next one — for an answer the engine already has, and
+  the row *reads* like a single dependency.
 
 #### /smh-plan-task
 

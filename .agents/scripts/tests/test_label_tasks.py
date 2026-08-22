@@ -1057,6 +1057,40 @@ def main() -> int:
                     for n in range(1, 5)),
                 str({k: x.get("verdict") for k, x in (r.get("_by") or {}).items()}))
 
+    # ── F3 · the ENGINE and its DOORS have to agree about `ref` (SCC-244 review) ──────────
+    # The packet emits `{"kind": …, "path": …, "ref": "<branch>"}` when it read the file off the
+    # lane's branch instead of the working tree. Both doors say "read them" and neither said
+    # HOW, so the agent opens `<path>` in a checkout that does not have it — an ENOENT on the
+    # rung the packet just called authoritative, which reads as "no source" and downgrades a
+    # grounded child. This is a contract BETWEEN two files, so it is measured on both ends: the
+    # engine must still be able to emit a ref, and every door must then explain `git show`.
+    engine = (lt.__file__ and Path(lt.__file__).read_text(encoding="utf-8")) or ""
+    c.check("F3 the engine still emits a `ref` on a source (else this contract is moot)",
+            '"ref"' in engine, "label_tasks.py")
+
+    doors = {d: (Path(".agents/scripts").parent / "commands" / d)
+             for d in ("cicd-label-tasks.md", "smh-label-tasks.md")}
+    for name, path in doors.items():
+        body = path.read_text(encoding="utf-8") if path.is_file() else ""
+        c.check(f"F3 {name} exists (a rename must FAIL, not scan nothing)", bool(body), str(path))
+        c.check(f"F3 {name} tells the agent to `git show` a source that carries a ref",
+                'show "<ref>:<path>"' in body,
+                "the packet names a path the checkout does not have; without this line the "
+                "miss reads as 'no source'")
+        # ⛔ C6: the report template is the operator-facing surface, and it still described the
+        # single-dependency shape while the engine had started naming every blocker. A row that
+        # names one of three is a schedule the operator builds on.
+        locked = [ln for ln in body.splitlines() if ln.lstrip().startswith("- `Locked:")]
+        c.check(f"F3 {name} has exactly one Locked report row", len(locked) == 1, str(locked))
+        c.check(f"F3 {name}'s Locked row shows MORE than one blocker",
+                bool(locked) and locked[0].count("<key>") >= 3,
+                (locked[0] if locked else "(none)")
+                + "  — `<key>` for the locked child plus at least two blockers")
+        legend = [ln for ln in body.splitlines() if ln.lstrip().startswith("| 🔒 after")]
+        c.check(f"F3 {name}'s legend row agrees with the report row",
+                bool(legend) and legend[0].count("<ticket>") >= 2,
+                (legend[0] if legend else "(none)"))
+
     return c.finish()
 
 

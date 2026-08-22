@@ -106,9 +106,12 @@ def main() -> int:
             plant = tmp / "cmds"
             plant.mkdir()
 
-            def one(body: str) -> list[tuple[str, int, str, str]]:
+            def one_full(body: str):
                 (plant / "z.md").write_text(body, encoding="utf-8")
-                return offenders(plant)[0]
+                return offenders(plant)
+
+            def one(body: str) -> list[tuple[str, int, str, str]]:
+                return one_full(body)[0]
 
             c.check("caught: a bare route with no path (the `/sm` defect, verbatim)",
                     len(one("- create the next story    → invoke `bmad-create-story`\n")) == 1,
@@ -138,9 +141,16 @@ def main() -> int:
                     not one("## Step 1\nRead the story file and get on with it.\n"),
                     "the law is about call sites, not about the word `stories`")
 
+            # ⛔ This read `offenders(plant)[2] >= 0 and len(one(...)) == 1`. A count is never
+            # negative, so the left conjunct was true no matter what — and being on the LEFT it
+            # also ran BEFORE `one()` wrote the body, so it counted callers in whatever `z.md`
+            # held from the check above. Write first, then assert, and assert the count that was
+            # actually meant: the file registers as a caller AND is flagged.
+            hits, _n, callers = one_full(f"invoke `{SKILL}`\n")
             c.check("a preamble invocation (a file with no headings at all) is still a call site",
-                    offenders(plant)[2] >= 0 and len(one(f"invoke `{SKILL}`\n")) == 1,
-                    "`/sm` has no `##` headings — a heading-only walk would skip it entirely")
+                    callers == 1 and len(hits) == 1,
+                    f"{callers} caller(s), {len(hits)} offender(s) — `/sm` has no `##` headings, "
+                    f"and a heading-only walk would skip the file entirely")
 
             empty = tmp / "empty"
             empty.mkdir()

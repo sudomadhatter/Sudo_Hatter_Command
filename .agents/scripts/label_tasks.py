@@ -378,9 +378,14 @@ def find_story_files_on_branch(repo: Path, story: str, branch: str) -> list[str]
     to create the story file that already exists on the branch being labelled.
 
     `git ls-tree` reads the branch without checking it out, so this stays a read-only pass
-    over a repo whose worktree belongs to somebody else. Matching mirrors
+    over a repo whose worktree belongs to somebody else. The SLUG RULE mirrors
     `wf.find_story_files` exactly — exact slug first, prefix second — because two readers of
     the same naming convention disagreeing is a worse bug than either being absent.
+
+    ⛔ The TRAVERSAL does not mirror it, and the difference is deliberate. `wf.find_story_files`
+    globs `stories/story-*.md` one level deep; this passes `-r` and reads the subtree, because a
+    branch may carry the story under a folder the checkout has never seen. So this reader can
+    find a file that one would miss — never the reverse.
     """
     r = wf.git(["ls-tree", "-r", "--name-only", branch, f"{wf.STORIES_REL}/"], repo)
     if r.returncode != 0:
@@ -558,8 +563,10 @@ def ground_child(repo: Path, child: dict, base: str, mode: str = "story",
     if mode == "task":
         plan = find_task_plan(repo, child["key"])
         rel = str(plan.relative_to(repo)) if plan else None
-        # The lane's own branch is where `/smh-plan-task` left it (finding #15); the current
-        # checkout is only the fallback for a plan that has already landed.
+        # CHECKOUT FIRST, branch as the fallback — see the story rung below for why the order
+        # is this way round. A landed plan is what every other lane sees; the branch copy is
+        # `/smh-plan-task`'s work still in flight, and it is only reached for when the checkout
+        # has nothing (finding #15).
         if not rel and branch:
             rel = find_task_plan_on_branch(repo, child["key"], branch)
         if rel:
@@ -586,8 +593,12 @@ def ground_child(repo: Path, child: dict, base: str, mode: str = "story",
         read_as = ("Dev Notes surfaces, task paths, and NEGATIVE declarations "
                    "('no X changes, that is 19.2')")
         found = [(str(f.relative_to(repo)), None) for f in wf.find_story_files(repo, sid)]
-        # The lane's own branch is where ① left it; the checkout is only the fallback for a
-        # story that has already merged. Same precedence as the Task-mode plan above.
+        # CHECKOUT FIRST, branch as the fallback — and that order is deliberate, not an
+        # oversight. A story file in the checkout is one that has landed, so it is the version
+        # every other lane will see; the branch copy is ① 's work in flight. Only reach for the
+        # branch when the checkout has nothing, which is the whole `[NO-STORY]` case this rung
+        # was added for. (The comment here used to claim the reverse; the CODE matched the
+        # acceptance row, so the sentence was what moved.)
         if not found and branch:
             found = [(rel, branch) for rel in find_story_files_on_branch(repo, sid, branch)]
         for rel, ref in found:
