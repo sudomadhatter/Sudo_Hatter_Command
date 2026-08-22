@@ -3630,6 +3630,11 @@ maintained projects; it does not touch the memory store (that is `/smh-memory-au
 linter first, shows you the findings, and waits at its approval gate before editing. Explained in
 [§19](#19-where-the-depth-lives).*
 
+It also checks whether each workspace's **code graph** still matches that workspace's latest commit,
+and tells you rather than fixing it: refreshing an index can take a while and is not something a
+reconciliation run should decide for you. When it reports a stale one, the fix is one command, run in
+that repo after you commit: `code-review-graph update`.
+
 ```mermaid
 flowchart TD
     S0["Step 0 — preflight + run the drift linter\ncheck_maps.py bare, from the workspace root"] --> S05["Step 0.5 — fan-out: the lobby + the maintained list\ninside a project: just that workspace"]

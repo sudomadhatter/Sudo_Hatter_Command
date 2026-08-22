@@ -1401,8 +1401,8 @@ def main() -> int:
         non_stdlib = sorted(tops - set(sys.stdlib_module_names))
         c.check("tripwire: every import is stdlib (checked against sys.stdlib_module_names)",
                 not non_stdlib, f"non-stdlib imports: {non_stdlib}")
-        c.check("docstring records the GitNexus decision (plan D7)",
-                "GitNexus" in src[:4000] and "machine-local" in src[:4000],
+        c.check("docstring records the code-graph decision (plan D7)",
+                "code graph" in src[:4000] and "machine-local" in src[:4000],
                 "rationale missing from the module docstring")
         c.check("docstring records the port source and SHA",
                 "8593130" in src[:4000] and "pr-af" in src[:4000], "provenance missing")

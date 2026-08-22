@@ -16,7 +16,7 @@ The seam's contract, and the one promise `test_risk_seam.py` pins:
 - `gates_audit(result)` is **False for every possible return** - the classifier
   INFORMS the lens, it never gates the audit. A future classifier that wants a veto
   must change that function and its test in the same commit, which is exactly the
-  visibility this seam exists to force. GitNexus is NOT required here: the
+  visibility this seam exists to force. A code graph is NOT required here: the
   pure-Python path is the normal one (operator ruling, 2026-08-19).
 
 Stdlib only; `python3` (Mac) / `python` (PC). CLI:  risk_seam.py classify <path> ...

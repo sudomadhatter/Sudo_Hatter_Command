@@ -8,7 +8,7 @@ platforms: [opencode, antigravity]
 **The `cicd-` twin of `/smh-self-audit` — same contract, product mechanics.** Deliberate
 divergences, stated as such: Step 0 **binds exactly one project, never the lobby**
 (`smh-target-resolution`); the acceptance list is the **story's ACs**, not a ticket block; Lens 1
-may use the GitNexus graph when fresh; Lens 3's failure narratives are product-shaped (state,
+may use the code graph when fresh; Lens 3's failure narratives are product-shaped (state,
 contracts, auth). Fix a shared idea in one twin, diff the other.
 
 ## ⛔ THE AMENDMENT RULE — carved here, above the lenses, on purpose
@@ -140,13 +140,14 @@ premature generality: not findings, no severity, not logged.
 For each declared change, trace against the **current** codebase — graph-first when fresh, grep
 as the normal fallback:
 
-- **GitNexus, gated:** `list_repos` is the only ground truth of "indexed" (never a doc mention).
+- **The code graph, gated:** `code-review-graph status --json` is the only ground truth of "indexed"
+  (never a doc mention), and `built_at_commit` must equal `current_sha` before you trust an answer.
   Compare its `lastCommit` to `git rev-parse HEAD` — stale index = **lead, not authority**;
   grep-verify every `0`/LOW `impact()` (it misses attribute-dispatch). The pure-grep path is the
   NORMAL path (operator, 2026-08-19), not the degraded one.
 - changed return / props / schema → every existing caller, consumer, query accounted for.
 - **Contract two-sidedness:** one side of a paired contract (SSE event, API schema, DB shape,
-  signature) changed → the plan names the other side, or that is the finding. GitNexus cannot see
+  signature) changed → the plan names the other side, or that is the finding. The code graph cannot see
   shared-DB coupling — this row is manual.
 - **Cross-repo port (SCC-176):** the file exists in more than one repo and the copies differ
   (`git diff --no-index`, exit 1 proves it) → the plan carries the six-check port section with

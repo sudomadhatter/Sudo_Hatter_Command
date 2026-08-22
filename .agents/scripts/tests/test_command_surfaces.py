@@ -1827,7 +1827,7 @@ def main() -> int:
         # `_my_resources` are the two places the old name is allowed to survive forever: they are
         # the written record of what happened, and rewriting history is not a rename.
         SWEEP_SKIP = {"worktrees", "_artifacts", "_my_resources", "Projects",
-                      "node_modules", ".git", ".gitnexus"}
+                      "node_modules", ".git", ".code-review-graph"}
         TEXTY = {".md", ".py", ".ps1", ".sh", ".json", ".toml", ".txt", ".yaml", ".yml"}
 
         def is_text(p: Path) -> bool:
