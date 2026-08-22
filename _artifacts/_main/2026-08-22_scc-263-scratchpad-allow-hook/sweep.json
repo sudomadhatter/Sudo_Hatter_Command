@@ -1,20 +1,23 @@
 {
-  "test": ["python3", ".agents/scripts/tests/test_allow_scratchpad.py"],
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_allow_scratchpad.py"
+  ],
   "mutants": [
     {
       "id": "M1 · widen the sandbox root back to the uid, dropping the session segment",
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "    r\"^/(?:private/)?tmp/claude-\\d+/[^/]+/[0-9A-Za-z][0-9A-Za-z_-]{7,}/scratchpad(?:/|$)\")",
       "mutated": "    r\"^/(?:private/)?tmp/claude-\\d+/\")",
-      "case": "E · silent on the uid root",
+      "case": "E · with no session_id the uid root is STILL refused",
       "block": "rule 4 ·"
     },
     {
-      "id": "M2 · anchor with search() instead of match() — a path CONTAINING the shape counts",
+      "id": "M2 · drop the `scratchpad` word boundary — a sibling named scratchpadX reads as inside",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    if not SANDBOX_RE.match(token):",
-      "mutated": "    if not SANDBOX_RE.search(token):",
-      "case": "E · silent on a path merely CONTAINING the shape",
+      "original": "    r\"^/(?:private/)?tmp/claude-\\d+/[^/]+/[0-9A-Za-z][0-9A-Za-z_-]{7,}/scratchpad(?:/|$)\")",
+      "mutated": "    r\"^/(?:private/)?tmp/claude-\\d+/[^/]+/[0-9A-Za-z][0-9A-Za-z_-]{7,}/scratchpad\")",
+      "case": "E · silent on a sibling whose name merely starts with scratchpad",
       "block": "rule 4 ·"
     },
     {
@@ -30,16 +33,16 @@
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "    if FORBIDDEN & set(command):",
       "mutated": "    if False:",
-      "case": "ESCAPES · silent on a sandbox path inside a # COMMENT",
-      "block": "ESCAPES"
+      "case": "B · silent on a command containing '>'",
+      "block": "rule 1 ·"
     },
     {
       "id": "M5 · drop `#` from the metacharacter set — the comment escape returns",
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "FORBIDDEN = set(\"`$|&;<>()[]{}*?!#~'\\\"\\\\\\n\\r\")",
       "mutated": "FORBIDDEN = set(\"`$|&;<>()[]{}*?!~'\\\"\\\\\\n\\r\")",
-      "case": "ESCAPES · silent on a sandbox path inside a # COMMENT",
-      "block": "ESCAPES"
+      "case": "B · silent on a command containing '#'",
+      "block": "rule 1 ·"
     },
     {
       "id": "M6 · add `tar` to the executable allow-list",
@@ -54,7 +57,7 @@
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "    if argv0 not in ALLOWED:",
       "mutated": "    if False:",
-      "case": "C · silent on git, which is never listed",
+      "case": "C · silent on an unlisted executable",
       "block": "rule 2 ·"
     },
     {

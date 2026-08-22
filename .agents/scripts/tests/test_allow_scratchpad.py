@@ -160,6 +160,11 @@ def main() -> int:
             ("a sibling of scratchpad", f"rm -rf /private/tmp/claude-501/-P/{SID}/tasks"),
             ("the claude-501x near-miss",
              f"rm -rf /private/tmp/claude-501x/-P/{SID}/scratchpad/rt"),
+            # ⛔ `scratchpad` must end at a boundary. Without `(?:/|$)` a SIBLING whose name
+            # merely starts with it — `scratchpadX` — reads as inside the sandbox.
+            ("a sibling whose name merely starts with scratchpad",
+             f"rm -rf /private/tmp/claude-501/-Users-sudohatter-Sudo-Hatter-Command/{SID}"
+             f"/scratchpadX/rt"),
             # ⛔ `sandboxed()` must anchor with match(), never search(): a path merely CONTAINING
             # the sandbox shape is not inside it. This mutant survived 70/70 in the v1 suite.
             ("a path merely CONTAINING the shape",
