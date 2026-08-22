@@ -353,27 +353,54 @@ already ran). Ran only what Step 3 did not:
 
 ## Your Actions
 
-0. **DECISION — do you want an independent review before this lands?** This one ran `inline`: the
-   Blind Hunter was dropped because the context that built the lane also reviewed it, and the standing
-   session directive reserves the subagent fan-out for your ask. It found and fixed three real
-   defects, but nobody independent looked. Say the word and it re-runs as a fan-out; say nothing and
-   **CONCERNS** stands as the honest record of a self-review. Either answer is fine — this row exists
-   so the choice is yours rather than mine.
-1. **Nothing yet.** GitNexus stays installed and registered until the lane lands — Part A only added
-   the new CLI beside it.
-2. **After the lane lands**, on **each** machine: `npm rm -g gitnexus`, delete `~/.gitnexus/` and each
-   repo's `.gitnexus/`, and remove the `gitnexus` entries from `~/.claude.json`'s per-project
-   `mcpServers`. The Windows PC also needs `pipx install code-review-graph`, `PYTHONUTF8=1`, and its
-   own `~/.claude.json` override — `docs/code-review-graph.md` (Part C) will carry both recipes.
+- [x] **The merge itself — lands via this branch's PR.** Number-free on purpose: the PR number is
+  assigned after this commit is pushed, so the number and the merge sha go on the ticket at Step 4.
 
-   **⛔ WITH ONE EXCEPTION — do not uninstall GitNexus on a machine that runs the AviationChat TIA
-   gate.** Found by the AGY twin (AVCH-73) while doing the same swap there: GitNexus is **live code**
-   in that repo, not a stale doc reference. `Projects/AGY_AVIATIONCHAT/backend/tia/gate.py:68` shells
-   out to `node .gitnexus/run.cjs status` and parses its output; `select.py:64` refuses to select
-   tests when that index is not at `HEAD`; `scripts/tia_gate.ps1` drives both. Removing GitNexus does
-   not degrade that gate — a missing index reads as `STALE_INDEX`, trips the `RUN_ALL` fail-safe, and
-   the "fast" pre-push gate silently becomes a full-suite run every time, with nothing saying why.
-   AVCH-73's scope excluded `backend/`, so the port is **AVCH-77** (a Task under the AGY CI/CD epic
-   AVCH-43), which also adds the macOS entry point that gate has never had — `tia_gate.ps1:27` and
-   `gate.py:132,141` all hardcode `backend/.venv/Scripts/python.exe`, so on a Mac it cannot dispatch a
-   single test today. Everywhere else, GitNexus can go.
+- [ ] **Set up both machines.** Until this is done the swap is landed in git but not live for you —
+  the repo points at a tool neither machine has. On **each** machine: `pipx install code-review-graph`,
+  then add the absolute-path override in `~/.claude.json` under `projects["<repo path>"].mcpServers`.
+  The tracked `.mcp.json` names the command portably, which is right for a terminal and **not** enough
+  for a Dock-launched editor — `launchctl getenv PATH` is unset, so the editor hands its children a
+  stripped `PATH` with no `~/.local/bin`, the server never starts, and the session simply has no graph
+  tools with no error. The Windows PC also needs `PYTHONUTF8=1` and `fastmcp >= 3.2.4`. Then retire the
+  old engine: `npm rm -g gitnexus`, delete `~/.gitnexus/` and each repo's `.gitnexus/`, and drop the
+  `gitnexus` entries from `~/.claude.json`'s per-project `mcpServers`. Recipes: `docs/code-review-graph.md`.
+
+**⛔ ONE EXCEPTION to the uninstall — the machine that runs the AviationChat TIA gate.** Found by the
+AGY twin (AVCH-73) while doing the same swap there: GitNexus is **live code** in that repo, not a stale
+doc reference. `Projects/AGY_AVIATIONCHAT/backend/tia/gate.py:68` shells out to
+`node .gitnexus/run.cjs status` and parses its output; `select.py:64` refuses to select tests when that
+index is not at `HEAD`; `scripts/tia_gate.ps1` drives both. Removing GitNexus does not degrade that gate
+— a missing index reads as `STALE_INDEX`, trips the `RUN_ALL` fail-safe, and the "fast" pre-push gate
+silently becomes a full-suite run every time, with nothing saying why. AVCH-73's scope excluded
+`backend/`, so the port is **AVCH-77** under the AGY CI/CD epic AVCH-43, which also adds the macOS entry
+point that gate has never had — `tia_gate.ps1:27` and `gate.py:132,141` all hardcode
+`backend/.venv/Scripts/python.exe`, so on a Mac it cannot dispatch a single test today. Everywhere else,
+GitNexus can go.
+
+### Rulings made at close-out (2026-08-22) — nothing owed here, recorded so the record is true
+
+**The independent-review question is answered, and the answer was that the question was wrong.** This
+lane's review ran `inline` because the agent read the session directive *"do not call the Agent tool
+unless the user requested it"* as forbidding the Blind Hunter fan-out. The operator's ruling, verbatim:
+*"we already fixed this with explicite instruction that the /command is the user calling for the sub
+agents."* **Invoking `/smh-code-review` IS the operator asking for its lenses** — the directive governs
+unprompted fan-outs, never the ones a command body specifies. The verdict stays **CONCERNS** because
+that is the honest record of what actually ran; it is not re-run, and the lane lands on the operator's
+word.
+
+**Follow-on, deliberately NOT ticketed here.** The operator's call was *"we are coming back to this…
+that is a huge bug we have to brain storm and fix"* — a brainstorm, not a defined fix, so minting a key
+now would invent scope. The defect is durable regardless: it is carried as a `--followon` on this
+ticket's Dev Record and as a flight-event fingerprint (non-PASS verdict), both of which outlive this
+lane. The shape worth fixing: a session-level directive silently outranked a command body, and the only
+symptom was a verdict one floor lower than it should have been.
+
+**The manifest keeps `secondary_repos: []`, and that is a decision rather than an omission.** AVCH-73 is
+this task's second-repo half and closes through its own lane. Declaring it here would have verified the
+wrong tree: `task_preflight.py` resolves a secondary to the **submodule root** and reads *its* `HEAD`
+(`main`), so it structurally cannot see `chore/AVCH-73-code-review-graph-swap`, which lives in a
+worktree of that submodule — and it would have hard-errored on another session's untracked
+`_artifacts/epic_23/` sitting in AGY's shared checkout. AVCH-73's own preflight reads its lane directly
+and is the stronger check. Worth knowing generally: since SCC-62 every commit-producing lane runs in a
+worktree, so this blind spot applies to **any** cross-repo secondary half.
