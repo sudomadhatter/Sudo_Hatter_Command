@@ -52,6 +52,9 @@ in one place, and eight statements in the standard contradicted the brain it des
 - `jira_feed.py index-row` reported the first row on SCC-262 as *"MISSING 1 line — data loss"*: the line it
   lost was the `(empty - this cycle has taken no work yet)` placeholder it is supposed to replace. Read-back
   confirmed the INDEX is intact. The guard false-alarms on the first row of a fresh rolling ticket.
+- `jira_feed.py devrecord --append-new` posted a **second** Dev Record comment (footer says "one per ticket, updated
+  in place") and dropped the Outcome line. Both partials were deleted and one complete record re-posted;
+  SCC-269 carries exactly one.
 
 ## Evidence
 
