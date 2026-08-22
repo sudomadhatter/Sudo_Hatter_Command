@@ -21,8 +21,8 @@ plan as it stood at `60b6868`.
 - [x] **Part C · SCC-274** — `docs/code-review-graph.md`, every pointer re-aimed, 12 skill docs → 1 house skill.
 - [x] **Part D · SCC-275** — check 9 reads the graph DB via stdlib `sqlite3`; commands re-cited; **acceptance row 2 met**.
 - [x] **Part E · SCC-276** — activation frontmatter on all 25 rules; `.claude/rules/` emitted by the sync.
-- [ ] Part F · SCC-277 — rule-trigger hook + routing-canary probe
-- [ ] Part H · SCC-278 — risk_seam classifier so the review loop reads the graph by default
+- [x] **Part F · SCC-277** — prompt-trigger hook + `InstructionsLoaded` probe; canary § "Probe 2".
+- [x] **Part H · SCC-278** — `risk_seam.classify` answers from the graph; both reviews print the tiers.
 - [ ] Part G · AVCH-73 — AviationChat, its own repo and lane
 
 ## Evidence
@@ -119,10 +119,12 @@ chases it later.
 | Gate | When | Result |
 |---|---|---|
 | `declared_change_set.py parse` | plan, after audit amendments | present, 113 entries, 0 incomplete |
-| `run_all.py` | after Part D, after Part E | **50/50 files** (was 49; Part E adds one) |
-| `workflow_lint.py --toolkit-only` | after Part D, after Part E | **0 errors, 0 warnings** |
+| `run_all.py` | after D, E, F, H | **51/51 files** (was 49; E and F each add one) |
+| `workflow_lint.py --toolkit-only` | after D, E, F, H | **0 errors, 0 warnings** |
 | `test_check_maps_graph_fresh.py` | Part D, RED→GREEN + 3 mutants | 5/5; mutants all killed |
 | `test_rule_frontmatter.py` | Part E, RED→GREEN + 2 mutants | 9/9; mutants all killed |
+| `test_rule_trigger.py` | Part F, RED→GREEN + 4 mutants | 18/18; mutants all killed |
+| `test_risk_seam.py` | Part H, RED→GREEN + 6 mutants | 24/24; mutants all killed |
 | `check_maps.py` | Part D | ledger row added; depth-3 clean |
 | `gate_receipt.py` | at the tip, once | not yet run |
 
@@ -152,6 +154,47 @@ is not decoration — it is the difference between a gate that binds and a gate 
 to open the right file. Floor and protocol tiers are therefore left unscoped, and the test asserts
 they never gain `paths:`. `.claude/rules/` holds six generated copies, never symlinks (Windows
 without Developer Mode turns a symlink into a text file containing a path).
+
+**F (SCC-277).** Two hooks, one for each way a rule activates. `rule-trigger.py`
+(`UserPromptSubmit`) reads the `triggers:` lists that twelve rules carried and **nothing had ever
+read** — Antigravity judges a rule's `description:` itself, Claude Code had no equivalent, so a
+request-shaped rule could not activate at all. It prints pointers, never bodies, three at most.
+Matching is **word-set, not substring**: `reproduce-before-you-fix` lists `red suite` and an operator
+writes "the suite is red". `log-rule-load.sh` (`InstructionsLoaded`) is the receipt for the other
+half — `_routing-canary/README.md` § "Probe 2" is the end-to-end check, and the probe command was run
+verbatim before it was written down.
+
+Two things the tests earned rather than assumed:
+
+- The RED was taken against a **stub that parsed the prompt and said nothing**, so it failed at five
+  assertions rather than on a missing file. It then caught a real bug: with `CLAUDE_PROJECT_DIR`
+  naming a tree that has no `.agents/rules/`, the hook fell through to its own ancestors and answered
+  out of the lane it was installed in — a cross-tree read.
+- Mutant 3 **survived the first cut of case D**, and that mattered. Deleting the no-closing-fence
+  guard changed nothing, because that fixture's trigger list was mangled too and stayed silent either
+  way — a vacuous pin. A second fixture (a good `triggers:` list, no closing fence) makes it bite.
+
+**H (SCC-278).** `risk_seam.classify` had returned `unclassified` for every input since SCC-228 built
+the seam; SCC-224 was to fill it and left it empty, so the Parity + Blast lens ran on nothing while
+reading as though it had context. It now answers from the graph, and **both** code-review commands
+print the tiers beside the overlap list.
+
+The measured facts that shaped it:
+
+- **`~/.local/bin` is not on `PATH`** in the shell this runs from — measured here, this session. The
+  CLI is probed (`which` → pipx's dir), never named.
+- Two fixture defects surfaced by cases that **failed against correct code**, each of which would
+  have left a green test proving nothing: an `/usr/bin/env` shebang cannot resolve once the case
+  under test empties `PATH`; and emptying `PATH` removes **git** too, so the "no CLI" case was
+  passing because `git rev-parse` failed. It would have survived deleting the probe outright. Both
+  now run on a git-only `PATH`.
+- ⚠ **Test links are call-graph links.** `detect-changes` called all eight functions of
+  `rule-trigger.py` untested while `test_rule_trigger.py` was exercising every one of them through
+  `subprocess.run`. That is most of `.agents/scripts/tests/`, and "no test found" reads identically
+  to "no test exists" — recorded in the contract doc, both review commands, and the SOP.
+
+**Live, against the real installed tool:** `classify` prints `classified` on the fresh graph and
+`unclassified` with the graph's own stamp rewritten. Nothing in git history was touched to prove it.
 
 ## Your Actions
 
