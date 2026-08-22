@@ -1,9 +1,12 @@
 # SCC-271 — walkthrough
 
 **Lane:** `chore/SCC-271-jira-feed-write-truth` · **Ticket:** SCC-271 (Subtask, Part B of SCC-262)
-**Tree:** `.claude/worktrees/SCC-271-jira-feed-write-truth` · **Base:** `origin/main` @ `9d7863b`
+**Tree:** `.claude/worktrees/SCC-271-jira-feed-write-truth` · **Base:** `origin/main` @ `7c5721c`
+(originally cut at `9d7863b`; `origin/main` absorbed at close-out — see *Landing order* below)
 **Lane type:** `/smh-quick-dev` (TASK — `lane_qualify` refused the light lane on toolkit paths)
-**Verdict:** pending `/smh-code-review`
+**Verdict:** no LLM review ran — this is a `/smh-quick-dev` lane, so the deterministic gates ARE
+the verdict, and the preflight said so out loud: *no review Verdict line in this task's own
+walkthrough - the full gate runs*. All three ran, green, at the landing sha.
 
 ---
 
@@ -106,6 +109,20 @@ workflow_lint.py --toolkit-only             -> 0 error(s), 0 warning(s), 8 info
 lane_qualify (intent + real diff)           -> TASK, both times (toolkit paths — correct lane)
 ```
 
+**Re-run bare at the LANDING sha, after `origin/main` was absorbed** — the gates above ran on the
+pre-absorb tree, which is not the tree that merges:
+
+```
+run_all.py                  -> exit 0, 48/48 files passed
+workflow_lint --toolkit-only-> exit 0, 0 error(s), 0 warning(s), 8 info
+check_maps --depth3-only --strict -> exit 0, silent
+task_preflight              -> exit 1 (the one WARN is the worktree Step 5 removes)
+                               VERDICT: clear to close out and merge · LANE: LOCAL · GATES: ARMED
+```
+
+Run **bare, never piped** — a pipe hands back `tail`'s exit code, so a red gate reads as green.
+That is why each line above carries its own `exit 0` and not just its last line of output.
+
 The five mutants, each killed by the one case that pins it: revert B1 · gut B1's teeth the other way
 (bless a real drop) · silence the replacement report · revert B2 · **over-fire** B2 (refuse even with
 no prior, breaking the second-lane path).
@@ -122,16 +139,25 @@ no prior, breaking the second-lane path).
    would have passed vacuously. Added; it parses.
 3. **MED** — the landing-order dependency below.
 
-## ⚠ Landing order — read before absorbing `main`
+## ⚠ Landing order — SETTLED
 
-**SCC-269 lands first.** Both lanes append to `_artifacts/_main/INDEX.md`. This lane's row had to be
-written now (`check_maps` F2 fails the suite without it), so **the absorb after SCC-269 merges will
-conflict on that file**. The resolution is **keep both rows** — SCC-269's `2026-08-22_scc-269-…` row
-*and* this lane's `2026-08-22_scc-271-…` row. Dropping either is the exact index-loss class this
-ticket exists to fix.
+**SCC-269 landed first** (PR #52, `7c5721c`), then this lane absorbed it. Both lanes appended a row
+to `_artifacts/_main/INDEX.md` for the same date, so the absorb **conflicted on exactly that file** —
+predicted here before either lane opened a PR, and it happened exactly as written.
+
+**Resolved by keeping BOTH rows**, newest first (SCC-271 above SCC-269), matching the table's own
+ordering. Counted rather than eyeballed: each side carried **176** rows over a common **175**, and
+the resolution carries **177**. `INDEX.md` was the only file the two lanes both touched.
+
+Dropping either row would have been the silent, unrecoverable index loss this ticket exists to stop —
+the same class as SCC-164's Part E row. Recording the arithmetic because *"I kept both"* and
+*"I kept both and nothing else moved"* are different claims, and only the second one is checkable.
 
 ## Your Actions
 
-- [ ] Merge **SCC-269** first (its PR), then this lane — the ledger conflict above resolves by
-  keeping both rows.
+- [x] The merge itself — lands via this branch's PR.
 - [x] The fixes, tests, mutants and gates — done and evidenced above.
+- [x] The `_artifacts/_main/INDEX.md` conflict — resolved on this lane, both rows kept, counted.
+
+Nothing is owed. **`GEMINI.md`'s three model-specific rules** — surfaced by the sibling lane, not by
+this one — are already filed as **SCC-279** and are not this ticket's work.
