@@ -497,3 +497,14 @@ with this lane. SCC-269 lands first. If it has not landed when Part C runs, abso
 first; the overlap is one line.
 
 Audit verdict: GO
+
+**Approval (2026-08-22):** the operator's verbatim word this turn — "approved" — given on the message
+that presented this plan, its `Audit verdict: GO`, and the proposed part breakdown. It covers **this
+plan as it stood at `60b6868`**, the commit whose content the operator read (`git show
+60b6868:_artifacts/_main/2026-08-22_code-review-graph-swap/implementation_plan.md` is that text —
+that is the mechanically checkable operand `000-PLAN-FIRST-GATE` demands, and no edit to the plan's
+substance has been made since). It covers the riders **SCC-272 · SCC-273 · SCC-274 · SCC-275 ·
+SCC-276 · SCC-277 · SCC-278**, and Part H stays in scope (it was offered as droppable and was not
+dropped). It is **planning approval only** — not merge approval, not a ticket transition, and it does
+not carry to `AVCH-73`, which is a different repo and takes its own lane and its own sign-off.
+Anything edited into this plan after `60b6868` re-arms that lane's gate.
