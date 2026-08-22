@@ -10,7 +10,7 @@ re-deriving "what changed" from scratch.
   CACHE, NOT TRUTH. The journal only ACCELERATES. `git diff <anchor>..HEAD` (check_maps check 4)
   stays ground truth. Every consumer runs a freshness guard (journal's last sha == HEAD?) and, if
   stale — a commit made without this hook, on another machine, or a rebase — FALLS BACK to the full
-  derivation. Same discipline as the machine-local GitNexus index rule. That is why the journal is
+  derivation. Same discipline as the machine-local code-graph index rule. That is why the journal is
   gitignored: it is a local accelerator rebuilt as you commit, never a shared source of truth.
 
 Modes:
@@ -40,7 +40,7 @@ SESSION_FOLDER_RE = re.compile(r"^(story-|\d{4}-|tea-|wave-|close-out-|epic-|aut
 TOPLEVEL_SKIP = {
     "node_modules", "venv", "env", "__pycache__", "auth_keys", "_artifacts", "_claude_artifacts",
     "_opencode_artifacts", "_test_scripts", "_debug_audio", "dist", "build", "__tests__", "_bmad",
-    "_my_resources", ".git", ".gitnexus", ".claude", ".opencode", ".githooks", "Projects",
+    "_my_resources", ".git", ".code-review-graph", ".claude", ".opencode", ".githooks", "Projects",
 }
 # Toolkit families whose .md files each need an INDEX row (+ /sync-agents to mirror the copies).
 TOOLKIT_FAMILIES = ("commands", "skills", "workflows", "rules")

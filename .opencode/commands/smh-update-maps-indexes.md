@@ -11,7 +11,7 @@ description: From the home base, fan out and reconcile the lobby + every conform
 > and structure claims — Step 3.8),
 > the size of the continuity `active-context.md` (**context hygiene / prune**), the **open-tasks list**
 > (`_my_resources/open_tasks/todo_list.md`'s `## Open Work` section, kept mirroring the task files beside it),
-> and the **GitNexus index freshness** (machine-local index vs HEAD — verify + hand off, never auto-reindex).
+> and the **code-graph index freshness** (machine-local index vs HEAD — verify + hand off, never auto-rebuild).
 > Detect drift accurately (use git, not a blind re-walk), fix what's safe to fix, and flag what isn't yours to edit.
 > **This is THE one verification command** for "are the maps, the INDEXes, the AGENTS files, the READMEs, and
 > the indexing all current?" — a clean exit means every deterministic layer agrees with disk.
@@ -48,7 +48,7 @@ description: From the home base, fan out and reconcile the lobby + every conform
 | `.agents/{rules,workflows,skills,commands}/INDEX.md` | **MASTER** family maps (this repo is the source) | **Editable here** — fix drift, then `/smh-sync-agents` to push copies to `.claude/`/`.opencode/`. |
 | Tier-2 local law — `{_artifacts,_my_resources,docs}/AGENTS.md` + `CLAUDE.md`/`GEMINI.md` adapters | the folder-file tier model (`workspace-standard.md` Part 1) | **Create/repair** when check 8 hints (Step 3.7): copy the house pattern, adapt the law digest to that workspace. The `_my_resources/` law files are the ONE other thing writable under that dir. |
 | **`AGENTS.md` + `README.md` CONTENT** — the root brain, every folder law, every folder README in scope | hand-written prose that *references* files, folders, and `/` commands | **Reconcile the references** (Step 3.8): verify every path / command / structure claim each file makes still matches disk (renames + command renames are the usual killers); repair dead pointers via the Step 4 gate. Repair pointers — never rewrite the prose's meaning. |
-| `.gitnexus/meta.json` `lastCommit` vs HEAD | machine-local GitNexus index (gitignored, does not travel) | **Verify-only** (check 9): if stale, hand Daniel the re-index command per repo — never run the indexer yourself mid-workflow. |
+| `.code-review-graph/graph.db` built-at commit vs HEAD | machine-local code graph (gitignored, does not travel) | **Verify-only** (check 9): if stale, hand Daniel the refresh command per repo — never run the indexer yourself mid-workflow. |
 | `_my_resources/open_tasks/todo_list.md` — the **`## Open Work`** file-list | Daniel's hand-written notes **plus** an auto manifest of the task files | **Refresh ONLY the `## Open Work` file-list** to mirror the `open_tasks/*.md` plan/PRP files beside it. Leave his `## Todo list` prose and the task files themselves untouched (Step 3.6). |
 
 **Off-limits the whole time:** anything under `_my_resources/` (Daniel's protected area — `AGENTS.md` §5)
@@ -103,8 +103,8 @@ Daniel's `## Todo list` prose and every task file — stays **read-only** (you m
    **NON-FATAL hints**: **context hygiene** — the continuity `active-context.md` is over the prune window or
    `INDEX.md` is over the row cap (drives Step 3.5); **tier-2 local law** — a guarded infrastructure dir
    (`_artifacts/`, `_my_resources/`, `docs/`) is missing its local-law `AGENTS.md`, the law is empty, or an
-   adapter doesn't actually redirect (drives Step 3.7); and **gitnexus index** — the workspace's machine-local
-   GitNexus index (`.gitnexus/meta.json`) is behind HEAD (drives the Step 6 re-index hand-off).
+   adapter doesn't actually redirect (drives Step 3.7); and **code graph** — the workspace's machine-local
+   graph (`.code-review-graph/graph.db`) is behind HEAD (drives the Step 6 refresh hand-off).
    High-precision: it only flags table-row paths with a real top-level first segment, so prose/cross-repo
    mentions don't generate noise. From the lobby it skips `Projects/` (separate repos) and `_my_resources/`
    (protected); with `--root` it lints that workspace directly.
@@ -404,8 +404,8 @@ each block:
 - .agents/scripts/README.md: contents-list +2 −1                                 [reason: scripts added/removed]
 - 🚩 README claims <behavior> — no longer true, needs an authoring decision      [flag, not an edit]
 
-#### 🔍 GitNexus index — only if the linter hinted (verify-only, command handed at Step 6)
-- <workspace>: index STALE (indexed <sha7>, HEAD <sha7>) → re-index command in the close-out
+#### 🔍 Code-graph index — only if the linter hinted (verify-only, command handed at Step 6)
+- <workspace>: graph STALE (built at <sha7>, HEAD <sha7>) → refresh command in the close-out
 
 #### 🚩 Flagged — NOT mine to edit (needs you / another tool)
 - _my_resources/... (outside the Open Work manifest + law files) → Daniel's protected area, confirm with him
@@ -478,15 +478,15 @@ edits, say so and proceed (a regen that produces no diff needs no approval).
   `docs/.maps-journal-archive.jsonl` (a MOVE, never a delete), so the live journal carries only *unreconciled*
   drift for the next SessionStart nag. Nothing to do by hand — `--set-anchor` does it.
 - If you fixed any `.agents/*/INDEX.md`, remind him those need `/smh-sync-agents` to reach `.claude`/`.opencode`.
-- **GitNexus re-index hand-off.** If check 9 hinted anywhere, hand Daniel the per-repo command **to run AFTER
-  committing** (so the fresh index lands on the new HEAD, same reasoning as the anchor):
+- **Code-graph refresh hand-off.** If check 9 hinted anywhere, hand Daniel the per-repo command **to run AFTER
+  committing** (so the fresh graph lands on the new HEAD, same reasoning as the anchor):
   ```bash
-  node .gitnexus/run.cjs analyze                                    # the stale workspace, from ITS root
+  code-review-graph update                                         # the stale workspace, from ITS root
   ```
-  Never run the indexer yourself mid-workflow (it can take minutes and the law is verify-only here). Two
-  standing caveats: the **`.agents/` SUDO_COMMAND index has no git tracking** (`--skip-git`) — check 9 can't
-  see it, so if this run touched `.agents/**`, remind Daniel it needs a manual re-analyze too; and an index is
-  **machine-local** — after a pull on another computer the same staleness must be re-checked there.
+  Never run the indexer yourself mid-workflow (the law is verify-only here). One standing caveat: a graph is
+  **machine-local** — after a pull on another computer the same staleness must be re-checked there. The old
+  second caveat is gone: there is one graph per repo now, rooted at the repo root, and it covers `.agents/**`
+  like anything else `git ls-files` tracks.
 
 ---
 
@@ -514,8 +514,8 @@ edits, say so and proceed (a regen that produces no diff needs no approval).
 - **AGENTS/README reconcile repairs POINTERS, never meaning** — dead paths, renamed commands, stale
   contents-lists are yours to fix (Step 3.8, gated); rewording a rule, a law, or Daniel's prose is not.
   Substantively-wrong claims get 🚩 flagged for an authoring decision.
-- **GitNexus is verify-only here** — check 9 detects, Step 6 hands off the re-index command; the workflow never
-  runs the indexer.
+- **The code graph is verify-only here** — check 9 detects, Step 6 hands off the refresh command; the workflow
+  never runs the indexer.
 - **Lands by hand** (multi-repo sweep — see above) — hand off the command, one per repo.
 
 Optional input: `$ARGUMENTS`. Pass a project name or `.` to focus a single workspace. Pass `--dry-run`

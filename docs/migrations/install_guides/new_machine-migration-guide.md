@@ -323,46 +323,42 @@ through each as needed:
   > ⚠️ **Pin Node to 22 LTS first.** `brew install node` gives the current major (26 as of
   > 2026-08-06), which breaks vitest's jsdom environment — see the ⛔ box in the vitest section of
   > [`python_vytest-updates-other-machines.md`](python_vytest-updates-other-machines.md).
-- **GitNexus**: machine-local, does not travel. **Neither the CLI nor the index arrives with a
-  clone** — both are per-machine (2026-08-06, the Mac):
+- **code-review-graph** (the code graph): machine-local, does not travel. **Neither the CLI nor the
+  index arrives with a clone** — both are per-machine:
   ```bash
-  npm i -g gitnexus                 # the CLI itself; nothing else installs it
-  gitnexus analyze                  # run from EACH repo root you work in (lobby + AGY)
-  gitnexus list                     # confirm both repos registered, commit == HEAD
+  # Mac
+  brew install pipx && pipx ensurepath
+  pipx install code-review-graph
+  # Windows PC
+  python -m pip install --user pipx && python -m pipx ensurepath && pipx install code-review-graph
+  #   set PYTHONUTF8=1 for this server; keep fastmcp >= 3.2.4
+
+  code-review-graph build      # from EACH repo root you work in (lobby + AGY)
+  code-review-graph status     # confirm built_at_commit == current_sha
   ```
-  > ⛔ **The MCP registration is Windows-only in git — a Mac gets NO gitnexus tools until you
-  > override it locally.** The tracked lobby `.mcp.json` launches the server as
-  > `cmd /c gitnexus mcp`; `cmd` does not exist on macOS, so the server silently never starts.
-  > **Do not "fix" the tracked file** — bare commands break Claude Code on native Windows, which
-  > genuinely needs the `cmd /c` wrapper. Instead add a **local-scope** override, which outranks
-  > project scope (precedence: local > project > user), in `~/.claude.json` under
+  > ⛔ **The tracked `.mcp.json` names the command portably (`code-review-graph serve`), and that is
+  > not always enough for a GUI-launched editor.** `launchctl getenv PATH` is unset on macOS, so an
+  > editor started from the Dock spawns children with only `/usr/bin:/bin:/usr/sbin:/sbin` — no
+  > `~/.local/bin`, where pipx puts the console script. The server then never starts and the session
+  > simply has no graph tools, with no error anywhere. **Do not "fix" the tracked file** — it is
+  > correct for a terminal and for CI. Add a **local-scope** override instead, which outranks project
+  > scope (precedence: local > project > user), in `~/.claude.json` under
   > `projects["<repo path>"].mcpServers`:
   >
   > ```json
-  > "gitnexus": {
-  >   "command": "/opt/homebrew/bin/node",
-  >   "args": ["/opt/homebrew/lib/node_modules/gitnexus/dist/cli/index.js", "mcp"]
+  > "code-review-graph": {
+  >   "command": "/Users/<you>/.local/bin/code-review-graph",
+  >   "args": ["serve"]
   > }
   > ```
   >
-  > ⛔ **Use those ABSOLUTE paths — `"command": "gitnexus"` is a second silent failure on macOS.**
-  > `launchctl getenv PATH` is unset here, so a GUI-launched editor spawns children with only
-  > `/usr/bin:/bin:/usr/sbin:/sbin` — no `/opt/homebrew/bin`. Naming `gitnexus` bare fails to resolve,
-  > and even an absolute `/opt/homebrew/bin/gitnexus` still dies, because its `#!/usr/bin/env node`
-  > shebang looks `node` up on that same stripped PATH (`env: node: No such file or directory`).
-  > Invoking the real node binary against the CLI script sidesteps both. Proved with
-  > `env -i PATH=/usr/bin:/bin`: bare and absolute-shim both fail, this form returns 17 tools.
-  >
-  > Set for the lobby and AGY on the Mac. Verify without launching a session by piping an
-  > `initialize` + `tools/list` JSON-RPC pair into `gitnexus mcp` — expect 17 tools and a
-  > `repoCount` matching `gitnexus list`. ⚠️ macOS has **no `timeout`** binary; a smoke test that
-  > uses it exits 127 and prints nothing, which reads exactly like a dead server. Use
-  > `perl -e 'alarm(40); exec "gitnexus","mcp"'`.
-  >
-  > ⚠️ **`gitnexus analyze` rewrites tracked skill docs** (`.claude/skills/gitnexus/*/SKILL.md`) to
-  > match the installed version. Upstream those to the `.agents/` master before committing, or the
-  > next `/smh-sync-agents` reverts them — and keep every machine on the same gitnexus version, or they
-  > will flip-flop the same three files forever.
+  > Set for the lobby and AGY on the Mac. Verify without launching a session by piping the JSON-RPC
+  > handshake into `code-review-graph serve` — expect **30 tools**. ⚠️ macOS has **no `timeout`**
+  > binary; a smoke test that uses it exits 127 and prints nothing, which reads exactly like a dead
+  > server. Use `perl -e 'alarm(60); exec "code-review-graph","serve"'`. ⚠️ And the handshake needs
+  > `{"jsonrpc":"2.0","method":"notifications/initialized"}` **between** `initialize` and
+  > `tools/list` — without it the server answers the handshake and lists nothing, which looks
+  > identical to a failure. The full probe is in `docs/code-review-graph.md`.
 - **opencode**: one of the four platforms the toolkit syncs to, and **none of it travels** (2026-08-06,
   the Mac). A clone brings the repo-side surface only — `opencode.json`, `.opencode/commands/` (47) and
   `.opencode/agent/` (13) — which is why the config looks complete while the machine has no opencode at
@@ -393,7 +389,7 @@ through each as needed:
   >
   > ⚠️ **opencode gets no MCP servers from this repo — on any platform.** It reads `mcp` out of
   > `opencode.json`, and ours has no such key; the `.opencode/mcp.json` file sitting next to it is read by
-  > nothing. So gitnexus and md-feedback are Claude-only today. Confirm with
+  > nothing. So code-review-graph and md-feedback are Claude-only today. Confirm with
   > `opencode debug config | grep '"mcp"'` (no match = none loaded). Pre-existing and shared with Windows,
   > not a Mac gap — listed here so nobody re-diagnoses it as one.
   >

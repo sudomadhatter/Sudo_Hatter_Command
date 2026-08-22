@@ -1426,6 +1426,85 @@ doc and index edits, memory files, `_artifacts` INDEX rows, notes, and quick ref
 
 ---
 
+### Rules that show up when they are needed
+
+The system's law lives in `.agents/rules/`. You do not load it — the agent does, and until now
+"loading" meant it had to *decide* to go and read the right file. Two of the four tools can now do
+that themselves, so each rule states when it applies:
+
+- **A rule about a kind of file** — the code standard, the dependency rule, the PowerShell encoding
+  rule, the testing rule — names the files it governs. Claude Code loads it the moment it opens a
+  matching file, and not before. So the Python standard arrives when Python is touched, and stays
+  out of the way when you are writing a document.
+- **A rule about a kind of request** — "something is broken", "the board", "this is a port" — cannot
+  be caught by a filename, so it carries a short list of words instead. Antigravity weighs the rule's
+  own description against what you asked; in Claude Code a small hook watches your prompt and, when
+  one of those words appears, tells the agent which rule to open. It only ever points; it never
+  blocks and it never edits.
+- **The three always-on rules and the four protocol rules are unchanged.** They bind the same way
+  they always did, and their gates remain written into the front door as well, so nothing depends on
+  a file being loaded at the right moment.
+
+Nothing to type, and nothing to maintain by hand: the classification lives in one table
+(`.agents/rules/INDEX.md`), the per-rule markers mirror it, and a test fails if the two ever
+disagree. `/smh-sync-agents` writes the copies Claude Code reads.
+
+⚠ **Those copies are a second home for the same text, and only the path-scoped rules move in.** A
+rule that links to a sibling by bare filename resolves next to the master and points at nothing next
+to the copy — which is the copy Claude Code actually loads. Write cross-rule links as
+`../../.agents/rules/<name>.md`: both folders sit two levels below the repo root, so that one
+spelling works in both. A test now fails on any dangling link in a generated copy, so this is a rule
+about how to write the link, not a thing to remember to check.
+
+**If you ever want to see it actually happen**, `_routing-canary/README.md` § "Probe 2" has two
+one-line checks: one prints the pointer a prompt produces, the other shows a log of every rule the
+tool loaded on its own. Worth running after a fresh clone or a new machine, because both mechanisms
+fail the same quiet way — a rule that never loads looks exactly like a rule with nothing to say.
+
+### The code graph — what the review commands ask before they judge
+
+The command centre and each project carry a **local code graph**: a small SQLite index built by
+`code-review-graph`, which reads your code and answers structural questions the review commands would
+otherwise answer by guessing. *Who calls this function? What breaks if I change it? Which of these
+changed functions has no test?* The reviews and audits ask it for you — there is nothing to type in
+the normal flow.
+
+You do see it in one place: a **risk map** printed beside the overlap list when a review re-checks
+its blast radius. Per changed file it names the riskiest thing you changed in it, how many flows run
+through it, and which of your changed functions it can find no test for — a shortlist of where to
+look hardest, nothing more. It also prints `test_links`; when that reads `0`, the "no test" column is
+empty of meaning and the fourth point below says why. When it says `unclassified`, the graph simply had no answer to give (see
+the first point below); that is a normal line, not a problem to solve.
+
+Four things are worth knowing, because each one has bitten:
+
+- **It is per machine and per workspace, and it goes stale.** It is not in git. A fresh clone, a fresh
+  worktree, or someone else's commits pulled down means the map no longer matches the code. The map
+  check (`/smh-update-maps-indexes`) notices and tells you; the fix is one command in that repo:
+  `code-review-graph update`.
+- **Installing it is a per-machine step, like `gh` or `firebase`.** `pipx install code-review-graph`
+  on each machine, then `code-review-graph build` once in each repo you work in. The new-machine guide
+  carries both, including the one editor quirk that makes the tools silently absent on the Mac.
+- **It narrows where to look; it does not replace looking.** It is exact about who calls a normal
+  function, and it gets confused when one file defines several nested functions with the same name.
+  So a reviewer confirms a caller's identity before acting on it. That habit is written into the
+  commands.
+- **In THIS repo, "no test" from the graph means nothing at all — and in a project repo it means "go
+  and check".** The graph links a test to its subject only when it can follow the import statically.
+  AviationChat's code is laid out that way, so it finds **3427** real links and a gap there is worth
+  chasing. The command centre's own tests all run their subject as a separate program or rewire the
+  import path first, so it finds **zero** — and therefore reports **every** function you changed as
+  untested, including the ones with thorough tests. Left unchecked that reads as a page of missing
+  tests that are not missing.
+
+  You do not have to remember which repo is which: the risk map prints `test_links`, the count of real
+  links it found. **Zero means ignore the "no test" column entirely.** A high number means treat it as
+  a shortlist to check. Either way the *risk* and *flow* columns are unaffected — the call graph works
+  fine in both repos; it is only the test half that is repo-dependent.
+
+Full reference — every tool, the freshness commands, the install recipe for both machines:
+[`docs/code-review-graph.md`](../code-review-graph.md).
+
 ## 9. The Task lane — work on the system itself
 
 **The dev cycle for work that has no story, no sprint board and no epic branch.** Seven commands
@@ -3627,6 +3706,11 @@ maintained projects; it does not touch the memory store (that is `/smh-memory-au
 linter first, shows you the findings, and waits at its approval gate before editing. Explained in
 [§19](#19-where-the-depth-lives).*
 
+It also checks whether each workspace's **code graph** still matches that workspace's latest commit,
+and tells you rather than fixing it: refreshing an index can take a while and is not something a
+reconciliation run should decide for you. When it reports a stale one, the fix is one command, run in
+that repo after you commit: `code-review-graph update`.
+
 ```mermaid
 flowchart TD
     S0["Step 0 — preflight + run the drift linter\ncheck_maps.py bare, from the workspace root"] --> S05["Step 0.5 — fan-out: the lobby + the maintained list\ninside a project: just that workspace"]
@@ -3662,7 +3746,7 @@ flowchart TD
 | ③ `/cicd-code-review` | Hunts the diff cold, runs an adversarial review, audits code quality, runs the test gate, issues a verdict into the walkthrough. |
 | `/cicd-clean-code-audit` | Dead code, duplication, drift. Runs inside ③; also runs solo across a whole area. |
 | `/cicd-bdd-tests` | Locks behavior in plain language, standalone (① does this for you). |
-| `/cicd-self-audit` | Pressure-tests a plan against the real code before anyone writes anything (② does this for you). The step where it asks the code graph "who else breaks if we change this?" asks the tool itself which projects are indexed — availability is never inferred from a doc title. Three guards: it names the project on every question, it **checks the map is not stale before trusting it**, and it treats a **"nothing breaks" answer as the one to double-check by hand** — the graph is blind to one common calling style. |
+| `/cicd-self-audit` | Pressure-tests a plan against the real code before anyone writes anything (② does this for you). The step where it asks the code graph "who else breaks if we change this?" asks the tool itself whether a graph exists — availability is never inferred from a doc title. Three guards: it names the repo on every question, it **checks the map is not stale before trusting it**, and it treats a **"nothing breaks" answer as the one to double-check by hand** — the graph collapses same-named nested functions inside one file. |
 | `/cicd-prune-context` | Trims the running session notes back under budget so sessions start fast. |
 
 **Landing and shipping** — [§7](#7-landing-and-shipping--the-close-out-family)

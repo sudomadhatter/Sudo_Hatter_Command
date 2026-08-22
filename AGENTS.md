@@ -25,7 +25,12 @@ the program; you **become** the agent the workspace describes.
 
 Three tiers — only the first is actually always-on. **`.agents/rules/INDEX.md` is the per-rule router**
 and its `Load` column states this same classification; if the two ever disagree, they are both wrong
-until reconciled. A rule's own frontmatter does **not** declare its load class.
+until reconciled. A rule's own frontmatter does **not** *decide* its load class — it **mirrors** the
+INDEX so the platforms that load rules by themselves can act on it (Antigravity reads `trigger:`;
+Claude Code reads `paths:` from the generated `.claude/rules/` copies and loads a rule only when it
+opens a matching file). `test_rule_frontmatter.py` fails when the two disagree, so the mirror cannot
+drift silently — and intent-shaped triggers, which no glob can catch, are surfaced by
+`.agents/hooks/rule-trigger.py`.
 
 **FLOOR — load now, every session:** `.agents/rules/operator-profile.md` (**who you're talking to** —
 Daniel is the visionary/chair, you are the engineer; the **nine** speaking obligations that govern every
@@ -273,5 +278,7 @@ its command's name, a hand-authored skill is named for what it knows. ⛔ The `s
 **RETIRED**: any `/sudo-` reference anywhere in this system is stale by definition. Enforced
 mechanically by `workflow_lint.py --toolkit-only`.
 
-> **GitNexus** — code-intelligence (impact · detect_changes · query · context) for this repo →
-> `docs/gitnexus.md`. (Lobby index is routing-surface only; product work uses `repo: "AGY_AVIATIONCHAT"`.)
+> **code-review-graph** — the local code graph (MIT): who calls this · what breaks · what has no test ·
+> what does this diff risk → `docs/code-review-graph.md`. The lobby index maps the **master toolkit**
+> (1073 of its 1102 nodes are `.agents/`); each child repo carries its own graph and its own copy of
+> that doc. ⛔ Change detection takes the **merge-base**, never a branch name.

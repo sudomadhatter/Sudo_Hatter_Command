@@ -1,6 +1,12 @@
 ---
 name: port-checklist
 description: "Fires at PLAN TIME, before a line is written, whenever a file being changed exists in more than one repo — a lobby→project port, a project→lobby port back, or a fix landing in two copies at once. Six checks, each with the command that answers it: (1) use a path git gave you exactly as git gave it — never re-normalise `--git-common-dir` / `--git-path`; (2) `printf`, not `echo`, for any operator-facing line; (3) on a write, verify the FILE, not `$?` — `|| exit` on the redirect and no success banner above the check; (4) no `.agents/rules/` path a thin repo does not carry (project-law.md); (5) it runs on BOTH machines — `python3` vs `python`, and `core.hooksPath` is per-machine config; (6) hooks stay repo-local and the port needs the target repo's OWN Jira key (project-law.md § carve-out). Runs in BOTH directions. From the AVCH-59 retro (2026-08-15): all four divergences came from this list, and three of them were reachable at plan time."
+trigger: model_decision
+triggers: [port, both repos, exists in more than one repo, lobby to project, project to lobby]
+# Intent-shaped: no glob can catch it, because the trigger is what the operator ASKS,
+# not what gets opened. Antigravity judges `description:` against the request;
+# `.agents/hooks/rule-trigger.py` matches these keywords and injects a pointer.
+
 ---
 
 # Port Checklist — the six questions to answer BEFORE a line is written

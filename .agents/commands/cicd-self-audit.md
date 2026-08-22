@@ -8,7 +8,7 @@ platforms: [opencode, antigravity]
 **The `cicd-` twin of `/smh-self-audit` — same contract, product mechanics.** Deliberate
 divergences, stated as such: Step 0 **binds exactly one project, never the lobby**
 (`smh-target-resolution`); the acceptance list is the **story's ACs**, not a ticket block; Lens 1
-may use the GitNexus graph when fresh; Lens 3's failure narratives are product-shaped (state,
+may use the code graph when fresh; Lens 3's failure narratives are product-shaped (state,
 contracts, auth). Fix a shared idea in one twin, diff the other.
 
 ## ⛔ THE AMENDMENT RULE — carved here, above the lenses, on purpose
@@ -140,13 +140,14 @@ premature generality: not findings, no severity, not logged.
 For each declared change, trace against the **current** codebase — graph-first when fresh, grep
 as the normal fallback:
 
-- **GitNexus, gated:** `list_repos` is the only ground truth of "indexed" (never a doc mention).
+- **The code graph, gated:** `code-review-graph status --json` is the only ground truth of "indexed"
+  (never a doc mention), and `built_at_commit` must equal `current_sha` before you trust an answer.
   Compare its `lastCommit` to `git rev-parse HEAD` — stale index = **lead, not authority**;
   grep-verify every `0`/LOW `impact()` (it misses attribute-dispatch). The pure-grep path is the
   NORMAL path (operator, 2026-08-19), not the degraded one.
 - changed return / props / schema → every existing caller, consumer, query accounted for.
 - **Contract two-sidedness:** one side of a paired contract (SSE event, API schema, DB shape,
-  signature) changed → the plan names the other side, or that is the finding. GitNexus cannot see
+  signature) changed → the plan names the other side, or that is the finding. The code graph cannot see
   shared-DB coupling — this row is manual.
 - **Cross-repo port (SCC-176):** the file exists in more than one repo and the copies differ
   (`git diff --no-index`, exit 1 proves it) → the plan carries the six-check port section with
@@ -162,10 +163,20 @@ as the normal fallback:
   ref is the story's EPIC branch (`epic/<KEY>-<slug>`), never `origin/main` (SCC-165). A file in both
   their set and this plan's declared set is a **landing-order dependency**: name which lane lands
   first and what happens to this work if it does not.
-- **Risk context (SCC-228 seam):** `python3 .agents/scripts/risk_seam.py classify <declared
-  paths>` *(PC: `python`)* informs this lens's depth. **Informs, never gates** — `gates_audit()`
-  is False for every return by pinned contract, so audit semantics are identical under the
-  placeholder and under SCC-223/224.
+- **Risk context (the code-graph seam):** `python3 .agents/scripts/risk_seam.py classify <declared
+  paths>` *(PC: `python`)* informs this lens's depth — per file, the highest risk score among its
+  changed functions, how many flows it sits on, and which changed functions have no test.
+  **Informs, never gates** — `gates_audit()` is False for every return by pinned contract, so audit
+  semantics are identical whatever it says. `"status": "unclassified"` is a **normal result** (no
+  graph, a stale graph, the tool absent, or a thin project with no `.agents/scripts/`), fixed with
+  `code-review-graph update` if you want the context.
+- ⛔ **Read `test_links` before `untested` — it is a per-repo number, and it decides whether the list
+  means anything.** It counts TESTED_BY edges naming a real subject, and a link needs a **statically
+  resolvable import**: a test that reaches its subject by `subprocess` or a runtime
+  `sys.path.insert(...)` produces none. Measured 2026-08-22 — `AGY_AVIATIONCHAT` **3427**, the command
+  centre **0**. A high count makes `untested` real signal (*where to look*, confirmed against the test
+  file, never a finding on its own); a **0** means the graph has no test data at all, so it lists every
+  changed function and you should ignore it outright. `risk` and `flows` are unaffected either way.
 
 ## Lens 3 — Pre-Mortem (LEDGER+BLAST) — bounded, and the bound is the point
 

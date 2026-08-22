@@ -13,8 +13,9 @@
 # (aviationChat-AGY, fresh-workspace-bmad, jetChat-AGY, B&L WorldWide, NEXGen Films, ingestion-Pipeline-*, openCode)
 # have been retired now that those workspaces are under Projects/.
 
-# GitNexus code-graph index (disposable Tier-2 accelerator — never committed).
-**/.gitnexus/
+# code-review-graph index (disposable, machine-local, per-worktree — never committed).
+# Rebuilt in seconds by `code-review-graph build`; scoped by `.code-review-graphignore`.
+**/.code-review-graph/
 
 # Map-drift journal (machine-local commit-time cache written by .githooks/post-commit — a HINT the
 # nag + /smh-update-maps-indexes read; check_maps.py's git-diff-vs-anchor stays ground truth). Rebuilt as you commit.

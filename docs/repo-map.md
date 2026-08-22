@@ -36,30 +36,33 @@
 | `docs/system-builder.md` | Growing/maintaining the home base itself — `/new-project`, `/sync-agents`, workspace-conversion rules |
 | `docs/migrations/INDEX.md` | New-machine setup / repopulating any `.env` or `auth_keys/` file (→ `new_machine-migration-guide.md`; the manifest inside the hand-carried master.env lists every secret file + its exact path). Standing reference kit. Moved out of `_my_resources/` (excluded from regen) into `docs/` under SCC-89, so it now DOES appear in the AUTO tree below — its `auth_keys/` subtree does not, being ignored by name |
 
-> **⚠ There are actually TWO indexes here, and the lint checks the one you don't query** (found
-> 2026-08-08). `check_maps.py`'s freshness hint reads the **root** `.gitnexus/meta.json` — a small
-> whole-repo index (86 nodes; the lobby is nearly all markdown) whose only job is to carry a
-> `lastCommit` stamp. The index you actually query is `SUDO_COMMAND` under `.agents/`, and because its
-> documented build uses `--skip-git` it writes **no** commit stamp at all — so it can never satisfy that
-> check, and the root one nagged permanently while pinned to `main_debug`, a branch retired 2026-08-07.
-> **Re-index both**: `gitnexus analyze . --index-only -f` clears the lint; the `.agents/` command below
-> refreshes what queries use. Node counts after centralization: root 86 · SUDO_COMMAND **2,664**.
+**code-review-graph (the code graph — on-demand, disposable, machine-local).** ONE index, rooted at the
+repo root, covering everything `git ls-files` tracks minus the exclusions in `.code-review-graphignore`.
+In practice that is the master toolkit: **1073 of its 1102 nodes are `.agents/`** — the scripts, commands,
+rules, skills and hooks — plus `docs/` and `.githooks/`. The sync mirrors (`.claude/`, `.opencode/`,
+`.agent/`, `.antigravity/`) are excluded on purpose: they are generated copies of `.agents/` and indexing
+them counts every toolkit symbol three to four times. No project source is indexed here — each project
+under `Projects/` is its own repo with its own graph.
 
-**GitNexus (Tier-2 graph — on-demand, disposable).** ONE index you query: **`SUDO_COMMAND`** = the command
-center itself — all of `.agents/` (rules · workflows · commands · skills · scripts). Rooted directly at
-`.agents/` (with `--skip-git`) to bypass GitNexus's dot-folder skip. This is "the one everything points to,"
-not the pointer/adapter copies (`.claude/`/`.opencode/` mirrors are excluded). Re-index after editing any
-rule/workflow (no commit-tracking, so do it manually):
-`$env:GITNEXUS_NO_GITIGNORE="1"; gitnexus analyze .agents --skip-git --index-only --name SUDO_COMMAND -f`.
-Tier-2/disposable — the maps above stay canonical (full guidance: `docs/gitnexus.md`).
-> Note: the markdown rule/workflow files yield few cross-file edges (GitNexus extracts headings, not
-> doc references) — the graph is strong for the `.py`/`.ps1` scripts, thin for the prose; trust the files for
-> "what references what." No project source is indexed here (projects are cherry-picked as their own repos).
+```bash
+code-review-graph build      # full rebuild, ~4s here
+code-review-graph update     # incremental, only changed files
+code-review-graph status     # nodes, edges, built_at_commit vs current_sha
+```
+
+The graph records the commit it was built at, so `check_maps.py` check 9 can compare it with `HEAD` and
+hint when it is stale. Tier-2/disposable — the maps above stay canonical. Full guidance:
+`docs/code-review-graph.md`.
+
+> Note: the markdown rule/workflow files yield few cross-file edges (the parser extracts code structure,
+> not doc references) — the graph is strong for the `.py`/`.ps1` scripts and thin for the prose; trust the
+> files and the doc-graph for "what references what."
 >
-> **Doc wiring (the prose layer GitNexus misses):** `docs/doc-graph.md` (+ `doc-graph.json`) is the owned,
-> deterministic, no-LLM map of which `.md` references which across `.agents/` — hubs, plus a broken-path /
-> ambiguous-ref report. Rebuild after editing rules/workflows:
-> `python .agents/scripts/generate_doc_graph.py`. Source: `.agents/scripts/generate_doc_graph.py`.
+> **Doc wiring (the prose layer the code graph does not model):** `docs/doc-graph.md` (+ `doc-graph.json`)
+> is the owned, deterministic, no-LLM map of which `.md` references which across `.agents/` — hubs, plus a
+> broken-path / ambiguous-ref report. Rebuild after editing rules/workflows:
+> `python3 .agents/scripts/generate_doc_graph.py` (PC: `python`). Source:
+> `.agents/scripts/generate_doc_graph.py`.
 
 **Drift:** checked at SessionStart by `.agents/scripts/check-repo-map-drift.ps1 -MapPath docs/repo-map.md` — it
 nags if a new top-level folder isn't named here. Rebuild the AUTO body:

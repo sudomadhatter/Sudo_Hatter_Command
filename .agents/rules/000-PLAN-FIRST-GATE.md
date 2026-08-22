@@ -1,6 +1,12 @@
 ---
 name: 000-PLAN-FIRST-GATE
 description: "PRIORITY ZERO — No project file may be modified until Daniel approves an implementation_plan.md. No skill, workflow, or slash command overrides this. Read this FIRST."
+trigger: model_decision
+# Protocol tier (rules/INDEX.md): conditional, not floor. Every gate it carries is ALSO
+# stated inline in AGENTS.md and constitution.md, so the stop binds even in a session
+# that never opens this file — which is what makes it safe to leave conditional rather
+# than load ~44 KB of protocol prose into every read-only session.
+
 ---
 
 # 🛑 PRIORITY ZERO: Plan First, Code Never (Until Approved)

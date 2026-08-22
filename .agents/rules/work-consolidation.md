@@ -1,6 +1,12 @@
 ---
 name: work-consolidation
 description: "Fires the moment work is DISCOVERED mid-lane, and again when a Task's subtasks are planned. Six rules, each with the command that answers it: (1) look for a home before you mint — discovered work becomes a lettered part under an open parent, and minting is legal only after you say what you looked at; (2) when able, ONE worktree and ONE branch carries a whole Task including its subtasks, declared as `riders:` in task.yaml, keyed per-commit by the subtask and closed once under the parent; (3) verify the batch in one block, not one command per part; (4) artifact-first — a constraint or a skipped step goes into the walkthrough the moment it is known; (5) two stops per lane (plan approval, merge sign-off) and nothing else; (6) verify the OUTCOME of a board write, never the exit code. Judgment, not a gate: the agent decides and says why. Operator ruling, 2026-08-15. Pairs with worktree-per-story.md and jira.md."
+trigger: model_decision
+triggers: [discovered work, new ticket, mint a ticket, subtask, rolling ticket, bugs and updates]
+# Intent-shaped: no glob can catch it, because the trigger is what the operator ASKS,
+# not what gets opened. Antigravity judges `description:` against the request;
+# `.agents/hooks/rule-trigger.py` matches these keywords and injects a pointer.
+
 ---
 
 # Work Consolidation — one home, one lane, one close

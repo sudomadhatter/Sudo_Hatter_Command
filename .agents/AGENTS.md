@@ -40,6 +40,6 @@ that subfolder's `INDEX.md` to dispatch — never read every rule/command/skill.
 - Entering a subfolder: if it carries an `INDEX.md`, scan that to dispatch (an `AGENTS.md` first, if one exists).
 - Not toolkit work? → `../AGENTS.md` (lobby) or `../router.md` (routing).
 
-<!-- No GitNexus block by design: this toolkit is markdown, navigated by these indexes (and the doc-graph),
+<!-- No code-graph block by design: this toolkit is navigated by these indexes (and the doc-graph),
      not the code-graph. If graph intel is ever wanted here, put it in a separate file + a one-line pointer —
      never inline in this floor law. -->

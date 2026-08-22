@@ -120,7 +120,7 @@ so you choose the lane: run it in-session (optionally on a cheaper model for eas
 plan doc to a fresh team and say **continue** when their audit lands.
 ```
 Phase 0  Right-size + AC traceability  → Skip / Light / Full; map every AC ↔ plan step (gap = under-deliver; extra = scope creep)
-Phase 1  Blast-radius trace            → GitNexus impact()/context() if indexed, else grep — who breaks if this changes;
+Phase 1  Blast-radius trace            → code-review-graph detect-changes / query callers_of if indexed, else grep — who breaks if this changes;
                                          contract two-sidedness (SSE/API/DB/signature); reinvention check
 Phase 2  Over-engineering gate (STRICT)→ default NO-GO: new abstraction/flag/dep for N=1, "might need", clone-and-tweak → CUT
 Phase 3  Pre-mortem scenarios          → happy · rehydration · error/timeout · concurrency · bad-auth · exhaustiveness · AI-hallucinated edge

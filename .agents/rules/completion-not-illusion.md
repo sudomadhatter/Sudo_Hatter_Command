@@ -1,6 +1,12 @@
 ---
 name: completion-not-illusion
 description: "Activates for any workflow that produces polished intermediate artifacts (plans, audits, walkthroughs). A polished artifact is a claim, not proof of completion; mark incompleteness loudly."
+trigger: model_decision
+triggers: [done, complete, finished, is it ready, ship it]
+# Intent-shaped: no glob can catch it, because the trigger is what the operator ASKS,
+# not what gets opened. Antigravity judges `description:` against the request;
+# `.agents/hooks/rule-trigger.py` matches these keywords and injects a pointer.
+
 ---
 
 # Completion Is Earned, Not Implied (Artifacts != Done)

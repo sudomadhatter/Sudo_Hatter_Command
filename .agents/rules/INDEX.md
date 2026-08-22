@@ -17,6 +17,28 @@ from here by every session. A project carries only its OWN rules, routed from it
   carry the mechanics, not the only copy of the law.
 - **On-demand (trigger):** the rest load only when their trigger fires (the `Trigger` column below).
 
+### The Load column is the classification; the frontmatter MIRRORS it
+
+Two platforms now load rules by themselves, and each reads a different field, so every rule carries
+activation frontmatter that must agree with the `Load` column above. `test_rule_frontmatter.py`
+fails when they disagree — the table stays the source of truth, the frontmatter is its projection.
+
+| Load here | `trigger:` | Also carries | Who acts on it |
+|---|---|---|---|
+| floor | `always_on` | — | Antigravity loads it every session; Claude gets it via `AGENTS.md` §3 |
+| protocol | `model_decision` | — | judged against the request; the gate is *also* inline in `AGENTS.md`, so it binds either way |
+| on-demand, **file**-shaped | `glob` | `globs:` **and** `paths:` (same set) | Antigravity reads `globs:`; Claude Code reads `paths:` from the generated `.claude/rules/<name>.md` and loads the rule ONLY when it opens a matching file |
+| on-demand, **intent**-shaped | `model_decision` | `triggers:` (keywords) | Antigravity judges `description:`; `.agents/hooks/rule-trigger.py` matches `triggers:` against the prompt and injects a one-line pointer |
+
+⛔ **`paths:` never goes on a floor or protocol rule.** A rule *without* `paths:` loads at launch,
+unconditionally — which is right for the floor and wrong for everything else. Path-scoping a
+protocol rule would bury a gate until something happened to open a matching file.
+
+⛔ **`.claude/rules/` holds generated COPIES, not symlinks** — a Windows checkout without Developer
+Mode materialises a symlink as a text file containing a path, so the rule would load as one line of
+nonsense on the machine least likely to notice. `/smh-sync-agents` writes them and retires any whose
+master stopped being path-scoped.
+
 ## The set
 
 | Rule | Load | Trigger — reach for it when… |

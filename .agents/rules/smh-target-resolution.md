@@ -1,6 +1,12 @@
 ---
 name: smh-target-resolution
 description: "The canonical Step-0 target-resolution ladder every /cicd-* command binds with: self fast-path → $ARGUMENTS inline override → .agents/active-project.txt pointer → STOP-and-ask. Variants: §ASK (boot — always confirm, never silently reuse the pointer) and §DUAL (park/resume — lobby + active project, both repos). Plus §BIND (everything resolves under PROJECT_ROOT; missing path → STOP; binding = reading the project's `.agents/INDEX.md` law) and the echo contract. Commands state the obligations inline and point here for the mechanics."
+trigger: model_decision
+triggers: [target resolution, step 0, project_root, bind the project, which project]
+# Intent-shaped: no glob can catch it, because the trigger is what the operator ASKS,
+# not what gets opened. Antigravity judges `description:` against the request;
+# `.agents/hooks/rule-trigger.py` matches these keywords and injects a pointer.
+
 ---
 
 # Sudo Target Resolution — the Step-0 ladder (single source)
