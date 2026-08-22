@@ -32,6 +32,15 @@ import sys
 
 from _harness import SCRIPTS, Cases
 
+# ⛔ Imported, not re-typed. The constants below are pinned as CLOSED SETS, and a pin that
+# restates the literal by hand drifts away from the module it claims to guard.
+sys.path.insert(0, str(SCRIPTS.parent / "hooks"))
+import importlib.util as _ilu  # noqa: E402
+_spec = _ilu.spec_from_file_location(
+    "allow_scratchpad", SCRIPTS.parent / "hooks" / "allow-scratchpad.py")
+hook = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(hook)
+
 ROOT = SCRIPTS.parents[1]
 HOOK = SCRIPTS.parent / "hooks" / "allow-scratchpad.py"
 
@@ -165,6 +174,14 @@ def main() -> int:
             c.check(f"B · silent on a command containing {ch!r}", silent(out), out.strip()[:120])
         _, out = call(f"cat {SB}/a\nrm -rf .agents")
         c.check("B · silent on a newline", silent(out), out.strip()[:120])
+        # ⛔ NON-VACUOUS. The case above passes even with `\n` removed from FORBIDDEN, because
+        # `.agents` fails rule 3 on its own. Here EVERY token of both commands is a sandbox path,
+        # so only rule 1 can refuse it.
+        _, out = call(f"cat {SB}/f\nbash {SB}/evil.sh")
+        c.check("B · silent on a newline whose second command is ALL sandbox paths",
+                silent(out), out.strip()[:120])
+        _, out = call(f"cat {SB}/f\rbash {SB}/evil.sh")
+        c.check("B · silent on a carriage return", silent(out), out.strip()[:120])
 
     # ── C · rule 2 — a bare name from the list ──────────────────────────────────────────
     if c.block("C · rule 2 · the executable is a bare allow-listed name"):
@@ -186,6 +203,10 @@ def main() -> int:
             ("an absolute path outside", f"cp {SB}/x {REPO}/AGENTS.md"),
             ("a system path as a write target", f"cp {SB}/x /usr/local/bin/gh"),
             ("a --flag= value outside", f"python3 {SB}/h.py --out={REPO}/x"),
+            # ⛔ On a LISTED executable, so rule 2 cannot mask the miss. The ESCAPES row for this
+            # class uses `tar`, which is refused one rule earlier — leaving FLAG_RE untested.
+            ("a path glued to a short flag", f"cp {SB}/payload -t{REPO}/.agents"),
+            ("a path glued to a short flag, no dash-dash", f"python3 {SB}/h.py -o{REPO}/AGENTS.md"),
             ("flags only, naming no subject", "ls -la"),
             # ⛔ The value slot after a counting flag accepts DIGITS ONLY. Widen it to "anything"
             # and it becomes a free pass for one arbitrary token per command — a path the walk
@@ -208,6 +229,9 @@ def main() -> int:
              f"rm -rf /private/tmp/claude-501x/-P/{SID}/scratchpad/rt"),
             # ⛔ `scratchpad` must end at a boundary. Without `(?:/|$)` a SIBLING whose name
             # merely starts with it — `scratchpadX` — reads as inside the sandbox.
+            ("a `scratchpad.bak` sibling", f"rm -rf /private/tmp/claude-501/-P/{SID}/scratchpad.bak/x"),
+            ("a too-short session segment", "rm -rf /private/tmp/claude-501/-P/abcdef/scratchpad/x"),
+            ("an EMPTY project segment", f"rm -rf /private/tmp/claude-501//{SID}/scratchpad/x"),
             ("a sibling whose name merely starts with scratchpad",
              f"rm -rf /private/tmp/claude-501/-Users-sudohatter-Sudo-Hatter-Command/{SID}"
              f"/scratchpadX/rt"),
@@ -281,6 +305,37 @@ def main() -> int:
             {"tool_name": "Write", "tool_input": {"command": f"ls {SB}"}, "session_id": SID}))
         c.check("G · a non-Bash tool carrying an allowable command is still silent",
                 silent(out), out.strip()[:160])
+
+    # ── CLOSED · the sets are CLOSED, and adding to one is a change, not a tweak ────────
+    # ⛔ A review hand-wrote 22 mutants against the previous cut and ALL 22 SURVIVED. The single
+    # biggest reason: every set here was pinned only by examples. Adding `env`, `chown`, `find`
+    # or `xargs` to ALLOWED left the whole suite green — and `env /<sb>/x` runs ANY binary, so
+    # one silent addition undoes rule 2 entirely. Example-pinning is what let v1 pass 70/70 with
+    # twelve live holes; these four assertions are the closed-set answer.
+    if c.block("CLOSED · the allow-list, the ban-list and the value-flag table are closed sets"):
+        c.check("CLOSED · ALLOWED is exactly this set",
+                hook.ALLOWED == frozenset({
+                    "mkdir", "rmdir", "rm", "cp", "mv", "touch", "chmod",
+                    "ls", "cat", "head", "tail", "wc", "diff", "cmp", "file", "stat", "du",
+                    "bash", "sh", "python3", "python", "node"}),
+                f"changed: {sorted(hook.ALLOWED)}")
+        c.check("CLOSED · `ln` is NOT on it (it has an implicit destination)",
+                "ln" not in hook.ALLOWED, "ln is back on the allow-list")
+        c.check("CLOSED · FORBIDDEN is exactly this set",
+                hook.FORBIDDEN == set("`$|&;<>()[]{}*?!#~'\"\\\n\r"),
+                f"changed: {sorted(hook.FORBIDDEN)}")
+        c.check("CLOSED · VALUE_FLAGS is exactly this table",
+                hook.VALUE_FLAGS == {"head": {"-n", "-c"}, "tail": {"-n", "-c"}, "wc": {"-L"}},
+                f"changed: {hook.VALUE_FLAGS}")
+        # Every allow-listed name gets ONE positive case: dropping a member is a silent friction
+        # regression (the prompts come back) that example-based coverage cannot see.
+        for name in sorted(hook.ALLOWED):
+            cmd = (f"chmod 755 {SB}/x" if name == "chmod" else
+                   f"{name} {SB}/a {SB}/b" if name in ("cp", "mv", "diff", "cmp") else
+                   f"{name} {SB}/a")
+            _, out = call(cmd)
+            c.check(f"CLOSED · `{name}` is allowed on a sandbox path", allowed(out),
+                    out.strip()[:120])
 
     # ── WIRING · reads the REAL repo files, not a fixture ──────────────────────────────
     if c.block("WIRING · the deployed copy and the settings entry agree with the master"):

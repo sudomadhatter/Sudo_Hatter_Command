@@ -155,6 +155,38 @@
       "mutated": "    if False:",
       "case": "G · a non-Bash tool carrying an allowable command is still silent",
       "block": "NEVER"
+    },
+    {
+      "id": "M20 · add `env` to the allow-list — one addition undoes rule 2 entirely",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "    \"bash\", \"sh\", \"python3\", \"python\", \"node\",",
+      "mutated": "    \"bash\", \"sh\", \"python3\", \"python\", \"node\", \"env\",",
+      "case": "CLOSED · ALLOWED is exactly this set",
+      "block": "CLOSED"
+    },
+    {
+      "id": "M21 · drop the newline from the metacharacter set",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "FORBIDDEN = set(\"`$|&;<>()[]{}*?!#~'\\\"\\\\\\n\\r\")",
+      "mutated": "FORBIDDEN = set(\"`$|&;<>()[]{}*?!#~'\\\"\\\\\\r\")",
+      "case": "B · silent on a newline whose second command is ALL sandbox paths",
+      "block": "rule 1 ·"
+    },
+    {
+      "id": "M22 · add a destructive command to the value-flag table",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "VALUE_FLAGS = {\"head\": {\"-n\", \"-c\"}, \"tail\": {\"-n\", \"-c\"}, \"wc\": {\"-L\"}}",
+      "mutated": "VALUE_FLAGS = {\"head\": {\"-n\", \"-c\"}, \"tail\": {\"-n\", \"-c\"}, \"wc\": {\"-L\"}, \"rm\": {\"-r\"}}",
+      "case": "CLOSED · VALUE_FLAGS is exactly this table",
+      "block": "CLOSED"
+    },
+    {
+      "id": "M23 · widen FLAG_RE — a path glued to a short flag becomes a flag",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "FLAG_RE = re.compile(r\"^--$|^-{1,2}[A-Za-z0-9][A-Za-z0-9-]*$\")",
+      "mutated": "FLAG_RE = re.compile(r\"^-\")",
+      "case": "D · silent on a path glued to a short flag",
+      "block": "rule 3 ·"
     }
   ]
 }
