@@ -169,7 +169,7 @@
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "FORBIDDEN = set(\"`$|&;<>()[]{}*?!#~'\\\"\\\\\\n\\r\")",
       "mutated": "FORBIDDEN = set(\"`$|&;<>()[]{}*?!#~'\\\"\\\\\\r\")",
-      "case": "B · silent on a newline whose second command is ALL sandbox paths",
+      "case": "B · silent on a newline whose second command IS a sandbox path",
       "block": "rule 1 ·"
     },
     {

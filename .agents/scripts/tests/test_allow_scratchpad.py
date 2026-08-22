@@ -174,14 +174,15 @@ def main() -> int:
             c.check(f"B · silent on a command containing {ch!r}", silent(out), out.strip()[:120])
         _, out = call(f"cat {SB}/a\nrm -rf .agents")
         c.check("B · silent on a newline", silent(out), out.strip()[:120])
-        # ⛔ NON-VACUOUS. The case above passes even with `\n` removed from FORBIDDEN, because
-        # `.agents` fails rule 3 on its own. Here EVERY token of both commands is a sandbox path,
-        # so only rule 1 can refuse it.
-        _, out = call(f"cat {SB}/f\nbash {SB}/evil.sh")
-        c.check("B · silent on a newline whose second command is ALL sandbox paths",
+        # ⛔ NON-VACUOUS, and it took two tries. `cat X\nrm -rf .agents` passes with `\n` REMOVED
+        # from FORBIDDEN, because `.agents` fails rule 3 on its own; so does `…\nbash X`, because
+        # the bare `bash` fails it. The only shape rule 1 alone can refuse is one where the second
+        # command IS a sandbox path — every token then passes the walk, and the shell runs it.
+        _, out = call(f"cat {SB}/f\n{SB}/evil.sh")
+        c.check("B · silent on a newline whose second command IS a sandbox path",
                 silent(out), out.strip()[:120])
-        _, out = call(f"cat {SB}/f\rbash {SB}/evil.sh")
-        c.check("B · silent on a carriage return", silent(out), out.strip()[:120])
+        _, out = call(f"cat {SB}/f\r{SB}/evil.sh")
+        c.check("B · silent on a carriage return, same shape", silent(out), out.strip()[:120])
 
     # ── C · rule 2 — a bare name from the list ──────────────────────────────────────────
     if c.block("C · rule 2 · the executable is a bare allow-listed name"):
