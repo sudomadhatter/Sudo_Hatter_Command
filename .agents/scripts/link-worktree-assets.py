@@ -25,7 +25,7 @@ Two things worth holding, both reported at runtime:
   - Shared `node_modules` is fine for dev, NOT for E2E: two lanes on different installs will fight.
     The E2E tier keeps its own `npm ci`.
 
-    link-worktree-assets <worktree-path> [--repo <path>] [--copy-env]
+    link-worktree-assets <worktree-path> [--repo <path>] [--copy-env] [--require-assets]
     link-worktree-assets --unlink <worktree-path>
 
 ⛔ --unlink MUST run before the worktree is removed. A recursive delete THROUGH a junction walks into
@@ -55,16 +55,65 @@ ASSETS: list[tuple[str, str]] = [
 ]
 
 
+class ResolutionError(RuntimeError):
+    """The repo behind this worktree does not resolve to a working tree (SCC-255)."""
+
+
 def repo_root(start: Path) -> Path:
-    """The main working tree, even when called from inside a worktree."""
-    out = subprocess.run(
+    """The main WORKING TREE — from a linked worktree, and from inside a SUBMODULE.
+
+    ⛔ NOT `Path(--git-common-dir).parent` on its own. That is right only when the git dir is
+    literally `<worktree>/.git`. In a submodule the common dir is `<super>/.git/modules/<name>`,
+    so the parent is `<super>/.git/modules` — a gitdir, never a checkout. The asset scan then
+    finds nothing and prints "nothing to link", which is indistinguishable from an honestly
+    empty repo. That was the measured defect (SCC-255): an AGY lane reported nothing to link
+    over a checkout that plainly carries `backend/.venv`.
+
+    Git has exactly TWO rules for finding the checkout behind a git dir, and both are needed:
+
+      `core.worktree` set  -> that, resolved RELATIVE TO THE GIT DIR. This is what a submodule
+                              sets (`../../../sub`), and it is the whole fix.
+      unset                -> the git dir's parent. The ordinary `<repo>/.git` case.
+
+    ⛔ And do NOT try to collapse them into one `git -C <common-dir> rev-parse --show-toplevel`.
+    It looks like it works — it is correct for the submodule — but inside a plain `<repo>/.git`
+    git answers `fatal: this operation must be run in a work tree`, so that shortcut refuses
+    every ordinary repo in the house. Ten command bodies call this script at worktree-open time;
+    the regression block in the test file is what caught it.
+
+    The candidate is then VERIFIED to be a working-tree root, because a wrong path that links
+    real files somewhere unexpected is worse than a refusal. Anything with no checkout behind it
+    — a bare repo, a submodule whose directory was deleted — raises instead of returning a
+    plausible-looking answer.
+    """
+    common = Path(subprocess.run(
         ["git", "-C", str(start), "rev-parse", "--path-format=absolute", "--git-common-dir"],
         capture_output=True,
         text=True,
         check=True,
-    ).stdout.strip()
-    # --git-common-dir points at the MAIN repo's .git even from a linked worktree.
-    return Path(out).parent
+    ).stdout.strip())
+
+    cw = subprocess.run(
+        ["git", "-C", str(common), "config", "--get", "core.worktree"],
+        capture_output=True, text=True,
+    )
+    declared = cw.stdout.strip() if cw.returncode == 0 else ""
+    candidate = Path(os.path.realpath(common / declared)) if declared else common.parent
+
+    probe = subprocess.run(
+        ["git", "-C", str(candidate), "rev-parse", "--path-format=absolute", "--show-toplevel"],
+        capture_output=True, text=True,
+    )
+    top = probe.stdout.strip()
+    if probe.returncode != 0 or not top:
+        why = (probe.stderr or "").strip().splitlines()
+        raise ResolutionError(
+            f"{candidate} (from git dir {common}) — {why[0] if why else 'it has no working tree'}")
+    if Path(os.path.realpath(top)) != Path(os.path.realpath(candidate)):
+        raise ResolutionError(
+            f"{candidate} (from git dir {common}) — is inside a DIFFERENT repo, whose root is "
+            f"{top}; refusing to link assets from a repo this worktree does not belong to")
+    return candidate
 
 
 def link_dir(src: Path, dst: Path) -> str:
@@ -110,7 +159,7 @@ def find_assets(repo: Path) -> list[tuple[Path, str]]:
     return found
 
 
-def do_link(worktree: Path, repo: Path, copy_env: bool) -> int:
+def do_link(worktree: Path, repo: Path, copy_env: bool, require_assets: bool = False) -> int:
     print(f"repo:     {repo}")
     print(f"worktree: {worktree}\n")
 
@@ -133,7 +182,17 @@ def do_link(worktree: Path, repo: Path, copy_env: bool) -> int:
         shared_node_modules = shared_node_modules or (rel.name == "node_modules" and dst.exists())
 
     if not linked and not skipped:
+        # ⭐ SAY THAT THE RESOLUTION WAS VERIFIED, not just that the result was empty (SCC-255).
+        # Six of the nine local checkouts genuinely have zero linkable assets, and so does any
+        # repo before its first `npm install` — refusing on the COUNT would make ten command
+        # bodies unable to open a lane in them. The defect was never the zero; it was that a
+        # failed resolution and an honest zero printed the same sentence. Now they cannot.
         print("  (nothing to link — no gitignored runtime assets at the repo root or one level down)")
+        print(f"  resolution verified: {repo} — this repo genuinely has none.")
+        if require_assets:
+            print(f"error: --require-assets was given, but {repo} has no linkable assets at its "
+                  f"root or one level down", file=sys.stderr)
+            return 1
         return 0
 
     print(f"\n{linked} linked, {skipped} already present.")
@@ -238,6 +297,10 @@ def main() -> int:
     ap.add_argument("--repo", help="source repo (default: this repo's main working tree)")
     ap.add_argument("--unlink", action="store_true", help="remove the links (run BEFORE worktree remove)")
     ap.add_argument("--copy-env", action="store_true", help="copy .env instead of linking it")
+    ap.add_argument("--require-assets", action="store_true",
+                    help="fail if the resolved repo has no linkable assets (for a caller that "
+                         "KNOWS it should — most callers must not use this: six of nine local "
+                         "repos legitimately have none)")
     args = ap.parse_args()
 
     worktree = Path(args.worktree).resolve()
@@ -248,11 +311,21 @@ def main() -> int:
     if args.unlink:
         return do_unlink(worktree)
 
-    repo = Path(args.repo).resolve() if args.repo else repo_root(worktree)
+    if args.repo:
+        repo = Path(args.repo).resolve()
+    else:
+        try:
+            repo = repo_root(worktree)
+        except ResolutionError as exc:
+            print(f"error: cannot resolve the repo behind {worktree}\n"
+                  f"       {exc}\n"
+                  f"       pass --repo <path> if you know which working tree these assets "
+                  f"belong to", file=sys.stderr)
+            return 1
     if repo == worktree:
         print("error: source repo and worktree are the same path", file=sys.stderr)
         return 2
-    return do_link(worktree, repo, args.copy_env)
+    return do_link(worktree, repo, args.copy_env, args.require_assets)
 
 
 if __name__ == "__main__":

@@ -1335,6 +1335,28 @@ The linker also finds assets **one folder down** (`backend/.env`, `frontend/node
 AGY layout); before that fix it looked only at the repo root and would have quietly linked almost
 nothing there.
 
+**And it now tells you the difference between "found nothing" and "looked in the wrong place"
+(SCC-255).** Opening an AGY lane, the linker used to report *nothing to link* over a checkout that
+obviously has a `backend/.venv`. AGY is a submodule, and a submodule keeps its history somewhere
+else — under the parent's `.git/modules/` — so the linker was scanning that bookkeeping folder
+instead of AGY itself. It found nothing, said so, and looked like a success. Every AGY lane opened
+after that started without its keys or its Python environment, and the first thing to fail was a
+test, several steps later, for no visible reason.
+
+It now asks git where the checkout is rather than guessing from the path, so submodules work. Two
+things you'll see:
+
+- **A repo with genuinely nothing to link says `resolution verified: <path>`.** Six of the nine
+  repos on this machine legitimately have no linked assets, and so does any repo before its first
+  `npm install` — that is normal and the lane opens. The line is there so an empty result can never
+  again be mistaken for a broken one.
+- **A repo it cannot resolve now refuses**, names the path it tried, and tells you to pass `--repo`.
+  Better a lane that will not open than one that opens empty and fails a test twenty minutes later.
+
+`--require-assets` is there for a caller that *knows* assets must exist and wants the hard failure.
+Do not add it to the ordinary worktree-open line — it would make lanes un-openable in the six repos
+that correctly have none.
+
 ### Where each check runs
 
 | Gate | Where | When |
