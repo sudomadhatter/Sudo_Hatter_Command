@@ -73,10 +73,20 @@ the twin is an AVCH ticket of its own, not something a lobby lane may do.
 
 ## Start here
 
+> **Teaching edition.** A generated teaching shell begins with no project checked out and no Jira
+> board. Run `/smh-tour`: the agent asks what to call the command center, asks what to call the first
+> project, then `/smh-new-project <name>` clones the paired
+> [`sudo-project-skeleton`](https://github.com/sudomadhatter/sudo-project-skeleton) into
+> `Projects/<name>`. `/smh-tour` re-opens this page and the current command body at every stop, so this
+> page remains the workflow source instead of being copied into a second tutorial. The teaching voice
+> is reversible at any time with `/smh-training on|off|status`.
+
 **I want to…**
 
 | …do this | → run / read |
 |---|---|
+| learn the system while creating my first real project | `/smh-tour` — live curriculum over this page; it asks for both names and clones the project skeleton |
+| turn teaching explanations on, off, or check them | `/smh-training on\|off\|status` — changes the voice, never the gates |
 | know what to work on | **put the card in `To Do Next` on the board — that column *is* the answer** ([§12](#12-the-board--what-runs-next)). On a project: `/cicd-boot-sprint-memory`. In the command centre: just ask. |
 | see or move the sprint board | ask any agent — the live board answers via `acli` ([§12](#12-the-board--what-runs-next)) |
 | work out which lane my work belongs in | [§5 — the lane chooser](#5-which-lane-am-i-in) |

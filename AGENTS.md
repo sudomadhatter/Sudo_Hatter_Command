@@ -73,6 +73,12 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 > and verification for a device with no terminal. On a desktop IDE session the var is unset → ignore it and
 > use the desktop defaults. `mobile-mode.md` owns the trigger (single source for the lane boundary).
 
+> **Teaching edition?** When a root `.training-mode` sentinel exists, also load
+> `.agents/rules/training-mode.md`. The rule changes the explanation contract, not the workflow or its
+> gates, and requires a fresh read of `docs/_scc_sops_prds/workflows_testing_SOP.md` plus the current
+> command body before workflow mechanics are taught. `/smh-training on|off|status` owns the switch;
+> `/smh-tour` owns the guided curriculum.
+
 > **⛔ ARTIFACTS — MANDATORY FIRST ACTION.** Before modifying ANY file outside `_artifacts/`, write an
 > `implementation_plan.md` into the artifact store owned by the target workspace (§5) and **STOP until Daniel says "approved."** Track
 > work with a live TodoWrite list; close with one `walkthrough.md`. **This applies at the lobby

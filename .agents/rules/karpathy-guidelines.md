@@ -1,7 +1,6 @@
 ---
 name: karpathy-guidelines
 description: "Universal behavioral principles to reduce common LLM coding mistakes. Derived from Andrej Karpathy's observations, adapted with project-specific lessons."
-since: 2026-06-24
 ---
 
 # Behavioral Principles

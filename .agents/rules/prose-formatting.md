@@ -1,8 +1,6 @@
 ---
 name: prose-formatting
 description: "Activates on conversational chat replies. Prefer prose over bullets and scaffolding; minimum formatting for clarity. Does not govern structured deliverable docs (artifacts, specs, tables)."
-why: "The formatting consequence of operator-profile obligations 2 and 5: narrative first, compression second, never make Daniel the compiler."
-since: 2026-06-24
 ---
 
 # Chat Response Formatting — Prose Over Scaffolding

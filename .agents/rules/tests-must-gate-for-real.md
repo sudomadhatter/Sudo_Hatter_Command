@@ -1,8 +1,6 @@
 ---
 name: tests-must-gate-for-real
 description: "Activates whenever a test is written, a CI/quality gate is scaffolded or reviewed, or a suite is marked report-only/soft/skip. A test only protects you if it fails for the RIGHT reason, CI runs the REAL suite, and no gate is soft forever."
-why: "AGY 2026-07-13: an e2e spec asserted four UI strings absent from the source against an auth-gated route and had never passed, while CI testIgnored the real journey suite - a green board over a suite that gated nothing."
-since: 2026-07-13
 ---
 
 # A Test Only Counts If It Actually Gates

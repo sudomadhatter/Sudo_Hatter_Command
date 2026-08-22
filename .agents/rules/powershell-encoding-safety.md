@@ -1,7 +1,6 @@
 ---
 name: powershell-encoding-safety
 description: "Prevents UTF-16LE/BOM file corruption when restoring or creating source files on Windows. Activates whenever file content is written via shell commands."
-since: 2026-06-24
 ---
 
 # PowerShell Encoding Safety (Windows)

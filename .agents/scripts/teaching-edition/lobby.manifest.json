@@ -1,8 +1,8 @@
 {
-  "name": "sudo-command-center (teaching edition)",
+  "name": "command-center teaching edition",
   "source": "../../..",
 
-  "_comment_include": "BARE BONES - the system itself, nothing else. Rules, commands, workflows, skills, scripts, templates, and the routing brain. No projects, no session history, no BMAD module (BMAD runs inside a project, not the command center - the skeleton carries it). Tool surface dirs (.claude/.opencode/.antigravity/.agent) are included so commands resolve on first clone rather than only after a /sync-agents.",
+  "_comment_include": "The command-center shell: shared toolkit, platform doors, gates, BMAD module, operator docs, and root routing/config. Projects and session history are deliberately empty. The paired project skeleton remains its own maintained repository and is cloned later by smh-new-project.",
   "include": [
     ".agents",
     ".claude",
@@ -19,54 +19,37 @@
     "router.md",
     "opencode.json",
     ".mcp.json",
+    ".env.example",
     ".gitattributes",
     ".gitignore",
     "requirements.txt",
     "requirements-tdad.txt"
   ],
 
-  "_comment_exclude": "Personal, machine-local, or project-owned. _my_resources is Daniel's personal area; _artifacts is session memory; .gitnexus is a per-machine index; Projects/ holds real client work.",
+  "_comment_exclude": "Active bindings, machine-local state, source-only export machinery, and domain-specific incident doors do not belong in a fresh shell.",
   "exclude": [
     ".agents/active-project.txt",
-    ".agents/skills/3_voice-ai-development",
-    ".agents/skills/4_sse-streaming-patterns",
-    ".agents/skills/5_adk_skills",
-    ".agents/skills/6_dual-store-rag-patterns",
-    ".agents/skills/agent-handoff-patterns",
-    ".agents/skills/hr-agent-schema-guide",
-    ".agents/skills/rag-implementation",
-    ".agents/skills/regulatory-verification-protocol",
-    ".agents/skills/specialist_agents_team",
-    ".agents/skills/gemini-live-api",
-    ".agents/skills/gcp-cloud-run",
-    ".agents/skills/deploy-backend",
-    ".agents/skills/troubleshoot-cloudrun-deployment",
-    ".agents/commands/security_team_aviationchat.md",
-    ".agents/workflows/security_team_aviationchat.md",
+    ".agents/jira.conf",
+    ".agents/project-own.txt",
+    ".agents/scripts/git-hooks/JIRA-ENFORCE",
     ".agents/scripts/export-teaching-edition.ps1",
     ".agents/scripts/teaching-edition",
-    ".claude/skills/3_voice-ai-development",
-    ".claude/skills/4_sse-streaming-patterns",
-    ".claude/skills/5_adk_skills",
-    ".claude/skills/6_dual-store-rag-patterns",
-    ".claude/skills/agent-handoff-patterns",
-    ".claude/skills/hr-agent-schema-guide",
-    ".claude/skills/rag-implementation",
-    ".claude/skills/regulatory-verification-protocol",
-    ".claude/skills/specialist_agents_team",
-    ".claude/skills/gemini-live-api",
-    ".claude/skills/gcp-cloud-run",
-    ".claude/skills/deploy-backend",
-    ".claude/skills/troubleshoot-cloudrun-deployment",
-    ".claude/commands/security_team_aviationchat.md",
-    ".opencode/commands/security_team_aviationchat.md",
-    ".claude/settings.local.json"
+    ".agents/scripts/validate_teaching_edition.py",
+    ".agents/scripts/tests/test_teaching_edition.py",
+    "docs/.maps-journal.jsonl",
+    "docs/.maps-state.json",
+    ".agents/commands/sentry-security-team-avch.md",
+    ".agents/skills/sentry-security-team-avch",
+    ".agents/workflows/sentry-security-team-avch.md",
+    ".claude/skills/sentry-security-team-avch",
+    ".opencode/commands/sentry-security-team-avch.md",
+    ".claude/settings.local.json",
+    ".claude/scratchpad-root"
   ],
 
-  "_comment_emptyDirs": "Folder exists, nothing inside. TOP-LEVEL ONLY on purpose: the real subfolders here are named after the owner's projects and dated sessions (_artifacts/_main/2026-08-04_..., Projects/<client>), so recreating the tree would leak the names. The newcomer gets the shape and fills it themselves.",
+  "_comment_emptyDirs": "Top-level shape only; no project names, personal notes, BMAD output, or session history cross the export boundary.",
   "emptyDirs": ["_artifacts", "_bmad-output", "Projects", "_my_resources"],
 
-  "_comment_excludeAnywhere": "Path segments never copied, wherever they appear.",
   "excludeAnywhere": [
     ".git",
     ".venv",
@@ -75,6 +58,7 @@
     "__pycache__",
     ".pytest_cache",
     ".gitnexus",
+    ".code-review-graph",
     "_artifacts",
     "_bmad-output",
     "_my_resources",
@@ -83,53 +67,60 @@
     "_routing-canary"
   ],
 
-  "_comment_substitutions": "Most domain references in core commands are incidental examples, not structure. Matching is CASE-SENSITIVE so replacements read naturally in context (DANIEL in a heading becomes THE OPERATOR, not 'the operator'). That means every case variant needs its own row - the case-INSENSITIVE leak scan below is what proves none were missed. Order matters: longest first, so AGY_AVIATIONCHAT is consumed before AVIATIONCHAT.",
+  "_comment_substitutions": "Case-sensitive content substitutions run before whole-file transforms. The final leak scan is case-insensitive and checks both content and paths.",
   "substitutions": [
     { "from": "AGY_AVIATIONCHAT", "to": "YOUR_PROJECT" },
     { "from": "AVIATIONCHAT", "to": "YOUR_PROJECT" },
     { "from": "AviationChat", "to": "your project" },
     { "from": "aviationChat", "to": "your-project" },
     { "from": "aviationchat", "to": "your-project" },
+    { "from": "AVCH-", "to": "PROJECT-" },
+    { "from": "SCC-", "to": "HISTORY-" },
     { "from": "NEXGen", "to": "YOUR_PROJECT" },
     { "from": "NEXgen", "to": "YOUR_PROJECT" },
     { "from": "DANIEL", "to": "THE OPERATOR" },
     { "from": "Daniel", "to": "the operator" },
+    { "from": "daniel", "to": "operator" },
     { "from": "dlohneiss@gmail.com", "to": "you@example.com" },
     { "from": "dlohneiss", "to": "your-user" },
-    { "from": "sudomadhatter", "to": "your-github-user" },
-    { "from": "Sudo_Hatter_Command", "to": "sudo-command-center" },
+    { "from": "sudomadhatter@gmail.com", "to": "you@example.com" },
+    { "from": "856831340418", "to": "YOUR_PROJECT_NUMBER" },
+    { "from": "Sudo_Hatter_Command", "to": "command-center" },
     { "from": "Fresh_Workspace_BMAD", "to": "sudo-project-skeleton" },
     { "from": "clean-bmad", "to": "sudo-project-skeleton" },
+    { "from": "https://sudo-command.atlassian.net/jira/software/projects/SCC/boards/2", "to": "your optional Jira board" },
+    { "from": "https://sudo-command.atlassian.net", "to": "https://YOUR-SITE.atlassian.net" },
+    { "from": "sudo-command.atlassian.net", "to": "YOUR-SITE.atlassian.net" },
+    { "from": "SCC Jira board", "to": "Jira board" },
+    { "from": "SCC and AVCH both have it today.", "to": "Add it when you configure a Jira board." },
 
-    { "_note": "Voice-agent names, surviving as INCIDENTAL EXAMPLES in generic files (v3-prompt-architecture uses them as sample entities). Substituted, not excluded. word:true is mandatory - Igor hides inside Rigor, Mac inside Machine." },
     { "from": "Sully", "to": "Ada", "word": true },
     { "from": "sully", "to": "ada", "word": true },
     { "from": "Igor", "to": "Bruno", "word": true },
     { "from": "igor", "to": "bruno", "word": true }
   ],
 
-  "_comment_transforms": "Whole-file swaps for files whose CONTENT is personal, not just its tokens. operator-profile is floor-tier and hard-codes Daniel as chair; unchanged, a stranger's agent believes it is talking to him.",
   "transforms": [
     { "path": ".agents/rules/operator-profile.md", "replaceWith": "replacements/operator-profile.md" },
     { "path": ".agents/maintained-projects.txt", "replaceWith": "replacements/maintained-projects.txt" },
     { "path": "router.md", "replaceWith": "replacements/router.md" },
-    { "_note": "ADDS a file rather than replacing one - the source repo has no .training-mode (its owner is not a learner) but every teaching clone must start with the tutor ON. A transform writes to a path whether or not the source has it.", "path": ".training-mode", "replaceWith": "replacements/training-mode-sentinel" },
-    { "_note": "Also an ADD: the source command center has no README. This one is teaching-edition-specific (it points at /sudo-tour and .training-mode), so it lives here rather than in the owner's repo.", "path": "README.md", "replaceWith": "replacements/lobby-README.md" }
+    { "path": ".training-mode", "replaceWith": "replacements/training-mode-sentinel" },
+    { "path": ".agents/jira.conf.example", "replaceWith": "replacements/jira-conf.example" },
+    { "path": "README.md", "replaceWith": "replacements/lobby-README.md" }
   ],
 
-  "_comment_leakScan": "Runs after every export and cannot be skipped. Any hit blocks the push. Matching is case-INSENSITIVE, so it catches case variants the substitution table missed - that is its main job. Every value from the live .env is added automatically. NOTE: _my_resources is deliberately NOT a needle. It is a structural folder name in the workspace standard (a personal area agents never touch) and the teaching edition should keep the concept; only its CONTENTS are excluded.",
   "leakScan": {
     "literals": [
       "Daniel",
       "dlohneiss",
+      "sudomadhatter@gmail.com",
       "AviationChat",
       "NEXgen",
       "Sudo_Hatter_Command",
       "Fresh_Workspace_BMAD",
-      "clean-bmad"
+      "clean-bmad",
+      "sudo-command.atlassian.net"
     ],
-    "_note_sudomadhatter": "sudomadhatter is deliberately NOT a needle. The READMEs must carry the real clone URLs (github.com/sudomadhatter/...) or nobody can clone anything - it is the publication address, not a secret. The SUBSTITUTION still rewrites it everywhere else, and transforms run AFTER substitutions, so the hand-authored READMEs keep the real URL while every other file is scrubbed.",
-    "_note_Mac": "Mac was tried as a needle and REMOVED: BMAD's own project-types.csv lists 'Mac desktop app', so it false-fired AND the matching substitution corrupted vendor data to 'Chen desktop app'. A lone Mac beside Ada and Bruno identifies nobody.",
     "wordLiterals": ["Sully", "Igor"]
   }
 }

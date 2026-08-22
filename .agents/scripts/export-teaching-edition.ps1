@@ -20,8 +20,8 @@
     Path to the manifest JSON (see .agents/scripts/teaching-edition/).
 
 .PARAMETER Target
-    Directory to write the export into. Overwritten in place; anything hand-edited there is
-    destroyed on the next run. That is deliberate - see the header note above.
+    New or empty directory to write the export into. A non-empty target is refused so an old file or
+    git history cannot survive a refresh invisibly.
 
 .PARAMETER WhatIf
     Report what would be copied, excluded and transformed. Writes nothing.
@@ -48,6 +48,13 @@ $m = Get-Content -LiteralPath $Manifest -Raw -Encoding UTF8 | ConvertFrom-Json
 
 $sourceRoot = Resolve-Path -LiteralPath (Join-Path $manifestDir $m.source)
 if (-not (Test-Path -LiteralPath $sourceRoot)) { throw "Source not found: $sourceRoot" }
+
+if (-not $WhatIf -and (Test-Path -LiteralPath $Target)) {
+    $existing = @(Get-ChildItem -LiteralPath $Target -Force)
+    if ($existing.Count -gt 0) {
+        throw "Target must be new or empty (found $($existing.Count) item(s)): $Target"
+    }
+}
 
 Write-Host ""
 Write-Host "=== teaching-edition export: $($m.name) ===" -ForegroundColor Cyan
@@ -96,7 +103,7 @@ foreach ($inc in $m.include) {
     }
 
     $items = if (Test-Path -LiteralPath $src -PathType Leaf) {
-        @(Get-Item -LiteralPath $src)
+        @(Get-Item -LiteralPath $src -Force)
     } else {
         Get-ChildItem -LiteralPath $src -Recurse -File -Force
     }
@@ -164,7 +171,7 @@ if (-not $WhatIf) {
 # Dotfiles like .gitignore report their whole NAME as .Extension, so both are checked -
 # missing that is how .gitignore shipped four project names past the substitution pass.
 $TEXT_EXT = @('.md', '.txt', '.json', '.ps1', '.py', '.yaml', '.yml', '.toml', '.cfg', '.ini',
-              '.sh', '.js', '.ts', '.html', '.css', '.xml', '.gitignore', '.gitattributes',
+              '.sh', '.js', '.ts', '.html', '.css', '.xml', '.patch', '.jsonl', '.gitignore', '.gitattributes',
               '.env.example', '.editorconfig')
 $subCount = 0
 $subFiles = 0
@@ -233,15 +240,22 @@ foreach ($t in (Get-ManifestList $m "transforms")) {
 # because it is the file a newcomer trusts to find things. Regenerate it against the export.
 # Runs BEFORE the leak scan on purpose, so the regenerated map is scanned like everything else.
 
+$pythonCommand = $null
 $mapPath = Join-Path $Target 'docs/repo-map.md'
 if (-not $WhatIf -and (Test-Path -LiteralPath $mapPath)) {
     $gen = Join-Path $sourceRoot '.agents/scripts/generate_repo_map.py'
     if (Test-Path -LiteralPath $gen) {
+        foreach ($candidate in @('python3', 'python', 'py')) {
+            $resolved = Get-Command $candidate -ErrorAction SilentlyContinue
+            if ($resolved) { $pythonCommand = $resolved.Source; break }
+        }
+        if (-not $pythonCommand) { throw "Python not found (tried python3, python, py)" }
         Write-Host "-- site map --" -ForegroundColor Yellow
-        & python $gen --root $Target --output $mapPath 2>&1 | Select-Object -Last 2 |
+        & $pythonCommand $gen --root $Target --output $mapPath 2>&1 | Select-Object -Last 2 |
             ForEach-Object { Write-Host "   $_" }
+        if ($LASTEXITCODE -ne 0) { throw "repo-map generation failed (rc=$LASTEXITCODE)" }
     } else {
-        Write-Warning "generate_repo_map.py not found - docs/repo-map.md still describes the SOURCE tree"
+        throw "generate_repo_map.py not found: $gen"
     }
 }
 
@@ -310,7 +324,7 @@ if (Test-Path -LiteralPath $envPath) {
     }
 }
 
-$scanRoot = if ($WhatIf) { $null } else { $Target }
+$scanRoot = if ($WhatIf) { $null } else { [System.IO.Path]::GetFullPath($Target) }
 $hits = @()
 $scannedGitRepo = $false
 if ($scanRoot -and (Test-Path -LiteralPath $scanRoot)) {
@@ -369,6 +383,24 @@ if ($WhatIf) {
     exit 1
 } else {
     Write-Host "   clean - $($needles.Count) needles, 0 hits (contents AND paths)" -ForegroundColor Green
+}
+
+# --- product contract (never optional) ----------------------------------------------------
+
+if (-not $WhatIf) {
+    if (-not $pythonCommand) {
+        foreach ($candidate in @('python3', 'python', 'py')) {
+            $resolved = Get-Command $candidate -ErrorAction SilentlyContinue
+            if ($resolved) { $pythonCommand = $resolved.Source; break }
+        }
+    }
+    if (-not $pythonCommand) { throw "Python not found (tried python3, python, py)" }
+    $validator = Join-Path $sourceRoot '.agents/scripts/validate_teaching_edition.py'
+    if (-not (Test-Path -LiteralPath $validator)) { throw "Teaching validator not found: $validator" }
+    Write-Host ""
+    Write-Host "-- teaching-shell contract --" -ForegroundColor Yellow
+    & $pythonCommand $validator $scanRoot
+    if ($LASTEXITCODE -ne 0) { throw "teaching-shell validation failed (rc=$LASTEXITCODE)" }
 }
 
 if (-not $WhatIf -and $scannedGitRepo) {

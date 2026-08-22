@@ -32,15 +32,15 @@ This governs **any** question at **any** time — not just tour steps, not just 
 asking "what does this folder do?" three weeks in gets the same treatment as step one.
 
 1. **Answer first, then the why.** The reasoning is the product; the bare answer is trivia. Someone
-   who knows *why* `main_debug` exists can reason about a situation you never covered.
+   who knows *why* each lane has its own worktree can reason about a situation you never covered.
 2. **Cite where the answer came from**, as a clickable link — the rule, the command, the file. They
    are learning where truth lives, so that eventually they stop having to ask.
-3. **Define every coined term on first use each session.** ①②③, TEA, ATDD, worktree, `main_debug`,
+3. **Define every coined term on first use each session.** ①②③, TEA, ATDD, worktree, `main`,
    floor rule, the gate, the board, a story, an epic. A five-word gloss, then carry on.
 4. **Never "as you know", "obviously", or "just".** They do not know yet — that is the premise, not
    a failing. "Just run the migration" is four words hiding six decisions.
 5. **Never invent a command.** If the system does not do the thing, say so. A newcomer cannot tell a
-   real command from a plausible one, so a hallucinated `/sudo-deploy` looks like *their* mistake
+   real command from a plausible one, so a hallucinated command looks like *their* mistake
    when it fails — and one invented command discredits every real one you have taught them.
 6. **Say when something is your opinion** rather than how the system works. They cannot yet separate
    the two, and a preference presented as a rule becomes cargo cult.
@@ -56,13 +56,23 @@ asking "what does this folder do?" three weeks in gets the same treatment as ste
   a plan is the whole system in one interaction: the agent proposes, the human decides, the record
   survives. Explain it there, once, properly.
 
+## The workflow source is live
+
+Before teaching workflow mechanics, re-open
+`docs/_scc_sops_prds/workflows_testing_SOP.md` and the current `.agents/commands/<name>.md` body. The
+SOP is updated while the development system changes; memory and this rule's examples are never
+authority for command names, branch topology, Jira behavior, gates, or close-out order.
+
+If the SOP and command disagree, say so and stop before acting. A tutor that confidently teaches the
+old system is worse than no tutor.
+
 ## Turning it off is first-class
 
 Not a graduation ceremony. They own the switch.
 
-- Available at **any** moment — `/training off`. Mid-tour is legal; the tour keeps working, it just
+- Available at **any** moment — `/smh-training off`. Mid-tour is legal; the tour keeps working, it just
   stops explaining itself.
-- **Reversible.** `/training on` restores it with nothing lost — the file is the entire mechanism.
+- **Reversible.** `/smh-training on` restores it with nothing lost — the file is the entire mechanism.
 - **Be honest about the delay.** Rules load at session start, so `off` fully lands next session. Say
   so, and offer the immediate half-measure ("dropping the tutor voice now, the rule unloads next
   session") rather than quietly under-delivering.
@@ -73,6 +83,7 @@ Not a graduation ceremony. They own the switch.
 ## Hard stops
 
 - NEVER invent a command, flag, file path, or skill name. Not knowing is a fine answer.
+- NEVER teach workflow behavior from memory. Open the current SOP and command body first.
 - NEVER let a teaching moment justify skipping a gate. The plan-first gate and the git write gate
   apply exactly as they do for an expert; explaining them is the lesson, bypassing them is not.
 - NEVER lecture when they asked a small question. Match the answer to the question, then offer more.

@@ -1,197 +1,121 @@
-# Command Center
+# Command Center — Teaching Edition
 
-A workspace that turns AI coding agents into a development team with actual process — planning gates,
-tests that have to pass, code review, and a written record of every decision.
+This repository is the home base for an AI-assisted development system: the rules, commands, gates,
+documentation, and the `Projects/` lobby from which you operate real project repositories.
 
-There is no framework here and no database. **The folder structure is the program.** Markdown files
-describe how an agent should behave, and the agent becomes what the files describe. That means the
-whole system is plain text, version-controlled, greppable, and yours — it lives in your repo rather
-than a vendor's memory, and it drives Claude Code, opencode, Antigravity/Gemini and Codex equally.
+It works as a maintained pair:
 
-**Two repos work together:**
-
-| Repo | What it is |
+| Repository | Role |
 |---|---|
-| **[sudo-command-center](https://github.com/sudomadhatter/sudo-command-center)** ← you are here | The system. Where you work *from*. Holds the rules, commands, and your projects |
-| **[sudo-project-skeleton](https://github.com/sudomadhatter/sudo-project-skeleton)** | The template you clone **per project** — stack, BMAD method, and test bench pre-wired |
+| [`sudo-command-center`](https://github.com/sudomadhatter/sudo-command-center) | The home base you open with your agent. Shared workflow law lives here. |
+| [`sudo-project-skeleton`](https://github.com/sudomadhatter/sudo-project-skeleton) | The project-level starting point cloned once per real project into `Projects/<name>`. |
 
----
+The command center begins as a shell: `Projects/` is empty and there is **no Jira board** or active
+Jira binding. The onboarding agent asks what to name your command center and first project, then builds
+that first project from the paired skeleton.
 
-## Before you start
+## 1. Choose the command-center name
 
-| You need | Why | Check it |
-|---|---|---|
-| **Git** | everything is version-controlled | `git --version` |
-| **GitHub CLI** ([cli.github.com](https://cli.github.com)) | creating repos and pushing from inside the flow | `gh --version` |
-| **Python 3.11+** | the scripts, the linters, the test harness | `python --version` |
-| **Node 20+** ([nodejs.org](https://nodejs.org)) | only if your project has a frontend | `node --version` |
-| **An AI coding agent** | Claude Code, opencode, Antigravity, or Codex | — |
-
-> **Platform note — read this one.** This system was built and is used on **Windows with PowerShell**.
-> The helper scripts are `.ps1` and several paths are Windows-style (`.venv\Scripts\activate`).
->
-> On **macOS or Linux** everything conceptual works — the rules, the commands, the agents, the whole
-> method — but you will need [PowerShell 7](https://github.com/PowerShell/PowerShell) (`pwsh`) for the
-> helper scripts, and you will hit backslash paths that need flipping. Nothing is unfixable; just know
-> you are the first one down that road rather than expecting a paved one.
-
----
-
-## Setup
-
-**1. Clone it**
+The final argument to `git clone` is your local command-center name:
 
 ```bash
-git clone https://github.com/sudomadhatter/sudo-command-center.git command-center
-cd command-center
+git clone https://github.com/sudomadhatter/sudo-command-center.git <chosen-command-center-name>
+cd <chosen-command-center-name>
 ```
 
-**2. Add your keys**
+If you downloaded an archive, rename the extracted folder before opening it. This chooses the local
+folder identity; it does not perform a repository-wide source rewrite.
+
+## 2. Verify the basics
+
+You need Git, PowerShell 7 (`pwsh`), Python 3.11+, and one supported agent surface: Claude Code,
+Codex, opencode, or Antigravity/Gemini. GitHub CLI is needed when you later create/publish remotes.
 
 ```bash
-cp .env.example .env          # Windows: copy .env.example .env
+git --version
+pwsh --version
+python3 --version                 # Windows may use: python --version
+python3 .agents/scripts/tests/run_all.py
 ```
 
-Open `.env` and fill in the **REQUIRED** block — just two entries:
+The root `.env.example` lists optional command-center integrations. Copy it to `.env` only for values
+you actually use; never commit `.env` or paste secrets into the example.
 
-- `GITHUB_PAT_CLASSIC` — a GitHub token. Create at
-  [github.com/settings/tokens](https://github.com/settings/tokens) → *Generate new token (classic)* →
-  tick **`repo`** and **`workflow`**.
-- `GITHUB_REPO` — your GitHub username or org.
+## 3. Open the command center and start the tutor
 
-Everything below that block is optional and each one is off until you fill it in. **You do not need an
-Anthropic API key** if you use Claude Code with a Pro or Max subscription — the CLI signs in on its
-own.
+Start a new agent session at this repository root and invoke:
 
-**3. Authenticate GitHub**
-
-```bash
-gh auth login
-gh auth status                 # should say "Logged in to github.com"
+```text
+/smh-tour
 ```
 
-**4. Install the Python tools**
+The tour reads `docs/_scc_sops_prds/workflows_testing_SOP.md` and the current command bodies at every
+stop. It does not carry a second frozen explanation of the development workflow.
 
-```bash
-python -m pip install -r requirements.txt
+During onboarding the agent asks:
+
+> What do you want to name your first project?
+
+It then runs `/smh-new-project <name>`, which clones
+`https://github.com/sudomadhatter/sudo-project-skeleton` into `Projects/<name>`, drops the template's
+history, initializes the project's own repository, and completes the local routing/placeholders.
+Creating or publishing a remote repository remains your separate decision.
+
+## Jira comes later
+
+The command-center shell has no Jira board. A new project also starts without an active Jira binding,
+so its commit gate does not demand a board that does not exist.
+
+When you create a Jira site/project/board for that project:
+
+1. Copy the project's `.agents/jira.conf.example` to `.agents/jira.conf`.
+2. Replace the placeholder site/key with that project's values.
+3. Add the workflow columns the SOP describes, including `To Do Next` if you want operator ranking.
+4. Arm that project's repo-local Jira enforcement marker only after the board works.
+
+Each project owns its board and key. This exported shell never points at the source owner's board.
+
+## Training mode
+
+The committed `.training-mode` sentinel makes agents explain before acting, define terms, cite the
+live source, and teach failures rather than retry silently. Control it at any time:
+
+```text
+/smh-training status
+/smh-training off
+/smh-training on
 ```
 
-**5. Check it works**
+Turning it off changes only the teaching voice. The plan, worktree, test, review, and shipping gates
+remain the real system.
 
-```bash
-python .agents/scripts/tests/run_all.py
-```
+## The workflow in one screen
 
-You should see `6/6 files passed`. If you do, the system is live.
+The current procedure always lives in
+[`docs/_scc_sops_prds/workflows_testing_SOP.md`](docs/_scc_sops_prds/workflows_testing_SOP.md).
+The tutor opens these sections instead of copying them:
 
-**6. Open the folder with your agent and type:**
+- §5 chooses the lane.
+- The story loop is `/cicd-write-story-tests` → `/cicd-dev-story-tests` →
+  `/cicd-code-review` → `/cicd-close-story-merge-tree`.
+- A finished epic ships through `/cicd-push-e2e`.
+- Command-center Task work uses `/smh-quick-dev` → `/smh-code-review` →
+  `/smh-close-task-merge-tree`.
 
-```
-/sudo-tour
-```
+Every commit-producing lane gets its own worktree. No implementation begins until an approved plan
+exists, and no agent decides on your behalf that work is done.
 
----
+## What the main folders mean
 
-## What happens next
-
-`/sudo-tour` is a six-stop guided run: from this clone to a story that actually shipped, on a real
-project of yours rather than a toy. It resumes wherever you left off — just run it again. Stop 2
-walks you through cloning the project skeleton and putting it on GitHub.
-
-**Training mode is on.** The `.training-mode` file at the root tells agents to teach as they go:
-explain before executing, define every term, and answer questions with the reasoning behind them.
-Turn it off whenever you are ready:
-
-```
-/training off
-```
-
-It is reversible (`/training on`), and nothing in the system is gated behind it — what is left when it
-goes is the real system, not a reduced one.
-
----
-
-## The two rules everything rests on
-
-**Plan first.** No file is modified until you approve a written plan. The agent researches, writes an
-`implementation_plan.md`, shows it to you in chat, and stops. This will feel slow exactly once. Then
-it will feel like the only sane way to work with something that can rewrite forty files while you get
-coffee.
-
-**`main` is not the working branch.** Day-to-day work lands on `main_debug`. Promoting to `main` is a
-deliberate human decision. "It works" and "it is safe to ship" are different claims, and two branches
-is what keeps them different.
-
----
-
-## The dev loop
-
-Once you have a project and a backlog, every story runs the same three steps:
-
-| | Command | What it does |
-|---|---|---|
-| ① | `/sudo-write-story-tests` | Writes the story spec, then **failing** acceptance tests — before any code |
-| ② | `/sudo-dev-story-tests` | Plans, stops for your approval, implements until the tests pass |
-| ③ | `/sudo-code-review` | Adversarial review + test and clean-code gates → PASS / CONCERNS / FAIL |
-
-Then `/sudo-update-sprint-memory` closes the story and files what was learned.
-
-Each story runs in its own **git worktree** — a separate folder sharing one repository — so parallel
-work never collides. Ask any agent here to explain any of this; that is what training mode is for.
-
----
-
-## What is in here
-
-| Folder | What it holds |
+| Path | Purpose |
 |---|---|
-| `.agents/` | The toolkit — `rules/` (how agents behave), `commands/` (the `/slash` commands), `skills/` (specialist know-how, loaded on demand), `scripts/`, `templates/` |
-| `.claude/` `.opencode/` `.antigravity/` `.agent/` | Per-tool copies so commands resolve in whichever agent you run. Generated by `/sync-agents` — **never hand-edit them** |
-| `docs/` | Reference shelf: the site map, the workspace standard |
-| `_bmad/` | The BMAD method module — agile lifecycle from product brief to retrospective |
-| `Projects/` | Empty. Your projects go here, each its own git repo |
-| `_artifacts/` | Empty. Session memory — plans and walkthroughs, written as you work |
-| `AGENTS.md` | **The brain.** The routing table: *this kind of work → read these files* |
-| `router.md` | Your project directory. Empty until you add one |
+| `AGENTS.md` | Root routing law and safety gates. |
+| `.agents/` | Authored commands, rules, skills, scripts, and generated platform workflows. |
+| `docs/_scc_sops_prds/` | Operator procedures; the workflow SOP answers “what do I type?” |
+| `Projects/` | Initially empty. Each named project is its own repository. |
+| `_artifacts/` | Plans, walkthroughs, and continuity records created while you work. |
+| `router.md` | Maps incoming work to the correct named project. |
 
-`CLAUDE.md` and `GEMINI.md` are one-line adapters that both say "read `AGENTS.md`" — one front door
-per tool, one brain.
-
----
-
-## If something breaks
-
-| Symptom | Cause | Fix |
-|---|---|---|
-| `/sudo-tour` does nothing | Your agent has not picked up the commands | Restart the agent session. If it persists, run `/sync-agents` |
-| `gh: command not found` | GitHub CLI not installed | [cli.github.com](https://cli.github.com), then `gh auth login` |
-| `run_all.py` fails on import | Wrong Python, or deps not installed | `python --version` (need 3.11+), then re-run step 4 |
-| Scripts fail on macOS/Linux | They are PowerShell | Install [PowerShell 7](https://github.com/PowerShell/PowerShell) and run with `pwsh` |
-| The agent talks like it knows you | `operator-profile.md` is still the blank template | Fill it in — see below |
-
----
-
-## Three things to personalise early
-
-1. **`.agents/rules/operator-profile.md`** — describes who the agent is working *for*. It ships as a
-   blank template on purpose: a profile describing someone else is worse than none, because the agent
-   would confidently optimise for the wrong reader. Fill it in; it changes how every reply is written.
-2. **`router.md`** — the routing table. Add a row per project as you create them.
-3. **`.agents/maintained-projects.txt`** — the list the fan-out commands sweep.
-
----
-
-## A note on what you are looking at
-
-This is a generated edition of a working command center — exported by a script that ships the system
-and none of its owner's projects, history, or notes. So this is real machinery that has been used in
-anger, with the personal layer removed, rather than a demo built to be shown.
-
-How it works: a manifest lists what ships, so privacy is reviewed once as a list rather than
-re-decided file by file; a substitution pass rewrites the names that remain; and a leak scan with no
-exception list runs last — any hit blocks the push.
-
-The export tooling itself is the one thing not in this repo, and for a reason worth knowing. Its
-manifest's search terms *are* the private names, so running the substitution pass over it rewrites
-every rule into an identity mapping — a copy that would report hundreds of substitutions while
-scrubbing nothing. A privacy tool that cannot survive its own pass has to stay home.
+This teaching edition is generated from a working command center through an allow-list, personal-file
+transforms, a secret/name leak scan, and a fresh-shell validator. The generated tree carries no source
+git history; publish it as a new repository rather than as a fork.

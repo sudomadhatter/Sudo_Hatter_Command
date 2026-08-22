@@ -1,38 +1,22 @@
-# MASTER ROUTER — sudo-command-center (the map)
+# MASTER ROUTER — command center
 
-You are in the LOBBY. This table is the directory: pick the workspace, then read **its** `AGENTS.md`.
-Lobby = categories only; detail lives on each floor. If a request isn't listed here, **ASK — don't guess.**
-Any workspace may send you BACK here ("if not here, go to root router").
-
-> **Note:** all projects live under `Projects/`, each keeping its own git repo. "Converted" = the
-> project has pointer `CLAUDE.md`/`GEMINI.md` + a workspace `AGENTS.md` (Layer-2 map) + vendored `.agents/`.
+You are in the lobby. Match the work to one project, then read that project's `AGENTS.md` before
+acting. A fresh teaching shell has no project yet; `/smh-tour` asks for the first project's name and
+`/smh-new-project <name>` clones the paired skeleton into `Projects/<name>`.
 
 ## Artifact ownership
 
-**Default:** every current or future directory under `Projects/` owns its artifacts in its own
-`Projects/<name>/_artifacts/`, regardless of where the chat starts or which agent/tool runs it.
+Every project owns its operational history in `Projects/<name>/_artifacts/`. Command-center and
+cross-project system work uses `_artifacts/_main/`.
 
-**Sudo-managed exception registry:** *(empty)*
+**Exception registry:** *(empty)*
 
-Every project follows the project-owned default. Adding an exception requires an explicit edit to this
-registry — never infer one.
-
-## The routing table
-
-**This table is empty on purpose.** A fresh command center routes nowhere yet. You add one row per
-project as you create it, and the row is what lets an agent find the right workspace without reading
-the whole tree.
+## Routing table
 
 | If the work is about… | Go to | Read first | Status |
 |---|---|---|---|
-| Maintaining THIS home-base system | `docs/` | `docs/workspace-standard.md` | active |
-| *(your first project — add a row here)* | `Projects/<name>/` | its `AGENTS.md` | — |
+| Maintaining this command center | `docs/` | `docs/workspace-standard.md` | active |
+| *(describe the first project's product/domain)* | `Projects/<name>/` | `Projects/<name>/AGENTS.md` | add after creation |
 
-### Adding your first row
-
-Clone the project skeleton (see `/sudo-tour` stop 2), then add a row describing **the kind of work**,
-not the technology. An agent matches on the work: *"aviation ground-school app"* routes better than
-*"FastAPI service"*, because the question arriving is *"fix the lesson quiz"*, never *"fix the FastAPI."*
-
-Keep the row's **Status** honest — `pending`, `active`, `converted` — because it tells the next agent
-how much of the standard it can assume is already in place.
+Describe the kind of work, not merely the technology. “Customer support product” routes a request
+more reliably than “TypeScript app.” Keep the status honest as projects are added or archived.

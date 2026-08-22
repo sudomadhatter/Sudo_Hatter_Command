@@ -1,8 +1,6 @@
 ---
 name: collaborative-debug-first
 description: "Activates when you cannot directly observe runtime behavior (browser console, network, Firestore, UI) but Daniel can. Instrument with one targeted debug log and ask him to report back instead of guessing."
-why: "Guessing burns 3-5 minutes per cycle and one debug log saves three guesses; the user holds the running browser, real Firestore, and actual auth state that the agent cannot see."
-since: 2026-06-24
 ---
 
 # Rule: Collaborative Debug-First (Ask the Pilot)

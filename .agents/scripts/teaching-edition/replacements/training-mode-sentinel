@@ -4,8 +4,8 @@
 # they use it: explain before executing, define every term on first use, answer every
 # question with the reasoning behind it, and never invent a command.
 #
-# Turn it off whenever you feel ready:   /training off
-# Turn it back on any time:              /training on
+# Turn it off whenever you feel ready:   /smh-training off
+# Turn it back on any time:              /smh-training on
 # Deleting this file by hand does exactly the same thing.
 #
 # Nothing is gated behind training mode. What is left when it goes is the real system,
