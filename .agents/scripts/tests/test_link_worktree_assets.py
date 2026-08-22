@@ -108,6 +108,16 @@ def main() -> int:
             c.check("B2a names the path it could not resolve", str(bare.resolve()) in out, out)
             c.check("B2a does NOT silently fall back to the gitdir's parent",
                     f"repo:     {home.resolve()}" not in out, out)
+            # ⛔ WHICH refusal fired, not just THAT one did (found by the SCC-244 sweep).
+            # `repo_root` raises in two places, and this fixture reaches both: the probe
+            # fails, and then `realpath("")` — the empty toplevel — compares unequal to the
+            # candidate, so the different-repo guard raises too. With only an "exit non-zero"
+            # assertion, deleting the FIRST refusal outright still passed this block. The
+            # reason line is the only thing that tells them apart, and it is also what the
+            # operator reads: "is inside a DIFFERENT repo" sends them hunting a repo that
+            # does not exist, when the truth is there is no checkout here at all.
+            c.check("B2a gives the RIGHT reason: no working tree, not 'a different repo'",
+                    "DIFFERENT repo" not in out, out)
 
     if c.block("B2b · verified-empty-repo-exits-zero: an honest zero is not a failure"):
         with TempDir() as tmp:

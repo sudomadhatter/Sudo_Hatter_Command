@@ -1,0 +1,172 @@
+{
+ "mutants": [
+  {
+   "id": "M1 (B) revert the resolver to the gitdir's parent — the SCC-255 defect, put back",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_link_worktree_assets.py"
+   ],
+   "file": ".agents/scripts/link-worktree-assets.py",
+   "block": "B1 · submodule-resolves",
+   "case": "B1 names the submodule WORKING TREE as the repo",
+   "original": "    candidate = Path(os.path.realpath(common / declared)) if declared else common.parent",
+   "mutated": "    candidate = common.parent"
+  },
+  {
+   "id": "M2 (B) accept an UNVERIFIED resolution instead of refusing it — SURVIVED on the first run: the fixture reaches BOTH refusals, so an exit-code-only assertion could not tell them apart. B2a now checks the reason line",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_link_worktree_assets.py"
+   ],
+   "file": ".agents/scripts/link-worktree-assets.py",
+   "block": "B2a · unverified-resolution-refuses",
+   "case": "B2a gives the RIGHT reason: no working tree, not 'a different repo'",
+   "original": "    if probe.returncode != 0 or not top:",
+   "mutated": "    if False:"
+  },
+  {
+   "id": "M3 (D) ignore include_subheadings — every section cuts at the first `#` again",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+   ],
+   "file": ".agents/scripts/jira_feed.py",
+   "block": "SCC-257 · ac-theme-subheadings",
+   "case": "D1 renders ACs from under a `###` sub-heading",
+   "original": "    if include_subheadings:\n        head = head_match.group(0)\n        level = len(head) - len(head.lstrip(\"#\"))\n        stop = re.compile(rf\"^#{{1,{level}}}\\s+\\S\", re.MULTILINE)\n    else:\n        stop = _NEXT_HEAD_RE",
+   "mutated": "    stop = _NEXT_HEAD_RE"
+  },
+  {
+   "id": "M4 (D) flip the depth default ON for every caller — the global change D3 forbids",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+   ],
+   "file": ".agents/scripts/jira_feed.py",
+   "block": "SCC-257 · ac-theme-subheadings",
+   "case": "D3 the story statement does NOT swallow its `###` child",
+   "original": "                 include_subheadings: bool = False) -> str:",
+   "mutated": "                 include_subheadings: bool = True) -> str:"
+  },
+  {
+   "id": "M5 (E) decide by LENGTH again instead of the render trailer",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+   ],
+   "file": ".agents/scripts/jira_feed.py",
+   "block": "SCC-258 · mint-reuse-stale-description",
+   "case": "E1 REPLACES the hand note with the real outline",
+   "original": "            if OUTLINE_TRAILER not in current:",
+   "mutated": "            if len(current.strip()) < MIN_DESCRIPTION:"
+  },
+  {
+   "id": "M6 (E) overwrite the hand note instead of keeping it under PREVIOUS NOTE",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+   ],
+   "file": ".agents/scripts/jira_feed.py",
+   "block": "SCC-258 · mint-reuse-stale-description",
+   "case": "E1 the hand note is KEPT, under PREVIOUS NOTE",
+   "original": "                note = current.strip()",
+   "mutated": "                note = \"\""
+  },
+  {
+   "id": "M7 (F) drop the tests-only demotion — a red-tests-only lane is rung 1 again",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_label_tasks.py"
+   ],
+   "file": ".agents/scripts/label_tasks.py",
+   "block": "F · SCC-259",
+   "case": "F1b ...and it ranks AFTER the story, so `story` is the authority",
+   "original": "    sources.sort(key=lambda src: 1 if src.get(\"tests_only\") else 0)",
+   "mutated": "    pass"
+  },
+  {
+   "id": "M8 (F) the lane-branch story read always comes back empty",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_label_tasks.py"
+   ],
+   "file": ".agents/scripts/label_tasks.py",
+   "block": "F · SCC-259",
+   "case": "F1 the story source names the BRANCH it was read from",
+   "original": "    r = wf.git([\"ls-tree\", \"-r\", \"--name-only\", branch, f\"{wf.STORIES_REL}/\"], repo)\n    if r.returncode != 0:\n        return []",
+   "mutated": "    r = wf.git([\"ls-tree\", \"-r\", \"--name-only\", branch, f\"{wf.STORIES_REL}/\"], repo)\n    if True:\n        return []"
+  },
+  {
+   "id": "M9 (F) name only the FIRST blocker in the lock detail",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_label_tasks.py"
+   ],
+   "file": ".agents/scripts/label_tasks.py",
+   "block": "F · SCC-259",
+   "case": "F2 the lock detail names EVERY declared blocker, not the first",
+   "original": "                             \"detail\": \"after \" + \", \".join(blockers),",
+   "mutated": "                             \"detail\": \"after \" + blockers[0],"
+  },
+  {
+   "id": "M10 (A) boot stops reading the epic branch's copy of sprint-status.yaml",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_boot_epic_branch_read.py"
+   ],
+   "file": ".agents/commands/cicd-boot-sprint-memory.md",
+   "block": "A1 · the live boot command",
+   "case": "Step 2b names the epic-branch read AND reports the disagreement",
+   "original": "git -C \"$PROJECT_ROOT\" show origin/epic/<JIRA-KEY>-<slug>:_bmad-output/implementation-artifacts/sprint-status.yaml",
+   "mutated": "cat _bmad-output/implementation-artifacts/sprint-status.yaml"
+  },
+  {
+   "id": "M11 (C) put the flat HEAD precondition back on ①'s Step 0.5",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_shared_checkout_stays_on_main.py"
+   ],
+   "file": ".agents/commands/cicd-write-story-tests.md",
+   "block": "C1 · the live command + rule surface",
+   "case": "no unqualified HEAD precondition for opening a worktree",
+   "original": "   `/cicd-create-epic-sprint` — missing → go back and run it), then open",
+   "mutated": "   `/cicd-create-epic-sprint` — missing → go back and run it) and HEAD is on it, then open"
+  },
+  {
+   "id": "M12 (C) the rule keeps its precondition but drops the trip home",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_shared_checkout_stays_on_main.py"
+   ],
+   "file": ".agents/rules/worktree-per-story.md",
+   "block": "C1 · the live command + rule surface",
+   "case": "no unqualified HEAD precondition for opening a worktree",
+   "original": "to go **back to `main`** the moment the tree is open (the shared checkout stands on `main`; see \"no",
+   "mutated": "to get straight on with the story (the shared checkout stands on `main`; see \"no"
+  },
+  {
+   "id": "M13 (C) ①'s worktree add stops naming its base",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_shared_checkout_stays_on_main.py"
+   ],
+   "file": ".agents/commands/cicd-write-story-tests.md",
+   "block": "C2 · the story door names its base as an operand",
+   "case": "① opens the story tree off `origin/epic/…` NAMED, not off wherever HEAD sat",
+   "original": "    -b claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>",
+   "mutated": "    -b claude/<JIRA-KEY>-<story-slug>"
+  },
+  {
+   "id": "M14 (G) /sm routes to bmad-create-story naming no output path again",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_story_path_is_pinned.py"
+   ],
+   "file": ".agents/commands/sm.md",
+   "block": "G1 · the live command surface",
+   "case": "every section invoking `bmad-create-story` names `_bmad/bmm/stories/`",
+   "original": "- create the next story    → invoke `bmad-create-story` — it writes the story file under\n  `_bmad/bmm/stories/`, which is where every downstream `/cicd-*` step reads it from",
+   "mutated": "- create the next story    → invoke `bmad-create-story`"
+  }
+ ]
+}
