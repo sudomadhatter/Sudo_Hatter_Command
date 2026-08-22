@@ -1,6 +1,12 @@
 ---
 name: jira
 description: "How ANY agent on this machine reads and writes the live Jira board: the authenticated `acli` CLI — no MCP, no API config, plain shell. Load whenever the board comes up outside a sudo command (what's In Progress? move this ticket, mint a ticket, JQL). Carries the command cheat-sheet, the flag traps, the ticket↔file join, the label vocabulary, and the guardrails (never invent a key; minting happens at two wired seams; placement is the operator's)."
+trigger: model_decision
+triggers: [jira, ticket, the board, backlog, sprint, acli, in progress, what's next, to do next]
+# Intent-shaped: no glob can catch it, because the trigger is what the operator ASKS,
+# not what gets opened. Antigravity judges `description:` against the request;
+# `.agents/hooks/rule-trigger.py` matches these keywords and injects a pointer.
+
 ---
 
 # Jira operations — the board is one shell command away

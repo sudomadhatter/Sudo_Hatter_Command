@@ -28,7 +28,7 @@ Workspace docs for the home base. Load per task — nothing here is a startup pa
   match the header's documented `--ignore`/`--mode`), never hand-edit inside the sentinels.
 - `system-builder.md` — how to grow/maintain the home base itself (`/smh-new-project`, `/smh-sync-agents`,
   workspace-conversion rules). Was `_system/AGENTS.md` until 2026-07-25; `_system/` no longer exists.
-- `gitnexus.md` — Tier-2 code-graph guidance (static; pointer target from the root `AGENTS.md`).
+- `code-review-graph.md` — code-graph guidance (static; pointer target from the root `AGENTS.md`).
 - `.maps-state.json` — machine-managed drift anchor (`check_maps.py --set-anchor`, run AFTER
   committing). Never hand-edit.
 - `doc-graph.md` / `doc-graph.json` — generated doc-wiring graph (regen via

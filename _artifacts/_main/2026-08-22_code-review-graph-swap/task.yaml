@@ -1,0 +1,6 @@
+task_key: SCC-270
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-270-code-review-graph-swap
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: [SCC-272, SCC-273, SCC-274, SCC-275, SCC-276, SCC-277, SCC-278]

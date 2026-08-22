@@ -1,0 +1,45 @@
+# code-review-graph index scope — HOME BASE ONLY, optimised as the PROJECT MANAGER map.
+#
+# Signal = the master toolkit (.agents/ — its scripts, commands, rules, skills, hooks)
+# and the routing/docs infrastructure. That toolkit is the whole point, and it is newly
+# reachable: the previous engine hardcoded `dot: false` in its file walker, so every
+# dot-directory was skipped before ignore rules ran and the lobby index saw 86 symbols in
+# 18 files. This engine indexes whatever `git ls-files` tracks, so .agents/ is in — 1073
+# nodes on the first build — and the job of this file is only to keep the NOISE out.
+#
+# Why this file and not .gitignore: these paths are tracked on purpose. Ignoring them
+# here scopes the graph without changing what git carries.
+
+# ── The sync MIRRORS. Excluding these is the single most important line here. ──
+# .agents/ is the master; .claude/, .opencode/, .agent/ and .antigravity/ are generated
+# copies of the same commands, skills and hooks. Indexing them re-indexes every toolkit
+# symbol three to four times over: measured on the first build, .claude contributed 257
+# nodes and .agent 193, all duplicates of .agents/ content.
+/.claude/
+/.opencode/
+/.agent/
+/.antigravity/
+
+# Historical session records — append-only walkthroughs, plans and receipts. History,
+# not the system: they describe work that is already done and would swamp every query.
+/_artifacts/
+
+# The operator's personal notes and brainstorming. Deliberately un-scanned (AGENTS.md §4).
+/_my_resources/
+
+# Vendor BMAD install (regenerated, never hand-edited) and its output.
+/_bmad/
+/_bmad-output/
+
+# Routing test fixtures — deliberately tiny and deliberately weird; graph noise.
+/_routing-canary/
+
+# Virtual environments.
+/.venv/
+/.venv_stale/
+
+# NOTE: Projects/ needs no line. Those are git submodules, so `git ls-files` reports
+# them as gitlinks rather than as files, and each carries its own graph. This is the
+# trap that forced this file's predecessor to exist: the previous engine walked the
+# filesystem instead of the index and swallowed every submodule working tree, ballooning
+# the lobby map to ~105k nodes. Verify after any engine upgrade rather than assuming.

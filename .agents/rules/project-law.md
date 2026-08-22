@@ -1,6 +1,12 @@
 ---
 name: project-law
 description: "The two-tier rule model. The command center owns ALL workflow law (rules, commands, skills, sync); a project owns ONLY its own product law — `.agents/rules/` + `.agents/skills/` routed by its `.agents/INDEX.md`. Fires when you BIND a project (every /cicd-* Step 0 — reading that INDEX is mandatory, not optional), and when you AUTHOR a rule/skill and must decide which tier it belongs to."
+trigger: model_decision
+triggers: [project law, tier-2, bind a project, authoring a rule, authoring a skill, thin project]
+# Intent-shaped: no glob can catch it, because the trigger is what the operator ASKS,
+# not what gets opened. Antigravity judges `description:` against the request;
+# `.agents/hooks/rule-trigger.py` matches these keywords and injects a pointer.
+
 ---
 
 # Project Law — the two-tier rule model

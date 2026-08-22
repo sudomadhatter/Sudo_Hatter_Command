@@ -1,20 +1,20 @@
 {
-  "root": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/SCC-210-close-out-rebalance/.agents",
+  "root": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/SCC-270-code-review-graph-swap/.agents",
   "counts": {
-    "files": 309,
+    "files": 329,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 522,
-    "external": 40,
-    "ambiguous": 52,
-    "dangling": 214,
-    "broken_paths": 55,
-    "unresolved_names": 159
+    "edges": 535,
+    "external": 44,
+    "ambiguous": 54,
+    "dangling": 206,
+    "broken_paths": 52,
+    "unresolved_names": 154
   },
   "nodes": [
     {
       "path": "AGENTS.md",
-      "in": 39,
+      "in": 38,
       "out": 9
     },
     {
@@ -34,7 +34,7 @@
     },
     {
       "path": "commands/INDEX.md",
-      "in": 7,
+      "in": 8,
       "out": 5
     },
     {
@@ -79,12 +79,12 @@
     },
     {
       "path": "commands/cicd-boot-sprint-memory.md",
-      "in": 1,
+      "in": 2,
       "out": 3
     },
     {
       "path": "commands/cicd-clean-code-audit.md",
-      "in": 1,
+      "in": 2,
       "out": 5
     },
     {
@@ -104,8 +104,8 @@
     },
     {
       "path": "commands/cicd-create-epic-sprint.md",
-      "in": 1,
-      "out": 3
+      "in": 2,
+      "out": 11
     },
     {
       "path": "commands/cicd-dev-story-tests-AP.md",
@@ -115,7 +115,7 @@
     {
       "path": "commands/cicd-dev-story-tests.md",
       "in": 2,
-      "out": 3
+      "out": 12
     },
     {
       "path": "commands/cicd-e2e.md",
@@ -134,8 +134,8 @@
     },
     {
       "path": "commands/cicd-merge-epic-workingtrees.md",
-      "in": 2,
-      "out": 4
+      "in": 3,
+      "out": 6
     },
     {
       "path": "commands/cicd-mobile-error-team.md",
@@ -145,7 +145,7 @@
     {
       "path": "commands/cicd-non-crit-pr-push.md",
       "in": 1,
-      "out": 4
+      "out": 6
     },
     {
       "path": "commands/cicd-park.md",
@@ -164,13 +164,13 @@
     },
     {
       "path": "commands/cicd-push-e2e.md",
-      "in": 1,
+      "in": 2,
       "out": 4
     },
     {
       "path": "commands/cicd-quick-dev.md",
       "in": 2,
-      "out": 16
+      "out": 17
     },
     {
       "path": "commands/cicd-resume.md",
@@ -194,8 +194,8 @@
     },
     {
       "path": "commands/cicd-write-story-tests.md",
-      "in": 1,
-      "out": 3
+      "in": 2,
+      "out": 5
     },
     {
       "path": "commands/dev.md",
@@ -269,7 +269,7 @@
     },
     {
       "path": "commands/smh-plan-task.md",
-      "in": 2,
+      "in": 3,
       "out": 9
     },
     {
@@ -434,7 +434,7 @@
     },
     {
       "path": "rules/000-PLAN-FIRST-GATE.md",
-      "in": 15,
+      "in": 17,
       "out": 1
     },
     {
@@ -444,12 +444,12 @@
     },
     {
       "path": "rules/artifacts-always-first.md",
-      "in": 26,
+      "in": 28,
       "out": 5
     },
     {
       "path": "rules/code-standards.md",
-      "in": 15,
+      "in": 14,
       "out": 2
     },
     {
@@ -474,12 +474,12 @@
     },
     {
       "path": "rules/git-policy.md",
-      "in": 53,
+      "in": 50,
       "out": 3
     },
     {
       "path": "rules/jira.md",
-      "in": 34,
+      "in": 30,
       "out": 1
     },
     {
@@ -534,12 +534,12 @@
     },
     {
       "path": "rules/reproduce-before-you-fix.md",
-      "in": 6,
+      "in": 7,
       "out": 0
     },
     {
       "path": "rules/smh-target-resolution.md",
-      "in": 52,
+      "in": 44,
       "out": 3
     },
     {
@@ -554,17 +554,17 @@
     },
     {
       "path": "rules/work-consolidation.md",
-      "in": 10,
+      "in": 14,
       "out": 2
     },
     {
       "path": "rules/worktree-per-story.md",
-      "in": 33,
+      "in": 35,
       "out": 1
     },
     {
       "path": "scripts/INDEX.md",
-      "in": 1,
+      "in": 3,
       "out": 4
     },
     {
@@ -591,6 +591,46 @@
       "path": "skills/INDEX.md",
       "in": 2,
       "out": 2
+    },
+    {
+      "path": "skills/animate-expo/RECIPES.md",
+      "in": 1,
+      "out": 1
+    },
+    {
+      "path": "skills/animate-expo/SKILL.md",
+      "in": 1,
+      "out": 1
+    },
+    {
+      "path": "skills/animate/RECIPES.md",
+      "in": 1,
+      "out": 1
+    },
+    {
+      "path": "skills/animate/SKILL.md",
+      "in": 1,
+      "out": 1
+    },
+    {
+      "path": "skills/animation-vocabulary/SKILL.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": "skills/apple-design/SKILL.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": "skills/ask-sonner/API.md",
+      "in": 1,
+      "out": 0
+    },
+    {
+      "path": "skills/ask-sonner/SKILL.md",
+      "in": 0,
+      "out": 1
     },
     {
       "path": "skills/backend-dev-guidelines/SKILL.md",
@@ -788,6 +828,21 @@
       "out": 0
     },
     {
+      "path": "skills/code-review-graph/SKILL.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": "skills/emil-design-eng/SKILL.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": "skills/find-animation-opportunities/SKILL.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": "skills/firebase-ai-logic-basics/SKILL.md",
       "in": 0,
       "out": 1
@@ -928,6 +983,21 @@
       "out": 0
     },
     {
+      "path": "skills/improve-animations/AUDIT.md",
+      "in": 2,
+      "out": 0
+    },
+    {
+      "path": "skills/improve-animations/PLAN-TEMPLATE.md",
+      "in": 1,
+      "out": 1
+    },
+    {
+      "path": "skills/improve-animations/SKILL.md",
+      "in": 0,
+      "out": 2
+    },
+    {
       "path": "skills/keyway-secrets/SKILL.md",
       "in": 0,
       "out": 0
@@ -936,6 +1006,21 @@
       "path": "skills/mermaid-diagram-standards/SKILL.md",
       "in": 0,
       "out": 0
+    },
+    {
+      "path": "skills/pick-ui-library/SKILL.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": "skills/prototype/PICKER.md",
+      "in": 1,
+      "out": 0
+    },
+    {
+      "path": "skills/prototype/SKILL.md",
+      "in": 0,
+      "out": 1
     },
     {
       "path": "skills/python-patterns/SKILL.md",
@@ -1193,6 +1278,16 @@
       "out": 0
     },
     {
+      "path": "skills/review-animations/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": "skills/review-animations/STANDARDS.md",
+      "in": 1,
+      "out": 0
+    },
+    {
       "path": "skills/sentry-security-team-avch/SKILL.md",
       "in": 0,
       "out": 1
@@ -1358,8 +1453,13 @@
       "out": 4
     },
     {
+      "path": "skills/write-swift/SKILL.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": "workflows/INDEX.md",
-      "in": 2,
+      "in": 3,
       "out": 9
     },
     {
@@ -1370,12 +1470,12 @@
     {
       "path": "workflows/cicd-boot-sprint-memory.md",
       "in": 0,
-      "out": 3
+      "out": 1
     },
     {
       "path": "workflows/cicd-clean-code-audit.md",
       "in": 0,
-      "out": 5
+      "out": 1
     },
     {
       "path": "workflows/cicd-close-story-merge-tree.md",
@@ -1390,7 +1490,7 @@
     {
       "path": "workflows/cicd-create-epic-sprint.md",
       "in": 0,
-      "out": 3
+      "out": 1
     },
     {
       "path": "workflows/cicd-dev-story-tests.md",
@@ -1415,12 +1515,12 @@
     {
       "path": "workflows/cicd-merge-epic-workingtrees.md",
       "in": 0,
-      "out": 4
+      "out": 1
     },
     {
       "path": "workflows/cicd-non-crit-pr-push.md",
       "in": 0,
-      "out": 4
+      "out": 6
     },
     {
       "path": "workflows/cicd-park.md",
@@ -1440,7 +1540,7 @@
     {
       "path": "workflows/cicd-push-e2e.md",
       "in": 0,
-      "out": 4
+      "out": 1
     },
     {
       "path": "workflows/cicd-quick-dev.md",
@@ -1465,7 +1565,7 @@
     {
       "path": "workflows/cicd-write-story-tests.md",
       "in": 0,
-      "out": 3
+      "out": 1
     },
     {
       "path": "workflows/sentry-security-team-avch.md",
@@ -1495,7 +1595,7 @@
     {
       "path": "workflows/smh-label-tasks.md",
       "in": 0,
-      "out": 6
+      "out": 1
     },
     {
       "path": "workflows/smh-memory-audit.md",
@@ -1828,6 +1928,21 @@
     },
     {
       "from": "commands/cicd-create-epic-sprint.md",
+      "to": "rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-create-epic-sprint.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-create-epic-sprint.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-create-epic-sprint.md",
       "to": "rules/jira.md",
       "kind": "ref"
     },
@@ -1838,7 +1953,12 @@
     },
     {
       "from": "commands/cicd-create-epic-sprint.md",
-      "to": "rules/git-policy.md",
+      "to": "rules/work-consolidation.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-create-epic-sprint.md",
+      "to": "rules/worktree-per-story.md",
       "kind": "ref"
     },
     {
@@ -1853,7 +1973,27 @@
     },
     {
       "from": "commands/cicd-dev-story-tests.md",
+      "to": "rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-dev-story-tests.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-dev-story-tests.md",
+      "to": "rules/code-standards.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-dev-story-tests.md",
       "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-dev-story-tests.md",
+      "to": "rules/reproduce-before-you-fix.md",
       "kind": "ref"
     },
     {
@@ -1863,7 +2003,22 @@
     },
     {
       "from": "commands/cicd-dev-story-tests.md",
-      "to": "rules/artifacts-always-first.md",
+      "to": "rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-dev-story-tests.md",
+      "to": "rules/work-consolidation.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-dev-story-tests.md",
+      "to": "rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-dev-story-tests.md",
+      "to": "rules/jira.md",
       "kind": "ref"
     },
     {
@@ -1899,6 +2054,11 @@
     {
       "from": "commands/cicd-merge-epic-workingtrees.md",
       "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-merge-epic-workingtrees.md",
+      "to": "rules/jira.md",
       "kind": "ref"
     },
     {
@@ -1949,6 +2109,16 @@
     {
       "from": "commands/cicd-non-crit-pr-push.md",
       "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-non-crit-pr-push.md",
+      "to": "scripts/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-non-crit-pr-push.md",
+      "to": "commands/INDEX.md",
       "kind": "ref"
     },
     {
@@ -2138,12 +2308,22 @@
     },
     {
       "from": "commands/cicd-write-story-tests.md",
+      "to": "commands/smh-plan-task.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-write-story-tests.md",
       "to": "rules/jira.md",
       "kind": "ref"
     },
     {
       "from": "commands/cicd-write-story-tests.md",
       "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-write-story-tests.md",
+      "to": "rules/worktree-per-story.md",
       "kind": "ref"
     },
     {
@@ -3202,6 +3382,31 @@
       "kind": "ref"
     },
     {
+      "from": "skills/animate-expo/RECIPES.md",
+      "to": "skills/animate-expo/SKILL.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/animate-expo/SKILL.md",
+      "to": "skills/animate-expo/RECIPES.md",
+      "kind": "link"
+    },
+    {
+      "from": "skills/animate/RECIPES.md",
+      "to": "skills/animate/SKILL.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/animate/SKILL.md",
+      "to": "skills/animate/RECIPES.md",
+      "kind": "link"
+    },
+    {
+      "from": "skills/ask-sonner/SKILL.md",
+      "to": "skills/ask-sonner/API.md",
+      "kind": "link"
+    },
+    {
       "from": "skills/backend-dev-guidelines/resources/architecture-overview.md",
       "to": "skills/backend-dev-guidelines/resources/routing-and-controllers.md",
       "kind": "link"
@@ -3597,6 +3802,26 @@
       "kind": "link"
     },
     {
+      "from": "skills/improve-animations/PLAN-TEMPLATE.md",
+      "to": "skills/improve-animations/AUDIT.md",
+      "kind": "link"
+    },
+    {
+      "from": "skills/improve-animations/SKILL.md",
+      "to": "skills/improve-animations/AUDIT.md",
+      "kind": "link"
+    },
+    {
+      "from": "skills/improve-animations/SKILL.md",
+      "to": "skills/improve-animations/PLAN-TEMPLATE.md",
+      "kind": "link"
+    },
+    {
+      "from": "skills/prototype/SKILL.md",
+      "to": "skills/prototype/PICKER.md",
+      "kind": "link"
+    },
+    {
       "from": "skills/react-best-practices/README.md",
       "to": "skills/react-best-practices/AGENTS.md",
       "kind": "ref"
@@ -3635,6 +3860,11 @@
       "from": "skills/react-best-practices/SKILL.md",
       "to": "skills/react-best-practices/rules/bundle-barrel-imports.md",
       "kind": "ref"
+    },
+    {
+      "from": "skills/review-animations/SKILL.md",
+      "to": "skills/review-animations/STANDARDS.md",
+      "kind": "link"
     },
     {
       "from": "skills/sentry-security-team-avch/SKILL.md",
@@ -3828,37 +4058,12 @@
     },
     {
       "from": "workflows/cicd-boot-sprint-memory.md",
-      "to": "rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-boot-sprint-memory.md",
-      "to": "rules/smh-target-resolution.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-boot-sprint-memory.md",
-      "to": "AGENTS.md",
+      "to": "commands/cicd-boot-sprint-memory.md",
       "kind": "ref"
     },
     {
       "from": "workflows/cicd-clean-code-audit.md",
-      "to": "rules/code-standards.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-clean-code-audit.md",
-      "to": "rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-clean-code-audit.md",
-      "to": "rules/smh-target-resolution.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-clean-code-audit.md",
-      "to": "rules/tests-must-gate-for-real.md",
+      "to": "commands/cicd-clean-code-audit.md",
       "kind": "ref"
     },
     {
@@ -3873,17 +4078,7 @@
     },
     {
       "from": "workflows/cicd-create-epic-sprint.md",
-      "to": "rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-create-epic-sprint.md",
-      "to": "rules/smh-target-resolution.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-create-epic-sprint.md",
-      "to": "rules/git-policy.md",
+      "to": "commands/cicd-create-epic-sprint.md",
       "kind": "ref"
     },
     {
@@ -3913,17 +4108,7 @@
     },
     {
       "from": "workflows/cicd-merge-epic-workingtrees.md",
-      "to": "rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-merge-epic-workingtrees.md",
-      "to": "rules/smh-target-resolution.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-merge-epic-workingtrees.md",
-      "to": "rules/worktree-per-story.md",
+      "to": "commands/cicd-merge-epic-workingtrees.md",
       "kind": "ref"
     },
     {
@@ -3944,6 +4129,16 @@
     {
       "from": "workflows/cicd-non-crit-pr-push.md",
       "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/cicd-non-crit-pr-push.md",
+      "to": "scripts/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/cicd-non-crit-pr-push.md",
+      "to": "workflows/INDEX.md",
       "kind": "ref"
     },
     {
@@ -3973,17 +4168,7 @@
     },
     {
       "from": "workflows/cicd-push-e2e.md",
-      "to": "rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-push-e2e.md",
-      "to": "rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-push-e2e.md",
-      "to": "rules/smh-target-resolution.md",
+      "to": "commands/cicd-push-e2e.md",
       "kind": "ref"
     },
     {
@@ -4013,12 +4198,7 @@
     },
     {
       "from": "workflows/cicd-write-story-tests.md",
-      "to": "rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-write-story-tests.md",
-      "to": "rules/smh-target-resolution.md",
+      "to": "commands/cicd-write-story-tests.md",
       "kind": "ref"
     },
     {
@@ -4049,21 +4229,6 @@
     {
       "from": "workflows/smh-label-tasks.md",
       "to": "commands/smh-label-tasks.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/smh-label-tasks.md",
-      "to": "rules/artifacts-always-first.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/smh-label-tasks.md",
-      "to": "rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/smh-label-tasks.md",
-      "to": "rules/smh-target-resolution.md",
       "kind": "ref"
     },
     {
@@ -4300,6 +4465,10 @@
     },
     {
       "from": "commands/cicd-create-epic-sprint.md",
+      "target": "_bmad-output/planning-artifacts/epics.md"
+    },
+    {
+      "from": "commands/cicd-create-epic-sprint.md",
       "target": "_my_resources/open_tasks/fix_list_admin_sudoadmin.md"
     },
     {
@@ -4365,6 +4534,10 @@
     {
       "from": "commands/cicd-mobile-error-team.md",
       "target": "PROJECT_ROOT/.github/claude/incident-triage.md"
+    },
+    {
+      "from": "commands/cicd-non-crit-pr-push.md",
+      "target": "docs/notes.md"
     },
     {
       "from": "commands/cicd-park.md",
@@ -4835,6 +5008,10 @@
       "target": "Projects/AGY_AVIATIONCHAT/_my_resources/_quick_reference/sudo_workflows_testing.md"
     },
     {
+      "from": "rules/sop-currency.md",
+      "target": "workflows_testing_SOP_changelog.md"
+    },
+    {
       "from": "rules/work-consolidation.md",
       "target": "implementation_plan.md"
     },
@@ -4853,6 +5030,10 @@
     {
       "from": "scripts/INDEX.md",
       "target": "plan.md"
+    },
+    {
+      "from": "scripts/INDEX.md",
+      "target": "walkthrough.md"
     },
     {
       "from": "scripts/tests/fixtures/avch58_your_actions.md",
@@ -4877,6 +5058,10 @@
     {
       "from": "skills/code-review-engine/steps/step-01-review.md",
       "target": "scoring.md"
+    },
+    {
+      "from": "skills/improve-animations/SKILL.md",
+      "target": "NNN-short-slug.md"
     },
     {
       "from": "skills/react-best-practices/README.md",
@@ -4923,56 +5108,12 @@
       "target": "todo_list.md"
     },
     {
-      "from": "workflows/cicd-boot-sprint-memory.md",
-      "target": "/_artifacts/_memory/MEMORY.md"
-    },
-    {
-      "from": "workflows/cicd-boot-sprint-memory.md",
-      "target": "/walkthrough.md"
-    },
-    {
-      "from": "workflows/cicd-boot-sprint-memory.md",
-      "target": "_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": "workflows/cicd-boot-sprint-memory.md",
-      "target": "_bmad-output/active-context/known-pitfalls.md"
-    },
-    {
-      "from": "workflows/cicd-boot-sprint-memory.md",
-      "target": "_bmad-output/history/CHANGELOG.md"
-    },
-    {
-      "from": "workflows/cicd-boot-sprint-memory.md",
-      "target": "code-review.md"
-    },
-    {
-      "from": "workflows/cicd-create-epic-sprint.md",
-      "target": "_my_resources/open_tasks/fix_list_admin_sudoadmin.md"
-    },
-    {
-      "from": "workflows/cicd-create-epic-sprint.md",
-      "target": "epics.md"
-    },
-    {
       "from": "workflows/cicd-live-testing-team.md",
       "target": "PROJECT_ROOT/_bmad-output/active-context/active-context.md"
     },
     {
-      "from": "workflows/cicd-merge-epic-workingtrees.md",
-      "target": "/walkthrough.md"
-    },
-    {
-      "from": "workflows/cicd-merge-epic-workingtrees.md",
-      "target": "MEMORY.md"
-    },
-    {
-      "from": "workflows/cicd-merge-epic-workingtrees.md",
-      "target": "_bmad-output/history/CHANGELOG.md"
-    },
-    {
-      "from": "workflows/cicd-merge-epic-workingtrees.md",
-      "target": "active-context.md"
+      "from": "workflows/cicd-non-crit-pr-push.md",
+      "target": "docs/notes.md"
     },
     {
       "from": "workflows/cicd-park.md",
@@ -4999,10 +5140,6 @@
       "target": "project-context.md"
     },
     {
-      "from": "workflows/cicd-push-e2e.md",
-      "target": "active-context.md"
-    },
-    {
       "from": "workflows/cicd-resume.md",
       "target": "_bmad-output/active-context/active-context.md"
     },
@@ -5021,10 +5158,6 @@
     {
       "from": "workflows/sentry-security-team-avch.md",
       "target": "PROJECT_ROOT/.github/claude/incident-triage.md"
-    },
-    {
-      "from": "workflows/smh-label-tasks.md",
-      "target": "implementation_plan.md"
     },
     {
       "from": "workflows/smh-new-project.md",
@@ -5126,6 +5259,10 @@
     },
     {
       "from": "rules/git-policy.md",
+      "target": "_artifacts/_memory/commit-message-backticks-execute.md"
+    },
+    {
+      "from": "rules/git-policy.md",
       "target": "_artifacts/_memory/nothing-guards-the-merge-target.md"
     },
     {
@@ -5146,6 +5283,10 @@
     },
     {
       "from": "rules/sop-currency.md",
+      "target": "../../docs/_scc_sops_prds/workflows_testing_SOP_changelog.md"
+    },
+    {
+      "from": "rules/sop-currency.md",
       "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
     {
@@ -5155,6 +5296,10 @@
     {
       "from": "scripts/INDEX.md",
       "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
+    },
+    {
+      "from": "skills/INDEX.md",
+      "target": "docs/_scc_sops_prds/frontend_UI_design_guide.md"
     },
     {
       "from": "skills/INDEX.md",
@@ -5169,20 +5314,24 @@
       "target": "_artifacts/_main/2026-08-20_scc-225-review-surface/lc-cost-measurement.md"
     },
     {
+      "from": "skills/code-review-graph/SKILL.md",
+      "target": "../../../docs/code-review-graph.md"
+    },
+    {
+      "from": "skills/code-review-graph/SKILL.md",
+      "target": "docs/code-review-graph.md"
+    },
+    {
       "from": "skills/keyway-secrets/SKILL.md",
       "target": "docs/_scc_sops_prds/sharing_keys_secrets_secure.md"
     },
     {
       "from": "skills/workspace-structure/SKILL.md",
-      "target": "docs/gitnexus.md"
+      "target": "docs/code-review-graph.md"
     },
     {
       "from": "skills/workspace-structure/SKILL.md",
       "target": "docs/workspace-standard.md"
-    },
-    {
-      "from": "workflows/cicd-boot-sprint-memory.md",
-      "target": "router.md"
     },
     {
       "from": "workflows/smh-new-project.md",
@@ -5270,6 +5419,11 @@
       "from": "commands/smh-sync-agents.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -5294,6 +5448,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -5301,10 +5458,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -5328,7 +5489,8 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
@@ -5477,6 +5639,11 @@
       "from": "opencode-agents/opus-reviewer.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -5501,6 +5668,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -5508,10 +5678,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -5535,7 +5709,8 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
@@ -5663,9 +5838,22 @@
       ]
     },
     {
+      "from": "rules/worktree-per-story.md",
+      "target": "smh-plan-task.md",
+      "candidates": [
+        "commands/smh-plan-task.md",
+        "workflows/smh-plan-task.md"
+      ]
+    },
+    {
       "from": "scripts/tests/fixtures/nc_review_engine/README.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -5690,6 +5878,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -5697,10 +5888,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -5724,13 +5919,19 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
       "from": "skills/INDEX.md",
       "target": "/SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -5755,6 +5956,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -5762,10 +5966,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -5789,13 +5997,19 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
       "from": "skills/INDEX.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -5820,6 +6034,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -5827,10 +6044,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -5854,13 +6075,19 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
       "from": "skills/backend-dev-guidelines/resources/architecture-overview.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -5885,6 +6112,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -5892,10 +6122,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -5919,13 +6153,19 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
       "from": "skills/backend-dev-guidelines/resources/async-and-errors.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -5950,6 +6190,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -5957,10 +6200,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -5984,13 +6231,19 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
       "from": "skills/backend-dev-guidelines/resources/complete-examples.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -6015,6 +6268,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -6022,10 +6278,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -6049,13 +6309,19 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
       "from": "skills/backend-dev-guidelines/resources/configuration.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -6080,6 +6346,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -6087,10 +6356,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -6114,13 +6387,19 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
       "from": "skills/backend-dev-guidelines/resources/database-patterns.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -6145,6 +6424,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -6152,10 +6434,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -6179,13 +6465,19 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
       "from": "skills/backend-dev-guidelines/resources/middleware-guide.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -6210,6 +6502,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -6217,10 +6512,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -6244,13 +6543,19 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
       "from": "skills/backend-dev-guidelines/resources/routing-and-controllers.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -6275,6 +6580,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -6282,10 +6590,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -6309,13 +6621,19 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
       "from": "skills/backend-dev-guidelines/resources/sentry-and-monitoring.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -6340,6 +6658,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -6347,10 +6668,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -6374,13 +6699,19 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
       "from": "skills/backend-dev-guidelines/resources/services-and-repositories.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -6405,6 +6736,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -6412,10 +6746,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -6439,13 +6777,19 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
       "from": "skills/backend-dev-guidelines/resources/testing-guide.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -6470,6 +6814,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -6477,10 +6824,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -6504,13 +6855,19 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
       "from": "skills/backend-dev-guidelines/resources/validation-patterns.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -6535,6 +6892,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -6542,10 +6902,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -6569,13 +6933,19 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
       "from": "skills/code-review-engine/steps/step-04-record.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -6600,6 +6970,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -6607,10 +6980,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -6634,7 +7011,8 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
@@ -6655,9 +7033,32 @@
       ]
     },
     {
+      "from": "skills/improve-animations/PLAN-TEMPLATE.md",
+      "target": "plans/README.md",
+      "candidates": [
+        "bmad",
+        "scripts/tests/fixtures/nc_review_engine/README.md",
+        "skills/react-best-practices/README.md"
+      ]
+    },
+    {
+      "from": "skills/improve-animations/SKILL.md",
+      "target": "plans/README.md",
+      "candidates": [
+        "bmad",
+        "scripts/tests/fixtures/nc_review_engine/README.md",
+        "skills/react-best-practices/README.md"
+      ]
+    },
+    {
       "from": "skills/systematic-debugging/CREATION-LOG.md",
       "target": "skill-creation/SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -6682,6 +7083,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -6689,10 +7093,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -6716,7 +7124,8 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     },
     {
@@ -6744,24 +7153,14 @@
       ]
     },
     {
-      "from": "workflows/cicd-push-e2e.md",
-      "target": "PROJECT_ROOT/_artifacts/INDEX.md",
-      "candidates": [
-        "INDEX.md",
-        "bmad",
-        "commands/INDEX.md",
-        "hooks/INDEX.md",
-        "opencode-agents/INDEX.md",
-        "rules/INDEX.md",
-        "scripts/INDEX.md",
-        "skills/INDEX.md",
-        "workflows/INDEX.md"
-      ]
-    },
-    {
       "from": "workflows/smh-sync-agents.md",
       "target": "SKILL.md",
       "candidates": [
+        "skills/animate-expo/SKILL.md",
+        "skills/animate/SKILL.md",
+        "skills/animation-vocabulary/SKILL.md",
+        "skills/apple-design/SKILL.md",
+        "skills/ask-sonner/SKILL.md",
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
@@ -6786,6 +7185,9 @@
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
         "skills/code-review-engine/SKILL.md",
+        "skills/code-review-graph/SKILL.md",
+        "skills/emil-design-eng/SKILL.md",
+        "skills/find-animation-opportunities/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -6793,10 +7195,14 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/improve-animations/SKILL.md",
         "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/pick-ui-library/SKILL.md",
+        "skills/prototype/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
+        "skills/review-animations/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
         "skills/smh-clean-code-audit/SKILL.md",
@@ -6820,7 +7226,8 @@
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
-        "skills/workspace-structure/SKILL.md"
+        "skills/workspace-structure/SKILL.md",
+        "skills/write-swift/SKILL.md"
       ]
     }
   ],

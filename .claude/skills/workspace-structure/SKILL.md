@@ -24,8 +24,8 @@ its `INDEX.md`/`README.md` only when you need the inventory. Only "special instr
 
 ## Adapters
 `CLAUDE.md` / `GEMINI.md` are **always one-line adapters** pointing to `AGENTS.md`. Nothing model-specific or
-heavy in them — no GitNexus block, no rules. Keep them bare. GitNexus code-intel, if a repo has it, lives in its
-own `docs/gitnexus.md` with a one-line pointer from `AGENTS.md` — never inline.
+heavy in them — no code-graph block, no rules. Keep them bare. Code-graph guidance, if a repo has an index, lives
+in its own `docs/code-review-graph.md` with a one-line pointer from `AGENTS.md` — never inline.
 
 ## Naming & artifact buckets
 Dated `YYYY-MM-DD_<slug>.md`; versioned `_draft`/`_v2`/`_final`; artifacts go **with the owning workspace,

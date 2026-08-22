@@ -17,8 +17,8 @@ project's `config.py`, whatever a summary may say — at the port SHA that file 
 toggle `evidence_pack_reviewers`, and the numbers live in `evidence.py` as module constants and
 function defaults which its orchestrator calls without overriding.
 
-  ── WHY NOT GitNexus ───────────────────────────────────────────────────────────────────────
-This system already has a code-intelligence index (GitNexus), and the overlap is deliberate, not an
+  ── WHY NOT THE CODE GRAPH ─────────────────────────────────────────────────────────────────
+This system already has a code-intelligence index (the code graph), and the overlap is deliberate, not an
 oversight. Fresh search wins **here** for three reasons that are properties of that index, not
 preferences: it is **machine-local** and does not travel via git, so a teammate or a fresh clone has
 no index at all; it goes **stale after a pull**, and a reviewer primed with last week's call graph
@@ -27,7 +27,7 @@ is worse off than one primed with nothing; and it **misses attribute-dispatch ca
 depend on state that may silently not exist.
 
 ⛔ Two standing instructions for whoever reads this next:
-   1. Do NOT "deduplicate" this script into GitNexus calls. The duplication is the point.
+   1. Do NOT "deduplicate" this script into code-graph calls. The duplication is the point.
    2. Do NOT grow it into a blast-radius or impact tool. It fetches evidence for a review that is
       already scoped; scoping is somebody else's job.
 

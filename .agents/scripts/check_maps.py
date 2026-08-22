@@ -35,8 +35,8 @@ Nine checks (1-3 fatal drift; 4 informational; 5 + 8 + 9 non-fatal hints; 6-7 fa
                              docs/) carries a local-law AGENTS.md (non-empty) + 1-line CLAUDE.md/GEMINI.md
                              adapters that actually redirect (workspace-standard.md Part 1, "folder-file tier
                              model"). Hint until every workspace carries the files; then promote into check 6.
-  9. GitNexus index freshness — NON-FATAL nag: if the workspace has a machine-local GitNexus index
-                             (.gitnexus/meta.json), its lastCommit must equal HEAD. A git pull moves HEAD past
+  9. Code-graph index freshness — NON-FATAL nag: if the workspace has a machine-local code graph
+                             (.code-review-graph/graph.db), its built-at commit must equal HEAD. A git pull moves HEAD past
                              the gitignored index and impact/test-selection answers go silently wrong
                              (dirty tree != stale — only commits count). No index -> skip.
 """
@@ -57,7 +57,7 @@ import record_map_changes as rmc  # noqa: E402  (commit-time journal — consume
 # own linter). _my_resources is PROTECTED (don't even read); _bmad is BMAD-regenerated. Rest is noise.
 SCAN_IGNORES = {
     ".git", ".venv", "venv", "env", "__pycache__", "node_modules", ".next", "dist", "build",
-    ".pytest_cache", ".turbo", ".cache", "coverage", "test-results", "_my_resources", "_bmad", "Projects", ".gitnexus",
+    ".pytest_cache", ".turbo", ".cache", "coverage", "test-results", "_my_resources", "_bmad", "Projects", ".code-review-graph",
     ".claude", ".opencode", "_bmad-output", ".github", ".vscode",
 }
 # Extra ignores fed to the generator's regen — MUST match the documented invocation in the repo-map
@@ -83,7 +83,7 @@ TOPLEVEL_SKIP = {
 #                normal folder. Everything else starting with "." stays skipped (.ruff_cache/0.15.21/ and
 #                friends would otherwise report as FATAL drift forever, which is how a real check gets
 #                trained into background noise). Applies at LEVEL 1 ONLY — the level-2 dot-skip stays
-#                blanket, so `.agents/.claude` and `.agents/.gitnexus` remain correctly exempt.
+#                blanket, so `.agents/.claude` and the tool caches remain correctly exempt.
 DEPTH3_DIRS = {"_artifacts"}
 DOT_CONTENT_DIRS = {".agents"}
 
@@ -402,7 +402,7 @@ def find_indexes(root):
 def check_level2_indexes(root):
     problems = []
     for p1 in root.iterdir():
-        # Dot-dirs are tool caches (.ruff_cache, .pytest_cache, .gitnexus, ...) — never content, so they
+        # Dot-dirs are tool caches (.ruff_cache, .pytest_cache, .code-review-graph, ...) — never content, so they
         # never owe an INDEX. Skip them at level 1 exactly as the level-2 loop below already does; without
         # this, a build cache's version folder (.ruff_cache/0.15.21/) is reported as FATAL drift forever,
         # which is how a real check gets trained into background noise. DOT_CONTENT_DIRS opts the real
@@ -549,28 +549,42 @@ def check_tier2_law(root):
     return hints
 
 
-# --- check 9: GitNexus index freshness (NON-FATAL hint — machine-local index vs HEAD) ------------------
-def check_gitnexus_fresh(root):
-    """Standing rule (memory: gitnexus-verify-index-fresh-after-pull): a git pull moves HEAD past the
-    machine-local, gitignored GitNexus index — which then silently mis-answers impact/test-selection
-    queries. If this workspace carries an index (.gitnexus/meta.json), its lastCommit must equal HEAD.
-    Dirty tree != stale — only commits count. No index / no git / no lastCommit (--skip-git indexes
-    like the .agents/ SUDO_COMMAND one) -> nothing to check here."""
-    meta = root / ".gitnexus" / "meta.json"
-    if not meta.exists():
+# --- check 9: code-graph index freshness (NON-FATAL hint — machine-local index vs HEAD) ---------------
+def check_graph_fresh(root):
+    """A git pull moves HEAD past the machine-local, gitignored code graph, which then silently
+    mis-answers impact / test-selection queries. If this workspace carries a graph, the commit the
+    graph says it was built at must equal HEAD. Dirty tree != stale — only commits count.
+
+    ⛔ Read the stamp from the graph's OWN sqlite database, never by shelling out to the CLI. This
+    runs inside a SessionStart hook, where `PATH` is stripped and the console script frequently is
+    not resolvable; a check that needs the tool it is checking cannot report the tool's absence, and
+    would report "fresh" by failing open. `sqlite3` is stdlib on both machines.
+
+    No graph / no git / no stamp -> nothing to check here. Any read failure is silence, not noise:
+    this is a hint, and a corrupt cache must never raise out of a session-start hook."""
+    db = root / ".code-review-graph" / "graph.db"
+    if not db.exists():
         return []
     try:
-        last = (json.loads(meta.read_text(encoding="utf-8")).get("lastCommit") or "").strip()
+        import sqlite3
+        con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        try:
+            row = con.execute(
+                "SELECT value FROM metadata WHERE key = 'git_head_sha'").fetchone()
+        finally:
+            con.close()
     except Exception:
-        return [".gitnexus/meta.json: unreadable - re-index: node .gitnexus/run.cjs analyze"]
+        # Corrupt, locked, or an unexpected schema. Not this lint's job to triage.
+        return []
+    last = (row[0] if row and row[0] else "").strip()
     if not last:
         return []
     head, rc = sh(["git", "rev-parse", "HEAD"], root)
     if rc != 0 or not head:
         return []
     if head != last:
-        return [f"GitNexus index STALE - indexed at {last[:7]}, HEAD is {head[:7]} - re-index: "
-                "node .gitnexus/run.cjs analyze (impact/test-selection answers unreliable until then)"]
+        return [f"code graph STALE - built at {last[:7]}, HEAD is {head[:7]} - refresh: "
+                "code-review-graph update (impact/test-selection answers unreliable until then)"]
     return []
 
 
@@ -721,16 +735,16 @@ def lint_one(root, ignore_override=None):
     else:
         print("  [ok] guarded dirs carry AGENTS.md + adapters (redirects verified)")
 
-    # gitnexus freshness is likewise a NON-FATAL nag (see check_gitnexus_fresh docstring)
-    print("\n[gitnexus index]  (hint only - does not fail the lint)")
-    gn = check_gitnexus_fresh(root)
+    # code-graph freshness is likewise a NON-FATAL nag (see check_graph_fresh docstring)
+    print("\n[code graph]  (hint only - does not fail the lint)")
+    gn = check_graph_fresh(root)
     if gn:
         for h in gn:
             print("  [hint] " + h)
-    elif (root / ".gitnexus" / "meta.json").exists():
-        print("  [ok] index matches HEAD")
+    elif (root / ".code-review-graph" / "graph.db").exists():
+        print("  [ok] graph matches HEAD")
     else:
-        print("  [ok] no GitNexus index in this workspace - nothing to verify")
+        print("  [ok] no code graph in this workspace - nothing to verify")
 
     return has_drift
 

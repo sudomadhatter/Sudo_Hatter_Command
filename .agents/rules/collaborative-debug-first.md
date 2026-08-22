@@ -1,6 +1,12 @@
 ---
 name: collaborative-debug-first
 description: "Activates when you cannot directly observe runtime behavior (browser console, network, Firestore, UI) but Daniel can. Instrument with one targeted debug log and ask him to report back instead of guessing."
+trigger: model_decision
+triggers: [browser, console, network tab, cannot observe, firestore, the ui, on screen]
+# Intent-shaped: no glob can catch it, because the trigger is what the operator ASKS,
+# not what gets opened. Antigravity judges `description:` against the request;
+# `.agents/hooks/rule-trigger.py` matches these keywords and injects a pointer.
+
 ---
 
 # Rule: Collaborative Debug-First (Ask the Pilot)

@@ -1,6 +1,12 @@
 ---
 name: git-policy
 description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<JIRA-KEY>-<slug>` branch off main; story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Daniel's in-the-moment 'approved' or via /cicd-close-story-merge-tree. The epic reaches `main` only through /cicd-push-e2e — full gate + E2E green + Daniel's sign-off."
+trigger: model_decision
+# Protocol tier (rules/INDEX.md): conditional, not floor. Every gate it carries is ALSO
+# stated inline in AGENTS.md and constitution.md, so the stop binds even in a session
+# that never opens this file — which is what makes it safe to leave conditional rather
+# than load ~44 KB of protocol prose into every read-only session.
+
 ---
 
 # Git Policy

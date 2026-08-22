@@ -115,7 +115,33 @@ test -s /tmp/mine.txt || { echo 'EMPTY DIFF — STOP (Step 0.6 said so)'; exit 1
 grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                               # the TRUE overlap
 git -C "$WORKTREE" merge-tree --write-tree --messages HEAD "origin/$EPIC" | head -40  # conflicts, before they are real
 git -C "$PROJECT_ROOT" worktree list                                                  # sibling story lanes still live
+python3 .agents/scripts/risk_seam.py classify $(cat /tmp/mine.txt)                    # risk tiers from the code graph
 ```
+
+**Read the tier map beside the overlap list.** `risk_seam.py` *(PC: `python`)* asks the local code
+graph which of the files you changed carry the riskiest changed functions, how many flows they sit
+on, and which changed functions it can find no test for. `"status": "classified"` means the graph
+answered; every other state — no graph, a graph built at a different commit, the tool not installed,
+or a thin project that carries no `.agents/scripts/` at all — prints `"status": "unclassified"` and
+**that is a normal result, not a failure**. The pure-Python path is the normal path; the graph is
+context, and `gates_audit` is False by contract, so nothing here can fail a review on its own. If you
+want the context, `code-review-graph update` in that repo and re-run this one line.
+
+⛔ **READ `test_links` BEFORE YOU READ `untested` — it is a per-repo number, and it decides whether
+the list means anything.** `test_links` counts the graph's TESTED_BY edges that name a real subject.
+A test link needs a **statically resolvable import**; a test that reaches its subject by `subprocess`
+or by a runtime `sys.path.insert(...)` produces no link at all. Two repos, measured the same day
+(2026-08-22):
+
+| Repo | `test_links` | What `untested` is worth there |
+|---|---|---|
+| `AGY_AVIATIONCHAT` | **3427** (of 18857 edges) | real signal — a gap is worth opening the file for |
+| the command centre | **0** (of 24 edges, all builtins) | **noise** — every changed function is listed |
+
+So: a **high** `test_links` means treat `untested` as *where to look* and confirm against the test
+file before writing it down. A `test_links` of **0** means the graph has no test data at all — do not
+open those files, do not write it down, do not mention it in the verdict. `risk` and `flows` are
+unaffected either way (`CALLS` resolved 22135/22135 in the centre and 74k edges in AGY).
 
 ⚠ **`zsh` does not word-split an unquoted variable** the way `bash` does. Build file lists into a file
 and expand with `$(cat …)`, or the whole list arrives as one argument and your sweep silently checks

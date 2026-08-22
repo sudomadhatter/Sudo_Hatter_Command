@@ -1,6 +1,11 @@
 ---
 name: constitution
 description: "Hard stops, confirmation gates, and partnership boundaries (shared, project-agnostic). For behavioral coding principles, see karpathy-guidelines.md. Project-specific hard stops live in each project's local constitution.project.md."
+trigger: always_on
+# Floor tier (rules/INDEX.md): loaded every session, unconditionally. No `paths:` —
+# a path-scoped rule is on-demand by definition, and this one must bind before the
+# first reply, not after the file that would have triggered it.
+
 ---
 
 # Agent Constitution (shared)

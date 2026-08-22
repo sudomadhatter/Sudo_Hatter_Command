@@ -153,7 +153,7 @@ Step 3.5 this part is satisfied by importing the Step-1 adversarial review's dri
 (source-labelled `review`); do not re-walk the hunks.*
 - New abstraction with a single caller?
 - Something re-implemented that already exists? **Search before you accept it as new** — this is the
-  most common real finding. Grep the obvious neighbours; use GitNexus `context({name})` if the repo is
+  most common real finding. Grep the obvious neighbours; use `code-review-graph query callers_of <name>` if the repo is
   indexed.
 - Defensive `try`/`except` around code that cannot fail?
 - Unused params, dead branches, a new file where an existing module was the home?

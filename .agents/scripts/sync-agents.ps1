@@ -877,6 +877,49 @@ if (-not $GlobalsOnly) {
   if ($skGone.Count) { Write-Host "sync-agents: purged $($skGone.Count) retired .claude skill(s): $($skGone -join ', ')" }
   $newLocal[$claudeSkKey] = $sk
   Sync-Dir (Join-Path $src "hooks")           (Join-Path $Target ".claude\hooks") -WhatIf:$WhatIf
+
+  # --- .claude\rules: the PATH-SCOPED rules only (SCC-270) -------------------------------------------
+  # Claude Code loads a .claude\rules\*.md file ONLY when it reads a file matching that rule's `paths:`
+  # frontmatter - which is exactly the behaviour the on-demand tier wants, and exactly the behaviour a
+  # rule WITHOUT `paths:` must never get: no-paths means "load at launch, unconditionally", so mirroring
+  # the whole master dir would drag every floor and protocol rule into every session twice over (they
+  # already load through AGENTS.md) and quietly re-classify the entire tier system.
+  #
+  # ⛔ COPIES, never symlinks. Claude Code does resolve symlinked rules, but a Windows checkout without
+  # Developer Mode materialises a symlink as a TEXT FILE containing the target path - the rule would
+  # then "load" as one line of nonsense, on the machine least likely to notice (two-machines rule).
+  #
+  # Manifest-tracked, so a rule that stops being path-scoped has its copy retired on the next run
+  # instead of lingering as a rule nobody can find the master for.
+  $clRulesKey = ".claude\rules"
+  $clRulesDst = Join-Path $Target $clRulesKey
+  $ruleSrcDir = Join-Path $src "rules"
+  $pathScoped = @()
+  if (Test-Path $ruleSrcDir) {
+    foreach ($rf in (Get-ChildItem $ruleSrcDir -Filter '*.md' -File | Sort-Object Name)) {
+      if ($rf.Name -eq 'INDEX.md') { continue }
+      # Frontmatter only: `paths:` must be a top-level key in the leading --- block, never a mention
+      # in the body (a rule that DISCUSSES paths: is not itself path-scoped).
+      $lines = [IO.File]::ReadAllLines($rf.FullName)
+      if ($lines.Count -lt 2 -or $lines[0].Trim() -ne '---') { continue }
+      $fmEnd = -1
+      for ($i = 1; $i -lt $lines.Count; $i++) { if ($lines[$i].Trim() -eq '---') { $fmEnd = $i; break } }
+      if ($fmEnd -lt 0) { continue }
+      $hasPaths = $false
+      for ($i = 1; $i -lt $fmEnd; $i++) { if ($lines[$i] -match '^paths:\s*$|^paths:\s*\[') { $hasPaths = $true; break } }
+      if (-not $hasPaths) { continue }
+      $pathScoped += $rf.Name
+      if ($WhatIf) {
+        Write-Host ("WHATIF: would copy path-scoped rule '{0}' -> .claude/rules/" -f $rf.Name)
+      } else {
+        if (-not (Test-Path $clRulesDst)) { New-Item -ItemType Directory -Path $clRulesDst -Force | Out-Null }
+        Copy-Item $rf.FullName (Join-Path $clRulesDst $rf.Name) -Force
+      }
+    }
+  }
+  $clRulesGone = Invoke-ManifestPurge $clRulesDst $manifest.local[$clRulesKey] $pathScoped -WhatIf:$WhatIf
+  if ($clRulesGone.Count) { Write-Host "sync-agents: purged $($clRulesGone.Count) rule(s) no longer path-scoped: $($clRulesGone -join ', ')" }
+  $newLocal[$clRulesKey] = $pathScoped
   $ocCmdKey = ".opencode\commands"
   $ocCmdDst = Join-Path $Target $ocCmdKey
   $oc = Sync-CommandDir $cmdDir $ocCmdDst "opencode" -SkipAP:$IsLobby -WhatIf:$WhatIf
@@ -894,6 +937,7 @@ if (-not $GlobalsOnly) {
 
   Write-Host "sync-agents: .claude\commands   -> RETIRED (SCC-66; Claude's door is .claude\skills)"
   Write-Host "sync-agents: .claude\skills     -> $($sk.Count) skill dirs ($($clOnlyMade.Count) claude-only launcher(s))"
+  Write-Host "sync-agents: .claude\rules      -> $($pathScoped.Count) path-scoped rule(s) (floor/protocol deliberately NOT mirrored)"
   Write-Host "sync-agents: .opencode\commands -> $($oc.Count) cmds"
 
   # Record what THIS run wrote, so the next one can retire it. Written last: a mid-run failure leaves the

@@ -6,7 +6,7 @@ and `_my_resources/diagrams_guides/` until this ticket moved them.
 
   -- WHY THEY ROTTED, WHICH IS THE WHOLE POINT ---------------------------------------------
 They did not rot from neglect. They rotted because `_my_resources/` is named in SCAN_IGNORES
-(check_maps.py), in DEFAULT_REGEN_IGNORE for the repo-map, and in the GitNexus ignore list --
+(check_maps.py), in DEFAULT_REGEN_IGNORE for the repo-map, and in .code-review-graphignore --
 and its own local law says "excluded from repo-map regen + linter scans ... do not fix that."
 Ten of the thirteen lived inside a folder every drift-checker in this system is FORBIDDEN to
 look at. No automation could reach them, so nothing could notice when they went wrong. It

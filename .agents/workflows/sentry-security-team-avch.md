@@ -42,7 +42,7 @@ no triage runbook yet (Story 16.1 ships it for AGY_AVIATIONCHAT). Never improvis
 Run the runbook end to end with:
 - `ISSUE` = the remaining `$ARGUMENTS` token (a Sentry issue/short id), or **`latest`** if none given.
 - `PROJECT` = the runbook's default (`python-fastapi`) unless `$ARGUMENTS` names another slug.
-- **Lane = interactive** → Sentry **MCP** transport; GitNexus enrichment when available; honor **every**
+- **Lane = interactive** → Sentry **MCP** transport; `code-review-graph` enrichment when available; honor **every**
   guardrail (read-only; write ONLY the report; never merge/PR/push; anchor at the event's release SHA).
 
 Follow the runbook's five steps and its graceful-degrade rules exactly — this harness adds nothing and

@@ -56,7 +56,7 @@ flowchart TD
     BMADL["_bmad/ + _bmad-output/\nBMAD module + state (lobby)"]
     CANARY["_routing-canary/\nrouting regression check"]
     SYS["_system/\nbuilder: /smh-new-project, /smh-sync-agents"]
-    SETTINGS[".claude/settings.json + .mcp.json\nhooks + MCP servers (gitnexus, md-feedback)"]
+    SETTINGS[".claude/settings.json + .mcp.json\nhooks + MCP servers (code-review-graph, md-feedback, playwright)"]
     PROJ["Projects/(name)/ — nested git repos, gitignored\neach: adapters + AGENTS.md + vendored .agents/"]
 
     BRAIN --> TOOLKIT
@@ -80,11 +80,11 @@ This is the one distinction worth memorising, because getting it wrong is how do
 | What it is | the **maintained** surface | Daniel's **thinking + brainstorming space** |
 | Agents | read it, keep it correct | **ignore it** unless he links a specific document |
 | Staleness | must never happen | **fine by design** — it is a scratchpad, not a contract |
-| Drift-checked | yes — `check_maps.py`, repo-map regen, GitNexus | **no, deliberately** |
+| Drift-checked | yes — `check_maps.py`, repo-map regen, the code graph | **no, deliberately** |
 
 **Why the split had to become a rule.** Every procedural doc in this system used to live in
 `_my_resources/`. That folder is named in `SCAN_IGNORES` (`check_maps.py`), in
-`DEFAULT_REGEN_IGNORE`, and in the GitNexus ignore list — its own local law says *"excluded from
+`DEFAULT_REGEN_IGNORE`, and in `.code-review-graphignore` — its own local law says *"excluded from
 repo-map regen + linter scans … do not fix that."* So thirteen documents that tell the operator what
 to type sat where **every drift-checker in this system is forbidden to look.** They did not rot from
 neglect; nothing was *able* to notice. The proof was sitting in the open: the index they lived under
@@ -211,7 +211,7 @@ flowchart LR
 ```
 
 **Why depth-3 only for `_artifacts/`:** session folders are content-rich (bug-tracking history, story
-context). Code dirs use GitNexus + the repo-map AUTO block instead — a depth-3 INDEX there would just
+context). Code dirs use the code graph + the repo-map AUTO block instead — a depth-3 INDEX there would just
 duplicate what the graph already indexes.
 
 ## 6. How it stays honest (the maintaining system)
@@ -230,7 +230,7 @@ flowchart TD
         C6["6. structure conformance\n(PATH CONTRACT gate)"]
         C7["7. depth-3 _artifacts INDEX\n(missing/stale per-bucket)"]
         C8["8. tier-2 local law\n(AGENTS.md + redirecting adapters — HINT only)"]
-        C9["9. gitnexus index freshness\n(meta.json lastCommit == HEAD — HINT only)"]
+        C9["9. code-graph index freshness\n(graph.db git_head_sha == HEAD — HINT only)"]
     end
 
     REC[".githooks/post-commit\nrecord_map_changes.py\nclassifies each commit into a journal"]
@@ -380,7 +380,7 @@ doc's ten sections had a counterpart here, and this table was the part that did 
 | `docs/repo-map.md` | Hybrid nav index (curated header + AUTO body) — per workspace |
 | `_artifacts/INDEX.md` | Depth-2 session ledger — per workspace |
 | `_artifacts/(bucket)/INDEX.md` | Depth-3 per-bucket session index — created at ≥ 2 session subfolders |
-| `.claude/settings.json` · `.mcp.json` | 4 SessionStart hooks + PreToolUse git guard · MCP servers (gitnexus, md-feedback) |
+| `.claude/settings.json` · `.mcp.json` | 4 SessionStart hooks + PreToolUse git guard · MCP servers (code-review-graph, md-feedback, playwright) |
 | `docs/.maps-state.json` · `docs/.maps-journal.jsonl` | Drift anchor · commit-time drift journal (cache, never truth) |
 | `_routing-canary/` | The routing regression check (README has run + reset instructions) |
 
@@ -394,6 +394,6 @@ doc's ten sections had a counterpart here, and this table was the part that did 
 | After any structural change (folders moved/added, sessions created) | `/smh-update-maps-indexes` — then commit, then `--set-anchor` |
 | After editing master `.agents/` | `/smh-sync-agents` (lobby) or `/smh-sync-agents <project>` |
 | After changing routing structure (`AGENTS.md`, `router.md`, adapters) | re-run `_routing-canary/` + reset `Power.md` |
-| After committing (if check 9 hinted) | `node .gitnexus/run.cjs analyze` in the stale repo |
+| After committing (if check 9 hinted) | `code-review-graph update` in the stale repo |
 | Reviewing a doc Daniel annotated | say **"review"** → md-feedback loop (§9) |
 | Adding a new project | `/smh-new-project <name>` — scaffold from Fresh, register in `router.md` |
