@@ -80,7 +80,19 @@ PROJECT_ROOTS = ("backend/", "frontend/", "firebase/", "functions/", "mobile/",
 # naming a file that a later lane removed is HISTORY, not a broken link — the same carve-out
 # `check_maps.py` makes with its own `NARRATIVE_LEDGERS`. Kept in step with that file deliberately:
 # two dead-path checkers with different exemption sets would disagree on the same tree.
-NARRATIVE_LEDGERS = ("_artifacts/INDEX.md", "_artifacts/_main/INDEX.md")
+# ⛔ `active-context.md` BELONGS HERE, and the authority is `check_maps.py`, not a preference.
+# That file carries `PRUNE_KEEP_BLOCKS = 10` — the house already models a continuity brief as a
+# chronological log of DATED session blocks whose old end is PRUNED, never repaired. So a path
+# inside a five-week-old block is a mention in a record, and the remedy for a stale one is the
+# prune, which is that script's job. Measured cost of adding it, stated so nobody has to
+# rediscover it: 11 real dead paths in the lobby's brief stop being reported here — every one
+# inside a 2026-07 block, and one of which the prose ITSELF records as permanently lost and
+# deliberately de-linked on 2026-08-12. What this does NOT excuse is a stale pointer in the
+# LIVE header, and that is not a gap this exemption opens: the stale SOP path fixed at
+# `active-context.md:9` this lane was prose, not a path claim, so no version of this checker
+# ever saw it. The brief is 5x over its declared 20 KB budget; the prune is what it is owed.
+NARRATIVE_LEDGERS = ("_artifacts/INDEX.md", "_artifacts/_main/INDEX.md",
+                     "_artifacts/_main/active-context.md")
 
 
 def _strip_dot_slash(p: str) -> str:

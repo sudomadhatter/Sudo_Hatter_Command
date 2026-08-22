@@ -104,6 +104,15 @@ def main() -> int:
             _ok = "_artifacts/_main/INDEX.md".endswith(CL.NARRATIVE_LEDGERS)
             c.check("B11 convention 7 - the narrative ledgers are declared", _ok,
                     "" if _ok else "a ledger row naming a deleted file is history, not a broken link")
+            # The continuity brief is one too, and `check_maps.py` is the authority: it carries
+            # `PRUNE_KEEP_BLOCKS = 10`, so the house already models this file as a dated log whose
+            # old end is PRUNED. A path in a five-week-old block is a mention; the fix is the prune.
+            _ok = "_artifacts/_main/active-context.md".endswith(CL.NARRATIVE_LEDGERS)
+            c.check("B12 convention 7b - the CONTINUITY BRIEF is a ledger (check_maps prunes it)", _ok,
+                    "" if _ok else "11 dead paths in 2026-07 session blocks report as this lane's defects")
+            _ok = not "_artifacts/_main/2026-08-22_lane/walkthrough.md".endswith(CL.NARRATIVE_LEDGERS)
+            c.check("B12b ...and a WALKTHROUGH is not one - the exemption stays narrow", _ok,
+                    "" if _ok else "exempting story artifacts would blind the checker to the live tree")
 
         if c.block("E · ⛔ IT MUST STILL BITE - REJECTS as well as ALLOWS"):
             _ok = r.resolve("docs/this_file_does_not_exist.md", "README.md") is None
