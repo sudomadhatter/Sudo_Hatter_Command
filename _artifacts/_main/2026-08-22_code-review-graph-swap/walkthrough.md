@@ -23,7 +23,14 @@ plan as it stood at `60b6868`.
 - [x] **Part E · SCC-276** — activation frontmatter on all 25 rules; `.claude/rules/` emitted by the sync.
 - [x] **Part F · SCC-277** — prompt-trigger hook + `InstructionsLoaded` probe; canary § "Probe 2".
 - [x] **Part H · SCC-278** — `risk_seam.classify` answers from the graph; both reviews print the tiers.
-- [ ] Part G · AVCH-73 — AviationChat, its own repo and lane
+- [x] **Part G · AVCH-73** — AviationChat, its own repo and lane. Committed and pushed on
+  `chore/AVCH-73-code-review-graph-swap`; its own walkthrough carries the AGY bake-off.
+  - ⛔ Found there: GitNexus is **live code** in `backend/tia/`, outside AVCH-73's scope. Ported by
+    **AVCH-77** (under AGY's CI/CD epic AVCH-43), which also adds the macOS entry point that gate has
+    never had. AVCH-73's acceptance 1 was amended to name its carve-outs rather than read as passed.
+- [x] **Review** — `/smh-code-review`, this file's `## Code Review (2026-08-22)` section. Three
+  findings applied in thread, three dismissed with reasons. **CONCERNS** — every gate green, floor
+  raised because the Blind Hunter was dropped (this context built the lane).
 
 ## Evidence
 
@@ -119,7 +126,7 @@ chases it later.
 | Gate | When | Result |
 |---|---|---|
 | `declared_change_set.py parse` | plan, after audit amendments | present, 113 entries, 0 incomplete |
-| `run_all.py` | after D, E, F, H | **51/51 files** (was 49; E and F each add one) |
+| `run_all.py` | after D, E, F, H, and again at the shipping sha `1133ebb` | **52/52 files, exit 0** (was 49; E and F each add one, SCC-279 adds `test_entry_adapters.py` on the absorb) |
 | `workflow_lint.py --toolkit-only` | after D, E, F, H | **0 errors, 0 warnings** |
 | `test_check_maps_graph_fresh.py` | Part D, RED→GREEN + 3 mutants | 5/5; mutants all killed |
 | `test_rule_frontmatter.py` | Part E, RED→GREEN + 2 mutants | 9/9; mutants all killed |
@@ -217,8 +224,141 @@ Proven both ways rather than asserted: **fresh → 24/24** with the live arm run
 it fires the live arm against a stale graph and fails, which is exactly the bug. The graph's stamp
 was rewritten in place and restored, so no lane history was touched to prove it.
 
+review-runtime: inline (blocked: standing session directive — "Do not call the AgentTool unless the user requested it". The operator approved the SCC-270 plan, which names this command as the next step; they did not separately authorise a subagent fan-out, and the directive names that tool specifically. Recorded here rather than laundered into a clean-looking `inline`.)
+
+## Code Review (2026-08-22)
+
+Verdict: CONCERNS @ 1133ebbc3a4acb5fe07374cd05001fdf26aed3ad
+Suite evidence measured at the same sha: 1133ebbc3a4acb5fe07374cd05001fdf26aed3ad
+
+lenses_run:
+- edge-case-hunter · recovered-inline — inline runtime; ran sequentially in this context
+- literal-correctness-hunter · recovered-inline — inline runtime; ran sequentially in this context
+- acceptance-auditor · recovered-inline — inline runtime; ran sequentially in this context
+- test-adequacy-auditor · recovered-inline — inline runtime; ran sequentially in this context
+lenses_counted:  4/4
+lenses_na:
+- blind-hunter · n/a — context contaminated (this context built the lane and holds the plan, the walkthrough and every part's reasoning). DROPPED rather than faked, per the engine's § When the order CANNOT protect it.
+
+dispositions:    per-lens: edge-case-hunter=1/2/0 · literal-correctness-hunter=1/8/0 · acceptance-auditor=1/0/0 · test-adequacy-auditor=1/2/0
+drift:           undeclared=7 · unimplemented=1 · incomplete=0 — dispositions in the findings table below; every row named, none cut
+
+**Scope.** 120 files, `origin/main...HEAD`, re-taken after Step 0.7 absorbed `origin/main` at `db75f19`.
+**Method.** Four lenses inline over the diff; every path and `#L` anchor in the 79 changed markdown
+files resolved mechanically; the declared change set reconciled with `declared_change_set.py`; the
+acceptance list recovered from `acli jira workitem view SCC-270` and matched item-by-item to a
+command that proves it.
+
+**Why CONCERNS and not PASS.** Every gate is green and every acceptance item is evidenced. The floor
+is raised by **one review layer that never ran**: the Blind Hunter was dropped, and this whole review
+ran in the context that built the lane. That is the honest severity for a self-review — the findings
+below are real and were caught, but nobody independent looked.
+
+### Findings
+
+| # | file:line | Severity | Failure scenario | Disposition |
+|---|---|---|---|---|
+| 1 | `.agents/scripts/risk_seam.py` — the `untested` field | **important** | `classify` reported 11 untested functions for `risk_seam.py`, 8 for `rule-trigger.py`, 3 for `check_maps.py` — **all of them thoroughly tested**. The graph holds 24 `TESTED_BY` edges and not one names a subject under test (21 point at builtins like `str`/`Path`/`mkdir`, 3 at a test class's own `assertEqual`). A reviewer trusting the column opens a dozen files for nothing, or worse, files "no test" findings against tested code. | **applied @ `b7659a2`** — `classify` now publishes `test_links`; all four consuming commands, the contract doc, the scripts INDEX and the SOP tell the reader to check it first. RED first (4 assertions), 4/4 mutants dead. |
+| 2 | `.claude/rules/sop-currency.md:91` | **important** | This lane **creates** `.claude/rules/` — six generated copies, and the copy is what Claude Code loads. `.agents/rules/` holds all 25 rules; the mirror holds only the 6 path-scoped ones, so `[project-law.md](project-law.md)` resolved beside the master and pointed at nothing beside the copy. An agent following the pointer opens nothing and is told nothing. | **applied @ `1133ebb`** — master link is now `../../.agents/rules/project-law.md`, which resolves from both folders (both sit two levels below the root). `test_rule_frontmatter.py` pins it; the re-introduction mutant dies. |
+| 3 | `.agents/commands/sentry-security-team-avch.md:45` | suggestion | Read "code-graph enrichment when available" — the tool is un-named, so an agent knows to reach for something but not what to call. Acceptance 5 asks these surfaces to **cite** the tool. | **applied @ `1133ebb`** |
+| 4 | `.agents/scripts/generate_doc_graph.py:38` · `record_map_changes.py:43` | dismissed | Suspected the same replace-don't-add bug as the `.gitignore` one: `.gitnexus` was **replaced** by `.code-review-graph` in both skip lists rather than added beside it, so a still-present `.gitnexus/` would be walked. | **dismissed — verified, not assumed.** Both auto-skip every dot-directory anyway (`generate_doc_graph.py:78` `not d.startswith(".")`, `record_map_changes.py:99` `or head.startswith(".")`), and the latter is fed by `git diff --name-status`, which never reports gitignored paths. Triple-covered; the entries are decorative in both. |
+| 5 | `docs/_scc_sops_prds/tea_deep_reference.md:786-791` + 2 others | dismissed (relevance) | Six links into `Projects/AGY_AVIATIONCHAT/backend/tests/…` did not resolve, plus two `relative/path` placeholders. | **dismissed** — worktree false positive: `Projects/` is gitignored and absent from a worktree; all six resolve in the shared checkout, verified. None on a line this diff added. The placeholders are prose examples. |
+| 6 | `.agents/hooks/log-rule-load.sh` | suggestion | New in this lane, no `test_log_rule_load.py`. | **dismissed** — a six-line diagnostic logger, not a gate. It was exercised live and verified by reading the log **file** rather than `$?`, and `_routing-canary/README.md` § Probe 2 carries the command. A test asserting a logger logs would restate the code. |
+
+**Also caught during the review, in this lane's own earlier commits** (fixed, and each recorded in
+its own commit): `.claude/mcp.json` is a third tracked MCP config in **both** repos and Part B
+updated only `.mcp.json`; and in the AGY twin, `.gitignore` **replaced** `.gitnexus/` instead of
+adding beside it, which would have surfaced the still-live TIA index as untracked.
+
+⚠ **A process finding worth more than any of the above.** The first attempt at finding 3 edited
+`.agents/workflows/sentry-security-team-avch.md` — a **generated** mirror of `.agents/commands/`.
+`sync-agents` silently reverted it on the next run and the edit vanished with no error. Re-reading
+the file after the sync is the only reason it was caught. The sync banner says "edit the master,
+never the copies"; this is what ignoring it looks like from the inside.
+
+### Step 0.7 — re-derivation
+
+1. **Did anything this diff references move, rename or get deleted on `main`?** No. `main` advanced
+   14 commits during this lane (SCC-186, SCC-269, SCC-271, SCC-279); all were absorbed at `db75f19`,
+   after which `merge-base HEAD origin/main` **equals** `origin/main` and `theirs` is empty. Every
+   path and `#L` anchor in the 79 changed markdown files was re-resolved mechanically: 9 unresolved,
+   **0** of them on a line this diff added, and all 9 explained in findings 5.
+2. **True overlap and merge result.** Overlap is **zero files**. `git merge-tree --write-tree
+   --messages HEAD origin/main` returns a bare tree sha (`e2df6ce`) with no conflict messages.
+   ⚠ The absorb was not free: it turned `test_risk_seam.py` red, because case L treated a stale
+   graph — the normal state right after any merge — as a failure rather than a precondition. Fixed
+   at `68c3c7f`, proven both ways (fresh 24/24 with the live arm running, stale 23/23 with it
+   skipping), mutant dead.
+3. **Sibling lanes and landing order.** One other live worktree: `SCC-280-teaching-edition` on
+   `claude/teaching-edition` @ `3cdb130`. **No landing-order dependency either way** — zero file
+   overlap, and this lane touches no surface that lane is building on. The AGY twin **AVCH-73** is a
+   different repo with its own key and gate; it is already committed and pushed on its own lane and
+   neither blocks the other.
+
+### Acceptance matrix
+
+| # | Item | Proving assertion | Result |
+|---|---|---|---|
+| 1 | Bake-off evidence, both repos | lobby walkthrough § Part A; AGY walkthrough § Bake-off — `callers_of calculate_cognitive_zone` = 5 (1 production, 4 tests); `detect-changes` 1918 files on a bad base vs 18 on the merge-base | **met** |
+| 2 | `gitnexus` in no tracked lobby file outside history | `git grep -Iln -i gitnexus` minus `_artifacts`/`_my_resources`/`_bmad*` → **2 hits**, both *historical narrative* (`risk_seam.py:6` "SCC-224 was meant to fill it with GitNexus", `docs/code-review-graph.md:58` naming the engine it replaced) | **met in intent, not literally** — no live dependency remains; the two survivors describe the past. Named here rather than claimed clean. |
+| 3 | MCP + ignore files | all three configs list `code-review-graph`; `git check-ignore .code-review-graph/` exit 0; `.gitnexusignore`/`.gitnexusrc` absent; `.code-review-graphignore` present | **met** (acceptance named two configs; three were updated) |
+| 4 | check 9 reads SQLite, no CLI dep | `check_maps.py:569-573` `sqlite3.connect(...mode=ro)` reading `metadata.git_head_sha`; `test_check_maps_graph_fresh.py` **5/5**; `run_all` **52/52** | **met** |
+| 5 | Five surfaces re-cited, one house skill, lint green, SOP same commit | `cicd-code-review` · `cicd-self-audit` · `cicd-clean-code-audit` · `smh-update-maps-indexes` · `sentry-security-team-avch` all cite `code-review-graph`, all zero `gitnexus`; `.agents/skills/code-review-graph/SKILL.md` is the single door, no `gitnexus*` skill remains; `workflow_lint` **0 errors**; SOP staged in every usage-surface commit (the gate rejected one attempt and was satisfied, never `[sop-ok]`'d) | **met** |
+| 6 | Rule frontmatter mirrors INDEX, test asserts it, `.claude/rules/` emitted | `test_rule_frontmatter.py` **10/10**, including the new dangling-link guard; `.claude/rules/` = 6 files = exactly the path-scoped masters | **met** |
+| 7 | `rule-trigger.py` hook registered + RED→GREEN test + canary probe | `.claude/settings.json` carries `UserPromptSubmit` → `run-hook.sh .claude/hooks/rule-trigger.py` and `InstructionsLoaded` → `log-rule-load.sh`; `test_rule_trigger.py` **18/18**, taken RED against a stub (5 failures) first; `_routing-canary/README.md` § Probe 2 present, both commands run before being written down | **met** |
+| 8 | `risk_seam` classified/unclassified, `gates_audit` False, both Step 0.7 twins print tiers | `test_risk_seam.py` **27/27** (28 when the graph is fresh; case L skips when stale, by design); both `smh-` and `cicd-code-review` carry the `risk_seam.py classify` line | **met** — ⚠ the acceptance text says `detect-changes --json`; **there is no such flag**. The full JSON is the default output and `--brief` replaces it. Implementation is correct; the acceptance wording is stale. |
+
+**Declared-set reconciliation.** `undeclared=7 · unimplemented=1 · incomplete=0`, block present. Every
+row named, none cut:
+
+- `.agents/.sync-manifest.json`, `.claude/hooks/INDEX.md`, `.claude/skills/INDEX.md`,
+  `.opencode/commands/smh-self-audit.md` — **stay**: generated output of declared actions.
+- `.agents/commands/smh-self-audit.md` — **stays**: a `risk_seam` consumer, and Part H's contract is
+  that consumers cite the new engine. Should have been declared; the plan named its three siblings.
+- `.claude/mcp.json` — **stays**: found *by* this review. A file the plan could not have declared
+  because the gap is what the review discovered.
+- `.agents/scripts/tests/test_check_maps_graph_fresh.py` (undeclared) pairs with
+  `.agents/scripts/tests/test_check_maps.py` (unimplemented) — the plan declared the check-9 test
+  would extend the existing file; it landed as a dedicated new one instead. **Stays**: the behaviour
+  is tested either way, and a 5-case file for one check reads better than a graft. Plan overreach on
+  the filename, not dropped scope.
+
+### Gates
+
+| Gate | Command | Result |
+|---|---|---|
+| Enforcement suite | `python3 .agents/scripts/tests/run_all.py` | **52/52 files passed**, exit **0** — run bare |
+| Toolkit lint | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | `-- 0 error(s), 0 warning(s), 8 info --`, exit **0** (the 8 are pre-existing UTF-8 BOMs on vendor `testarch-*` files) |
+| Assertion evidence | `test_risk_seam.py` · `test_rule_trigger.py` · `test_rule_frontmatter.py` · `test_check_maps_graph_fresh.py` | 27/27 · 18/18 · 10/10 · 5/5 — all GREEN now, each taken RED at an assertion first |
+| SOP currency | `sop_currency.py --paths <changed> --message …` | exit **0**. It **rejected** one commit this session and was satisfied by updating the SOP — never `[sop-ok]`'d |
+| Link + anchor | every markdown link in the 79 changed `.md` files, resolved relative to its own file | 9 unresolved, **0** introduced by this diff — see finding 5 |
+| Door parity | `git diff --name-status … -- .agents/commands/` | no command added or renamed — parity not at risk |
+| Map drift | `check_maps.py --depth3-only --strict` | exit **0** |
+| Compile | `py_compile` on every changed `.py` | clean |
+
+### Clean-Code Gate
+
+Machine floor imported from the table above (SCC-146: nested, the audit does not re-run what Step 3
+already ran). Ran only what Step 3 did not:
+
+| Check | Result |
+|---|---|
+| `py_compile`, all changed `.py` | clean |
+| Comment contract (§2A) — every ⛔ block names the scar it prevents | **pass**; the two new ones (`_test_link_count`, case M) both carry the measured numbers that caused them |
+| Convention table (§2C) — probe the binary, never name it; explicit-path commits; stdlib only | **pass**; `_test_link_count` opens the db read-only via stdlib `sqlite3` and returns 0 on any failure, matching `_graph_is_fresh` beside it |
+| Drift / bloat | imported from Step 1 — findings 1–3 applied, 4–6 dismissed with reasons |
+| Legacy debt in untouched files | the 8 BOM infos on vendor `testarch-*` files: noted, not gated on, not this diff's |
+
+**Changes applied during review:** findings 1, 2 and 3, at `b7659a2` and `1133ebb`.
+
 ## Your Actions
 
+0. **DECISION — do you want an independent review before this lands?** This one ran `inline`: the
+   Blind Hunter was dropped because the context that built the lane also reviewed it, and the standing
+   session directive reserves the subagent fan-out for your ask. It found and fixed three real
+   defects, but nobody independent looked. Say the word and it re-runs as a fan-out; say nothing and
+   **CONCERNS** stands as the honest record of a self-review. Either answer is fine — this row exists
+   so the choice is yours rather than mine.
 1. **Nothing yet.** GitNexus stays installed and registered until the lane lands — Part A only added
    the new CLI beside it.
 2. **After the lane lands**, on **each** machine: `npm rm -g gitnexus`, delete `~/.gitnexus/` and each
