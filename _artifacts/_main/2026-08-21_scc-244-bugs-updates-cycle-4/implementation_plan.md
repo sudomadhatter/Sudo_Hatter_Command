@@ -59,11 +59,11 @@ is checkable by a command.
 | D1 | SCC-257 | `outline` on a `## Acceptance Criteria` → `### Theme` → `- **AC-n**` story renders every AC | `test_jira_feed.py --case ac-theme-subheadings` |
 | D2 | SCC-257 | A story with flat `1.` ACs still renders as before | same file, regression case |
 | E1 | SCC-258 | `mint` on a ticket whose description is a **hand note** replaces it with the outline and preserves the note under `PREVIOUS NOTE` | `test_jira_feed.py --case mint-reuse-stale-description` |
-| E2 | SCC-258 | `outline` and `mint` accept the same flags | `test_jira_feed.py --case outline-accepts-jira-project` |
-| F1 | SCC-259 | `plan` lists a `story` source for a child whose story file exists **only on the lane branch**; a tests-only branch-diff carries `tests_only: true` and ranks **after** `story` | `test_label_tasks.py --case branch-only-story-source` |
-| F2 | SCC-259 | `resolve`'s lock `detail` names **every** declared blocker, not the first | `test_label_tasks.py --case resolve-lists-all-blockers` |
+| E2 | SCC-258 | `outline` and `mint` accept the same flags | `test_jira_feed.py --case "mint-reuse-stale-description"` — ⛔ the filter matches a BLOCK label, and E2's case lives inside that block; the name below is the case, not a selector |
+| F1 | SCC-259 | `plan` lists a `story` source for a child whose story file exists **only on the lane branch**; a tests-only branch-diff carries `tests_only: true` and ranks **after** `story` | `test_label_tasks.py` (whole file) — ⛔ it declares **no** `c.block()`, so every `--case` against it returns exit 3, NO_MATCH: a green that selected nothing |
+| F2 | SCC-259 | `resolve`'s lock `detail` names **every** declared blocker, not the first — in the legend and the chat report as well as the engine | `test_label_tasks.py` (whole file, same reason as F1) |
 | G1 | SCC-260 | `cicd-write-story-tests.md` Step 1 names `_bmad/bmm/stories/` next to the skill invocation | `test_story_path_is_pinned.py` |
-| G2 | SCC-260 | The two out-of-repo halves are **filed**, not silently dropped | the ticket keys appear in `## Your Actions` and on the board |
+| G2 | SCC-260 | ~~The two out-of-repo halves are **filed**, not silently dropped~~ — ⛔ **WITHDRAWN under the operator's BMAD ruling, not deferred.** Both halves were `_bmad/custom/bmad-create-story.toml` overrides; BMAD is neither edited nor overridden, so the accepted fix is one that may not be applied and there is no defect left to anchor. Filing them anyway would mint two tickets nobody may close. | **nothing** — Step 7 is NOT RUN, deliberately, and this row records that rather than asserting it |
 | Z1 | all | Enforcement suite green at the shipping sha, through the receipt writer | `gate_receipt.py run … run_all.py` → `gates/suite.json` |
 | Z2 | riders | The two memory files written during the discovery session ride **this** PR, and `main` is clean | `git -C <main> status --short` empty; both paths in this branch's diff |
 
@@ -171,48 +171,75 @@ tickets whose accepted fix is one the operator has forbidden — the failure mod
 
 ## Declared Change Set
 
-**Reconciled against `git diff --name-status 038c0f1..HEAD` after every part landed.** Rows the
-sync did not actually touch are **struck**, not left as phantom scope; rows the work turned up that
-plan time did not foresee are marked **+**. Three rows are still owed at the time of writing.
+**Reconciled against `git diff --name-status 038c0f1..HEAD` after every part landed**, then twice
+more: once at code review, when `declared_change_set.py diff` rejected 13 of these bullets and read
+15 declared files as `undeclared` drift, and once after the review's own fixes landed. The grammar is
+**one** bullet per path, opening a hyphen, then NEW/EDIT/DELETE, then ONE backticked path, closing
+`→ <the acceptance row it serves>`: a `**+**` marker in front of the op, several paths on one line,
+and a `~~struck~~` row all fail it. Unforeseen rows now say so **after** the em-dash; dropped scope is
+prose below the list, not a bullet.
 
 ### Scripts and their tests
 
-- EDIT `.agents/scripts/link-worktree-assets.py` — `repo_root()` resolves the main WORKING TREE; refuse an UNVERIFIED resolution → B1, B2
-- NEW `.agents/scripts/tests/test_link_worktree_assets.py` — submodule (gitdir-file) fixture + the unverified-resolution refusal + a plain-repo characterization block → B1, B2, B3
-- EDIT `.agents/scripts/jira_feed.py` — `section_body` depth-aware (opt-in per caller); `mint` reuse tests for the outline trailer; `outline` gains `--jira-project` → D1, D2, E1, E2
-- EDIT `.agents/scripts/tests/test_jira_feed.py` — the `### Theme` AC shape, the flat-AC regression, the `story_statement` non-regression, the stale-description reuse, the flag parity, the armed hook's exact line → D1, D2, E1, E2
+- EDIT `.agents/scripts/link-worktree-assets.py` — `repo_root()` resolves the main WORKING TREE; refuse an UNVERIFIED resolution, and say which of the three kinds of zero this is → B1, B2
+- NEW `.agents/scripts/tests/test_link_worktree_assets.py` — submodule (gitdir-file) fixture + the unverified-resolution refusal + the different-repo refusal + a plain-repo characterization block → B1, B2, B3
+- EDIT `.agents/scripts/jira_feed.py` — `section_body` depth-aware and the sub-heading kept as a label; `mint` reuse tests for the outline trailer and preserves the hand note idempotently; `check` reads the trailer; `outline` gains `--jira-project` → D1, D2, E1, E2
+- EDIT `.agents/scripts/tests/test_jira_feed.py` — the `### Theme` AC shape, the `### Out of scope` child, the flat-AC regression, the `story_statement` non-regression, the stale-description reuse, the four-retry nesting, the flag parity, the armed hook's exact line → D1, D2, E1, E2
 - EDIT `.agents/scripts/label_tasks.py` — story read via `ls-tree` on the lane branch; `tests_only` demotion; all blockers in `detail` → F1, F2
-- EDIT `.agents/scripts/tests/test_label_tasks.py` — branch-only story source, tests-only ranking, multi-blocker detail → F1, F2
-- **+** EDIT `.agents/scripts/tests/test_twin_parity.py` — `FENCED_TODAY` gains the label-tasks pair, so the shared rule is held by a FENCE rather than by matching text today → F1
-- NEW `.agents/scripts/tests/test_boot_epic_branch_read.py` — the anchored Step 2b scan, one mutant per requirement → A1
-- NEW `.agents/scripts/tests/test_shared_checkout_stays_on_main.py` — paragraph scan across all `.agents/commands/*.md` **and** `.agents/rules/*.md` → C1
+- EDIT `.agents/scripts/tests/test_label_tasks.py` — branch-only story source, tests-only ranking, multi-blocker detail, and the engine/door `ref` contract → F1, F2
+- EDIT `.agents/scripts/tests/test_twin_parity.py` — **unforeseen at plan time.** `FENCED_TODAY` gains the label-tasks pair, so the shared rule is held by a FENCE rather than by matching text today → F1
+- NEW `.agents/scripts/tests/test_boot_epic_branch_read.py` — the anchored Step 2b scan, one mutant per requirement, the quoted refspec and the claim measured as a sentence → A1
+- NEW `.agents/scripts/tests/test_shared_checkout_stays_on_main.py` — paragraph scan across all `.agents/commands/*.md` **and** `.agents/rules/*.md`, plus a logical-line scan for an epic base left tracking the epic → C1
 - NEW `.agents/scripts/tests/test_story_path_is_pinned.py` — the story-dir pin in the same section as the skill invocation → G1
+- EDIT `.agents/scripts/mutation_sweep.py` — **unforeseen at plan time, and the plan never named it at all.** A `"unfiltered": true` mutant runs its test file whole; it exists because `test_label_tasks.py` declares no blocks, and wrapping only Part F's cases in one broke the ORPHAN law for the other 110 → F1
+- EDIT `.agents/scripts/tests/test_mutation_sweep.py` — **unforeseen, same reason.** Block `U` pins all four halves of that mode: filtered → exit 3, unfiltered → killed, both keys → refused at load, tree restored → F1
+
+⛔ **Dropped, not deferred — `.agents/commands/cicd-write-story-tests.md` Step 1 naming the story
+dir.** The rider text asked for it; the surface **already said it at `:45`** before this lane opened.
+G1's live defect was `/sm`, and re-reading the surface is what found that. No bullet, because nothing
+moved.
 
 ### Command and rule bodies
 
-- EDIT `.agents/commands/cicd-label-tasks.md` — the tests-only rule, FENCED as `twin-law`, plus an unfenced cicd-only note on reading rung 3 from the lane branch → F1
-- EDIT `.agents/commands/smh-label-tasks.md` — the same fenced rule; ⛔ the story-branch note is **deliberately not mirrored** (operator ruling: stories are app work, the command centre has none) → F1
-- EDIT `.agents/commands/cicd-boot-sprint-memory.md` — Step 2b reads the epic branch's YAML, reports the disagreement, falls back when the project is between epics → A1
-- EDIT `.agents/commands/cicd-write-story-tests.md` — Step 0.5 item 2 cuts the tree with the epic ref as an OPERAND; the HEAD precondition is scoped to `EnterWorktree` and names the trip back to `main` → C1
-- **+** EDIT `.agents/rules/worktree-per-story.md` — the authority the command was following says the same thing at `:70`; scoping only the command would leave it disagreeing with its own rule → C1
-- **+** EDIT `.agents/commands/sm.md` — the create-story route names `_bmad/bmm/stories/` → G1
-- ~~EDIT `.agents/commands/cicd-write-story-tests.md` Step 1 names the story dir~~ — **already true at `:45`** before this lane; G1's live defect was `/sm`, found by re-reading the surface rather than trusting the rider text
+- EDIT `.agents/commands/cicd-label-tasks.md` — the tests-only rule, FENCED as `twin-law`; an unfenced cicd-only note on reading rung 3 from the lane branch; `git show "<ref>:<path>"`; the multi-blocker legend and report rows → F1, F2
+- EDIT `.agents/commands/smh-label-tasks.md` — the same fenced rule and the same three review fixes; ⛔ the story-branch note is **deliberately not mirrored** (operator ruling: stories are app work, the command centre has none) → F1, F2
+- EDIT `.agents/commands/cicd-boot-sprint-memory.md` — Step 2b reads the epic branch's YAML, reports the disagreement naming both copies, falls back when the project is between epics, and quotes its refspec → A1
+- EDIT `.agents/commands/cicd-write-story-tests.md` — Step 0.5 item 2 cuts the tree with the epic ref as an OPERAND and `--no-track`; the HEAD precondition is scoped to `EnterWorktree` and names the trip back to `main` → C1
+- EDIT `.agents/rules/worktree-per-story.md` — **unforeseen at plan time.** The authority the command was following says the same thing at `:70`; scoping only the command would leave it disagreeing with its own rule, and the `--no-track` half belongs here for the same reason → C1
+- EDIT `.agents/commands/sm.md` — **unforeseen at plan time.** The create-story route names `_bmad/bmm/stories/` → G1
+- EDIT `.agents/commands/cicd-prune-worktree.md` — **unforeseen, and found by this lane's own new scan.** The same unquoted `for-each-ref` refspec, pre-existing and dying in zsh identically → A1
+- EDIT `.agents/commands/cicd-clean-code-audit.md` — **unforeseen, same scan, same two quote characters** → A1
 
 ### Regenerated mirrors — reconciled after `/smh-sync-agents -NoGlobals`
 
-- EDIT `.agents/workflows/smh-label-tasks.md` · `cicd-boot-sprint-memory.md` · `cicd-write-story-tests.md` — all three **flipped from verbatim copy to generated thin launcher**: the edits pushed each body past `sync-agents.ps1`'s 11,500-byte ceiling
-- EDIT `.opencode/commands/cicd-label-tasks.md` · `smh-label-tasks.md` · `cicd-boot-sprint-memory.md` · `cicd-write-story-tests.md` · **+** `sm.md`
-- **+** EDIT `.agents/.sync-manifest.json` — the sync's own record; changes on every run and was not foreseen
-- ~~EDIT `.claude/skills/{cicd-label-tasks,smh-label-tasks,cicd-boot-sprint-memory,cicd-write-story-tests}/SKILL.md`~~ — **unchanged, all four.** A skill is a thin launcher naming the command; a command *body* edit never reaches it
+- EDIT `.agents/workflows/smh-label-tasks.md` — **flipped from verbatim copy to generated thin launcher**: the edit pushed the body past `sync-agents.ps1`'s 11,500-byte ceiling → F1
+- EDIT `.agents/workflows/cicd-boot-sprint-memory.md` — same flip, same ceiling → A1
+- EDIT `.agents/workflows/cicd-write-story-tests.md` — same flip, same ceiling → C1
+- EDIT `.opencode/commands/cicd-label-tasks.md` — verbatim mirror of its command body → F1
+- EDIT `.opencode/commands/smh-label-tasks.md` — verbatim mirror of its command body → F1
+- EDIT `.opencode/commands/cicd-boot-sprint-memory.md` — verbatim mirror of its command body → A1
+- EDIT `.opencode/commands/cicd-write-story-tests.md` — verbatim mirror of its command body → C1
+- EDIT `.opencode/commands/cicd-prune-worktree.md` — verbatim mirror of its command body → A1
+- EDIT `.opencode/commands/cicd-clean-code-audit.md` — verbatim mirror of its command body → A1
+- EDIT `.opencode/commands/sm.md` — **unforeseen at plan time**, and the mirror of an unforeseen edit → G1
+- EDIT `.agents/.sync-manifest.json` — **unforeseen at plan time.** The sync's own record; it changes on every run → A1, C1, F1, G1
+
+⛔ **Dropped, not deferred — the four `.claude/skills/…/SKILL.md` doors.** The plan declared them and
+**all four are unchanged.** A skill is a thin launcher that names its command; a command *body* edit
+never reaches it. Verified: `git diff --name-only origin/main...HEAD -- .claude/skills/` is empty.
 
 ### Docs, board and artifacts
 
-- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — the usage changes in A, B, C, D, E, F and G1 → A2, C2
-- **+** EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — one row per rider. ⛔ Owed, not optional: `sop-currency.md` habit 4 puts the change story here and keeps the page in timeless present tense, and B/D/E/F had put ticket refs and dates in the spine instead. Those three passages are rewritten and one unresolvable prose path (`.git/modules/`) that had been failing `test_sops_prds_folder` T9 since `7b2ac12` is now written as the placeholder it always was
-- **+** EDIT `_artifacts/_main/INDEX.md` — the session row; `check_maps.py` F2 fails without it
-- EDIT `_artifacts/_memory/MEMORY.md` + NEW `_artifacts/_memory/exercise-the-real-cicd-doors.md` — the two riders that were sitting uncommitted on `main` → Z2
-- NEW `…/implementation_plan.md` (this file) · `…/task.yaml` → Z1
-- **owed** `…/walkthrough.md` · `…/sweep.json` · `…/gates/suite.json` → Z1
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — the usage changes in A, B, C, D, E, F and G1, plus the review's own → A2, C2
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — **unforeseen at plan time, and owed rather than optional.** `sop-currency.md` habit 4 puts the change story here and keeps the page in timeless present tense; B/D/E/F had put ticket refs and dates in the spine instead. Those three passages are rewritten, the one unresolvable prose path that had been failing `test_sops_prds_folder` T9 since `7b2ac12` is now written as the placeholder it always was, and the five rows the review changed are corrected in place rather than duplicated → A2, C2
+- EDIT `_artifacts/_main/INDEX.md` — **unforeseen at plan time.** The session row; `check_maps.py` F2 fails without it → Z1
+- EDIT `_artifacts/_memory/MEMORY.md` — the index pointer for the rider below → Z2
+- NEW `_artifacts/_memory/exercise-the-real-cicd-doors.md` — the second of the two riders that were sitting uncommitted on `main` → Z2
+- NEW `_artifacts/_main/2026-08-21_scc-244-bugs-updates-cycle-4/implementation_plan.md` — this file → Z1
+- NEW `_artifacts/_main/2026-08-21_scc-244-bugs-updates-cycle-4/task.yaml` — the close-out machine contract → Z1
+- NEW `_artifacts/_main/2026-08-21_scc-244-bugs-updates-cycle-4/sweep.json` — the mutant table → Z1
+- NEW `_artifacts/_main/2026-08-21_scc-244-bugs-updates-cycle-4/gates/suite.json` — the STAMP-FIRST suite receipt → Z1
+- NEW `_artifacts/_main/2026-08-21_scc-244-bugs-updates-cycle-4/walkthrough.md` — the evidence, the review verdict and `## Your Actions` → Z1
 
 ## Out of scope, and named
 
@@ -239,7 +266,14 @@ gate's input (`sop_currency.py`), four platform caches, and a `cicd`/`smh` twin 
 ```
 lens:        1 Repo Reality + Scope Ledger
 checks_run:  every path/script/command/door the plan names exists (12/12 OK, listed)
-             `declared_change_set.py parse <plan>` — after one repair, 32 entries / 0 incomplete
+             `declared_change_set.py parse <plan>` — 41 entries / 0 incomplete at the shipping
+             sha. ⛔ The PRE-WORK run recorded "32 entries / 0 incomplete" and that reading
+             did not survive the lane: by review time the block had grown `**+**` markers,
+             multi-path bullets and struck rows, and `diff` rejected 13 bullets while reading
+             15 declared files as undeclared drift. The block was rewritten to the grammar and
+             re-reconciled after the review's own fixes landed; `diff` now returns empty
+             incomplete / undeclared / unimplemented. A parse result is only true of the sha
+             it was taken at.
              lane fit: zero deployable paths (backend|frontend|firebase|functions|mobile|.github) in the block
              both-machines: every command is stdlib python3 + git + acli; no venv, no bare `python`
              Scope Ledger: 11 NEW artefacts x acceptance row — every one mapped (B1-B3, A1, C1, G1, Z1, Z2)
