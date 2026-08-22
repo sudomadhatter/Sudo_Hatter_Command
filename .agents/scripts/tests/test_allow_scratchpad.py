@@ -74,6 +74,36 @@ def call(command: str, tool: str = "Bash", raw: str | None = None,
     return p.returncode, (p.stdout or "") + (p.stderr or "")
 
 
+def call_in(command: str, root_file: str | None = None, *, no_getuid: bool = False,
+            session: str | None = SID) -> tuple[int, str]:
+    """Run the hook against a synthetic repo root, optionally on a platform with no `os.getuid`.
+
+    ⭐ THE SUBPROCESS IS THE POINT (SCC-267). `os.getuid` is read by the hook's OWN process, and
+    the machine-local root is read off `CLAUDE_PROJECT_DIR`, so neither can be exercised by
+    importing the module here — an in-process monkeypatch would test a different code path than
+    the one Claude Code actually runs. `sitecustomize` on `PYTHONPATH` is inherited by children,
+    which is what makes "this platform has no uid" reproducible from a Mac at all.
+    """
+    with tempfile.TemporaryDirectory() as repo:
+        if root_file is not None:
+            cfg = pathlib.Path(repo, ".claude")
+            cfg.mkdir(parents=True, exist_ok=True)
+            (cfg / "scratchpad-root").write_text(root_file, encoding="utf-8")
+        env = {**os.environ, "CLAUDE_PROJECT_DIR": repo}
+        if no_getuid:
+            shim = pathlib.Path(repo, "_shim")
+            shim.mkdir(parents=True, exist_ok=True)
+            (shim / "sitecustomize.py").write_text(
+                "import os\ntry:\n    del os.getuid\nexcept AttributeError:\n    pass\n")
+            env["PYTHONPATH"] = str(shim)
+        payload: dict = {"tool_name": "Bash", "tool_input": {"command": command}}
+        if session is not None:
+            payload["session_id"] = session
+        pr = subprocess.run([sys.executable, str(HOOK)], input=json.dumps(payload),
+                            capture_output=True, text=True, errors="replace", env=env)
+        return pr.returncode, (pr.stdout or "") + (pr.stderr or "")
+
+
 def decision(out: str) -> str | None:
     """The decision, or None for silence. A traceback is silence, not a decision."""
     try:
@@ -375,6 +405,82 @@ def main() -> int:
                     out.strip()[:120])
 
     # ── WIRING · reads the REAL repo files, not a fixture ──────────────────────────────
+    # ── PLATFORM · the crash that made the fail-safe promise untrue (SCC-267) ──────────
+    # ⛔ THIS IS THE ONE THE DOCSTRING'S PROMISE DEPENDS ON. `_UID = re.escape(f"claude-
+    # {os.getuid()}")` used to run at MODULE level, outside the `try/except` at the bottom of the
+    # file. `os.getuid` does not exist on Windows, so on the operator's second machine this hook
+    # raised AttributeError before `main()` existed and exited 1 with a traceback on EVERY Bash
+    # call — a convenience hook that had become a noisy blocker, which is precisely what the
+    # wrapper was written to make impossible. A crash before the wrapper is installed is not
+    # covered by the wrapper.
+    if c.block("PLATFORM · a machine with no `os.getuid` gets SILENCE, never a traceback"):
+        code, out = call_in(f"cat {SB}/f", no_getuid=True)
+        c.check("PLATFORM · exit 0 where there is no uid", code == 0, f"exit={code}")
+        c.check("PLATFORM · and nothing at all on stdout or stderr", silent(out), out.strip()[:200])
+        # ⛔ Non-vacuous in the other direction: silence must come from a RESOLVED refusal, not
+        # from the module failing to load. If it never imported, the WIRING tier would be the only
+        # thing that noticed, and only on the day someone read it.
+        c.check("PLATFORM · the silence is a refusal, not an import failure",
+                "Traceback" not in out and "AttributeError" not in out, out.strip()[:200])
+        # ...and with a machine-local root, that same uid-less platform GRANTS. This is the whole
+        # point of the file: it is what makes the hook work on the PC at all.
+        other = "/c/Users/op/AppData/Local/Temp/claude-lobby"
+        code, out = call_in(f"cat {other}/-P/{SID}/scratchpad/f", root_file=other, no_getuid=True)
+        c.check("PLATFORM · a configured root makes a uid-less platform grant",
+                allowed(out), out.strip()[:200])
+        c.check("PLATFORM · and still exits 0", code == 0, f"exit={code}")
+
+    # ── CONFIG · the machine-local root widens the ROOT, never the SHAPE ────────────────
+    if c.block("CONFIG · the machine-local root file"):
+        good = "/c/Users/op/AppData/Local/Temp/claude-lobby"
+        _, out = call_in(f"cat {good}/-P/{SID}/scratchpad/f", root_file=good)
+        c.check("CONFIG · a valid root is honoured", allowed(out), out.strip()[:160])
+        # ⭐ The SHAPE is untouched: every rule that held for the built-in root holds for this one.
+        for label, cmd in [
+            ("a path directly under the root", f"rm -rf {good}/f"),
+            ("the project segment but no session", f"rm -rf {good}/-P/scratchpad/f"),
+            ("ANOTHER session under the same root",
+             f"rm -rf {good}/-P/ffffffff-0000-0000-0000-000000000000/scratchpad/f"),
+            ("a scratchpad sibling", f"rm -rf {good}/-P/{SID}/tasks/f"),
+            ("traversal out of the configured root",
+             f"rm -rf {good}/-P/{SID}/scratchpad/../../../../Users/op/x"),
+            ("the root itself", f"rm -rf {good}"),
+        ]:
+            _, out = call_in(cmd, root_file=good)
+            c.check(f"CONFIG · silent on {label}", silent(out), out.strip()[:160])
+        # ⛔ A root it cannot fully validate falls back rather than being half-honoured. On a
+        # machine with no uid that fallback IS a refusal, which is the safe direction.
+        # ⛔ EACH PROBE COMMAND IS BUILT UNDER THE ROOT IT TESTS. The first cut of this loop sent
+        # one command under `good` at every bad root, so every case passed because the command was
+        # not under that root AT ALL — a different rule refusing it, proving nothing about the
+        # guard it named. The sweep caught it (SCC-267 M5); it is the same mis-attribution
+        # SCC-263's sweep caught four times, and the reason a mutant table outranks a green suite.
+        for label, bad, probe in [
+            ("a relative root", "tmp/claude-lobby", f"cat tmp/claude-lobby/-P/{SID}/scratchpad/f"),
+            ("a NATIVE Windows root", "C:\\Users\\op\\Temp",
+             f"cat C:/Users/op/Temp/-P/{SID}/scratchpad/f"),
+            ("the filesystem root", "/", f"cat //x/{SID}/scratchpad/f"),
+            ("a doubled filesystem root", "//", f"cat //x/{SID}/scratchpad/f"),
+            ("a one-segment root", "/tmp", f"cat /tmp/-P/{SID}/scratchpad/f"),
+            ("a root carrying a metacharacter", "/tmp/claude-$USER",
+             f"cat /tmp/claude-$USER/-P/{SID}/scratchpad/f"),
+            ("an empty file", "", f"cat /tmp/-P/{SID}/scratchpad/f"),
+            ("a comments-only file", "# nothing here yet\n", f"cat /tmp/-P/{SID}/scratchpad/f"),
+        ]:
+            _, out = call_in(probe, root_file=bad, no_getuid=True)
+            c.check(f"CONFIG · {label} does NOT grant", silent(out), out.strip()[:160])
+        # A configured root is normalised like everything else, so a `..` inside it cannot smuggle
+        # the real root somewhere else.
+        _, out = call_in(f"cat /c/Users/op/AppData/Local/Temp/claude-lobby/-P/{SID}/scratchpad/f",
+                         root_file="/c/Users/op/AppData/Local/Temp/other/../claude-lobby")
+        c.check("CONFIG · a `..` inside the root normalises to the same place",
+                allowed(out), out.strip()[:160])
+        # ⭐ And the Mac default is untouched when no file exists — the regression that matters
+        # most, because every other case in this suite depends on it.
+        _, out = call_in(f"cat {SB}/f")
+        c.check("CONFIG · with NO file the built-in POSIX root still grants",
+                allowed(out), out.strip()[:160])
+
     if c.block("WIRING · the deployed copy and the settings entry agree with the master"):
         master = ROOT / ".agents/hooks/allow-scratchpad.py"
         deployed = ROOT / ".claude/hooks/allow-scratchpad.py"
