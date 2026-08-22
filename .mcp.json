@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "gitnexus": {
-      "command": "cmd",
-      "args": ["/c", "gitnexus", "mcp"]
+    "code-review-graph": {
+      "command": "code-review-graph",
+      "args": ["serve"]
     },
     "md-feedback": {
       "command": "npx",
