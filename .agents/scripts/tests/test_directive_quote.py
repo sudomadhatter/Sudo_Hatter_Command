@@ -254,7 +254,13 @@ def main() -> int:
                      f'*"{DIRECTIVE}"* is satisfied here.')
         chk("D7 REQUIRE passes when the rebuttal is present alongside a narration copy",
                 rebuts_verbatim(two_sites), "REQUIRE cannot see a genuine rebuttal")
-        narration_only = f'the narration says *"{DIRECTIVE}"* got read as inline. Nothing else.'
+        # ⛔ This body MUST still contain the word `satisfied`, far from the quote. Without it the
+        # case passes for the WRONG reason — the loop never runs — and the anchor is never
+        # exercised. Caught by mutant M7 surviving: `window = flat` (presence-anywhere restored)
+        # left this row green, which is the definition of a vacuous counter-example.
+        narration_only = (f'the narration says *"{DIRECTIVE}"* got read as inline.\n\n'
+                          + "filler prose that stands between the two. " * 20 +
+                          "\n\nThe test-adequacy requirement is satisfied by the probe.")
         chk("D8 REQUIRE FAILS when only the narration copy survives (H4)",
                 not rebuts_verbatim(narration_only),
                 "REQUIRE is occurrence-blind again - deleting the rebuttal ships green")
