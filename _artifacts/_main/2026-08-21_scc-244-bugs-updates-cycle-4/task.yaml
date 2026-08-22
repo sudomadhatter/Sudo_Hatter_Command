@@ -1,0 +1,5 @@
+task_key: SCC-244
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-244-bugs-updates-cycle-4
+close_command: smh-close-task-merge-tree
+secondary_repos: []
