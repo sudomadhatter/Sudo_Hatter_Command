@@ -2202,6 +2202,27 @@ prefixed branch ref — local **or** `origin/`, because a landed lane's local br
 day and its manifest is not. An id nothing claims is a **FORKED Dev Record**: exit 1, naming the
 orphan id and which record is newest. The remedy is to delete the record filed under the slug that is
 not a lane and re-run the block — never `--append-new` past it.
+
+**⭐ Since SCC-271 that ban is ENFORCED, not just instructed.** `devrecord --append-new` over a ticket
+that already carries a record for the same `--story` id now **exits 2 and writes nothing**, naming the
+remedy. So the sentence above is no longer something to remember — the script refuses. What you will
+see instead of a silently-forked ticket:
+
+```
+[ERR] SCC-269 already carries a Dev Record for `<slug>` and --append-new would post a SECOND one
+      under the SAME id - the two-records-one-id state `check` reports as a defect (SCC-113).
+      Drop the flag to UPDATE the existing record in place. …
+```
+
+Drop the flag and re-run to update in place. A **second lane** on the same ticket is unaffected: it
+files under a different id, so it was never the banned case and needs no flag at all.
+
+**The same ticket fixed a false alarm in the other direction.** `index-row` used to report the
+`(empty - …)` INDEX placeholder it deliberately replaces as **data loss** and exit 2 — on the first
+row of every fresh rolling ticket — telling you to restore a ticket that was fine. It now falsifies
+only against the lines it meant to keep, and says `· replaced the INDEX placeholder` when it swaps
+one out. A `MISSING … line(s)` refusal from `index-row` is therefore now always real: **stop and read
+the ticket.**
 ### Two shapes of work on one board — and why it decides the command
 
 Everything on the board is a **Story** or a **Task**, and that is not a label — **it decides which

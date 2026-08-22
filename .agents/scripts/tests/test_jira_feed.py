@@ -542,6 +542,103 @@ def main() -> int:
 
             set_state(state, description="", lossy_drop=None, comments=[])
 
+        # ── SCC-271 A · the placeholder index-row REPLACES is not "data loss" ──
+        if c.block("SCC-271 index-row: the placeholder it replaces is not data loss"):
+            # ⛔ THE DEFECT. `keep` snapshotted EVERY prior line, `index_append` then
+            # deliberately drops the `(empty ...)` placeholder - its documented job - and the
+            # read-back falsified `now` against the pre-drop snapshot. So the command reported
+            # its own correct write as data loss and exited 2, on the FIRST row of every fresh
+            # rolling ticket. Measured on SCC-262, 2026-08-22.
+            #
+            # Why this is worth a guard rather than a shrug: the message tells the reader to
+            # "restore the ticket before doing anything else" - i.e. to undo a good write - and
+            # a data-loss guard that cries wolf on first use is one that gets trained out of the
+            # system. The teeth are re-pinned by the control at the end of this block.
+            FRESH = ("THE ROLLING TICKET - the ONE open home for discovered work.\n"
+                     "\n"
+                     "PREDECESSOR\n"
+                     "  Cycle 4 was SCC-244, run as one consolidated lane.\n"
+                     "\n"
+                     "INDEX\n"
+                     "  (empty - this cycle has taken no work yet)\n")
+            ROW1 = "  Part A - SCC-269 - the first row this ticket ever took"
+
+            set_state(state, description=FRESH, lossy_drop=None)
+            code, out = jf("index-row", "--key", "TEST-1", "--line", ROW1, "--apply")
+            st = get_state(state)
+            c.check("index-row: the first row on a FRESH index exits 0",
+                    code == 0, f"exit {code}: " + out.strip()[:300])
+            c.check("index-row: ...and does NOT cry data loss over the placeholder",
+                    "MISSING" not in out and "data loss" not in out.lower(),
+                    out.strip()[:400])
+            c.check("index-row: ...the row landed", "SCC-269" in st["description"],
+                    st["description"][-200:])
+            c.check("index-row: ...the placeholder is gone (index_append's job)",
+                    "(empty" not in st["description"], st["description"][-200:])
+            c.check("index-row: ...and the deliberate replacement is REPORTED, not silent",
+                    "placeholder" in out.lower(), out.strip()[:400])
+
+            # ⭐ THE TEETH, re-pinned on the SAME shape. A line that index_append promised to
+            # KEEP and that came back missing is still data loss and still exits 2 - the fix
+            # narrows what counts as loss, it does not remove the check.
+            set_state(state, description=FRESH, lossy_drop="SCC-244")
+            code, out = jf("index-row", "--key", "TEST-1", "--line", ROW1, "--apply")
+            c.check("index-row: a REAL dropped line on a fresh index is still caught",
+                    code == 2 and "usage: jira_feed.py" not in out,
+                    f"exit {code}: " + out.strip()[:300])
+            c.check("index-row: ...and it still names the line that went missing",
+                    "SCC-244" in out, out.strip()[:400])
+
+            set_state(state, description="", lossy_drop=None, comments=[])
+
+        # ── SCC-271 B · --append-new cannot manufacture two records for one id ─
+        if c.block("SCC-271 devrecord: --append-new cannot forge two records for one id"):
+            # `find_devrecord` already filters by story id, so `prior` is non-None ONLY when
+            # the id MATCHES. That makes "one id, two records" the flag's only reachable
+            # effect - the exact state `record_story_id`'s own docstring calls "the failure
+            # SCC-49 wrote `check` for", and that `cmd_check` reports as a defect.
+            #
+            # SEVEN command bodies plus the SOP say "never --append-new" and nothing enforced
+            # it. This block is that enforcement. The legitimate two-records case (two LANES,
+            # two different ids) needs no flag: prior is None and it creates anyway - pinned
+            # by the second control below.
+            set_state(state, description="", comments=[])
+            code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
+                           "--stage", "quick-dev", "--followon", "none")
+            c.check("devrecord: the first record posts", code == 0
+                    and len(get_state(state)["comments"]) == 1, out.strip()[:200])
+
+            code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
+                           "--append-new", "--followon", "none")
+            c.check("--append-new over a MATCHING prior is refused (exit 2)",
+                    code == 2 and "usage: jira_feed.py" not in out,
+                    f"exit {code}: " + out.strip()[:300])
+            c.check("...and the ticket still carries exactly ONE record",
+                    len(get_state(state)["comments"]) == 1,
+                    f"{len(get_state(state)['comments'])} comments")
+            c.check("...and the refusal names the remedy (drop the flag / update in place)",
+                    "drop the flag" in out.lower(), out.strip()[:400])
+
+            # Control 1: no prior record -> --append-new is harmless, still creates.
+            set_state(state, description="", comments=[])
+            code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
+                           "--append-new", "--followon", "none")
+            c.check("control: --append-new with NO prior record still creates",
+                    code == 0 and len(get_state(state)["comments"]) == 1,
+                    f"exit {code}, {len(get_state(state)['comments'])} comments")
+
+            # Control 2: a DIFFERENT id is a second LANE, not a fork - it must still post,
+            # and it must not disturb the first lane's record.
+            code, out = jf("devrecord", "--story", "scc-271-other-lane", "--key", "TEST-7",
+                           "--apply", "--followon", "none")
+            bodies = "\n".join(x["body"] for x in get_state(state)["comments"])
+            c.check("control: a SECOND LANE (different id) still gets its own record",
+                    code == 0 and len(get_state(state)["comments"]) == 2
+                    and "9.1" in bodies and "scc-271-other-lane" in bodies,
+                    f"exit {code}, {len(get_state(state)['comments'])} comments")
+
+            set_state(state, description="", comments=[])
+
         # ── outline: rendered FROM the story file, never invented ──────────────
         if c.block("jira_feed · legacy A: outline, devrecord, mint, check, types, audit, trace, flag, start"):
             code, out = jf("outline", "--story", "9.1", "--epic-key", "TEST-1", "--lane", "full")
@@ -627,10 +724,18 @@ def main() -> int:
                     "Second pass ruling" in after[0]["body"] and "quick-dev" in after[0]["body"])
             c.check("devrecord: reports that it updated", "updated the existing" in out)
 
+            # ⚠ SCC-271 INVERTED this assertion, deliberately. It used to read "--append-new:
+            # opts out of the one-record rule" (exit 0, two comments) and it PINNED A FOOTGUN:
+            # the opt-out's only reachable effect is the two-records-one-id state `cmd_check`
+            # reports as a defect, and seven command bodies already banned it in prose. The
+            # flag is now refused over a matching prior. Full coverage lives in the
+            # `SCC-271 devrecord` block above; this line stays here so the legacy block cannot
+            # drift back to asserting the old behaviour.
             code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
                            "--append-new", "--followon", "none")
-            c.check("devrecord --append-new: opts out of the one-record rule",
-                    code == 0 and len(get_state(state)["comments"]) == 2)
+            c.check("devrecord --append-new: the one-record rule can NOT be opted out of",
+                    code == 2 and len(get_state(state)["comments"]) == 1,
+                    f"exit {code}, {len(get_state(state)['comments'])} comments")
 
             # The load-bearing negative: acli exits 0 and records NOTHING. Indistinguishable
             # from success unless the ticket is read back.

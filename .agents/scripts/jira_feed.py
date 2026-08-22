@@ -1040,6 +1040,25 @@ def cmd_devrecord(args) -> int:
 
     binary = acli_bin(args.acli)
     prior = find_devrecord(list_comments(binary, args.key), args.story)
+
+    # ⛔ SCC-271 · the flag can only ever produce the state `check` calls a defect, so refuse.
+    # `find_devrecord` filters by story id, so `prior` is non-None ONLY when the id MATCHES -
+    # which makes "one id, two records" this flag's single reachable effect. That is the exact
+    # failure `record_story_id`'s docstring names ("the failure SCC-49 wrote `check` for") and
+    # that `cmd_check` reports. The legitimate case - two LANES, two different ids - needs no
+    # flag at all: `prior` is None there and the create path runs anyway.
+    #
+    # SEVEN command bodies plus the SOP already say "never --append-new" (smh-close-task-merge-
+    # tree, smh-quick-dev, smh-merge-multiple-workingtrees, cicd-close-story-merge-tree,
+    # cicd-quick-dev, cicd-merge-epic-workingtrees, workflows_testing_SOP). A ban repeated by
+    # hand in seven places and enforced in none is a mechanism waiting to be written down once.
+    if prior and args.append_new:
+        wf.die(f"{args.key} already carries a Dev Record for `{args.story}` and --append-new "
+               f"would post a SECOND one under the SAME id - the two-records-one-id state "
+               f"`check` reports as a defect (SCC-113). Drop the flag to UPDATE the existing "
+               f"record in place. If the record on the ticket was filed under the WRONG slug, "
+               f"delete that comment and re-post under `{args.story}` - never append past it.")
+
     tmp = write_temp(body)
     try:
         if prior and not args.append_new:
@@ -2819,8 +2838,24 @@ def cmd_index_row(args) -> int:
             f"UNVERIFIED and check the ticket by hand before relying on the row.")
         return 2
     now = field_text(again.get("description"))
-    lost = [ln for ln in keep if ln.strip() and ln.strip() not in
-            {x.strip() for x in now.splitlines()}]
+    # ⭐ SCC-271 · falsify against what `index_append` COMPOSED, not against everything that
+    # was here. `keep` is the PRE-write snapshot, and `index_append` deliberately drops the
+    # `(empty ...)` placeholder - that is its documented job, three functions up. Comparing
+    # `now` against `keep` therefore reported this command's own correct write as DATA LOSS
+    # and exited 2, on the FIRST row of every fresh rolling ticket (measured on SCC-262,
+    # 2026-08-22), while instructing the reader to "restore the ticket" - i.e. to undo a good
+    # write. A data-loss guard that cries wolf on first use is one that gets trained out of
+    # the system, which is the real cost.
+    #
+    # Every tooth is kept: a line that WAS composed into `after` and did not come back is
+    # still loss, still exit 2, still named. Only the line this command itself replaced is
+    # exempt - and it is REPORTED below rather than swallowed, because a deletion the
+    # operator cannot see is the same class of problem this guard exists to catch.
+    seen_now = {x.strip() for x in now.splitlines()}
+    intended = {x.strip() for x in after.splitlines() if x.strip()}
+    lost = [ln for ln in keep if ln.strip() and ln.strip() in intended
+            and ln.strip() not in seen_now]
+    dropped = [ln for ln in keep if ln.strip() and ln.strip() not in intended]
     if lost:
         say(f"jira-feed: ⛔ {args.key}'s description was REPLACED and the read back is "
             f"MISSING {len(lost)} line(s) that were there before:\n"
@@ -2833,8 +2868,10 @@ def cmd_index_row(args) -> int:
         say(f"jira-feed: {args.key} accepted the edit but the new row is not in the read "
             f"back - nothing landed. Do not re-run blindly; read the ticket.")
         return 2
+    note = (f" · replaced the INDEX placeholder `{dropped[0].strip()[:60]}`"
+            if dropped else "")
     say(f"jira-feed: {args.key} index row added and read back "
-        f"({len(keep)} prior line(s) intact):\n  {row.strip()[:160]}")
+        f"({len(keep) - len(dropped)} prior line(s) intact){note}:\n  {row.strip()[:160]}")
     return 0
 
 
@@ -3013,7 +3050,11 @@ def main() -> int:
     p_dev.add_argument("--closing", action="store_true",
                        help="this is the close-out: clear a `Bug` flag back to Story or Task")
     p_dev.add_argument("--append-new", action="store_true",
-                       help="post a SECOND record instead of updating (rare)")
+                       help="post a SECOND record instead of updating. REFUSED when the "
+                            "ticket already carries a record for this --story id: that is "
+                            "the two-records-one-id defect `check` reports (SCC-271). Every "
+                            "command body in this system says never to pass it; a second "
+                            "LANE needs no flag, because a different id creates anyway")
     p_dev.add_argument("--apply", action="store_true", help="without this, renders only")
 
     p_aud = sub.add_parser("audit", help="do all the ticket TYPES agree with the rule?")
