@@ -249,7 +249,9 @@ files, per §3); full model →
 
 ## 8. PORTABILITY
 `AGENTS.md` is the universal contract; `CLAUDE.md` / `GEMINI.md` are one-line adapters pointing here (nothing
-model-specific in shared files). **Codex** reads `AGENTS.md` **and** the Agent Skills in `.agents/skills/`
+model-specific in shared files) — **asserted, not assumed**: `tests/test_entry_adapters.py` fails the suite on
+any adapter line beyond the redirect (SCC-279, after root `GEMINI.md` grew three Gemini-only hard rules that
+no other platform could see). **Codex** reads `AGENTS.md` **and** the Agent Skills in `.agents/skills/`
 natively — it needs no adapter file. One command set (`.agents/commands/`) reaches **all four** LLM surfaces
 via `/smh-sync-agents`, with **one door per platform per command (SCC-66)**: Claude and Codex invoke the
 **launcher skill** (generated per claude/codex-eligible command; the skill's whole body is "read the command

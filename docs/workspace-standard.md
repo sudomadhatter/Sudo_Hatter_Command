@@ -6,16 +6,17 @@ owner: Daniel
 status: canonical
 canonical_location: docs/workspace-standard.md (home base; thin projects carry no copy — legacy vendored copies retire at conversion)
 sources:
-  - _my_resources/youtube_transcripts/implementation-plan_folder-as-workspace-routing-system.md  # theory
-  - _my_resources/docs/master-implementation-plan.md                                             # the rollout
+  - _my_resources/research_docs/implementation-plan_folder-as-workspace-routing-system.md  # the theory (design-time input; lives in the thinking space, read only when linked)
+  # the one-time rollout doc (_my_resources/docs/master-implementation-plan.md) was RETIRED — deleted in f43c7bf; the rollout is done and this standard is what remains of it
 ---
 
 # Workspace Standard
 
 > **What this is.** The single, evergreen standard for how every workspace in `Sudo_Hatter_Command` is
-> *shaped* and *kept healthy*. The transcript is the theory; the master-implementation-plan is the one-time
-> rollout; **this** is the standing spec an agent consults whenever it creates, converts, or maintains a
-> workspace. It is model-agnostic — it serves Claude, opencode, Antigravity/Gemini, and Codex equally.
+> *shaped* and *kept healthy*. The folder-as-workspace routing plan is the theory (§0.5 maps its
+> requirements to what is live); the one-time rollout is finished and its plan retired; **this** is the
+> standing spec an agent consults whenever it creates, converts, or maintains a workspace. It is
+> model-agnostic — it serves Claude, opencode, Antigravity/Gemini, and Codex equally.
 >
 > **Where it lives.** Canonically at `docs/workspace-standard.md` — the ONE live copy (thin model,
 > 2026-08-07: sessions run from the center, so projects no longer carry one). Legacy vendored copies still
@@ -34,6 +35,36 @@ sources:
 7. **The folder is the app; the model becomes the agent** — describe the workspace, don't hard-code N agents.
 8. **Start small** — prove routing on a little before scaling to a lot (that's what `_routing-canary/` is for).
 
+### 0.5 Lineage — the plan this implements, and where each piece lives now
+
+The design input was the **folder-as-workspace routing plan**
+(`_my_resources/research_docs/implementation-plan_folder-as-workspace-routing-system.md`: three layers —
+map → workspace context → skills — plus routing up and down, naming-as-database, pickup/handoff, and
+`AGENTS.md` as the universal contract). Its requirements are **all live**; the plan's names changed
+where the system grew past them. Audited 2026-08-22 (SCC-269). Use this table to answer "is the idea
+actually implemented?" without re-deriving it.
+
+| Plan requirement | Live in this repo | Stated in |
+|---|---|---|
+| **R1** auto-loaded entry map: `CLAUDE.md` → `AGENTS.md` (root law · start-here · naming · gates) | root `CLAUDE.md` + `GEMINI.md` (adapters) → `AGENTS.md` §1 START HERE … §8 PORTABILITY | Part 1 Layer 1 |
+| **R2** master router: categories only, routes **up** as well as down, ask-don't-guess | `router.md` — "Lobby = categories only … ASK — don't guess … Any workspace may send you BACK here" | Part 1 Layer 2 (up-route) · Part 2 Router drift |
+| **R3** workspace context: Map / Mission / Support + a **routing table** | root `AGENTS.md` §2 (lobby; `router.md` is its table) · each floor's `AGENTS.md` §3 + §6 (e.g. `Projects/AGY_AVIATIONCHAT/`, `Projects/RAG_Pipeline_AC/`) | Part 1 Layer 1 + Layer 2 |
+| **R4** skills referenced only where needed, never preloaded | `.agents/skills/<name>/SKILL.md`, pulled by routing-table rows; `opencode.json` `skills.paths` | Part 1 Layer 3 |
+| **R5** naming conventions replace a database | root `AGENTS.md` §5 NAMING & ARTIFACT PLACEMENT; floors §7 | Part 1 Layer 1 item 7 |
+| **R6** persistence: "pick up" (read-only brief) / "hand off" (write, read back, verify), numbered `_memory/` | root `AGENTS.md` §7; `_artifacts/_main/active-context.md` (`1 PRIME` · `5 PICK UP` · `6 HAND OFF`); project briefs per the PATH CONTRACT. The plan's `_memory/` became **two stores**: the continuity brief (`active-context.md`) and the portable auto-memory (`_artifacts/_memory/`) | Part 1 item 9 · PATH CONTRACT · Part 2 Auto-memory |
+| **R7** gates before routing and before risky action | root `AGENTS.md` §6 GATES (routing · project-law · search · risk · worktree · git-write) → `.agents/rules/constitution.md` | Part 1 item 8 |
+| **R8** portability: `CLAUDE.md` a pure redirect, nothing model-specific in shared files, ≥2 agents verified | root `AGENTS.md` §8; one command set reaches four platforms via `/smh-sync-agents`; canary runs per tool. ✅ **Exception CLOSED 2026-08-22 (SCC-279)** — root `GEMINI.md` had grown three "GEMINI SPECIFIC HARD RULES"; operator ruling was **FOLD**, and the file is now the house adapter. Nothing was lost: all three were already law every platform loads — explicit staging is `git-policy.md`, worktree-before-edit is `worktree-per-story.md`, and sync scope is `project-law.md` (“`/smh-sync-agents` targets the command center and the machine-global caches only”), which `sync-agents.ps1` enforces by exiting 1 on the retired `-Maintained` flag that rule actually told Gemini to run. Now **checked, not asserted**: `.agents/scripts/tests/test_entry_adapters.py` | Part 1 Layer 1 · Part 2 Command sync |
+| `_experiment/` — the routing smoke test | `_routing-canary/` (renamed: permanent regression check, not a demo) | Part 2 Routing canary |
+| `_system/AGENTS.md` — the system-builder agent | `docs/system-builder.md` (`_system/` dissolved 2026-07-25; `router.md` row "Maintaining THIS home-base system") · `/smh-new-project` adds a workspace by cloning the skeleton | Part 2 Router drift |
+| Validation loop (canary · cold-route · persistence · token-frugality · negative/route-up) | all five named in Part 2 "Routing canary — the regression cadence" | Part 2 |
+| Anti-patterns (mega `AGENTS.md`; framework/DB; agent-per-task; detail in the lobby; model-specific shared files; skipping pickup/handoff; scaling before routing works) | guarded by: ALWAYS-LOAD tiers (§Layer 1 item 4) · the folder-file tier model · "lobby = categories only" in `router.md` · the canary triggers · the anti-fork rule (Part 2 Rules) | throughout |
+
+**Lobby vs floor numbering.** The §1–§9 shape in Layer 1 below is the **floor** (project) brain. The
+**lobby** brain (`AGENTS.md` at the root) runs §1–§8 with a different middle: it carries no routing
+table (`router.md` *is* the lobby's table), §4 is WHAT LIVES WHERE (home-base infrastructure), and §8
+is PORTABILITY. Both shapes satisfy the same plan requirements; the difference is that the lobby
+routes *to* floors and a floor routes *within* itself.
+
 ---
 
 ## Part 1 — How to FORMAT a workspace
@@ -43,6 +74,12 @@ A compliant workspace has these, and nothing it doesn't need.
 ### Layer 1 — entry + map
 - **`CLAUDE.md`** and **`GEMINI.md`** — one-line adapters, identical everywhere: *"Read `AGENTS.md` in this
   same folder and follow it. That is the single source of truth."* Nothing model-specific beyond the name.
+  ⛔ **This is a gate, not a convention (SCC-279).** `.agents/scripts/tests/test_entry_adapters.py`
+  reads every TRACKED adapter and fails `run_all` on any line that is not the title, the redirect, or
+  the house footnote. It exists because root `GEMINI.md` carried three model-specific hard rules and
+  `check_maps`' check 8 passed it — that check asks whether the redirect is PRESENT, and it was.
+  *Contains the redirect* and *is the redirect* are different claims; only the second is the promise
+  above. `_routing-canary/`'s adapters are exempt BY NAME (they point at `agent.md` by design).
 - **`AGENTS.md`** — the brain. Numbered sections so agents skip-to-N:
   1. **ROOT LAW / prime mission** — one line: what this workspace exists to do.
   2. **START HERE** — you're in this workspace; don't read the tree; routing question → the routing table /
@@ -60,8 +97,10 @@ A compliant workspace has these, and nothing it doesn't need.
   7. **NAMING CONVENTIONS** — dates/versions/slugs; replaces a database.
   8. **GATES** — routing gate + risk gate → `.agents/rules/constitution.md`.
   9. **PERSISTENCE** — pickup/handoff → the `_artifacts/` owned by the target workspace (Part 2). **"pick up"
-     also surfaces `_my_resources/open_tasks/todo_list.md`** (READ-ONLY) — the same notes the routing-table
-     "what's next / open tasks" row serves, so both triggers land on one source.
+     also surfaces open work from the live Jira board** — `In Progress` → `To Do Next` → `To Do`, first
+     non-empty rank wins (root `AGENTS.md` §7 · `.agents/rules/jira.md` §The queue). ⛔ **Never from
+     `_my_resources/open_tasks/todo_list.md`** — retired as an agent source (ruling 2026-08-09): it is the
+     operator's personal notes, stale by design, and duplicates tickets that already exist.
 
 ### Layer 2 — the routing table (the single most important thing)
 A plain-English table in `AGENTS.md`: **task → read these / skip these / skills**. It is what makes
@@ -90,8 +129,8 @@ an `AGENTS.md`, read that FIRST (how to *act* here); read `INDEX.md`/`README.md`
 adapters any workspace root does, and each of its subfolders carries an `INDEX.md`. Dot-dirs are
 otherwise treated as tool cache and skipped wholesale, so `.agents/` is named in `DOT_CONTENT_DIRS`
 (PATH CONTRACT below) to opt it back into the scan. It does **not** index deeper than level 2 — six of
-its ten subfolders are flat, `skills/` is self-describing via `SKILL.md` frontmatter, `bmad/` is
-and `bmad/` is BMAD-owned and regenerated. (`templates/project-template/` was retired 2026-08-07,
+its ten subfolders are flat, `skills/` is self-describing via `SKILL.md` frontmatter, and `bmad/` is
+BMAD-owned and regenerated. (`templates/project-template/` was retired 2026-08-07,
 SCC-31 — `/smh-new-project` clones the skeleton repo instead.) Depth is not the need there; enforcement is.
 
 **Why the adapters matter at Tier 2:** harnesses auto-attach their nested memory file at the point of
@@ -104,7 +143,7 @@ Coverage is linted by `check_maps.py` check 8 (non-fatal hint until every worksp
 ### Supporting files every workspace carries
 - **`docs/repo-map.md`** — the navigation index (Part 3).
 - **`active-context.md`** (home-base/exception bucket or project-local, per Part 2) — continuity (numbered: `1 PRIME`, `5 PICK UP`, `6 HAND OFF`).
-- **`_my_resources/open_tasks/todo_list.md`** — Daniel's "what's next" queue (+ any plan/PRP `.md` notes alongside). Surfaced by BOTH the routing-table "what's next" row AND on "pick up." **READ-ONLY for agents — with one exception:** `/smh-update-maps-indexes` refreshes the **`## Open Work` file-list** to mirror the task files beside it (Daniel's `## Todo list` prose and the task files stay his). Cross-check vs live files.
+- **`_my_resources/open_tasks/todo_list.md`** — Daniel's personal notes (+ any plan/PRP `.md` notes alongside). ⛔ **Not an agent source for "what's next" or "pick up"** (retired 2026-08-09 — the queue is the live Jira board, root `AGENTS.md` §7). Agents never edit it, **with one mechanical exception:** `/smh-update-maps-indexes` refreshes the **`## Open Work` file-list** to mirror the task files beside it (Daniel's `## Todo list` prose and the task files stay his).
 - **`.agents/`** — at the home base: the MASTER toolkit (rules, commands, skills, workflows, scripts,
   templates). In a project (thin model, 2026-08-07): **tier-2 law only** — the project's own `rules/` +
   `skills/` + `INDEX.md`; the center carries all workflow law → `.agents/rules/project-law.md`.
@@ -138,14 +177,14 @@ the toolkit:
 ### Format checklist (stamp a workspace)
 | ✓ | Item |
 |---|---|
-| ☐ | `CLAUDE.md` + `GEMINI.md` are one-line adapters (no `{{PLACEHOLDER}}`, no dead commands) |
+| ☐ | `CLAUDE.md` + `GEMINI.md` are one-line adapters (no `{{PLACEHOLDER}}`, no dead commands) — asserted by `tests/test_entry_adapters.py`, which is where a “just this one extra rule” gets caught |
 | ☐ | `AGENTS.md` numbered, with Map/Mission/Support + a real routing table + up-route |
 | ☐ | `.agents/`: master at the lobby · **tier-2 law only** in a thin project (`rules/` + `skills/` + `INDEX.md`; no vendor, no `opencode.json`) — `project-law.md` |
 | ☐ | `docs/repo-map.md` present and current (Part 3) |
 | ☐ | the workspace's `active-context.md` exists in its owning home-base, exception, or project-local store |
-| ☐ | `_my_resources/open_tasks/todo_list.md` present (READ-ONLY); wired into BOTH the "what's next" routing row AND "pick up" |
+| ☐ | "what's next" and "pick up" both read the **live Jira board** (`In Progress` → `To Do Next` → `To Do`); nothing routes to `todo_list.md` |
 | ☐ | registered as a row in the root `router.md` |
-| ☐ | vendored `docs/workspace-standard.md` present |
+| ☐ | **no** vendored `docs/workspace-standard.md` in a thin project (the one live copy is the center's; a leftover copy is a conversion defect) |
 | ☐ | Tier-2 local law: `_artifacts/`, `_my_resources/`, `docs/` each carry `AGENTS.md` + 1-line adapters |
 | ☐ | dev workspace: `_bmad/custom/` guard layer present (4 tomls + resolver scripts — hand-copy parity, never synced) |
 | ☐ | dev workspace: `_bmad-output/sudo-tests.yaml` ARMED · `pr-check.yml` gates `main` + `epic/**` |
@@ -177,8 +216,8 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 | ↳ per-project memory | *(home base only)* | `Projects/<name>/_artifacts/_memory/` | the same store shape, **inside the project's own repo** — so a project's memories version with the code they describe and arrive with a clone. Read by any lane launched inside that project (which never loads the lobby index), and by `/cicd-boot-sprint-memory` Step 1.5 after it binds a target. ⛔ **A separate repo, therefore a separate ticket key** — AGY answers to `AVCH` only, and an `SCC`-keyed commit there is rejected by its armed hook. The lobby gate reports project-store defects as `[SIGNAL]`, never as a blocking failure, because the lobby is not allowed to fix them. |
 | Retired artifacts | `_artifacts/_archived/` | `_artifacts/_archived/` | — |
 | Testing & Debugging | `_artifacts/debugging/` | `_artifacts/debugging/` | standardized folder for isolated testing, bug repros, and debug scripts |
-| Tier-2 local law | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` (+ 1-line `CLAUDE.md`/`GEMINI.md` adapters beside each) | same | tier model above; linted as a **non-fatal hint** (check 8) |
-| Open tasks ("what's next") | `_my_resources/open_tasks/todo_list.md` (+ plan/PRP notes) | same | **READ-ONLY for context**, but `/smh-update-maps-indexes` refreshes its `## Open Work` file-list; surfaced on pickup + "what's next" |
+| Tier-2 local law | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` (+ 1-line `CLAUDE.md`/`GEMINI.md` adapters beside each) | same | tier model above; PRESENCE linted as a **non-fatal hint** (`check_maps` check 8), adapter BODY asserted fatally by `tests/test_entry_adapters.py` |
+| Open tasks ("what's next") | the **live Jira board** (`SCC`) — `In Progress` → `To Do Next` → `To Do` | the project's own board (e.g. `AVCH`) | root `AGENTS.md` §7 · `.agents/rules/jira.md`. ⛔ `_my_resources/open_tasks/todo_list.md` is **not** a source (retired 2026-08-09); `/smh-update-maps-indexes` only refreshes its `## Open Work` file-list |
 | Personal area (protected) | `_my_resources/` | `_my_resources/` | off-limits **except** the `## Open Work` manifest in `open_tasks/todo_list.md` (maintained by `/smh-update-maps-indexes`) |
 | BMAD (if present) | — | `_bmad/` (owned, regenerated) · `_bmad-output/` (state) | `_bmad-output/active-context/active-context.md` **IS** the continuity brief above; `_bmad/` itself is never hand-edited |
 
@@ -236,9 +275,12 @@ The **single canonical invocable set is `.agents/commands/`**. It mirrors to eve
   asymmetry is a platform constraint, not a defect — the same canonical set still reaches it.
 
 ### Git — one policy
-Never run `git commit`/`git push` yourself; the `walkthrough.md` "Your Actions" hands Daniel the exact command.
-The only exception is when Daniel explicitly delegates a specific commit/push in the moment. Full rule →
-`.agents/rules/git-policy.md`.
+**Agents commit and push their own work** — explicit paths (never `git add -A`), the repo's Jira key leading
+every branch and subject, in the lane's own worktree, and **commit + push are one action** (unpushed is
+stranded). `main` is the only long-lived branch and is reached only through a door
+(`/cicd-push-e2e` · `/smh-close-task-merge-tree`) whose invocation is the operator's sign-off. The old
+default — "never run git yourself; hand Daniel the command" — is **gone** (it produced commits carrying four
+unrelated sessions). Full rule → `.agents/rules/git-policy.md`.
 
 ### Artifacts — the plan-first discipline
 Every non-trivial, file-touching task: research read-only → write `implementation_plan.md` and **STOP for
@@ -287,6 +329,17 @@ Full contract → `_artifacts/_memory/README.md`; setup steps → `docs/migratio
 (`AGENTS.md`/`router.md`/the adapter-skill pattern) or qualify a new LLM/CLI. A green run proves the
 *mechanism* works in that tool; it does NOT prove your real routing is correct — for that, run the cold-route
 test ("work on X" from a fresh session lands in the right workspace). Full how/when → `_routing-canary/README.md`.
+
+The plan's full **validation loop** is five checks; the canary is only the first. Run the rest when the
+change warrants it:
+
+| Check | How | Pass |
+|---|---|---|
+| **Canary** (mechanism) | paste `_routing-canary/<adapter>` into a fresh agent, nothing else | `Power.md` == `control your agent`, reply `done boss` |
+| **Cold route** (real routing) | fresh session at the root: "work on X"; then "never mind, Y" | lands in the right workspace via a light lookup; re-routes cleanly |
+| **Persistence** | trivial edit → "hand off" → new session → "pick up" | the brief matches the hand-off, and nothing was mutated by the pick-up |
+| **Negative / route-up** | ask a workspace something outside its domain | it routes **back up** via `router.md` — no hallucinated answer, no tree wander |
+| **Token frugality** | watch the agent's "reading …" trace on a cold route | entry map + one router hop + one workspace context; not the tree |
 
 ### Router + repo-map drift
 - Add/remove/convert a workspace → update its row in the root `router.md` (lobby = categories only).
