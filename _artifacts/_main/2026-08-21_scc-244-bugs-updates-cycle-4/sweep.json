@@ -79,10 +79,10 @@
     ".agents/scripts/tests/test_label_tasks.py"
    ],
    "file": ".agents/scripts/label_tasks.py",
-   "block": "F · SCC-259",
    "case": "F1b ...and it ranks AFTER the story, so `story` is the authority",
    "original": "    sources.sort(key=lambda src: 1 if src.get(\"tests_only\") else 0)",
-   "mutated": "    pass"
+   "mutated": "    pass",
+   "unfiltered": true
   },
   {
    "id": "M8 (F) the lane-branch story read always comes back empty",
@@ -91,10 +91,10 @@
     ".agents/scripts/tests/test_label_tasks.py"
    ],
    "file": ".agents/scripts/label_tasks.py",
-   "block": "F · SCC-259",
    "case": "F1 the story source names the BRANCH it was read from",
    "original": "    r = wf.git([\"ls-tree\", \"-r\", \"--name-only\", branch, f\"{wf.STORIES_REL}/\"], repo)\n    if r.returncode != 0:\n        return []",
-   "mutated": "    r = wf.git([\"ls-tree\", \"-r\", \"--name-only\", branch, f\"{wf.STORIES_REL}/\"], repo)\n    if True:\n        return []"
+   "mutated": "    r = wf.git([\"ls-tree\", \"-r\", \"--name-only\", branch, f\"{wf.STORIES_REL}/\"], repo)\n    if True:\n        return []",
+   "unfiltered": true
   },
   {
    "id": "M9 (F) name only the FIRST blocker in the lock detail",
@@ -103,10 +103,10 @@
     ".agents/scripts/tests/test_label_tasks.py"
    ],
    "file": ".agents/scripts/label_tasks.py",
-   "block": "F · SCC-259",
    "case": "F2 the lock detail names EVERY declared blocker, not the first",
    "original": "                             \"detail\": \"after \" + \", \".join(blockers),",
-   "mutated": "                             \"detail\": \"after \" + blockers[0],"
+   "mutated": "                             \"detail\": \"after \" + blockers[0],",
+   "unfiltered": true
   },
   {
    "id": "M10 (A) boot stops reading the epic branch's copy of sprint-status.yaml",

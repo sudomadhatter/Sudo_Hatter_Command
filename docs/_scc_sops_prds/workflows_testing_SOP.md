@@ -1721,6 +1721,14 @@ itself did exactly that on all eight mutants, then found three more defects in i
 labels were right. It is worth reading that as the recommendation it is: **sweep the sweep's own
 target file the moment you have one, and expect the first run to be about your tests.**
 
+**A test file that declares no `c.block()` at all takes `"unfiltered": true` instead of `block`.**
+There is no label to select in such a file, so any filter matches nothing and every mutant comes
+back as a sweep error rather than a result — which is how the largest change in a lane can end up
+with no sweep coverage while the transcript looks merely noisy. Running the whole file is more
+coverage than a filtered run, never less, and unlike a filter it cannot be a typo. Attribution does
+not change: the declared `case` must still name a case on the `FAILED:` line. Declaring both
+`unfiltered` and `block` is a contradiction and is refused before the first mutant is written.
+
 | The rule | Why it exists |
 |---|---|
 | A **surviving** mutant is a finding | the coverage hole you came to find |

@@ -18,6 +18,7 @@ of `—` means the page recorded the ticket but not the day; the ticket's sessio
 
 | Date | Ticket | What changed for the operator |
 |---|---|---|
+| 2026-08-21 | SCC-244 | `mutation_sweep.py` accepts `"unfiltered": true` on a mutant, for a test file that declares no `c.block()` — without it every such mutant returns a sweep error and the file gets no coverage. `unfiltered` + `block` together is refused. |
 | 2026-08-21 | SCC-260 | Every command that invokes `bmad-create-story` names `_bmad/bmm/stories/` beside the invocation, so BMAD's own default output path cannot win by silence. BMAD itself is not edited or overridden. |
 | 2026-08-21 | SCC-259 | `/cicd-label-tasks` + `/smh-label-tasks`: grounding reads the lane's own branch when the checkout has no story file; a tests-only diff keeps its paths but ranks below whatever can see further; 🔒 names every declared blocker instead of the first. |
 | 2026-08-21 | SCC-258 | `jira_feed.py mint` reusing a ticket tests for the render trailer, not the description's length — a hand-typed note gets its outline and is kept underneath under `PREVIOUS NOTE`. `outline` accepts `--jira-project` for flag parity with `mint`. |
