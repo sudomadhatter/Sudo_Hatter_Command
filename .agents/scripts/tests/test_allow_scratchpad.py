@@ -6,7 +6,7 @@ first. Five review lenses reproduced twelve escapes, every one the same shape: s
 recognised AS a path was treated as harmless. `rm -rf /<sb>/rt .agents` · `rm -rf .git # /<sb>` ·
 `> "out.txt"` · `>| out.txt` · `>&out.txt` · `tar -C/<repo>` · `--out=/<repo>/x` · `"curl"` ·
 `\\curl` · `/usr/bin/sudo` · `git -C /<sb>/r log && git reset --hard` · `cp /<sb>/x
-/opt/homebrew/bin/git`. Block ESCAPES replays all twelve; none may ever return `allow` again.
+/opt/homebrew/bin/git`. Block ESCAPES replays them; none may ever return `allow` again.
 
 The rewrite inverted the question into an allow-list of SHAPES - no metacharacters, a bare-name
 executable from a literal list, every non-flag token an absolute path inside THIS session's
@@ -26,6 +26,7 @@ says so - it reads the real repo files.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 
@@ -89,6 +90,12 @@ def main() -> int:
             ("head -20", f"head -20 {SB}/out.txt"),
             ("cp within the sandbox", f"cp {SB}/a {SB}/b"),
             ("the /tmp spelling", f"bash {SB_ALT}/rt/run.sh"),
+            # These four were REFUSED before the second review and are ordinary harness spelling.
+            # Each miss is a prompt this hook exists to remove, so they are pinned as ALLOWED.
+            ("chmod -R with the mode after the flag", f"chmod -R 755 {SB}/rt"),
+            ("head -n with a separate count", f"head -n 5 {SB}/out.txt"),
+            ("tail -c with a separate count", f"tail -c 100 {SB}/out.txt"),
+            ("-- end-of-options", f"rm -rf -- {SB}/rt"),
         ]:
             code, out = call(cmd)
             c.check(f"A · {label} is allowed", allowed(out), out.strip()[:160])
@@ -116,6 +123,40 @@ def main() -> int:
         ]:
             _, out = call(cmd)
             c.check(f"ESCAPES · silent on {label}", silent(out), out.strip()[:160])
+
+    # ── TRAVERSAL · rules 5 and 6, the two the REWRITE got wrong ────────────────────────
+    # ⛔ A different class from the twelve above. These tokens ARE recognised as paths and DO
+    # match the sandbox — they simply resolve outside it. `SANDBOX_RE.match` stops at
+    # `scratchpad/` and never looks further, so `..` sailed through every rule and the session
+    # pin passed because the real id genuinely is in the string. Two lenses reproduced it.
+    if c.block("TRAVERSAL · rules 5 and 6 · a path that MATCHES but RESOLVES outside"):
+        up = "/../../../../../.."
+        for label, cmd in [
+            ("rm through ..", f"rm -rf {SB}{up}/Users/sudohatter/Sudo_Hatter_Command/.agents"),
+            ("the sandbox's own parent", f"rm -rf {SB}/.."),
+            ("a write through ..", f"cp {SB}/evil {SB}{up}/Users/sudohatter/.zshenv"),
+            ("execution through ..", f"bash {SB}{up}/Users/sudohatter/x.sh"),
+            # ⛔ The `--flag=VALUE` split is the fix for v1's glued-path hole; traversal walked
+            # straight through it, so the fix needed the same normalisation as everything else.
+            ("traversal inside a --flag= value",
+             f"python3 {SB}/h.py --out={SB}{up}/Users/x/AGENTS.md"),
+            ("`.` interleaved with `..`", f"rm -rf {SB}/./../../"),
+            ("the sibling-of-scratchpad case, spelled with ..", f"rm -rf {SB}/../tasks"),
+        ]:
+            _, out = call(cmd)
+            c.check(f"TRAVERSAL · silent on {label}", silent(out), out.strip()[:160])
+        # ⭐ ...and an interior `..` that stays INSIDE must still be allowed, or normalisation has
+        # simply banned a legal path and taken the feature down with the hole.
+        _, out = call(f"cat {SB}/a/../b")
+        c.check("TRAVERSAL · still allows an interior .. that stays inside",
+                allowed(out), out.strip()[:160])
+        # Rule 6 — `ln` has an IMPLICIT destination no argument inspection can see.
+        for label, cmd in [
+            ("ln with one operand (writes into the CWD)", f"ln -sf {SB}/AGENTS.md"),
+            ("ln at all, even two-operand and in-sandbox", f"ln -s {SB}/a {SB}/b"),
+        ]:
+            _, out = call(cmd)
+            c.check(f"TRAVERSAL · silent on {label}", silent(out), out.strip()[:160])
 
     # ── B · rule 1 — one simple command, or nothing ─────────────────────────────────────
     if c.block("B · rule 1 · every shell metacharacter refuses the whole command"):
@@ -175,12 +216,29 @@ def main() -> int:
         # The session pin: the same path, under a different session's id.
         _, out = call(f"rm -rf {SB}/rt", session="ffffffff-0000-0000-0000-000000000000")
         c.check("E · a path from a DIFFERENT session is refused", silent(out), out.strip()[:160])
-        # ...and when no session id arrives, the shape alone still has to hold.
+        # ⛔ POSITIONAL, not containment. The pin used to be `f"/{sid}/" in token`, so a path under
+        # ANOTHER live lane's session with our id as a leaf directory name satisfied it — a
+        # sibling review's harness was writable. Two lenses found it.
+        _, out = call(f"cp {SB}/p /private/tmp/claude-501/-Users-sudohatter-Sudo-Hatter-Command"
+                      f"/ffffffff-0000-0000-0000-000000000000/scratchpad/{SID}/stomp")
+        c.check("E · our session id as a LEAF of another session's path is refused",
+                silent(out), out.strip()[:160])
+        # ⛔ The uid is this process's, not `\\d+`: another account's tree is not our sandbox.
+        _, out = call(f"rm -rf /private/tmp/claude-999/-P/{SID}/scratchpad/x")
+        c.check("E · a FOREIGN uid's tree is refused", silent(out), out.strip()[:160])
+        # With no session_id the shape alone still has to pin uid, depth and boundary.
+        _, out = call("rm -rf /private/tmp/claude-501/-P/aaaabbbbccccdddd/scratchpad")
+        c.check("E · ANOTHER session's scratchpad is refused", silent(out), out.strip()[:160])
+        # ⛔ NO SESSION ID, NO GRANT. Judging by shape alone let ANY live lane's scratchpad
+        # through, and an absent or non-string id used to DOWNGRADE to that shape-only judgement
+        # rather than refuse. Both spellings are pinned here.
         _, out = call(f"rm -rf {SB}/rt", session=None)
-        c.check("E · with no session_id the shape alone still allows a real scratchpad",
-                allowed(out), out.strip()[:160])
-        _, out = call("rm -rf /private/tmp/claude-501/", session=None)
-        c.check("E · with no session_id the uid root is STILL refused",
+        c.check("E · with NO session_id even our own scratchpad is refused",
+                silent(out), out.strip()[:160])
+        _, out = call("", raw=json.dumps({"tool_name": "Bash",
+                                          "tool_input": {"command": f"rm -rf {SB}/rt"},
+                                          "session_id": 12345}))
+        c.check("E · a NON-STRING session_id is refused, not downgraded",
                 silent(out), out.strip()[:160])
 
     # ── F · the one non-flag, non-path token the hook accepts ──────────────────────────
@@ -254,10 +312,17 @@ def main() -> int:
         payload = json.dumps(
             {"tool_name": "Bash", "tool_input": {"command": f"bash {SB}/rt/run.sh"},
              "session_id": SID})
+        # ⛔ `CLAUDE_PROJECT_DIR`, not `cwd`. run-hook.sh resolves its target as
+        # `${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/$SCRIPT`, so the env var is
+        # consulted FIRST and `cwd=` only matters when it is unset. Under a real session it points
+        # at the MAIN checkout, which carries its own copy of this hook — so this block measured
+        # main's file while reporting on the lane's, the wrong-tree class `_harness._tree_guard`
+        # exists to prevent (SCC-263 review, Literal-Correctness Hunter).
         p = subprocess.run(["sh", str(SCRIPTS.parent / "hooks" / "run-hook.sh"),
                             ".claude/hooks/allow-scratchpad.py"],
                            input=payload, capture_output=True, text=True,
-                           cwd=str(ROOT), errors="replace")
+                           cwd=str(ROOT), env={**os.environ, "CLAUDE_PROJECT_DIR": str(ROOT)},
+                           errors="replace")
         c.check("E2E · run-hook.sh dispatches it and it allows", allowed(p.stdout),
                 (p.stdout + p.stderr).strip()[:200])
         c.check("E2E · exit 0 through the seam", p.returncode == 0, f"exit={p.returncode}")

@@ -47,12 +47,36 @@ recognise is refused:
   3. EVERY NON-FLAG TOKEN IS AN ABSOLUTE PATH INSIDE THIS SESSION'S SCRATCHPAD. Relative
      arguments are refused outright - `.agents`, `out.txt`, `conftest.py` are not paths this hook
      can resolve, and it no longer pretends otherwise. A `--flag=VALUE` is split and its VALUE
-     held to the same bar, so a path glued to a flag is checked rather than hidden.
-  4. THE SANDBOX IS THIS SESSION'S, not the uid's. The old root stopped at `claude-<uid>/`, two
+     held to the same bar, so a path glued to a flag is checked rather than hidden. The two
+     exceptions are named and narrow: `chmod`'s mode in its first non-flag slot, and the digits
+     after a counting flag (`head -n 5`).
+  4. THE SANDBOX IS THIS SESSION'S, not the uid's. The first root stopped at `claude-<uid>/`, two
      levels too high, so `rm -rf /private/tmp/claude-501/` was allowed and would have wiped every
-     concurrently running lane's harness. The root must now be a full
-     `claude-<uid>/<project>/<session>/scratchpad` - and when the payload carries `session_id`,
-     the path must contain THAT session's id.
+     concurrently running lane's harness. The root must be a full
+     `claude-<uid>/<project>/<session>/scratchpad`, the uid must be THIS PROCESS'S, and when the
+     payload carries `session_id` the session component must EQUAL it - matched positionally, not
+     by containment. A containment test admitted a path under another live lane's session that
+     merely had our id as a leaf directory name.
+
+⛔ AND THE TWO THE REWRITE ITSELF GOT WRONG, found by a second review of THIS file:
+
+  5. PATHS ARE NORMALISED BEFORE THEY ARE MATCHED. `SANDBOX_RE.match` is a PREFIX assertion - it
+     stops at `scratchpad/` and never looks further - while `..` is ordinary text to a regex and
+     to `str.split()`. So `/<sandbox>/../../../../../../Users/.../Sudo_Hatter_Command` matched,
+     satisfied the session pin (the real id genuinely IS in the string), and was auto-approved for
+     `rm -rf`. Version one banned `..` outright; this rewrite dropped the ban and did not replace
+     it. `posixpath.normpath` FIRST, then match.
+  6. NO TOOL WITH AN IMPLICIT DESTINATION. `ln -sf /<sandbox>/AGENTS.md` names one sandbox path
+     and no destination at all - POSIX puts the link in the CURRENT DIRECTORY, and `-f` unlinks
+     what is already there. No amount of argument inspection can see a destination the command
+     string never contains, so the only defence is the allow-list, and `ln` is off it.
+
+  ⭐ Rules 5 and 6 are a DIFFERENT class from the twelve above, and that is the lesson worth
+  keeping. Those twelve were all "something not recognised AS a path was treated as harmless".
+  These two are "a token correctly recognised as a path, correctly matched, and still resolving
+  outside" - once because this compares strings where the kernel resolves a graph, once because
+  the command supplies a destination the string never mentions. Getting the shell parser right
+  did not make the FILESYSTEM safe.
 
 ⛔ TWO LEGAL OUTPUTS: `allow`, or SILENCE. Never `ask`, never `deny`.
 `ask` is auto-DENY in non-interactive mode, so a hook that emitted it would block the very lanes
@@ -67,14 +91,37 @@ prompt on RUNNING agent-authored code, not on authoring it. That is the delibera
 twelve escapes above were not.
 
 Canonical source: `.agents/hooks/`. Deployed to `.claude/hooks/` - never hand-edit the copy."""
+import functools
 import json
+import os
+import posixpath
 import re
 import sys
 
 # Rule 4. A full session scratchpad, never a prefix of one: `/tmp/claude-<uid>/<project>/<session>/
 # scratchpad`. `/tmp` is a symlink to `/private/tmp` on macOS, so both spellings must be accepted.
-SANDBOX_RE = re.compile(
-    r"^/(?:private/)?tmp/claude-\d+/[^/]+/[0-9A-Za-z][0-9A-Za-z_-]{7,}/scratchpad(?:/|$)")
+# ⛔ The uid is THIS PROCESS'S, not `\d+`. A bare `claude-\d+` accepted `/private/tmp/claude-999/…`,
+# so a path under another account's tree satisfied the sandbox test (SCC-263 review, Edge Case
+# Hunter). `os.getuid()` is the only authority on which tree is ours.
+_UID = re.escape(f"claude-{os.getuid()}")
+
+
+@functools.lru_cache(maxsize=4)
+def sandbox_re(session_id: str) -> "re.Pattern[str]":
+    """The ONE pattern, built around the session that is actually asking.
+
+    ⛔ There is deliberately no session-agnostic pattern to fall back on. An earlier cut had two -
+    a general `SANDBOX_RE` plus a positional pin applied only `if session_id` - so a payload
+    carrying no session id was judged by shape alone and ANY live lane's scratchpad passed. Two
+    regexes also meant the general one was barely load-bearing whenever a pin applied, which is
+    how a mutation to it could survive. One pattern, no fallback, no drift.
+
+    `/tmp` is a symlink to `/private/tmp` on macOS, so both spellings must be accepted. The uid is
+    THIS PROCESS'S: a pattern accepting any digits accepted another account's tree.
+    """
+    return re.compile(rf"^/(?:private/)?tmp/{_UID}/[^/]+/"
+                      + re.escape(session_id) + r"/scratchpad(?:/|$)")
+
 
 # Rule 1. Anything that makes this more than ONE simple command, or that makes token boundaries a
 # matter of interpretation. `#` is here because a path inside a comment is text the shell discards
@@ -83,30 +130,56 @@ FORBIDDEN = set("`$|&;<>()[]{}*?!#~'\"\\\n\r")
 
 # Rule 2. Bare names only. An absolute path is NOT accepted here, which is what makes the
 # `/usr/bin/<denied>` class unreachable instead of merely inconvenient.
+# ⛔ `ln` IS DELIBERATELY ABSENT, and this comment is why it must stay absent. `ln source` with a
+# SINGLE operand is defined to create the link in the CURRENT DIRECTORY, named after the source's
+# basename - and `-f` unlinks whatever is already there first. So `ln -sf /<sandbox>/AGENTS.md`
+# passes every rule in this file (one allow-listed name, one flag, one genuinely sandboxed path,
+# no `..`, no metacharacter) and DELETES the repo's own AGENTS.md, replacing it with a symlink to
+# agent-authored content. The destination is one the command string never mentions, so no amount
+# of argument inspection can catch it. Any future addition to this list must be checked for the
+# same property: does this tool have an IMPLICIT destination? (SCC-263 review, Blind Hunter.)
 ALLOWED = frozenset({
-    "mkdir", "rmdir", "rm", "cp", "mv", "touch", "chmod", "ln",
+    "mkdir", "rmdir", "rm", "cp", "mv", "touch", "chmod",
     "ls", "cat", "head", "tail", "wc", "diff", "cmp", "file", "stat", "du",
     "bash", "sh", "python3", "python", "node",
 })
 
-# `chmod`'s mode argument is the one non-flag, non-path token this hook accepts, and only in
-# first position, and only for chmod: `+x`, `755`, `u+rw,go-w`.
+# `chmod`'s mode argument is the one non-flag, non-path token this hook accepts, and only for
+# chmod, and only in its first non-flag slot: `+x`, `755`, `u+rw,go-w`.
 MODE_RE = re.compile(r"^[0-7]{3,4}$|^[ugoa]*[+\-=][rwxXst]+(?:,[ugoa]*[+\-=][rwxXst]+)*$")
 
-FLAG_RE = re.compile(r"^-{1,2}[A-Za-z0-9][A-Za-z0-9-]*$")
+# Flags whose VALUE is the next token and is a count, not a path. Without these, `head -n 5 X` and
+# `tail -c 100 X` fall through to a prompt while `head -5 X` does not - friction the hook exists to
+# remove. Scoped per command, and the value must be digits, so it can never name a file.
+VALUE_FLAGS = {"head": {"-n", "-c"}, "tail": {"-n", "-c"}, "wc": {"-L"}}
+COUNT_RE = re.compile(r"^\+?\d+$")
+
+FLAG_RE = re.compile(r"^--$|^-{1,2}[A-Za-z0-9][A-Za-z0-9-]*$")
 FLAG_WITH_VALUE_RE = re.compile(r"^(-{1,2}[A-Za-z0-9][A-Za-z0-9-]*)=(.*)$")
 
 
 def sandboxed(token: str, session_id: str) -> bool:
-    """A token is acceptable only as an absolute path inside THIS session's scratchpad."""
-    if not SANDBOX_RE.match(token):
+    """A token is acceptable only as an absolute path inside THIS session's scratchpad.
+
+    ⛔ NORMALISE BEFORE MATCHING. The pattern is a PREFIX assertion - it stops at `scratchpad/`
+    and never looks further - while `..` is ordinary text to a regex and to `str.split()`. So
+    `/<sandbox>/../../../../../../Users/.../Sudo_Hatter_Command` matched, satisfied the session
+    check (the real id genuinely IS in the string), and was auto-approved for `rm -rf`. Two
+    independent lenses reproduced it; version one banned `..` outright and the rewrite dropped
+    that ban without replacing it (SCC-263 review).
+
+    `normpath` is lexical, which is the right tool: the token often names a file that does not
+    exist yet, so `realpath` would resolve nothing. A symlink already inside the sandbox can still
+    point out, but planting one needs agent-authored code - the trade the module docstring
+    declares - and `ln` is off the allow-list precisely so this hook cannot plant it.
+
+    ⛔ NO SESSION ID, NO GRANT. `session_id` is not advisory: without it there is no way to tell
+    this lane's disposable directory from a concurrently running one's, and the whole claim of
+    this hook is that what it permits is disposable.
+    """
+    if not session_id or not token.startswith("/"):
         return False
-    # Rule 4's second half. `session_id` is advisory: the payload does not always carry one, and a
-    # subagent may report its parent's. When it IS present it must appear in the path, which pins
-    # the grant to this session rather than to any session of this uid.
-    if session_id and f"/{session_id}/" not in token:
-        return False
-    return True
+    return bool(sandbox_re(session_id).match(posixpath.normpath(token)))
 
 
 def permitted(command: str, session_id: str) -> bool:
@@ -124,8 +197,21 @@ def permitted(command: str, session_id: str) -> bool:
 
     # 3: every remaining token is a flag, or a path inside the sandbox.
     saw_path = False
-    for i, tok in enumerate(args):
-        if argv0 == "chmod" and i == 0 and MODE_RE.match(tok):
+    saw_mode = False
+    expect_count = False
+    for tok in args:
+        if expect_count:
+            # The value of a counting flag (`head -n 5`). Digits only, so it cannot name a file.
+            expect_count = False
+            if COUNT_RE.match(tok):
+                continue
+            return False
+        # ⛔ The first non-flag slot BEFORE any path, not index 0. An index test refused the
+        # canonical `chmod -R 755 X` (the `-R` occupies index 0); dropping the index test
+        # without `not saw_path` then ALLOWED `chmod X +x`, where the mode is not a mode at
+        # all. Both spellings are pinned in block F.
+        if argv0 == "chmod" and not saw_mode and not saw_path and MODE_RE.match(tok):
+            saw_mode = True
             continue
         flagged = FLAG_WITH_VALUE_RE.match(tok)
         if flagged:
@@ -136,10 +222,15 @@ def permitted(command: str, session_id: str) -> bool:
             saw_path = True
             continue
         if FLAG_RE.match(tok):
+            expect_count = tok in VALUE_FLAGS.get(argv0, ())
             continue
         if not sandboxed(tok, session_id):
             return False
         saw_path = True
+
+    # A flag left waiting for its value never got one, so the command is not the shape it looked.
+    if expect_count:
+        return False
 
     # A command of nothing but flags names no subject; there is nothing to be sure about.
     return saw_path
@@ -152,9 +243,11 @@ def main() -> None:
     command = payload.get("tool_input", {}).get("command", "")
     if not isinstance(command, str) or not command.strip():
         return
-    session_id = payload.get("session_id") or ""
-    if not isinstance(session_id, str):
-        session_id = ""
+    session_id = payload.get("session_id")
+    # A non-string or absent id is refused, never downgraded to "no pin" - that downgrade was
+    # itself the fail-open (SCC-263 review, Edge Case Hunter).
+    if not isinstance(session_id, str) or not session_id:
+        return
 
     if not permitted(command, session_id):
         return

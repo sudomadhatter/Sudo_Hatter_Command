@@ -5,36 +5,36 @@
   ],
   "mutants": [
     {
-      "id": "M1 · widen the sandbox root back to the uid, dropping the session segment",
+      "id": "M1 · stop normalising — the `..` traversal escape returns",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    r\"^/(?:private/)?tmp/claude-\\d+/[^/]+/[0-9A-Za-z][0-9A-Za-z_-]{7,}/scratchpad(?:/|$)\")",
-      "mutated": "    r\"^/(?:private/)?tmp/claude-\\d+/\")",
-      "case": "E · with no session_id the uid root is STILL refused",
-      "block": "rule 4 ·"
+      "original": "    return bool(sandbox_re(session_id).match(posixpath.normpath(token)))",
+      "mutated": "    return bool(sandbox_re(session_id).match(token))",
+      "case": "TRAVERSAL · silent on rm through ..",
+      "block": "TRAVERSAL"
     },
     {
       "id": "M2 · drop the `scratchpad` word boundary — a sibling named scratchpadX reads as inside",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    r\"^/(?:private/)?tmp/claude-\\d+/[^/]+/[0-9A-Za-z][0-9A-Za-z_-]{7,}/scratchpad(?:/|$)\")",
-      "mutated": "    r\"^/(?:private/)?tmp/claude-\\d+/[^/]+/[0-9A-Za-z][0-9A-Za-z_-]{7,}/scratchpad\")",
+      "original": "                      + re.escape(session_id) + r\"/scratchpad(?:/|$)\")",
+      "mutated": "                      + re.escape(session_id) + r\"/scratchpad\")",
       "case": "E · silent on a sibling whose name merely starts with scratchpad",
       "block": "rule 4 ·"
     },
     {
-      "id": "M3 · drop the session pin — any session's scratchpad passes",
+      "id": "M3 · accept any uid rather than this process's",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    if session_id and f\"/{session_id}/\" not in token:",
-      "mutated": "    if False:",
-      "case": "E · a path from a DIFFERENT session is refused",
+      "original": "    return re.compile(rf\"^/(?:private/)?tmp/{_UID}/[^/]+/\"",
+      "mutated": "    return re.compile(r\"^/(?:private/)?tmp/claude-[0-9]+/[^/]+/\"",
+      "case": "E · a FOREIGN uid's tree is refused",
       "block": "rule 4 ·"
     },
     {
-      "id": "M4 · drop rule 1 entirely — metacharacters stop refusing",
+      "id": "M4 · make the session component positional-but-any, not this session",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    if FORBIDDEN & set(command):",
-      "mutated": "    if False:",
-      "case": "B · silent on a command containing '>'",
-      "block": "rule 1 ·"
+      "original": "                      + re.escape(session_id) + r\"/scratchpad(?:/|$)\")",
+      "mutated": "                      + r\"[^/]+\" + r\"/scratchpad(?:/|$)\")",
+      "case": "E · ANOTHER session's scratchpad is refused",
+      "block": "rule 4 ·"
     },
     {
       "id": "M5 · drop `#` from the metacharacter set — the comment escape returns",
@@ -45,7 +45,23 @@
       "block": "rule 1 ·"
     },
     {
-      "id": "M6 · add `tar` to the executable allow-list",
+      "id": "M6 · drop rule 1 entirely",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "    if FORBIDDEN & set(command):",
+      "mutated": "    if False:",
+      "case": "B · silent on a command containing '>'",
+      "block": "rule 1 ·"
+    },
+    {
+      "id": "M7 · put `ln` back on the allow-list — the implicit-destination escape returns",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "    \"mkdir\", \"rmdir\", \"rm\", \"cp\", \"mv\", \"touch\", \"chmod\",",
+      "mutated": "    \"mkdir\", \"rmdir\", \"rm\", \"cp\", \"mv\", \"touch\", \"chmod\", \"ln\",",
+      "case": "TRAVERSAL · silent on ln with one operand (writes into the CWD)",
+      "block": "TRAVERSAL"
+    },
+    {
+      "id": "M8 · add `tar` to the allow-list",
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "    \"bash\", \"sh\", \"python3\", \"python\", \"node\",",
       "mutated": "    \"bash\", \"sh\", \"python3\", \"python\", \"node\", \"tar\",",
@@ -53,7 +69,7 @@
       "block": "rule 2 ·"
     },
     {
-      "id": "M7 · drop rule 2 — any executable is accepted",
+      "id": "M9 · drop rule 2 — any executable is accepted",
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "    if argv0 not in ALLOWED:",
       "mutated": "    if False:",
@@ -61,7 +77,7 @@
       "block": "rule 2 ·"
     },
     {
-      "id": "M8 · accept an ABSOLUTE path to a listed name (the /usr/bin/sudo class)",
+      "id": "M10 · accept an ABSOLUTE path to a listed name (the /usr/bin/sudo class)",
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "    argv0, args = tokens[0], tokens[1:]",
       "mutated": "    argv0, args = tokens[0].split(\"/\")[-1], tokens[1:]",
@@ -69,7 +85,7 @@
       "block": "rule 2 ·"
     },
     {
-      "id": "M9 · stop checking a --flag= VALUE — the glued-path escape returns",
+      "id": "M11 · stop checking a --flag= VALUE",
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "            if not sandboxed(flagged.group(2), session_id):",
       "mutated": "            if False:",
@@ -77,7 +93,7 @@
       "block": "rule 3 ·"
     },
     {
-      "id": "M10 · stop checking bare tokens — the relative-argument escape returns",
+      "id": "M12 · stop checking bare tokens",
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "        if not sandboxed(tok, session_id):",
       "mutated": "        if False:",
@@ -85,7 +101,7 @@
       "block": "rule 3 ·"
     },
     {
-      "id": "M11 · drop the `names a subject` requirement",
+      "id": "M13 · drop the `names a subject` requirement",
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "    return saw_path",
       "mutated": "    return True",
@@ -93,15 +109,31 @@
       "block": "rule 3 ·"
     },
     {
-      "id": "M12 · let the chmod mode token be a free token for every command",
+      "id": "M14 · let a chmod mode be accepted AFTER a path",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "        if argv0 == \"chmod\" and i == 0 and MODE_RE.match(tok):",
-      "mutated": "        if MODE_RE.match(tok):",
+      "original": "        if argv0 == \"chmod\" and not saw_mode and not saw_path and MODE_RE.match(tok):",
+      "mutated": "        if argv0 == \"chmod\" and not saw_mode and MODE_RE.match(tok):",
+      "case": "F · a mode in second position refuses",
+      "block": "chmod mode token"
+    },
+    {
+      "id": "M15 · scope the chmod mode to every command, not just chmod",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "        if argv0 == \"chmod\" and not saw_mode and not saw_path and MODE_RE.match(tok):",
+      "mutated": "        if not saw_mode and not saw_path and MODE_RE.match(tok):",
       "case": "F · `+x` is NOT a free token for other commands",
       "block": "chmod mode token"
     },
     {
-      "id": "M13 · emit `ask` instead of `allow` — auto-DENY in non-interactive mode",
+      "id": "M16 · let a counting flag's value be anything, not digits",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "            if COUNT_RE.match(tok):",
+      "mutated": "            if True:",
+      "case": "D · silent on a bare relative name",
+      "block": "rule 3 ·"
+    },
+    {
+      "id": "M17 · emit `ask` instead of `allow` — auto-DENY in non-interactive mode",
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "        \"permissionDecision\": \"allow\",",
       "mutated": "        \"permissionDecision\": \"ask\",",
@@ -109,7 +141,7 @@
       "block": "harness shapes"
     },
     {
-      "id": "M14 · stop failing silent — let an exception escape",
+      "id": "M18 · stop failing silent — let an exception escape",
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "    except Exception:  # noqa: BLE001 - a convenience hook must never become a blocker.\n        pass",
       "mutated": "    except Exception:  # noqa: BLE001 - a convenience hook must never become a blocker.\n        raise",
@@ -117,7 +149,7 @@
       "block": "NEVER"
     },
     {
-      "id": "M15 · drop the tool_name guard — non-Bash tools get judged as Bash",
+      "id": "M19 · drop the tool_name guard",
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "    if payload.get(\"tool_name\") != \"Bash\":",
       "mutated": "    if False:",
