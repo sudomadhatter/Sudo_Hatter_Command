@@ -103,7 +103,7 @@ Sudo_Hatter_Command/
       [6 files: .mdx6 | e.g. AGENTS.md]
   docs/
     _scc_sops_prds/
-        [12 files: .mdx12 | e.g. INDEX.md]
+        [15 files: .mdx15 | e.g. INDEX.md]
     migrations/
       antigravity_extensions/
           [1 files: .txtx1 | e.g. antigravity-extension-ids.txt]
@@ -117,6 +117,6 @@ Sudo_Hatter_Command/
       [10 files: .mdx9, .jsonx1 | e.g. AGENTS.md]
   scratch/
       [1 files: .pyx1 | e.g. find_brainstorm.py]
-    [8 files: .mdx4, .txtx3, .jsonx1 | e.g. AGENTS.md]
+    [9 files: .mdx5, .txtx3, .jsonx1 | e.g. AGENTS.md]
 ```
 <!-- REPO-MAP:AUTO-END -->

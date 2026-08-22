@@ -114,6 +114,7 @@ EXPECTED = {
     "tdad_stack_install_guide.md",
     "smh-adviser-board-REFERENCE.md",
     "sharing_keys_secrets_secure.md",     # SCC-37 - the Keyway secrets-sharing guide
+    "frontend_UI_design_guide.md",        # House Frontend & UI/UX Design Guide
 }
 
 # Folders that must hold no procedural docs once the move lands. Both are removed by SCC-74;
