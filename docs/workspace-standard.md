@@ -53,7 +53,7 @@ actually implemented?" without re-deriving it.
 | **R5** naming conventions replace a database | root `AGENTS.md` §5 NAMING & ARTIFACT PLACEMENT; floors §7 | Part 1 Layer 1 item 7 |
 | **R6** persistence: "pick up" (read-only brief) / "hand off" (write, read back, verify), numbered `_memory/` | root `AGENTS.md` §7; `_artifacts/_main/active-context.md` (`1 PRIME` · `5 PICK UP` · `6 HAND OFF`); project briefs per the PATH CONTRACT. The plan's `_memory/` became **two stores**: the continuity brief (`active-context.md`) and the portable auto-memory (`_artifacts/_memory/`) | Part 1 item 9 · PATH CONTRACT · Part 2 Auto-memory |
 | **R7** gates before routing and before risky action | root `AGENTS.md` §6 GATES (routing · project-law · search · risk · worktree · git-write) → `.agents/rules/constitution.md` | Part 1 item 8 |
-| **R8** portability: `CLAUDE.md` a pure redirect, nothing model-specific in shared files, ≥2 agents verified | root `AGENTS.md` §8; one command set reaches four platforms via `/smh-sync-agents`; canary runs per tool. ⚠ root `GEMINI.md` carries three Gemini-specific hard rules — an open exception to this requirement, pending an operator ruling | Part 1 Layer 1 · Part 2 Command sync |
+| **R8** portability: `CLAUDE.md` a pure redirect, nothing model-specific in shared files, ≥2 agents verified | root `AGENTS.md` §8; one command set reaches four platforms via `/smh-sync-agents`; canary runs per tool. ✅ **Exception CLOSED 2026-08-22 (SCC-279)** — root `GEMINI.md` had grown three "GEMINI SPECIFIC HARD RULES"; operator ruling was **FOLD**, and the file is now the house adapter. Nothing was lost: all three were already law every platform loads — explicit staging is `git-policy.md`, worktree-before-edit is `worktree-per-story.md`, and sync scope is `project-law.md` (“`/smh-sync-agents` targets the command center and the machine-global caches only”), which `sync-agents.ps1` enforces by exiting 1 on the retired `-Maintained` flag that rule actually told Gemini to run. Now **checked, not asserted**: `.agents/scripts/tests/test_entry_adapters.py` | Part 1 Layer 1 · Part 2 Command sync |
 | `_experiment/` — the routing smoke test | `_routing-canary/` (renamed: permanent regression check, not a demo) | Part 2 Routing canary |
 | `_system/AGENTS.md` — the system-builder agent | `docs/system-builder.md` (`_system/` dissolved 2026-07-25; `router.md` row "Maintaining THIS home-base system") · `/smh-new-project` adds a workspace by cloning the skeleton | Part 2 Router drift |
 | Validation loop (canary · cold-route · persistence · token-frugality · negative/route-up) | all five named in Part 2 "Routing canary — the regression cadence" | Part 2 |
@@ -74,6 +74,12 @@ A compliant workspace has these, and nothing it doesn't need.
 ### Layer 1 — entry + map
 - **`CLAUDE.md`** and **`GEMINI.md`** — one-line adapters, identical everywhere: *"Read `AGENTS.md` in this
   same folder and follow it. That is the single source of truth."* Nothing model-specific beyond the name.
+  ⛔ **This is a gate, not a convention (SCC-279).** `.agents/scripts/tests/test_entry_adapters.py`
+  reads every TRACKED adapter and fails `run_all` on any line that is not the title, the redirect, or
+  the house footnote. It exists because root `GEMINI.md` carried three model-specific hard rules and
+  `check_maps`' check 8 passed it — that check asks whether the redirect is PRESENT, and it was.
+  *Contains the redirect* and *is the redirect* are different claims; only the second is the promise
+  above. `_routing-canary/`'s adapters are exempt BY NAME (they point at `agent.md` by design).
 - **`AGENTS.md`** — the brain. Numbered sections so agents skip-to-N:
   1. **ROOT LAW / prime mission** — one line: what this workspace exists to do.
   2. **START HERE** — you're in this workspace; don't read the tree; routing question → the routing table /
@@ -171,7 +177,7 @@ the toolkit:
 ### Format checklist (stamp a workspace)
 | ✓ | Item |
 |---|---|
-| ☐ | `CLAUDE.md` + `GEMINI.md` are one-line adapters (no `{{PLACEHOLDER}}`, no dead commands) |
+| ☐ | `CLAUDE.md` + `GEMINI.md` are one-line adapters (no `{{PLACEHOLDER}}`, no dead commands) — asserted by `tests/test_entry_adapters.py`, which is where a “just this one extra rule” gets caught |
 | ☐ | `AGENTS.md` numbered, with Map/Mission/Support + a real routing table + up-route |
 | ☐ | `.agents/`: master at the lobby · **tier-2 law only** in a thin project (`rules/` + `skills/` + `INDEX.md`; no vendor, no `opencode.json`) — `project-law.md` |
 | ☐ | `docs/repo-map.md` present and current (Part 3) |
@@ -210,7 +216,7 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 | ↳ per-project memory | *(home base only)* | `Projects/<name>/_artifacts/_memory/` | the same store shape, **inside the project's own repo** — so a project's memories version with the code they describe and arrive with a clone. Read by any lane launched inside that project (which never loads the lobby index), and by `/cicd-boot-sprint-memory` Step 1.5 after it binds a target. ⛔ **A separate repo, therefore a separate ticket key** — AGY answers to `AVCH` only, and an `SCC`-keyed commit there is rejected by its armed hook. The lobby gate reports project-store defects as `[SIGNAL]`, never as a blocking failure, because the lobby is not allowed to fix them. |
 | Retired artifacts | `_artifacts/_archived/` | `_artifacts/_archived/` | — |
 | Testing & Debugging | `_artifacts/debugging/` | `_artifacts/debugging/` | standardized folder for isolated testing, bug repros, and debug scripts |
-| Tier-2 local law | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` (+ 1-line `CLAUDE.md`/`GEMINI.md` adapters beside each) | same | tier model above; linted as a **non-fatal hint** (check 8) |
+| Tier-2 local law | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` (+ 1-line `CLAUDE.md`/`GEMINI.md` adapters beside each) | same | tier model above; PRESENCE linted as a **non-fatal hint** (`check_maps` check 8), adapter BODY asserted fatally by `tests/test_entry_adapters.py` |
 | Open tasks ("what's next") | the **live Jira board** (`SCC`) — `In Progress` → `To Do Next` → `To Do` | the project's own board (e.g. `AVCH`) | root `AGENTS.md` §7 · `.agents/rules/jira.md`. ⛔ `_my_resources/open_tasks/todo_list.md` is **not** a source (retired 2026-08-09); `/smh-update-maps-indexes` only refreshes its `## Open Work` file-list |
 | Personal area (protected) | `_my_resources/` | `_my_resources/` | off-limits **except** the `## Open Work` manifest in `open_tasks/todo_list.md` (maintained by `/smh-update-maps-indexes`) |
 | BMAD (if present) | — | `_bmad/` (owned, regenerated) · `_bmad-output/` (state) | `_bmad-output/active-context/active-context.md` **IS** the continuity brief above; `_bmad/` itself is never hand-edited |
