@@ -114,6 +114,13 @@ lane:
 | MCP configs | source-machine absolute workspace survived | exact-root substitution to `--workspace=.` plus export assertion |
 | README verification | source full suite fails in a deliberately thin shell | generated stdlib validator ships and is the documented gate |
 | scripts index | source-only exporter looked available in the product | explicit source-only inventory label; product validator retained |
+| leak failure transcript | matched `.env` values were printed verbatim | findings redact both token and potentially secret-bearing path |
+| dotenv parser | `secret # comment` produced a needle containing the comment | unquoted inline comments stripped; quoted hashes preserved |
+| private aliases | standalone `AVCH` and spaced `Aviation Chat` survived a green export | substitution and blocking privacy lists cover every reproduced form |
+| nested target | an output under an included source folder could self-enumerate | target must resolve outside the source tree, including `-WhatIf` |
+| generated tutor mirrors | stale `/sudo-*` lessons outside authored files passed validation | every generated tutor door joins the live-surface scan plus mutant |
+| training sentinel | `off` → `on` restored different bytes | one canonical three-line payload is exported and embedded in the command |
+| scripts top-level inventory | both new scripts were absent from the auto-listed block | exporter and validator appear in the folder inventory |
 
 ## Task Checklist
 

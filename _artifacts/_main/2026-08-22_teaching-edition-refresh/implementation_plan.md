@@ -340,3 +340,20 @@ Approved by Daniel on 2026-08-22 with the bounded addition recorded above:
 `approved, with one addition we will handle after this is complete.` The addition makes
 `sudo-project-skeleton` the named first-project pair and defers the AviationChat-derived skeleton
 upgrade until SCC-280 is complete.
+
+## Final-Review Amendment — privacy and reversibility
+
+The first verdict-eligible fan-out at `d8b63a38` withheld PASS and reproduced six additional defects:
+
+1. leak failures echoed the matched credential into terminal and CI transcripts;
+2. unquoted dotenv values with trailing comments were parsed as the wrong needle;
+3. standalone `AVCH`, spaced `Aviation Chat`, and incident-door aliases escaped the privacy manifest;
+4. an export target nested under an included source directory could recurse into its own output;
+5. generated opencode/Antigravity tutor mirrors were outside the retired-command validator sweep; and
+6. `/smh-training off` → `on` recreated content that differed from the committed exported sentinel.
+
+The literal review also caught an incomplete generated top-level scripts inventory. These fixes remain
+inside the approved exporter, validator, tutor, SOP, tests, indexes, and artifact surfaces. Acceptance
+now requires an eight-case matcher/parser self-test, a redacted real leak failure, source-recursion
+refusal, generated-mirror mutation kill, expanded private-alias scan, and byte-identical sentinel
+contract before a new SHA can receive the final suite receipt or review verdict.

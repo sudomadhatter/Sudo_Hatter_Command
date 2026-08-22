@@ -3,8 +3,11 @@
 
 from __future__ import annotations
 
+import json
+import re
 import subprocess
 import sys
+import textwrap
 from pathlib import Path
 
 from _harness import Cases, TempDir
@@ -47,6 +50,30 @@ def main() -> int:
             c.check("export has no git history", not (target / ".git").exists())
 
             if target.exists():
+                sentinel = target / ".training-mode"
+                canonical_sentinel = (
+                    SCRIPTS
+                    / "teaching-edition"
+                    / "replacements"
+                    / "training-mode-sentinel"
+                ).read_bytes()
+                training_command = (
+                    target / ".agents" / "commands" / "smh-training.md"
+                ).read_text(encoding="utf-8")
+                embedded_match = re.search(
+                    r"```text\n(?P<sentinel>.*?)\n\s*```", training_command, flags=re.DOTALL
+                )
+                embedded_sentinel = (
+                    (textwrap.dedent(embedded_match.group("sentinel")) + "\n").encode("utf-8")
+                    if embedded_match
+                    else b""
+                )
+                c.check(
+                    "training on restores the committed sentinel bytes",
+                    sentinel.read_bytes() == canonical_sentinel
+                    and embedded_sentinel == canonical_sentinel,
+                )
+
                 readme = target / "README.md"
                 original = readme.read_text(encoding="utf-8") if readme.is_file() else ""
                 readme.write_text(original + "\nRun /sudo-tour now.\n", encoding="utf-8")
@@ -57,6 +84,22 @@ def main() -> int:
                     " | ".join(retired_findings[:8]),
                 )
                 readme.write_text(original, encoding="utf-8")
+
+                generated_tour = target / ".opencode" / "commands" / "smh-tour.md"
+                generated_original = generated_tour.read_text(encoding="utf-8")
+                generated_tour.write_text(
+                    generated_original + "\nRun /sudo-tour now.\n", encoding="utf-8"
+                )
+                generated_findings = validate(target)
+                c.check(
+                    "generated tutor-mirror mutant is killed",
+                    any(
+                        "retired /sudo" in finding and ".opencode/commands/smh-tour.md" in finding
+                        for finding in generated_findings
+                    ),
+                    " | ".join(generated_findings[:8]),
+                )
+                generated_tour.write_text(generated_original, encoding="utf-8")
 
                 readme.write_text(original + '\nRun ["/sudo-tour"] now.\n', encoding="utf-8")
                 quoted_retired_findings = validate(target)
@@ -103,9 +146,77 @@ def main() -> int:
         transcript = (proc.stdout or "") + (proc.stderr or "")
         c.check(
             "leak matcher self-test passes",
-            proc.returncode == 0 and "LEAK MATCHER SELF-TEST VALID (5/5)" in transcript,
+            proc.returncode == 0 and "LEAK MATCHER SELF-TEST VALID (8/8)" in transcript,
             transcript,
         )
+
+        inside_proc = subprocess.run(
+            [
+                "pwsh",
+                "-NoProfile",
+                "-File",
+                str(exporter),
+                "-Manifest",
+                str(manifest),
+                "-Target",
+                str(REPO / "docs" / "teaching-output"),
+                "-WhatIf",
+            ],
+            cwd=REPO,
+            capture_output=True,
+            text=True,
+            errors="replace",
+        )
+        inside_transcript = (inside_proc.stdout or "") + (inside_proc.stderr or "")
+        c.check(
+            "target inside source is refused before enumeration",
+            inside_proc.returncode != 0 and "outside the source tree" in inside_transcript,
+            inside_transcript,
+        )
+
+        with TempDir() as temp:
+            fixture = temp / "source"
+            fixture.mkdir()
+            (fixture / ".env").write_text(
+                "API_KEY=secretvalue12345 # production\n", encoding="utf-8"
+            )
+            (fixture / "payload.txt").write_text("secretvalue12345\n", encoding="utf-8")
+            fixture_manifest = fixture / "manifest.json"
+            fixture_manifest.write_text(
+                json.dumps(
+                    {
+                        "name": "redaction probe",
+                        "source": ".",
+                        "include": ["payload.txt"],
+                        "leakScan": {"literals": [], "wordLiterals": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            redaction_proc = subprocess.run(
+                [
+                    "pwsh",
+                    "-NoProfile",
+                    "-File",
+                    str(exporter),
+                    "-Manifest",
+                    str(fixture_manifest),
+                    "-Target",
+                    str(temp / "public"),
+                ],
+                cwd=REPO,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+            redaction_transcript = (redaction_proc.stdout or "") + (redaction_proc.stderr or "")
+            c.check(
+                "inline-comment secret is blocked without echoing it",
+                redaction_proc.returncode != 0
+                and "LEAK SCAN FAILED" in redaction_transcript
+                and "secretvalue12345" not in redaction_transcript,
+                redaction_transcript,
+            )
 
         original_exporter = exporter.read_text(encoding="utf-8")
         mutants = {

@@ -35,6 +35,10 @@
     ".agents/scripts/export-teaching-edition.ps1",
     ".agents/scripts/teaching-edition",
     ".agents/scripts/tests/test_teaching_edition.py",
+    ".agents/scripts/tests/fixtures/avch58_your_actions.md",
+    "docs/_scc_sops_prds/sentry_error_response_team.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md",
     "docs/.maps-journal.jsonl",
     "docs/.maps-state.json",
     ".agents/commands/sentry-security-team-avch.md",
@@ -70,10 +74,14 @@
   "substitutions": [
     { "from": "AGY_AVIATIONCHAT", "to": "YOUR_PROJECT" },
     { "from": "AVIATIONCHAT", "to": "YOUR_PROJECT" },
+    { "from": "Aviation Chat", "to": "your project" },
     { "from": "AviationChat", "to": "your project" },
     { "from": "aviationChat", "to": "your-project" },
     { "from": "aviationchat", "to": "your-project" },
     { "from": "AVCH-", "to": "PROJECT-" },
+    { "from": "AVCH", "to": "PROJECT" },
+    { "from": "AvCh", "to": "Project" },
+    { "from": "avch", "to": "project" },
     { "from": "SCC-", "to": "HISTORY-" },
     { "from": "NEXGen", "to": "YOUR_PROJECT" },
     { "from": "NEXgen", "to": "YOUR_PROJECT" },
@@ -117,12 +125,13 @@
       "sudohatter",
       "sudomadhatter@gmail.com",
       "AviationChat",
+      "Aviation Chat",
       "NEXgen",
       "Sudo_Hatter_Command",
       "Fresh_Workspace_BMAD",
       "clean-bmad",
       "sudo-command.atlassian.net"
     ],
-    "wordLiterals": ["Sully", "Igor"]
+    "wordLiterals": ["Sully", "Igor", "AVCH"]
   }
 }

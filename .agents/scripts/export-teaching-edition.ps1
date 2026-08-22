@@ -58,15 +58,40 @@ function Test-IsWithinDirectory {
         $candidatePath.StartsWith($directoryPrefix, [StringComparison]::OrdinalIgnoreCase)
 }
 
+function ConvertFrom-DotEnvValue {
+    param([AllowNull()][string]$ValueText)
+    if ($null -eq $ValueText) { return '' }
+    $value = $ValueText.Trim()
+    if ($value.Length -ge 2 -and ($value[0] -eq '"' -or $value[0] -eq "'")) {
+        $quote = $value[0]
+        $closing = $value.IndexOf($quote, 1)
+        if ($closing -gt 0) { return $value.Substring(1, $closing - 1) }
+    }
+    # dotenv treats a # after whitespace as an inline comment for an unquoted value.
+    return ($value -replace '\s+#.*$', '').Trim()
+}
+
+function New-RedactedLeakHit {
+    param([ValidateSet('path', 'content')][string]$Kind,
+          [ValidateSet('literal', 'word')][string]$MatchType)
+    # Never echo the matched token or path: either can itself be the credential. The manifest
+    # remains the local debugging source; terminal and CI transcripts stay safe to share.
+    return "exported $Kind contains configured private $MatchType (details withheld)"
+}
+
 if ($SelfTestLeakMatcher) {
     $probeRoot = Join-Path ([System.IO.Path]::GetTempPath()) 'teaching-export-probe'
     $probeGit = Join-Path $probeRoot '.git'
+    $redactedProbe = New-RedactedLeakHit -Kind content -MatchType literal
     $cases = @(
         @('real .git child is skipped', (Test-IsWithinDirectory (Join-Path $probeGit 'config') $probeGit), $true),
         @('.githooks is scanned', (Test-IsWithinDirectory (Join-Path $probeRoot '.githooks/hook.ps1') $probeGit), $false),
         @('.gitignore is scanned', (Test-IsWithinDirectory (Join-Path $probeRoot '.gitignore') $probeGit), $false),
         @('bracket secret matches literally', (Test-LiteralContains 'prefix secret[abc]token123 suffix' 'secret[abc]token123'), $true),
-        @('bracket secret is not a wildcard', (Test-LiteralContains 'prefix secretatoken123 suffix' 'secret[abc]token123'), $false)
+        @('bracket secret is not a wildcard', (Test-LiteralContains 'prefix secretatoken123 suffix' 'secret[abc]token123'), $false),
+        @('unquoted dotenv comment is stripped', (ConvertFrom-DotEnvValue 'secretvalue123 # production'), 'secretvalue123'),
+        @('quoted dotenv hash is preserved', (ConvertFrom-DotEnvValue '"secret#value123" # production'), 'secret#value123'),
+        @('leak report redacts the secret', (Test-LiteralContains $redactedProbe 'secretvalue123'), $false)
     )
     $failed = @($cases | Where-Object { $_[1] -ne $_[2] })
     if ($failed.Count -gt 0) {
@@ -85,6 +110,11 @@ $m = Get-Content -LiteralPath $Manifest -Raw -Encoding UTF8 | ConvertFrom-Json
 
 $sourceRoot = Resolve-Path -LiteralPath (Join-Path $manifestDir $m.source)
 if (-not (Test-Path -LiteralPath $sourceRoot)) { throw "Source not found: $sourceRoot" }
+
+$targetRoot = [System.IO.Path]::GetFullPath($Target)
+if (Test-IsWithinDirectory $targetRoot $sourceRoot.Path) {
+    throw "Target must be outside the source tree to prevent recursive self-copy: $Target"
+}
 
 if (-not $WhatIf -and (Test-Path -LiteralPath $Target)) {
     $existing = @(Get-ChildItem -LiteralPath $Target -Force)
@@ -213,7 +243,7 @@ $TEXT_EXT = @('.md', '.txt', '.json', '.ps1', '.py', '.yaml', '.yml', '.toml', '
 $subCount = 0
 $subFiles = 0
 
-$subList = Get-ManifestList $m "substitutions"
+$subList = @(Get-ManifestList $m "substitutions")
 if (-not $WhatIf -and $subList.Count -gt 0) {
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     foreach ($file in Get-ChildItem -LiteralPath $Target -Recurse -File -Force) {
@@ -341,12 +371,12 @@ if (-not $WhatIf) {
 Write-Host ""
 Write-Host "-- leak scan --" -ForegroundColor Yellow
 
-$needles = Get-ManifestList $m.leakScan "literals"
+$needles = @(Get-ManifestList $m.leakScan "literals")
 
 # Short names that are substrings of ordinary words need whole-word matching, or the scan
 # cries wolf ("Igor" inside "Rigor") - and a scanner that cries wolf gets muted, which is
 # the same outcome as having no scanner.
-$wordNeedles = Get-ManifestList $m.leakScan "wordLiterals"
+$wordNeedles = @(Get-ManifestList $m.leakScan "wordLiterals")
 
 # Every VALUE from the live .env, so a key that was pasted into a doc is caught even
 # though the .env itself was excluded.
@@ -355,7 +385,7 @@ if (Test-Path -LiteralPath $envPath) {
     foreach ($line in Get-Content -LiteralPath $envPath) {
         if ($line -match '^\s*[#;]') { continue }
         if ($line -notmatch '=') { continue }
-        $val = ($line -split '=', 2)[1].Trim().Trim('"').Trim("'")
+        $val = ConvertFrom-DotEnvValue (($line -split '=', 2)[1])
         # Short values are common words, not secrets - they would only produce noise.
         if ($val.Length -ge 12) { $needles += $val }
     }
@@ -388,22 +418,26 @@ if ($scanRoot -and (Test-Path -LiteralPath $scanRoot)) {
         # past this guard and into a pushed repo.
         $relSlash = $rel -replace '\\', '/'
         foreach ($n in $needles) {
-            if (Test-LiteralContains $relSlash $n) { $hits += "$rel  PATH contains: $n" }
+            if (Test-LiteralContains $relSlash $n) {
+                $hits += New-RedactedLeakHit -Kind path -MatchType literal
+            }
         }
         foreach ($n in $wordNeedles) {
             if ($relSlash -match ('\b' + [regex]::Escape($n) + '\b')) {
-                $hits += "$rel  PATH contains (word): $n"
+                $hits += New-RedactedLeakHit -Kind path -MatchType word
             }
         }
 
         $text = Get-Content -LiteralPath $file.FullName -Raw -ErrorAction SilentlyContinue
         if (-not $text) { continue }
         foreach ($n in $needles) {
-            if (Test-LiteralContains $text $n) { $hits += "$rel  contains: $n" }
+            if (Test-LiteralContains $text $n) {
+                $hits += New-RedactedLeakHit -Kind content -MatchType literal
+            }
         }
         foreach ($n in $wordNeedles) {
             if ($text -match ('\b' + [regex]::Escape($n) + '\b')) {
-                $hits += "$rel  contains (word): $n"
+                $hits += New-RedactedLeakHit -Kind content -MatchType word
             }
         }
     }

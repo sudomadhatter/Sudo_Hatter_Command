@@ -67,7 +67,9 @@ Tests: **`python3 .agents/scripts/tests/run_all.py`** (stdlib only, no pytest; f
 - `__pycache__/`
 - `check_maps.py`
 - `check-repo-map-drift.ps1`
+- `export-teaching-edition.ps1`
 - `generate_doc_graph.py`
 - `generate_repo_map.py`
 - `new-project.ps1`
 - `sync-agents.ps1`
+- `validate_teaching_edition.py`

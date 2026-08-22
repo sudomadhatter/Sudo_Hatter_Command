@@ -18,6 +18,8 @@ PRIVATE_LITERALS = (
     "dlohneiss",
     "sudo" + "hatter",
     "AviationChat",
+    "Aviation Chat",
+    "AVCH",
     "NEXgen",
     "Sudo_Hatter_Command",
     "Fresh_Workspace_BMAD",
@@ -30,6 +32,14 @@ LIVE_TUTOR_FILES = (
     ".agents/rules/training-mode.md",
     ".agents/commands/smh-tour.md",
     ".agents/commands/smh-training.md",
+    ".agents/skills/smh-tour/SKILL.md",
+    ".agents/skills/smh-training/SKILL.md",
+    ".agents/workflows/smh-tour.md",
+    ".agents/workflows/smh-training.md",
+    ".claude/skills/smh-tour/SKILL.md",
+    ".claude/skills/smh-training/SKILL.md",
+    ".opencode/commands/smh-tour.md",
+    ".opencode/commands/smh-training.md",
 )
 
 REQUIRED_PATHS = (
