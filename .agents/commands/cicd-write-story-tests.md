@@ -29,9 +29,20 @@ STOP and say so, never fall back to the lobby.
    slug `story-<id-dashed>-<short-name>`, e.g. `story-21-3-student-archive`:
 ```bash
 git -C "$PROJECT_ROOT" fetch origin epic/<JIRA-KEY>-<slug>
-git -C "$PROJECT_ROOT" worktree add .claude/worktrees/<story-slug> \
+git -C "$PROJECT_ROOT" worktree add --no-track .claude/worktrees/<story-slug> \
     -b claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>
 ```
+
+   ⛔ **`--no-track` is not optional, and it is the price of naming the base as an operand.** A
+   *remote-tracking* start point makes `branch.autoSetupMerge` (on by default) set this lane's upstream
+   to **the epic**, so `git status -sb` reads `## claude/…...origin/epic/…` — every later `0 0` check
+   measures the wrong remote — and a bare `git push` dies with *"The upstream branch of your current
+   branch does not match the name of your current branch"*. `push.autoSetupRemote=true` does **not**
+   rescue it, and git's own suggested remedy is `git push origin HEAD:epic/…`, the mid-story epic push
+   `.agents/rules/worktree-per-story.md` G3 bans. With `--no-track` the lane has no upstream until its
+   first push, which then creates `origin/claude/<JIRA-KEY>-<story-slug>` and reports `0 0`. Same trap,
+   different cure, at `.agents/commands/smh-plan-task.md` — a Task lane branches from `origin/main` and
+   spends a second line on `git branch --unset-upstream`; one flag here cannot be forgotten.
 
    ⛔ **The base is an OPERAND, so the shared checkout never leaves `main` (SCC-256).** `EnterWorktree`
    is the other door and it is **not** equivalent — `worktree.baseRef: "head"` makes it inherit the

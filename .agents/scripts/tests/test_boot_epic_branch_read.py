@@ -39,17 +39,22 @@ survive a reflow, far short of the ~14 lines back to the board-vs-YAML paragraph
 wording this must NOT be allowed to satisfy."""
 
 # The `git show` of the epic copy — the anchor everything else is measured from.
-ANCHOR = re.compile(r"git\s+(?:-C\s+\S+\s+)?show[^\n]*\bepic/[^\n]*sprint-status\.yaml")
+# ⛔ The objectspec COLON is part of the requirement. `git show <ref>:<path>` is the form; degrade
+# that colon to a slash and git answers `fatal: ambiguous argument` — but a pattern that only
+# looked for `epic/` … `sprint-status.yaml` on one line called the broken command satisfied.
+ANCHOR = re.compile(r"git\s+(?:-C\s+\S+\s+)?show\s[^\n]*\bepic/\S*:\S*sprint-status\.yaml")
 
 # (name, pattern, where it must appear, why it is required)
-_SECTION, _AFTER = "section", "window"
+_SECTION, _AFTER, _CLAIM = "section", "window", "claim"
 REQUIRED: tuple[tuple[str, re.Pattern[str], str, str], ...] = (
     ("epic-read", ANCHOR, _SECTION,
      "a `git show <epic-ref>:…/sprint-status.yaml` — close-out writes the YAML INSIDE the "
      "story worktree, so the landed truth is on the epic branch, not in the checkout"),
-    ("ref-discovery", re.compile(r"refs/remotes/origin/epic/"), _SECTION,
-     "`git for-each-ref … refs/remotes/origin/epic/*` — the epic ref is DISCOVERED, and "
-     "`origin/` first because a local epic head is only as fresh as the last pull"),
+    ("ref-discovery", re.compile(r"""['"]refs/remotes/origin/epic/\*['"]"""), _SECTION,
+     "`git for-each-ref … 'refs/remotes/origin/epic/*'` — the epic ref is DISCOVERED, and "
+     "`origin/` first because a local epic head is only as fresh as the last pull. The STAR "
+     "and the QUOTES are both load-bearing: without the star it discovers nothing, and "
+     "unquoted, zsh globs it against the filesystem and the command exits 1 with no output"),
     ("no-epic-fallback", re.compile(r"no epic branch|between epics", re.I), _AFTER,
      "the project that has NO epic branch — there the checkout copy is the authority, and a "
      "boot that errors out instead of saying so is a worse boot than the stale one"),
@@ -58,6 +63,13 @@ REQUIRED: tuple[tuple[str, re.Pattern[str], str, str], ...] = (
      "already says this about the BOARD and that sentence must not be allowed to count"),
     ("report-both", re.compile(r"report\s+both", re.I), _AFTER,
      "the words `report both`, in the window — one disagreement idiom in this file, not two"),
+    ("names-both-copies", re.compile(r"(?is)epic.*checkout|checkout.*epic"), _CLAIM,
+     "the disagreement sentence must name BOTH copies — the epic branch and the checkout. "
+     "⛔ Step 2b already says `disagree` and `report both` about the BOARD, and the window is "
+     "the only thing keeping that sentence out; reflow it ten lines up and the two checks "
+     "above go green on a section that never mentions the epic copy at all. Measured on the "
+     "SENTENCE, not the window — the no-epic fallback line names both copies too, and a "
+     "window-wide check let it stand in for the claim"),
 )
 
 # Characterization: true before the fix and after it. The fix ADDS the epic read; a future
@@ -102,13 +114,29 @@ def after_anchor(body: str) -> str:
     return ""
 
 
+def claim(win: str) -> str:
+    """The ONE sentence in the window that carries `report both`, whitespace-flattened.
+
+    ⛔ Not the window. The window also holds the no-epic fallback — *"the checkout copy IS the
+    authority"* — which names both copies all by itself, so a window-wide check for "epic AND
+    checkout" is satisfied no matter what the disagreement sentence says. The requirement is
+    about the CLAIM."""
+    flat = " ".join(win.split())
+    m = re.search(r"report\s+both", flat, re.I)
+    if not m:
+        return ""
+    start = flat.rfind(". ", 0, m.start()) + 1
+    dot = flat.find(". ", m.end())
+    return flat[start:len(flat) if dot < 0 else dot + 1]
+
+
 def missing(body: str) -> list[tuple[str, str]]:
     """-> [(requirement name, why it is required)] for every one not satisfied."""
     win = after_anchor(body)
+    hays = {_SECTION: body, _AFTER: win, _CLAIM: claim(win)}
     out = []
     for name, pat, where, why in REQUIRED:
-        hay = body if where is _SECTION else win
-        if not pat.search(hay):
+        if not pat.search(hays[where]):
             out.append((name, why))
     return out
 
@@ -124,23 +152,39 @@ GOOD = """
 Read `_bmad-output/implementation-artifacts/sprint-status.yaml` — it is ~62 KB of bare rows.
 Read it off the EPIC BRANCH, not off the checkout:
 ```bash
-git for-each-ref --format='%(refname:short)' refs/remotes/origin/epic/*
+git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'
 git show origin/epic/<KEY>-<slug>:_bmad-output/implementation-artifacts/sprint-status.yaml
 ```
 No epic branch (a project between epics) → the checkout copy IS the authority; say so and move on.
-When the two disagree, report both and lead with the epic branch.
+When the two disagree, report both ("the epic branch has <id> at <status>; the checkout copy
+still says <status>") and lead with the epic branch.
 """
 
-# Each mutant drops exactly one requirement from GOOD.
-MUTANTS: dict[str, tuple[str, str]] = {
-    "epic-read": ("git show origin/epic/<KEY>-<slug>:_bmad-output/implementation-artifacts/"
+# Each mutant breaks exactly one requirement in GOOD. Several requirements have MORE THAN ONE
+# way to fail — a `git show` can lose its ref or just its colon; a refspec can lose its star or
+# just its quotes — so this is a list of triples, not one mutant per name.
+MUTANTS: tuple[tuple[str, str, str], ...] = (
+    ("epic-read", "git show origin/epic/<KEY>-<slug>:_bmad-output/implementation-artifacts/"
                   "sprint-status.yaml", "cat sprint-status.yaml"),
-    "ref-discovery": ("refs/remotes/origin/epic/*", "refs/heads/*"),
-    "no-epic-fallback": ("No epic branch (a project between epics) → the checkout copy IS "
+    # git: `fatal: ambiguous argument` — a path is not an objectspec.
+    ("epic-read", "epic/<KEY>-<slug>:_bmad", "epic/<KEY>-<slug>/_bmad"),
+    ("ref-discovery", "'refs/remotes/origin/epic/*'", "'refs/heads/*'"),
+    # zsh: `no matches found: refs/remotes/origin/epic/*`, exit 1, nothing on stdout.
+    ("ref-discovery", "'refs/remotes/origin/epic/*'", "refs/remotes/origin/epic/*"),
+    # discovers nothing: for-each-ref wants a pattern, and this one matches only an exact ref.
+    ("ref-discovery", "origin/epic/*'", "origin/epic/'"),
+    ("no-epic-fallback", "No epic branch (a project between epics) → the checkout copy IS "
                          "the authority; say so and move on.", "Otherwise carry on."),
-    "disagreement": ("When the two disagree, report both", "When the two differ, report both"),
-    "report-both": ("report both and lead with", "prefer the epic branch and lead with"),
-}
+    ("disagreement", "When the two disagree, report both", "When the two differ, report both"),
+    ("report-both", "report both (\"the epic", "prefer the epic branch ((\"the epic"),
+    # ⛔ B1's mutant: Step 2b's own pre-existing BOARD sentence, moved into the window. It keeps
+    # `disagree` and `report both` and mentions neither copy — the exact sentence the window was
+    # built to exclude, and before `names-both-copies` it satisfied both of those requirements.
+    ("names-both-copies",
+     "When the two disagree, report both (\"the epic branch has <id> at <status>; the checkout "
+     "copy\nstill says <status>\") and lead with the epic branch.",
+     "When the board and the YAML disagree, report both and lead with the board."),
+)
 
 
 def main() -> int:
@@ -177,10 +221,32 @@ def main() -> int:
     if c.block("A3 · every requirement fails its own mutant"):
         c.check("the reference section satisfies all of them", not missing(GOOD),
                 report(missing(GOOD)))
-        for name, (find, replace) in MUTANTS.items():
+        for name, find, replace in MUTANTS:
             mutant = GOOD.replace(find, replace)
-            c.check(f"mutant fires: {name}", mutant != GOOD and name in {n for n, _ in missing(mutant)},
-                    f"substitution applied={mutant != GOOD}; missing={[n for n, _ in missing(mutant)]}")
+            c.check(f"mutant fires: {name} → {replace[:44]!r}",
+                    mutant != GOOD and name in {n for n, _ in missing(mutant)},
+                    f"substitution applied={mutant != GOOD}; "
+                    f"missing={[n for n, _ in missing(mutant)]}")
+
+    if c.block("A5 · the claim is measured as a SENTENCE, not as the window"):
+        win = after_anchor(GOOD)
+        c.check("the window really does name both copies twice over — claim AND fallback",
+                len(re.findall(r"(?i)checkout", win)) >= 2, f"{re.findall(r'(?i)checkout', win)}")
+        c.check("...so `claim()` isolates one sentence, not the lot",
+                "report both" in claim(win).lower() and "authority" not in claim(win).lower(),
+                claim(win))
+        board = GOOD.replace(
+            'When the two disagree, report both ("the epic branch has <id> at <status>; '
+            'the checkout copy\nstill says <status>") and lead with the epic branch.',
+            "When the two disagree, report both and lead with the newer one.")
+        c.check("a claim that names only ONE copy fires, even though the fallback names both",
+                "names-both-copies" in {n for n, _ in missing(board)},
+                f"claim={claim(after_anchor(board))!r}")
+        c.check("...and the window-wide reading would have MISSED it",
+                bool(re.search(r"(?is)epic.*checkout|checkout.*epic", after_anchor(board))),
+                "this is why the requirement moved off the window")
+        c.check("no `report both` at all yields an empty claim, which fails closed",
+                claim("nothing here") == "", "an absent claim is never a satisfied one")
 
     if c.block("A4 · the scan's own failure modes"):
         with TempDir() as tmp:

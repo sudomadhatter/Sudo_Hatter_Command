@@ -507,11 +507,21 @@ nothing. The story directory is named at every call site on purpose: the underly
 defaults somewhere else, and nothing in this system is edited inside BMAD to change that.
 
 **Opening the story tree does not move your shared checkout.** The tree is cut with the epic ref
-named as an operand — `git worktree add <path> -b claude/<KEY>-<story-slug> origin/epic/<KEY>-<slug>`
-— so nothing has to be checked out first and the shared checkout stays on `main`, where every later
-`git status`, `worktree add` and boot expects to find it. The one exception is the `EnterWorktree`
-door, which inherits the current HEAD by configuration: take that door and you check the epic branch
-out first and go **straight back to `main`** once the tree is open.
+named as an operand — `git worktree add --no-track <path> -b claude/<KEY>-<story-slug>
+origin/epic/<KEY>-<slug>` — so nothing has to be checked out first and the shared checkout stays on
+`main`, where every later `git status`, `worktree add` and boot expects to find it. The one exception
+is the `EnterWorktree` door, which inherits the current HEAD by configuration: take that door and you
+check the epic branch out first and go **straight back to `main`** once the tree is open.
+
+**⛔ `--no-track` is the price of that operand, and a lane that drops it pushes at the epic.** A
+remote-tracking start point sets the new branch's upstream to `origin/epic/<…>`, so `git status -sb`
+compares the lane against the epic — `0 0` stops meaning "in sync with my own remote branch" — and a
+bare `git push` refuses with *"The upstream branch of your current branch does not match the name of
+your current branch"*, offering `git push origin HEAD:epic/<…>` as the remedy. That remedy is the
+mid-story epic push the worktree rule bans, and `push.autoSetupRemote=true` does not rescue the case.
+With the flag the lane carries no upstream until its own first push. The Task lane meets the same
+trap from `origin/main` and answers it with a separate `git branch --unset-upstream`; a story lane
+answers it inside the line it was already typing.
 
 **⛔ It does not rule `parallel-ok`** — that is `/cicd-label-tasks`' job, for the reason above.
 
@@ -2943,6 +2953,13 @@ findings can FAIL; the judgment pass caps at CONCERNS. Explained in
 > `origin/main`, never a bare `main`. The line had been carrying `BASE=${BASE:-main}`, invisible to
 > the stale-ref scan because its `(?<![\w/.-])` lookbehind rejects the `-` of the shell
 > default-value operator; the scan carries `ref-default` and `ref-assign` patterns for that.
+>
+> ⛔ **QUOTE the refspec.** `'refs/remotes/origin/epic/*'` is a pattern for git to match, not a
+> path for the shell to expand. Bash leaves an unmatched glob alone, so an unquoted one looks
+> fine there; **zsh** — the Mac's shell, and the operator's — refuses outright with
+> `no matches found: refs/remotes/origin/epic/*`, exits 1 and prints nothing, so the next line
+> reads an empty variable and the whole discovery step fails quietly. Every `for-each-ref`,
+> `ls-remote` and `show-ref` pattern in a command body is quoted for this reason.
 
 ```mermaid
 flowchart TD

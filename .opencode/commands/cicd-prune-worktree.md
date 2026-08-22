@@ -74,7 +74,7 @@ In `PROJECT_ROOT`:
 Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; git fetch origin
 
 # 2 · Resolve the story's epic branch (exactly one live epic/* is the normal case)
-git for-each-ref --format='%(refname:short)' refs/remotes/origin/epic/*
+git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'
 
 # 3 · Verification check: confirm story branch has landed on origin/epic/<JIRA-KEY>-<slug>
 git merge-base --is-ancestor claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>

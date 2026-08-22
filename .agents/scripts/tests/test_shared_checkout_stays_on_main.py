@@ -58,6 +58,72 @@ RETURN_HOME = re.compile(r"\b(?:back|return)(?:ing)?\s+to\s+\W?main\b", re.I)
 # The replacement wiring, pinned so the fix cannot be "delete the sentence and say nothing".
 BASE_AS_OPERAND = re.compile(r"worktree add[^\n]*\\?\n?[^\n]*origin/epic/")
 
+# ...and the operand carries a cost the pin above cannot see. `origin/epic/<…>` is a
+# REMOTE-TRACKING start point, so `branch.autoSetupMerge` (on by default) sets the new lane's
+# upstream to the EPIC: `git status -sb` reads `## claude/…...origin/epic/…` and every later
+# `0 0` check measures the wrong remote, while a bare `git push` refuses outright —
+#   fatal: The upstream branch of your current branch does not match the name of your current
+#   branch. …use  git push origin HEAD:epic/<…>
+# — and that suggested remedy is the mid-story epic push G3 of `worktree-per-story.md` BANS.
+# `push.autoSetupRemote=true` does not rescue it. `--no-track` leaves the lane with no upstream
+# until its own first push. Measured on the whitespace-normalised PARAGRAPH, so the command's
+# backslash continuation is already joined for us.
+WORKTREE_EPIC = re.compile(r"worktree add\b(?P<flags>[^\n]*?)\borigin/epic/")
+NO_TRACK = re.compile(r"--no-track\b")
+UNSET_UPSTREAM = re.compile(r"branch\s+--unset-upstream\b")
+
+CURE_WINDOW = 4
+"""⛔ There are TWO cures and the house uses both, so this scan may not demand one idiom.
+`--no-track` rides the call itself; `git -C <tree> branch --unset-upstream` is a separate line
+after it, and that is the shape `smh-plan-task.md` and `cicd-quick-dev.md` already ship — both
+with their own "not optional" note. A gate that saw only the flag would go red on a surface that
+is already correct. The window is LOGICAL lines, so a `link-worktree-assets` call or a comment
+between the two does not break the pairing."""
+
+
+def logical_lines(text: str) -> list[tuple[int, str]]:
+    """-> [(1-based number of the line it STARTS on, the line with continuations joined)].
+
+    ⛔ Physical lines are the wrong unit here. The story door writes its call across a backslash
+    continuation, so a physical-line scan sees `worktree add …` and `… origin/epic/<…>` as two
+    unrelated lines and never matches the call at all — and `paragraphs()` is the wrong unit in
+    the other direction: it joins a fenced call to whatever prose shares its block, which is how
+    an `origin/epic/` mentioned three lines below an unrelated `worktree add --track` got read as
+    one command."""
+    out: list[tuple[int, str]] = []
+    buf: list[str] = []
+    start = 0
+    for n, raw in enumerate(text.splitlines(), 1):
+        if not buf:
+            start = n
+        s = raw.rstrip()
+        if s.endswith("\\"):
+            buf.append(s[:-1])
+            continue
+        buf.append(s)
+        out.append((start, " ".join(x.strip() for x in buf).strip()))
+        buf = []
+    if buf:
+        out.append((start, " ".join(x.strip() for x in buf).strip()))
+    return out
+
+
+def untracked_bases(folders: list[Path]) -> list[tuple[str, int, str]]:
+    """-> [(file, line, the call)] for every epic-based `worktree add` left tracking the epic."""
+    out: list[tuple[str, int, str]] = []
+    for folder in folders:
+        for f in sorted(folder.glob("*.md")):
+            lines = logical_lines(f.read_text(encoding="utf-8"))
+            for i, (n, line) in enumerate(lines):
+                m = WORKTREE_EPIC.search(line)
+                if not m or NO_TRACK.search(m.group("flags")):
+                    continue
+                after = " ".join(x for _, x in lines[i + 1: i + 1 + CURE_WINDOW])
+                if UNSET_UPSTREAM.search(after):
+                    continue
+                out.append((f"{folder.name}/{f.name}", n, line))
+    return out
+
 
 def paragraphs(text: str) -> list[tuple[int, str]]:
     """-> [(1-based line number of the paragraph's first line, whitespace-normalised text)]."""
@@ -120,10 +186,18 @@ def main() -> int:
         bad = [h for h in hits if not h[4]]
         c.check("no unqualified HEAD precondition for opening a worktree",
                 not bad, f"{len(bad)} unruled" + report(bad))
-        c.check("the exemption path is exercised by real text (it rules something)",
-                any(h[4] for h in hits),
-                f"{sum(1 for h in hits if h[4])} ruled of {len(hits)} hits — a ruling nothing "
-                f"matches is a hole waiting for a future paragraph to fall into")
+        # ⛔ Do NOT assert that the live surface still HAS a ruled hit. Exactly one exists today
+        # and it is the ruled one, so `any(ruled)` only restates the check above — and it goes RED
+        # the day the paragraph is reworded or `EnterWorktree` is retired, which is a surface that
+        # is strictly BETTER. C3 exercises the ruling path on planted text either way. What is
+        # worth asserting here is that a live ruling was earned: re-derive both halves from the
+        # paragraph, independently of `scan()`'s own bookkeeping.
+        ruled = [h for h in hits if h[4]]
+        c.check("every live exemption names BOTH halves — the HEAD-inheriting door and the "
+                "trip home",
+                all(DOOR.search(h[3]) and RETURN_HOME.search(h[3]) for h in ruled),
+                f"{len(ruled)} ruled of {len(hits)} hits; zero is a PASS — a surface that no "
+                f"longer needs the exemption has outgrown it")
 
     if c.block("C2 · the story door names its base as an operand"):
         wst = COMMANDS / "cicd-write-story-tests.md"
@@ -132,6 +206,20 @@ def main() -> int:
         found = bool(BASE_AS_OPERAND.search(text))
         c.check("① opens the story tree off `origin/epic/…` NAMED, not off wherever HEAD sat",
                 found, f"`worktree add … origin/epic/` present={found}")
+        c.check("...and does it `--no-track`, so the lane's upstream is not the EPIC",
+                not untracked_bases([COMMANDS]),
+                f"{[(f, n) for f, n, _ in untracked_bases([COMMANDS])]}")
+
+    if c.block("C4 · no `worktree add … origin/epic/…` anywhere tracks the epic"):
+        offenders = untracked_bases([COMMANDS, RULES])
+        c.check("every epic-based worktree call passes `--no-track`",
+                not offenders,
+                f"{len(offenders)} tracking the epic: "
+                + "; ".join(f"{f}:{n}" for f, n, _ in offenders)
+                + ("\n      REMEDY: add `--no-track` to the `worktree add`. Without it "
+                   "`branch.autoSetupMerge` points the lane's upstream at `origin/epic/<…>`, "
+                   "`0 0` measures the wrong remote, and a bare `git push` fatals — offering "
+                   "the mid-story epic push G3 bans." if offenders else ""))
 
     if c.block("C3 · the scan fires, and the ruling is not a rubber stamp"):
         with TempDir() as tmp:
@@ -177,6 +265,44 @@ def main() -> int:
                     not one(quiet), f"{one(quiet)}")
             c.check("...and that same block satisfies the operand pin",
                     bool(BASE_AS_OPERAND.search(quiet)), quiet.replace("\n", "|"))
+
+            # C4's mutant: the SAME call, one flag short. It must be caught, and the catch must
+            # survive the backslash continuation the real command is written across.
+            (plant / "z.md").write_text(quiet, encoding="utf-8")
+            c.check("caught: the operand form WITHOUT `--no-track` tracks the epic",
+                    len(untracked_bases([plant])) == 1, f"{untracked_bases([plant])}")
+
+            fixed = quiet.replace("worktree add", "worktree add --no-track")
+            (plant / "z.md").write_text(fixed, encoding="utf-8")
+            c.check("...and clean once the flag is there, continuation and all",
+                    not untracked_bases([plant]), fixed.replace("\n", "|"))
+
+            (plant / "z.md").write_text(
+                fixed.replace("origin/epic/<KEY>-<slug>", "origin/main"), encoding="utf-8")
+            c.check("...and a `main`-based tree is not this scan's business",
+                    not untracked_bases([plant]), "the flag matters where the base is REMOTE-tracking")
+
+            # The SECOND cure, which the quick-dev door already ships: no flag, but the upstream
+            # is unset on a following line. A gate that demanded the flag would go red on it.
+            cured = quiet.rstrip() + ('\ngit -C "<the new tree>" branch --unset-upstream'
+                                      "   # an origin/… start-point sets upstream to the BASE\n")
+            (plant / "z.md").write_text(cured, encoding="utf-8")
+            c.check("`branch --unset-upstream` on a following line is the OTHER cure, and counts",
+                    not untracked_bases([plant]), cured.replace("\n", "|"))
+
+            far = quiet.rstrip() + "\nfiller\n" * (CURE_WINDOW + 1) + \
+                'git -C "<t>" branch --unset-upstream\n'
+            (plant / "z.md").write_text(far, encoding="utf-8")
+            c.check(f"...but not {CURE_WINDOW + 1} lines later — a cure that far off is not the pair",
+                    len(untracked_bases([plant])) == 1, f"{untracked_bases([plant])}")
+
+            prose = ('git worktree add --track -b claude/<K>-<s> .claude/worktrees/<s> '
+                     "origin/claude/<K>-<s>\n\nA story with no parked branch opens off "
+                     "`origin/epic/<K>-<s>` instead.\n")
+            (plant / "z.md").write_text(prose, encoding="utf-8")
+            c.check("prose naming `origin/epic/…` near an UNRELATED call is not a call",
+                    not untracked_bases([plant]),
+                    "logical lines, not paragraphs — this is cicd-resume.md's real shape")
 
             empty = tmp / "empty"
             empty.mkdir()

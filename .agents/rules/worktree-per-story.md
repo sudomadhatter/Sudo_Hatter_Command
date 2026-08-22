@@ -75,8 +75,18 @@ you are deliberately stacking on another story's branch. `git worktree add` take
 OPERAND and needs neither trip:
 
 ```
-git -C <repo> worktree add .claude/worktrees/<slug> -b claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>
+git -C <repo> worktree add --no-track .claude/worktrees/<slug> -b claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>
 ```
+
+⛔ **`--no-track` belongs to the operand form, and dropping it re-points the lane at the epic.**
+`origin/epic/<…>` is a *remote-tracking* start point, so `branch.autoSetupMerge` sets the new branch's
+upstream to the epic: `git status -sb` then compares against the wrong remote (`0 0` stops meaning
+what it says) and a bare `git push` refuses outright, offering `git push origin HEAD:epic/<…>` — the
+mid-story epic push G3 below **bans**. `push.autoSetupRemote=true` does not rescue it. With
+`--no-track` there is no upstream at all until the lane's first push, which creates
+`origin/claude/<JIRA-KEY>-<story-slug>`. A Task lane hits the same trap from `origin/main` and pays for
+it with a second command (`git branch --unset-upstream`, `smh-plan-task.md`); a flag inside the one
+line you were already typing cannot be skipped.
 
 **Bring the gitignored assets with you.** A worktree does not inherit `.env`, `auth_keys/` or
 `node_modules` — they are not in git, so there is nothing for `git worktree add` to copy, and reading

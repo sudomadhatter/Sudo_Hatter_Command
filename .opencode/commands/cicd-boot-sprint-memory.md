@@ -68,7 +68,7 @@ has landed since**. Read both:
 ```bash
 git -C "$PROJECT_ROOT" fetch origin --quiet
 # origin/ FIRST: a local epic head is only as fresh as the last pull
-git -C "$PROJECT_ROOT" for-each-ref --format='%(refname:short)' refs/remotes/origin/epic/*
+git -C "$PROJECT_ROOT" for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'   # ⛔ QUOTE the refspec — zsh globs it against the filesystem and exits 1 with no output
 git -C "$PROJECT_ROOT" show origin/epic/<JIRA-KEY>-<slug>:_bmad-output/implementation-artifacts/sprint-status.yaml
 ```
 No epic branch — a project between epics — → the checkout copy **is** the authority; say so in one
