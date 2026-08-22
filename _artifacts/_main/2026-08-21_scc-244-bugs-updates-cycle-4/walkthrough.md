@@ -40,6 +40,8 @@ Three riders are guarded by pattern scans over the whole `.agents/commands/` + `
 - [x] Sweep re-declared for the guards the review fixes added — **27/27 killed**
 - [x] Doors regenerated; SOP spine + sibling changelog current
 - [x] Suite receipt PASS at the shipping sha, clean tree
+- [x] Walkthrough + roster gate (exit 0), INDEX row, Dev Record — one record, slug from `task.yaml`
+- [x] **Rider SCC-253, picked up at close-out** — the parent carried an eighth open subtask this lane never scoped, and a parent does not close over an open child
 
 ## Evidence
 
@@ -145,6 +147,9 @@ The table carried **14** mutants written before the review. Every guard the revi
 | F2 | SCC-259 | `resolve`'s lock `detail` names **every** declared blocker — in the legend and the chat report as well as the engine | **PASS** — same file; the two door bodies fixed as review finding C6 |
 | G1 | SCC-260 | The story path is named at our own call site | **PASS** — `test_story_path_is_pinned.py` 10/10 |
 | G2 | SCC-260 | ~~The two out-of-repo halves are filed~~ | ⛔ **WITHDRAWN under the operator's BMAD ruling, not deferred.** Both halves were `_bmad/custom/bmad-create-story.toml` overrides; BMAD is neither edited nor overridden, so the accepted fix may not be applied and there is no defect left to anchor. Step 7 is NOT RUN, deliberately |
+| H1 | SCC-253 | The `test_jira_feed.py` sentence in `.agents/scripts/INDEX.md` is replaced with the measured position: no single file is the next lever, the suite is work-bound, packing limit ~39 s | **PASS** — the clause is rewritten; `test_jira_feed.py` is third by wall clock behind `test_task_preflight.py` (~49.5 s) and `test_task_preflight_contract.py` (~46.1 s), so it cannot move the floor |
+| H2 | SCC-253 | The number is cited with **how it was obtained**, so the next reader can re-run it rather than trust it | **PASS** — "the same pool run with that file excluded entirely … 59.5 s wall against 61.7 s", plus the instruction to re-run it that way before believing any successor sentence |
+| H3 | SCC-253 | Enforcement suite green | **PASS** — see Z1; the receipt was re-stamped after this edit, because `.agents/scripts/INDEX.md` is not `_artifacts/` and the freshness rule correctly went stale |
 | Z1 | all | Enforcement suite green at the shipping sha, through the receipt writer | **PASS** — `gates/suite.json`, 47/47, exit 0, 67.3 s @ `ead8c831` |
 | Z2 | riders | The two memory files ride **this** PR, and `main` is clean | **PARTIAL, and reported rather than swept** — both memory files are in this branch's diff (`_artifacts/_memory/MEMORY.md`, `exercise-the-real-cicd-doors.md`). `main`'s working tree is **not** empty: it carries `M .claude/settings.json` and `?? .claude/hooks/allow-scratchpad.py`, written today by a **concurrent session**, unrelated to this lane and deliberately untouched. Neither path is in this diff, so the merge does not contend with them. See § Your Actions |
 
@@ -152,7 +157,7 @@ The table carried **14** mutants written before the review. Every guard the revi
 
 Verdict: PASS @ ead8c831
 
-Reviewed at `c492d76`; all 21 findings applied across five commits and re-gated at `ead8c831`. Nothing outside `_artifacts/` has changed since the receipt was stamped.
+Reviewed at `c492d76`; all 21 findings applied across five commits and re-gated at `ead8c831`. **One code change landed after that stamp and is named rather than hidden:** rider SCC-253's one-paragraph correction to `.agents/scripts/INDEX.md`, picked up at close-out when the board showed an eighth open subtask. It is a doc sentence in a file no lens finding touched, it changes no behaviour, and the suite receipt was **re-stamped after it** — so the freshness rule correctly withholds the preflight's suite SKIP and the full gate runs at the landing sha. The verdict stands for the code the lenses read.
 
 lenses_run:
 - blind-hunter · ok
@@ -233,7 +238,8 @@ The machine floor is imported from the gate table above (suite receipt, `workflo
 
 ## Your Actions
 
-1. **Run `/smh-close-task-merge-tree`** — this lane is staged and green. It merges `chore/SCC-244-bugs-updates-cycle-4` into `main`, and one invocation authorises exactly one merge.
-2. **SCC-244 is a rolling ticket — its successor was cloned when this one went In Progress**, per the standing instruction. Nothing further is owed on the clone here.
-3. ⚠️ **Two files are sitting uncommitted on the `main` checkout and are not mine** — `M .claude/settings.json` and `?? .claude/hooks/allow-scratchpad.py`, both written today (00:06 and 04:18) by a concurrent session building a PreToolUse scratchpad-allow hook. This lane touches neither path, so the merge does not contend with them and they are deliberately left alone. They do need a home before they are lost — that is a decision for whoever wrote them, not a defect in this lane.
-4. **Nothing else is open.** All 21 review findings are fixed in-lane; no residue ticket was minted, and no work was deferred.
+**Nothing is owed.** All 21 review findings are fixed in-lane, no residue ticket was minted, nothing was deferred, and SCC-244's successor was cloned when this one went In Progress.
+
+- [x] The merge itself — lands via this branch's PR
+
+⚠️ **One thing to know, and it is not a task.** Two files are sitting uncommitted on the `main` checkout and are not this lane's: `M .claude/settings.json` and `?? .claude/hooks/allow-scratchpad.py`, both written today (00:06 and 04:18) by a **concurrent session** building a PreToolUse scratchpad-allow hook. This lane touches neither path, so the merge does not contend with them, and they are deliberately not swept — another session's uncommitted work is never committed under this ticket. They need a home before they are lost, and that belongs to the session that wrote them.

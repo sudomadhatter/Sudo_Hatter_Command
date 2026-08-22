@@ -230,6 +230,7 @@ never reaches it. Verified: `git diff --name-only origin/main...HEAD -- .claude/
 
 ### Docs, board and artifacts
 
+- EDIT `.agents/scripts/INDEX.md` — **unforeseen at plan time: rider SCC-253, found at close-out.** The parent carried an EIGHTH open subtask this lane never scoped, and a parent does not close over an open child. SCC-214's closing line named `test_jira_feed.py` as the suite's next lever; it is third by wall clock, and excluding it entirely moves the pool 61.7 s → 59.5 s. The sentence now states the measured position — work-bound, ~39 s packing limit, no single file is a lever — and cites how the number was obtained → SCC-253
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — the usage changes in A, B, C, D, E, F and G1, plus the review's own → A2, C2
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — **unforeseen at plan time, and owed rather than optional.** `sop-currency.md` habit 4 puts the change story here and keeps the page in timeless present tense; B/D/E/F had put ticket refs and dates in the spine instead. Those three passages are rewritten, the one unresolvable prose path that had been failing `test_sops_prds_folder` T9 since `7b2ac12` is now written as the placeholder it always was, and the five rows the review changed are corrected in place rather than duplicated → A2, C2
 - EDIT `_artifacts/_main/INDEX.md` — **unforeseen at plan time.** The session row; `check_maps.py` F2 fails without it → Z1
