@@ -7,8 +7,8 @@
     {
       "id": "M1 · stop normalising — the `..` traversal escape returns",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    return bool(sandbox_re(session_id).match(posixpath.normpath(token)))",
-      "mutated": "    return bool(sandbox_re(session_id).match(token))",
+      "original": "    return bool(pattern.match(posixpath.normpath(token)))",
+      "mutated": "    return bool(pattern.match(token))",
       "case": "TRAVERSAL · silent on rm through ..",
       "block": "TRAVERSAL"
     },
@@ -23,8 +23,8 @@
     {
       "id": "M3 · accept any uid rather than this process's",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    return re.compile(rf\"^/(?:private/)?tmp/{_UID}/[^/]+/\"",
-      "mutated": "    return re.compile(r\"^/(?:private/)?tmp/claude-[0-9]+/[^/]+/\"",
+      "original": "    return rf\"/(?:private/)?tmp/{re.escape(f'claude-{getuid()}')}\"",
+      "mutated": "    return r\"/(?:private/)?tmp/claude-\\d+\"",
       "case": "E · a FOREIGN uid's tree is refused",
       "block": "rule 4 ·"
     },
@@ -191,8 +191,8 @@
     {
       "id": "M24 · hardcode the uid — the hook stops tracking the process it runs in",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "_UID = re.escape(f\"claude-{os.getuid()}\")",
-      "mutated": "_UID = re.escape(\"claude-501\")",
+      "original": "    return rf\"/(?:private/)?tmp/{re.escape(f'claude-{getuid()}')}\"",
+      "mutated": "    return r\"/(?:private/)?tmp/claude-501\"",
       "case": "E · uid is read from the PROCESS - the uid-4242 root is grantable to a uid-4242 process",
       "block": "E"
     }

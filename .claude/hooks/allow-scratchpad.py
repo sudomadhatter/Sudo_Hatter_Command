@@ -99,7 +99,7 @@ import re
 import sys
 
 # ⛔ NOTHING AT MODULE LEVEL MAY RAISE, AND THIS BLOCK IS WHY THAT IS A RULE (SCC-267).
-# `_UID = re.escape(f"claude-{os.getuid()}")` used to sit right here, at import time, OUTSIDE the
+# The uid used to be baked into a module-level constant right here, at import time, OUTSIDE the
 # `try/except` at the bottom of this file. `os.getuid` DOES NOT EXIST ON WINDOWS - so on the
 # operator's second machine this hook raised `AttributeError` before `main()` was ever called and
 # exited 1 with a traceback, on EVERY Bash call. The whole design rests on one promise - "it may
