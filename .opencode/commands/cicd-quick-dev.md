@@ -184,8 +184,8 @@ input in Step 3:
 <!-- twin-law: review-runtime-probe -->
 ⛔ **The probe asks ONE question: does a subagent tool exist in this runtime? (SCC-203)** Yes →
 `fan-out`. No → `inline (no subagent tool)`. ⭐ *Am I permitted?* is **already answered — the
-operator invoked a `/` command, and a command IS a user request**; a session directive reading
-*"do not use subagents unless the user requested it"* is **satisfied by that invocation**, so you
+operator invoked a `/` command, and a command IS a user request**; the standing directive
+*"Do not call the AgentTool unless the user requested it"* is **satisfied by that invocation**, so you
 never stop to ask and never quietly downgrade. ⛔ If you still believe you cannot, you may not
 record a bare `inline` — write `inline (blocked: <what blocked you, verbatim>)`. A bare `inline`
 from a runtime that HAS the tool is indistinguishable from one that never had it, and that

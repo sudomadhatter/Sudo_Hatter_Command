@@ -114,3 +114,4 @@ of `—` means the page recorded the ticket but not the day; the ticket's sessio
 | — | SCC-126 | Autopilot Stage 4 runs the house review engine via `/cicd-code-review-AP`. |
 | — | SCC-134 | Autopilot "done means green": stage gates are script exit codes, never agent say-so. |
 | — | SCC-203 | The runtime probe asks capability, never policy; a contaminated Blind Hunter is dropped (`n/a` + reason), not faked. |
+| — | SCC-285 | The directive is quoted VERBATIM (it names `AgentTool`); `test_directive_quote.py` bans every paraphrase and requires the exact string. |

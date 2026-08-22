@@ -187,8 +187,8 @@ two differ, and a ② that skipped its probe leaves this as the only recording p
 ⛔ **The question is a **capability**, never a **policy** — and conflating the two silently gutted a
 review on SCC-197 (SCC-203).** *Does a subagent tool exist in this runtime?* is the whole question.
 *Am I permitted to use it right now?* is a different one, and answering it here is how a session
-directive — *"do not spawn subagents unless the user asks"* — got read as *"this runtime is
-inline"*. The entire review then ran in the builder's own context and the flow recorded it as a
+directive — *"Do not call the AgentTool unless the user requested it"* — got read as *"this
+runtime is inline"*. The entire review then ran in the builder's own context and the flow recorded it as a
 legitimate outcome. The operator caught it by reading the chat; nothing in the system would have.
 
 ⭐ **Answer ONE question: does a subagent tool exist in this runtime?**
@@ -197,8 +197,8 @@ legitimate outcome. The operator caught it by reading the chat; nothing in the s
 - **No → `review-runtime: inline (no subagent tool)`.**
 
 ⛔ **Do not ask a second question.** *"Am I allowed to?"* is already answered: **the operator
-invoked this command, and a `/` command IS a user request.** A session directive reading *"do not
-use subagents unless the user requested it"* is **satisfied here** — typing the command is the
+invoked this command, and a `/` command IS a user request.** The standing directive *"Do not call
+the AgentTool unless the user requested it"* is **satisfied here** — typing the command is the
 operator asking, and this step is where that ask lands. Do not stop and put it to them again.
 
 ⛔ **If you still believe you cannot launch one, you may not record a bare `inline`.** Write the
