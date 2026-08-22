@@ -970,6 +970,127 @@ def main() -> int:
         c.check("a task-mode run never prints the word STORY at an ungrounded child",
                 "NO-STORY" not in out.upper(), out[-300:])
 
+    # ── SCC-259 · grounding reads the LANE, and a lock names every blocker ───────────────
+    # Both halves measured 2026-08-21 running the real /cicd-label-tasks against AVCH Epic 19.
+    with TempDir() as tmp:
+        import subprocess as _sp
+
+        def g(*a: str) -> None:
+            _sp.run(["git", "-C", str(tmp), *a], capture_output=True, check=False)
+
+        g("init", "-q", "-b", "main"); g("config", "user.email", "t@t"); g("config", "user.name", "t")
+        (tmp / "seed.txt").write_text("x\n", encoding="utf-8")
+        g("add", "seed.txt"); g("commit", "-qm", "seed")
+
+        def story_lane(key: str, sid: str, *extra: str) -> None:
+            """A story lane exactly as ① leaves it: the story file and its red tests
+            committed to the lane's OWN branch, nothing merged to main."""
+            g("checkout", "-q", "-b", f"claude/{key}-story-{sid.replace('.', '-')}")
+            d = tmp / "_bmad" / "bmm" / "stories"
+            d.mkdir(parents=True, exist_ok=True)
+            (d / f"story-{sid.replace('.', '-')}-thing.md").write_text(
+                "# Story\n\n## Acceptance Criteria\n\n- **AC-1:** x\n", encoding="utf-8")
+            for e in extra:
+                (tmp / e).parent.mkdir(parents=True, exist_ok=True)
+                (tmp / e).write_text("code\n", encoding="utf-8")
+            g("add", "-A"); g("commit", "-qm", f"{key} story")
+            g("checkout", "-q", "main")
+
+        # ⛔ F1 · THE STORY FILE IS ON THE LANE, AND THE CHECKOUT CANNOT SEE IT. `find_plan`
+        # and `wf.find_story_files` both read the CURRENT checkout. ① writes the story file
+        # and its red tests onto `claude/<KEY>-…` and pushes; nothing merges until ③. So for
+        # every story still in flight - which is every story this command is asked about -
+        # rung 3 could not fire, and the lane came back [NO-STORY] with a `next_command`
+        # telling the operator to go and create the story file that already exists.
+        story_lane("AVCH-77", "19.1", "tests/test_grounding.py")
+        story_lane("AVCH-78", "19.2", ".agents/real_code.py")
+
+        gc = getattr(lt, "ground_child", None)
+        f1 = gc(tmp, {"key": "AVCH-77", "summary": "19.1 - Grounding", "story_id": "19.1",
+                      "description": ""}, "main", "story", "AVCH-13") if gc else {}
+        kinds = [s.get("kind") for s in (f1.get("sources") or [])]
+        c.check("F1 a branch-only story file grounds the child",
+                f1.get("grounded") is True, str(f1.get("reason")))
+        c.check("F1 ...and it is listed as a `story` source",
+                "story" in kinds, str(kinds))
+        c.check("F1 the story source names the BRANCH it was read from",
+                any(s.get("kind") == "story" and "AVCH-77" in str(s.get("ref", ""))
+                    for s in (f1.get("sources") or [])), str(f1.get("sources")))
+
+        # ⛔ F1b · A TESTS-ONLY DIFF IS NOT "CODE WRITTEN". This is SCC-155 finding #16 one
+        # step on: a planning-only diff was already demoted, but ①'s lane is planning
+        # artifacts PLUS red tests, and `source_paths` keeps `tests/`. So rung 1 fires on a
+        # touch-set that is only the test files - understating the lane's real surface, which
+        # is exactly the manufactured-green shape #16 closed. The story file knows better.
+        bd = [s for s in (f1.get("sources") or []) if s.get("kind") == "branch-diff"]
+        c.check("F1b the tests-only branch-diff is KEPT as a source",
+                len(bd) == 1, str(kinds))
+        c.check("F1b ...flagged tests_only",
+                bool(bd and bd[0].get("tests_only")), str(bd))
+        c.check("F1b ...and it ranks AFTER the story, so `story` is the authority",
+                f1.get("authority") == "story", str(f1.get("authority")))
+
+        # F1c · CONTROL. A lane with REAL source code keeps branch-diff at rung 1. Without
+        # this the demotion could be unconditional and every case above would still pass.
+        f1c = gc(tmp, {"key": "AVCH-78", "summary": "19.2 - Real", "story_id": "19.2",
+                       "description": ""}, "main", "story", "AVCH-13") if gc else {}
+        c.check("F1c (control) a lane with real source still grounds on branch-diff",
+                f1c.get("authority") == "branch-diff", str(f1c.get("authority")))
+
+    # ⛔ F2 · A LOCK THAT NAMES ONE BLOCKER WHEN FOUR ARE DECLARED. `blockers[0]` becomes
+    # `after A-1`, so the operator lands A-1, re-runs, and is told `after A-2`. Four rounds
+    # for one answer the engine already had in hand - and the row reads like a single
+    # dependency, which is a different plan from the one that is actually true.
+    with TempDir() as tmp:
+        kids = [child(f"A-{n}", f"1.{n}") for n in range(1, 5)] + [child("A-9", "1.9")]
+        touch = {f"A-{n}": {"paths": [f"backend/m{n}.py"]} for n in range(1, 5)}
+        touch["A-9"] = {"paths": ["backend/m9.py"],
+                        "blocked_by": ["A-1", "A-2", "A-3", "A-4"]}
+        r = run_resolve(tmp, kids, touch)
+        v = (r.get("_by") or {}).get("A-9", {})
+        c.check("F2 the follower is locked", v.get("verdict") == "after", str(v))
+        c.check("F2 the lock detail names EVERY declared blocker, not the first",
+                all(b in v.get("detail", "") for b in ("A-1", "A-2", "A-3", "A-4")),
+                v.get("detail", "(none)"))
+        c.check("F2 the four unblocked lanes are still approved",
+                all((r.get("_by") or {}).get(f"A-{n}", {}).get("verdict") == "approved"
+                    for n in range(1, 5)),
+                str({k: x.get("verdict") for k, x in (r.get("_by") or {}).items()}))
+
+    # ── F3 · the ENGINE and its DOORS have to agree about `ref` (SCC-244 review) ──────────
+    # The packet emits `{"kind": …, "path": …, "ref": "<branch>"}` when it read the file off the
+    # lane's branch instead of the working tree. Both doors say "read them" and neither said
+    # HOW, so the agent opens `<path>` in a checkout that does not have it — an ENOENT on the
+    # rung the packet just called authoritative, which reads as "no source" and downgrades a
+    # grounded child. This is a contract BETWEEN two files, so it is measured on both ends: the
+    # engine must still be able to emit a ref, and every door must then explain `git show`.
+    engine = (lt.__file__ and Path(lt.__file__).read_text(encoding="utf-8")) or ""
+    c.check("F3 the engine still emits a `ref` on a source (else this contract is moot)",
+            '"ref"' in engine, "label_tasks.py")
+
+    doors = {d: (Path(".agents/scripts").parent / "commands" / d)
+             for d in ("cicd-label-tasks.md", "smh-label-tasks.md")}
+    for name, path in doors.items():
+        body = path.read_text(encoding="utf-8") if path.is_file() else ""
+        c.check(f"F3 {name} exists (a rename must FAIL, not scan nothing)", bool(body), str(path))
+        c.check(f"F3 {name} tells the agent to `git show` a source that carries a ref",
+                'show "<ref>:<path>"' in body,
+                "the packet names a path the checkout does not have; without this line the "
+                "miss reads as 'no source'")
+        # ⛔ C6: the report template is the operator-facing surface, and it still described the
+        # single-dependency shape while the engine had started naming every blocker. A row that
+        # names one of three is a schedule the operator builds on.
+        locked = [ln for ln in body.splitlines() if ln.lstrip().startswith("- `Locked:")]
+        c.check(f"F3 {name} has exactly one Locked report row", len(locked) == 1, str(locked))
+        c.check(f"F3 {name}'s Locked row shows MORE than one blocker",
+                bool(locked) and locked[0].count("<key>") >= 3,
+                (locked[0] if locked else "(none)")
+                + "  — `<key>` for the locked child plus at least two blockers")
+        legend = [ln for ln in body.splitlines() if ln.lstrip().startswith("| 🔒 after")]
+        c.check(f"F3 {name}'s legend row agrees with the report row",
+                bool(legend) and legend[0].count("<ticket>") >= 2,
+                (legend[0] if legend else "(none)"))
+
     return c.finish()
 
 

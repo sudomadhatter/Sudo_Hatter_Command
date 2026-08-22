@@ -1,0 +1,69 @@
+{
+  "v": 1,
+  "task": "SCC-244",
+  "sha": "ead8c831d241b5e7fbedfe8800db1238de740c97",
+  "tip": "3fe5615c2f7d644cd7c3f65e1a83939fa012f19a",
+  "trigger": "close-out",
+  "when": "2026-08-22T04:38:54-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/cicd-boot-sprint-memory.md",
+    ".agents/commands/cicd-clean-code-audit.md",
+    ".agents/commands/cicd-label-tasks.md",
+    ".agents/commands/cicd-prune-worktree.md",
+    ".agents/commands/cicd-write-story-tests.md",
+    ".agents/commands/sm.md",
+    ".agents/commands/smh-label-tasks.md",
+    ".agents/rules/worktree-per-story.md",
+    ".agents/scripts/jira_feed.py",
+    ".agents/scripts/label_tasks.py",
+    ".agents/scripts/link-worktree-assets.py",
+    ".agents/scripts/mutation_sweep.py",
+    ".agents/scripts/tests/test_boot_epic_branch_read.py",
+    ".agents/scripts/tests/test_jira_feed.py",
+    ".agents/scripts/tests/test_label_tasks.py",
+    ".agents/scripts/tests/test_link_worktree_assets.py",
+    ".agents/scripts/tests/test_mutation_sweep.py",
+    ".agents/scripts/tests/test_shared_checkout_stays_on_main.py",
+    ".agents/scripts/tests/test_story_path_is_pinned.py",
+    ".agents/scripts/tests/test_twin_parity.py",
+    ".agents/workflows/cicd-boot-sprint-memory.md",
+    ".agents/workflows/cicd-write-story-tests.md",
+    ".agents/workflows/smh-label-tasks.md",
+    ".opencode/commands/cicd-boot-sprint-memory.md",
+    ".opencode/commands/cicd-clean-code-audit.md",
+    ".opencode/commands/cicd-label-tasks.md",
+    ".opencode/commands/cicd-prune-worktree.md",
+    ".opencode/commands/cicd-write-story-tests.md",
+    ".opencode/commands/sm.md",
+    ".opencode/commands/smh-label-tasks.md",
+    "_artifacts/_main/2026-08-21_scc-244-bugs-updates-cycle-4/gates/suite.json",
+    "_artifacts/_main/2026-08-21_scc-244-bugs-updates-cycle-4/implementation_plan.md",
+    "_artifacts/_main/2026-08-21_scc-244-bugs-updates-cycle-4/sweep.json",
+    "_artifacts/_main/2026-08-21_scc-244-bugs-updates-cycle-4/task.yaml",
+    "_artifacts/_main/INDEX.md",
+    "_artifacts/_memory/MEMORY.md",
+    "_artifacts/_memory/exercise-the-real-cicd-doors.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-21_scc-244-bugs-updates-cycle-4/walkthrough.md",
+    "verdict": "PASS @ ead8c83",
+    "gates": {
+      "suite": "pass@d9d9a9d"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/worktree-per-story.md"
+  ]
+}

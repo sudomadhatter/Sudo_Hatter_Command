@@ -102,6 +102,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [glm hybrid lane](autopilot-glm-hybrid-lane.md) — Dev on GLM via Z.ai, QA stays Claude.
 
 ## Working style
+- [⭐ Exercise the REAL cicd doors when testing the system](exercise-the-real-cicd-doors.md) — run /cicd-* via Skill one story at a time, epic-branch worktrees; file every command defect as an SCC-244 subtask with an anchor.
 - [⭐⛔ Audit findings need a FILE anchor](audit-findings-need-a-file-anchor.md) — fan-outs manufacture findings; no anchor = delete; never build an audit-of-the-audit (SCC-225).
 - [⭐ Lightweight lane for specific, can't-break work](lightweight-lane-for-specific-no-break-work.md) — doc-only / operator-directed ask is ticket -> edit -> push (SCC-162).
 - [⭐⛔ Close the loop; don't hand back decisions](close-the-loop-dont-hand-back-decisions.md) — no new-concern tails, no menus; pick the default, say it, keep going (SCC-201).

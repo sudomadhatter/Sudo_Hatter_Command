@@ -316,6 +316,61 @@ def main() -> int:
             c.check("K4b a full-file failure fails the sweep, even with every mutant killed",
                     code != 0 and "CASE-C" in out, f"exit={code} " + out[-600:])
 
+    # ── U · a test file that declares NO blocks (SCC-244) ────────────────────────────────
+    # `test_label_tasks.py` has 118 cases and not one `c.block()`. There is no label to
+    # select, so ANY `--case` matches nothing and the harness exits 3 - which this script
+    # correctly refuses to score. Without an explicit "run the whole file", the largest code
+    # change in a lane can have no sweep coverage at all, and the shape that hides that is a
+    # transcript full of SWEEP ERROR lines that reads like a tooling niggle rather than a
+    # coverage hole.
+    if c.block("U · a file with no blocks is swept whole, and only when asked"):
+        with TempDir() as t_:
+            repo = build(t_)
+            # A stand-in with no selectable blocks: any filter selects nothing.
+            (repo / "tnb.py").write_text(
+                "import sys, pathlib\n"
+                "argv = sys.argv[1:]\n"
+                "if '--case' in argv:\n"
+                "    print('NO CASES RAN: no block matched'); sys.exit(3)\n"
+                "src = pathlib.Path(__file__).parent.joinpath('src.py').read_text()\n"
+                "bad = " + repr(PATTERN) + " not in src\n"
+                "print(('[FAIL] ' if bad else '[PASS] ') + 'CASE-A pattern intact')\n"
+                "print('-- %d/1 passed --' % (0 if bad else 1))\n"
+                "if bad:\n"
+                "    print('FAILED: CASE-A pattern intact')\n"
+                "sys.exit(1 if bad else 0)\n", encoding="utf-8")
+            git(repo, "add", "-A"); git(repo, "commit", "-qm", "no-block runner")
+            base = {"id": "M1 break the pattern", "file": SRC, "original": PATTERN,
+                    "mutated": 'if flag != "on":', "case": "CASE-A pattern intact",
+                    "test": [sys.executable, "tnb.py"]}
+
+            code, out = _run(repo, ["--table", str(table(repo, [dict(base)], "u1.json"))])
+            # ⛔ `"KILLED" not in out` is WRONG here and passed vacuously the first time:
+            # the refusal line itself reads `⛔ NOT KILLED`, which contains the substring.
+            # Match the verdict line, not the word.
+            killed_lines = [ln for ln in out.splitlines() if ln.startswith("KILLED")]
+            c.check("U1 filtered, it is a SWEEP ERROR on exit 3 - never a kill and never a pass",
+                    code != 0 and "SWEEP ERROR - exit 3" in out and not killed_lines,
+                    f"exit={code} killed={killed_lines} " + out[-300:])
+
+            code, out = _run(repo, ["--table", str(table(
+                repo, [dict(base, unfiltered=True)], "u2.json"))])
+            c.check("U2 `unfiltered` runs the whole file and the mutant is KILLED, attributed",
+                    code == 0 and "KILLED" in out and "CASE-A pattern intact" in out,
+                    f"exit={code} " + out[-300:])
+            c.check("U2 ...and no `--case` reached the runner (no filter line at all)",
+                    "-- filter " not in out, out[-300:])
+
+            code, out = _run(repo, ["--table", str(table(
+                repo, [dict(base, unfiltered=True, block="CASE-A")], "u3.json"))])
+            c.check("U3 declaring BOTH `unfiltered` and `block` is refused at load, named",
+                    code != 0 and "unfiltered" in out and "block" in out and "KILLED" not in out,
+                    f"exit={code} " + out[-300:])
+
+            c.check("U4 the tree is still restored after all three",
+                    git(repo, "diff", "--quiet").returncode == 0,
+                    git(repo, "status", "--short").stdout)
+
     return c.finish()
 
 

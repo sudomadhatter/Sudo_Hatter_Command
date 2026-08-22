@@ -24,9 +24,32 @@ STOP and say so, never fall back to the lobby.
 1. **`git worktree list`** — if a `claude/<JIRA-KEY>-<story-slug>` tree already exists (a re-run, or ② started),
    **re-enter it**; never open a second for the same slug.
 2. Else confirm the story's EPIC branch exists (`epic/<JIRA-KEY>-<slug>`, cut by
-   `/cicd-create-epic-sprint` — missing → go back and run it) and HEAD is on it (**never** `main`),
-   then open `.claude/worktrees/<story-slug>` on `claude/<JIRA-KEY>-<story-slug>` off it — slug
-   `story-<id-dashed>-<short-name>`, e.g. `story-21-3-student-archive`.
+   `/cicd-create-epic-sprint` — missing → go back and run it), then open
+   `.claude/worktrees/<story-slug>` on `claude/<JIRA-KEY>-<story-slug>` **off the epic ref by name** —
+   slug `story-<id-dashed>-<short-name>`, e.g. `story-21-3-student-archive`:
+```bash
+git -C "$PROJECT_ROOT" fetch origin epic/<JIRA-KEY>-<slug>
+git -C "$PROJECT_ROOT" worktree add --no-track .claude/worktrees/<story-slug> \
+    -b claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>
+```
+
+   ⛔ **`--no-track` is not optional, and it is the price of naming the base as an operand.** A
+   *remote-tracking* start point makes `branch.autoSetupMerge` (on by default) set this lane's upstream
+   to **the epic**, so `git status -sb` reads `## claude/…...origin/epic/…` — every later `0 0` check
+   measures the wrong remote — and a bare `git push` dies with *"The upstream branch of your current
+   branch does not match the name of your current branch"*. `push.autoSetupRemote=true` does **not**
+   rescue it, and git's own suggested remedy is `git push origin HEAD:epic/…`, the mid-story epic push
+   `.agents/rules/worktree-per-story.md` G3 bans. With `--no-track` the lane has no upstream until its
+   first push, which then creates `origin/claude/<JIRA-KEY>-<story-slug>` and reports `0 0`. Same trap,
+   different cure, at `.agents/commands/smh-plan-task.md` — a Task lane branches from `origin/main` and
+   spends a second line on `git branch --unset-upstream`; one flag here cannot be forgotten.
+
+   ⛔ **The base is an OPERAND, so the shared checkout never leaves `main` (SCC-256).** `EnterWorktree`
+   is the other door and it is **not** equivalent — `worktree.baseRef: "head"` makes it inherit the
+   CURRENT HEAD, so taking it means checking the epic branch out first and going **back to `main`** the
+   moment the tree is open. A shared checkout left parked on an epic branch is what
+   `.agents/rules/worktree-per-story.md` ("it stands on `main`") exists to prevent: every later
+   `git status`, `worktree add` and boot then reads a tree the operator believes is `main`.
 3. **Either way, link the gitignored assets** — `python3 .agents/scripts/link-worktree-assets.py
    "$PROJECT_ROOT"/.claude/worktrees/<story-slug>` (PC: `python`). A tree has no `.env`,
    `backend/.venv`, `auth_keys/` or `node_modules` of its own and the runners resolve them relative to

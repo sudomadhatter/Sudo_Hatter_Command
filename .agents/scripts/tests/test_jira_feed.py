@@ -745,13 +745,32 @@ def main() -> int:
                     code == 2 and "no outline" in out and "no Dev Record" in out,
                     out.strip()[:200])
 
-            # Positive control: a checker that never reports clean gets muted.
-            set_state(state,
-                      description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+            # Positive control: a checker that never reports clean gets muted. The description
+            # carries the RENDERED-BY trailer, because that is what a minted one looks like and
+            # `check` reads the trailer, not the length.
+            fed_desc = ("9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive. "
+                        "Rendered by jira_feed.py")
+            set_state(state, description=fed_desc,
                       comments=[{"id": "1", "body": "Dev Record - 9.1 (close-out)\nDecisions"}])
             code, out = jf("check", "--key", "TEST-7")
             c.check("check: fed ticket -> exit 0 (positive control)",
-                    code == 0 and "0 error(s)" in out, out.strip()[:200])
+                    code == 0 and "0 error(s)" in out and "outline present" in out,
+                    out.strip()[:200])
+
+            # ⛔ LENGTH IS NOT CONTENT. A hand-typed note clears MIN_DESCRIPTION, and `check`
+            # reported "outline present (213 chars)" over it — at close-out, in both doors,
+            # where the operator reads that line as the sign-off. The exit code is deliberately
+            # UNCHANGED (a hand note passed before and passes now); the claim is what was wrong.
+            hand = ("Blocked on the auth migration - ping me before touching this one, the "
+                    "staging keys rotate on Friday and the runbook is out of date.")
+            set_state(state, description=hand,
+                      comments=[{"id": "1", "body": "Dev Record - 9.1 (close-out)\nDecisions"}])
+            code, out = jf("check", "--key", "TEST-7")
+            c.check(f"check: a {len(hand)}-char HAND NOTE is not called an outline",
+                    "outline present" not in out and "NO rendered outline" in out,
+                    out.strip()[:300])
+            c.check("check: ...and it still exits 0 — the severity boundary did not move",
+                    code == 0, f"exit={code}")
 
             set_state(state,
                       description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
@@ -3516,6 +3535,301 @@ Nothing is actually owed.
         c.check("G5 (control) a description with no INDEX section still appends at the end",
                 e5 is None and g5 is not None and g5.rstrip().endswith("SCC-999 - something."),
                 e5 or str(g5))
+
+    # ── SCC-257 · a section ends at its own LEVEL, not at the next line starting with # ──
+    # ⛔ MEASURED ON AVCH EPIC 19, 2026-08-21. Its stories group ACs under themes:
+    #
+    #     ## Acceptance Criteria
+    #     ### Theme A - grounding
+    #     - **AC-1 (cite):** ...
+    #
+    # `_NEXT_HEAD_RE` is `^#{1,4}\s+\S`, so `section_body` cut the section at `### Theme A`
+    # - the FIRST line inside it. `acceptance_criteria` then read an empty body and the
+    # outline rendered "(none found in the story file)" over a story with nine ACs. That
+    # warning is indistinguishable from a story that genuinely has none.
+    if c.block("SCC-257 · ac-theme-subheadings: a section ends at its own heading level"):
+        import jira_feed  # noqa: E402
+
+        THEMED = """# Story 19.1: Grounding
+
+## Story
+
+As **a pilot**, I want **cited answers**, so that **I can verify them.**
+
+## Acceptance Criteria
+
+### Theme A - grounding
+
+- **AC-1 (cite):** every claim carries a source.
+- **AC-2 (refuse):** an uncited claim is refused.
+
+### Theme B - safety
+
+- **AC-3 (override):** the safety override always wins.
+
+## Tasks
+
+- this is not an acceptance criterion
+"""
+        acs = jira_feed.acceptance_criteria(THEMED)
+        c.check("D1 renders ACs from under a `###` sub-heading",
+                any("AC-1" in a for a in acs) and any("AC-2" in a for a in acs), str(acs))
+        c.check("D1 crosses a SECOND sub-heading to reach AC-3",
+                any("AC-3" in a for a in acs), str(acs))
+        c.check("D1 still STOPS at the next `##` - Tasks is not an AC",
+                not any("not an acceptance criterion" in a for a in acs), str(acs))
+
+        # D2 · REGRESSION. The flat shape is what the 139 story files on disk use. It must
+        # not move a byte.
+        FLAT = """# Story 9.1: Widget Archive
+
+## Story
+
+As **an admin**, I want **archived widgets to stay readable**, so that **nothing is deleted.**
+
+## Acceptance Criteria
+
+1. archiving a widget sets `archived_at` and keeps the document.
+2. the list view hides archived widgets by default.
+
+## Tasks
+
+- not an AC
+"""
+        flat = jira_feed.acceptance_criteria(FLAT)
+        c.check("D2 (regression) the flat AC list is unchanged, exactly",
+                flat == ["archiving a widget sets `archived_at` and keeps the document.",
+                         "the list view hides archived widgets by default."], str(flat))
+
+        # ⛔ D3 · THE CALLER THAT MUST **NOT** CHANGE (audit finding 3). `story_statement`
+        # shares `section_body`. Making the cut depth-aware for EVERYONE silently grows every
+        # `## Story` block that has `###` children - and that function exists precisely to stop
+        # the ticket reproducing the story file ("a description that reproduces the whole file
+        # is the same failure as one with no description"). So the depth rule is opt-in per
+        # caller, and this case is what fails if someone flips it globally.
+        # A FLAT story cannot detect this; the `### Context` child is the whole point.
+        SUBBED = """# Story 19.2: Overrides
+
+## Story
+
+As **a controller**, I want **overrides logged**, so that **they can be audited.**
+
+### Context
+
+Six paragraphs of background that belong in the story file and nowhere near the ticket.
+The override subsystem dates to 2024 and has three historical shapes still in the data.
+
+## Acceptance Criteria
+
+- **AC-1 (log):** every override writes an audit row.
+"""
+        # ⛔ D4 · THE OTHER KIND OF CHILD. `include_subheadings=True` swallows EVERY `###`
+        # child, and the sub-heading text was then dropped because it is not a bullet — so
+        # `### Out of scope` contributed its bullets to the AC list with the one word that
+        # said otherwise deleted on the way. "the mobile app" is not a criterion the story
+        # is measured against. Latent when it was found (0 of 123 AGY story files carry such
+        # a child today) and cheap to leave broken until the first one does.
+        SCOPED = """# Story 21.4: Archive
+
+## Story
+
+As **an admin**, I want **archive**, so that **nothing is lost.**
+
+## Acceptance Criteria
+
+- **AC-1 (archive):** archiving keeps the document.
+
+### Out of scope
+
+- the mobile app
+- the bulk importer
+
+## Tasks
+
+- not an AC
+"""
+        scoped = jira_feed.acceptance_criteria(SCOPED)
+        c.check("D4 the real AC still renders", any("AC-1" in a for a in scoped), str(scoped))
+        c.check("D4 the out-of-scope bullets are still CARRIED (dropping them is the other bug)",
+                any("mobile app" in a for a in scoped), str(scoped))
+        c.check("D4 ...but the boundary is VISIBLE — the sub-heading renders as a label",
+                "[Out of scope]" in scoped, str(scoped))
+        # ⛔ `.index()` on a missing label RAISES, and a crashed run prints no `FAILED:` line —
+        # which is the one thing the mutation sweep scores. A guard that can only explode is a
+        # guard the sweep records as SURVIVED. Positions first, assertions second.
+        def at(pred) -> int:
+            hits = [i for i, a in enumerate(scoped) if pred(a)]
+            return hits[0] if hits else -1
+
+        label_i, ac_i, oos_i = (at(lambda a: a == "[Out of scope]"),
+                                at(lambda a: "AC-1" in a),
+                                at(lambda a: "mobile app" in a))
+        c.check("D4 the label sits ABOVE the bullets it introduces, not below",
+                0 <= label_i < oos_i, f"label={label_i} out-of-scope bullet={oos_i} {scoped}")
+        c.check("D4 the AC above it is NOT under the label",
+                0 <= ac_i < label_i, f"AC-1={ac_i} label={label_i} {scoped}")
+        c.check("D4 Tasks is still out of the section entirely",
+                not any("not an AC" in a for a in scoped), str(scoped))
+
+        themed = jira_feed.acceptance_criteria(THEMED)
+        c.check("D4 the theme case gets its labels too, and keeps every AC",
+                themed.count("[Theme A - grounding]") == 1
+                and themed.count("[Theme B - safety]") == 1
+                and sum(1 for a in themed if a.startswith("AC-")) == 3, str(themed))
+
+        EMPTY_CHILD = """# Story 21.5: X
+
+## Acceptance Criteria
+
+- **AC-1:** one.
+
+### Out of scope
+
+## Tasks
+"""
+        c.check("D4 a sub-heading with NO bullets under it leaves no orphan label",
+                "[Out of scope]" not in jira_feed.acceptance_criteria(EMPTY_CHILD),
+                str(jira_feed.acceptance_criteria(EMPTY_CHILD)))
+
+        stmt = jira_feed.story_statement(SUBBED)
+        c.check("D3 the story statement still carries the As-a/I-want/So-that",
+                "controller" in stmt and "audited" in stmt, stmt)
+        c.check("D3 the story statement does NOT swallow its `###` child",
+                "Six paragraphs" not in stmt and "2024" not in stmt, stmt)
+        c.check("D3 ...and its own ACs still render (the section under test is unaffected)",
+                any("AC-1" in a for a in jira_feed.acceptance_criteria(SUBBED)),
+                str(jira_feed.acceptance_criteria(SUBBED)))
+
+    # ── SCC-258 · mint must not call a hand note "its outline" ───────────────────────────
+    # ⛔ MEASURED 2026-08-21. `mint` reuses an existing ticket and backfills the outline only
+    # when `len(description) < MIN_DESCRIPTION` (40). A ticket somebody typed two sentences
+    # into is longer than that, so the outline is never written - and mint then prints
+    # "<key> carries its outline (213 chars)". It carries 213 characters of somebody's note.
+    # The length test cannot tell CONTENT from LENGTH, and this whole file exists to stop a
+    # command reporting success over a ticket that holds nothing it claims to hold.
+    if c.block("SCC-258 · mint-reuse-stale-description + flag parity across subcommands"):
+        with TempDir() as tmp:
+            repo, acli, state = build(tmp)
+
+            def jf(*args: str) -> tuple[int, str]:
+                os.environ["STUB_STATE"] = str(state)
+                return run_script("jira_feed.py", args[0], "--project", str(repo),
+                                  "--acli", str(acli), *args[1:])
+
+            HAND_NOTE = ("Spoke to the operator on the 14th - this one is blocked on the "
+                         "auth migration and should not be picked up before it lands. "
+                         "Ping me before starting.")
+            EXISTING = [{"key": "TEST-42", "fields": {"summary": "9.1 - Widget Archive"}}]
+
+            # E1a · CONTROL, and it must keep passing: a genuinely BARE ticket is backfilled.
+            # Without this the fix could "work" by never writing anything at all.
+            set_state(state, search=EXISTING, description="")
+            code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
+            st = get_state(state)
+            c.check("E1a (control) a BARE reused ticket still gets the outline",
+                    code == 0 and "AC-1 (archive)" in st["description"], out.strip()[:200])
+
+            set_state(state, search=EXISTING, description=HAND_NOTE)
+            code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
+            st = get_state(state)
+            c.check("E1 reuses the existing ticket", "reusing existing ticket TEST-42" in out,
+                    out.strip()[:200])
+            c.check("E1 REPLACES the hand note with the real outline",
+                    "AC-1 (archive)" in st["description"], st["description"][:300])
+            c.check("E1 the description carries the render trailer",
+                    "Rendered by jira_feed.py" in st["description"], st["description"][:300])
+            c.check("E1 the hand note is KEPT, under PREVIOUS NOTE",
+                    "PREVIOUS NOTE" in st["description"]
+                    and "blocked on the auth migration" in st["description"],
+                    st["description"][-400:])
+            c.check("E1 SAYS it kept the note, rather than reporting a plain backfill",
+                    "kept under PREVIOUS NOTE" in out and "bare ticket" not in out,
+                    out.strip()[:300])
+
+            # ⛔ E1c · THE LIE ITSELF. A description that is long enough but is NOT the outline
+            # must never be reported as one. `lossy_drop` strips the trailer from the write, so
+            # the field lands long, plausible, and wrong - the exact shape a length test blesses.
+            set_state(state, search=EXISTING, description="",
+                      lossy_drop="Rendered by jira_feed.py")
+            code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
+            c.check("E1c a long-but-not-the-outline description is exit 2, not a success line",
+                    code == 2 and "carries its outline" not in out, f"exit={code}: {out.strip()[:300]}")
+
+            # ⛔ E1d · THE RETRY THAT NESTS. `lossy_drop` strips the trailer on the way in, so
+            # the field lands WITHOUT it and the read-back guard exits 2 — which is exactly the
+            # state an operator re-runs from. On that re-run `current` already held the outline
+            # AND its PREVIOUS NOTE, and the reuse branch wrapped the lot in a fresh one.
+            # Measured before the fix: 502 → 986 → 1498 → 2038 chars, one block becoming four,
+            # the operator's actual note a level deeper every time.
+            set_state(state, search=EXISTING, description=HAND_NOTE,
+                      lossy_drop="Rendered by jira_feed.py")
+            sizes, blocks = [], []
+            for _ in range(4):
+                jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
+                landed = get_state(state)["description"]
+                sizes.append(len(landed))
+                blocks.append(landed.count("PREVIOUS NOTE"))
+                set_state(state, search=EXISTING, description=landed,
+                          lossy_drop="Rendered by jira_feed.py")
+            c.check("E1d four retries leave exactly ONE PREVIOUS NOTE block, every time",
+                    blocks == [1, 1, 1, 1], f"blocks per run: {blocks}")
+            c.check("E1d ...and the description stops growing",
+                    len(set(sizes)) == 1, f"chars per run: {sizes}")
+            c.check("E1d ...and the operator's note is still the thing being preserved",
+                    "blocked on the auth migration" in get_state(state)["description"],
+                    get_state(state)["description"][-300:])
+
+            # E1e · the unit underneath, including a ticket this bug has ALREADY nested.
+            import jira_feed as _jf  # noqa: E402
+            hdr = _jf.PREVIOUS_NOTE_HEADER
+            c.check("E1e a plain field is the note",
+                    _jf.preserved_note("just a note") == "just a note")
+            c.check("E1e one existing block yields its contents, de-indented",
+                    _jf.preserved_note(f"outline\n\n{hdr}\n  the note\n") == "the note")
+            c.check("E1e a ticket already nested FOUR deep converges on the original note",
+                    _jf.preserved_note(f"o1\n\n{hdr}\n  o2\n\n  {hdr}\n    o3\n\n"
+                                       f"    {hdr}\n      original") == "original",
+                    "rfind, not find - the deepest block is the human's")
+
+            # E1f · TWO MACHINES. `write_temp` pins newline="\n" on purpose; the reuse branch
+            # rewrote the same file with Path.write_text, which defaults to newline=None and
+            # translates to os.linesep. ⛔ This check CANNOT go red on POSIX, where os.linesep
+            # is already "\n" — it is a guard for the PC half of this system, and it is here
+            # because that is the half nobody runs the suite on first.
+            body = "line one\nline two\n"
+            wt = Path(_jf.write_temp(body))
+            rw = wt.parent / (wt.name + ".rw")
+            rw.write_text(body, encoding="utf-8", newline="\n")
+            c.check("E1f the reuse rewrite pins LF the same way write_temp does",
+                    wt.read_bytes() == rw.read_bytes() == body.encode(),
+                    f"write_temp={wt.read_bytes()!r} rewrite={rw.read_bytes()!r}")
+            wt.unlink(missing_ok=True)
+            rw.unlink(missing_ok=True)
+
+            # E2 · FLAG PARITY. `outline` and `mint` render the same thing from the same story
+            # file; the measured friction is copying a working `mint` line to `outline` and
+            # getting `unrecognized arguments: --jira-project`.
+            set_state(state)
+            code, out = jf("outline", "--story", "9.1", "--jira-project", "TEST")
+            c.check("E2 outline accepts --jira-project, like mint",
+                    code == 0 and "unrecognized arguments" not in out, f"exit={code}: {out.strip()[:200]}")
+            c.check("E2 ...and still renders the outline", "AC-1 (archive)" in out, out[:200])
+
+            # ⛔ E3 · THE ARMED HOOK'S EXACT LINE (audit finding 4).
+            # .agents/scripts/git-hooks/post-commit-jira-start.sh:119 runs
+            #     "$PY" .agents/scripts/jira_feed.py start --key "$KEY" --timeout 10 --apply
+            # on the FIRST commit of every chore/ · claude/ · epic/ branch, in every repo. An
+            # argparse edit that disturbs `start` fires there - and VS Code HIDES hook output,
+            # so it reads as a clean commit. This pins the hook's flags to the parser.
+            set_state(state)
+            code, out = jf("start", "--key", "TEST-7", "--timeout", "10", "--apply")
+            c.check("E3 the post-commit hook's exact flag set still parses",
+                    "unrecognized arguments" not in out and "invalid choice" not in out
+                    and "error: argument" not in out, f"exit={code}: {out.strip()[:300]}")
+            c.check("E3 ...and it actually transitions the ticket",
+                    code == 0 and any(t["key"] == "TEST-7"
+                                      for t in get_state(state).get("transitions", [])),
+                    f"exit={code}: {out.strip()[:200]}")
 
     return c.finish()
 

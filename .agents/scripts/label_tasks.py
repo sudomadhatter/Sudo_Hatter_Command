@@ -367,6 +367,67 @@ def story_branch(repo: Path, key: str) -> str | None:
     return None
 
 
+def find_story_files_on_branch(repo: Path, story: str, branch: str) -> list[str]:
+    """The story files for `story` read out of a BRANCH — repo-relative paths, or [].
+
+    ⭐ The same gap `find_task_plan_on_branch` closed for Task mode, one mode over.
+    `wf.find_story_files` globs the CURRENT checkout, and ① writes the story file onto
+    `claude/<KEY>-<slug>` and pushes; nothing merges to the epic until ③. So for every story
+    still in flight — which is every story this command is ever asked about — rung 3 could
+    not fire, and the lane came back `[NO-STORY]` under a `next_command` telling the operator
+    to create the story file that already exists on the branch being labelled.
+
+    `git ls-tree` reads the branch without checking it out, so this stays a read-only pass
+    over a repo whose worktree belongs to somebody else. The SLUG RULE mirrors
+    `wf.find_story_files` exactly — exact slug first, prefix second — because two readers of
+    the same naming convention disagreeing is a worse bug than either being absent.
+
+    ⛔ The TRAVERSAL does not mirror it, and the difference is deliberate. `wf.find_story_files`
+    globs `stories/story-*.md` one level deep; this passes `-r` and reads the subtree, because a
+    branch may carry the story under a folder the checkout has never seen. So this reader can
+    find a file that one would miss — never the reverse.
+    """
+    r = wf.git(["ls-tree", "-r", "--name-only", branch, f"{wf.STORIES_REL}/"], repo)
+    if r.returncode != 0:
+        return []
+    want = wf.norm_id(story)
+    exact, prefix = [], []
+    for line in (r.stdout or "").splitlines():
+        rel = line.strip()
+        name = rel.rsplit("/", 1)[-1]
+        if not name.startswith("story-") or not name.endswith(".md"):
+            continue
+        have = wf.norm_id(name[len("story-"):-len(".md")])
+        if have == want:
+            exact.append(rel)
+        elif want.startswith(have + "-") or have.startswith(want + "-"):
+            prefix.append(rel)
+    return sorted(exact) if exact else sorted(prefix)
+
+
+_TEST_PATH_RE = re.compile(
+    r"(^|/)(tests?|__tests__|spec)/|(^|/)test_[^/]+$|_test\.[A-Za-z0-9]+$"
+    r"|\.(test|spec)\.[A-Za-z0-9]+$")
+
+
+def tests_only(paths) -> bool:
+    """True when every SOURCE path in a diff is a test file.
+
+    ⭐ SCC-155 finding #16, one step on. That finding demoted a branch whose diff is entirely
+    PLANNING artifacts, because the plan wearing rung one's authority manufactures a green.
+    ①'s lane is planning artifacts **plus red tests** — the tests are the whole deliverable of
+    that step — and `source_paths` keeps `tests/`, so rung 1 fired again on a touch-set that
+    is only the test files. That understates the lane's real surface exactly as badly: the
+    code it is about to write is not in the diff yet, and the story file is the thing that
+    knows where it will go.
+
+    So a tests-only diff is KEPT as a source — its paths are real and the set math needs them
+    — and demoted below the story/plan that can see further. An EMPTY set is not tests-only;
+    it is nothing at all, and the caller has already rejected it."""
+    src = source_paths({"paths": list(paths or [])})
+    return bool(src) and all(_TEST_PATH_RE.search(p) for p in src)
+
+
 def find_plan(repo: Path, story: str) -> Path | None:
     """An `implementation_plan.md` whose owning directory slug matches this story id. Layout
     varies by epic, so match the SLUG rather than hardcoding `_artifacts/epic_N/story-N-M/`."""
@@ -497,13 +558,15 @@ def ground_child(repo: Path, child: dict, base: str, mode: str = "story",
             # An empty diff is the same story: nothing written is not evidence of scope.
             if source_paths({"paths": paths}):
                 sources.append({"kind": "branch-diff", "ref": f"{base}...{branch}",
-                                "paths": paths})
+                                "paths": paths, "tests_only": tests_only(paths)})
 
     if mode == "task":
         plan = find_task_plan(repo, child["key"])
         rel = str(plan.relative_to(repo)) if plan else None
-        # The lane's own branch is where `/smh-plan-task` left it (finding #15); the current
-        # checkout is only the fallback for a plan that has already landed.
+        # CHECKOUT FIRST, branch as the fallback — see the story rung below for why the order
+        # is this way round. A landed plan is what every other lane sees; the branch copy is
+        # `/smh-plan-task`'s work still in flight, and it is only reached for when the checkout
+        # has nothing (finding #15).
         if not rel and branch:
             rel = find_task_plan_on_branch(repo, child["key"], branch)
         if rel:
@@ -527,10 +590,24 @@ def ground_child(repo: Path, child: dict, base: str, mode: str = "story",
                             "read": "the 'Modify/Add' lines AND every source path under "
                                     "'## Self-Audit' (that section exists to catch the edit "
                                     "sites the plan missed)"})
-        for f in wf.find_story_files(repo, sid):
-            sources.append({"kind": "story", "path": str(f.relative_to(repo)),
-                            "read": "Dev Notes surfaces, task paths, and NEGATIVE "
-                                    "declarations ('no X changes, that is 19.2')"})
+        read_as = ("Dev Notes surfaces, task paths, and NEGATIVE declarations "
+                   "('no X changes, that is 19.2')")
+        found = [(str(f.relative_to(repo)), None) for f in wf.find_story_files(repo, sid)]
+        # CHECKOUT FIRST, branch as the fallback — and that order is deliberate, not an
+        # oversight. A story file in the checkout is one that has landed, so it is the version
+        # every other lane will see; the branch copy is ① 's work in flight. Only reach for the
+        # branch when the checkout has nothing, which is the whole `[NO-STORY]` case this rung
+        # was added for. (The comment here used to claim the reverse; the CODE matched the
+        # acceptance row, so the sentence was what moved.)
+        if not found and branch:
+            found = [(rel, branch) for rel in find_story_files_on_branch(repo, sid, branch)]
+        for rel, ref in found:
+            sources.append({"kind": "story", "path": rel, "ref": ref, "read": read_as})
+
+    # ⛔ RE-RANK LAST, and only ever DOWNWARDS. A tests-only branch-diff keeps its paths but
+    # loses rung 1 to whatever can see further. Stable, so the order within each tier - and
+    # the whole ladder when nothing is flagged - is exactly what it was.
+    sources.sort(key=lambda src: 1 if src.get("tests_only") else 0)
 
     child["sources"] = sources
     child["authority"] = sources[0]["kind"] if sources else None
@@ -833,10 +910,14 @@ def cmd_resolve(args) -> int:
                                  "evidence": ", ".join(sorted(source_paths(touch[k])))
                                              or "no source paths declared"})
                 continue
-            first = blockers[0]
+            # ⛔ ALL OF THEM, not blockers[0] (SCC-259). Naming one turns a single answer
+            # the engine already holds into as many rounds as there are blockers: land it,
+            # re-run, be told the next one. Worse, the row READS like a single dependency,
+            # which is a different plan from the true one.
             verdicts.append({"key": k, "verdict": "after", "mark": "🔒",
-                             "detail": f"after {first}",
-                             "evidence": g[k].get(first, "shares ground")})
+                             "detail": "after " + ", ".join(blockers),
+                             "evidence": "; ".join(
+                                 f"{b}: {g[k].get(b, 'shares ground')}" for b in blockers)})
 
     # quick-dev is decided per child by the AGENT, in the touch-set, for the same reason the
     # touch-sets themselves are: "small enough for one light lane" is a judgment about the
