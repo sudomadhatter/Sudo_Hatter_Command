@@ -46,6 +46,7 @@
     ".agents/workflows/sentry-security-team-avch.md",
     ".claude/skills/sentry-security-team-avch",
     ".opencode/commands/sentry-security-team-avch.md",
+    ".claude/worktrees",
     ".claude/settings.local.json",
     ".claude/scratchpad-root"
   ],
@@ -79,6 +80,7 @@
     { "path": "docs/_scc_sops_prds/workflows_testing_SOP.md", "contains": "DRILL[\"3 · /sentry-security-team-avch" },
     { "path": "docs/_scc_sops_prds/workflows_testing_SOP.md", "contains": "| `/sentry-security-team-avch` |" },
     { "path": "docs/_scc_sops_prds/workflows_testing_SOP.md", "contains": "[sentry_error_response_team.md](sentry_error_response_team.md)" },
+    { "path": ".agents/.sync-manifest.json", "contains": "\"sentry-security-team-avch.md\"" },
     { "path": ".agents/scripts/INDEX.md", "contains": "- `export-teaching-edition.ps1`" }
   ],
 
@@ -104,6 +106,9 @@
     { "from": "daniel", "to": "operator" },
     { "from": "dlohneiss@gmail.com", "to": "you@example.com" },
     { "from": "dlohneiss", "to": "your-user" },
+    { "from": "Dlohn", "to": "YourUser" },
+    { "from": "dlohn", "to": "your-local-user" },
+    { "from": "Sudos-MacBook-Pro.local", "to": "your-machine.local" },
     { "from": "sudomadhatter@gmail.com", "to": "you@example.com" },
     { "from": "856831340418", "to": "YOUR_PROJECT_NUMBER" },
     { "from": "/Users/sudohatter/Sudo_Hatter_Command", "to": "." },
@@ -138,6 +143,8 @@
     "literals": [
       "Daniel",
       "dlohneiss",
+      "dlohn",
+      "Sudos-MacBook-Pro.local",
       "sudohatter",
       "sudomadhatter@gmail.com",
       "AviationChat",

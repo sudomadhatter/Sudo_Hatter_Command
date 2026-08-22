@@ -177,7 +177,8 @@ def main() -> int:
 
                 private_probe = target / "privacy-probe.txt"
                 private_probe.write_text(
-                    "Daniel AviationChat AVCH dlohneiss SullySessionTelemetry igor_temp\n",
+                    "Daniel AviationChat AVCH dlohneiss dlohn Sudos-MacBook-Pro.local "
+                    "SullySessionTelemetry igor_temp\n",
                     encoding="utf-8",
                 )
                 private_findings = validate(target)
@@ -186,6 +187,28 @@ def main() -> int:
                     any("private literal" in finding for finding in private_findings)
                     and any("private alias" in finding for finding in private_findings),
                     " | ".join(private_findings[:12]),
+                )
+                private_probe.unlink()
+
+                nested_worktree = target / ".claude" / "worktrees" / "foreign-lane"
+                nested_worktree.mkdir(parents=True)
+                (nested_worktree / "private.txt").write_text("private lane\n", encoding="utf-8")
+                nested_findings = validate(target)
+                c.check(
+                    "shipped validator rejects nested source worktrees",
+                    any("source checkout worktrees" in finding for finding in nested_findings),
+                    " | ".join(nested_findings[:8]),
+                )
+                (nested_worktree / "private.txt").unlink()
+                nested_worktree.rmdir()
+                nested_worktree.parent.rmdir()
+
+                private_probe.write_bytes("Daniel AviationChat\n".encode("utf-32-be"))
+                utf32_findings = validate(target)
+                c.check(
+                    "shipped validator scans UTF-32BE content",
+                    any("private literal" in finding for finding in utf32_findings),
+                    " | ".join(utf32_findings[:8]),
                 )
                 private_probe.unlink()
 
@@ -274,12 +297,43 @@ def main() -> int:
             )
 
         with TempDir() as temp:
+            fixture_source = temp / "source"
+            fixture_source.mkdir()
+            outside = temp / "outside-secret.txt"
+            outside.write_text("not part of the source\n", encoding="utf-8")
+            os.symlink(outside, fixture_source / "payload.txt")
+            fixture_manifest = fixture_source / "manifest.json"
+            fixture_manifest.write_text(
+                json.dumps({
+                    "name": "include symlink probe",
+                    "source": ".",
+                    "include": ["payload.txt"],
+                    "leakScan": {"literals": [], "wordLiterals": []},
+                }),
+                encoding="utf-8",
+            )
+            include_link_proc = subprocess.run(
+                ["pwsh", "-NoProfile", "-File", str(exporter), "-Manifest",
+                 str(fixture_manifest), "-Target", str(temp / "public"), "-WhatIf"],
+                cwd=REPO, capture_output=True, text=True, errors="replace",
+            )
+            include_link_transcript = (
+                (include_link_proc.stdout or "") + (include_link_proc.stderr or "")
+            )
+            c.check(
+                "include symlink resolving outside source is refused",
+                include_link_proc.returncode != 0
+                and "outside the source tree" in include_link_transcript,
+                include_link_transcript,
+            )
+
+        with TempDir() as temp:
             fixture = temp / "source"
             fixture.mkdir()
             (fixture / ".env").write_text(
                 "API_KEY=secretvalue12345 # production\n", encoding="utf-8"
             )
-            (fixture / "payload.txt").write_bytes("secretvalue12345\n".encode("utf-16-le"))
+            (fixture / "payload.txt").write_bytes("secretvalue12345\n".encode("utf-32-be"))
             fixture_manifest = fixture / "manifest.json"
             fixture_manifest.write_text(
                 json.dumps(

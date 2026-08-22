@@ -377,3 +377,19 @@ local override, required inputs and physical target containment fail closed, gen
 byte-identical to authored commands, privacy scanning covers escaped dotenv values and UTF-16/32 text,
 and source-only catalog rows are pruned by required manifest anchors. The 24/24 pass is necessary but
 not sufficient; a new five-lens review, full receipt-backed suite, and clean-code audit still gate PASS.
+
+## Final-Review Amendment — distribution-boundary closure
+
+The first fan-out on `b6c196d8` again withheld PASS. Blind, edge, and literal review reproduced seven
+distribution defects: the exported sync manifest retained ownership of an excluded incident door;
+the README claimed `/smh-new-project` completed follow-up wiring that the command only prints; an
+included symlink could dereference outside the source; UTF-32BE content escaped both scanners; the
+normal checkout's nested `.claude/worktrees/` could be recursively exported; and the owner's Windows
+username and Mac hostname were absent from both deny lists. The seventh finding was the deliberately
+stale walkthrough, which remains deferred only until the final reviewed SHA and receipt exist.
+
+The fixes stay on already declared exporter, manifest, replacement, validator, test, and artifact
+paths. Acceptance now includes 27 executable checks, required line-pruning of the incident ownership
+row, physical containment of every included file, five text decoders including UTF-32BE, explicit
+worktree-tree exclusion plus validator rejection, and independent deny-list mutations for both
+machine identifiers. A new clean fan-out is required because this amendment changed the reviewed SHA.

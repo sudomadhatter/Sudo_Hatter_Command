@@ -138,7 +138,8 @@ function Get-DecodedTextCandidates {
         [System.Text.Encoding]::UTF8,
         [System.Text.Encoding]::Unicode,
         [System.Text.Encoding]::BigEndianUnicode,
-        [System.Text.Encoding]::UTF32
+        [System.Text.Encoding]::UTF32,
+        [System.Text.UTF32Encoding]::new($true, $true)
     )) {
         $text = $encoding.GetString($bytes)
         if ($seen.Add($text)) { Write-Output $text }
@@ -245,6 +246,9 @@ foreach ($inc in $m.include) {
     }
 
     foreach ($item in $items) {
+        if (-not (Test-IsWithinDirectory (Resolve-PhysicalPath $item.FullName) $sourcePhysical)) {
+            throw "Required include resolves outside the source tree: $inc"
+        }
         $rel = $item.FullName.Substring($sourceRoot.Path.Length).TrimStart('\', '/')
         $hit = Test-Excluded -Rel $rel
         if ($hit) { $excluded.Add("$rel   [$hit]"); continue }

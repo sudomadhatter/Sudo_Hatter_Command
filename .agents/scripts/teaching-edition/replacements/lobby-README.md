@@ -59,8 +59,10 @@ During onboarding the agent asks:
 
 It then runs `/smh-new-project <name>`, which clones
 `https://github.com/sudomadhatter/sudo-project-skeleton` into `Projects/<name>`, drops the template's
-history, initializes the project's own repository, and completes the local routing/placeholders.
-Creating or publishing a remote repository remains your separate decision.
+history, and initializes the project's own repository. The command then prints the required routing,
+placeholder, and map-localization steps; the onboarding agent completes those steps with you instead
+of treating the clone as fully wired. Creating or publishing a remote repository remains your
+separate decision.
 
 ## Jira comes later
 

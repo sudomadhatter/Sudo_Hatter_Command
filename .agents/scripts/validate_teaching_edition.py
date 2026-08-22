@@ -16,6 +16,8 @@ from pathlib import Path
 PRIVATE_LITERALS = (
     "Dan" + "iel",
     "dloh" + "neiss",
+    "dlo" + "hn",
+    "Sudos-" + "MacBook-Pro.local",
     "sudo" + "hatter",
     "Aviation" + "Chat",
     "Aviation" + " Chat",
@@ -97,7 +99,7 @@ def _decoded_texts(path: Path) -> list[str]:
     except OSError:
         return []
     texts: list[str] = []
-    for encoding in ("utf-8", "utf-16-le", "utf-16-be", "utf-32-le"):
+    for encoding in ("utf-8", "utf-16-le", "utf-16-be", "utf-32-le", "utf-32-be"):
         try:
             text = payload.decode(encoding)
         except UnicodeError:
@@ -142,6 +144,8 @@ def validate(root: Path) -> list[str]:
 
     if (root / ".agents/jira.conf").exists():
         errors.append("fresh shell must not contain active .agents/jira.conf")
+    if (root / ".claude/worktrees").exists():
+        errors.append("fresh shell contains source checkout worktrees")
 
     projects = root / "Projects"
     if not projects.is_dir():
@@ -229,6 +233,10 @@ def validate(root: Path) -> list[str]:
         errors.append("exported scripts index presents the source-only exporter as available")
     if "- `export-teaching-edition.ps1`" in scripts_index:
         errors.append("exported scripts inventory lists the absent source-only exporter")
+
+    sync_manifest = _text(root / ".agents/.sync-manifest.json", errors)
+    if "sentry-security-team-" in sync_manifest:
+        errors.append("sync ownership manifest claims an excluded incident door")
 
     sop = _text(root / "docs/_scc_sops_prds/workflows_testing_SOP.md", errors)
     command_index = _text(root / ".agents/commands/INDEX.md", errors)
