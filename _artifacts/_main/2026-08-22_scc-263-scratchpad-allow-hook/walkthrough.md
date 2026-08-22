@@ -108,6 +108,24 @@ which the law forbids — because the law offered nothing else to do. The fix is
 
 ---
 
+## Step 0.7 — re-derivation (what moved under this lane, and what it changed)
+
+- **What moved:** `chore/SCC-244-bugs-updates-cycle-4` landed on `main` as `fd2aef9` (PR #46, 44
+  files) *after* this lane's base `038c0f1` and *after* round 1's review sha. It edits
+  `.agents/scripts/mutation_sweep.py` and eight files under `.agents/scripts/tests/` — **zero file
+  overlap with this set, and the gate machinery this lane's A4 and A6 run on** (memory:
+  `lane-collision-is-gates-not-files`). Nothing else landed.
+- **What it changes here:** the landing-order dependency this plan declared resolved in SCC-244's
+  favour, so this lane is the one that re-absorbs and re-runs. `main` was merged in at `fc40535`
+  with one conflict — `_artifacts/_main/INDEX.md`, where both lanes added a top row — resolved by
+  keeping **both** rows. No code conflict.
+- **What was re-measured, on the merged tree:** the full floor `run_all.py` **48/48 files (59/59
+  tests)**, the mutation sweep **23/23 killed with restore verified** on SCC-244's rewritten
+  `mutation_sweep.py`, the hook suite **163/163**, engine contract **868/868**, twin parity
+  **65/65**. `merge-tree` against `origin/main` is clean at the PR sha.
+
+---
+
 ## Code Review — round 1 (2026-08-22, v1 @ `141a6ff1`)
 
 review-runtime:  fan-out
