@@ -595,6 +595,16 @@ too. No drift row auto-fails; each takes the same cut-it-or-name-why-it-stays di
 `dispositions:` line (per-lens survived/dismissed/relevance-killed) and a one-line `drift:` result;
 `walkthrough_roster.py` blocks a lane dated 2026-08-20 or later that is missing either.
 
+**And the runtime header owes a REASON when it says `inline` (SCC-285).** `review-runtime:
+inline` is a claim about your session, so write the evidence on the line — `inline (no subagent
+tool)` when the tool is genuinely absent, or `inline (blocked: <quote what blocked you>)`. A
+bare `inline` is refused for lanes dated 2026-08-22 or later, and so is a reason resting on
+**permission** rather than capability: *"a directive says not to"* answers a question the step
+does not ask. The step asks only whether the tool EXISTS — whether you may use it was settled
+when the operator typed the command. That rule had lived in the command body since SCC-203 and
+nothing read it, which is how the original incident recorded a clean-looking `inline` and
+merged.
+
 > ⓘ **Why 0.7 re-derives against the epic, not `main` (SCC-166).** These steps were ported from
 > `/smh-code-review`, where a Task lane merges into `main` and so re-derives against `origin/main`.
 > A story lane merges into `epic/<JIRA-KEY>-<slug>` — pasting the Task step verbatim would re-derive

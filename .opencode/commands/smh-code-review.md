@@ -155,6 +155,7 @@ verdict about code that will never exist.
 happens: a headless pipeline or a platform without a subagent tool makes the answer `inline`, and
 both are invisible until a lens fails to launch.
 
+<!-- twin-law: subagent-probe -->
 ⛔ **The question is a **capability**, never a **policy** — and conflating the two silently gutted a
 review on SCC-197 (SCC-203).** *Does a subagent tool exist in this runtime?* is the whole question.
 *Am I permitted to use it right now?* is a different one, and answering it here is how a session
@@ -177,7 +178,10 @@ reason on the header line: `review-runtime: inline (blocked: <quote what blocked
 `inline` from a runtime that HAS the tool is a false record, and at close-out it is
 indistinguishable from a runtime that never had one — which IS the SCC-203 defect. This third door
 exists so an agent that believes it is forbidden has somewhere to put that belief where a reader
-can see it, instead of laundering it into a clean-looking `inline`.
+can see it, instead of laundering it into a clean-looking `inline`. **`walkthrough_roster.py`
+READS that reason (SCC-285):** a bare `inline`, or one resting on permission rather than on
+capability, is refused at close-out — this rule stopped being prose.
+<!-- /twin-law -->
 
 And if you are `inline` while holding this lane's plan and walkthrough, the engine **drops** the
 Blind Hunter rather than faking it — see step-01 § *When the order CANNOT protect it*. A roster is

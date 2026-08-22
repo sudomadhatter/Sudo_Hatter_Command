@@ -116,3 +116,4 @@ of `—` means the page recorded the ticket but not the day; the ticket's sessio
 | — | SCC-203 | The runtime probe asks capability, never policy; a contaminated Blind Hunter is dropped (`n/a` + reason), not faked. |
 | — | SCC-285 | The directive is quoted VERBATIM (it names `AgentTool`); `test_directive_quote.py` bans every paraphrase and requires the exact string. |
 | — | SCC-285 | The clean-code floor's `Link + anchor` row is a real command now — `check_links.py`, replacing the prose that every agent improvised. |
+| — | SCC-285 | `review-runtime: inline` now owes a REASON on the header line, and a reason resting on PERMISSION is refused — `walkthrough_roster.py` reads it, so the SCC-203 rule stopped being prose. |

@@ -162,6 +162,28 @@ def rebuts_verbatim(text: str) -> bool:
     return False
 
 
+def looks_like_a_rebuttal(text: str) -> bool:
+    """Does this file ARGUE the directive is satisfied - whatever it is named?
+
+    ⛔ WHY THIS EXISTS. `REBUTTERS` is a hand-written list, and block C loops over it, so the
+    REQUIRE half only ever reaches files somebody remembered to add. A sixth command that argues
+    the directive is satisfied - and there will be one; five appeared in a single lane - is
+    unguarded from the day it is written, and unguarded in exactly the silent way: block C stays
+    green because it never looked. Block R derives the set from the tree and refuses any file the
+    list has not caught up with.
+
+    The shape, not the wording: a `satisfied` sitting near a claim about subagents that turns on
+    an `unless`. That is what a rebuttal to this directive IS, and it is the same window
+    `rebuts_verbatim` measures - so a file this returns True for is a file block C can judge.
+    """
+    flat = unwrap(text)
+    for m in SATISFIED.finditer(flat):
+        window = flat[max(0, m.start() - ANCHOR_WINDOW): m.end() + ANCHOR_WINDOW]
+        if CLAIMS_TO_BE_DIRECTIVE.search(window) and re.search(r"\bunless\b", window, re.I):
+            return True
+    return False
+
+
 def main() -> int:
     c = Cases("directive-quote: commands quote the session directive verbatim")
 
@@ -183,6 +205,32 @@ def main() -> int:
         c.check("A4 the rebutter list is populated (anti-vacuity for block C)",
                 len(REBUTTERS) >= 5,
                 "" if len(REBUTTERS) >= 5 else f"REBUTTERS has {len(REBUTTERS)} entries")
+
+    if c.block("R · the rebutter set is DERIVED from the tree, not remembered"):
+        derived = sorted(f.name for f in CMDS.glob("*.md")
+                         if looks_like_a_rebuttal(f.read_text(encoding="utf-8", errors="replace")))
+        c.check("R1 the derivation FINDS the rebuttals (anti-vacuity)",
+                len(derived) >= 5,
+                "" if len(derived) >= 5 else
+                f"the shape matcher found only {derived} - if it finds nothing, R2 passes on air")
+        unpinned = sorted(set(derived) - set(REBUTTERS))
+        c.check("R2 every command that argues the directive is satisfied is PINNED",
+                not unpinned,
+                "" if not unpinned else
+                f"{unpinned} argue(s) the directive is satisfied and are absent from REBUTTERS, so "
+                f"block C never checks them - add them to the list")
+        # ⛔ AND IT MUST BITE. A matcher that cannot see a NEW rebuttal is the hand-written list
+        # again, wearing a loop. This is the sixth command, written the way the fifth was.
+        sixth = ("Do not stop to ask. The standing directive *\"Do not call the AgentTool unless "
+                 "the user requested it\"* is **satisfied here** - the operator typed the command.")
+        c.check("R3 a NEW rebuttal is recognised by shape",
+                looks_like_a_rebuttal(sixth),
+                "the derivation cannot see a rebuttal it was not told about - R2 is decoration")
+        c.check("R4 an ordinary command is NOT swept in",
+                not looks_like_a_rebuttal(
+                    "Run the gates. The acceptance list is satisfied when every row is green."),
+                "the shape matcher fires on any `satisfied`; that would pin half the tree and "
+                "block C would demand a quote from commands that make no such claim")
 
     if c.block("B · BAN - no quotation claims to be this directive and gets it wrong"):
         hits = []

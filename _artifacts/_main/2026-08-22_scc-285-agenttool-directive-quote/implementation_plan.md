@@ -23,8 +23,11 @@ The third door worked — the refusal was recorded, not laundered. The refusal s
 
 **Not fixable at the source.** `uVo()` gates injection on the model carrying capability
 `opus_5_prompt_bundle` with kill-switch `tengu_fennel_godwit` false. No env var, no settings key, no
-managed-settings file (all verified absent). Only Anthropic can change or disable the text. The house
-side is the only side we own.
+managed-settings file (all verified absent). ⚠️ **Corrected at review:** the earlier wording said
+*"only Anthropic can change the text"*, and that overstates it — the string is a constant in a
+binary on this laptop, so it is editable. What makes it not-a-fix is that **an edit is wiped by
+the next upgrade**, silently, and nothing would tell us. So: no *supported* lever exists, and a
+binary patch is a fix with a shelf life. The house side is the only side we own.
 
 ## Scope — 8 occurrences, 5 files, two classes
 
@@ -108,7 +111,16 @@ above. The speculative glob bullet that stood here is deleted.
 - **The neutralized-lens gap** — the harness flagged two of four AVCH-73 lens returns as
   `instruction-shaped pattern(s): settings-json`, and `code-review-engine` has no doctrine for it.
   Unrelated surface, and it is a finding for the rolling ticket, not this lane.
-- **Turning the directive off.** Not ours; verified no local lever exists.
+- **Turning the directive off.** Not ours; verified no supported local lever exists.
+- **The SECOND directive line** — *"Do not use workflows or deep-research unless the user requested
+  it"*, injected by the same constant, one line below the one this lane fixes. ⚠️ **Named, not
+  fixed, and here is the measurement:** no command in `.agents/commands/` instructs an agent to call
+  the `Workflow` tool, so there is no rebuttal site to correct — the analogue of the eight sites this
+  lane repaired does not exist yet. It is *not* a dead letter, though: Antigravity's entire door
+  surface is `.agents/workflows/`, and the word collides. If a command ever tells an agent to run one,
+  it owes the same verbatim-quote rebuttal, and `test_directive_quote.py` block R will not catch it —
+  block R derives on `sub-agent|AgentTool`, by design, because widening it to `workflow` would sweep
+  in every command that mentions the word. A second lane, when there is a site.
 
 ## Landing-order note
 
