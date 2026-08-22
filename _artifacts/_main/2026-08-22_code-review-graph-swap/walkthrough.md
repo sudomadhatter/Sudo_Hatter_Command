@@ -204,3 +204,15 @@ The measured facts that shaped it:
    repo's `.gitnexus/`, and remove the `gitnexus` entries from `~/.claude.json`'s per-project
    `mcpServers`. The Windows PC also needs `pipx install code-review-graph`, `PYTHONUTF8=1`, and its
    own `~/.claude.json` override — `docs/code-review-graph.md` (Part C) will carry both recipes.
+
+   **⛔ WITH ONE EXCEPTION — do not uninstall GitNexus on a machine that runs the AviationChat TIA
+   gate.** Found by the AGY twin (AVCH-73) while doing the same swap there: GitNexus is **live code**
+   in that repo, not a stale doc reference. `Projects/AGY_AVIATIONCHAT/backend/tia/gate.py:68` shells
+   out to `node .gitnexus/run.cjs status` and parses its output; `select.py:64` refuses to select
+   tests when that index is not at `HEAD`; `scripts/tia_gate.ps1` drives both. Removing GitNexus does
+   not degrade that gate — a missing index reads as `STALE_INDEX`, trips the `RUN_ALL` fail-safe, and
+   the "fast" pre-push gate silently becomes a full-suite run every time, with nothing saying why.
+   AVCH-73's scope excluded `backend/`, so the port is **AVCH-77** (a Task under the AGY CI/CD epic
+   AVCH-43), which also adds the macOS entry point that gate has never had — `tia_gate.ps1:27` and
+   `gate.py:132,141` all hardcode `backend/.venv/Scripts/python.exe`, so on a Mac it cannot dispatch a
+   single test today. Everywhere else, GitNexus can go.

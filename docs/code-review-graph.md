@@ -43,6 +43,23 @@ lives in the child repos, each with its own graph (`Projects/AGY_AVIATIONCHAT` �
   143, 358, 429), and the graph attributes a call to the wrong one. Direct callers of a top-level
   function are exact; **same-named nested closures in one file collapse**. When a caller's identity
   decides your action, confirm it with `grep`.
+- **⛔ `callers_of` UNDER-REPORTS attribute-dispatched calls — and `callees_of` is the way to see it.**
+  Measured on `AGY_AVIATIONCHAT` (2026-08-22). `SpecialistOrchestrator.handle_socratic` calls
+  `self.socratic_teacher.evaluate(...)` at four lines (2373, 2422, 2580, 2630) of
+  `backend/agents/specialist/agent.py`. `callers_of SocraticTeacherAgent.evaluate` returns 11 callers
+  and **`handle_socratic` is not one of them**. The edge is not lost — it points at a bare `evaluate`
+  node the resolver marked `"resolution": "ambiguous"` with **both real candidates named**, and
+  `callees_of handle_socratic` shows it. So the two directions disagree, and only one of them tells you.
+
+  The rule: **when `callers_of` returns few or no production callers for a method reached through an
+  attribute, it has not proved the method is dead.** Run `callees_of` on the function you suspect, and
+  treat an `ambiguous` entry that lists your target in `candidates` as a real call site.
+
+  ⓘ This is the same seam the previous engine failed at, and it fails *better*: GitNexus's `impact()`
+  on this exact call chain reported the path as effectively unreached and had to be ground-truthed by
+  hand (recorded in that repo's `_bmad/bmm/stories/tea-6-temp0-integration.md`). This engine keeps the edge and
+  names the candidates — it just files them somewhere `callers_of` does not look. In a 54-callee
+  function, **33 callees were unresolved bare names** (mostly builtins, but `evaluate` among them).
 - **Never report a `tests_for` / `test_gaps` miss as a finding without opening the test file.** The
   test link is a CALL-GRAPH link, so **a test that spawns its subject as a subprocess is invisible to
   it**. Measured on this repo (2026-08-22): `detect-changes` listed all eight functions of
