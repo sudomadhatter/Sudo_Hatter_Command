@@ -1,25 +1,27 @@
 """The scratchpad auto-allow hook: what it may permit, and everything it must not (SCC-263).
 
-Every verification lane builds a throwaway harness under the session scratchpad and runs it -
-twenty-odd approvals per `/smh-code-review`, for a directory that dies with the session. Bash
-permission rules match the COMMAND STRING by prefix and the scratchpad path carries a per-session
-UUID, so settings cannot pre-grant it. A PreToolUse hook is the only layer that sees the resolved
-command. This file is the contract on what that hook is allowed to wave through.
+⛔ THE TWELVE ESCAPES THIS FILE EXISTS TO KEEP DEAD. The first implementation asked "are all the
+absolute paths I can find inside the sandbox?" - a deny-list over a surface it had to recognise
+first. Five review lenses reproduced twelve escapes, every one the same shape: something not
+recognised AS a path was treated as harmless. `rm -rf /<sb>/rt .agents` · `rm -rf .git # /<sb>` ·
+`> "out.txt"` · `>| out.txt` · `>&out.txt` · `tar -C/<repo>` · `--out=/<repo>/x` · `"curl"` ·
+`\\curl` · `/usr/bin/sudo` · `git -C /<sb>/r log && git reset --hard` · `cp /<sb>/x
+/opt/homebrew/bin/git`. Block ESCAPES replays all twelve; none may ever return `allow` again.
 
-⛔ THE HOOK HAS EXACTLY TWO LEGAL OUTPUTS: `allow`, or SILENCE. Never `ask`.
-`ask` is auto-DENY in non-interactive mode, so a convenience hook that emitted it would block the
-very lanes it exists to unblock - and it would do so wearing the word "ask", which reads in a
-transcript like a question that was never asked. `allowed()` below therefore refuses to treat
-anything but a well-formed `allow` as permission, and block H asserts the `ask` ban directly.
+The rewrite inverted the question into an allow-list of SHAPES - no metacharacters, a bare-name
+executable from a literal list, every non-flag token an absolute path inside THIS session's
+scratchpad - so most of those escapes are now unreachable by construction rather than by a
+pattern. The block still runs them because "unreachable by construction" is a claim, and this is
+what makes it an assertion.
 
-⭐ WHY MOST BLOCKS BUILD NO DIRECTORIES. The hook judges the command STRING and never touches
-disk, so a fixture path only has to MATCH the sandbox shape, not exist. Blocks that do read real
-files (I) say so.
+⛔ THE HOOK HAS EXACTLY TWO LEGAL OUTPUTS: `allow`, or SILENCE. Never `ask`, never `deny`.
+`ask` is auto-DENY in non-interactive mode; `deny` is worse. A convenience hook that emitted
+either would block the very lanes it exists to unblock. `allowed()` and `silent()` below are
+deliberately NOT each other's negation, so an `ask` or a `deny` fails both.
 
-Retrofit honesty: blocks A-I were written against a working hook and passed on their first run
-(`test-debt-stories-are-characterization`). Block J was written RED - rule 7 did not exist - and
-is the only part of this file that ever failed for the right reason. The mutation sweep is what
-keeps the other nine from being decorative.
+⭐ WHY THE FIXTURES BUILD NO DIRECTORIES. The hook judges the command STRING and never touches
+disk, so a fixture path only has to MATCH the sandbox shape. Block WIRING is the exception and
+says so - it reads the real repo files.
 """
 from __future__ import annotations
 
@@ -32,24 +34,27 @@ from _harness import SCRIPTS, Cases
 ROOT = SCRIPTS.parents[1]
 HOOK = SCRIPTS.parent / "hooks" / "allow-scratchpad.py"
 
-# A path with the sandbox SHAPE. It need not exist - see the module docstring.
-SB = "/private/tmp/claude-501/-Users-sudohatter-Sudo-Hatter-Command/697c65e7/scratchpad"
-# The `/tmp` spelling of the same tree: macOS symlinks `/tmp` -> `/private/tmp`, so both reach
-# the same bytes and a hook that recognised only one would decline half of its own traffic.
-SB_ALT = "/tmp/claude-501/-Users-sudohatter-Sudo-Hatter-Command/697c65e7/scratchpad"
+SID = "697c65e7-558e-4bf4-975f-ad474d8bb76d"
+SB = f"/private/tmp/claude-501/-Users-sudohatter-Sudo-Hatter-Command/{SID}/scratchpad"
+# macOS symlinks `/tmp` -> `/private/tmp`; both spellings reach the same bytes.
+SB_ALT = f"/tmp/claude-501/-Users-sudohatter-Sudo-Hatter-Command/{SID}/scratchpad"
 REPO = "/Users/sudohatter/Sudo_Hatter_Command"
 
 
-def call(command: str, tool: str = "Bash", raw: str | None = None) -> tuple[int, str]:
-    payload = raw if raw is not None else json.dumps(
-        {"tool_name": tool, "tool_input": {"command": command}})
-    p = subprocess.run([sys.executable, str(HOOK)], input=payload,
+def call(command: str, tool: str = "Bash", raw: str | None = None,
+         session: str | None = SID) -> tuple[int, str]:
+    if raw is None:
+        payload: dict = {"tool_name": tool, "tool_input": {"command": command}}
+        if session is not None:
+            payload["session_id"] = session
+        raw = json.dumps(payload)
+    p = subprocess.run([sys.executable, str(HOOK)], input=raw,
                        capture_output=True, text=True, errors="replace")
     return p.returncode, (p.stdout or "") + (p.stderr or "")
 
 
 def decision(out: str) -> str | None:
-    """The hook's decision, or None for silence. A traceback is silence, not a decision."""
+    """The decision, or None for silence. A traceback is silence, not a decision."""
     try:
         d = json.loads(out.strip() or "{}")
     except json.JSONDecodeError:
@@ -62,172 +67,195 @@ def allowed(out: str) -> bool:
 
 
 def silent(out: str) -> bool:
-    """⛔ Not `not allowed()`. An `ask` is neither allow nor silence, and collapsing the two
-    would let the one output this hook must never produce pass every decline case in the file."""
+    """⛔ NOT `not allowed()`. An `ask` or a `deny` is neither allow nor silence, and collapsing
+    the two would let the outputs this hook must never produce pass every decline case here."""
     return out.strip() == ""
 
 
 def main() -> int:
     c = Cases("scratchpad auto-allow hook (SCC-263)")
 
-    # ── A · the shapes that caused the twenty prompts, all of them permitted ───────────────
-    if c.block("A · real /smh-code-review harness shapes are ALLOWED"):
+    # ── A · the traffic the hook exists to permit ────────────────────────────────────────
+    if c.block("A · real harness shapes are ALLOWED"):
         for label, cmd in [
-            ("mkdir", f"mkdir -p {SB}/rt/notarepo {SB}/rt/lane"),
+            ("mkdir -p, two dirs", f"mkdir -p {SB}/rt/notarepo {SB}/rt/lane"),
             ("bash a script", f"bash {SB}/rt/run.sh"),
-            ("python3 with flags", f"python3 {SB}/rt/harness.py --repo {SB}/rt/notarepo "
-                                   f"--worktree {SB}/rt/lane"),
+            ("python3 with spaced flags", f"python3 {SB}/rt/h.py --repo {SB}/a --worktree {SB}/b"),
+            ("python3 with --flag=path", f"python3 {SB}/rt/h.py --repo={SB}/a"),
             ("rm -rf", f"rm -rf {SB}/rt"),
-            ("absolute interpreter", f"/usr/bin/env python3 {SB}/probe.py"),
-            ("chmod then run", f"chmod +x {SB}/rt/run.sh && bash {SB}/rt/run.sh"),
-            ("git with -C inside", f"git -C {SB}/rt/repo status"),
-            ("pipe to a coreutil", f"cat {SB}/out.txt | head -20"),
+            ("chmod +x", f"chmod +x {SB}/rt/run.sh"),
+            ("chmod 755", f"chmod 755 {SB}/rt/run.sh"),
+            ("cat", f"cat {SB}/out.txt"),
+            ("head -20", f"head -20 {SB}/out.txt"),
+            ("cp within the sandbox", f"cp {SB}/a {SB}/b"),
             ("the /tmp spelling", f"bash {SB_ALT}/rt/run.sh"),
         ]:
             code, out = call(cmd)
             c.check(f"A · {label} is allowed", allowed(out), out.strip()[:160])
             c.check(f"A · {label} exits 0", code == 0, f"exit={code}")
 
-    # ── B · rule 1 — no sandbox path means this is ordinary repo work ──────────────────────
-    if c.block("B · rule 1 · a command naming NO sandbox path is left alone"):
-        for cmd in ["rm -rf .agents", "git status",
-                    "python3 -m py_compile .agents/hooks/allow-scratchpad.py"]:
-            _, out = call(cmd)
-            c.check(f"B · silent on `{cmd}`", silent(out), out.strip()[:160])
-
-    # ── C · rule 2 — one path outside is one path too many ────────────────────────────────
-    if c.block("C · rule 2 · ANY absolute path outside the sandbox declines the whole command"):
+    # ── ESCAPES · the twelve the lenses reproduced against v1 ───────────────────────────
+    if c.block("ESCAPES · every hole the review found stays dead"):
         for label, cmd in [
-            ("a read out of the repo", f"cp {REPO}/AGENTS.md {SB}/"),
-            ("a delete that also eats the repo", f"rm -rf {SB} {REPO}/.git"),
-            ("an outside write target", f"cp {SB}/out.txt /etc/hosts"),
+            ("a relative arg beside a sandbox path", f"rm -rf {SB}/rt .agents"),
+            ("a sandbox path inside a # COMMENT", f"rm -rf .git # cleanup under {SB}/rt"),
+            ("a QUOTED redirect target", f'bash {SB}/rt/run.sh > "out.txt"'),
+            ("a noclobber redirect", f"bash {SB}/rt/run.sh >| out.txt"),
+            (">&FILE, which writes a file not an fd", f"bash {SB}/rt/run.sh >&out.txt"),
+            ("a path glued to a short flag", f"tar -C{REPO} -xf {SB}/payload.tar"),
+            ("a path glued to a long flag", f"python3 {SB}/h.py --out={REPO}/AGENTS.md"),
+            ("a QUOTED deny word", f'"curl" -so {SB}/f example.com/p'),
+            ("a backslash-escaped deny word", f"\\curl -so {SB}/f example.com/p"),
+            ("an absolutely-pathed sudo", f"/usr/bin/sudo rm -rf {SB}"),
+            ("an absolutely-pathed git", f"/usr/bin/git clean -fdx && ls {SB}"),
+            ("one -C licensing a second bare git", f"git -C {SB}/repo log && git reset --hard"),
+            ("a write into a system prefix by ARGUMENT", f"cp {SB}/payload /opt/homebrew/bin/git"),
+            ("tilde-USER expansion", f"cp {SB}/x.sh ~sudohatter/.ssh/authorized_keys"),
+            ("a heredoc body", f"python3 - <<'EOF'\nopen('AGENTS.md','w')\nEOF\ncat {SB}/f"),
+            ("a newline-chained second command", f"bash {SB}/r.sh\nrm -rf .agents"),
+        ]:
+            _, out = call(cmd)
+            c.check(f"ESCAPES · silent on {label}", silent(out), out.strip()[:160])
+
+    # ── B · rule 1 — one simple command, or nothing ─────────────────────────────────────
+    if c.block("B · rule 1 · every shell metacharacter refuses the whole command"):
+        for ch in "`$|&;<>()[]{}*?!#~'\"\\":
+            _, out = call(f"cat {SB}/a{ch}b")
+            c.check(f"B · silent on a command containing {ch!r}", silent(out), out.strip()[:120])
+        _, out = call(f"cat {SB}/a\nrm -rf .agents")
+        c.check("B · silent on a newline", silent(out), out.strip()[:120])
+
+    # ── C · rule 2 — a bare name from the list ──────────────────────────────────────────
+    if c.block("C · rule 2 · the executable is a bare allow-listed name"):
+        for label, cmd in [
+            ("an unlisted executable", f"tar -xf {SB}/p.tar"),
+            ("git, which is never listed", f"git status {SB}"),
+            ("curl, which is never listed", f"curl {SB}/f"),
+            ("an ABSOLUTE path to a listed name", f"/bin/cat {SB}/f"),
+            ("an absolute path to an interpreter", f"/usr/bin/env python3 {SB}/x.py"),
         ]:
             _, out = call(cmd)
             c.check(f"C · silent on {label}", silent(out), out.strip()[:160])
-        # The near-miss that proves the boundary is a boundary and not a prefix-match:
-        # `claude-501x` shares every character of the real root up to the digits.
-        _, out = call("rm -rf /private/tmp/claude-501x/scratchpad/rt")
-        c.check("C · `claude-501x` is NOT the sandbox (boundary, not prefix)",
-                silent(out), out.strip()[:160])
 
-    # ── D · rule 3 — a relative escape from inside lands outside ──────────────────────────
-    if c.block("D · rule 3 · a `..` segment declines"):
-        _, out = call(f"rm -rf {SB}/../../..")
-        c.check("D · silent on a `..` escape", silent(out), out.strip()[:160])
-
-    # ── E · rule 4 — an unexpanded path is a path the hook cannot judge ───────────────────
-    if c.block("E · rule 4 · shell expansion the hook cannot resolve declines"):
+    # ── D · rule 3 — every non-flag token is a sandboxed absolute path ──────────────────
+    if c.block("D · rule 3 · a non-flag token that is not a sandboxed path refuses"):
         for label, cmd in [
-            ("a project-dir variable", f"cp $CLAUDE_PROJECT_DIR/AGENTS.md {SB}/"),
-            ("command substitution", f"bash {SB}/$(whoami).sh"),
-            ("backticks", f"bash {SB}/`whoami`.sh"),
-            ("a tilde home path", f"cp ~/.ssh/id_rsa {SB}/"),
+            ("a bare relative name", f"cp {SB}/x conftest.py"),
+            ("a relative path with a slash", f"cp {SB}/x tests/conftest.py"),
+            ("an absolute path outside", f"cp {SB}/x {REPO}/AGENTS.md"),
+            ("a system path as a write target", f"cp {SB}/x /usr/local/bin/gh"),
+            ("a --flag= value outside", f"python3 {SB}/h.py --out={REPO}/x"),
+            ("flags only, naming no subject", "ls -la"),
+        ]:
+            _, out = call(cmd)
+            c.check(f"D · silent on {label}", silent(out), out.strip()[:160])
+
+    # ── E · rule 4 — the SESSION's scratchpad, not the uid's ───────────────────────────
+    if c.block("E · rule 4 · the sandbox root is this session's scratchpad"):
+        for label, cmd in [
+            ("the uid root", "rm -rf /private/tmp/claude-501/"),
+            ("a project dir above the session", "rm -rf /private/tmp/claude-501/-Some-Proj/"),
+            ("another session's scratchpad",
+             "rm -rf /private/tmp/claude-501/-P/aaaaaaaa-bbbb-cccc/scratchpad"),
+            ("a sibling of scratchpad", f"rm -rf /private/tmp/claude-501/-P/{SID}/tasks"),
+            ("the claude-501x near-miss",
+             f"rm -rf /private/tmp/claude-501x/-P/{SID}/scratchpad/rt"),
+            # ⛔ `sandboxed()` must anchor with match(), never search(): a path merely CONTAINING
+            # the sandbox shape is not inside it. This mutant survived 70/70 in the v1 suite.
+            ("a path merely CONTAINING the shape",
+             f"rm -rf {REPO}/backup/private/tmp/claude-501/-P/{SID}/scratchpad/x"),
         ]:
             _, out = call(cmd)
             c.check(f"E · silent on {label}", silent(out), out.strip()[:160])
+        # The session pin: the same path, under a different session's id.
+        _, out = call(f"rm -rf {SB}/rt", session="ffffffff-0000-0000-0000-000000000000")
+        c.check("E · a path from a DIFFERENT session is refused", silent(out), out.strip()[:160])
+        # ...and when no session id arrives, the shape alone still has to hold.
+        _, out = call(f"rm -rf {SB}/rt", session=None)
+        c.check("E · with no session_id the shape alone still allows a real scratchpad",
+                allowed(out), out.strip()[:160])
+        _, out = call("rm -rf /private/tmp/claude-501/", session=None)
+        c.check("E · with no session_id the uid root is STILL refused",
+                silent(out), out.strip()[:160])
 
-    # ── F · rule 5 — reach past the filesystem and the paths stop mattering ───────────────
-    if c.block("F · rule 5 · egress and privilege escalation decline"):
-        for label, cmd in [
-            ("curl", f"curl -o {SB}/x.tgz https://example.com/x.tgz"),
-            ("wget", f"wget -O {SB}/x.tgz https://example.com/x.tgz"),
-            ("sudo", f"sudo rm -rf {SB}"),
-            ("rsync to a remote", f"rsync -a {SB}/ remote:/tmp/"),
-            ("ssh", f"ssh host 'cat > {SB}/x'"),
-        ]:
-            _, out = call(cmd)
-            c.check(f"F · silent on {label}", silent(out), out.strip()[:160])
+    # ── F · the one non-flag, non-path token the hook accepts ──────────────────────────
+    if c.block("F · the chmod mode token is scoped to chmod, and to first position"):
+        _, out = call(f"chmod u+rw,go-w {SB}/x")
+        c.check("F · a symbolic mode is allowed", allowed(out), out.strip()[:160])
+        _, out = call(f"cp +x {SB}/x")
+        c.check("F · `+x` is NOT a free token for other commands", silent(out), out.strip()[:160])
+        _, out = call(f"chmod {SB}/x +x")
+        c.check("F · a mode in second position refuses", silent(out), out.strip()[:160])
 
-    # ── G · rule 6 — bare `git` reads the AMBIENT repo, sandbox paths notwithstanding ─────
-    if c.block("G · rule 6 · `git` without a sandboxed `-C` declines"):
-        for label, cmd in [
-            ("git add of a sandbox file", f"git add {SB}/out.txt"),
-            ("git -C pointing at the repo", f"git -C {REPO} commit -F {SB}/msg.txt"),
-        ]:
-            _, out = call(cmd)
-            c.check(f"G · silent on {label}", silent(out), out.strip()[:160])
-
-    # ── H · the ban that makes the hook safe to install at all ───────────────────────────
-    if c.block("H · ⛔ it NEVER emits `ask`, and NEVER exits non-zero"):
+    # ── G · the two guarantees that make the hook safe to install at all ───────────────
+    if c.block("G · ⛔ NEVER `ask`, NEVER `deny`, ALWAYS exit 0"):
         probes = [
-            ("well-formed allow", None, json.dumps(
-                {"tool_name": "Bash", "tool_input": {"command": f"ls {SB}"}})),
-            ("a declined command", None, json.dumps(
-                {"tool_name": "Bash", "tool_input": {"command": "rm -rf .agents"}})),
-            ("malformed JSON", None, "{not json at all"),
-            ("empty stdin", None, ""),
-            ("no tool_input", None, json.dumps({"tool_name": "Bash"})),
-            ("a non-Bash tool", None, json.dumps(
-                {"tool_name": "Write", "tool_input": {"file_path": f"{SB}/x"}})),
-            ("an empty command", None, json.dumps(
-                {"tool_name": "Bash", "tool_input": {"command": "   "}})),
+            ("malformed JSON", "{not json at all"),
+            ("empty stdin", ""),
+            ("no tool_input", json.dumps({"tool_name": "Bash"})),
+            ("a null tool_input", json.dumps({"tool_name": "Bash", "tool_input": None})),
+            ("a non-string command",
+             json.dumps({"tool_name": "Bash", "tool_input": {"command": 42}})),
+            ("a whitespace-only command",
+             json.dumps({"tool_name": "Bash", "tool_input": {"command": "   "}})),
         ]
-        for label, _unused, raw in probes:
+        for label, raw in probes:
             code, out = call("", raw=raw)
-            c.check(f"H · `{label}` never yields ask", decision(out) != "ask", out.strip()[:160])
-            c.check(f"H · `{label}` exits 0", code == 0, f"exit={code}")
-        # A non-Bash tool must be silence specifically - the hook is registered on a Bash
-        # matcher today, but a matcher is configuration and this is the code's own guarantee.
+            # ⛔ `silent`, not `decision != "ask"`. The v1 suite asserted only the weaker form,
+            # and a mutant that printed `deny` from the exception handler survived it — turning
+            # a convenience hook into a hard blocker on every Bash call.
+            c.check(f"G · `{label}` is SILENT", silent(out), out.strip()[:160])
+            c.check(f"G · `{label}` exits 0", code == 0, f"exit={code}")
+        # ⛔ Non-vacuous: this payload carries a REAL allowable command, so silence can only come
+        # from the tool_name guard. The v1 version passed `file_path` instead, so the empty-command
+        # guard produced the silence and deleting the tool_name check survived the whole suite.
         _, out = call("", raw=json.dumps(
-            {"tool_name": "Write", "tool_input": {"file_path": f"{SB}/x"}}))
-        c.check("H · a non-Bash tool is silence, not allow", silent(out), out.strip()[:160])
+            {"tool_name": "Write", "tool_input": {"command": f"ls {SB}"}, "session_id": SID}))
+        c.check("G · a non-Bash tool carrying an allowable command is still silent",
+                silent(out), out.strip()[:160])
 
-    # ── I · the wiring — reads the REAL repo files, not a fixture ────────────────────────
-    if c.block("I · the deployed copy and the settings wiring agree with the master"):
+    # ── WIRING · reads the REAL repo files, not a fixture ──────────────────────────────
+    if c.block("WIRING · the deployed copy and the settings entry agree with the master"):
         master = ROOT / ".agents/hooks/allow-scratchpad.py"
         deployed = ROOT / ".claude/hooks/allow-scratchpad.py"
-        c.check("I · the master exists", master.is_file(), str(master))
-        c.check("I · the deployed copy exists", deployed.is_file(), str(deployed))
+        c.check("WIRING · the master exists", master.is_file(), str(master))
+        c.check("WIRING · the deployed copy exists", deployed.is_file(), str(deployed))
         if master.is_file() and deployed.is_file():
-            c.check("I · deployed copy is byte-identical to the master",
-                    master.read_bytes() == deployed.read_bytes(),
-                    "they have diverged — re-run /smh-sync-agents")
+            same = master.read_bytes() == deployed.read_bytes()
+            c.check("WIRING · deployed copy is byte-identical to the master", same,
+                    "" if same else "they have diverged — re-run /smh-sync-agents")
         settings = json.loads((ROOT / ".claude/settings.json").read_text(encoding="utf-8"))
-        bash_groups = [g for g in settings["hooks"]["PreToolUse"] if g.get("matcher") == "Bash"]
-        c.check("I · there is a PreToolUse Bash matcher", len(bash_groups) == 1,
-                f"found {len(bash_groups)}")
-        if bash_groups:
-            cmds = [h["command"] for h in bash_groups[0]["hooks"]]
-            c.check("I · the hook is wired into it",
-                    any("allow-scratchpad.py" in x for x in cmds), str(cmds))
-            # FIRST, so its `allow` is on record before the later gates speak. A sibling
-            # `ask`/`deny` still wins - that ordering is the safe direction and is intended.
-            c.check("I · it is FIRST in the chain",
-                    bool(cmds) and "allow-scratchpad.py" in cmds[0], str(cmds[:1]))
-        # ⛔ The stray-copy check. This hook was first wired into `SessionStart` by mistake,
-        # where it is inert: it reads a payload with no `tool_name`, returns silently, and
-        # every symptom is identical to a hook that is working. Nothing else would catch it.
-        ss = [h["command"] for g in settings["hooks"].get("SessionStart", [])
-              for h in g["hooks"]]
-        c.check("I · it is NOT also wired into SessionStart (inert there, and silent about it)",
+        groups = [g for g in settings["hooks"]["PreToolUse"] if g.get("matcher") == "Bash"]
+        c.check("WIRING · there is exactly one PreToolUse Bash matcher", len(groups) == 1,
+                f"found {len(groups)}")
+        cmds = [h["command"] for h in groups[0]["hooks"]] if groups else []
+        mine = [x for x in cmds if "allow-scratchpad.py" in x]
+        c.check("WIRING · the hook is wired into it", len(mine) == 1, str(cmds))
+        c.check("WIRING · it is FIRST in the chain",
+                bool(cmds) and "allow-scratchpad.py" in cmds[0], str(cmds[:1]))
+        # ⛔ The interpreter seam. `.claude/settings.json` is shared across a Mac with no bare
+        # `python` and a PC with no `python3`; naming either directly is the SCC-77 exit-127 bug,
+        # which is silent. `run-hook.sh` probes. A mutant naming `python` survived the v1 suite.
+        c.check("WIRING · it is dispatched through run-hook.sh, never a named interpreter",
+                all("run-hook.sh" in x for x in mine), str(mine))
+        # ⛔ The stray-copy check. This hook was first wired into SessionStart by mistake, where it
+        # is inert and every symptom is identical to a hook that works.
+        ss = [h["command"] for g in settings["hooks"].get("SessionStart", []) for h in g["hooks"]]
+        c.check("WIRING · it is NOT also wired into SessionStart (inert there, and silent)",
                 not any("allow-scratchpad.py" in x for x in ss), str(ss))
 
-    # ── J · rule 7 — the hole the self-audit found (written RED) ─────────────────────────
-    if c.block("J · rule 7 · a redirect target outside the sandbox declines"):
-        for label, cmd in [
-            ("a RELATIVE redirect", f"bash {SB}/rt/run.sh > out.txt"),
-            ("a relative append", f"bash {SB}/rt/run.sh >> log.txt"),
-            ("a relative stderr redirect", f"python3 {SB}/probe.py 2> err.txt"),
-            ("a relative combined redirect", f"bash {SB}/rt/run.sh &> all.txt"),
-            ("tee to a relative path", f"bash {SB}/rt/run.sh | tee out.txt"),
-            ("a redirect into the repo", f"bash {SB}/rt/run.sh > {REPO}/out.txt"),
-            # ⛔ `/usr/` is in SAFE_PREFIXES, so rule 2 waves this through: those prefixes exist
-            # so an absolute interpreter can be READ. Only rule 7's separate, narrower WRITE_OK
-            # stops it, and this case is the only thing that proves the two lists stayed apart.
-            ("a redirect into a system prefix", f"bash {SB}/rt/run.sh > /usr/local/lib/x"),
-        ]:
-            _, out = call(cmd)
-            c.check(f"J · silent on {label}", silent(out), out.strip()[:160])
-        # The other half: a redirect that STAYS inside must still be allowed, or rule 7 has
-        # simply banned redirection and taken the feature down with the hole.
-        for label, cmd in [
-            ("a sandboxed redirect", f"bash {SB}/rt/run.sh > {SB}/out.txt"),
-            ("a sandboxed append", f"bash {SB}/rt/run.sh >> {SB}/log.txt"),
-            ("/dev/null", f"bash {SB}/rt/run.sh > /dev/null 2>&1"),
-            ("tee to a sandboxed path", f"bash {SB}/rt/run.sh | tee {SB}/out.txt"),
-        ]:
-            _, out = call(cmd)
-            c.check(f"J · still allows {label}", allowed(out), out.strip()[:160])
+    # ── E2E · through the seam Claude Code actually uses ──────────────────────────────
+    if c.block("E2E · the hook answers correctly through run-hook.sh"):
+        payload = json.dumps(
+            {"tool_name": "Bash", "tool_input": {"command": f"bash {SB}/rt/run.sh"},
+             "session_id": SID})
+        p = subprocess.run(["sh", str(SCRIPTS.parent / "hooks" / "run-hook.sh"),
+                            ".claude/hooks/allow-scratchpad.py"],
+                           input=payload, capture_output=True, text=True,
+                           cwd=str(ROOT), errors="replace")
+        c.check("E2E · run-hook.sh dispatches it and it allows", allowed(p.stdout),
+                (p.stdout + p.stderr).strip()[:200])
+        c.check("E2E · exit 0 through the seam", p.returncode == 0, f"exit={p.returncode}")
 
     return c.finish()
 

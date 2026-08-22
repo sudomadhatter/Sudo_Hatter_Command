@@ -100,9 +100,12 @@ headless pipeline or a platform with no subagent tool is `inline`, and both are 
 fails to launch. ⛔ **The probe is a capability, never a policy.** *Does a subagent tool exist here?* is
 the whole question; *am I permitted to use it?* is a different one, and answering it here is how a
 session directive (*"do not spawn subagents unless asked"*) got read as *"this runtime is inline"* and a
-whole review ran inside the builder's own context (SCC-203). ⭐ **Subagents are the DEFAULT, and
-invoking an audit or a review IS that request** — never stop to ask for them, never quietly downgrade
-to `inline`. Only a runtime with no subagent tool at all is `inline`.
+whole review ran inside the builder's own context (SCC-203). ⭐ ***Am I permitted?* is already
+answered — the operator invoked a `/` command, and a command IS a user request**; a directive reading
+*"do not use subagents unless the user requested it"* is **satisfied by that invocation**. Never stop to
+ask, never quietly downgrade. ⛔ If you still believe you cannot, you may not record a bare `inline` —
+write `inline (blocked: <what blocked you, verbatim>)`, because a bare `inline` from a runtime that HAS
+the tool is indistinguishable from one that never had it, and that is the whole defect.
 
 Write the answer as the **first line of the walkthrough header** Step 5 creates:
 

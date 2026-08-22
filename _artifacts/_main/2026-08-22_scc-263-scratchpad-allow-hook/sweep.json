@@ -2,100 +2,124 @@
   "test": ["python3", ".agents/scripts/tests/test_allow_scratchpad.py"],
   "mutants": [
     {
-      "id": "M1 · widen the sandbox root so any /tmp child matches",
+      "id": "M1 · widen the sandbox root back to the uid, dropping the session segment",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "SANDBOX_RE = re.compile(r\"^/(private/)?tmp/claude-\\d+/\")",
-      "mutated": "SANDBOX_RE = re.compile(r\"^/(private/)?tmp/\")",
-      "case": "C · `claude-501x` is NOT the sandbox (boundary, not prefix)",
-      "block": "rule 2 ·"
-    },
-    {
-      "id": "M2 · drop rule 1 — stop requiring any sandbox path at all",
-      "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    if not any(sandboxed(p) for p in paths):",
-      "mutated": "    if False:",
-      "case": "B · silent on `rm -rf .agents`",
-      "block": "rule 1 ·"
-    },
-    {
-      "id": "M3 · weaken rule 2 from ALL paths to ANY path",
-      "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    if not all(safe(p) for p in paths):",
-      "mutated": "    if not any(safe(p) for p in paths):",
-      "case": "C · silent on a read out of the repo",
-      "block": "rule 2 ·"
-    },
-    {
-      "id": "M4 · drop rule 3 — allow a `..` escape",
-      "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    if UNEXPANDED.search(command) or \"..\" in command:",
-      "mutated": "    if UNEXPANDED.search(command):",
-      "case": "D · silent on a `..` escape",
-      "block": "rule 3 ·"
-    },
-    {
-      "id": "M5 · drop rule 4 — allow unexpanded shell expansion",
-      "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    if UNEXPANDED.search(command) or \"..\" in command:",
-      "mutated": "    if \"..\" in command:",
-      "case": "E · silent on a project-dir variable",
+      "original": "    r\"^/(?:private/)?tmp/claude-\\d+/[^/]+/[0-9A-Za-z][0-9A-Za-z_-]{7,}/scratchpad(?:/|$)\")",
+      "mutated": "    r\"^/(?:private/)?tmp/claude-\\d+/\")",
+      "case": "E · silent on the uid root",
       "block": "rule 4 ·"
     },
     {
-      "id": "M6 · drop rule 5 — allow sudo and network egress",
+      "id": "M2 · anchor with search() instead of match() — a path CONTAINING the shape counts",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    if DENY_WORDS.search(command):",
+      "original": "    if not SANDBOX_RE.match(token):",
+      "mutated": "    if not SANDBOX_RE.search(token):",
+      "case": "E · silent on a path merely CONTAINING the shape",
+      "block": "rule 4 ·"
+    },
+    {
+      "id": "M3 · drop the session pin — any session's scratchpad passes",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "    if session_id and f\"/{session_id}/\" not in token:",
       "mutated": "    if False:",
-      "case": "F · silent on sudo",
-      "block": "rule 5 ·"
+      "case": "E · a path from a DIFFERENT session is refused",
+      "block": "rule 4 ·"
     },
     {
-      "id": "M7 · drop rule 6 — allow git with no sandboxed -C",
+      "id": "M4 · drop rule 1 entirely — metacharacters stop refusing",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "        if not targets or not all(sandboxed(t.strip(\"'\\\"\")) for t in targets):",
-      "mutated": "        if False:",
-      "case": "G · silent on git add of a sandbox file",
-      "block": "rule 6 ·"
-    },
-    {
-      "id": "M8 · drop rule 7's redirect check — the hole the self-audit found",
-      "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    if not all(writable(t) for t in REDIRECT.findall(command)):",
+      "original": "    if FORBIDDEN & set(command):",
       "mutated": "    if False:",
-      "case": "J · silent on a RELATIVE redirect",
-      "block": "rule 7 ·"
+      "case": "ESCAPES · silent on a sandbox path inside a # COMMENT",
+      "block": "ESCAPES"
     },
     {
-      "id": "M9 · drop rule 7's tee check — the half easiest to forget",
+      "id": "M5 · drop `#` from the metacharacter set — the comment escape returns",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "        if not all(writable(t) for t in m.group(1).split() if not t.startswith(\"-\")):",
+      "original": "FORBIDDEN = set(\"`$|&;<>()[]{}*?!#~'\\\"\\\\\\n\\r\")",
+      "mutated": "FORBIDDEN = set(\"`$|&;<>()[]{}*?!~'\\\"\\\\\\n\\r\")",
+      "case": "ESCAPES · silent on a sandbox path inside a # COMMENT",
+      "block": "ESCAPES"
+    },
+    {
+      "id": "M6 · add `tar` to the executable allow-list",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "    \"bash\", \"sh\", \"python3\", \"python\", \"node\",",
+      "mutated": "    \"bash\", \"sh\", \"python3\", \"python\", \"node\", \"tar\",",
+      "case": "C · silent on an unlisted executable",
+      "block": "rule 2 ·"
+    },
+    {
+      "id": "M7 · drop rule 2 — any executable is accepted",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "    if argv0 not in ALLOWED:",
+      "mutated": "    if False:",
+      "case": "C · silent on git, which is never listed",
+      "block": "rule 2 ·"
+    },
+    {
+      "id": "M8 · accept an ABSOLUTE path to a listed name (the /usr/bin/sudo class)",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "    argv0, args = tokens[0], tokens[1:]",
+      "mutated": "    argv0, args = tokens[0].split(\"/\")[-1], tokens[1:]",
+      "case": "C · silent on an ABSOLUTE path to a listed name",
+      "block": "rule 2 ·"
+    },
+    {
+      "id": "M9 · stop checking a --flag= VALUE — the glued-path escape returns",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "            if not sandboxed(flagged.group(2), session_id):",
+      "mutated": "            if False:",
+      "case": "D · silent on a --flag= value outside",
+      "block": "rule 3 ·"
+    },
+    {
+      "id": "M10 · stop checking bare tokens — the relative-argument escape returns",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "        if not sandboxed(tok, session_id):",
       "mutated": "        if False:",
-      "case": "J · silent on tee to a relative path",
-      "block": "rule 7 ·"
+      "case": "D · silent on a bare relative name",
+      "block": "rule 3 ·"
     },
     {
-      "id": "M10 · let rule 7 inherit the READ prefixes as WRITE targets",
+      "id": "M11 · drop the `names a subject` requirement",
       "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    return sandboxed(t) or t in WRITE_OK",
-      "mutated": "    return sandboxed(t) or t.startswith(SAFE_PREFIXES) or t in WRITE_OK",
-      "case": "J · silent on a redirect into a system prefix",
-      "block": "rule 7 ·"
+      "original": "    return saw_path",
+      "mutated": "    return True",
+      "case": "D · silent on flags only, naming no subject",
+      "block": "rule 3 ·"
     },
     {
-      "id": "M11 · emit `ask` instead of `allow` — auto-DENY in non-interactive mode",
+      "id": "M12 · let the chmod mode token be a free token for every command",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "        if argv0 == \"chmod\" and i == 0 and MODE_RE.match(tok):",
+      "mutated": "        if MODE_RE.match(tok):",
+      "case": "F · `+x` is NOT a free token for other commands",
+      "block": "chmod mode token"
+    },
+    {
+      "id": "M13 · emit `ask` instead of `allow` — auto-DENY in non-interactive mode",
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "        \"permissionDecision\": \"allow\",",
       "mutated": "        \"permissionDecision\": \"ask\",",
-      "case": "H · `well-formed allow` never yields ask",
-      "block": "NEVER emits"
+      "case": "A · mkdir -p, two dirs is allowed",
+      "block": "harness shapes"
     },
     {
-      "id": "M12 · stop failing silent — let an exception escape",
+      "id": "M14 · stop failing silent — let an exception escape",
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "    except Exception:  # noqa: BLE001 - a convenience hook must never become a blocker.\n        pass",
       "mutated": "    except Exception:  # noqa: BLE001 - a convenience hook must never become a blocker.\n        raise",
-      "case": "H · `malformed JSON` exits 0",
-      "block": "NEVER emits"
+      "case": "G · `malformed JSON` is SILENT",
+      "block": "NEVER"
+    },
+    {
+      "id": "M15 · drop the tool_name guard — non-Bash tools get judged as Bash",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "    if payload.get(\"tool_name\") != \"Bash\":",
+      "mutated": "    if False:",
+      "case": "G · a non-Bash tool carrying an allowable command is still silent",
+      "block": "NEVER"
     }
   ]
 }
