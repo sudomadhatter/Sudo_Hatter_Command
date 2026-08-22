@@ -1,0 +1,5 @@
+task_key: SCC-271
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-271-jira-feed-write-truth
+close_command: smh-close-task-merge-tree
+secondary_repos: []
