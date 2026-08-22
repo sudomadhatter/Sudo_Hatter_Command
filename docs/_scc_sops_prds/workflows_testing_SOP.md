@@ -1365,9 +1365,18 @@ several steps later, for no visible reason. Two things you'll see:
 - **A repo with genuinely nothing to link says `resolution verified: <path>`.** Six of the nine
   repos on this machine legitimately have no linked assets, and so does any repo before its first
   `npm install` — that is normal and the lane opens. The line is there so an empty result can never
-  again be mistaken for a broken one.
-- **A repo it cannot resolve now refuses**, names the path it tried, and tells you to pass `--repo`.
+  again be mistaken for a broken one, so it is only ever printed about a repo the script resolved
+  **and** checked itself. There are three ways to link nothing and each says which one it was:
+  the repo is honestly empty · assets are there but this worktree has nowhere to put them
+  (`N asset(s) FOUND in this repo, none placeable`) · you passed `--repo`, so nothing was resolved
+  and nothing was verified.
+- **A repo it cannot resolve refuses**, names the path it tried, and tells you to pass `--repo`.
   Better a lane that will not open than one that opens empty and fails a test twenty minutes later.
+  Every resolution failure comes back this way, including the first question the script asks git —
+  a refusal you can read, never a stack trace.
+- **`--repo` is an escape hatch, not a second gate.** It skips resolution on purpose, so it never
+  refuses; it warns when the path you gave is not a working tree or not a repo root, links what it
+  finds, and declines to call the result verified.
 
 `--require-assets` is there for a caller that *knows* assets must exist and wants the hard failure.
 Do not add it to the ordinary worktree-open line — it would make lanes un-openable in the six repos

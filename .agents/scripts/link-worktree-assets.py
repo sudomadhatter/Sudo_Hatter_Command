@@ -86,12 +86,20 @@ def repo_root(start: Path) -> Path:
     — a bare repo, a submodule whose directory was deleted — raises instead of returning a
     plausible-looking answer.
     """
-    common = Path(subprocess.run(
+    # ⛔ NO `check=True` here. It raises CalledProcessError, which is not what main() catches,
+    # so the operator gets a raw traceback instead of the refusal this script promises — and the
+    # promise is the whole point of the resolution work below. A lane whose `.git` file points at
+    # a gitdir `git worktree prune` has already removed reaches exactly this line.
+    rp = subprocess.run(
         ["git", "-C", str(start), "rev-parse", "--path-format=absolute", "--git-common-dir"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip())
+        capture_output=True, text=True,
+    )
+    if rp.returncode != 0 or not rp.stdout.strip():
+        why = (rp.stderr or "").strip().splitlines()
+        raise ResolutionError(
+            f"{start} — git cannot name a git dir here: "
+            f"{why[0] if why else 'rev-parse --git-common-dir printed nothing'}")
+    common = Path(rp.stdout.strip())
 
     cw = subprocess.run(
         ["git", "-C", str(common), "config", "--get", "core.worktree"],
@@ -159,17 +167,27 @@ def find_assets(repo: Path) -> list[tuple[Path, str]]:
     return found
 
 
-def do_link(worktree: Path, repo: Path, copy_env: bool, require_assets: bool = False) -> int:
+def do_link(worktree: Path, repo: Path, copy_env: bool, require_assets: bool = False,
+            verified: bool = True) -> int:
+    """`verified` is False when the caller GAVE the repo with --repo instead of resolving it.
+
+    ⛔ It is not decoration. The zero-assets report below claims the resolution was checked, and
+    that claim is the entire point of the report — so it may only be made about a repo this
+    script actually resolved. `--repo` skips `repo_root()`, which is exactly what the escape
+    hatch is for, and printing "resolution verified" over it re-opens the ambiguity the report
+    was written to close."""
     print(f"repo:     {repo}")
     print(f"worktree: {worktree}\n")
 
-    linked, skipped = 0, 0
+    assets = find_assets(repo)
+    linked = skipped = unplaceable = 0
     env_symlinked = shared_node_modules = False
-    for src, kind in find_assets(repo):
+    for src, kind in assets:
         rel = src.relative_to(repo)
         dst = worktree / rel
         if not dst.parent.is_dir():
             print(f"  ! {rel} — its parent dir is not in the worktree, skipped")
+            unplaceable += 1
             continue
         if dst.exists() or dst.is_symlink():
             print(f"  = {str(rel):<24} already present — left alone")
@@ -182,16 +200,28 @@ def do_link(worktree: Path, repo: Path, copy_env: bool, require_assets: bool = F
         shared_node_modules = shared_node_modules or (rel.name == "node_modules" and dst.exists())
 
     if not linked and not skipped:
-        # ⭐ SAY THAT THE RESOLUTION WAS VERIFIED, not just that the result was empty (SCC-255).
-        # Six of the nine local checkouts genuinely have zero linkable assets, and so does any
-        # repo before its first `npm install` — refusing on the COUNT would make ten command
-        # bodies unable to open a lane in them. The defect was never the zero; it was that a
-        # failed resolution and an honest zero printed the same sentence. Now they cannot.
-        print("  (nothing to link — no gitignored runtime assets at the repo root or one level down)")
-        print(f"  resolution verified: {repo} — this repo genuinely has none.")
+        # ⭐ SAY WHICH KIND OF ZERO THIS IS (SCC-255). Six of the nine local checkouts genuinely
+        # have no linkable assets, and so does any repo before its first `npm install` — refusing
+        # on the COUNT would make ten command bodies unable to open a lane in them. The defect was
+        # never the zero; it was that every different reason for a zero printed one sentence.
+        # There are THREE, and only the first may claim the repo genuinely has none:
+        #   assets == []    the repo really is empty of them — and we resolved it ourselves
+        #   unplaceable     assets ARE there, this worktree just has nowhere to put them
+        #   not verified    --repo was given, so repo_root() never ran and nothing was checked
+        print("  (nothing to link — no gitignored runtime assets at the repo root or one level down)"
+              if not assets else
+              f"  ({unplaceable} asset(s) FOUND in this repo, none placeable in this worktree — "
+              f"see the `!` line(s) above)")
+        if not assets and verified:
+            print(f"  resolution verified: {repo} — this repo genuinely has none.")
+        elif not assets:
+            print(f"  ⚠ NOT verified: {repo} was given with --repo, so it was never checked to be "
+                  f"the working tree behind this worktree. Drop --repo to have it resolved.")
         if require_assets:
-            print(f"error: --require-assets was given, but {repo} has no linkable assets at its "
-                  f"root or one level down", file=sys.stderr)
+            print(f"error: --require-assets was given, but nothing was linked from {repo}"
+                  + (f" ({unplaceable} asset(s) found but unplaceable)" if unplaceable
+                     else " (it has no linkable assets at its root or one level down)"),
+                  file=sys.stderr)
             return 1
         return 0
 
@@ -311,8 +341,22 @@ def main() -> int:
     if args.unlink:
         return do_unlink(worktree)
 
+    verified = not args.repo
     if args.repo:
         repo = Path(args.repo).resolve()
+        # Not a refusal — --repo IS the escape hatch, and refusing here would close it. But a
+        # path that is not a working-tree root is almost always a typo, and saying so beats
+        # linking nothing and reporting a clean run.
+        probe = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "--path-format=absolute", "--show-toplevel"],
+            capture_output=True, text=True)
+        top = probe.stdout.strip()
+        if probe.returncode != 0 or not top:
+            print(f"⚠ --repo {repo} is not a git working tree; linking from it anyway "
+                  f"because you asked.", file=sys.stderr)
+        elif Path(os.path.realpath(top)) != Path(os.path.realpath(repo)):
+            print(f"⚠ --repo {repo} is not a repo ROOT; its root is {top}. Assets are only "
+                  f"looked for at the root and one level down.", file=sys.stderr)
     else:
         try:
             repo = repo_root(worktree)
@@ -325,7 +369,7 @@ def main() -> int:
     if repo == worktree:
         print("error: source repo and worktree are the same path", file=sys.stderr)
         return 2
-    return do_link(worktree, repo, args.copy_env, args.require_assets)
+    return do_link(worktree, repo, args.copy_env, args.require_assets, verified)
 
 
 if __name__ == "__main__":

@@ -69,10 +69,19 @@ def main() -> int:
             # `backend/` itself must be TRACKED — the script skips an asset whose parent dir is
             # absent from the worktree, so an untracked `backend/` would make the depth-1 half of
             # this case vacuous rather than failing it.
+            # ⛔ `seed()` set an identity on `src`; `submodule add` CLONED it, and local config
+            # does not travel with a clone. On a machine with no ambient user.email the commit
+            # below fails silently — `git()` neither checks nor raises — and the failure surfaces
+            # four assertions later pointing at the script instead of at this fixture. Two
+            # machines, and only one of them has an ambient identity.
+            git(sub, "config", "user.email", "t@t.t")
+            git(sub, "config", "user.name", "t")
             (sub / "backend").mkdir()
             (sub / "backend" / "keep.txt").write_text("tracked\n", encoding="utf-8")
             git(sub, "add", "backend/keep.txt")
-            git(sub, "commit", "-qm", "backend")
+            r = git(sub, "commit", "-qm", "backend")
+            c.check("fixture: the submodule commit landed (identity is NOT inherited by a clone)",
+                    r.returncode == 0, (r.stderr or r.stdout).strip()[:200])
             (sub / ".env").write_text("KEY=1\n", encoding="utf-8")
             (sub / "backend" / ".venv").mkdir()
 
@@ -141,6 +150,94 @@ def main() -> int:
                     "unrecognized arguments" not in out
                     and "--require-assets was given" in out
                     and str(plain.resolve()) in out, out)
+
+    if c.block("B2c · different-repo-refuses: the candidate is inside SOMEONE ELSE's tree"):
+        # ⛔ B2a only asserts this message is ABSENT. Nothing pinned it ever APPEARING, so
+        # replacing the guard with `if False:` kept every check green — the symmetric hole to the
+        # one B2a itself was written to close. It is reachable: a submodule gitdir whose
+        # `core.worktree` names a plain subdirectory of the superproject.
+        with TempDir() as tmp:
+            src = seed(tmp / "subsrc")
+            super_ = seed(tmp / "super")
+            git(super_, "-c", "protocol.file.allow=always", "submodule", "add", "-q",
+                str(src), "sub")
+            sub_ = super_ / "sub"
+            lane = tmp / "lane"
+            git(sub_, "worktree", "add", "-q", str(lane), "-b", "lane")
+            c.check("fixture: lane worktree exists", (lane / "f.txt").is_file())
+
+            stray = super_ / "stray"
+            stray.mkdir()
+            gitdir = super_ / ".git" / "modules" / "sub"
+            c.check("fixture: the submodule gitdir is where git puts it", gitdir.is_dir(),
+                    str(gitdir))
+            git(gitdir, "config", "core.worktree", str(stray))
+
+            code, out = link(str(lane))
+            c.check("B2c refuses", code != 0, f"exit={code}\n{out}")
+            c.check("B2c gives the DIFFERENT-repo reason, and names the root it found",
+                    "DIFFERENT repo" in out and str(super_.resolve()) in out, out)
+            c.check("B2c does not link anything from a repo the lane does not belong to",
+                    "linked" not in out, out)
+
+    if c.block("B2d · a zero that was never verified may not claim it was"):
+        # `--repo` skips repo_root() — that is what the escape hatch is FOR — and the report
+        # printed "resolution verified" over it anyway, re-opening the exact ambiguity the
+        # report exists to close. `--repo <an empty dir that is not a repo>` exited 0 and said
+        # the repo genuinely has none.
+        with TempDir() as tmp:
+            lane = tmp / "lane"
+            lane.mkdir()
+            notrepo = tmp / "notrepo"
+            notrepo.mkdir()
+
+            code, out = link(str(lane), "--repo", str(notrepo))
+            c.check("still exits 0 — --repo is an escape hatch, not a second gate", code == 0,
+                    f"exit={code}\n{out}")
+            c.check("...but does NOT claim the resolution was verified",
+                    "resolution verified" not in out, out)
+            c.check("...and says plainly that nothing was checked", "NOT verified" in out, out)
+            c.check("...and warns that the given path is not a working tree at all",
+                    "not a git working tree" in out, out)
+
+    if c.block("B2e · assets FOUND but unplaceable is not 'this repo has none'"):
+        # The third state nobody counted: the loop `continue`s past an asset whose parent dir is
+        # missing from the worktree without incrementing linked OR skipped, so a repo that
+        # visibly carries `backend/.venv` reported that it genuinely has none.
+        with TempDir() as tmp:
+            repo = seed(tmp / "repo")
+            (repo / "backend").mkdir()
+            (repo / "backend" / ".venv").mkdir()
+            lane = tmp / "lane"                      # no `backend/` in it — nowhere to put it
+            lane.mkdir()
+
+            code, out = link(str(lane), "--repo", str(repo))
+            c.check("the unplaceable asset is reported on its own line",
+                    "! backend/.venv" in out, out)
+            c.check("...and the report does NOT say the repo genuinely has none",
+                    "genuinely has none" not in out, out)
+            c.check("...it says how MANY assets were found and could not be placed",
+                    "1 asset(s) FOUND in this repo" in out,
+                    out + "\n      the COUNT is the assertion: a report that says `0 asset(s) "
+                          "FOUND` is the same silent zero this block exists to catch")
+
+            code, out = link(str(lane), "--repo", str(repo), "--require-assets")
+            c.check("--require-assets refuses on this state too", code != 0, f"exit={code}\n{out}")
+            c.check("...naming the unplaceable count, not 'it has no linkable assets'",
+                    "1 asset(s) found but unplaceable" in out
+                    and "has no linkable assets" not in out, out)
+
+    if c.block("B2f · an unresolvable start REFUSES, it does not traceback"):
+        # `check=True` on the first rev-parse raised CalledProcessError, which main() does not
+        # catch — so the operator got a traceback instead of the refusal the SOP advertises.
+        with TempDir() as tmp:
+            loose = tmp / "loose"
+            loose.mkdir()
+            code, out = link(str(loose))
+            c.check("exits 1, the refusal code", code == 1, f"exit={code}\n{out}")
+            c.check("prints the refusal, not a stack trace",
+                    "cannot resolve the repo behind" in out and "Traceback" not in out, out)
+            c.check("...and still tells the operator the way out", "--repo" in out, out)
 
     if c.block("B3 · plain-repo-unchanged: the ten callers' everyday path still links"):
         # Characterization, and honestly green from the start: this is what the fix must not
