@@ -3,7 +3,6 @@
 **Lane:** `chore/SCC-267-scratchpad-hook-cross-platform` · **Ticket:** SCC-267 (Task, under SCC-33)
 **Tree:** `.claude/worktrees/scc-267-scratchpad-hook-cross-platform` · **Follows:** SCC-263 (`2756b5a`)
 
-review-runtime: fan-out
 
 ---
 
@@ -120,9 +119,10 @@ stays anyway* — the same discipline SCC-263 used for its `search()`/`match()` 
 
 ---
 
-## Code Review
+## Code Review — NOT RUN
 
-**Not run, deliberately — operator call.** The ask behind this lane was *"stop making me approve
+⛔ **No lens review happened, so this file carries no `Verdict:` line and no roster.**
+Operator call. The ask behind this lane was *"stop making me approve
 twenty Bash calls"*, and it had already grown into two tickets and three lens review rounds. The
 operator called the ceremony overkill for the size of the change, and that ruling stands.
 
@@ -132,7 +132,6 @@ review proved can miss a whole class. Weighed against it: the change is small, t
 direction is the safe one (every new path answers *no grant*), the Mac behaviour is asserted
 byte-for-byte unchanged, and **both** mutant tables are clean.
 
-Verdict: WAIVED @ 3a037d7
 
 ---
 
