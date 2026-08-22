@@ -1,0 +1,5 @@
+task_key: SCC-148
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-148-incident-guard
+close_command: smh-close-task-merge-tree
+secondary_repos: []

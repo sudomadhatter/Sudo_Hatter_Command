@@ -6,7 +6,12 @@ since: 2026-07-09
 
 # 🛑 PRIORITY ZERO: Plan First, Code Never (Until Approved)
 
-> This rule OVERRIDES every skill, workflow, and slash command — including BMAD dev-story, quick-dev, create-story, and any future skill that has its own "execute" steps. If a skill says "mark in-progress" or "implement now," STOP — that instruction is subordinate to this gate.
+> This rule OVERRIDES every skill, workflow, and slash command — including BMAD dev-story, create-story, and any future skill that has its own "execute" steps. If a skill says "mark in-progress" or "implement now," STOP — that instruction is subordinate to this gate.
+>
+> **The one carve-out lives in the exemption list, not here** (see "When to Skip" below): `/cicd-quick-dev`
+> is operator-invoked, and invoking it IS the "skip the plan" instruction. Naming it inline here as
+> *overridden* is what put this rule and that command in direct contradiction — two copies of a gate's
+> scope drift apart, and each one reads authoritative.
 
 ## The Kill-Chain
 
@@ -31,10 +36,66 @@ The ONLY exception: the artifact directory `_artifacts/` itself (where `implemen
 
 ## What is NOT Approval
 
+**The gate opens on ONE thing: the operator typing `approved`, unprompted.** Everything below has
+been mistaken for it in practice — the top four are the classics, the rest were all misread inside a
+single session on 2026-08-09, which is why they are now written down.
+
 - "ok", "sure", "looks good", "continue", "let's go", "ready-for-dev"
 - A plan from a prior conversation
 - A story file with status `ready-for-dev`
 - A BMAD skill step that says "mark in-progress" or "begin implementation"
+- ⛔ **A selected option in a question YOU authored.** A selection answers *which*, never *whether*.
+- ⛔ **An instruction to do the work** — "go make SCC-12", "finish SCC-56", "I would like to fix
+  this", "that is a bug and a problem". These commission the work; the plan step is still owed.
+  Being told to build something is the *reason* to write a plan, not permission to skip it.
+- ⛔ **An answer to a clarifying question.** That is information, not consent.
+- ⛔ **A correction or an overrule** ("no, it is `cicd-label-tasks`"). A correction narrows the
+  plan; it does not open the gate. **Edit the plan and stop AGAIN** — a correction restarts the
+  wait, it never ends it.
+
+### ⛔ Never put the gate word in an option label
+
+Do not offer "approved" (or "go ahead", "ship it", or any other opening token) as the text of a
+choice you present. Writing the word yourself and then reading it back off the operator's click is
+**manufacturing the approval token** — the operator answered *which option*, and the consent was
+authored by you. This is exactly how the gate was bypassed on 2026-08-09.
+
+Present options for *design forks*. Ask for approval in **plain text**, and wait.
+
+### One approval MAY cover several plans — only as `/smh-plan-task`'s recorded batch (SCC-155)
+
+**Narrow, and every word of it is load-bearing.** `/smh-plan-task` plans a whole Task and all its
+subtasks in one pass, then presents every plan, every `Audit verdict:` and the parallel table at
+**one** stop. The operator's approval there covers **exactly the plans that stop listed** — and it
+is only an approval at all when all four hold:
+
+1. The operator's **verbatim words** are recorded into each covered plan, naming the subtask keys
+   the batch covers. **You never write the gate word yourself** — the quote is the artifact, the
+   same way the main-write gate takes the operator's own sentence rather than a flag (SCC-37).
+2. Every covered plan carried `Audit verdict: GO` **at the moment of the stop**. A NO-GO lane is
+   never in a batch.
+3. It covers **those plans as they stood**, and that is **mechanically checkable** because the
+   approval line ends `— recorded at <sha>`. `/smh-quick-dev` Step 1.5 compares
+   `git log -1 --format=%h -- <the plan>` against that sha; equal means untouched, anything else
+   means **that lane's gate re-arms** and it stops for its own approval. A batch cannot approve
+   text the operator never saw.
+   ⛔ **No sha on the line = no approval.** The clause originally said "unchanged since the commit
+   that recorded it" while nothing anywhere recorded which commit that was — so the check had one
+   operand and an agent wanting to proceed would supply the other. A missing operand is a re-armed
+   gate, never a pass (SCC-155).
+4. It covers **planning only**. It is not merge approval, not a ticket transition, and it never
+   carries to a lane that was not on the list.
+
+⛔ This is **not** a general "batch mode". No other command may claim it, and an approval you
+assemble from several messages is not a quote. Everything in § What is NOT Approval still applies
+to each item inside the batch.
+
+### The carve-outs are a CLOSED list
+
+There is a real rule that invoking a command IS the sign-off — `/cicd-quick-dev`, and the close-out
+commands. That list lives in `artifacts-always-first.md` § "When to Skip" and nowhere else. It does
+**not** generalize from *"the operator told me to do the work"* to *"the gate is open."* If you are
+reasoning your way toward an exemption that is not written in that list, you are bypassing the gate.
 
 ## The Plan Must Contain
 
@@ -48,6 +109,12 @@ Present key points inline in the chat AND link the artifact. Daniel reviews plan
 ## BMAD Skill Integration
 
 BMAD skills (`bmad-dev-story`, `bmad-quick-dev`, etc.) have execution steps that mutate project files — updating story status, sprint-status.yaml, writing code. **Those steps are subordinate to this gate.** The correct execution order when a BMAD skill is invoked:
+
+> **Read this together with the carve-out at the top.** `bmad-quick-dev` appears in that list because a
+> **bare** invocation of it is gated like any other skill. It is NOT gated when it runs as the engine of
+> `/cicd-quick-dev` — that command's invocation IS the skip instruction, and its EJECT tripwire re-arms
+> the gate. Same skill, two callers, two answers; the caller decides, never the skill and never the size
+> of the change.
 
 1. Run the skill's research/discovery steps (read-only)
 2. Use the skill's context to write `implementation_plan.md` (artifact only)

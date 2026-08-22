@@ -1,0 +1,133 @@
+# ──────────────────────────────────────────────────────────────────────────────────────────
+# Sudo_Hatter_Command — main write gate (server side)                              SCC-118
+#
+# The SCC-77 gate is a git hook. A merge performed on GitHub's servers — the web "Merge pull
+# request" button, or the REST API — never touches a machine, so that hook is not bypassed
+# there, it is ABSENT. PR #2 (dabb3c3, 2026-08-12) landed on main that way with no gate
+# structurally able to look at it.
+#
+# This job is the half that CAN live server-side. It is NOT a port of the local hook and must
+# never be described as one — the local hook enforces AUTHORISATION (one operator sign-off buys
+# one merge, via a single-use token under .git/ that by design never leaves the machine). This
+# enforces FITNESS. See .agents/scripts/main_write_gate.py for the full reasoning, and
+# .agents/rules/git-policy.md § "The write gate" for the law.
+#
+# The check this publishes is named `main-write-gate` and the ruleset on `main` requires it.
+#
+#   ⛔ NO SOFT STEPS. No continue-on-error, no `|| true`, no `if: always()` on a gating step.
+#      `.agents/rules/tests-must-gate-for-real.md` rule 3: those are all forms of not gating,
+#      and "report-only for now" with no owner and no expiry becomes report-only forever.
+#      test_main_write_gate_ci.py asserts their absence, so adding one turns the suite red.
+#
+#   Break-glass (CI down / GitHub degraded, and main must move): disable the ruleset —
+#     gh api -X PUT repos/{owner}/{repo}/rulesets/{id} -f enforcement=disabled
+#   That is the server-side twin of deleting .agents/scripts/git-hooks/MAIN-PUSH-ENFORCE.
+#   Documented in docs/_scc_sops_prds/workflows_testing_SOP.md beside the other kill switches.
+# ──────────────────────────────────────────────────────────────────────────────────────────
+name: main write gate
+
+on:
+  # Road 1 — a pull request into main. This is the road that was completely unguarded, and the
+  # one a web/mobile session takes. GitHub builds the merge commit itself only AFTER the check
+  # passes, so at this point there are no parents to inspect: the source branch NAME is all
+  # there is to check. Deliberately the weaker of the two.
+  pull_request:
+    branches: [main]
+
+  # Road 2 — the local shipping doors. They merge on the machine, so the finished merge commit
+  # has never been to GitHub and carries no check; a required status check would refuse it.
+  # The doors push that exact commit here first, this runs on it, and the green then travels
+  # with the COMMIT to main (checks attach to a sha, not a branch — GitHub's own documented
+  # route for direct pushes under required checks).
+  push:
+    branches: ['gate/**']
+
+# Deliberately NOT scoped by `paths:`. The sibling repo's pr-check.yml skips docs-only PRs
+# because its gate is about app code. This gate is about *what is allowed to reach main at
+# all*, and a docs-only change is exactly what PR #2 was.
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-write-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    # ⭐ This name IS the required-status-check context in the ruleset. Renaming the job
+    # silently un-gates main: the ruleset waits forever for a check that no longer reports,
+    # or — worse — a check that never runs is simply never required. Keep them in step;
+    # test_main_ruleset_armed.py compares the two.
+    name: main-write-gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # fetch-depth: 0 is REQUIRED, not tidiness. The merge-shape check resolves
+          # origin/main and walks the merge's parents; a shallow clone cannot see either, and
+          # the failure mode is a check that passes because it found nothing to look at.
+          fetch-depth: 0
+          # On a pull_request, actions/checkout defaults to a synthetic merge ref. We want the
+          # PR's actual head, because that is the commit the ruleset will gate.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Arm the git hooks
+        # ⭐⭐ THIS STEP MUST COME BEFORE THE SUITE, AND IT IS NOT OPTIONAL.
+        #
+        # `core.hooksPath` is local config that git NEVER carries in a clone, so a fresh CI
+        # checkout has every gate in this repo switched OFF. test_main_push_gate.py and
+        # test_hooks_armed.py both assert the LIVE repo is armed — correctly, since an unarmed
+        # machine is the exact failure they were written for. Without this step they go red on
+        # the runner for a purely machine-local reason, and the tempting "fix" would be to
+        # weaken the very assertions doing the protecting.
+        #
+        # This is the same act the operator performs once per machine. It arms the runner; it
+        # does not soften anything.
+        #
+        # The git identity is here for the same class of reason: eight test files build throwaway
+        # repos and commit into them. All eight set their own identity today, so this masks
+        # nothing — it just stops a runner with no ~/.gitconfig from being stricter than either
+        # of the two real machines in an incidental way.
+        run: |
+          git config core.hooksPath .githooks
+          git config --global user.email "ci@sudo-hatter-command.local"
+          git config --global user.name "main-write-gate"
+          git config --global init.defaultBranch main
+
+      - name: Enforcement suite
+        # The REAL entrypoint, unmodified — the same command the operator and every local door
+        # run. Not a subset and not a CI-only config: tests-must-gate-for-real rule 2 exists
+        # because a job that runs a *different* partial suite shows a green check while the
+        # suite that matters never ran.
+        run: python3 .agents/scripts/tests/run_all.py
+
+      - name: Toolkit self-consistency
+        # --toolkit-only is not optional. Without it, workflow_lint resolves a project from
+        # .agents/active-project.txt and gates this on whichever product project happens to be
+        # active — a gate about the wrong thing (SCC-64).
+        run: python3 .agents/scripts/workflow_lint.py --toolkit-only
+
+      - name: Authorised source + SOP currency (pull request)
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 .agents/scripts/main_write_gate.py \
+            --mode pr \
+            --branch "${{ github.head_ref }}" \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}"
+
+      - name: Merge shape + SOP currency (pre-flight for a local door)
+        if: github.event_name == 'push'
+        run: |
+          python3 .agents/scripts/main_write_gate.py \
+            --mode gate \
+            --base origin/main \
+            --head "${{ github.sha }}"

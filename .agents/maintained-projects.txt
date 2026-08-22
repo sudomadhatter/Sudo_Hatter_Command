@@ -1,16 +1,26 @@
-# Maintained projects — the SINGLE source of truth for which child workspaces this
-# command center keeps in sync (toolkit vendor + map fan-out).
+# Maintained projects — the check_maps.py --all LINT worklist: which child workspaces the
+# home base lints + reconciles (/smh-update-maps-indexes fan-out).
 #
 # One `Projects/<name>` folder name per line. Blank lines and #comments are ignored.
 # The lobby (this command center) is ALWAYS maintained and is not listed here.
 #
 # WHO READS THIS:
-#   - .agents/scripts/check_maps.py  (fan_out_targets): `--all` / /update-maps-indexes lint ONLY these.
-#   - .agents/scripts/sync-agents.ps1 (-Maintained):    the ONLY sanctioned "sync everything".
+#   - .agents/scripts/check_maps.py (fan_out_targets): `--all` / /smh-update-maps-indexes lint ONLY these.
+#   - sync-agents.ps1 no longer reads it: the -Maintained vendor fan-out was RETIRED 2026-08-07
+#     (thin model, .agents/rules/project-law.md — projects carry no vendored toolkit to sync).
 # Never hand-loop over Projects/* — that touches repos we deliberately do not keep current.
 #
-# To add a new project to upkeep: add its folder name below and re-run /sync-agents -Maintained.
+# To add a new project to upkeep: add its folder name below.
+# ⛔ TWO-FILE EDIT since SCC-73. Adding a name here without also adding its row to the
+#    `## Project stores` section of `_artifacts/_memory/MEMORY.md` turns `run_all` RED
+#    immediately, in every checkout — `test_memory_store.py` asserts that every name on this
+#    list is signposted in the index. That is deliberate (a project store nothing points at is
+#    unreachable from the one index every platform loads), but it is not guessable, so it is
+#    written here where you are standing when you add the name.
+# De-listed 2026-08-07: Fresh_Workspace_BMAD — frozen template (deliberate legacy vendor must not red
+# the lint; new projects clone the sudo-project-skeleton repo instead).
 
 AGY_AVIATIONCHAT
-Fresh_Workspace_BMAD
 NEXgen-VR-Director
+# Fresh_Workspace_BMAD retired 2026-08-07 (SCC-25) — was the living template; left on disk untouched,
+# no longer synced or linted. Disposal of the repo itself is the operator's call.

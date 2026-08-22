@@ -1,0 +1,5 @@
+task_key: SCC-115
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-115-verify-hooks-migrate
+close_command: smh-close-task-merge-tree
+secondary_repos: []

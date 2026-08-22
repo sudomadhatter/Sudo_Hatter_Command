@@ -1,0 +1,350 @@
+---
+IsArtifact: true
+ArtifactMetadata:
+  title: SCC-225 — Optimize the agent review surface (consolidated lane, 8 riders)
+  type: implementation_plan
+  date: 2026-08-20
+---
+
+# Implementation Plan — SCC-225: Optimize the agent review surface
+
+**Lane:** `chore/SCC-225-review-surface` (ONE consolidated worktree; riders SCC-226…SCC-233 per
+`task.yaml`; subtask key leads each commit; parent closes LAST).
+**Mode rationale (work-consolidation rule 2):** same repo, same lane class, and hard overlap —
+`step-01-review.md` is edited by parts D, E, G, H; the Declared Change Set block is produced by A
+and consumed by B and F; dependencies chain (B←A, F←A, G←D). Separate lanes would collide on
+gates, not just files.
+
+**Governing rulings (parent SCC-225, binding on every part):** anchor-or-delete · coverage-not-
+findings · no audit-of-the-audit · corroboration promotes never demotes · no minute budgets or
+finding caps · over-engineering ships only as a ledger · deletion is the permitted response to a
+miss, adding a lens is not.
+
+## Goal
+
+Rebuild `/smh-self-audit`+`/cicd-self-audit` around the anchor rule (Surface 1), tighten the
+code-review engine without cutting any lens (Surface 2), and leave both machine-checkable: a
+Declared Change Set block that a stdlib parser reads, a risk-classification seam with a
+placeholder, one lens-roster contract, doc-truth fixes, a two-sided drift check, measured
+two-level lens scoping, and per-lens disposition attribution.
+
+## Declared Change Set
+
+*(This block is the form part A formalizes — the plan practices it. Op markers: NEW / EDIT / DELETE
+(the ticket's fixed three — audit finding F3). Each maps to the acceptance row(s) it serves, by
+part letter. The review wave (2026-08-20) rewrote this block to per-file ground truth: the glob
+door bullet the shipped grammar rejected became the per-file entries below, the two test files the
+drift check caught undeclared were added, and the review-wave fix surface was declared — recorded
+under Amendments.)*
+
+- EDIT `.agents/rules/artifacts-always-first.md` — §2 Create the artifact folder + plan (~:173): name the block as the form the touch-list requirement takes → A
+- EDIT `.agents/commands/smh-quick-dev.md` — plan template emits the block → A
+- EDIT `.agents/commands/smh-plan-task.md` — plan template emits the block → A
+- EDIT `.agents/commands/cicd-quick-dev.md` — NON-emitter, ground-truthed (plan-exempt by design); its record instruction gains the dispositions/drift lines → A, F
+- EDIT `.agents/commands/cicd-dev-story-tests.md` — plan template emits the block → A
+- NEW `.agents/scripts/declared_change_set.py` — stdlib parser + two-sided diff; fences stripped, bullet attempts reported, incomplete carried through the diff verb → A, F
+- NEW `.agents/scripts/tests/test_declared_change_set.py` — shape, markers, absence, drift, fence, attempt, CLI-tier and emitter-structure fixtures → A, F
+- NEW `.agents/scripts/risk_seam.py` — seam call + placeholder returning `unclassified` → C
+- NEW `.agents/scripts/tests/test_risk_seam.py` — pins identical audit semantics placeholder vs populated → C
+- EDIT (wholesale rewrite) `.agents/commands/smh-self-audit.md` — three lenses, anchor rule, Scope Ledger, amendment rule at top; review wave restored the constitution citation, fetch guard and lane-fit check, added the levels else-row and the twin-law fences → B
+- EDIT (wholesale rewrite) `.agents/commands/cicd-self-audit.md` — same contract, twin-diffed; review wave aligned and fenced the shared law → B
+- NEW `.agents/scripts/tests/test_self_audit_contract.py` — structural mutations; review wave: both-direction lens count, new CANON rows, restoration pins → B
+- EDIT `.agents/skills/code-review-engine/steps/step-01-review.md` — ONE lens-roster contract → D; doc-truth → E; two levels from Step 0.7 radius, roster table made level-aware by the review wave → G
+- NEW `.agents/scripts/tests/test_lens_roster_contract.py` — mutation per scar, level semantics; review wave: h2 anchor, addendum cross-check, threshold pins, step-04 round-trip → D, E, G
+- EDIT `.agents/commands/smh-code-review.md` — Step 2 declared-set reconciliation + the two record lines → F; Step 0.7 resolves the level, fenced → G
+- EDIT `.agents/commands/cicd-code-review.md` — Step 1.5 same wording, snippet bound to `PROJECT_ROOT` → F; Step 0.7 same, fenced → G
+- EDIT `.agents/skills/code-review-engine/steps/step-04-record.md` — finding shape gains `src` lens field; per-lens disposition counts; §2 aligned to the SKILL.md block form by the review wave → H
+- EDIT `.agents/skills/code-review-engine/SKILL.md` — returned-summary contract gains per-lens disposition counts → H
+- EDIT `.agents/scripts/INDEX.md` — rows for the two new scripts → A, C
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — self-audit usage (levels, verdict shape) + review-level + drift + record-lines surfaces → B, F, G (SOP-currency gate)
+- EDIT `.agents/scripts/label_tasks.py` — blocked_by made directional in resolve; review wave: shape normalisation, case-insensitive key match, loud self-reference drop → I
+- EDIT `.agents/scripts/tests/test_label_tasks.py` — direction fixture RED first; review wave: outside-run, scalar, case-slip and self-reference fixtures → I
+- EDIT `.agents/scripts/walkthrough_roster.py` — machine consumer for the `dispositions:` and `drift:` record lines, gated for lanes dated 2026-08-20+ → F, H
+- EDIT `.agents/scripts/tests/test_walkthrough_roster.py` — parse + judge fixtures for the two record lines, both directions → F, H
+- EDIT `.agents/scripts/tests/test_twin_parity.py` — FENCED_TODAY gains the self-audit pair → B
+- NEW `.agents/scripts/tests/test_finding_record.py` — step-04 attribution checks; review wave: template-line pins replace countable prose → H
+- EDIT `.agents/scripts/tests/test_review_engine.py` — roster pins track the consolidated step-01; review wave: level-aware routing cells + the quick-membership pin → D, G
+- EDIT (generated) `.agents/.sync-manifest.json` — sync bookkeeping → A
+- EDIT (generated) `.agents/skills/smh-self-audit/SKILL.md` — regenerated launcher → B
+- EDIT (generated) `.agents/workflows/cicd-self-audit.md` — regenerated workflow door → B
+- EDIT (generated) `.agents/workflows/smh-self-audit.md` — regenerated workflow door → B
+- EDIT (generated) `.claude/skills/code-review-engine/SKILL.md` — engine cache mirror → H
+- EDIT (generated) `.claude/skills/code-review-engine/steps/step-01-review.md` — engine cache mirror → D
+- EDIT (generated) `.claude/skills/code-review-engine/steps/step-04-record.md` — engine cache mirror → H
+- EDIT (generated) `.claude/skills/smh-self-audit/SKILL.md` — launcher cache mirror → B
+- EDIT (generated) `.opencode/commands/cicd-code-review.md` — opencode door → F
+- EDIT (generated) `.opencode/commands/cicd-dev-story-tests.md` — opencode door → A
+- EDIT (generated) `.opencode/commands/cicd-quick-dev.md` — opencode door → A
+- EDIT (generated) `.opencode/commands/cicd-self-audit.md` — opencode door → B
+- EDIT (generated) `.opencode/commands/smh-code-review.md` — opencode door → F
+- EDIT (generated) `.opencode/commands/smh-plan-task.md` — opencode door → A
+- EDIT (generated) `.opencode/commands/smh-quick-dev.md` — opencode door → A
+- EDIT (generated) `.opencode/commands/smh-self-audit.md` — opencode door → B
+- NEW `_artifacts/_main/2026-08-20_scc-225-review-surface/walkthrough.md` — at close → all
+
+**Port check (Rule 5): NOT triggered.** No file in scope exists in more than one repo — verified:
+`Projects/AGY_AVIATIONCHAT/.agents` and `Projects/NEXgen-VR-Director/.agents` carry no
+`code-review-engine` skill and zero `cicd-*`/`smh-*` commands (checked 2026-08-20). The cicd/smh
+twins both live in THIS repo; twin parity is handled per part, not as a port.
+
+## Execution order
+
+`A → C → B → D → E → F → G → H` — A first (B and F read its block), C before B (B's Parity+Blast
+names the seam), D before E and G (both edit the file D restructures; G needs D's roster
+invariant), H last on the engine. One commit per part minimum, subtask key leading the subject.
+
+---
+
+## Part A — SCC-226 · Declared Change Set block + parser
+
+1. Define the fixed shape in `artifacts-always-first.md` at the existing ~:173 requirement
+   ("every file touched with links" — the block SATISFIES it, it does not replace it):
+   `## Declared Change Set`, one repo-relative path per bullet, op marker
+   (NEW / EDIT / DELETE — exactly the ticket's three), `→ <acceptance-row ref>`.
+2. Ship `.agents/scripts/declared_change_set.py` (stdlib only): `parse(plan_text)` →
+   `{present: bool, entries: [{path, op, row}], incomplete: [raw bullets]}`; absence returns
+   `present: False` — a defined case, never a crash. Plus `diff(declared_paths, changed_paths)` →
+   `{undeclared: [...], unimplemented: [...]}` (consumed by part F).
+3. Update the four plan-emitting command templates to produce the block.
+   **Assertions (RED first):** parser fixture with the fixed shape parses to entries; a bullet
+   missing an op marker or row lands in `incomplete`; empty/absent section → `present: False`;
+   each emitting command file names the block in its plan template (structure check).
+   **SOP:** agent-facing plan shape — no operator usage change → `[sop-ok]`.
+
+## Part B — SCC-227 · Rewrite the self-audit twins
+
+1. Rewrite `.agents/commands/smh-self-audit.md`: **amendment rule carved at the TOP, above lens
+   definitions** (a miss amends marker lists/anchor defs/ledger rules — a fourth lens is never
+   the response; delete instead). Exactly three lenses — **Repo Reality** (incl. Scope Ledger),
+   **Parity + Blast** (risk context via part C's seam), **Pre-Mortem** (cannot originate; attaches
+   to anchored findings only, unattached output discarded). Anchor rule: no existing file path or
+   plan step number + literal text read → deleted, not demoted. Schema demands coverage (checks
+   ran, what was read, verdict); zero-findings-full-coverage = successful run. Observations
+   section = non-blocking, never counted. Corroboration: anchor filter first, sort-order only,
+   dedupe key = shared anchor never topic, lenses blind to each other. Scope Ledger reads the
+   created set via `declared_change_set.py`; finding = "<path> created by step N; no acceptance
+   row requires it"; caller-count check (grep, printable); precondition: <2 acceptance rows or no
+   concrete observable IS the finding. Two levels, scope-named not verdict-named (LEDGER /
+   LEDGER+BLAST) — resolves the open naming question toward the operator's scope statement
+   (audit ≠ gate); flagged at approval for override. Deleted outright: prose over-engineering
+   critique, scope-creep commentary, completeness scoring, assumption enumeration,
+   requirement-coverage judgment, risk taxonomies, standalone refutation phase, severity rubric.
+2. Twin-diff into `.agents/commands/cicd-self-audit.md`; each deliberate divergence stated inline.
+   **Assertions (RED first):** `test_self_audit_contract.py` — exactly three `## Lens` headings;
+   amendment rule appears before the first lens definition; deleted-lens names absent from both
+   twins; a planted unanchored finding in a fixture output is rejected by the stated schema rules;
+   two-lens finding sorts above one-lens same-severity, single-lens structural blocker still top.
+   **Close-out regression (live, at review):** re-run against the 2026-08-18 SCC-210 plan — both
+   known-good findings return anchored with quoted evidence; total is small, not 44.
+   **SOP:** usage changes (what the operator gets back) → SOP staged in the same commit.
+
+## Part C — SCC-228 · Risk-classification seam + placeholder
+
+1. `.agents/scripts/risk_seam.py`: `classify(paths: list[str]) -> {status: "unclassified", tiers: {}}`
+   fixed return shape; SCC-223/224 swap in behind it without touching the audit command file.
+2. Audit behaviour pinned identical under placeholder vs populated return — classifier informs
+   the Parity+Blast lens, never gates the audit.
+   **Assertions (RED first):** `test_risk_seam.py` — placeholder satisfies the shape; a populated
+   fixture return and the placeholder produce the same audit-semantics decision (no
+   verdict-affecting branch on `status`); swap requires no edit to `smh-self-audit.md` (the
+   command names the seam call, not the implementation). Stdlib only, both machines.
+   **SOP:** internal seam → `[sop-ok]`.
+
+## Part D — SCC-229 · One lens-roster contract in step-01
+
+1. Collapse the five sections (~:192, ~:449, ~:479, ~:503, ~:557) into ONE contract on the
+   invariant: *every lens in the roster ends the run in exactly one declared state — ran,
+   skipped-by-mode, or failed-to-launch — never no state at all.* All five scars carried: roster+
+   budget stated once (SCC-147); launch failure recorded never silent (SCC-173); inline execution
+   never silently drops the Blind Hunter (SCC-203); mode-skipped declared not absent; runtime
+   expectations from scoring.md retained (SCC-177).
+2. `lenses_run` return block unchanged in shape — `walkthrough_roster.py` and both preflights
+   keep reading it.
+   **Assertions (RED first):** `test_lens_roster_contract.py` — one mutation per scar ticket,
+   each failing before the consolidation and passing after; invariant sentence present exactly
+   once; `lenses_run:` line shape unchanged (pinned against `walkthrough_roster.py`'s reader).
+   **Verification (live, at review):** SCC-124 fixture run (diff e55b7c79, spec a7091ed4, pack
+   03840243) still surfaces the recorded core finding set. Size reduction REPORTED, not targeted.
+   **SOP:** engine-internal → `[sop-ok]`.
+
+## Part E — SCC-230 · step-01 doc-truth
+
+1. Strike "the one lens with a real token cost" (~:127); replace with the measured Arm-A table
+   cited to `_artifacts/_main/2026-08-12_scc-124-baseline-trial/scoring.md` (Edge Case 220.5s ·
+   Blind 180.9s · Acceptance 127.4s · Test-Adequacy 75.3s) + explicit "Literal-Correctness:
+   unmeasured (postdates the trial)". Note for the record: Edge Case is the most expensive lens
+   AND produced SCC-129's one unseeded true positive.
+2. Scope-fence ~:440 (wording per ticket): binds diff-anchored review; plan/story audits are
+   governed by SCC-225's anchor rule; external benchmarks cited with source+version or not cited.
+   **Assertions (RED first):** in `test_lens_roster_contract.py` — no per-lens cost claim without
+   a scoring.md citation or an "unmeasured" label; the `## No noise filter` section carries the
+   fence + citation requirement; guard fails if a worthiness-filter instruction reappears.
+   **SOP:** engine-internal → `[sop-ok]`.
+
+## Part F — SCC-231 · Two-sided drift check
+
+1. `smh-code-review.md` Step 2 (:227 area) and `cicd-code-review.md` Step 1.5 (:216 area):
+   KEEP diff-vs-acceptance; ADD diff-vs-declared-set via `declared_change_set.py`:
+   `drift.undeclared` (diff−declared, *important*/file) · `drift.unimplemented` (declared−diff,
+   *suggestion*/file). Missing block/plan = *important* "no declared set to reconcile against",
+   never a silent skip. Neither auto-fatal; both need a named disposition.
+   **Assertions (RED first):** parser-diff fixtures in `test_declared_change_set.py` (edited-not-
+   declared → undeclared; declared-not-edited → unimplemented; absent block → the important
+   finding — the vacuous-green mutation); both command files carry both left-hand sides
+   (structure check, both twins).
+   **SOP:** review output surface → SOP staged in the same commit.
+
+## Part G — SCC-232 · Two-level lens scoping from measured radius
+
+1. **Measure FIRST:** one arm of the SCC-124 fixture with Literal-Correctness enabled; record its
+   mean beside scoring.md (addendum in this lane's artifact folder). The number decides tier
+   membership: LC ≤ 127.4s → quick = LC + Test-Adequacy; LC > 127.4s → quick = Test-Adequacy +
+   Acceptance, LC moves to standard.
+2. Define quick/standard as lens SETS in step-01, resolved from Step 0.7's measured blast radius
+   in both command twins — DERIVED, never a caller flag; `lens_budget` axis preserved as the
+   separate thing it is; excluded lens reports skipped-by-mode (part D's invariant);
+   `lenses_counted` reflects the applicable set.
+   **Assertions (RED first):** no caller-passed level flag exists in either twin; no minute
+   budget or finding cap anywhere in the level text; skipped-by-mode declared for the excluded
+   set; the recorded measurement exists and predates the membership commit (test reads the
+   addendum file).
+   **SOP:** operator-visible review behavior → SOP staged in the same commit.
+
+## Part H — SCC-233 · Lens attribution + disposition counts
+
+1. `step-04-record.md`: finding record gains `src` (multi-lens values like `blind+edge`, the
+   SCC-124 hand-recorded shape). Dismissed/relevance-killed keep attribution in the summary/
+   artifact record — never as dead boxes in the builder's worklist (existing rule preserved).
+2. Per-lens disposition counts (survived / dismissed / relevance-killed) in the engine's returned
+   summary; `SKILL.md` updated only if it names the summary shape.
+   **Assertions (RED first):** record-shape fixture carries `src`; a dismissed finding appears in
+   disposition counts and NOT in the worklist; summary block lists per-lens counts.
+   N-runs-to-answer deliberately unfixed (ruling 5).
+   **SOP:** engine-internal record shape → `[sop-ok]`.
+
+---
+
+## Cross-cutting
+
+- **Both machines:** everything new is stdlib Python; invoked as `python3` (Mac) / `python` (PC)
+  per existing convention in command bodies. No venv, no GitNexus dependency (fallback is the
+  normal path).
+- **SOP currency:** parts B, F, G stage `workflows_testing_SOP.md` in their commits; A, C, D, E,
+  H are agent-internal → `[sop-ok]` with the reason in the commit body.
+- **Door sync:** one `/smh-sync-agents` run after the last command edit, before review — door
+  parity is a review gate.
+- **Commits:** explicit paths only; `-F <file>` messages (backticks execute); rider key leads
+  each part's subject; push after every part (commit+push are one action).
+- **Gate:** `python3 .agents/scripts/tests/run_all.py` green at the tip; then `/smh-code-review`;
+  then `/smh-close-task-merge-tree --expect-key SCC-225` (riders flip first, parent last).
+
+## Open questions (for the approval stop) — resolutions recorded 2026-08-20: Q1 no new ticket (SCC-234 unrecoverable, row handled at close-out); Q2 LEDGER/LEDGER+BLAST stands; Q3 fixed in this lane as Part I
+
+1. **SCC-234 (subtask I — audit the close-out twins) is named in the parent's index but does NOT
+   exist on the board** (`acli` returns not-found). Mint it under SCC-225 and add to `riders:`,
+   or drop it from the parent's index? Its audit-then-fix work fits this lane by design.
+2. **Level names for the self-audit (part B §5):** plan resolves the ticket's open decision to
+   scope-named `LEDGER / LEDGER+BLAST` (an outcome name would make the audit a gate, against the
+   operator's scope statement). Say the word to flip to PROCEED/STOP instead.
+3. **SCC-235 overlap:** its In-Progress lane swaps in behind part C's seam. This lane lands the
+   seam + placeholder only; SCC-235 stays parked on its own branch until this lands. No file
+   collision today (its lane holds only plan+manifest).
+
+## Verification plan
+
+Per-part assertions above run RED before each part's edit and green after; `run_all.py` green at
+the tip; live regressions at review: SCC-210 plan re-run (part B) and SCC-124 fixture run (parts
+D/G). The walkthrough records each rider's commits, the measurement result, and the sync receipt.
+
+---
+
+## Approval record
+
+**Batch approval (2026-08-20), operator verbatim:** "approved" — covers the plans listed in
+`/smh-plan-task SCC-225` Step 5: SCC-226, SCC-227, SCC-228, SCC-229, SCC-230, SCC-231, SCC-232,
+SCC-233 — plan as approved at `51ecbd3` (this recording commit follows it; any later plan edit
+re-arms the gate per `000-PLAN-FIRST-GATE` clause 3).
+
+**Amendment (2026-08-20), operator verbatim:** "just fix it now with this ticket scc-234" →
+"noooo i do not want now task just fix it in this one" → "i can do this forever running of new
+tasks" → **"this is an easy fix so just fix it with the very first sub task, I dont need a new
+ticket or plan or anothing just do it"** — the `label_tasks.py` resolver direction fix rides THIS
+lane **keyed to SCC-226, the first subtask** (Part I below); **no new ticket** (a mistakenly
+minted SCC-239 was deleted the same minute). *Record correction (review wave):* an earlier
+version of this paragraph wrote "keyed to the parent SCC-225" — a recording error; the shipped
+commits, test banner and walkthrough row were SCC-226-keyed throughout, matching the operator's
+final instruction quoted above. Level naming for part B stays scope-named (LEDGER / LEDGER+BLAST)
+— flagged at the stop, no override given.
+
+**Amendment (review wave, 2026-08-20):** the `/smh-code-review` ceremony on this lane returned 42
+verified findings + 9 compounds; every surviving patch was fixed in-thread per the review
+contract (step-03: fixes land before the verdict — not new scope, the ceremony's own required
+step). The Declared Change Set above was rewritten to per-file ground truth in the same wave: the
+glob door bullet (grammar-rejected by the shipped parser) became per-file entries, the two
+undeclared test files were declared, `commands/INDEX.md`'s conditional entry was CUT (rows 47/51
+re-read: they describe the dev flow's phases, not the audit's internal model — accurate as-is),
+and the review-fix surface (walkthrough_roster.py + three test files) was declared. Dispositions
+for every finding live in the walkthrough's `## Code Review (2026-08-20)` section.
+
+## Part I — SCC-226 ride-along · label_tasks.py: `blocked_by` is directional
+
+Discovered running this lane's own labelling ceremony (work-consolidation rung 1 — the lane's
+ticket covers it; operator placed it here, quoted above).
+
+1. **RED first:** fixture in `test_label_tasks.py` — child A free, child B declaring
+   `blocked_by: [A]`, no file overlap: assert A is approved and B is locked "after A". Fails
+   against the current resolver, which approves the declarer and prints the lock inverted
+   ("SCC-226 after SCC-227 — evidence: SCC-227 declares blocked_by: SCC-226", measured
+   2026-08-20).
+2. **Fix:** `blocked_by` is a directed edge in `resolve` — a declarer never enters the approved
+   set while its blocker is unlanded; the lock row always reads "<declarer> after <blocker>".
+   Overlap locks unchanged (existing tests pin them).
+   **Assertions:** new case red→green; existing `test_label_tasks.py` cases stay green;
+   `run_all.py` green at the tip.
+
+---
+
+## Self-Audit (2026-08-20)
+
+**Mode:** PRE-WORK · **Right-size: FULL** (touches rules, commands, the engine skill, scripts other
+flows consume, and the SOP surface). Repo/branch echoed from command output:
+`Repo: SCC-225-review-surface | Branch: chore/SCC-225-review-surface` (worktree of Sudo_Hatter_Command).
+
+**Phase 0 — scope + checkable list.** Change set = the Declared Change Set block above. Checkable
+list = the eight riders' ACCEPTANCE blocks (authority order 1), mapped part-by-part; traceability
+runs both directions — every acceptance row has a step, and each plan step names its rider. Lane
+check: no deployable path (`backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/`,
+`.github/`) appears in the set → `/smh-close-task-merge-tree` is the right door.
+
+**Phase 1 — blast radius.** Rows walked with command output:
+- *Command files* → doors regenerated by one `/smh-sync-agents` after the last edit; `commands/INDEX.md` added to the set (F1).
+- *Rule file* (`artifacts-always-first.md`) → `workflow_lint.py` `_RULE_POINTERS` keys on git/worktree/riders machinery, not on this rule's §plan-contents text — no lint interaction; commands citing the rule unaffected by an additive block-naming amendment.
+- *Scripts* → `run_all.py` auto-discovers `test_*.py` ("a new one joins the suite with no wiring") — no wiring needed; `scripts/INDEX.md` added to the set (F2).
+- *Gate/hook* → none shipped or re-armed; `sop_currency.py` interplay handled per part.
+- *File moves / memory writes* → none; `_artifacts/_memory/` untouched (main checkout's dirty memory file is another flow's, not this lane's).
+- *Multi-repo port* → not triggered; evidence in the port-check paragraph above.
+- *Sibling lanes* (`git worktree list` + per-tree diffs): SCC-235 holds only its own plan+manifest under `_artifacts/_main/2026-08-19_scc-235…/` — **zero file overlap** with this set. Landing order: **this lane first**; SCC-235 consumes part C's seam and stays parked until this lands.
+
+**Phase 2 — over-engineering gate.** Tripwires fired and dispositions:
+- *Marker creep* (F3): plan had invented REWRITE/SYNC op markers beyond ticket A's fixed NEW/EDIT/DELETE — **cut**, block revised.
+- New scripts (2) and new test modules (4) each trace to a current acceptance row (A "machine-readable", C "seam callable", B/D/E "proven by mutation", F "proven by fixture") — no unfunded artifact. `SKILL.md` edit is conditional on the shape being named there, verified at part H, not speculative.
+- Prose-pinning hazard on structure tests acknowledged: every guard is written RED-first against a mutant (plants the defect, sees it caught) rather than grepping for comfort sentences.
+
+**Phase 3 — pre-mortem.** Both machines: stdlib only, `python3`/`python` per convention ✅ · fresh clone: no new hooks to arm ✅ · gate on someone else's commit: unchanged gates ✅ · escape hatch: `[sop-ok]` is logged ✅ · empty input: parser absence returns `present: False` and part F turns that into an *important* finding — the vacuous-green case is itself tested ✅ · four platform caches: one sync covers all four ✅ · sibling lands first: n/a (zero overlap; order named) ✅ · rollback: doc/script edits are git-revertible; Jira transitions happen only at close-out ✅. Surviving risk named: the SCC-124/SCC-210 live regressions are judgment-verified runs, not unit tests — they land in the walkthrough as recorded evidence, which is the strongest available short of automating an LLM run.
+
+**Findings table**
+
+| # | Anchor | Severity | Failure scenario | Disposition |
+|---|---|---|---|---|
+| F1 | `.agents/commands/INDEX.md:47,51` | important | INDEX rows describe the self-audit's phase model; a rewrite leaves the menu lying | added to Declared Change Set (conditional edit at part B) |
+| F2 | `.agents/scripts/INDEX.md` | important | two new scripts invisible to the script inventory | added to Declared Change Set (parts A, C) |
+| F3 | plan §Declared Change Set | suggestion | REWRITE/SYNC markers exceed ticket A's fixed three-op contract — consumers written to the ticket would read this plan's own block as malformed | cut; block + part A text revised to NEW/EDIT/DELETE |
+
+**Four quick gates:** verification strategy present per part (assertion named, RED first) ✅ ·
+irreversible: nothing outside git history; board flips only at close-out ✅ · vague steps: part B's
+level-naming resolved in-plan (scope-named) and flagged for operator override ✅ · convention fit:
+naming law, one-door law, artifact placement, SOP currency all anchored ✅.
+
+**Sibling-lane landing order:** SCC-225 lands before SCC-235 (seam producer before consumer).
+
+Audit verdict: GO

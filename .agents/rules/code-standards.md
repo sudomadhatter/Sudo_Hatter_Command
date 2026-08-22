@@ -1,13 +1,12 @@
 ---
 name: code-standards
-description: "Activates when writing, reviewing, or gating code — backend (Python/FastAPI) or frontend (React/TypeScript). The house definition of 'clean': the comment contract (Story provenance + AIDEV-NOTE anchors), the AI-drift bans, style/organization, and the machine-checkable floor. The `clean-code-audit` skill and `/sudo-code-review` Step 3.5 both enforce THIS file — edit the standard here and the gate follows."
-since: 2026-06-24
+description: "Activates when writing, reviewing, or gating code — backend (Python/FastAPI) or frontend (React/TypeScript). The house definition of 'clean': the comment contract (Story provenance + AIDEV-NOTE anchors), the AI-drift bans, style/organization, and the machine-checkable floor. The `cicd-clean-code-audit` skill and `/cicd-code-review` Step 3.5 both enforce THIS file — edit the standard here and the gate follows."
 ---
 
 # Code Standards — the house definition of "clean"
 
-This file is the standard. The **`clean-code-audit`** skill is the auditor that checks a diff against
-it, and **`/sudo-code-review` Step 3.5** is the gate that can fail a story on it. There is one
+This file is the standard. The **`cicd-clean-code-audit`** skill is the auditor that checks a diff against
+it, and **`/cicd-code-review` Step 3.5** is the gate that can fail a story on it. There is one
 definition of clean and it lives here — change it here and every enforcement point follows.
 
 > **Scope of enforcement: the diff, not the repo.** The gate judges the code THIS story wrote. Legacy
@@ -107,6 +106,7 @@ they are what the judgment half of the audit hunts for.
 | **API** | RESTful. JSON bodies/responses. |
 | **Git** | Present tense commits. Explicit paths only — `git add -A`/`.`/`-u` are banned (`git-policy`). Never commit secrets. |
 | **Paths** | `Path(__file__).parent` — never hardcoded CWD paths. |
+| **Both machines** | This system is driven from a Mac **and** a PC. `python3` exists on one and `python` on the other, so **never hardcode either** — carry `sys.executable` down, or probe `python3 → python → py`. A `C:/…` path, a `;` separator, `robocopy`, or a bare `python` in a committed script is a finding, not a portability nicety: it works where it was written and dies on the other machine. |
 
 ---
 
@@ -117,16 +117,66 @@ they are what the judgment half of the audit hunts for.
 
 | Check | Command (from the project root) |
 |---|---|
-| Backend lint | `backend/.venv/Scripts/python.exe -m ruff check backend/` |
-| Backend types | `backend/.venv/Scripts/pyrefly.exe check` |
+| Backend lint | `<VENV>/ruff check backend/` |
+| Backend types | `<VENV>/pyrefly check` |
 | Frontend lint | `npm run lint` (in `frontend/`) |
 | Frontend types | `npx tsc --noEmit` (in `frontend/`) |
 
-> **Use the venv interpreter.** Bare `python` is the drifted global install and produces false
-> missing-dependency findings. Always `backend/.venv/Scripts/python.exe -m <tool>`.
+> **`<VENV>` IS PER-MACHINE — resolve it, never hardcode it** (SCC-205, measured 2026-08-18). A venv
+> puts its executables in `backend/.venv/Scripts/` on Windows and `backend/.venv/bin/` on POSIX.
+> These commands read `Scripts/…exe` until 2026-08-18, so **every Mac run of the most-used audit found
+> its own machine floor unrunnable** — and under the audit's own rule a missing tool "is a finding, not
+> a skip", so the objective half did nothing while reporting normally. Resolve it once:
+>
+> ```bash
+> VENV=backend/.venv/bin; [ -d "$VENV" ] || VENV=backend/.venv/Scripts   # POSIX first, then Windows
+> ```
+>
+> **Use the venv's own executables.** Bare `python` / bare `ruff` is the drifted global install and
+> produces false missing-dependency findings — and bare `python` does not exist on the Mac at all
+> (§5, Both machines).
 
 A project whose stack differs declares its own commands in its `AGENTS.md`; these are the defaults for
 the FastAPI + Next.js house shape.
+
+---
+
+## 6.5 Disposition — the ASSESSOR decides what is REAL, not the lens
+
+> Hoisted here by SCC-205 because it is **disposition law, not review-engine law**: it governs every
+> command that produces findings — both clean-code audits, both code reviews, both self-audits — and
+> it lived in exactly one place, `code-review-engine/steps/step-01-review.md`, owned by no rule.
+> This rule already owns the FAIL-vs-CONCERNS split (§7), so it is the one place all four audits bind.
+
+**The ruling, in the operator's words (2026-08-17): *"the agent's job is to find things so it always
+will — this is how we end up in this loop. The agent who assesses the finds has to decide what's real
+and what's just the agent finding something to report. We fix actual issues."***
+
+⛔ **A lens's severity label is an INPUT, not a verdict.** Every hunter is told to be exhaustive and is
+measured by what it returns, so it will always return something, and it grades its own work. Treating
+`critical` as an instruction to fix is how a four-lens review becomes an unbounded queue: each pass
+finds more, each fix is a new unreviewed edit, and the lane never closes. **The orchestrator running
+the audit is the assessor. Nobody else is.**
+
+**Assess every finding against three questions, in order. All three must be YES to fix.**
+
+1. **Is it REAL?** Can you state the concrete failure — *this input, this state, this wrong output*? A
+   finding phrased as *"may be"*, *"could lead to"*, *"consider"* or *"is not covered"* has not
+   established that anything is broken. **Reproduce it, or drop it.**
+2. **Does it change BEHAVIOUR?** A gate that fails open, a wrong answer, a crash, a refusal of
+   something legitimate, lost data. Naming, structure, wording, a missing test for a branch that is
+   already correct — these do not.
+3. **Is it in THIS lane's diff?** Pre-existing debt in an untouched file is not this task's work.
+
+**Fix what passes all three. Dismiss the rest — including anything a lens called `critical`.** The
+label neither promotes nor protects a finding; the assessment does.
+
+⛔ **"It's cheap" is not a reason.** Twenty cheap fixes is not cheap — it is the audit that never ends,
+and every one of them lands *after* the checks ran, unreviewed.
+
+⛔ **Record the tail in ONE line**: how many findings came back, how many were assessed real and fixed,
+and that the rest were dismissed under this ruling. Not one line each. Name individually only a finding
+whose ASSESSMENT disagreed with its label, in either direction — that is the calibration signal.
 
 ---
 

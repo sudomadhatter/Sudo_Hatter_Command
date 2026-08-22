@@ -1,0 +1,37 @@
+{
+  "test": ["python3", ".agents/scripts/tests/test_main_push_gate.py"],
+  "mutants": [
+    {
+      "id": "M1",
+      "file": ".agents/scripts/git-hooks/mint-push-token.sh",
+      "original": "TOKEN=\"$GIT_COMMON/main-push-approval\"",
+      "mutated": "case \"$GIT_COMMON\" in\n  /*) : ;;\n  *)  GIT_COMMON=\"$REPO_ROOT/$GIT_COMMON\" ;;\nesac\nTOKEN=\"$GIT_COMMON/main-push-approval\"",
+      "case": "C1 ·",
+      "block": "C · the PC token path"
+    },
+    {
+      "id": "M2",
+      "file": ".agents/scripts/git-hooks/mint-push-token.sh",
+      "original": "if [ ! -s \"$TOKEN\" ]; then",
+      "mutated": "if [ -n \"\" ]; then",
+      "case": "C3 ·",
+      "block": "C · the PC token path"
+    },
+    {
+      "id": "M3",
+      "file": ".agents/scripts/git-hooks/pre-push-main-approval.sh",
+      "original": "TOKEN=\"$GIT_COMMON/main-push-approval\"",
+      "mutated": "case \"$GIT_COMMON\" in\n  /*) : ;;\n  *)  GIT_COMMON=\"$REPO_ROOT/$GIT_COMMON\" ;;\nesac\nTOKEN=\"$GIT_COMMON/main-push-approval\"",
+      "case": "C5 ·",
+      "block": "C5"
+    },
+    {
+      "id": "M4",
+      "file": ".agents/scripts/tests/test_main_push_gate.py",
+      "original": "return \"\\n\".join(ln for ln in text.splitlines() if not ln.lstrip().startswith(\"#\"))",
+      "mutated": "return text",
+      "case": "C5 ·",
+      "block": "C5"
+    }
+  ]
+}

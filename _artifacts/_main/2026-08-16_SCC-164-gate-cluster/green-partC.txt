@@ -1,0 +1,88 @@
+== main write gate (SCC-77) ==
+[PASS] pre-push exists
+[PASS] pre-push is executable: chmod +x — git silently ignores a non-executable hook
+[PASS] pre-push-main-approval.sh exists
+[PASS] pre-push-main-approval.sh is executable: chmod +x — git silently ignores a non-executable hook
+[PASS] mint-push-token.sh exists
+[PASS] mint-push-token.sh is executable: chmod +x — git silently ignores a non-executable hook
+[PASS] MAIN-PUSH-ENFORCE present (gate is ARMED)
+[PASS] core.hooksPath is set: unset -> git uses .git/hooks and every gate here is OFF
+[PASS] core.hooksPath resolves to a dir holding pre-push
+[PASS] every worktree carrying the gate resolves hooks to it: resolves elsewhere: [] — pushes from these are ungated AND silent
+[PASS] this gate's hook is in the generic check's DERIVED set, and executable: drift: hooks_armed no longer sees the hook this whole file is about
+[PASS] no hook command is bound to one platform's binaries: found [] — this is the exit-127 bug that hid the gate for weeks
+[PASS] non-main ref passes with no token
+[PASS] `refs/heads/main-backup` does not trip the match: whole-ref equality — main-backup and mainx are the cases that catch a substring or prefix implementation
+[PASS] `refs/heads/mainx` does not trip the match: whole-ref equality — main-backup and mainx are the cases that catch a substring or prefix implementation
+[PASS] `refs/heads/epic/main-fix` does not trip the match: whole-ref equality — main-backup and mainx are the cases that catch a substring or prefix implementation
+[PASS] main with NO token is refused
+[PASS] the refusal names both doors
+[PASS] the refusal does NOT name update-sprint-memory as a door: it lands on the epic branch; listing it here is the SCC-77 misreading
+[PASS] main WITH a valid token is allowed
+[PASS] the token is consumed: single use — a surviving token authorises the next merge too (SCC-71)
+[PASS] replaying the same push is refused
+[PASS] token minted for another sha is refused: the check that would have caught six merges on one sign-off
+[PASS] a refused token is discarded too: or a stale token waits around for a push that happens to match
+[PASS] token older than 30 min is refused
+[PASS] token with no approval record is refused: a hand-written token must not outrank the minter's own refusal
+[PASS] the approval-less token is discarded
+[PASS] malformed token is refused
+[PASS] non-numeric timestamp fails CLOSED: arithmetic on untrusted file content must never fall through to allow
+[PASS] future-dated token is refused (clock skew): a negative age must not read as 'fresh'
+[PASS] multi-ref push is gated on main wherever it appears: a `git push --all` must not smuggle main past the gate on a later line
+[PASS] deleting main is always refused
+[PASS] disarmed (no MAIN-PUSH-ENFORCE) passes through
+[PASS] DISABLE kill switch passes through
+[PASS] minter writes a token from main
+[PASS] minted token carries HEAD's sha
+[PASS] minted token records the operator's words: the quote is the approval evidence; a token without it is refused at the push
+[PASS] the minted token is accepted by the gate
+[PASS] the gate PRINTS the approval words at the push: a stretched quote must survive being read back at push time
+[PASS] minter requires --command
+[PASS] minter REFUSES without operator approval in a non-TTY shell: an agent shell must not be able to self-authorise a main merge
+[PASS] the refusal teaches the contract: the message must name the ticket-permission != merge-permission rule
+[PASS] minter refuses when HEAD is not main: a token minted off main names a sha the push will not carry
+[PASS] C1 · the repo root is NOT prepended to an absolute `C:/` path: the PC normalisation bug: an absolute answer that does not match `/*` gets the toplevel glued in front of it, and the token goes somewhere that cannot exist
+[PASS] C2 · mint does NOT print the success banner when no token was written: printed the minted banner with nothing on disk:
+/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-o8aah8c3/work/.agents/scripts/git-hooks/mint-push-token.sh: line 167: C:/Users/dan/Sudo_Hatter_Command/.git/worktrees/gate-cluster/main-push-approval: No such file or directory
+mint-push-token: FAILED to write the approval token.
+  path: C:/Users/dan/Sudo_Hatter_Command/.git/worktrees/gate-cluster/main-push-approval
+  No token was written, so the push would be refused for having none. Reported here,
+  where the reason is still in scope, rather than as a contradictory refusal later.
+
+[PASS] C3 · a failed token write EXITS NON-ZERO: exit was 2 with no token written:
+/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-o8aah8c3/work/.agents/scripts/git-hooks/mint-push-token.sh: line 167: C:/Users/dan/Sudo_Hatter_Command/.git/worktrees/gate-cluster/main-push-approval: No such file or directory
+mint-push-token: FAILED to write the approval token.
+  path: C:/Users/dan/Sudo_Hatter_Command/.git/worktrees/gate-cluster/main-push-approval
+  No token was written, so the push would be refused for having none. Reported here,
+  where the reason is still in scope, rather than as a contradictory refusal later.
+
+[PASS] C4 · (control) the shim really did divert the token away from disk: a token WAS written — C2/C3 proved nothing this run
+[PASS] REAL git push to main is refused with no token: if this passes, git is not running the hook — the whole gate is decorative
+[PASS] nothing reached the remote
+[PASS] REAL git push to main succeeds with a token: PERATOR: "yes - land it"
+     Token consumed. The next merge needs its own sign-off.
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-o8aah8c3/remote.git
+ * [new branch]      main -> main
+[PASS] the commit reached the remote
+[PASS] the token was consumed by the real push
+[PASS] minter accepts a single merge sitting on origin/main: 🔑 main-push token minted — /smh-close-task-merge-tree · SCC-77 · chore/SCC-77-a @ 2e40eb4e302d013d3400d8e9843d80ca58a7a779
+     AUTHORIZED BY OPERATOR: "yes - l
+[PASS] ONE merge with a token lands: umed. The next merge needs its own sign-off.
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-u2qiqz5j/remote.git
+   2f2bb39..2e40eb4  main -> main
+[PASS] exactly 1 merge on the remote: got 1
+[PASS] minter REFUSES to mint for a batch of merges: caught at mint time, where the message can still name the fix
+[PASS] gate REFUSES a batched push even with a valid-looking token: THE regression guard: 6 merges rode 1 token before this check existed
+[PASS] the batch did NOT reach the remote: got 1
+[PASS] force-push REWIND of main is refused: delete was refused but rewind was not — same destructive outcome
+[PASS] the remote tip is unchanged after the rewind attempt
+[PASS] a token naming a DIFFERENT branch than the merge is refused: otherwise one sign-off is a blank cheque any merge can spend
+[PASS] `git push --no-verify` bypasses the gate, as documented: the escape hatch is evidence, not a doc claim
+[PASS] PreToolUse ASKS on a push to main with no token
+[PASS] PreToolUse STANDS DOWN when a valid token covers the push: otherwise ask->auto-deny strands a headless close-out mid-merge
+[PASS] PreToolUse ASKS when the token is for another sha
+[PASS] PreToolUse ASKS when the token is stale
+[PASS] PreToolUse ASKS when the timestamp is garbage: fails toward asking — any doubt and the prompt still fires
+[PASS] PreToolUse ignores a push to a non-protected branch
+-- 68/68 passed --

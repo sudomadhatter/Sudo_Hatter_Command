@@ -1,0 +1,5 @@
+task_key: SCC-128
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-128-rewire-callers
+close_command: smh-close-task-merge-tree
+secondary_repos: []

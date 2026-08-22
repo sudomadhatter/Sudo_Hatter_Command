@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-214-template-clone-tests",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-214",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "0a4d4a271d7a4fd3742afce4a2e13691eb4c5385",
+  "warnings": 1,
+  "when": "2026-08-21T16:01:17-05:00"
+}

@@ -14,5 +14,5 @@
 persistent_facts = [
   "TEST DIALECT (TDAD Layer 1 — non-negotiable): this project's acceptance/red-phase tests are pytest + pytest-bdd (Python). NEVER scaffold Cypress or Jest. Playwright is reserved for stories that are explicitly E2E/UI-journey level — everything else is pytest. When your checklists or knowledge fragments suggest JS-framework fixtures, translate the underlying intent into pytest/pytest-bdd idiom instead of emitting them verbatim.",
   "BDD LAYOUT (house convention): Gherkin contracts live at {project-root}/backend/tests/features/<domain>/<name>.feature; step bindings live at {project-root}/backend/tests/bdd/steps_<domain>.py and are SELF-BINDING — each steps module calls pytest_bdd.scenarios() on its feature file(s), and pyproject.toml collects steps_*.py as test modules. Dropping a feature+steps pair into the tree is all it takes for the suite (and CI) to execute it.",
-  "VISION LOCK: if /sudo-bdd-tests (flow step ①b) already authored a .feature contract for this story, bind your red-phase scaffolds to THAT contract via scenarios() — do not write a parallel set of assertions that can drift from it.",
+  "VISION LOCK: if /cicd-bdd-tests (flow step ①b) already authored a .feature contract for this story, bind your red-phase scaffolds to THAT contract via scenarios() — do not write a parallel set of assertions that can drift from it.",
 ]

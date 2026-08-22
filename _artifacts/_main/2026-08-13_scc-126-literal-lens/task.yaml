@@ -1,0 +1,5 @@
+task_key: SCC-126
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-126-literal-lens
+close_command: smh-close-task-merge-tree
+secondary_repos: []

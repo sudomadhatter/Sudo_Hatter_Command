@@ -1,0 +1,19 @@
+task_key: SCC-137
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-137-close-out-gate-defects
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+
+# ONE branch, ONE worktree, ONE merge. SCC-137 is the surviving Bug and the parent;
+# its three subtasks are the work breakdown, all built on this branch.
+#
+#   SCC-138  gate_plan runs check_maps, worktree-safe
+#   SCC-139  live-tree MISSING coverage + SCAN_IGNORES
+#   SCC-140  hooks_armed / task_preflight defect set, REDUCED scope. Was SCC-136 (Bug);
+#            the Jira UI move to Subtask minted a new key and dropped the summary and
+#            description, both rewritten to the kept scope. SCC-136 no longer resolves.
+#            acli `edit` has --type but exposes no parent field, which is why SCC-119
+#            dropped its hierarchy-conversion spike -- the move is UI-only.
+#
+# check_children() blocks a parent close while a child is open (SCC-119), so all three
+# subtasks close BEFORE the parent's close-out runs. See implementation_plan.md §6.

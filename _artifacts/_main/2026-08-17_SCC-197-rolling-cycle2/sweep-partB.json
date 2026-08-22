@@ -1,0 +1,48 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_command_surfaces.py"
+  ],
+  "mutants": [
+    {
+      "id": "B-M1 the APPROVAL seam loses the duty - the sharp one, and SCC-190's actual failure",
+      "file": ".agents/rules/artifacts-always-first.md",
+      "original": "⛔ **🔗 Hand it back — the approval request CARRIES the link.**",
+      "mutated": "⛔ **Make the approval request clear.**",
+      "case": "SCC-200 the rule carries the hand-back duty at ALL THREE seams",
+      "block": "SCC-200"
+    },
+    {
+      "id": "B-M2 the PLAN seam loses the duty",
+      "file": ".agents/rules/artifacts-always-first.md",
+      "original": "**🔗 Hand it back.** Post the link in the same turn you write the file —",
+      "mutated": "**Note.** Post the link in the same turn you write the file —",
+      "case": "SCC-200 the rule carries the hand-back duty at ALL THREE seams",
+      "block": "SCC-200"
+    },
+    {
+      "id": "B-M3 the WALKTHROUGH seam loses the duty",
+      "file": ".agents/rules/artifacts-always-first.md",
+      "original": "**🔗 Hand it back.** The walkthrough is the closing deliverable",
+      "mutated": "**Note.** The walkthrough is the closing deliverable",
+      "case": "SCC-200 the rule carries the hand-back duty at ALL THREE seams",
+      "block": "SCC-200"
+    },
+    {
+      "id": "B-M4 the `## Hand It Back` home stops SHOWING the link form - a duty with no shape",
+      "file": ".agents/rules/artifacts-always-first.md",
+      "original": "post a **Markdown link `[label](relative/path)`**, relative to",
+      "mutated": "post a markdown link, relative to",
+      "case": "SCC-200 the rule carries the hand-back duty at ALL THREE seams",
+      "block": "SCC-200"
+    },
+    {
+      "id": "B-M5 the checker stops requiring the marker - placement becomes unpinned",
+      "file": ".agents/scripts/tests/test_command_surfaces.py",
+      "original": "                elif MARK not in body[k].lower() or not LINK.search(body[k]):",
+      "mutated": "                elif False:",
+      "case": "SCC-200 CONTROL: stripping the duty from the APPROVAL seam is caught",
+      "block": "SCC-200"
+    }
+  ]
+}

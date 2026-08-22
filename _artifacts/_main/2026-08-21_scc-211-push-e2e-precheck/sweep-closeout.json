@@ -1,0 +1,24 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_closeout_preflight.py"
+ ],
+ "mutants": [
+  {
+   "id": "M46 the story door stops deriving the lane's tree",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "    if args.branch:\n        explicit = Path(args.worktree).resolve() if args.worktree else None",
+   "mutated": "    if args.branch and False:\n        explicit = Path(args.worktree).resolve() if args.worktree else None",
+   "case": "SCC-211 the lane's dirt is found without being told where to look",
+   "block": "SCC-211 · a dirty LANE worktree is caught with no --worktree flag"
+  },
+  {
+   "id": "M47 an explicitly named tree stops being measured",
+   "file": ".agents/scripts/wf_common.py",
+   "original": "    if explicit is not None and explicit.resolve() not in seen:",
+   "mutated": "    if explicit is not None and explicit.resolve() not in seen and False:",
+   "case": "SCC-211 an explicitly named tree is still measured",
+   "block": "SCC-211 · a dirty LANE worktree is caught with no --worktree flag"
+  }
+ ]
+}

@@ -1,0 +1,23 @@
+{
+  "gate": "maps",
+  "story": "scc-154",
+  "result": "pass",
+  "exit_code": 0,
+  "sha": "ff3a5ccbaeb3a18ecdecf7da0adb18b54620d825",
+  "dirty_tree": true,
+  "dirty_paths": [
+    "_artifacts/_main/2026-08-14_gate-edges/gates/lint.json",
+    "_artifacts/_main/2026-08-14_gate-edges/gates/suite.json"
+  ],
+  "totals": null,
+  "command": [
+    "python3",
+    ".agents/scripts/check_maps.py",
+    "--depth3-only",
+    "--strict"
+  ],
+  "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/gate-edges",
+  "duration_s": 0.1,
+  "recorded_at": "2026-08-14T18:06:12+00:00",
+  "output_tail": ""
+}

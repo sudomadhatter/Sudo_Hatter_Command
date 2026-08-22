@@ -1,0 +1,46 @@
+#!/bin/sh
+# commit-msg — three gates, run in order. All must pass.
+#
+#   1. merge-target  a merge lands on a branch the model allows     (merge-target-guard.sh)
+#   2. jira          every commit carries this repo's work-item key (commit-msg-jira.sh)
+#   3. sop           usage changes move the SOP quick-reference     (sop-currency.sh)
+#
+# ⭐ GATE 1 IS THE ONLY ONE HERE THAT EXISTS *FOR* MERGES (SCC-144). Gates 2 and 3 both carve merges
+# OUT — git writes those messages, so blocking them blocks the tool. Gate 1 runs on nothing else.
+# It is FIRST because a merge landing on the wrong branch should not be assessed for message
+# content at all, and because it is the cheapest of the three (a few rev-parses, no interpreter spawn).
+#
+# ⓘ It lives here rather than in `pre-merge-commit`, which is where SCC-144 was written to put it,
+# because a trace of real merges showed `pre-merge-commit` runs BEFORE git writes MERGE_HEAD and
+# never fires at all on the conflicted path. Full measurement in merge-target-guard.sh's header.
+#
+# GUARD (SCC-32): `--show-toplevel` resolves to the WORKTREE root, not the main checkout, so a worktree
+# cut from a commit before a script existed has no script to exec — and a bare `exec` on a missing file
+# kills the commit outright with a shell error. That is a hard door where the design calls for a loud
+# alarm (guide §10), and it hit a real lane the day the jira gate shipped. Missing script -> say so, allow.
+#
+# NOTE (SCC-31): this used to `exec` the jira hook, which replaces the shell process — anything added
+# after it would silently never run. With two gates it must call and check, not exec-and-forget. The
+# final gate is still exec'd so its exit code is the hook's.
+ROOT="$(git rev-parse --show-toplevel)"
+
+MERGETARGET="$ROOT/.agents/scripts/git-hooks/merge-target-guard.sh"
+if [ ! -x "$MERGETARGET" ]; then
+  echo "  ⚠ merge-target gate not present in this worktree ($MERGETARGET) — MERGES in this"
+  echo "    worktree are UNCHECKED. (This line prints on every commit, not only merges.)"
+  echo "    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it."
+else
+  "$MERGETARGET" "$@" || exit $?
+fi
+
+JIRA="$ROOT/.agents/scripts/git-hooks/commit-msg-jira.sh"
+if [ ! -x "$JIRA" ]; then
+  echo "  ⚠ jira commit gate not present in this worktree ($JIRA) — commit allowed, unchecked."
+  echo "    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it."
+else
+  "$JIRA" "$@" || exit $?
+fi
+
+SOP="$ROOT/.agents/scripts/git-hooks/sop-currency.sh"
+[ -x "$SOP" ] || exit 0
+exec "$SOP" "$@"

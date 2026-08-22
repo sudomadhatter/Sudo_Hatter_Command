@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
-  Push the master .agents toolkit into every command surface: a target's local tool dirs (the lobby or a
-  project) AND the machine-global command caches for opencode + Antigravity/Gemini.
+  Push the master .agents toolkit into every command surface: the LOBBY's local tool dirs AND the
+  machine-global command caches for opencode + Antigravity/Gemini + Codex. (Project targets are retired —
+  thin model 2026-08-07, .agents/rules/project-law.md: projects carry tier-2 law only, no vendor.)
 
 .DESCRIPTION
   Single source of authorship = <home>\.agents. The canonical invocable set is .agents\commands\ — it mirrors
@@ -10,16 +11,18 @@
   and, for a LOBBY sync, also refreshes the machine-global caches so opencode, Antigravity, and Codex see the
   same set Claude does.
 
-  Codex is the lightest surface: it reads AGENTS.md natively AND discovers Agent Skills from .agents\skills
-  (repo) + ~\.codex\skills (global), so rules + our own skills need zero work. Only two globals are pushed for
-  it: (1) custom prompts -> ~\.codex\prompts (its /commands equivalent, invoked /prompts:<name>), and (2) the
-  bmad-* skills -> ~\.codex\skills (BMAD installs to .claude\skills, which Codex does not read).
+  THE DOOR MODEL (SCC-66): one door per platform per command. Claude and Codex enter through a LAUNCHER
+  SKILL (generated per claude/codex-eligible command into .agents\skills, tree-copied to .claude\skills;
+  hand-authored SKILL.md always wins); opencode through its command mirror; Antigravity through its
+  workflow mirror. Publishing .claude\commands and ~\.codex\prompts is RETIRED - both double-doored every
+  command beside its skill. Codex reads AGENTS.md + .agents\skills natively; the only global pushed for it
+  is the bmad-* skills mirror -> ~\.codex\skills (BMAD installs to .claude\skills, which Codex does not read).
 
   Use -WhatIf (alias -DryRun) to preview every copy, create, and delete action without touching disk.
 
   PLATFORM REACH. A command may declare its reach with frontmatter `platforms: [claude, opencode, antigravity, codex]`.
   Absent = universal (all four). The sync copies a command only to the platforms it lists, so e.g.
-  /autopilot_claude (claude-only) never lands in the opencode/gemini/codex surfaces.
+  /cicd-autopilot-claude (claude-only) never lands in the opencode/gemini/codex surfaces.
 
   PURGE POLICY.
     - Local tool dirs (.claude, .opencode): copy eligible commands; purge only commands that ARE master-managed
@@ -39,30 +42,19 @@
       eligible, EXCEPT `bmad-*` (BMAD installs its own global agents/workflows; never ours to delete).
     - Codex skills cache (~\.codex\skills): mirror `bmad-*` skill dirs from .claude\skills (per-dir /MIR); purge
       codex-side bmad-* dirs whose source is gone; PRESERVE `.system` and any foreign (non-bmad) dirs.
-    - Project .agents vendor: ADDITIVE. The vendored .agents is a HYBRID (master toolkit + project-owned
-      rules\, skills\, and bmad\), so it is NEVER mirrored/purged wholesale. bmad\ is EXCLUDED from the vendor
-      robocopy entirely (BMAD's module config is project-identity — each repo's own `project_name` — and BMAD
-      self-installs per project; master must never overwrite it). The lone deletion is a narrow prune of
-      stale workflows\ command-ghosts — a workflows\ file whose name is a master COMMAND but not a master
-      WORKFLOW (a leftover from when commands lived in workflows\). That test provably never hits rules\,
-      skills\, bmad\, or a project-authored workflow.
-
-  For a PROJECT target (not the lobby root) it ALSO vendors master's .agents into the project so the repo is
-  clone-safe. That vendor is ADDITIVE (/E, no purge): a project's .agents is a HYBRID — master toolkit copied
-  in, layered OVER project-OWNED content master does NOT have (notably .agents\rules\ and project-specific
-  .agents\skills\). .agents\bmad\ is EXCLUDED from the vendor (project-owned identity; see PURGE POLICY). So
-  NEVER /MIR or blanket-/PURGE the vendored .agents — that deletes the project's own files. The only deletion
-  here is the narrow workflows\ command-ghost prune (see PURGE POLICY). A project
-  sync does NOT touch the machine-global caches (globals reflect the lobby's canonical set).
+    - Project vendoring: RETIRED (thin model, 2026-08-07). A project holds ONLY its own tier-2 law
+      (rules\ + skills\ + INDEX.md — .agents/rules/project-law.md); sessions run from the center, so the
+      lobby dirs + machine-global caches are the entire sync surface. -Maintained and project -Target now
+      exit with an explanatory error instead of vendoring.
 
   Always edit the master; never hand-edit the copies. Re-run this to propagate changes.
 
 .PARAMETER Target
-  Directory to sync into. Default: the home-base root (lobby).
+  Must resolve to the home-base root (the default). Project targets are retired — thin model 2026-08-07.
 
 .PARAMETER GlobalsOnly
   Refresh only the machine-global caches (opencode + Antigravity command caches, Codex prompts, and the Codex
-  bmad-* skills mirror) from the lobby master. Skips local tool dirs. /slash_command_updating delegates to this.
+  bmad-* skills mirror) from the lobby master. Skips local tool dirs. /smh-slash-command-updating delegates to this.
 
 .PARAMETER NoGlobals
   Sync local tool dirs only; skip the machine-global caches (incl. the Codex prompts + skills mirror) even on a
@@ -86,65 +78,135 @@ $ErrorActionPreference = "Stop"
 $Master   = Split-Path $PSScriptRoot -Parent     # ...\.agents
 $HomeRoot = Split-Path $Master -Parent           # ...\Sudo_Hatter_Command
 
-# -Maintained: the ONLY sanctioned "sync everything" — the lobby + ONLY the projects on the
-# .agents\maintained-projects.txt allowlist (shared with check_maps.py). Never hand-loop over
-# Projects\* : that touches child repos we deliberately do not keep in sync. -Target is ignored here.
+# Machine home for the global caches. $env:USERPROFILE is WINDOWS-ONLY - on macOS/Linux pwsh it is
+# $null, and `Join-Path $null ...` THROWS, which killed the entire global-cache stage (opencode +
+# Antigravity + Codex prompts + Codex skills) on the Mac while the local sync above had already
+# succeeded, so the run looked mostly fine. Resolve it once, cross-platform.
+# (Everything else in this script is separator-safe: PowerShell 7's Join-Path normalises the `\`
+# in path literals to `/` on Unix. The `.claude\commands`-style MANIFEST KEYS are deliberately left
+# back-slashed - they are dictionary keys, not paths, and must stay byte-identical across machines
+# or a manifest written on Windows would stop matching here and skip its retire-purge.)
+$UserHome = if ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME)    { $env:HOME }
+            else                  { [Environment]::GetFolderPath('UserProfile') }
+if (-not $UserHome) { throw "sync-agents: cannot resolve the machine home dir (USERPROFILE/HOME both unset)" }
+
+# -Maintained is RETIRED (thin model, 2026-08-07 — .agents/rules/project-law.md): projects carry no
+# vendored toolkit, so there is nothing to fan out to. A plain /sync-agents (lobby + machine-global
+# caches) already reaches every platform from any cwd. .agents\maintained-projects.txt lives on as the
+# check_maps.py --all LINT worklist only — it no longer drives any sync.
 if ($Maintained) {
-  Write-Host "sync-agents: -Maintained fan-out (lobby + .agents\maintained-projects.txt)"
-  & $PSCommandPath -Status:$Status -Reconcile:$Reconcile -WhatIf:$WhatIf   # lobby (default target; refreshes globals)
-  $listFile = Join-Path $HomeRoot ".agents\maintained-projects.txt"
-  if (Test-Path $listFile) {
-    foreach ($line in Get-Content $listFile) {
-      $name = ($line -replace '#.*$', '').Trim()
-      if (-not $name) { continue }
-      $proj = Join-Path $HomeRoot "Projects\$name"
-      if (-not (Test-Path $proj)) {
-        Write-Warning "sync-agents: maintained project '$name' not found under Projects\ - skipping"
-        continue
-      }
-      # GUARD (2026-08-04): a directory existing is NOT proof the project is here. Every Projects\<name>
-      # is a git SUBMODULE; an uninitialized one is an EMPTY directory that looks deliberate. Vendoring
-      # into it manufactures a fake project that later tools then trust - that is exactly how
-      # NEXgen-VR-Director got 601 toolkit files written into a placeholder it had no business holding
-      # (root cause: its .gitmodules mapping was missing, so `submodule update --init` silently skipped it).
-      # Materialized == has .git (dir or file) OR a root AGENTS.md. Fail LOUD; never write into the gap.
-      $hasGit    = Test-Path (Join-Path $proj ".git")
-      $hasAgents = Test-Path (Join-Path $proj "AGENTS.md")
-      if (-not ($hasGit -or $hasAgents)) {
-        Write-Warning "sync-agents: SKIPPING '$name' - directory exists but the project is NOT checked out (no .git, no AGENTS.md)."
-        Write-Warning "sync-agents:   This is almost always an uninitialized submodule. Do NOT sync into it - clone it first:"
-        Write-Warning "sync-agents:       git submodule update --init -- Projects/$name"
-        Write-Warning "sync-agents:   If that no-ops, the path has no .gitmodules mapping. Verify parity:"
-        Write-Warning "sync-agents:       git ls-files -s Projects/   vs   git config -f .gitmodules --get-regexp path"
-        continue
-      }
-      & $PSCommandPath -Target $proj -NoGlobals -Status:$Status -Reconcile:$Reconcile -WhatIf:$WhatIf
-    }
-  } else {
-    Write-Warning "sync-agents: no .agents\maintained-projects.txt found - only the lobby was synced"
-  }
-  exit 0
+  Write-Error ("sync-agents: -Maintained is retired (thin model, 2026-08-07). Projects hold only their " +
+    "own tier-2 law (rules/ + skills/ + INDEX.md - see .agents/rules/project-law.md); there is no " +
+    "per-project vendor to sync. Run /sync-agents with no flags: the lobby + machine-global caches " +
+    "serve every session from any cwd. (maintained-projects.txt remains the check_maps --all worklist.)")
+  exit 1
 }
 
 if (-not $Target) { $Target = $HomeRoot }
 $Target   = (Resolve-Path $Target).Path
-$IsLobby  = ($Target.TrimEnd('\') -ieq $HomeRoot.TrimEnd('\'))
+# Trim BOTH separators: off Windows a trailing '/' survives TrimEnd('\'), and the lobby would then
+# compare unequal to itself and silently run the project branch against the master tree.
+$IsLobby  = ($Target.TrimEnd('\', '/') -ieq $HomeRoot.TrimEnd('\', '/'))
+
+# Project targets are RETIRED with the same 2026-08-07 thin model: vendoring tier 1 into a project is
+# now a rule violation (project-law.md hard stop), so fail LOUD with the why instead of writing files.
+if (-not $IsLobby) {
+  Write-Error ("sync-agents: project targets are retired (thin model, 2026-08-07). '$Target' must not " +
+    "carry the tier-1 toolkit - a project holds only its own rules/ + skills/ + INDEX.md " +
+    "(.agents/rules/project-law.md). Run /sync-agents with no target: the lobby + machine-global " +
+    "caches serve every session, from any cwd.")
+  exit 1
+}
 
 $AllPlatforms = @('claude','opencode','antigravity','codex')
 
 # --- helpers ------------------------------------------------------------------
 
+# Is this path, or any directory above it inside $Root, excluded? Mirrors robocopy's /XD /XF, which match
+# by NAME anywhere in the tree; an /XD entry given as an absolute path is honoured as that exact directory
+# (the .agents vendor passes `<master>\bmad` that way).
+function Test-TreeExcluded {
+  param([string]$Full, [string]$Root, [bool]$IsDir, [string[]]$DirNames, [string[]]$DirPaths, [string[]]$FileNames)
+  if ((-not $IsDir) -and ($FileNames -contains (Split-Path $Full -Leaf))) { return $true }
+  $probe = if ($IsDir) { $Full } else { Split-Path $Full -Parent }
+  while ($probe -and ($probe.Length -gt $Root.Length)) {
+    if ($DirNames -contains (Split-Path $probe -Leaf)) { return $true }
+    if ($DirPaths -contains $probe) { return $true }
+    $probe = Split-Path $probe -Parent
+  }
+  return $false
+}
+
+# Cross-platform tree copy. robocopy is WINDOWS-ONLY, and on macOS/Linux these call sites aborted the run
+# mid-way instead of degrading - the Mac's first /sync-agents died after creating exactly one codex skill
+# dir, leaving a half-built cache that looked deliberate. Windows keeps robocopy VERBATIM (the proven path
+# on the primary machines); every other platform takes the PowerShell-native equivalent below. Semantics
+# both sides implement:
+#   -Mirror off (robocopy /E)  : additive - copy the tree, never delete anything already at the target
+#   -Mirror on  (robocopy /MIR): additive PLUS delete target entries the source no longer has
+# Excluded paths are skipped on BOTH passes, so -Mirror never deletes an excluded dir at the target either
+# (robocopy /MIR /XD behaves the same way: an excluded dir is out of scope, not "extra").
+function Copy-Tree {
+  param([string]$Src, [string]$Dst, [string[]]$ExcludeDirs, [string[]]$ExcludeFiles, [switch]$Mirror)
+  $xd = @(@($ExcludeDirs)  | Where-Object { $_ })
+  $xf = @(@($ExcludeFiles) | Where-Object { $_ })
+
+  if ($IsWindows) {
+    New-Item -ItemType Directory -Force -Path $Dst | Out-Null
+    $mode = if ($Mirror) { '/MIR' } else { '/E' }
+    if ($xf) { robocopy $Src $Dst $mode /XD @xd /XF @xf /NFL /NDL /NJH /NJS /NC /NS | Out-Null }
+    else     { robocopy $Src $Dst $mode /XD @xd          /NFL /NDL /NJH /NJS /NC /NS | Out-Null }
+    if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($Src -> $Dst), rc=$LASTEXITCODE" }
+    return
+  }
+
+  $srcRoot  = (Resolve-Path -LiteralPath $Src).Path
+  $dirNames = @($xd | Where-Object { -not [IO.Path]::IsPathRooted($_) })
+  $dirPaths = @($xd | Where-Object { [IO.Path]::IsPathRooted($_) } |
+                ForEach-Object { $r = Resolve-Path -LiteralPath $_ -ErrorAction SilentlyContinue; if ($r) { $r.Path } })
+  New-Item -ItemType Directory -Force -Path $Dst | Out-Null
+  $dstRoot = (Resolve-Path -LiteralPath $Dst).Path
+
+  # -Force: on Unix a dot-file is "hidden", and without it every .gitkeep / .env.example would be skipped.
+  $kept = New-Object 'System.Collections.Generic.HashSet[string]'
+  foreach ($item in Get-ChildItem -LiteralPath $srcRoot -Recurse -Force -ErrorAction SilentlyContinue) {
+    if (Test-TreeExcluded $item.FullName $srcRoot $item.PSIsContainer $dirNames $dirPaths $xf) { continue }
+    $rel = $item.FullName.Substring($srcRoot.Length).TrimStart([char]'/', [char]'\')
+    [void]$kept.Add($rel)
+    $target = Join-Path $dstRoot $rel
+    if ($item.PSIsContainer) {
+      New-Item -ItemType Directory -Force -Path $target | Out-Null
+    } else {
+      $parent = Split-Path $target -Parent
+      if (-not (Test-Path -LiteralPath $parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
+      Copy-Item -LiteralPath $item.FullName -Destination $target -Force
+    }
+  }
+
+  if (-not $Mirror) { return }
+  # Deepest-first, so a directory is only removed after its own contents have been considered.
+  $extra = @(Get-ChildItem -LiteralPath $dstRoot -Recurse -Force -ErrorAction SilentlyContinue |
+             Sort-Object { $_.FullName.Length } -Descending)
+  foreach ($item in $extra) {
+    if (-not (Test-Path -LiteralPath $item.FullName)) { continue }   # already gone with its parent
+    if (Test-TreeExcluded $item.FullName $dstRoot $item.PSIsContainer $dirNames $dirPaths $xf) { continue }
+    $rel = $item.FullName.Substring($dstRoot.Length).TrimStart([char]'/', [char]'\')
+    if (-not $kept.Contains($rel)) { Remove-Item -LiteralPath $item.FullName -Recurse -Force }
+  }
+}
+
 function Sync-Dir($src, $dst, [string[]]$ExcludeDirs, [string[]]$ExcludeFiles, [switch]$WhatIf) {
   if (-not (Test-Path $src)) { return }
-  $xd = @('node_modules') + (@($ExcludeDirs) | Where-Object { $_ })
+  # __pycache__ alongside node_modules: .pyc names embed the interpreter version (cpython-314 here,
+  # something else on the Windows box), so vendoring them churns the TRACKED manifest every time a
+  # different machine syncs — and they are regenerable caches no project should carry.
+  $xd = @('node_modules', '__pycache__') + (@($ExcludeDirs) | Where-Object { $_ })
   $xf = @(@($ExcludeFiles) | Where-Object { $_ })
   if (-not $WhatIf) {
-    New-Item -ItemType Directory -Force -Path $dst | Out-Null
-    if ($xf) { robocopy $src $dst /E /XD @xd /XF @xf /NFL /NDL /NJH /NJS /NC /NS | Out-Null }
-    else     { robocopy $src $dst /E /XD @xd          /NFL /NDL /NJH /NJS /NC /NS | Out-Null }
-    if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($src -> $dst), rc=$LASTEXITCODE" }
+    Copy-Tree $src $dst $xd $xf
   } else {
-    Write-Host ("WHATIF: would robocopy '{0}' -> '{1}' (excluding: {2})" -f $src,$dst,($xd -join ', '))
+    Write-Host ("WHATIF: would copy tree '{0}' -> '{1}' (excluding: {2})" -f $src,$dst,($xd -join ', '))
   }
 }
 
@@ -169,18 +231,62 @@ function Get-SyncManifest([string]$target) {
   }
 }
 
+function ConvertTo-ManifestString([string]$s) {
+  # Back-slash FIRST or the escapes we add get re-escaped. Manifest strings are path keys and file names.
+  $e = $s.Replace('\','\\').Replace('"','\"').Replace("`r",'\r').Replace("`n",'\n').Replace("`t",'\t')
+  return '"' + $e + '"'
+}
+
+# The manifest is TRACKED, so its bytes are a diff every machine reads. `ConvertTo-Json` cannot own them:
+# Windows PowerShell 5.1 and pwsh 7 serialise differently (5.1 emits a BOM and its own spacing -
+# `"version":  1` with two spaces), so the file rewrote ENTIRELY the first time it was generated on the
+# Mac - 250 lines of pure formatting churn burying the one line that carries meaning, and a guaranteed
+# conflict every time the two machines sync in turn. Emitting it by hand makes both engines write the
+# same bytes: fixed key order, sorted arrays, 2-space indent, LF, no BOM. Sorting is safe - every reader
+# tests membership (`-notcontains`), never position.
 function Save-SyncManifest([string]$target, $manifest, [switch]$WhatIf) {
   $p = Join-Path $target ".agents\$ManifestName"
   if ($WhatIf) { Write-Host ("WHATIF: would write sync manifest '{0}'" -f $p); return }
   New-Item -ItemType Directory -Force -Path (Split-Path $p -Parent) | Out-Null
-  $out = [ordered]@{
-    version   = 1
-    generated = (Get-Date).ToString('s')
-    note      = 'Generated by sync-agents.ps1. Records what the sync wrote so the next run can purge its own retired files. Do not hand-edit.'
-    vendor    = @($manifest.vendor)
-    local     = $manifest.local
+
+  $note  = 'Generated by sync-agents.ps1. Records what the sync wrote so the next run can purge its own retired files. Do not hand-edit.'
+  $lines = New-Object 'System.Collections.Generic.List[string]'
+  $lines.Add('{')
+  $lines.Add('  "version": 1,')
+  $lines.Add('  "generated": ' + (ConvertTo-ManifestString ((Get-Date).ToString('s'))) + ',')
+  $lines.Add('  "note": ' + (ConvertTo-ManifestString $note) + ',')
+
+  # An array as `[]` when empty, else one entry per line - matching what ConvertTo-Json produced, so this
+  # change alone does not re-churn the file on top of the format switch.
+  $emit = {
+    param([string]$label, [string[]]$items, [string]$indent, [string]$tail)
+    $vals = @(@($items) | Where-Object { $_ } | Sort-Object)
+    if (-not $vals.Count) { $lines.Add("$indent$label[]$tail"); return }
+    $lines.Add("$indent$label[")
+    for ($i = 0; $i -lt $vals.Count; $i++) {
+      $comma = if ($i -lt $vals.Count - 1) { ',' } else { '' }
+      $lines.Add("$indent  " + (ConvertTo-ManifestString $vals[$i]) + $comma)
+    }
+    $lines.Add("$indent]$tail")
   }
-  ($out | ConvertTo-Json -Depth 6) | Set-Content -Path $p -Encoding utf8
+
+  & $emit '"vendor": ' @($manifest.vendor) '  ' ','
+  $keys = @($manifest.local.Keys | Sort-Object)
+  if (-not $keys.Count) {
+    $lines.Add('  "local": {}')
+  } else {
+    $lines.Add('  "local": {')
+    for ($k = 0; $k -lt $keys.Count; $k++) {
+      $tail = if ($k -lt $keys.Count - 1) { ',' } else { '' }
+      & $emit ((ConvertTo-ManifestString $keys[$k]) + ': ') @($manifest.local[$keys[$k]]) '    ' $tail
+    }
+    $lines.Add('  }')
+  }
+  $lines.Add('}')
+
+  # WriteAllText, not Set-Content: -Encoding utf8 means "with BOM" on 5.1 and "without" on 7, and
+  # Set-Content would also stamp the platform's line ending on every line.
+  [IO.File]::WriteAllText($p, (($lines -join "`n") + "`n"), (New-Object Text.UTF8Encoding($false)))
 }
 
 # --- reconcile: a git-status-style three-way view of the invocable surfaces ---
@@ -240,12 +346,20 @@ function Get-SurfaceState {
 }
 
 # Files under the master that a vendor copy is expected to place (relative paths), mirroring Sync-Dir's excludes.
-function Get-VendorFileSet([string]$masterDir) {
-  $root = (Resolve-Path $masterDir).Path
-  Get-ChildItem $masterDir -File -Recurse -Force -ErrorAction SilentlyContinue |
-    Where-Object { ($_.FullName -notmatch '\\(bmad|node_modules)\\') -and ($_.Name -ne $ManifestName) } |
-    ForEach-Object { $_.FullName.Substring($root.Length).TrimStart('\') }
-}
+#
+# ⛔ SEPARATORS ARE LOAD-BEARING HERE — this set is compared against the TRACKED manifest, which every
+# machine shares. Windows produces `commands\analyst.md`; an unnormalised macOS run produces
+# `/commands/analyst.md`, and the two sets then have ZERO overlap. Invoke-ManifestPurge reads that as
+# "the master dropped every file it ever owned" and deletes the entire vendored toolkit — ~570 files per
+# project — while Join-Path still happily resolves the back-slashed manifest paths on macOS, so every
+# delete succeeds and the run reports itself as a normal purge. Emit BACK-slashed, leading-separator-free
+# paths on every OS so the manifest stays byte-comparable across machines.
+# (Get-VendorFileSet deleted 2026-08-07 with the project-vendor path — thin model, project-law.md.
+#  It had just gained a `jira.conf` exclusion (SCC-10) to stop the vendor overwriting each repo's Jira
+#  identity. Deleting the vendor makes that exclusion moot — nothing copies into a project at all — and
+#  supersedes it with the stronger guarantee. `jira.conf`, `.githooks/`, and `.agents/scripts/git-hooks/`
+#  are repo-local ENFORCEMENT: git runs hooks in the repo they gate, so they live there permanently and
+#  are never centralized. Same class as BMAD's `_bmad/custom/*.toml`.)
 
 # Delete what a previous run wrote into $dst and this run no longer owns. Returns the purged relative paths.
 function Invoke-ManifestPurge([string]$dst, [string[]]$was, [string[]]$now, [switch]$WhatIf) {
@@ -332,7 +446,7 @@ function Get-CommandPlatforms($file) {
 #   -WhatIf       : report actions but do not copy or delete
 # Returns the list of eligible file names.
 function Sync-CommandDir {
-  # -SkipAP: robot-lane commands (*_AP.md — invoked by the autopilot engines, never typed by a human) are
+  # -SkipAP: robot-lane commands (*-AP.md — invoked by the autopilot engines, never typed by a human) are
   # vendored ONLY into project tool dirs (the engines Push-Location into the project and resolve them there).
   # The lobby's typeable menus and the machine-global caches skip them; the purge branch below then removes
   # any stale copies automatically on every sync.
@@ -342,7 +456,7 @@ function Sync-CommandDir {
   $masterNames = @($masterFiles | Select-Object -ExpandProperty Name)
   $eligible = @()
   foreach ($f in $masterFiles) {
-    if ($SkipAP -and ($f.Name -match '_AP\.md$')) { continue }
+    if ($SkipAP -and ($f.Name -match '-AP\.md$')) { continue }
     if ((Get-CommandPlatforms $f.FullName) -contains $Platform) {
       if (-not $WhatIf) {
         Copy-Item -Path $f.FullName -Destination $Dst -Force
@@ -367,38 +481,98 @@ function Sync-CommandDir {
   return $eligible
 }
 
-# Mirror the sudo-* dev flow into .agents/workflows/ so ANTIGRAVITY sees it. Antigravity surfaces / from
-# workflows/ (+ skills/), never commands/ (a Claude/opencode concept). The sudo flow is authored as
-# commands; copy the antigravity-eligible ones (sudo-*, excluding _AP claude-only) into workflows/ VERBATIM
-# (frontmatter stays line 1 -- no injected header) so the same / works in all three tools from ONE source.
-# Mirror ONLY sudo-* on purpose: BMAD personas are skills and 1_* are real workflows, so mirroring those too
-# would make duplicate / entries. Generated copies, regenerated every sync -- edit the command, not these.
+# Mirror the antigravity-eligible commands into .agents/workflows/ so ANTIGRAVITY sees them. Antigravity
+# surfaces / from workflows/ (+ skills/), never commands/ (a Claude/opencode concept). The flow is authored
+# as commands; copy the eligible ones into workflows/ VERBATIM (frontmatter stays line 1 -- no injected
+# header) so the same / works in every tool from ONE source. Generated copies, regenerated every sync --
+# edit the command, not these.
+# THE GATE IS `platforms:`, NOT THE FILENAME (SCC-56, 2026-08-09). This used to filter by NAME first
+# ($allowed = sudo-*, 1_*, new-project, slash_command_updating) and only then consult Get-CommandPlatforms,
+# so a command's DECLARED reach was never read unless its filename happened to match. Four commands that
+# claim Antigravity reached it zero times: close-task-merge-tree, sync-agents, review,
+# and clean-code-audit -- which declares `platforms: [opencode, antigravity]` in the documented mechanism
+# and was dropped anyway. The name filter was ALSO redundant: its stated reason was keeping BMAD personas
+# and 1_* workflows out of the / menu, but every persona and testarch-* wrapper already declares
+# `platforms: [opencode]` (so Get-CommandPlatforms excludes them unaided) and no 1_*.md command has existed
+# for some time. It blocked nothing it was written to block. Now: absent/empty `platforms:` == universal ==
+# mirrored; `platforms: []` == nowhere; -AP stays claude-only by name convention.
 # BIG COMMANDS (2026-07-25): a command over ~11.5 KB gets a GENERATED THIN LAUNCHER instead of a verbatim
-# copy -- Antigravity silently drops workflows over its 12,000-char cap, and hand-trimmed twins drifted and
+# copy -- Antigravity does not honour a workflow over its 12,000-char cap, and hand-trimmed twins drifted and
 # needed byte-golf on every edit. The launcher points the agent at .agents/commands/<name>.md (the single
 # source of truth), so the command can grow freely and no workflow can ever hit the cap again. Same pattern
-# as the hand-authored sudo-adviser-board launcher, now automatic.
+# as the hand-authored smh-adviser-board launcher, now automatic.
+# WHAT OVER-CAP ACTUALLY DOES (measured, SCC-135 -- this was previously written here as "silently drops"):
+# Antigravity TRUNCATES at 12,000 chars, it does not reject the file. smh-update-maps-indexes shipped a
+# 39,594-char body and the agent received the header, the target list, Step 0 and half of Step 0.5 -- cut
+# mid-sentence -- then improvised the remaining 70%, including past the Step 4 approval gate it never saw.
+# That is the important distinction: a dropped workflow fails visibly, a truncated one runs and looks fine.
+# ── SCC-195 · THE ANTIGRAVITY DESCRIPTION BUDGET ───────────────────────────────────────────────
+# Antigravity builds its slash-command menu from the `description:` frontmatter of every
+# .agents/workflows/*.md. This repo's descriptions run 400-950+ chars (they are written for an agent
+# reading the command, not for a menu), and the TOTAL blew the menu's context budget: 15 workflows
+# were dropped from the agent's command list outright.
+#
+# ⛔ Shortening them BY HAND in workflows/ cannot work, twice over: these files are GENERATED, so the
+# next sync overwrites them; and test_command_surfaces.py's door-parity check demands a mirror be
+# byte-identical to its brain (or a launcher whose description EQUALS the brain's), so a hand-edited
+# door reads as `stale` and main-write-gate goes red. So the rule lives HERE, in the generator, and
+# the parity check learned the same rule: truncated-from-the-brain IS parity on this surface.
+#
+# ⚠ TWO IMPLEMENTATIONS OF ONE RULE (this, and `ag_description` in test_command_surfaces.py). That is
+# the same shape as Get-CommandPlatforms vs platforms_declared, and it is checked rather than
+# trusted: if the two ever disagree the door reads `stale` and the test names the file.
+# `-ge 0` on LastIndexOf, not `-gt 0`, so a leading-space description cuts identically on both sides.
+function Get-AgDescription {
+  param([string]$Desc)
+  if ($null -eq $Desc) { return '' }
+  if ($Desc.Length -le 135) { return $Desc }
+  $cut = $Desc.Substring(0, 132)
+  $i = $cut.LastIndexOf(' ')
+  if ($i -ge 0) { $cut = $cut.Substring(0, $i) }
+  return $cut.TrimEnd(' ', ',', ';', ':', '-') + '...'
+}
+
+# The brain with ONLY its description line replaced by the budgeted one, byte-for-byte otherwise.
+# Every command file under .agents/commands is LF and BOM-less except the eight testarch-* bridges,
+# which declare `platforms: [opencode]` and so never reach this surface (verified 2026-08-17).
+function Set-AgDescriptionLine {
+  param([string]$Raw)
+  # (\r?) is captured and PUT BACK. `.` matches CR in .NET, `$` in multiline matches before the
+  # LF, so on a CRLF brain the CR landed inside group 1, TrimEnd() ate it, and the rewritten
+  # line shipped LF-only among CRLF siblings -- a mixed-ending file from a pure text edit.
+  # No brain is CRLF today (all LF, BOM-less); this is the writer not being the thing that
+  # introduces one. The Python twin in test_command_surfaces.py does the same.
+  $m = [regex]::Match($Raw, '(?m)^description:[ \t]*(.*?)(\r?)$')
+  if (-not $m.Success) { return $Raw }
+  $short = Get-AgDescription $m.Groups[1].Value.TrimEnd()
+  if ($short -eq $m.Groups[1].Value) { return $Raw }
+  return $Raw.Remove($m.Index, $m.Length).Insert($m.Index, ('description: ' + $short + $m.Groups[2].Value))
+}
+
 function Sync-AntigravityWorkflowMirror {
   param([string]$MasterDir, [switch]$WhatIf)
   $cmdDir = Join-Path $MasterDir "commands"
   $wfDir  = Join-Path $MasterDir "workflows"
   if (-not $WhatIf) { New-Item -ItemType Directory -Force -Path $wfDir | Out-Null } else { Write-Host "WHATIF: would ensure dir '$wfDir'" }
   $mirrored = @()
-  
-  $allowed = @('sudo-*.md', '1_*.md', 'new-project.md', 'slash_command_updating.md', 'merge_main_debug.md',
-               'training.md')  # training: the tutor toggle must reach Antigravity/Gemini too, or the
-                               # teaching edition ships a /training the README promises and one surface cannot run
-  $excluded = @('update-maps-indexes.md', 'sudo-adviser-board.md') # Real workflow lives in workflows/, do not overwrite with command wrapper (adviser-board: hand-authored thin launcher — the full command is ~25k, over AG's 12k limit)
-  
-  $files = Get-ChildItem -Path $cmdDir -Filter '*.md' -File | Where-Object {
-    $name = $_.Name
-    $match = $false
-    foreach ($p in $allowed) { if ($name -like $p) { $match = $true; break } }
-    $match -and ($excluded -notcontains $name)
-  }
+
+  # HAND-OWNED files in workflows/: never written by this mirror, never pruned by it. Each has a reason.
+  #   smh-adviser-board.md   - hand-authored thin launcher (the command is ~52k, over AG's 12k cap).
+  #   INDEX.md               - the workflows router. It has NO frontmatter and NO source in commands/, and
+  #                            survived only because it failed the old name filter. With that filter gone
+  #                            the prune below would DELETE it on the next sync. Load-bearing guard.
+  # smh-update-maps-indexes.md was here until SCC-135. It was the ONLY command whose body lived in
+  # workflows/ while commands/ held a wrapper, and this exclusion is what exempted it from the launcher
+  # rule below -- so its 39.6k body shipped to Antigravity and was TRUNCATED at 12,000 chars, losing 70%
+  # of the steps including the Step 4 approval gate. Un-inverted: the body is now the command, and this
+  # function generates its launcher like every other big command. Do not re-add it.
+  $excluded = @('smh-adviser-board.md', 'INDEX.md')
+
+  $files = Get-ChildItem -Path $cmdDir -Filter '*.md' -File |
+    Where-Object { $excluded -notcontains $_.Name }
 
   foreach ($f in $files) {
-    if (($f.Name -notmatch '_AP\.md$') -and ((Get-CommandPlatforms $f.FullName) -contains 'antigravity')) {
+    if (($f.Name -notmatch '-AP\.md$') -and ((Get-CommandPlatforms $f.FullName) -contains 'antigravity')) {
       $dest = Join-Path $wfDir $f.Name
       if ((Get-Item $f.FullName).Length -gt 11500) {
         # Over (or near) the 12k cap: emit a generated launcher, never a doomed verbatim copy.
@@ -410,14 +584,15 @@ function Sync-AntigravityWorkflowMirror {
         # mangle any non-ASCII literal here into mojibake in every generated file.
         $stub = @(
           '---',
-          ('description: ' + $desc),
+          ('description: ' + (Get-AgDescription $desc)),
           'platforms: [opencode, antigravity]',
           '---',
           '',
           ('# /' + $f.BaseName + ' - launcher (GENERATED by sync-agents; do not edit)'),
           '',
           '**THIN LAUNCHER - carries NO steps of its own.** Generated because the command body exceeds',
-          "Antigravity's 12k workflow cap; a verbatim mirror would be silently dropped. Regenerated every sync.",
+          "Antigravity's 12,000-char workflow cap. A verbatim mirror would be TRUNCATED at the cap, not",
+          'rejected, so the agent would run on partial steps and look like it worked. Regenerated every sync.',
           '',
           ('**Execute now:** read `' + '.agents/commands/' + $f.Name + '` (relative to the repo root of the'),
           'workspace you are in) and follow it **END TO END**, passing any arguments through verbatim. If that',
@@ -431,31 +606,121 @@ function Sync-AntigravityWorkflowMirror {
           Write-Host ("WHATIF: would emit LAUNCHER for '{0}' (command over 11.5 KB) -> workflows/" -f $f.Name)
         }
       } else {
+        # Under the size cap: a verbatim mirror, EXCEPT that the description is cut to the menu
+        # budget (SCC-195). Untouched when it already fits, so most files still copy byte-for-byte.
+        $raw = [IO.File]::ReadAllText($f.FullName)
+        $out = Set-AgDescriptionLine $raw
         if (-not $WhatIf) {
-          Copy-Item -Path $f.FullName -Destination $dest -Force
+          if ($out -eq $raw) {
+            Copy-Item -Path $f.FullName -Destination $dest -Force
+          } else {
+            [IO.File]::WriteAllText($dest, $out, (New-Object Text.UTF8Encoding($false)))
+          }
         } else {
-          Write-Host ("WHATIF: would mirror '{0}' -> workflows/' for antigravity" -f $f.FullName)
+          Write-Host ("WHATIF: would mirror '{0}' -> workflows/' for antigravity{1}" -f `
+                      $f.FullName, $(if ($out -ne $raw) { ' (description cut to the menu budget)' } else { '' }))
         }
       }
       $mirrored += $f.Name
     }
   }
-  # Prune stale generated mirrors: any file in workflows/ that matches our allowed patterns but is NO LONGER mirrored.
-  # (Except the excluded ones which we intentionally don't mirror, but might legitimately exist in workflows/)
+  # Prune stale generated mirrors: anything in workflows/ that is NO LONGER mirrored and is not hand-owned.
+  # This is now the ONLY thing standing between workflows/ and a stale twin, so $excluded above is the whole
+  # safety list -- a file that belongs in workflows/ without a commands/ source MUST be named there.
   $stale = Get-ChildItem -Path $wfDir -Filter '*.md' -File -ErrorAction SilentlyContinue |
-    Where-Object { 
-      $name = $_.Name
-      $match = $false
-      foreach ($p in $allowed) { if ($name -like $p) { $match = $true; break } }
-      $match -and ($excluded -notcontains $name) -and ($mirrored -notcontains $name)
-    }
-    
+    Where-Object { ($excluded -notcontains $_.Name) -and ($mirrored -notcontains $_.Name) }
+
+
   if (-not $WhatIf) {
     $stale | ForEach-Object { Remove-Item $_.FullName -Force }
   } else {
     $stale | ForEach-Object { Write-Host ("WHATIF: would delete stale mirror '{0}' from workflows/'" -f $_.Name) }
   }
   return $mirrored
+}
+
+# One launcher-skill body, shared by the master emit and the claude-only cache emit. ASCII-only literals
+# (same reason as the Antigravity stubs: PS 5.1 would mangle non-ASCII into mojibake in every generated
+# file). The marker line is the ownership record: a SKILL.md WITHOUT it is hand-authored and this script
+# never overwrites or prunes it.
+function New-LauncherSkillStub {
+  param([System.IO.FileInfo]$CommandFile)
+  $desc = ''
+  foreach ($line in (Get-Content $CommandFile.FullName -TotalCount 30 -Encoding UTF8)) {
+    if ($line -match '^description:\s*(.+)$') { $desc = $Matches[1]; break }
+  }
+  if (-not $desc) {
+    $desc = ('Launcher for /' + $CommandFile.BaseName + ' - reads .agents/commands/' +
+             $CommandFile.Name + ' and follows it end to end.')
+  }
+  return @(
+    '---',
+    ('name: ' + $CommandFile.BaseName),
+    ('description: ' + $desc),
+    '---',
+    '',
+    ('# /' + $CommandFile.BaseName + ' - launcher (GENERATED by sync-agents; do not edit)'),
+    '',
+    '**THIN LAUNCHER - carries NO steps of its own.** The single source of truth is the command body;',
+    'this skill exists so the same / works in Claude and Codex, whose menus read skills, not commands.',
+    'Regenerated every sync - edit the command, not this file.',
+    '',
+    ('**Execute now:** read `' + '.agents/commands/' + $CommandFile.Name + '` (relative to the repo root of'),
+    'the workspace you are in) and follow it **END TO END**, passing any arguments through verbatim. If',
+    'that file does not exist in this workspace, STOP and tell the operator - never improvise the flow',
+    'from memory.',
+    ''
+  ) -join "`n"
+}
+
+# THE DOOR MODEL (SCC-66): one door per platform per command.
+#   claude      -> a launcher skill (Claude's menu reads .claude\skills; every SKILL.md is a typeable /command)
+#   codex       -> the SAME launcher skill, read natively from .agents\skills
+#   opencode    -> the command mirror in .opencode\commands (unchanged)
+#   antigravity -> the workflow mirror in .agents\workflows (unchanged)
+# Publishing commands into .claude\commands and ~/.codex/prompts is RETIRED - both double-doored every
+# command beside its skill. This stage generates the skill door for every claude/codex-eligible command:
+#   - eligible = `platforms:` includes claude or codex (absent = universal = eligible); -AP robot lane skipped;
+#   - a HAND-AUTHORED SKILL.md (no GENERATED marker) always wins - it already IS the door; never overwritten;
+#   - claude-ONLY commands are NOT emitted here: .agents\skills is Codex-visible by definition, so their
+#     launcher goes straight into the .claude\skills cache at the local stage instead;
+#   - stale GENERATED launchers (command deleted / renamed / no longer eligible) are pruned; hand skills never.
+function Sync-LauncherSkills {
+  param([string]$MasterDir, [switch]$WhatIf)
+  $cmdDir = Join-Path $MasterDir 'commands'
+  $skDir  = Join-Path $MasterDir 'skills'
+  if (-not $WhatIf) { New-Item -ItemType Directory -Force -Path $skDir | Out-Null }
+  $made = @()
+  foreach ($f in (Get-ChildItem -Path $cmdDir -Filter '*.md' -File)) {
+    if ($f.Name -match '-AP\.md$') { continue }
+    $pl = Get-CommandPlatforms $f.FullName
+    if (-not (($pl -contains 'claude') -or ($pl -contains 'codex'))) { continue }
+    if (($pl -contains 'claude') -and -not ($pl -contains 'codex')) { continue }
+    $dstDir    = Join-Path $skDir $f.BaseName
+    $skillFile = Join-Path $dstDir 'SKILL.md'
+    if ((Test-Path $skillFile) -and ((Get-Content $skillFile -Raw) -notmatch 'GENERATED by sync-agents')) {
+      continue
+    }
+    if (-not $WhatIf) {
+      New-Item -ItemType Directory -Force -Path $dstDir | Out-Null
+      [IO.File]::WriteAllText($skillFile, (New-LauncherSkillStub $f), (New-Object Text.UTF8Encoding($false)))
+    } else {
+      Write-Host ("WHATIF: would emit launcher skill '{0}' -> .agents/skills/" -f $f.BaseName)
+    }
+    $made += $f.BaseName
+  }
+  # Prune stale GENERATED launchers. Only a SKILL.md carrying the marker is a candidate - hand-authored
+  # skills (knowledge skills, the rich cicd-*/smh-* launchers) are structurally unreachable here.
+  foreach ($d in @(Get-ChildItem -Path $skDir -Directory -ErrorAction SilentlyContinue)) {
+    if ($made -contains $d.Name) { continue }
+    $sf = Join-Path $d.FullName 'SKILL.md'
+    if (-not (Test-Path $sf)) { continue }
+    if ((Get-Content $sf -Raw) -match 'GENERATED by sync-agents') {
+      if ($WhatIf) { Write-Host ("WHATIF: would prune stale generated skill '{0}'" -f $d.Name) }
+      else         { Remove-Item $d.FullName -Recurse -Force }
+    }
+  }
+  return ,$made
 }
 
 # Mirror the BMAD skills into Codex's machine-global skills cache (~/.codex/skills). Codex implements the
@@ -482,8 +747,7 @@ function Sync-CodexSkills {
     $tgt = Join-Path $Dst $s.Name
     if (-not $WhatIf) {
       New-Item -ItemType Directory -Force -Path $tgt | Out-Null
-      robocopy $s.FullName $tgt /MIR /NFL /NDL /NJH /NJS /NC /NS /XD node_modules | Out-Null
-      if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($($s.FullName) -> $tgt), rc=$LASTEXITCODE" }
+      Copy-Tree $s.FullName $tgt @('node_modules') @() -Mirror
     } else {
       Write-Host ("WHATIF: would mirror codex skill '{0}' -> '{1}'" -f $s.Name, $tgt)
     }
@@ -530,7 +794,11 @@ if ($Status) {
 # Regenerate the Antigravity workflow mirrors in the master BEFORE vendoring, so projects pick them up via
 # the (additive) .agents vendor. (Global command cache still mirrors commands/ separately, unchanged.)
 $agWf = Sync-AntigravityWorkflowMirror $Master -WhatIf:$WhatIf
-Write-Host "sync-agents: antigravity workflow mirror -> $($agWf.Count) sudo-* in .agents/workflows/"
+Write-Host "sync-agents: antigravity workflow mirror -> $($agWf.Count) commands in .agents/workflows/"
+
+# Regenerate the Claude+Codex skill doors in the master BEFORE the local copy stage picks them up.
+$genSk = Sync-LauncherSkills $Master -WhatIf:$WhatIf
+Write-Host "sync-agents: launcher skills -> $($genSk.Count) generated in .agents/skills/ (hand-authored skills untouched)"
 
 # --- local tool dirs ----------------------------------------------------------
 if (-not $GlobalsOnly) {
@@ -540,68 +808,22 @@ if (-not $GlobalsOnly) {
   # Rebuilt from scratch each run and swapped in at save time, so keys from an older layout (or an older
   # absolute-path scheme) age out instead of accumulating forever.
   $newLocal = @{}
-  # Project target → vendor master's .agents into the project ADDITIVELY (Sync-Dir = /E, no purge). The
-  # project's .agents is a HYBRID: master toolkit layered over project-OWNED rules\ + project skills\ that
-  # master does NOT have. Do NOT change this to /MIR or a blanket /PURGE — it deletes the project's own files.
-  if (-not $IsLobby) {
-    # Exclude bmad\ from the vendor: BMAD's module config is PROJECT-OWNED (each repo carries its own
-    # `project_name` etc.) and BMAD self-installs per project, so it must NOT be overwritten from master.
-    # This keeps it project-owned the same way rules\ already are (additive vendor, master never clobbers it).
-    Sync-Dir $Master (Join-Path $Target ".agents") @((Join-Path $Master 'bmad')) @($ManifestName) -WhatIf:$WhatIf
+  # Project vendoring RETIRED (thin model, 2026-08-07 — .agents/rules/project-law.md): projects carry
+  # tier-2 law only, and the non-lobby guard above makes this whole stage lobby-only. The manifest's
+  # `vendor` key stays in the schema (older manifests carry it) but nothing writes it anymore.
 
-    # THE BLIND-SPOT FIX. The vendor above is additive, so a master file that was deleted or renamed used to
-    # live on here forever — and since this vendored .agents is the SOURCE for this project's .claude/.opencode
-    # menus (see $src below), the ghost was re-published into the menus on every sync. Purge strictly what a
-    # previous run of this script wrote and the master has since dropped; project-owned rules\, project skills\,
-    # bmad\ and any project-authored command were never in the manifest and are structurally unreachable here.
-    $vendorNow    = @(Get-VendorFileSet $Master)
-    $vendorPurged = Invoke-ManifestPurge (Join-Path $Target ".agents") $manifest.vendor $vendorNow -WhatIf:$WhatIf
-    if ($vendorPurged.Count) {
-      Write-Host "sync-agents: purged $($vendorPurged.Count) retired vendor file(s): $($vendorPurged -join ', ')"
-      # A file purge empties a retired skill's folder but leaves the folder standing. Collect those husks so the
-      # vendor matches the master exactly; empty-only, so project-owned content is never in reach.
-      $husks = Remove-EmptyDirs (Join-Path $Target ".agents\skills") -WhatIf:$WhatIf
-      if ($husks) { Write-Host "sync-agents: pruned $husks empty skill folder(s) left by the purge" }
-    }
-    $manifest.vendor = $vendorNow
-
-    # Inventory (never delete) the project's OWN invocables, so local-only additions stay visible instead of
-    # being mistaken for drift later. These are legitimately outside the master — reported, not touched.
-    foreach ($sub in @('commands','workflows')) {
-      $d = Join-Path $Target ".agents\$sub"
-      if (-not (Test-Path $d)) { continue }
-      $own = @(Get-ChildItem $d -Filter *.md -File -ErrorAction SilentlyContinue |
-               Where-Object { $vendorNow -notcontains "$sub\$($_.Name)" } |
-               Select-Object -ExpandProperty Name)
-      if ($own.Count) { Write-Host ("sync-agents: .agents\{0}\ has {1} project-owned file(s), left alone: {2}" -f $sub, $own.Count, ($own -join ', ')) }
-    }
-    # Prune stale command-ghosts from the vendored workflows/: a file that is a master COMMAND but NOT a
-    # master workflow is a leftover from the old layout (commands used to live in workflows/). This is the
-    # ONLY purge on the vendored .agents and it is provably safe — it can never touch rules/, skills/, or a
-    # project-authored workflow (none of those are master commands). Everything else stays additive (/E).
-    $mWf  = @(Get-ChildItem (Join-Path $Master "workflows") -Filter *.md -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
-    $mCmd = @(Get-ChildItem (Join-Path $Master "commands")  -Filter *.md -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
-    $purged = 0
-    $ghosts = Get-ChildItem (Join-Path $Target ".agents\workflows") -Filter *.md -File -ErrorAction SilentlyContinue |
-      Where-Object { ($mWf -notcontains $_.Name) -and ($mCmd -contains $_.Name) }
-    if (-not $WhatIf) {
-      $ghosts | ForEach-Object { Remove-Item $_.FullName -Force; $purged++ }
-    } else {
-      $ghosts | ForEach-Object { Write-Host ("WHATIF: would delete stale vendor command-ghost '{0}'" -f $_.FullName); $purged++ }
-    }
-    if ($purged) { Write-Host "sync-agents: purged $purged stale workflows/ command-ghost(s) from the vendor" }
-  }
-
-  # Source of truth for this target's tool dirs: master for the lobby, vendored copy for a project.
-  $src    = if ($IsLobby) { $Master } else { Join-Path $Target ".agents" }
+  # Source of truth: the master (the only sanctioned target is the lobby).
+  $src    = $Master
   $cmdDir = Join-Path $src "commands"
 
   # Manifest keys are RELATIVE to the target, so the record stays valid if the repo is moved or re-cloned.
+  # .claude\commands publishing is RETIRED (SCC-66 - see THE DOOR MODEL above): Claude's menu reads skills,
+  # so command mirrors here double-doored every command beside its launcher skill. This run claims NOTHING,
+  # which makes Invoke-ManifestPurge retire everything previous runs wrote; files the sync never wrote are
+  # untouched, exactly like any other retirement. The manifest key stays so older records keep resolving.
   $claudeCmdKey = ".claude\commands"
   $claudeCmdDst = Join-Path $Target $claudeCmdKey
-  $cl = Sync-CommandDir $cmdDir $claudeCmdDst "claude" -SkipAP:$IsLobby -WhatIf:$WhatIf
-  # Second half of the blind-spot fix: a command the master RENAMED or DELETED stops being master-managed, so
-  # Sync-CommandDir's name test reclassifies it as "project-own, keep". The manifest remembers we wrote it.
+  $cl = @()
   $clGone = Invoke-ManifestPurge $claudeCmdDst $manifest.local[$claudeCmdKey] $cl -WhatIf:$WhatIf
   if ($clGone.Count) { Write-Host "sync-agents: purged $($clGone.Count) retired .claude command(s): $($clGone -join ', ')" }
   $newLocal[$claudeCmdKey] = $cl
@@ -611,13 +833,46 @@ if (-not $GlobalsOnly) {
   # sync (robocopy overwrites same-named files). Exclude bmad-* so BMAD stays the single source for its own skills.
   # Skills are the THIRD invocable surface, not just content: Claude Code publishes a slash command for every
   # .claude\skills\*\SKILL.md, so a RENAMED skill leaves a typeable ghost exactly the way a retired command file
-  # does (/sudo-write-epics-stories-sprint survived its own rename this way). Sync-Dir is additive robocopy, so
+  # does (/cicd-write-epics-stories-sprint survived its own rename this way). Sync-Dir is additive robocopy, so
   # the manifest carries the same ownership record here that it already carries for commands.
+  # Per-platform reach for the SKILL door (SCC-66): .agents\skills is Codex's NATIVE surface and
+  # .claude\skills is Claude's cache, so `platforms:` splits here rather than in Sync-CommandDir -
+  # a codex-only command's launcher must not ride the tree copy into Claude's menu, and a claude-only
+  # command's launcher never enters the master at all (it is emitted below, cache-only).
+  $doorCmds = @(Get-ChildItem -Path $cmdDir -Filter '*.md' -File | Where-Object { $_.Name -notmatch '-AP\.md$' })
+  $cxOnly = @(); $clOnly = @()
+  foreach ($f in $doorCmds) {
+    $pl = Get-CommandPlatforms $f.FullName
+    if (($pl -contains 'codex')  -and -not ($pl -contains 'claude')) { $cxOnly += $f.BaseName }
+    if (($pl -contains 'claude') -and -not ($pl -contains 'codex'))  { $clOnly += $f }
+  }
   $skillSrcDir = Join-Path $src "skills"
   $claudeSkKey = ".claude\skills"
   $claudeSkDst = Join-Path $Target $claudeSkKey
-  Sync-Dir $skillSrcDir $claudeSkDst @('bmad-*') -WhatIf:$WhatIf
-  $sk     = Get-SkillDirSet $skillSrcDir
+  Sync-Dir $skillSrcDir $claudeSkDst (@('bmad-*') + $cxOnly) -WhatIf:$WhatIf
+  # claude-only launchers, emitted straight into the cache - and recorded in the manifest set below, so a
+  # later retirement purges them like any other sync-written skill. A hand-authored SKILL.md wins here too.
+  $clOnlyMade = @()
+  foreach ($f in $clOnly) {
+    $dstDir    = Join-Path $claudeSkDst $f.BaseName
+    $skillFile = Join-Path $dstDir 'SKILL.md'
+    if ((Test-Path $skillFile) -and ((Get-Content $skillFile -Raw) -notmatch 'GENERATED by sync-agents')) { continue }
+    if (-not $WhatIf) {
+      New-Item -ItemType Directory -Force -Path $dstDir | Out-Null
+      [IO.File]::WriteAllText($skillFile, (New-LauncherSkillStub $f), (New-Object Text.UTF8Encoding($false)))
+    } else {
+      Write-Host ("WHATIF: would emit claude-only launcher skill '{0}' -> .claude/skills/" -f $f.BaseName)
+    }
+    $clOnlyMade += $f.BaseName
+  }
+  # ⛔ PLAIN assignment, and filter the VARIABLE - never pipe Get-SkillDirSet directly, and never wrap the
+  # call in @(). It returns `,@(...)` (the wrapper idiom that stops an empty/1-element array from unrolling),
+  # and only a bare assignment unrolls that wrapper back into the real array. `@(Get-SkillDirSet ...)` yields
+  # a 1-element array whose single item IS the inner array, and piping hands Where-Object that same single
+  # object - either way $now then matches no name and the manifest purge proposes deleting all 32 skill dirs
+  # it ever wrote, hand-authored ones included. Caught by -WhatIf, twice, before it ran.
+  $masterSk = Get-SkillDirSet $skillSrcDir
+  $sk       = @(@($masterSk | Where-Object { $cxOnly -notcontains $_ }) + $clOnlyMade)
   $skGone = Invoke-ManifestPurgeDir $claudeSkDst $manifest.local[$claudeSkKey] $sk -WhatIf:$WhatIf
   if ($skGone.Count) { Write-Host "sync-agents: purged $($skGone.Count) retired .claude skill(s): $($skGone -join ', ')" }
   $newLocal[$claudeSkKey] = $sk
@@ -628,9 +883,17 @@ if (-not $GlobalsOnly) {
   $ocGone = Invoke-ManifestPurge $ocCmdDst $manifest.local[$ocCmdKey] $oc -WhatIf:$WhatIf
   if ($ocGone.Count) { Write-Host "sync-agents: purged $($ocGone.Count) retired .opencode command(s): $($ocGone -join ', ')" }
   $newLocal[$ocCmdKey] = $oc
-  Sync-Dir (Join-Path $src "opencode-agents") (Join-Path $Target ".opencode\agent") -WhatIf:$WhatIf
+  # -ExcludeFiles INDEX.md: opencode's agent loader treats EVERY .md in this dir as an agent definition, so
+  # the folder's own map file was being registered as a selectable agent named "INDEX" (mode `all`) whose
+  # entire prompt is a list of its sibling files. It showed up in the agent picker in all six projects that
+  # have a .opencode. The command surface never had this bug because .agents/commands/INDEX.md declares
+  # `platforms: []` and Sync-CommandDir filters on that — but Sync-Dir is a plain tree copy with no such
+  # filter, so the exclusion has to be stated here. check_maps.py never descends into .opencode, so the
+  # master's INDEX.md still satisfies the map lint; only the vendored copy is suppressed.
+  Sync-Dir (Join-Path $src "opencode-agents") (Join-Path $Target ".opencode\agent") -ExcludeFiles 'INDEX.md' -WhatIf:$WhatIf
 
-  Write-Host "sync-agents: .claude\commands   -> $($cl.Count) cmds"
+  Write-Host "sync-agents: .claude\commands   -> RETIRED (SCC-66; Claude's door is .claude\skills)"
+  Write-Host "sync-agents: .claude\skills     -> $($sk.Count) skill dirs ($($clOnlyMade.Count) claude-only launcher(s))"
   Write-Host "sync-agents: .opencode\commands -> $($oc.Count) cmds"
 
   # Record what THIS run wrote, so the next one can retire it. Written last: a mid-run failure leaves the
@@ -688,20 +951,20 @@ if (-not $GlobalsOnly) {
 if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
   $GlobalCmdSrc = Join-Path $Master "commands"
   $caches = @(
-    @{ Name = 'opencode';    Platform = 'opencode';    Path = (Join-Path $env:USERPROFILE ".config\opencode\commands") },
-    @{ Name = 'antigravity'; Platform = 'antigravity'; Path = (Join-Path $env:USERPROFILE ".gemini\antigravity\global_workflows") },
-    # Codex custom prompts (invoked /prompts:<name>). Global-only -- Codex has no repo-level prompts dir; its
-    # repo surface is AGENTS.md + .agents/skills (already handled). bmad-* skills go to ~/.codex/skills below.
-    @{ Name = 'codex';       Platform = 'codex';       Path = (Join-Path $env:USERPROFILE ".codex\prompts") }
+    @{ Name = 'opencode';    Platform = 'opencode';    Path = (Join-Path $UserHome ".config\opencode\commands") },
+    @{ Name = 'antigravity'; Platform = 'antigravity'; Path = (Join-Path $UserHome ".gemini\antigravity\global_workflows") }
   )
   foreach ($c in $caches) {
     try {
       if (-not $WhatIf) {
         New-Item -ItemType Directory -Force -Path $c.Path -ErrorAction SilentlyContinue | Out-Null
+        # Guard the REAL run only. Under -WhatIf the dir was deliberately not created, so this test
+        # would fail on every not-yet-existing cache and report a fake "broken junction" on a fresh
+        # machine - which is exactly the state a dry run is most often used to inspect.
+        if (-not (Test-Path $c.Path)) { throw "path not writable (broken junction or missing target?)" }
       } else {
         Write-Host ("WHATIF: would ensure global cache dir '{0}'" -f $c.Path)
       }
-      if (-not (Test-Path $c.Path)) { throw "path not writable (broken junction or missing target?)" }
     } catch {
       Write-Warning ("sync-agents: SKIPPED {0} global cache '{1}' - {2}" -f $c.Name, $c.Path, $_.Exception.Message)
       continue
@@ -711,44 +974,29 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
   }
   Write-Host "sync-agents: (global caches mirror-exact; bmad-* preserved; restart opencode to pick up)"
 
+  # Codex prompts cache RETIRED (SCC-66): /prompts:<name> is Codex's deprecated door and double-doored
+  # every command beside the native skill in .agents\skills. Purge our prompts once per machine; bmad-*
+  # stays BMAD's own, exactly as in the mirror caches above.
+  $codexPrompts = Join-Path $UserHome ".codex\prompts"
+  if (Test-Path $codexPrompts) {
+    $stalePrompts = @(Get-ChildItem -Path $codexPrompts -Filter '*.md' -File -ErrorAction SilentlyContinue |
+                      Where-Object { $_.Name -notmatch '^bmad-' })
+    if (-not $WhatIf) { $stalePrompts | ForEach-Object { Remove-Item $_.FullName -Force } }
+    else { $stalePrompts | ForEach-Object { Write-Host ("WHATIF: would purge retired codex prompt '{0}'" -f $_.Name) } }
+    if ($stalePrompts.Count) { Write-Host ("sync-agents: codex prompts cache RETIRED - purged {0} prompt(s); Codex's door is .agents/skills" -f $stalePrompts.Count) }
+  }
+
   # Codex reads Agent Skills natively but NOT .claude/skills (where BMAD installs). Mirror the bmad-* skills
   # into ~/.codex/skills so BMAD is reachable from Codex via /skills (Daniel: "we use bmad in everything").
-  $codexSkillsDst = Join-Path $env:USERPROFILE ".codex\skills"
+  $codexSkillsDst = Join-Path $UserHome ".codex\skills"
   $bmadSkillSrc   = Join-Path $HomeRoot ".claude\skills"
   $codexSkillCount = Sync-CodexSkills $bmadSkillSrc $codexSkillsDst -WhatIf:$WhatIf
   Write-Host ("sync-agents: codex skills -> {0} bmad-* mirrored  ({1})" -f $codexSkillCount, $codexSkillsDst)
 }
 
-# --- Fresh living-template drift check (lobby sync only) ----------------------
-# Fresh_Workspace_BMAD is the skeleton new projects clone from. This sync already vendors .agents/ into it
-# (additive, above), but the FRONT DOOR + docs are per-workspace and are NOT synced (copying them would wipe
-# the skeleton's own content). So instead of a blind copy, FLAG when Fresh's front-door pattern has drifted
-# from the lobby — the agent reconciles it by hand (living-template-sync rule), keeping it generic.
-if ($IsLobby -and -not $GlobalsOnly) {
-  $fresh = Join-Path $HomeRoot "Projects\Fresh_Workspace_BMAD"
-  if (Test-Path $fresh) {
-    $warn = @()
-    if (-not (Test-Path (Join-Path $fresh "docs\gitnexus.md"))) { $warn += "missing docs/gitnexus.md (GitNexus own-file pattern)" }
-    $fa = Join-Path $fresh "AGENTS.md"
-    if (Test-Path $fa) {
-      $t = Get-Content $fa -Raw
-      if ($t -notmatch 'read that FIRST') { $warn += "AGENTS.md is missing the reading-order rule" }
-      if ($t -match 'gitnexus:start')     { $warn += "AGENTS.md still inlines a GitNexus block (should be docs/gitnexus.md + pointer)" }
-    } else { $warn += "no root AGENTS.md" }
-    $lws = Join-Path $HomeRoot "docs\workspace-standard.md"
-    $fws = Join-Path $fresh "docs\workspace-standard.md"
-    if ((Test-Path $lws) -and (Test-Path $fws)) {
-      if ((Get-FileHash $lws).Hash -ne (Get-FileHash $fws).Hash) { $warn += "docs/workspace-standard.md differs from the lobby canon" }
-    } elseif (-not (Test-Path $fws)) { $warn += "missing docs/workspace-standard.md" }
-    if ($warn.Count) {
-      Write-Warning "sync-agents: Fresh_Workspace_BMAD (living template) has drifted from the lobby front-door pattern:"
-      $warn | ForEach-Object { Write-Warning ("  - {0}" -f $_) }
-      Write-Warning "  reconcile by hand per the living-template-sync rule (keep generic; placeholders where a real project fills in)."
-    } else {
-      Write-Host "sync-agents: Fresh living-template check OK (front-door pattern current)."
-    }
-  }
-}
+# (Fresh living-template drift check RETIRED 2026-08-07: Fresh_Workspace_BMAD is frozen — the clone
+# source is now the sudo-project-skeleton repo, and lobby canon changes no longer propagate to Fresh.
+# The living-template-sync rule is rewritten against the skeleton in the centralization epic's P6.)
 
 Write-Host "sync-agents: done. (Edit the master .agents/ - never the copies - and re-run to propagate.)"
 exit 0

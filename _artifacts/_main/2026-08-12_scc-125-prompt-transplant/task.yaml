@@ -1,0 +1,5 @@
+task_key: SCC-125
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-125-prompt-transplant
+close_command: smh-close-task-merge-tree
+secondary_repos: []

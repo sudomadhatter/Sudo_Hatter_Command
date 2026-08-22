@@ -1,0 +1,5 @@
+task_key: SCC-127
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-127-verify-wave
+close_command: smh-close-task-merge-tree
+secondary_repos: []

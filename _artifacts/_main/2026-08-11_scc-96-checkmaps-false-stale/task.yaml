@@ -1,0 +1,6 @@
+task_key: SCC-96
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-96-checkmaps-false-stale
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+found_by: the combined gate on main after landing SCC-90/89/94/88/83

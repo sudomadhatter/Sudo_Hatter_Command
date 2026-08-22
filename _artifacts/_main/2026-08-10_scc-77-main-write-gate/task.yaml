@@ -1,0 +1,5 @@
+task_key: SCC-77
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-77-main-write-gate
+close_command: smh-close-task-merge-tree
+secondary_repos: []        # AGY needs the same gate — its own AVCH ticket, per the cross-repo rule

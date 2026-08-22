@@ -1,0 +1,39 @@
+{
+  "v": 1,
+  "task": "SCC-163",
+  "sha": "eb9030bec3f482b7f1b9c9128fa3a439a7877de2",
+  "tip": "d5f78068743730ff3cd4eed1ac9e74fe9ef1ea30",
+  "trigger": "close-out",
+  "when": "2026-08-15T20:27:30-05:00",
+  "changes": [
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/git-hooks/pre-push-merge-backstop.sh",
+    ".agents/scripts/jira_feed.py",
+    ".agents/scripts/tests/fixtures/avch58_your_actions.md",
+    ".agents/scripts/tests/test_git_hooks.py",
+    ".agents/scripts/tests/test_jira_feed.py",
+    "_artifacts/_main/2026-08-15_scc-163-gate-hardening/gates/suite.json",
+    "_artifacts/_main/2026-08-15_scc-163-gate-hardening/implementation_plan.md",
+    "_artifacts/_main/2026-08-15_scc-163-gate-hardening/task.yaml",
+    "_artifacts/_main/2026-08-15_scc-163-gate-hardening/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-15_scc-163-gate-hardening/walkthrough.md",
+    "verdict": "CONCERNS @ eb9030b",
+    "gates": {
+      "suite": "pass@a98682e"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "CONCERNS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}

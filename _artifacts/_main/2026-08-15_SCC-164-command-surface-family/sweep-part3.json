@@ -1,0 +1,96 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_mutation_sweep.py"
+  ],
+  "mutants": [
+    {
+      "id": "M1 drop the pinned-sha-vs-HEAD commit check (a mutant may reach history)",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "    landed = git([\"diff\", \"--quiet\", pre_sha, \"HEAD\", \"--\", *files], repo)\n    if landed.returncode != 0:",
+      "mutated": "    landed = git([\"diff\", \"--quiet\", pre_sha, \"HEAD\", \"--\", *files], repo)\n    if False:",
+      "case": "K2e",
+      "block": "K2 \u00b7"
+    },
+    {
+      "id": "M2 drop the dirty-start refusal (SCC-144's clause)",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "    dirty = [f for f in files if file_is_dirty(repo, f)]\n    if dirty:",
+      "mutated": "    dirty = [f for f in files if file_is_dirty(repo, f)]\n    if False:",
+      "case": "K3a",
+      "block": "K3 \u00b7"
+    },
+    {
+      "id": "M3 drop the empty-table refusal (F21)",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "    if not mutants:\n        return {}, (f\"{path}: the mutant table is EMPTY.",
+      "mutated": "    if False:\n        return {}, (f\"{path}: the mutant table is EMPTY.",
+      "case": "K3d",
+      "block": "K3 \u00b7"
+    },
+    {
+      "id": "M4 read ANY non-zero exit as a kill (drop the harness's exit 3)",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "    if code == 3:\n        return False, (\"SWEEP ERROR",
+      "mutated": "    if False:\n        return False, (\"SWEEP ERROR",
+      "case": "K2d",
+      "block": "K2 \u00b7"
+    },
+    {
+      "id": "M5 drop the declared-case attribution (something died, so call it killed)",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "    if case.lower() not in failed[-1].lower():",
+      "mutated": "    if False:",
+      "case": "K2c",
+      "block": "K2 \u00b7"
+    },
+    {
+      "id": "M6 accept a NON-UNIQUE anchor (n != 1 -> n < 1)",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "        if n != 1:",
+      "mutated": "        if n < 1:",
+      "case": "K3e2",
+      "block": "K3 \u00b7"
+    },
+    {
+      "id": "M7 restore only in the finally, not after each mutant",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "            restore()                      # immediately, so the next mutant starts clean",
+      "mutated": "            pass                           # immediately, so the next mutant starts clean",
+      "case": "K3f",
+      "block": "K3 \u00b7"
+    },
+    {
+      "id": "M8 stop after the scoped runs - skip the full unfiltered run (8681d83)",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "    for cmd in [list(x) for x in {tuple(m.get(\"test\") or data[\"test\"]) for m in mutants}]:",
+      "mutated": "    for cmd in []:",
+      "case": "K4a",
+      "block": "K4 \u00b7"
+    },
+    {
+      "id": "M9 attribute the kill to ANY FAILED line, not the runner's own last one",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "    if case.lower() not in failed[-1].lower():",
+      "mutated": "    if case.lower() not in out.lower():",
+      "case": "K2c",
+      "block": "K2 \u00b7"
+    },
+    {
+      "id": "M10 trust the runner's exit code alone (skip the FAILED: line requirement)",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "    if not failed:\n        return False, (f\"SWEEP ERROR - exit {code} with no `FAILED:` line, so the kill cannot \"\n                       \"be attributed to a named case\")",
+      "mutated": "    if False:\n        return False, (f\"SWEEP ERROR - exit {code} with no `FAILED:` line, so the kill cannot \"\n                       \"be attributed to a named case\")",
+      "case": "K2f",
+      "block": "K2 \u00b7"
+    },
+    {
+      "id": "M11 skip the did-it-APPLY check (a stale mutation reads as a fresh kill)",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "            if src.read_text(encoding=\"utf-8\") == before:",
+      "mutated": "            if False:",
+      "case": "K3f",
+      "block": "K3 \u00b7"
+    }
+  ]
+}

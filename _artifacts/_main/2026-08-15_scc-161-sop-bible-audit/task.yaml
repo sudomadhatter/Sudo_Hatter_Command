@@ -1,0 +1,8 @@
+task_key: SCC-161
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-161-sop-bible-audit
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# Doc-only lane, operator-directed 2026-08-15: "create a ticket, make the edits, push it" — the
+# audit + rebuild of docs/_scc_sops_prds/workflows_testing_SOP.md. No plan-first ceremony by the
+# operator's word ("we are editing a doc thats all"); the lightweight lane it argues for is SCC-162.

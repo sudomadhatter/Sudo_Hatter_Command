@@ -1,7 +1,7 @@
 ﻿# ──────────────────────────────────────────────
 # Sudo_Hatter_Command — TDAD Orchestration Tools
 # Test-Driven Agentic Development (TDAD) Pipeline
-# Used by: /autopilot_claude workflow
+# Used by: /cicd-autopilot-claude workflow
 # ──────────────────────────────────────────────
 
 # ─────────────────────────────────

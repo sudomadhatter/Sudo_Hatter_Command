@@ -50,7 +50,7 @@ def check_commands(lobby: Path, rep: wf.Report) -> None:
 
     if index_text:
         # Dead pointers — LINKS only. INDEX prose legitimately names files that live
-        # elsewhere (`_my_resources/.../sudo-adviser-board-REFERENCE.md`) and records
+        # elsewhere (`docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md`) and records
         # historical renames (`sprint-dependency-map.md` -> ...); a bare-filename scan
         # reads those as missing commands.
         for target in set(_LINK_RE.findall(index_text)):
@@ -73,8 +73,53 @@ _RULE_POINTERS = (
                 r"git checkout -b|git branch -[Dd]\b")),
     ("worktree-per-story", "worktree",
      re.compile(r"git worktree\b")),
-    ("sudo-target-resolution", "target-resolving",
+    ("smh-target-resolution", "target-resolving",
      re.compile(r"^#+\s*Step 0\b.*(?:target|project)", re.I | re.M)),
+    # SCC-170. Keyed on the machinery the rule OWNS - the `riders:` / `landing:` manifest
+    # keys - not on the word "consolidate". A phrase-keyed row names the files that really
+    # drive the mechanism; a concept-keyed one ("one worktree") matched six unrelated cicd
+    # bodies and none of the three that matter (audit F26).
+    # ⛔ `landing_mode`, NOT `landing`: the key was renamed because `task.yaml` already has a
+    # different `landing:` nested under `secondary_repos:`. `landing\s*:` could never match
+    # `landing_mode: partial`, so this third arm was DEAD - the row fired only through its two
+    # `riders:` arms, and a body documenting the partial-landing contract without the literal
+    # `riders:` was silently exempt from the pointer requirement.
+    ("work-consolidation", "consolidating",
+     re.compile(r"^\s*riders\s*:|`riders:|landing_mode\s*:\s*partial", re.M)),
+    # SCC-176. Two arms, both zero-hit on the tree before this part landed: the trigger
+    # CONDITION as the three plan/audit commands state it, and the command that answers it.
+    # ⛔ "port" as a step verb was the first sketch and was thrown out by audit F26 - it matched
+    # SEVEN unrelated bodies (`port 3100`, `--port`, "Port the rule verbatim", two AP twins) and
+    # NONE of the three commands the rule is for, so RED would have named the wrong files and the
+    # tip could never reach 0/0. Same lesson as the row above: key on the machinery, never the
+    # concept. The second arm exists so a command that words the trigger differently but still
+    # tells an agent to diff two copies is not silently exempt.
+    ("port-checklist", "porting",
+     re.compile(r"exists in more than one repo|git diff --no-index", re.I)),
+    # SCC-205. A command that PRODUCES findings must point at the rule that says how to
+    # dispose of them - the three-question test (`code-standards.md` §6.5). Before this row
+    # the ruling lived in ONE review-engine step, owned by no rule, cited by none of the
+    # audit commands, and every one of them still described an unbounded fix queue.
+    #
+    # ⛔ Keyed on the MACHINERY, never the concept. `disposition` / `finding` as words match
+    # half the tree; what marks a finding-producer is the shape it EMITS - the triage
+    # vocabulary it classifies into, or the verdict ladder it grades findings onto.
+    #
+    # ⛔ FOUR ARMS, one per vocabulary actually in use, each measured against the tree before
+    # it was added. The first cut shipped TWO arms and review measured one of them DEAD (zero
+    # hits tree-wide) and the other keyed on an EM-DASH - so `cicd-code-review.md`, which
+    # writes `- **FAIL** = ...`, was exempt on punctuation alone. That is the defect this very
+    # row's comment cites from `work-consolidation`: a dead arm inside a live row is a check
+    # that cannot fail, and on a ticket about twin PARITY it held one twin and freed the other.
+    ("code-standards", "producing findings", re.compile(
+        # the clean-code audits' triage vocabulary (backticks optional)
+        r"`?applied`?\s*/\s*`?deferred`?\s*/\s*`?dismissed`?"
+        # a verdict ladder row - ANY punctuation after the label, never just an em-dash
+        r"|^\s*-\s*\*\*FAIL\*\*\s*[-—–=:]"
+        # the fast lane's triage vocabulary
+        r"|patch\s*/\s*defer\s*/\s*reject"
+        # the pre-dev audits' verdict
+        r"|\bNO-GO\b", re.M)),
 )
 
 
@@ -84,7 +129,11 @@ def check_rule_pointers(lobby: Path, rep: wf.Report) -> None:
     mojibake case, where the backticks mean "this is what NOT to write"."""
     cmd_dir = lobby / ".agents" / "commands"
     for f in sorted(cmd_dir.glob("*.md")):
-        if f.name == "INDEX.md":
+        # ⛔ `-AP` twins are ABANDONED and FROZEN (SCC-209) - their own marker says "do not
+        # port law into it". Demanding a NEW pointer from them would force an edit to a file
+        # this repo has declared unmaintained, which is the trap SCC-209 removed from the
+        # twin-freshness check; re-creating it here would just move it.
+        if f.name == "INDEX.md" or f.stem.endswith("-AP"):
             continue
         text = wf.read_text(f)
         for rule, label, pattern in _RULE_POINTERS:
@@ -94,93 +143,183 @@ def check_rule_pointers(lobby: Path, rep: wf.Report) -> None:
                          f"`.agents/rules/{rule}.md`")
 
 
-def _last_commit_ts(path: Path, cwd: Path) -> int | None:
-    r = wf.git(["log", "-1", "--format=%ct", "--", str(path)], cwd)
-    out = r.stdout.strip()
-    return int(out) if r.returncode == 0 and out.isdigit() else None
+# SCC-128: `bmad-code-review` (the vendor skill) and `bmad_code_review_sudo_fix` (the
+# adapter rule that patched it) are RETIRED - the house `code-review-engine` skill replaces
+# both. This guard is permanent rather than a one-time sweep because BMAD's installer
+# re-emits the vendor skill on every regen: the file comes back on its own, so the thing
+# worth policing is not the skill's existence but whether any of OUR surfaces still routes
+# work to it.
+#
+# Scope is every AUTHORED routing surface under `.agents/`: commands (what an operator
+# invokes), rules (what an agent loads mid-run), skills (the door Claude and Codex enter
+# through), workflows (Antigravity's door) and opencode-agents (the opencode subagent
+# definitions - `opus-reviewer.md` loaded the retired rule BY PATH, so this is the surface
+# the regression actually lived on).
+#
+# ⛔ The first draft excluded `workflows/` on the reasoning that it holds generated mirrors
+# which follow their command source. That is true of `workflows/<command>.md` and FALSE of
+# `workflows/INDEX.md`, which sync-agents lists in its `$excluded` set - hand-written router
+# prose with no command upstream, so it follows nothing and no regeneration can fix it. It
+# was carrying a live stale pointer while this guard reported the toolkit clean. A mirror
+# being scanned twice is harmless noise; a hand-owned router being scanned never is a hole.
+#
+# Still out of scope, each for a reason that is about ownership rather than convenience:
+# `.agents/bmad/` (vendor manifests, regenerated, never hand-edited), `_artifacts/` (history
+# that must stay readable exactly as it was written), and the machine-global/`.opencode/`,
+# `.claude/` copies (byte mirrors of masters that ARE guarded here).
+_RETIRED_REVIEW_RE = re.compile(r"bmad[-_]code[-_]review", re.I)
+_RETIRED_SURFACES = ("commands", "rules", "skills", "workflows", "opencode-agents")
 
 
-def check_ap_twins(lobby: Path, rep: wf.Report) -> None:
-    """_AP twins drift from their primaries (memory: sudo-commands-have-ap-twins-that-drift).
+def check_retired_review_surface(lobby: Path, rep: wf.Report) -> None:
+    """No routing surface may point at the retired vendor review skill (SCC-128).
 
-    A twin is NOT a step-for-step mirror — it is a single-pass headless adaptation with its
-    own prose headings, so comparing step sequences only ever produces noise. The signals
-    that actually mean drift: the twin stopped pointing at its primary, or the primary was
-    committed AFTER the twin (someone fixed one side only)."""
-    cmd_dir = lobby / ".agents" / "commands"
-    for ap in sorted(cmd_dir.glob("*_AP.md")):
-        primary = cmd_dir / (ap.stem[:-3] + ".md")
-        if not primary.is_file():
-            rep.err("ap-twins", f"{ap.name}: primary {primary.name} missing")
+    Both spellings are caught on purpose: `bmad-code-review` is the skill, and
+    `bmad_code_review_sudo_fix` was the rule that adapted it - the second half is the one
+    that survives as a dangling file path an agent is told to open. Case-insensitive
+    because the half that varies is the half a human retypes.
+
+    The message carries the path relative to the lobby, never the bare filename: `SKILL.md`
+    and `INDEX.md` each name dozens of files here, and a gate that blocks a close-out
+    without saying WHICH file to open is a gate people learn to route around.
+    """
+    for sub in _RETIRED_SURFACES:
+        root = lobby / ".agents" / sub
+        if not root.is_dir():
             continue
-        # Match the STEM: twins name the primary bare in their title/description
-        # (`# /sudo-code-review_AP - ...`); only some use the `@.../<name>.md` path form.
-        # This fires when the primary is RENAMED out from under the twin.
-        if primary.stem not in wf.read_text(ap):
-            rep.warn("ap-twins", f"{ap.name} no longer references {primary.stem}")
-        ap_ts, pr_ts = _last_commit_ts(ap, lobby), _last_commit_ts(primary, lobby)
-        if ap_ts and pr_ts and pr_ts > ap_ts:
-            days = round((pr_ts - ap_ts) / 86400, 1)
-            rep.warn("ap-twins",
-                     f"{primary.name} committed {days}d AFTER {ap.name} - diff the twin")
+        for f in sorted(root.rglob("*.md")):
+            # rglob yields DIRECTORIES whose name ends in `.md` too, and read_text's
+            # errors="replace" covers decoding, not I/O - either would take the whole
+            # linter down with a traceback instead of a finding.
+            if not f.is_file():
+                continue
+            try:
+                text = wf.read_text(f)
+            except OSError as exc:
+                rep.warn("retired-surface", f"{f.relative_to(lobby)}: unreadable ({exc})")
+                continue
+            if _RETIRED_REVIEW_RE.search(text):
+                rep.err("retired-surface",
+                        f"{f.relative_to(lobby)}: references the RETIRED vendor review "
+                        f"surface - route it to the `code-review-engine` skill instead "
+                        f"(SCC-128)")
+
+
+# SCC-205 - the WINDOWS-ONLY invocation. This system is driven from two machines and the venv
+# bin dir is the one path that differs on every single tool call. Five authored surfaces
+# hardcoded the Windows spelling, the worst being a close-out probe on the DESTRUCTIVE path
+# which, on the Mac, reported a destroyed shared venv that was never touched.
+#
+# ⛔ FILES LEGITIMATELY NAME THE WINDOWS PATH THREE WAYS, and telling them apart is the whole
+# difficulty: as the Windows ARM of a conditional, as PROSE explaining the rule, and as DATA
+# (an allow-list key, a fixture). The first two carry a real POSIX path nearby and are
+# exempted by that. The third cannot be - a path in a data structure has no POSIX twin - so it
+# takes the file-level opt-out below, which is auditable and carries its reason in the file.
+# ⛔ The off-switch is a real `.venv/bin` path, NEVER the bare word "POSIX": review measured
+# that a surviving trailing comment (`# POSIX first, then Windows`) exempted a pure Windows
+# hardcode after its conditional's first clause was deleted. A guard whose off-switch is a word
+# in prose is switched off by prose - and this comment block itself proved it, by tripping the
+# check on its own explanatory text.
+BOTH_MACHINES_OPT_OUT = "wf-lint: allow-windows-venv"
+_WINDOWS_VENV = re.compile(r"\.venv[\\/]+Scripts\b")
+# ⛔ THE OFF-SWITCH IS A REAL POSIX PATH, NEVER THE WORD "POSIX". The first cut also accepted
+# the bare word and any `bin/`, which review measured as a hole: delete the first clause of
+# `VENV=.venv/bin; [ -d "$VENV" ] || VENV=.venv/Scripts   # POSIX first, then Windows` and the
+# surviving trailing COMMENT still exempted a pure Windows hardcode. A guard whose off-switch is
+# a word in prose is switched off by prose.
+_POSIX_AWARE = re.compile(r"\.venv[\\/]+bin\b")
+# How far to look for the POSIX arm. ±1 line was measured too narrow: it misses a PowerShell
+# probe whose brace sits on its own line and a bash conditional whose arms are split by comments
+# - both CORRECT code, both flagged. Widening trades a little precision for not punishing the
+# author who did the right thing, which is the failure mode that gets a guard disarmed.
+_WINDOW = 4
+
+
+def check_both_machines(lobby: Path, rep: wf.Report) -> None:
+    """A hardcoded Windows venv path with no POSIX arm near it (`code-standards` §5/§6).
+
+    This system is driven from a Mac AND a PC, and the venv bin dir is the one path that
+    differs on every single tool call: `Scripts/` on Windows, `bin/` on POSIX. Five authored
+    surfaces hardcoded the Windows form (SCC-205), the worst being a close-out probe that
+    guards an irreversible delete and, on the Mac, reported a destroyed shared venv that was
+    never touched.
+
+    ⛔ Scans the AUTHORED masters only. Generated mirrors (`.claude/skills`, `.opencode`,
+    `.agents/workflows`) are byte copies whose fix is a re-sync, never an edit - flagging them
+    would ask the reader to edit a file the next sync overwrites. Door parity is what keeps
+    those honest, and it is a different check.
+    """
+    roots = [lobby / ".agents" / sub for sub in ("commands", "rules", "skills", "scripts")]
+    for root in roots:
+        if not root.is_dir():
+            continue
+        # ⛔ `*` not `*.md`: "a bare `python` in a committed script" is the same rule, and
+        # `.agents/scripts` is where a committed script lives. Suffix-filtered below.
+        for f in sorted(root.rglob("*")):
+            # ⛔ BOTH GUARDS ARE LOAD-BEARING, and the sibling check 30 lines below carries
+            # them with the same comment. `rglob` yields DIRECTORIES whose name ends in `.md`,
+            # and `read_text`'s errors="replace" covers DECODING, not I/O - a dangling symlink
+            # (this repo links gitignored assets into every worktree) raises. Either would take
+            # the whole linter down with a traceback instead of a finding, and this check runs
+            # FIRST, so it would take the defensively-written ones with it.
+            if not f.is_file() or f.suffix.lower() not in (".md", ".py", ".ps1", ".sh"):
+                continue
+            try:
+                text = wf.read_text(f)
+            except OSError as exc:
+                rep.warn("both-machines", f"{f.relative_to(lobby)}: unreadable ({exc})")
+                continue
+            if BOTH_MACHINES_OPT_OUT in text:
+                continue
+            lines = text.split("\n")
+            for i, line in enumerate(lines):
+                if not _WINDOWS_VENV.search(line):
+                    continue
+                window = "\n".join(lines[max(0, i - _WINDOW):i + _WINDOW + 1])
+                if _POSIX_AWARE.search(window):
+                    continue
+                rep.warn("both-machines",
+                         f"{f.relative_to(lobby)}:{i + 1}: hardcodes the WINDOWS venv path "
+                         f"(`.venv/Scripts`) with no POSIX arm near it - it dies on the "
+                         f"Mac. Resolve it: `VENV=backend/.venv/bin; [ -d \"$VENV\" ] || "
+                         f"VENV=backend/.venv/Scripts` (code-standards §6)")
+
+
+# Vendor BMAD bridges keep their upstream names and take no prefix. This list is
+# CLOSED: widening it is how the convention dies one exception at a time. A new
+# command belongs to cicd- (one project, never the lobby) or smh- (may act on the
+# lobby); sentry- is the reserved incident family.
+VENDOR_COMMANDS = frozenset({
+    "INDEX", "analyst", "architect", "bmad-help", "bmad-master", "dev", "pm", "qa", "sm",
+    "tea", "tech-writer", "testarch-atdd", "testarch-automate", "testarch-ci",
+    "testarch-framework", "testarch-nfr", "testarch-test-design", "testarch-test-review",
+    "testarch-trace", "ux-designer",
+})
+_FAMILY_RE = re.compile(r"^(cicd|smh|sentry)-")
+
+
+def check_naming_law(lobby: Path, rep: wf.Report) -> None:
+    """Every command master declares its family in its name (SCC-63).
+
+    The prefix is load-bearing, not cosmetic: `cicd-*` binds smh-target-resolution.md
+    (exactly ONE project, never the lobby) while `smh-*` may act on the repo you are
+    standing in. A misnamed command therefore claims the wrong permissions. Underscores
+    are rejected outright — the same pass that retired `sudo-` normalised separators, and
+    a lone `foo_bar.md` would quietly reintroduce the split the rename removed."""
+    cmd_dir = lobby / ".agents" / "commands"
+    for f in sorted(cmd_dir.glob("*.md")):
+        stem = f.stem
+        if stem in VENDOR_COMMANDS:
+            continue
+        if not _FAMILY_RE.match(stem):
+            rep.err("naming-law",
+                    f"{f.name}: must start with cicd- / smh- / sentry- "
+                    f"(or be a listed vendor bridge) - see AGENTS.md command naming law")
+        if "_" in stem:
+            rep.err("naming-law", f"{f.name}: underscore in command name - hyphens only")
 
 
 # ── Project checks ─────────────────────────────────────────────────────────────
-
-_ZONES = ["## 🎯", "## 🧵", "## 🛠", "## 👤", "## 📚"]
-
-
-def check_scrum_board(project: Path, rep: wf.Report) -> None:
-    path = project / wf.SCRUM_BOARD_REL
-    if not path.is_file():
-        rep.err("board", f"{wf.SCRUM_BOARD_REL} missing")
-        return
-    text = wf.read_text(path)
-    lines = text.splitlines()
-
-    for z in _ZONES:
-        if not any(ln.startswith(z) for ln in lines):
-            rep.err("board", f"zone '{z}' missing")
-    if len(lines) > 160:  # skill cap is "~150"; 160 = cap + slack before it fires
-        rep.warn("board", f"{len(lines)} lines (cap ~150)")
-    if "~~" in text:
-        rep.err("board", "strikethrough present (banned - delete, don't strike)")
-    if "<!-- STALE-STAMP -->" in text or "<!--YAML-DRIFT-->" in text:
-        rep.err("board", "hook drift-stamp present - board needs a rebuild")
-
-    # Right-now zone: <=8 content lines, by the skill's own contract.
-    in_zone, count = False, 0
-    for ln in lines:
-        if ln.startswith("## 🎯"):
-            in_zone = True
-            continue
-        if in_zone and ln.startswith("## "):
-            break
-        if in_zone and ln.strip():
-            count += 1
-    if count > 8:
-        rep.warn("board", f"'Right now' zone has {count} content lines (cap 8)")
-
-    # No descoped/deferred item inside the Work queue zone.
-    in_q = False
-    for i, ln in enumerate(lines, 1):
-        if ln.startswith("## 🛠"):
-            in_q = True
-            continue
-        if in_q and ln.startswith("## "):
-            break
-        if in_q and ln.lstrip().startswith("|") and re.search(
-                r"\b(descoped|deferred)\b", ln, re.IGNORECASE):
-            rep.err("board", f"line {i}: descoped/deferred item in the Work queue")
-
-    # Every relative link resolves (from the board's own directory).
-    for target in _LINK_RE.findall(text):
-        t = target.split("#")[0].strip()
-        if not t or t.startswith(("http://", "https://", "mailto:")):
-            continue
-        if not (path.parent / t).exists():
-            rep.err("board-links", f"dead link: {target}")
-
 
 def check_active_context(project: Path, rep: wf.Report) -> None:
     path = project / wf.ACTIVE_CONTEXT_REL
@@ -194,46 +333,22 @@ def check_active_context(project: Path, rep: wf.Report) -> None:
         rep.info("context", f"active-context ~{round(size / 4)} / 5,000 tokens")
 
 
-# Plan A's hard budgets. SCOPE: per-STORY artifacts only. The budget exists to cap what
-# (3) and close-out must re-read on every story; `_artifacts/_main/` initiative plans are
-# neither per-story nor re-read by the loop, so they are deliberately out of scope.
-_BUDGETS = {"implementation_plan.md": 8 * 1024, "walkthrough.md": 10 * 1024}
-
-
-def check_artifact_budgets(project: Path, rep: wf.Report) -> None:
-    """A budget nobody measures is a wish. Plan A set these on 2026-08-02 and nothing has
-    enforced them since - the same shape as every other rule this upgrade is mechanising.
-
-    SCOPE: artifacts of stories still moving through the loop. The budget's stated purpose
-    is capping what (3) and close-out must RE-READ, so a closed story's walkthrough is
-    history - compressing it churns the tree for nothing. And a check that opens with 115
-    warnings about files nobody will touch is a check that gets muted. `_artifacts/_main/`
-    initiative plans are out of scope for the same reason: not per-story, never re-read."""
-    board = wf.parse_board(wf.read_text(project / wf.BOARD_REL))
-    live = [k for k, v in board.items()
-            if wf.is_story_key(k) and v["status"] not in wf.TERMINAL]
-    over, historic = [], 0
-    for name, cap in _BUDGETS.items():
-        for path in project.glob(f"_artifacts/**/{name}"):
-            parts = path.relative_to(project).parts
-            if "_main" in parts or "_archived" in parts or "debugging" in parts:
-                continue
-            size = path.stat().st_size
-            if size <= cap:
-                continue
-            slug = wf.norm_id(path.parent.name).removeprefix("story-")
-            if any(wf.slug_matches(wf.story_id(k), slug) for k in live):
-                over.append((size / cap, path.relative_to(project), size, cap))
-            else:
-                historic += 1
-    for _, rel, size, cap in sorted(over, reverse=True):
-        rep.warn("budgets", f"{rel}: {size} bytes over the {cap} cap "
-                            f"({size / cap:.1f}x) - compress in place, never split")
-    if historic:
-        rep.info("budgets", f"{historic} closed-story artifact(s) over budget "
-                            f"(history; the budget post-dates them)")
-    if not over:
-        rep.info("budgets", "every in-flight story artifact is within its byte budget")
+# REMOVED 2026-08-08 (SCC-51, operator ruling): the hard byte budgets on
+# implementation_plan.md (8 KB) and walkthrough.md (10 KB), and the check that warned on them.
+#
+# They were set 2026-08-02 in the SAME commit that made implementation_plan.md a TWO-author
+# document - the plan plus /cicd-self-audit's findings, phase evidence and verdict
+# (artifacts-always-first §7). A fixed cap on a two-author doc squeezes the second author,
+# which is the auditor: the one voice you least want truncated. The number was never
+# validated against a real audit, and the first Full audit run under it had to compress its
+# own findings to fit. That is the gate cutting substance while the filler it was aimed at
+# survives.
+#
+# The discipline did NOT go away - it moved to where judgement belongs, as a stated standard
+# in artifacts-always-first.md: dense not short, every line carries a decision / constraint /
+# finding / evidence, and LENGTH IS NEVER A REASON TO OMIT A FINDING, AN AC, OR EVIDENCE.
+# Do not re-add a byte threshold here. If artifacts bloat, the answer is removing what does
+# not inform a decision - never truncating what does.
 
 
 def check_sprint_status(project: Path, rep: wf.Report) -> None:
@@ -416,6 +531,9 @@ def cmd_staged(fix: bool) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description="Workflow invariants linter (Wave 1.1)")
     ap.add_argument("--project", help="project name under Projects/ or a path")
+    ap.add_argument("--toolkit-only", action="store_true",
+                    help="lobby/toolkit checks only; never resolves a project - a root "
+                         "Task close-out must not inherit .agents/active-project.txt (SCC-64)")
     ap.add_argument("--staged", action="store_true",
                     help="pre-commit mode: encoding scan of staged files only")
     ap.add_argument("--fix", action="store_true",
@@ -425,6 +543,9 @@ def main() -> int:
 
     if args.staged:
         return cmd_staged(args.fix)
+    if args.toolkit_only and args.project:
+        wf.die("--toolkit-only and --project are mutually exclusive - the flag exists "
+               "precisely so no project is resolved")
 
     rep = wf.Report()
     scan: list[tuple[str, Path]] = []
@@ -432,21 +553,36 @@ def main() -> int:
     if lobby:
         check_commands(lobby, rep)
         check_rule_pointers(lobby, rep)
-        check_ap_twins(lobby, rep)
+        check_both_machines(lobby, rep)
+        check_naming_law(lobby, rep)
+        check_retired_review_surface(lobby, rep)
         scan += [(f"commands/{f.name}", f)
                  for f in sorted((lobby / ".agents" / "commands").glob("*.md"))]
     else:
         rep.info("toolkit", "no lobby root found from cwd - toolkit checks skipped")
 
+    if args.toolkit_only:
+        # The whole point of the flag: STOP before resolve_project_root, which would fall
+        # back to cwd and then .agents/active-project.txt - a root Task close-out gated on
+        # whichever product project happens to be active is a gate about the wrong thing.
+        if not lobby:
+            wf.die("--toolkit-only: no lobby root found from cwd - there is no toolkit "
+                   "here to lint")
+        scan_encoding(scan, rep)
+        if args.json:
+            print(json.dumps({"project": None, "findings": rep.items,
+                              "exit": rep.exit_code()}, indent=2))
+        else:
+            rep.print_human("workflow_lint - toolkit-only")
+        return rep.exit_code()
+
     project = wf.resolve_project_root(args.project)
-    check_scrum_board(project, rep)
     check_active_context(project, rep)
-    check_artifact_budgets(project, rep)
     check_sprint_status(project, rep)
     check_board_note_budget(project, rep)
     check_status_drift(project, rep)
     scan += [(rel, project / rel) for rel in
-             (wf.BOARD_REL, wf.ACTIVE_CONTEXT_REL, wf.SCRUM_BOARD_REL)]
+             (wf.BOARD_REL, wf.ACTIVE_CONTEXT_REL)]
     scan_encoding(scan, rep)
 
     if args.json:

@@ -23,7 +23,8 @@ from pathlib import Path
 BOARD_REL = "_bmad-output/implementation-artifacts/sprint-status.yaml"
 STORIES_REL = "_bmad/bmm/stories"
 ACTIVE_CONTEXT_REL = "_bmad-output/active-context/active-context.md"
-SCRUM_BOARD_REL = "_my_resources/_quick_reference/sprint_scrum_board_map.md"
+# SCRUM_BOARD_REL retired 2026-08-07 (SCC-22): the scrum-board map is superseded by Jira;
+# sprint-status.yaml (BOARD_REL) remains the working sprint state.
 EPICS_REL = "_bmad-output/planning-artifacts/epics.md"
 GATES_REL = "_bmad-output/gates"
 
@@ -121,7 +122,7 @@ _SPAN_RE = re.compile(r"`[^`\n]*`")
 def strip_code(text: str) -> str:
     """Blank out fenced blocks and inline code spans.
 
-    Docs that TEACH a bad pattern quote it verbatim — `sudo-prune-context.md` says
+    Docs that TEACH a bad pattern quote it verbatim — `cicd-prune-context.md` says
     "no `a-hat-euro` mojibake, use a real em dash" — so a naive scan flags the very file
     telling you not to do it. Same shape as the source-grep gate a comment satisfied
     (memory: comment-literals-invert-source-grep-tests): match PROSE, not quoted examples."""
@@ -257,13 +258,82 @@ def status_drift(project_root: Path) -> list[dict]:
 
 
 def git(args: list[str], cwd: Path, timeout: int = 60) -> subprocess.CompletedProcess:
+    # ⛔ `encoding="utf-8"` is load-bearing on the PC. git writes UTF-8 (paths, messages,
+    # `--porcelain -z` filenames unquoted); `text=True` alone decodes with the LOCALE codec,
+    # which is cp1252 on Windows - so `_artifacts/café.md` came back as `cafÃ©.md` there and
+    # a receipt's "exact filename" was only exact on the Mac (SCC-160 review, Blind Hunter).
     return subprocess.run(["git", *args], cwd=str(cwd), capture_output=True,
-                          text=True, errors="replace", timeout=timeout)
+                          text=True, encoding="utf-8", errors="replace", timeout=timeout)
 
 
 def git_head(cwd: Path) -> str | None:
     r = git(["rev-parse", "HEAD"], cwd)
     return r.stdout.strip() if r.returncode == 0 else None
+
+
+def changed_since_fork(repo: Path, ref: str, fork: str) -> set[str]:
+    """Files `ref` changed since `fork`, as repo-relative paths.
+
+    Two arguments rather than the `fork..ref` range form: a diff treats them identically, and
+    the two-argument spelling is what the merge itself compares - so this answer cannot drift
+    from the thing it is predicting."""
+    r = git(["diff", "--name-only", fork, ref], repo)
+    if r.returncode != 0:
+        return set()
+    return {ln.strip() for ln in r.stdout.splitlines() if ln.strip()}
+
+
+def base_overlap(repo: Path, branch: str, base: str) -> dict | None:
+    """Which files BOTH `branch` and `base` touched since they forked.
+
+    Returns `{"mine": N, "theirs": N, "overlap": [paths]}`, or None when there is no
+    merge-base to compare from. Callers decide severity and wording; this only answers the
+    question, so the two preflights cannot drift on the ANSWER while disagreeing on the prose.
+
+    Why this exists: "you are 7 commits behind `main`" is true and nearly useless. Being
+    behind is routine and usually free. What costs a session is being behind *on a file you
+    also edited* - and without naming those, a 30-second fast-forward and a real three-way
+    merge print identically, so the two correct reactions look the same.
+
+    Deliberately answered at a gate the lane has already stopped at, not pushed at a lane the
+    moment somebody merges to main: a notification cannot know whether it overlaps (most
+    merges do not), and interrupting live work to absorb main is its own hazard - it drags
+    other people's changes into the diff a review scopes on, and a merge under a running dev
+    server has wedged this system before."""
+    fork = git(["merge-base", branch, base], repo).stdout.strip()
+    if not fork:
+        return None
+    mine = changed_since_fork(repo, branch, fork)
+    theirs = changed_since_fork(repo, base, fork)
+    return {"mine": len(mine), "theirs": len(theirs), "overlap": sorted(mine & theirs)}
+
+
+# How many overlapping paths to name before summarizing the rest. The list answers "which of
+# MY files did they touch" - a dozen names answers it; a hundred is a wall that gets scrolled
+# past, which is the same as printing nothing. The COUNT is always exact.
+OVERLAP_SHOWN = 12
+
+
+def report_overlap(repo: Path, branch: str, base: str, rep: "Report",
+                   section: str = "base") -> None:
+    """Print `base_overlap`'s answer. A no-overlap result is printed too - "behind, but on
+    files you never touched" is a real answer, and leaving it silent is how a clean absorb
+    reads as an unknown risk."""
+    info = base_overlap(repo, branch, base)
+    if info is None:
+        rep.warn(section, f"no merge-base with {base} - cannot tell which files overlap")
+        return
+    if not info["mine"] or not info["theirs"]:
+        return
+    overlap = info["overlap"]
+    if not overlap:
+        rep.info(section, f"no file overlap: {base} moved on {info['theirs']} file(s), none "
+                          f"of the {info['mine']} this branch touched - the merge should be clean")
+        return
+    shown = overlap[:OVERLAP_SHOWN]
+    more = f" (+{len(overlap) - len(shown)} more)" if len(overlap) > len(shown) else ""
+    rep.err(section, f"{len(overlap)} file(s) changed on BOTH sides - resolve by keeping both "
+                     f"sides' facts, never by picking a winner: " + ", ".join(shown) + more)
 
 
 class Report:
@@ -297,3 +367,209 @@ class Report:
         e, w = self.counts()
         print(f"-- {e} error(s), {w} warning(s), "
               f"{len(self.items) - e - w} info --")
+
+
+# ── What a VERDICT is, and how a manifest field is read (SCC-190 F6) ──────────────────
+#
+# These three lived in `task_preflight` because that is where they were first needed. But
+# `main_write_gate` - the gate that guards `main` - imported them from there and thereby
+# pulled in SEVEN local modules (jira_feed, gate_receipt, hooks_armed, walkthrough_roster,
+# task_preflight, wf_common, sop_currency; measured) to buy one regex and two small
+# helpers. An import-time break anywhere in that chain became a break in the gate itself.
+#
+# ⛔ RE-TYPING THEM IN THE GATE WAS NEVER THE ANSWER - a gate and a door disagreeing about
+# what a verdict IS is precisely the defect class main_write_gate exists to catch. So they
+# move DOWN instead, to the leaf every one of those modules already imports. Still one
+# definition; the readers just no longer drag a subsystem in to reach it.
+# `task_preflight` re-exports all three, so every existing importer is unaffected.
+
+# The canonical line /smh-code-review Step 4 writes as the review section's first line.
+# Anchored at line start: prose ABOUT a verdict does not match; the stamp does.
+VERDICT_RE = re.compile(r"^Verdict:\s*(PASS|CONCERNS|FAIL|WAIVED)\s*@\s*([0-9a-fA-F]{7,40})\b",
+                        re.MULTILINE)
+
+def manifest_field(text: str, field: str) -> str | None:
+    m = re.search(rf"^\s*{field}\s*:\s*[\"']?([^\"'\n#]+)", text, re.MULTILINE)
+    return m.group(1).strip() if m else None
+
+
+def strip_fenced(text: str) -> str:
+    """Markdown code fences removed before any verdict scan (SCC-154, finding 8).
+
+    A canonical stamp pasted AS EVIDENCE inside a fence sits at column 0 and matched
+    VERDICT_RE — a fenced FAIL was a permanent block. ⛔ Fences close per CommonMark: the
+    SAME marker kind, at least the opening length — the first cut toggled on ANY marker
+    line, so a ````-or-~~~-wrapped paste whose content held a ``` pair LEAKED its inner
+    lines back into the scan (measured by this lane's own review: a quoted FAIL became the
+    governing latest stamp, a permanent false block). Marker lines inside an open fence of
+    another kind are content and stay dropped. An UNCLOSED fence still drops everything
+    after it: no verdict then means the full gate runs, the safe direction — pinned as
+    declared design."""
+    out: list[str] = []
+    fence: tuple[str, int] | None = None      # (marker char, opening length) while inside
+    for line in text.splitlines():
+        m = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})", line)
+        if m:
+            marker = m.group(1)
+            if fence is None:
+                fence = (marker[0], len(marker))
+            elif marker[0] == fence[0] and len(marker) >= fence[1]:
+                fence = None
+            continue
+        if fence is None:
+            out.append(line)
+    return "\n".join(out)
+
+
+# ── WHICH TREE HOLDS THE BRANCH? — one definition, read by every door (SCC-211) ───────
+#
+# ⛔ THE QUESTION IS "WHICH TREE WILL BE GATED?", AND EVERY DOOR HAS TO ANSWER IT THE SAME WAY.
+# All three close-out doors ask whether the working tree is clean, because a dirty tree means
+# the gate measures content the merge does not carry — what ships was never gated. Before this
+# they answered it three different ways, and each way had a different hole:
+#
+#   * `/cicd-push-e2e`  measured `PROJECT_ROOT` only. With the epic in a linked worktree — the
+#     NORM under `worktree-per-story` — that root stands on `main`, spotless, while the lane's
+#     tree is dirty. It reported "working tree clean" and cleared the ship. Reproduced.
+#   * `/cicd-close-story-merge-tree` measured the worktree only when the CALLER passed
+#     `--worktree`. Prose in the door said the flag was mandatory; argparse did not, and
+#     `/cicd-prune-worktree` calls the same script without it.
+#   * `/smh-close-task-merge-tree` measures whatever `--repo` names, which its own door happens
+#     to set to the lane's worktree — correct by construction, and only for that door.
+#
+# A guard that depends on the caller passing the right path is "cwd is not intent" wearing a
+# flag: it can be forgotten, and it can be pointed at the wrong tree. Asking git cannot be
+# either. So the answer is DERIVED, once, here — the leaf every one of those modules already
+# imports (the same move SCC-190 F6 made for `VERDICT_RE`, and for the same reason: a gate and
+# a door disagreeing about what they are measuring is the defect class, not a style question).
+
+
+def worktree_holding(repo: Path, branch: str) -> "Path | None":
+    """The working tree `branch` is checked out in, or None if no tree has it.
+
+    Parsed from `git worktree list --porcelain`, which is authoritative and machine-readable.
+    ⛔ Unlike `task_preflight.check_worktree` this does NOT skip the first block: there the
+    main checkout is the caller's own tree by definition, so naming it would fire on every
+    clean run; here the whole question is *which* tree holds the branch, and the main checkout
+    is a perfectly good answer.
+    """
+    out = git(["worktree", "list", "--porcelain"], repo).stdout
+    for block in out.split("\n\n"):
+        wt = re.search(r"^worktree (.+)$", block, re.MULTILINE)
+        br = re.search(r"^branch refs/heads/(.+)$", block, re.MULTILINE)
+        if wt and br and br.group(1).strip() == branch:
+            return Path(wt.group(1).strip())
+    return None
+
+
+def trees_to_measure(repo: Path, branch: str,
+                     explicit: "Path | None" = None) -> list[tuple[str, Path]]:
+    """Every distinct tree whose dirt could reach this landing: (label, path).
+
+    Always the repo the caller named; plus the tree that actually holds `branch`; plus an
+    explicit path a caller supplied, when it is a third thing. Deduped by resolved path so a
+    door that names the same tree twice reports it once.
+    """
+    out: list[tuple[str, Path]] = [("the checkout", repo)]
+    seen = {repo.resolve()}
+    held = worktree_holding(repo, branch)
+    if held is not None and held.resolve() not in seen:
+        out.append((f"the worktree holding {branch} ({held.name})", held))
+        seen.add(held.resolve())
+    if explicit is not None and explicit.resolve() not in seen:
+        out.append((f"the worktree you named ({explicit.name})", explicit))
+    return out
+
+
+# ── WHICH TREE AM I IN? (SCC-190 · operator ruling 2026-08-17) ────────────────────────
+#
+# ⛔ THE MEASURED COST, AND IT IS THE BIGGEST ONE IN THIS SYSTEM. A shell's cwd resets to the
+# MAIN checkout the moment a command cd's outside the workspace, and nothing says so. The next
+# `python3 .agents/scripts/tests/run_all.py` then runs MAIN's copy of the suite against MAIN's
+# tree - green or red about work that is not the work - and the whole cycle is repeated once the
+# mistake surfaces. Operator, 2026-08-17: *"we do all our work twice and it's killing
+# productivity."*
+#
+# The fix is not a memory, because a memory does not run. Every gate and runner PRINTS the tree
+# and branch it is about to act on, unmissably, at the top - so a wrong-tree run is obvious in
+# the first line of output rather than three minutes later in a confusing failure.
+
+def tree_tag(start: Path | str = ".") -> tuple[str, str, bool]:
+    """`(repo path, branch, is_the_main_checkout)` for the tree that CONTAINS `start`.
+
+    Resolved from git, never from the cwd string: a worktree and its main checkout share a
+    `.git` lineage but are different trees, and `git rev-parse --git-common-dir` is what tells
+    them apart (a linked worktree's `--git-dir` sits under the main one's `worktrees/`)."""
+    p = Path(start).resolve()
+    root = git(["rev-parse", "--show-toplevel"], p)
+    if root.returncode != 0 or not (root.stdout or "").strip():
+        return str(p), "", True
+    top = (root.stdout or "").strip()
+    br = (git(["rev-parse", "--abbrev-ref", "HEAD"], Path(top)).stdout or "").strip()
+    gd = (git(["rev-parse", "--absolute-git-dir"], Path(top)).stdout or "").strip()
+    cd = (git(["rev-parse", "--git-common-dir"], Path(top)).stdout or "").strip()
+    # ⛔ `--git-common-dir` comes back RELATIVE (`.git`) in the main checkout and ABSOLUTE in a
+    # linked worktree. Resolving the relative one against the PROCESS cwd - which is the whole
+    # hazard this function exists for - made every main checkout report as a worktree. Resolve
+    # it against the repo top, which is the only frame it was ever relative to.
+    cdp = Path(cd) if cd else None
+    if cdp is not None and not cdp.is_absolute():
+        cdp = Path(top) / cdp
+    is_main = not gd or cdp is None or Path(gd).resolve() == cdp.resolve()
+    return top, br, is_main
+
+
+def say_tree(what: str, start: Path | str = ".") -> tuple[str, str, bool]:
+    """Print the tree banner and return what `tree_tag` found. Called by every runner."""
+    top, br, is_main = tree_tag(start)
+    where = "MAIN CHECKOUT" if is_main else "worktree"
+    print(f"== {what} @ {Path(top).name} [{br or 'DETACHED'}] - {where} ==")
+    print(f"   {top}")
+    return top, br, is_main
+
+
+# The branch prefixes that mark a LANE worktree. A worktree on anything else (a detached
+# probe, a scratch branch) is not lane work and does not make a mainline run suspicious.
+LANE_PREFIXES = ("chore", "epic")
+
+
+def tree_guard(start: Path | str, who: str = "run_all.py", allow_main: bool = False,
+               tag: tuple[str, str, bool] | None = None) -> str | None:
+    """SCC-190's wrong-tree refusal - the text to print, or None when the run is fine.
+
+    ⛔ ONE BODY, TWO CALLERS (SCC-240). This lived inline in `run_all.py` and guarded the
+    once-per-lane suite run only; every single-file run - the review loop, and the ONLY way
+    `mutation_sweep.py` runs a test - bypassed it, and a lane recorded `47/47 passed` against
+    `main` from a reset cwd with nothing to say so. The harness now asks the same question at
+    the chokepoint every test file passes through. Lifting the body here, rather than copying
+    it, is what keeps the two answers identical: the condition, the lane list and the wording
+    cannot drift apart when there is only one of each.
+
+    The refusing shape, all three at once: the MAIN checkout, on the mainline, while lane
+    worktrees are checked out on `chore/*` or `epic/*`. That is lane work being measured
+    against a tree that does not contain it. `allow_main` is the deliberate spelling for the
+    times it IS what you meant (a pre-merge sanity run) - `--on-main` on either runner.
+
+    `who` is the script name, for the first word of the refusal and the "run it in the lane"
+    hint. `tag` lets a caller that already ran `tree_tag` (or `say_tree`) hand it over instead
+    of paying the git round trips twice.
+    """
+    if allow_main:
+        return None
+    top, br, is_main = tag if tag is not None else tree_tag(start)
+    if not is_main or br not in ("main", "master"):
+        return None
+    wt = git(["worktree", "list", "--porcelain"], Path(top)).stdout or ""
+    lanes = [ln.split("/", 2)[-1] for ln in wt.splitlines()
+             if ln.startswith("branch refs/heads/")
+             and ln.split("refs/heads/")[-1].split("/", 1)[0] in LANE_PREFIXES]
+    if not lanes:
+        return None
+    name = who[:-3] if who.endswith(".py") else who
+    return (f"{name}: REFUSING - this is the MAIN checkout on `{br}`, but "
+            f"{len(lanes)} lane worktree(s) are checked out: {', '.join(lanes[:4])}.\n"
+            f"         A suite run here says nothing about that lane's work, and it is\n"
+            f"         how the same work gets done twice (SCC-190).\n"
+            f"         Run it in the lane:  cd <worktree> && python3 "
+            f".agents/scripts/tests/{who}\n"
+            f"         Or say you meant this tree:  --on-main")

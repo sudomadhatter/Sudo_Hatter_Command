@@ -1,0 +1,63 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_main_push_gate.py"
+  ],
+  "note": "Part 10 (D = SCC-172). Three fail-opens in the main-write path, all back-ported from AVCH-59 where each was reproduced live. D3 is swept LAST and its mutant is the only one that touches `.githooks/pre-push` - the file `core.hooksPath` makes LIVE for this worktree's own pushes (F22). It is safe here for a reason that is checked, not assumed: the mutant only removes the refusal on `refs/heads/main`, this lane pushes `chore/SCC-164-gate-cluster` and never main, and the sweep verifies byte-restore against the committed baseline before it exits. Proven first in a scratch repo with a real remote (see the walkthrough's D3 drill), then here.",
+  "mutants": [
+    {
+      "id": "D-1",
+      "why": "C1 - the hand-rolled --git-common-dir normalisation. git-for-windows answers `C:/...`, which does not match `/*`, so the repo root is prepended to an already-absolute path and the token is written nowhere: every push to main refused, on the PC only.",
+      "file": ".agents/scripts/git-hooks/pre-push-main-approval.sh",
+      "original": "GIT_COMMON=$(git rev-parse --git-common-dir 2>/dev/null)",
+      "mutated": "GIT_COMMON=$(git rev-parse --git-common-dir 2>/dev/null); case \"$GIT_COMMON\" in /*) : ;; *) GIT_COMMON=\"$REPO_ROOT/$GIT_COMMON\" ;; esac",
+      "case": "C5 ·",
+      "block": "C5"
+    },
+    {
+      "id": "D-2",
+      "why": "D1a - a push carrying no MERGE commit at all. Reproduced on AGY: a plain non-merge commit plus a token naming a never-existed branch came back APPROVED.",
+      "file": ".agents/scripts/git-hooks/pre-push-main-approval.sh",
+      "original": "      if [ -z \"$merged\" ]; then",
+      "mutated": "      if [ -z \"$merged\" ] && [ -n \"$claimed\" ]; then",
+      "case": "D1 ·",
+      "block": "D1"
+    },
+    {
+      "id": "D-3",
+      "why": "D1b - the token names a branch that does not resolve here. The original guard was `[ -n \"$claimed\" ] && [ \"$merged\" != \"$claimed\" ]`, so an EMPTY claimed skipped the comparison entirely and the gate approved a merge it could not identify.",
+      "file": ".agents/scripts/git-hooks/pre-push-main-approval.sh",
+      "original": "      if [ -z \"$claimed\" ]; then",
+      "mutated": "      if [ -z \"$claimed\" ] && [ -z \"$merged\" ]; then",
+      "case": "D1c",
+      "block": "D1"
+    },
+    {
+      "id": "D-4",
+      "why": "D2 - the ZERO arm. Every check in this gate lived inside `remote_sha != ZERO` with no else, so a push CREATING main on a bare remote fell straight through to approved. AGY reproduced it with 3 stacked merges and 1 token.",
+      "file": ".agents/scripts/git-hooks/pre-push-main-approval.sh",
+      "original": "    refuse \"this push would CREATE '$PROTECTED_REF' on the remote, which has no main yet.",
+      "mutated": "    : \"this push would CREATE '$PROTECTED_REF' on the remote, which has no main yet.",
+      "case": "D2 ·",
+      "block": "D2 ·"
+    },
+    {
+      "id": "D-5",
+      "why": "the ZERO arm must refuse ON ITS OWN REASON. A shared banner would tell the operator to re-mint a token, which is not the problem and cannot fix it.",
+      "file": ".agents/scripts/git-hooks/pre-push-main-approval.sh",
+      "original": "        one-sign-off-one-merge invariant cannot be evaluated at all",
+      "mutated": "        sign-off could not be verified at all",
+      "case": "D2c",
+      "block": "D2 ·"
+    },
+    {
+      "id": "D-6",
+      "why": "D3 - the stale-worktree fail-open. Restore the blanket `exit 0` and a tree missing the gate scripts pushes main with nothing checking anything: on AGY the same repo REFUSED from the main checkout and LANDED `main -> main` from a worktree. The gate was not bypassed, it was never asked.",
+      "file": ".githooks/pre-push",
+      "original": "  if awk '$3 == \"refs/heads/main\" { found = 1 } END { exit !found }' < \"$REFS\"; then",
+      "mutated": "  if awk 'BEGIN { exit 1 }' < \"$REFS\"; then",
+      "case": "D3 ·",
+      "block": "D3"
+    }
+  ]
+}

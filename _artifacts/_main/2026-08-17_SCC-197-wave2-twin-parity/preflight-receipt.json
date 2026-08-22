@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-197-wave2-twin-parity",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-197",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "531047f09ff44a44f8d45e095bd4a76f29c0b7db",
+  "warnings": 3,
+  "when": "2026-08-18T18:30:28-05:00"
+}

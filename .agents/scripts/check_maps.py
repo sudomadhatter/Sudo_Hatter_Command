@@ -57,7 +57,7 @@ import record_map_changes as rmc  # noqa: E402  (commit-time journal — consume
 # own linter). _my_resources is PROTECTED (don't even read); _bmad is BMAD-regenerated. Rest is noise.
 SCAN_IGNORES = {
     ".git", ".venv", "venv", "env", "__pycache__", "node_modules", ".next", "dist", "build",
-    ".pytest_cache", ".turbo", ".cache", "coverage", "_my_resources", "_bmad", "Projects", ".gitnexus",
+    ".pytest_cache", ".turbo", ".cache", "coverage", "test-results", "_my_resources", "_bmad", "Projects", ".gitnexus",
     ".claude", ".opencode", "_bmad-output", ".github", ".vscode",
 }
 # Extra ignores fed to the generator's regen — MUST match the documented invocation in the repo-map
@@ -91,7 +91,19 @@ STATE_BASENAME = ".maps-state.json"   # sits in the docs folder beside the repo-
 
 # Append-only NARRATIVE ledgers: rows are immutable history (cross-repo + renamed/deleted paths by
 # design), so path-existence linting is a category error here — old rows SHOULD keep their old paths.
-NARRATIVE_LEDGERS = {"_artifacts/INDEX.md"}
+#
+# EVERY INDEX under `_artifacts/` qualifies, not just the top-level one (SCC-74, 2026-08-10). The
+# depth-3 bucket ledgers (`_artifacts/_main/INDEX.md`, `_artifacts/epic_8/INDEX.md`, ...) are where
+# the detailed narrative actually lives, and a row describing work that RETIRED a path must name
+# that path to be worth reading. Listing only `_artifacts/INDEX.md` left those permanently red on
+# `main` — for `.claude/commands` and `docs/file_structure_rules/README.md`, both correctly recorded
+# as removed — and a lint that is red for reasons nobody may fix trains people to skip its output.
+_NARRATIVE_LEDGER_ROOT = "_artifacts/"
+
+
+def is_narrative_ledger(rel: str) -> bool:
+    """True for append-only history ledgers, where old paths are the point."""
+    return rel.startswith(_NARRATIVE_LEDGER_ROOT) and rel.endswith("INDEX.md")
 
 # Session-folder name patterns (depth-3 INDEX rows reference these)
 SESSION_FOLDER_RE = re.compile(r"^(story-|\d{4}-|tea-|wave-|close-out-|epic-|autopilot-)")
@@ -445,9 +457,28 @@ def _check_depth3_tree(root, adir):
             problems.append(f"{rel_bucket}/INDEX.md: missing (has {len(sessions)} session folders (>=2) -- create it)")
             continue
 
-        # Parse INDEX for session folder names mentioned in table rows (backticked tokens)
+        # Parse INDEX table rows. TWO sets, deliberately, because the two checks want opposite
+        # things (SCC-96):
+        #
+        #   `mentioned` — any backticked token anywhere in the row. Permissive on purpose: it
+        #     only ever SUPPRESSES a "missing row" complaint, so being generous here cannot
+        #     invent a problem, only decline to raise one.
+        #
+        #   `declared` — the row's FIRST cell, written as a folder reference (trailing `/`).
+        #     Strict on purpose: it is the only thing allowed to raise "stale row". A row
+        #     declares its session folder in column one, with a slash — every INDEX in this
+        #     repo writes them that way — so anything else in the row is prose.
+        #
+        # The old code kept one permissive set and `rstrip("/")`-ed the trailing slash off,
+        # throwing away the very signal that separates the two. SESSION_FOLDER_RE then decided
+        # the question, and that regex classifies DIRECTORY NAMES, not arbitrary prose: any
+        # memory slug starting `story-`/`tea-`/`epic-`/`autopilot-`/`wave-`/`close-out-` read as
+        # a folder that had gone missing. Nine memories in the lobby store match. A ledger row
+        # exists to say WHY, and naming the memory a decision rests on is exactly that — so the
+        # gate was firing on the behaviour the convention asks for. See test_check_maps.py.
         text = idx.read_text(encoding="utf-8")
         mentioned = set()
+        declared = set()
         for line in text.splitlines():
             if "|" not in line:
                 continue
@@ -455,9 +486,14 @@ def _check_depth3_tree(root, adir):
                 tok = tok.strip().rstrip("/")
                 if tok and not SHAPE_NOISE.search(tok):
                     mentioned.add(tok)
+            first_cell = line.split("|")[1] if line.lstrip().startswith("|") else ""
+            for tok in re.findall(r"`([^`]+/)`", first_cell):
+                tok = tok.strip().rstrip("/")
+                if tok and not SHAPE_NOISE.search(tok):
+                    declared.add(tok)
 
         missing = [s for s in sessions if s not in mentioned]
-        stale = sorted(m for m in mentioned if m not in sessions and SESSION_FOLDER_RE.match(m))
+        stale = sorted(d for d in declared if d not in sessions and SESSION_FOLDER_RE.match(d))
 
         for s in missing:
             problems.append(f"{rel_bucket}/INDEX.md: missing row for `{s}/`")
@@ -552,21 +588,54 @@ def check_conformance(root, is_home, is_bmad, map_path):
     need("CLAUDE.md", "adapter")
     need("GEMINI.md", "adapter")
     need(".agents", "toolkit dir")
-    # `.agents/` is a TIER-1 FLOOR (workspace-standard.md Part 1) — it carries the same brain + adapters
-    # any workspace root does. Doctrine has said so since the tier model landed; nothing enforced it,
-    # because check 2.5's dot-dir skip made the whole toolkit invisible to the linter.
-    need(".agents/AGENTS.md", "toolkit brain")
-    need(".agents/INDEX.md", "toolkit inventory")
-    need(".agents/CLAUDE.md", "toolkit adapter")
-    need(".agents/GEMINI.md", "toolkit adapter")
-    need(".agents/scripts/check_maps.py", "maintenance script")
-    need(".agents/scripts/generate_repo_map.py", "map generator")
+    if is_home:
+        # LOBBY: `.agents/` is the MASTER toolkit and a TIER-1 FLOOR (workspace-standard.md Part 1) —
+        # it carries the same brain + adapters any workspace root does, plus the maintenance scripts.
+        need(".agents/AGENTS.md", "toolkit brain")
+        need(".agents/INDEX.md", "toolkit inventory")
+        need(".agents/CLAUDE.md", "toolkit adapter")
+        need(".agents/GEMINI.md", "toolkit adapter")
+        need(".agents/scripts/check_maps.py", "maintenance script")
+        need(".agents/scripts/generate_repo_map.py", "map generator")
+        if not (docs / "workspace-standard.md").exists():
+            missing.append(f"structure standard (`{(docs / 'workspace-standard.md').relative_to(root).as_posix()}`)")
+    else:
+        # PROJECT: THIN floor (thin model 2026-08-07 — `.agents/rules/project-law.md`). A project's
+        # `.agents/` holds ONLY its own tier-2 law: `rules/` + `skills/` + `INDEX.md`. The INDEX is
+        # anchor 5 of the always-check guarantee — binding a project MEANS reading it, so its absence
+        # is an ERROR, never a default. Any tier-1 vendor still present is the P3/P4 conversion
+        # worklist, flagged loud so a half-stripped project can't read as clean.
+        need(".agents/INDEX.md", "tier-2 law INDEX (binding reads this — project-law.md)")
+        # ⚠️ NEVER add the repo-local ENFORCEMENT set to this list (SCC-32): `.githooks/`,
+        # `.agents/scripts/git-hooks/`, and `.agents/jira.conf` are the armed Jira commit gate. Git runs
+        # hooks in the repo they gate and `jira.conf` names THAT repo's Jira project — they are permanently
+        # project-local by design (same class as BMAD's `_bmad/custom/*.toml`), never vendored, never
+        # centralized. Flagging them would order the conversion to delete the audit trail. `.agents/scripts`
+        # is therefore probed by its TOOLKIT sentinel, not the bare directory, so a project keeping only
+        # `scripts/git-hooks/` reads as clean.
+        vendor_markers = [
+            ".agents/AGENTS.md", ".agents/commands", ".agents/workflows",
+            ".agents/scripts/check_maps.py", ".agents/scripts/generate_repo_map.py",
+            ".agents/scripts/sync-agents.ps1",
+            ".agents/hooks", ".agents/templates", ".agents/reference", ".agents/bmad",
+            ".agents/opencode-agents", ".opencode/commands", ".opencode/agent", "opencode.json",
+        ]
+        # NOT markers: `.mcp.json` / `.opencode/mcp.json` / `.claude/settings.json` are per-project
+        # CONFIG (which MCP servers this repo declares, its permissions, its worktree baseRef) — the
+        # same class as the enforcement set, not vendored toolkit. Only `.opencode/`'s command+agent
+        # dirs are vendor, so they are named directly instead of the parent (AVCH-23: the bare
+        # `.opencode` marker red-flagged a repo whose only remaining file was its MCP declaration).
+        found = [m for m in vendor_markers if (root / m).exists()]
+        if found:
+            shown = ", ".join(found[:4]) + ("," if len(found) > 4 else "")
+            more = f" +{len(found) - 4} more" if len(found) > 4 else ""
+            missing.append(
+                f"STALE-VENDOR: still carries tier-1 toolkit ({shown}{more}) - "
+                "strip per project-law.md (the P3/P4 conversion worklist)")
     need("_my_resources/open_tasks/todo_list.md", "open-tasks list")
     need("_artifacts/INDEX.md", "session ledger")
     if not map_path.exists():
         missing.append(f"navigation index (`{map_path.relative_to(root).as_posix()}`)")
-    if not (docs / "workspace-standard.md").exists():
-        missing.append(f"structure standard (`{(docs / 'workspace-standard.md').relative_to(root).as_posix()}`)")
     if not continuity_briefs(root, is_home, is_bmad):
         if is_home:
             loc = "_artifacts/_main/active-context.md"
@@ -604,7 +673,7 @@ def lint_one(root, ignore_override=None):
 
     index_problems = []
     for idx in find_indexes(root):
-        if idx.relative_to(root).as_posix() in NARRATIVE_LEDGERS:
+        if is_narrative_ledger(idx.relative_to(root).as_posix()):
             continue  # immutable narrative ledger — don't lint historical paths
         index_problems.extend(check_paths(root, idx, top_level))
     drift["INDEX.md paths"] = index_problems
@@ -686,19 +755,49 @@ def main():
                     help="home base: fan out across the lobby + every conformant Projects/<name> in one run")
     ap.add_argument("--set-anchor", action="store_true", help="record HEAD as the reconciled baseline and exit")
     ap.add_argument("--depth3-only", action="store_true",
-                    help="fast check: only run the depth-3 _artifacts INDEX reconciliation (for SessionStart; always exits 0)")
+                    help="fast check: only run the depth-3 _artifacts INDEX reconciliation (for SessionStart; exits 0 unless --strict)")
+    ap.add_argument("--strict", action="store_true",
+                    help="with --depth3-only: EXIT 1 on drift instead of 0, so a close-out gate can fail on it (SCC-138)")
     args = ap.parse_args()
+    # `--strict` is read ONLY inside the --depth3-only branch, so on its own it was silently
+    # accepted and ran the FULL linter instead — which from a worktree exits 1 on the two
+    # documented false positives whose printed remedy ships the lane name into the map. A flag
+    # that quietly does something else is worse than one that refuses (SCC-140 review).
+    if args.strict and not args.depth3_only:
+        ap.error("--strict only applies to --depth3-only. The full lint already exits non-zero "
+                 "on drift; run `--depth3-only --strict` for the worktree-safe close-out gate.")
     root = Path(args.root).resolve()
     is_home, _ = detect_mode(root)
 
-    # --depth3-only: fast SessionStart nag — only checks _artifacts/ depth-3 INDEXes, always exits 0
+    # --depth3-only: only the depth-3 _artifacts INDEX reconciliation.
+    #
+    # TWO callers, and they need OPPOSITE exit codes from the same check:
+    #   SessionStart  -> a nag. Must exit 0 even when drifted, or boot itself starts failing.
+    #   the lane gate -> a GATE. Must exit 1 on drift, or the close-out prints "clear to close
+    #                    out and merge" over a repo whose own linter is red (SCC-138).
+    # `--strict` is that switch. Defaulting to 1 here would have gated SessionStart; defaulting
+    # to 0 forever is what let SCC-124 land a session folder with no INDEX row while the suite
+    # reported 21/21 PASS.
+    #
+    # ⭐ WHY THE GATE RUNS THIS SUBSET AND NOT THE WHOLE LINTER. The close-out runs from a
+    # WORKTREE. Bare check_maps there exits 1 on two GUARANTEED false positives — "AUTO block
+    # is STALE" and "on disk but not in map: <lane-name>/" — because the repo-map comparison
+    # labels the home base from the CWD basename, and its printed remedy would ship the lane
+    # name into the map bound for main. This reconciliation is free of both: it reads only
+    # `root/` (resolved from THIS FILE's location, never the CWD) and compares INDEX rows to
+    # directories. Verified in a real detached worktree, 2026-08-13.
+    #
+    # ⚠ It is therefore a SUBSET, not "the linter". Checks 1-6 — AUTO-block freshness, level-2
+    # INDEX presence, structure conformance — are NOT gated at close-out. That is deliberate
+    # (the incidents this closes were all missing INDEX rows) but it must never be described as
+    # "the gate runs check_maps", or a reader will believe the full linter runs.
     if args.depth3_only:
         problems = check_depth3_indexes(root)
         if problems:
             print("⚠️  Depth-3 _artifacts INDEX drift (run /update-maps-indexes to reconcile):")
             for p in problems:
                 print(f"  • {p}")
-        sys.exit(0)  # always 0 — it's a nag, not a gate
+        sys.exit(1 if (problems and args.strict) else 0)
 
     # Worklist: `--all` at a home base fans out (lobby first, then each conformant project); otherwise the
     # single --root. `--all` outside a home base is a harmless no-op so the SAME command is safe everywhere.

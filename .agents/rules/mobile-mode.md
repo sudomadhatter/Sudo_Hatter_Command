@@ -17,7 +17,7 @@ since: 2026-06-25
 
 - **Auto:** the session runs in a remote / cloud container (Claude Code on the web or the mobile app),
   detected by the environment variable **`CLAUDE_CODE_REMOTE=true`** (the flag Claude Code sets on
-  web/mobile — the same one `autopilot_mobile.md` keys on). This is the normal case for phone use.
+  web/mobile). This is the normal case for phone use.
 - **Manual:** Daniel says "mobile" / "mobile mode" in any session.
 - **Off (desktop):** a local desktop IDE session — `CLAUDE_CODE_REMOTE` is unset, so the desktop defaults
   (`git-policy.md`, `artifacts-always-first.md`) apply **unchanged**. Ignore this rule entirely.
@@ -35,7 +35,8 @@ On the phone there is no terminal, so the "hand Daniel the command" default does
   and flag it. (Full rule → `git-policy.md` → "Sync-first".)
 - **Commit and push for him.** After approved work, commit your OWN files and push them to your own
   **`claude/*` session branch** — no waiting for a terminal that does not exist. Pushing to `claude/*` is
-  FREE (no approval), per `git-policy.md` → "Branch model"; never push directly to `main_debug`/`main`.
+  FREE (no approval), per `git-policy.md` → "Branch model"; never push directly to `main` or the
+  epic branch.
 - **Keep the safe-commit mechanics from `git-policy.md`.** Explicit paths only (`git add path/one path/two`);
   **NEVER `git add -A` / `git add .` / `git add -u`**; verify `git diff --cached --stat` shows only your
   files before committing; scope the message to this task.
@@ -43,15 +44,13 @@ On the phone there is no terminal, so the "hand Daniel the command" default does
   `git push -u origin <branch>`. If the push is rejected because the remote moved, STOP and report — do
   not force-push or blind-rebase.
 - **Ask before the PR.** Opening / converting a draft PR is an outward action — present it as a
-  **tap-confirm** (see Override 2) and wait for the tap before creating it. The PR targets **`main_debug`**
-  (the shared integration branch), **never `main`** — see `git-policy.md` → "Branch model".
-  - **Hotfix carve-out (incident lane ONLY).** A `/sudo-mobile-error-team` production hotfix PR targets
-    **`main`**, not `main_debug`. Two reasons: the incident lane is anchored on production
-    (`incident-response.yml` checks out `ref: main`, and every back-merge footer says merge to
-    `main` then rebase `main_debug`), and the quality gate `pr-check.yml` only runs on PRs whose
-    base is `main` — a hotfix PR to `main_debug` would get **no CI at all**, which on the mobile
-    lane means no gate at all. Everything else still holds: it opens as a **draft**, the
-    tap-confirm above is still required, and the agent still never merges it.
+  **tap-confirm** (see Override 2) and wait for the tap before creating it. A story PR targets **the
+  story's epic branch** (`epic/<JIRA-KEY>-<slug>`), **never `main`** — see `git-policy.md` → "Branch model".
+  - **Hotfix carve-out (incident lane ONLY).** A `/cicd-mobile-error-team` production hotfix PR targets
+    **`main`** directly: the incident lane is anchored on production (`incident-response.yml` checks
+    out `ref: main`), and the quality gate `pr-check.yml` runs on PRs whose base is `main` — so the
+    hotfix gets real CI. Everything else still holds: it opens as a **draft**, the tap-confirm above
+    is still required, and the agent still never merges it.
 - **"Your Actions" becomes "review the PR."** The `walkthrough.md` closing section links the pushed
   branch / draft PR (`review PR #N`) instead of pasting a git command Daniel can't run.
 

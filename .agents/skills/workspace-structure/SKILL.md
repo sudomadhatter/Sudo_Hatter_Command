@@ -34,9 +34,9 @@ listed in the home router's Sudo-managed exception registry. The `artifacts-alwa
 bucket model. Full model → `docs/workspace-standard.md`.
 
 ## When you CHANGE the structure
-Propagate structural changes to `Projects/Fresh_Workspace_BMAD/` — the living template new projects clone from —
+Propagate structural changes to the `sudo-project-skeleton` repo — the clone source new projects come from —
 so they inherit the current shape, not a stale one. See the `living-template-sync` rule: rules/toolkit ride
-`/sync-agents`; front-door + structure changes are hand-mirrored.
+`/smh-sync-agents`; front-door + structure changes are hand-mirrored.
 
 ## Full spec
 `docs/workspace-standard.md` — the canonical, complete model.

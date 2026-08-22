@@ -1,0 +1,53 @@
+task_key: SCC-90
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-90-sop-teaching-restructure
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+
+# SCOPE CUT 2026-08-11, mid-lane. This branch is the SOP restructure ONLY.
+#
+# It was briefly staged with 27 files. That happened because this lane ran in the
+# SHARED checkout, where a sibling lane's uncommitted work is indistinguishable
+# from its own -- the SCC-58 / SCC-61 failure. The operator caught it before the
+# commit. Everything not listed below was unstaged with `git restore --staged`,
+# which never touches working-tree content; the sibling lane's files are intact.
+in_scope:
+  - docs/_scc_sops_prds/workflows_testing_SOP.md
+  - _artifacts/_main/2026-08-11_scc-90-sop-teaching-restructure/
+  - _artifacts/_main/INDEX.md          # this lane's row only
+
+subtasks:
+  - key: SCC-91
+    what: restructure workflows_testing_SOP.md as a teaching document
+    state: in this branch
+
+related:
+  - key: SCC-89
+    what: relocate the migrations kit into docs/migrations/ and repair its blast radius
+    state: SEPARATE LANE - chore/SCC-89-migrations-to-docs, uncommitted in the shared checkout
+    note: >
+      Pre-existing and properly scoped before this lane began. Its blast-radius list
+      already names this SOP's two dead links as its own, so SCC-89 repoints them.
+      A duplicate sub-task (SCC-92) minted here in ignorance of it was DELETED.
+      This branch therefore leaves both links on _my_resources/ - the path that still
+      resolves on main - so the commit stands alone without depending on SCC-89.
+  - key: SCC-93
+    what: add the Antigravity IDE extension migration guide
+    state: NOT in this branch - the guide lands inside docs/migrations/, which SCC-89 creates
+
+# Deliberately NOT in this branch. task_preflight's own rule: another session's
+# dirty memory files are parked or left -- never swept, deleted, or committed
+# under this task.
+excluded:
+  - _artifacts/_memory/            # README.md + 6 memory files, another session
+  - AGENTS.md                      # SCC-89
+  - router.md                      # SCC-89
+  - .gitignore                     # SCC-89
+  - .gitattributes                 # SCC-89
+  - docs/repo-map.md               # SCC-89
+  - docs/system-builder.md         # SCC-89
+  - docs/workspace-standard.md     # SCC-89
+  - docs/migrations/               # SCC-89
+  - .agents/scripts/link-memory.sh # SCC-89
+  - _artifacts/_main/active-context.md
+  - _artifacts/_main/2026-08-11_antigravity-extension-migration-guide/   # SCC-93

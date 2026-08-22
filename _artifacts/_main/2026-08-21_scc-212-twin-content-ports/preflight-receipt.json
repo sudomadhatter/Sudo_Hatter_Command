@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-212-twin-content-ports",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-212",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "448ba5cf26a8dac56cf1b22b751db9735afee0ec",
+  "warnings": 1,
+  "when": "2026-08-21T10:17:42-04:00"
+}

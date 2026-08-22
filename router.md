@@ -5,7 +5,10 @@ Lobby = categories only; detail lives on each floor. If a request isn't listed h
 Any workspace may send you BACK here ("if not here, go to root router").
 
 > **Note:** all projects live under `Projects/`, each keeping its own git repo. "Converted" = the
-> project has pointer `CLAUDE.md`/`GEMINI.md` + a workspace `AGENTS.md` (Layer-2 map) + vendored `.agents/`.
+> project has pointer `CLAUDE.md`/`GEMINI.md` + a workspace `AGENTS.md` (Layer-2 map) + **its own tier-2
+> law only** (`.agents/rules/` + `.agents/skills/` + `.agents/INDEX.md`) — the center carries all workflow
+> law (`.agents/rules/project-law.md`). Binding a converted project = reading its `.agents/INDEX.md`
+> (§BIND). Legacy full-vendor projects are pending conversion.
 
 ## Artifact ownership
 
@@ -26,6 +29,7 @@ to this registry.
 |---|---|---|---|
 | Aviation ground-school app (FastAPI / ADK / Gemini, voice CFI) | `Projects/AGY_AVIATIONCHAT/` | its `AGENTS.md` | converted (Phase 1) · standard-compliant · repo-map indexed · Phase 2 (rule reconcile) pending |
 | AGY quick-start project skeleton (FastAPI/ADK · Next/React · Firebase) — clone to start a new project | `Projects/Fresh_Workspace_BMAD/` | its `AGENTS.md` | quick-start skeleton · standard-compliant · repo-map indexed + drift hook |
+| AGY quick-start skeleton (canonical GitHub source) — the repo `/smh-new-project` clones | `Projects/sudo-project-skeleton/` | its `AGENTS.md` | skeleton source repo · freshly cloned |
 | BRKN_Tattoos app | `Projects/BRKN_Tattoos/` | its `AGENTS.md` | active |
 | B&L WorldWide | `Projects/B-L-WorldWide/` | its `AGENTS.md` | pending |
 | NEXGen Films | `Projects/NEXGen-Films/` | its `AGENTS.md` | pending |
@@ -33,6 +37,6 @@ to this registry.
 | AviationChat ingestion pipeline — curriculum authoring + gated store ingest (upstream of the app) | `Projects/RAG_Pipeline_AC/` | its `AGENTS.md` · two-team curriculum ops → its `docs/SOP_curriculum_operations.md` | converted · standard-compliant · repo-map indexed · BMAD-lite board |
 | openCode workspace | `Projects/OpenChat-Openrouter/` | its `AGENTS.md` | pending |
 | Maintaining THIS home-base system | `docs/` | `docs/system-builder.md` | active |
-| Setting up a NEW computer (secrets restore) · rename-day restructure | `_my_resources/migrations/` | its `INDEX.md` → `env-migration-guide.md` | active · disposable (deleted after a machine is set up) |
-| **"What do we do next" / open tasks / what's left / Daniel's plans & PRPs** | `_my_resources/open_tasks/` **for where you work FROM** (lobby → home-base `_my_resources/open_tasks/`; inside a converted project → that project's `_my_resources/open_tasks/`) | `todo_list.md` (+ any plan/PRP files there) | active · **READ-ONLY** (Daniel's notes — never edit; cross-check vs live project files) |
-| Reference: routing theory + transcripts | `docs/`, `_my_resources/youtube_transcripts/` | `_my_resources/docs/master-implementation-plan.md` | reference |
+| Setting up a NEW computer (secrets restore) · rename-day restructure | `docs/migrations/` | its `INDEX.md` → `install_guides/new_machine-migration-guide.md` | active · standing reference |
+| **"What do we do next" / open tasks / what's left** | the **live Jira board** of the repo you work FROM (lobby → `SCC`; inside a project → its own key, e.g. `AVCH`) | root `AGENTS.md` §7 · `.agents/rules/jira.md` §The queue — `In Progress` → **`To Do Next`** → `To Do`, first non-empty rank wins | active · ⛔ **never `_my_resources/open_tasks/todo_list.md`** (retired as an agent source, ruling 2026-08-09 — personal notes, stale by design) |
+| Reference: SOPs, PRDs, routing theory | **`docs/_scc_sops_prds/`** (every SOP + PRD) · `docs/workspace-standard.md` | its `INDEX.md` → `workflows_testing_SOP.md` | canonical |

@@ -1,0 +1,10 @@
+== workflow_lint - toolkit-only ==
+[INFO ] commands: testarch-atdd.md: UTF-8 BOM present
+[INFO ] commands: testarch-automate.md: UTF-8 BOM present
+[INFO ] commands: testarch-ci.md: UTF-8 BOM present
+[INFO ] commands: testarch-framework.md: UTF-8 BOM present
+[INFO ] commands: testarch-nfr.md: UTF-8 BOM present
+[INFO ] commands: testarch-test-design.md: UTF-8 BOM present
+[INFO ] commands: testarch-test-review.md: UTF-8 BOM present
+[INFO ] commands: testarch-trace.md: UTF-8 BOM present
+-- 0 error(s), 0 warning(s), 8 info --

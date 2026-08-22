@@ -4,8 +4,8 @@
 
 .DESCRIPTION
   Claude Code keeps auto-memory at  %USERPROFILE%\.claude\projects\<slug>\memory\  where <slug> is
-  DERIVED FROM THE ABSOLUTE PATH of the workspace (':' '\' '/' and '_' all become '-'). That makes the
-  store fragile on three axes:
+  DERIVED FROM THE ABSOLUTE PATH of the workspace (':' '\' '/' '_' and '.' all become '-'). That makes
+  the store fragile on three axes:
 
     1. MACHINE  - ~/.claude is not a repo and is not synced, so memory never leaves the box it was
                   written on.
@@ -67,10 +67,22 @@ $Root = (Resolve-Path $Root).Path.TrimEnd('\')
 $ProjectsStore = Join-Path $env:USERPROFILE '.claude\projects'
 
 # --- the slug algorithm -------------------------------------------------------------------------
-# Verified against every directory present under ~\.claude\projects on this machine: ':' '\' '/' and
-# '_' each become '-'. Nothing else is touched, and case is preserved exactly as the path supplies it.
+# Verified against every directory present under ~\.claude\projects on this machine: ':' '\' '/' '_'
+# and '.' each become '-'. Nothing else is touched, and case is preserved exactly as the path supplies
+# it.
+#
+# '.' IS IN THE SET, and leaving it out is not cosmetic - it silently retargets the whole script. Our
+# home base lives under a DOTTED directory, '.gemini', so the true slug carries a DOUBLE dash there:
+#
+#     c:\Users\dlohn\.gemini\...  ->  c--Users-dlohn--gemini-...
+#                     ^ '\' then '.'        ^^ both dashes
+#
+# A char class without '.' yields '-.gemini', which matches no existing directory. The script would
+# then take itself down the "no local store" path, create a BRAND NEW empty slug dir, junction that,
+# and leave every real memory stranded in the old one - the precise data-loss this tool exists to
+# prevent, wearing a success message. Caught 2026-08-04 on the seeding run, 126 files at stake.
 function Get-MemorySlug([string]$path) {
-  return ($path.TrimEnd('\') -replace '[:\\/_]', '-')
+  return ($path.TrimEnd('\') -replace '[:\\/_.]', '-')
 }
 
 # Drive-letter case (axis 3) is NOT a fragmentation risk on Windows: NTFS is case-INSENSITIVE, so
@@ -80,16 +92,24 @@ function Get-MemorySlug([string]$path) {
 #
 # So: compute ONE slug, then reuse any existing directory that matches case-insensitively rather than
 # creating a second one. Correct on case-insensitive volumes (reuse) and case-sensitive ones (create).
+#
+# Resolve by ENUMERATION, never by Test-Path: Get-ChildItem reports each name as it is stored ON DISK,
+# whereas Test-Path/Get-Item echo back whatever casing the caller supplied (NTFS happily resolves
+# either). PowerShell's Resolve-Path uppercases the drive letter while the harness records the cwd's
+# own casing - here lowercase - so the two spellings routinely disagree. Exact match wins first, so a
+# genuinely case-sensitive volume still picks its exact directory; the case-insensitive pass is the
+# reuse path. Reporting the on-disk spelling matters: an operator comparing this output against
+# `ls ~/.claude/projects` must not see a name that looks like a second, freshly-created store.
 function Resolve-SlugDir([string]$path) {
   $slug = Get-MemorySlug $path
-  $want = Join-Path $ProjectsStore $slug
-  if (Test-Path $want) { return (Get-Item $want -Force).FullName }
+  $all = @()
   if (Test-Path $ProjectsStore) {
-    $hit = Get-ChildItem $ProjectsStore -Directory -Force -ErrorAction SilentlyContinue |
-             Where-Object { $_.Name -ieq $slug } | Select-Object -First 1
-    if ($hit) { return $hit.FullName }
+    $all = @(Get-ChildItem $ProjectsStore -Directory -Force -ErrorAction SilentlyContinue)
   }
-  return $want
+  $hit = $all | Where-Object { $_.Name -ceq $slug } | Select-Object -First 1
+  if (-not $hit) { $hit = $all | Where-Object { $_.Name -ieq $slug } | Select-Object -First 1 }
+  if ($hit) { return $hit.FullName }
+  return (Join-Path $ProjectsStore $slug)
 }
 
 # Count MEMORIES only. README.md / .gitkeep are scaffolding committed so the empty store is visible in

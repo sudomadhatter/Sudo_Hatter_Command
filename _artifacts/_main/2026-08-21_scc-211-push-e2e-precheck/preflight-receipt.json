@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-211-push-e2e-precheck",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-211",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "1c2ee578fe31d735fb49a80f75702e6bbcf5f061",
+  "warnings": 1,
+  "when": "2026-08-21T07:54:54-04:00"
+}

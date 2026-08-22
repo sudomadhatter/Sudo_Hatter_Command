@@ -1,0 +1,50 @@
+### SCC-147 review-fix mutation sweep — 11 CODE-DERIVED mutants, ONE sweep.
+### Restore is from COPIES, never 'git checkout --': this lane has now been bitten TWICE by
+### git-restoring an UNCOMMITTED fix instead of the mutation. Copies are correct either way.
+### M5-M11 are the shapes the REVIEW proved survived the first version of this guard.
+
+== M1: delete the row (cicd) ==
+  engine EXIT=1 FAILED: interactive caller /cicd-code-review: invocation table passes lens_budget standard,   ^ counter-example applies,   ^ counter-example is rejected, cicd-code-review.md carries exactly ONE lens_budget row, cicd-code-review.md names a lens_budget explicitly | fixture EXIT=0 -- 68/68 passed --
+  => KILLED
+== M2: delete the row (smh) ==
+  engine EXIT=1 FAILED: interactive caller /smh-code-review: invocation table passes lens_budget standard,   ^ counter-example applies,   ^ counter-example is rejected, smh-code-review.md carries exactly ONE lens_budget row, smh-code-review.md names a lens_budget explicitly | fixture EXIT=0 -- 68/68 passed --
+  => KILLED
+== M3: INVERT standard->capped (cicd) ==
+  engine EXIT=1 FAILED: interactive caller /cicd-code-review: invocation table passes lens_budget standard,   ^ counter-example applies,   ^ counter-example is rejected | fixture EXIT=0 -- 68/68 passed --
+  => KILLED
+== M4: INVERT standard->capped (smh) ==
+  engine EXIT=1 FAILED: interactive caller /smh-code-review: invocation table passes lens_budget standard,   ^ counter-example applies,   ^ counter-example is rejected | fixture EXIT=0 -- 68/68 passed --
+  => KILLED
+== M5 RELOCATE: row moved to an appendix table at EOF (cicd) ==
+  engine EXIT=1 FAILED: interactive caller /cicd-code-review: invocation table passes lens_budget standard | fixture EXIT=0 -- 68/68 passed --
+  => KILLED
+== M6 RELOCATE: row wrapped in an HTML comment in place (smh) ==
+  engine EXIT=1 FAILED: interactive caller /smh-code-review: invocation table passes lens_budget standard | fixture EXIT=0 -- 68/68 passed --
+  => KILLED
+== M7 RELOCATE: row moved into a fenced example block (cicd) ==
+  engine EXIT=1 FAILED: interactive caller /cicd-code-review: invocation table passes lens_budget standard | fixture EXIT=0 -- 68/68 passed --
+  => KILLED
+== M8 INVERT-IN-CELL: append 'pass capped when large' inside the cell (smh) ==
+  engine EXIT=1 FAILED: interactive caller /smh-code-review: invocation table passes lens_budget standard | fixture EXIT=0 -- 68/68 passed --
+  => KILLED
+== M9 SECOND CONTRADICTORY ROW in a later section (cicd) ==
+  engine EXIT=1 FAILED: cicd-code-review.md carries exactly ONE lens_budget row | fixture EXIT=0 -- 68/68 passed --
+  => KILLED
+== M10 A FOURTH engine caller naming no budget ==
+  engine EXIT=1 FAILED: CALLER_FILES is every command that invokes the engine, zz-temp-caller.md names a lens_budget explicitly | fixture EXIT=0 -- 68/68 passed --
+  => KILLED
+== M11 the negative control's own budget flipped to capped ==
+  engine EXIT=0 -- 762/762 passed -- | fixture EXIT=1 FAILED: README still carries the interactive budget both arms run
+  => KILLED
+
+== restored from copies: tree clean, both guards green ==
+  engine EXIT=0 -- 762/762 passed -- | fixture EXIT=0 -- 68/68 passed --
+  => *** SURVIVED ***
+
+### READ THE LAST LINE CORRECTLY: the closing block is the RESTORED, UN-MUTATED tree. The helper
+### prints "SURVIVED" whenever both guards are green, which is exactly what a clean restore must
+### look like — there is no 12th mutant. Score: 11 mutants declared, 11 KILLED, 0 survivors.
+### Every kill names the specific case that caught it, and no two mutants were caught by the same
+### case alone: M1/M2 delete, M3/M4 invert the value, M5/M6/M7 RELOCATE (appendix, HTML comment,
+### fenced block), M8 inverts INSIDE the cell, M9 adds a contradicting second row, M10 adds an
+### unpinned fourth caller, M11 flips the negative control's own budget.

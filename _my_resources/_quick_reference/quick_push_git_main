@@ -1,0 +1,36 @@
+Standing Branch: chore/SCC-186-standing-push
+
+── METHOD 1: TELL THE AGENT (RECOMMENDED) ──
+Simply instruct: "Commit and push my recent file changes to main under SCC-186."
+The agent syncs latest main into chore/SCC-186-standing-push, stages changed files, commits with "SCC-186 ...", pushes, opens the PR, and verifies the merge.
+
+── METHOD 2: TERMINAL ONE-LINER ──
+# 1. Switch to standing branch and pull latest main
+git checkout chore/SCC-186-standing-push && git pull origin main
+
+# 2. Stage your specific file(s)
+git add path/to/file
+
+# 3. Commit with SCC-186 summary
+git commit -m "SCC-186 <your summary here>"
+
+# 4. Push branch to GitHub
+git push origin chore/SCC-186-standing-push
+
+# 5. Open the Pull Request targeting main
+gh pr create --base main --head chore/SCC-186-standing-push --title "SCC-186 <your summary here>" --body "SCC-186"
+
+# 6. Merge the Pull Request
+gh pr merge --merge
+
+# 7. Return to main and pull latest merge
+git checkout main && git pull origin main
+
+── METHOD 3: SOURCE CONTROL UI ──
+
+1. Bottom status bar: switch branch to chore/SCC-186-standing-push.
+2. Source Control panel: click ... -> Pull, Push -> Pull from... -> origin/main.
+3. Stage files with '+', enter commit message starting with SCC-186, click Commit.
+4. Click 'Sync Changes' / Push.
+5. Create PR on GitHub, wait for main-write-gate check (green checkmark), then click Merge pull request.
+6. Switch back to main and Sync to pull the changes 

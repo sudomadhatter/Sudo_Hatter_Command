@@ -1,3 +1,8 @@
 #!/bin/sh
 # pre-commit-encoding (installed by .agents/scripts/git-hooks/install-encoding-hook.ps1)
-exec "$(git rev-parse --show-toplevel)/.agents/scripts/git-hooks/pre-commit-encoding.sh" "$@"
+#
+# GUARD (SCC-32): same worktree trap as commit-msg — `--show-toplevel` points at the worktree, so a tree
+# cut before this script existed would die on exec instead of committing. Missing script → allow.
+HOOK="$(git rev-parse --show-toplevel)/.agents/scripts/git-hooks/pre-commit-encoding.sh"
+[ -x "$HOOK" ] || exit 0
+exec "$HOOK" "$@"

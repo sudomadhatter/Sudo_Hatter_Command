@@ -1,0 +1,14 @@
+task_key: SCC-164
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-164-gate-cluster
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# ⛔ NO `landing_mode:` KEY, DELIBERATELY. `partial` is the only value anything reads, and it
+# RELAXES a rule (it lets the ceremony flip a subset). Writing `landing_mode: final` looks like
+# the opposite declaration but is an unread string, so the preflight fails it CLOSED rather than
+# letting a well-meant word imply a check nobody wrote. A full landing is the absence of the key.
+#
+# The second half of SCC-164, declared as the next lane by the first half's manifest
+# (2026-08-15_SCC-164-command-surface-family/task.yaml, `landing_mode: partial`).
+# Parts 8-12 of the approved plan: C, G+L, D, E+I. The parent CLOSES at this ceremony.
+riders: [SCC-171, SCC-172, SCC-173, SCC-175, SCC-177, SCC-180]

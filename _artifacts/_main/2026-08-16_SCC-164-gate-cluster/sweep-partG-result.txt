@@ -1,0 +1,23 @@
+-- sweep: 4 mutant(s) over 1 file(s) @ e50bcc9e --
+KILLED    M1
+            KILLED by G2 ·
+            -- filter 'G · SCC-175': matched 1/5 blocks --
+KILLED    M2
+            KILLED by G6b ·
+            -- filter 'G · SCC-175': matched 1/5 blocks --
+KILLED    M3
+            KILLED by G4 ·
+            -- filter 'G · SCC-175': matched 1/5 blocks --
+KILLED    M4
+            KILLED by G7 ·
+            -- filter 'G · SCC-175': matched 1/5 blocks --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet e50bcc9e` is clean --
+-- full file, unfiltered: python3 .agents/scripts/tests/test_jira_feed.py -> exit 0 --
+        | [PASS] G7 · recogniser: MERGE — the other door: '**Land it** — `/cicd-push-e2e`'
+        | [PASS] G7 · recogniser: not a merge row — a real operator decision: '**Rule the landing order.** Recommended: SCC-126 lands first'
+        | [PASS] G7 · recogniser: not a merge row — a real operator decision: '**Decide whether the CONCERNS is worth clearing before the merge.**'
+        | [PASS] G7 · recogniser: not a merge row — SCC-162's genuinely open row: 'Try the lane on something real'
+        | [PASS] G8 · a walkthrough with no merge row returns None, not a verdict: None
+        | -- 271/271 passed --
+
+-- sweep clean: 4/4 killed by their declared case --

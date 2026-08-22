@@ -1,0 +1,128 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+  ],
+  "mutants": [
+    {
+      "id": "T-M1 the ceremony check is disabled outright",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    rows = open_actions(text)\n    if not rows:\n        return []\n    out: list[tuple[str, str]] = []\n    for row in rows:\n        # The ledger row is SCC-175's, in both tick states. See the boundary note above.",
+      "mutated": "    rows = []\n    if not rows:\n        return []\n    out: list[tuple[str, str]] = []\n    for row in rows:\n        # The ledger row is SCC-175's, in both tick states. See the boundary note above.",
+      "case": "B1 RED: SCC-164's two rows are BOTH refused",
+      "block": "SCC-193 B"
+    },
+    {
+      "id": "T-M2 the ledger-row exemption is dropped (the wedge)",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "        if is_ledger_row(row):\n            continue",
+      "mutated": "        if False:\n            continue",
+      "case": "B3b CONTROL: an OPEN ledger row is spared even when it names the click",
+      "block": "SCC-193 B"
+    },
+    {
+      "id": "T-M3 the click pattern loses its verb binding (bare 'merge')",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    (re.compile(r\"\\b(?:click|hit|press)\\b[^\\n]{0,40}?\\bmerge\\b\", re.I),",
+      "mutated": "    (re.compile(r\"\\bmerge\\b\", re.I),",
+      "case": "B2 CONTROL: not flagged \u2014 a product decision that names the merge",
+      "block": "SCC-193 B"
+    },
+    {
+      "id": "T-M4 the re-invoke pattern is removed",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    (re.compile(r\"\\bre-?invoke\\b[^\\n]{0,60}?\" + _CEREMONY_OBJECT, re.I),",
+      "mutated": "    (re.compile(r\"(?!x)x\", re.I),",
+      "case": "B1b a re-invocation with no --after-merge is still refused",
+      "block": "SCC-193 B"
+    },
+    {
+      "id": "T-M5 finish stops refusing on ceremony rows",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    ceremony = ceremony_rows(text)\n    banned = banned_action_rows(text)\n    if ceremony:",
+      "mutated": "    ceremony = []\n    banned = banned_action_rows(text)\n    if ceremony:",
+      "case": "B6 finish REFUSES a walkthrough carrying the ceremony's steps",
+      "block": "SCC-193 B"
+    },
+    {
+      "id": "T-M6 the merge row is read off the TICK again (SCC-175 undone)",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    anc = wf.git([\"merge-base\", \"--is-ancestor\", tip, \"origin/main\"], root)\n    if anc.returncode == 0:",
+      "mutated": "    anc = wf.git([\"merge-base\", \"--is-ancestor\", tip, \"origin/main\"], root)\n    if False:",
+      "case": "D1 without GITHUB_TOKEN: ...and the landed lane SATISFIES it",
+      "block": "SCC-193 D"
+    },
+    {
+      "id": "T-M7 the ledger exemption widens back to a substring (the executed bypass)",
+      "file": ".agents/scripts/jira_feed.py",
+      "block": "SCC-193 B",
+      "original": "        if is_ledger_row(row):\n            continue",
+      "mutated": "        if MERGE_PHRASE in row.lower():\n            continue",
+      "case": "B3c RED: appending the ledger phrase does NOT excuse a ceremony row"
+    },
+    {
+      "id": "T-M8 the 'then run' pattern loses its ceremony object (the false-positive shape)",
+      "file": ".agents/scripts/jira_feed.py",
+      "block": "SCC-193 B",
+      "original": "    (re.compile(r\"\\bthen\\s+(?:invoke|run|call)\\b[^\\n]{0,60}?\" + _CEREMONY_OBJECT, re.I),",
+      "mutated": "    (re.compile(r\"\\bthen\\s+(?:invoke|run|call)\\b\", re.I),",
+      "case": "B7 CONTROL: not flagged \u2014 a product decision that happens to say 'then run'"
+    },
+    {
+      "id": "T-M9 finish refuses on the first family and never reads the second",
+      "file": ".agents/scripts/jira_feed.py",
+      "block": "SCC-193 B",
+      "original": "    if ceremony:\n        say(render_ceremony_banner(ceremony, str(wt), strict=args.strict_actions))\n    if banned:",
+      "mutated": "    if ceremony:\n        say(render_ceremony_banner(ceremony, str(wt), strict=args.strict_actions))\n        return 2\n    if banned:",
+      "case": "B8 finish reports BOTH families in one run, then refuses once"
+    },
+    {
+      "id": "T-M10 the merge-x-pull-request pattern is neutered",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    (re.compile(r\"\\bmerge\\b[^\\n]{0,25}?\\b(?:pull\\s+request|the\\s+PR)\\b\", re.I),",
+      "mutated": "    (re.compile(r\"(?!x)x\", re.I),",
+      "case": "B9 pattern 2 \u00b7 merge x pull request stands on its own",
+      "block": "SCC-193 B"
+    },
+    {
+      "id": "T-M11 the --after-merge pattern is neutered",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    (re.compile(r\"--after-merge\\b\", re.I),",
+      "mutated": "    (re.compile(r\"(?!x)x\", re.I),",
+      "case": "B9 pattern 4 \u00b7 the ceremony's second half stands on its own",
+      "block": "SCC-193 B"
+    },
+    {
+      "id": "T-M12 the run-the-machinery pattern is neutered",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    (re.compile(r\"\\brun\\b[^\\n]{0,50}?\\b(?:jira_feed|task_preflight|flight_recorder\"\n                r\"|gate_receipt|main_write_gate)\\.py\\b\", re.I),",
+      "mutated": "    (re.compile(r\"(?!x)x\", re.I),",
+      "case": "B9 pattern 6 \u00b7 running the machinery stands on its own",
+      "block": "SCC-193 B"
+    },
+    {
+      "id": "T-M13 the --warn-actions opt-out stops being logged",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    if ceremony and not args.strict_actions:",
+      "mutated": "    if False:",
+      "case": "B10 --warn-actions does NOT refuse, and logs that it was chosen",
+      "block": "SCC-193 B"
+    },
+    {
+      "id": "T-M14 the decision-subject carve-out is dropped (the SOP's own exemption)",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "            if i == 1 and decision:\n                continue",
+      "mutated": "            if False:\n                continue",
+      "case": "B11 CONTROL: not flagged \u2014 the SOP names 'a product decision that happens to me",
+      "block": "SCC-193 B"
+    },
+    {
+      "id": "T-M15 the machinery pattern widens back to ANY script under .agents/scripts",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    (re.compile(r\"\\brun\\b[^\\n]{0,50}?\\b(?:jira_feed|task_preflight|flight_recorder\"\n                r\"|gate_receipt|main_write_gate)\\.py\\b\", re.I),",
+      "mutated": "    (re.compile(r\"\\brun\\b[^\\n]{0,50}?(?:\\.agents/scripts/)\", re.I),",
+      "case": "B11 CONTROL: not flagged \u2014 cmd_finish's own docstring names this as the row that",
+      "block": "SCC-193 B"
+    }
+  ]
+}

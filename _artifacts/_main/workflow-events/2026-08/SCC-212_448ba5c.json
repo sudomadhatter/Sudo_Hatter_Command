@@ -1,0 +1,75 @@
+{
+  "v": 1,
+  "task": "SCC-212",
+  "sha": "448ba5cf26a8dac56cf1b22b751db9735afee0ec",
+  "tip": "fb2b338f631d43decc55f237553ecec904377d36",
+  "trigger": "close-out",
+  "when": "2026-08-21T10:17:42-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/cicd-clean-code-audit.md",
+    ".agents/commands/cicd-code-review.md",
+    ".agents/commands/cicd-create-epic-sprint.md",
+    ".agents/commands/cicd-dev-story-tests.md",
+    ".agents/commands/cicd-merge-epic-workingtrees.md",
+    ".agents/commands/cicd-quick-dev.md",
+    ".agents/commands/cicd-self-audit.md",
+    ".agents/commands/cicd-write-story-tests.md",
+    ".agents/commands/smh-clean-code-audit.md",
+    ".agents/commands/smh-code-review.md",
+    ".agents/commands/smh-merge-multiple-workingtrees.md",
+    ".agents/commands/smh-quick-dev.md",
+    ".agents/rules/git-policy.md",
+    ".agents/rules/jira.md",
+    ".agents/scripts/tests/test_command_surfaces.py",
+    ".agents/scripts/tests/test_twin_parity.py",
+    ".agents/workflows/cicd-clean-code-audit.md",
+    ".agents/workflows/cicd-create-epic-sprint.md",
+    ".agents/workflows/cicd-merge-epic-workingtrees.md",
+    ".agents/workflows/cicd-write-story-tests.md",
+    ".opencode/commands/cicd-clean-code-audit.md",
+    ".opencode/commands/cicd-code-review.md",
+    ".opencode/commands/cicd-create-epic-sprint.md",
+    ".opencode/commands/cicd-dev-story-tests.md",
+    ".opencode/commands/cicd-merge-epic-workingtrees.md",
+    ".opencode/commands/cicd-quick-dev.md",
+    ".opencode/commands/cicd-self-audit.md",
+    ".opencode/commands/cicd-write-story-tests.md",
+    ".opencode/commands/smh-clean-code-audit.md",
+    ".opencode/commands/smh-code-review.md",
+    ".opencode/commands/smh-merge-multiple-workingtrees.md",
+    ".opencode/commands/smh-quick-dev.md",
+    "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/assert-scc212.py",
+    "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/edit-spec.md",
+    "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/gates/suite.json",
+    "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/implementation_plan.md",
+    "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/review-authored.diff",
+    "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/review-code.diff",
+    "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/review-findings.md",
+    "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/sweep.json",
+    "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/task.yaml",
+    "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/walkthrough.md",
+    "verdict": "CONCERNS @ 448ba5c",
+    "gates": {
+      "suite": "pass@448ba5c"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "CONCERNS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/git-policy.md",
+    "rule-edited:.agents/rules/jira.md"
+  ]
+}

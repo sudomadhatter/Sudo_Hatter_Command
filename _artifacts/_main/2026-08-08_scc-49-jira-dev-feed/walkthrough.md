@@ -1,0 +1,149 @@
+---
+type: walkthrough
+story: SCC-49
+date: 2026-08-08
+branch: chore/SCC-49-jira-dev-feed
+---
+
+# SCC-49 — Feed dev knowledge back into the Jira ticket
+
+The board could tell you a story existed. It could never tell you what the story was about, or what
+building it taught. ① minted with `--summary` and nothing else, and close-out posted one verdict line —
+so the outline, the decisions, the pitfalls and the still-owed all died in the walkthrough. This puts
+them on the ticket, and makes it impossible to skip quietly.
+
+## Task Checklist
+
+- [x] **Read the ticket and ground it in the code.** Confirmed both halves were genuinely absent, not
+      just thin: no `--description` anywhere in ① Step 1.6, one line in close-out Step 4.5.
+- [x] **`.agents/scripts/jira_feed.py`** — four verbs: `outline` · `mint` · `devrecord` · `check`.
+  - Both write verbs **read the ticket back** and exit 2 if what they claimed to write is not there.
+    An `acli` call that exits 0 while recording nothing is indistinguishable from one that worked.
+  - `acli --json` returns an **array** on `search` and an **object** on `view` / `comment list`; a
+    parser accepting one shape reads a good response as a failure. Both shapes handled.
+  - Descriptions and comments come back as **ADF**, never plain text, so every read-back flattens it.
+  - *Found while testing:* `relative_to()` raises when a path handed in with `--walkthrough` resolves
+    differently from the project root (macOS `/tmp` → `/private/tmp`, or any symlinked worktree). It
+    killed the whole evidence section with a traceback. Now routed through `rel_to()`, which falls back
+    to the absolute path.
+  - *Found while wiring quick-dev:* `wf.resolve_project_root` **dies without a sprint board**, and the
+    command centre deliberately has none — so the one repo where the workflow itself is built was the
+    one repo whose tickets could never carry a record. `devrecord` now resolves leniently.
+- [x] **① `/sudo-write-story-tests` Step 1.6** — the dedupe search and the mint collapse into one
+      `jira_feed.py mint` call. The lane / parallel / blocked ruling stays the agent's judgment.
+- [x] **Close-out Step 4.5** — rewritten from "transition + one line" to transition, **file the Dev
+      Record**, verify. Content comes from Step 3's routing as `--decision` / `--pitfall` /
+      `--followon`; the walkthrough scrape is only a safety net beneath it.
+- [x] **`/sudo-create-epic-sprint` Step 1.5** — epic mint now renders its outline from `epics.md`.
+- [x] **`/sudo-quick-dev` Step 4.5 (new)** — it closes its own branch, so it files its own record.
+      **Exactly one Dev Record per ticket:** an existing record is *updated in place*, never stacked,
+      so the branch-closer and a later story close-out cannot leave two partial records.
+- [x] **The type rule, pinned in one place after being wrong twice.** Cut 1 keyed on the epic
+      *parent* — but everything is parented, and a BMAD epic is indistinguishable in Jira from a
+      grouping epic (`CI/CD Improvment`), so that types every chore Task a Story. Cut 2 keyed on the
+      *story file* alone — but `19.2` is a planned sprint story whose file is not written until ①
+      picks it up. Settled: **Story** takes three signals (dotted number **or** `debug-` marker **or**
+      story file), **Task** is everything else, **Epic** is never computed. `work_type()` is the one
+      implementation; `--type` overrides.
+- [x] **The `Bug` lifecycle — he raises it, the flow clears it.** A Story found broken wears `Bug`
+      and goes back to `To Do`. It carries the same number and file as any Story, so every rule reads
+      it as a mistyped Story and "correcting" it would erase the only signal that it is broken.
+      Exactly one thing clears it: `devrecord --closing` at close-out, the one moment anything can
+      know the fix landed. The bulk `audit` cannot tell "still broken" from "fixed", so it reports
+      Bugs and moves on.
+- [x] **New `audit` verb** — reports every ticket whose type disagrees with the rule, `--apply`
+      migrates and reads each one back. AVCH now returns **every type agrees with the rule (39
+      items)**. SCC needs none: no story files, no sprint board, so all 27 non-epic tickets are
+      correctly `Task` under its five grouping epics — the rule produces that with no per-project
+      switch.
+- [x] **The split lane, closed.** SCC-40 landed on `main` mid-session, so `main` was absorbed here.
+      The merge auto-resolved and **placed Step 3.5 after Step 4** — the silent misplacement predicted
+      in the first pass. Renumbered to **Step 4.5**, which is where it belonged anyway: it points at the
+      walkthrough Step 4 writes, and it now mirrors close-out's own Step 4.5.
+- [x] **Bare `python` swept** — 18 call sites across 5 files (`sudo-code-review`, its `_AP` twin,
+      `sudo-update-sprint-memory` ×3, `sudo-close-workingtree`, `update-maps-indexes` ×12). The Mac has
+      no bare `python` at all, so every one of those was broken on this machine.
+      `rules/sop-currency.md` keeps its bare `python` — it *quotes* the bug as the example.
+- [x] **A silently-disarmed gate, found by the sweep.** Fixing the docs' `python` surfaced the same bug
+      one layer down: `pre-commit-encoding.sh` probed `python || python3`, **never tried `py`**, and on
+      a box with only the Windows launcher the whole substitution failed so the hook `exit 0`'d —
+      **armed in name, checking nothing.** VS Code hides hook output, so that would have stayed
+      invisible indefinitely. Both it and `.githooks/post-commit` now use the same
+      `python3 → python → py` probe as `sop-currency.sh`, and the armed gates *announce* a skip.
+- [x] **78 test cases** in this file (202 across the suite), joined to `run_all.py` by auto-discovery.
+      The probe guard reads **code only** — the fix's own comment quotes the broken line, and a raw
+      grep flagged the fix as the defect on first run. It carries a positive control asserting the
+      strip is load-bearing.
+- [x] **`/close-task-merge-tree` — the Task lane's close-out** (added after the type model settled).
+      The board now knows Task from Story, and the Task half had nowhere to go: BMAD's
+      `/sudo-update-sprint-memory` reads a sprint board, flips a story status and lands on an epic
+      branch, and a Task has **none of the three**. This does the same four things without them —
+      gate, `--no-ff` merge to `main`, one Dev Record + ticket → Done, prune.
+  - **Deliberately not `sudo-*`.** That family binds `sudo-target-resolution.md` — *"never the
+    lobby"* — and toolkit Tasks live in the lobby. The non-`sudo` family (`/sync-agents`,
+    `/update-maps-indexes`) is the one allowed to act on the repo you are standing in, so the
+    naming carries the permission rather than an exception being written for it.
+  - **The E2E question is answered by the repo, not by the agent.** Skipping the end-to-end suite is
+    the *only* thing making this cheaper than `/sudo-push-e2e`, and its one honest justification —
+    *nothing that deploys changed* — is exactly the claim an agent audits worst about its own work.
+    `task_preflight.py` derives it twice over: does the repo **have** a deployable surface at all
+    (empty ⇒ the command centre, where `git-policy.md` already says there is no E2E suite and never
+    will be — nothing is being skipped), and did **this diff** reach one. Touched ⇒ `HANDOFF`, hard
+    exit 2, `/sudo-push-e2e`. **No override flag, on purpose.**
+  - Order settled: **merge, then record.** A ticket reading `Done` while the merge failed is a lie
+    on the board; a merge that landed while the record lags is one command from correct.
+  - No `--closing` on this lane — it clears a `Bug` back to `Story`, and `Bug` is the operator's flag
+    on a broken **Story**. Passing it here would be a dead flag.
+  - *Found while building:* the worktree check flagged the **main checkout** — `git worktree list`
+    block [0] is the checkout itself, which stands on the branch by definition. A warning that fires
+    on every clean run is a warning nobody reads. Now skipped, with a regression case **and** a
+    positive control proving a real extra worktree still trips it.
+  - *Found while building:* a missing `_artifacts/` tree read as "nothing to check" (a WARN). That is
+    backwards — no tree is the **strongest** evidence the walkthrough was never written, and warning
+    there is how the check goes quiet on the one repo that needed it. Now an ERROR either way.
+- [x] **35 test cases** for it (237 across 8 files). The load-bearing pair is one repo, one command,
+      two diffs: `backend/app.py` → HANDOFF + exit 2, `.agents/rules/x.md` → LOCAL + exit 0. Without
+      the second the gate would just be "always stop", which gets routed around inside a week.
+- [x] **Docs** — SOP quick-reference §3/§5/§6 (incl. the lane branch in the shipping diagram),
+      `.agents/rules/jira.md` (a close-out row per type — the type decides which command can reach
+      it), `.agents/rules/git-policy.md` (the chore lane now names its command, and the `main` row of
+      the write gate lists both roads), both INDEXes.
+- [x] `/sync-agents` — mirrors regenerated for Claude, opencode, Antigravity, Codex.
+
+## Evidence
+
+| Claim | Proof |
+|---|---|
+| Full enforcement suite green | `python3 .agents/scripts/tests/run_all.py` → **8/8 files, 237 cases** |
+| New files' own cases | `test_jira_feed.py` → **78/78** · `test_task_preflight.py` → **35/35** |
+| The lane cannot be talked around | same repo, same command: `backend/app.py` in the diff → `LANE: HANDOFF`, exit 2, names `/sudo-push-e2e`; `.agents/rules/x.md` → `LANE: LOCAL`, exit 0 |
+| The command centre needs no exception | live run on this branch → *"this repo has no deployable surface … there is no E2E suite here to skip"*, `LANE: LOCAL` |
+| Outline renders real ACs, invents nothing | `outline --story 12.3.4 --project AGY_AVIATIONCHAT` → all 7 ACs verbatim, story statement, story-file path |
+| Epic outline reads `epics.md` | `outline --epic 12` → goal + the 3 child stories, stops before Epic 13 |
+| `check` works against the LIVE board | `check --key AVCH-15` → description present (142 chars), **no Dev Record → exit 2** |
+| Toolkit lint clean for this change | `workflow_lint.py` → its 1 error is pre-existing AGY epic-19 state, untouched here |
+
+**The load-bearing test cases** (a checker nobody can trust is worse than none):
+
+- acli exits 0 and records nothing → **exit 2, not a false success**
+- a second `devrecord` post → **still exactly one record**, carrying the newer content
+- a fuzzy `~` search hit on a *child* story (`9.1.2` when minting `9.1`) → **not** treated as a reuse
+- a minted ticket whose description never landed → **exit 2**
+- positive control: a fully-fed ticket reports clean (`0 error(s)`)
+
+## Your Actions
+
+**Landed** on `chore/SCC-49-jira-dev-feed` (off `main`). Nothing pushed to `main`.
+
+Two things need your call:
+
+1. **The live post to SCC-49 is held.** You said the ticket was being updated, so I did not write to
+   it. The command is ready and its dry-run output is in the chat — say go and I'll run it.
+2. **AVCH is migrated and clean** — `audit` reports *every type agrees with the rule (39 items)*.
+   Re-run `jira_feed.py audit --jira-project AVCH --project AGY_AVIATIONCHAT` any time; it is
+   idempotent. SCC needs no migration at all.
+
+**Note for whoever picks this up next:** the shared checkout was flipped to another branch mid-session
+by a parallel session (SCC-50), which is why the command bodies briefly appeared to revert. Nothing was
+lost — the work was already committed and pushed. In this checkout, verify
+`git rev-parse --abbrev-ref HEAD` before trusting what a file says.

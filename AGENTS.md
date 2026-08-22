@@ -28,7 +28,7 @@ and its `Load` column states this same classification; if the two ever disagree,
 until reconciled. A rule's own frontmatter does **not** declare its load class.
 
 **FLOOR — load now, every session:** `.agents/rules/operator-profile.md` (**who you're talking to** —
-Daniel is the visionary/chair, you are the engineer; the eight speaking obligations that govern every
+Daniel is the visionary/chair, you are the engineer; the **nine** speaking obligations that govern every
 reply), `.agents/rules/constitution.md` (hard stops + gates), and `.agents/rules/karpathy-guidelines.md`
 (how to work).
 
@@ -50,11 +50,23 @@ floor, and why the trigger has to be a rule you follow rather than a hope.
 in the INDEX). Do not preload. The full rule set is the shared toolkit, not a startup payload. How a
 workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 
-> **Training mode?** When a file named **`.training-mode`** exists at the repo root, also load
-> `.agents/rules/training-mode.md` — the tutor lane for someone LEARNING this system: every answer is
-> a teaching answer, explain before executing, never invent a command. It **supersedes
-> `operator-profile`** while active and nothing else. `/training on|off|status` flips it.
-> `training-mode.md` owns the trigger (single source for the lane boundary).
+> **One on-demand rule is named HERE because its trigger hides in plain sight: the Jira board.** Any
+> sprint/backlog/ticket question — **"what's next?" / "what should I work on?"**, "what's In Progress?",
+> "move/mint this ticket" — is answered from the **live board** via the authenticated `acli` CLI — load
+> `.agents/rules/jira.md` (cheat-sheet + queue order + flag traps + guardrails) and run the query. Never
+> answer "I have no Jira integration": every shell-capable agent on this machine has one. The local
+> `sprint-status.yaml` remains the machine state; Jira is the human view — the rule carries the join.
+> **"What's next" has a defined answer, not a judgment call:** `In Progress` → **`To Do Next`** (the
+> operator's hand-picked queue) → `To Do`, first non-empty rank wins; `Blocking` is an impediment, never
+> a candidate. Full rule → `.agents/rules/jira.md` §The queue.
+
+> **A second on-demand rule is named HERE for the same reason — its trigger is invisible from inside the
+> edit: `sop-currency.md`.** Editing a `/` command, a rule, a safety-net script, a commit gate, or this
+> file **changes how the operator uses the system**, so
+> `docs/_scc_sops_prds/workflows_testing_SOP.md` — the operator's PRD, the one page that
+> answers "what do I type" — must be updated **in the same commit**. An armed commit-msg gate rejects the
+> commit otherwise; `[sop-ok]` in the message is the logged opt-out for changes that genuinely alter no
+> usage. Load the rule before you touch any of those surfaces.
 
 > **Web/mobile session?** When env **`CLAUDE_CODE_REMOTE=true`** (Claude Code on the web or phone), also
 > load `.agents/rules/mobile-mode.md` — the web/mobile lane: it adapts git, the approval gate, artifacts,
@@ -67,8 +79,22 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 > too — not only inside projects.** Full protocol → `.agents/rules/artifacts-always-first.md`; the
 > priority-zero kill-chain that enforces it (and the `_bmad/custom/` guard tomls that load it into every
 > dev-story / quick-dev run) → `.agents/rules/000-PLAN-FIRST-GATE.md`. (Skip only for
-> read-only/investigatory asks and trivial one-liners — that exemption list lives in
-> `artifacts-always-first.md` § "When to Skip" and nowhere else.)
+> read-only/investigatory asks, trivial one-liners, `/cicd-quick-dev`, and **the lightweight lane
+> `/smh-quick-fix`** — that exemption list lives in `artifacts-always-first.md` § "When to Skip" and
+> nowhere else.)
+>
+> **⭐ The lightweight lane, because its trigger is a sentence rather than a file (SCC-162, operator
+> ruling 2026-08-15).** *"Not everything is a full quick dev. sometimes I just want an agent to do
+> something specific… this does not touch anything that can break."* Command-centre work only —
+> *"only for the smh / commands, not normal cicd work"* — and the test is his own sentence: **things
+> that do not affect our development system.** Writing a guide, fixing a reference, tidying a messy
+> source-control state. Invoking **`/smh-quick-fix`** IS the "skip the plan" instruction, and so is
+> saying *"skip the plan, just do it"*. ⛔ **Do not ask whether to mint a ticket or open a lane** —
+> asking is the over-engineering the ruling names. **Qualification is a script, never a judgement:**
+> `python3 .agents/scripts/lane_qualify.py --paths <paths>` — `LIGHT`/`LIGHT-VCS` qualify, and **no
+> paths at all is `TASK`**, because silence is unknown scope. The lane still takes a Jira key, a
+> `chore/*` worktree, the gates, a lean walkthrough, and `/smh-close-task-merge-tree` — there is no
+> lighter door to `main`.
 
 ## 4. WHAT LIVES WHERE  (home-base infrastructure)
 | Area | Path | Purpose |
@@ -78,10 +104,11 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 | Docs | `docs/` | home-base documentation (master implementation plan, workspace standard) |
 | Navigation index | `docs/repo-map.md` | the lobby's repo-map (curated header + auto body); drift-checked at SessionStart |
 | Routing canary | `_routing-canary/` | model-agnostic proof the routing works (Claude/opencode/Antigravity) |
-| System builder | `docs/system-builder.md` | how to add/maintain workspaces (`/new-project`, `/sync-agents`) |
-| New-machine setup (disposable) | `_my_resources/migrations/` | secrets export/restore + rename-day tooling; start at its `INDEX.md`. Not day-to-day infra — deleted once a machine is set up |
-| Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master so `/commands` + skills resolve here. `/sync-agents` mirrors `.agents/commands/` to **all four** platforms (incl. the opencode + Antigravity machine-global caches, and the Codex `~/.codex/prompts` + `~/.codex/skills` caches); `platforms:` frontmatter limits a command's reach |
-| Personal area | `_my_resources/` | Daniel's notes (docs · transcripts · open_tasks) — protected, Tier-2 law; `open_tasks/` (read-only) & `_quick_reference/` (read/write) allow-list carve-outs |
+| System builder | `docs/system-builder.md` | how to add/maintain workspaces (`/smh-new-project`, `/smh-sync-agents`) |
+| New-machine setup | `docs/migrations/` | secrets export/restore + rename-day tooling; start at its `INDEX.md`. Not day-to-day infra, but standing reference — run when pointed at, never deleted (moved out of `_my_resources/` under SCC-89) |
+| Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master. **One door per platform per command (SCC-66):** Claude + Codex enter through a **launcher skill** (generated per eligible command into `.agents/skills/`, tree-copied to `.claude/skills/`; hand-authored `SKILL.md` wins); opencode through `.opencode/commands/`; Antigravity through `.agents/workflows/`. `.claude/commands/` and `~/.codex/prompts` are **retired** doors; `platforms:` frontmatter limits a command's reach |
+| SOPs & PRDs | `docs/_scc_sops_prds/` | **every procedural doc** — what the *operator* does and types, as opposed to `.agents/`, which describes the system to an *agent*. Start at its `INDEX.md`; `workflows_testing_SOP.md` is THE quick reference and is gated by `sop-currency.md`. Consolidated here by SCC-74 |
+| Thinking space | `_my_resources/` | Daniel's brainstorming + personal notes. **⛔ IGNORE unless he links a specific document** (ruling 2026-08-10). Not authoritative, deliberately un-scanned, staleness fine by design. Standing exception: `open_tasks/todo_list.md` (the `## Open Tasks` list only). The `migrations/` exception is **retired** — SCC-89 moved that kit to `docs/migrations/`, so it is now scanned documentation like everything else under `docs/`. Local law → `_my_resources/AGENTS.md` |
 | BMAD (lobby) | `_bmad/` · `_bmad-output/` | BMAD module (regenerated — never hand-edit) + its state/output |
 | Projects | `Projects/<name>/` | project-owned workspaces, each with its own repo and `_artifacts/`, except the explicit Sudo-managed exceptions in `router.md` |
 
@@ -103,25 +130,37 @@ files, per §3); full model →
 
 ## 6. GATES  (consult before acting)
 - **ROUTING GATE**: confirm the target workspace via `router.md` before touching files in it.
+- **PROJECT-LAW GATE — binding a project = loading its law.** The moment a target project is bound
+  (`/cicd-*` Step 0 §BIND, or any work under `Projects/<name>/`), read `PROJECT_ROOT/.agents/INDEX.md`
+  and honor its `Load` column — a converted (thin) project's INDEX routes its own rules + skills; a
+  converted project missing it → STOP. Two-tier contract → `.agents/rules/project-law.md`.
 - **SEARCH GATE** — a root-level Grep is blind to `Projects/` (ripgrep honors the lobby `.gitignore`) and
   reads as a false "clean"; point Grep at `Projects/<name>` or use Bash. **Full mechanics →
   `.agents/rules/lobby-search.md`.**
 - **RISK GATE**: never delete / overwrite / publish without explicit go-ahead.
-- **WORKTREE GATE — worktrees belong to the sudo story lanes.** A story lane (①/②/quick-dev/autopilot)
-  opens its own worktree branched from **`main_debug`** (never `main`) before the first edit — automatic,
-  don't ask — commits **freely** inside it (explicit paths; `git add -A`/`.`/`-u` stay banned), and the
-  SAME flow closes it (close-out lands it; `/sudo-close-workingtree` prunes). **Ad-hoc non-story work
-  never opens a worktree** — it edits `main_debug` directly (an orphan tree no flow will close is the
-  failure this prevents). Read-only sessions: no tree. **Parallel teams are the NORM — up to four lanes
-  (sometimes more) run at once:** expect other lanes' dirty files in the shared checkout (never sweep,
-  revert, or "fix" work you didn't do) and expect `origin/main_debug` to move mid-session; several lanes
-  landing together go through `/sudo-merge-epic-workingtrees`, never one-by-one. Full lifecycle →
+- **WORKTREE GATE — one lane, one worktree.** **Any lane that will produce commits** opens its own git
+  worktree **before the first project file is edited** — automatic, don't ask, and **don't first work
+  out what kind of work this is** (SCC-62, 2026-08-09: the trigger is **concurrency, not work type** — a
+  chore lane beside a story lane collides exactly as hard). What differs by lane is the **branch and its
+  base, never whether you isolate**: a story lane takes `claude/<KEY>-<slug>` off **the story's epic
+  branch** (`epic/<KEY>-<slug>`, never `main`), ad-hoc/Task work takes `chore/<KEY>-<slug>` off `main`.
+  Each is pruned by its own close-out — `/cicd-close-story-merge-tree` for a story, `/smh-close-task-merge-tree`
+  Step 5 for a Task. Commits stay explicit-path (`git add -A`/`.`/`-u` banned). Read-only sessions and a
+  single trivial edit the operator is watching are exempt. A fresh tree does not inherit gitignored
+  assets (`.env`, `auth_keys/`, `.venv`, `node_modules`) — run `.agents/scripts/link-worktree-assets.py`,
+  and `--unlink` **before** any tree is removed. **⛔ Your tree is your world** — never sweep, revert,
+  commit, or **file as a finding** another lane's in-flight work.
+  **Parallel teams are the NORM — up to four lanes (sometimes more) run at once:** expect other lanes'
+  dirty files in the shared checkout (never sweep, revert, or "fix" work you didn't do) and expect the
+  epic branch to move mid-session; several lanes
+  landing together go through `/cicd-merge-epic-workingtrees`, never one-by-one. Full lifecycle →
   `.agents/rules/worktree-per-story.md`.
-- **GIT WRITE APPROVAL — the gate is WHERE a write lands.** FREE: your own `claude/*` branch — commits
-  **and** pushes. SIGN-OFF (per-action, never carries): landing on **`main_debug`** — Daniel's in-the-moment
-  "approved", or invoking `/sudo-update-sprint-memory` (its Step 7 does the landing; invoking it IS the
-  sign-off). OWNER-ONLY: **`main`** — only when Daniel asks directly or runs `/sudo-push-e2e`. Full branch
-  model + enforcement → `.agents/rules/git-policy.md` (web/mobile → `mobile-mode.md`).
+- **GIT WRITE APPROVAL — the gate is WHERE a write lands.** FREE: your own `claude/*` or `chore/*`
+  branch — commits **and** pushes. SIGN-OFF (per-action, never carries): landing on **the epic branch** —
+  Daniel's in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (its Step 3 does the
+  landing; invoking it IS the sign-off). OWNER-ONLY: **`main`** — only via `/cicd-push-e2e` (epic merge,
+  full gate) or Daniel's direct ask. Full branch model + enforcement → `.agents/rules/git-policy.md`
+  (web/mobile → `mobile-mode.md`).
 - Full hard stops + "ask first" list → `.agents/rules/constitution.md`.
 
 ## 7. PERSISTENCE  (you own this — not a vendor)
@@ -129,19 +168,110 @@ files, per §3); full model →
   starts in the lobby. Sudo-managed exceptions use their named home-base buckets; home-base/cross-project
   work uses `_artifacts/_main/`. Full model → `.agents/rules/artifacts-always-first.md` ·
   `docs/workspace-standard.md`.
-- **"pick up"** → read-only continuity brief from the right `active-context.md`, then surface open tasks from
-  this workspace's `_my_resources/open_tasks/todo_list.md` (**READ-ONLY** — never edit; cross-check vs live
-  files; trigger also → `router.md`). **"hand off"** → write state back, append the matching `INDEX.md` row,
-  read it back to verify.
+- **"pick up"** → read-only continuity brief from the right `active-context.md`, then surface open work
+  **from the live Jira board** — `In Progress` → `To Do Next` → `To Do`, first non-empty rank wins
+  (`.agents/rules/jira.md` §The queue; trigger also → `router.md`). ⛔ **NOT from
+  `_my_resources/open_tasks/todo_list.md`** — retired as an agent source (ruling 2026-08-09): it is the
+  operator's personal notes, it is stale, and it duplicates tickets that already exist. Never quote it as
+  "what's next". **"hand off"** → write state back, append the matching `INDEX.md` row, read it back to
+  verify.
+- **Memory — every platform reads it, every machine has it (SCC-65).** The persistent memory store is
+  **`_artifacts/_memory/`** — the repo path is canonical: it travels via git, so it is identical on both
+  machines and readable by every model. **At session start read `_artifacts/_memory/MEMORY.md`** (the
+  index — one line per memory, ≤25 KB) and open the full files relevant to your task. Recalled facts
+  reflect when they were written — verify against the live repo before acting on one.
+  **The store is READ-ONLY except through the sanctioned flows** (the Claude harness auto-memory and
+  `/cicd-update-sprint-memory`'s learning-routing step): never edit, delete, reorganize, sweep, or
+  commit `_artifacts/_memory/` files otherwise — a dirty memory file in your tree that you did not
+  write is another session's work in flight. Write law, for the writers: one index line per memory;
+  update the existing file, never fork a duplicate; wrong → **delete** (git is the undo);
+  closed-but-instructive → compress to a one-line lesson. (Claude's `~/.claude/...` harness path is a
+  per-machine symlink into this store — a convenience, never the mechanism; fresh machine →
+  migrations kit §1 step 8.)
+  ⛔ **THAT SYMLINK POINTS AT THE SHARED CHECKOUT, AND IT IS WHY `main` KEEPS COMING BACK DIRTY
+  (SCC-246).** `~/.claude/projects/<slug>/memory` resolves to `<repo>/_artifacts/_memory` in the
+  **main** working tree — hardcoded, per machine. So an agent working in
+  `.claude/worktrees/<lane>/` still writes its memory into `main`'s tree: the memory never rides that
+  lane's PR, and it sits uncommitted in the shared checkout until a later session finds it and cleans
+  it up as a chore. Measured 2026-08-21: after one lane closed, `main` carried three untracked memory
+  files and a modified `MEMORY.md` from two different sessions.
+  **A memory you write during a lane goes ON THE LANE, in four steps:**
+  1. Write it — the harness writes through the symlink into the shared checkout. Unavoidable.
+  2. **Copy it into your worktree's own `_artifacts/_memory/`** — the file *and* the `MEMORY.md` line.
+  3. **Restore the shared checkout** — `git checkout -- _artifacts/_memory/MEMORY.md`, then remove the
+     new files you wrote there. ⛔ **Only the ones YOU wrote this session**: `cmp` each against your
+     worktree copy first, and never `git clean` that directory.
+  4. Commit on the lane with explicit paths, so the memory lands with the PR.
+  **Another session's uncommitted memory is untouched by every step above** — that protection is the
+  rule stated just before this one and it does not move. The distinction is **authorship**, not
+  tidiness: your own memory has a home (this lane); theirs is work in flight.
+  **That read-only rule governs memory CONTENT.** A **structural** change is a different act —
+  and "structural" means exactly three things, by enumeration, because an undefined word here is a
+  self-authorizing exemption to the one rule protecting memory: (1) the index's **section layout**,
+  (2) the **`## Project stores` pointers**, (3) **relocating** a memory file between tiers. Anything
+  touching what a memory *says* is content and stays read-only. ⛔ **All three still require the
+  operator's explicit approval** — the same per-item yes relocation already needs; a ticket whose
+  title you wrote is not authorization. Editing someone's memory in passing is what the rule
+  forbids; rebuilding the shelf, on a branch that says so and with a yes in hand, is not (SCC-73).
+- **The store is TWO-TIER — lobby = inbox + cross-project, project = settled project history (SCC-73).**
+  The lobby store `_artifacts/_memory/` is where **every** platform writes, always: Claude's harness
+  bakes an absolute per-workspace path into its own memory instruction, and no repo law can redirect
+  it — so a rule saying "write project facts over there" would be unenforceable for the writer that
+  produces most of them. **Do not change where you write.** What settles into project-only truth is
+  **relocated** to that project's own `Projects/<name>/_artifacts/_memory/` by `/smh-memory-audit`, per
+  item, on the operator's word — its fourth disposition beside retire / merge / compress, and its first
+  lever, since SCC-69 measured compaction spent (145 memories, 633 bytes freed). ⛔ **Never relocate a
+  memory on your own judgment, and never outside that command.** Two obligations follow, and
+  `test_memory_store.py` treats them **differently on purpose — one blocks, one only reports**: the
+  lobby index must carry a **`## Project stores`** section signposting every maintained project (a
+  memory moved out with no pointer left behind is indistinguishable from a deletion) — that is a
+  **hard failure**, because this repo owns it. Each project index must carry the **mirror line back**
+  to the lobby (a lane launched inside a project reads only that repo's store, so workflow law and
+  cross-cutting hazards would otherwise be invisible to it) — that is a **`[SIGNAL]`, never a
+  failure**, because it lives in a repo whose armed hook rejects this repo's ticket keys, and a gate
+  that reds for a defect nobody standing here may fix blocks every unrelated lane instead. Cross-project law, operator rulings and the ⛔ hazards **stay in the
+  lobby** — they are not any one project's.
+- **⚠ The memory-audit trigger — a standing obligation for every platform (SCC-68).** Upkeep is gated:
+  `tests/test_memory_store.py` (in `run_all`) enforces the 25 KB index cap + link↔file integrity, and at
+  **90 % of the cap** it prints a `MEMORY AUDIT DUE` block — below the cap, while the run still passes,
+  so the trigger prevents the red instead of being it. **If you see that block, STOP and ask the
+  operator whether to run `/smh-memory-audit` now.** It is a script: it can print, it cannot ask. You are the
+  half that asks — do not silently note it, do not defer it to a later command, and do not decide for
+  them. ⛔ And do not act on it yourself: **never compact, merge, or retire a memory on your own
+  judgment, and never raise the cap.** Compaction is `/smh-memory-audit`'s work, applied per item on the
+  operator's word — a model summarizing away a hard-won pitfall is silent, permanent loss of exactly
+  the recall this store exists for.
 
 ## 8. PORTABILITY
 `AGENTS.md` is the universal contract; `CLAUDE.md` / `GEMINI.md` are one-line adapters pointing here (nothing
-model-specific in shared files). **Codex** reads `AGENTS.md` **and** the Agent Skills in `.agents/skills/`
-natively — it needs no adapter file. One command set (`.agents/commands/`) mirrors to **all four** LLM surfaces
-(Claude, opencode, Antigravity/Gemini, Codex) via `/sync-agents` (`platforms:` frontmatter opts a command out;
-default = everywhere). Codex's `/commands` equivalent is custom prompts (`~/.codex/prompts`, invoked
-`/prompts:<name>`); BMAD's skills — which install to `.claude/skills`, outside Codex's search path — are mirrored
-to `~/.codex/skills` so BMAD is reachable there too. Full model → `docs/workspace-standard.md`.
+model-specific in shared files) — **asserted, not assumed**: `tests/test_entry_adapters.py` fails the suite on
+any adapter line beyond the redirect (SCC-279, after root `GEMINI.md` grew three Gemini-only hard rules that
+no other platform could see). **Codex** reads `AGENTS.md` **and** the Agent Skills in `.agents/skills/`
+natively — it needs no adapter file. One command set (`.agents/commands/`) reaches **all four** LLM surfaces
+via `/smh-sync-agents`, with **one door per platform per command (SCC-66)**: Claude and Codex invoke the
+**launcher skill** (generated per claude/codex-eligible command; the skill's whole body is "read the command
+file, follow it end to end", so the command stays the single brain); opencode invokes its command mirror;
+Antigravity its workflow mirror (12k-cap thin launchers included). `platforms:` frontmatter limits reach;
+default = everywhere. The retired doors — `.claude/commands/` and Codex custom prompts (`~/.codex/prompts`,
+`/prompts:<name>`) — double-doored commands beside their skills and are purged by the sync. BMAD's skills —
+which install to `.claude/skills`, outside Codex's search path — are mirrored to `~/.codex/skills` so BMAD is
+reachable there too. Full model → `docs/workspace-standard.md`.
+
+**⭐ Command naming law (SCC-63, 2026-08-09).** A command's prefix declares what it IS, and the prefix
+is load-bearing — it decides what the command is allowed to touch:
+
+| Family | What it is | Target |
+|---|---|---|
+| **`cicd-*`** | the BMAD-paired story/epic dev loop and its logistics (write → dev → review → close, boards, worktrees, autopilot, shipping) | binds `smh-target-resolution.md` — **exactly ONE project, never the lobby** |
+| **`smh-*`** | workflows run ON the command centre + everyday operator tasks (sync, maps, memory, Task close-out, ideation) | allowed to act on the repo you are standing in |
+| **`sentry-*`** | the Sentry incident system — a separate system from the dev loop | reserved family; one member today |
+
+Rules: **hyphens only, never underscores.** An autopilot twin appends **`-AP`**. Vendor BMAD bridges
+(`dev`, `pm`, `qa`, `sm`, `tea`, `analyst`, `architect`, `testarch-*`, …) keep their upstream names and
+take **no** prefix. **Skills take no prefix** — a prefix marks a command; a generated launcher inherits
+its command's name, a hand-authored skill is named for what it knows. ⛔ The `sudo-` prefix is
+**RETIRED**: any `/sudo-` reference anywhere in this system is stale by definition. Enforced
+mechanically by `workflow_lint.py --toolkit-only`.
 
 > **GitNexus** — code-intelligence (impact · detect_changes · query · context) for this repo →
 > `docs/gitnexus.md`. (Lobby index is routing-surface only; product work uses `repo: "AGY_AVIATIONCHAT"`.)

@@ -1,8 +1,6 @@
 ---
 name: artifacts-always-first
-description: "The single source of truth for the plan-first artifact protocol. Create implementation_plan.md and get explicit approval BEFORE modifying ANY project file. Track with the live TodoWrite task list. A session/story closes with TWO living docs: implementation_plan.md (+ appended ## Self-Audit) and walkthrough.md (outline ## Task Checklist + ## Evidence + ## Suite Ledger + appended ## Code Review + ## Your Actions). No standalone audit/review files, no task-list.md / your-action-required.md. No exceptions."
-why: "Artifacts are Daniel's primary interface for reviewing session work, and _artifacts/ is the cross-project memory every agent reads - skipping it breaks the collaboration model."
-since: 2026-06-24
+description: "The single source of truth for the plan-first artifact protocol. Create implementation_plan.md and get explicit approval BEFORE modifying ANY project file. Track with the live TodoWrite task list. A session/story closes with TWO living docs: implementation_plan.md (+ appended ## Self-Audit) and walkthrough.md (outline ## Task Checklist + ## Evidence + ## Suite Ledger + appended ## Code Review + ## Your Actions). No standalone audit/smh-review files, no task-list.md / your-action-required.md. No exceptions."
 ---
 
 # Artifacts — Always First
@@ -29,7 +27,7 @@ Keep it minimal — **TWO living docs** per session, hard-budgeted:
    update live). AT COMPLETION its end-state becomes the walkthrough's **`## Task Checklist`** outline
    (§5) — never a separate file, never a hand-maintained parallel `task.md`.
 2. **`implementation_plan.md`** — the plan Daniel signs off on (the "approved" gate) AND the pre-dev
-   audit's home: `/sudo-self-audit` **appends its `## Self-Audit (<date>)` section here** (§7). A
+   audit's home: `/cicd-self-audit` **appends its `## Self-Audit (<date>)` section here** (§7). A
    living pre-dev doc — no standalone audit file.
 3. **`walkthrough.md`** — the SINGLE closing doc, outline-first (§5): header → **`## Task Checklist`**
    (the task outline — pitfalls/findings indented under the tasks that fought back) →
@@ -38,41 +36,52 @@ Keep it minimal — **TWO living docs** per session, hard-budgeted:
    landed + what's still on Daniel). Everything final lives here; the review appends, never forks.
 4. **`bug-list.md`** — ONLY for debugging / live-testing sessions. A simple bug list.
 
-**Budgets (targets):** `implementation_plan.md` ≤ 8 KB incl. its audit section; `walkthrough.md`
-≤ 10 KB incl. its review section. Right ~99% of the time; a multi-phase or multi-repo plan may run
-longer.
+**Dense, not short — and there is NO byte cap.** Both docs are re-read on every pass of the loop: the
+dev writes the plan, `/cicd-self-audit` appends into it (§7), the reviewer reads it, close-out reads it
+before flipping status. Every line is paid for repeatedly, so every line must earn it — a decision, a
+constraint, a finding, or evidence. Cut restatement of the codebase, narrative filler, and context
+already stated elsewhere. Test evidence is totals lines + SHA, never reporter dumps; a re-run REPLACES
+the pasted totals (git keeps history) — only the `## Suite Ledger` accretes rows. Feels bloated →
+compress in place (pointers to git / the story file), **never a new file**.
 
-> **Scope — per-story artifacts only.** The budget caps what dev and close-out must RE-READ, so it
-> covers artifacts of stories still moving through the loop. **`_artifacts/_main/` initiative plans,
-> closed stories, `_archived/`, and `debugging/` are OUT of scope** — that is exactly what
-> `workflow_lint.check_artifact_budgets` enforces, and it **warns, never blocks**. Do not compress a
-> `_main/` plan to hit a number that was never aimed at it.
-
-- **HARD — accuracy outranks the budget.** Never drop a decision, a file, or a caveat to hit a byte
-  count. If the work genuinely needs the space, write it and state the size + reason in chat. Daniel
-  can call it bloat and make you cut — that is his call, not one to make silently on his behalf.
-  Never ask permission for bytes: the ask lands before the content exists, so it cannot be judged.
-- **HARD — never a new file.** Over budget → compress in place (pointers to git / the story file).
-  Splitting the record across files is the failure the budget actually guards against.
-
-Test evidence is totals lines + SHA, never reporter dumps; a re-run REPLACES the pasted totals (git
-keeps history) — only the `## Suite Ledger` accretes rows.
+> ⛔ **Length is NEVER a reason to omit a finding, an AC, or a piece of evidence.** A plan that grew
+> because the audit found eight real things is working correctly. Truncating substance to hit a number
+> is the failure this rule exists to prevent — not the outcome it wants.
+>
+> *Hard caps (8 KB / 10 KB) were set 2026-08-02 and **removed 2026-08-08 (SCC-51, operator ruling).**
+> They shipped in the same commit that made `implementation_plan.md` a TWO-author doc (plan + audit),
+> and the number was never validated against a real audit; the first Full audit run under it had to
+> compress its own findings to fit. The discipline stays, the number is gone.*
 
 > Do NOT create: a parallel `task.md`, a standalone `task-list.md` / `your-action-required.md`,
 > index/`00_artifacts-list.md` files, the verbose `debug-watch-log.md`, a standalone
 > `self-audit-stress-test.md` (§7), or a standalone `code-review.md` /
-> `sudo-code-review-<story>.md` (§6) — audits live IN the plan, reviews live IN the walkthrough.
+> `cicd-code-review-<story>.md` (§6) — audits live IN the plan, reviews live IN the walkthrough.
 > Stories closed before 2026-08-02 carry the old standalone files: valid history, read them there,
 > never write new ones. TEA test-artifacts (`atdd-checklist-*`, `automation-summary-*`,
 > `certification-*.json` under `_bmad-output/test-artifacts/`) are OUT of this set by design and stay
 > standalone. The rest of the flow is identical for normal dev and stories.
 
-> **🔗 Link every artifact — and every file — in the chat, always.** The moment you write or update ANY
-> artifact (plan, walkthrough, bug-list, code-review, self-audit) — or name / hand over ANY file or path —
-> post a **clickable Markdown link `[label](relative/path)`** in the chat that same turn, with a one-line
-> note of what it is. Daniel reviews from the conversation — a file he can't open from chat may as well not
-> exist. This is the always-on **"clickable links, never bare paths"** rule from `constitution.md`, applied
-> to the artifact set (and every file path alongside it).
+## Hand It Back
+
+**🔗 Every artifact — and every file — goes back as a clickable link, in the chat, that same turn.**
+The moment you write or update ANY artifact (plan, walkthrough, bug-list, code-review, self-audit) —
+or name / hand over ANY file or path — post a **Markdown link `[label](relative/path)`**, relative to
+the workspace root, with a one-line note of what it is. The operator reviews from the conversation: a
+file they cannot open from chat may as well not exist. This is the always-on **"clickable links,
+never bare paths"** rule from `constitution.md`, applied to the artifact set and to every file path
+alongside it.
+
+⛔ **The worktree path is the case that actually breaks.** Lane artifacts live under
+`.claude/worktrees/<slug>/_artifacts/_main/<date>_<slug>/` — not where the operator is standing, and
+not a path anyone reconstructs from memory. Naming that folder in prose hands over nothing.
+
+⭐ **This section is not where the rule does its work — §2, §3 and §5 are.** The duty was stated
+here, in this file, and still did not fire: SCC-190 ran an entire lane — plan, five review lenses,
+close-out, PR — handing back bare paths the whole way, and the operator had to ask for the links
+outright. A rule read at the top of a file is not read at the moment of the act, so it is repeated at
+each of the three seams where an artifact is produced. That repetition is deliberate: `SCC-200` in
+`test_command_surfaces.py` fails if any seam loses it.
 
 ## The Rule
 
@@ -137,7 +146,7 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
   - One `walkthrough.md` in the folder is the whole record (no `implementation_plan.md`), plus a row
     in `quick_fixes/INDEX.md` — that INDEX is the numbering register, so **append its row by hand**;
     it is the exception to the batch-reconcile note below.
-  - This is where `/sudo-quick-dev` work lands when it turns out not to be a story, and it is the
+  - This is where `/cicd-quick-dev` work lands when it turns out not to be a story, and it is the
     home for the follow-on class in `followon-fixes-are-not-a-new-story`.
 - **System / infrastructure** ("systems things": the agent system, rules, scripts, CI, cross-cutting config)
   → the owning store's `_main/<YYYY-MM-DD>_<slug>/`. A quick fix that happens to touch infra matches
@@ -150,7 +159,7 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
 
 > **The `INDEX.md` ledger is reconciled in batch — do NOT hand-append a row every session.** That machinery
 > already exists: the SessionStart hook chain runs `check_maps.py --depth3-only` and
-> `record_map_changes.py --nag`, and `/update-maps-indexes` does the real pass (audits every `INDEX.md`,
+> `record_map_changes.py --nag`, and `/smh-update-maps-indexes` does the real pass (audits every `INDEX.md`,
 > reconciles `AGENTS.md`/README pointers against disk). Getting the artifact into the **right folder** is the
 > per-session obligation — the ledger catches up on its own, and it is run deliberately, on cheaper agents.
 > Append a row by hand only when you are the only one who can write it: a session whose "What" needs context
@@ -162,7 +171,12 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
 
 Start the **TodoWrite task list** (this is the task tracker — no `task.md` file), then write
 `implementation_plan.md` (goal, every file touched with links, execution order, open questions,
-verification plan). Use the `Write` tool. Frontmatter on every artifact file:
+verification plan). **The touch-list half of that takes ONE fixed form (SCC-226): a
+`## Declared Change Set` section** — one repo-relative path per bullet, op marker `NEW` / `EDIT` /
+`DELETE`, and `→ <the acceptance row it serves>` — parsed by `.agents/scripts/declared_change_set.py`
+(the self-audit's Scope Ledger and the review drift check both read it; a bullet that fails the
+grammar is reported `incomplete`, and an absent block is the reviewer's *important* finding). The
+block **satisfies** this paragraph's requirement; it does not replace it. Use the `Write` tool. Frontmatter on every artifact file:
 
 ```markdown
 ---
@@ -183,13 +197,24 @@ link with a teaser — the whole plan, in the conversation, so Daniel can approv
 a file. A link alone (or a digest of a plan he cannot see) is a **gate violation**, not a style choice:
 he is being asked to approve something he has not been shown.
 
-Only exception: a genuinely long plan (≳ the 8 KB target) may lead with the decisions and trade-offs in
-full and link the exhaustive file-by-file appendix — the reasoning he must judge is never the part
-abbreviated. Same principle as `operator-profile.md`: narrative briefing first, compressed record second.
+Only exception: a genuinely long plan may lead with the decisions and trade-offs in full and link the
+exhaustive file-by-file appendix — the reasoning he must judge is never the part abbreviated. That is a
+judgement about what he needs in front of him, never a byte count. Same principle as
+`operator-profile.md`: narrative briefing first, compressed record second.
+
+**🔗 Hand it back.** Post the link in the same turn you write the file —
+`[implementation_plan.md](_artifacts/_main/<date>_<slug>/implementation_plan.md)`, relative to the
+workspace root. The paste and the link are not alternatives: the paste is what gets read now, the
+link is what gets re-opened, annotated and returned to later.
 
 ### 3. STOP — wait for the gate phrase
 Do nothing else. Do not "prepare" files, update story status, or touch `sprint-status.yaml`
 until you hear **"approved"**.
+
+⛔ **🔗 Hand it back — the approval request CARRIES the link.** Asking for sign-off on a document the
+operator was never handed is this rule's defect in one sentence, and it is a gate violation for the
+same reason a link-only plan is: they are being asked to approve something they cannot open. End the
+request with `[implementation_plan.md](<relative/path>)`.
 
 **Granularity:** every story AND every code-touch gets its own plan + sign-off. An
 epic-level plan is NOT a license to implement stories without per-story approval.
@@ -216,25 +241,35 @@ fought back. In this order:
    result · why this run`. The certification row carries the SHA; the review step appends its rows.
 5. **`## Code Review (<date>)`** — appended by the review step (§6), never pre-written by the dev.
 6. **`## Your Actions`** (LAST) — what landed (the `claude/*` branch, the commit range, whether it
-   reached `main_debug`) plus anything still on Daniel: a `main` promotion, a live check, a decision.
-   Also posted in chat. The review step attempts any agent-solvable row here and ticks it; only
-   genuine human calls survive. Not a `git add` block — the agent commits its own work in the
+   reached the epic branch) plus **errands only**: what the operator must go and DO outside this
+   chat — promote an epic to `main` via `/cicd-push-e2e`, live-test a P0 feature, exercise an agent
+   we built, create an account on an external service we need.
+   ⛔ **Never a decision or a question.** The operator is in the session — ask, and tick the row with
+   the answer. A row survives only if they would have to leave the chat to do it.
+   Also posted in chat. Not a `git add` block — the agent commits its own work in the
    worktree and lands it at close-out (→ `git-policy` · `worktree-per-story`).
 
 Do NOT split any section into a separate file — one doc holds the outline, the evidence, the review,
 and the actions.
 
+**🔗 Hand it back.** The walkthrough is the closing deliverable, so the close is not done until its
+link is in the chat: `[walkthrough.md](_artifacts/_main/<date>_<slug>/walkthrough.md)`, relative to
+the workspace root. Same at every later touch — §6's review section and §7's self-audit are edits to
+these files, and each one gets its link posted again.
+
 ### 6. Append `## Code Review (<date>)` to `walkthrough.md` (whenever a code review runs)
-**Any code review — `/sudo-code-review`, `/code-review`, `bmad-code-review`, or an ad-hoc review —
+**Any code review — `/cicd-code-review`, `/smh-code-review`, `/code-review`, or an ad-hoc review —
 writes its findings INTO the session/story `walkthrough.md` as a `## Code Review (<date>)` section.**
 Presenting findings only inline in the chat is NOT sufficient, and a standalone review file is no
 longer the home. The section carries:
 - the canonical verdict line — **`Verdict: PASS|CONCERNS|FAIL|WAIVED @ <reviewed-sha>`** — plus the
-  SHA the suite evidence was measured on. This line is what `/sudo-update-sprint-memory` reads before
+  SHA the suite evidence was measured on. This line is what `/cicd-update-sprint-memory` reads before
   flipping a story to `done`; any code/test diff between that SHA and HEAD invalidates the verdict.
 - scope (files/diff reviewed) and method/effort — one line each,
 - **ONE findings table** (the only copy anywhere — the story file links here, never restates):
-  `file:line` · severity · failure scenario · disposition (applied / deferred / dismissed),
+  `file:line` · severity · failure scenario · disposition (applied @ sha / deferred — blocked by
+  another live lane · another repo · an open decision / dismissed — a relevance kill carries its
+  one-line reason, noise is count-only; a review never produces a ticket),
 - each gate check's result in one line, with the actual suite totals (rows also go to
   `## Suite Ledger`).
 
@@ -247,7 +282,7 @@ minimal walkthrough and put the section in it. Multiple reviews append multiple 
 > a walkthrough has no `## Code Review` section. **Never write a NEW review to those paths.**
 
 ### 7. Append `## Self-Audit (<date>)` to `implementation_plan.md` (whenever the pre-dev audit runs)
-**Every `/sudo-self-audit` run appends its result INTO the plan it audited** as a
+**Every `/cicd-self-audit` run appends its result INTO the plan it audited** as a
 `## Self-Audit (<date>)` section — presenting findings only inline in the chat is NOT sufficient, and
 a standalone audit file is no longer the home. The section carries: the right-size level
 (Skip/Light/Full), **one line per phase walked** (what was checked and cleared — the evidence the
@@ -271,7 +306,85 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
 ## When to Skip
 - **Investigatory requests** ("explain how X works", "where is Y?") — no artifacts needed.
 - **Trivial one-liners** (typo, comment fix) — mention what you changed; skip the full cycle.
-- **Daniel explicitly says** "skip the plan, just do it" — still write a walkthrough after.
+- **Daniel explicitly says** "skip the plan, just do it" — that phrase names **the lightweight lane
+  below**, and everything written there applies. It used to dead-end here, telling an agent to skip the
+  plan and nothing about what to do instead; that gap is what put a doc-only edit through the full Task
+  ceremony on SCC-161. Saying it and typing `/smh-quick-fix` are the same instruction.
+- **⭐ `/smh-quick-fix` — THE LIGHTWEIGHT LANE (SCC-162, operator ruling 2026-08-15).** Command-centre
+  work that touches nothing which can break: *"sometimes I just want an agent to do something specific…
+  this does not touch anything that can break. so we don't need to over engineer it."* Scope, from the
+  same operator: **`smh-*` / command centre only — never `cicd-*` product work** — and the test is his
+  own sentence, ***"things that do not affect our development system."*** Typical work: writing a
+  document or a guide, fixing a reference, tidying a messy source-control state.
+  - **Invoking it IS the "skip the plan" instruction**, exactly like `/cicd-quick-dev` above. No
+    `implementation_plan.md`, no `approved`, no `/smh-self-audit`, no RED-first assertion, no review
+    verdict. ⛔ And **do not ask** *"shall I mint a ticket / open a lane / write a plan?"* — asking is
+    the over-engineering the ruling is against. Mint, cut, do, push, hand back.
+  - **Qualification is mechanical, never a judgement** — that is the whole reason this entry can be
+    trusted, because the previous version of this rule was prose and an agent talked itself past it:
+    ```
+    python3 .agents/scripts/lane_qualify.py --repo "$(git rev-parse --show-toplevel)" \
+            --paths <the paths you will touch>                                  # PC: `python`
+    ```
+    `LIGHT` (or `LIGHT-VCS`) qualifies. `TASK` / `HANDOFF` / `NOT-COMMAND-CENTRE` do not — and note
+    that **no paths at all is `TASK`**, because silence is unknown scope, never empty scope. A
+    git-hygiene action that genuinely edits no files declares `--no-file-changes` and may delete only
+    refs the operator named, never a swept set.
+  - **What it still keeps, because each is machine-enforced:** the Jira key and a `chore/<KEY>-<slug>`
+    branch in its own worktree (the armed `commit-msg` hook refuses a keyless commit) · explicit-path
+    commits, pushed before hand-back · the SOP-currency gate where it applies · a lean `walkthrough.md`
+    carrying **`## Your Actions`** (the close-out preflight errors without it) · `task.yaml` beside it ·
+    close-out through **`/smh-close-task-merge-tree`, unchanged** — there is no lighter door to `main`,
+    and a missing review verdict simply means that close-out runs the full gate itself.
+    ⚠️ Those guarantees assume **armed hooks**; `core.hooksPath` is per-machine, so on a fresh clone
+    they are prose until the migrations kit arms them.
+  - **A fired EJECT re-arms this gate** — same rule as `/cicd-quick-dev`. Before the walkthrough,
+    re-run `lane_qualify.py` against the **real** diff (`git diff --name-only main...HEAD`); anything
+    but `LIGHT` and the work continues on `/smh-quick-dev` with a plan and an `approved`.
+- **`/cicd-quick-dev`** — **invoking that command IS the "skip the plan" instruction above**, the same way
+  invoking `/cicd-close-story-merge-tree` IS the close-out sign-off. It runs no `implementation_plan.md` and
+  waits for no "approved"; its gate is the human review at the end. The exemption is conditional on its
+  guards staying intact — the worktree/chore branch, the acceptance criteria fixed in Step 1, the EJECT
+  tripwire, and the mandatory review gate. **A fired tripwire re-arms this gate:** the moment the work
+  ejects to the full lane, it is no longer exempt and needs an approved plan like anything else.
+  - Its record is **spec + thin walkthrough**: the spec the skill writes (in `_bmad-output/`) is the
+    working doc; the `walkthrough.md` in the owning `_artifacts/` store **links** it rather than restating
+    it, and still carries `## Task Checklist` → `## Evidence` → `## Code Review (<date>)` (with the
+    canonical `Verdict:` line) → `## Your Actions`. The walkthrough is never skipped.
+
+## The memory store — what it is for, and what it must never carry
+
+`_artifacts/_memory/` is **recall, not law.** Every platform reads its index at session start, on both
+machines — that reach is why misusing it is dangerous rather than merely untidy. It lives under
+`_artifacts/`, which this rule owns, and its `protocol` load class fires on any session that may modify
+files: exactly the agent about to write a memory.
+
+**A memory has four properties that make it unable to hold an obligation.** It is **prunable** — the
+memory audit retires, merges and compresses entries against a 25 KB index cap, so an obligation stored
+here is one compaction from gone. It is **unenforced** — no gate reads it, so ignoring it is silent. It
+is **advisory by contract** — recalled entries arrive as background context describing what was true
+when written. And it **creates false coverage**: the dangerous case is not a missing memory, it is a
+present one that makes an unfixed problem look handled.
+
+**DO record** context (how the system is used, what was decided, why a shape is what it is) · gotchas
+(a trap that cost real time and is invisible from the code — `echo` truncates at `\c`; one machine has
+no `python3`, the other no bare `python`) · pointers (where a thing lives, which ticket settled it) ·
+**a pointer to a rule** — *"this law lives in `<rule>`"* is correct and encouraged.
+
+⛔ **DO NOT put an obligation in a memory.** If a thing must be *followed* — a gate, a test, a required
+step, a discipline — it is a **rule**, with a pointer a linter can check. **Do not write a memory
+instead of a fix**: "remember to do X" is not doing X. **Do not treat an existing memory as proof
+something is handled** — a memory that reads like law is a signal the law has no rule yet.
+
+**The test, before writing one:** *if this memory disappeared tomorrow, would something BREAK, or would
+someone merely have to look it up again?* **Break → it is a rule**, and writing a memory instead is the
+failure this clause exists to stop. **Look it up → a memory is correct.**
+
+⛔ **Never sweep another session's memory into your diff.** The store is shared and two-tier since
+SCC-73 — the lobby's index plus each project's own — so a `git add` over `_artifacts/_memory/` picks up
+whatever a sibling lane left uncommitted. Explicit paths, the entries YOU wrote, nothing else.
+
+---
 
 ## Hard Stops
 - NEVER modify any project file before `implementation_plan.md` is approved.
@@ -285,14 +398,12 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
 - NEVER finish a `walkthrough.md` without its `## Task Checklist`, `## Evidence` (+ `## Suite Ledger`
   for story work), and `## Your Actions` sections (what landed + what's still on Daniel lives in the latter).
 - NEVER write the task outline, evidence, review, or "Your Actions" as separate files — they are sections inside `walkthrough.md` (§5).
-- NEVER answer an over-budget doc by splitting it into a second file (see The Lean Artifact Set) —
-  compress in place; a re-run REPLACES pasted totals, only the `## Suite Ledger` accretes. The byte
-  targets themselves are targets: NEVER cut a decision, file, or caveat to hit one — write what the
-  work needs and state the overage.
-- NEVER edit a project file for sudo-lane story work before opening its worktree — then commit your own work inside it freely (explicit paths, never `git add -A`). Ad-hoc non-story work edits `main_debug` directly — no worktree (→ `worktree-per-story` Trigger). Landing on `main_debug` needs Daniel's sign-off; `main` is his alone. Full policy → the `git-policy` + `worktree-per-story` rules.
+- NEVER let a living doc blow its budget (see The Lean Artifact Set) — compress in place; a re-run
+  REPLACES pasted totals, only the `## Suite Ledger` accretes.
+- NEVER edit a project file for a commit-producing lane before opening its worktree — story and Task lanes alike (SCC-62: story → `claude/*` off the epic branch, ad-hoc/Task → `chore/*` off `main`) — then commit your own work inside it freely (explicit paths, never `git add -A`). Landing on the epic branch needs Daniel's sign-off; `main` is his alone (via `/cicd-push-e2e` for an epic, `/smh-close-task-merge-tree` for a Task). Full policy → the `git-policy` + `worktree-per-story` rules.
 - NEVER deliver code-review findings inline-only — append the `## Code Review (<date>)` section to the
   walkthrough (§6); never mint a standalone review file (legacy paths are read-only history).
-- NEVER deliver `/sudo-self-audit` findings inline-only — append the `## Self-Audit (<date>)` section
+- NEVER deliver `/cicd-self-audit` findings inline-only — append the `## Self-Audit (<date>)` section
   to the plan (§7); never mint a standalone audit file.
 
 ## Why this matters

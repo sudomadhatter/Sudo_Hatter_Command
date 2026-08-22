@@ -38,7 +38,7 @@ Two legitimate exits, both endings rather than workarounds:
   output as the reproduction.
 - **It genuinely does not reproduce** — heisenbug, prod-only, race, one Sentry event and nothing since.
   **Add observability, say so plainly, stop.** Naming a bug unreproducible is a real result; you cannot
-  verify a fix for something you cannot trigger. (Same shape as `sudo-mobile-error-team`'s "not a fire.")
+  verify a fix for something you cannot trigger. (Same shape as `cicd-mobile-error-team`'s "not a fire.")
 
 ### G1.5 · MINIMIZE
 
@@ -80,7 +80,7 @@ observation.** Never stack speculative fixes.
 
 Escalation is **not failure**. Hand over the reproduction, the minimized case, the red test, and the
 list of what is now **ruled out** — that is real progress, and exactly what the next agent or Daniel
-needs. In a `/sudo-quick-dev` lane it is the same signal as the EJECT tripwire: stop, this is not a
+needs. In a `/cicd-quick-dev` lane it is the same signal as the EJECT tripwire: stop, this is not a
 quick fix.
 
 ### G4 · FIX — minimal, at the cause
@@ -143,7 +143,7 @@ alongside it and isolating nothing; only relocating it proved the behavioral tes
 Both are diligence-shaped failures, which is why they are written down.
 
 The halves of this rule already existed — `karpathy-guidelines` §1 (root cause before symptom),
-`sudo-quick-dev` Step 2 (one pinning regression test), `sudo-mobile-error-team` §4 (regression test
+`cicd-quick-dev` Step 3's review gate (one pinning regression test), `cicd-mobile-error-team` §4 (regression test
 mandatory), `collaborative-debug-first` (instrument, don't speculate). What was missing across every
 rule and command was **reproduction**: one grep for `reproduc*` over the whole `.agents/` tree returned
 a single hit, about a disk path. That is the gap this closes.

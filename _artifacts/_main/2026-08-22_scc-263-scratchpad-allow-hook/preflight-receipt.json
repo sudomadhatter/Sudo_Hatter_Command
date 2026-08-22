@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-263-scratchpad-allow-hook",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-263",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "7ba2d09e5d5bf73f62b268c3ba73773461217c4c",
+  "warnings": 1,
+  "when": "2026-08-22T05:14:22-04:00"
+}

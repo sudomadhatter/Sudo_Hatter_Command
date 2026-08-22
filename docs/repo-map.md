@@ -14,12 +14,13 @@
 | Master toolkit (single source of authorship) | `.agents/` — rules · commands · skills · workflows · bmad · scripts · templates |
 | Synced engine mirrors (so `/commands` + skills resolve here) | `.claude/`, `.opencode/` |
 | Shared memory (plans · walkthroughs · handoffs · ledger) | `_artifacts/` (`_main/` = home-base work; `<project>/` = per-project; `opencode/` = opencode's mirror) |
-| Home-base docs (this map · workspace standard · master plan) | `docs/` |
-| How to add / maintain workspaces (`/new-project`, `/sync-agents`) | `docs/system-builder.md` |
+| Home-base docs (this map · workspace standard) | `docs/` |
+| **Every SOP + PRD** — what the operator does and types | **`docs/_scc_sops_prds/`** — start at its `INDEX.md`; `workflows_testing_SOP.md` is THE quick reference |
+| How to add / maintain workspaces (`/smh-new-project`, `/smh-sync-agents`) | `docs/system-builder.md` |
 | Model-agnostic proof the routing works | `_routing-canary/` |
 | BMAD-generated output (planning/implementation/test artifacts from running BMAD workflows at the home base) | `_bmad-output/` |
-| Daniel's personal area — **PROTECTED** (don't edit/reference unless he says/links) | `_my_resources/` — **EXCEPT** `open_tasks/` (read-only carve-out below) |
-| Secrets / env files — ALL gitignored, so never in the AUTO tree below | lobby `.env` (root) + per-project files; master bundle `_my_resources/migrations/_secrets/master.env` (hand-carried, NEVER committed); export/restore: `_my_resources/migrations/Export-EnvMaster.ps1` / `Restore-EnvMaster.ps1` |
+| Daniel's thinking space — **⛔ IGNORE unless he links a document** (ruling 2026-08-10) | `_my_resources/` — not authoritative, deliberately un-scanned, staleness fine by design. Exception: `open_tasks/todo_list.md` (the `migrations/` exception retired under SCC-89 — that kit now lives in `docs/migrations/`) |
+| Secrets / env files — ALL gitignored, so never in the AUTO tree below | lobby `.env` (root) + per-project files; master bundle master.env under the migrations `auth_keys/` tree (hand-carried, NEVER committed; the whole `auth_keys/` tree is gitignored, so it is invisible to git and to this lint); export/restore: `docs/migrations/scripts/Export-EnvMaster.ps1` / `scripts/Restore-EnvMaster.ps1` — both now default to the operator's real bundle location (`docs/migrations/auth_keys/_secrets/master.env`) and resolve the lobby root three levels up, fixed under SCC-89; `-MasterPath` still overrides for a USB copy |
 | **"What do we do next" / open tasks / Daniel's plans & PRPs** — READ-ONLY, never edit | `_my_resources/open_tasks/` (start at `todo_list.md`; cross-check vs live project files) |
 | Scratch scripts and temp files | `scratch/` |
 
@@ -33,15 +34,24 @@
 | a project's `Projects/<name>/AGENTS.md` | When you go work inside that project (not this file) |
 | `_my_resources/open_tasks/` | Daniel asks "what do we do next / what's left" — read his todo + saved plans/PRPs (read-only) |
 | `docs/system-builder.md` | Growing/maintaining the home base itself — `/new-project`, `/sync-agents`, workspace-conversion rules |
-| `_my_resources/migrations/INDEX.md` | New-machine setup / repopulating any `.env` or `auth_keys/` file (→ `env-migration-guide.md`; the manifest inside `_secrets/master.env` lists every secret file + its exact path). Disposable kit — `_my_resources/` is excluded from repo-map regen, so it never appears in the AUTO tree below |
+| `docs/migrations/INDEX.md` | New-machine setup / repopulating any `.env` or `auth_keys/` file (→ `new_machine-migration-guide.md`; the manifest inside the hand-carried master.env lists every secret file + its exact path). Standing reference kit. Moved out of `_my_resources/` (excluded from regen) into `docs/` under SCC-89, so it now DOES appear in the AUTO tree below — its `auth_keys/` subtree does not, being ignored by name |
 
-**GitNexus (Tier-2 graph — on-demand, disposable).** ONE index: **`SUDO_COMMAND`** = the command center
-itself — all of `.agents/` (rules · workflows · commands · skills · scripts; ~17k nodes). Rooted directly at
+> **⚠ There are actually TWO indexes here, and the lint checks the one you don't query** (found
+> 2026-08-08). `check_maps.py`'s freshness hint reads the **root** `.gitnexus/meta.json` — a small
+> whole-repo index (86 nodes; the lobby is nearly all markdown) whose only job is to carry a
+> `lastCommit` stamp. The index you actually query is `SUDO_COMMAND` under `.agents/`, and because its
+> documented build uses `--skip-git` it writes **no** commit stamp at all — so it can never satisfy that
+> check, and the root one nagged permanently while pinned to `main_debug`, a branch retired 2026-08-07.
+> **Re-index both**: `gitnexus analyze . --index-only -f` clears the lint; the `.agents/` command below
+> refreshes what queries use. Node counts after centralization: root 86 · SUDO_COMMAND **2,664**.
+
+**GitNexus (Tier-2 graph — on-demand, disposable).** ONE index you query: **`SUDO_COMMAND`** = the command
+center itself — all of `.agents/` (rules · workflows · commands · skills · scripts). Rooted directly at
 `.agents/` (with `--skip-git`) to bypass GitNexus's dot-folder skip. This is "the one everything points to,"
 not the pointer/adapter copies (`.claude/`/`.opencode/` mirrors are excluded). Re-index after editing any
 rule/workflow (no commit-tracking, so do it manually):
 `$env:GITNEXUS_NO_GITIGNORE="1"; gitnexus analyze .agents --skip-git --index-only --name SUDO_COMMAND -f`.
-Tier-2/disposable — the maps above stay canonical (see `_my_resources/.../gitnexus-usage-guide.md`).
+Tier-2/disposable — the maps above stay canonical (full guidance: `docs/gitnexus.md`).
 > Note: the markdown rule/workflow files yield few cross-file edges (GitNexus extracts headings, not
 > doc references) — the graph is strong for the `.py`/`.ps1` scripts, thin for the prose; trust the files for
 > "what references what." No project source is indexed here (projects are cherry-picked as their own repos).
@@ -53,7 +63,7 @@ Tier-2/disposable — the maps above stay canonical (see `_my_resources/.../gitn
 
 **Drift:** checked at SessionStart by `.agents/scripts/check-repo-map-drift.ps1 -MapPath docs/repo-map.md` — it
 nags if a new top-level folder isn't named here. Rebuild the AUTO body:
-`python .agents/scripts/generate_repo_map.py --root . --output docs/repo-map.md --mode content --ignore Projects,_my_resources` (`--root .` is required here — the master generator lives at `.agents/scripts/`, so its default root would otherwise resolve to `.agents/`).
+`python3 .agents/scripts/generate_repo_map.py --root . --mode content --ignore Projects,_my_resources` (`--root .` is required here — the master generator lives at `.agents/scripts/`, so its default root would otherwise resolve to `.agents/`; the default output is `docs/repo-map.md`).
 <!-- REPO-MAP:CURATED-END -->
 
 <!-- REPO-MAP:AUTO-START -->
@@ -70,10 +80,7 @@ Sudo_Hatter_Command/
     core/
         [2 files: .yamlx1, .csvx1 | e.g. config.yaml]
     custom/
-        [6 files: .tomlx6 | e.g. bmad-dev-story.toml]
-    output/
-      brainstorming/
-        virtual-film-previs-software/
+        [5 files: .tomlx5 | e.g. bmad-dev-story.toml]
     scripts/
         [3 files: .pyx3 | e.g. memlog.py]
     tea/
@@ -85,17 +92,9 @@ Sudo_Hatter_Command/
   _bmad-output/
     brainstorming/
       brainstorm-tdad-integration-2026-07-07/
-      virtual-director/
         [1 files: .mdx1 | e.g. INDEX.md]
     forge/
       aviationchat-prd/
-    implementation-artifacts/
-    planning-artifacts/
-      briefs/
-        brief-NEXgen-VR-Director-2026-07-28/
-      prds/
-        prd-NEXgen-VR-Director-2026-07-28/
-    test-artifacts/
   _routing-canary/
     control/
         [2 files: .mdx2 | e.g. INDEX.md]
@@ -103,9 +102,21 @@ Sudo_Hatter_Command/
         [2 files: .mdx2 | e.g. INDEX.md]
       [6 files: .mdx6 | e.g. AGENTS.md]
   docs/
-      [9 files: .mdx8, .jsonx1 | e.g. AGENTS.md]
+    _scc_sops_prds/
+        [15 files: .mdx15 | e.g. INDEX.md]
+    migrations/
+      antigravity_extensions/
+          [1 files: .txtx1 | e.g. antigravity-extension-ids.txt]
+      gemini_extensions/
+          [2 files: .mdx1, .shx1 | e.g. gemini-extensions-sync-guide.md]
+      install_guides/
+          [5 files: .mdx5 | e.g. antigravity-ide-extension-migration.md]
+      scripts/
+          [9 files: .ps1x4, .pyx2, .shx2, .patchx1 | e.g. Export-EnvMaster.ps1]
+        [1 files: .mdx1 | e.g. INDEX.md]
+      [10 files: .mdx9, .jsonx1 | e.g. AGENTS.md]
   scratch/
       [1 files: .pyx1 | e.g. find_brainstorm.py]
-    [8 files: .mdx4, .txtx3, .jsonx1 | e.g. AGENTS.md]
+    [9 files: .mdx5, .txtx3, .jsonx1 | e.g. AGENTS.md]
 ```
 <!-- REPO-MAP:AUTO-END -->

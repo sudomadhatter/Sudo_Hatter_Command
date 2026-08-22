@@ -1,0 +1,55 @@
+{
+  "v": 1,
+  "task": "SCC-214",
+  "sha": "0a4d4a271d7a4fd3742afce4a2e13691eb4c5385",
+  "tip": "8f58da697fc7779e9013e76797b76c7f6b17f900",
+  "trigger": "close-out",
+  "when": "2026-08-21T16:01:17-05:00",
+  "changes": [
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/tests/_pf_fixtures.py",
+    ".agents/scripts/tests/_repo_template.py",
+    ".agents/scripts/tests/test_git_hooks.py",
+    ".agents/scripts/tests/test_repo_template.py",
+    ".agents/scripts/tests/test_task_preflight.py",
+    ".agents/scripts/tests/test_task_preflight_contract.py",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/gates/suite.json",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/implementation_plan.md",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/after/full_run_all.log",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/after/gh_profile.log",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/after/pf_profile.log",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/after/receipts_solo.log",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/after/report.txt",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/after/stall_probe_idle.log",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/before/report.txt",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/blocktime.py",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/clone_probe.py",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/floor.py",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/inode_probe.py",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/measure.py",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/profile_split.py",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/stall_probe.py",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/review-code.diff",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/sweep.json",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/task.yaml",
+    "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/walkthrough.md",
+    "_artifacts/_main/INDEX.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-21_scc-214-template-clone-tests/walkthrough.md",
+    "verdict": "PASS @ 0a4d4a2",
+    "gates": {
+      "suite": "pass@0a4d4a2"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}

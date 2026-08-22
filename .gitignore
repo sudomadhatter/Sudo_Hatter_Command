@@ -17,12 +17,21 @@
 **/.gitnexus/
 
 # Map-drift journal (machine-local commit-time cache written by .githooks/post-commit — a HINT the
-# nag + /update-maps-indexes read; check_maps.py's git-diff-vs-anchor stays ground truth). Rebuilt as you commit.
+# nag + /smh-update-maps-indexes read; check_maps.py's git-diff-vs-anchor stays ground truth). Rebuilt as you commit.
 **/docs/.maps-journal*.jsonl
 
 # Build / runtime junk anywhere
+# ⛔ Both forms of node_modules/.venv are needed, and the slash-less one is not redundant.
+# A trailing slash matches DIRECTORIES ONLY. In a git worktree these are not directories:
+# `link-worktree-assets.py` creates them as symlinks (Mac) / junctions (PC) pointing at the
+# main checkout, and git reports a symlink as a FILE. So the directory-only rule missed them,
+# every worktree sat permanently dirty, and `task_preflight.py` blocked the Task close-out on
+# "1 uncommitted change" produced by this repo's own tooling. Invisible from the main checkout,
+# where they really are directories and really are ignored. Found closing SCC-73.
 **/node_modules/
+**/node_modules
 **/.venv/
+**/.venv
 **/venv/
 **/__pycache__/
 **/.pytest_cache/
@@ -41,10 +50,18 @@
 **/*.pre-restore.bak
 **/auth_keys/
 # Master env bundle for machine migration (built by
-# _my_resources/migrations/Export-EnvMaster.ps1) — never committed. Pattern is
+# docs/migrations/scripts/Export-EnvMaster.ps1) — never committed. Pattern is
 # deliberately path-independent: the vault stays ignored wherever it lands.
 **/_secrets/
 .claude/settings.local.json
+
+# The scratchpad allow-hook's root, per machine. Every machine's Claude Code scratchpad lives
+# somewhere different, and the hook that auto-approves commands confined to it must be told where
+# — so this is the same class as `core.hooksPath` and `~/.zshenv`: it is set once per machine and
+# it NEVER travels. Committing one machine's root would point every other machine's hook at a
+# directory that does not exist there. Guide:
+# docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md  (SCC-267)
+.claude/scratchpad-root
 
 # Story worktrees — MACHINE-LOCAL, never committable. A worktree dir holds a
 # `.git` FILE, so a blanket `git add` records it as a gitlink (mode 160000) with
@@ -53,3 +70,6 @@
 # (Bit AGY in d098dc63 — pre-empting it here.)
 .claude/worktrees/
 
+
+# macOS Finder droppings — machine noise, never content
+**/.DS_Store

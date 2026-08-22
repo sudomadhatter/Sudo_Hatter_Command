@@ -1,0 +1,5 @@
+task_key: SCC-39
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-39-master-env-home-machine
+close_command: smh-close-task-merge-tree
+secondary_repos: []

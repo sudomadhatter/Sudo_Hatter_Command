@@ -1,6 +1,6 @@
 # Board Sessions — INDEX
 
-> Strategic briefs, ideation outputs, and direction cards resulting from `/sudo-adviser-board` sessions with Daniel and the Adviser Board.
+> Strategic briefs, ideation outputs, and direction cards resulting from `/smh-adviser-board` sessions with Daniel and the Adviser Board.
 
 | Date / Session file | Topic / Scope | Artifact |
 |---|---|---|

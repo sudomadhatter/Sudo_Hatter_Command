@@ -1,30 +1,43 @@
 ---
 name: living-template-sync
-description: "Fresh_Workspace_BMAD is the LIVING TEMPLATE new projects are cloned from. `/sync-agents` (lobby) auto-flags when Fresh's front-door pattern has drifted; this rule is how to RECONCILE it. Rule/toolkit edits ride /sync-agents automatically; front-door + structure changes are per-workspace (NOT synced) and must be hand-mirrored into Fresh, kept generic."
-why: "Rule and structure changes at the home base must also land in Fresh, the living template for new projects, so new projects are never set up from scratch."
-since: 2026-07-07
+description: "The clone source for new projects is the sudo-project-skeleton REPO (thin — no vendored toolkit). Fires when you change the front-door pattern, the folder layout, the enforcement set, or the thin-project floor at the home base: those are per-workspace and do NOT propagate by any automatic mechanism, so they must be hand-mirrored into the skeleton or every new project starts stale. Toolkit/rule edits do NOT need mirroring — projects read them from the center."
 ---
 
-# Living Template — keep Fresh_Workspace_BMAD current
+# Living Template — keep the skeleton repo current
 
-**`Projects/Fresh_Workspace_BMAD/` is the golden skeleton** cloned + renamed to start every new project. If it
-drifts behind the home base, every new project starts stale. Keeping it current is a standing obligation.
+**`sudomadhatter/sudo-project-skeleton` is the one clone source for new projects.** `/smh-new-project`
+clones it, strips its history, and git-inits. If the skeleton drifts behind the home base, every new
+project starts stale — and unlike the old model, **nothing detects that for you**.
 
-## Detection is automated
-`/sync-agents` (on a lobby sync) runs a **Fresh drift-check** and warns when Fresh's front-door pattern lags —
-missing `docs/gitnexus.md`, `AGENTS.md` missing the reading-order rule or still inlining a GitNexus block, or
-`docs/workspace-standard.md` differing from the lobby canon. **You don't have to remember to look — the tool
-tells you.** This rule is what to DO about it.
+> **History (2026-08-07, SCC-25 + SCC-31).** `Projects/Fresh_Workspace_BMAD` was the living template
+> until it was retired: de-listed from `maintained-projects.txt`, frozen on disk, and left deliberately
+> stale. The `/smh-sync-agents` Fresh drift-check that used to warn you was deleted with the project-vendor
+> path. There is no automated detector now — this rule is the whole mechanism.
 
-## What propagates how
-1. **Rules + toolkit (`.agents/**`) → automatic.** `/sync-agents` additively vendors `.agents/` into every
-   project incl. Fresh. Nothing to hand-do.
-2. **Front-door + structure (root `AGENTS.md` / adapters / `INDEX.md`, `docs/`, folder layout) → hand-mirror
-   into Fresh.** These are per-workspace content, so a blind copy would wipe the skeleton. Adapt to the
-   skeleton: keep generic (no product specifics), `<PROJECT_NAME>` placeholders where a real project fills in.
-3. **Verify clone-readiness.** A clone + rename of Fresh should need only placeholder fills — never structural
-   setup. Re-run `/sync-agents`; the drift-check should come back clean.
+## What propagates, and what does NOT
 
-## Why
-Any rule or structure change at the home base must also land in Fresh — the living/evolving workflow for new
-projects — so new projects are never set up from scratch.
+| Change at the home base | Reaches a new project how |
+|---|---|
+| A shared rule, `/` command, skill, workflow, script | **Automatically — nothing to do.** Under the thin model (`project-law.md`) projects carry no toolkit copy; sessions run from the center, so every project already sees the current version. This is the whole win of centralization. |
+| Front door: root `AGENTS.md`, `CLAUDE.md`/`GEMINI.md`, `README.md` | **Hand-mirror into the skeleton.** Per-workspace content; keep it generic — `<PROJECT_NAME>` / `{{PLACEHOLDER}}` where a real project fills in. |
+| Folder layout, the thin-project floor, `.gitignore` | **Hand-mirror.** If `check_maps.py`'s floor gains a required file, the skeleton must ship it or every clone lints red on day one. |
+| The enforcement set — `.githooks/`, `.agents/scripts/git-hooks/`, `jira.conf.example` | **Hand-mirror.** These are repo-local by design and never synced. A fix to a hook script at the center does not reach the skeleton on its own. |
+| `.agents/INDEX.md` template stub, the BMAD `_bmad/custom/*.toml` (incl. the INLINED plan-first gate) | **Hand-mirror.** The gate text lives inline in the tomls; edit the canonical rule first, then mirror it into the skeleton's two tomls. |
+
+## The obligation
+
+After changing anything in the right-hand "hand-mirror" rows: **clone the skeleton fresh, apply the
+change, and verify it still passes the thin floor** —
+
+```bash
+python3 .agents/scripts/check_maps.py --root <path-to-fresh-clone>   # must be [ok] clean
+```
+
+A clone should need only placeholder fills, never structural setup. If the clone lints red, a new
+project would have shipped that red.
+
+## Why this rule survived centralization
+
+Centralization removed the *toolkit* propagation problem entirely — that is now automatic. What it did
+NOT remove is the **template** problem: a clone source is a snapshot, and snapshots rot. This rule is
+what keeps the snapshot honest, and it is now purely manual, so it has to be a rule rather than a tool.

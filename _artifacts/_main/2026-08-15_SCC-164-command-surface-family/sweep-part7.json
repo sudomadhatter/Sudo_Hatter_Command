@@ -1,0 +1,80 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+  ],
+  "mutants": [
+    {
+      "id": "F1 REVERT the whole verdict - two ids are two lanes again, on their own say-so",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "            elif [s for s in sorted(by_id) if s not in lanes]:\n",
+      "mutated": "            elif False:\n",
+      "case": "F1 · one lane filed under two slugs -> exit 1, not blessed",
+      "block": "SCC-174"
+    },
+    {
+      "id": "F2a drop the origin/ arm - a landed, locally-pruned follow-on reads as a fork",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    r = wf.git([\"for-each-ref\", \"--format=%(refname)\", \"refs/heads\", \"refs/remotes\"], repo)",
+      "mutated": "    r = wf.git([\"for-each-ref\", \"--format=%(refname)\", \"refs/heads\"], repo)",
+      "case": "the origin/ ref alone proves a lane (a landed, locally-pruned follow-on)",
+      "block": "SCC-174"
+    },
+    {
+      "id": "F2b drop the manifest arm - refs only, so a lane whose branches are gone reads as a fork",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    return {wf.norm_id(s) for s in slugs + ref_lane_slugs(repo) if s}",
+      "mutated": "    return {wf.norm_id(s) for s in ref_lane_slugs(repo) if s}",
+      "case": "the committed manifest alone proves a lane (no branch left at all)",
+      "block": "SCC-174"
+    },
+    {
+      "id": "F2c the glob shape - `check` starts trusting manifests git is not tracking",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    slugs = [b.rsplit(\"/\", 1)[-1] for b in manifest_branches(repo)]",
+      "mutated": "    slugs = [b.rsplit(\"/\", 1)[-1] for b in manifest_branches(repo, include_new=True)]",
+      "case": "an UNCOMMITTED manifest does not claim a lane either (check reads --cached)",
+      "block": "SCC-174"
+    },
+    {
+      "id": "F2d conflate None with the empty set - unreadable evidence becomes a FORK verdict",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "            if lanes is None:\n",
+      "mutated": "            if False:\n",
+      "case": "no git checkout -> exit 1 and says the lanes could not be read, not 0",
+      "block": "SCC-174"
+    },
+    {
+      "id": "F2e report the OLDEST record as the newest",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "            newest = record_story_id(records[-1])",
+      "mutated": "            newest = record_story_id(records[0])",
+      "case": "F1 · ...and it says which record is NEWEST",
+      "block": "SCC-174"
+    },
+    {
+      "id": "F3a drop the default - --story goes back to being typed by hand",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "        args.story = lane\n",
+      "mutated": "        args.story = args.story\n",
+      "case": "F3 · --story defaults to the branch slug in this lane's task.yaml",
+      "block": "SCC-174"
+    },
+    {
+      "id": "F3b drop the mismatch warning - a wrong slug forks the record in silence",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    elif lane and wf.norm_id(args.story) != wf.norm_id(lane):",
+      "mutated": "    elif False:",
+      "case": "F3 · a slug that is not this lane's is WARNED, naming both",
+      "block": "SCC-174"
+    },
+    {
+      "id": "F3c the default stops cross-checking the manifest - any prefixed branch is a lane",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    return branch.rsplit(\"/\", 1)[-1] if branch in declared else \"\"",
+      "mutated": "    return branch.rsplit(\"/\", 1)[-1] if declared or True else \"\"",
+      "case": "F3 · a prefixed branch NO manifest declares is not a lane to default from",
+      "block": "SCC-174"
+    }
+  ]
+}
