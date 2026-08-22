@@ -18,19 +18,45 @@ exactly that on 2026-08-22:
 
 The review ran INLINE — no independent lens — because the rebuttal missed by four words.
 
-⛔ WHY A GREP GUARD AND NOT PROSE. The paraphrase reached five files because people write the
-rebuttal from memory. Prose cannot stop that; a gate can. This file is the gate.
+⛔ WHY A GATE AND NOT PROSE. The paraphrase reached five files because people write the rebuttal
+from memory. Prose cannot stop that; a gate can. This file is the gate.
 
 ── THE TWO HALVES, AND WHY BOTH ARE REQUIRED ────────────────────────────────────────────────
 A guard that only bans the wrong string is satisfied by DELETING the rebuttal entirely — which
-removes the very sentence that makes the fan-out legal, a strictly worse outcome than the bug.
-So:
+removes the very sentence that makes the fan-out legal, a strictly worse outcome than the bug. So:
 
-  BAN     - no paraphrase variant appears anywhere under .agents/commands/
-  REQUIRE - every command that rebuts the directive carries the VERBATIM string
+  BAN     - no quotation that PURPORTS to be this directive says anything but the verbatim text
+  REQUIRE - every rebutter carries the verbatim quote AT ITS OPERATIVE SITE
 
-Neither half alone is a check. Block D fails this file's own gate in both directions before it is
-believed (`tests-must-gate-for-real.md` § Mutation Testing).
+Neither half alone is a check. Block D fails this file's own gate in both directions.
+
+⛔ FOUR HOLES THE FIRST VERSION SHIPPED WITH, and how each is closed. All four were found by
+ADVERSARIAL PROBING of this file — the operator's own probe script and two review lenses that
+executed the guard's code against synthetic inputs. None was found by block D, because block D's
+counter-examples were drawn from the shapes already handled. That is the lesson: counter-examples
+derived from what you already fixed cannot find what you missed.
+
+  H1 · BAN was LINE-SCOPED. It ran `PARAPHRASE.search(line)` over `.splitlines()`, so `\\s+` could
+       never span a newline — while `norm()` was applied to REQUIRE only. A paraphrase wrapped
+       between `subagents` and `unless` shipped GREEN. The docstring had even recorded that 4 of
+       the 8 real sites were wrapped mid-quote; the fix was applied to one half and not the other.
+       CLOSED: `unwrap()` runs on both halves, and block D2/D3 pin a wrapped paraphrase.
+
+  H2 · BAN matched only ADJACENT tokens (`subagents?\\s+unless`). Every re-wording with a word
+       between them — `subagents for the review unless` — or a different spelling — `sub-agents`,
+       `Agent tools` — shipped GREEN, in a check whose docstring claimed it "matches the SHAPE".
+       CLOSED: the ban no longer pattern-matches wording at all. See § How BAN works now.
+
+  H3 · REQUIRE was not verbatim. `norm()` collapsed *every* whitespace run, so `AgentTool  unless`
+       (two spaces) satisfied a case literally named "rejects a near-miss paraphrase".
+       CLOSED: `unwrap()` collapses a LINE WRAP to exactly one space and nothing else, so internal
+       spacing stays significant. D8 pins it.
+
+  H4 · REQUIRE was OCCURRENCE-BLIND — `target in body`, anywhere. Three files carry the directive
+       twice (the SCC-203 narration AND the rebuttal), so deleting the whole rebuttal paragraph —
+       the exact deletion this half exists to prevent — left the guard green in 3 of 5 files.
+       Reproduced by a lens: 17/17 passed with the rebuttal gone.
+       CLOSED: REQUIRE anchors to the operative site. See § How REQUIRE works now.
 
 ⛔ SOURCE OF TRUTH. `DIRECTIVE` below is the binary's constant, byte for byte. If Anthropic changes
 the injected text, this file is what goes red first — that redness is correct, and the fix is to
@@ -47,6 +73,12 @@ from pathlib import Path
 from _harness import Cases
 
 CMDS = Path(__file__).resolve().parents[2] / "commands"
+REPO = Path(__file__).resolve().parents[3]
+SOP = REPO / "docs" / "_scc_sops_prds" / "workflows_testing_SOP.md"
+"""⛔ The SOP is scanned too, and that is not scope creep — it is the MEASURED second vector.
+The paraphrase spread to five commands AND to the SOP by the same copy-from-memory route, and
+the SOP is the document agents are routed to read for this law. A ban that covers one of the
+two surfaces it demonstrably spread across is a ban with a hole in it."""
 
 DIRECTIVE = "Do not call the AgentTool unless the user requested it"
 """Verbatim, from the Claude Code binary. Not a summary, not a re-wording."""
@@ -58,24 +90,36 @@ REBUTTERS = [
     "cicd-quick-dev.md",
     "smh-quick-dev.md",
 ]
-"""The commands that argue the directive is satisfied. Each MUST carry `DIRECTIVE` verbatim."""
+"""The commands that argue the directive is satisfied. Each MUST carry `DIRECTIVE` at that claim."""
 
-PARAPHRASE = re.compile(r"subagents?\s+unless", re.I)
-"""Every observed wrong form collapses to this: `use subagents unless`, `spawn subagents unless`.
+# ── How BAN works now ────────────────────────────────────────────────────────────────────────
+# The old ban guessed at WORDING and lost twice: it missed re-phrasings (H2) and it over-fired on
+# legitimate prose — a lens reproduced `never fan out to subagents unless the probe returned
+# fan-out` reddening the suite with a remedy message that did not apply.
+#
+# ⭐ So the ban no longer looks at wording at all. It looks at the SHAPE OF THE CLAIM: a quoted
+# string that purports to BE this directive. Any quotation naming a subagent/Agent-tool concept
+# and carrying an `unless` clause is asserting "the directive says this" — and there is exactly
+# one right answer. Unquoted prose is never a quotation, so it cannot be wrong, and the whole
+# over-fire class disappears.
+QUOTED = re.compile(r'"([^"\n]{10,240})"')
+"""Every double-quoted span. The command files write the quote as *"…"*, inside the markdown."""
 
-⛔ Deliberately NOT a list of the three known variants. The defect is people re-wording from
-memory, so the next variant is one nobody has written yet. This matches the SHAPE.
-"""
+CLAIMS_TO_BE_DIRECTIVE = re.compile(r"sub[-\s]?agents?|agent[-\s]?tools?|agenttool", re.I)
+"""A quotation mentioning this concept AND `unless` is claiming to be the directive."""
 
 
-def norm(text: str) -> str:
-    """Whitespace-collapsed, so a quote wrapped across two lines still matches.
+def unwrap(text: str) -> str:
+    """Collapse a LINE WRAP to exactly one space. Nothing else.
 
-    ⛔ Load-bearing, not tidiness: 4 of the 8 original occurrences were line-wrapped mid-quote
-    (`smh-code-review.md:171-172` splits after the word `do not`). A raw `in` check reads those
-    files as clean and the guard is vacuous on exactly the sites it was written for.
+    ⛔ This is not `" ".join(text.split())`, and the difference is the whole of hole H3. Collapsing
+    every whitespace run makes `AgentTool  unless` compare equal to `AgentTool unless`, so a check
+    calling itself verbatim silently accepts a near-miss. Collapsing only `\\s*\\n\\s*` tolerates
+    the hard wrapping these files use — load-bearing, since 2 of the 8 original sites were wrapped
+    mid-quote (`cicd-code-review.md:200-201` and `smh-code-review.md:171-172`, both breaking after
+    `*"do not`) — while leaving internal spacing significant.
     """
-    return " ".join(text.split())
+    return re.sub(r"\s*\n\s*", " ", text)
 
 
 def body(name: str) -> str:
@@ -83,63 +127,154 @@ def body(name: str) -> str:
     return p.read_text(encoding="utf-8", errors="replace") if p.is_file() else ""
 
 
+def bad_quotes(text: str) -> list[str]:
+    """Quotations that claim to be the directive but are not it, verbatim.
+
+    Runs on `unwrap`ped text so a quote broken across lines is still one quotation (H1).
+    """
+    out = []
+    for m in QUOTED.finditer(unwrap(text)):
+        span = m.group(1)
+        if CLAIMS_TO_BE_DIRECTIVE.search(span) and re.search(r"\bunless\b", span, re.I):
+            if DIRECTIVE not in span:
+                out.append(span)
+    return out
+
+
+# ── How REQUIRE works now ────────────────────────────────────────────────────────────────────
+# ⛔ Presence-anywhere was hole H4. Three of these files carry the directive TWICE — once in the
+# SCC-203 narration, once in the operative rebuttal — so `target in body` stayed true after the
+# rebuttal was deleted whole. The operative site is the one that says the directive is SATISFIED;
+# that word is what makes the sentence a rebuttal rather than a mention, so that is what we anchor
+# to. Delete the rebuttal and the anchor goes with it.
+SATISFIED = re.compile(r"\bsatisfied\b", re.I)
+ANCHOR_WINDOW = 400
+"""Chars either side of `satisfied` the verbatim quote must fall within. The real sites sit
+within ~120; the margin absorbs re-wrapping without letting a mention three paragraphs away count."""
+
+
+def rebuts_verbatim(text: str) -> bool:
+    flat = unwrap(text)
+    for m in SATISFIED.finditer(flat):
+        window = flat[max(0, m.start() - ANCHOR_WINDOW): m.end() + ANCHOR_WINDOW]
+        if DIRECTIVE in window:
+            return True
+    return False
+
+
 def main() -> int:
     c = Cases("directive-quote: commands quote the session directive verbatim")
 
+    def chk(name: str, ok: bool, why: str) -> None:
+        """`_harness.check` prints `detail` on PASS too, so a static failure sentence makes
+        every green row read as a red one — and this file's transcript is stored verbatim in
+        `gates/suite.json` for humans and the receipt classifier. Collapse it on pass."""
+        c.check(name, ok, "" if ok else why)
+
     if c.block("A · the inputs exist (anti-vacuity)"):
         # Every row below loops over files. A loop over a missing tree passes silently.
-        c.check("A1 the commands directory resolves", CMDS.is_dir(), f"CMDS={CMDS}")
+        c.check("A1 the commands directory resolves", CMDS.is_dir(),
+                "" if CMDS.is_dir() else f"CMDS={CMDS} does not resolve")
         files = sorted(CMDS.glob("*.md"))
-        c.check("A2 there are commands to scan", len(files) >= 20, f"{len(files)} *.md found")
+        c.check("A2 there are commands to scan", len(files) >= 20,
+                "" if len(files) >= 20 else f"only {len(files)} *.md found - the glob found nothing")
         missing = [n for n in REBUTTERS if not (CMDS / n).is_file()]
-        c.check("A3 every pinned rebutter exists on disk", not missing, f"missing={missing}")
+        c.check("A3 every pinned rebutter exists on disk", not missing,
+                "" if not missing else f"missing={missing}")
         # ⛔ A3 passes over an EMPTY list (`missing` is []), and block C is a loop over the same
-        # list - so an emptied REBUTTERS guts the REQUIRE half in silence. Found by mutation M4.
+        # list - so an emptied REBUTTERS guts the REQUIRE half in silence. `>=`, not `==`: the
+        # anti-vacuity property is "populated", and pinning the count would red a correct change
+        # that legitimately adds a sixth rebutter.
         c.check("A4 the rebutter list is populated (anti-vacuity for block C)",
-                len(REBUTTERS) == 5, f"REBUTTERS={REBUTTERS}")
+                len(REBUTTERS) >= 5,
+                "" if len(REBUTTERS) >= 5 else f"REBUTTERS has {len(REBUTTERS)} entries")
 
-    if c.block("B · BAN - no paraphrase of the directive survives anywhere"):
+    if c.block("B · BAN - no quotation claims to be this directive and gets it wrong"):
         hits = []
-        for p in sorted(CMDS.glob("*.md")):
-            for n, line in enumerate(p.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
-                if PARAPHRASE.search(line):
-                    hits.append(f"{p.name}:{n}")
-        c.check("B1 zero paraphrase variants under .agents/commands/",
+        scanned = sorted(CMDS.glob("*.md")) + ([SOP] if SOP.is_file() else [])
+        for p in scanned:
+            for span in bad_quotes(p.read_text(encoding="utf-8", errors="replace")):
+                hits.append(f"{p.name}: {span[:90]!r}")
+        c.check("B0 the SOP is on the scan list (anti-vacuity)", SOP.is_file(),
+                "" if SOP.is_file() else f"{SOP} is missing - the second re-seed vector is unscanned")
+        c.check("B1 no misquotation of the directive in the commands or the SOP",
                 not hits,
                 "" if not hits else
-                f"paraphrased at {hits} - quote the directive verbatim: {DIRECTIVE!r}")
+                f"{len(hits)} misquotation(s); the only correct text is {DIRECTIVE!r} -> {hits}")
 
-    if c.block("C · REQUIRE - every rebutter carries the directive verbatim"):
-        target = norm(DIRECTIVE)
+    if c.block("C · REQUIRE - every rebutter quotes it verbatim AT THE CLAIM"):
         for name in REBUTTERS:
-            c.check(f"C1 {name} quotes the directive verbatim",
-                    target in norm(body(name)),
-                    f"{name} rebuts the directive without quoting it - "
-                    f"a ban-only guard is satisfied by deleting the rebuttal")
+            ok = rebuts_verbatim(body(name))
+            c.check(f"C1 {name} quotes the directive verbatim where it claims 'satisfied'",
+                    ok,
+                    "" if ok else
+                    f"{name} has no verbatim quote within {ANCHOR_WINDOW} chars of 'satisfied' - "
+                    f"the rebuttal was deleted or re-worded")
 
     if c.block("D · ⛔ COUNTER-EXAMPLES - a check never seen failing is not a check"):
-        # Both halves, both directions, against synthetic text - never the real tree.
-        c.check("D1 BAN fires on the exact string that shipped the bug",
-                bool(PARAPHRASE.search('*"do not use subagents unless the user requested it"*')),
-                "the regex misses the literal defect it was written for")
-        c.check("D2 BAN fires on the OTHER shipped variant",
-                bool(PARAPHRASE.search('*"do not spawn subagents unless the user asks"*')),
-                "the regex is pinned to one wording")
-        c.check("D3 BAN fires on the singular form",
-                bool(PARAPHRASE.search("do not call a subagent unless asked")),
-                "`subagents?` is not doing its job")
-        c.check("D4 BAN does NOT fire on the correct directive",
-                not PARAPHRASE.search(DIRECTIVE),
+        # ⛔ Every row here is drawn from a hole this file SHIPPED WITH, not from a shape it
+        # already handled. That is the correction: the first version's counter-examples all
+        # confirmed the fix that was already in, so they could not see H1-H4.
+        real = '*"do not use subagents unless the user requested it"* is satisfied here'
+        chk("D1 BAN fires on the exact string that shipped the bug",
+                bool(bad_quotes(real)), "the guard misses the literal defect it was written for")
+
+        # H1 - the wrap that shipped green. Reproduced by two independent lenses.
+        wrapped = 'a session directive reading *"do not use subagents\nunless the user requested it"*'
+        chk("D2 BAN fires on a paraphrase WRAPPED between `subagents` and `unless` (H1)",
+                bool(bad_quotes(wrapped)), "BAN is line-scoped again - a wrapped paraphrase ships green")
+
+        # H2 - the re-wordings the old adjacency regex could not see.
+        for label, text in [
+            ("words in between", '*"do not use subagents for the review unless the user requested it"*'),
+            ("hyphenated",       '*"do not use sub-agents unless the user requested it"*'),
+            ("spaced",           '*"do not use sub agents unless the user requested it"*'),
+            ("Agent tools",      '*"do not use Agent tools unless the user requested it"*'),
+            ("other shipped",    '*"do not spawn subagents unless the user asks"*'),
+        ]:
+            chk(f"D3 BAN fires on a re-worded paraphrase - {label} (H2)",
+                    bool(bad_quotes(text)), f"the {label} spelling ships green")
+
+        chk("D4 BAN does NOT fire on the correct directive",
+                not bad_quotes(f'*"{DIRECTIVE}"* is satisfied here'),
                 "the guard cannot be satisfied - it reds on the very text it demands")
-        c.check("D5 REQUIRE fails when the rebuttal is deleted",
-                norm(DIRECTIVE) not in norm("a command with no rebuttal at all"),
-                "the REQUIRE half passes over an empty body")
-        c.check("D6 REQUIRE survives a mid-quote line wrap",
-                norm(DIRECTIVE) in norm("reading *\"Do not call the\nAgentTool unless the user\nrequested it\"* is satisfied"),
-                "norm() is not collapsing wraps - 4 of the 8 real sites are wrapped")
-        c.check("D7 REQUIRE rejects a near-miss paraphrase",
-                norm(DIRECTIVE) not in norm('*"Do not call the Agent tool unless the user requested it"*'),
-                "REQUIRE accepts `Agent tool` for `AgentTool` - the check is not verbatim")
+
+        # The over-fire a lens reproduced: legitimate UNQUOTED prose about the probe.
+        chk("D5 BAN does NOT fire on legitimate unquoted prose about subagents",
+                not bad_quotes("never fan out to subagents unless the probe returned fan-out"),
+                "BAN over-fires on ordinary prose and prints a remedy that does not apply")
+
+        chk("D6 BAN ignores a quotation that is not about this directive",
+                not bad_quotes('got read as *"this runtime is inline"* and a review ran'),
+                "BAN fires on unrelated quotations")
+
+        # H4 - the deletion that shipped green in 3 of 5 files.
+        two_sites = (f'the narration says *"{DIRECTIVE}"* got read as inline.\n\n'
+                     f'⛔ Do not ask a second question. The standing directive '
+                     f'*"{DIRECTIVE}"* is satisfied here.')
+        chk("D7 REQUIRE passes when the rebuttal is present alongside a narration copy",
+                rebuts_verbatim(two_sites), "REQUIRE cannot see a genuine rebuttal")
+        narration_only = f'the narration says *"{DIRECTIVE}"* got read as inline. Nothing else.'
+        chk("D8 REQUIRE FAILS when only the narration copy survives (H4)",
+                not rebuts_verbatim(narration_only),
+                "REQUIRE is occurrence-blind again - deleting the rebuttal ships green")
+        chk("D9 REQUIRE fails when the rebuttal is deleted entirely",
+                not rebuts_verbatim("a command with no rebuttal at all"),
+                "REQUIRE passes over an empty body")
+
+        # H3 - `norm()` collapsed every run and made a near-miss compare equal.
+        chk("D10 REQUIRE survives a mid-quote line wrap",
+                rebuts_verbatim('reading *"Do not call the\nAgentTool unless the user\n'
+                                'requested it"* is satisfied'),
+                "unwrap() is not collapsing wraps - 4 of the 8 real sites are wrapped")
+        chk("D11 REQUIRE rejects a double-spaced near-miss (H3)",
+                not rebuts_verbatim('*"Do not call the AgentTool  unless the user requested it"* '
+                                    'is satisfied'),
+                "internal spacing is being collapsed - the check is not verbatim")
+        chk("D12 REQUIRE rejects `Agent tool` for `AgentTool`",
+                not rebuts_verbatim('*"Do not call the Agent tool unless the user requested it"* '
+                                    'is satisfied'),
+                "REQUIRE accepts a near-miss - the check is not verbatim")
 
     return c.finish()
 

@@ -1,48 +1,54 @@
 {
- "test": [
-  "python3",
-  ".agents/scripts/tests/test_directive_quote.py"
- ],
+ "_why": "SCC-285 review finding (Test-Adequacy, important): the FIRST sweep mutated only the guard's own constants, so 4 of its 5 mutants were killed by block D - the guard's synthetic self-tests. It certified the regex helper against string literals and never once certified the GATE against the TREE, which is exactly why it could not reach the four holes the operator's probe and two lenses found. M1-M5 below mutate the PROTECTED SURFACE - the real command files and the real SOP - so a kill is evidence the gate holds on disk. M6-M7 keep the guard's own decisions covered.",
+ "test": ["python3", ".agents/scripts/tests/test_directive_quote.py"],
  "mutants": [
-  {
-   "id": "M1 BAN narrowed to the one wording that shipped",
+  {"id": "M1 re-seed the WRAPPED paraphrase into a real command file (hole H1, on disk)",
+   "file": ".agents/commands/cicd-quick-dev.md",
+   "original": "<!-- twin-law: review-runtime-probe -->\n⛔ **The probe asks ONE question:",
+   "mutated": "<!-- twin-law: review-runtime-probe -->\nA session directive reading *\"do not use subagents\nunless the user requested it\"* applies here.\n⛔ **The probe asks ONE question:",
+   "case": "B1 no misquotation of the directive in the commands or the SOP",
+   "block": "B · BAN - no quotation claims to be this directive and gets it wrong"},
+
+  {"id": "M2 re-seed a HYPHENATED re-wording into a real command file (hole H2, on disk)",
+   "file": ".agents/commands/smh-code-review.md",
+   "original": "⭐ **Answer ONE question: does a subagent tool exist in this runtime?**",
+   "mutated": "A directive reading *\"do not use sub-agents unless the user requested it\"* applies.\n\n⭐ **Answer ONE question: does a subagent tool exist in this runtime?**",
+   "case": "B1 no misquotation of the directive in the commands or the SOP",
+   "block": "B · BAN - no quotation claims to be this directive and gets it wrong"},
+
+  {"id": "M3 re-seed a paraphrase into the SOP - the MEASURED second vector",
+   "file": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+   "original": "There is no local lever to disable it.",
+   "mutated": "A session directive reading \"do not spawn subagents unless asked\" applies. There is no local lever to disable it.",
+   "case": "B1 no misquotation of the directive in the commands or the SOP",
+   "block": "B · BAN - no quotation claims to be this directive and gets it wrong"},
+
+  {"id": "M4 DELETE the operative rebuttal, leaving the narration copy (hole H4, on disk)",
+   "file": ".agents/commands/cicd-code-review.md",
+   "original": "⛔ **Do not ask a second question.** *\"Am I allowed to?\"* is already answered: **the operator\ninvoked this command, and a `/` command IS a user request.** The standing directive *\"Do not call\nthe AgentTool unless the user requested it\"* is **satisfied here** — typing the command is the\noperator asking, and this step is where that ask lands. Do not stop and put it to them again.",
+   "mutated": "⛔ **Do not ask a second question.** Launch them.",
+   "case": "C1 cicd-code-review.md quotes the directive verbatim where it claims 'satisfied'",
+   "block": "C · REQUIRE - every rebutter quotes it verbatim AT THE CLAIM"},
+
+  {"id": "M5 strip the verbatim quote out of a real rebuttal, keeping the claim",
+   "file": ".agents/commands/smh-quick-dev.md",
+   "original": "the standing directive\n*\"Do not call the AgentTool unless the user requested it\"* is **satisfied by that invocation**, so you",
+   "mutated": "the standing directive is **satisfied by that invocation**, so you",
+   "case": "C1 smh-quick-dev.md quotes the directive verbatim where it claims 'satisfied'",
+   "block": "C · REQUIRE - every rebutter quotes it verbatim AT THE CLAIM"},
+
+  {"id": "M6 unwrap() stops collapsing line wraps - the H1/H3 fix reverted",
    "file": ".agents/scripts/tests/test_directive_quote.py",
-   "original": "PARAPHRASE = re.compile(r\"subagents?\\s+unless\", re.I)",
-   "mutated": "PARAPHRASE = re.compile(r\"use subagents\\s+unless\", re.I)",
-   "case": "D2 BAN fires on the OTHER shipped variant",
-   "block": "D · ⛔ COUNTER-EXAMPLES - a check never seen failing is not a check"
-  },
-  {
-   "id": "M2 BAN loses the singular form",
-   "file": ".agents/scripts/tests/test_directive_quote.py",
-   "original": "PARAPHRASE = re.compile(r\"subagents?\\s+unless\", re.I)",
-   "mutated": "PARAPHRASE = re.compile(r\"subagents\\s+unless\", re.I)",
-   "case": "D3 BAN fires on the singular form",
-   "block": "D · ⛔ COUNTER-EXAMPLES - a check never seen failing is not a check"
-  },
-  {
-   "id": "M3 norm() stops collapsing wraps",
-   "file": ".agents/scripts/tests/test_directive_quote.py",
-   "original": "    return \" \".join(text.split())",
+   "original": "    return re.sub(r\"\\s*\\n\\s*\", \" \", text)",
    "mutated": "    return text",
-   "case": "D6 REQUIRE survives a mid-quote line wrap",
-   "block": "D · ⛔ COUNTER-EXAMPLES - a check never seen failing is not a check"
-  },
-  {
-   "id": "M4 REQUIRE accepts `Agent tool` for `AgentTool`",
+   "case": "D10 REQUIRE survives a mid-quote line wrap",
+   "block": "D · ⛔ COUNTER-EXAMPLES - a check never seen failing is not a check"},
+
+  {"id": "M7 REQUIRE drops the operative-site anchor - presence-anywhere restored",
    "file": ".agents/scripts/tests/test_directive_quote.py",
-   "original": "DIRECTIVE = \"Do not call the AgentTool unless the user requested it\"",
-   "mutated": "DIRECTIVE = \"Do not call the Agent tool unless the user requested it\"",
-   "case": "D7 REQUIRE rejects a near-miss paraphrase",
-   "block": "D · ⛔ COUNTER-EXAMPLES - a check never seen failing is not a check"
-  },
-  {
-   "id": "M5 REBUTTERS shortened - block C silently stops covering two files",
-   "file": ".agents/scripts/tests/test_directive_quote.py",
-   "original": "    \"cicd-code-review.md\",\n    \"smh-code-review.md\",\n",
-   "mutated": "    \"cicd-code-review.md\",\n",
-   "case": "A4 the rebutter list is populated (anti-vacuity for block C)",
-   "block": "A · the inputs exist (anti-vacuity)"
-  }
+   "original": "        window = flat[max(0, m.start() - ANCHOR_WINDOW): m.end() + ANCHOR_WINDOW]",
+   "mutated": "        window = flat",
+   "case": "D8 REQUIRE FAILS when only the narration copy survives (H4)",
+   "block": "D · ⛔ COUNTER-EXAMPLES - a check never seen failing is not a check"}
  ]
 }
