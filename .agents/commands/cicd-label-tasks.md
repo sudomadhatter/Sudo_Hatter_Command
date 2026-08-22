@@ -80,6 +80,21 @@ Then, per child, it applies the **grounding gate** in authority order — first 
 | 2. `plan` | `implementation_plan.md` | a declaration beats an intention |
 | 3. `story` | the story file's Dev Notes | the intention is all there is |
 
+<!-- twin-law: tests-only-diff-is-not-rung-1 -->
+⛔ **A TESTS-ONLY DIFF IS NOT RUNG 1 (SCC-259).** An assert-first lane commits its RED tests
+before a line of implementation exists, so `branch-diff` there is the test files and nothing
+else — a real touch-set that badly understates where the code is about to land. The script keeps
+those paths as a source, flags it `tests_only`, and ranks it **below** the rungs that can see
+further. A diff that is entirely planning artifacts was already excluded for the same reason
+(SCC-155 #16). A diff carrying any real source file stays rung 1.
+<!-- /twin-law -->
+
+⭐ **And rung 3 is read from the LANE BRANCH when the checkout has none (SCC-259).** ① writes the
+story file onto `claude/<KEY>-<slug>` and pushes; nothing merges to the epic until ③. Reading only
+the current checkout meant every story still in flight — which is every story you would ever label
+— came back `[NO-STORY]`, under a `next_command` telling you to create the file that already
+exists on the branch being labelled.
+
 **Umbrella children are excluded automatically** — a child whose BMAD number prefixes a sibling's
 (`12.3` over `12.3.4`, `12.3.7`) contains them rather than competing with them. It renders as a
 context line, never a verdict row. **Done children are excluded.** Both are the script's job, not
@@ -88,7 +103,19 @@ yours.
 ## Step 2 — ⭐ Extract the touch-sets (THIS is the judgment, and it is yours)
 
 The packet names the exact files to read. For each **grounded, non-umbrella** child, read them and
-decide **what it will actually modify**. This is the step no parser wins: across 139 AGY story
+decide **what it will actually modify**.
+
+⛔ **A source carrying a `ref` is NOT in your checkout — open it with `git show`.** The packet
+emits `{"kind": …, "path": …, "ref": "<branch>"}` when it found the file on the lane's own branch
+rather than in the working tree, which is the normal state for anything still in flight. Opening
+`<path>` there is an ENOENT on the rung the packet just called authoritative, and an agent that
+reads the miss as "no source" downgrades a grounded child:
+
+```bash
+git -C "$REPO" show "<ref>:<path>"     # ref present  → read it from the branch
+cat "<path>"                            # ref null     → it is in the checkout
+```
+ This is the step no parser wins: across 139 AGY story
 files, 105 name source paths, 58 carry negative declarations, and only 29 have a `**Task**`
 checklist — there is no field to grep.
 
@@ -168,7 +195,7 @@ Print the table the script renders, unedited — approved list first, then one v
 | Verdict | Meaning |
 |---|---|
 | 🟢 approved | safe to run beside **every other** 🟢 |
-| 🔒 after `<ticket>` | shares ground with that ticket — run after it lands |
+| 🔒 after `<ticket>`, `<ticket>` | shares ground with EVERY ticket named — run after all of them land |
 | ⏳ waiting on `<story>` | an in-flight story's surfaces are unknown; clears when its plan lands |
 | 📝 no story | ungrounded — `/cicd-write-story-tests <id>` unlocks it |
 | ⚡ quick-dev | ships via `/cicd-quick-dev` (a separate column, not a verdict) |
@@ -204,7 +231,7 @@ both misled on 2026-08-09; this is the check that makes the same failure impossi
 
 `✅ Parallel check — <PARENT-KEY> (Epic <n>) in <repo>:`
 - `Approved (<n>): <keys>` *(or why nothing was)*
-- `Locked: <key> after <key> — <the shared path>` per row
+- `Locked: <key> after <key>, <key> — <the shared path per blocker>` per row — ⛔ **every** declared blocker, not the first. A row naming one of three reads as a single dependency, and the operator schedules against it.
 - `Quick-dev (<n>): <keys>`
 - `Ungrounded: <keys> → /cicd-write-story-tests <id>`
 - `Board: <n> labels added, <n> stripped · comment on <PARENT-KEY>`

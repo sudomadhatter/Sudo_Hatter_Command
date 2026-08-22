@@ -35,6 +35,16 @@ that is SELECTION. They are different namespaces and conflating them is a sweep 
 a kill. `block` defaults to `case` for a file whose blocks and cases share a prefix. A mutant may
 also carry its own `"test"` to override the table's.
 
+`"unfiltered": true` runs the whole file instead, and is the ONLY honest answer for a test
+file that declares no `c.block()` at all (`test_label_tasks.py`): there is no label to
+select, so a filter - any filter - matches nothing, the harness exits 3, and every mutant
+comes back a sweep error rather than a result. ⛔ It is not a convenience switch. Selection
+exists so the re-run provably exercises the mutated pattern (the 8681d83 clause); running the
+WHOLE file is strictly more coverage than a filtered run, never less, and it cannot be a
+typo'd label the way a filter can. Attribution is unchanged and still strict - the declared
+`case` must name a case on the `FAILED:` line - and exit 3 simply cannot arise. Declaring
+both `unfiltered` and `block` is a contradiction and refused at load.
+
 WHAT COUNTS AS A KILL, and why it is this strict. The harness protocol is: 0 = every selected
 case passed, non-zero = something failed, **3 = the filter selected NOTHING** (`_harness.NO_MATCH`,
 added by SCC-156 for exactly this reader). A sweep that reads any non-zero as "killed" launders
@@ -129,6 +139,9 @@ def load_table(path: Path) -> tuple[dict, str | None]:
             return {}, f"{path}: mutant #{i + 1} is missing {', '.join(missing)}"
         if m["original"] == m["mutated"]:
             return {}, f"{path}: mutant {m['id']} does not change anything"
+        if m.get("unfiltered") and m.get("block"):
+            return {}, (f"{path}: mutant {m['id']} declares BOTH `unfiltered` and `block` - "
+                        "run the whole file or select a block, not both")
     if not data.get("test") and not all(m.get("test") for m in mutants):
         return {}, f"{path}: no `test` command - set it on the table or on every mutant"
     return data, None
@@ -251,7 +264,8 @@ def main() -> int:
                 print(f"⛔ NOT KILLED {m['id']}\n            {why}")
                 continue
             cmd = m.get("test") or data["test"]
-            code, out = run_test(cmd, repo, m.get("block") or m["case"])
+            sel = None if m.get("unfiltered") else (m.get("block") or m["case"])
+            code, out = run_test(cmd, repo, sel)
             restore()                      # immediately, so the next mutant starts clean
             killed, why = judge(code, out, m["case"])
             verdicts.append((m["id"], killed, why))

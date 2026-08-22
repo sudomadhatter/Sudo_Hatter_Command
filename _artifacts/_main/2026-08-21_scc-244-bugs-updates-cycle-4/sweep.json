@@ -1,0 +1,328 @@
+{
+ "mutants": [
+  {
+   "id": "M1 (B) revert the resolver to the gitdir's parent — the SCC-255 defect, put back",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_link_worktree_assets.py"
+   ],
+   "file": ".agents/scripts/link-worktree-assets.py",
+   "block": "B1 · submodule-resolves",
+   "case": "B1 names the submodule WORKING TREE as the repo",
+   "original": "    candidate = Path(os.path.realpath(common / declared)) if declared else common.parent",
+   "mutated": "    candidate = common.parent"
+  },
+  {
+   "id": "M2 (B) accept an UNVERIFIED resolution instead of refusing it — SURVIVED on the first run: the fixture reaches BOTH refusals, so an exit-code-only assertion could not tell them apart. B2a now checks the reason line",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_link_worktree_assets.py"
+   ],
+   "file": ".agents/scripts/link-worktree-assets.py",
+   "block": "B2a · unverified-resolution-refuses",
+   "case": "B2a gives the RIGHT reason: no working tree, not 'a different repo'",
+   "original": "    if probe.returncode != 0 or not top:\n        why = (probe.stderr or \"\").strip().splitlines()",
+   "mutated": "    if False:\n        why = (probe.stderr or \"\").strip().splitlines()"
+  },
+  {
+   "id": "M3 (D) ignore include_subheadings — every section cuts at the first `#` again",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+   ],
+   "file": ".agents/scripts/jira_feed.py",
+   "block": "SCC-257 · ac-theme-subheadings",
+   "case": "D1 renders ACs from under a `###` sub-heading",
+   "original": "    if include_subheadings:\n        head = head_match.group(0)\n        level = len(head) - len(head.lstrip(\"#\"))\n        stop = re.compile(rf\"^#{{1,{level}}}\\s+\\S\", re.MULTILINE)\n    else:\n        stop = _NEXT_HEAD_RE",
+   "mutated": "    stop = _NEXT_HEAD_RE"
+  },
+  {
+   "id": "M4 (D) flip the depth default ON for every caller — the global change D3 forbids",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+   ],
+   "file": ".agents/scripts/jira_feed.py",
+   "block": "SCC-257 · ac-theme-subheadings",
+   "case": "D3 the story statement does NOT swallow its `###` child",
+   "original": "                 include_subheadings: bool = False) -> str:",
+   "mutated": "                 include_subheadings: bool = True) -> str:"
+  },
+  {
+   "id": "M5 (E) decide by LENGTH again instead of the render trailer",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+   ],
+   "file": ".agents/scripts/jira_feed.py",
+   "block": "SCC-258 · mint-reuse-stale-description",
+   "case": "E1 REPLACES the hand note with the real outline",
+   "original": "            if OUTLINE_TRAILER not in current:",
+   "mutated": "            if len(current.strip()) < MIN_DESCRIPTION:"
+  },
+  {
+   "id": "M6 (E) overwrite the hand note instead of keeping it under PREVIOUS NOTE (retargeted onto preserved_note() when A8 landed)",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+   ],
+   "file": ".agents/scripts/jira_feed.py",
+   "block": "SCC-258 · mint-reuse-stale-description",
+   "case": "E1 the hand note is KEPT, under PREVIOUS NOTE",
+   "original": "                note = preserved_note(current)",
+   "mutated": "                note = \"\""
+  },
+  {
+   "id": "M7 (F) drop the tests-only demotion — a red-tests-only lane is rung 1 again",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_label_tasks.py"
+   ],
+   "file": ".agents/scripts/label_tasks.py",
+   "case": "F1b ...and it ranks AFTER the story, so `story` is the authority",
+   "original": "    sources.sort(key=lambda src: 1 if src.get(\"tests_only\") else 0)",
+   "mutated": "    pass",
+   "unfiltered": true
+  },
+  {
+   "id": "M8 (F) the lane-branch story read always comes back empty",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_label_tasks.py"
+   ],
+   "file": ".agents/scripts/label_tasks.py",
+   "case": "F1 the story source names the BRANCH it was read from",
+   "original": "    r = wf.git([\"ls-tree\", \"-r\", \"--name-only\", branch, f\"{wf.STORIES_REL}/\"], repo)\n    if r.returncode != 0:\n        return []",
+   "mutated": "    r = wf.git([\"ls-tree\", \"-r\", \"--name-only\", branch, f\"{wf.STORIES_REL}/\"], repo)\n    if True:\n        return []",
+   "unfiltered": true
+  },
+  {
+   "id": "M9 (F) name only the FIRST blocker in the lock detail",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_label_tasks.py"
+   ],
+   "file": ".agents/scripts/label_tasks.py",
+   "case": "F2 the lock detail names EVERY declared blocker, not the first",
+   "original": "                             \"detail\": \"after \" + \", \".join(blockers),",
+   "mutated": "                             \"detail\": \"after \" + blockers[0],",
+   "unfiltered": true
+  },
+  {
+   "id": "M10 (A) boot stops reading the epic branch's copy of sprint-status.yaml",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_boot_epic_branch_read.py"
+   ],
+   "file": ".agents/commands/cicd-boot-sprint-memory.md",
+   "block": "A1 · the live boot command",
+   "case": "Step 2b names the epic-branch read AND reports the disagreement",
+   "original": "git -C \"$PROJECT_ROOT\" show origin/epic/<JIRA-KEY>-<slug>:_bmad-output/implementation-artifacts/sprint-status.yaml",
+   "mutated": "cat _bmad-output/implementation-artifacts/sprint-status.yaml"
+  },
+  {
+   "id": "M11 (C) put the flat HEAD precondition back on ①'s Step 0.5",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_shared_checkout_stays_on_main.py"
+   ],
+   "file": ".agents/commands/cicd-write-story-tests.md",
+   "block": "C1 · the live command + rule surface",
+   "case": "no unqualified HEAD precondition for opening a worktree",
+   "original": "   `/cicd-create-epic-sprint` — missing → go back and run it), then open",
+   "mutated": "   `/cicd-create-epic-sprint` — missing → go back and run it) and HEAD is on it, then open"
+  },
+  {
+   "id": "M12 (C) the rule keeps its precondition but drops the trip home",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_shared_checkout_stays_on_main.py"
+   ],
+   "file": ".agents/rules/worktree-per-story.md",
+   "block": "C1 · the live command + rule surface",
+   "case": "no unqualified HEAD precondition for opening a worktree",
+   "original": "to go **back to `main`** the moment the tree is open (the shared checkout stands on `main`; see \"no",
+   "mutated": "to get straight on with the story (the shared checkout stands on `main`; see \"no"
+  },
+  {
+   "id": "M13 (C) ①'s worktree add stops naming its base",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_shared_checkout_stays_on_main.py"
+   ],
+   "file": ".agents/commands/cicd-write-story-tests.md",
+   "block": "C2 · the story door names its base as an operand",
+   "case": "① opens the story tree off `origin/epic/…` NAMED, not off wherever HEAD sat",
+   "original": "    -b claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>",
+   "mutated": "    -b claude/<JIRA-KEY>-<story-slug>"
+  },
+  {
+   "id": "M14 (G) /sm routes to bmad-create-story naming no output path again",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_story_path_is_pinned.py"
+   ],
+   "file": ".agents/commands/sm.md",
+   "block": "G1 · the live command surface",
+   "case": "every section invoking `bmad-create-story` names `_bmad/bmm/stories/`",
+   "original": "- create the next story    → invoke `bmad-create-story` — it writes the story file under\n  `_bmad/bmm/stories/`, which is where every downstream `/cicd-*` step reads it from",
+   "mutated": "- create the next story    → invoke `bmad-create-story`"
+  },
+  {
+   "id": "M15 (A1) the story door stops passing --no-track — the SCC-244 regression, put back",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_shared_checkout_stays_on_main.py"
+   ],
+   "file": ".agents/commands/cicd-write-story-tests.md",
+   "block": "C4 · no `worktree add … origin/epic/…` anywhere tracks the epic",
+   "case": "every epic-based worktree call passes `--no-track`",
+   "original": "worktree add --no-track .claude/worktrees/<story-slug> \\\n    -b claude/",
+   "mutated": "worktree add .claude/worktrees/<story-slug> \\\n    -b claude/"
+  },
+  {
+   "id": "M16 (A1) the OTHER accepted cure is removed — cicd-quick-dev's epic add loses its `branch --unset-upstream`, proving the scan sees the second idiom and its absence",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_shared_checkout_stays_on_main.py"
+   ],
+   "file": ".agents/commands/cicd-quick-dev.md",
+   "block": "C4 · no `worktree add … origin/epic/…` anywhere tracks the epic",
+   "case": "every epic-based worktree call passes `--no-track`",
+   "original": "git -C \"<the new tree>\" branch --unset-upstream           # an origin/… start-point sets upstream to the BASE branch\n",
+   "mutated": "git -C \"<the new tree>\" status -sb                        # the cure is gone\n"
+  },
+  {
+   "id": "M17 (A2) the refspec loses its quotes — zsh globs it, exits 1, prints nothing",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_boot_epic_branch_read.py"
+   ],
+   "file": ".agents/commands/cicd-boot-sprint-memory.md",
+   "block": "A1 · the live boot command",
+   "case": "Step 2b names the epic-branch read AND reports the disagreement",
+   "original": "--format='%(refname:short)' 'refs/remotes/origin/epic/*'",
+   "mutated": "--format='%(refname:short)' refs/remotes/origin/epic/*"
+  },
+  {
+   "id": "M18 (B1) the disagreement claim names only ONE copy — the defect the board sentence used to satisfy on its behalf",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_boot_epic_branch_read.py"
+   ],
+   "file": ".agents/commands/cicd-boot-sprint-memory.md",
+   "block": "A1 · the live boot command",
+   "case": "Step 2b names the epic-branch read AND reports the disagreement",
+   "original": "(\"the epic branch has\n`<id>` at `<status>`; the checkout copy still says `<status>`\")",
+   "mutated": "(\"<id> is at <status>\")"
+  },
+  {
+   "id": "M19 (B6) remove the DIFFERENT-repo refusal — the branch B2a could not reach",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_link_worktree_assets.py"
+   ],
+   "file": ".agents/scripts/link-worktree-assets.py",
+   "block": "B2c · different-repo-refuses: the candidate is inside SOMEONE ELSE's tree",
+   "case": "B2c gives the DIFFERENT-repo reason, and names the root it found",
+   "original": "    if Path(os.path.realpath(top)) != Path(os.path.realpath(candidate)):",
+   "mutated": "    if False:"
+  },
+  {
+   "id": "M20 (A3) claim the resolution was verified even when --repo skipped it",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_link_worktree_assets.py"
+   ],
+   "file": ".agents/scripts/link-worktree-assets.py",
+   "block": "B2d · a zero that was never verified may not claim it was",
+   "case": "...but does NOT claim the resolution was verified",
+   "original": "    verified = not args.repo",
+   "mutated": "    verified = True"
+  },
+  {
+   "id": "M21 (A3) the unplaceable counter goes dead again — SURVIVED on the first attempt, because the report read len(assets) instead of the count it had measured; the count is load-bearing now and B2e asserts the NUMBER, not the phrase",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_link_worktree_assets.py"
+   ],
+   "file": ".agents/scripts/link-worktree-assets.py",
+   "block": "B2e · assets FOUND but unplaceable is not 'this repo has none'",
+   "case": "...it says how MANY assets were found and could not be placed",
+   "original": "            unplaceable += 1\n            continue",
+   "mutated": "            continue"
+  },
+  {
+   "id": "M22 (A9) put check=True back on the resolver's first git call — a traceback where the SOP promises a refusal",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_link_worktree_assets.py"
+   ],
+   "file": ".agents/scripts/link-worktree-assets.py",
+   "block": "B2f · an unresolvable start REFUSES, it does not traceback",
+   "case": "prints the refusal, not a stack trace",
+   "original": "        [\"git\", \"-C\", str(start), \"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\"],\n        capture_output=True, text=True,\n    )",
+   "mutated": "        [\"git\", \"-C\", str(start), \"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\"],\n        capture_output=True, text=True, check=True,\n    )"
+  },
+  {
+   "id": "M23 (A4) the sub-heading label is never emitted — out-of-scope bullets read as criteria again, with the one word that said otherwise deleted",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+   ],
+   "file": ".agents/scripts/jira_feed.py",
+   "block": "SCC-257 · ac-theme-subheadings",
+   "case": "D4 ...but the boundary is VISIBLE — the sub-heading renders as a label",
+   "original": "            if pending_label:\n                out.append(f\"[{pending_label}]\")\n                pending_label = \"\"\n",
+   "mutated": "            pass\n"
+  },
+  {
+   "id": "M24 (A5) `check` decides by LENGTH again — 'outline present (131 chars)' over a hand note, at close-out, in both doors",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+   ],
+   "file": ".agents/scripts/jira_feed.py",
+   "block": "jira_feed · legacy A",
+   "case": "check: a 131-char HAND NOTE is not called an outline",
+   "original": "    if OUTLINE_TRAILER in desc:",
+   "mutated": "    if len(desc) >= MIN_DESCRIPTION:"
+  },
+  {
+   "id": "M25 (A8) take the FIRST PREVIOUS NOTE header instead of the last — stops converging, so a ticket this bug has already nested stays nested",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+   ],
+   "file": ".agents/scripts/jira_feed.py",
+   "block": "SCC-258 · mint-reuse-stale-description",
+   "case": "E1e a ticket already nested FOUR deep converges on the original note",
+   "original": "    idx = current.rfind(PREVIOUS_NOTE_HEADER)",
+   "mutated": "    idx = current.find(PREVIOUS_NOTE_HEADER)"
+  },
+  {
+   "id": "M26 (A7) a door stops telling the agent to `git show` a source that carries a ref — ENOENT on the rung the packet just called authoritative",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_label_tasks.py"
+   ],
+   "file": ".agents/commands/cicd-label-tasks.md",
+   "case": "F3 cicd-label-tasks.md tells the agent to `git show` a source that carries a ref",
+   "original": "git -C \"$REPO\" show \"<ref>:<path>\"     # ref present  → read it from the branch\n",
+   "mutated": "cat \"<path>\"     # just open it\n",
+   "unfiltered": true
+  },
+  {
+   "id": "M27 (C6) the Locked report row goes back to naming ONE blocker — the operator-facing surface still describing the shape F2 fixed",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_label_tasks.py"
+   ],
+   "file": ".agents/commands/smh-label-tasks.md",
+   "case": "F3 smh-label-tasks.md's Locked row shows MORE than one blocker",
+   "original": "- `Locked: <key> after <key>, <key> — <the shared path per blocker>` per row",
+   "mutated": "- `Locked: <key> after <key> — <the shared path>` per row",
+   "unfiltered": true
+  }
+ ]
+}
