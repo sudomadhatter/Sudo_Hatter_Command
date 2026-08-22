@@ -17,10 +17,10 @@ plan as it stood at `60b6868`.
 ## Task Checklist
 
 - [x] **Part A · SCC-272** — bake-off + both-machine install recipe. **PASS; tripwire did not fire.**
-- [ ] Part B · SCC-273 — lobby MCP, ignore and scope files
-- [ ] Part C · SCC-274 — docs + the one house skill
-- [ ] Part D · SCC-275 — commands, scripts, check 9, tests, SOP
-- [ ] Part E · SCC-276 — rules activation frontmatter + generated `.claude/rules/`
+- [x] **Part B · SCC-273** — lobby MCP, ignore and scope files. Index scoped 300→126 files; mirrors excluded.
+- [x] **Part C · SCC-274** — `docs/code-review-graph.md`, every pointer re-aimed, 12 skill docs → 1 house skill.
+- [x] **Part D · SCC-275** — check 9 reads the graph DB via stdlib `sqlite3`; commands re-cited; **acceptance row 2 met**.
+- [x] **Part E · SCC-276** — activation frontmatter on all 25 rules; `.claude/rules/` emitted by the sync.
 - [ ] Part F · SCC-277 — rule-trigger hook + routing-canary probe
 - [ ] Part H · SCC-278 — risk_seam classifier so the review loop reads the graph by default
 - [ ] Part G · AVCH-73 — AviationChat, its own repo and lane
@@ -119,10 +119,39 @@ chases it later.
 | Gate | When | Result |
 |---|---|---|
 | `declared_change_set.py parse` | plan, after audit amendments | present, 113 entries, 0 incomplete |
-| `run_all.py` | Part D and at the tip | not yet run |
-| `workflow_lint.py --toolkit-only` | Part D and at the tip | not yet run |
-| `check_maps.py` | Part D | not yet run |
+| `run_all.py` | after Part D, after Part E | **50/50 files** (was 49; Part E adds one) |
+| `workflow_lint.py --toolkit-only` | after Part D, after Part E | **0 errors, 0 warnings** |
+| `test_check_maps_graph_fresh.py` | Part D, RED→GREEN + 3 mutants | 5/5; mutants all killed |
+| `test_rule_frontmatter.py` | Part E, RED→GREEN + 2 mutants | 9/9; mutants all killed |
+| `check_maps.py` | Part D | ledger row added; depth-3 clean |
 | `gate_receipt.py` | at the tip, once | not yet run |
+
+### Parts B–E — what landed
+
+**B (SCC-273).** `.mcp.json` and `.antigravity/mcp.json` now run `code-review-graph serve`;
+`.gitnexusignore`/`.gitnexusrc` deleted; `.code-review-graphignore` written. ⚠️ **SCC-186 landed on
+`main` mid-lane touching all four MCP configs** (it added Playwright). The merge kept *both* facts —
+verified per file: `code-review-graph` + `md-feedback` + `playwright`, no `gitnexus`. Scoping the
+index dropped it from 300 files/1637 nodes to **126/1111**, of which **1073 are `.agents/`**; the
+`.claude`/`.agent` mirror duplicates the plan predicted are gone.
+
+**C (SCC-274).** `docs/code-review-graph.md` is the house contract. Twelve GitNexus skill docs
+deleted — six masters *and* six tracked copies under `.claude/skills/` that the sync manifest never
+owned and could not have purged (audit finding F1/F6, caught at plan time). The repo-map's two-index
+workaround was deleted rather than reworded: it existed only because the old walker could not read
+`.agents/`.
+
+**D (SCC-275).** Check 9 rewritten. Its test is new (the check had **none** before), and because the
+red died at import rather than at an assertion, three mutants were run to prove the green: going
+blind, inverting the comparison, and dropping the fix command from the message all fail. **Acceptance
+row 2 is met** — `gitnexus` appears in no tracked file outside `_artifacts/` history.
+
+**E (SCC-276).** All 25 rules carry activation frontmatter mirroring `rules/INDEX.md`. The one thing
+worth stating plainly: **a rule without `paths:` loads at launch, unconditionally**, so path-scoping
+is not decoration — it is the difference between a gate that binds and a gate that waits for someone
+to open the right file. Floor and protocol tiers are therefore left unscoped, and the test asserts
+they never gain `paths:`. `.claude/rules/` holds six generated copies, never symlinks (Windows
+without Developer Mode turns a symlink into a text file containing a path).
 
 ## Your Actions
 
