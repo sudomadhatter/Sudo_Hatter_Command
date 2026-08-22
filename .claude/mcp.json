@@ -7,15 +7,6 @@
         "md-feedback",
         "--workspace=/Users/sudohatter/Sudo_Hatter_Command"
       ]
-    },
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@playwright/mcp@latest",
-        "--caps",
-        "vision,pdf,devtools"
-      ]
     }
   }
 }
