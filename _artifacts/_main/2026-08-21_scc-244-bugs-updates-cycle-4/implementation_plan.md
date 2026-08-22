@@ -16,11 +16,25 @@ before this plan was written (see *Recon* per part).
 Six riders (A–F) are entirely inside this repo and land on this lane. **Rider G splits**, and the
 split is a *structural* blocker, not a preference:
 
+⭐ **REVISED 2026-08-21 on the operator's ruling — G no longer splits at all.** "We can't change
+BMAD stuff… if there is something we created that contradicts BMAD we need to look at that, or just
+drop this fix plan altogether for the subtask for the BMAD." Not editing BMAD and not overriding it
+are the same instruction, so **both `_bmad/custom/bmad-create-story.toml` halves are dropped, not
+deferred**, and G is entirely in-repo.
+
 | G half | Repo | Disposition |
 |---|---|---|
-| `cicd-write-story-tests.md` Step 1 names the story path | **this repo** | **lands here** |
-| `_bmad/custom/bmad-create-story.toml` in AGY | `AGY_AVIATIONCHAT` (submodule, `JIRA_KEYS="AVCH"`) | **AVCH ticket** — a commit there carries an AVCH key and its own PR |
-| same file in the project template | `Projects/sudo-project-skeleton` | **filed on SCC-262** — the submodule is **not initialized** (`git submodule status` shows `-de8dbf29`, the directory is empty) and the repo has no `.agents/jira.conf`, so there is no key to commit under from here |
+| the story path is named at our own call site | **this repo** | **lands here** — and the live defect was `/sm`, not `cicd-write-story-tests.md`, which already named `_bmad/bmm/stories/` at `:45` |
+| ~~`_bmad/custom/bmad-create-story.toml` in AGY~~ | `AGY_AVIATIONCHAT` | **DROPPED.** No override is written, and none is needed: AGY is a **thin** project — `.agents/` there holds `INDEX.md · bmad · jira.conf · rules · scripts · skills` and **no `commands/`** — so it reads this repo's command bodies and inherits G1 on the next toolkit sync |
+| ~~same file in the project template~~ | `Projects/sudo-project-skeleton` | **DROPPED**, same ruling |
+
+**So G2 files nothing, and that is the finding rather than an omission.** The convention the override
+was meant to enforce is already real and already enforced by our own commands: 139 story files under
+`_bmad/bmm/stories/` on AGY, **zero** under `_bmad-output/implementation-artifacts/`. The only place
+BMAD's default could still win was a call site of ours that named no path, and that is what G1 closed.
+The three repos carrying their own `sm.md` copy are `B-L-WorldWide` and `BRKN_Tattoos` (installed and
+**deliberately unmaintained**) and `sudo-command-center` (a copy of this repo, refreshed by the
+toolkit sync after merge, not by a rider).
 
 ⚠️ The empty-directory state is itself a reading trap worth recording: `cd Projects/sudo-project-skeleton
 && git log` **succeeds and prints the LOBBY's log**, because git walks up out of the empty dir. Anyone
@@ -147,9 +161,11 @@ The two memory files are already staged on this lane. SOP page updated for every
 change. Mutation sweep declared as JSON and run through `mutation_sweep.py`, drawn **from the code**.
 Suite run once, on the shipping sha, through `gate_receipt.py`.
 
-### Step 7 — file the two out-of-repo halves (G2)
-One AVCH subtask for the AGY toml; one SCC-262 subtask for the skeleton toml. Both get the measured
-defect, an anchor, SCOPE and ACCEPTANCE, per `audit-findings-need-a-file-anchor`.
+### Step 7 — file the two out-of-repo halves (G2) — **NOT RUN, and deliberately**
+Both halves were `_bmad/custom/bmad-create-story.toml` overrides and both are dropped by the ruling
+above, so there is no defect left to anchor and nothing to file. Filing them anyway would mint two
+tickets whose accepted fix is one the operator has forbidden — the failure mode
+`audit-findings-need-a-file-anchor` exists to prevent, arrived at from the other direction.
 
 ---
 
