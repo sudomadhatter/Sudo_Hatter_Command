@@ -311,13 +311,23 @@ def main() -> int:
     # ── L · the canned shape vs the REAL tool, on a machine that has both ─────────────────────
     # ⛔ NOT a skip that hides a failure: it reports which arm ran. A canned fixture that has
     # drifted from the tool's actual output is invisible to every case above, and this is the
-    # only thing that can see it. On a machine with no CLI or no graph there is nothing to
-    # compare, and the live arm states that rather than passing quietly.
+    # only thing that can see it. On a machine that cannot answer there is nothing to compare,
+    # and the live arm states that rather than passing quietly.
+    #
+    # ⛔ A STALE GRAPH IS A PRECONDITION, NOT A FAILURE — and getting that wrong is what this
+    # comment is here to stop happening twice. `classify` returns `unclassified` when the graph's
+    # recorded sha is not HEAD, which is CORRECT and is what cases E/F pin. HEAD moves on every
+    # merge, so a live arm that only skips on "no CLI / no db" turns every `git merge origin/main`
+    # into a red suite that says nothing true about the code (measured 2026-08-22, SCC-270: the
+    # merge that absorbed SCC-269/271/279 failed exactly this way while `code-review-graph update`
+    # made it green untouched). The precondition for comparing against the real tool is that the
+    # real tool can ANSWER: CLI present, db present, AND db at HEAD.
     if c.block("L · the real installed tool, when this machine has one"):
         import shutil
         exe = shutil.which("code-review-graph") or str(Path.home() / ".local/bin/code-review-graph")
         db = REPO / ".code-review-graph" / "graph.db"
-        if Path(exe).exists() and db.exists():
+        fresh = rs._graph_is_fresh(REPO) if (Path(exe).exists() and db.exists()) else False
+        if Path(exe).exists() and db.exists() and fresh:
             got = rs.classify([".agents/hooks/rule-trigger.py"], root=str(REPO))
             live = got.get("status") == "classified" and got.get("tiers")
             c.check("L LIVE: the real tool classifies a file this lane changed", bool(live),
@@ -326,6 +336,11 @@ def main() -> int:
                 t = next(iter(got["tiers"].values()))
                 c.check("L LIVE: a tier carries risk/flows/untested",
                         set(t) == {"risk", "flows", "untested"}, str(t)[:200])
+        elif Path(exe).exists() and db.exists():
+            c.check("L SKIPPED — the graph is STALE (not at HEAD), so the real tool has nothing "
+                    "to compare against. Run `code-review-graph update` and re-run this file to "
+                    "verify the canned shape. This is the normal state right after a merge.",
+                    True, f"db={db} fresh={fresh}")
         else:
             c.check("L SKIPPED — no code-review-graph and/or no graph db on this machine "
                     "(the canned shape in this file is therefore UNVERIFIED here)", True,

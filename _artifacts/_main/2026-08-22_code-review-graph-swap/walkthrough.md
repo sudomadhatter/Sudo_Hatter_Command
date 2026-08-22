@@ -196,6 +196,27 @@ The measured facts that shaped it:
 **Live, against the real installed tool:** `classify` prints `classified` on the fresh graph and
 `unclassified` with the graph's own stamp rewritten. Nothing in git history was touched to prove it.
 
+### The merge that absorbed SCC-269 / SCC-271 / SCC-279 turned my own gate red
+
+Worth recording, because the defect was in the **test**, not the code, and the failure mode is
+general. Case L is the live arm — it runs `classify` against the real installed tool so that a canned
+fixture which has drifted from the tool's real output cannot hide. It skipped when the CLI or the
+graph db was missing. It did **not** skip when the graph was merely **stale**.
+
+A merge moves `HEAD`. `_graph_is_fresh` then reports `False`, `classify` correctly returns
+`unclassified` — which is the behaviour cases E and F exist to pin — and case L called that a
+failure. So `git merge origin/main` produced a red suite that said nothing true about the code, and
+`code-review-graph update` made it green without a line changing.
+
+Fixed by making the precondition what it should always have been: not *"is the tool installed"* but
+*"can the tool answer"* — CLI present, db present, **and db at `HEAD`**. A stale graph now states
+`L SKIPPED` with the reason and the command that clears it.
+
+Proven both ways rather than asserted: **fresh → 24/24** with the live arm running;
+**stale → 23/23** with the live arm skipping. Mutant **M1** (delete the `and fresh` guard) **dies** —
+it fires the live arm against a stale graph and fails, which is exactly the bug. The graph's stamp
+was rewritten in place and restored, so no lane history was touched to prove it.
+
 ## Your Actions
 
 1. **Nothing yet.** GitNexus stays installed and registered until the lane lands — Part A only added
