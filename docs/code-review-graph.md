@@ -60,13 +60,23 @@ lives in the child repos, each with its own graph (`Projects/AGY_AVIATIONCHAT` �
   hand (recorded in that repo's `_bmad/bmm/stories/tea-6-temp0-integration.md`). This engine keeps the edge and
   names the candidates — it just files them somewhere `callers_of` does not look. In a 54-callee
   function, **33 callees were unresolved bare names** (mostly builtins, but `evaluate` among them).
-- **Never report a `tests_for` / `test_gaps` miss as a finding without opening the test file.** The
-  test link is a CALL-GRAPH link, so **a test that spawns its subject as a subprocess is invisible to
-  it**. Measured on this repo (2026-08-22): `detect-changes` listed all eight functions of
-  `.agents/hooks/rule-trigger.py` as untested while `test_rule_trigger.py` was exercising every one of
-  them through `subprocess.run`. That is most of `.agents/scripts/tests/`, which tests scripts by
-  running them. A gap here means *go look*, not *there is no test* — and the two read identically in
-  the tool's output.
+- **⛔ In THIS repo the test layer is empty, and a `test_gaps` miss means nothing at all.** Measured
+  2026-08-22: the graph holds **24 TESTED_BY edges and not one names a subject under test** — 21 point
+  at bare builtins (`str`, `Path`, `mkdir`, `isinstance`) and 3 at a test class's own `assertEqual`.
+  So `detect-changes` reports **every** changed function as untested, including thoroughly tested
+  ones, and the output reads exactly like a page of findings.
+
+  A test link needs a **statically resolvable import**. Every test under `.agents/scripts/tests/`
+  reaches its subject either by `subprocess` or by a runtime `sys.path.insert(...)` before the import,
+  and the resolver can follow neither. Two concrete measurements: `detect-changes` listed all eight
+  functions of `.agents/hooks/rule-trigger.py` as untested while `test_rule_trigger.py` exercised
+  every one through `subprocess.run`; and `tests_for check_graph_fresh` returned **0** while
+  `test_check_maps_graph_fresh.py` called it directly at three lines.
+
+  **This is repo-specific, so read the number rather than assuming.** `risk_seam.py classify` publishes
+  `test_links` for exactly this. The centre measures **0**; `AGY_AVIATIONCHAT`, with conventional
+  package imports, measures **3427** real links of 18857 edges, and its gaps are worth opening a file
+  for. The call graph is unaffected in both: `CALLS` resolved 22135/22135 here.
 - **Never trust a stale graph.** The index is machine-local, per-worktree, and gitignored — it does
   **not** travel through git. `check_maps.py` check 9 compares the graph's recorded commit with `HEAD`
   and hints when they diverge; that hint is non-fatal by design, so it is on you to act.

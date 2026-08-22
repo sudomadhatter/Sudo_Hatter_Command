@@ -183,6 +183,12 @@ and which changed functions have no test. It **informs, never gates**: `gates_au
 every possible return, by pinned contract, so the audit's semantics are identical whatever the
 classifier says.
 
+⛔ **`test_links` says whether `untested` means anything, and in the command centre it is `0`.** The
+graph's 24 TESTED_BY edges all point at builtins or a test's own assert methods (measured
+2026-08-22), so `untested` lists every changed function whether or not it is covered. Treat a `0`
+here as "the graph has no opinion on tests" and ignore the list. `risk` and `flows` stay trustworthy
+— `CALLS` resolved 22135/22135 in the same measurement.
+
 `"status": "unclassified"` is a **normal result, not a failure** — no graph, a graph built at a
 different commit, or the tool not installed all return it, and the pure-Python path is the normal
 path. `code-review-graph update` in that repo is the fix if you want the context.

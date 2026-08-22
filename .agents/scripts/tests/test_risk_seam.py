@@ -84,13 +84,23 @@ def fake_cli(bindir: Path, payload: object, rc: int = 0) -> None:
     script.chmod(0o755)
 
 
-def graph_at(root: Path, sha: str) -> None:
-    """A real graph db carrying a real `git_head_sha` — the same stamp check 9 reads."""
+def graph_at(root: Path, sha: str, tested_by: list[str] | None = None) -> None:
+    """A real graph db carrying a real `git_head_sha` — the same stamp check 9 reads.
+
+    `tested_by` seeds the TESTED_BY edge layer with the given SUBJECT qualified-names, so a case
+    can pin the difference between "the graph has real test links" and "the graph has 24 edges
+    that all point at builtins". Omit it entirely to model a graph built before that layer
+    existed — the table is then ABSENT, not empty, which is a different failure to survive.
+    """
     d = root / ".code-review-graph"
     d.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(d / "graph.db")
     con.execute("CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT)")
     con.execute("INSERT INTO metadata VALUES ('git_head_sha', ?)", (sha,))
+    if tested_by is not None:
+        con.execute("CREATE TABLE edges (kind TEXT, source_qualified TEXT, target_qualified TEXT)")
+        for subject in tested_by:
+            con.execute("INSERT INTO edges VALUES ('TESTED_BY', ?, 'someTest')", (subject,))
     con.commit()
     con.close()
 
@@ -307,6 +317,44 @@ def main() -> int:
                 out = {}
             c.check("K prints classified tiers", out.get("status") == "classified",
                     r.stdout[:300])
+
+    # ── M · `untested` is only signal when the graph HAS a test-link layer ────────────────────
+    # ⛔ THE REASON THIS CASE EXISTS. Measured in the command centre 2026-08-22, during SCC-270's
+    # own review: the live graph held 24 TESTED_BY edges and NOT ONE named a subject under test.
+    # 21 pointed at bare builtins (`str`, `Path`, `mkdir`, `isinstance`) and 3 at a test class's
+    # own `assertEqual`/`assertIn`. Meanwhile CALLS was 22135/22135 path-resolved — the call graph
+    # works, the test-link layer does not. Consequence: `untested` listed EVERY changed function
+    # in the repo, and read exactly like a finding. A reviewer trusting it would open twelve files
+    # that are all thoroughly tested. So `classify` must publish HOW MANY REAL TEST LINKS EXIST,
+    # and a raw `count(*)` would have said 24 and hidden the whole problem.
+    if c.block("M · classify publishes the test-link count, and does not count junk"):
+        with TempDir() as tmp:
+            head = git_repo(tmp)
+            junk = ["str", "Path", "mkdir", "isinstance",                       # bare builtins
+                    str(tmp / "t/tests/test_x.py") + "::TestX.assertEqual"]     # a test's own method
+            graph_at(tmp, head, tested_by=junk)
+            fake_cli(tmp / "bin", CANNED)
+            got = call_classify(tmp, ["src/a.py"], with_path(tmp / "bin"))
+            c.check("M the shape carries test_links", "test_links" in got, str(got)[:200])
+            c.check("M ⛔ 5 junk edges count as ZERO real test links",
+                    got.get("test_links") == 0, str(got.get("test_links")))
+
+        with TempDir() as tmp:
+            head = git_repo(tmp)
+            real = [str(tmp / "src/a.py") + "::alpha", str(tmp / "src/b.py") + "::beta"]
+            graph_at(tmp, head, tested_by=real + ["len"])
+            fake_cli(tmp / "bin", CANNED)
+            got = call_classify(tmp, ["src/a.py"], with_path(tmp / "bin"))
+            c.check("M a REAL subject link is counted (and the builtin beside it is not)",
+                    got.get("test_links") == 2, str(got.get("test_links")))
+
+        with TempDir() as tmp:                       # graph predating the edges table entirely
+            head = git_repo(tmp)
+            graph_at(tmp, head)                      # no `tested_by` -> no edges TABLE
+            fake_cli(tmp / "bin", CANNED)
+            got = call_classify(tmp, ["src/a.py"], with_path(tmp / "bin"))
+            c.check("M ⛔ a graph with no edges table degrades to 0, it does not raise",
+                    got.get("status") == "classified" and got.get("test_links") == 0, str(got)[:200])
 
     # ── L · the canned shape vs the REAL tool, on a machine that has both ─────────────────────
     # ⛔ NOT a skip that hides a failure: it reports which arm ran. A canned fixture that has

@@ -169,8 +169,14 @@ as the normal fallback:
   **Informs, never gates** — `gates_audit()` is False for every return by pinned contract, so audit
   semantics are identical whatever it says. `"status": "unclassified"` is a **normal result** (no
   graph, a stale graph, the tool absent, or a thin project with no `.agents/scripts/`), fixed with
-  `code-review-graph update` if you want the context. ⚠ `untested` reads the CALL GRAPH, so a script
-  tested by spawning it as a subprocess reads as a gap — *where to look*, never a finding.
+  `code-review-graph update` if you want the context.
+- ⛔ **Read `test_links` before `untested` — it is a per-repo number, and it decides whether the list
+  means anything.** It counts TESTED_BY edges naming a real subject, and a link needs a **statically
+  resolvable import**: a test that reaches its subject by `subprocess` or a runtime
+  `sys.path.insert(...)` produces none. Measured 2026-08-22 — `AGY_AVIATIONCHAT` **3427**, the command
+  centre **0**. A high count makes `untested` real signal (*where to look*, confirmed against the test
+  file, never a finding on its own); a **0** means the graph has no test data at all, so it lists every
+  changed function and you should ignore it outright. `risk` and `flows` are unaffected either way.
 
 ## Lens 3 — Pre-Mortem (LEDGER+BLAST) — bounded, and the bound is the point
 

@@ -18,6 +18,7 @@ of `—` means the page recorded the ticket but not the day; the ticket's sessio
 
 | Date | Ticket | What changed for the operator |
 |---|---|---|
+| 2026-08-22 | SCC-270 | The risk map now prints `test_links`, and it tells you whether to believe its "no test" column. The graph only links a test to its subject when it can follow the import statically: AviationChat finds 3427 real links, the command centre finds **zero** — so in the centre every function you changed reads as untested, tested ones included. `test_links: 0` means ignore that column outright; the risk and flow columns are unaffected either way. |
 | 2026-08-22 | SCC-270 | Reviews and self-audits now print a risk map beside the overlap list: per changed file, the riskiest change in it, the flows through it, and the changed functions with no test found. It informs the review and can never fail it, and it prints `unclassified` — a normal line — whenever the code graph has no answer. |
 | 2026-08-22 | SCC-270 | Two one-line checks in `_routing-canary/README.md` show rule activation actually happening — what a prompt surfaces, and a log of every rule the tool loaded on its own. Worth running on a fresh clone or a new machine. |
 | 2026-08-22 | SCC-270 | The code graph the reviews and audits consult is now `code-review-graph` (MIT), installed per machine with `pipx`. It can finally see `.agents/`, so the toolkit itself is reviewable. New section in §8; full reference in `docs/code-review-graph.md`. |

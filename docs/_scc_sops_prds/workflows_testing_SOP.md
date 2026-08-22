@@ -1465,7 +1465,8 @@ the normal flow.
 You do see it in one place: a **risk map** printed beside the overlap list when a review re-checks
 its blast radius. Per changed file it names the riskiest thing you changed in it, how many flows run
 through it, and which of your changed functions it can find no test for — a shortlist of where to
-look hardest, nothing more. When it says `unclassified`, the graph simply had no answer to give (see
+look hardest, nothing more. It also prints `test_links`; when that reads `0`, the "no test" column is
+empty of meaning and the fourth point below says why. When it says `unclassified`, the graph simply had no answer to give (see
 the first point below); that is a normal line, not a problem to solve.
 
 Four things are worth knowing, because each one has bitten:
@@ -1481,10 +1482,18 @@ Four things are worth knowing, because each one has bitten:
   function, and it gets confused when one file defines several nested functions with the same name.
   So a reviewer confirms a caller's identity before acting on it. That habit is written into the
   commands.
-- **"No test" from the graph means "go and check", not "there is no test".** It finds tests by
-  following calls, so a test that runs its subject as a separate program is invisible to it — which is
-  how most of this system's own tests work. Left unchecked, that reads as a pile of missing tests that
-  are not missing. The commands say so where they print it.
+- **In THIS repo, "no test" from the graph means nothing at all — and in a project repo it means "go
+  and check".** The graph links a test to its subject only when it can follow the import statically.
+  AviationChat's code is laid out that way, so it finds **3427** real links and a gap there is worth
+  chasing. The command centre's own tests all run their subject as a separate program or rewire the
+  import path first, so it finds **zero** — and therefore reports **every** function you changed as
+  untested, including the ones with thorough tests. Left unchecked that reads as a page of missing
+  tests that are not missing.
+
+  You do not have to remember which repo is which: the risk map prints `test_links`, the count of real
+  links it found. **Zero means ignore the "no test" column entirely.** A high number means treat it as
+  a shortlist to check. Either way the *risk* and *flow* columns are unaffected — the call graph works
+  fine in both repos; it is only the test half that is repo-dependent.
 
 Full reference — every tool, the freshness commands, the install recipe for both machines:
 [`docs/code-review-graph.md`](../code-review-graph.md).

@@ -10,10 +10,16 @@ on nothing. This file is the fill: the answer now comes from the local **code gr
 The seam's contract, and what `test_risk_seam.py` pins:
 
 - `classify(paths, root=None)` returns the fixed shape
-      {"status": "unclassified" | "classified", "tiers": {<path>: {risk, flows, untested}}}
+      {"status": "unclassified" | "classified", "test_links": int,
+       "tiers": {<path>: {risk, flows, untested}}}
   `risk` is the HIGHEST risk score among that file's changed functions (a file is as risky as its
   worst change, not its average). `flows` is how many affected flows touch it. `untested` names the
   changed functions the graph found no test for.
+- ⛔ `test_links` is how many TESTED_BY edges name a real subject, and it is what tells you whether
+  `untested` means anything. **In the command centre it is 0** — the graph's 24 test edges all point
+  at builtins or a test's own assert methods, so `untested` lists every changed function whether or
+  not it is tested. `risk` and `flows` are unaffected (CALLS resolves 22135/22135). When
+  `test_links` is 0, read `untested` as "the graph has no opinion", never as a finding.
 - `gates_audit(result)` is **False for every possible return** — the classifier INFORMS the lens, it
   never gates the audit. A future classifier that wants a veto must change that function and its
   test in the same commit, which is exactly the visibility this seam exists to force.
@@ -80,6 +86,49 @@ def _repo_root(root: str | os.PathLike | None) -> Path | None:
         return Path(root)
     top = _git(Path.cwd(), "rev-parse", "--show-toplevel")
     return Path(top) if top else None
+
+
+def _test_link_count(root: Path) -> int:
+    """How many TESTED_BY edges name a REAL subject in this repo. Unreadable reads as 0.
+
+    ⛔ NOT `count(*)`, and the difference is the whole point. Measured in the command centre
+    2026-08-22, during SCC-270's own review: the graph held **24** TESTED_BY edges and **not one**
+    named a subject under test. 21 pointed at bare builtins (`str`, `Path`, `mkdir`, `isinstance`)
+    and 3 at a test class's own `assertEqual`/`assertIn`. A raw count would have reported 24 and
+    read as "the test layer works".
+
+    What it actually means when this returns 0: the graph has **no test-link data**, so every
+    changed function lands in `untested` — including the thoroughly tested ones. `untested` is then
+    NOISE, not signal, and the callers say so. The call graph is unaffected: CALLS resolved
+    22135/22135 in the same measurement, so `risk` and `flows` stay trustworthy while this does not.
+
+    Two shapes count as junk: a subject with no `/` in it (a bare unresolved name — a builtin, or a
+    method the resolver could not place), and a subject whose own file is a test file (a test's
+    internal helper, not a thing under test).
+    """
+    db = root / ".code-review-graph" / "graph.db"
+    if not db.exists():
+        return 0
+    try:
+        import sqlite3
+        con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        try:
+            rows = con.execute(
+                "SELECT source_qualified FROM edges WHERE kind = 'TESTED_BY'").fetchall()
+        finally:
+            con.close()
+    except Exception:                       # noqa: BLE001 — no edges table, corrupt db: 0, not a crash
+        return 0
+    real = 0
+    for row in rows:
+        subject = str((row[0] if row else "") or "")
+        if "/" not in subject:              # a bare name the resolver never placed
+            continue
+        base = subject.split("::", 1)[0].rsplit("/", 1)[-1]
+        if base.startswith("test_") or base.endswith("_test.py"):
+            continue                        # a test's own helper, not a subject under test
+        real += 1
+    return real
 
 
 def _graph_is_fresh(root: Path) -> bool:
@@ -226,7 +275,7 @@ def classify(paths: list[str], root: str | os.PathLike | None = None) -> dict:
                 if key in tiers:
                     tiers[key]["flows"] += 1
 
-        return {"status": "classified", "tiers": tiers}
+        return {"status": "classified", "test_links": _test_link_count(top), "tiers": tiers}
     except Exception:                       # noqa: BLE001 — ⛔ the seam degrades, never raises
         return _unclassified()
 

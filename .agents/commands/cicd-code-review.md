@@ -127,9 +127,21 @@ or a thin project that carries no `.agents/scripts/` at all — prints `"status"
 context, and `gates_audit` is False by contract, so nothing here can fail a review on its own. If you
 want the context, `code-review-graph update` in that repo and re-run this one line.
 
-⚠ **`untested` reads the CALL GRAPH, so a subprocess test is invisible to it.** A script exercised by
-spawning it shows up as a test gap even when it is thoroughly covered. Treat `untested` as *where to
-look*, never as a finding on its own; confirm against the test file before you write it down.
+⛔ **READ `test_links` BEFORE YOU READ `untested` — it is a per-repo number, and it decides whether
+the list means anything.** `test_links` counts the graph's TESTED_BY edges that name a real subject.
+A test link needs a **statically resolvable import**; a test that reaches its subject by `subprocess`
+or by a runtime `sys.path.insert(...)` produces no link at all. Two repos, measured the same day
+(2026-08-22):
+
+| Repo | `test_links` | What `untested` is worth there |
+|---|---|---|
+| `AGY_AVIATIONCHAT` | **3427** (of 18857 edges) | real signal — a gap is worth opening the file for |
+| the command centre | **0** (of 24 edges, all builtins) | **noise** — every changed function is listed |
+
+So: a **high** `test_links` means treat `untested` as *where to look* and confirm against the test
+file before writing it down. A `test_links` of **0** means the graph has no test data at all — do not
+open those files, do not write it down, do not mention it in the verdict. `risk` and `flows` are
+unaffected either way (`CALLS` resolved 22135/22135 in the centre and 74k edges in AGY).
 
 ⚠ **`zsh` does not word-split an unquoted variable** the way `bash` does. Build file lists into a file
 and expand with `$(cat …)`, or the whole list arrives as one argument and your sweep silently checks

@@ -97,10 +97,19 @@ normal path; the graph is context, and `gates_audit` is False by contract, so no
 review on its own. If it comes back `unclassified` and you want the context, `code-review-graph update`
 in that repo and re-run this one line.
 
-⚠ **`untested` reads the CALL GRAPH, so a subprocess test is invisible to it.** A script exercised by
-spawning it — which is how most of `.agents/scripts/tests/` works — shows up as a test gap even when
-it is thoroughly covered. Treat `untested` as *where to look*, never as a finding on its own; confirm
-against the test file before you write it down.
+⛔ **READ `test_links` BEFORE YOU READ `untested`, and in the command centre `test_links` is `0`.**
+That number is how many of the graph's TESTED_BY edges name a real subject. Measured here
+2026-08-22: the graph held **24** test edges and **not one** named a thing under test — 21 pointed at
+bare builtins (`str`, `Path`, `mkdir`, `isinstance`) and 3 at a test class's own `assertEqual`. So
+**every** changed function lands in `untested`, thoroughly-tested ones included, and the list reads
+exactly like a page of findings. When `test_links` is `0`, `untested` carries **no information**:
+do not open those files, do not write it down, do not mention it in the verdict.
+
+The cause is that a test link needs a statically resolvable import, and every test under
+`.agents/scripts/tests/` reaches its subject either by `subprocess` or by a runtime
+`sys.path.insert(...)` before the import — neither of which the resolver can follow. `risk` and
+`flows` are **not** affected: `CALLS` resolved 22135/22135 in the same measurement, so the call
+graph is trustworthy while the test layer is not.
 
 ⚠ **`zsh` does not word-split an unquoted variable** the way `bash` does. Build file lists into a file
 and expand with `$(cat …)`, or the whole list arrives as one argument and your sweep silently checks
