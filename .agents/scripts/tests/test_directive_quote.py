@@ -93,6 +93,10 @@ def main() -> int:
         c.check("A2 there are commands to scan", len(files) >= 20, f"{len(files)} *.md found")
         missing = [n for n in REBUTTERS if not (CMDS / n).is_file()]
         c.check("A3 every pinned rebutter exists on disk", not missing, f"missing={missing}")
+        # ⛔ A3 passes over an EMPTY list (`missing` is []), and block C is a loop over the same
+        # list - so an emptied REBUTTERS guts the REQUIRE half in silence. Found by mutation M4.
+        c.check("A4 the rebutter list is populated (anti-vacuity for block C)",
+                len(REBUTTERS) == 5, f"REBUTTERS={REBUTTERS}")
 
     if c.block("B · BAN - no paraphrase of the directive survives anywhere"):
         hits = []
