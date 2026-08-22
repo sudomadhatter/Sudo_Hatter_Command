@@ -1,0 +1,6 @@
+task_key: SCC-270
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-270-code-review-graph-swap
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: []        # filled with the Subtask keys on the operator's go (Parts A–F); AVCH-73 is the AGY twin, its own lane

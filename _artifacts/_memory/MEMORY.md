@@ -78,6 +78,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [Destructive re-verify reads FRESH](destructive-reverify-must-read-fresh.md) — cached re-check no-ops delete and looks green.
 
 ## GitNexus
+- [⛔ `base` is NOT a GitNexus replacement; review-weighted MIT swap = code-review-graph (1st) / codebase-memory-mcp (2nd); rules layer = native `.claude/rules paths:` + Antigravity `.agents/rules` + trigger hook, no product](base-is-not-a-gitnexus-replacement.md) — same NC license as GitNexus; CodeGraphContext below both.
 - **The index is a stale cache** — [machine-local](gitnexus-index-not-actually-live.md) (pass repo: explicitly).
 - **Search blind spots** — [grep skips gitignored projects](grep-skips-gitignored-projects.md) (blind to Projects/ from lobby) · [⭐ grep reads parked branch](grep-reads-the-branch-you-are-parked-on.md) (stale checkout fakes scope) · [relocated links are mis-pathed](relocated-doc-links-are-mispathed-not-dead.md) (target moved).
 
