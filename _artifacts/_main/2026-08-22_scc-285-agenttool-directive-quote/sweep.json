@@ -1,0 +1,48 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_directive_quote.py"
+ ],
+ "mutants": [
+  {
+   "id": "M1 BAN narrowed to the one wording that shipped",
+   "file": ".agents/scripts/tests/test_directive_quote.py",
+   "original": "PARAPHRASE = re.compile(r\"subagents?\\s+unless\", re.I)",
+   "mutated": "PARAPHRASE = re.compile(r\"use subagents\\s+unless\", re.I)",
+   "case": "D2 BAN fires on the OTHER shipped variant",
+   "block": "D · ⛔ COUNTER-EXAMPLES - a check never seen failing is not a check"
+  },
+  {
+   "id": "M2 BAN loses the singular form",
+   "file": ".agents/scripts/tests/test_directive_quote.py",
+   "original": "PARAPHRASE = re.compile(r\"subagents?\\s+unless\", re.I)",
+   "mutated": "PARAPHRASE = re.compile(r\"subagents\\s+unless\", re.I)",
+   "case": "D3 BAN fires on the singular form",
+   "block": "D · ⛔ COUNTER-EXAMPLES - a check never seen failing is not a check"
+  },
+  {
+   "id": "M3 norm() stops collapsing wraps",
+   "file": ".agents/scripts/tests/test_directive_quote.py",
+   "original": "    return \" \".join(text.split())",
+   "mutated": "    return text",
+   "case": "D6 REQUIRE survives a mid-quote line wrap",
+   "block": "D · ⛔ COUNTER-EXAMPLES - a check never seen failing is not a check"
+  },
+  {
+   "id": "M4 REQUIRE accepts `Agent tool` for `AgentTool`",
+   "file": ".agents/scripts/tests/test_directive_quote.py",
+   "original": "DIRECTIVE = \"Do not call the AgentTool unless the user requested it\"",
+   "mutated": "DIRECTIVE = \"Do not call the Agent tool unless the user requested it\"",
+   "case": "D7 REQUIRE rejects a near-miss paraphrase",
+   "block": "D · ⛔ COUNTER-EXAMPLES - a check never seen failing is not a check"
+  },
+  {
+   "id": "M5 REBUTTERS shortened - block C silently stops covering two files",
+   "file": ".agents/scripts/tests/test_directive_quote.py",
+   "original": "    \"cicd-code-review.md\",\n    \"smh-code-review.md\",\n",
+   "mutated": "    \"cicd-code-review.md\",\n",
+   "case": "A4 the rebutter list is populated (anti-vacuity for block C)",
+   "block": "A · the inputs exist (anti-vacuity)"
+  }
+ ]
+}

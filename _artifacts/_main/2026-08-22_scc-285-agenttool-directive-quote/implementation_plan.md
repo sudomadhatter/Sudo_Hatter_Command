@@ -90,6 +90,9 @@ feature: it is the gate proving both twins moved.
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — SOP currency, same commit → A6
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — one provenance row → A6
 - EDIT `.agents/.sync-manifest.json` — written by sync-agents, not by hand → A5
+- EDIT `_artifacts/_main/INDEX.md` — the session row `check_maps.py` requires → A7
+- NEW `_artifacts/_main/2026-08-22_scc-285-agenttool-directive-quote/sweep.json` — the mutant table → A3
+- NEW `_artifacts/_main/2026-08-22_scc-285-agenttool-directive-quote/gates/suite.json` — the gate receipt → A3
 - NEW `_artifacts/_main/2026-08-22_scc-285-agenttool-directive-quote/implementation_plan.md` — this plan → A7
 - NEW `_artifacts/_main/2026-08-22_scc-285-agenttool-directive-quote/walkthrough.md` — the record → A7
 - NEW `_artifacts/_main/2026-08-22_scc-285-agenttool-directive-quote/task.yaml` — the manifest → A7
