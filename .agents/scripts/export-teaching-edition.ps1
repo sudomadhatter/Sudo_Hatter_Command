@@ -58,14 +58,65 @@ function Test-IsWithinDirectory {
         $candidatePath.StartsWith($directoryPrefix, [StringComparison]::OrdinalIgnoreCase)
 }
 
+function Resolve-PhysicalPath {
+    param([string]$Path)
+    $full = [System.IO.Path]::GetFullPath($Path)
+
+    # Resolve the final component up front when the caller supplied an existing
+    # link. This explicit fast path also covers providers that expose the link
+    # only on the final DirectoryInfo/FileInfo object during a WhatIf export.
+    if (Test-Path -LiteralPath $full) {
+        $finalItem = Get-Item -LiteralPath $full -Force
+        if ($finalItem.LinkType) {
+            $finalTarget = $finalItem.ResolveLinkTarget($true)
+            if (-not $finalTarget) { throw "Cannot resolve target link" }
+            $full = [System.IO.Path]::GetFullPath($finalTarget.FullName)
+        }
+    }
+
+    $root = [System.IO.Path]::GetPathRoot($full)
+    $current = $root
+    $relative = $full.Substring($root.Length)
+    $segments = $relative -split '[\\/]'
+    foreach ($segment in $segments) {
+        if ([string]::IsNullOrEmpty($segment)) { continue }
+        $next = Join-Path $current $segment
+        if (Test-Path -LiteralPath $next) {
+            $item = Get-Item -LiteralPath $next -Force
+            if ($item.LinkType) {
+                $resolved = $item.ResolveLinkTarget($true)
+                if (-not $resolved) { throw "Cannot resolve target link: $next" }
+                $current = $resolved.FullName
+                continue
+            }
+        }
+        $current = $next
+    }
+    return [System.IO.Path]::GetFullPath($current)
+}
+
 function ConvertFrom-DotEnvValue {
     param([AllowNull()][string]$ValueText)
     if ($null -eq $ValueText) { return '' }
     $value = $ValueText.Trim()
     if ($value.Length -ge 2 -and ($value[0] -eq '"' -or $value[0] -eq "'")) {
         $quote = $value[0]
-        $closing = $value.IndexOf($quote, 1)
-        if ($closing -gt 0) { return $value.Substring(1, $closing - 1) }
+        $result = New-Object System.Text.StringBuilder
+        $escaped = $false
+        for ($i = 1; $i -lt $value.Length; $i++) {
+            $char = $value[$i]
+            if ($escaped) {
+                [void]$result.Append($char)
+                $escaped = $false
+            } elseif ($char -eq '\') {
+                $escaped = $true
+            } elseif ($char -eq $quote) {
+                return $result.ToString()
+            } else {
+                [void]$result.Append($char)
+            }
+        }
+        return $result.ToString()
     }
     # dotenv treats a # after whitespace as an inline comment for an unquoted value.
     return ($value -replace '\s+#.*$', '').Trim()
@@ -77,6 +128,21 @@ function New-RedactedLeakHit {
     # Never echo the matched token or path: either can itself be the credential. The manifest
     # remains the local debugging source; terminal and CI transcripts stay safe to share.
     return "exported $Kind contains configured private $MatchType (details withheld)"
+}
+
+function Get-DecodedTextCandidates {
+    param([string]$Path)
+    $bytes = [System.IO.File]::ReadAllBytes($Path)
+    $seen = New-Object 'System.Collections.Generic.HashSet[string]'
+    foreach ($encoding in @(
+        [System.Text.Encoding]::UTF8,
+        [System.Text.Encoding]::Unicode,
+        [System.Text.Encoding]::BigEndianUnicode,
+        [System.Text.Encoding]::UTF32
+    )) {
+        $text = $encoding.GetString($bytes)
+        if ($seen.Add($text)) { Write-Output $text }
+    }
 }
 
 if ($SelfTestLeakMatcher) {
@@ -91,6 +157,9 @@ if ($SelfTestLeakMatcher) {
         @('bracket secret is not a wildcard', (Test-LiteralContains 'prefix secretatoken123 suffix' 'secret[abc]token123'), $false),
         @('unquoted dotenv comment is stripped', (ConvertFrom-DotEnvValue 'secretvalue123 # production'), 'secretvalue123'),
         @('quoted dotenv hash is preserved', (ConvertFrom-DotEnvValue '"secret#value123" # production'), 'secret#value123'),
+        @('escaped dotenv quote is not a terminator', (ConvertFrom-DotEnvValue '"prefix\"secretvalue123"'), 'prefix"secretvalue123'),
+        @('private prefix after underscore matches', ('EVAL_IGOR_TEMP' -match '(?<![A-Za-z0-9])IGOR'), $true),
+        @('private prefix inside ordinary word does not match', ('RIGOR' -match '(?<![A-Za-z0-9])IGOR'), $false),
         @('leak report redacts the secret', (Test-LiteralContains $redactedProbe 'secretvalue123'), $false)
     )
     $failed = @($cases | Where-Object { $_[1] -ne $_[2] })
@@ -111,8 +180,9 @@ $m = Get-Content -LiteralPath $Manifest -Raw -Encoding UTF8 | ConvertFrom-Json
 $sourceRoot = Resolve-Path -LiteralPath (Join-Path $manifestDir $m.source)
 if (-not (Test-Path -LiteralPath $sourceRoot)) { throw "Source not found: $sourceRoot" }
 
-$targetRoot = [System.IO.Path]::GetFullPath($Target)
-if (Test-IsWithinDirectory $targetRoot $sourceRoot.Path) {
+$targetRoot = Resolve-PhysicalPath $Target
+$sourcePhysical = Resolve-PhysicalPath $sourceRoot.Path
+if (Test-IsWithinDirectory $targetRoot $sourcePhysical) {
     throw "Target must be outside the source tree to prevent recursive self-copy: $Target"
 }
 
@@ -125,8 +195,8 @@ if (-not $WhatIf -and (Test-Path -LiteralPath $Target)) {
 
 Write-Host ""
 Write-Host "=== teaching-edition export: $($m.name) ===" -ForegroundColor Cyan
-Write-Host "source : $sourceRoot"
-Write-Host "target : $Target$(if ($WhatIf) { '   [WhatIf - nothing will be written]' })"
+Write-Host "source : [resolved from manifest; path withheld]"
+Write-Host "target : [path withheld]$(if ($WhatIf) { '   [WhatIf - nothing will be written]' })"
 Write-Host ""
 
 # Optional manifest keys. Set-StrictMode turns a missing property into a hard error, so every
@@ -165,8 +235,7 @@ $excluded = New-Object System.Collections.Generic.List[string]
 foreach ($inc in $m.include) {
     $src = Join-Path $sourceRoot $inc
     if (-not (Test-Path -LiteralPath $src)) {
-        Write-Warning "include path missing in source, skipped: $inc"
-        continue
+        throw "Required include path missing in source: $inc"
     }
 
     $items = if (Test-Path -LiteralPath $src -PathType Leaf) {
@@ -189,6 +258,42 @@ foreach ($inc in $m.include) {
             New-Item -ItemType Directory -Path $destDir -Force | Out-Null
         }
         Copy-Item -LiteralPath $item.FullName -Destination $dest -Force
+    }
+}
+
+# Export-only line transforms remove source-owner catalog rows whose underlying assets are
+# intentionally excluded from a fresh shell. They are path-scoped so a token in ordinary prose is
+# never deleted globally.
+$lineTransformCount = 0
+if (-not $WhatIf) {
+    foreach ($rule in (Get-ManifestList $m "lineTransforms")) {
+        $dest = Join-Path $Target $rule.path
+        if (-not (Test-Path -LiteralPath $dest -PathType Leaf)) {
+            throw "Line-transform target missing: $($rule.path)"
+        }
+        $replacement = if ($rule.PSObject.Properties.Name -contains 'replacement') {
+            [string]$rule.replacement
+        } else { '' }
+        $lines = [System.IO.File]::ReadAllLines($dest)
+        $changed = $false
+        $output = New-Object System.Collections.Generic.List[string]
+        foreach ($line in $lines) {
+            if ($line.Contains([string]$rule.contains)) {
+                $changed = $true
+                $lineTransformCount++
+                if ($replacement.Length -gt 0) { $output.Add($replacement) }
+            } else {
+                $output.Add($line)
+            }
+        }
+        if (-not $changed) {
+            throw "Line-transform anchor missing in $($rule.path): $($rule.contains)"
+        }
+        [System.IO.File]::WriteAllLines(
+            $dest,
+            $output,
+            (New-Object System.Text.UTF8Encoding($false))
+        )
     }
 }
 
@@ -260,7 +365,7 @@ if (-not $WhatIf -and $subList.Count -gt 0) {
             # inside "Rigor". Without this the choice is a corrupted export or a missed name.
             $isWord = ($s.PSObject.Properties.Name -contains 'word') -and $s.word
             if ($isWord) {
-                $pattern = '\b' + [regex]::Escape($s.from) + '\b'
+                $pattern = '(?<![A-Za-z0-9])' + [regex]::Escape($s.from)
                 $n = ([regex]::Matches($text, $pattern)).Count
                 if ($n -gt 0) {
                     $text = [regex]::Replace($text, $pattern, $s.to)
@@ -332,39 +437,12 @@ Write-Host "copied      : $($copied.Count) files"
 Write-Host "excluded    : $($excluded.Count) files"
 Write-Host "structure   : $structureDirs empty folder(s) kept"
 Write-Host "substituted : $subCount token(s) across $subFiles file(s)"
+Write-Host "line-pruned : $lineTransformCount source-only catalog row(s)"
 Write-Host "transformed : $($transformed.Count) files"
 Write-Host ""
 Write-Host "-- transforms --" -ForegroundColor Yellow
 $transformed | ForEach-Object { Write-Host "   $_" }
 Write-Host ""
-
-if (-not $WhatIf) {
-    # The report NAMES every excluded path, so it necessarily contains the very strings the
-    # leak scan hunts for. It is written OUTSIDE the export tree - never inside it. The first
-    # version of this script put it in $Target and exempted it from the scan; the exemption
-    # was the leak. A scanner with an exception list is a scanner with a hole.
-    $absTarget = [System.IO.Path]::GetFullPath($Target)
-    $reportPath = Join-Path (Split-Path -Parent $absTarget) `
-                            ((Split-Path -Leaf $absTarget) + '.export-report.txt')
-    $report = @(
-        "teaching-edition export report",
-        "manifest : $($m.name)",
-        "source   : $sourceRoot",
-        "",
-        "--- transformed ($($transformed.Count)) ---"
-    ) + $transformed + @(
-        "",
-        "--- excluded ($($excluded.Count)) ---"
-    ) + $excluded
-    # Non-fatal: the report is a courtesy, the export is the product. If the target sits at a
-    # drive root the parent is write-protected, and a 2400-file export must not die on a log.
-    try {
-        Set-Content -LiteralPath $reportPath -Value $report -Encoding UTF8 -ErrorAction Stop
-        Write-Host "exclusion report: $reportPath"
-    } catch {
-        Write-Warning "could not write the exclusion report to '$reportPath' ($($_.Exception.GetType().Name)) - export itself is unaffected"
-    }
-}
 
 # --- leak scan (never optional) ---------------------------------------------------------
 
@@ -423,21 +501,22 @@ if ($scanRoot -and (Test-Path -LiteralPath $scanRoot)) {
             }
         }
         foreach ($n in $wordNeedles) {
-            if ($relSlash -match ('\b' + [regex]::Escape($n) + '\b')) {
+            if ($relSlash -match ('(?<![A-Za-z0-9])' + [regex]::Escape($n))) {
                 $hits += New-RedactedLeakHit -Kind path -MatchType word
             }
         }
 
-        $text = Get-Content -LiteralPath $file.FullName -Raw -ErrorAction SilentlyContinue
-        if (-not $text) { continue }
-        foreach ($n in $needles) {
-            if (Test-LiteralContains $text $n) {
-                $hits += New-RedactedLeakHit -Kind content -MatchType literal
+        foreach ($text in (Get-DecodedTextCandidates $file.FullName)) {
+            if (-not $text) { continue }
+            foreach ($n in $needles) {
+                if (Test-LiteralContains $text $n) {
+                    $hits += New-RedactedLeakHit -Kind content -MatchType literal
+                }
             }
-        }
-        foreach ($n in $wordNeedles) {
-            if ($text -match ('\b' + [regex]::Escape($n) + '\b')) {
-                $hits += New-RedactedLeakHit -Kind content -MatchType word
+            foreach ($n in $wordNeedles) {
+                if ($text -match ('(?<![A-Za-z0-9])' + [regex]::Escape($n))) {
+                    $hits += New-RedactedLeakHit -Kind content -MatchType word
+                }
             }
         }
     }

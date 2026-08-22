@@ -41,6 +41,7 @@
 
 # Secrets / local
 **/.env
+.training-mode-off
 # `**/.env` matches ONLY a file named exactly `.env` — not `.env.local`, and not the
 # `<name>.pre-restore.bak` copies that Restore-EnvMaster.ps1 / restore-env-master.sh drop beside
 # every file they overwrite. On the 2026-08-04 Desktop restore that gap left a live Firebase API

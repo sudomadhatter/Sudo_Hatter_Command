@@ -57,9 +57,10 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 
 > **One on-demand rule is named HERE because its trigger hides in plain sight: the Jira board.** Any
 > sprint/backlog/ticket question — **"what's next?" / "what should I work on?"**, "what's In Progress?",
-> "move/mint this ticket" — is answered from the **live board** via the authenticated `acli` CLI — load
-> `.agents/rules/jira.md` (cheat-sheet + queue order + flag traps + guardrails) and run the query. Never
-> answer "I have no Jira integration": every shell-capable agent on this machine has one. The local
+> "move/mint this ticket" — first resolves the bound repo's `.agents/jira.conf`. When it exists, answer
+> from the **live board** via authenticated `acli`: load `.agents/rules/jira.md` and run the query. When
+> no binding exists, say plainly that this shell/project has no Jira board configured and do not query
+> ambient credentials; `/smh-tour` owns the optional setup hand-off. The local
 > `sprint-status.yaml` remains the machine state; Jira is the human view — the rule carries the join.
 > **"What's next" has a defined answer, not a judgment call:** `In Progress` → **`To Do Next`** (the
 > operator's hand-picked queue) → `To Do`, first non-empty rank wins; `Blocking` is an impediment, never
@@ -78,7 +79,7 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 > and verification for a device with no terminal. On a desktop IDE session the var is unset → ignore it and
 > use the desktop defaults. `mobile-mode.md` owns the trigger (single source for the lane boundary).
 
-> **Teaching edition?** When a root `.training-mode` sentinel exists, also load
+> **Teaching edition?** When root `.training-mode` exists and ignored `.training-mode-off` does not, load
 > `.agents/rules/training-mode.md`. The rule changes the explanation contract, not the workflow or its
 > gates, and requires a fresh read of `docs/_scc_sops_prds/workflows_testing_SOP.md` plus the current
 > command body before workflow mechanics are taught. `/smh-training on|off|status` owns the switch;
@@ -179,8 +180,10 @@ files, per §3); full model →
   starts in the lobby. Sudo-managed exceptions use their named home-base buckets; home-base/cross-project
   work uses `_artifacts/_main/`. Full model → `.agents/rules/artifacts-always-first.md` ·
   `docs/workspace-standard.md`.
-- **"pick up"** → read-only continuity brief from the right `active-context.md`, then surface open work
-  **from the live Jira board** — `In Progress` → `To Do Next` → `To Do`, first non-empty rank wins
+- **"pick up"** → read-only continuity brief from the right `active-context.md`, then, only when that
+  repo has `.agents/jira.conf`, surface open work **from its live Jira board** — `In Progress` →
+  `To Do Next` → `To Do`, first non-empty rank wins. With no binding, report that no board is configured
+  and stop before `acli`
   (`.agents/rules/jira.md` §The queue; trigger also → `router.md`). ⛔ **NOT from
   `_my_resources/open_tasks/todo_list.md`** — retired as an agent source (ruling 2026-08-09): it is the
   operator's personal notes, it is stale, and it duplicates tickets that already exist. Never quote it as

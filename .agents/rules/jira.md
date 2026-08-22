@@ -11,6 +11,18 @@ triggers: [jira, ticket, the board, backlog, sprint, acli, in progress, what's n
 
 # Jira operations — the board is one shell command away
 
+## Binding preflight — no config means no board
+
+Before any `acli` query or write, resolve the repo the question belongs to and require its
+`.agents/jira.conf`. **No file means no Jira board is configured for that shell/project.** Say that
+plainly and stop; never let ambient Atlassian credentials choose a site or project by accident. A
+fresh teaching shell intentionally starts in this state. `/smh-tour` explains how a named project can
+copy its inert example only after that project has a site, key, and board.
+
+The rest of this rule applies only after the binding exists. Authentication and binding answer
+different questions: `acli jira auth status` proves the machine can reach Atlassian; `jira.conf`
+proves which repo-owned board the request is allowed to address.
+
 **The fact every platform misses:** Jira is fully reachable from this machine RIGHT NOW via
 **`acli`**, already authenticated — the API token lives in the OS credential store (the macOS
 keychain on the Mac, the Windows equivalent on the PC), **never** in a repo file, a commit, or chat.

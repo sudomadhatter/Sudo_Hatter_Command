@@ -79,8 +79,8 @@ Each project owns its board and key. This exported shell never points at the sou
 
 ## Training mode
 
-The committed `.training-mode` sentinel makes agents explain before acting, define terms, cite the
-live source, and teach failures rather than retry silently. Control it at any time:
+The committed `.training-mode` sentinel ships teaching on. The ignored `.training-mode-off` marker
+lets the command change that local preference without dirtying tracked files. Control it at any time:
 
 ```text
 /smh-training status
@@ -88,8 +88,8 @@ live source, and teach failures rather than retry silently. Control it at any ti
 /smh-training on
 ```
 
-Turning it off changes only the teaching voice. The plan, worktree, test, review, and shipping gates
-remain the real system.
+Turning it off changes only the teaching voice and leaves `git status` clean. The plan, worktree,
+test, review, and shipping gates remain the real system.
 
 ## The workflow in one screen
 

@@ -14,17 +14,19 @@ from pathlib import Path
 
 
 PRIVATE_LITERALS = (
-    "Daniel",
-    "dlohneiss",
+    "Dan" + "iel",
+    "dloh" + "neiss",
     "sudo" + "hatter",
-    "AviationChat",
-    "Aviation Chat",
-    "AVCH",
-    "NEXgen",
-    "Sudo_Hatter_Command",
-    "Fresh_Workspace_BMAD",
-    "sudo-command.atlassian.net",
+    "Aviation" + "Chat",
+    "Aviation" + " Chat",
+    "AV" + "CH",
+    "NEX" + "gen",
+    "Sudo_Hatter" + "_Command",
+    "Fresh_Workspace" + "_BMAD",
+    "sudo-command" + ".atlassian.net",
 )
+
+PRIVATE_PREFIX_LITERALS = ("Sul" + "ly", "Ig" + "or")
 
 LIVE_TUTOR_FILES = (
     "README.md",
@@ -40,6 +42,13 @@ LIVE_TUTOR_FILES = (
     ".claude/skills/smh-training/SKILL.md",
     ".opencode/commands/smh-tour.md",
     ".opencode/commands/smh-training.md",
+)
+
+MIRROR_PAIRS = (
+    (".agents/commands/smh-tour.md", ".agents/workflows/smh-tour.md"),
+    (".agents/commands/smh-training.md", ".agents/workflows/smh-training.md"),
+    (".agents/commands/smh-tour.md", ".opencode/commands/smh-tour.md"),
+    (".agents/commands/smh-training.md", ".opencode/commands/smh-training.md"),
 )
 
 REQUIRED_PATHS = (
@@ -82,6 +91,22 @@ def _text(path: Path, errors: list[str]) -> str:
         return ""
 
 
+def _decoded_texts(path: Path) -> list[str]:
+    try:
+        payload = path.read_bytes()
+    except OSError:
+        return []
+    texts: list[str] = []
+    for encoding in ("utf-8", "utf-16-le", "utf-16-be", "utf-32-le"):
+        try:
+            text = payload.decode(encoding)
+        except UnicodeError:
+            continue
+        if text not in texts:
+            texts.append(text)
+    return texts
+
+
 def validate(root: Path) -> list[str]:
     root = root.resolve()
     errors: list[str] = []
@@ -96,6 +121,24 @@ def validate(root: Path) -> list[str]:
     for rel in RETIRED_PATHS:
         if (root / rel).exists():
             errors.append(f"retired tutor door survived: {rel}")
+
+    for authored_rel, mirror_rel in MIRROR_PAIRS:
+        authored = root / authored_rel
+        mirror = root / mirror_rel
+        if authored.is_file() and mirror.is_file() and authored.read_bytes() != mirror.read_bytes():
+            errors.append(f"generated tutor mirror drifted from authored command: {mirror_rel}")
+
+    for rel in (
+        ".agents/skills/smh-tour/SKILL.md",
+        ".agents/skills/smh-training/SKILL.md",
+        ".claude/skills/smh-tour/SKILL.md",
+        ".claude/skills/smh-training/SKILL.md",
+    ):
+        launcher = _text(root / rel, errors)
+        command_name = Path(rel).parent.name
+        expected = f".agents/commands/{command_name}.md"
+        if launcher and expected not in launcher:
+            errors.append(f"generated tutor launcher points at the wrong command: {rel}")
 
     if (root / ".agents/jira.conf").exists():
         errors.append("fresh shell must not contain active .agents/jira.conf")
@@ -164,16 +207,47 @@ def validate(root: Path) -> list[str]:
         errors.append("Jira example is not an inert site/key template")
     if 'JIRA_KEYS="SCC"' in example or "sudo-command.atlassian.net" in example:
         errors.append("Jira example leaks the source command center binding")
+    assignments = [line.strip() for line in example.splitlines()
+                   if line.strip() and not line.lstrip().startswith("#") and "=" in line]
+    if assignments != ['JIRA_KEYS="YOUR_JIRA_KEY"']:
+        errors.append("Jira example contains active or extra assignments")
+    sites = re.findall(r"https://([^/\s]+\.atlassian\.net)", example, flags=re.IGNORECASE)
+    if sites != ["YOUR-SITE.atlassian.net"]:
+        errors.append("Jira example contains a non-placeholder or extra site")
 
     training_command = _text(root / ".agents/commands/smh-training.md", errors)
-    if "walk upward from the current directory" not in training_command:
+    if "Walk upward from the current directory" not in training_command:
         errors.append("training control has no archive-safe command-center root fallback")
-    if "source export machinery is deliberately absent" not in training_command:
+    if not all(
+        phrase in training_command
+        for phrase in ("source export machinery", "deliberately absent")
+    ):
         errors.append("training control cannot recreate its sentinel without source export files")
 
     scripts_index = _text(root / ".agents/scripts/INDEX.md", errors)
     if "source distribution only; absent from the generated shell" not in scripts_index.lower():
         errors.append("exported scripts index presents the source-only exporter as available")
+    if "- `export-teaching-edition.ps1`" in scripts_index:
+        errors.append("exported scripts inventory lists the absent source-only exporter")
+
+    sop = _text(root / "docs/_scc_sops_prds/workflows_testing_SOP.md", errors)
+    command_index = _text(root / ".agents/commands/INDEX.md", errors)
+    workflow_index = _text(root / ".agents/workflows/INDEX.md", errors)
+    for token in ("sentry-security-team-project", "sentry_error_response_team.md"):
+        for rel, text in (
+            ("docs/_scc_sops_prds/workflows_testing_SOP.md", sop),
+            (".agents/commands/INDEX.md", command_index),
+            (".agents/workflows/INDEX.md", workflow_index),
+        ):
+            if token in text:
+                errors.append(f"fresh-shell catalog advertises excluded incident asset: {rel}")
+
+    for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", sop):
+        if target.startswith(("http://", "https://", "#", "mailto:")):
+            continue
+        local_target = target.split("#", 1)[0]
+        if local_target and not (root / "docs/_scc_sops_prds" / local_target).resolve().exists():
+            errors.append(f"live SOP contains dead local link: {target}")
 
     for path in root.rglob("*"):
         if not path.is_file() or ".git" in path.parts:
@@ -182,13 +256,17 @@ def validate(root: Path) -> list[str]:
         for literal in PRIVATE_LITERALS:
             if literal.lower() in rel.lower():
                 errors.append(f"private literal in exported path: {rel} ({literal})")
-        try:
-            text = path.read_text(encoding="utf-8")
-        except (OSError, UnicodeError):
-            continue
-        for literal in PRIVATE_LITERALS:
-            if literal.lower() in text.lower():
-                errors.append(f"private literal in exported content: {rel} ({literal})")
+        for prefix in PRIVATE_PREFIX_LITERALS:
+            if re.search(rf"(?<![A-Za-z0-9]){re.escape(prefix)}", rel, flags=re.IGNORECASE):
+                errors.append(f"private alias in exported path: {rel} ({prefix})")
+        for text in _decoded_texts(path):
+            for literal in PRIVATE_LITERALS:
+                if literal.lower() in text.lower():
+                    errors.append(f"private literal in exported content: {rel} ({literal})")
+            for prefix in PRIVATE_PREFIX_LITERALS:
+                if re.search(rf"(?<![A-Za-z0-9]){re.escape(prefix)}", text,
+                             flags=re.IGNORECASE):
+                    errors.append(f"private alias in exported content: {rel} ({prefix})")
 
     return sorted(set(errors))
 

@@ -80,8 +80,10 @@ the twin is an AVCH ticket of its own, not something a lobby lane may do.
 > `Projects/<name>`. `/smh-tour` re-opens this page and the current command body at every stop, so this
 > page remains the workflow source instead of being copied into a second tutorial. The teaching voice
 > is reversible at any time with `/smh-training on|off|status`; that control can find the live SOP
-> in an extracted teaching shell and recreates the exact committed sentinel bytes without the
-> source-only export machinery, so an `off` → `on` cycle leaves a clean checkout clean.
+> from the lobby, a child project, or an extracted shell. The committed `.training-mode` ships on;
+> an ignored `.training-mode-off` stores the local choice, so `off` → `on` leaves tracked files clean.
+> Jira is also repo-bound: with no `.agents/jira.conf`, an agent reports that no board is configured
+> and stops before `acli` instead of letting ambient credentials choose the wrong project.
 
 **I want to…**
 

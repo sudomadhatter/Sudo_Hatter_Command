@@ -70,8 +70,22 @@
     "_routing-canary"
   ],
 
+  "_comment_lineTransforms": "Path-scoped catalog pruning for assets deliberately absent from a fresh shell. Every anchor is required so source drift fails the export instead of reviving a ghost.",
+  "lineTransforms": [
+    { "path": ".agents/commands/INDEX.md", "contains": "`sentry-security-team-avch` →" },
+    { "path": ".agents/commands/INDEX.md", "contains": "| **Security / error team**", "replacement": "| **Security / error team** | `cicd-mobile-error-team` | Live incident response is project-owned and becomes available only after a project installs its own runbook. |" },
+    { "path": ".agents/commands/INDEX.md", "contains": "`sudo-incident-response` → `sentry-security-team-avch`" },
+    { "path": ".agents/workflows/INDEX.md", "contains": "`sentry-security-team-avch.md`" },
+    { "path": "docs/_scc_sops_prds/workflows_testing_SOP.md", "contains": "DRILL[\"3 · /sentry-security-team-avch" },
+    { "path": "docs/_scc_sops_prds/workflows_testing_SOP.md", "contains": "| `/sentry-security-team-avch` |" },
+    { "path": "docs/_scc_sops_prds/workflows_testing_SOP.md", "contains": "[sentry_error_response_team.md](sentry_error_response_team.md)" },
+    { "path": ".agents/scripts/INDEX.md", "contains": "- `export-teaching-edition.ps1`" }
+  ],
+
   "_comment_substitutions": "Case-sensitive content substitutions run before whole-file transforms. The final leak scan is case-insensitive and checks both content and paths.",
   "substitutions": [
+    { "from": "AGY_AVIATIONCHAT · NEXgen-VR-Director", "to": "none in a fresh shell; add named projects after creation" },
+    { "from": "AGY_AVIATIONCHAT keeps a copy of this page (its `_my_resources/_quick_reference/` folder, file\n`sudo_workflows_testing.md`). That copy is **stale** — a fifth of this page's size — and it sits in\nthat project's `_my_resources/`, which agents do not scan. **This page is canonical**; re-syncing\nthe twin is an AVCH ticket of its own, not something a lobby lane may do.", "to": "A fresh teaching shell has no project-specific SOP copies. This page is canonical; each named\nproject may add its own references after creation without replacing this command-center source." },
     { "from": "AGY_AVIATIONCHAT", "to": "YOUR_PROJECT" },
     { "from": "AVIATIONCHAT", "to": "YOUR_PROJECT" },
     { "from": "Aviation Chat", "to": "your project" },
@@ -97,7 +111,7 @@
     { "from": "Sudo_Hatter_Command", "to": "command-center" },
     { "from": "Fresh_Workspace_BMAD", "to": "sudo-project-skeleton" },
     { "from": "clean-bmad", "to": "sudo-project-skeleton" },
-    { "from": "https://sudo-command.atlassian.net/jira/software/projects/SCC/boards/2", "to": "your optional Jira board" },
+    { "from": "https://sudo-command.atlassian.net/jira/software/projects/SCC/boards/2", "to": "https://YOUR-SITE.atlassian.net/jira/software/projects/YOUR_KEY/boards/YOUR_BOARD" },
     { "from": "https://sudo-command.atlassian.net", "to": "https://YOUR-SITE.atlassian.net" },
     { "from": "sudo-command.atlassian.net", "to": "YOUR-SITE.atlassian.net" },
     { "from": "SCC Jira board", "to": "Jira board" },
@@ -105,8 +119,10 @@
 
     { "from": "Sully", "to": "Ada", "word": true },
     { "from": "sully", "to": "ada", "word": true },
+    { "from": "SULLY", "to": "ADA", "word": true },
     { "from": "Igor", "to": "Bruno", "word": true },
-    { "from": "igor", "to": "bruno", "word": true }
+    { "from": "igor", "to": "bruno", "word": true },
+    { "from": "IGOR", "to": "BRUNO", "word": true }
   ],
 
   "transforms": [

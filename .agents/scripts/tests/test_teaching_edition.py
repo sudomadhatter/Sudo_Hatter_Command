@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -45,9 +46,18 @@ def main() -> int:
             )
             transcript = (proc.stdout or "") + (proc.stderr or "")
             c.check("exporter exits zero", proc.returncode == 0, transcript[-2000:])
+            c.check(
+                "successful transcript withholds private source path",
+                str(REPO) not in transcript and "sudohatter" not in transcript.lower(),
+                transcript[-2000:],
+            )
             findings = validate(target) if target.exists() else ["target was not created"]
             c.check("generated shell validates", not findings, " | ".join(findings[:8]))
             c.check("export has no git history", not (target / ".git").exists())
+            c.check(
+                "export writes no unscanned sibling report",
+                not target.with_name(target.name + ".export-report.txt").exists(),
+            )
 
             if target.exists():
                 sentinel = target / ".training-mode"
@@ -73,6 +83,27 @@ def main() -> int:
                     sentinel.read_bytes() == canonical_sentinel
                     and embedded_sentinel == canonical_sentinel,
                 )
+                subprocess.run(["git", "init", "-q"], cwd=target, check=True)
+                subprocess.run(["git", "add", ".gitignore", ".training-mode"], cwd=target, check=True)
+                subprocess.run(
+                    [
+                        "git", "-c", "user.name=Teaching Test",
+                        "-c", "user.email=teaching@example.invalid",
+                        "commit", "-qm", "initial teaching shell",
+                    ],
+                    cwd=target,
+                    check=True,
+                )
+                (target / ".training-mode-off").write_text(
+                    "training disabled locally\n", encoding="utf-8"
+                )
+                status = subprocess.run(
+                    ["git", "status", "--short", "--", ".training-mode", ".training-mode-off"],
+                    cwd=target, capture_output=True, text=True,
+                    check=True,
+                ).stdout
+                c.check("training off override leaves a clean clone", status == "", status)
+                (target / ".training-mode-off").unlink()
 
                 readme = target / "README.md"
                 original = readme.read_text(encoding="utf-8") if readme.is_file() else ""
@@ -101,6 +132,15 @@ def main() -> int:
                 )
                 generated_tour.write_text(generated_original, encoding="utf-8")
 
+                generated_tour.write_text("", encoding="utf-8")
+                empty_mirror_findings = validate(target)
+                c.check(
+                    "empty generated tutor mirror is rejected",
+                    any("mirror drifted" in finding for finding in empty_mirror_findings),
+                    " | ".join(empty_mirror_findings[:8]),
+                )
+                generated_tour.write_text(generated_original, encoding="utf-8")
+
                 readme.write_text(original + '\nRun ["/sudo-tour"] now.\n', encoding="utf-8")
                 quoted_retired_findings = validate(target)
                 c.check(
@@ -119,6 +159,35 @@ def main() -> int:
                     " | ".join(jira_findings[:8]),
                 )
                 active_jira.unlink()
+
+                jira_example = target / ".agents" / "jira.conf.example"
+                jira_original = jira_example.read_text(encoding="utf-8")
+                jira_example.write_text(
+                    jira_original + '\nREAL_SITE="https://private.atlassian.net"\n',
+                    encoding="utf-8",
+                )
+                extra_jira_findings = validate(target)
+                c.check(
+                    "extra Jira binding mutant is killed",
+                    any("extra assignments" in finding or "extra site" in finding
+                        for finding in extra_jira_findings),
+                    " | ".join(extra_jira_findings[:8]),
+                )
+                jira_example.write_text(jira_original, encoding="utf-8")
+
+                private_probe = target / "privacy-probe.txt"
+                private_probe.write_text(
+                    "Daniel AviationChat AVCH dlohneiss SullySessionTelemetry igor_temp\n",
+                    encoding="utf-8",
+                )
+                private_findings = validate(target)
+                c.check(
+                    "shipped validator retains the source privacy denylist",
+                    any("private literal" in finding for finding in private_findings)
+                    and any("private alias" in finding for finding in private_findings),
+                    " | ".join(private_findings[:12]),
+                )
+                private_probe.unlink()
 
                 mcp_files = (
                     target / ".mcp.json",
@@ -146,7 +215,7 @@ def main() -> int:
         transcript = (proc.stdout or "") + (proc.stderr or "")
         c.check(
             "leak matcher self-test passes",
-            proc.returncode == 0 and "LEAK MATCHER SELF-TEST VALID (8/8)" in transcript,
+            proc.returncode == 0 and "LEAK MATCHER SELF-TEST VALID (11/11)" in transcript,
             transcript,
         )
 
@@ -175,12 +244,42 @@ def main() -> int:
         )
 
         with TempDir() as temp:
+            fixture_source = temp / "source"
+            fixture_source.mkdir()
+            (fixture_source / "payload.txt").write_text("safe\n", encoding="utf-8")
+            fixture_manifest = fixture_source / "manifest.json"
+            fixture_manifest.write_text(
+                json.dumps({
+                    "name": "symlink containment probe",
+                    "source": ".",
+                    "include": ["payload.txt"],
+                    "leakScan": {"literals": [], "wordLiterals": []},
+                }),
+                encoding="utf-8",
+            )
+            nested = fixture_source / "nested-output"
+            nested.mkdir()
+            outside_link = temp / "outside-name"
+            os.symlink(nested, outside_link)
+            symlink_proc = subprocess.run(
+                ["pwsh", "-NoProfile", "-File", str(exporter), "-Manifest",
+                 str(fixture_manifest), "-Target", str(outside_link), "-WhatIf"],
+                cwd=REPO, capture_output=True, text=True, errors="replace",
+            )
+            symlink_transcript = (symlink_proc.stdout or "") + (symlink_proc.stderr or "")
+            c.check(
+                "symlink target resolving inside source is refused",
+                symlink_proc.returncode != 0 and "outside the source tree" in symlink_transcript,
+                symlink_transcript,
+            )
+
+        with TempDir() as temp:
             fixture = temp / "source"
             fixture.mkdir()
             (fixture / ".env").write_text(
                 "API_KEY=secretvalue12345 # production\n", encoding="utf-8"
             )
-            (fixture / "payload.txt").write_text("secretvalue12345\n", encoding="utf-8")
+            (fixture / "payload.txt").write_bytes("secretvalue12345\n".encode("utf-16-le"))
             fixture_manifest = fixture / "manifest.json"
             fixture_manifest.write_text(
                 json.dumps(
@@ -216,6 +315,31 @@ def main() -> int:
                 and "LEAK SCAN FAILED" in redaction_transcript
                 and "secretvalue12345" not in redaction_transcript,
                 redaction_transcript,
+            )
+
+        with TempDir() as temp:
+            fixture = temp / "source"
+            fixture.mkdir()
+            missing_manifest = fixture / "manifest.json"
+            missing_manifest.write_text(
+                json.dumps({
+                    "name": "missing include probe",
+                    "source": ".",
+                    "include": ["required-but-missing"],
+                    "leakScan": {"literals": [], "wordLiterals": []},
+                }),
+                encoding="utf-8",
+            )
+            missing_proc = subprocess.run(
+                ["pwsh", "-NoProfile", "-File", str(exporter), "-Manifest",
+                 str(missing_manifest), "-Target", str(temp / "public"), "-WhatIf"],
+                cwd=REPO, capture_output=True, text=True, errors="replace",
+            )
+            missing_transcript = (missing_proc.stdout or "") + (missing_proc.stderr or "")
+            c.check(
+                "missing declared include fails closed",
+                missing_proc.returncode != 0 and "Required include path missing" in missing_transcript,
+                missing_transcript,
             )
 
         original_exporter = exporter.read_text(encoding="utf-8")

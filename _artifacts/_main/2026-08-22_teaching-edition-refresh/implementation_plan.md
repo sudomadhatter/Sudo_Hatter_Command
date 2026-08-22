@@ -185,6 +185,7 @@ checks are explicit:
 - NEW `.agents/commands/smh-tour.md` — resumable live-SOP curriculum → 2, 3
 - NEW `.agents/commands/smh-training.md` — sentinel on/off/status control → 2
 - EDIT `.agents/rules/INDEX.md` — conditional training rule classification/trigger → 2
+- EDIT `.agents/rules/jira.md` — no-binding preflight for a fresh command center → 3, 4
 - NEW `.agents/rules/training-mode.md` — tutor behavior and live-source hard stop → 2
 - EDIT `.agents/scripts/INDEX.md` — exporter and validator inventory → 4, 6
 - NEW `.agents/scripts/export-teaching-edition.ps1` — current one-shell export, portable map generation, blocking validation → 4, 6
@@ -199,6 +200,7 @@ checks are explicit:
 - NEW `.agents/scripts/teaching-edition/replacements/router.md` — empty current routing shell → 3, 4
 - NEW `.agents/scripts/teaching-edition/replacements/training-mode-sentinel` — tutor ships on → 2
 - EDIT `.env.example` — generic command-center environment names/instructions, values absent → 4
+- EDIT `.gitignore` — keep the local training-off override from dirtying a fresh clone → 2, 3
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — branch-only teaching entry points; workflow remains canonical/live → 2, 5
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — teaching-branch SOP currency row → 2, 5
 - NEW (generated) `.agents/skills/smh-tour/SKILL.md` → 5
@@ -357,3 +359,21 @@ inside the approved exporter, validator, tutor, SOP, tests, indexes, and artifac
 now requires an eight-case matcher/parser self-test, a redacted real leak failure, source-recursion
 refusal, generated-mirror mutation kill, expanded private-alias scan, and byte-identical sentinel
 contract before a new SHA can receive the final suite receipt or review verdict.
+
+## Final-Review Amendment — shell integrity and no-board behavior
+
+The next clean-review fan-out at `0b24ca78` withheld PASS and exposed a final set of reproducible
+fresh-shell failures. The generated command center still inherited an unconditional live-Jira rule;
+training-off removed a tracked sentinel and dirtied the clone; case/encoding and escaped-value privacy
+variants could bypass the source or shipped validator; a symlinked target could resolve into the source;
+missing declared includes did not fail closed; generated tutor mirrors were not byte-checked; nested
+project invocation could bind the wrong root; and source-only incident/exporter rows survived in the
+generated catalogs.
+
+The review-driven fixes add the two DCS paths above and otherwise remain on approved exporter, tutor,
+validator, test, generated-door, SOP, and artifact surfaces. The contract is now 24 executable checks:
+the shell has no ambient Jira behavior until `.agents/jira.conf` exists, training-off uses an ignored
+local override, required inputs and physical target containment fail closed, generated mirrors are
+byte-identical to authored commands, privacy scanning covers escaped dotenv values and UTF-16/32 text,
+and source-only catalog rows are pruned by required manifest anchors. The 24/24 pass is necessary but
+not sufficient; a new five-lens review, full receipt-backed suite, and clean-code audit still gate PASS.

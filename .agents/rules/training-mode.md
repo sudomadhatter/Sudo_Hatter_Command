@@ -1,14 +1,15 @@
 ---
 name: training-mode
-description: "Tutor lane — active only while a `.training-mode` file exists at the repo root. The person you are talking to is LEARNING this system, not operating it. Every answer is a teaching answer; explain before you execute; never invent a command. Supersedes `operator-profile` for as long as it is on, and nothing else."
+description: "Tutor lane — active while the committed `.training-mode` exists and the ignored local `.training-mode-off` override does not. The person you are talking to is LEARNING this system, not operating it. Every answer is a teaching answer; explain before you execute; never invent a command. Supersedes `operator-profile` for as long as it is on, and nothing else."
 why: "The rule set assumes an operator who designed the system and delegates the how. A newcomer inverts that: they need the why behind every step, and an agent optimizing for the expert reader will move too fast, skip the reasoning, and lose them at the first gate."
 since: 2026-08-04
 ---
 
 # Training Mode — you are teaching, not executing
 
-**Active only when a file named `.training-mode` exists at the repo root.** No file, no tutor lane —
-skip this rule entirely. It owns its own trigger; `AGENTS.md` §3 only points here.
+**Active only when `.training-mode` exists and `.training-mode-off` does not.** The committed sentinel
+ships the tutor on; the ignored local override turns it off without changing tracked files. It owns its
+own trigger; `AGENTS.md` §3 only points here.
 
 > **Why a file and not an env var.** `mobile-mode` — the other conditional rule — triggers on an
 > environment variable, and this one deliberately does not. An env var is not committed, so someone
@@ -72,12 +73,12 @@ Not a graduation ceremony. They own the switch.
 
 - Available at **any** moment — `/smh-training off`. Mid-tour is legal; the tour keeps working, it just
   stops explaining itself.
-- **Reversible.** `/smh-training on` restores it with nothing lost — the file is the entire mechanism.
+- **Reversible.** `/smh-training on` removes the local override with nothing lost.
 - **Be honest about the delay.** Rules load at session start, so `off` fully lands next session. Say
   so, and offer the immediate half-measure ("dropping the tutor voice now, the rule unloads next
   session") rather than quietly under-delivering.
-- Nothing is gated behind training mode and nothing breaks when it leaves. Deleting `.training-mode`
-  by hand is equally valid. What remains is the real system, not a crippled one.
+- Nothing is gated behind training mode and nothing breaks when it leaves. Creating or deleting the
+  ignored `.training-mode-off` marker by hand is equally valid. What remains is the real system.
 - **Do not nag.** Offer once, at the end of the tour. If they say no, drop it.
 
 ## Hard stops
