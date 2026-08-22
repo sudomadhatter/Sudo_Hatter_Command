@@ -242,7 +242,7 @@ isolates rule 1 is one where the second command **is itself** a sandbox path —
 
 ## Verdict
 
-**Verdict: PASS @ `7ba2d09`**
+Verdict: PASS @ 7ba2d09
 
 - **Both rounds' findings are fixed at the shipping sha**, and round 2's were fixed *after* being
   found by lenses that did not design the code — which is precisely the obligation round 1's
@@ -258,3 +258,18 @@ resolves inside a directory that dies with the session"* — not *"this command 
 agent-authored scripts from the scratchpad is deliberately in scope for `allow`, and the two review
 rounds are the record of how much a permission-granting component gets wrong when only its author
 looks at it.
+
+---
+
+## Your Actions
+
+- [ ] **Click *Merge pull request*.** That click is how your decision reaches GitHub — it is not
+      work you owe. Everything before and after it is the ceremony's.
+
+Nothing else. The hook is already live in your main checkout and byte-identical to the copy in this
+PR, so `git status` in `Sudo_Hatter_Command` goes clean the moment the merge lands.
+
+⚠️ **One thing to know, not to do:** this hook is **lobby-only**. `.agents/hooks/` does not sync to
+project repos (no `hooks` key in `.sync-manifest.json`), so `/cicd-code-review` inside
+`AGY_AVIATIONCHAT` or `NEXgen-VR-Director` still asks for every approval. Say the word if you want
+that carried across; it is a follow-on, not this lane's scope.
