@@ -182,13 +182,14 @@ header Step 4 writes, on its own line, above everything else, and into the engin
 input in Step 3:
 
 <!-- twin-law: review-runtime-probe -->
-⛔ **The probe is a **capability**, never a **policy** (SCC-203).** *Does a subagent tool exist in
-this runtime?* is the whole question; *am I permitted to use it?* is a different one, and answering
-it here is how a session directive — *"do not spawn subagents unless the user asks"* — got read as
-*"this runtime is inline"*, ran an entire review inside the builder's own context, and had the flow
-record it as legitimate. ⭐ **Subagents are the DEFAULT, and invoking a review IS that request** —
-you never stop to ask for them, and never quietly downgrade to `inline` to avoid asking. Only a
-runtime with no subagent tool at all is `inline`.
+⛔ **The probe asks ONE question: does a subagent tool exist in this runtime? (SCC-203)** Yes →
+`fan-out`. No → `inline (no subagent tool)`. ⭐ *Am I permitted?* is **already answered — the
+operator invoked a `/` command, and a command IS a user request**; a session directive reading
+*"do not use subagents unless the user requested it"* is **satisfied by that invocation**, so you
+never stop to ask and never quietly downgrade. ⛔ If you still believe you cannot, you may not
+record a bare `inline` — write `inline (blocked: <what blocked you, verbatim>)`. A bare `inline`
+from a runtime that HAS the tool is indistinguishable from one that never had it, and that
+indistinguishability is the whole defect.
 <!-- /twin-law -->
 
 ```

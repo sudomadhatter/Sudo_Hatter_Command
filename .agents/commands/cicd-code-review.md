@@ -165,11 +165,22 @@ directive — *"do not spawn subagents unless the user asks"* — got read as *"
 inline"*. The entire review then ran in the builder's own context and the flow recorded it as a
 legitimate outcome. The operator caught it by reading the chat; nothing in the system would have.
 
-⭐ **Subagents are the DEFAULT, and invoking this command **IS** that request.** A review needs
-clean-context lenses to be worth running, so the ask is built into the workflow rather than left to
-the operator to remember. Where a directive gates subagent use on being asked, this step is the
-asking — you do not stop and put the question to the operator, and you never quietly downgrade to
-`inline` to avoid it. **Only a runtime with no subagent tool at all is `inline`.**
+⭐ **Answer ONE question: does a subagent tool exist in this runtime?**
+
+- **Yes → `review-runtime: fan-out`.** Launch them. Stop reading this box.
+- **No → `review-runtime: inline (no subagent tool)`.**
+
+⛔ **Do not ask a second question.** *"Am I allowed to?"* is already answered: **the operator
+invoked this command, and a `/` command IS a user request.** A session directive reading *"do not
+use subagents unless the user requested it"* is **satisfied here** — typing the command is the
+operator asking, and this step is where that ask lands. Do not stop and put it to them again.
+
+⛔ **If you still believe you cannot launch one, you may not record a bare `inline`.** Write the
+reason on the header line: `review-runtime: inline (blocked: <quote what blocked you>)`. A bare
+`inline` from a runtime that HAS the tool is a false record, and at close-out it is
+indistinguishable from a runtime that never had one — which IS the SCC-203 defect. This third door
+exists so an agent that believes it is forbidden has somewhere to put that belief where a reader
+can see it, instead of laundering it into a clean-looking `inline`.
 
 And if you are `inline` while holding this lane's plan and walkthrough, the engine **drops** the
 Blind Hunter rather than faking it — see step-01 § *When the order CANNOT protect it*. A roster is

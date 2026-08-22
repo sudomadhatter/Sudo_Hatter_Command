@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "task": "SCC-263",
+  "sha": "7ba2d09e5d5bf73f62b268c3ba73773461217c4c",
+  "tip": "595c52f799ac51998f4a6d9a3b79bbef4a226079",
+  "trigger": "close-out",
+  "when": "2026-08-22T05:14:22-04:00",
+  "changes": [
+    ".agents/commands/cicd-code-review.md",
+    ".agents/commands/cicd-dev-story-tests.md",
+    ".agents/commands/cicd-quick-dev.md",
+    ".agents/commands/smh-code-review.md",
+    ".agents/commands/smh-quick-dev.md",
+    ".agents/hooks/INDEX.md",
+    ".agents/hooks/allow-scratchpad.py",
+    ".agents/scripts/tests/test_allow_scratchpad.py",
+    ".agents/scripts/tests/test_review_engine.py",
+    ".claude/hooks/INDEX.md",
+    ".claude/hooks/allow-scratchpad.py",
+    ".claude/settings.json",
+    ".opencode/commands/cicd-code-review.md",
+    ".opencode/commands/cicd-dev-story-tests.md",
+    ".opencode/commands/cicd-quick-dev.md",
+    ".opencode/commands/smh-code-review.md",
+    ".opencode/commands/smh-quick-dev.md",
+    "_artifacts/_main/2026-08-22_scc-263-scratchpad-allow-hook/implementation_plan.md",
+    "_artifacts/_main/2026-08-22_scc-263-scratchpad-allow-hook/sweep.json",
+    "_artifacts/_main/2026-08-22_scc-263-scratchpad-allow-hook/walkthrough.md",
+    "_artifacts/_main/INDEX.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-22_scc-263-scratchpad-allow-hook/walkthrough.md",
+    "verdict": "PASS @ 7ba2d09",
+    "gates": {}
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}

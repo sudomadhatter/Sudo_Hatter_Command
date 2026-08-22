@@ -74,6 +74,10 @@ AP_CMD = ".agents/commands/cicd-code-review-AP.md"
 # rule lived only in step-01, which is a claim about a caller, not a check on one.
 CICD_CMD = ".agents/commands/cicd-code-review.md"
 SMH_CMD = ".agents/commands/smh-code-review.md"
+# ⛔ The THIRD carrier of the probe law. `test_twin_parity.py:117` lists this file as
+# having no twin, so nothing else in the suite reaches it — delete its `blocked:`
+# clause and every gate stayed green (SCC-263 review, Acceptance Auditor).
+DEV_STORY_CMD = ".agents/commands/cicd-dev-story-tests.md"
 # SCC-205: the FAST lane became a caller. `/cicd-quick-dev` used to invoke
 # `bmad-review-adversarial-general` bare - one lens, no roster, no verification, no triage - so it
 # was the only dev lane in either family whose review produced no `lenses_run` block, which is
@@ -214,8 +218,8 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"\*\*capability\*\*[^\n]*\n?[^\n]*never a \*\*policy\*\*", re.M | re.I,
      "never a **policy**", "and also a **policy**"),
     ("smh: invoking the command IS the request for subagents", SMH_CMD,
-     r"invoking this command \*\*IS\*\* that request", 0,
-     "invoking this command **IS** that request",
+     r"a `/` command IS a user request", 0,
+     "a `/` command IS a user request",
      "the operator must ask for subagents themselves"),
     # ⛔ THE TWIN CARRIES IT TOO. `sudo-commands-have-ap-twins-that-drift`: fix one, diff the
     # twin. The operator caught this omission the first time round - the smh caller was fixed
@@ -224,9 +228,22 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"\*\*capability\*\*[^\n]*\n?[^\n]*never a \*\*policy\*\*", re.M | re.I,
      "never a **policy**", "and also a **policy**"),
     ("cicd: invoking the command IS the request for subagents", CICD_CMD,
-     r"invoking this command \*\*IS\*\* that request", 0,
-     "invoking this command **IS** that request",
+     r"a `/` command IS a user request", 0,
+     "a `/` command IS a user request",
      "the operator must ask for subagents themselves"),
+    ("dev-story-tests: invoking the command IS the request for subagents", DEV_STORY_CMD,
+     r"a `/` command IS a user request", 0,
+     "a `/` command IS a user request",
+     "the operator must ask for subagents themselves"),
+    ("dev-story-tests: a blocked inline must NAME what blocked it", DEV_STORY_CMD,
+     r"inline \(blocked:", 0,
+     "inline (blocked:", "a bare inline is fine"),
+    ("smh: a blocked inline must NAME what blocked it", SMH_CMD,
+     r"inline \(blocked:", 0,
+     "inline (blocked:", "a bare inline is fine"),
+    ("cicd: a blocked inline must NAME what blocked it", CICD_CMD,
+     r"inline \(blocked:", 0,
+     "inline (blocked:", "a bare inline is fine"),
     ("step-01: under inline, `ok` is not a legal per-lens state", STEPS[0],
      r"`recovered-inline` for every lens that RAN — `ok` is not a legal state here", 0,
      "`ok` is not a legal state here", "`ok` is fine here too"),
@@ -1242,7 +1259,10 @@ def main() -> int:
     texts = {rel: (read(MASTER / rel) if (MASTER / rel).is_file() else "") for rel in ENGINE_FILES}
     # Callers resolve from ROOT, not from the engine dir. Same CHECKS loop, same counter-example
     # proof — the only difference is where the file lives.
-    texts.update({rel: (read(ROOT / rel) if (ROOT / rel).is_file() else "") for rel in CALLER_FILES})
+    # ⛔ DEV_STORY_CMD is loaded but is NOT a CALLER_FILE: it carries the probe law without
+    # invoking the engine, and section 2b asserts CALLER_FILES is exactly the caller set.
+    texts.update({rel: (read(ROOT / rel) if (ROOT / rel).is_file() else "")
+                  for rel in CALLER_FILES + (DEV_STORY_CMD,)})
 
     # ── 2. Content: every rule bound to its meaning, and proven able to reject its negation ─
     for name, rel, pattern, flags, old, new in CHECKS:
@@ -1281,7 +1301,8 @@ def main() -> int:
     def _law_of(txt: str) -> str:
         out = []
         for para in txt.split("\n\n"):
-            if ("**capability**" in para or "IS** that request" in para
+            if ("**capability**" in para or "IS a user request" in para
+                    or "may not record a bare" in para
                     or "rather than faking it" in para):
                 out.append(" ".join(para.split()))
         return "\n".join(out)
@@ -1301,8 +1322,14 @@ def main() -> int:
     # ⛔ ALL THREE CLAUSES, NAMED. Byte-identity is satisfied by two files that are equally
     # WRONG — drop the drop-clause from both and this still passes. So assert each clause is
     # actually in the extracted law, or the comparison above guards an empty agreement.
+    # ⛔ The `blocked:` clause is the SCC-263 addition and is load-bearing, not decoration. The
+    # law used to forbid both stopping to ask AND downgrading, while naming no third move — so an
+    # agent that believed itself forbidden had no legal option, and the cheapest illegal one is a
+    # silent `inline` that reads exactly like a runtime with no subagent tool. Naming the escape
+    # hatch is what makes that belief visible in the record instead of laundered out of it.
     for clause, why in (("**capability**", "capability-vs-policy"),
-                        ("IS** that request", "invoking the command IS the request"),
+                        ("IS a user request", "a `/` command IS a user request"),
+                        ("inline (blocked:", "a blocked inline must NAME what blocked it"),
                         ("rather than faking it", "a contaminated Blind Hunter is DROPPED")):
         c.check(f"  ^ the law includes the {why} clause",
                 clause in smh_law and clause in cicd_law,
@@ -1314,7 +1341,7 @@ def main() -> int:
     # differ. Perturbing one caller must make them disagree, and a law-less text must extract
     # empty — together those bound the extractor from both sides.
     drifted = _law_of(texts.get(CICD_CMD, "").replace(
-        "Subagents are the DEFAULT", "Subagents are optional", 1))
+        "IS a user request", "is not a user request", 1))
     c.check("  ^ counter-example: a twin that drifts on the law is caught",
             bool(drifted) and drifted != smh_law,
             "perturbing the cicd law left it byte-identical — the drift check cannot fail")
