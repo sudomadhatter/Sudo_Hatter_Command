@@ -122,11 +122,17 @@ stays anyway* — the same discipline SCC-263 used for its `search()`/`match()` 
 
 ## Code Review
 
-*(pending — `/smh-code-review` has not run on this lane yet)*
+**Not run, deliberately — operator call.** The ask behind this lane was *"stop making me approve
+twenty Bash calls"*, and it had already grown into two tickets and three lens review rounds. The
+operator called the ceremony overkill for the size of the change, and that ruling stands.
 
-## Verdict
+**What that costs, stated rather than hidden:** no clean-context lens has looked at the two new
+resolvers. The mechanical evidence below is builder-run — which is exactly the thing SCC-263's own
+review proved can miss a whole class. Weighed against it: the change is small, the fail-safe
+direction is the safe one (every new path answers *no grant*), the Mac behaviour is asserted
+byte-for-byte unchanged, and **both** mutant tables are clean.
 
-*(pending)*
+Verdict: WAIVED @ 3a037d7
 
 ---
 
