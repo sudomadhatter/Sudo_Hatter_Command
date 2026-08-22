@@ -187,6 +187,14 @@
       "mutated": "FLAG_RE = re.compile(r\"^-\")",
       "case": "D · silent on a path glued to a short flag",
       "block": "rule 3 ·"
+    },
+    {
+      "id": "M24 · hardcode the uid — the hook stops tracking the process it runs in",
+      "file": ".agents/hooks/allow-scratchpad.py",
+      "original": "_UID = re.escape(f\"claude-{os.getuid()}\")",
+      "mutated": "_UID = re.escape(\"claude-501\")",
+      "case": "E · uid is read from the PROCESS - the uid-4242 root is grantable to a uid-4242 process",
+      "block": "E"
     }
   ]
 }

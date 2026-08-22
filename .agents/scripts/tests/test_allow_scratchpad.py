@@ -27,8 +27,10 @@ from __future__ import annotations
 
 import json
 import os
+import pathlib
 import subprocess
 import sys
+import tempfile
 
 from _harness import SCRIPTS, Cases
 
@@ -45,9 +47,18 @@ ROOT = SCRIPTS.parents[1]
 HOOK = SCRIPTS.parent / "hooks" / "allow-scratchpad.py"
 
 SID = "697c65e7-558e-4bf4-975f-ad474d8bb76d"
-SB = f"/private/tmp/claude-501/-Users-sudohatter-Sudo-Hatter-Command/{SID}/scratchpad"
+# ⛔ THE UID IS THE RUNNING PROCESS'S, NEVER A LITERAL. The hook pins the sandbox root to
+# `os.getuid()`, so a fixture spelling `claude-501` describes ONE developer's machine and nothing
+# else. Every ALLOW case in this file returned silence on CI — 47/48 files, all fifteen block-A
+# shapes red — because the runner's uid is not 501. A suite that can only pass on the machine that
+# wrote it proves nothing about the hook anywhere else, and neither does a mutation sweep run
+# against it. `FOREIGN_UID` is derived the same way, so it stays foreign wherever this runs.
+UID = os.getuid()
+FOREIGN_UID = UID + 1
+PROJ = "-Users-sudohatter-Sudo-Hatter-Command"
+SB = f"/private/tmp/claude-{UID}/{PROJ}/{SID}/scratchpad"
 # macOS symlinks `/tmp` -> `/private/tmp`; both spellings reach the same bytes.
-SB_ALT = f"/tmp/claude-501/-Users-sudohatter-Sudo-Hatter-Command/{SID}/scratchpad"
+SB_ALT = f"/tmp/claude-{UID}/{PROJ}/{SID}/scratchpad"
 REPO = "/Users/sudohatter/Sudo_Hatter_Command"
 
 
@@ -221,25 +232,25 @@ def main() -> int:
     # ── E · rule 4 — the SESSION's scratchpad, not the uid's ───────────────────────────
     if c.block("E · rule 4 · the sandbox root is this session's scratchpad"):
         for label, cmd in [
-            ("the uid root", "rm -rf /private/tmp/claude-501/"),
-            ("a project dir above the session", "rm -rf /private/tmp/claude-501/-Some-Proj/"),
+            ("the uid root", f"rm -rf /private/tmp/claude-{UID}/"),
+            ("a project dir above the session", f"rm -rf /private/tmp/claude-{UID}/-Some-Proj/"),
             ("another session's scratchpad",
-             "rm -rf /private/tmp/claude-501/-P/aaaaaaaa-bbbb-cccc/scratchpad"),
-            ("a sibling of scratchpad", f"rm -rf /private/tmp/claude-501/-P/{SID}/tasks"),
-            ("the claude-501x near-miss",
-             f"rm -rf /private/tmp/claude-501x/-P/{SID}/scratchpad/rt"),
+             f"rm -rf /private/tmp/claude-{UID}/-P/aaaaaaaa-bbbb-cccc/scratchpad"),
+            ("a sibling of scratchpad", f"rm -rf /private/tmp/claude-{UID}/-P/{SID}/tasks"),
+            ("the claude-<uid>x near-miss",
+             f"rm -rf /private/tmp/claude-{UID}x/-P/{SID}/scratchpad/rt"),
             # ⛔ `scratchpad` must end at a boundary. Without `(?:/|$)` a SIBLING whose name
             # merely starts with it — `scratchpadX` — reads as inside the sandbox.
-            ("a `scratchpad.bak` sibling", f"rm -rf /private/tmp/claude-501/-P/{SID}/scratchpad.bak/x"),
-            ("a too-short session segment", "rm -rf /private/tmp/claude-501/-P/abcdef/scratchpad/x"),
-            ("an EMPTY project segment", f"rm -rf /private/tmp/claude-501//{SID}/scratchpad/x"),
+            ("a `scratchpad.bak` sibling", f"rm -rf /private/tmp/claude-{UID}/-P/{SID}/scratchpad.bak/x"),
+            ("a too-short session segment", f"rm -rf /private/tmp/claude-{UID}/-P/abcdef/scratchpad/x"),
+            ("an EMPTY project segment", f"rm -rf /private/tmp/claude-{UID}//{SID}/scratchpad/x"),
             ("a sibling whose name merely starts with scratchpad",
-             f"rm -rf /private/tmp/claude-501/-Users-sudohatter-Sudo-Hatter-Command/{SID}"
+             f"rm -rf /private/tmp/claude-{UID}/{PROJ}/{SID}"
              f"/scratchpadX/rt"),
             # ⛔ `sandboxed()` must anchor with match(), never search(): a path merely CONTAINING
             # the sandbox shape is not inside it. This mutant survived 70/70 in the v1 suite.
             ("a path merely CONTAINING the shape",
-             f"rm -rf {REPO}/backup/private/tmp/claude-501/-P/{SID}/scratchpad/x"),
+             f"rm -rf {REPO}/backup/private/tmp/claude-{UID}/-P/{SID}/scratchpad/x"),
         ]:
             _, out = call(cmd)
             c.check(f"E · silent on {label}", silent(out), out.strip()[:160])
@@ -249,15 +260,15 @@ def main() -> int:
         # ⛔ POSITIONAL, not containment. The pin used to be `f"/{sid}/" in token`, so a path under
         # ANOTHER live lane's session with our id as a leaf directory name satisfied it — a
         # sibling review's harness was writable. Two lenses found it.
-        _, out = call(f"cp {SB}/p /private/tmp/claude-501/-Users-sudohatter-Sudo-Hatter-Command"
+        _, out = call(f"cp {SB}/p /private/tmp/claude-{UID}/{PROJ}"
                       f"/ffffffff-0000-0000-0000-000000000000/scratchpad/{SID}/stomp")
         c.check("E · our session id as a LEAF of another session's path is refused",
                 silent(out), out.strip()[:160])
         # ⛔ The uid is this process's, not `\\d+`: another account's tree is not our sandbox.
-        _, out = call(f"rm -rf /private/tmp/claude-999/-P/{SID}/scratchpad/x")
+        _, out = call(f"rm -rf /private/tmp/claude-{FOREIGN_UID}/-P/{SID}/scratchpad/x")
         c.check("E · a FOREIGN uid's tree is refused", silent(out), out.strip()[:160])
         # With no session_id the shape alone still has to pin uid, depth and boundary.
-        _, out = call("rm -rf /private/tmp/claude-501/-P/aaaabbbbccccdddd/scratchpad")
+        _, out = call(f"rm -rf /private/tmp/claude-{UID}/-P/aaaabbbbccccdddd/scratchpad")
         c.check("E · ANOTHER session's scratchpad is refused", silent(out), out.strip()[:160])
         # ⛔ NO SESSION ID, NO GRANT. Judging by shape alone let ANY live lane's scratchpad
         # through, and an absent or non-string id used to DOWNGRADE to that shape-only judgement
@@ -270,6 +281,31 @@ def main() -> int:
                                           "session_id": 12345}))
         c.check("E · a NON-STRING session_id is refused, not downgraded",
                 silent(out), out.strip()[:160])
+
+        # ⛔ THE UID IS READ FROM THE PROCESS, AND THIS IS THE ONLY CASE THAT PROVES IT PORTABLY.
+        # Every other uid assertion here is written in terms of `os.getuid()`, so on a machine
+        # whose uid happens to match a hardcoded fixture they all agree for the wrong reason —
+        # which is exactly how a suite that was green on one Mac went 47/48 on CI. This runs the
+        # hook in a child whose `os.getuid()` is overridden (PYTHONPATH `sitecustomize` is
+        # inherited by subprocesses, which the hook is), and asserts the sandbox MOVES with it:
+        # the foreign root becomes grantable and OUR real one stops being.
+        with tempfile.TemporaryDirectory() as td:
+            (pathlib.Path(td) / "sitecustomize.py").write_text(
+                "import os\nos.getuid = lambda: 4242\n")
+            env = {**os.environ, "PYTHONPATH": td}
+            other = f"/private/tmp/claude-4242/{PROJ}/{SID}/scratchpad"
+            for label, cmd, want_allow in [
+                ("the uid-4242 root is grantable to a uid-4242 process", f"cat {other}/f", True),
+                ("our own root is NOT, to that same process", f"cat {SB}/f", False),
+            ]:
+                pr = subprocess.run(
+                    [sys.executable, str(HOOK)],
+                    input=json.dumps({"tool_name": "Bash", "tool_input": {"command": cmd},
+                                      "session_id": SID}),
+                    capture_output=True, text=True, errors="replace", env=env)
+                got = (pr.stdout or "") + (pr.stderr or "")
+                ok = allowed(got) if want_allow else silent(got)
+                c.check(f"E · uid is read from the PROCESS - {label}", ok, got.strip()[:160])
 
     # ── F · the one non-flag, non-path token the hook accepts ──────────────────────────
     if c.block("F · the chmod mode token is scoped to chmod, and to first position"):
