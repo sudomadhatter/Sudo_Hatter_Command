@@ -80,6 +80,34 @@ guard's own machinery was proven working before the tree was touched.
 removes the sentence that makes the fan-out legal, strictly worse than the bug. BAN + REQUIRE, and
 block D fails both directions before either is believed.
 
+## Gates
+
+| Gate | Result |
+|---|---|
+| `run_all.py` **through `gate_receipt.py`** | **PASS exit=0, 69.0s @ `15bfa72e`**, `dirty_tree: false`. Receipt at `gates/suite.json`. The first stamp (`436a66e`) was **red** — that is the mechanism working, not a failure: it caught the missing `_artifacts/_main/INDEX.md` row, which was added and re-stamped. |
+| `test_directive_quote.py` | 17/17, exit 0 (RED 10/16 first) |
+| `test_twin_parity.py` | 65/65, exit 0 |
+| `test_check_maps.py` | 27/27, exit 0 |
+| `mutation_sweep.py` | **5/5 killed**, restore verified, unfiltered re-run exit 0 |
+| `workflow_lint.py --toolkit-only` | **0 errors, 0 warnings, 8 info** (BOMs on vendored `testarch-*`, pre-existing), exit 0 |
+| `check_maps.py` bare | **exit 1 — none of it mine**, proven below |
+
+⛔ **All gates run bare, never piped** — a `| tail` reports the pipe's exit code, not the gate's.
+
+**`check_maps` attribution.** Three findings, all accounted for:
+
+1. **AUTO block STALE** — `on disk but not in map: scc-285-agenttool-directive-quote/` /
+   `in map but not on disk: Sudo_Hatter_Command/`. The known worktree false positive: the label is
+   derived from the **CWD basename**, so it is *always* stale inside a worktree.
+2. **Two dead paths** at `docs/migrations/auth_keys/_secrets/master.env` (`repo-map.md` +
+   `docs/migrations/INDEX.md`). Measured: the file **exists in the main checkout**
+   (`-rwxr-xr-x 16827 Jul 24`) and is gitignored, so it is simply absent from this tree —
+   `link-worktree-assets.py` links `auth_keys` at the repo root, not under `docs/migrations/`.
+3. **The shared `main` checkout runs the same linter to `exit 1` too** — measured directly, with my
+   lane absent from it. The red pre-dates this branch.
+
+Nothing in this lane's diff touches `docs/`, `repo-map.md`, or `docs/migrations/INDEX.md`.
+
 ## Your Actions
 
 Nothing is owed. Recorded for context:
