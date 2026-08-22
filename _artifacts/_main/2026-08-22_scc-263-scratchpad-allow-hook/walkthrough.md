@@ -283,13 +283,12 @@ looks at it.
 
 ## Your Actions
 
-- [ ] **Click *Merge pull request*.** That click is how your decision reaches GitHub — it is not
-      work you owe. Everything before and after it is the ceremony's.
+- [x] The merge itself — lands via this branch's PR
 
-Nothing else. The hook is already live in your main checkout and byte-identical to the copy in this
-PR, so `git status` in `Sudo_Hatter_Command` goes clean the moment the merge lands.
+Nothing is owed. The hook is already live in your main checkout and byte-identical to the copy in
+this PR, so `git status` in `Sudo_Hatter_Command` goes clean when the merge lands.
 
 ⚠️ **One thing to know, not to do:** this hook is **lobby-only**. `.agents/hooks/` does not sync to
 project repos (no `hooks` key in `.sync-manifest.json`), so `/cicd-code-review` inside
-`AGY_AVIATIONCHAT` or `NEXgen-VR-Director` still asks for every approval. Say the word if you want
-that carried across; it is a follow-on, not this lane's scope.
+`AGY_AVIATIONCHAT` or `NEXgen-VR-Director` still asks for every approval. Carrying it across is a
+follow-on, not this lane's scope.
