@@ -1,0 +1,5 @@
+task_key: SCC-263
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-263-scratchpad-allow-hook
+close_command: smh-close-task-merge-tree
+secondary_repos: []

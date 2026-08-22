@@ -86,6 +86,7 @@ lane it exists to unblock, so this hook has exactly two legal outputs: `allow`, 
 - NEW `_artifacts/_main/2026-08-22_scc-263-scratchpad-allow-hook/implementation_plan.md` — this plan → A7
 - NEW `_artifacts/_main/2026-08-22_scc-263-scratchpad-allow-hook/walkthrough.md` — the closing record → A7
 - NEW `_artifacts/_main/2026-08-22_scc-263-scratchpad-allow-hook/sweep.json` — the mutant table → A4
+- NEW `_artifacts/_main/2026-08-22_scc-263-scratchpad-allow-hook/task.yaml` — the close-out manifest → A7
 - EDIT `_artifacts/_main/INDEX.md` — the session row → A7
 
 ---
