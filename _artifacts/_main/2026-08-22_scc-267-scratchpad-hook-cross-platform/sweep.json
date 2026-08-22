@@ -13,27 +13,11 @@
       "block": "PLATFORM"
     },
     {
-      "id": "M2 · drop the None-pattern guard — a uid-less machine raises inside sandboxed()",
-      "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "    if pattern is None:",
-      "mutated": "    if False:",
-      "case": "PLATFORM · exit 0 where there is no uid",
-      "block": "PLATFORM"
-    },
-    {
       "id": "M3 · stop preferring the machine-local root — the PC can never be configured",
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "        return _configured_root() or _uid_root()",
       "mutated": "        return _uid_root()",
       "case": "CONFIG · a valid root is honoured",
-      "block": "CONFIG"
-    },
-    {
-      "id": "M4 · honour a RELATIVE or metacharacter-carrying root",
-      "file": ".agents/hooks/allow-scratchpad.py",
-      "original": "        if not line.startswith(\"/\") or FORBIDDEN & set(line):",
-      "mutated": "        if False:",
-      "case": "CONFIG · a relative root does NOT grant",
       "block": "CONFIG"
     },
     {
@@ -51,6 +35,16 @@
       "mutated": "        norm = line",
       "case": "CONFIG · a `..` inside the root normalises to the same place",
       "block": "CONFIG"
+    }
+  ],
+  "equivalent_mutants_not_declared": [
+    {
+      "mutant": "if pattern is None: -> if False:",
+      "why_no_test_can_kill_it": "The raise it lets through (NoneType has no attribute 'match') propagates out of permitted() into this module's own fail-safe wrapper, which exits 0 with empty stdout. That is the SAME observable behaviour as the guard: silence, exit 0. The guard is KEPT because leaning on the last-resort wrapper for ordinary control flow means every Bash call on a uid-less machine raises internally - but no external observer can tell, so no case may declare it."
+    },
+    {
+      "mutant": "if not line.startswith(\"/\") or FORBIDDEN & set(line): -> if False:",
+      "why_no_test_can_kill_it": "Both halves are defence in depth over a check that already holds downstream. A relative root yields a pattern with no leading slash, and sandboxed() refuses any token that does not start with one before it ever matches. A metacharacter survives re.escape as a literal, so it can only ever match a path spelled with that literal. The guard STAYS: it is what keeps this file correct if sandboxed()'s own leading-slash check is ever relaxed."
     }
   ]
 }

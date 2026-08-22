@@ -450,16 +450,24 @@ def main() -> int:
             c.check(f"CONFIG · silent on {label}", silent(out), out.strip()[:160])
         # ⛔ A root it cannot fully validate falls back rather than being half-honoured. On a
         # machine with no uid that fallback IS a refusal, which is the safe direction.
-        for label, bad in [
-            ("a relative root", "tmp/claude-lobby"),
-            ("a NATIVE Windows root", "C:\\Users\\op\\AppData\\Local\\Temp"),
-            ("the filesystem root", "/"),
-            ("a one-segment root", "/tmp"),
-            ("a root carrying a metacharacter", "/tmp/claude-$USER"),
-            ("an empty file", ""),
-            ("a comments-only file", "# nothing here yet\n"),
+        # ⛔ EACH PROBE COMMAND IS BUILT UNDER THE ROOT IT TESTS. The first cut of this loop sent
+        # one command under `good` at every bad root, so every case passed because the command was
+        # not under that root AT ALL — a different rule refusing it, proving nothing about the
+        # guard it named. The sweep caught it (SCC-267 M5); it is the same mis-attribution
+        # SCC-263's sweep caught four times, and the reason a mutant table outranks a green suite.
+        for label, bad, probe in [
+            ("a relative root", "tmp/claude-lobby", f"cat tmp/claude-lobby/-P/{SID}/scratchpad/f"),
+            ("a NATIVE Windows root", "C:\\Users\\op\\Temp",
+             f"cat C:/Users/op/Temp/-P/{SID}/scratchpad/f"),
+            ("the filesystem root", "/", f"cat //x/{SID}/scratchpad/f"),
+            ("a doubled filesystem root", "//", f"cat //x/{SID}/scratchpad/f"),
+            ("a one-segment root", "/tmp", f"cat /tmp/-P/{SID}/scratchpad/f"),
+            ("a root carrying a metacharacter", "/tmp/claude-$USER",
+             f"cat /tmp/claude-$USER/-P/{SID}/scratchpad/f"),
+            ("an empty file", "", f"cat /tmp/-P/{SID}/scratchpad/f"),
+            ("a comments-only file", "# nothing here yet\n", f"cat /tmp/-P/{SID}/scratchpad/f"),
         ]:
-            _, out = call_in(f"cat {good}/-P/{SID}/scratchpad/f", root_file=bad, no_getuid=True)
+            _, out = call_in(probe, root_file=bad, no_getuid=True)
             c.check(f"CONFIG · {label} does NOT grant", silent(out), out.strip()[:160])
         # A configured root is normalised like everything else, so a `..` inside it cannot smuggle
         # the real root somewhere else.
