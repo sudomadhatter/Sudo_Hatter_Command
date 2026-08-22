@@ -3517,6 +3517,182 @@ Nothing is actually owed.
                 e5 is None and g5 is not None and g5.rstrip().endswith("SCC-999 - something."),
                 e5 or str(g5))
 
+    # ── SCC-257 · a section ends at its own LEVEL, not at the next line starting with # ──
+    # ⛔ MEASURED ON AVCH EPIC 19, 2026-08-21. Its stories group ACs under themes:
+    #
+    #     ## Acceptance Criteria
+    #     ### Theme A - grounding
+    #     - **AC-1 (cite):** ...
+    #
+    # `_NEXT_HEAD_RE` is `^#{1,4}\s+\S`, so `section_body` cut the section at `### Theme A`
+    # - the FIRST line inside it. `acceptance_criteria` then read an empty body and the
+    # outline rendered "(none found in the story file)" over a story with nine ACs. That
+    # warning is indistinguishable from a story that genuinely has none.
+    if c.block("SCC-257 · ac-theme-subheadings: a section ends at its own heading level"):
+        import jira_feed  # noqa: E402
+
+        THEMED = """# Story 19.1: Grounding
+
+## Story
+
+As **a pilot**, I want **cited answers**, so that **I can verify them.**
+
+## Acceptance Criteria
+
+### Theme A - grounding
+
+- **AC-1 (cite):** every claim carries a source.
+- **AC-2 (refuse):** an uncited claim is refused.
+
+### Theme B - safety
+
+- **AC-3 (override):** the safety override always wins.
+
+## Tasks
+
+- this is not an acceptance criterion
+"""
+        acs = jira_feed.acceptance_criteria(THEMED)
+        c.check("D1 renders ACs from under a `###` sub-heading",
+                any("AC-1" in a for a in acs) and any("AC-2" in a for a in acs), str(acs))
+        c.check("D1 crosses a SECOND sub-heading to reach AC-3",
+                any("AC-3" in a for a in acs), str(acs))
+        c.check("D1 still STOPS at the next `##` - Tasks is not an AC",
+                not any("not an acceptance criterion" in a for a in acs), str(acs))
+
+        # D2 · REGRESSION. The flat shape is what the 139 story files on disk use. It must
+        # not move a byte.
+        FLAT = """# Story 9.1: Widget Archive
+
+## Story
+
+As **an admin**, I want **archived widgets to stay readable**, so that **nothing is deleted.**
+
+## Acceptance Criteria
+
+1. archiving a widget sets `archived_at` and keeps the document.
+2. the list view hides archived widgets by default.
+
+## Tasks
+
+- not an AC
+"""
+        flat = jira_feed.acceptance_criteria(FLAT)
+        c.check("D2 (regression) the flat AC list is unchanged, exactly",
+                flat == ["archiving a widget sets `archived_at` and keeps the document.",
+                         "the list view hides archived widgets by default."], str(flat))
+
+        # ⛔ D3 · THE CALLER THAT MUST **NOT** CHANGE (audit finding 3). `story_statement`
+        # shares `section_body`. Making the cut depth-aware for EVERYONE silently grows every
+        # `## Story` block that has `###` children - and that function exists precisely to stop
+        # the ticket reproducing the story file ("a description that reproduces the whole file
+        # is the same failure as one with no description"). So the depth rule is opt-in per
+        # caller, and this case is what fails if someone flips it globally.
+        # A FLAT story cannot detect this; the `### Context` child is the whole point.
+        SUBBED = """# Story 19.2: Overrides
+
+## Story
+
+As **a controller**, I want **overrides logged**, so that **they can be audited.**
+
+### Context
+
+Six paragraphs of background that belong in the story file and nowhere near the ticket.
+The override subsystem dates to 2024 and has three historical shapes still in the data.
+
+## Acceptance Criteria
+
+- **AC-1 (log):** every override writes an audit row.
+"""
+        stmt = jira_feed.story_statement(SUBBED)
+        c.check("D3 the story statement still carries the As-a/I-want/So-that",
+                "controller" in stmt and "audited" in stmt, stmt)
+        c.check("D3 the story statement does NOT swallow its `###` child",
+                "Six paragraphs" not in stmt and "2024" not in stmt, stmt)
+        c.check("D3 ...and its own ACs still render (the section under test is unaffected)",
+                any("AC-1" in a for a in jira_feed.acceptance_criteria(SUBBED)),
+                str(jira_feed.acceptance_criteria(SUBBED)))
+
+    # ── SCC-258 · mint must not call a hand note "its outline" ───────────────────────────
+    # ⛔ MEASURED 2026-08-21. `mint` reuses an existing ticket and backfills the outline only
+    # when `len(description) < MIN_DESCRIPTION` (40). A ticket somebody typed two sentences
+    # into is longer than that, so the outline is never written - and mint then prints
+    # "<key> carries its outline (213 chars)". It carries 213 characters of somebody's note.
+    # The length test cannot tell CONTENT from LENGTH, and this whole file exists to stop a
+    # command reporting success over a ticket that holds nothing it claims to hold.
+    if c.block("SCC-258 · mint-reuse-stale-description + flag parity across subcommands"):
+        with TempDir() as tmp:
+            repo, acli, state = build(tmp)
+
+            def jf(*args: str) -> tuple[int, str]:
+                os.environ["STUB_STATE"] = str(state)
+                return run_script("jira_feed.py", args[0], "--project", str(repo),
+                                  "--acli", str(acli), *args[1:])
+
+            HAND_NOTE = ("Spoke to the operator on the 14th - this one is blocked on the "
+                         "auth migration and should not be picked up before it lands. "
+                         "Ping me before starting.")
+            EXISTING = [{"key": "TEST-42", "fields": {"summary": "9.1 - Widget Archive"}}]
+
+            # E1a · CONTROL, and it must keep passing: a genuinely BARE ticket is backfilled.
+            # Without this the fix could "work" by never writing anything at all.
+            set_state(state, search=EXISTING, description="")
+            code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
+            st = get_state(state)
+            c.check("E1a (control) a BARE reused ticket still gets the outline",
+                    code == 0 and "AC-1 (archive)" in st["description"], out.strip()[:200])
+
+            set_state(state, search=EXISTING, description=HAND_NOTE)
+            code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
+            st = get_state(state)
+            c.check("E1 reuses the existing ticket", "reusing existing ticket TEST-42" in out,
+                    out.strip()[:200])
+            c.check("E1 REPLACES the hand note with the real outline",
+                    "AC-1 (archive)" in st["description"], st["description"][:300])
+            c.check("E1 the description carries the render trailer",
+                    "Rendered by jira_feed.py" in st["description"], st["description"][:300])
+            c.check("E1 the hand note is KEPT, under PREVIOUS NOTE",
+                    "PREVIOUS NOTE" in st["description"]
+                    and "blocked on the auth migration" in st["description"],
+                    st["description"][-400:])
+            c.check("E1 SAYS it kept the note, rather than reporting a plain backfill",
+                    "kept under PREVIOUS NOTE" in out and "bare ticket" not in out,
+                    out.strip()[:300])
+
+            # ⛔ E1c · THE LIE ITSELF. A description that is long enough but is NOT the outline
+            # must never be reported as one. `lossy_drop` strips the trailer from the write, so
+            # the field lands long, plausible, and wrong - the exact shape a length test blesses.
+            set_state(state, search=EXISTING, description="",
+                      lossy_drop="Rendered by jira_feed.py")
+            code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
+            c.check("E1c a long-but-not-the-outline description is exit 2, not a success line",
+                    code == 2 and "carries its outline" not in out, f"exit={code}: {out.strip()[:300]}")
+
+            # E2 · FLAG PARITY. `outline` and `mint` render the same thing from the same story
+            # file; the measured friction is copying a working `mint` line to `outline` and
+            # getting `unrecognized arguments: --jira-project`.
+            set_state(state)
+            code, out = jf("outline", "--story", "9.1", "--jira-project", "TEST")
+            c.check("E2 outline accepts --jira-project, like mint",
+                    code == 0 and "unrecognized arguments" not in out, f"exit={code}: {out.strip()[:200]}")
+            c.check("E2 ...and still renders the outline", "AC-1 (archive)" in out, out[:200])
+
+            # ⛔ E3 · THE ARMED HOOK'S EXACT LINE (audit finding 4).
+            # .agents/scripts/git-hooks/post-commit-jira-start.sh:119 runs
+            #     "$PY" .agents/scripts/jira_feed.py start --key "$KEY" --timeout 10 --apply
+            # on the FIRST commit of every chore/ · claude/ · epic/ branch, in every repo. An
+            # argparse edit that disturbs `start` fires there - and VS Code HIDES hook output,
+            # so it reads as a clean commit. This pins the hook's flags to the parser.
+            set_state(state)
+            code, out = jf("start", "--key", "TEST-7", "--timeout", "10", "--apply")
+            c.check("E3 the post-commit hook's exact flag set still parses",
+                    "unrecognized arguments" not in out and "invalid choice" not in out
+                    and "error: argument" not in out, f"exit={code}: {out.strip()[:300]}")
+            c.check("E3 ...and it actually transitions the ticket",
+                    code == 0 and any(t["key"] == "TEST-7"
+                                      for t in get_state(state).get("transitions", [])),
+                    f"exit={code}: {out.strip()[:200]}")
+
     return c.finish()
 
 

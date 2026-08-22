@@ -63,6 +63,18 @@ MARKER = "Dev Record"
 # real description from acli having accepted an empty --description without complaint.
 MIN_DESCRIPTION = 40
 
+OUTLINE_TRAILER = "Rendered by jira_feed.py"
+"""The one string that says a description IS a rendered outline (SCC-258).
+
+⛔ LENGTH IS NOT CONTENT, and `mint` used to decide with `len(...) < MIN_DESCRIPTION`. A ticket
+somebody typed two sentences into clears 40 characters, so the outline was never written — and
+`mint` then printed "<key> carries its outline (213 chars)" over 213 characters of somebody's
+hand note. Both the reuse branch and the final read-back now test for THIS, so "it carries its
+outline" is a claim about what the field says rather than how long it is.
+
+Kept short deliberately: it must survive the round trip through ADF and back, and matching the
+whole trailer sentence would break on a wrapped paragraph."""
+
 _ASCII_FOLD = {
     "—": "-", "–": "-", "‘": "'", "’": "'",
     "“": '"', "”": '"', "…": "...", " ": " ",
@@ -195,12 +207,37 @@ _BULLET_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(.*)$")
 _EMPH_RE = re.compile(r"\*\*|__|(?<!`)\*(?!\*)")
 
 
-def section_body(text: str, head_match: re.Match | None) -> str:
-    """Everything under a heading up to the next heading of any level."""
+def section_body(text: str, head_match: re.Match | None, *,
+                 include_subheadings: bool = False) -> str:
+    """Everything under a heading, up to the next heading that ENDS the section.
+
+    ⛔ WHAT ENDS IT IS PER-CALLER, AND THAT IS NOT A STYLE CHOICE (SCC-257).
+
+    Default — the next heading of ANY level. `story_statement` needs this: its whole job is
+    to lift the As-a/I-want/So-that paragraph and NOT the story file's background prose, so a
+    `## Story` block with a `### Context` child must stop at that child. `scrape_bucket` takes
+    it too; a walkthrough's `## Decisions` is a flat bullet list in every one measured.
+
+    `include_subheadings=True` — the next heading at this one's level OR SHALLOWER, so the
+    section's own children stay INSIDE it. `acceptance_criteria` needs this: AVCH Epic 19
+    groups its ACs under `### Theme …` sub-headings, and the any-level rule cut the section
+    at the first theme line and left an EMPTY body. The outline then printed "(none found in
+    the story file)" over a story carrying nine ACs — which reads exactly like a story that
+    genuinely has none.
+
+    Three callers, two answers, one function — so flipping this globally is a change to every
+    ticket description, not a bug fix. The test file pins both sides.
+    """
     if not head_match:
         return ""
     rest = text[head_match.end():]
-    nxt = _NEXT_HEAD_RE.search(rest)
+    if include_subheadings:
+        head = head_match.group(0)
+        level = len(head) - len(head.lstrip("#"))
+        stop = re.compile(rf"^#{{1,{level}}}\s+\S", re.MULTILINE)
+    else:
+        stop = _NEXT_HEAD_RE
+    nxt = stop.search(rest)
     return rest[:nxt.start()] if nxt else rest
 
 
@@ -232,8 +269,12 @@ def acceptance_criteria(text: str) -> list[str]:
 
     Story files write ACs as `- **AC-1 (name):** ...` and as plain `1. ...`; both reduce to
     the bullet regex. Non-bullet prose in the section is deliberately dropped - it is
-    commentary around the criteria, and including it makes the ticket unreadable."""
-    body = section_body(text, _AC_HEAD_RE.search(text))
+    commentary around the criteria, and including it makes the ticket unreadable.
+
+`include_subheadings` because ACs are grouped under `### Theme ...` headings from AVCH Epic
+19 on; without it the section ended at the first theme line and this returned [] (SCC-257).
+The theme headings themselves drop out here anyway — they are not bullets."""
+    body = section_body(text, _AC_HEAD_RE.search(text), include_subheadings=True)
     out: list[str] = []
     current: list[str] = []
     for line in body.splitlines():
@@ -838,14 +879,32 @@ def cmd_mint(args) -> int:
         if existing:
             say(f"jira-feed: reusing existing ticket {existing} for story {args.story}")
             key = existing
-            if len(field_text(view_fields(binary, key).get("description"))) < MIN_DESCRIPTION:
+            current = field_text(view_fields(binary, key).get("description"))
+            if OUTLINE_TRAILER not in current:
+                # ⭐ A HAND NOTE IS NOT AN OUTLINE, AND IT IS ALSO NOT RUBBISH (SCC-258).
+                # Somebody wrote it on purpose — "blocked on the auth migration, ping me
+                # first" is exactly the kind of thing that must not vanish because a script
+                # decided to render over the field. So the outline is written AND the note is
+                # kept below it. Overwriting was never the alternative to leaving it stale;
+                # both of those lose something.
+                note = current.strip()
+                if note:
+                    body = (body.rstrip("\n")
+                            + "\n\nPREVIOUS NOTE - what this ticket said before the outline "
+                              "was rendered\n"
+                            + "\n".join(f"  {ln}" for ln in note.splitlines()) + "\n")
+                    tmp.write_text(body, encoding="utf-8")
                 # --yes: `edit` prompts interactively without it, which hangs an agent run.
                 r = acli(binary, ["jira", "workitem", "edit", "--key", key, "--yes",
                                   "--description-file", str(tmp)])
                 if r.returncode != 0:
                     wf.die(f"backfilling the description on {key} failed: "
                            f"{(r.stderr or r.stdout).strip()[:400]}")
-                say(f"jira-feed: backfilled the outline onto bare ticket {key}")
+                if note:
+                    say(f"jira-feed: {key} carried a hand-written description - the outline is "
+                        f"now on it and the note is kept under PREVIOUS NOTE")
+                else:
+                    say(f"jira-feed: backfilled the outline onto bare ticket {key}")
         else:
             create = ["jira", "workitem", "create", "--project", args.jira_project,
                       "--type", issue_type(args, story_file), "--summary", summary,
@@ -876,6 +935,13 @@ def cmd_mint(args) -> int:
     if len(landed) < MIN_DESCRIPTION:
         say(f"jira-feed: {key} minted but its description is empty or truncated "
             f"({len(landed)} chars) - fix before continuing")
+        return 2
+    if OUTLINE_TRAILER not in landed:
+        # The write landed and acli exited 0, and the field still is not the outline. That is
+        # the lossy-writer shape (SCC-170) wearing a length that looks fine.
+        say(f"jira-feed: {key} was written, but its description does not carry the outline "
+            f"trailer - {len(landed)} chars of something else. Read the ticket; do NOT treat "
+            f"this as minted")
         return 2
     say(f"jira-feed: {key} carries its outline ({len(landed)} chars)")
     say(f"JIRA_KEY={key}")
@@ -2852,6 +2918,13 @@ def main() -> int:
 
     p_out = sub.add_parser("outline", help="render a ticket description; no network")
     common(p_out); outline_flags(p_out)
+    # Accepted and unused, on purpose (SCC-258). `outline` and `mint` render the SAME body
+    # from the SAME story file, and the everyday move is to copy a working `mint` line back to
+    # `outline` to see what it would say. Rejecting the one flag that differs turns that into
+    # `unrecognized arguments` for no gain — outline never reaches the board, so there is
+    # nothing for the value to be wrong about.
+    p_out.add_argument("--jira-project", help="accepted for parity with `mint`; outline "
+                                              "renders locally and never reaches the board")
     p_out.add_argument("--epic", help="render an EPIC outline from epics.md instead")
     p_out.add_argument("--out", help="write to this file (for acli --description-file)")
 
