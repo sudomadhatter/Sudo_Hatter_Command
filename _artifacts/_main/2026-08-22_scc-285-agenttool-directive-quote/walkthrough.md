@@ -108,6 +108,23 @@ block D fails both directions before either is believed.
 
 Nothing in this lane's diff touches `docs/`, `repo-map.md`, or `docs/migrations/INDEX.md`.
 
+## Landing order
+
+⚠️ **AUDIT FINDING (review, Literal-Correctness) — the earlier "zero overlap" claim was FALSE.**
+Measured: `git -C .claude/worktrees/SCC-280-teaching-edition diff --name-only origin/main...HEAD`
+returns **two files this lane also declares**.
+
+| Shared file | Collision |
+|---|---|
+| `.agents/.sync-manifest.json` | ⛔ **HARD** — both lanes rewrite the same line-3 `"generated"` timestamp, so whichever lands second conflicts textually. It is a **generated** file: the resolution is to re-run `/smh-sync-agents`, never to hand-merge. |
+| `docs/_scc_sops_prds/workflows_testing_SOP.md` | benign — SCC-280 edits ~lines 73-96, this lane line 2052; a 3-way merge resolves it. |
+
+The five command files remain genuinely disjoint — SCC-280 touches `smh-tour` / `smh-training`.
+Per `lane-collision-is-gates-not-files` there is a **gate** overlap too, since SCC-280 carries
+`test_twin_parity.py`: before close-out this lane runs its own guard against their blobs, and their
+`test_twin_parity.py` against its own. **Landing order is not forced — but the second lane to land
+must REGENERATE the sync manifest rather than resolve it by hand.**
+
 ## Your Actions
 
 Nothing is owed. Recorded for context:
@@ -116,7 +133,7 @@ Nothing is owed. Recorded for context:
 - **SCC-284 confirmed live** here — `mutation_sweep.py` rejects a deletion mutant. Already filed;
   not fixed in this lane, which owns no part of that script.
 - **Follow-on, not this lane's to make:** the shared memory index still names
-  `_my_resources/_quick_reference/sudo_workflows_testing.md` as the SOP-currency doc. The real one
+  "_my_resources/_quick_reference/sudo_workflows_testing.md" (which does not exist) as the SOP-currency doc. The real one
   is `docs/_scc_sops_prds/workflows_testing_SOP.md` (`sop_currency.py:60`). The stale entry cost
   this lane one audit finding and will cost the next agent the same. The memory store is read-only
   outside its own flows, so it is named here rather than edited.

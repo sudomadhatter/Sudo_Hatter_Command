@@ -94,7 +94,7 @@ output** — a summarized result is not evidence.
 | **Python compiles** | `python3 -m py_compile <changed .py files>` | any `.py` in the diff |
 | **Shell parses** | `bash -n <changed .sh files>` | any `.sh` in the diff |
 | **PowerShell parses** | `pwsh -NoProfile -Command "[void][System.Management.Automation.Language.Parser]::ParseFile('<file>',[ref]$null,[ref]$null)"` | any `.ps1` in the diff |
-| **Link + anchor** | resolve every Markdown link path and every `#L` anchor the diff touched | any `.md` in the diff |
+| **Link + anchor** | `python3 .agents/scripts/check_links.py --base origin/main` | any `.md` in the diff |
 | **Door parity** | `.claude/skills/<name>/`, `.agents/skills/<name>/`, `.opencode/commands/<name>.md`, `.agents/workflows/<name>.md` all agree with the command's `platforms:` | a command was added, renamed or deleted |
 
 **⭐ `--toolkit-only` is not optional, and never swap in the bare form.** Without the flag,

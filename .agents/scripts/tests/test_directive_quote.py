@@ -165,11 +165,6 @@ def rebuts_verbatim(text: str) -> bool:
 def main() -> int:
     c = Cases("directive-quote: commands quote the session directive verbatim")
 
-    def chk(name: str, ok: bool, why: str) -> None:
-        """`_harness.check` prints `detail` on PASS too, so a static failure sentence makes
-        every green row read as a red one — and this file's transcript is stored verbatim in
-        `gates/suite.json` for humans and the receipt classifier. Collapse it on pass."""
-        c.check(name, ok, "" if ok else why)
 
     if c.block("A · the inputs exist (anti-vacuity)"):
         # Every row below loops over files. A loop over a missing tree passes silently.
@@ -216,13 +211,15 @@ def main() -> int:
         # already handled. That is the correction: the first version's counter-examples all
         # confirmed the fix that was already in, so they could not see H1-H4.
         real = '*"do not use subagents unless the user requested it"* is satisfied here'
-        chk("D1 BAN fires on the exact string that shipped the bug",
-                bool(bad_quotes(real)), "the guard misses the literal defect it was written for")
+        _ok = bool(bad_quotes(real))
+        c.check("D1 BAN fires on the exact string that shipped the bug", _ok,
+                "" if _ok else "the guard misses the literal defect it was written for")
 
         # H1 - the wrap that shipped green. Reproduced by two independent lenses.
         wrapped = 'a session directive reading *"do not use subagents\nunless the user requested it"*'
-        chk("D2 BAN fires on a paraphrase WRAPPED between `subagents` and `unless` (H1)",
-                bool(bad_quotes(wrapped)), "BAN is line-scoped again - a wrapped paraphrase ships green")
+        _ok = bool(bad_quotes(wrapped))
+        c.check("D2 BAN fires on a paraphrase WRAPPED between `subagents` and `unless` (H1)", _ok,
+                "" if _ok else "BAN is line-scoped again - a wrapped paraphrase ships green")
 
         # H2 - the re-wordings the old adjacency regex could not see.
         for label, text in [
@@ -232,28 +229,30 @@ def main() -> int:
             ("Agent tools",      '*"do not use Agent tools unless the user requested it"*'),
             ("other shipped",    '*"do not spawn subagents unless the user asks"*'),
         ]:
-            chk(f"D3 BAN fires on a re-worded paraphrase - {label} (H2)",
-                    bool(bad_quotes(text)), f"the {label} spelling ships green")
+            _ok = bool(bad_quotes(text))
+            c.check(f"D3 BAN fires on a re-worded paraphrase - {label} (H2)", _ok,
+                    "" if _ok else f"the {label} spelling ships green")
 
-        chk("D4 BAN does NOT fire on the correct directive",
-                not bad_quotes(f'*"{DIRECTIVE}"* is satisfied here'),
-                "the guard cannot be satisfied - it reds on the very text it demands")
+        _ok = not bad_quotes(f'*"{DIRECTIVE}"* is satisfied here')
+        c.check("D4 BAN does NOT fire on the correct directive", _ok,
+                "" if _ok else "the guard cannot be satisfied - it reds on the very text it demands")
 
         # The over-fire a lens reproduced: legitimate UNQUOTED prose about the probe.
-        chk("D5 BAN does NOT fire on legitimate unquoted prose about subagents",
-                not bad_quotes("never fan out to subagents unless the probe returned fan-out"),
-                "BAN over-fires on ordinary prose and prints a remedy that does not apply")
+        _ok = not bad_quotes("never fan out to subagents unless the probe returned fan-out")
+        c.check("D5 BAN does NOT fire on legitimate unquoted prose about subagents", _ok,
+                "" if _ok else "BAN over-fires on ordinary prose and prints a remedy that does not apply")
 
-        chk("D6 BAN ignores a quotation that is not about this directive",
-                not bad_quotes('got read as *"this runtime is inline"* and a review ran'),
-                "BAN fires on unrelated quotations")
+        _ok = not bad_quotes('got read as *"this runtime is inline"* and a review ran')
+        c.check("D6 BAN ignores a quotation that is not about this directive", _ok,
+                "" if _ok else "BAN fires on unrelated quotations")
 
         # H4 - the deletion that shipped green in 3 of 5 files.
         two_sites = (f'the narration says *"{DIRECTIVE}"* got read as inline.\n\n'
                      f'⛔ Do not ask a second question. The standing directive '
                      f'*"{DIRECTIVE}"* is satisfied here.')
-        chk("D7 REQUIRE passes when the rebuttal is present alongside a narration copy",
-                rebuts_verbatim(two_sites), "REQUIRE cannot see a genuine rebuttal")
+        _ok = rebuts_verbatim(two_sites)
+        c.check("D7 REQUIRE passes when the rebuttal is present alongside a narration copy", _ok,
+                "" if _ok else "REQUIRE cannot see a genuine rebuttal")
         # ⛔ This body MUST still contain the word `satisfied`, far from the quote. Without it the
         # case passes for the WRONG reason — the loop never runs — and the anchor is never
         # exercised. Caught by mutant M7 surviving: `window = flat` (presence-anywhere restored)
@@ -261,26 +260,23 @@ def main() -> int:
         narration_only = (f'the narration says *"{DIRECTIVE}"* got read as inline.\n\n'
                           + "filler prose that stands between the two. " * 20 +
                           "\n\nThe test-adequacy requirement is satisfied by the probe.")
-        chk("D8 REQUIRE FAILS when only the narration copy survives (H4)",
-                not rebuts_verbatim(narration_only),
-                "REQUIRE is occurrence-blind again - deleting the rebuttal ships green")
-        chk("D9 REQUIRE fails when the rebuttal is deleted entirely",
-                not rebuts_verbatim("a command with no rebuttal at all"),
-                "REQUIRE passes over an empty body")
+        _ok = not rebuts_verbatim(narration_only)
+        c.check("D8 REQUIRE FAILS when only the narration copy survives (H4)", _ok,
+                "" if _ok else "REQUIRE is occurrence-blind again - deleting the rebuttal ships green")
+        _ok = not rebuts_verbatim("a command with no rebuttal at all")
+        c.check("D9 REQUIRE fails when the rebuttal is deleted entirely", _ok,
+                "" if _ok else "REQUIRE passes over an empty body")
 
         # H3 - `norm()` collapsed every run and made a near-miss compare equal.
-        chk("D10 REQUIRE survives a mid-quote line wrap",
-                rebuts_verbatim('reading *"Do not call the\nAgentTool unless the user\n'
-                                'requested it"* is satisfied'),
-                "unwrap() is not collapsing wraps - 4 of the 8 real sites are wrapped")
-        chk("D11 REQUIRE rejects a double-spaced near-miss (H3)",
-                not rebuts_verbatim('*"Do not call the AgentTool  unless the user requested it"* '
-                                    'is satisfied'),
-                "internal spacing is being collapsed - the check is not verbatim")
-        chk("D12 REQUIRE rejects `Agent tool` for `AgentTool`",
-                not rebuts_verbatim('*"Do not call the Agent tool unless the user requested it"* '
-                                    'is satisfied'),
-                "REQUIRE accepts a near-miss - the check is not verbatim")
+        _ok = (rebuts_verbatim('reading *"Do not call the\nAgentTool unless the user\n' 'requested it"* is satisfied'))
+        c.check("D10 REQUIRE survives a mid-quote line wrap", _ok,
+                "" if _ok else "unwrap() is not collapsing wraps - 4 of the 8 real sites are wrapped")
+        _ok = (not rebuts_verbatim('*"Do not call the AgentTool  unless the user requested it"* ' 'is satisfied'))
+        c.check("D11 REQUIRE rejects a double-spaced near-miss (H3)", _ok,
+                "" if _ok else "internal spacing is being collapsed - the check is not verbatim")
+        _ok = (not rebuts_verbatim('*"Do not call the Agent tool unless the user requested it"* ' 'is satisfied'))
+        c.check("D12 REQUIRE rejects `Agent tool` for `AgentTool`", _ok,
+                "" if _ok else "REQUIRE accepts a near-miss - the check is not verbatim")
 
     return c.finish()
 

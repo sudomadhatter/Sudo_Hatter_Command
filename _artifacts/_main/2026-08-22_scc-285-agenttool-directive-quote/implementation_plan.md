@@ -112,12 +112,20 @@ above. The speculative glob bullet that stood here is deleted.
 
 ## Landing-order note
 
-Sibling lane `chore/claude/teaching-edition` (SCC-280) is live and touches `.agents/commands/` —
-but `smh-tour.md` / `smh-training.md`, **zero overlap** with my five. It also has
-`.agents/scripts/tests/test_twin_parity.py` in its diff. Per `lane-collision-is-gates-not-files`,
-zero file overlap is not zero risk: before close-out I run **my** guard against **their** blobs and
-`test_twin_parity.py` from **their** copy against mine. No landing-order dependency expected; if
-their twin-parity edit changes the block grammar, mine lands after theirs.
+⚠️ **AUDIT FINDING (review, Literal-Correctness) — the earlier "zero overlap" claim was FALSE.**
+Measured: `git -C .claude/worktrees/SCC-280-teaching-edition diff --name-only origin/main...HEAD`
+returns **two files this lane also declares**.
+
+| Shared file | Collision |
+|---|---|
+| `.agents/.sync-manifest.json` | ⛔ **HARD** — both lanes rewrite the same line-3 `"generated"` timestamp, so whichever lands second conflicts textually. It is a **generated** file: the resolution is to re-run `/smh-sync-agents`, never to hand-merge. |
+| `docs/_scc_sops_prds/workflows_testing_SOP.md` | benign — SCC-280 edits ~lines 73-96, this lane line 2052; a 3-way merge resolves it. |
+
+The five command files remain genuinely disjoint — SCC-280 touches `smh-tour` / `smh-training`.
+Per `lane-collision-is-gates-not-files` there is a **gate** overlap too, since SCC-280 carries
+`test_twin_parity.py`: before close-out this lane runs its own guard against their blobs, and their
+`test_twin_parity.py` against its own. **Landing order is not forced — but the second lane to land
+must REGENERATE the sync manifest rather than resolve it by hand.**
 
 ---
 
@@ -164,12 +172,14 @@ verdict:     clean (2 narratives attached to anchored findings)
 | anchor | literal text read | consequence | severity |
 |---|---|---|---|
 | `implementation_plan.md` § Declared Change Set | `declared_change_set.py parse` returned `"entries": []` with **15** `incomplete` bullets — *"the left side is not `<OP> <path>`"* | **F1.** `/smh-code-review` Step 2 diffs the real diff against the declared set. An empty parse means it compares against nothing and reports no drift — a green that lies. Silent: nothing fails today. | important |
-| `.agents/scripts/sop_currency.py:60` | `SOP_DOC = "docs/_scc_sops_prds/workflows_testing_SOP.md"` | **F2.** The plan named `_my_resources/_quick_reference/sudo_workflows_testing.md`, which **does not exist** on disk. A6 as written was unsatisfiable; the commit would be refused by the armed gate and the lane would reach for the `[sop-ok]` it forbids itself. | important |
+| `.agents/scripts/sop_currency.py:60` | `SOP_DOC = "docs/_scc_sops_prds/workflows_testing_SOP.md"` | **F2.** The plan named "_my_resources/_quick_reference/sudo_workflows_testing.md" (which does not exist), which **does not exist** on disk. A6 as written was unsatisfiable; the commit would be refused by the armed gate and the lane would reach for the `[sop-ok]` it forbids itself. | important |
 | `.agents/scripts/tests/run_all.py:11` | *"Test files are auto-discovered (`test_*.py`), so a new one joins the suite with no wiring."* (confirmed at `:53`, `HERE.glob("test_*.py")`) | **F3.** The plan declared `EDIT run_all.py` to "register the new test". That edit must never happen — a declared path with no diff is drift at review Step 2. | important |
 | `.opencode/commands/`, `.agents/workflows/`, `.claude/skills/`, `~/.codex/prompts/` | grep for the paraphrase: **5 hits, all under `.opencode/commands/`**; zero in the other three | **F4.** The plan's glob bullet `.agents/workflows/*.md, .claude/skills/*/SKILL.md — EDIT (if the bodies carry it)` was both unparseable and false. A conditional bullet cannot be diffed against a real change set. | suggestion |
 
 **All four are baked into the plan inline** (`⚠️ AUDIT FINDING` markers) and the Declared Change Set
-has been rewritten to the op-first grammar — it now parses **15 entries / 0 incomplete**.
+has been rewritten to the op-first grammar and parses cleanly — **0 incomplete**. (The entry
+count is deliberately not quoted here: it moved 17 → 20 as the ceremony artifacts were declared,
+and a stale number in the audit that checks the block is the defect this row exists to catch.)
 
 ### Scope Ledger
 
@@ -196,30 +206,39 @@ acceptance rows, each with a concrete observable. Precondition met.
   graph built. Per the command's own note, the command centre's `test_links` is `0` anyway, so an
   `untested` list here would carry no information.
 - `.agents/scripts/INDEX.md` carries no rows for `test_twin_parity.py` or `test_self_audit_contract.py`,
-  and there is no `.agents/scripts/tests/INDEX.md`. A new test file therefore needs no INDEX row —
+  and the tests directory has no INDEX of its own. A new test file therefore needs no INDEX row —
   the Lens 2 "script → `scripts/INDEX.md`" scar does not bind inside `tests/`.
 - `.agents/commands/INDEX.md` holds 6 rows matching the five files, but **no command is renamed**, so
   the SCC-63/SCC-66 rename scars do not apply.
 
 ### Landing-order dependency
 
-`chore/claude/teaching-edition` (SCC-280) is live and edits `.agents/commands/smh-tour.md` and
-`smh-training.md` — **zero overlap** with this lane's five command files. It also carries
-`.agents/scripts/tests/test_twin_parity.py` in its diff. Per `lane-collision-is-gates-not-files`,
-that is a **gate** overlap, not a file one: before close-out this lane runs its own guard against
-their blobs and their `test_twin_parity.py` against its own. **No landing order is forced**; if their
-edit changes the twin-law block grammar, this lane lands second.
+⚠️ **AUDIT FINDING (review, Literal-Correctness) — the earlier "zero overlap" claim was FALSE.**
+Measured: `git -C .claude/worktrees/SCC-280-teaching-edition diff --name-only origin/main...HEAD`
+returns **two files this lane also declares**.
+
+| Shared file | Collision |
+|---|---|
+| `.agents/.sync-manifest.json` | ⛔ **HARD** — both lanes rewrite the same line-3 `"generated"` timestamp, so whichever lands second conflicts textually. It is a **generated** file: the resolution is to re-run `/smh-sync-agents`, never to hand-merge. |
+| `docs/_scc_sops_prds/workflows_testing_SOP.md` | benign — SCC-280 edits ~lines 73-96, this lane line 2052; a 3-way merge resolves it. |
+
+The five command files remain genuinely disjoint — SCC-280 touches `smh-tour` / `smh-training`.
+Per `lane-collision-is-gates-not-files` there is a **gate** overlap too, since SCC-280 carries
+`test_twin_parity.py`: before close-out this lane runs its own guard against their blobs, and their
+`test_twin_parity.py` against its own. **Landing order is not forced — but the second lane to land
+must REGENERATE the sync manifest rather than resolve it by hand.**
 
 ### Pre-Mortem narratives (attached, non-originating)
 
 - **F1 — the silent one.** Nothing fails today. The plan ships, the review's drift check compares
   the diff against an empty declared set, prints no drift, and the lane closes green having never
   checked the thing the block exists to check.
-- **F2 — the other-machine one.** The wrong SOP path did not come from nowhere: the shared memory
-  index still names `_my_resources/_quick_reference/sudo_workflows_testing.md`. The next agent — on
-  the PC, in a fresh clone, with no worktree open — makes this identical error and burns the same
-  cycle. Correcting the memory entry is **out of this lane** (the store is read-only outside its own
-  flows); it is carried to `## Your Actions` as a follow-on.
+- **F2 — the other-machine one.** ⚠️ **This narrative was itself wrong, and the review caught it.**
+  It blamed the shared memory store; measured, the store is **clean** — its `sop-doc-currency-gate`
+  entry names the current path *and already records the move*. The stale text is
+  `_artifacts/_main/active-context.md:9`, a tracked file in this repo, which is loaded into every
+  session by the SessionStart hook — a far better explanation of where the wrong path came from,
+  and one this lane can fix rather than defer.
 
 ```
 Audit verdict: GO
