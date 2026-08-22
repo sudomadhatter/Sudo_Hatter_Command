@@ -1,0 +1,20 @@
+{
+  "gate": "links",
+  "story": "scc-285",
+  "result": "pass",
+  "exit_code": 0,
+  "sha": "ac90bcbbfd14c022244aa2ca4c2a5a162a7c3c1a",
+  "dirty_tree": false,
+  "dirty_paths": [],
+  "totals": null,
+  "command": [
+    "python3",
+    ".agents/scripts/check_links.py",
+    "--base",
+    "origin/main"
+  ],
+  "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/scc-285-agenttool-directive-quote",
+  "duration_s": 0.1,
+  "recorded_at": "2026-08-22T23:27:27+00:00",
+  "output_tail": "check_links: 19 markdown file(s), 238 path claim(s) checked\n  clean\n"
+}
