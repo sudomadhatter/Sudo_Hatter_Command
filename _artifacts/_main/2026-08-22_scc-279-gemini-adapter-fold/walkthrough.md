@@ -198,6 +198,27 @@ command change, no gate surface — so the lane stays inside its risk class. If 
 
 ---
 
+## Preflight receipt + the flight event that could not be written
+
+`task_preflight.py --fetch --repo <lane> --branch chore/SCC-279-gemini-adapter-fold --expect-key SCC-279`:
+
+```
+LANE: LOCAL
+GATES: ARMED
+VERDICT: clear to close out and merge
+-- 0 error(s), 1 warning(s), 17 info --
+```
+
+The one warning is the lane's own worktree still being checked out — Step 5 prunes it. `preflight-receipt.json`
+is committed here because `main-write-gate --mode pr` requires it.
+
+⚠ `flight_recorder.py record` exited **2**: *"walkthrough.md carries no canonical `Verdict: ... @ <sha>` line
+(fences stripped) — the event is keyed on that sha."* Correct refusal, and **the fourth lane in a row** to hit
+it (SCC-267, SCC-269, SCC-271, this one). No LLM review runs on a quick-fix or lightweight lane, so no lane of
+that class can ever produce the line the recorder keys on. A `record` failure never blocks a merge, and a
+verdict line was **not** fabricated to satisfy it. The recorder is structurally blind to an entire lane class;
+that is the recorder's contract to change, not this ticket's scope.
+
 ## Your Actions
 
 - [x] The ruling — given, recorded verbatim, and followed (Door A, no Door B changes).
