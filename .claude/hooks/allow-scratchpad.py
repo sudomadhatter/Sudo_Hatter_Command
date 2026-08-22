@@ -98,16 +98,96 @@ import posixpath
 import re
 import sys
 
-# Rule 4. A full session scratchpad, never a prefix of one: `/tmp/claude-<uid>/<project>/<session>/
-# scratchpad`. `/tmp` is a symlink to `/private/tmp` on macOS, so both spellings must be accepted.
-# ⛔ The uid is THIS PROCESS'S, not `\d+`. A bare `claude-\d+` accepted `/private/tmp/claude-999/…`,
-# so a path under another account's tree satisfied the sandbox test (SCC-263 review, Edge Case
-# Hunter). `os.getuid()` is the only authority on which tree is ours.
-_UID = re.escape(f"claude-{os.getuid()}")
+# ⛔ NOTHING AT MODULE LEVEL MAY RAISE, AND THIS BLOCK IS WHY THAT IS A RULE (SCC-267).
+# `_UID = re.escape(f"claude-{os.getuid()}")` used to sit right here, at import time, OUTSIDE the
+# `try/except` at the bottom of this file. `os.getuid` DOES NOT EXIST ON WINDOWS - so on the
+# operator's second machine this hook raised `AttributeError` before `main()` was ever called and
+# exited 1 with a traceback, on EVERY Bash call. The whole design rests on one promise - "it may
+# only ever REMOVE a prompt it is certain about, never ADD one" - and the fail-safe wrapper that
+# makes that promise true could not cover a crash that happened before it was installed.
+# Everything below is therefore a FUNCTION, called from inside the wrapper, and every resolver
+# answers `None` rather than raising. `None` means NO GRANT: this hook falls silent, and the
+# operator gets the ordinary approval prompt they had before it existed.
+
+# Where a machine says what its own scratchpad root is. Gitignored, one line, never committed -
+# the same class as `core.hooksPath` and `~/.zshenv`: per-machine, and it never travels.
+ROOT_FILE = (".claude", "scratchpad-root")
+
+
+def _repo_root() -> str:
+    """The repo this hook was loaded from. `CLAUDE_PROJECT_DIR` first (run-hook.sh exports it),
+    then this file's own location - `<repo>/.agents/hooks/` and `<repo>/.claude/hooks/` are the
+    same depth, so the master and the deployed copy resolve identically."""
+    env = os.environ.get("CLAUDE_PROJECT_DIR")
+    if env:
+        return env
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def _configured_root() -> str | None:
+    """The machine-local root override as a regex fragment, or None to fall through.
+
+    ⛔ IT WIDENS THE ROOT, NEVER THE SHAPE. Whatever this names must still be followed by
+    `/<project>/<session_id>/scratchpad`, session-pinned and normalised, exactly as the built-in
+    root is - so a wrong entry here cannot grant more than one session's disposable directory.
+    Anything it cannot fully validate returns None, which falls back to the built-in root; on a
+    machine with no uid that means no grant at all.
+    """
+    path = os.path.join(_repo_root(), *ROOT_FILE)
+    try:
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.read().splitlines()
+    except OSError:
+        return None
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        # ⛔ POSIX-spelled and absolute. A NATIVE Windows root (`C:\Users\...`) is refused here
+        # rather than half-honoured, and that refusal is load-bearing: `\` is in FORBIDDEN, so a
+        # command carrying a native Windows path is rejected by rule 1 no matter what this file
+        # says. A root that can never match its own machine's commands is worse than none.
+        if not line.startswith("/") or FORBIDDEN & set(line):
+            return None
+        norm = posixpath.normpath(line)
+        # ⛔ At least two segments. `/` would make `/<anything>/<session>/scratchpad` grantable,
+        # and a one-segment root is close enough to that to be worth refusing outright.
+        if norm.count("/") < 2 or norm.endswith("/"):
+            return None
+        return re.escape(norm)
+    return None
+
+
+def _uid_root() -> str | None:
+    """The built-in POSIX root as a regex fragment, or None where this process has no uid.
+
+    ⛔ The uid is THIS PROCESS'S, never "any digits". A root accepting any digits accepted
+    `/private/tmp/claude-999/…`, so a path under another account's tree satisfied the sandbox test
+    (SCC-263 review, Edge Case Hunter). `getattr` rather than a bare call: on Windows the
+    attribute is absent, and asking for it is what used to crash this file at import.
+    """
+    getuid = getattr(os, "getuid", None)
+    if getuid is None:
+        return None
+    return rf"/(?:private/)?tmp/{re.escape(f'claude-{getuid()}')}"
+
+
+@functools.lru_cache(maxsize=1)
+def sandbox_root() -> str | None:
+    """This machine's scratchpad root, as a regex fragment - or None, which means NO GRANT.
+
+    The machine-local file wins when it validates, because a machine has exactly one scratchpad
+    root and the built-in one describes only POSIX. Absent or unusable file -> the built-in root,
+    so a Mac with no config behaves byte-for-byte as it did before this function existed.
+    """
+    try:
+        return _configured_root() or _uid_root()
+    except Exception:  # noqa: BLE001 - a resolver that raises must read as "no grant", not as a crash.
+        return None
 
 
 @functools.lru_cache(maxsize=4)
-def sandbox_re(session_id: str) -> "re.Pattern[str]":
+def sandbox_re(session_id: str) -> "re.Pattern[str] | None":
     """The ONE pattern, built around the session that is actually asking.
 
     ⛔ There is deliberately no session-agnostic pattern to fall back on. An earlier cut had two -
@@ -116,10 +196,13 @@ def sandbox_re(session_id: str) -> "re.Pattern[str]":
     regexes also meant the general one was barely load-bearing whenever a pin applied, which is
     how a mutation to it could survive. One pattern, no fallback, no drift.
 
-    `/tmp` is a symlink to `/private/tmp` on macOS, so both spellings must be accepted. The uid is
-    THIS PROCESS'S: a pattern accepting any digits accepted another account's tree.
+    `/tmp` is a symlink to `/private/tmp` on macOS, so the built-in root accepts both spellings.
+    Returns None when this machine has no resolvable root - the caller reads that as no grant.
     """
-    return re.compile(rf"^/(?:private/)?tmp/{_UID}/[^/]+/"
+    root = sandbox_root()
+    if root is None:
+        return None
+    return re.compile("^" + root + r"/[^/]+/"
                       + re.escape(session_id) + r"/scratchpad(?:/|$)")
 
 
@@ -179,7 +262,10 @@ def sandboxed(token: str, session_id: str) -> bool:
     """
     if not session_id or not token.startswith("/"):
         return False
-    return bool(sandbox_re(session_id).match(posixpath.normpath(token)))
+    pattern = sandbox_re(session_id)
+    if pattern is None:
+        return False
+    return bool(pattern.match(posixpath.normpath(token)))
 
 
 def permitted(command: str, session_id: str) -> bool:
