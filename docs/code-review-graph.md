@@ -43,6 +43,13 @@ lives in the child repos, each with its own graph (`Projects/AGY_AVIATIONCHAT` �
   143, 358, 429), and the graph attributes a call to the wrong one. Direct callers of a top-level
   function are exact; **same-named nested closures in one file collapse**. When a caller's identity
   decides your action, confirm it with `grep`.
+- **Never report a `tests_for` / `test_gaps` miss as a finding without opening the test file.** The
+  test link is a CALL-GRAPH link, so **a test that spawns its subject as a subprocess is invisible to
+  it**. Measured on this repo (2026-08-22): `detect-changes` listed all eight functions of
+  `.agents/hooks/rule-trigger.py` as untested while `test_rule_trigger.py` was exercising every one of
+  them through `subprocess.run`. That is most of `.agents/scripts/tests/`, which tests scripts by
+  running them. A gap here means *go look*, not *there is no test* — and the two read identically in
+  the tool's output.
 - **Never trust a stale graph.** The index is machine-local, per-worktree, and gitignored — it does
   **not** travel through git. `check_maps.py` check 9 compares the graph's recorded commit with `HEAD`
   and hints when they diverge; that hint is non-fatal by design, so it is on you to act.

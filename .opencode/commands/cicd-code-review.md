@@ -115,7 +115,21 @@ test -s /tmp/mine.txt || { echo 'EMPTY DIFF — STOP (Step 0.6 said so)'; exit 1
 grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                               # the TRUE overlap
 git -C "$WORKTREE" merge-tree --write-tree --messages HEAD "origin/$EPIC" | head -40  # conflicts, before they are real
 git -C "$PROJECT_ROOT" worktree list                                                  # sibling story lanes still live
+python3 .agents/scripts/risk_seam.py classify $(cat /tmp/mine.txt)                    # risk tiers from the code graph
 ```
+
+**Read the tier map beside the overlap list.** `risk_seam.py` *(PC: `python`)* asks the local code
+graph which of the files you changed carry the riskiest changed functions, how many flows they sit
+on, and which changed functions it can find no test for. `"status": "classified"` means the graph
+answered; every other state — no graph, a graph built at a different commit, the tool not installed,
+or a thin project that carries no `.agents/scripts/` at all — prints `"status": "unclassified"` and
+**that is a normal result, not a failure**. The pure-Python path is the normal path; the graph is
+context, and `gates_audit` is False by contract, so nothing here can fail a review on its own. If you
+want the context, `code-review-graph update` in that repo and re-run this one line.
+
+⚠ **`untested` reads the CALL GRAPH, so a subprocess test is invisible to it.** A script exercised by
+spawning it shows up as a test gap even when it is thoroughly covered. Treat `untested` as *where to
+look*, never as a finding on its own; confirm against the test file before you write it down.
 
 ⚠ **`zsh` does not word-split an unquoted variable** the way `bash` does. Build file lists into a file
 and expand with `$(cat …)`, or the whole list arrives as one argument and your sweep silently checks

@@ -163,10 +163,14 @@ as the normal fallback:
   ref is the story's EPIC branch (`epic/<KEY>-<slug>`), never `origin/main` (SCC-165). A file in both
   their set and this plan's declared set is a **landing-order dependency**: name which lane lands
   first and what happens to this work if it does not.
-- **Risk context (SCC-228 seam):** `python3 .agents/scripts/risk_seam.py classify <declared
-  paths>` *(PC: `python`)* informs this lens's depth. **Informs, never gates** — `gates_audit()`
-  is False for every return by pinned contract, so audit semantics are identical under the
-  placeholder and under SCC-223/224.
+- **Risk context (the code-graph seam):** `python3 .agents/scripts/risk_seam.py classify <declared
+  paths>` *(PC: `python`)* informs this lens's depth — per file, the highest risk score among its
+  changed functions, how many flows it sits on, and which changed functions have no test.
+  **Informs, never gates** — `gates_audit()` is False for every return by pinned contract, so audit
+  semantics are identical whatever it says. `"status": "unclassified"` is a **normal result** (no
+  graph, a stale graph, the tool absent, or a thin project with no `.agents/scripts/`), fixed with
+  `code-review-graph update` if you want the context. ⚠ `untested` reads the CALL GRAPH, so a script
+  tested by spawning it as a subprocess reads as a gap — *where to look*, never a finding.
 
 ## Lens 3 — Pre-Mortem (LEDGER+BLAST) — bounded, and the bound is the point
 

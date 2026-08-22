@@ -176,11 +176,18 @@ set. Then `git worktree list`, then per tree
 set and this plan's declared set is a **landing-order dependency**: name which lane lands first
 and what happens if it does not.
 
-**Risk context (SCC-228 seam):** `python3 .agents/scripts/risk_seam.py classify <declared paths>`
-*(PC: `python`)* — where risk lives informs THIS lens's depth. It **informs, never gates**:
-`gates_audit()` is False for every possible return, by pinned contract, so the audit's semantics
-are identical under the placeholder and under a real classifier (SCC-223/224 swap in behind the
-seam without touching this file).
+**Risk context (the code-graph seam):** `python3 .agents/scripts/risk_seam.py classify <declared
+paths>` *(PC: `python`)* — where risk lives informs THIS lens's depth. It answers from the local
+code graph: per file, the highest risk score among its changed functions, how many flows it sits on,
+and which changed functions have no test. It **informs, never gates**: `gates_audit()` is False for
+every possible return, by pinned contract, so the audit's semantics are identical whatever the
+classifier says.
+
+`"status": "unclassified"` is a **normal result, not a failure** — no graph, a graph built at a
+different commit, or the tool not installed all return it, and the pure-Python path is the normal
+path. `code-review-graph update` in that repo is the fix if you want the context.
+⚠ `untested` reads the CALL GRAPH: a script exercised by spawning it as a subprocess reads as a test
+gap even when it is thoroughly covered. Treat it as *where to look*, never as a finding on its own.
 
 ## Lens 3 — Pre-Mortem (LEDGER+BLAST) — bounded, and the bound is the point
 

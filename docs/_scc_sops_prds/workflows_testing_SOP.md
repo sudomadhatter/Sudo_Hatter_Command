@@ -1462,7 +1462,13 @@ otherwise answer by guessing. *Who calls this function? What breaks if I change 
 changed functions has no test?* The reviews and audits ask it for you — there is nothing to type in
 the normal flow.
 
-Three things are worth knowing, because each one has bitten:
+You do see it in one place: a **risk map** printed beside the overlap list when a review re-checks
+its blast radius. Per changed file it names the riskiest thing you changed in it, how many flows run
+through it, and which of your changed functions it can find no test for — a shortlist of where to
+look hardest, nothing more. When it says `unclassified`, the graph simply had no answer to give (see
+the first point below); that is a normal line, not a problem to solve.
+
+Four things are worth knowing, because each one has bitten:
 
 - **It is per machine and per workspace, and it goes stale.** It is not in git. A fresh clone, a fresh
   worktree, or someone else's commits pulled down means the map no longer matches the code. The map
@@ -1475,6 +1481,10 @@ Three things are worth knowing, because each one has bitten:
   function, and it gets confused when one file defines several nested functions with the same name.
   So a reviewer confirms a caller's identity before acting on it. That habit is written into the
   commands.
+- **"No test" from the graph means "go and check", not "there is no test".** It finds tests by
+  following calls, so a test that runs its subject as a separate program is invisible to it — which is
+  how most of this system's own tests work. Left unchecked, that reads as a pile of missing tests that
+  are not missing. The commands say so where they print it.
 
 Full reference — every tool, the freshness commands, the install recipe for both machines:
 [`docs/code-review-graph.md`](../code-review-graph.md).
