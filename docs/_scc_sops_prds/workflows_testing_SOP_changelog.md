@@ -18,6 +18,10 @@ of `—` means the page recorded the ticket but not the day; the ticket's sessio
 
 | Date | Ticket | What changed for the operator |
 |---|---|---|
+| 2026-08-22 | SCC-270 | Two one-line checks in `_routing-canary/README.md` show rule activation actually happening — what a prompt surfaces, and a log of every rule the tool loaded on its own. Worth running on a fresh clone or a new machine. |
+| 2026-08-22 | SCC-270 | The code graph the reviews and audits consult is now `code-review-graph` (MIT), installed per machine with `pipx`. It can finally see `.agents/`, so the toolkit itself is reviewable. New section in §8; full reference in `docs/code-review-graph.md`. |
+| 2026-08-22 | SCC-270 | `/smh-update-maps-indexes` reports a stale code graph and hands you `code-review-graph update` to run after committing; it never rebuilds one for you. |
+| 2026-08-22 | SCC-270 | Rules now say when they apply: file-shaped rules load when a matching file is opened, request-shaped rules are surfaced by a prompt hook. Floor and protocol tiers unchanged. |
 | 2026-08-22 | SCC-267 | The scratchpad allow-hook no longer crashes on Windows — the uid was read at import, outside its own fail-safe wrapper, so it exited 1 with a traceback on every Bash call there. Nothing that can raise runs at module level now. |
 | 2026-08-22 | SCC-267 | The scratchpad root is per-machine (a gitignored `scratchpad-root` file under `.claude/`, root only — the session-pinned shape is unchanged). Setup guide added under `docs/migrations/install_guides/`. |
 | 2026-08-22 | SCC-263 | `allow-scratchpad.py`: a `PreToolUse` hook auto-allows the narrow shape of Bash command that can only touch this session's scratchpad, so a review stops asking twenty-odd times to run its own throwaway harness. Allow-list of shapes; two legal outputs, `allow` or silence. Lobby-only, Mac-only. |
@@ -106,6 +110,3 @@ of `—` means the page recorded the ticket but not the day; the ticket's sessio
 | — | SCC-126 | Autopilot Stage 4 runs the house review engine via `/cicd-code-review-AP`. |
 | — | SCC-134 | Autopilot "done means green": stage gates are script exit codes, never agent say-so. |
 | — | SCC-203 | The runtime probe asks capability, never policy; a contaminated Blind Hunter is dropped (`n/a` + reason), not faked. |
-| 2026-08-22 | SCC-270 | The code graph the reviews and audits consult is now `code-review-graph` (MIT), installed per machine with `pipx`. It can finally see `.agents/`, so the toolkit itself is reviewable. New section in §8; full reference in `docs/code-review-graph.md`. |
-| 2026-08-22 | SCC-270 | `/smh-update-maps-indexes` reports a stale code graph and hands you `code-review-graph update` to run after committing; it never rebuilds one for you. |
-| 2026-08-22 | SCC-270 | Rules now say when they apply: file-shaped rules load when a matching file is opened, request-shaped rules are surfaced by a prompt hook. Floor and protocol tiers unchanged. |

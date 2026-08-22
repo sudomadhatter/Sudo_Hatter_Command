@@ -1449,6 +1449,11 @@ Nothing to type, and nothing to maintain by hand: the classification lives in on
 (`.agents/rules/INDEX.md`), the per-rule markers mirror it, and a test fails if the two ever
 disagree. `/smh-sync-agents` writes the copies Claude Code reads.
 
+**If you ever want to see it actually happen**, `_routing-canary/README.md` § "Probe 2" has two
+one-line checks: one prints the pointer a prompt produces, the other shows a log of every rule the
+tool loaded on its own. Worth running after a fresh clone or a new machine, because both mechanisms
+fail the same quiet way — a rule that never loads looks exactly like a rule with nothing to say.
+
 ### The code graph — what the review commands ask before they judge
 
 The command centre and each project carry a **local code graph**: a small SQLite index built by

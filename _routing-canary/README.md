@@ -36,3 +36,44 @@ Expected trace: entry → `agent.md` → `control/agent.md` → reads `skills/sk
 ## Reset between runs
 
 Replace `Power.md`'s contents with the placeholder line so the next run starts clean.
+
+---
+
+## Probe 2 — rule activation (Claude Code only)
+
+The hop test above proves an agent can **follow** routing. It says nothing about whether the house
+rules reach that agent, which is a separate mechanism with a separate way of failing silently.
+
+Rules activate two ways, and each has its own probe:
+
+**The FILE trigger** — a rule carrying `paths:` loads when a matching file is read. `sync-agents.ps1`
+emits the six path-scoped rules into `.claude/rules/`, and `log-rule-load.sh` records every load.
+
+```bash
+rm -f "${TMPDIR:-/tmp}/claude-rule-loads.log"     # start clean
+# …then in a FRESH session, read any .ps1 in the tree — e.g. .agents/scripts/sync-agents.ps1
+cat "${TMPDIR:-/tmp}/claude-rule-loads.log"
+```
+
+**Pass = a line naming `powershell-encoding-safety.md`.** An empty log means the rule did not load —
+check that `.claude/rules/` exists (it is generated; a fresh clone has none until a sync runs) and
+that the `InstructionsLoaded` hook is registered in `.claude/settings.json`.
+
+**The INTENT trigger** — no file is read, so `paths:` can never fire. `rule-trigger.py` matches the
+prompt against each rule's `triggers:` list instead.
+
+```bash
+printf 'the suite is red' | sh .agents/hooks/run-hook.sh .claude/hooks/rule-trigger.py
+```
+
+**Pass = one pointer line naming `.agents/rules/reproduce-before-you-fix.md`.** Silence means either
+the hook is not reaching the tree (`CLAUDE_PROJECT_DIR` is authoritative when set — a tree without
+`.agents/rules/` yields nothing, by design) or the mirror in `.claude/hooks/` is missing, which a
+sync fixes.
+
+> **Why a probe and not just a test.** `test_rule_trigger.py` proves the hook computes the right
+> answer; `test_rule_frontmatter.py` proves the frontmatter says the right thing. Neither proves the
+> PLATFORM acts on either one. That gap is exactly the exit-127 bug (SCC-77): five hooks wired to
+> binaries this machine did not have, failing silently for weeks, because a mechanism that never
+> fires looks identical to a mechanism with nothing to say. Only a fresh session and a log file can
+> tell those apart — which is why this lives here, in the canary, and not in the suite.
