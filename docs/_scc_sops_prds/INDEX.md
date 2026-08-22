@@ -8,7 +8,7 @@ and `_my_resources/diagrams_guides/`.
 ## Why this folder exists
 
 The docs below rotted for years, and not from neglect. They lived in `_my_resources/`, which is named
-in `SCAN_IGNORES` (`check_maps.py`), in `DEFAULT_REGEN_IGNORE` for the repo-map, and in the GitNexus
+in `SCAN_IGNORES` (`check_maps.py`), in `DEFAULT_REGEN_IGNORE` for the repo-map, and in the code-graph
 ignore list — its own local law says *"excluded from repo-map regen + linter scans … do not fix
 that."* **Every drift-checker in this system was forbidden to look at them.** The index they lived
 under listed 2 files that did not exist and omitted 4 that did, and nothing could notice.

@@ -271,5 +271,7 @@ its command's name, a hand-authored skill is named for what it knows. ⛔ The `s
 **RETIRED**: any `/sudo-` reference anywhere in this system is stale by definition. Enforced
 mechanically by `workflow_lint.py --toolkit-only`.
 
-> **GitNexus** — code-intelligence (impact · detect_changes · query · context) for this repo →
-> `docs/gitnexus.md`. (Lobby index is routing-surface only; product work uses `repo: "AGY_AVIATIONCHAT"`.)
+> **code-review-graph** — the local code graph (MIT): who calls this · what breaks · what has no test ·
+> what does this diff risk → `docs/code-review-graph.md`. The lobby index maps the **master toolkit**
+> (1073 of its 1102 nodes are `.agents/`); each child repo carries its own graph and its own copy of
+> that doc. ⛔ Change detection takes the **merge-base**, never a branch name.

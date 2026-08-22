@@ -1426,6 +1426,31 @@ doc and index edits, memory files, `_artifacts` INDEX rows, notes, and quick ref
 
 ---
 
+### The code graph — what the review commands ask before they judge
+
+The command centre and each project carry a **local code graph**: a small SQLite index built by
+`code-review-graph`, which reads your code and answers structural questions the review commands would
+otherwise answer by guessing. *Who calls this function? What breaks if I change it? Which of these
+changed functions has no test?* The reviews and audits ask it for you — there is nothing to type in
+the normal flow.
+
+Three things are worth knowing, because each one has bitten:
+
+- **It is per machine and per workspace, and it goes stale.** It is not in git. A fresh clone, a fresh
+  worktree, or someone else's commits pulled down means the map no longer matches the code. The map
+  check (`/smh-update-maps-indexes`) notices and tells you; the fix is one command in that repo:
+  `code-review-graph update`.
+- **Installing it is a per-machine step, like `gh` or `firebase`.** `pipx install code-review-graph`
+  on each machine, then `code-review-graph build` once in each repo you work in. The new-machine guide
+  carries both, including the one editor quirk that makes the tools silently absent on the Mac.
+- **It narrows where to look; it does not replace looking.** It is exact about who calls a normal
+  function, and it gets confused when one file defines several nested functions with the same name.
+  So a reviewer confirms a caller's identity before acting on it. That habit is written into the
+  commands.
+
+Full reference — every tool, the freshness commands, the install recipe for both machines:
+[`docs/code-review-graph.md`](../code-review-graph.md).
+
 ## 9. The Task lane — work on the system itself
 
 **The dev cycle for work that has no story, no sprint board and no epic branch.** Seven commands
@@ -3640,7 +3665,7 @@ flowchart TD
 | ③ `/cicd-code-review` | Hunts the diff cold, runs an adversarial review, audits code quality, runs the test gate, issues a verdict into the walkthrough. |
 | `/cicd-clean-code-audit` | Dead code, duplication, drift. Runs inside ③; also runs solo across a whole area. |
 | `/cicd-bdd-tests` | Locks behavior in plain language, standalone (① does this for you). |
-| `/cicd-self-audit` | Pressure-tests a plan against the real code before anyone writes anything (② does this for you). The step where it asks the code graph "who else breaks if we change this?" asks the tool itself which projects are indexed — availability is never inferred from a doc title. Three guards: it names the project on every question, it **checks the map is not stale before trusting it**, and it treats a **"nothing breaks" answer as the one to double-check by hand** — the graph is blind to one common calling style. |
+| `/cicd-self-audit` | Pressure-tests a plan against the real code before anyone writes anything (② does this for you). The step where it asks the code graph "who else breaks if we change this?" asks the tool itself whether a graph exists — availability is never inferred from a doc title. Three guards: it names the repo on every question, it **checks the map is not stale before trusting it**, and it treats a **"nothing breaks" answer as the one to double-check by hand** — the graph collapses same-named nested functions inside one file. |
 | `/cicd-prune-context` | Trims the running session notes back under budget so sessions start fast. |
 
 **Landing and shipping** — [§7](#7-landing-and-shipping--the-close-out-family)

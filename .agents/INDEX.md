@@ -16,5 +16,6 @@ the "what's in here" map. Edit at master, then `/smh-sync-agents`.
 | `hooks/` | `require-push-approval.py` — the git write-approval gate (synced into every `.claude/hooks/`) | — |
 | `opencode-agents/` | opencode agent definitions | — |
 
-Adapters `CLAUDE.md` / `GEMINI.md` here both point to `AGENTS.md`. **No GitNexus block by design** — the
-toolkit is markdown, navigated by these indexes (and the doc-graph), not the code-graph.
+Adapters `CLAUDE.md` / `GEMINI.md` here both point to `AGENTS.md`. **No code-graph block by design here** —
+this INDEX is the human/agent map. The scripts in `scripts/` *are* graph-indexed (they are the bulk of the
+lobby graph); the routing between markdown files is the doc-graph's job, not the code-graph's.

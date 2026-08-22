@@ -4,7 +4,7 @@
 by design… can be deleted outright once a migration is done."* **That was reversed by SCC-89**, and
 the reversal is the reason it now lives under `docs/`: this is the kit a **fresh machine** depends
 on, and while it sat in `_my_resources/` — named in `SCAN_IGNORES`, `DEFAULT_REGEN_IGNORE` and the
-GitNexus ignore list — no drift-checker was allowed to look at it, so it could not rot loudly. A
+code-graph ignore list — no drift-checker was allowed to look at it, so it could not rot loudly. A
 guide nothing validates is worth less than no guide. It is scanned documentation now, like
 everything else under `docs/`.
 
@@ -75,7 +75,7 @@ to use it — read the guides, run the scripts. Nothing here is read-only-protec
 | 3 | Restore every `.env` / `auth_keys/` from the master bundle | Windows → [`Restore-EnvMaster.ps1`](scripts/Restore-EnvMaster.ps1) · macOS/Linux → [`restore-env-master.sh`](scripts/restore-env-master.sh) · or `python docs/migrations/scripts/env_master.py --restore` | ✅ | ✅ **use the `.sh`** |
 | 4 | The secret bundle step 3 reads (export with `env_master.py --export` or `Export-EnvMaster.ps1`) | `docs/migrations/auth_keys/_secrets/master.env` — **gitignored, hand-carried, never committed** (SCC-39) | ✅ | ✅ |
 | 5 | Rebuild the AGY Python venv + verify the test infra | [`python_vytest-updates-other-machines.md`](install_guides/python_vytest-updates-other-machines.md) | ✅ | ✅ (use its macOS column) |
-| 6 | Per-machine logins & toolchains — gcloud, gh, firebase, Java 17, Node, GitNexus re-index | that guide, §5 | ✅ | ✅ |
+| 6 | Per-machine logins & toolchains — gcloud, gh, firebase, Java 17, Node, code-graph build | that guide, §5 | ✅ | ✅ |
 | 7 | Scrum-board stale-stamp git hooks (per machine, per project — AGY today) | [`git-hooks-board-stale-install.md`](../../_my_resources/open_tasks/git-hooks-board-stale-install.md) | ✅ | needs `pwsh` (installer is `.ps1`) |
 | 8 | **Link the Claude auto-memory store** so memory travels via git instead of dying on this box | `.agents/scripts/link-memory.ps1` · macOS → `link-memory.sh` | ✅ | ✅ **use the `.sh`** |
 | 9 | Carry the **Antigravity IDE extensions** across (export on the old box, import on the new one) | [`antigravity-ide-extension-migration.md`](install_guides/antigravity-ide-extension-migration.md) | ✅ export | ✅ import |

@@ -1,11 +1,11 @@
 # code-review-graph index scope — HOME BASE ONLY, optimised as the PROJECT MANAGER map.
 #
 # Signal = the master toolkit (.agents/ — its scripts, commands, rules, skills, hooks)
-# and the routing/docs infrastructure. That toolkit is the whole point: GitNexus could
-# never index it (its walker hardcoded `dot: false`, so every dot-directory was skipped
-# before ignore rules ran, and the lobby index saw 86 symbols in 18 files). This engine
-# indexes whatever `git ls-files` tracks, so .agents/ is in — 1073 nodes on the first
-# build — and the job of this file is only to keep the NOISE out.
+# and the routing/docs infrastructure. That toolkit is the whole point, and it is newly
+# reachable: the previous engine hardcoded `dot: false` in its file walker, so every
+# dot-directory was skipped before ignore rules ran and the lobby index saw 86 symbols in
+# 18 files. This engine indexes whatever `git ls-files` tracks, so .agents/ is in — 1073
+# nodes on the first build — and the job of this file is only to keep the NOISE out.
 #
 # Why this file and not .gitignore: these paths are tracked on purpose. Ignoring them
 # here scopes the graph without changing what git carries.
@@ -40,6 +40,6 @@
 
 # NOTE: Projects/ needs no line. Those are git submodules, so `git ls-files` reports
 # them as gitlinks rather than as files, and each carries its own graph. This is the
-# trap that forced `.gitnexusignore` to exist: GitNexus walked the filesystem instead
-# of the index and swallowed every submodule working tree, ballooning the lobby map to
-# ~105k nodes. Verify after any engine upgrade rather than assuming.
+# trap that forced this file's predecessor to exist: the previous engine walked the
+# filesystem instead of the index and swallowed every submodule working tree, ballooning
+# the lobby map to ~105k nodes. Verify after any engine upgrade rather than assuming.

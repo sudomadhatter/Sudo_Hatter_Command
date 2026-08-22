@@ -120,7 +120,7 @@ Read it top to bottom once, then live in the **Coverage Scorecard** (§1) and th
 | **P4** — Variance control (integration LLM at temperature 0.0) | Not yet | `generate_with_fallback` accepts `temperature=`, but Sully runs `0.6`, eval Igor `0.3`; no test pins temp 0.0 on a real call. No L2 live tier exists. | §P4 — stand up an L2 temp-0 harness, kept out of the PR gate |
 | **P5** — Schema-contract enforcement (strict Pydantic; deviation = hard fail) | Partial | Generic schema-validation tests exist (`test_schemas_lesson_plan.py`); the real reasoning-log+response contracts `SocraticExecutorResponse` / `SullyResponse` are UNTESTED. | §P5 — hard-fail `ValidationError` tests for the two real contracts |
 | **P6** — Adversarial / negative testing (wrong-FAA-query + hallucination/citation) | Partial | An L3 citation-fidelity suite exists (`evals/scenarios/citation_fidelity.json`, manual-only). No deterministic in-gate L2 layer, no bad-FAA-*query* input set. | §P6 — author input-adversarial fixtures + a mocked in-gate guard |
-| **P7** — Test Impact Analysis (PR gate runs only impacted tests) | Not yet | `pr-check.yml` runs full `pytest backend/tests/ -v` — no `-k`/`--testmon`/changed-file selection. GitNexus `impact()` is documented but its engine files are NOT on disk and NOT wired to CI. | §P7 — `bmad-testarch-ci` scaffolds TIA selection; resolve GitNexus (human lane) |
+| **P7** — Test Impact Analysis (PR gate runs only impacted tests) | Not yet | `pr-check.yml` runs full `pytest backend/tests/ -v` — no `-k`/`--testmon`/changed-file selection. A code-graph impact engine is documented but was not wired to CI. | §P7 — `bmad-testarch-ci` scaffolds TIA selection; resolve the engine (human lane) |
 | **P8** — Semantic-eval separation (L3 judge decoupled, nightly) | Not yet | L3 correctly absent from the PR gate by policy, but there is no nightly/scheduled eval job (only `firestore-backup` cron). | §P8 — `bmad-testarch-ci` adds a scheduled nightly L3 job |
 | **P9** — Machine-enforced standards (ruleset bans string-match on LLM output) | Partial | `agent_bearing: true` arms the Test-Adequacy auditor and "no string-match on generative output"; `prompt-tdd.md` codifies it *scoped to `prompts.py` only*. No single Always-On rule, no blocking linter. | §P9 — consolidate into one named `testing-standards.md`; sync scope is Daniel's call |
 | **P10** — Test-first for agentic code (new workflows ship L1 mock + L2 schema by default) | Partial | `/cicd-write-story-tests` writes failing ATDD tests before code; gate requires `[L1, L2]`; baseline `at-opt-in`. But `l1_coverage_min: 0.0` makes the tier a presence-check, not a real floor; "by default" is convention, not a hard stop. | §P10 — the per-story loop IS this; ratchet the floor (human lane) |
@@ -153,7 +153,7 @@ flowchart TD
 
     subgraph S3 ["Step 3 — CI (TIA plus nightly)"]
         CI["PR gate runs only impacted L1/L2;\nL3 judge runs as a nightly job"]
-        CICmd["Command: bmad-testarch-ci\n(resolve GitNexus impact engine)"]
+        CICmd["Command: bmad-testarch-ci\n(resolve code-graph impact engine)"]
         CI --> CICmd
     end
 
@@ -200,7 +200,7 @@ flowchart TD
     end
     subgraph OUT ["Artifacts"]
         Risk["P0-P3 risk map +\ntest-design-epic-N.md under {test_artifacts}"]
-        Decide["decide-with-Daniel list\n(Research Agent, 85% floor, GitNexus engine)"]
+        Decide["decide-with-Daniel list\n(Research Agent, 85% floor, code-graph engine)"]
         Stories["Scoped stories ready for the sudo loop"]
     end
     Brief --> Tea
@@ -382,7 +382,7 @@ D2 is about what happens when you *do* let a model run inside a test: make it bo
 5. **Write the first temp-0 test against a REAL agent** (`SocraticTeacherAgent`): run it twice and assert the **structured fields are stable** (`routing_tag == "EVAL_CORRECT"`, `r1.routing_tag == r2.routing_tag`) — never the prose. Run `pytest backend/tests/integration_temp0 -m temp0 -v`; with the key unset it SKIPS, proving it can never break the gate.
 6. **Schedule, don't gate.** Wire it into the same nightly slot as L3 (P8) or run before a model migration. It must never appear in `pr-check.yml`.
 
-> **Decide with Daniel:** `SocraticTeacherAgent` does not currently read a temperature override. Two clean ways to pin 0.0 — (1) add a `temperature` param to `evaluate(...)` that flows to `generate_with_fallback(..., temperature=...)` (cleanest, touches the signature → **run `impact()` on `evaluate` first** per the GitNexus rule), or (2) read an env var like `EVAL_TEMP_OVERRIDE` inside the agent (lower blast radius). Flag this in the test-design handoff; do not silently pick one.
+> **Decide with Daniel:** `SocraticTeacherAgent` does not currently read a temperature override. Two clean ways to pin 0.0 — (1) add a `temperature` param to `evaluate(...)` that flows to `generate_with_fallback(..., temperature=...)` (cleanest, touches the signature → **run `query callers_of evaluate` first** per the code-graph rule), or (2) read an env var like `EVAL_TEMP_OVERRIDE` inside the agent (lower blast radius). Flag this in the test-design handoff; do not silently pick one.
 
 ```mermaid
 flowchart TD
@@ -458,7 +458,7 @@ flowchart TD
 4. **Add the DETERMINISTIC in-gate guard** via `bmad-testarch-automate` (standalone): in `backend/tests/agents/specialist/`, **mock** the dossier/retrieval and assert the invariant structurally — empty dossier → `result["sources"] == []`. This is the new free L2 the PR gate runs.
 5. **Wire L3 (not L2) into the nightly slot** (P8 owns the schedule); the deterministic test rides the existing gate.
 
-> **Decide with Daniel:** the exact mock seam inside `ReasonerAgent.fact_check` and the dossier key names (`db2_legal_chunks`, `source`, `text` vs `backend/schemas/investigation_dossier.py`). **Run `impact()` / `context()` on `ReasonerAgent.fact_check` first** (GitNexus rule); do not hardcode an unverified seam.
+> **Decide with Daniel:** the exact mock seam inside `ReasonerAgent.fact_check` and the dossier key names (`db2_legal_chunks`, `source`, `text` vs `backend/schemas/investigation_dossier.py`). **Run `query callers_of ReasonerAgent.fact_check` first** (code-graph rule); do not hardcode an unverified seam.
 
 ```mermaid
 flowchart TD
@@ -493,9 +493,9 @@ flowchart TD
 
 > **Definition:** the PR gate runs only the L1/L2 tests that the changed code can break, not the whole suite.
 
-**Covered? — NO (gate exists, but has no TIA).** `.github/workflows/pr-check.yml` (Story 7.1) triggers `on: pull_request, branches:[main]`, paths `['backend/**','frontend/**']`. The backend gate is the literal line `pytest backend/tests/ -v --tb=short` — **all 148 files, every PR**, with no `-k`/`--lf`/`--testmon`/changed-file selection. Frontend is the same (`npm run test -- --run` runs all 44 unit files; `npx playwright test` runs both e2e specs). The natural TIA engine, GitNexus `impact()`, is **documented** (`CLAUDE.md`: 18,051 symbols, dep graph) and its *skills* are git-tracked, but the **engine files are NOT on disk** (no `.gitnexus/`, no `.gitnexus/run.cjs`) and not wired to CI.
+**Covered? — NO (gate exists, but has no TIA).** `.github/workflows/pr-check.yml` (Story 7.1) triggers `on: pull_request, branches:[main]`, paths `['backend/**','frontend/**']`. The backend gate is the literal line `pytest backend/tests/ -v --tb=short` — **all 148 files, every PR**, with no `-k`/`--lf`/`--testmon`/changed-file selection. Frontend is the same (`npm run test -- --run` runs all 44 unit files; `npx playwright test` runs both e2e specs). The natural TIA engine is the code graph's `detect-changes`, which now exists and is installed per machine, but it is **not wired to CI**: a fresh runner has no index until it builds one.
 
-> **Decide with Daniel:** before TIA can run in CI you must decide **how `impact()` executes in a fresh GitHub Actions runner** — re-index in-CI (`npx gitnexus analyze`), commit a `.gitnexus/` index, or run it as an MCP call. The runner is **not in this checkout**; treat the index step below as a placeholder to confirm.
+> **Decide with Daniel:** before TIA can run in CI you must decide **how `impact()` executes in a fresh GitHub Actions runner** — build the graph in-CI (`code-review-graph build`), cache the `.code-review-graph/` index, or run it as an MCP call. The runner is **not in this checkout**; treat the index step below as a placeholder to confirm.
 
 **Walkthrough (first-timer):** turn a "run all 148" gate into a "run only impacted" gate — (1) get changed files, (2) ask `impact()` which tests they touch, (3) feed that list to pytest **with a full-suite fail-safe**.
 
@@ -520,7 +520,7 @@ flowchart TD
     subgraph TARGET ["pr-check.yml TARGET (impact-aware)"]
         G1["PR opened"]
         G2["git diff base...HEAD -> changed files"]
-        G3["GitNexus impact() -> impacted test node-ids"]
+        G3["code-review-graph detect-changes -> impacted test node-ids"]
         G4["impacted.txt empty?"]
         G5["Run ONLY impacted L1 and L2 tests (fast)"]
         G6["Fail-safe: run FULL suite"]
@@ -701,7 +701,7 @@ The retrofit is a two-lane operation. The agents do the mechanical, repeatable w
 
 - **"Research Agent"** — does **not** exist in AviationChat code (the only hit is a vendored SDK file). The closest real equivalent is the **Librarian** (`backend/tools/librarian.py`), the Lane-2 RAG investigator that produces `InvestigationDossier`. Decide: rename the directive to "Librarian" or drop. Do **not** scaffold tests for a "Research Agent".
 - **The 85% coverage floor** — an unbacked number, not a component. No coverage tooling installed (backend) or wired (frontend). Resolve by setting a *measured* baseline first (Step 1), then ratchet.
-- **GitNexus as the TIA engine (P7)** — documented and its skills are git-tracked, but the **engine files are NOT on disk** (no `.gitnexus/run.cjs`) and it is not wired to CI. Decide whether to install/wire it or pick another impact engine before promising TIA.
+- **The code graph as the TIA engine (P7)** — `code-review-graph detect-changes` is installed per machine but **not wired to CI**: a fresh runner has no index until it builds one (seconds, but it must be a step). Decide whether to wire it before promising TIA.
 
 > For the record: two things the mentor might have assumed missing are **present and named** — JIT prompt injection (`DossierContextBuilder`, "JIT Context Assembler", Story 3.6, with tests) and the reasoning-log+response schema (`SocraticExecutorResponse` / `SullyResponse`, both carrying `internal_reasoning_log` + a user-facing reply, defined inline in the agent `.py` files). So P3 and P5 get real walkthroughs, not "decide with Daniel" items.
 
@@ -716,16 +716,16 @@ TEA-9 was the **last** story of the retrofit: build a **local pre-push Test Impa
 Wrote the story (`_bmad/bmm/stories/tea-9-tia-ci.md`) and a **failing** spec for the pure decision layer: `backend/tests/tia/test_tia_select.py` — 12 tests, all red because the module `backend.tia.select` didn't exist yet. The red phase is the proof-of-test: a spec that fails *before* the code exists proves the test actually pins something.
 
 **Design decisions locked in the story up front (so ② couldn't drift):**
-- **Local pre-push gate, not CI** — the GitNexus index is machine-local and absent from a CI runner (Decisions appendix, B5).
+- **Local pre-push gate, not CI** — the graph index is machine-local and absent from a CI runner (Decisions appendix, B5).
 - **Freshness = `indexed_commit == HEAD`** — a dirty working tree is *not* stale (uncommitted changes are the intended input to a pre-push check).
-- **Selection is file-level** (`git diff --name-only` → a test-map), *not* an `impact()` call — sidestepping that `impact()`/`detect_changes()` are MCP-only and under-select on attribute-dispatch. GitNexus is used **only** for the freshness check.
+- **Selection is file-level** (`git diff --name-only` → a test-map), *not* an `impact()` call — sidestepping that graph impact calls under-select on attribute dispatch. The graph is used **only** for the freshness check.
 
 ### ② `/cicd-dev-story-tests` — plan → self-audit → build to green
 
 Delivered a clean **pure/impure split** (the TEA-7 precedent — test the brain, keep the I/O thin):
 
 - **`backend/tia/select.py` — the pure brain (fully tested).** `Selection` (frozen dataclass); reasons `STALE_INDEX` / `IMPACT_ERROR` / `EMPTY_SELECTION` / `SELECTED`; `is_index_fresh` (HEAD-equality, dirty ignored); `decide_selection`; a `HUB_FILES` denylist (`agent.py`, `mastery_service.py`, `database.py`, `model_runtime.py`, `registry.py`); `map_changes_to_tests` → `ChangeMap`; `plan_run`. The 12 red tests went green, and `test_tia_mapping.py` (16 more) was added — **28 structural tests total**, all asserting sentinels/enums/sets, zero live model.
-- **`backend/tia/gate.py` — the impure runner (thin I/O, reviewed not unit-tested).** Reads `node .gitnexus/run.cjs status` for indexed-vs-current commit, runs `git diff`, dispatches pytest.
+- **`backend/tia/gate.py` — the impure runner (thin I/O, reviewed not unit-tested).** Reads `code-review-graph status --json` for indexed-vs-current commit, runs `git diff`, dispatches pytest.
 - **`scripts/tia_gate.ps1` — the Windows launcher** (thin; all logic lives in `backend/tia/`).
 
 **The fail-safe ladder** — the load-bearing idea. TIA is an *optimization with a full-suite floor*, never a hole:
@@ -849,7 +849,7 @@ A **fast local pre-push pre-check** — run only the tests your diff can break, 
 #   in a story lane, diff against the epic branch instead: -Base epic/<key>-<slug>
 ```
 
-If the GitNexus index is behind HEAD (e.g. after pulling work committed on another machine), it prints `STALE_INDEX` and runs everything — re-index with `node .gitnexus/run.cjs analyze` to re-enable fast selective runs. (This gate operationalizes the standing rule in memory `gitnexus-verify-index-fresh-after-pull`.)
+If the graph index is behind HEAD (e.g. after pulling work committed on another machine), it prints `STALE_INDEX` and runs everything — refresh with `code-review-graph update` to re-enable fast selective runs. (This gate operationalizes the standing rule that a machine-local index must be re-verified after every pull.)
 
 ### The E2E journeys — how to run them
 
@@ -903,7 +903,7 @@ cd firebase/tests && npm test        # 61/61 green; non-vacuity via the emulator
 | **B1** | The coverage floor only ever ratchets **UP** | Set it above today's real number and every story fails the gate → people switch it off. |
 | **B2** | FAA adversarial fixtures are **human-authored/ratified** first | Regulatory judgment is Daniel's lane; verify against primary FAA sources, not memory (memory `domain-gated-fixtures-web-verify`). |
 | **B4** | Testing standards are **project-local**, not synced to the lobby | Prove it in AviationChat first; editing master `.agents/` auto-syncs everywhere — do **not** `/smh-sync-agents` on a hunch. |
-| **B5** | The TIA gate + eval-drift runner are **local, never CI** | The GitNexus index is machine-local/absent from a CI runner, and the live key stays off CI. The full suite remains the merge gate. |
+| **B5** | The TIA gate + eval-drift runner are **local, never CI** | The graph index is machine-local/absent from a CI runner, and the live key stays off CI. The full suite remains the merge gate. |
 
 ---
 
