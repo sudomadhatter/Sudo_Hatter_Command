@@ -108,7 +108,7 @@ which the law forbids — because the law offered nothing else to do. The fix is
 
 ---
 
-## Code Review (2026-08-22)
+## Code Review — round 1 (2026-08-22, v1 @ `141a6ff1`)
 
 review-runtime:  fan-out
 lenses_run:
@@ -130,24 +130,13 @@ notes:           Reviewed at 141a6ff1. All five lenses ran in clean contexts; no
                  (SAFE_PREFIXES, DENY_WORDS, ABS_PATH, REDIRECT, TEE, WRITE_OK, the git -C
                  scrape) plus one over-refusal that fails safe.
 
-**Verdict: CONCERNS @ `141a6ff1` → rewritten**
+**Round-1 verdict: CONCERNS @ `141a6ff1` → rewritten.** Every finding was fixed, but ⛔ **the code
+that would have shipped had never itself been hunted** — the `ESCAPES` block and the replay harness
+were builder-run evidence over the builder's own design, which is exactly what this lane proves
+misses things. CONCERNS therefore obliged a second fan-out against the rewrite. Round 2 is that
+fan-out, and it found two escape classes nobody would have found from the inside.
 
-**Why not PASS.** The engine's floor was `FAIL`, and the floor binds — a caller may report the floor
-or something more severe, never less. Every finding is fixed, the suite is 107/107, the sweep is
-15/15 and the floor is 44/44 — but **the code that now ships was never itself hunted by
-clean-context lenses.** The `ESCAPES` block and the replay harness are builder-run evidence, and
-this lane is the standing proof that builder-run evidence over one's own design is exactly what
-misses things: v1 passed 70/70 with its author's own mutation sweep clean, and still had twelve
-holes.
-
-**Why not FAIL.** Nothing known-broken is being carried, and the architecture that produced the
-twelve escapes is gone rather than patched.
-
-⛔ **What CONCERNS obliges before close-out:** re-run the lens fan-out against the rewrite. This is
-not a formality — the whole finding of this lane is that a hook granting permission must be reviewed
-by someone who did not design it.
-
-### Fixed in-lane
+### Fixed in-lane — round 1
 
 | Finding | Lens(es) | Fix |
 |---|---|---|
@@ -169,7 +158,7 @@ by someone who did not design it.
 | `.claude/settings.json` lost its trailing newline | all four | restored |
 | `.claude/hooks/INDEX.md` left unpaired with its master | Literal | re-paired |
 
-### Relevance kills (reported, not fixed — with the reason)
+### Relevance kills — round 1 (reported, not fixed, with the reason)
 
 - **Six Test-Adequacy findings** about untested constants — per-word `DENY_WORDS`, `SAFE_PREFIXES`
   widening, the `ABS_PATH` lookbehind, `tee`'s flag skip, `WRITE_OK` membership, `git`'s multi-`-C`
@@ -180,3 +169,92 @@ by someone who did not design it.
 - **Test-Adequacy: block WIRING's byte-identity check confounds hand mutation** of the master. Real,
   and kept deliberately: `sweep.json` filters by `--case` so the declared sweep is unaffected, and
   the check is the only thing that catches a stale deployed copy.
+
+---
+
+## Code Review — round 2 (2026-08-22, the rewrite @ `46a67bb6`)
+
+review-runtime:  fan-out
+lenses_run:
+- Blind Hunter · ok
+- Edge Case Hunter · ok
+- Literal-Correctness Hunter · ok
+- Acceptance Auditor · ok
+- Test-Adequacy Auditor · ok
+lenses_counted:  5/5
+lenses_na:       none
+findings:        0 decision · 14 patch · 0 defer   (0 noise-dismissed · 3 relevance kills)
+dispositions:    per-lens: Blind Hunter=4/0/1 · Edge Case Hunter=3/0/0 · Literal-Correctness Hunter=3/0/1 · Acceptance Auditor=2/0/1 · Test-Adequacy Auditor=2/0/0
+severity_floor:  FAIL
+notes:           Reviewed at 46a67bb6, in clean contexts, none degraded. The floor is FAIL on
+                 the reviewed sha: two NEW escape classes, both in the granting direction and
+                 both invisible to round 1's design because they are not deny-list holes —
+                 they are tokens the allow-list correctly recognises and correctly matches
+                 that still resolve outside. Every one is fixed at 7ba2d09.
+
+⭐ **The allow-list closed all twelve of round 1's escapes and opened a class of its own.** Both new
+findings share one shape: **a token that IS recognised as a path, DOES match the sandbox, and still
+lands outside it.** No amount of "is this argument in the sandbox?" reaches either one.
+
+| # | Escape | Lens(es) | Why the allow-list allowed it | Fix |
+|---|---|---|---|---|
+| 1 | `rm -rf /<sb>/../../../../../../Users/…/.agents` | Blind · Edge | The hook compares **strings**; the kernel resolves a **graph**. `SANDBOX_RE.match` stops at `scratchpad/` and never looks further, and the session pin passes because the real id genuinely is in the string. ⛔ **A regression I introduced** — v1 banned `..` outright and the rewrite dropped the ban without replacing it. | rule 5 — `posixpath.normpath` **before** matching, so the string the hook checks is the path the kernel will walk |
+| 2 | `ln -sf /<sb>/AGENTS.md` | Blind | One operand, no `..`, every argument legitimately inside the sandbox — and POSIX puts the link in the **CWD**, which `-f` unlinks first. The destination is never in the string, so **no argument inspection can see it.** | rule 6 — `ln` removed from `ALLOWED`, with the property to test before any future addition written beside it |
+| 3 | The session pin was **containment, not position** | Edge · Literal | Any string containing this session's id anywhere passed, and **a missing `session_id` downgraded to shape-only** — so a concurrent lane's scratchpad was writable. | one pattern built around the asking session, uid pinned to `os.getuid()`, and **no session id means no grant** |
+
+⛔ **The Test-Adequacy Auditor was the most useful lens and the most damning.** It hand-wrote 22
+mutants against the audited sha and **all 22 survived**. One root cause: every set in the hook was
+pinned by *examples*. **Adding `env` to `ALLOWED` left the entire suite green** — and `env` runs any
+binary, so the allow-list's whole guarantee was untested. `ALLOWED`, `FORBIDDEN` and `VALUE_FLAGS`
+are now pinned as **closed sets** imported from the module, with a positive case per member.
+
+It also caught two of my own tests being vacuous while looking rigorous, and one took **two** goes
+to fix: `cat X\nrm -rf .agents` and `cat X\nbash Y` both still refuse with `\n` removed from
+`FORBIDDEN`, because the second command's own token fails a *different* rule. The only shape that
+isolates rule 1 is one where the second command **is itself** a sandbox path — `cat X\n/<sb>/evil.sh`.
+
+### Fixed in-lane — round 2
+
+| Finding | Lens(es) | Fix |
+|---|---|---|
+| `..` traversal out of the sandbox (also inside a `--flag=` value) | Blind · Edge | `posixpath.normpath` before every match; block `TRAVERSAL`, incl. a positive case that an interior `..` staying inside is still allowed |
+| `ln`'s implicit CWD destination | Blind | `ln` off the allow-list; the comment states the property, not the instance |
+| Session pin was containment, and absent id fell back to shape-only | Edge · Literal | per-session compiled pattern, `os.getuid()`, no id → no grant |
+| 22 hand-written mutants all survived — sets pinned by example | Test-Adequacy | block `CLOSED`: `ALLOWED`, `FORBIDDEN`, `VALUE_FLAGS` asserted as closed sets against the imported module |
+| Sweep table did not reach the new rules | Test-Adequacy | table grown 15 → **23** mutants: normpath, boundary, uid, positional session, `#`/`\n` drops, `env`/`tar`/`ln` additions, `FLAG_RE` widening, the chmod mode slots |
+| `chmod <path> +x` allowed — my own fix for `chmod -R 755 X` | Literal (caught by existing block F) | `saw_mode` requires `not saw_path`, so the mode may only be a leading token |
+| Ordinary harness spelling refused (`chmod -R 755 X`, `head -n 5 X`, `tail -c 100 X`, `rm -rf -- X`) | Acceptance · Edge | value-flag slot + `--` handling; each is a prompt this hook exists to remove, so all four are pinned ALLOWED |
+| Two "non-vacuous" tests were vacuous | Test-Adequacy | rewritten until each isolates its own rule; the newline case needed a sandbox-path second command |
+| E2E measured the wrong tree | Literal | `run-hook.sh` reads `CLAUDE_PROJECT_DIR` before `cwd`; the test now passes it explicitly |
+| Probe-law clause selectors drifted from the new wording | Acceptance | `test_review_engine.py` re-pinned to `IS a user request` / `may not record a bare`; `cicd-dev-story-tests.md` added as a carrier without joining `CALLER_FILES` |
+
+### Relevance kills — round 2
+
+- **`bash /<sb>/x.sh` still runs agent-authored code.** Restated by two lenses. Out of scope by
+  design and stated in the docstring — writing into the scratchpad was never gated, so the script's
+  *contents* were never what this hook reviews.
+- **Over-refusal of legitimate non-sandbox work** (`grep -C 3 pat file`). Correct direction: it
+  falls through to the normal prompt, which is the pre-hook behaviour.
+- **No `task.yaml` manifest** (Acceptance). Close-out warns, does not fail; the artifact folder
+  carries the plan, the walkthrough and the sweep table.
+
+---
+
+## Verdict
+
+**Verdict: PASS @ `7ba2d09`**
+
+- **Both rounds' findings are fixed at the shipping sha**, and round 2's were fixed *after* being
+  found by lenses that did not design the code — which is precisely the obligation round 1's
+  CONCERNS imposed.
+- **The evidence is no longer builder-run over its own design.** Sixteen v1 escapes and nine
+  round-2 escapes are replayed as tests; the sweep is 23/23 killed with restore verified; the three
+  sets that carry the security guarantee are pinned closed, not by example.
+- **Gates at `7ba2d09`:** suite **163/163** · sweep **23/23 killed** · floor **48/48 files**
+  (`run_all.py`, 59/59 tests) · twin parity **65/65** · engine contract **868/868**.
+
+⚠️ **What PASS does not claim.** This hook grants permission, and its guarantee is *"every argument
+resolves inside a directory that dies with the session"* — not *"this command is safe"*. Running
+agent-authored scripts from the scratchpad is deliberately in scope for `allow`, and the two review
+rounds are the record of how much a permission-granting component gets wrong when only its author
+looks at it.

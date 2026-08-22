@@ -34,9 +34,9 @@ this touches is disposable". So the hook answers exactly that and nothing wider.
 | # | Statement | How it is checked |
 |---|---|---|
 | A1 | Emits `permissionDecision: allow` for one simple command whose executable is an allow-listed bare name and whose every non-flag token is an absolute path inside **this session's** scratchpad | `test_allow_scratchpad.py` block A, 11 real harness shapes |
-| A2 | Emits **nothing** for each of the four decline rules — a shell metacharacter · an executable that is not an allow-listed bare name · a non-flag token that is not a sandboxed absolute path · a path outside this session's scratchpad — **and for all twelve escapes the review reproduced against v1** | blocks B, C, D, E and ESCAPES |
+| A2 | Emits **nothing** for each of the four decline rules — a shell metacharacter · an executable that is not an allow-listed bare name · a non-flag token that is not a sandboxed absolute path · a path outside this session's scratchpad — **and for every escape the two review rounds reproduced** | blocks B, C, D, E, `ESCAPES` (16 v1 escapes) and `TRAVERSAL` (9 round-2 escapes) |
 | A3 | **Never** emits `ask` or `deny`, and always exits 0 — malformed, empty, null and non-Bash stdin are all SILENT, asserted as silence rather than merely not-`ask` | block G |
-| A4 | The suite fails when any of the hook's rule constants is mutated | `mutation_sweep.py` over `sweep.json` — 15 mutants, each killed by its declared case |
+| A4 | The suite fails when any of the hook's rule constants is mutated | `mutation_sweep.py` over `sweep.json` — 23 mutants, each killed by its declared case |
 | A5 | `.claude/settings.json` wires it **first** in the `PreToolUse` Bash matcher and dispatches it through `run-hook.sh` (never a named interpreter), and `.claude/hooks/` byte-matches the `.agents/hooks/` master | blocks WIRING and E2E, reading the real repo files |
 | A6 | `python3 .agents/scripts/tests/run_all.py` passes | the gate itself |
 | A7 | The lane's artifact folder holds an `implementation_plan.md` carrying a parsing `## Declared Change Set` and an audit verdict, and a `walkthrough.md` carrying a `Verdict:` line | `declared_change_set.py parse` exits clean; `/smh-close-task-merge-tree` preflight reads both |
@@ -99,7 +99,7 @@ chat, so the code preceded the ceremony. The test therefore passes green on firs
 
 **Superseded by the Amendment below.** v1's suite was a retrofit; v2's `ESCAPES` block is a
 genuine red — every one of its sixteen cases returned `allow` against the code that shipped as
-`8479bc8`, and they were written from reproductions the review lenses executed, not from
+`8479bc8`, and block `TRAVERSAL` is the same again against the rewrite at `46a67bb6`, and they were written from reproductions the review lenses executed, not from
 imagination. The mutation sweep remains the guard against vacuity for the rest of the suite.
 
 ## Landing-order dependency
@@ -260,8 +260,11 @@ is refused:
 4. **The sandbox is this SESSION's scratchpad**, pinned against the payload's `session_id` when one
    arrives, so one lane can no longer delete another's harness.
 
-**Evidence.** All 18 replayed escapes refused · all 11 real harness shapes still allowed · suite
-**107/107** · sweep **15/15 killed**, restore verified · full floor **44/44 files**.
+**Evidence at the shipping sha `7ba2d09`.** All **16 replayed v1 escapes** refused (block
+`ESCAPES`) · all **9 round-2 escapes** refused and the legal interior `..` still allowed (block
+`TRAVERSAL`) · all **15 real harness shapes** still allowed (block `A`) · suite **163/163** ·
+sweep **23/23 killed**, restore verified · full floor **48/48 files** · twin parity **65/65** ·
+engine contract **868/868**.
 
 ⭐ **The sweep earned its place twice over.** It rejected four of my own mutant attributions — three
 where a *different* rule caught the mutant first (so the declared case proved nothing about the
