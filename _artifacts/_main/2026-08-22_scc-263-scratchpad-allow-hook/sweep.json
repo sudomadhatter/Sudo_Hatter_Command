@@ -129,7 +129,7 @@
       "file": ".agents/hooks/allow-scratchpad.py",
       "original": "            if COUNT_RE.match(tok):",
       "mutated": "            if True:",
-      "case": "D · silent on a bare relative name",
+      "case": "D · silent on a path in a counting flag's value slot",
       "block": "rule 3 ·"
     },
     {

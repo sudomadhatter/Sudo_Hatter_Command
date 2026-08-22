@@ -187,6 +187,11 @@ def main() -> int:
             ("a system path as a write target", f"cp {SB}/x /usr/local/bin/gh"),
             ("a --flag= value outside", f"python3 {SB}/h.py --out={REPO}/x"),
             ("flags only, naming no subject", "ls -la"),
+            # ⛔ The value slot after a counting flag accepts DIGITS ONLY. Widen it to "anything"
+            # and it becomes a free pass for one arbitrary token per command — a path the walk
+            # never checks. Nothing else in this file isolates that slot.
+            ("a path in a counting flag's value slot", f"head -n /etc/passwd {SB}/x"),
+            ("a relative name in a counting flag's value slot", f"head -n .agents {SB}/x"),
         ]:
             _, out = call(cmd)
             c.check(f"D · silent on {label}", silent(out), out.strip()[:160])
