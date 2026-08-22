@@ -80,6 +80,21 @@ Then, per child, it applies the **grounding gate** in authority order — first 
 | 2. `plan` | `implementation_plan.md` | a declaration beats an intention |
 | 3. `story` | the story file's Dev Notes | the intention is all there is |
 
+<!-- twin-law: tests-only-diff-is-not-rung-1 -->
+⛔ **A TESTS-ONLY DIFF IS NOT RUNG 1 (SCC-259).** An assert-first lane commits its RED tests
+before a line of implementation exists, so `branch-diff` there is the test files and nothing
+else — a real touch-set that badly understates where the code is about to land. The script keeps
+those paths as a source, flags it `tests_only`, and ranks it **below** the rungs that can see
+further. A diff that is entirely planning artifacts was already excluded for the same reason
+(SCC-155 #16). A diff carrying any real source file stays rung 1.
+<!-- /twin-law -->
+
+⭐ **And rung 3 is read from the LANE BRANCH when the checkout has none (SCC-259).** ① writes the
+story file onto `claude/<KEY>-<slug>` and pushes; nothing merges to the epic until ③. Reading only
+the current checkout meant every story still in flight — which is every story you would ever label
+— came back `[NO-STORY]`, under a `next_command` telling you to create the file that already
+exists on the branch being labelled.
+
 **Umbrella children are excluded automatically** — a child whose BMAD number prefixes a sibling's
 (`12.3` over `12.3.4`, `12.3.7`) contains them rather than competing with them. It renders as a
 context line, never a verdict row. **Done children are excluded.** Both are the script's job, not

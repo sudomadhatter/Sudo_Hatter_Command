@@ -2695,6 +2695,22 @@ flowchart TD
     LATER["later: label_tasks.py check\nFRESH exit 0 · STALE exit 1 — re-run me"] -.-> S0
 ```
 
+**Three ways it used to answer confidently and wrongly, all fixed 2026-08-21 (SCC-259).**
+
+- **It could not see a story file that had not merged yet.** ① writes the story onto the lane branch
+  and pushes; nothing reaches the epic until ③. Grounding read only the current checkout, so every
+  story *still in flight* — which is every story you would ever ask about — came back `[NO-STORY]`,
+  telling you to go and write a file that already existed on the branch being labelled. It now reads
+  the lane's own branch when the checkout has none, the same way the Task lane already read its plan.
+- **A lane with only its RED tests written counted as "code written".** That is rung 1, the top of
+  the ladder, decided on a touch-set that is the test files and nothing else — which understates
+  where the code is actually about to land, and an understated touch-set is what manufactures a
+  false 🟢. A tests-only diff now keeps its paths but ranks *below* whatever can see further. **A
+  diff with any real source file in it is unaffected.**
+- **A lock named one blocker when four were declared.** You landed it, re-ran, and were told about
+  the next one — four rounds for an answer the engine already had. Worse, the row *read* like a
+  single dependency. 🔒 now names every blocker.
+
 #### /smh-plan-task
 
 *Plan a whole Task and its subtasks in one pass, so the parallel question can be answered before any

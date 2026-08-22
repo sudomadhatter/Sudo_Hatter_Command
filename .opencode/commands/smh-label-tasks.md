@@ -74,6 +74,15 @@ and grounding a label on a stale diff reads a lane as touching files it does not
 | 2. `plan` | the `implementation_plan.md` whose sibling `task.yaml` declares `task_key: <KEY>` | a declaration beats an intention |
 | 3. `ticket` | the Subtask's own description | the intention is all there is — **weakest rung**, and rule 3 governs its ambiguity |
 
+<!-- twin-law: tests-only-diff-is-not-rung-1 -->
+⛔ **A TESTS-ONLY DIFF IS NOT RUNG 1 (SCC-259).** An assert-first lane commits its RED tests
+before a line of implementation exists, so `branch-diff` there is the test files and nothing
+else — a real touch-set that badly understates where the code is about to land. The script keeps
+those paths as a source, flags it `tests_only`, and ranks it **below** the rungs that can see
+further. A diff that is entirely planning artifacts was already excluded for the same reason
+(SCC-155 #16). A diff carrying any real source file stays rung 1.
+<!-- /twin-law -->
+
 ⭐ **The plan is joined by DECLARATION, never by slug.** A Task lane's artifacts folder is
 `<date>_<slug>` with no key in it, so the join is the `task.yaml` manifest every lane already
 writes — the same declaration `check_gate` governs on. The match is exact: `SCC-146`'s manifest

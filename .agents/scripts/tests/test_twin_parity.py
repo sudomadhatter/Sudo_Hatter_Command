@@ -175,6 +175,12 @@ FENCED_TODAY = (
     # ported once and left to drift again - which is the failure the whole ticket exists to close.
     "cicd-quick-dev.md", "smh-quick-dev.md",                 # twin-law: review-runtime-probe
     "cicd-merge-epic-workingtrees.md", "smh-merge-multiple-workingtrees.md",  # twin-law: merge-empty-set-stop, merge-machinery-last, merge-cross-repo-order
+    # SCC-259 joined this pair. The demotion lives in `label_tasks.py`, which BOTH doors
+    # read, and both published the old ranking as law - ship one without the other and the
+    # door contradicts its own engine. ⛔ Only the tests-only rule is fenced: rung 3 differs
+    # by mode (a story file vs the Subtask description) and stories are APP work, so the
+    # branch-read note is cicd-only on purpose and must never be mirrored here.
+    "cicd-label-tasks.md", "smh-label-tasks.md",             # twin-law: tests-only-diff-is-not-rung-1
 )
 
 LAW_OPEN = re.compile(r"^<!-- twin-law:\s*([a-z0-9-]+)\s*-->$", re.M)
