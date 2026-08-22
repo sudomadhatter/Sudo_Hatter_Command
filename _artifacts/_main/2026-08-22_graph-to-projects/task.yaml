@@ -1,0 +1,6 @@
+task_key: SCC-288
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-288-graph-to-projects
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: [SCC-289, SCC-290, SCC-291]
