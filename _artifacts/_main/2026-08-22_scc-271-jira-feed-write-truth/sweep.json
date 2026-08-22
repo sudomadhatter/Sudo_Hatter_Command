@@ -1,0 +1,48 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+  ],
+  "mutants": [
+    {
+      "id": "M1 · revert B1 — falsify against the PRE-write snapshot again, so the placeholder this command itself replaced reads as data loss",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    lost = [ln for ln in keep if ln.strip() and ln.strip() in intended\n            and ln.strip() not in seen_now]",
+      "mutated": "    lost = [ln for ln in keep if ln.strip() and ln.strip() not in seen_now]",
+      "case": "index-row: ...and does NOT cry data loss over the placeholder",
+      "block": "SCC-271 index-row"
+    },
+    {
+      "id": "M2 · gut B1's teeth the other way — treat EVERY prior line as expendable, so a genuinely dropped row is blessed",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    lost = [ln for ln in keep if ln.strip() and ln.strip() in intended\n            and ln.strip() not in seen_now]",
+      "mutated": "    lost = []",
+      "case": "index-row: a REAL dropped line on a fresh index is still caught",
+      "block": "SCC-271 index-row"
+    },
+    {
+      "id": "M3 · stop REPORTING the deliberate replacement — the write is correct but the deletion is invisible",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    note = (f\" · replaced the INDEX placeholder `{dropped[0].strip()[:60]}`\"\n            if dropped else \"\")",
+      "mutated": "    note = \"\"",
+      "case": "index-row: ...and the deliberate replacement is REPORTED, not silent",
+      "block": "SCC-271 index-row"
+    },
+    {
+      "id": "M4 · revert B2 — let --append-new forge a second record under the same id again",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    if prior and args.append_new:\n        wf.die(",
+      "mutated": "    if False and prior and args.append_new:\n        wf.die(",
+      "case": "--append-new over a MATCHING prior is refused (exit 2)",
+      "block": "SCC-271 devrecord"
+    },
+    {
+      "id": "M5 · over-fire B2 — refuse --append-new even with NO prior record, breaking the legitimate second-lane path",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    if prior and args.append_new:\n        wf.die(",
+      "mutated": "    if args.append_new:\n        wf.die(",
+      "case": "control: --append-new with NO prior record still creates",
+      "block": "SCC-271 devrecord"
+    }
+  ]
+}
