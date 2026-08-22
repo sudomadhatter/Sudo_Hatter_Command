@@ -58,6 +58,15 @@ def main() -> int:
                 )
                 readme.write_text(original, encoding="utf-8")
 
+                readme.write_text(original + '\nRun ["/sudo-tour"] now.\n', encoding="utf-8")
+                quoted_retired_findings = validate(target)
+                c.check(
+                    "quoted Markdown retired-command mutant is killed",
+                    any("retired /sudo" in finding for finding in quoted_retired_findings),
+                    " | ".join(quoted_retired_findings[:8]),
+                )
+                readme.write_text(original, encoding="utf-8")
+
                 active_jira = target / ".agents" / "jira.conf"
                 active_jira.write_text('JIRA_KEYS="SCC"\n', encoding="utf-8")
                 jira_findings = validate(target)
@@ -68,7 +77,67 @@ def main() -> int:
                 )
                 active_jira.unlink()
 
-    if c.block("B · obsolete two-export source is gone"):
+                mcp_files = (
+                    target / ".mcp.json",
+                    target / ".opencode" / "mcp.json",
+                    target / ".antigravity" / "mcp.json",
+                )
+                mcp_text = "\n".join(
+                    path.read_text(encoding="utf-8") for path in mcp_files if path.is_file()
+                )
+                c.check(
+                    "exported MCP workspaces are clone-relative",
+                    mcp_text.count("--workspace=.") == len(mcp_files)
+                    and "/Users/" not in mcp_text,
+                    mcp_text,
+                )
+
+    if c.block("B · leak matcher is literal, boundary-safe, and mutation-proven"):
+        proc = subprocess.run(
+            ["pwsh", "-NoProfile", "-File", str(exporter), "-SelfTestLeakMatcher"],
+            cwd=REPO,
+            capture_output=True,
+            text=True,
+            errors="replace",
+        )
+        transcript = (proc.stdout or "") + (proc.stderr or "")
+        c.check(
+            "leak matcher self-test passes",
+            proc.returncode == 0 and "LEAK MATCHER SELF-TEST VALID (5/5)" in transcript,
+            transcript,
+        )
+
+        original_exporter = exporter.read_text(encoding="utf-8")
+        mutants = {
+            "git-prefix boundary mutant is killed": original_exporter.replace(
+                "$candidatePath.StartsWith($directoryPrefix, [StringComparison]::OrdinalIgnoreCase)",
+                "$candidatePath.StartsWith($directoryPath, [StringComparison]::OrdinalIgnoreCase)",
+                1,
+            ),
+            "wildcard-secret matcher mutant is killed": original_exporter.replace(
+                "return $Text.IndexOf($Needle, [StringComparison]::OrdinalIgnoreCase) -ge 0",
+                'return $Text -like "*$Needle*"',
+                1,
+            ),
+        }
+        with TempDir() as temp:
+            for label, mutant in mutants.items():
+                mutant_path = temp / (label.split()[0] + ".ps1")
+                mutant_path.write_text(mutant, encoding="utf-8")
+                mutant_proc = subprocess.run(
+                    ["pwsh", "-NoProfile", "-File", str(mutant_path), "-SelfTestLeakMatcher"],
+                    cwd=REPO,
+                    capture_output=True,
+                    text=True,
+                    errors="replace",
+                )
+                c.check(
+                    label,
+                    mutant != original_exporter and mutant_proc.returncode != 0,
+                    (mutant_proc.stdout or "") + (mutant_proc.stderr or ""),
+                )
+
+    if c.block("C · obsolete two-export source is gone"):
         c.check(
             "retired skeleton manifest absent",
             not (SCRIPTS / "teaching-edition" / "skeleton.manifest.json").exists(),

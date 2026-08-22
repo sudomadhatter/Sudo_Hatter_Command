@@ -18,7 +18,7 @@ of `—` means the page recorded the ticket but not the day; the ticket's sessio
 
 | Date | Ticket | What changed for the operator |
 |---|---|---|
-| 2026-08-22 | SCC-280 | The teaching edition now enters through `/smh-tour` and `/smh-training`; the tour reads this SOP live, asks for the command-center and first-project names, and clones the paired `sudo-project-skeleton` into `Projects/<name>`. A fresh shell has no Jira board or active binding. |
+| 2026-08-22 | SCC-280 | The teaching edition now enters through `/smh-tour` and `/smh-training`; the tour reads this SOP live, asks for the command-center and first-project names, and clones the paired `sudo-project-skeleton` into `Projects/<name>`. A fresh shell has no Jira board or active binding. Review fixes make training reversible after `off`, resolve archive roots from the SOP, bind optional Jira inside the named project, and harden the leak scan against `.git*` prefix and wildcard-secret bypasses. |
 | 2026-08-22 | SCC-267 | The scratchpad allow-hook no longer crashes on Windows — the uid was read at import, outside its own fail-safe wrapper, so it exited 1 with a traceback on every Bash call there. Nothing that can raise runs at module level now. |
 | 2026-08-22 | SCC-267 | The scratchpad root is per-machine (a gitignored `scratchpad-root` file under `.claude/`, root only — the session-pinned shape is unchanged). Setup guide added under `docs/migrations/install_guides/`. |
 | 2026-08-22 | SCC-263 | `allow-scratchpad.py`: a `PreToolUse` hook auto-allows the narrow shape of Bash command that can only touch this session's scratchpad, so a review stops asking twenty-odd times to run its own throwaway harness. Allow-list of shapes; two legal outputs, `allow` or silence. Lobby-only, Mac-only. |

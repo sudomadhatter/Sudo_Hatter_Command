@@ -190,6 +190,7 @@ checks are explicit:
 - NEW `.agents/scripts/export-teaching-edition.ps1` — current one-shell export, portable map generation, blocking validation → 4, 6
 - NEW `.agents/scripts/validate_teaching_edition.py` — reusable exported-shell validator → 2, 3, 4, 6
 - NEW `.agents/scripts/tests/test_teaching_edition.py` — fresh-export contract and mutants → 2, 3, 4, 5, 6
+- EDIT `.agents/scripts/tests/test_twin_parity.py` — classify both teaching-only `smh-*` commands as intentionally unpaired → 5, 6
 - NEW `.agents/scripts/teaching-edition/lobby.manifest.json` — current include/exclude/transform/leak contract → 3, 4
 - NEW `.agents/scripts/teaching-edition/replacements/lobby-README.md` — naming, empty shell, named skeleton clone, first-project/Jira onboarding → 3, 4
 - NEW `.agents/scripts/teaching-edition/replacements/jira-conf.example` — generic optional binding only → 3, 4
@@ -294,6 +295,44 @@ non-overlapping paths may begin after approval; final acceptance and push wait f
 SOP and overlapping indexes to be merged and re-gated.
 
 Audit verdict: GO
+
+## Implementation Amendment — full-suite completion findings
+
+The first receipt-backed full run at `e35165bf` passed 48 of 50 test files and exposed two contained
+omissions:
+
+1. `_artifacts/_main/2026-08-22_teaching-edition-refresh/` lacked its required row in
+   `_artifacts/_main/INDEX.md`.
+2. `test_twin_parity.py` correctly rejected the new `/smh-tour` and `/smh-training` commands because
+   neither was in a pinned pair nor declared intentionally unpaired. Both are command-center teaching
+   doors with no child-project `cicd-*` equivalent, so the fix records that subject boundary in
+   `NOT_PAIRED` rather than inventing fake twins.
+
+The remaining `test_check_maps.py` failure occurred only because the sandbox denied creation of its
+temporary Git worktree. The same test is rerun with Git metadata access; no product assertion is
+waived. This amendment directly completes acceptance rows 5 and 6 and does not change the approved
+teaching/export behavior.
+
+## Review-Driven Amendment — exported-shell failures
+
+The first standard fan-out at `e35165bf` returned nine unique, reproducible failures. Three independent
+lenses converged on the highest-risk paths, so these are patched before any verdict:
+
+1. The leak scan's `.git` prefix check also skipped `.githooks`, `.gitignore`, and `.gitattributes`.
+2. Literal secrets containing PowerShell wildcard characters bypassed the `-like` scan.
+3. `/smh-training on` depended on a source replacement file the manifest deliberately excludes.
+4. `/smh-training` could not resolve an archive-opened shell without Git metadata.
+5. The retired-command regex missed quoted and Markdown-link command forms.
+6. Optional Jira instructions copied the project example to the lobby-relative destination.
+7. Three exported MCP configs retained the source machine's absolute workspace path.
+8. The exported README told owners to run the source repository's full suite, which cannot pass in the
+   intentionally thinned shell.
+9. The exported scripts index presented the source-only exporter as locally available.
+
+The fixes stay within the declared teaching/export surfaces. The leak matcher now has an executable
+five-case self-test plus two source mutants that must fail; the real-export contract adds quoted-command,
+clone-relative MCP, generated-validator, project-local Jira, and reversible-training assertions. The
+final gate and final review are measured only after these patches and regenerated platform doors land.
 
 ## Approval
 

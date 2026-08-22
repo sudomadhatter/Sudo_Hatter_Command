@@ -68,9 +68,10 @@ printed wiring steps: placeholders, localized repo map, and a routing row. Do no
 create/publish a GitHub repository without the owner's separate authorization.
 
 Jira remains optional. Only after this project actually has its own Jira site/project/board should the
-owner copy `.agents/jira.conf.example` to `.agents/jira.conf`, set that project's key, and arm its
-repo-local enforcement marker. Checkpoint: `Projects/<name>/AGENTS.md` exists, its local git history
-starts with the scaffold commit, and `router.md` reaches it.
+owner copy `Projects/<name>/.agents/jira.conf.example` to
+`Projects/<name>/.agents/jira.conf`, set that project's key, and arm its repo-local enforcement
+marker. Checkpoint: `Projects/<name>/AGENTS.md` exists, its local git history starts with the scaffold
+commit, and `router.md` reaches it.
 
 ## Stop 3 — choose the right lane
 

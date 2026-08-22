@@ -152,6 +152,8 @@ NOT_PAIRED = {
     "smh-update-maps-indexes.md": _ONE_SUBJECT + " (repo maps + INDEX reconciliation)",
     "smh-memory-audit.md": _ONE_SUBJECT + " (audits the shared memory store)",
     "smh-new-project.md": _ONE_SUBJECT + " (scaffolds a new project)",
+    "smh-tour.md": _ONE_SUBJECT + " (teaches command-center onboarding and project routing)",
+    "smh-training.md": _ONE_SUBJECT + " (toggles the command-center-only teaching mode)",
     "smh-slash-command-updating.md": _ONE_SUBJECT + " (authoring the command surface itself)",
     "smh-adviser-board.md": _ONE_SUBJECT + " (multi-voice advisory board)",
     "smh-review.md": _ONE_SUBJECT + " (ad-hoc read-only review)",

@@ -23,8 +23,9 @@ git clone https://github.com/sudomadhatter/sudo-command-center.git <chosen-comma
 cd <chosen-command-center-name>
 ```
 
-If you downloaded an archive, rename the extracted folder before opening it. This chooses the local
-folder identity; it does not perform a repository-wide source rewrite.
+If you downloaded an archive for inspection, rename the extracted folder before opening it. The tutor
+can find the shell from its live SOP without Git metadata; branch, sync, and shipping workflows still
+require a real clone. The folder name chooses local identity and does not rewrite source files.
 
 ## 2. Verify the basics
 
@@ -35,7 +36,7 @@ Codex, opencode, or Antigravity/Gemini. GitHub CLI is needed when you later crea
 git --version
 pwsh --version
 python3 --version                 # Windows may use: python --version
-python3 .agents/scripts/tests/run_all.py
+python3 .agents/scripts/validate_teaching_edition.py .   # Windows may use: python
 ```
 
 The root `.env.example` lists optional command-center integrations. Copy it to `.env` only for values
@@ -68,7 +69,8 @@ so its commit gate does not demand a board that does not exist.
 
 When you create a Jira site/project/board for that project:
 
-1. Copy the project's `.agents/jira.conf.example` to `.agents/jira.conf`.
+1. Copy `Projects/<name>/.agents/jira.conf.example` to
+   `Projects/<name>/.agents/jira.conf`.
 2. Replace the placeholder site/key with that project's values.
 3. Add the workflow columns the SOP describes, including `To Do Next` if you want operator ranking.
 4. Arm that project's repo-local Jira enforcement marker only after the board works.

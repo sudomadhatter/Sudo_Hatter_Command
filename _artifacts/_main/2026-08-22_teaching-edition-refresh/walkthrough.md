@@ -54,14 +54,14 @@ could not enumerate the current hidden-file tree, and the generated shell failed
 contract. After implementation, a fresh export produced:
 
 ```text
-Copied files: 2665
-Excluded paths: 22
+Copied files: 2666
+Excluded files: 49
 Created empty directories: 4
-Identity substitutions: 4872 across 321 files
+Identity substitutions: 4886 across 322 files
 Replacement transforms: 6
-Leak scan: 38 needles, 0 hits
+Leak scan: 39 needles, 0 hits
 TEACHING EDITION VALID
-test_teaching_edition.py: 7/7 passed
+test_teaching_edition.py: 12/12 passed
 ```
 
 The same test injects two bad states into otherwise-valid exports. A retired `/sudo-tour` reference
@@ -76,13 +76,13 @@ and an active `.agents/jira.conf` binding are both rejected, proving the validat
 | 3 | Pass | Real export asserts the clone destination syntax, project-name prompt, exact skeleton URL/destination, empty `Projects/`, no active Jira binding, and optional Jira path. |
 | 4 | Pass | Real export, zero-history assertion, 38-needle leak scan, manifest inventory, and removed second-export path. |
 | 5 | Pass | `sync-agents.ps1 -Status` clean; `test_command_surfaces.py` 185/185; retired doors absent. |
-| 6 | Pending final full gate | Focused test 7/7, SOP test 61/61, toolkit lint 0 errors/0 warnings, Python compile and JSON parse green. Full receipt and review follow the last content commit. |
+| 6 | Pending final full gate | Focused test 12/12, SOP test 61/61, toolkit lint 0 errors/0 warnings, Python compile and JSON parse green. Full receipt and review follow the last content commit. |
 
 ## Evidence
 
 | Check | Result |
 |---|---|
-| `python3 .agents/scripts/tests/test_teaching_edition.py` | 7/7 passed, including both negative controls |
+| `python3 .agents/scripts/tests/test_teaching_edition.py` | 12/12 passed, including retired-command, active-Jira, Git-prefix, and wildcard-secret negative controls |
 | `python3 .agents/scripts/tests/test_command_surfaces.py` | 185/185 passed |
 | `python3 .agents/scripts/tests/test_sops_prds_folder.py` | 61/61 passed |
 | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | 0 errors, 0 warnings; 8 informational BOM notices |
@@ -90,6 +90,30 @@ and an active `.agents/jira.conf` binding are both rejected, proving the validat
 | `python3 -m py_compile ...` | Validator and teaching-edition test compile |
 | manifest JSON parse | Valid |
 | `git diff --check origin/main` | Clean |
+
+The first receipt-backed full run passed 48/50 files and found two completion omissions rather than
+being reported green: the missing `_artifacts/_main/INDEX.md` row and missing twin-parity declarations
+for the two teaching-only `smh-*` commands. Both were corrected in this lane. Its other map-test
+failure was the restricted sandbox refusing the test's temporary Git worktree; the test and full
+suite are rerun with Git metadata access after the corrections.
+
+## Review fixes before the final verdict
+
+The first clean-room fan-out found nine unique failures. All passed the relevance gate because each
+reproduced a wrong export, a dead advertised command, or false privacy evidence; all were fixed in this
+lane:
+
+| Surface | Reproduced failure | Applied disposition |
+|---|---|---|
+| exporter `.git` skip | `.githooks`/`.gitignore` were skipped by a raw prefix | directory-boundary matcher plus mutation-killed self-test |
+| exporter literal scan | bracket-bearing secrets were interpreted as wildcard patterns | ordinal literal matcher plus mutation-killed self-test |
+| `/smh-training on` | its restore template was excluded from the product | self-contained sentinel creation |
+| archive root | `git rev-parse` failed before any training action | live-SOP upward fallback; Git checkout behavior retained |
+| retired-command validator | quotes and Markdown brackets bypassed the regex | URL-safe negative-lookbehind matcher plus real export mutant |
+| Jira onboarding | relative destination could bind the lobby | both paths explicitly use `Projects/<name>/.agents/` |
+| MCP configs | source-machine absolute workspace survived | exact-root substitution to `--workspace=.` plus export assertion |
+| README verification | source full suite fails in a deliberately thin shell | generated stdlib validator ships and is the documented gate |
+| scripts index | source-only exporter looked available in the product | explicit source-only inventory label; product validator retained |
 
 ## Task Checklist
 

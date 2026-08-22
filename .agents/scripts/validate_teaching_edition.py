@@ -16,6 +16,7 @@ from pathlib import Path
 PRIVATE_LITERALS = (
     "Daniel",
     "dlohneiss",
+    "sudo" + "hatter",
     "AviationChat",
     "NEXgen",
     "Sudo_Hatter_Command",
@@ -36,6 +37,7 @@ REQUIRED_PATHS = (
     ".agents/commands/smh-tour.md",
     ".agents/commands/smh-training.md",
     ".agents/rules/training-mode.md",
+    ".agents/scripts/validate_teaching_edition.py",
     ".agents/jira.conf.example",
     ".agents/skills/smh-tour/SKILL.md",
     ".agents/skills/smh-training/SKILL.md",
@@ -109,6 +111,10 @@ def validate(root: Path) -> list[str]:
     for token in readme_needs:
         if token not in readme:
             errors.append(f"README missing onboarding contract: {token}")
+    if "validate_teaching_edition.py ." not in readme or "tests/run_all.py" in readme:
+        errors.append("README does not use the generated shell's own validation gate")
+    if "Projects/<name>/.agents/jira.conf" not in readme:
+        errors.append("README does not bind optional Jira inside the named project")
 
     training = _text(root / ".agents/rules/training-mode.md", errors)
     if "docs/_scc_sops_prds/workflows_testing_SOP.md" not in training:
@@ -130,13 +136,15 @@ def validate(root: Path) -> list[str]:
     ):
         if token not in tour:
             errors.append(f"tour missing current workflow hand-off: {token}")
+    if "Projects/<name>/.agents/jira.conf" not in tour:
+        errors.append("tour does not bind optional Jira inside the named project")
 
     for rel in LIVE_TUTOR_FILES:
         path = root / rel
         if not path.is_file():
             continue
         text = _text(path, errors)
-        if re.search(r"(?:^|[\s`(])\/sudo-[a-z]", text, flags=re.MULTILINE):
+        if re.search(r"(?<![A-Za-z0-9])\/sudo-[a-z]", text, flags=re.MULTILINE):
             errors.append(f"live tutor surface teaches retired /sudo-* command: {rel}")
         if "main_debug" in text:
             errors.append(f"live tutor surface teaches retired main_debug branch: {rel}")
@@ -146,6 +154,16 @@ def validate(root: Path) -> list[str]:
         errors.append("Jira example is not an inert site/key template")
     if 'JIRA_KEYS="SCC"' in example or "sudo-command.atlassian.net" in example:
         errors.append("Jira example leaks the source command center binding")
+
+    training_command = _text(root / ".agents/commands/smh-training.md", errors)
+    if "walk upward from the current directory" not in training_command:
+        errors.append("training control has no archive-safe command-center root fallback")
+    if "source export machinery is deliberately absent" not in training_command:
+        errors.append("training control cannot recreate its sentinel without source export files")
+
+    scripts_index = _text(root / ".agents/scripts/INDEX.md", errors)
+    if "source distribution only; absent from the generated shell" not in scripts_index.lower():
+        errors.append("exported scripts index presents the source-only exporter as available")
 
     for path in root.rglob("*"):
         if not path.is_file() or ".git" in path.parts:

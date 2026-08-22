@@ -30,15 +30,52 @@
     .\export-teaching-edition.ps1 -Manifest .agents/scripts/teaching-edition/lobby.manifest.json `
                                   -Target ../sudo-command-center -WhatIf
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Export')]
 param(
-    [Parameter(Mandatory)][string]$Manifest,
-    [Parameter(Mandatory)][string]$Target,
-    [switch]$WhatIf
+    [Parameter(Mandatory, ParameterSetName = 'Export')][string]$Manifest,
+    [Parameter(Mandatory, ParameterSetName = 'Export')][string]$Target,
+    [Parameter(ParameterSetName = 'Export')][switch]$WhatIf,
+    [Parameter(Mandatory, ParameterSetName = 'LeakMatcherSelfTest')][switch]$SelfTestLeakMatcher
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+
+function Test-LiteralContains {
+    param([AllowNull()][string]$Text, [AllowNull()][string]$Needle)
+    if ([string]::IsNullOrEmpty($Text) -or [string]::IsNullOrEmpty($Needle)) { return $false }
+    return $Text.IndexOf($Needle, [StringComparison]::OrdinalIgnoreCase) -ge 0
+}
+
+function Test-IsWithinDirectory {
+    param([string]$Candidate, [string]$Directory)
+    $candidatePath = [System.IO.Path]::GetFullPath($Candidate)
+    $directoryPath = [System.IO.Path]::TrimEndingDirectorySeparator(
+        [System.IO.Path]::GetFullPath($Directory)
+    )
+    $directoryPrefix = $directoryPath + [System.IO.Path]::DirectorySeparatorChar
+    return $candidatePath.Equals($directoryPath, [StringComparison]::OrdinalIgnoreCase) -or
+        $candidatePath.StartsWith($directoryPrefix, [StringComparison]::OrdinalIgnoreCase)
+}
+
+if ($SelfTestLeakMatcher) {
+    $probeRoot = Join-Path ([System.IO.Path]::GetTempPath()) 'teaching-export-probe'
+    $probeGit = Join-Path $probeRoot '.git'
+    $cases = @(
+        @('real .git child is skipped', (Test-IsWithinDirectory (Join-Path $probeGit 'config') $probeGit), $true),
+        @('.githooks is scanned', (Test-IsWithinDirectory (Join-Path $probeRoot '.githooks/hook.ps1') $probeGit), $false),
+        @('.gitignore is scanned', (Test-IsWithinDirectory (Join-Path $probeRoot '.gitignore') $probeGit), $false),
+        @('bracket secret matches literally', (Test-LiteralContains 'prefix secret[abc]token123 suffix' 'secret[abc]token123'), $true),
+        @('bracket secret is not a wildcard', (Test-LiteralContains 'prefix secretatoken123 suffix' 'secret[abc]token123'), $false)
+    )
+    $failed = @($cases | Where-Object { $_[1] -ne $_[2] })
+    if ($failed.Count -gt 0) {
+        $failed | ForEach-Object { Write-Error "Leak matcher self-test failed: $($_[0])" }
+        throw "Leak matcher self-test failed ($($failed.Count)/$($cases.Count))"
+    }
+    Write-Host "LEAK MATCHER SELF-TEST VALID ($($cases.Count)/$($cases.Count))"
+    return
+}
 
 # --- load -------------------------------------------------------------------------------
 
@@ -341,7 +378,7 @@ if ($scanRoot -and (Test-Path -LiteralPath $scanRoot)) {
     $scannedGitRepo = Test-Path -LiteralPath $gitDir
 
     foreach ($file in Get-ChildItem -LiteralPath $scanRoot -Recurse -File -Force) {
-        if ($file.FullName.StartsWith($gitDir, [StringComparison]::OrdinalIgnoreCase)) { continue }
+        if (Test-IsWithinDirectory $file.FullName $gitDir) { continue }
         $rel = $file.FullName.Substring($scanRoot.Length).TrimStart('\', '/')
 
         # PATHS are scanned, not only contents. The substitution pass rewrites what is INSIDE
@@ -351,7 +388,7 @@ if ($scanRoot -and (Test-Path -LiteralPath $scanRoot)) {
         # past this guard and into a pushed repo.
         $relSlash = $rel -replace '\\', '/'
         foreach ($n in $needles) {
-            if ($relSlash -like "*$n*") { $hits += "$rel  PATH contains: $n" }
+            if (Test-LiteralContains $relSlash $n) { $hits += "$rel  PATH contains: $n" }
         }
         foreach ($n in $wordNeedles) {
             if ($relSlash -match ('\b' + [regex]::Escape($n) + '\b')) {
@@ -362,7 +399,7 @@ if ($scanRoot -and (Test-Path -LiteralPath $scanRoot)) {
         $text = Get-Content -LiteralPath $file.FullName -Raw -ErrorAction SilentlyContinue
         if (-not $text) { continue }
         foreach ($n in $needles) {
-            if ($text -like "*$n*") { $hits += "$rel  contains: $n" }
+            if (Test-LiteralContains $text $n) { $hits += "$rel  contains: $n" }
         }
         foreach ($n in $wordNeedles) {
             if ($text -match ('\b' + [regex]::Escape($n) + '\b')) {
