@@ -18,6 +18,13 @@ of `—` means the page recorded the ticket but not the day; the ticket's sessio
 
 | Date | Ticket | What changed for the operator |
 |---|---|---|
+| 2026-08-21 | SCC-260 | Every command that invokes `bmad-create-story` names `_bmad/bmm/stories/` beside the invocation, so BMAD's own default output path cannot win by silence. BMAD itself is not edited or overridden. |
+| 2026-08-21 | SCC-259 | `/cicd-label-tasks` + `/smh-label-tasks`: grounding reads the lane's own branch when the checkout has no story file; a tests-only diff keeps its paths but ranks below whatever can see further; 🔒 names every declared blocker instead of the first. |
+| 2026-08-21 | SCC-258 | `jira_feed.py mint` reusing a ticket tests for the render trailer, not the description's length — a hand-typed note gets its outline and is kept underneath under `PREVIOUS NOTE`. `outline` accepts `--jira-project` for flag parity with `mint`. |
+| 2026-08-21 | SCC-257 | `jira_feed.py` reads a section to the next heading of its **own** level, so acceptance criteria grouped under `### Theme …` sub-headings render in full instead of coming back as "(none found in the story file)". |
+| 2026-08-21 | SCC-256 | ① cuts the story tree with the epic ref as an operand, so the shared checkout stays on `main`; the HEAD precondition is scoped to the `EnterWorktree` door, which inherits HEAD, and now names the trip back. |
+| 2026-08-21 | SCC-255 | `link-worktree-assets.py` asks git where the checkout is instead of guessing from the path, so a **submodule** links its assets; a repo it cannot resolve refuses and names the path, and a verified repo with genuinely nothing to link says so. |
+| 2026-08-21 | SCC-254 | `/cicd-boot-sprint-memory` Step 2b reads `sprint-status.yaml` off the epic branch as well as the checkout, reports a disagreement instead of picking silently, and falls back to the checkout copy when the project is between epics. |
 | 2026-08-21 | — | The SOP de-cluttered: the page states the current system in present tense; the change story moved here; `sop-currency.md` habit 4 codifies the shape. Navigation added — a per-command jump table opens §18, and every Part ends with a back-to-Contents link. |
 | 2026-08-21 | SCC-246 | A memory written during a lane is copied into the lane's worktree and rides its PR; the shared checkout is restored (authorship still protects other sessions' memory). |
 | 2026-08-21 | SCC-245 | Ninth speaking obligation (FLOOR): close the loop — a reply never ends on a new problem; a finding without a fix is a bill. |

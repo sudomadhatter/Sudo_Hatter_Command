@@ -501,8 +501,17 @@ anything.**
 
 ▶ **Diagram:** [`/cicd-write-story-tests` in the command atlas](#cicd-write-story-tests) — every step, stop and refusal, checked against the live command.
 
-**What it leaves you:** a story file carrying `jira_key:`, a locked behavior contract, and tests that
-fail. Failing is the point — a test that has never failed proves nothing.
+**What it leaves you:** a story file under `_bmad/bmm/stories/` carrying `jira_key:`, a locked
+behavior contract, and tests that fail. Failing is the point — a test that has never failed proves
+nothing. The story directory is named at every call site on purpose: the underlying BMAD skill
+defaults somewhere else, and nothing in this system is edited inside BMAD to change that.
+
+**Opening the story tree does not move your shared checkout.** The tree is cut with the epic ref
+named as an operand — `git worktree add <path> -b claude/<KEY>-<story-slug> origin/epic/<KEY>-<slug>`
+— so nothing has to be checked out first and the shared checkout stays on `main`, where every later
+`git status`, `worktree add` and boot expects to find it. The one exception is the `EnterWorktree`
+door, which inherits the current HEAD by configuration: take that door and you check the epic branch
+out first and go **straight back to `main`** once the tree is open.
 
 **⛔ It does not rule `parallel-ok`** — that is `/cicd-label-tasks`' job, for the reason above.
 
@@ -1335,16 +1344,13 @@ The linker also finds assets **one folder down** (`backend/.env`, `frontend/node
 AGY layout); before that fix it looked only at the repo root and would have quietly linked almost
 nothing there.
 
-**And it now tells you the difference between "found nothing" and "looked in the wrong place"
-(SCC-255).** Opening an AGY lane, the linker used to report *nothing to link* over a checkout that
-obviously has a `backend/.venv`. AGY is a submodule, and a submodule keeps its history somewhere
-else — under the parent's `.git/modules/` — so the linker was scanning that bookkeeping folder
-instead of AGY itself. It found nothing, said so, and looked like a success. Every AGY lane opened
-after that started without its keys or its Python environment, and the first thing to fail was a
-test, several steps later, for no visible reason.
-
-It now asks git where the checkout is rather than guessing from the path, so submodules work. Two
-things you'll see:
+**It tells you the difference between "found nothing" and "looked in the wrong place".** It asks
+git where the checkout actually is instead of guessing from the path, which is what makes a
+**submodule** work: a submodule keeps its history under `<super-repo>/.git/modules/<path>`, so
+guessing scans that bookkeeping folder rather than the checkout — over a repo that obviously has a
+`backend/.venv` it finds nothing, says *nothing to link*, and looks like a success. A lane opened
+that way starts without its keys or its Python environment, and the first thing to fail is a test,
+several steps later, for no visible reason. Two things you'll see:
 
 - **A repo with genuinely nothing to link says `resolution verified: <path>`.** Six of the nine
   repos on this machine legitimately have no linked assets, and so does any repo before its first
@@ -1924,7 +1930,7 @@ flowchart LR
 | `commit-msg-jira.sh` | **A commit with no ticket.** Each repo declares its Jira project in `.agents/jira.conf`; a commit whose message carries no valid key for *that* repo — or the wrong project's key — is refused outright. A rejected commit is a no-op: your staged files are untouched, nothing to undo. Merges, reverts, and rebases are exempt (the branch name carries the key for them). ⛔ **That exemption was blind inside a worktree until SCC-144** — it probed for a MERGE_HEAD file under a hardcoded .git *directory*, and inside a worktree .git is a **file** pointing elsewhere — so that probe was always false there, and every lane in this system is a worktree. It asks git where its git dir actually is. |
 | `sop_currency.py` | **This page falling behind the system it describes.** Change a `/` command, a rule, a safety-net script, a commit gate, or the root `AGENTS.md`, and the commit is refused unless this file is staged with it. Say `[sop-ok]` in the message when a change genuinely alters no usage — that stays in the git log as the record of the call. It checks only that the two moved together; no program can judge whether the *edit* was right, and the point is to make you look while you still have the context. ⛔ **It shares the merge carve-out above, and shared the same worktree blindness until SCC-144** — which bit harder here: a merge cannot sanely be asked to stage the SOP doc, so an absorb-`main` merge inside a lane was being refused on a condition no author could satisfy, while the identical merge in the shared checkout sailed through. |
 | `merge-target-guard.sh` | **A merge landing on a branch you did not mean.** Every other check on this page guards the branch you merge *from*; this is the only one that guards the branch you merge *into*. It refuses a merge whose target is not a legal destination for its source under the branch model — a `chore/*` lane landing on **another** `chore/*` lane is the SCC-97 signature and is named as such in the refusal, which also prints the target, the source, the rule and `git merge --abort`. — *and the history behind it, below.* |
-| `jira_feed.py` | **A Jira ticket that is only a title.** ① mints the ticket with an outline rendered *from the story file*, and the close-out files a **Dev Record**: the decisions, the pitfalls, and what is still owed. Both write paths **read the ticket back** and fail if what they claimed to write is not there. **Exactly one Dev Record per ticket.** It also picks the ticket **type** for you ([§12](#12-the-board--what-runs-next)). Its `start` verb moves a ticket to `In Progress` and is **idempotent**, which is what lets three different seams call it without any of them double-moving a card. ⛔ **Two ways it used to report success over a ticket that held nothing, both fixed 2026-08-21.** (1) *Themed acceptance criteria vanished.* Stories that group their ACs under `### Theme …` sub-headings — the Epic 19 shape — rendered as **"(none found in the story file)"**, which is the same sentence a story with genuinely no ACs gets. A section now ends at a heading of its **own level**, not at the first line that starts with a `#`. (2) *A hand-written description was called an outline.* When `mint` reuses an existing ticket it decided whether to write the outline by the **length** of what was already there, so a ticket somebody had typed two sentences into was left alone and then reported as *"carries its outline (213 chars)"*. It now tests for the render trailer instead of the length, writes the outline, and **keeps your note underneath it under `PREVIOUS NOTE`** — stale and overwritten were never the only two options. If the field comes back without the trailer, `mint` exits 2 and tells you to read the ticket. `outline` also accepts `--jira-project` now, purely so a working `mint` line can be pasted back to it without `unrecognized arguments`. |
+| `jira_feed.py` | **A Jira ticket that is only a title.** ① mints the ticket with an outline rendered *from the story file*, and the close-out files a **Dev Record**: the decisions, the pitfalls, and what is still owed. Both write paths **read the ticket back** and fail if what they claimed to write is not there. **Exactly one Dev Record per ticket.** It also picks the ticket **type** for you ([§12](#12-the-board--what-runs-next)). Its `start` verb moves a ticket to `In Progress` and is **idempotent**, which is what lets three different seams call it without any of them double-moving a card. ⛔ **Two ways it could report success over a ticket that held nothing are closed.** (1) *Themed acceptance criteria render in full.* A section ends at a heading of its **own level**, not at the first line that starts with a `#` — so stories that group their ACs under `### Theme …` sub-headings no longer come back as **"(none found in the story file)"**, which is the same sentence a story with genuinely no ACs gets. (2) *A hand-written description is not an outline.* When `mint` reuses an existing ticket it tests for the render trailer, not the **length** of what is already there — so a ticket somebody typed two sentences into gets its outline instead of being left alone and reported as *"carries its outline (213 chars)"*, and **your note is kept underneath under `PREVIOUS NOTE`**. Stale and overwritten were never the only two options. If the field comes back without the trailer, `mint` exits 2 and tells you to read the ticket. `outline` also accepts `--jira-project` now, purely so a working `mint` line can be pasted back to it without `unrecognized arguments`. |
 | `post-commit-jira-start.sh` | **A ticket that never shows as in flight.** Your first commit on a `chore/ · claude/ · epic/` branch moves that ticket to `In Progress` — see [§12](#12-the-board--what-runs-next). It reads the key from the **branch name** and never invents one; `main` and unkeyed branches are silent. It costs **one exchange per branch** on the normal path (a marker short-circuits the rest before any network call), it **can never block or fail a commit**, and an offline commit simply retries on the next one. A ticket that is not startable yet (`Blocking`, `In Review`, `Deferred`) deliberately writes no marker, so that branch re-reads once per commit until it is — the price of never silencing a ticket that might still start. |
 | `ship_preflight.py` | **Production shipping something that was never gated.** `/cicd-push-e2e` is the only command that writes production `main` — and uncommitted work in the epic checkout would mean Step 3 gates a *tree* while Step 4 merges the *branch*. It answers four questions the door would otherwise take on trust — the branch SHAPE (`epic/*`, or a `chore/*` the lane check admits), the pinned `--expect-key` against the key the branch carries, a **clean** checkout that is `0 0` with its remote, and **the LANE**: a `chore/*` belongs here only when its diff reaches `backend/ frontend/ firebase/ functions/ mobile/ .github/`, which it derives by importing `task_preflight.PRODUCT_DIRS` rather than re-typing it, so the two doors cannot drift about what "deployable" means. Reads and prints; the merge, the mint and the push stay in the command where a human is watching. Exit 0/1/2, and the staleness of an unfetched comparison rides the VERDICT line itself — SCC-193's lesson, one door over, where a stale note sat under a verdict reading *clear*. |
 > **All three close-out doors answer "which tree gets gated?" the SAME way, and they derive it instead of trusting you (SCC-211).** Every one of them asks whether the working tree is clean, because a dirty tree means the gate measures content the merge does not carry — *what ships was never gated*. The shared body, **`wf_common.trees_to_measure`**, asks `git worktree list` which tree actually holds the branch — a required flag would be the weaker answer (it can still be aimed at the wrong tree, and it would break every caller that has none), so the tree is derived and `--worktree` survives as an *additional* tree rather than the only one. A dirty lane stops the close-out from wherever you run it, and the refusal **names the tree** so you know where to go. |
@@ -2627,7 +2633,7 @@ flowchart TD
     LOB -- "yes — no sprint here" --> Q["read the Jira queue instead\nIn Progress → To Do Next → To Do"]
     LOB -- "no" --> S1["Step 1 — active-context\nStep 1.5 — this project's own memory index"]
     S1 --> S2["Step 2 — the in-scope component specs"]
-    S2 --> S2B["Step 2b — sprint-status.yaml\nread the walkthrough Verdict, never infer it"]
+    S2 --> S2B["Step 2b — sprint-status.yaml\nthe EPIC branch's copy, not the checkout's\nread the walkthrough Verdict, never infer it"]
     S2B --> NEXT{"a card in To Do Next\non the board?"}
     NEXT -- "yes" --> LEAD["lead with your card\nreport the computed pick beside it"]
     NEXT -- "no" --> PICK["the computed next story"]
@@ -2641,6 +2647,14 @@ flowchart TD
     S4 -.-> THREE["③"]
     S4 -.-> CLOSE["/cicd-close-story-merge-tree\nor /cicd-merge-epic-workingtrees\nwhen 2+ lanes passed"]
 ```
+
+**Step 2b reads the sprint file off the epic branch, not off your checkout.** Close-out runs inside
+the story worktree, so the `sprint-status.yaml` it writes rides the story branch and lands on the
+epic; your shared checkout stays on `main` and only moves when the whole epic ships. Its copy is
+therefore behind by every story that has landed since — which on a live epic is most of them. Boot
+reads both and, when they disagree, **says so and leads with the epic branch**. A project between
+epics has no epic branch at all; there the checkout copy is the authority and boot says that in one
+line rather than erroring out.
 
 #### /cicd-create-epic-sprint
 
@@ -2695,21 +2709,21 @@ flowchart TD
     LATER["later: label_tasks.py check\nFRESH exit 0 · STALE exit 1 — re-run me"] -.-> S0
 ```
 
-**Three ways it used to answer confidently and wrongly, all fixed 2026-08-21 (SCC-259).**
+**Three ways it could answer confidently and wrongly are closed.**
 
-- **It could not see a story file that had not merged yet.** ① writes the story onto the lane branch
-  and pushes; nothing reaches the epic until ③. Grounding read only the current checkout, so every
-  story *still in flight* — which is every story you would ever ask about — came back `[NO-STORY]`,
-  telling you to go and write a file that already existed on the branch being labelled. It now reads
-  the lane's own branch when the checkout has none, the same way the Task lane already read its plan.
-- **A lane with only its RED tests written counted as "code written".** That is rung 1, the top of
+- **A story file that has not merged yet is still found.** ① writes the story onto the lane branch
+  and pushes; nothing reaches the epic until ③. Grounding reads the lane's own branch when the
+  checkout has none — the same way the Task lane reads its plan. Reading only the checkout returns
+  `[NO-STORY]` for every story *still in flight*, which is every story you would ever ask about, and
+  tells you to go and write a file that already exists on the branch being labelled.
+- **A lane with only its RED tests written is not "code written".** That would be rung 1, the top of
   the ladder, decided on a touch-set that is the test files and nothing else — which understates
-  where the code is actually about to land, and an understated touch-set is what manufactures a
-  false 🟢. A tests-only diff now keeps its paths but ranks *below* whatever can see further. **A
-  diff with any real source file in it is unaffected.**
-- **A lock named one blocker when four were declared.** You landed it, re-ran, and were told about
-  the next one — four rounds for an answer the engine already had. Worse, the row *read* like a
-  single dependency. 🔒 now names every blocker.
+  where the code is about to land, and an understated touch-set is what manufactures a false 🟢. A
+  tests-only diff keeps its paths but ranks *below* whatever can see further. **A diff with any real
+  source file in it is unaffected.**
+- **🔒 names every declared blocker, not just the first.** One name for four declared blockers costs
+  you four rounds — land it, re-run, hear about the next one — for an answer the engine already has,
+  and the row *reads* like a single dependency.
 
 #### /smh-plan-task
 

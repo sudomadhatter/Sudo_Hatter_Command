@@ -58,7 +58,25 @@ For each spec flagged in-scope (or implied by the sprint objective), read it fro
 Read `_bmad-output/implementation-artifacts/sprint-status.yaml` — post-split (Wave 4, 2026-08-03) it is
 ~62 KB of bare `key: status` rows and fits one read. **Row narrative is NOT there anymore**: what
 happened on a story lives in `_bmad-output/history/<epic>/<key>.md` (and the change log in
-`_bmad-output/history/CHANGELOG.md`) — read those only for the specific rows you need. Report, compactly:
+`_bmad-output/history/CHANGELOG.md`) — read those only for the specific rows you need.
+
+⛔ **READ IT OFF THE EPIC BRANCH TOO — the checkout's copy is stale BY DESIGN (SCC-254).**
+`/cicd-close-story-merge-tree` runs **inside the story worktree**, so the `sprint-status.yaml` it
+writes rides `claude/<JIRA-KEY>-<story-slug>` and lands on the epic branch. The shared checkout stays
+on `main`, which only moves when the whole epic ships — so its copy is behind by **every story that
+has landed since**. Read both:
+```bash
+git -C "$PROJECT_ROOT" fetch origin --quiet
+# origin/ FIRST: a local epic head is only as fresh as the last pull
+git -C "$PROJECT_ROOT" for-each-ref --format='%(refname:short)' refs/remotes/origin/epic/*
+git -C "$PROJECT_ROOT" show origin/epic/<JIRA-KEY>-<slug>:_bmad-output/implementation-artifacts/sprint-status.yaml
+```
+No epic branch — a project between epics — → the checkout copy **is** the authority; say so in one
+line and move on, never error out. When the two **disagree**, **report both** ("the epic branch has
+`<id>` at `<status>`; the checkout copy still says `<status>`") and lead with the epic branch, for the
+same reason the board leads over the YAML below: the lagging copy is the one nobody wrote to.
+
+Report, compactly:
 - **Story states** — counts by status (`ready-for-dev` / `in-progress` / `review` / `done`).
 - **Next story to pick up** — the top `ready-for-dev` (or the current `in-progress`), with its file under
   `_bmad/bmm/stories/`. ⛔ A `descoped` or `deferred` story is **never** recommended, whatever its

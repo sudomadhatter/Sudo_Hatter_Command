@@ -67,9 +67,16 @@ EnterWorktree  →  .claude/worktrees/<slug>/  on branch  claude/<JIRA-KEY>-<sto
 tree*, not *what they branch from* — a story cut from `main` loses every sibling's work in the epic and
 breaks the landing sequence. The epic branch is cut from `main` at epic kickoff
 (`/cicd-create-epic-sprint`); if it doesn't exist yet, that step was skipped — go back and run it. The
-`worktree.baseRef: "head"` setting makes the new worktree inherit the current HEAD, so **check out the
-base branch before opening the worktree** — if you are somewhere else, get there first (or say so out
-loud if you are deliberately stacking on another story's branch).
+`worktree.baseRef: "head"` setting makes **`EnterWorktree`** inherit the current HEAD, so that door —
+and only that door — needs you to **check out the base branch before opening the worktree**, and then
+to go **back to `main`** the moment the tree is open (the shared checkout stands on `main`; see "no
+reconcile after a landing" below). If you are somewhere else, get there first — or say so out loud if
+you are deliberately stacking on another story's branch. `git worktree add` takes its base as an
+OPERAND and needs neither trip:
+
+```
+git -C <repo> worktree add .claude/worktrees/<slug> -b claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>
+```
 
 **Bring the gitignored assets with you.** A worktree does not inherit `.env`, `auth_keys/` or
 `node_modules` — they are not in git, so there is nothing for `git worktree add` to copy, and reading
