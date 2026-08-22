@@ -70,6 +70,12 @@ after push). Record commit follows.
 
 ## Your Actions
 
-- [ ] Rule on root `GEMINI.md`: fold its three hard rules into `AGENTS.md` / `.agents/rules/` so it becomes
-  the one-line adapter R8 requires — or write the exception into the standard.
-- [x] The merge — lands via this branch's PR through `/smh-close-task-merge-tree`.
+- [x] The merge itself — lands via this branch's PR
+- [x] The root `GEMINI.md` exception is **filed, not owed here** — SCC-279 (Part C of SCC-262) carries
+  the ruling with both doors written out (fold the three rules into `AGENTS.md`/`.agents/rules/`, or
+  codify the exception in the standard). It is recorded in §0.5's R8 row as an open exception in the
+  meantime, so the standard is honest about it today.
+
+**Context, nothing owed:** this lane changed `router.md`, which is a `_routing-canary/` re-run trigger
+per the standard's own cadence. The canary's `Power.md` is sitting on its placeholder, so it has not
+run since its last reset — worth a green run on the next session that touches routing structure.
