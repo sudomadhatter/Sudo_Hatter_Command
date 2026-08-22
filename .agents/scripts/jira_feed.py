@@ -63,6 +63,10 @@ MARKER = "Dev Record"
 # real description from acli having accepted an empty --description without complaint.
 MIN_DESCRIPTION = 40
 
+PREVIOUS_NOTE_HEADER = ("PREVIOUS NOTE - what this ticket said before the outline "
+                        "was rendered")
+"""The one header that marks a preserved hand note. Written once, read back once."""
+
 OUTLINE_TRAILER = "Rendered by jira_feed.py"
 """The one string that says a description IS a rendered outline (SCC-258).
 
@@ -204,6 +208,7 @@ _AC_HEAD_RE = re.compile(r"^#{2,4}\s*(?:Acceptance\s+Criteria|ACs?)\b.*$",
 _STORY_HEAD_RE = re.compile(r"^#{2,4}\s*Story\s*$", re.MULTILINE | re.IGNORECASE)
 _NEXT_HEAD_RE = re.compile(r"^#{1,4}\s+\S", re.MULTILINE)
 _BULLET_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(.*)$")
+_SUB_HEAD_RE = re.compile(r"^#{1,6}\s+(.*\S)\s*$")
 _EMPH_RE = re.compile(r"\*\*|__|(?<!`)\*(?!\*)")
 
 
@@ -273,15 +278,32 @@ def acceptance_criteria(text: str) -> list[str]:
 
 `include_subheadings` because ACs are grouped under `### Theme ...` headings from AVCH Epic
 19 on; without it the section ended at the first theme line and this returned [] (SCC-257).
-The theme headings themselves drop out here anyway — they are not bullets."""
+
+⛔ AND THE SUB-HEADING IS KEPT, as a `[label]` row above the bullets it introduces. Dropping
+it was fine while every child was a `### Theme ...`, but a child can just as easily be
+`### Out of scope` — and then its bullets render as acceptance criteria on a live board, with
+the one word that said otherwise deleted on the way. "the mobile app" becomes a criterion the
+story is measured against. The label is emitted LAZILY, only once a bullet actually follows
+it, so an empty sub-section leaves no orphan row."""
     body = section_body(text, _AC_HEAD_RE.search(text), include_subheadings=True)
     out: list[str] = []
     current: list[str] = []
+    pending_label = ""
     for line in body.splitlines():
+        head = _SUB_HEAD_RE.match(line)
+        if head:
+            if current:
+                out.append(flatten(" ".join(current), 240))
+                current = []
+            pending_label = flatten(head.group(1), 80)
+            continue
         m = _BULLET_RE.match(line)
         if m:
             if current:
                 out.append(flatten(" ".join(current), 240))
+            if pending_label:
+                out.append(f"[{pending_label}]")
+                pending_label = ""
             current = [m.group(1)]
         elif current and line.strip() and line.startswith((" ", "\t")):
             current.append(line.strip())  # a wrapped continuation of the item above
@@ -747,6 +769,29 @@ def lane_slug_here(repo: Path) -> str:
     return branch.rsplit("/", 1)[-1] if branch in declared else ""
 
 
+def preserved_note(current: str) -> str:
+    """The human's note to keep under `PREVIOUS NOTE`, given whatever is on the ticket now.
+
+    ⛔ IDEMPOTENT ON PURPOSE. The reuse branch wraps `current` wholesale, and `current` is
+    whatever the last run left behind — so running again wrapped the previous outline AND its
+    `PREVIOUS NOTE` inside a fresh one. Measured over four runs: 502 → 986 → 1498 → 2038
+    characters, one block becoming four, the operator's actual note sinking a level each time.
+    A repeat run is the NORMAL path here, not an accident: the read-back guard exits 2 on a
+    lossy writer, and that is precisely the state somebody re-runs the command from.
+
+    So — take the LAST header, not the first. Everything above it is machine-rendered; what
+    follows the deepest one is the note a human typed, however many times this has happened
+    already. That makes the function converge on a ticket this bug has been run over before
+    instead of only stopping the next round."""
+    idx = current.rfind(PREVIOUS_NOTE_HEADER)
+    if idx < 0:
+        return current.strip()
+    inner = current[idx + len(PREVIOUS_NOTE_HEADER):]
+    # Written with a two-space indent; ADF may or may not give it back, so strip it if present.
+    return "\n".join(ln[2:] if ln.startswith("  ") else ln
+                     for ln in inner.splitlines()).strip()
+
+
 def write_temp(body: str) -> Path:
     fd, name = tempfile.mkstemp(prefix="jira-feed-", suffix=".txt", text=True)
     with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
@@ -887,13 +932,16 @@ def cmd_mint(args) -> int:
                 # decided to render over the field. So the outline is written AND the note is
                 # kept below it. Overwriting was never the alternative to leaving it stale;
                 # both of those lose something.
-                note = current.strip()
+                note = preserved_note(current)
                 if note:
                     body = (body.rstrip("\n")
-                            + "\n\nPREVIOUS NOTE - what this ticket said before the outline "
-                              "was rendered\n"
+                            + f"\n\n{PREVIOUS_NOTE_HEADER}\n"
                             + "\n".join(f"  {ln}" for ln in note.splitlines()) + "\n")
-                    tmp.write_text(body, encoding="utf-8")
+                    # ⛔ `newline="\n"` — Path.write_text defaults to newline=None, which
+                    # translates every \n to os.linesep. On the PC half of this two-machine
+                    # system that writes CRLF into a file `write_temp` deliberately pins to LF,
+                    # so the same command produces a different description depending on the box.
+                    tmp.write_text(body, encoding="utf-8", newline="\n")
                 # --yes: `edit` prompts interactively without it, which hangs an agent run.
                 r = acli(binary, ["jira", "workitem", "edit", "--key", key, "--yes",
                                   "--description-file", str(tmp)])
@@ -2796,11 +2844,21 @@ def cmd_check(args) -> int:
     rep = wf.Report()
     fields = view_fields(binary, args.key)
     desc = field_text(fields.get("description"))
-    if len(desc) < MIN_DESCRIPTION:
-        rep.err("description", f"{args.key}: {len(desc)} chars - no outline "
-                               f"(jira_feed.py mint renders one from the story file)")
-    else:
+    # ⛔ LENGTH IS NOT CONTENT — the same lesson OUTLINE_TRAILER exists for. This ran on a
+    # hand-typed note of 213 characters and reported "outline present (213 chars)", and it
+    # runs at close-out in both doors, so the false claim reached the sign-off.
+    # The severity boundary is deliberately UNMOVED: a hand note used to pass and still
+    # passes. Escalating it would fail close-outs on tickets nobody has minted yet, which is
+    # a gate change, not a review fix. What changes is that the line stops lying.
+    if OUTLINE_TRAILER in desc:
         rep.info("description", f"{args.key}: outline present ({len(desc)} chars)")
+    elif len(desc) < MIN_DESCRIPTION:
+        rep.err("description", f"{args.key}: {len(desc)} chars - no description at all, so no "
+                               f"outline (jira_feed.py mint renders one from the story file)")
+    else:
+        rep.info("description", f"{args.key}: {len(desc)} chars of description, but NO rendered "
+                                f"outline - somebody typed this by hand. `jira_feed.py mint` "
+                                f"renders one and keeps the note under PREVIOUS NOTE.")
 
     comments = list_comments(binary, args.key)
     records = [c for c in comments if MARKER.lower() in field_text(c.get("body"))[:400].lower()]
