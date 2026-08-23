@@ -3936,6 +3936,151 @@ As **an admin**, I want **archive**, so that **nothing is lost.**
                                       for t in get_state(state).get("transitions", [])),
                     f"exit={code}: {out.strip()[:200]}")
 
+    if c.block("SCC-298 · reconcile-actions: the close-out VERIFIES the task list"):
+        import jira_feed  # noqa: E402
+
+        # ⛔ THE DEFECT THIS BLOCK PINS. `finish` decides `Done` from what `## Your Actions`
+        # CLAIMS, and nothing has ever checked whether a row's claim is still true - so SCC-288
+        # sat at `Review Required` for a day over one box whose work was finished, authenticated
+        # and attached. SCC-175 already ruled on the general shape for the merge row: "a tick is
+        # a CLAIM, and `finish --apply` is what writes `Done` to Jira on the strength of it."
+        # This is that ruling applied to every OTHER row - the difference being that most rows
+        # have no `merge-base` to ask, so the check is derived per row and its ANSWER is recorded
+        # beside it.
+        #
+        # Operator, 2026-08-23: "agents are terrible at checking off those task lists, especially
+        # when its a user task, even if I tell them" - and the ruling on how a row gets ticked:
+        # evidence where a check exists; where none does, ask the operator and tick on their
+        # word, recorded either way.
+        WT = (
+            "# Walkthrough\n"
+            "\n"
+            "## Task Checklist\n"
+            "\n"
+            "- [ ] THE AGENT'S OWN ROW - must never be listed or tickable\n"
+            "\n"
+            "## Your Actions\n"
+            "\n"
+            "- [ ] **C0 - store the Jira API token.** The keychain item the attach door reads.\n"
+            "- [x] **C1 - already settled.** Nothing owed here.\n"
+            "- [ ] Click **Merge** on the PR when CI is green.\n"
+            "- [ ] **The merge itself** - lands via this branch's PR.\n"
+            "- [ ] **Rule the landing order.** SCC-280 or this lane first.\n"
+        )
+        # The line numbers a human sees, pinned here so a drift in the fixture is loud rather
+        # than silently re-aiming every case below at a different row.
+        L_C0, L_C1, L_CLICK, L_MERGE, L_ORDER = 9, 10, 11, 12, 13
+        assert WT.splitlines()[L_C0 - 1].startswith("- [ ] **C0"), "fixture line map drifted"
+        assert WT.splitlines()[L_MERGE - 1].startswith("- [ ] **The merge itself"), "drifted"
+
+        GOOD = "keychain item `sudo-jira` present; REST GET returned 200 with the file listed"
+
+        def wt_file(tmp: Path, text: str = WT) -> Path:
+            p = tmp / "walkthrough.md"
+            p.write_text(text, encoding="utf-8")
+            return p
+
+        def ra(path: Path, *args: str) -> tuple[int, str]:
+            return run_script("jira_feed.py", "reconcile-actions",
+                              "--walkthrough", str(path), *args)
+
+        # ── A1 · the list, and the HOLD ───────────────────────────────────────────────
+        with TempDir() as tmp:
+            p = wt_file(tmp)
+            code, out = ra(p)
+            c.check("A1 an open section EXITS 3 - the same HELD code `finish` uses",
+                    code == 3, f"exit={code}: {out.strip()[:300]}")
+            c.check("A1 ...and every open row is named with its line number",
+                    all(f"L{n}" in out for n in (L_C0, L_CLICK, L_MERGE, L_ORDER)),
+                    f"missing a line number: {out.strip()[:400]}")
+            # Bound to `code == 3` for the same reason as the refusal marker above: "the
+            # string is absent" is trivially true of the empty output an unknown verb produces.
+            c.check("A1 ...the SETTLED row is not listed",
+                    code == 3 and f"L{L_C1}" not in out, out.strip()[:300])
+            # ⛔ ANTI-VACUITY. `## Task Checklist` is full of `- [ ]` rows that are the AGENT's.
+            # Listing them would hold every ticket forever - the mirror of the bug being fixed.
+            c.check("A1 ...and the AGENT's own checklist rows are invisible",
+                    code == 3 and "THE AGENT'S OWN ROW" not in out, out.strip()[:300])
+
+        with TempDir() as tmp:
+            p = wt_file(tmp, "# W\n\n## Your Actions\n\n- [x] settled\n")
+            code, out = ra(p)
+            c.check("A1 a section with nothing open EXITS 0",
+                    code == 0, f"exit={code}: {out.strip()[:300]}")
+
+        # ── A2 · the tick writes ONE line and proves itself ───────────────────────────
+        with TempDir() as tmp:
+            p = wt_file(tmp)
+            before = p.read_text(encoding="utf-8").splitlines()
+            code, out = ra(p, "--tick", str(L_C0), "--evidence", GOOD, "--source", "measured")
+            after = p.read_text(encoding="utf-8").splitlines()
+            c.check("A2 the tick exits 0", code == 0, f"exit={code}: {out.strip()[:300]}")
+            diff = [i for i, (a, b) in enumerate(zip(before, after)) if a != b]
+            c.check("A2 EXACTLY ONE line changed, and it is the one asked for",
+                    len(before) == len(after) and diff == [L_C0 - 1],
+                    f"changed lines (0-based): {diff}")
+            row = after[L_C0 - 1] if len(after) >= L_C0 else ""
+            c.check("A2 the row is now ticked", row.startswith("- [x] "), row)
+            # Bound to the tick for the same reason: the ORIGINAL row also contains this text.
+            c.check("A2 ...the original text survives",
+                    row.startswith("- [x] ") and "**C0 - store the Jira API token.**" in row, row)
+            c.check("A2 ...the SOURCE is recorded, not just the claim", "(measured)" in row, row)
+            c.check("A2 ...and the evidence itself is in the file, where a human reads it",
+                    GOOD in row, row)
+
+        # ── A3 · the five refusals. Each must write NOTHING. ─────────────────────────
+        REFUSALS = [
+            ("A3a a line that is already ticked is not an open row", L_C1, GOOD, "measured"),
+            ("A3b a line OUTSIDE `## Your Actions` is not tickable", 5, GOOD, "measured"),
+            ("A3c empty evidence is refused", L_C0, "   ", "measured"),
+            ("A3d generic evidence is refused", L_C0, "done", "operator"),
+            ("A3e a CEREMONY row is refused (SCC-193 - the agent RUNS those)",
+             L_CLICK, GOOD, "measured"),
+            ("A3f a MERGE row is refused (SCC-175 - `finish` computes it from the repo)",
+             L_MERGE, GOOD, "measured"),
+        ]
+        # ⛔ EXIT 2 ALONE IS NOT EVIDENCE OF A REFUSAL, and this block's own first RED run
+        # proved it: argparse exits 2 on an unknown verb, so every row below PASSED against a
+        # `jira_feed.py` that had never heard of `reconcile-actions` - nothing ran, so nothing
+        # was written either. A case that is green before the feature exists cannot fail when
+        # the feature breaks (`red-test-can-die-before-its-assertion`). So the refusal must
+        # ANNOUNCE itself with a marker the verb owns, and the row asserts on that.
+        REFUSAL_MARK = "jira-feed: REFUSED"
+        for label, line, ev, src in REFUSALS:
+            with TempDir() as tmp:
+                p = wt_file(tmp)
+                raw = p.read_bytes()
+                code, out = ra(p, "--tick", str(line), "--evidence", ev, "--source", src)
+                c.check(label, code == 2 and REFUSAL_MARK in out,
+                        f"exit={code} (argparse also exits 2 - the marker is the tell): "
+                        f"{out.strip()[:300]}")
+                c.check(label + " - and NOTHING was written",
+                        p.read_bytes() == raw, "the file changed on a refusal")
+
+        # ⛔ THE CONTROL THAT FORBIDS THE LAZY FIX. Every refusal above passes if the verb
+        # refuses everything, and a gate that rejects every case is as broken as one that
+        # rejects none. This row must stay green.
+        with TempDir() as tmp:
+            p = wt_file(tmp)
+            code, out = ra(p, "--tick", str(L_ORDER),
+                           "--evidence", "operator ruled SCC-298 lands first, 2026-08-23",
+                           "--source", "operator")
+            c.check("A3 (control, must stay green) a REAL operator row with REAL words is ACCEPTED",
+                    code == 0, f"exit={code}: {out.strip()[:300]}")
+
+        # ── A5 · end to end: the row SCC-288 hung on, reconciled, then finish is clear ──
+        with TempDir() as tmp:
+            p = wt_file(tmp, "# W\n\n## Your Actions\n\n"
+                             "- [ ] **C0 - store the Jira API token.** Already done on the Mac.\n")
+            code, out = ra(p, "--tick", "5", "--evidence", GOOD, "--source", "measured")
+            c.check("A5 the only open row reconciles", code == 0, f"exit={code}: {out.strip()[:200]}")
+            c.check("A5 ...and `open_actions` - what `finish` reads - is now CLEAR",
+                    jira_feed.open_actions(p.read_text(encoding="utf-8")) == [],
+                    str(jira_feed.open_actions(p.read_text(encoding="utf-8"))))
+            code2, _ = ra(p)
+            c.check("A5 ...so the list exits 0", code2 == 0, f"exit={code2}")
+
+
     return c.finish()
 
 

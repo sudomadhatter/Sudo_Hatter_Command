@@ -1760,18 +1760,45 @@ def open_actions(text: str) -> list[str] | None:
     starts = [i for i, ln in live if ln.strip().lower() == YOUR_ACTIONS.lower()]
     if not starts:
         return None
-    items: list[str] = []
+    items: list[tuple[int, str]] = []
     # EVERY such section, not just the first. `next(...)` took the first heading only, so a
     # walkthrough that opened a second `## Your Actions` later (a close-out appending its own
     # asks is exactly how) had those items silently dropped and the ticket closed over them
     # (SCC-155 review finding).
     for start in starts:
         _collect(live, start, items)
+    return [t for _, t in items]
+
+
+def open_action_rows(text: str) -> list[tuple[int, str]] | None:
+    """`open_actions`, but each row keeps the 1-based line it was read from. `None` = no section.
+
+    ⭐ SCC-298 · THE LINE NUMBER *IS* THE STABLE ID, and it is stable for a real reason rather
+    than by luck: ticking rewrites `- [ ]` to `- [x]` **in place** - same line, same line count -
+    so every number this prints stays valid for the whole reconcile pass. `--tick` re-reads the
+    file and re-validates the target before every write anyway, so a stale number cannot hit a
+    neighbour; it hits a row that is no longer open, which is a refusal."""
+    lines = text.splitlines()
+    live = list(_unfenced(lines))
+    starts = [i for i, ln in live if ln.strip().lower() == YOUR_ACTIONS.lower()]
+    if not starts:
+        return None
+    items: list[tuple[int, str]] = []
+    for start in starts:
+        _collect(live, start, items)
     return items
 
 
-def _collect(live: list[tuple[int, str]], start: int, items: list[str]) -> None:
-    """Append this section's OPEN items to `items`, continuations folded in.
+def _collect(live: list[tuple[int, str]], start: int,
+             items: list[tuple[int, str]]) -> None:
+    """Append this section's OPEN items to `items` as `(1-based line, text)`, folded.
+
+    ⭐ SCC-298 · THE LINE NUMBER RIDES ALONG SO THERE IS ONLY EVER ONE READER. `reconcile-actions`
+    has to name a row by line so the operator (or an agent) can tick exactly it - and a second
+    walk that re-derived those numbers would be a second reader of the same section. This file
+    already paid for two readers disagreeing about one file (`cmd_finish`: "the two readers
+    disagreed about what was wrong with one file"), so the number comes out of the walk that
+    already found the row. `open_actions` drops it and its contract is unchanged.
 
     ⛔ SCC-206 · THE CONTINUATION WINDOW IS STATE, AND IT HAS TO CLOSE. The first version
     folded any indented line into `items[-1]` without asking whether the item above it was
@@ -1818,7 +1845,7 @@ def _collect(live: list[tuple[int, str]], start: int, items: list[str]) -> None:
             continue
         m = _OPEN_ITEM_RE.match(ln)
         if m:
-            items.append(m.group(1).strip())
+            items.append((i + 1, m.group(1).strip()))
             open_window = True
         elif _ANY_ITEM_RE.match(ln):
             # A ticked item, or any other list row. It owns nothing here, and it ENDS the
@@ -1830,7 +1857,7 @@ def _collect(live: list[tuple[int, str]], start: int, items: list[str]) -> None:
             # ride along"), and dropping them truncated the operator's own instructions to
             # their first line - the half that says WHY reached nobody. It must NOT become a
             # second owed item, so it folds into the item above rather than appending.
-            items[-1] += " " + s
+            items[-1] = (items[-1][0], items[-1][1] + " " + s)
     return items
 
 
@@ -2362,6 +2389,189 @@ def cmd_check_actions(args) -> int:
     if ceremony:
         say(render_ceremony_banner(ceremony, str(wt)))
     return 1
+
+
+# ── SCC-298: the close-out RECONCILES the list before it asks `finish` to close ────
+#
+# ⛔ THE DEFECT. `finish` decides `Done` from what `## Your Actions` CLAIMS. Nothing has ever
+# checked whether a row's claim is still TRUE, so a ticket sits at `Review Required` over work
+# that is finished. SCC-288 sat for a day on one box: the token existed, authenticated, and the
+# plan was already attached. `finish` cannot tell "not done" from "not ticked", and there is no
+# force flag - by design, because the flag would be pulled every time.
+#
+# ⭐ THE PRECEDENT IS ALREADY IN THIS FILE. SCC-175 stopped reading the MERGE row off a tick and
+# started COMPUTING it from the repo: "a tick is a CLAIM, and `finish --apply` is what writes
+# `Done` to Jira on the strength of it." That covered one row. This is the same ruling for every
+# other row - with the difference that most rows have no `merge-base` to ask, so the check is
+# derived per row and the ANSWER is written into the file beside it.
+#
+# ⭐ THE OPERATOR'S RULING ON HOW A ROW GETS TICKED (2026-08-23): evidence where a machine check
+# exists; where none does, ASK and tick on their word - recorded either way, so the file says
+# which it was. Hence `--source measured|operator`, required, and printed into the row.
+#
+# ⛔ THIS VERB NEVER DERIVES ITS OWN EVIDENCE. It records what a caller measured or what the
+# operator said. An agent that could both invent the check and pass it is back to
+# self-certifying, which is the whole thing this exists to stop.
+
+REFUSED = "jira-feed: REFUSED"
+
+# ⛔ A FLOOR, NOT A CONTENT JUDGE - and saying so is load-bearing. No check can tell a real
+# measurement from a plausible sentence, and one that claimed to would be trusted for something
+# it cannot do. What this refuses is the forms that carry NOTHING a later reader could check.
+# The real guard is that the evidence lands in the file, in the lane's own commit, where the
+# operator and `/smh-code-review` both read it.
+_GENERIC_EVIDENCE = frozenset({
+    "done", "verified", "confirmed", "complete", "completed", "checked", "check",
+    "yes", "no", "ok", "okay", "true", "n/a", "na", "none", "nil",
+    "it works", "works", "working", "fine", "good", "all good", "looks good",
+    "tested", "passed", "pass", "green", "as discussed", "as agreed",
+    "operator confirmed", "confirmed by operator", "operator said yes",
+    "already done", "was done", "did it", "sorted", "handled",
+})
+_MIN_EVIDENCE_CHARS = 16
+_MIN_EVIDENCE_WORDS = 3
+_EVIDENCE_TRIM = " \t`'\"*_.!?,;:"
+
+
+def normalise_evidence(text: str) -> str:
+    """Lowercased, whitespace-collapsed, stripped of the decoration a deny-set cannot see past."""
+    return " ".join((text or "").split()).strip(_EVIDENCE_TRIM).lower()
+
+
+def evidence_ok(text: str) -> tuple[bool, str]:
+    """Is this evidence, or is it the word "done"? `(ok, why not)`.
+
+    Three tests, and each one is here because it catches a shape the others miss:
+      * EMPTY is the empty-input-reads-as-pass shape `tests-must-gate-for-real` bans outright;
+      * the DENY-SET catches the long-but-contentless ("yes it is done and confirmed" clears any
+        length floor and says nothing);
+      * the FLOOR catches everything the deny-set has not seen, which is most of it - a deny-set
+        alone is defeated by adding a full stop.
+    """
+    raw = (text or "").strip()
+    if not raw:
+        return False, "the evidence is empty - an empty proof is not a proof"
+    norm = normalise_evidence(raw)
+    if not norm:
+        return False, "the evidence is punctuation only"
+    if norm in _GENERIC_EVIDENCE:
+        return False, (f"'{raw.strip()[:40]}' says nothing a later reader could check. Name what "
+                       f"you RAN and what it returned, or quote what the operator said")
+    if len(norm) < _MIN_EVIDENCE_CHARS or len(norm.split()) < _MIN_EVIDENCE_WORDS:
+        return False, (f"'{raw.strip()[:40]}' is too thin ({len(norm)} chars, {len(norm.split())} "
+                       f"word(s); the floor is {_MIN_EVIDENCE_CHARS} and {_MIN_EVIDENCE_WORDS}). "
+                       f"Say what proves it, not that it is proved")
+    return True, ""
+
+
+# The row rewrite. Captures the prefix so the bullet char and indentation survive verbatim -
+# `- ` and `* ` are both legal here and `_OPEN_ITEM_RE` accepts both.
+_TICK_RE = re.compile(r"^(\s*[-*]\s*)\[\s\](\s*)(.*?)\s*$")
+# ⛔ ASCII ON PURPOSE. This string is written by a machine into a tracked file on a Mac AND a PC,
+# and read back by the same code on both. An em-dash here is one console-encoding difference away
+# from a diff nobody can explain (`powershell-console-fakes-mojibake`).
+TICK_MARK = "-- verified"
+
+
+def tick_row(text: str, line: int, evidence: str, source: str,
+             today: str) -> tuple[str | None, str]:
+    """Flip ONE open row to `- [x]` with its proof inline. `(new text, reason it was refused)`.
+
+    Refuses five ways, and every one of them writes nothing:
+      1. the line is not an OPEN row under `## Your Actions` - stale number, already ticked, or
+         a `- [ ]` that belongs to `## Task Checklist`, which is the AGENT's list;
+      2. no `## Your Actions` section at all - `finish`'s own hard refusal, same answer here;
+      3. the evidence does not clear `evidence_ok`;
+      4. a CEREMONY row (SCC-193) - those are the agent's to RUN from the sign-off on. Ticking
+         one launders the ceremony's own step into settled operator work;
+      5. a MERGE row (SCC-175) - `finish` COMPUTES that one from the repo. A hand tick here is
+         exactly the self-certification SCC-175 spent a lane removing, and it is refused rather
+         than merely re-opened, so the false claim never reaches the file.
+    """
+    rows = open_action_rows(text)
+    if rows is None:
+        return None, (f"`{YOUR_ACTIONS}` is not in this file. An absent section is not evidence "
+                      f"that nothing is owed - add it (even empty) and re-run")
+    by_line = dict(rows)
+    if line not in by_line:
+        open_ns = ", ".join(f"L{n}" for n, _ in rows) or "(none)"
+        return None, (f"line {line} is not an OPEN row under `{YOUR_ACTIONS}`. Open rows: "
+                      f"{open_ns}. A settled row, the agent's own `{'## Task Checklist'}`, a "
+                      f"fenced example and a stale number all land here")
+    row = by_line[line]
+    ok, why = evidence_ok(evidence)
+    if not ok:
+        return None, why
+    if is_merge_row(row):
+        return None, (f"L{line} is the MERGE row, and `finish` computes that one from the repo "
+                      f"(SCC-175: a tick is a claim, the ancestry check is the answer). Leave it "
+                      f"open - `finish` clears it when the lane actually lands")
+    for crow, creason in ceremony_rows(text):
+        if crow == row:
+            return None, (f"L{line} hands over the CEREMONY's own step, so it is not the "
+                          f"operator's to tick: {creason}. Delete the row - from their word on, "
+                          f"every step is the ceremony's and the agent runs it")
+    lines = text.splitlines(keepends=True)
+    raw = lines[line - 1]
+    nl = raw[len(raw.rstrip("\r\n")):]
+    m = _TICK_RE.match(raw.rstrip("\r\n"))
+    if not m:                                   # unreachable via `by_line`, kept as a hard stop
+        return None, f"line {line} does not parse as an open checkbox row"
+    prefix, gap, body = m.group(1), m.group(2) or " ", m.group(3)
+    proof = f"{TICK_MARK} {today} ({source}): {evidence.strip()}"
+    lines[line - 1] = f"{prefix}[x]{gap}{(body + ' ') if body else ''}{proof}{nl}"
+    return "".join(lines), ""
+
+
+def cmd_reconcile_actions(args) -> int:
+    """List what the operator still owes - or tick ONE row and record what proved it.
+
+    Exit codes are `finish`'s, deliberately: `0` nothing open / the tick landed · `3` HELD, rows
+    still open · `2` the artifact is wrong and nothing was written. A new code here would mean
+    the same condition answered differently depending on which verb found it."""
+    wt = Path(args.walkthrough)
+    if not wt.is_file():
+        say(f"{REFUSED} no walkthrough at `{wt}`")
+        return 2
+    text = wf.read_text(wt)
+
+    if args.tick is not None:
+        new, why = tick_row(text, args.tick, args.evidence or "", args.source, args.date)
+        if new is None:
+            say(f"{REFUSED} {why}.")
+            return 2
+        wt.write_text(new, encoding="utf-8")
+        say(f"jira-feed: `{wt}` L{args.tick} ticked ({args.source}): {args.evidence.strip()}")
+        left = open_action_rows(new) or []
+        say(f"jira-feed: {len(left)} row(s) still open." if left
+            else f"jira-feed: `{YOUR_ACTIONS}` is now CLEAR - `finish` will close the ticket.")
+        return 0
+
+    rows = open_action_rows(text)
+    if rows is None:
+        say(f"{REFUSED} `{wt}` has no `{YOUR_ACTIONS}` section. An absent section is not "
+            f"evidence that nothing is owed; add it (even empty) so the answer is recorded "
+            f"rather than assumed.")
+        return 2
+    if not rows:
+        say(f"jira-feed: `{wt}` -> `{YOUR_ACTIONS}` is clear. Nothing is owed.")
+        return 0
+
+    say(f"jira-feed: `{wt}` -> `{YOUR_ACTIONS}`: {len(rows)} row(s) still open.\n")
+    for n, row in rows:
+        tag = ""
+        if is_merge_row(row):
+            tag = "   [merge row - `finish` computes this one; leave it]"
+        elif any(crow == row for crow, _ in ceremony_rows(text)):
+            tag = "   [ceremony step - not the operator's; DELETE the row]"
+        say(f"  L{n}  {row[:150]}{tag}")
+    say("\n⛔ DO NOT TICK A ROW YOU HAVE NOT CHECKED. For each one, derive the check and RUN it;\n"
+        "   where no machine check exists, ASK the operator and tick on their word, quoted.\n"
+        "   A row that is neither proved nor answered stays open and gets reported.\n\n"
+        f"  jira_feed.py reconcile-actions --walkthrough {wt} \\\n"
+        "      --tick <line> --evidence \"<what you ran and what it returned>\" \\\n"
+        "      --source measured|operator\n")
+    return 3
 
 
 def cmd_finish(args) -> int:
@@ -3150,6 +3360,22 @@ def main() -> int:
                                f"ticket work? no board, no network")
     p_ca.add_argument("--walkthrough", required=True)
 
+    # SCC-298 - the close-out's pass over the SAME section, one step earlier than `finish`.
+    # Also boardless, keyless and offline: it reads a file and writes that file.
+    p_ra = sub.add_parser("reconcile-actions",
+                          help=f"list what the operator still owes under `{YOUR_ACTIONS}`, or "
+                               f"tick ONE row and record what proved it")
+    p_ra.add_argument("--walkthrough", required=True)
+    p_ra.add_argument("--tick", type=int, metavar="LINE",
+                      help="the 1-based line of the open row to settle (omit to just list)")
+    p_ra.add_argument("--evidence", metavar="TEXT",
+                      help="what you RAN and what it returned, or the operator's words. "
+                           "Required with --tick, and a floor refuses the contentless forms")
+    p_ra.add_argument("--source", choices=("measured", "operator"),
+                      help="did a machine prove this, or did the operator say so? Required "
+                           "with --tick - the answer is written into the row")
+    p_ra.add_argument("--date", default=date.today().isoformat())
+
     p_ix = sub.add_parser("index-row",
                           help="append ONE row to a parent's index description and PROVE "
                                "the rest of it survived (acli edit REPLACES the field)")
@@ -3167,10 +3393,21 @@ def main() -> int:
                                        "did THIS lane file one? missing is an error")
 
     args = ap.parse_args()
+    # ⛔ `--tick` is useless without both companions and DANGEROUS without `--source`: a row
+    # ticked with no recorded source is exactly the unattributed claim this verb exists to
+    # replace. argparse cannot say "required with another flag", so it is said here, at the
+    # parser, where the error prints the usage the caller was reading.
+    if getattr(args, "verb", "") == "reconcile-actions" and args.tick is not None:
+        missing = [f for f, v in (("--evidence", args.evidence), ("--source", args.source))
+                   if not v]
+        if missing:
+            ap.error("--tick needs " + " and ".join(missing) +
+                     " - a tick with no recorded proof is the claim this verb replaces")
     return {"outline": cmd_outline, "mint": cmd_mint, "devrecord": cmd_devrecord,
             "audit": cmd_audit, "check": cmd_check, "trace": cmd_trace,
             "flag": cmd_flag, "start": cmd_start, "check-actions": cmd_check_actions,
-            "finish": cmd_finish, "index-row": cmd_index_row}[args.verb](args)
+            "finish": cmd_finish, "index-row": cmd_index_row,
+            "reconcile-actions": cmd_reconcile_actions}[args.verb](args)
 
 
 if __name__ == "__main__":

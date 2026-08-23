@@ -2450,6 +2450,60 @@ def main() -> int:
                     bool(re.search(r"exit(?:ing)? 5", body, re.I)),
                     "an unset one-time token must not stop a lane from closing")
 
+    if c.block("CS-17 · SCC-298: the reconcile passage is IDENTICAL in all four closing doors"):
+        # ⛔ WHY A MARKER AND A DIFF, AND NOT A `grep -c`. FOUR command bodies call
+        # `jira_feed.py finish --apply` and close a ticket, and each of them must run the same
+        # reconcile pass first or a story lane settles rows by different rules than a task lane.
+        # `test_twin_parity.py` cannot carry this: it puts BOTH close doors in `NOT_PAIRED`
+        # ("the Task DOOR - it opens a PR against main and stops"), and its law blocks loop over
+        # `PAIRS` - so a `twin-law` marker in these files is never compared. A `grep -c` proves
+        # the string appears; it cannot see that one copy drifted.
+        CLOSING_DOORS = ("smh-close-task-merge-tree.md", "cicd-close-story-merge-tree.md",
+                         "smh-merge-multiple-workingtrees.md", "cicd-merge-epic-workingtrees.md")
+        OPEN, CLOSE = "<!-- reconcile-law -->", "<!-- /reconcile-law -->"
+        CDIR = ROOT / ".agents/commands"
+
+        # ANTI-VACUITY FIRST: every row below loops over these files, and a loop over a missing
+        # set passes silently.
+        c.check("CS-17 A all four closing doors exist",
+                all((CDIR / n).is_file() for n in CLOSING_DOORS),
+                str([n for n in CLOSING_DOORS if not (CDIR / n).is_file()]))
+
+        blocks: dict[str, str] = {}
+        for name in CLOSING_DOORS:
+            body = (CDIR / name).read_text(encoding="utf-8-sig") if (CDIR / name).is_file() else ""
+            i, j = body.find(OPEN), body.find(CLOSE)
+            blocks[name] = body[i + len(OPEN):j] if 0 <= i < j else ""
+
+        c.check("CS-17 B every closing door carries the reconcile passage",
+                all(blocks.values()),
+                "missing or unterminated: " + str([n for n, b in blocks.items() if not b]))
+
+        # ⛔ NON-EMPTY IS HALF THE ASSERTION. Four files each carrying an empty marker pair are
+        # also "all equal" - the anti-vacuity shape `tests-must-gate-for-real` bans. The length
+        # floor is what makes equality mean something.
+        c.check("CS-17 C ...and it is SUBSTANTIVE, not an empty marker pair",
+                all(len(b.strip()) > 200 for b in blocks.values()),
+                str({n: len(b.strip()) for n, b in blocks.items()}))
+
+        first = blocks[CLOSING_DOORS[0]]
+        drifted = [n for n, b in blocks.items() if b != first]
+        c.check("CS-17 D all four copies are BYTE-IDENTICAL",
+                not drifted, f"drifted from {CLOSING_DOORS[0]}: {drifted}")
+
+        # E · the passage has to name the verb it is about, or "identical" is satisfied by four
+        # identical copies of something else entirely.
+        c.check("CS-17 E ...and the passage names `reconcile-actions`",
+                "reconcile-actions" in first, first[:200])
+
+        # F · the law the passage acts under, cited where an agent reading the door will see it.
+        for name in CLOSING_DOORS:
+            body = (CDIR / name).read_text(encoding="utf-8-sig") if (CDIR / name).is_file() else ""
+            c.check(f"CS-17 F {name} cites completion-not-illusion",
+                    "completion-not-illusion" in body,
+                    "a door doing the thing must point at its law")
+
+
     return c.finish()
 
 

@@ -984,6 +984,46 @@ on the owed list with the reason. Every other open box is untouched; those are y
 > the merge, on `main`, in a commit the write gate then refused — and that refusal is what put
 > `git reset --hard` in front of the agent that destroyed three sessions' work.
 
+**And since SCC-298 the close-out RECONCILES the other rows before it asks `finish` to close
+(2026-08-23).** The merge row was the only one anything ever checked. Every *other* row closed or
+held a ticket on nothing but whether somebody had typed an `x` — so a ticket sat at `Review
+Required` over work that was finished. SCC-288 sat for a day on one box whose API token already
+existed, authenticated, and had attached the file. The operator's words: *"agents are terrible at
+checking off those task lists, especially when its a user task, even if I tell them."*
+
+```bash
+python3 .agents/scripts/jira_feed.py reconcile-actions --walkthrough <path>   # PC: `python`
+```
+
+Bare, it lists every open row **with its line number** and exits `3` — `finish`'s own HELD code. It
+reads a file and writes that file: no board, no key, no network. Then you settle rows one at a time:
+
+```bash
+… reconcile-actions --walkthrough <path> --tick <line> --evidence "<what proves it>"       --source measured|operator
+```
+
+**The rule for ticking, and it is the operator's ruling of 2026-08-23:** derive the check and RUN
+it where one exists, and tick on what it returned (`--source measured`); where no machine check
+exists, **ASK**, and tick on their word, quoted (`--source operator`). Either way the answer is
+written into the row, in the lane's own commit, where you and the review both read it. A row that
+is neither proved nor answered **stays open** and gets reported — that is a row genuinely holding
+the ticket, and it is the only kind that should.
+
+It refuses five ways and writes nothing on any of them: a line that is not an open row (a stale
+number, an already-settled row, a `- [ ]` from the agent's own `## Task Checklist`, a fenced
+example) · **empty** evidence · **contentless** evidence · a **ceremony** row (SCC-193 — the agent
+runs those; delete the row) · and the **merge** row (SCC-175 — `finish` computes that one). ⚠️ The
+contentless check is a **floor, not a content judge**: it refuses the forms that carry nothing
+(`done`, `verified`, under 16 characters or 3 words), and no check can tell a real measurement from
+a plausible sentence. The real guard is that the evidence lands in the file. ⛔ **The verb never
+derives its own evidence** — an agent that could both invent the check and pass it is
+self-certifying, which is the thing this closes. Law: `.agents/rules/completion-not-illusion.md`
+§4, and the step is mandatory in all four doors that call `finish --apply`
+(`/smh-close-task-merge-tree`, `/cicd-close-story-merge-tree`,
+`/smh-merge-multiple-workingtrees`, `/cicd-merge-epic-workingtrees`), byte-identical and pinned by
+`test_command_surfaces.py` **CS-17** — which the twin-parity suite cannot cover, because both close
+doors sit in its `NOT_PAIRED` list.
+
 **The landing target is resolved, not assumed.** A Task lands on `main`; a **story** lands on
 `epic/<KEY>-<slug>`, which is not an ancestor of `main` until the epic itself ships — so a
 hardcoded `origin/main` would answer *"held"* forever on a finished story. The target resolves

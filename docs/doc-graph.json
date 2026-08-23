@@ -7,7 +7,7 @@
     "files": 362,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 696,
+    "edges": 701,
     "external": 39,
     "ambiguous": 163,
     "dangling": 295,
@@ -94,7 +94,7 @@
     {
       "path": ".agents/commands/cicd-close-story-merge-tree.md",
       "in": 2,
-      "out": 8
+      "out": 9
     },
     {
       "path": ".agents/commands/cicd-code-review-AP.md",
@@ -139,7 +139,7 @@
     {
       "path": ".agents/commands/cicd-merge-epic-workingtrees.md",
       "in": 3,
-      "out": 6
+      "out": 7
     },
     {
       "path": ".agents/commands/cicd-mobile-error-team.md",
@@ -239,7 +239,7 @@
     {
       "path": ".agents/commands/smh-close-task-merge-tree.md",
       "in": 3,
-      "out": 9
+      "out": 10
     },
     {
       "path": ".agents/commands/smh-code-review.md",
@@ -259,7 +259,7 @@
     {
       "path": ".agents/commands/smh-merge-multiple-workingtrees.md",
       "in": 2,
-      "out": 5
+      "out": 6
     },
     {
       "path": ".agents/commands/smh-new-project.md",
@@ -463,7 +463,7 @@
     },
     {
       "path": ".agents/rules/completion-not-illusion.md",
-      "in": 2,
+      "in": 7,
       "out": 0
     },
     {
@@ -1744,7 +1744,7 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 21,
-      "out": 48
+      "out": 49
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
@@ -2047,6 +2047,11 @@
     },
     {
       "from": ".agents/commands/cicd-close-story-merge-tree.md",
+      "to": ".agents/rules/completion-not-illusion.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-close-story-merge-tree.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
@@ -2218,6 +2223,11 @@
     {
       "from": ".agents/commands/cicd-live-testing-team.md",
       "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-merge-epic-workingtrees.md",
+      "to": ".agents/rules/completion-not-illusion.md",
       "kind": "ref"
     },
     {
@@ -2547,6 +2557,11 @@
     },
     {
       "from": ".agents/commands/smh-close-task-merge-tree.md",
+      "to": ".agents/rules/completion-not-illusion.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-close-task-merge-tree.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
@@ -2648,6 +2663,11 @@
     {
       "from": ".agents/commands/smh-merge-multiple-workingtrees.md",
       "to": ".agents/rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-merge-multiple-workingtrees.md",
+      "to": ".agents/rules/completion-not-illusion.md",
       "kind": "ref"
     },
     {
@@ -4923,6 +4943,11 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/rules/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/completion-not-illusion.md",
       "kind": "ref"
     },
     {
