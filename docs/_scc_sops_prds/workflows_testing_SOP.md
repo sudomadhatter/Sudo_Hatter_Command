@@ -1646,8 +1646,31 @@ points this lane's upstream at **main itself**.
 **Shipping before every part is built — partial landing.** Write `landing_mode: partial` into `task.yaml`
 and **trim `riders:` to the subset actually on the branch**. Then the trimmed riders flip, the
 **parent stays open**, and the remainder becomes the next lane. `task_preflight.py` checks every
-declared rider against the lane's commits and refuses one that leads no commit there; an unrecognised
+declared rider against the lane's commits and refuses one that is NAMED in no commit subject there — the key may sit anywhere in the subject, so the house shape `SCC-244 rider SCC-253: …` earns it (SCC-282; until then only the LEADING key was read and no rider on a consolidated lane could ever earn `partial`); an unrecognised
 `landing_mode:` **value** fails CLOSED, so a typo in the value blocks rather than relaxes.
+
+**A dirty path that belongs to a LIVE SIBLING LANE is named, not errored (SCC-283).** The close-out
+classifies every dirty path in the shared checkout: its own receipt, memory files, and everything
+else — which used to be a hard error with no way to recognise another live lane's working copy
+(`.claude/settings.json` can only be edited in the shared checkout, so a lane working on it is
+*required* to leave that tree dirty). The two answers have opposite correct actions — unswept dirt
+is committed or parked, another lane's copy is left alone — and guessing wrong once cost three
+sessions' work (SCC-180). Now a dirty path whose BYTES equal a sibling `chore/` · `claude/` · `epic/`
+worktree's COMMITTED copy is reported as *that lane's working copy* with the branch named, as a
+warning. Different bytes still error; a path no lane committed still errors; and `main` is never a
+sibling lane, so a hand-revert to main's content in your working copy still errors.
+⛔ The same lane found that the classifier had been mis-reading the FIRST dirty line whenever it was a
+tracked modification (` M path` lost its leading space to a whole-output `.strip()`), so the memory ruling and
+the sibling match both silently missed exactly the `M .claude/settings.json` shape the ticket was filed on — fixed.
+⭐ **The review of that lane then found the hole in its own fix, four lenses independently:** a sibling's committed TREE
+carries main's bytes for every file it never touched, so "working copy equals `<sibling>:<path>`" was also true of a
+hand-revert to main — the moment ONE unrelated sibling worktree was live (the normal state here). Excluding `main` by
+name was dead code on every real run. **The predicate is now "the lane CHANGED it"**: a sibling owns a path only when its
+blob differs from the base's blob. Three more rulings ride with it: the lane's **own** branch is a legitimate owner (the
+lane that dirtied the shared checkout must be able to close itself); a **`prunable`** worktree is not a live lane; a
+**staged** sibling copy (`A `, `M `, `MM`) is never owned — it errors with the `git restore --staged` remedy, because
+staging is an act of this tree. And the compare is by **blob id through the clean filter** (`git hash-object --path`),
+so the PC's `core.autocrlf=true` CRLF working copy still matches the LF blob — raw bytes made the bucket dead there.
 ⛔ The **key** is `landing_mode`, never `landing` — `task.yaml` already has a different `landing:`
 nested under each `secondary_repos:` entry, which is why the name was changed. A bare `landing: partial`
 at column 0 is not recognised at all: it fails **silently**, not closed — nothing reads it, no
@@ -1840,6 +1863,7 @@ not change: the declared `case` must still name a case on the `FAILED:` line. De
 | The rule | Why it exists |
 |---|---|
 | A **surviving** mutant is a finding | the coverage hole you came to find |
+| A **DELETION** mutant is declared as `"mutated": ""` — remove the anchor entirely and see if anything notices | the most valuable mutant shape for a guard: it proves the guard fires because the line is THERE, not because some other line happens to be. ⛔ Until SCC-284 the loader tested fields with a FALSY check, so the empty string read as *missing* and the whole table was refused; SCC-244 worked around it three times with an inert substitute line, and its record then said *replaced* about mutants that tested *removed*. Now every field must be PRESENT (an absent key refuses and says **absent**), every field but `mutated` must be non-empty, and `original` still needs a unique anchor |
 | A mutant that **removes nothing** is **DEFECTIVE** — a SKIP that **counts as a survivor** | SCC-144's `M3` commented out one `echo` of a two-line message; the second line still printed the asserted word, so the case passed **correctly**. Read as a coverage gap it buys a test for a hole that does not exist |
 | Mutants are **CODE-DERIVED**, never drawn from your own cases | case-derived mutants are circular — they prove only that the suite agrees with itself. Measured in SCC-144: its 14 case-derived mutants were all killed, and a later set drawn from the code left **24 of 25 surviving** — every survivor a hole the first sweep had reported as covered |
 | **RESTORE** in a `finally`/trap; never start dirty; re-check `git status` after | a `timeout`-killed sweep left a **mutated gate on disk, uncommitted** — and a mutated gate is committable. **Enforced by `mutation_sweep.py`**, which also names the file it refuses to start on |

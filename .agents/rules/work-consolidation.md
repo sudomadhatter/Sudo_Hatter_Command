@@ -157,7 +157,7 @@ stays for work that really does run side by side (`/smh-label-tasks` computes th
 | Worktree / branch | ONE, keyed by the **parent** — `chore/<PARENT-KEY>-<slug>` | one per subtask |
 | Plan | one `implementation_plan.md`, N part sections | one per lane |
 | Manifest | `riders: [<every subtask key>]` in `task.yaml`, written at cut time | no riders |
-| Commits | **the SUBTASK's key per commit** — each child's Jira dev panel shows its own commits, and a part can be reverted as a unit | the lane's own key |
+| Commits | **the SUBTASK's key NAMED in each commit subject** — anywhere in it; `SCC-244 rider SCC-253: …` with the lane key leading is the house shape, `SCC-253 fix: …` also counts (SCC-282). Each child's Jira dev panel shows its own commits, and a part can be reverted as a unit | the lane's own key |
 | The merge | ONE `--no-ff` merge under the **parent's** key | one per lane |
 | Close-out | ONE ceremony: riders flip to Done first, parent last | one per lane |
 | Gate | ONCE, at the tip, through the receipt writer | once per lane |
@@ -170,7 +170,7 @@ makes the *rest of this lane* cheaper goes first.
 is built, write `landing_mode: partial` in `task.yaml` and **trim `riders:` to the subset that actually
 landed**. Then the declared riders flip, the **parent stays open**, and the remainder becomes the next
 `chore/<PARENT-KEY>-<slug2>` lane with its own manifest. `task_preflight.py` checks the trim against
-the lane's commits and refuses a rider that leads no commit — *never declare a ticket whose work is
+the lane's commits and refuses a rider that is named in no commit subject — *never declare a ticket whose work is
 not real.*
 
 ## Rule 3 — Verify the batch in ONE block

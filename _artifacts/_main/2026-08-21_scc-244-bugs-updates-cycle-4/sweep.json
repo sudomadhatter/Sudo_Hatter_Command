@@ -181,7 +181,7 @@
    "mutated": "worktree add .claude/worktrees/<story-slug> \\\n    -b claude/"
   },
   {
-   "id": "M16 (A1) the OTHER accepted cure is removed — cicd-quick-dev's epic add loses its `branch --unset-upstream`, proving the scan sees the second idiom and its absence",
+   "id": "M16 (A1) the OTHER accepted cure is removed — cicd-quick-dev's epic add loses its `branch --unset-upstream`, proving the scan sees the second idiom and its absence [SCC-284: now a REAL deletion - was an inert substitute line]",
    "test": [
     "python3",
     ".agents/scripts/tests/test_shared_checkout_stays_on_main.py"
@@ -190,7 +190,7 @@
    "block": "C4 · no `worktree add … origin/epic/…` anywhere tracks the epic",
    "case": "every epic-based worktree call passes `--no-track`",
    "original": "git -C \"<the new tree>\" branch --unset-upstream           # an origin/… start-point sets upstream to the BASE branch\n",
-   "mutated": "git -C \"<the new tree>\" status -sb                        # the cure is gone\n"
+   "mutated": ""
   },
   {
    "id": "M17 (A2) the refspec loses its quotes — zsh globs it, exits 1, prints nothing",
@@ -265,7 +265,7 @@
    "mutated": "        [\"git\", \"-C\", str(start), \"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\"],\n        capture_output=True, text=True, check=True,\n    )"
   },
   {
-   "id": "M23 (A4) the sub-heading label is never emitted — out-of-scope bullets read as criteria again, with the one word that said otherwise deleted",
+   "id": "M23 (A4) the sub-heading label is never emitted — out-of-scope bullets read as criteria again, with the one word that said otherwise deleted [SCC-284: now a REAL deletion - was an inert substitute line]",
    "test": [
     "python3",
     ".agents/scripts/tests/test_jira_feed.py"
@@ -274,7 +274,7 @@
    "block": "SCC-257 · ac-theme-subheadings",
    "case": "D4 ...but the boundary is VISIBLE — the sub-heading renders as a label",
    "original": "            if pending_label:\n                out.append(f\"[{pending_label}]\")\n                pending_label = \"\"\n",
-   "mutated": "            pass\n"
+   "mutated": ""
   },
   {
    "id": "M24 (A5) `check` decides by LENGTH again — 'outline present (131 chars)' over a hand note, at close-out, in both doors",
@@ -301,7 +301,7 @@
    "mutated": "    idx = current.find(PREVIOUS_NOTE_HEADER)"
   },
   {
-   "id": "M26 (A7) a door stops telling the agent to `git show` a source that carries a ref — ENOENT on the rung the packet just called authoritative",
+   "id": "M26 (A7) a door stops telling the agent to `git show` a source that carries a ref — ENOENT on the rung the packet just called authoritative [SCC-284: now a REAL deletion - was an inert substitute line]",
    "test": [
     "python3",
     ".agents/scripts/tests/test_label_tasks.py"
@@ -309,7 +309,7 @@
    "file": ".agents/commands/cicd-label-tasks.md",
    "case": "F3 cicd-label-tasks.md tells the agent to `git show` a source that carries a ref",
    "original": "git -C \"$REPO\" show \"<ref>:<path>\"     # ref present  → read it from the branch\n",
-   "mutated": "cat \"<path>\"     # just open it\n",
+   "mutated": "",
    "unfiltered": true
   },
   {

@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-281-bugs-cycle-6",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-281",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "02dc7b804dd2b3a54afc1f7ed60a7d6613df7fa4",
+  "warnings": 2,
+  "when": "2026-08-22T19:48:44-05:00"
+}

@@ -161,7 +161,7 @@ single `/smh-close-task-merge-tree --expect-key <PARENT-KEY>`.
 **If the lane must ship before every part is built:** write `landing_mode: partial` into `task.yaml` and
 **trim `riders:` to the subset that actually landed.** The declared riders flip, the parent stays open,
 and the remainder becomes the next `chore/<PARENT-KEY>-<slug2>` lane. `task_preflight.py` checks the
-trim against the lane's commits and refuses a rider that leads no commit there.
+trim against the lane's commits and refuses a rider that is named in no commit subject there (the key may sit anywhere in the subject — SCC-282).
 
 ## Step 3 — Per subtask: plan it, audit it, cut it, push it
 
