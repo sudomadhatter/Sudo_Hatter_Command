@@ -14,7 +14,7 @@ review-runtime: fan-out
 # SCC-288 — walkthrough
 
 **One consolidated lane, ONE commit, on the operator's word (2026-08-22): *"we will do all subtasks
-in one shot on this working tree, one commit at the end."*** Shipping sha `52edbb2`.
+in one shot on this working tree, one commit at the end."*** Shipping sha `52edbb2` for A/B/C; `14ed813` adds the close-out fix in Finding 4.
 
 ---
 
@@ -47,6 +47,10 @@ in one shot on this working tree, one commit at the end."*** Shipping sha `52edb
   - C3 both Task doors wired (`smh-plan-task`, `smh-close-task-merge-tree --after-merge`).
   - C4 `jira_integration_guide.md` §12.5, `jira_manual.md` step 5, SOP §12.
   - C5 **deferred with a structural reason** — see Deferred.
+- [x] **D (SCC-290 follow-on) — `--repair`, found by this lane's gate at its own close-out.**
+  - The merge that absorbed `origin/main` left the maps stale behind a clean tree, and the remedy
+    `--verify` printed could not fix it. See Finding 4.
+- [x] The merge itself — lands via this branch's PR
 
 ---
 
@@ -151,6 +155,11 @@ docstring rather than leaving a reader to assume otherwise.
 | `check_maps.py --all` | exit 1 — **two pre-existing dead-path reports, not this lane** (below) |
 | `mutation_sweep.py` (27 mutants) | **27/27 killed by their declared case** |
 
+**Re-run at the close-out tip `14ed813`**, after `origin/main` was absorbed and Finding 4 was
+fixed: `run_all.py` **58/58 files**, `refresh_maps.py --verify` **exit 0**, `mutation_sweep.py`
+**32/32 killed** (M28–M32 added for `--repair`). `check_maps --all` still exits 1 on the same
+two pre-existing rows below and nothing else.
+
 ⚠ **`check_maps --all` exits 1 on two rows and both are pre-existing.** Both name
 `docs/migrations/auth_keys/_secrets/master.env`, a hand-carried secrets file that is gitignored
 (`.gitignore:52 **/auth_keys/`) and therefore absent from every clone. The same row is on
@@ -210,6 +219,38 @@ Ownership is now **byte equality**, with three distinct outcomes asserted agains
 PowerShell: foreign → REFUSED, ours-but-extended → REFUSED, ours-and-identical → installed.
 Mutant **M19** kills it.
 
+### 4. `--verify` printed a remedy that could not fix the tree it fires on
+
+**Found at this lane's own close-out, by this lane's own gate — the fourth time that has happened
+here.** Merging `origin/main` in at Step 1 brought a new file under `docs/`. `git merge` runs
+`pre-merge-commit`, never `pre-commit`, so `pre-commit-maps.sh` did not fire and the generated maps
+went stale **behind a clean tree**. `--verify` caught it at the push. That part worked exactly as
+designed — it is reason #1 in `pre-push-maps-verify.sh`'s own header.
+
+What did not work was the next line. `--verify` printed:
+
+```
+regenerate: python3 .agents/scripts/refresh_maps.py --staged
+```
+
+and `--staged` is gated on the **staged set**. After a merge nothing is staged, so it exits 0 having
+written nothing. Run it, run `--verify` again, get the same refusal, forever. **All three trees
+`--verify` exists to catch have an empty index** — a merge commit, a `--no-verify` commit, and a
+clone whose `core.hooksPath` was never armed — so on every one of them the printed remedy was a
+no-op and `--no-verify` was the only way past. ⛔ **A gate whose only escape is the bypass is a gate
+everybody bypasses**, which would have quietly retired the whole of Part B within a month.
+
+**Fixed:** `run_staged` split into the trigger gate plus a reusable `converge()`; new `run_repair`
+/ `--repair` runs the same convergent write with no trigger gate. Every message that names a remedy
+now names it — `refresh_maps --verify`, `check_maps` check 10, `pre-push-maps-verify.sh`, SOP §8.
+
+**RED first.** `RM-D2` builds the merge shape (stale tree, empty index), asserts the fixture really
+is stale and the index really is empty, then that `--staged` **cannot** fix it — that assertion is
+the defect, kept as a case so the trigger gate cannot be deleted to "simplify" it — then that one
+`--repair` converges, stages all three files, and a second run is a silent no-op. `RM-D` now pins
+the printed remedy **both ways** (`--repair` present, `--staged` absent); `CM10 C` pins check 10's;
+`RM-I` covers the new mode collision. Mutants **M28–M32** kill all five.
+
 ---
 
 ## Corrections to the plan, made on measured evidence
@@ -224,12 +265,12 @@ Mutant **M19** kills it.
 
 ---
 
-## Mutation sweep — 27/27 killed
+## Mutation sweep — 32/32 killed
 
 `python3 .agents/scripts/mutation_sweep.py --table _artifacts/_main/2026-08-22_graph-to-projects/sweep.json`
 
 ```
--- sweep clean: 27/27 killed by their declared case --
+-- sweep clean: 32/32 killed by their declared case --
 ```
 
 Every mutant is drawn from a **decision in the source**, not from the cases. Coverage: `risk_seam`
@@ -282,8 +323,15 @@ certifying sweep was run outside the sandbox.
 
 ## Your Actions
 
-**What landed:** one commit, `52edbb2`, on `chore/SCC-288-graph-to-projects`. All three riders'
-scope, all gates green at the tip, 27/27 mutants killed.
+**What landed:** `52edbb2` (all three riders' scope) and `14ed813` (Finding 4, found by this
+lane's own gate while closing it out), on `chore/SCC-288-graph-to-projects`. Gates green at the tip,
+32/32 mutants killed.
+
+⛔ **No adversarial review verdict on this lane.** `/smh-code-review` was the next door and it was
+not run — the close-out was invoked straight after the build. Nothing was waved through: with no
+verdict the preflight grants **no SKIP**, so the full mechanical gate ran at the landing sha rather
+than being cited from a review. Stated here because the walkthrough carries no `Verdict:` line and
+that absence should be a fact on the record, not something a later reader has to notice.
 
 **What I decided, and why, without asking:**
 - Moved the two truth checks from `pre-commit` to a new `commit-msg` delegate. The ratchet could not
