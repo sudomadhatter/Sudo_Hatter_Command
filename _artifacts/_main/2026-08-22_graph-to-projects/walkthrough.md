@@ -14,8 +14,8 @@ review-runtime: fan-out
 # SCC-288 — walkthrough
 
 **One consolidated lane, ONE commit, on the operator's word (2026-08-22): *"we will do all subtasks
-in one shot on this working tree, one commit at the end."*** Shipping sha `52edbb2` for A/B/C; `14ed813` and `1624a5d` add the two close-out fixes in
-Findings 4 and 5.
+in one shot on this working tree, one commit at the end."*** Shipping sha `52edbb2` for A/B/C; `14ed813`, `1624a5d` and `4aa9ef2` add the three
+close-out fixes in Findings 4–6.
 
 ---
 
@@ -52,6 +52,7 @@ Findings 4 and 5.
   - The merge that absorbed `origin/main` left the maps stale behind a clean tree, and the remedy
     `--verify` printed could not fix it. See Finding 4.
 - [x] **E (SCC-288) — a green mutation sweep was leaving the mutant running.** See Finding 5.
+- [x] **F (SCC-288) — the link checker read the doc graph's report as its own findings.** Finding 6.
 - [x] The merge itself — lands via this branch's PR
 
 ---
@@ -157,11 +158,15 @@ docstring rather than leaving a reader to assume otherwise.
 | `check_maps.py --all` | exit 1 — **two pre-existing dead-path reports, not this lane** (below) |
 | `mutation_sweep.py` (27 mutants) | **27/27 killed by their declared case** |
 
-**Re-run at the close-out tip `1624a5d`**, after `origin/main` was absorbed and Finding 4 was
+**Re-run at the close-out tip `4aa9ef2`**, after `origin/main` was absorbed and Finding 4 was
 fixed: `run_all.py` **58/58 files**, `refresh_maps.py --verify` **exit 0**, `mutation_sweep.py`
-**34/34 killed** (M28–M32 for `--repair`, M33–M34 for the bytecode purge), with
+**36/36 killed** (M28–M32 for `--repair`, M33–M34 for the bytecode purge, M35–M36 for the
+AUTO-block strip), with
 `test_jira_ticket.py` at **41/41** because the sweep was run outside the sandbox. `check_maps --all` still exits 1 on the same
 two pre-existing rows below and nothing else.
+
+`check_links.py --base origin/main` exits 1 with **26** unresolved paths: 15 pre-existing on
+`origin/main`, 11 example fixture paths in this lane's own artifacts. Finding 6 has the breakdown.
 
 ⚠ **`check_maps --all` exits 1 on two rows and both are pre-existing.** Both name
 `docs/migrations/auth_keys/_secrets/master.env`, a hand-carried secrets file that is gitignored
@@ -286,6 +291,33 @@ the `(mtime, size)` pair recorded in the `.pyc` header against the source — an
 fix and without it**, because that pair matching *is* the defect. Kept in the case comment rather
 than quietly replaced.
 
+### 6. `check_links` reported the doc graph's findings as its own — 40 of them
+
+`docs/doc-graph.md`'s AUTO block is a **report** whose job is to LIST the dangling references the
+graph found, and every entry is a backticked path `check_links`'s pattern matches. So the graph's
+findings came back as the checker's findings, in a file no human wrote a link into. **This lane
+widened the graph onto `docs/`, which took the run from ~24 hits to 64** — and SCC-285 built this
+script with the lesson written into it: *a gate that cries wolf thirty times teaches the reader to
+skip the one real hit.* The lane that made the noise fixes it.
+
+`generate_doc_graph.strip_auto()` already refuses to parse AUTO blocks as link **sources** for the
+same reason. This is the same rule applied by the other reader of the same files — both sentinels,
+line numbers preserved.
+
+**Measured on this diff: 64 → 26.** Of the 26, **fifteen are pre-existing on `origin/main`**
+(`PROJECT_ROOT/` placeholders in the sentry doors, two older pointers) and **eleven are example
+fixture paths quoted in this lane's own plan and walkthrough** — prose about tests, in a historical
+record. **No new dead link in authored prose.** The two illustrative node ids in `doc-graph.md`'s
+curated header were also changed to real paths, so the example is true as well as quiet.
+
+**RED first**, case `H`. `H1` a dead path inside the block is not the checker's finding; `H2`/`H3`
+an authored dead link on **either side** still reports, so the strip cannot swallow the file — the
+failure mode the mermaid strip had; `H4` the checked count; `H5` the repo-map sentinel.
+
+⛔ **`H`'s first fixture used a plain table cell and passed WITHOUT the fix.** The real block
+backticks its paths and only a backticked path matches. Corrected, and noted in the case — this is
+the second vacuous first draft on this lane, both caught by running RED before GREEN.
+
 ---
 
 ## Corrections to the plan, made on measured evidence
@@ -300,12 +332,12 @@ than quietly replaced.
 
 ---
 
-## Mutation sweep — 34/34 killed
+## Mutation sweep — 36/36 killed
 
 `python3 .agents/scripts/mutation_sweep.py --table _artifacts/_main/2026-08-22_graph-to-projects/sweep.json`
 
 ```
--- sweep clean: 34/34 killed by their declared case --
+-- sweep clean: 36/36 killed by their declared case --
 ```
 
 Every mutant is drawn from a **decision in the source**, not from the cases. Coverage: `risk_seam`
@@ -358,9 +390,10 @@ certifying sweep was run outside the sandbox.
 
 ## Your Actions
 
-**What landed:** `52edbb2` (all three riders' scope) and `14ed813` and `1624a5d` (Findings 4 and 5,
-both found while closing the lane out — the second by the first one's symptom), on `chore/SCC-288-graph-to-projects`. Gates green at the tip,
-34/34 mutants killed.
+**What landed:** `52edbb2` (all three riders' scope) and `14ed813`, `1624a5d` and `4aa9ef2`
+(Findings 4, 5 and 6 — all three found while closing the lane out, the second by the first one's
+symptom), on `chore/SCC-288-graph-to-projects`. Gates green at the tip,
+36/36 mutants killed.
 
 ⛔ **No adversarial review verdict on this lane.** `/smh-code-review` was the next door and it was
 not run — the close-out was invoked straight after the build. Nothing was waved through: with no
