@@ -194,7 +194,6 @@
         "python3",
         ".agents/scripts/tests/test_install_git_hooks.py"
       ],
-      "unfiltered": true,
       "block": "F2 · SCC-290 · -Install refuses to clobber an EXTENDED dispatcher"
     },
     {
