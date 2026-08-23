@@ -33,6 +33,19 @@ banner scrolls past in a terminal; the polished file on disk is what survives.
 3. **Don't let a stopping point masquerade as a finish line.** A trial run, a `-MaxStage` stop, a
    plan awaiting approval, or a paused session are all INCOMPLETE until the close-out steps run.
    Say so plainly - in the artifact AND in your summary to the user.
+4. **An unverified open box is not evidence of owed work** (SCC-298). The rule above runs in the
+   other direction too: a `- [ ]` in `## Your Actions` is a CLAIM that something is still owed,
+   and an unchecked claim is no more trustworthy pointing that way than the other. Agents are
+   reliably bad at ticking a list, and worst at the rows that are the operator's - so at close-out
+   you **reconcile before you close**: derive the check for each open row and run it, tick on what
+   it returned; where no machine check exists, ASK the operator and tick on their word, quoted;
+   what is neither proved nor answered stays open and gets reported. `jira_feed.py
+   reconcile-actions` is the door, and it is mandatory in every command that runs
+   `jira_feed.py finish`.
+   ⛔ **Verifying is not self-certifying.** You record what a check returned or what the operator
+   said - you never derive the evidence and accept it in the same breath. The one row you may not
+   tick at all is the merge row: `finish` computes that from the repo (SCC-175), because a tick
+   is a claim and the ancestry check is the answer.
 
 ## Why
 Source: the autopilot loop's `-MaxStage 2` trial (2026-06-19) produced a plan + audit so polished

@@ -984,6 +984,110 @@ on the owed list with the reason. Every other open box is untouched; those are y
 > the merge, on `main`, in a commit the write gate then refused — and that refusal is what put
 > `git reset --hard` in front of the agent that destroyed three sessions' work.
 
+**And since SCC-298 the close-out RECONCILES the other rows before it asks `finish` to close
+(2026-08-23).** The merge row was the only one anything ever checked. Every *other* row closed or
+held a ticket on nothing but whether somebody had typed an `x` — so a ticket sat at `Review
+Required` over work that was finished. SCC-288 sat for a day on one box whose API token already
+existed, authenticated, and had attached the file. The operator's words: *"agents are terrible at
+checking off those task lists, especially when its a user task, even if I tell them."*
+
+```bash
+python3 .agents/scripts/jira_feed.py reconcile-actions --walkthrough <path>   # PC: `python`
+```
+
+Bare, it lists every open row **with its line number** and exits `3` — `finish`'s own HELD code. It
+reads a file and writes that file: no board, no key, no network.
+
+⛔ **It counts only what YOU can settle, and that is the point of reusing `finish`'s codes.** The
+**merge row** is listed and tagged but never counted: `finish` computes that one from the repo
+(SCC-175) and the verb refuses to tick it, so counting it would mean answering **HELD** on a file
+`finish` answers **CLEAR** — and since almost every walkthrough carries a merge row, the verb could
+essentially never reach `0`. That was live and shipped-adjacent: caught by a review lens after the
+author had read the wrong output as correct. A **ceremony** row still blocks, because `finish`
+refuses on one — but it is reported as something to **DELETE**, not as work you owe.
+
+⛔ **If you delete a row, RE-RUN the listing before the next tick.** Ticking preserves line numbers
+by construction; **deleting shifts every row below it**, and a number from the stale listing then
+lands on a different open row — which `--tick` would accept, because that line really is open. Pass
+`--expect "<text from the row>"` and it is checked for you. The listing's own *"DELETE the row"* tag
+is what makes this reachable, so it is not a hypothetical.
+
+Then you settle rows one at a time:
+
+```bash
+… reconcile-actions --walkthrough <path> --tick <line> \
+      --evidence "<what proves it>" --source measured|operator [--expect "<text from the row>"]
+```
+
+**The rule for ticking, and it is the operator's ruling of 2026-08-23:** derive the check and RUN
+it where one exists, and tick on what it returned (`--source measured`); where no machine check
+exists, **ASK**, and tick on their word, quoted (`--source operator`). Either way the answer is
+written into the row, in the lane's own commit, where you and the review both read it. A row that
+is neither proved nor answered **stays open** and gets reported — that is a row genuinely holding
+the ticket, and it is the only kind that should.
+
+It refuses **seven** ways and writes nothing on any of them: no `## Your Actions` section at all ·
+a line that is not an open row (a stale number, an already-settled row, a `- [ ]` from the agent's
+own `## Task Checklist`, a fenced example) · an `--expect` the row no longer contains · **empty**,
+**contentless**, or **multi-line** evidence · a **merge** row (SCC-175 — `finish` computes that one)
+· a **ceremony** row (SCC-193 — the agent runs those; delete the row) · and evidence that would
+*manufacture* a merge row out of an ordinary one.
+
+⛔ **EVIDENCE IS ONE LINE, and this is a fail-open the review caught, not a style rule.** The proof
+is written into the walkthrough **verbatim**. A newline in it puts a new line into the file: one
+starting `## ` **ends the section**, one carrying a fence marker **hides the rest of the file**, and
+either way `finish` reads *"nothing owed"* and **closes the ticket over rows nobody checked** —
+while the verb prints *"`## Your Actions` is now CLEAR"*. Measured before the fix, on real output
+pasted into `--evidence`. It is refused rather than silently collapsed: reflowing a paste would put
+words in the operator's mouth in the one place the file exists to quote them. `--date` takes the
+same vector and must be a plain `YYYY-MM-DD`.
+
+ⓘ **The verb rewrites the whole file, so it reads the way a writer must.** `wf.read_exact` /
+`write_exact` — *"Byte-preserving read for files we will WRITE BACK"* — because the ordinary reader
+is `utf-8-sig` + `errors="replace"` + universal newlines, and on a round trip each of those is
+destructive: an undecodable byte came back **U+FFFD permanently**, a BOM was swallowed, and a CRLF
+walkthrough was rewritten wholly to LF (the reverse on the PC). All three measured.
+
+⚠️ **The contentless check is a FLOOR, not a content judge, and it is two layers with a division of
+labour worth knowing.** A **length/word floor** does the volume — under **16 characters** or **3
+words** is refused whatever it says, so `done`, `ok`, `verified` and `n/a` never get further. A
+short **exact-match phrase set** sits above it for the one shape a floor structurally cannot see:
+**long and contentless** — *"confirmed by operator"*, *"it has been done"*, *"already taken care
+of"*. Every phrase in that set clears the floor, and a test asserts exactly that, so a short word
+added to it later fails the suite instead of silently doing nothing (the first draft was 37 words
+and 35 of them were unreachable — a mutant, not a review, is what found it).
+
+⛔ **The match is exact on purpose, and it will never grow into a judge.** A fuzzy *"does this
+sentence carry content"* test would refuse real operator quotes, and a **false refusal HOLDS a
+ticket** — the exact failure this feature exists to end. Over-accepting is recoverable by a human
+reading the file; over-refusing is not recoverable by anyone. So the real guard is that the
+evidence lands in the file, not that a regex approved it.
+
+⭐ **WHERE it runs is as load-bearing as what it does, and the first cut got it wrong.** The step
+sits in each door's **pre-landing** window — immediately before the `check-actions` block every one
+of them already carves out — and never beside the `finish` call. `finish` runs **after** the merge:
+in `/smh-close-task-merge-tree` that is Step 4, whose opening line is *"After the merge, never
+before"*, and Step 5 prunes the worktree. ⛔ **`cmd_finish` reads the WORKING TREE for these rows**
+— only the merge row is read from `HEAD` — so a tick made there clears the hold and writes `Done`
+while the copy that actually lands still reads `- [ ]`, in a tree about to be deleted. **An open box
+on a closed ticket is exactly what §4 forbids.** So: reconcile → `check-actions` → commit → land →
+`finish`. `test_command_surfaces.py` **CS-17 G** asserts that order by file offset in all four
+doors, because CS-17's other six rows are all satisfied by a block sitting anywhere in the file
+(`source-grep-guards-cannot-see-order`).
+
+ⓘ **A wrapped row keeps its shape.** `## Your Actions` rows routinely run to two or three lines, and
+SCC-206 taught the reader to fold those continuations in. The tick flips the box on the row's **first**
+line and writes the proof after its **last word** — never through the middle of the sentence — and the
+file's line COUNT never changes, which is what keeps every other row's printed line number valid for
+the whole pass. ⛔ **The verb never
+derives its own evidence** — an agent that could both invent the check and pass it is
+self-certifying, which is the thing this closes. Law: `.agents/rules/completion-not-illusion.md`
+§4, and the step is mandatory in all four doors that call `finish --apply`
+(`/smh-close-task-merge-tree`, `/cicd-close-story-merge-tree`,
+`/smh-merge-multiple-workingtrees`, `/cicd-merge-epic-workingtrees`), byte-identical and pinned by
+`test_command_surfaces.py` **CS-17** — which the twin-parity suite cannot cover, because both close
+doors sit in its `NOT_PAIRED` list.
+
 **The landing target is resolved, not assumed.** A Task lands on `main`; a **story** lands on
 `epic/<KEY>-<slug>`, which is not an ancestor of `main` until the epic itself ships — so a
 hardcoded `origin/main` would answer *"held"* forever on a finished story. The target resolves

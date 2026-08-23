@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-298-reconcile-actions",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-298",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "2804483d963c152df39f4eb6c8b851727eeda086",
+  "warnings": 1,
+  "when": "2026-08-23T10:11:42-05:00"
+}
