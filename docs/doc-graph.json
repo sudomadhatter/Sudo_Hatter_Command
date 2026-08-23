@@ -8,11 +8,12 @@
     "packs": 1,
     "pack_docs": 2,
     "edges": 696,
-    "external": 42,
+    "external": 39,
     "ambiguous": 163,
-    "dangling": 298,
-    "broken_paths": 74,
-    "unresolved_names": 224
+    "dangling": 295,
+    "broken_paths": 71,
+    "unresolved_names": 224,
+    "unresolvable": 6
   },
   "nodes": [
     {
@@ -6298,10 +6299,6 @@
     },
     {
       "from": "docs/_scc_sops_prds/tea_testing_guide.md",
-      "target": "Projects/AGY_AVIATIONCHAT/.agents/rules/testing-standards.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/tea_testing_guide.md",
       "target": "_bmad-output/implementation-artifacts/sudo-code-review-tea-9-tia-ci.md"
     },
     {
@@ -6411,14 +6408,6 @@
     {
       "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",
       "target": "/.claude/commands/autopilot_glm.md"
-    },
-    {
-      "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",
-      "target": "Projects/AGY_AVIATIONCHAT/.agents/commands/autopilot_glm.md"
-    },
-    {
-      "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",
-      "target": "Projects/AGY_AVIATIONCHAT/.claude/commands/autopilot_glm.md"
     },
     {
       "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
@@ -6571,10 +6560,6 @@
       "target": "_my_resources/open_tasks/todo_list.md"
     },
     {
-      "from": ".agents/rules/sop-currency.md",
-      "target": "Projects/AGY_AVIATIONCHAT/_my_resources/_quick_reference/sudo_workflows_testing.md"
-    },
-    {
       "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
       "target": "_artifacts/_main/2026-08-12_scc-124-baseline-trial/scoring.md"
     },
@@ -6609,14 +6594,6 @@
     {
       "from": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
       "target": "router.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/sentry_error_response_team.md",
-      "target": "Projects/AGY_AVIATIONCHAT/_artifacts/_main/2026-07-09_incident-response-story-draft/always-live-trigger-brainstorm.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/tea_testing_guide.md",
-      "target": "Projects/AGY_AVIATIONCHAT/.agents/rules/prompt-tdd.md"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
@@ -9934,6 +9911,32 @@
         ".agents/skills/react-best-practices/AGENTS.md",
         "docs/AGENTS.md"
       ]
+    }
+  ],
+  "unresolvable": [
+    {
+      "from": ".agents/rules/sop-currency.md",
+      "target": "Projects/AGY_AVIATIONCHAT/_my_resources/_quick_reference/sudo_workflows_testing.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/sentry_error_response_team.md",
+      "target": "Projects/AGY_AVIATIONCHAT/_artifacts/_main/2026-07-09_incident-response-story-draft/always-live-trigger-brainstorm.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/tea_testing_guide.md",
+      "target": "Projects/AGY_AVIATIONCHAT/.agents/rules/prompt-tdd.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/tea_testing_guide.md",
+      "target": "Projects/AGY_AVIATIONCHAT/.agents/rules/testing-standards.md"
+    },
+    {
+      "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",
+      "target": "Projects/AGY_AVIATIONCHAT/.agents/commands/autopilot_glm.md"
+    },
+    {
+      "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",
+      "target": "Projects/AGY_AVIATIONCHAT/.claude/commands/autopilot_glm.md"
     }
   ],
   "packs": [

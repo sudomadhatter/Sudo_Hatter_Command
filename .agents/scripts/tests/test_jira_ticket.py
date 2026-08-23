@@ -79,14 +79,32 @@ def run(*args, env=None, cwd=None):
 def acli_stub(d: Path, log: Path):
     """A REAL executable standing in for acli — it records its argv and succeeds. The only thing
     faked is the third-party binary; `write_description` builds the argv and spawns the process
-    exactly as it does in production."""
+    exactly as it does in production.
+
+    ⛔ SCC-288 · `auth status` PRINTS THE REAL SHAPE, MEASURED FROM THE REAL BINARY. This stub used
+    to print `https://sudo-command.atlassian.net  account: t@example.com` — one line, with a
+    scheme. `acli` version 1.x prints four lines and the site is a BARE HOST:
+
+        \u2713 Authenticated
+          Site: sudo-command.atlassian.net
+          Email: someone@example.com
+          Authentication Type: api_token
+
+    The invented shape was the only thing `auth_identity` was ever measured against, and it
+    happened to satisfy a scheme-anchored regex that the real output can never satisfy. Every
+    upload case passes `--site/--email` explicitly, so nothing else covered the gap: `attach` with
+    a perfectly good token died at "could not determine the Jira site" on the real machine while
+    the suite stayed green. A fixture that does not match the contract is not coverage."""
     p = d / "acli-stub"
     p.write_text(
         "#!/usr/bin/env python3\n"
         "import json, sys, pathlib\n"
         f"pathlib.Path({str(log)!r}).write_text(json.dumps(sys.argv[1:]), encoding='utf-8')\n"
         "if 'status' in sys.argv:\n"
-        "    print('https://sudo-command.atlassian.net  account: t@example.com')\n"
+        "    print('OK Authenticated')\n"
+        "    print('  Site: sudo-command.atlassian.net')\n"
+        "    print('  Email: t@example.com')\n"
+        "    print('  Authentication Type: api_token')\n"
         "sys.exit(0)\n", encoding="utf-8")
     p.chmod(0o755)
     return p
@@ -365,6 +383,46 @@ def main() -> int:
                     os.environ.pop("JIRA_API_TOKEN", None)
                 else:
                     os.environ["JIRA_API_TOKEN"] = saved
+
+    if c.block("JT-I \u00b7 SCC-288 \u00b7 the site is resolved from REAL `acli auth status` output"):
+        with TempDir() as d:
+            (d / "plan.md").write_text("PLANBYTES\n", encoding="utf-8")
+            stub = acli_stub(d, d / "argv.json")
+            site, email = jt.auth_identity(str(stub))
+            c.check("JT-I \u26d4 a BARE HOST is accepted and comes back scheme-qualified",
+                    site == "https://sudo-command.atlassian.net", repr(site))
+            c.check("JT-I the account email is read off the same output",
+                    email == "t@example.com", repr(email))
+            # And the END-TO-END half: `attach` with NO --site/--email must reach the wire. Every
+            # other upload case passes both explicitly, which is exactly why the bare-host regex
+            # miss survived a green suite.
+            # ITS OWN listener: `srv` is already shut down by JT-T above, and a POST at a dead
+            # port hangs to the socket timeout instead of failing the assertion honestly.
+            srv2 = serve()
+            if srv2 is None:
+                c.check("JT-I SKIPPED (UNVERIFIED HERE) - no local listener in this sandbox; the "
+                        "no-flags upload path is NOT checked in this run", True,
+                        "re-run outside the sandbox to verify it")
+            else:
+                base = f"http://127.0.0.1:{srv2.server_address[1]}"
+                stub2 = d / "acli-stub2"
+                stub2.write_text(
+                    "#!/usr/bin/env python3\n"
+                    "import sys\n"
+                    "if 'status' in sys.argv:\n"
+                    "    print('OK Authenticated')\n"
+                    f"    print('  Site: {base}')\n"
+                    "    print('  Email: t@example.com')\n"
+                    "sys.exit(0)\n", encoding="utf-8")
+                stub2.chmod(0o755)
+                Upload.reply = b'[{"filename": "plan.md", "id": "1"}]'
+                r = run("--acli", str(stub2), "attach", "--key", "SCC-288",
+                        "--file", str(d / "plan.md"),
+                        env=dict(os.environ, JIRA_API_TOKEN="tok-abc",
+                                 JIRA_SITE="", JIRA_EMAIL=""))
+                srv2.shutdown()
+                c.check("JT-I \u2b50 `attach` works with NO --site/--email, off auth status alone",
+                        r.returncode == 0, f"rc={r.returncode} {r.stderr[:300]}")
 
     return c.finish()
 

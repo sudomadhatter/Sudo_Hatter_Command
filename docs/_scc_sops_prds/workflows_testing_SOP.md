@@ -1575,6 +1575,12 @@ a commit message:
 - **The broken-reference ratchet.** Your commit may not raise the count of broken references above
   what it already was. It does not demand zero — there are stale links inside old migration guides —
   it demands that you not add one. If you do, it names the new reference and the file it is in.
+  ⭐ **The count means the same thing in every checkout (SCC-288 R9).** A link that points into a
+  `Projects/*` submodule is reported as **unresolvable**, never as broken, whether that submodule is
+  checked out or not — the lobby graph does not adjudicate links into another repo, and each project
+  has its own `check_maps` run that does. Before this, `git worktree add` left `Projects/*` empty,
+  the same commit scored 74 broken from the main checkout and 77 from a worktree, and the ratchet
+  refused **every commit made in a worktree** — which is every lane in this system.
 - **Every door must be named in this page.** Add or rename a command in `.agents/commands/` without
   giving it a line in this SOP and the commit is refused, naming the door. Retiring a door means
   deleting its file, and a deleted door cannot be un-named.
@@ -1582,6 +1588,8 @@ a commit message:
 Putting **`[maps-ok]`** in the commit message re-baselines both checks for that one commit, and the
 token stays in the log forever — which is the point, the same way `[sop-ok]` works. Use it when the
 graph's **scope** changed (a new folder brought into it), never to wave a real broken link through.
+⛔ **And never to get a worktree commit through** — that was R9, and reaching for the hatch is how it
+stayed hidden for a release. A hatch you need on every commit is a bug report, not an escape.
 A mention of the token inside a `#` comment line does not count.
 
 If a commit slips past the hooks — a merge made on GitHub, a `git commit --no-verify`, or a clone
@@ -2336,6 +2344,14 @@ anything else. `/smh-plan-task` writes and attaches it when it mints; `/smh-clos
 thing needs it.** `acli` cannot attach at all. Until you do it, uploading exits **5** and prints the
 instructions, while the description still lands normally:
 [jira-api-token-setup.md](../migrations/install_guides/jira-api-token-setup.md).
+**The credential-store item must be named `sudo-jira`** — that name is the contract every script
+looks the token up by. The label you type on Atlassian's own site is cosmetic and need not match.
+**Done on the Mac, 2026-08-23; still owed on the PC.**
+
+⭐ **You do not pass `--site` or `--email`** — `attach` reads both from `acli jira auth status`.
+That read was broken until 2026-08-23 (SCC-288 R8): it required a `https://` prefix that `acli`
+never prints, so uploads failed with *"could not determine the Jira site"* on machines holding a
+perfectly good token. **If you ever see that message, it is the parse, not your credential.**
 
 **Any agent can read and write the board — live.** There is no "export it for me" step: every
 platform (Claude, Gemini, opencode, Codex, Antigravity) shells out to the authenticated `acli` CLI.

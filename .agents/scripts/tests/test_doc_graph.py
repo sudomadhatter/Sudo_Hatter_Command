@@ -236,6 +236,69 @@ def main() -> int:
                         f"rc={r.returncode} root={g.get('root')!r} err={r.stderr[-200:]}")
 
     # ── H · the LIVE tree: the SOP is in the graph. This is the operator's actual ask. ────────
+    # ── S · an UNINITIALIZED SUBMODULE is a blind spot, not a broken link ────────────────
+    # SCC-288 R9. `git worktree add` does NOT initialize submodules, so every lane in this system
+    # works in a tree where `Projects/*` is an empty directory. The generator probed those targets
+    # with a plain `is_file()`, got False, and called them dangling - so the SAME commit counted
+    # 74 broken refs from the main checkout and 77 from a worktree, and the commit-msg ratchet
+    # refused every worktree commit. The prior lane papered over it with `[maps-ok]`, which
+    # re-baselines a number that was never real.
+    #
+    # A repo does NOT assert that a file inside an uninitialized submodule is missing. It asserts
+    # it cannot see it. Those are different facts and only one of them is a broken link.
+    def sub_fixture(tmp, initialized):
+        lobby = fixture_lobby(tmp)
+        write(lobby / ".gitmodules",
+              '[submodule "Projects/Sub"]\n\tpath = Projects/Sub\n'
+              '\turl = https://example.com/sub.git\n')
+        if initialized:
+            write(lobby / "Projects" / "Sub" / ".git", "gitdir: ../../.git/modules/Sub\n")
+            write(lobby / "Projects" / "Sub" / "docs" / "thing.md", "# thing\n")
+        else:
+            (lobby / "Projects" / "Sub").mkdir(parents=True, exist_ok=True)
+        write(lobby / ".agents" / "rules" / "sub.md",
+              "# sub\n\nInto the submodule: [thing](../../Projects/Sub/docs/thing.md).\n"
+              "Not a submodule at all: [gone](../../Projects/NotASub/docs/gone.md).\n")
+        return lobby
+
+    if c.block("DG-S · SCC-288 · an uninitialized submodule is BLIND, not broken"):
+        with TempDir() as tmp:
+            lobby = sub_fixture(tmp, initialized=False)
+            rc, out, err = run_gen(lobby, cwd=lobby)
+            c.check("DG-S exit 0", rc == 0, f"rc={rc} err={err[-300:]}")
+            g = graph_of(lobby)
+            unres = {u["target"] for u in g.get("unresolvable", [])}
+            dang = {d["target"] for d in g["dangling"]}
+            c.check("DG-S ⛔ the ref into the EMPTY submodule is not counted broken",
+                    "../../Projects/Sub/docs/thing.md" not in dang, f"dangling={sorted(dang)}")
+            c.check("DG-S and it is REPORTED as unresolvable, not silently dropped",
+                    any("Projects/Sub" in u for u in unres), f"unresolvable={sorted(unres)}")
+            c.check("DG-S ⭐ negative control: a path under a dir that is NOT a declared "
+                    "submodule is still broken",
+                    any("NotASub" in d for d in dang), f"dangling={sorted(dang)}")
+            blind_broken = g["counts"]["broken_paths"]
+            blind_unres = g["counts"]["unresolvable"]
+
+        with TempDir() as tmp:
+            lobby = sub_fixture(tmp, initialized=True)
+            rc, out, err = run_gen(lobby, cwd=lobby)
+            c.check("DG-S exit 0 (initialized)", rc == 0, f"rc={rc} err={err[-300:]}")
+            g2 = graph_of(lobby)
+            c.check("DG-S ⭐⛔ THE INVARIANT THE RATCHET NEEDS: broken_paths is the SAME "
+                    "whether the submodule is checked out or not",
+                    g2["counts"]["broken_paths"] == blind_broken,
+                    f"initialized={g2['counts']['broken_paths']} blind={blind_broken}")
+            # ⛔ AND the classification itself must match, not just the total. Excusing only the
+            # UNINITIALIZED ones passes the line above while still moving refs between buckets as
+            # the checkout state changes - measured on the live repo as main=74 / worktree=71.
+            c.check("DG-S ⭐⛔ and so is the unresolvable count - a CHECKED-OUT submodule is "
+                    "still not the lobby's to adjudicate",
+                    g2["counts"]["unresolvable"] == blind_unres,
+                    f"initialized={g2['counts']['unresolvable']} blind={blind_unres}")
+            c.check("DG-S a real file inside a checked-out submodule is NOT an `external` edge",
+                    not any("Projects/Sub" in e["target"] for e in g2.get("external", [])),
+                    f"external={g2.get('external')}")
+
     if c.block("DG-H · SCC-290 · the live graph contains the SOP and the docs/ tree"):
         live = REPO / "docs" / "doc-graph.json"
         if not live.exists():

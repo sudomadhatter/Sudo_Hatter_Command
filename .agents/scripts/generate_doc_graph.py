@@ -213,8 +213,59 @@ def extract_refs(text):
     return refs
 
 
-def resolve(target, source_rel, scope_files, by_basename, lobby):
-    """(status, value) where status in resolved|ambiguous|external|dangling.
+_SUBMODULE_PATH_RE = re.compile(r"^\s*path\s*=\s*(.+?)\s*$", re.MULTILINE)
+
+
+def blind_submodules(lobby):
+    """EVERY declared submodule path, lobby-relative. The lobby graph does not adjudicate links
+    into another repo \u2014 in ANY checkout state.
+
+    \u26d4 SCC-288 R9 \u00b7 `git worktree add` DOES NOT INITIALIZE SUBMODULES. Every lane in this
+    system works in a worktree, so `Projects/*` is empty there while the main checkout has all ten
+    populated. The generator probed those targets with a plain `is_file()`, got False, and recorded
+    them as dangling \u2014 so the SAME commit counted 74 broken refs from the main checkout and 77
+    from a worktree, and the commit-msg RATCHET refused every worktree commit. It was papered over
+    with `[maps-ok]`, which re-baselines a number that was never real.
+
+    \u2b50 WHY EVERY SUBMODULE AND NOT JUST THE UNINITIALIZED ONES. Excusing only the ones this
+    tree cannot see fixes the refusal but leaves the count tree-dependent: measured here, main
+    scored 74 while the worktree scored 71, because 3 of the 6 refs into `Projects/*` are real
+    files main can stat and the worktree cannot. A commit from a worktree would then bank 71, and
+    the next regeneration from the main checkout would read as a RISE to 74 and be refused \u2014
+    the same bug pointing the other way. **The baseline has to mean the same thing in every tree**,
+    and the only version of that which holds is: the lobby never counts a link into a submodule.
+
+    That is also the existing design, not a new carve-out. Each project is an independent repo with
+    its own map artifacts and its own `check_maps` run; lobby checks are lobby-only by
+    construction. A broken link inside a project is that project's gate to catch, and it is the
+    only gate that can catch it reliably.
+
+    Read from `.gitmodules` textually \u2014 no subprocess, because cwd-independence and "git may
+    not be on PATH" are hard contracts here (see the module docstring).
+    """
+    f = lobby / ".gitmodules"
+    try:
+        text = f.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return frozenset()
+    subs = set()
+    for raw in _SUBMODULE_PATH_RE.findall(text):
+        rel = raw.replace("\\", "/").strip().strip("/")
+        if rel:
+            subs.add(rel)
+    return frozenset(subs)
+
+
+def _inside_blind(cand, blind):
+    """Is this lobby-relative candidate underneath a submodule we cannot see into?"""
+    for sub in blind:
+        if cand == sub or cand.startswith(sub + "/"):
+            return True
+    return False
+
+
+def resolve(target, source_rel, scope_files, by_basename, lobby, blind=frozenset()):
+    """(status, value) where status in resolved|ambiguous|external|dangling|unresolvable.
 
     Every id in `scope_files` is LOBBY-relative, so both candidates below live in that same
     space: joining a `../../docs/x.md` onto a `.agents/rules/` source now lands on `docs/x.md`
@@ -238,6 +289,15 @@ def resolve(target, source_rel, scope_files, by_basename, lobby):
     # into the lobby) or genuinely broken (dangling)? Probe each base via the cached, UNC-guarded
     # stat: memoization + the UNC skip keep this fast and stop a stray `//host/x.md` URL from
     # blocking ~30s on SMB (the bug that silently froze every regen since June).
+    # \u26d4 BEFORE the stat, not after. A submodule that IS checked out would otherwise answer
+    # `external` here while the same ref in a worktree answered `unresolvable` -- which is the
+    # tree-dependence this whole fix exists to remove. Checked on the NORMALIZED candidates,
+    # because the reference is usually written relative to its source (`../../Projects/Sub/x.md`)
+    # and only `candidates` has resolved that into lobby space.
+    if blind:
+        for cand in candidates:
+            if _inside_blind(cand, blind):
+                return ("unresolvable", cand)
     for base in (lobby, lobby / src_dir):
         if _cached_is_file(base / target):
             return ("external", target)
@@ -321,7 +381,8 @@ def build_graph(roots, ignores, lobby=None, exclude=(), keep=None):
             pack_docs[pr] += 1
     authored = [rel for rel in scope_list if pack_root(rel) is None]
 
-    edges, externals, danglings, ambiguous = [], [], [], []
+    edges, externals, danglings, ambiguous, unresolvable = [], [], [], [], []
+    blind = blind_submodules(lobby)
     out_deg = defaultdict(int)
     in_deg = defaultdict(int)
     for rel in authored:
@@ -339,7 +400,7 @@ def build_graph(roots, ignores, lobby=None, exclude=(), keep=None):
     for rel in authored:                          # parse ONLY the docs we authored (skip pack internals)
         text = strip_mermaid(strip_auto((root / rel).read_text(encoding="utf-8", errors="ignore")))
         for target, kind in sorted(extract_refs(text).items()):
-            status, value = resolve(target, rel, scope_files, by_basename, lobby)
+            status, value = resolve(target, rel, scope_files, by_basename, lobby, blind)
             if status == "resolved":
                 _link(rel, canon(value), kind)    # a hit inside a pack collapses to the pack node
             elif status == "ambiguous":
@@ -354,6 +415,10 @@ def build_graph(roots, ignores, lobby=None, exclude=(), keep=None):
                     ambiguous.append({"from": rel, "target": target, "candidates": cands})
             elif status == "external":
                 externals.append({"from": rel, "target": value})
+            elif status == "unresolvable":
+                # Recorded, never counted. A blind spot the operator can SEE is the point --
+                # dropping these silently would be the same lie in the other direction.
+                unresolvable.append({"from": rel, "target": value})
             else:
                 danglings.append({"from": rel, "target": value})
 
@@ -382,9 +447,13 @@ def build_graph(roots, ignores, lobby=None, exclude=(), keep=None):
             "edges": len(edges), "external": len(externals),
             "ambiguous": len(ambiguous),
             "dangling": len(danglings), "broken_paths": broken, "unresolved_names": len(danglings) - broken,
+            # NOT part of broken_paths, on purpose -- see `blind_submodules`. Counted so the
+            # number is visible in the report rather than being an invisible subtraction.
+            "unresolvable": len(unresolvable),
         },
         "nodes": nodes, "edges": edges,
         "dangling": danglings, "external": externals, "ambiguous": ambiguous,
+        "unresolvable": unresolvable,
         "packs": [{"path": pr, "docs": pack_docs[pr], "in": in_deg.get(pr, 0)} for pr in sorted(pack_docs)],
     }
 
@@ -430,7 +499,10 @@ def render_auto(graph, top):
         f"**{c['files']}** authored docs + **{c.get('packs', 0)}** bmad packs "
         f"({c.get('pack_docs', 0)} vendor docs summarized) | **{c['edges']}** resolved edges | "
         f"**{c['broken_paths']}** broken-path refs | **{c['unresolved_names']}** bare-name refs | "
-        f"**{c['ambiguous']}** ambiguous | **{c['external']}** external.",
+        f"**{c['ambiguous']}** ambiguous | **{c['external']}** external"
+        + (f" | **{c['unresolvable']}** unresolvable (inside an uninitialized submodule -- this "
+           f"tree cannot see them, so they are NOT counted broken)." if c.get("unresolvable")
+           else "."),
         f"_Human summary -- tables capped at {CAP} rows; the complete lists are in `doc-graph.json`._",
         "",
         f"## Hubs (most-referenced docs, top {top})",
