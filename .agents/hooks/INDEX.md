@@ -26,8 +26,29 @@ Both fail open — see the ⚠ above. `test_rule_trigger.py` pins the pointer ca
 word-set matcher, and two ways of failing open (a malformed rule, a tree with no rules at all).
 The end-to-end check is `_routing-canary/README.md` § "Probe 2".
 
+## The two auto-allow hooks, and the line between them
+
+Both remove approval prompts and neither can ever add one: their only outputs are `allow` and
+SILENCE. They cover **different shapes**, and the split is deliberate.
+
+| File | Covers | Allow-list is over |
+|---|---|---|
+| `allow-scratchpad.py` | ONE simple command, no shell metacharacter at all, every argument inside this session's disposable scratchpad | **paths** — so a construct it misparses is a write in the wrong place, which is why it refuses every metacharacter (SCC-263, fourteen escapes) |
+| `allow-readonly-chain.py` | a COMPOUND command — pipes, `&&`, `;`, newlines — where every atom is a read-only verb AND already matches one of the operator's own `permissions.allow` rules | **verbs and flags** — every verb on it reads, so quotes and separators can be admitted, paid for by an exact quote-aware split and a per-verb flag allow-list |
+
+⭐ **`allow-readonly-chain.py` grants nothing new, and that is testable rather than asserted.**
+Condition (B) requires each atom to match a rule the operator already wrote, so every atom would
+auto-approve on its own as a separate call. It removes the prompt on running them in one call.
+Measured over one session: 19% → 39% of Bash calls auto-approved, 94 prompts removed of 375.
+
+⚠ **The general lever is `/sandbox`, not either of these.** With sandboxing on,
+`autoAllowBashIfSandboxed` (default true) auto-allows every command that runs inside it, whatever
+its shape — no verb list at all. These two hooks are what works while it is off, or where a
+command must run outside it.
+
 ## Top-level contents
 <!-- auto-listed by /smh-update-maps-indexes — refresh via /smh-update-maps-indexes; do not hand-edit entries -->
+- `allow-readonly-chain.py`
 - `allow-scratchpad.py`
 - `guard-cwd-escape.py`
 - `log-rule-load.sh`
