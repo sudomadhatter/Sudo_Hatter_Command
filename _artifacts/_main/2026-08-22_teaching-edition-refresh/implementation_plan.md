@@ -207,6 +207,8 @@ checks are explicit:
 - EDIT `.agents/scripts/new-project.ps1` — refuse a false-success scaffold when git initialization or the first commit fails → 3, 6
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — branch-only teaching entry points; workflow remains canonical/live → 2, 5
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — teaching-branch SOP currency row → 2, 5
+- EDIT `docs/doc-graph.md` — generated navigation reflects the teaching-only commands and artifacts on this branch → 2, 5
+- EDIT `docs/doc-graph.json` — machine-readable generated navigation stays paired with the Markdown graph → 2, 5
 - NEW (generated) `.agents/skills/smh-tour/SKILL.md` → 5
 - NEW (generated) `.agents/skills/smh-training/SKILL.md` → 5
 - NEW (generated) `.agents/workflows/smh-tour.md` → 5
