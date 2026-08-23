@@ -120,6 +120,13 @@ def main() -> int:
         code, out = call("cd .. && ls", cwd=WS)
         c.check("M3 control: the SAME `cd ..` from the ROOT leaves and is refused",
                 blocked(out), out.strip()[:150])
+        # Scratchpad paths: /private/tmp/claude-<uid>/... or /tmp/claude-<uid>/... are recognized as safe
+        uid = getattr(os, "getuid", lambda: 501)()
+        for cmd in (f"cd /private/tmp/claude-{uid}/-P/sess-123/scratchpad && ls",
+                    f"cd /tmp/claude-{uid}/-P/sess-123/scratchpad/exp && python3 t.py"):
+            code, out = call(cmd)
+            c.check(f"M3 allowed (scratchpad path): {cmd}",
+                    not blocked(out) and code == 0, f"exit={code} {out.strip()[:150]}")
 
     if c.block("M4 · every other way of leaving the workspace is caught"):
         for cmd in ("cd", "cd ~", "cd ~/Downloads", "cd -", "cd $HOME", "cd ..",
