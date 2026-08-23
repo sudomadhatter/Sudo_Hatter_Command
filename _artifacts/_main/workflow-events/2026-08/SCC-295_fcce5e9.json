@@ -1,0 +1,45 @@
+{
+  "v": 1,
+  "task": "SCC-295",
+  "sha": "fcce5e91f8d37e0b06bc6d826b756e3ec46bf25b",
+  "tip": "f4f423524e7ed05aceea34596974969de1d874cf",
+  "trigger": "close-out",
+  "when": "2026-08-23T13:49:06-05:00",
+  "changes": [
+    ".agents/scripts/label_tasks.py",
+    ".agents/scripts/tests/test_label_tasks.py",
+    "_artifacts/_main/2026-08-23_label-tasks-dot-strip/gates/suite.json",
+    "_artifacts/_main/2026-08-23_label-tasks-dot-strip/implementation_plan.md",
+    "_artifacts/_main/2026-08-23_label-tasks-dot-strip/sweep.json",
+    "_artifacts/_main/2026-08-23_label-tasks-dot-strip/task.yaml",
+    "_artifacts/_main/2026-08-23_label-tasks-dot-strip/walkthrough.md",
+    "_artifacts/_main/INDEX.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-23_label-tasks-dot-strip/walkthrough.md",
+    "verdict": "CONCERNS @ fcce5e9",
+    "gates": {
+      "suite": "pass@19f5933"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "CONCERNS"
+  },
+  "decisions": [
+    "`[sop-ok]`, checked rather than assumed. `.agents/scripts/.py` is a usage surface, so the gate",
+    "`while`, not `if`, and not `os.path.normpath` \u2014 which would also resolve `..` and change what a",
+    "Path fixtures inside this lane's artifacts are FENCED. `check_links` reported 13 dead paths,"
+  ],
+  "pitfalls": [
+    "A read of the working tree during a sweep is a read of a MUTANT. Mid-lane, `label_tasks.py:779`",
+    "A test that dies is not a test that fails, and the exit code cannot tell you which. See A5b.",
+    "A test fixture is a live surface to a source-grep guard. See `CS-15 G`."
+  ],
+  "followons": [],
+  "fingerprints": [
+    "mention:label_tasks.py"
+  ]
+}
