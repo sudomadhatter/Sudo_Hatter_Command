@@ -76,36 +76,39 @@ can find. The *store* differs per OS; the *name* is a contract.
 
 ### macOS
 
-Copy the token to the clipboard first (§2 step 3), then:
+**Four lines. Paste them into the terminal, then paste the token when it prompts.**
 
 ```bash
-security add-generic-password -U -a "<your-atlassian-email>" -s sudo-jira -w "$(pbpaste)"
+printf 'Paste the token, then press Return: '; read -rs T; echo
+security add-generic-password -U -a "<your-atlassian-email>" -s sudo-jira -w "$T"
+echo "stored ${#T} chars"
+unset T
 ```
 
-`-U` means "update if it already exists" — without it the store refuses a second write, and you get
-to keep the broken value. **Clear the clipboard afterwards** (`pbcopy </dev/null`).
+`-U` means "update if it already exists" — without it the store refuses a second write and you keep
+whatever broken value is already in there.
 
-> ⛔ **DO NOT use the interactive prompt form — `-w` with no value. It silently truncates.**
-> Measured here 2026-08-22: a pasted token came back out of the keychain at **exactly 128
-> characters** and returned **401**. 128 is the prompt's fixed buffer, and an Atlassian token is
-> longer than that. The keychain itself is innocent — storing a 200-character value through `-w
-> <value>` reads back at 200. **The prompt is the thing that loses your token, it says nothing while
-> doing it, and a truncated token fails exactly like a wrong one.**
+⭐ **The `echo "${#T} chars"` is not decoration — it is the only feedback you get.** A complete
+Atlassian token is around **190 characters**. Any smaller number means it went wrong; every failure
+mode below produces a stored value that looks fine and returns 401.
 
-**Why `$(pbpaste)` and not the token typed out.** Your shell history records the command *text* —
-`-w "$(pbpaste)"` — never what it expanded to, so nothing is written to disk. The expanded value does
-sit in the process's arguments for the few milliseconds the command runs, which is visible to other
-users on a shared box; on a single-user machine that is the right trade against a prompt that
-corrupts the value outright.
+> ⛔ **Both of the obvious routes silently corrupt the token. Measured here, 2026-08-22, both of
+> them, on a real token.**
+>
+> | Route | What lands | Why |
+> |---|---|---|
+> | `security add-generic-password … -w` **with no value** (the interactive prompt) | exactly **128 characters** | that prompt reads through a fixed 128-byte buffer and truncates without a word. The shell's own `read` has no such limit, which is why the block above works |
+> | `-w "$(pbpaste)"` **after copying the command to run it** | **the command text itself** | to run a command you must copy it, which replaces the token on your clipboard. `pbpaste` then faithfully stores `security add-generic-password …`. This is not hypothetical — it is what happened |
+>
+> The keychain is innocent in both cases: a 200-character value written as `-w <value>` reads back
+> at 200. **A corrupted token fails exactly like a wrong one**, so you will go hunting the email, the
+> site, and the account before you suspect the paste.
 
-**Check what actually landed before trusting it:**
+**Read it back before trusting it** (prints the count, never the value):
 
 ```bash
 T=$(security find-generic-password -s sudo-jira -a "<your-atlassian-email>" -w); echo "${#T} chars"; unset T
 ```
-
-**Under ~150 characters means truncated** — redo it from the clipboard. Never paste the token into a
-terminal prompt again once you know this.
 
 ### Windows
 
@@ -176,10 +179,15 @@ unset TOKEN
 
 Expect one `OK: …` line.
 
-**A 401 on a token you just created is almost always truncation, not a wrong token** — check its
-length first (§3), before you go hunting the email or re-issuing. Other causes, in order of
+**A 401 on a token you just created is almost always a corrupted paste, not a wrong token** — check
+its length first (§3), before you go hunting the email or re-issuing. Other causes, in order of
 likelihood: paired with the wrong email (the *Atlassian* account email, which need not be your git
 email), expired, revoked.
+
+⭐ **The token list page has a diagnostic in it: the `Last accessed` column.** A token that still
+reads **Never Accessed** has never once reached Jira — which settles, without any guessing, whether
+the problem is at your end or theirs. It is also how you tell **which** token a machine is actually
+using when several exist: make one successful call, reload the page, and see which row moved.
 
 ⛔ **Note what that snippet does NOT do: put the token in `-u user:token`.** Command-line arguments
 are visible to any process listing while the call is in flight. Piping a curl config on stdin
@@ -203,6 +211,22 @@ POST https://sudo-command.atlassian.net/rest/api/3/issue/<KEY>/attachments
      body      multipart form field named "file"
      auth      basic, <atlassian-email>:<api-token>
 ```
+
+The call, in the shape that keeps the token out of `argv` — run 2026-08-22, this is not a sketch:
+
+```bash
+EMAIL=$(acli jira auth status | awk '/Email:/{print $2}')
+T=$(security find-generic-password -s sudo-jira -a "$EMAIL" -w)
+printf 'user = "%s:%s"\n' "$EMAIL" "$T" | curl -s -K - \
+  -X POST -H "X-Atlassian-Token: no-check" -H "Accept: application/json" \
+  -F "file=@<path/to/file>" \
+  "https://sudo-command.atlassian.net/rest/api/3/issue/<KEY>/attachments"
+unset T
+```
+
+It answers with a JSON array describing what landed — filename, size, author. Anything else is a
+failure: **403** means the `X-Atlassian-Token` header is missing, **404** means the key does not
+exist or the account cannot see it, **401** means the token (see §5).
 
 **Re-check this after upgrading `acli`.** If a later version grows an `add` verb, the token stops
 being required for attachments — but stays required for anything else calling REST directly.
@@ -243,11 +267,11 @@ Same convention as the rest of this kit: an unticked row is **untested**, not "f
 |---|---|
 | §1 install (macOS, `brew tap atlassian/acli`) | ✅ verified on the Mac 2026-08-22 — `/opt/homebrew/bin/acli` → `1.3.22-stable` |
 | §1 install (Windows) | ⛔ **not run** — path and package manager unverified from here |
-| §3 macOS store | ✅ **run 2026-08-22, and it is why the ⛔ box exists** — the interactive `-w` prompt truncated a real token to 128 chars; `-w "$(pbpaste)"` round-trips a 200-char value intact |
+| §3 macOS store | ✅ **run 2026-08-22 — and it is why the ⛔ table exists.** Both wrong routes were measured on a real token: the interactive prompt truncates to 128 chars, and `-w "$(pbpaste)"` stored the command text. The `read -rs` block landed **192 chars** |
 | §3 Windows `Set-Secret` | ⛔ **not run** |
 | §4 `acli` login + `auth status` | ✅ verified on the Mac 2026-08-22 — ✓ Authenticated, `api_token` |
-| §5 REST verify | ⚠️ **only failure paths measured so far** — `acli`'s own stored credential returns 401 (which is why §3 exists), and so does a prompt-truncated token. The success path is still unproven on this machine |
-| §6 attachment limits | ✅ measured on 1.3.22-stable 2026-08-22 — `list` / `delete` only |
+| §5 REST verify | ✅ **verified 2026-08-22** — `/rest/api/3/myself` returned the account. The failure paths are measured too: `acli`'s own stored credential 401s, and so does any corrupted paste |
+| §6 attachment limits | ✅ **measured AND exercised 2026-08-22** — `attachment` on 1.3.22-stable is `list` / `delete` only; the REST upload was run for real, landing a 12 KB and a 49 KB markdown file on five work items |
 
 ## Related
 
