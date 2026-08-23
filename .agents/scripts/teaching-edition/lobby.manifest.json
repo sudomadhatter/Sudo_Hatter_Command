@@ -1,6 +1,7 @@
 {
   "name": "command-center teaching edition",
   "source": "../../..",
+  "generateDocGraph": true,
 
   "_comment_include": "The command-center shell: shared toolkit, platform doors, gates, BMAD module, operator docs, and root routing/config. Projects and session history are deliberately empty. The paired project skeleton remains its own maintained repository and is cloned later by smh-new-project.",
   "include": [

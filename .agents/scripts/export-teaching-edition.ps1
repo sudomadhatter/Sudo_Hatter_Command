@@ -296,12 +296,13 @@ foreach ($inc in $m.include) {
     }
 
     foreach ($item in $items) {
-        if (-not (Test-IsWithinDirectory (Resolve-PhysicalPath $item.FullName) $sourcePhysical)) {
-            throw "Required include resolves outside the source tree: $inc"
-        }
         $rel = $item.FullName.Substring($sourceRoot.Path.Length).TrimStart('\', '/')
         $hit = Test-Excluded -Rel $rel
         if ($hit) { $excluded.Add("$rel   [$hit]"); continue }
+
+        if (-not (Test-IsWithinDirectory (Resolve-PhysicalPath $item.FullName) $sourcePhysical)) {
+            throw "Required include resolves outside the source tree: $inc"
+        }
 
         $copied.Add($rel)
         if ($WhatIf) { continue }
@@ -487,6 +488,33 @@ if (-not $WhatIf -and (Test-Path -LiteralPath $mapPath)) {
     } else {
         throw "generate_repo_map.py not found: $gen"
     }
+}
+
+# Main's live SOP links to the generated doc graph. The source graph describes files deliberately
+# omitted from a teaching shell, so copy neither source artifact; rebuild both against the exported
+# `.agents/` + `docs/` tree before privacy and link validation.
+$generateDocGraph = $false
+if ($m.PSObject.Properties.Name -contains 'generateDocGraph') {
+    $generateDocGraph = [bool]$m.generateDocGraph
+}
+if (-not $WhatIf -and $generateDocGraph) {
+    if (-not $pythonCommand) {
+        foreach ($candidate in @('python3', 'python', 'py')) {
+            $resolved = Get-Command $candidate -ErrorAction SilentlyContinue
+            if ($resolved) { $pythonCommand = $resolved.Source; break }
+        }
+    }
+    if (-not $pythonCommand) { throw "Python not found (tried python3, python, py)" }
+    $docGen = Join-Path $Target '.agents/scripts/generate_doc_graph.py'
+    if (-not (Test-Path -LiteralPath $docGen)) {
+        throw "generate_doc_graph.py not found: $docGen"
+    }
+    $docGraphPath = Join-Path $Target 'docs/doc-graph.md'
+    $docGraphJsonPath = Join-Path $Target 'docs/doc-graph.json'
+    Write-Host "-- doc graph --" -ForegroundColor Yellow
+    & $pythonCommand $docGen --lobby $Target --output $docGraphPath --json $docGraphJsonPath 2>&1 |
+        Select-Object -Last 3 | ForEach-Object { Write-Host "   $_" }
+    if ($LASTEXITCODE -ne 0) { throw "doc-graph generation failed (rc=$LASTEXITCODE)" }
 }
 
 # --- report -----------------------------------------------------------------------------

@@ -75,8 +75,34 @@ _NA_ROW_RE = re.compile(r"^\s*(?:[-*]\s+)?`?([A-Za-z0-9][\w /-]*?)`?"
 # underscore across, and a header this regex cannot see is not an error anyone gets told about —
 # `runtime` comes back `None`, I3 never fires, and the gate reports clean. Reading both costs one
 # character class; refusing one costs a silent hole of exactly the kind this lane exists to close.
-_RUNTIME_RE = re.compile(r"^[>\-*#\s]*\**\s*review[-_]runtime\s*:\**\s*\**(fan-out|inline)\**",
+_RUNTIME_RE = re.compile(r"^[>\-*#\s]*\**\s*review[-_]runtime\s*:\**\s*\**(fan-out|inline)\**`?[ \t]*(.*)$",
                          re.I | re.M)
+# ⛔ `[ \t]*`, NEVER `\s*`, BEFORE THE REASON. `\s` MATCHES A NEWLINE, so a greedy `\s*`
+# runs off the end of the header and group 2 comes back holding the NEXT LINE - the first
+# draft of this returned `'## Code Review'` as the reason for a bare `inline`. That is the
+# worst possible failure here: the bare-header check never fires, and both its controls
+# pass for a reason nobody wrote. Caught only because the RED-first cases were run before
+# the fix and two of them went green early.
+# ⛔ THE REASON IS THE SECOND HALF OF THE HEADER, AND NOTHING READ IT UNTIL SCC-285.
+# `/cicd-code-review` Step 0.7 has required it since SCC-203 - *"you may not record a bare
+# `inline`. Write the reason on the header line: `review-runtime: inline (blocked: <quote
+# what blocked you>)`"* - and the rule lived entirely in prose, which this module's own
+# docstring measures at 12/142 compliance. Group 2 is that clause.
+#
+# And the clause that MATTERS is the one the incident produced. A walkthrough in this tree
+# records `review-runtime: inline` because *"this session carries a standing directive that
+# the subagent tool is not to..."* - a POLICY answer to a CAPABILITY question, which is the
+# whole of SCC-203. Step 0.7 asks exactly one thing: *does a subagent tool exist here?*
+# *Am I allowed to use it?* is already answered - the operator typed the command. So a
+# reason resting on permission is not a reason; it is the defect, written out.
+_POLICY_ANSWER_RE = re.compile(
+    r"directive|polic(?:y|ies)|permission|permitted|not\s+allowed|allowed\s+to|"
+    r"instructed|told\s+not\s+to|unless\s+the\s+user|"
+    r"unless\s+(?:directly\s+)?(?:asked|requested|instructed)",
+    re.I)
+# Lanes dated before the header owed a machine-readable reason are exempt, same mechanism
+# as CUTOFF and DISPO_CUTOFF: three bare `inline` headers already exist in `_artifacts/`.
+RUNTIME_REASON_CUTOFF = "2026-08-22"
 _DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
 # SCC-231/233 record lines (this parser is their ONLY machine tier — measured base rate for
@@ -234,6 +260,7 @@ def parse(text: str) -> dict:
     return {"lenses": lenses,
             "lenses_na": na,
             "runtime": rt.group(1).lower() if rt else None,
+            "runtime_reason": (rt.group(2) or "").strip(" `*\t") if rt else None,
             "rederive_lines": rederived,
             "dispositions": dispo[-1].strip() if dispo else None,
             "drift": drift[-1].strip() if drift else None,
@@ -362,6 +389,33 @@ def judge(text: str, path: Path | str, verdict: str | None,
             f"({', '.join(unreasoned)}). Record why the order could not protect it - "
             f"`<lens> · n/a - context contaminated (<what it held>)`.")
         return False, reasons
+
+    if data["runtime"] == "inline" and (date is None or date >= RUNTIME_REASON_CUTOFF):
+        reason = data["runtime_reason"] or ""
+        if len(reason) < 4:
+            # A bare `inline` and a reasoned one were the same three characters to this parser, so
+            # the review that produced the SCC-203 incident recorded the same header a review with
+            # no subagent tool would. The reason IS the evidence - exactly as it is for `n/a`.
+            reasons.append(
+                "header says `review-runtime: inline` with no reason on the line. An `inline` "
+                "runtime is a claim about this session, and the claim needs its evidence: write "
+                "`review-runtime: inline (no subagent tool)` when the tool is genuinely absent, "
+                "or `review-runtime: inline (blocked: <quote what blocked you>)`.")
+            return False, reasons
+        if _POLICY_ANSWER_RE.search(reason):
+            # ⛔ SCC-203, and the reason this check exists at all (SCC-285). Step 0.7 asks whether
+            # the tool EXISTS. A reason resting on permission answers a question nobody asked, and
+            # it is wrong on its own terms: the operator invoked the command, and a `/` command IS
+            # the user requesting. The whole review then runs in the builder's own context and the
+            # record calls it a legitimate outcome - which is what happened, and what the operator
+            # caught by reading the chat because nothing in the system could.
+            reasons.append(
+                f"header says `review-runtime: inline` for a reason of PERMISSION, not capability "
+                f"({reason!r}). Step 0.7 asks one question - does a subagent tool EXIST in this "
+                f"runtime? Whether you are allowed to use it is already answered: the operator "
+                f"invoked this command, and a `/` command IS the user requesting. Record "
+                f"`fan-out` and launch them, or name what is absent.")
+            return False, reasons
 
     if data["runtime"] == "inline" and any(l["state"] == "ok" for l in lenses):
         # I3 (F20). Under a declared `inline` runtime the ladder runs ONCE, so `recovered-inline`

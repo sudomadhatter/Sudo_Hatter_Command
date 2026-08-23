@@ -1,0 +1,516 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_refresh_maps.py"
+  ],
+  "mutants": [
+    {
+      "id": "M1 the seam ignores --repo and falls back to CWD",
+      "file": ".agents/scripts/risk_seam.py",
+      "original": "            root, i = rest[i + 1], i + 2",
+      "mutated": "            root, i = None, i + 2",
+      "case": "N status is classified",
+      "block": "N · SCC-289 · classify --repo reads the named repo, not cwd",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_risk_seam.py"
+      ]
+    },
+    {
+      "id": "M2 a bare --repo silently falls back instead of exit 2",
+      "file": ".agents/scripts/risk_seam.py",
+      "original": "                return _bad(\"--repo needs a value\")\n            root, i = rest[i + 1], i + 2",
+      "mutated": "                i += 1\n                continue\n            root, i = rest[i + 1], i + 2",
+      "case": "O a trailing --repo with no value is exit 2, never a silent cwd fallback",
+      "block": "O · SCC-289 · --repo is discoverable and argument errors are exit 2",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_risk_seam.py"
+      ]
+    },
+    {
+      "id": "M3 the answer stops saying WHICH repo it is about",
+      "file": ".agents/scripts/risk_seam.py",
+      "original": "    if top is not None:\n        result[\"root\"] = str(top)\n    return result",
+      "mutated": "    return result",
+      "case": "N the JSON ECHOES the root it classified against",
+      "block": "N · SCC-289 · classify --repo reads the named repo, not cwd",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_risk_seam.py"
+      ]
+    },
+    {
+      "id": "M4 doc-graph trigger narrowed back to the repo-map ignore set",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "        if top not in ign:\n            want.add(\"repo-map\")\n        if p.lower().endswith(\".md\") and top in dg.DEFAULT_ROOT_NAMES:",
+      "mutated": "        if top not in ign:\n            want.add(\"repo-map\")\n        if top not in ign and p.lower().endswith(\".md\") and top in dg.DEFAULT_ROOT_NAMES:",
+      "case": "RM-B the doc graph is regenerated AND staged",
+      "block": "RM-B · SCC-290 · a staged .agents/ doc regenerates and STAGES the maps"
+    },
+    {
+      "id": "M5 the repo-map trigger drops entirely",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "        if top not in ign:\n            want.add(\"repo-map\")",
+      "mutated": "        if False:\n            want.add(\"repo-map\")",
+      "case": "RM-B3 the repo-map IS regenerated and staged",
+      "block": "RM-B3 · SCC-290 · a non-markdown docs file triggers the repo-map ALONE"
+    },
+    {
+      "id": "M6 the ratchet allows the count to RISE",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    if now <= base:\n        return []",
+      "mutated": "    if now <= base + 5:\n        return []",
+      "case": "RM-F exit 1",
+      "block": "RM-F · SCC-290 · the ratchet refuses a NEW broken reference, and names it"
+    },
+    {
+      "id": "M7 the reverse door check never reports a miss",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    if not missing:\n        return []",
+      "mutated": "    if True:\n        return []",
+      "case": "RM-G exit 1",
+      "block": "RM-G · SCC-290 · a house door missing from the SOP refuses the commit"
+    },
+    {
+      "id": "M8 the door check widens to the vendor set too (a false RED)",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "        if name == \"INDEX\" or name.endswith(\"-AP\") or name in VENDOR_DOORS:\n            continue",
+      "mutated": "        if name == \"INDEX\":\n            continue",
+      "case": "RM-G2 exit 0",
+      "block": "RM-G2 · SCC-290 · ALLOW: vendor and -AP doors are NOT required in the SOP"
+    },
+    {
+      "id": "M9 the kill switch stops being honoured",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    if disabled(root):\n        return 0",
+      "mutated": "    if False:\n        return 0",
+      "case": "RM-H and allowed with it",
+      "block": "RM-H · SCC-290 · the DISABLE kill switch, and ASCII-only console output"
+    },
+    {
+      "id": "M10 --verify starts REPAIRING the tree instead of reporting it",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    stale = verify(root)\n    if not stale:\n        return 0",
+      "mutated": "    stale = verify(root)\n    for _rel, _t in regenerate(root, {\"repo-map\", \"doc-graph\"}).items():\n        (root / _rel).write_text(_t, encoding=\"utf-8\")\n    if not stale:\n        return 0",
+      "case": "RM-D ⛔ --verify WROTE NOTHING",
+      "block": "RM-D · SCC-290 · --verify refuses a stale map and NAMES it"
+    },
+    {
+      "id": "M11 a doc-graph write no longer forces the repo-map rebuild (the ordering fix's teeth)",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    rm = fresh_repo_map(root) if (\"repo-map\" in want or wrote) else None",
+      "mutated": "    rm = fresh_repo_map(root) if (\"repo-map\" in want) else None",
+      "case": "RM-B4 ⛔ ONE run converges",
+      "block": "RM-B4 · SCC-290 · the FIRST refresh converges in ONE run"
+    },
+    {
+      "id": "M12 the doc graph reads its OWN output (never settles)",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    graph = dg.build_graph(roots, set(dg.DEFAULT_IGNORES), root, exclude=[DOC_GRAPH_MD],\n                           keep=in_index(root))",
+      "mutated": "    graph = dg.build_graph(roots, set(dg.DEFAULT_IGNORES), root,\n                           keep=in_index(root))",
+      "case": "RM-B4 ⛔ ONE run converges",
+      "block": "RM-B4 · SCC-290 · the FIRST refresh converges in ONE run"
+    },
+    {
+      "id": "M13 mermaid labels are parsed as paths again",
+      "file": ".agents/scripts/generate_doc_graph.py",
+      "original": "    return MERMAID_FENCE_RE.sub(\"\", text)",
+      "mutated": "    return text",
+      "case": "DG-I the mermaid label emits NO path refs",
+      "block": "DG-I · SCC-290 · mermaid labels are stripped; real code-fence refs are NOT",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_doc_graph.py"
+      ]
+    },
+    {
+      "id": "M14 the mermaid strip widens to EVERY code fence (real refs lost)",
+      "file": ".agents/scripts/generate_doc_graph.py",
+      "original": "MERMAID_FENCE_RE = re.compile(r\"^[ \\t]*(`{3,}|~{3,})[ \\t]*mermaid\\b.*?^[ \\t]*\\1[ \\t]*$\",",
+      "mutated": "MERMAID_FENCE_RE = re.compile(r\"^[ \\t]*(`{3,}|~{3,})[ \\t]*\\w*\\b.*?^[ \\t]*\\1[ \\t]*$\",",
+      "case": "DG-I ⛔ a code fence's real reference SURVIVES",
+      "block": "DG-I · SCC-290 · mermaid labels are stripped; real code-fence refs are NOT",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_doc_graph.py"
+      ]
+    },
+    {
+      "id": "M15 node ids go back to root-relative (cross-root links dangle)",
+      "file": ".agents/scripts/generate_doc_graph.py",
+      "original": "            prefix = \"\" if r == lobby else r.relative_to(lobby).as_posix()",
+      "mutated": "            prefix = \"\"",
+      "case": "DG-A .agents → docs resolves",
+      "block": "DG-A · SCC-290 · two roots, and cross-root links resolve BOTH ways",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_doc_graph.py"
+      ]
+    },
+    {
+      "id": "M16 the artifact carries an ABSOLUTE root again (per-tree churn)",
+      "file": ".agents/scripts/generate_doc_graph.py",
+      "original": "        \"root\": rel_roots,",
+      "mutated": "        \"root\": str(root),",
+      "case": "DG-C the lobby's absolute path appears NOWHERE in the json",
+      "block": "DG-C · SCC-290 · the artifacts carry RELATIVE roots, never an absolute path",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_doc_graph.py"
+      ]
+    },
+    {
+      "id": "M17 the repo-map label reverts to the worktree dir basename",
+      "file": ".agents/scripts/generate_repo_map.py",
+      "original": "            if common.name == \".git\":\n                return common.parent.name",
+      "mutated": "            if False:\n                return common.parent.name",
+      "case": "CM-LABEL ⛔ from a WORKTREE it is the SAME string",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_check_maps.py"
+      ],
+      "unfiltered": true
+    },
+    {
+      "id": "M18 check 10 fires on every project on the fan-out (audit F1)",
+      "file": ".agents/scripts/check_maps.py",
+      "original": "    if not (root / \"docs\" / \"doc-graph.md\").exists():\n        return []",
+      "mutated": "    if False:\n        return []",
+      "case": "CM10 A ⛔ a workspace with no doc graph reports NOTHING",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_check_maps.py"
+      ],
+      "unfiltered": true
+    },
+    {
+      "id": "M19 the PS installer clobbers an extended dispatcher again (audit F2)",
+      "file": ".agents/scripts/git-hooks/install-encoding-hook.ps1",
+      "original": "  if ((Test-Path $hook) -and (-not $ours)) {",
+      "mutated": "  if ((Test-Path $hook) -and ($existing -notmatch $MARKER)) {",
+      "case": "F2 extended (ours + the maps delegate) -> REFUSED",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_install_git_hooks.py"
+      ],
+      "block": "F2 · SCC-290 · -Install refuses to clobber an EXTENDED dispatcher"
+    },
+    {
+      "id": "M20 the outline placeholder is read back as real Done content",
+      "file": ".agents/scripts/jira_ticket.py",
+      "original": "            \"done\": drop(bullets(sections[\"Done\"])),",
+      "mutated": "            \"done\": bullets(sections[\"Done\"]),",
+      "case": "JT-D the Done line landed and the placeholder is gone",
+      "block": "JT-D · SCC-291 · `done` ticks Plan items and appends Done, in the FILE",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_jira_ticket.py"
+      ]
+    },
+    {
+      "id": "M21 the Plan renders as bullets, so the checkboxes vanish",
+      "file": ".agents/scripts/jira_ticket.py",
+      "original": "    content.append({\n        \"type\": \"taskList\",",
+      "mutated": "    content.append({\n        \"type\": \"bulletList\",",
+      "case": "JT-A ⛔ Plan is a taskList",
+      "block": "JT-A · SCC-291 · `outline` renders the house node sequence, offline",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_jira_ticket.py"
+      ]
+    },
+    {
+      "id": "M22 the XSRF header is dropped (Jira 403s every upload)",
+      "file": ".agents/scripts/jira_ticket.py",
+      "original": "                 \"X-Atlassian-Token\": \"no-check\",",
+      "mutated": "                 \"X-Atlassian-Tokenx\": \"no-check\",",
+      "case": "JT-F ⛔ X-Atlassian-Token: no-check is present",
+      "block": "JT-F · SCC-291 · `attach` sends real multipart with the no-check header",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_jira_ticket.py"
+      ]
+    },
+    {
+      "id": "M23 success is reported from HTTP 200 alone",
+      "file": ".agents/scripts/jira_ticket.py",
+      "original": "    if src.name not in landed:",
+      "mutated": "    if False:",
+      "case": "JT-G ⛔ HTTP 200 with an empty array is reported as a FAILURE",
+      "block": "JT-G · SCC-291 · a 200 that does not report the file STORED is a FAILURE",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_jira_ticket.py"
+      ]
+    },
+    {
+      "id": "M24 a missing token becomes a generic transport error, losing the fix",
+      "file": ".agents/scripts/jira_ticket.py",
+      "original": "        err(f\"jira-ticket: {TOKEN_HELP}\")\n        return NO_TOKEN",
+      "mutated": "        err(\"jira-ticket: upload failed\")\n        return TRANSPORT",
+      "case": "JT-E exit 5, its own code",
+      "block": "JT-E · SCC-291 · with no token `attach` exits 5 and prints the one-time fix",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_jira_ticket.py"
+      ]
+    },
+    {
+      "id": "M25 the token stops being scrubbed from error output",
+      "file": ".agents/scripts/jira_ticket.py",
+      "original": "    return text.replace(token, \"<token>\") if token else text",
+      "mutated": "    return text",
+      "case": "JT-T ⛔ the secret is SCRUBBED out of the server's own error body",
+      "block": "JT-T · SCC-291 · the token never reaches stdout, stderr, or argv",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_jira_ticket.py"
+      ]
+    },
+    {
+      "id": "M26 a [maps-ok] inside a COMMENT line opts the commit out",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    body = \"\\n\".join(ln for ln in message.splitlines() if not ln.lstrip().startswith(\"#\"))",
+      "mutated": "    body = message",
+      "case": "RM-F ⛔ the token in a COMMENT line does NOT opt out",
+      "block": "RM-F · SCC-290 · the ratchet refuses a NEW broken reference, and names it"
+    },
+    {
+      "id": "M27 the re-baseline hatch stops working (the lane cannot land)",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    if OPT_OUT in body:",
+      "mutated": "    if False:",
+      "case": "RM-F [maps-ok] in the message re-baselines, on the record",
+      "block": "RM-F · SCC-290 · the ratchet refuses a NEW broken reference, and names it"
+    },
+    {
+      "id": "M28 --repair is trigger-gated like --staged, so an empty index fixes nothing",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    return converge(root, {\"repo-map\", \"doc-graph\"})",
+      "mutated": "    return converge(root, triggered(staged_paths(root), root))",
+      "case": "RM-D2 ⛔ ONE --repair converges",
+      "block": "RM-D2 · SCC-290 · --repair fixes a stale tree with an EMPTY index",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_refresh_maps.py"
+      ]
+    },
+    {
+      "id": "M29 --repair regenerates but never stages, so the fix is not one commit away",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    r = sh([\"git\", \"add\", \"--\"] + sorted(rels), root)",
+      "mutated": "    r = sh([\"git\", \"status\", \"--short\"], root)",
+      "case": "RM-D2 it STAGES what it wrote, so the fix is one `git commit` away",
+      "block": "RM-D2 · SCC-290 · --repair fixes a stale tree with an EMPTY index",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_refresh_maps.py"
+      ]
+    },
+    {
+      "id": "M30 --verify goes back to naming the mode that cannot fix an empty index",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    print(\"    regenerate: python3 .agents/scripts/refresh_maps.py --repair   (PC: python)\")",
+      "mutated": "    print(\"    regenerate: python3 .agents/scripts/refresh_maps.py --staged   (PC: python)\")",
+      "case": "RM-D the remedy printed is --repair, NOT the trigger-gated --staged",
+      "block": "RM-D · SCC-290 · --verify refuses a stale map and NAMES it",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_refresh_maps.py"
+      ]
+    },
+    {
+      "id": "M31 check 10's remedy names --staged again",
+      "file": ".agents/scripts/check_maps.py",
+      "original": "    return [f\"{rel} is STALE - regenerate: python3 .agents/scripts/refresh_maps.py --repair \"",
+      "mutated": "    return [f\"{rel} is STALE - regenerate: python3 .agents/scripts/refresh_maps.py --staged \"",
+      "case": "CM10 C the report names --repair, the mode that works on an empty index",
+      "unfiltered": true,
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_check_maps.py"
+      ]
+    },
+    {
+      "id": "M32 --repair is accepted alongside another mode instead of exit 2",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    modes = [args.staged, args.truth is not None, args.verify, args.repair]",
+      "mutated": "    modes = [args.staged, args.truth is not None, args.verify]",
+      "case": "RM-I ['--repair', '--verify'] is exit 2",
+      "block": "RM-I · SCC-290 · exactly one mode, or exit 2",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_refresh_maps.py"
+      ]
+    },
+    {
+      "id": "M33 the restore leaves the mutant's bytecode behind",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "        for d in cache_dirs:\n            if d.is_dir():\n                shutil.rmtree(d, ignore_errors=True)",
+      "mutated": "        pass",
+      "case": "K7d and a fresh import runs the ORIGINAL behaviour, not the mutant's",
+      "block": "K7 · SCC-288 · the restore purges __pycache__, so no mutant bytecode survives",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_mutation_sweep.py"
+      ]
+    },
+    {
+      "id": "M34 the purge looks in the wrong place, so it clears nothing",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "    cache_dirs = sorted({(repo / f).resolve().parent / \"__pycache__\" for f in files})",
+      "mutated": "    cache_dirs = []",
+      "case": "K7c ⛔ no .pyc predates the source it claims to cache",
+      "block": "K7 · SCC-288 · the restore purges __pycache__, so no mutant bytecode survives",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_mutation_sweep.py"
+      ]
+    },
+    {
+      "id": "M35 the generated AUTO block is read as authored links again",
+      "file": ".agents/scripts/check_links.py",
+      "original": "    for n, line in enumerate(strip_auto(strip_fences(text)).splitlines(), 1):",
+      "mutated": "    for n, line in enumerate(strip_fences(text).splitlines(), 1):",
+      "case": "H1 a dead path INSIDE the AUTO block is not the checker's finding",
+      "block": "H · SCC-288 · a GENERATED block is machine output, not authored links",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_check_links.py"
+      ]
+    },
+    {
+      "id": "M36 the AUTO strip never turns back off, blinding the rest of the file",
+      "file": ".agents/scripts/check_links.py",
+      "original": "            blank.update(range(open_at, i + 1))",
+      "mutated": "            blank.update(range(open_at, len(lines)))",
+      "case": "H3 and one AFTER the block is too - the strip closes at AUTO-END",
+      "block": "H · SCC-288 · a GENERATED block is machine output, not authored links",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_check_links.py"
+      ]
+    },
+    {
+      "id": "M37 the maps are built from the FILESYSTEM again, untracked files and all",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    r = sh([\"git\", \"ls-files\", \"--cached\", \"-z\"], root)\n    if r.returncode != 0:\n        return None",
+      "mutated": "    r = sh([\"git\", \"ls-files\", \"--cached\", \"-z\"], root)\n    if True:\n        return None",
+      "case": "RM-J --verify still exit 0 - a scratch file cannot refuse a push",
+      "block": "RM-J · SCC-288 · an untracked scratch file changes NO map, and blocks NO push",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_refresh_maps.py"
+      ]
+    },
+    {
+      "id": "M38 only FILES count as 'git has this', so a tracked dir with hidden files is pruned",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    for f in list(have):\n        have.update(f.parents)                        # every ancestor directory git implies",
+      "mutated": "    pass",
+      "case": "RM-J2 the tracked dir is in the map though its only file is hidden",
+      "block": "RM-J2 · SCC-288 · a tracked dir survives; an untracked-only dir never appears",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_refresh_maps.py"
+      ]
+    },
+    {
+      "id": "M39 the repo-map filters files but not DIRECTORIES, so a phantom folder is mapped",
+      "file": ".agents/scripts/generate_repo_map.py",
+      "original": "        dirs = [e for e in dirs if keep(os.path.join(directory, e))]\n",
+      "mutated": "",
+      "case": "RM-J2 the untracked-only dir is NOT",
+      "block": "RM-J2 · SCC-288 · a tracked dir survives; an untracked-only dir never appears",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_refresh_maps.py"
+      ]
+    },
+    {
+      "id": "M40 the doc graph stops filtering, so an untracked file becomes a node",
+      "file": ".agents/scripts/generate_doc_graph.py",
+      "original": "                if keep is not None and not keep(full):\n                    continue\n",
+      "mutated": "",
+      "case": "RM-J the phantom is not a node in the graph",
+      "block": "RM-J · SCC-288 · an untracked scratch file changes NO map, and blocks NO push",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_refresh_maps.py"
+      ]
+    },
+    {
+      "id": "M41 the doc graph is staged LAST again, so the repo-map is built blind to it",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "            if not stage(root, wrote):\n                return 1",
+      "mutated": "            if False:\n                return 1",
+      "case": "RM-B the doc graph is regenerated AND staged",
+      "block": "RM-B · SCC-290 · a staged .agents/ doc regenerates and STAGES the maps",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_refresh_maps.py"
+      ]
+    },
+    {
+      "id": "M42 -Uninstall goes back to the marker-only ownership test and DELETES the dispatcher",
+      "file": ".agents/scripts/git-hooks/install-encoding-hook.ps1",
+      "original": "    } elseif ($ours) {",
+      "mutated": "    } elseif ($existing -match $MARKER) {",
+      "case": "F3 extended (ours + the maps delegate): the file SURVIVES with its bytes intact",
+      "block": "F3 · SCC-288 · -Uninstall must not delete a hook it did not write",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_install_git_hooks.py"
+      ]
+    },
+    {
+      "id": "S1 .githooks/pre-commit never invokes the maps delegate",
+      "file": ".githooks/pre-commit",
+      "original": "[ -x \"$MAPS\" ] && { \"$MAPS\" \"$@\" || exit $?; }",
+      "mutated": "true",
+      "case": "MH-1 the doc graph rode along in the SAME commit",
+      "block": "MH-1 · SCC-290 · a real commit through .githooks/pre-commit stages the maps",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_maps_hooks.py"
+      ]
+    },
+    {
+      "id": "S2 pre-commit-maps.sh exits 0 instead of regenerating anything",
+      "file": ".agents/scripts/git-hooks/pre-commit-maps.sh",
+      "original": "\"$PY\" \"$REFRESH\" --staged\nexit $?",
+      "mutated": "exit 0",
+      "case": "MH-1 the doc graph rode along in the SAME commit",
+      "block": "MH-1 · SCC-290 · a real commit through .githooks/pre-commit stages the maps",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_maps_hooks.py"
+      ]
+    },
+    {
+      "id": "S3 the push gate prints the no-op --staged remedy again",
+      "file": ".agents/scripts/git-hooks/pre-push-maps-verify.sh",
+      "original": "refresh_maps.py --repair",
+      "mutated": "refresh_maps.py --staged",
+      "case": "MH-3 and it does NOT print the no-op --staged",
+      "block": "MH-3 · SCC-290 · a stale tree is REFUSED at push, and the printed remedy fixes it",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_maps_hooks.py"
+      ]
+    },
+    {
+      "id": "S4 commit-msg-maps.sh loses its MERGE_HEAD carve-out, so the ratchet blocks merges",
+      "file": ".agents/scripts/git-hooks/commit-msg-maps.sh",
+      "original": "if [ -f \"$(git rev-parse --git-path MERGE_HEAD 2>/dev/null)\" ]; then\n  exit 0\nfi\n",
+      "mutated": "",
+      "case": "MH-5 the MERGE of that same content is ALLOWED",
+      "block": "MH-5 · SCC-290 · the ratchet refuses a COMMIT and lets a MERGE through",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_maps_hooks.py"
+      ]
+    }
+  ]
+}

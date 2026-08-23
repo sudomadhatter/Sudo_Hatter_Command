@@ -70,6 +70,8 @@ REQUIRED_PATHS = (
     ".opencode/commands/smh-tour.md",
     ".opencode/commands/smh-training.md",
     "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/doc-graph.md",
+    "docs/doc-graph.json",
     "_artifacts/_memory/MEMORY.md",
     "_artifacts/_memory/README.md",
 )

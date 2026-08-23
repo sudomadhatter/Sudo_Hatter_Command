@@ -313,6 +313,81 @@ def main() -> int:
                     subprocess.run(["git", "-C", str(repo), "worktree", "remove", "--force",
                                     str(wt)], capture_output=True)
 
+    # ── CM10 · SCC-290 · check 10, doc-graph freshness — and the PROJECT SKIP ────────────────
+    # ⛔ THE SKIP IS THE FINDING (audit F1). `check_maps --all` fans out over every conformant
+    # project and NO project carries a doc graph. Armed unconditionally, check 10 prints FAIL for
+    # every project on the operator's next ceremony — and the natural "fix" is to generate a 200 KB
+    # graph inside a repo where nothing reads it. Check 9 already takes this shape.
+    # CM10 · SCC-290 · doc-graph freshness fails on drift, and is SILENT where absent
+    import check_maps as cm
+    import refresh_maps as rm
+
+    with TempDir() as root:
+        # a root with no docs/doc-graph.md at all — every project on the fan-out
+        (root / "docs").mkdir(parents=True)
+        c.check("CM10 A ⛔ a workspace with no doc graph reports NOTHING (the project skip)",
+                cm.check_doc_graph_fresh(root) == [], str(cm.check_doc_graph_fresh(root)))
+
+    with TempDir() as root:
+        # a root that HAS one, and it disagrees with the tree
+        (root / "docs").mkdir(parents=True)
+        (root / ".agents" / "rules").mkdir(parents=True)
+        (root / ".agents" / "rules" / "a.md").write_text("# a\n", encoding="utf-8")
+        (root / "docs" / "doc-graph.md").write_text("stale, and not even the right shape\n",
+                                                    encoding="utf-8")
+        probs = cm.check_doc_graph_fresh(root)
+        c.check("CM10 B a workspace WITH a doc graph is checked, and drift is reported",
+                any("doc-graph.md" in p and "STALE" in p for p in probs), str(probs))
+        # ⛔ It must name the mode that can fix THIS tree. Everything check 10 fires on has an
+        # empty index, where `--staged` writes nothing and exits 0.
+        c.check("CM10 C the report names --repair, the mode that works on an empty index",
+                any("refresh_maps.py --repair" in p for p in probs)
+                and not any("--staged" in p for p in probs), str(probs))
+
+        # and it goes quiet once the tree agrees
+        for rel, text in rm.regenerate(root, {"doc-graph"}).items():
+            (root / rel).write_text(text, encoding="utf-8")
+        c.check("CM10 D once regenerated, check 10 is clean",
+                cm.check_doc_graph_fresh(root) == [], str(cm.check_doc_graph_fresh(root)))
+
+    c.check("CM10 E check 10 is WIRED into the FATAL drift dict, not the hint section",
+            "drift[\"doc-graph freshness\"]" in
+            (Path(cm.__file__).read_text(encoding="utf-8")),
+            "a check that cannot fail the lint is not a gate")
+    # ── CM-LABEL · SCC-290 · the worktree false positive check 1 has always had ──────────────
+    # `build_auto_body` labelled the tree with `Path(root).name` — the WORKTREE directory basename
+    # — so check 1 reported "AUTO block is STALE / in map but not on disk: <repo>/" from every
+    # lane, and its printed remedy would have shipped the lane name into the map bound for main.
+    # SCC-290 had to retire it: `refresh_maps --verify` runs at PUSH and every push here is from a
+    # worktree, so a per-tree label would have refused every push in the system.
+    # CM-LABEL · SCC-290 · the repo-map's root label is stable across worktrees
+    import generate_repo_map as grm
+    with TempDir() as root:
+        main_co = root / "Repo_Name"
+        main_co.mkdir()
+        subprocess.run(["git", "init", "-q", "-b", "main"], cwd=str(main_co),
+                       capture_output=True)
+        (main_co / "seed.txt").write_text("x\n", encoding="utf-8")
+        env = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t",
+                   GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
+        subprocess.run(["git", "add", "seed.txt"], cwd=str(main_co), capture_output=True)
+        subprocess.run(["git", "commit", "-qm", "seed"], cwd=str(main_co), env=env,
+                       capture_output=True)
+        wt = root / "lane-slug-that-is-not-the-repo"
+        r = subprocess.run(["git", "worktree", "add", "-q", str(wt), "-b", "chore/x"],
+                           cwd=str(main_co), env=env, capture_output=True, text=True)
+        if r.returncode != 0:
+            c.check("CM-LABEL SKIPPED - git worktree add failed here", True, r.stderr[-200:])
+        else:
+            c.check("CM-LABEL from the main checkout the label is the repo name",
+                    grm.repo_label(main_co) == "Repo_Name", grm.repo_label(main_co))
+            c.check("CM-LABEL ⛔ from a WORKTREE it is the SAME string, not the lane slug",
+                    grm.repo_label(wt) == "Repo_Name",
+                    f"{grm.repo_label(wt)!r} (dir basename is {wt.name!r})")
+            c.check("CM-LABEL so the AUTO block's first line matches from both trees",
+                    grm.build_auto_body(str(main_co), 8, "auto", set()).splitlines()[5]
+                    == grm.build_auto_body(str(wt), 8, "auto", set()).splitlines()[5],
+                    "the map changes identity depending on who regenerated it")
     return c.finish()
 
 

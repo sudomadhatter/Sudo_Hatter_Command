@@ -1,11 +1,5 @@
 {
   "mcpServers": {
-    "code-review-graph": {
-      "command": "code-review-graph",
-      "args": [
-        "serve"
-      ]
-    },
     "md-feedback": {
       "command": "npx",
       "args": [

@@ -1,0 +1,48 @@
+{
+  "v": 1,
+  "task": "SCC-300",
+  "sha": "ebade3bc934043723688d229c25a7a1d819c393f",
+  "tip": "ec0bd80ac5292cc24c68063ebf1cd13e0df405c2",
+  "trigger": "close-out",
+  "when": "2026-08-23T13:19:47-05:00",
+  "changes": [
+    ".agents/scripts/sync-agents.ps1",
+    ".agents/scripts/tests/test_allow_readonly_chain.py",
+    ".agents/scripts/tests/test_allow_scratchpad.py",
+    ".agents/scripts/tests/test_command_surfaces.py",
+    ".agents/scripts/tests/test_cwd_escape_hook.py",
+    ".claude/hooks/INDEX.md",
+    ".claude/hooks/allow-readonly-chain.py",
+    ".claude/hooks/allow-scratchpad.py",
+    ".claude/hooks/guard-cwd-escape.py",
+    ".claude/hooks/log-rule-load.sh",
+    ".claude/hooks/require-push-approval.py",
+    ".claude/hooks/rule-trigger.py",
+    ".claude/hooks/run-hook.sh",
+    ".claude/hooks/session-start-context.sh",
+    ".claude/settings.json",
+    "_artifacts/_main/2026-08-23_sandbox-claude-hooks-skills/implementation_plan.md",
+    "_artifacts/_main/2026-08-23_sandbox-claude-hooks-skills/sweep.json",
+    "_artifacts/_main/2026-08-23_sandbox-claude-hooks-skills/task.yaml",
+    "_artifacts/_main/2026-08-23_sandbox-claude-hooks-skills/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "_artifacts/_memory/sandbox-denies-writes-under-dot-claude-hooks-skills.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/migrations/install_guides/claude-permission-sandboxed.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-23_sandbox-claude-hooks-skills/walkthrough.md",
+    "verdict": "PASS @ ebade3b",
+    "gates": {}
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}

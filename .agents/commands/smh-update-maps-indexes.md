@@ -48,7 +48,9 @@ description: From the home base, fan out and reconcile the lobby + every conform
 | `.agents/{rules,workflows,skills,commands}/INDEX.md` | **MASTER** family maps (this repo is the source) | **Editable here** — fix drift, then `/smh-sync-agents` to push copies to `.claude/`/`.opencode/`. |
 | Tier-2 local law — `{_artifacts,_my_resources,docs}/AGENTS.md` + `CLAUDE.md`/`GEMINI.md` adapters | the folder-file tier model (`workspace-standard.md` Part 1) | **Create/repair** when check 8 hints (Step 3.7): copy the house pattern, adapt the law digest to that workspace. The `_my_resources/` law files are the ONE other thing writable under that dir. |
 | **`AGENTS.md` + `README.md` CONTENT** — the root brain, every folder law, every folder README in scope | hand-written prose that *references* files, folders, and `/` commands | **Reconcile the references** (Step 3.8): verify every path / command / structure claim each file makes still matches disk (renames + command renames are the usual killers); repair dead pointers via the Step 4 gate. Repair pointers — never rewrite the prose's meaning. |
-| `.code-review-graph/graph.db` built-at commit vs HEAD | machine-local code graph (gitignored, does not travel) | **Verify-only** (check 9): if stale, hand Daniel the refresh command per repo — never run the indexer yourself mid-workflow. |
+| `.code-review-graph/graph.db` built-at commit vs HEAD | machine-local code graph (gitignored, does not travel) | **Verify-only** (check 9): if stale, hand Daniel the refresh command per repo — never run the indexer yourself mid-workflow. **In the lobby there is no graph at all, permanently and by design** (`docs/code-review-graph.md`) — check 9 skipping here is the right answer, not a missing build. |
+| `docs/doc-graph.md` + `.json` — the AUTO body | the centre's markdown link graph over `.agents/` + `docs/`, **regenerated and staged by the `pre-commit` hook on every commit** | **Normally already current — do not hand-regenerate.** Confirm with `refresh_maps.py --verify` (check 10 does the same). What IS yours here is the file's **CURATED** block. |
+| broken doc refs + door coverage | the two truth checks, run from **`commit-msg`** (they need the message: `[maps-ok]` is the recorded re-baseline, and `pre-commit` cannot see a message) | **Not this ceremony's job** — they gate every commit. If one fires, fix the ref or add the SOP row; `[maps-ok]` is for a scope change only. |
 | `_my_resources/open_tasks/todo_list.md` — the **`## Open Work`** file-list | Daniel's hand-written notes **plus** an auto manifest of the task files | **Refresh ONLY the `## Open Work` file-list** to mirror the `open_tasks/*.md` plan/PRP files beside it. Leave his `## Todo list` prose and the task files themselves untouched (Step 3.6). |
 
 **Off-limits the whole time:** anything under `_my_resources/` (Daniel's protected area — `AGENTS.md` §5)
@@ -172,7 +174,24 @@ project** (listed in `.agents/maintained-projects.txt`); `/smh-update-maps-index
    python3 .agents/scripts/generate_repo_map.py --root Projects/<name> --ignore <its documented set> --mode <its mode>   # fan-out, per project
    ```
    (Use `--mode auto` only if the sentinel says so.)
-3. `git diff docs/repo-map.md`. Three outcomes:
+3. **The doc graph needs no step of its own.** `.agents/scripts/refresh_maps.py` regenerates
+   `docs/doc-graph.md` + `.json` **and the repo-map AUTO block** from the `pre-commit` hook on every
+   commit that touches `.agents/` or `docs/`, and stages them. So by the time you run this ceremony
+   both are current already. Confirm rather than redo:
+   ```bash
+   python3 .agents/scripts/refresh_maps.py --verify    # PC: python. Exit 0 = both are current.
+   ```
+   Non-zero means a commit bypassed the hook — a merge made on github.com, a `--no-verify`, or a
+   clone where `core.hooksPath` was never set. Fix it with `refresh_maps.py --repair` and commit.
+   ⛔ `--repair`, never `--staged`: all three of those trees have an EMPTY index, and `--staged`
+   is gated on the staged set, so it exits 0 having written nothing.
+
+   ⭐ **THE SPLIT THIS CEREMONY NOW OWNS.** The hook owns the **generated** layer; you own the
+   **curated** one — one-line purposes, INDEX prose, the `AGENTS.md` pointers, the CURATED blocks
+   at the top of `repo-map.md` and `doc-graph.md`. A hook cannot write prose. The payoff is that a
+   drift report is now only ever about the half a human has to fix.
+
+4. `git diff docs/repo-map.md`. Three outcomes:
    - **No diff** → the folder structure is unchanged; the AUTO block was already current. Good.
    - **Diff present** → new/removed/renamed top-level folders exist on disk. Keep it; note the changed
      folders for Step 2 (they probably need a curated routing line too).
@@ -456,6 +475,10 @@ edits, say so and proceed (a regen that produces no diff needs no approval).
   ```bash
   python3 .agents/scripts/check_maps.py --all      # home base; or bare / --root <proj> for one workspace
   ```
+  **Check 10 (doc-graph freshness) is FATAL and lobby-only.** It runs only where `docs/doc-graph.md`
+  exists, so it is silent on every project — a project carries no doc graph and must not be made to.
+  If it fires in the lobby, a commit bypassed the pre-commit hook: `refresh_maps.py --repair`, then
+  commit the two files. Do **not** answer it by generating a doc graph inside a project.
 - Summarise what changed (files + line counts) and what was flagged, **grouped by repo**.
 - **This one lands by hand** — it is a multi-repo sweep, not story work, so there is no single story
   branch for `worktree-per-story` to land. Hand Daniel the exact command(s). **Each

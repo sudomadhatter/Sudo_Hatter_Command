@@ -1,18 +1,41 @@
-# code-review-graph — code intelligence for the command centre
+# code-review-graph — code intelligence for the PROJECTS
 
 > Pointer target from the root `AGENTS.md`. The graph guidance lives here so it does not clutter the
 > always-read front door. **Static** — no generator rewrites this file.
+
+> ⛔ **THE COMMAND CENTRE CARRIES NO GRAPH OF ITS OWN (SCC-289).** This page is the tool reference
+> the **projects** read. There is no `code-review-graph` MCP server in any of this repo's four
+> platform configs, no `.code-review-graphignore`, and no index. That is a design decision, not an
+> unbuilt machine: a code graph parses **code**, and this repo is markdown — `.agents/` commands and
+> rules, `docs/` procedure. `check_maps.py` check 9 says *"No index → skip"* and always will here.
+> What maps the centre is the **doc graph** (`docs/doc-graph.md`).
+>
+> **What the centre keeps** is the project-facing half: this document, the `code-review-graph` skill,
+> and `risk_seam.py` — because the review and audit doors run **from here** against a project
+> worktree. Those doors pass `--repo`, and that is what makes them read the project's graph instead
+> of this repo's absent one.
 
 **What it is.** A local, MIT-licensed code graph (`code-review-graph`, Tree-sitter + SQLite) that
 answers *who calls this*, *what breaks if I change it*, *what has no test*, and *what does this diff
 put at risk*. It is an **MCP server** (30 tools) and a CLI, and it is the engine `/smh-code-review`,
 `/cicd-code-review`, `/smh-self-audit` and `/cicd-self-audit` reach for.
 
-**Scope here.** The lobby index maps the **master toolkit** — `.agents/` (scripts, commands, rules,
-skills, hooks) plus `docs/` and `.githooks/`. That is the point of it: **1073 of this repo's 1102
-graph nodes are `.agents/`**, and the toolkit is the thing this repo exists to maintain. Product code
-lives in the child repos, each with its own graph (`Projects/AGY_AVIATIONCHAT` → its own
-`docs/code-review-graph.md`). Scope is set by the committed `.code-review-graphignore`.
+**Scope — one index per PROJECT, and none here.** Product code lives in the child repos under
+`Projects/`, each its own git repo with its own graph and its own copy of this doc
+(`Projects/AGY_AVIATIONCHAT` → its own `docs/code-review-graph.md`), scoped by that repo's own
+committed `.code-review-graphignore`. The command centre has none of those three things.
+
+**Reaching a project's graph from the centre.** Every review and audit door runs from here, so the
+seam has to be told which tree it is answering about:
+
+```bash
+python3 .agents/scripts/risk_seam.py classify --repo "<the project worktree>" <paths…>
+```
+
+The JSON echoes `"root"` so the answer states its own subject. ⛔ **Omit `--repo` and the seam
+resolves the repo from CWD** — the centre — which has no graph, so it returns `unclassified` and
+that reads exactly like a project whose index was never built. That silent wrong answer is the
+defect SCC-289 closed.
 
 ## Always do
 
@@ -74,7 +97,9 @@ lives in the child repos, each with its own graph (`Projects/AGY_AVIATIONCHAT` �
   `test_check_maps_graph_fresh.py` called it directly at three lines.
 
   **This is repo-specific, so read the number rather than assuming.** `risk_seam.py classify` publishes
-  `test_links` for exactly this. The centre measures **0**; `AGY_AVIATIONCHAT`, with conventional
+  `test_links` for exactly this. The centre has no graph to measure at all (SCC-289) — it answers
+  `unclassified`, and the number below is the historical measurement from when it did;
+  `AGY_AVIATIONCHAT`, with conventional
   package imports, measures **3427** real links of 18857 edges, and its gaps are worth opening a file
   for. The call graph is unaffected in both: `CALLS` resolved 22135/22135 here.
 - **Never trust a stale graph.** The index is machine-local, per-worktree, and gitignored — it does

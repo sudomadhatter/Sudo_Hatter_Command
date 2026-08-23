@@ -85,31 +85,19 @@ git -C "$REPO" diff --name-only origin/main...HEAD   | sort > /tmp/mine.txt    #
 grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                        # the TRUE overlap
 git -C "$REPO" merge-tree --write-tree --messages HEAD origin/main | head -40  # conflicts, before they are real
 git -C "$REPO" worktree list                                                   # sibling lanes still live
-python3 .agents/scripts/risk_seam.py classify $(cat /tmp/mine.txt)             # risk tiers from the code graph
+python3 .agents/scripts/risk_seam.py classify --repo "$REPO" $(cat /tmp/mine.txt)  # risk tiers (see below)
 ```
 
-**Read the tier map beside the overlap list.** `risk_seam.py` asks the local code graph which of the
-files you changed carry the riskiest changed functions, how many flows they sit on, and which changed
-functions it can find no test for. `"status": "classified"` means the graph answered; every other
-state — no graph, a graph built at a different commit, the tool not installed — prints
-`"status": "unclassified"` and **that is a normal result, not a failure**. The pure-Python path is the
-normal path; the graph is context, and `gates_audit` is False by contract, so nothing here can fail a
-review on its own. If it comes back `unclassified` and you want the context, `code-review-graph update`
-in that repo and re-run this one line.
+**Read the tier map beside the overlap list — and know what it can say HERE.** ⛔ **The command
+centre carries no code graph at all (SCC-289): `unclassified` is the permanent, correct answer for
+this repo, not a machine that has not built an index yet.** A code graph parses code; this repo is
+markdown. So on a `smh-` lane this line is a one-second no-op you run for the shape, and every
+judgement in this review comes from reading the diff.
 
-⛔ **READ `test_links` BEFORE YOU READ `untested`, and in the command centre `test_links` is `0`.**
-That number is how many of the graph's TESTED_BY edges name a real subject. Measured here
-2026-08-22: the graph held **24** test edges and **not one** named a thing under test — 21 pointed at
-bare builtins (`str`, `Path`, `mkdir`, `isinstance`) and 3 at a test class's own `assertEqual`. So
-**every** changed function lands in `untested`, thoroughly-tested ones included, and the list reads
-exactly like a page of findings. When `test_links` is `0`, `untested` carries **no information**:
-do not open those files, do not write it down, do not mention it in the verdict.
-
-The cause is that a test link needs a statically resolvable import, and every test under
-`.agents/scripts/tests/` reaches its subject either by `subprocess` or by a runtime
-`sys.path.insert(...)` before the import — neither of which the resolver can follow. `risk` and
-`flows` are **not** affected: `CALLS` resolved 22135/22135 in the same measurement, so the call
-graph is trustworthy while the test layer is not.
+`--repo "$REPO"` is still mandatory and not decoration: the flag is what makes the JSON echo
+`"root"`, so the output states which tree it answered about. The same script, invoked from here with
+a project worktree in `--repo`, DOES read that project's graph — which is the whole reason the flag
+exists (`docs/code-review-graph.md`).
 
 ⚠ **`zsh` does not word-split an unquoted variable** the way `bash` does. Build file lists into a file
 and expand with `$(cat …)`, or the whole list arrives as one argument and your sweep silently checks
@@ -155,11 +143,12 @@ verdict about code that will never exist.
 happens: a headless pipeline or a platform without a subagent tool makes the answer `inline`, and
 both are invisible until a lens fails to launch.
 
+<!-- twin-law: subagent-probe -->
 ⛔ **The question is a **capability**, never a **policy** — and conflating the two silently gutted a
 review on SCC-197 (SCC-203).** *Does a subagent tool exist in this runtime?* is the whole question.
 *Am I permitted to use it right now?* is a different one, and answering it here is how a session
-directive — *"do not spawn subagents unless the user asks"* — got read as *"this runtime is
-inline"*. The entire review then ran in the builder's own context and the flow recorded it as a
+directive — *"Do not call the AgentTool unless the user requested it"* — got read as *"this
+runtime is inline"*. The entire review then ran in the builder's own context and the flow recorded it as a
 legitimate outcome. The operator caught it by reading the chat; nothing in the system would have.
 
 ⭐ **Answer ONE question: does a subagent tool exist in this runtime?**
@@ -168,8 +157,8 @@ legitimate outcome. The operator caught it by reading the chat; nothing in the s
 - **No → `review-runtime: inline (no subagent tool)`.**
 
 ⛔ **Do not ask a second question.** *"Am I allowed to?"* is already answered: **the operator
-invoked this command, and a `/` command IS a user request.** A session directive reading *"do not
-use subagents unless the user requested it"* is **satisfied here** — typing the command is the
+invoked this command, and a `/` command IS a user request.** The standing directive *"Do not call
+the AgentTool unless the user requested it"* is **satisfied here** — typing the command is the
 operator asking, and this step is where that ask lands. Do not stop and put it to them again.
 
 ⛔ **If you still believe you cannot launch one, you may not record a bare `inline`.** Write the
@@ -177,7 +166,10 @@ reason on the header line: `review-runtime: inline (blocked: <quote what blocked
 `inline` from a runtime that HAS the tool is a false record, and at close-out it is
 indistinguishable from a runtime that never had one — which IS the SCC-203 defect. This third door
 exists so an agent that believes it is forbidden has somewhere to put that belief where a reader
-can see it, instead of laundering it into a clean-looking `inline`.
+can see it, instead of laundering it into a clean-looking `inline`. **`walkthrough_roster.py`
+READS that reason (SCC-285):** a bare `inline`, or one resting on permission rather than on
+capability, is refused at close-out — this rule stopped being prose.
+<!-- /twin-law -->
 
 And if you are `inline` while holding this lane's plan and walkthrough, the engine **drops** the
 Blind Hunter rather than faking it — see step-01 § *When the order CANNOT protect it*. A roster is
@@ -327,7 +319,7 @@ exit code, which is how a red gate reads as green.
 | **Toolkit lint** | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **always** — errors FAIL, warnings are CONCERNS |
 | **Assertion evidence** | re-run the task's own Step 2 RED assertions — `--case "<label>"` where the suite declares blocks, so this row cites the NAMED cases rather than a whole file | **always** — they must be GREEN now |
 | **SOP currency** | `python3 .agents/scripts/sop_currency.py --paths <changed> --message "<subject>"` | a usage surface is in the diff |
-| **Link + anchor** | resolve every path and `#L` anchor the diff touched | any `.md` in the diff |
+| **Link + anchor** | `python3 .agents/scripts/check_links.py --base origin/main` | any `.md` in the diff |
 | **Door parity** | every added/renamed command has exactly the doors its `platforms:` claims | a command was added, renamed or deleted |
 
 **Receipts ride this lane too (SCC-146).** `/smh-quick-dev` Step 3 stamps the suite run at

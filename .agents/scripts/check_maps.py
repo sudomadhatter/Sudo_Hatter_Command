@@ -588,6 +588,37 @@ def check_graph_fresh(root):
     return []
 
 
+# --- check 10: doc-graph freshness (FATAL, and lobby-only by construction) ----------------------------
+def check_doc_graph_fresh(root):
+    """The generated doc graph must match the tree. Unlike check 9 this one FAILS the lint.
+
+    ⛔ IT RUNS ONLY WHERE `docs/doc-graph.md` ALREADY EXISTS, and that guard is the whole finding
+    (SCC-290 audit F1). `--all` fans out over every conformant project (`fan_out_targets`), and NO
+    project carries a doc graph — armed unconditionally, this check would print FAIL for every
+    project on the operator's next ceremony, and the natural "fix" is to generate a 200 KB graph
+    inside a repo where nothing reads it. Check 9 already takes exactly this shape (`if not
+    db.exists(): return []`); this mirrors it.
+
+    Fatal, where check 9 is a hint, because the two failures are different animals. Check 9's
+    subject is a machine-local, gitignored cache that a `git pull` legitimately outdates. This
+    one's subject is a COMMITTED artifact, and it going stale means a commit bypassed the
+    pre-commit hook — a merge on github.com, a `--no-verify`, or an unarmed clone. That is drift in
+    the tree everyone reads, and it should stop a ceremony that claims the maps agree with disk.
+    """
+    if not (root / "docs" / "doc-graph.md").exists():
+        return []
+    try:
+        import refresh_maps
+        stale = refresh_maps.verify(root)
+    except Exception as exc:                          # noqa: BLE001 — a lint never takes a session down
+        return [f"doc-graph freshness could not be checked ({type(exc).__name__}: {exc})"]
+    # ⛔ `--repair`, NOT `--staged`. Every tree this check fires on has an EMPTY index (a merge,
+    # a --no-verify, an unarmed clone), and `--staged` is gated on the staged set - it would exit
+    # 0 having written nothing. `--repair` is the trigger-free mode. CM10 C pins the string.
+    return [f"{rel} is STALE - regenerate: python3 .agents/scripts/refresh_maps.py --repair "
+            "(PC: python)" for rel in stale]
+
+
 # --- check 6: structure conformance (the contract gate — 'verify structures stay standard') -----------
 def check_conformance(root, is_home, is_bmad, map_path):
     """Confirm the workspace carries the standard files in the standard places (workspace-standard.md PATH CONTRACT)."""
@@ -696,6 +727,7 @@ def lint_one(root, ignore_override=None):
     drift["depth-3 _artifacts INDEX"] = check_depth3_indexes(root)
 
     drift["structure conformance"] = check_conformance(root, is_home, is_bmad, map_path)
+    drift["doc-graph freshness"] = check_doc_graph_fresh(root)
 
     git_notes, _ = check_git(root, state_path)
     hygiene = check_context_hygiene(root, is_home, is_bmad)

@@ -288,6 +288,11 @@ its command's name, a hand-authored skill is named for what it knows. ⛔ The `s
 mechanically by `workflow_lint.py --toolkit-only`.
 
 > **code-review-graph** — the local code graph (MIT): who calls this · what breaks · what has no test ·
-> what does this diff risk → `docs/code-review-graph.md`. The lobby index maps the **master toolkit**
-> (1073 of its 1102 nodes are `.agents/`); each child repo carries its own graph and its own copy of
-> that doc. ⛔ Change detection takes the **merge-base**, never a branch name.
+> what does this diff risk → `docs/code-review-graph.md`. ⛔ **The lobby carries NO code graph; the
+> projects do (SCC-289).** A code graph parses code and this repo is markdown, so there is no server,
+> no ignore file and no index here — `check_maps` check 9 skipping is the permanent answer, not a
+> missing build. Inside a project, **ask the graph before you grep**
+> (`.agents/skills/code-review-graph`); each child repo carries its own graph and its own copy of that
+> doc. A door that reviews a project **from here** must name it: `risk_seam.py classify --repo <the
+> project worktree> …`, or the seam classifies this repo and answers `unclassified` every time.
+> ⛔ Change detection takes the **merge-base**, never a branch name.

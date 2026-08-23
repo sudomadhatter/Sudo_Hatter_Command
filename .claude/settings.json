@@ -17,17 +17,22 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .claude/hooks/allow-scratchpad.py",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .agents/hooks/allow-scratchpad.py",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .claude/hooks/require-push-approval.py",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .agents/hooks/require-push-approval.py",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .claude/hooks/guard-cwd-escape.py",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .agents/hooks/guard-cwd-escape.py",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .agents/hooks/allow-readonly-chain.py",
             "timeout": 10
           }
         ]
@@ -38,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .claude/hooks/rule-trigger.py",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .agents/hooks/rule-trigger.py",
             "timeout": 10,
             "statusMessage": "Matching prompt against house rules..."
           }

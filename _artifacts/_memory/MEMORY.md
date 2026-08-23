@@ -19,6 +19,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 ## Jira & tickets
 - [Jira is LIVE (SCC + AVCH)](jira-integration-live.md) — acli authed; branch/commit carries key; wrong-project key rejected.
 - [⛔ acli CANNOT re-parent a subtask](acli-cannot-reparent-a-subtask.md) — create takes --parent, edit has no such flag; partial landing keeps parent open.
+- [⛔ acli CANNOT attach a file](jira-attachments-need-the-rest-token.md) — upload is REST + the token in keychain `sudo-jira`; storing it corrupts silently two ways.
 - [Cross-repo work = a ticket PER REPO](cross-repo-work-needs-a-ticket-per-repo.md) — ticket per repo required; key from epic/* branch, not BMAD number.
 - [`To Do Next` IS the queue](to-do-next-is-the-queue.md) — lead every "what's next" with it; todo_list.md retired as agent source; use Blocking.
 - [VS Code hides hook output](vscode-hides-git-hook-output.md) — warn-only hooks look like clean success; ship hooks ARMED.
@@ -95,6 +96,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [Dev Record forks on `--story` slug](devrecord-story-slug-forks-the-record.md) — different slug creates duplicate record; check existing title.
 - [⭐ Memory is EVERY platform's, on every machine](memory-store-is-read-by-every-platform.md) — AGENTS.md §7 routes all models; memory audit due at 90%.
 - **Local plumbing** — [hooks live in .githooks](git-hooks-live-in-githooks-not-git-hooks.md) (.git/hooks silently inert) · [memory lives in repo](portable-memory-store-dot-slug-trap.md) (_artifacts/_memory/ + junction) · [PS console fakes mojibake](powershell-console-fakes-mojibake.md) (check bytes) · [PS `,@()` unrolls ONCE](powershell-comma-array-wrapper-unrolls-once.md) (bare assignment only).
+- [⛔ Sandbox denies `.claude/hooks` + `.claude/skills`](sandbox-denies-writes-under-dot-claude-hooks-skills.md) — breaks `git merge`/`checkout` for every lane and blocks `/smh-sync-agents` in-session (SCC-300).
 - [Claude notifications: Mac + phone](claude-notifications-mac-and-phone.md) — array schema required for hooks; phone notifications via ntfy mac-sudo-command.
 - [Antigravity SCM repo list](antigravity-scm-repo-list-collapses.md) — git.path shim unstacks; a click collapses the multi-repo view (cmd+alt+r restores).
 

@@ -415,3 +415,18 @@ needles, generic memory-store files, the generated-shell validator as Stop 1's e
 non-overwriting transform-traversal regression, an existing scaffold `HEAD`, and matching
 `JIRA_SITE`/`JIRA_KEYS` before any board operation. A fresh full review and receipt are required on the
 resulting SHA.
+
+## Latest-Main Integration Amendment — generated navigation and local assets
+
+Immediately before final review, `origin/main` advanced to `310824a` and was merged as required by
+Step 6. That live baseline retired the tracked `.claude/hooks/` mirror, preserved machine-local Claude
+settings as a linked asset, and made the SOP link to the newly generated `docs/doc-graph.md`.
+
+The first post-merge export correctly failed twice and supplied the RED evidence for the compatibility
+work. First, containment examined the physical destination of an explicitly excluded machine-local
+symlink before applying the exclusion; excluded paths now skip by their in-tree name without
+dereferencing, while included symlinks retain the strict physical-source check. Second, the source doc
+graph is deliberately excluded because it describes omitted/private files, so the export now opts into
+regenerating both doc-graph outputs against its sanitized `.agents/` + `docs/` tree using the exported
+generator itself. The contract is now 30 checks, including the hermetic excluded-symlink case, and the
+post-merge generated shell passes privacy, link, map, and tutor validation.

@@ -255,7 +255,11 @@ duplication** — keep both runs and do not "clean up" the wider one into the na
 Plus, because task work is almost always **docs and rules**, the two checks `/cicd-quick-dev` Step 3
 runs on a docs-only diff:
 
-- **Link + anchor check** on every path and `#L` anchor the diff touched.
+- **Link + anchor check** — `python3 .agents/scripts/check_links.py --base origin/main`, over every
+  path and `#L` anchor the diff touched. ⛔ Run the command; never improvise a matcher. An
+  improvised one reported **31 unresolved paths of which ~30 were false**, because it did not know
+  this repo cites scripts short — and a check that cries wolf thirty times teaches the reader to
+  skip the one real hit (SCC-285).
 - **SOP currency** — a usage-surface change (`.agents/commands/`, `.agents/rules/`,
   `.agents/scripts/`, git hooks, root `AGENTS.md`) must have moved
   `docs/_scc_sops_prds/workflows_testing_SOP.md`. The armed commit-msg gate already
@@ -352,6 +356,40 @@ five minutes later. Check both **before** opening the PR:
 | `- [x] The merge itself — lands via this branch's PR` | **Number-free on purpose** — the PR number is assigned when the PR is opened, which is *after* this commit is pushed. The number and merge sha go on the ticket in Step 4, where both are known |
 | a `## Your Actions` section, **even if it says nothing is owed** | `jira_feed.py finish` **refuses to close without it**: an absent section is not evidence that nothing is owed, so the answer must be recorded rather than assumed |
 
+<!-- reconcile-law -->
+⛔ **RECONCILE `## Your Actions` BEFORE this lane lands, and before you ask `finish` to close.**
+`finish` decides `Done` from what that section **claims**, and until SCC-298 nothing had ever
+checked whether a row's claim was still true — so a ticket sat at `Review Required` over work that
+was finished. SCC-288 sat for a day on one box whose token already existed, authenticated, and was
+attached. Law: `.agents/rules/completion-not-illusion.md` §4 — **an unverified open box is not
+evidence of owed work.**
+
+```bash
+python3 .agents/scripts/jira_feed.py reconcile-actions --walkthrough <the walkthrough>   # PC: `python`
+```
+
+Exit `3` lists every open row with its line number. **Take each one, in this order:**
+
+1. **Derive the check and RUN it.** A keychain item, a live endpoint, a file on disk, a board
+   field — most rows have one. Tick on what it returned:
+   `--tick <line> --evidence "<what you ran and what it returned>" --source measured`
+2. **No machine check exists? ASK the operator** and tick on their word, quoted:
+   `--tick <line> --evidence "<their words>" --source operator`
+3. **Neither proved nor answered → it STAYS OPEN**, and you report it. That is a row genuinely
+   holding the ticket, and it is the only kind that should.
+
+⛔ **Never tick a row you have not checked.** The verb refuses empty and contentless evidence, a
+line that is not an open row, a **ceremony** row (SCC-193 — the agent RUNS those; delete it) and
+the **merge** row (SCC-175 — `finish` computes that one from the repo). It never derives evidence
+by itself: an agent that could both invent the check and pass it is self-certifying.
+
+⛔ **Commit the ticked walkthrough NOW, on this lane, in the commit that lands — never after.**
+`finish` reads the **working tree** for these rows (only the merge row is read from `HEAD`), so an
+uncommitted tick satisfies it and the ticket goes `Done` — while the copy that actually lands still
+reads `- [ ]`, in a worktree the close-out is about to prune. An open box on a closed ticket is the
+exact state §4 exists to forbid, and this is the one window where avoiding it costs nothing.
+<!-- /reconcile-law -->
+
 ```bash
 grep -q "The merge itself" <walkthrough> && grep -q "^## Your Actions" <walkthrough> \
   || { echo "walkthrough incomplete — fix it BEFORE the PR"; exit 1; }
@@ -409,7 +447,7 @@ finding). If the check is red, **STOP** — never disable the ruleset to get pas
 > did: each of those strings was judged separately by the agent's permission layer, several were
 > denied, and the state was left stranded halfway. Measured, same op and same target:
 > `git merge X --no-ff` **allowed**, `git -C <path> merge X --no-ff` **denied** — and `-C` is what
-> `.agents/rules/nothing-guards-the-merge-target.md` *mandates*. Obeying the safety law guaranteed
+> `.agents/rules/git-policy.md` §*"Pin the merge TARGET"* *mandates*. Obeying the safety law guaranteed
 > the permission miss. `gh pr create` has none of that: it is one command, it needs no checkout on
 > `main`, it writes nothing on this machine, and it is what actually landed PR #5, #6 and #8.
 
@@ -489,8 +527,12 @@ recoverable failure.
 >
 > 1. **Trim `riders:` in `task.yaml` to the subset whose work is actually on this branch** — and
 >    commit that trim on the lane, before the preflight. `task_preflight.py` checks every declared
->    rider against the lane's commits and refuses one that leads no commit here. *Never declare a
->    ticket whose work is not real.*
+>    rider against the lane's commits and refuses one that is named in no commit subject here.
+>    *Never declare a ticket whose work is not real.* ⭐ **How a rider EARNS its evidence (SCC-282):**
+>    its key is NAMED in at least one commit subject on the lane — anywhere in the subject, so
+>    `SCC-244 rider SCC-253: …` (lane key leading, the house convention) and `SCC-253 fix: …`
+>    both count. Know this BEFORE the commits are written: the check runs here, at close-out, when
+>    every subject is immutable, and a rider with no subject naming it has no remedy but a trim.
 > 2. **Add `landing_mode: partial`** to the same `task.yaml`. Without it an open undeclared child blocks,
 >    exactly as it always has — the mode is a thing you say, and an unrecognised value fails CLOSED.
 > 3. **The trimmed riders flip** as above. **The PARENT STAYS OPEN** — do not transition it, and do
@@ -531,6 +573,32 @@ python3 .agents/scripts/jira_feed.py finish --key <JIRA-KEY> \
        --walkthrough <the walkthrough> --apply
 python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY> --project "$REPO"   # must exit 0
 ```
+
+⭐ **Then close the DESCRIPTION out too — the `## Plan` checklist and `## Done`.** A ticket whose
+Plan boxes are all still unticked reads, forever, as work that never happened. `jira_ticket.py done`
+ticks them and appends what shipped by rewriting the outline file in the tree and re-rendering from
+it — the tree stays the source, so the board and the branch cannot disagree
+(`.agents/rules/jira.md` §"The description is the fast read"). Do this for the lane's key **and each
+rider**:
+
+```bash
+python3 .agents/scripts/jira_ticket.py done --key <JIRA-KEY> \
+       --outline _artifacts/_main/<folder>/tickets/<JIRA-KEY>.md \
+       --tick 1,2,3,4 \
+       --done-line "<what shipped, from the walkthrough - one line per Done row>" \
+       --files "Plan: _artifacts/_main/<folder>/implementation_plan.md - attached - \
+https://github.com/sudomadhatter/<repo>/blob/main/_artifacts/_main/<folder>/implementation_plan.md"
+
+python3 .agents/scripts/jira_ticket.py attach --key <JIRA-KEY> \
+       --file _artifacts/_main/<folder>/walkthrough.md
+```
+
+⛔ **Rewrite the `Files` link to `blob/main/`.** The one written at planning time points at the lane
+branch, and `--after-merge` runs *after* that branch is pruned — a dead link on a closed ticket.
+
+⚠ **`attach` exiting 5 does not block the close-out.** It means this machine has no Atlassian API
+token (a one-time setup it prints in full); `done` still landed through acli. Record it as a line in
+the hand-back, not as a failure.
 
 ⛔ **`--project "$REPO"` is REQUIRED on both.** Both subcommands resolve their repo by walking up
 from **cwd**, and cwd is not intent — it resets to the shared checkout at slash-command boundaries,

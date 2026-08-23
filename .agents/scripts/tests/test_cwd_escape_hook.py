@@ -120,6 +120,13 @@ def main() -> int:
         code, out = call("cd .. && ls", cwd=WS)
         c.check("M3 control: the SAME `cd ..` from the ROOT leaves and is refused",
                 blocked(out), out.strip()[:150])
+        # Scratchpad paths: /private/tmp/claude-<uid>/... or /tmp/claude-<uid>/... are recognized as safe
+        uid = getattr(os, "getuid", lambda: 501)()
+        for cmd in (f"cd /private/tmp/claude-{uid}/-P/sess-123/scratchpad && ls",
+                    f"cd /tmp/claude-{uid}/-P/sess-123/scratchpad/exp && python3 t.py"):
+            code, out = call(cmd)
+            c.check(f"M3 allowed (scratchpad path): {cmd}",
+                    not blocked(out) and code == 0, f"exit={code} {out.strip()[:150]}")
 
     if c.block("M4 · every other way of leaving the workspace is caught"):
         for cmd in ("cd", "cd ~", "cd ~/Downloads", "cd -", "cd $HOME", "cd ..",
@@ -194,10 +201,9 @@ def main() -> int:
                 all("run-hook.sh" in x for x in cmds if "guard-cwd-escape.py" in x), f"{cmds}")
         c.check("M7 the existing push-approval hook is still wired beside it",
                 any("require-push-approval.py" in x for x in cmds), f"{cmds}")
-        c.check("M7 the deployed .claude/hooks copy matches the canonical .agents/hooks source",
-                (ROOT / ".claude/hooks/guard-cwd-escape.py").is_file()
-                and (ROOT / ".claude/hooks/guard-cwd-escape.py").read_bytes() == HOOK.read_bytes(),
-                "deployed copy missing or drifted")
+        c.check("M7 it points directly to .agents/hooks/guard-cwd-escape.py (the single source)",
+                any(".agents/hooks/guard-cwd-escape.py" in x for x in cmds),
+                f"expected direct .agents/hooks wiring in {cmds}")
 
     tmp_ctx.__exit__()
     return c.finish()

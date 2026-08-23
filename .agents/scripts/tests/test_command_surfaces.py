@@ -21,6 +21,7 @@ Both directions are asserted — a door in the wrong place is exactly as wrong a
 """
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -1817,7 +1818,7 @@ def main() -> int:
         # ── B · the retired janitor name cannot come back ─────────────────────────
         # A rename is only finished when the OLD name is unreachable from anything an agent
         # reads: commands, rules, scripts, docs, and all four platform door caches.
-        SWEEP_ROOTS = (".agents", "docs", ".opencode", ".claude/skills", ".claude/hooks",
+        SWEEP_ROOTS = (".agents", "docs", ".opencode", ".claude/skills",
                        ".githooks", "_bmad/custom")
         # ⛔ `.claude/worktrees` IS EXCLUDED BY DIRECTORY NAME, and that exclusion is the
         # difference between a check that measures THIS lane and one that measures whoever else
@@ -2328,6 +2329,222 @@ def main() -> int:
         c.check("CS-14 E the multi-lane door verifies landing by SHA, not by a deleted branch name",
                 "4.4 SHA" in body("cicd-merge-epic-workingtrees.md"),
                 "Step 6 deletes the branch Step 7 would name; capture the tip sha at 4.4")
+
+    # ── CS-15 · SCC-289 · the centre carries no code graph, and the seam is told which repo ───
+    # TWO defects, one root cause: the command centre is markdown, and a code graph parses code.
+    # (a) Three of the four MCP configs still started a `code-review-graph` server here — an index
+    #     of nothing, on every platform but opencode, which had already been trimmed.
+    # (b) `risk_seam.py` resolved its repo from CWD. The four review/audit doors run from the
+    #     CENTRE while reviewing a PROJECT worktree, so every project review classified the centre,
+    #     which has no graph — the answer was ALWAYS `unclassified` and read as "no index here".
+    if c.block("CS-15 · SCC-289 · no centre graph; every seam call names its repo"):
+        mcp_files = {
+            ".mcp.json": ROOT / ".mcp.json",
+            ".claude/mcp.json": ROOT / ".claude" / "mcp.json",
+            ".antigravity/mcp.json": ROOT / ".antigravity" / "mcp.json",
+            ".opencode/mcp.json": ROOT / ".opencode" / "mcp.json",
+        }
+        present = {k: v for k, v in mcp_files.items() if v.exists()}
+        c.check("CS-15 A all four platform MCP configs exist",
+                set(present) == set(mcp_files), f"missing: {sorted(set(mcp_files) - set(present))}")
+
+        server_sets = {}
+        for name, path in present.items():
+            try:
+                server_sets[name] = frozenset(
+                    json.loads(path.read_text(encoding="utf-8-sig")).get("mcpServers", {}))
+            except ValueError as exc:
+                server_sets[name] = frozenset({f"UNPARSEABLE: {exc}"})
+
+        c.check("CS-15 B ⛔ no platform starts a code-review-graph server in the CENTRE",
+                not any("code-review-graph" in v for v in server_sets.values()),
+                "; ".join(f"{k}={sorted(v)}" for k, v in server_sets.items()
+                          if "code-review-graph" in v)
+                or "clean")
+        c.check("CS-15 C the four configs declare the SAME server set",
+                len(set(server_sets.values())) == 1,
+                "; ".join(f"{k}={sorted(v)}" for k, v in server_sets.items()))
+
+        # (b) EVERY invocation carries --repo. Prose that merely names the script is not an
+        #     invocation; `risk_seam.py classify` is. The flag must sit ON the call — a paragraph
+        #     three lines below telling the reader to pass a root is not the call passing one.
+        seam_sites = []
+        for surface in (ROOT / ".agents" / "commands", ROOT / ".agents" / "workflows"):
+            for md in sorted(surface.rglob("*.md")):
+                text = md.read_text(encoding="utf-8-sig")
+                start = 0
+                while True:
+                    hit = text.find("risk_seam.py classify", start)
+                    if hit < 0:
+                        break
+                    start = hit + 1
+                    window = text[hit:hit + 60]
+                    rel = md.relative_to(ROOT).as_posix()
+                    seam_sites.append((rel, text[:hit].count(chr(10)) + 1, "--repo" in window))
+
+        c.check("CS-15 D there ARE seam call sites to check (a zero-site pass is vacuous)",
+                len(seam_sites) >= 4, f"{len(seam_sites)} sites: {[s[0] for s in seam_sites]}")
+        naked = [f"{f}:{ln}" for f, ln, ok in seam_sites if not ok]
+        c.check("CS-15 E ⛔ every `risk_seam.py classify` call passes --repo",
+                not naked,
+                f"naked calls: {naked} — without --repo the seam classifies CWD, which during a "
+                "project review is the command centre")
+
+        # (c) The ignore file the centre's index needed is gone, and nothing live still names it.
+        c.check("CS-15 F .code-review-graphignore is DELETED",
+                not (ROOT / ".code-review-graphignore").exists(),
+                "the centre keeps no index, so it needs no ignore list for one")
+        stale = []
+        for surface in (ROOT / ".agents", ROOT / "docs"):
+            for f in sorted(surface.rglob("*")):
+                if not f.is_file() or f.suffix.lower() not in (".md", ".py", ".ps1", ".sh"):
+                    continue
+                rel = f.relative_to(ROOT).as_posix()
+                # Two files may say the name: the tool reference that documents what a PROJECT
+                # carries, and this test, whose own assertion string is the word.
+                if rel in ("docs/code-review-graph.md",
+                           Path(__file__).resolve().relative_to(ROOT).as_posix()):
+                    continue
+                try:
+                    if "code-review-graphignore" in f.read_text(encoding="utf-8-sig"):
+                        stale.append(rel)
+                except (OSError, UnicodeDecodeError):
+                    continue
+        c.check("CS-15 G no live surface still names the deleted ignore file",
+                not stale, f"still naming it: {stale}")
+
+    # ── CS-16 · SCC-291 · the fast-read ticket tool is wired into BOTH ends of the lane ───────
+    # A tool nothing invokes is a tool nobody uses. The shape only holds if the door that MINTS
+    # a ticket renders it and the door that CLOSES one ticks it — one without the other leaves
+    # every ticket either unstructured at birth or permanently unticked at death.
+    if c.block("CS-16 · SCC-291 · both Task doors name jira_ticket.py, at the right end"):
+        cmds = ROOT / ".agents" / "commands"
+        plan = (cmds / "smh-plan-task.md").read_text(encoding="utf-8")
+        close = (cmds / "smh-close-task-merge-tree.md").read_text(encoding="utf-8")
+        c.check("CS-16 A the planning door renders the outline when it mints",
+                "jira_ticket.py outline" in plan, "smh-plan-task.md never calls the renderer")
+        # ⛔ SEARCH THE CODE FENCES, NOT THE PROSE. The door's own text says *"not
+        # `acli ... --description "…"`"* — a naive grep over the whole file matches that
+        # PROHIBITION and reports the door as still doing the thing it forbids. A guard a comment
+        # can invert is not a guard; only the fenced blocks are invocations.
+        def fences(body):
+            return "\n".join(re.findall(r"^```[a-z]*\n(.*?)^```", body, re.S | re.M))
+        plan_code = fences(plan)
+        c.check("CS-16 B ⛔ it mints with --description-file, not --description",
+                "--description-file" in plan_code
+                and not re.search(r"--description\s+[\"']", plan_code),
+                f"offending code lines: "
+                f"{[ln for ln in plan_code.splitlines() if re.search(chr(45) * 2 + 'description' + chr(92) + 's', ln)]}")
+        c.check("CS-16 C the planning door ATTACHES the plan rather than pasting it",
+                "jira_ticket.py attach" in plan, "smh-plan-task.md never attaches the plan")
+        c.check("CS-16 D the close-out door ticks the checklist and appends Done",
+                "jira_ticket.py done" in close and "--tick" in close,
+                "a ticket whose Plan boxes are all unticked reads as work that never happened")
+        c.check("CS-16 E and it rewrites the Files link to blob/main/ before the branch is pruned",
+                "blob/main/" in close,
+                "the planning-time link points at a branch --after-merge has already deleted")
+        # Neither door may treat a missing API token as a failure: attach is the ONLY verb that
+        # needs one, and the shape has to land on a machine that has not done the setup yet.
+        for name, body in (("smh-plan-task.md", plan), ("smh-close-task-merge-tree.md", close)):
+            c.check(f"CS-16 F {name} says exit 5 from attach does NOT block the lane",
+                    bool(re.search(r"exit(?:ing)? 5", body, re.I)),
+                    "an unset one-time token must not stop a lane from closing")
+
+    if c.block("CS-17 · SCC-298: the reconcile passage is IDENTICAL in all four closing doors"):
+        # ⛔ WHY A MARKER AND A DIFF, AND NOT A `grep -c`. FOUR command bodies call
+        # `jira_feed.py finish --apply` and close a ticket, and each of them must run the same
+        # reconcile pass first or a story lane settles rows by different rules than a task lane.
+        # `test_twin_parity.py` cannot carry this: it puts BOTH close doors in `NOT_PAIRED`
+        # ("the Task DOOR - it opens a PR against main and stops"), and its law blocks loop over
+        # `PAIRS` - so a `twin-law` marker in these files is never compared. A `grep -c` proves
+        # the string appears; it cannot see that one copy drifted.
+        OPEN, CLOSE = "<!-- reconcile-law -->", "<!-- /reconcile-law -->"
+        CDIR = ROOT / ".agents/commands"
+        # ⛔ DERIVED FROM THE TREE, NEVER A HAND-WRITTEN LIST. `completion-not-illusion.md` §4
+        # says reconcile is mandatory in EVERY command that runs `jira_feed.py finish`; a literal
+        # four-name tuple cannot enforce that, and a fifth closing door added later would pass
+        # this block in silence. Same reasoning `test_twin_parity.counterparts()` states for
+        # PAIRS: "a list that checks itself against itself is a list that cannot go stale in the
+        # one direction that matters". Keyed on the CALL, not a mention - three other command
+        # bodies name the verb in prose and are correctly not closing doors.
+        CALL = re.compile(r"jira_feed\.py finish (?:--key|--walkthrough)")
+        CLOSING_DOORS = tuple(sorted(
+            f.name for f in CDIR.glob("*.md")
+            if CALL.search(f.read_text(encoding="utf-8-sig", errors="replace"))))
+
+        # ANTI-VACUITY FIRST: every row below loops over these files, and a loop over a missing
+        # set passes silently.
+        # ANTI-VACUITY, and it has to bite BOTH ways now that the set is derived: an empty or
+        # one-element set would satisfy every loop below it, and "all copies are byte-equal" is
+        # trivially true of one copy.
+        c.check("CS-17 A the closing-door set is derived and plural",
+                len(CLOSING_DOORS) >= 4 and all((CDIR / n).is_file() for n in CLOSING_DOORS),
+                f"derived: {CLOSING_DOORS}")
+
+        blocks: dict[str, str] = {}
+        for name in CLOSING_DOORS:
+            body = (CDIR / name).read_text(encoding="utf-8-sig") if (CDIR / name).is_file() else ""
+            i, j = body.find(OPEN), body.find(CLOSE)
+            blocks[name] = body[i + len(OPEN):j] if 0 <= i < j else ""
+
+        c.check("CS-17 B every closing door carries the reconcile passage",
+                all(blocks.values()),
+                "missing or unterminated: " + str([n for n, b in blocks.items() if not b]))
+
+        # ⛔ NON-EMPTY IS HALF THE ASSERTION. Four files each carrying an empty marker pair are
+        # also "all equal" - the anti-vacuity shape `tests-must-gate-for-real` bans. The length
+        # floor is what makes equality mean something.
+        c.check("CS-17 C ...and it is SUBSTANTIVE, not an empty marker pair",
+                all(len(b.strip()) > 200 for b in blocks.values()),
+                str({n: len(b.strip()) for n, b in blocks.items()}))
+
+        first = blocks[CLOSING_DOORS[0]]
+        drifted = [n for n, b in blocks.items() if b != first]
+        c.check("CS-17 D all four copies are BYTE-IDENTICAL",
+                not drifted, f"drifted from {CLOSING_DOORS[0]}: {drifted}")
+
+        # E · the passage has to name the verb it is about, or "identical" is satisfied by four
+        # identical copies of something else entirely.
+        c.check("CS-17 E ...and the passage names `reconcile-actions`",
+                "reconcile-actions" in first, first[:200])
+
+        # ⛔ G · POSITION, NOT JUST PRESENCE — and this row exists because the first cut got it
+        # wrong in all four doors at once. The passage was dropped in beside the `finish` call,
+        # which in `smh-close-task-merge-tree.md` is inside **Step 4**, whose opening line is
+        # "**After the merge, never before.**" — and Step 5 prunes the worktree the tick was
+        # written into. That same door's Step 3 already carries the heading "⛔ Everything Step 4
+        # will demand of `walkthrough.md` must be committed ON THIS BRANCH, NOW". Rows A-F were
+        # ALL GREEN over it: presence, length, byte-equality and the law citation cannot see
+        # order (`source-grep-guards-cannot-see-order`). The consequence was live, not
+        # theoretical - `cmd_finish` reads the WORKING TREE for these rows, so the tick clears
+        # the hold and Jira goes `Done` while the copy that lands still reads `- [ ]`.
+        #
+        # So the order is asserted: reconcile, THEN the pre-landing `check-actions` each door
+        # already carves out, THEN `finish`.
+        FINISH_CALL = re.compile(r"jira_feed\.py finish (?:--key|--walkthrough)")
+        for name in CLOSING_DOORS:
+            body = (CDIR / name).read_text(encoding="utf-8-sig") if (CDIR / name).is_file() else ""
+            r = body.find(OPEN)
+            ca = body.find("check-actions --walkthrough")
+            m = FINISH_CALL.search(body)
+            fin = m.start() if m else -1
+            # ANTI-VACUITY: `-1 < -1` is False, but `-1 < 5` is True - a missing marker must not
+            # satisfy an ordering test by being "early".
+            c.check(f"CS-17 G {name} has all three markers to order",
+                    r >= 0 and ca >= 0 and fin >= 0,
+                    f"reconcile={r} check-actions={ca} finish={fin}")
+            c.check(f"CS-17 G {name} reconciles BEFORE it lands and BEFORE finish",
+                    0 <= r < ca < fin,
+                    f"reconcile={r} check-actions={ca} finish={fin} - the passage must precede "
+                    f"the pre-landing pass and the close, or the tick dies in a pruned worktree")
+
+        # F · the law the passage acts under, cited where an agent reading the door will see it.
+        for name in CLOSING_DOORS:
+            body = (CDIR / name).read_text(encoding="utf-8-sig") if (CDIR / name).is_file() else ""
+            c.check(f"CS-17 F {name} cites completion-not-illusion",
+                    "completion-not-illusion" in body,
+                    "a door doing the thing must point at its law")
+
 
     return c.finish()
 

@@ -611,6 +611,16 @@ too. No drift row auto-fails; each takes the same cut-it-or-name-why-it-stays di
 `dispositions:` line (per-lens survived/dismissed/relevance-killed) and a one-line `drift:` result;
 `walkthrough_roster.py` blocks a lane dated 2026-08-20 or later that is missing either.
 
+**And the runtime header owes a REASON when it says `inline` (SCC-285).** `review-runtime:
+inline` is a claim about your session, so write the evidence on the line — `inline (no subagent
+tool)` when the tool is genuinely absent, or `inline (blocked: <quote what blocked you>)`. A
+bare `inline` is refused for lanes dated 2026-08-22 or later, and so is a reason resting on
+**permission** rather than capability: *"a directive says not to"* answers a question the step
+does not ask. The step asks only whether the tool EXISTS — whether you may use it was settled
+when the operator typed the command. That rule had lived in the command body since SCC-203 and
+nothing read it, which is how the original incident recorded a clean-looking `inline` and
+merged.
+
 > ⓘ **Why 0.7 re-derives against the epic, not `main` (SCC-166).** These steps were ported from
 > `/smh-code-review`, where a Task lane merges into `main` and so re-derives against `origin/main`.
 > A story lane merges into `epic/<JIRA-KEY>-<slug>` — pasting the Task step verbatim would re-derive
@@ -989,6 +999,110 @@ on the owed list with the reason. Every other open box is untouched; those are y
 > ⓘ **Why the tick moved before the PR.** The old remedy had the close-out tick the row *after*
 > the merge, on `main`, in a commit the write gate then refused — and that refusal is what put
 > `git reset --hard` in front of the agent that destroyed three sessions' work.
+
+**And since SCC-298 the close-out RECONCILES the other rows before it asks `finish` to close
+(2026-08-23).** The merge row was the only one anything ever checked. Every *other* row closed or
+held a ticket on nothing but whether somebody had typed an `x` — so a ticket sat at `Review
+Required` over work that was finished. SCC-288 sat for a day on one box whose API token already
+existed, authenticated, and had attached the file. The operator's words: *"agents are terrible at
+checking off those task lists, especially when its a user task, even if I tell them."*
+
+```bash
+python3 .agents/scripts/jira_feed.py reconcile-actions --walkthrough <path>   # PC: `python`
+```
+
+Bare, it lists every open row **with its line number** and exits `3` — `finish`'s own HELD code. It
+reads a file and writes that file: no board, no key, no network.
+
+⛔ **It counts only what YOU can settle, and that is the point of reusing `finish`'s codes.** The
+**merge row** is listed and tagged but never counted: `finish` computes that one from the repo
+(SCC-175) and the verb refuses to tick it, so counting it would mean answering **HELD** on a file
+`finish` answers **CLEAR** — and since almost every walkthrough carries a merge row, the verb could
+essentially never reach `0`. That was live and shipped-adjacent: caught by a review lens after the
+author had read the wrong output as correct. A **ceremony** row still blocks, because `finish`
+refuses on one — but it is reported as something to **DELETE**, not as work you owe.
+
+⛔ **If you delete a row, RE-RUN the listing before the next tick.** Ticking preserves line numbers
+by construction; **deleting shifts every row below it**, and a number from the stale listing then
+lands on a different open row — which `--tick` would accept, because that line really is open. Pass
+`--expect "<text from the row>"` and it is checked for you. The listing's own *"DELETE the row"* tag
+is what makes this reachable, so it is not a hypothetical.
+
+Then you settle rows one at a time:
+
+```bash
+… reconcile-actions --walkthrough <path> --tick <line> \
+      --evidence "<what proves it>" --source measured|operator [--expect "<text from the row>"]
+```
+
+**The rule for ticking, and it is the operator's ruling of 2026-08-23:** derive the check and RUN
+it where one exists, and tick on what it returned (`--source measured`); where no machine check
+exists, **ASK**, and tick on their word, quoted (`--source operator`). Either way the answer is
+written into the row, in the lane's own commit, where you and the review both read it. A row that
+is neither proved nor answered **stays open** and gets reported — that is a row genuinely holding
+the ticket, and it is the only kind that should.
+
+It refuses **seven** ways and writes nothing on any of them: no `## Your Actions` section at all ·
+a line that is not an open row (a stale number, an already-settled row, a `- [ ]` from the agent's
+own `## Task Checklist`, a fenced example) · an `--expect` the row no longer contains · **empty**,
+**contentless**, or **multi-line** evidence · a **merge** row (SCC-175 — `finish` computes that one)
+· a **ceremony** row (SCC-193 — the agent runs those; delete the row) · and evidence that would
+*manufacture* a merge row out of an ordinary one.
+
+⛔ **EVIDENCE IS ONE LINE, and this is a fail-open the review caught, not a style rule.** The proof
+is written into the walkthrough **verbatim**. A newline in it puts a new line into the file: one
+starting `## ` **ends the section**, one carrying a fence marker **hides the rest of the file**, and
+either way `finish` reads *"nothing owed"* and **closes the ticket over rows nobody checked** —
+while the verb prints *"`## Your Actions` is now CLEAR"*. Measured before the fix, on real output
+pasted into `--evidence`. It is refused rather than silently collapsed: reflowing a paste would put
+words in the operator's mouth in the one place the file exists to quote them. `--date` takes the
+same vector and must be a plain `YYYY-MM-DD`.
+
+ⓘ **The verb rewrites the whole file, so it reads the way a writer must.** `wf.read_exact` /
+`write_exact` — *"Byte-preserving read for files we will WRITE BACK"* — because the ordinary reader
+is `utf-8-sig` + `errors="replace"` + universal newlines, and on a round trip each of those is
+destructive: an undecodable byte came back **U+FFFD permanently**, a BOM was swallowed, and a CRLF
+walkthrough was rewritten wholly to LF (the reverse on the PC). All three measured.
+
+⚠️ **The contentless check is a FLOOR, not a content judge, and it is two layers with a division of
+labour worth knowing.** A **length/word floor** does the volume — under **16 characters** or **3
+words** is refused whatever it says, so `done`, `ok`, `verified` and `n/a` never get further. A
+short **exact-match phrase set** sits above it for the one shape a floor structurally cannot see:
+**long and contentless** — *"confirmed by operator"*, *"it has been done"*, *"already taken care
+of"*. Every phrase in that set clears the floor, and a test asserts exactly that, so a short word
+added to it later fails the suite instead of silently doing nothing (the first draft was 37 words
+and 35 of them were unreachable — a mutant, not a review, is what found it).
+
+⛔ **The match is exact on purpose, and it will never grow into a judge.** A fuzzy *"does this
+sentence carry content"* test would refuse real operator quotes, and a **false refusal HOLDS a
+ticket** — the exact failure this feature exists to end. Over-accepting is recoverable by a human
+reading the file; over-refusing is not recoverable by anyone. So the real guard is that the
+evidence lands in the file, not that a regex approved it.
+
+⭐ **WHERE it runs is as load-bearing as what it does, and the first cut got it wrong.** The step
+sits in each door's **pre-landing** window — immediately before the `check-actions` block every one
+of them already carves out — and never beside the `finish` call. `finish` runs **after** the merge:
+in `/smh-close-task-merge-tree` that is Step 4, whose opening line is *"After the merge, never
+before"*, and Step 5 prunes the worktree. ⛔ **`cmd_finish` reads the WORKING TREE for these rows**
+— only the merge row is read from `HEAD` — so a tick made there clears the hold and writes `Done`
+while the copy that actually lands still reads `- [ ]`, in a tree about to be deleted. **An open box
+on a closed ticket is exactly what §4 forbids.** So: reconcile → `check-actions` → commit → land →
+`finish`. `test_command_surfaces.py` **CS-17 G** asserts that order by file offset in all four
+doors, because CS-17's other six rows are all satisfied by a block sitting anywhere in the file
+(`source-grep-guards-cannot-see-order`).
+
+ⓘ **A wrapped row keeps its shape.** `## Your Actions` rows routinely run to two or three lines, and
+SCC-206 taught the reader to fold those continuations in. The tick flips the box on the row's **first**
+line and writes the proof after its **last word** — never through the middle of the sentence — and the
+file's line COUNT never changes, which is what keeps every other row's printed line number valid for
+the whole pass. ⛔ **The verb never
+derives its own evidence** — an agent that could both invent the check and pass it is
+self-certifying, which is the thing this closes. Law: `.agents/rules/completion-not-illusion.md`
+§4, and the step is mandatory in all four doors that call `finish --apply`
+(`/smh-close-task-merge-tree`, `/cicd-close-story-merge-tree`,
+`/smh-merge-multiple-workingtrees`, `/cicd-merge-epic-workingtrees`), byte-identical and pinned by
+`test_command_surfaces.py` **CS-17** — which the twin-parity suite cannot cover, because both close
+doors sit in its `NOT_PAIRED` list.
 
 **The landing target is resolved, not assumed.** A Task lands on `main`; a **story** lands on
 `epic/<KEY>-<slug>`, which is not an ancestor of `main` until the epic itself ships — so a
@@ -1479,47 +1593,141 @@ fail the same quiet way — a rule that never loads looks exactly like a rule wi
 
 ### The code graph — what the review commands ask before they judge
 
-The command centre and each project carry a **local code graph**: a small SQLite index built by
-`code-review-graph`, which reads your code and answers structural questions the review commands would
-otherwise answer by guessing. *Who calls this function? What breaks if I change it? Which of these
-changed functions has no test?* The reviews and audits ask it for you — there is nothing to type in
-the normal flow.
+**Each project carries a local code graph. The command centre does not, and never will.**
 
-You do see it in one place: a **risk map** printed beside the overlap list when a review re-checks
-its blast radius. Per changed file it names the riskiest thing you changed in it, how many flows run
-through it, and which of your changed functions it can find no test for — a shortlist of where to
-look hardest, nothing more. It also prints `test_links`; when that reads `0`, the "no test" column is
-empty of meaning and the fourth point below says why. When it says `unclassified`, the graph simply had no answer to give (see
-the first point below); that is a normal line, not a problem to solve.
+A code graph is a small SQLite index built by `code-review-graph`, which reads your **code** and
+answers structural questions the review commands would otherwise answer by guessing. *Who calls this
+function? What breaks if I change it? Which of these changed functions has no test?* Inside a project
+the reviews and audits ask it for you — there is nothing to type in the normal flow.
 
-Four things are worth knowing, because each one has bitten:
+⛔ **This repo has no graph of its own, by design.** A code graph parses code, and the command centre
+is markdown: commands, rules, procedure. An index here described almost nothing. There is no server
+for it in any of the four platform configs, no ignore file, and no index — and the map check saying
+"no code graph in this workspace" is the permanent right answer here, not something waiting to be
+built. What maps this repo instead is the **doc graph** (below).
+
+So when you run a review here, the risk map says `unclassified`. **That is correct and expected**, not
+a machine that needs setting up.
+
+#### What you see, in a project
+
+A **risk map** printed beside the overlap list when a review re-checks its blast radius. Per changed
+file it names the riskiest thing you changed in it, how many flows run through it, and which of your
+changed functions it can find no test for — a shortlist of where to look hardest, nothing more. It
+also echoes `root`, so the output states **which repository it answered about**.
+
+#### Reviewing a project from the command centre
+
+Every review and audit door runs from here, so the tool has to be told which tree it is judging:
+
+```bash
+python3 .agents/scripts/risk_seam.py classify --repo "<the project worktree>" <paths…>
+```
+
+⛔ **Without `--repo` it reads whatever directory you are standing in** — the command centre — which
+has no graph, so it answers `unclassified` for every file and that looks exactly like a project whose
+index was never built. The four doors pass it for you; you would type this by hand only to look at a
+project's risk map directly.
+
+#### Three things worth knowing, because each one has bitten
 
 - **It is per machine and per workspace, and it goes stale.** It is not in git. A fresh clone, a fresh
-  worktree, or someone else's commits pulled down means the map no longer matches the code. The map
-  check (`/smh-update-maps-indexes`) notices and tells you; the fix is one command in that repo:
-  `code-review-graph update`.
+  worktree, or someone else's commits pulled down means the index no longer matches the code. The map
+  check notices and tells you; the fix is one command in that repo: `code-review-graph update`.
 - **Installing it is a per-machine step, like `gh` or `firebase`.** `pipx install code-review-graph`
-  on each machine, then `code-review-graph build` once in each repo you work in. The new-machine guide
-  carries both, including the one editor quirk that makes the tools silently absent on the Mac.
+  on each machine, then `code-review-graph build` once in each **project** you work in — never here.
+  The new-machine guide carries both, including the one editor quirk that makes the tools silently
+  absent on the Mac.
 - **It narrows where to look; it does not replace looking.** It is exact about who calls a normal
   function, and it gets confused when one file defines several nested functions with the same name.
   So a reviewer confirms a caller's identity before acting on it. That habit is written into the
   commands.
-- **In THIS repo, "no test" from the graph means nothing at all — and in a project repo it means "go
-  and check".** The graph links a test to its subject only when it can follow the import statically.
-  AviationChat's code is laid out that way, so it finds **3427** real links and a gap there is worth
-  chasing. The command centre's own tests all run their subject as a separate program or rewire the
-  import path first, so it finds **zero** — and therefore reports **every** function you changed as
-  untested, including the ones with thorough tests. Left unchecked that reads as a page of missing
-  tests that are not missing.
-
-  You do not have to remember which repo is which: the risk map prints `test_links`, the count of real
-  links it found. **Zero means ignore the "no test" column entirely.** A high number means treat it as
-  a shortlist to check. Either way the *risk* and *flow* columns are unaffected — the call graph works
-  fine in both repos; it is only the test half that is repo-dependent.
+- **Read `test_links` before you read the "no test" column.** The graph links a test to its subject
+  only when it can follow the import statically. AviationChat's code is laid out that way, so it finds
+  thousands of real links and a gap there is worth chasing. A repo whose tests run their subject as a
+  separate program finds **zero** — and then reports *every* changed function as untested, including
+  the thoroughly tested ones. The risk map prints the count so you never have to remember which repo
+  is which: **zero means ignore that column entirely.** The *risk* and *flow* columns are unaffected.
 
 Full reference — every tool, the freshness commands, the install recipe for both machines:
 [`docs/code-review-graph.md`](../code-review-graph.md).
+
+### The doc graph — what maps the command centre instead
+
+Because the code graph cannot read markdown, this repo is mapped by a **doc graph**: a link graph over
+every `.md` file under `.agents/` (the toolkit) and `docs/` (the procedure — every SOP and PRD,
+including this page). It answers *what references what*, and it is what catches a link that quietly
+stopped resolving when a file moved.
+
+It lives at [`docs/doc-graph.md`](../doc-graph.md) (readable) and `docs/doc-graph.json` (complete).
+**You never have to run it.** A `pre-commit` hook regenerates it — and the repo-map's generated
+block — on any commit that touches those two folders, and commits the result alongside your work.
+See "Maps refresh" below.
+
+Two counts are worth understanding when you read it. A **broken-path** reference contains a `/` and
+almost always means a real link that stopped resolving — that is the number that matters. A
+**bare-name** reference is a filename with no path (`walkthrough.md`), which is usually a workflow
+naming a file it will generate rather than linking to one; those are noise.
+
+### Maps refresh — the generated maps keep themselves current
+
+Two files in `docs/` are machine-written: the repo map's tree block, and the doc graph. They used to
+go stale between manual reconciliation runs, which is the worst state a map can be in — it is still
+read as if it were current.
+
+**They now refresh themselves.** A `pre-commit` hook regenerates both and adds them to your commit
+whenever you have touched `.agents/` or `docs/`. A commit that touches neither costs nothing.
+
+That leaves a clean split, and it is the point of the whole thing:
+
+| Layer | Who owns it |
+|---|---|
+| **Generated** — the tree block, the node and edge lists | the hook, on every commit |
+| **Curated** — one-line purposes, INDEX prose, the pointers in `AGENTS.md`, the hand-written blocks at the top of both files | you, via `/smh-update-maps-indexes` |
+
+A hook cannot write prose. What it buys you is that a drift report is now only ever about the half a
+person has to fix.
+
+**Two checks refuse work rather than warn about it.** They run as the commit message is written,
+not as the files are staged — because each has a recorded way out and a `pre-commit` hook cannot see
+a commit message:
+
+- **The broken-reference ratchet.** Your commit may not raise the count of broken references above
+  what it already was. It does not demand zero — there are stale links inside old migration guides —
+  it demands that you not add one. If you do, it names the new reference and the file it is in.
+  ⭐ **The count means the same thing in every checkout (SCC-288 R9).** A link that points into a
+  `Projects/*` submodule is reported as **unresolvable**, never as broken, whether that submodule is
+  checked out or not — the lobby graph does not adjudicate links into another repo, and each project
+  has its own `check_maps` run that does. Before this, `git worktree add` left `Projects/*` empty,
+  the same commit scored 74 broken from the main checkout and 77 from a worktree, and the ratchet
+  refused **every commit made in a worktree** — which is every lane in this system.
+- **Every door must be named in this page.** Add or rename a command in `.agents/commands/` without
+  giving it a line in this SOP and the commit is refused, naming the door. Retiring a door means
+  deleting its file, and a deleted door cannot be un-named.
+
+Putting **`[maps-ok]`** in the commit message re-baselines both checks for that one commit, and the
+token stays in the log forever — which is the point, the same way `[sop-ok]` works. Use it when the
+graph's **scope** changed (a new folder brought into it), never to wave a real broken link through.
+⛔ **And never to get a worktree commit through** — that was R9, and reaching for the hatch is how it
+stayed hidden for a release. A hatch you need on every commit is a bug report, not an escape.
+⛔ **The token must OPEN or CLOSE a line** — `<subject> [maps-ok]`, or a trailer line that
+begins with it. A mention inside a `#` comment line does not count, and since SCC-288 R10
+neither does one buried mid-sentence: the check used to be a bare substring test, so a commit
+message saying it did *not* use the hatch pulled it anyway. Where the rule is unsure it fails
+closed — an honest re-baseline is one line-break away.
+
+If a commit slips past the hooks — a merge made on GitHub, a `git commit --no-verify`, or a clone
+where hooks were never armed — the **push** is refused instead, and the map check reports it as a
+failure. Either way the message tells you the one command that fixes it:
+
+```bash
+python3 .agents/scripts/refresh_maps.py --repair     # PC: python
+```
+
+`--verify` is the read-only form: it tells you whether the maps match the tree and changes nothing.
+
+Bypasses, if you genuinely need one: `git commit --no-verify` for a single commit, or creating
+`.agents/scripts/git-hooks/DISABLE` to turn the whole thing off on this machine.
 
 ## 9. The Task lane — work on the system itself
 
@@ -1652,8 +1860,31 @@ points this lane's upstream at **main itself**.
 **Shipping before every part is built — partial landing.** Write `landing_mode: partial` into `task.yaml`
 and **trim `riders:` to the subset actually on the branch**. Then the trimmed riders flip, the
 **parent stays open**, and the remainder becomes the next lane. `task_preflight.py` checks every
-declared rider against the lane's commits and refuses one that leads no commit there; an unrecognised
+declared rider against the lane's commits and refuses one that is NAMED in no commit subject there — the key may sit anywhere in the subject, so the house shape `SCC-244 rider SCC-253: …` earns it (SCC-282; until then only the LEADING key was read and no rider on a consolidated lane could ever earn `partial`); an unrecognised
 `landing_mode:` **value** fails CLOSED, so a typo in the value blocks rather than relaxes.
+
+**A dirty path that belongs to a LIVE SIBLING LANE is named, not errored (SCC-283).** The close-out
+classifies every dirty path in the shared checkout: its own receipt, memory files, and everything
+else — which used to be a hard error with no way to recognise another live lane's working copy
+(`.claude/settings.json` can only be edited in the shared checkout, so a lane working on it is
+*required* to leave that tree dirty). The two answers have opposite correct actions — unswept dirt
+is committed or parked, another lane's copy is left alone — and guessing wrong once cost three
+sessions' work (SCC-180). Now a dirty path whose BYTES equal a sibling `chore/` · `claude/` · `epic/`
+worktree's COMMITTED copy is reported as *that lane's working copy* with the branch named, as a
+warning. Different bytes still error; a path no lane committed still errors; and `main` is never a
+sibling lane, so a hand-revert to main's content in your working copy still errors.
+⛔ The same lane found that the classifier had been mis-reading the FIRST dirty line whenever it was a
+tracked modification (` M path` lost its leading space to a whole-output `.strip()`), so the memory ruling and
+the sibling match both silently missed exactly the `M .claude/settings.json` shape the ticket was filed on — fixed.
+⭐ **The review of that lane then found the hole in its own fix, four lenses independently:** a sibling's committed TREE
+carries main's bytes for every file it never touched, so "working copy equals `<sibling>:<path>`" was also true of a
+hand-revert to main — the moment ONE unrelated sibling worktree was live (the normal state here). Excluding `main` by
+name was dead code on every real run. **The predicate is now "the lane CHANGED it"**: a sibling owns a path only when its
+blob differs from the base's blob. Three more rulings ride with it: the lane's **own** branch is a legitimate owner (the
+lane that dirtied the shared checkout must be able to close itself); a **`prunable`** worktree is not a live lane; a
+**staged** sibling copy (`A `, `M `, `MM`) is never owned — it errors with the `git restore --staged` remedy, because
+staging is an act of this tree. And the compare is by **blob id through the clean filter** (`git hash-object --path`),
+so the PC's `core.autocrlf=true` CRLF working copy still matches the LF blob — raw bytes made the bucket dead there.
 ⛔ The **key** is `landing_mode`, never `landing` — `task.yaml` already has a different `landing:`
 nested under each `secondary_repos:` entry, which is why the name was changed. A bare `landing: partial`
 at column 0 is not recognised at all: it fails **silently**, not closed — nothing reads it, no
@@ -1846,9 +2077,11 @@ not change: the declared `case` must still name a case on the `FAILED:` line. De
 | The rule | Why it exists |
 |---|---|
 | A **surviving** mutant is a finding | the coverage hole you came to find |
+| A **DELETION** mutant is declared as `"mutated": ""` — remove the anchor entirely and see if anything notices | the most valuable mutant shape for a guard: it proves the guard fires because the line is THERE, not because some other line happens to be. ⛔ Until SCC-284 the loader tested fields with a FALSY check, so the empty string read as *missing* and the whole table was refused; SCC-244 worked around it three times with an inert substitute line, and its record then said *replaced* about mutants that tested *removed*. Now every field must be PRESENT (an absent key refuses and says **absent**), every field but `mutated` must be non-empty, and `original` still needs a unique anchor |
 | A mutant that **removes nothing** is **DEFECTIVE** — a SKIP that **counts as a survivor** | SCC-144's `M3` commented out one `echo` of a two-line message; the second line still printed the asserted word, so the case passed **correctly**. Read as a coverage gap it buys a test for a hole that does not exist |
 | Mutants are **CODE-DERIVED**, never drawn from your own cases | case-derived mutants are circular — they prove only that the suite agrees with itself. Measured in SCC-144: its 14 case-derived mutants were all killed, and a later set drawn from the code left **24 of 25 surviving** — every survivor a hole the first sweep had reported as covered |
 | **RESTORE** in a `finally`/trap; never start dirty; re-check `git status` after | a `timeout`-killed sweep left a **mutated gate on disk, uncommitted** — and a mutated gate is committable. **Enforced by `mutation_sweep.py`**, which also names the file it refuses to start on |
+| The restore takes the **bytecode** with the source | restoring the text alone is not enough. Python caches the compiled mutant in `__pycache__`, and it decides that cache is current by comparing the source's *timestamp and size* — not its contents. A mutant the same length as the line it replaced, restored in the same second, satisfies both, so later runs execute code that no longer exists on disk: source clean, `git status` clean, sweep green, **behaviour still the mutant's**. `mutation_sweep.py` deletes the cache as part of every restore |
 | A kill must be attributable to the **DECLARED** case | a non-zero exit only says *something* died. `--case "E"` once matched 40 blocks and the sweep recorded "killed by case E" for a case that never ran alone (SCC-156 #1), so a kill needs the declared label on the `FAILED:` line |
 | The **FULL file runs unfiltered** before the next commit | `8681d83`: every scoped case green, the mutant still in the tree, and the bill was a red receipt, a diagnosis, a fix commit and another full suite run |
 
@@ -2067,8 +2300,9 @@ flowchart LR
 | `pre-push-main-approval.sh` | **Anything reaching `main` without a fresh, single-use sign-off.** The `pre-push` hook refuses a push landing on `main` unless a token minted for that exact sha is present, and the token is spent on use — so one approval buys exactly one push. It closed the hole where six merges rode a single sign-off. ⛔ **SCC-171 — it was broken on the PC, and it failed in the worst direction: it refused *everything*.** Both this and `mint-push-token.sh` took git's answer for "where is the shared git dir" and re-normalised it by hand, which is a no-op on the Mac and wrong on Windows — git-for-windows answers `C:/Users/…`, that does not look like a Unix absolute path, so the repo root got glued in front of it and the token was written to a folder that cannot exist. The gate then looked in the same impossible place, found nothing, and refused every push to `main`. **Every lane in this system is a worktree, and that is the case where it bites.** Worse, the minter never checked that the write worked: it printed `🔑 main-push token minted` and exited 0 with nothing on disk, so you were handed a success message and then a refusal that contradicted it. Both are now used as git gives them, and the minter asks the filesystem whether the token is actually there. ⛔ **SCC-172 — and three separate ways it said `✅ main push approved` without having checked anything.** (1) The rung that binds a token to the branch it names was the *only* one requiring the push to be a merge at all, and it was skipped whenever that branch did not resolve locally — so a **plain commit** pushed straight onto `main`, with a token naming a branch that never existed, was **approved**. Reachable with no ill intent: a fresh clone, the other machine, a lane pruned before the sign-off, a typo. (2) **Every** check lived inside "the remote already has a `main`", with nothing on the other side — so a push that **creates** `main` on a remote skipped the lot; measured as three stacked merges riding one token onto a bare remote, with a green banner. (3) A worktree cut before the gate existed has no hook to run, and the dispatcher allowed the push while *saying* it was unchecked — but `main` is shared, so whether landing on it was gated depended on **which directory you happened to be standing in**. All three now refuse, each naming its own reason rather than the shared banner, and each with a control proving the legitimate case still passes. **The suite was measuring from inside hole (2):** its fixtures drove every case through the no-remote-`main` arm, so the happy path was green *because of* the bug. *(Shipped 2026-08-10 by SCC-77; PC path + silent-write-failure closed 2026-08-16 by SCC-171; the three fail-opens by SCC-172.)* |
 | `pre-push-merge-backstop.sh` | **A lane quietly carrying another lane's unlanded work.** The row above and the merge-target guard both act on a *commit*; a **fast-forward** merge creates no commit, so nothing at commit time can see it — and SCC-97's own recovery deliberately used `--ff-only`, so that path is not hypothetical. What a fast-forward cannot hide is the evidence: another lane's commits are now inside yours. So when you push a `chore/*` or `claude/*` lane, this refuses if any **other** lane branch is contained in it and is **not** reachable from `origin/main`. **An `epic/*` counts as one of those "other" branches — but only for a `chore/*` lane (SCC-163).** — *and the history behind it, below.* |
 | `main_write_gate.py` | **A merge made on GitHub itself reaching `main` with no gate having run.** Everything in the row above happens on your computer, at `git push`; a merge performed in the browser or through the API happens on GitHub's servers and never touches your computer, so that hook is not bypassed — it is **absent**. This is the half that runs *there*, as a required check called `main-write-gate`: the real enforcement suite, the toolkit lint, and a check that the merge came from an `epic/*` or `chore/*` branch with a key this repo answers to (and, for a pre-flighted local merge, that `main` advances by exactly one merge of a genuinely pushed branch). — *and the history behind it, below.* |
+| `check_links.py` | **A doc that cites a file which is no longer there.** The clean-code floor had a `Link + anchor` row that named **no command** — the only prose row on a floor of scripts — so every agent improvised a matcher, and an improvised matcher is worse than none: one reported **31 unresolved paths of which ~30 were false**, because it did not know this repo cites scripts short (`tests/test_twin_parity.py` for `.agents/scripts/tests/test_twin_parity.py`). A gate that cries wolf thirty times teaches the reader to skip the one real hit. This resolves the claims a diff's markdown makes, against **seven** house conventions, each of which is a measured false positive from one of its own drafts: short citations · relative `../..` links · the **branch's** index rather than `main`'s (or every file the lane ADDED reads as dead) · gitignored assets that live only in the main checkout · URLs, placeholders, fenced examples and directories, which are not claims · child-project paths that `cicd-*` commands cite correctly and the lobby cannot resolve · and the narrative ledgers, where a row naming a deleted file is history — which includes `_artifacts/_main/active-context.md`, on `check_maps.py`'s authority rather than a preference: it carries `PRUNE_KEEP_BLOCKS = 10`, so the house already models a continuity brief as a dated log whose old end is **pruned**, never repaired. The cost of that one is written into the code: 11 real dead paths in the lobby's brief stop being reported, every one inside a 2026-07 block. It does not excuse a stale pointer in the LIVE header — those are prose, which no version of this checker ever read. ⛔ Its second draft shipped `lstrip("./")`, which takes a character SET and ate the leading dot off every `.agents/…` path — 168 false findings, and the identical trap `sop_currency.py` already carried a comment about. That case is pinned in `tests/test_check_links.py`, which also proves the checker still BITES: a dead path, a plausible-looking dead path, an out-of-range `#L` anchor and a reversed range are each asserted to be reported. ⛔ **It is a LOBBY script, and every door that cites the floor row says so.** The `smh-*` doors name the command; `/cicd-quick-dev` deliberately keeps prose, because a thin project's `.agents/scripts/` carries only `git-hooks/` and `tests/` — naming the command there would cite a file that is not on the target. It also skips **generated blocks** — the `REPO-MAP:AUTO-*` and `DOC-GRAPH:AUTO-*` sentinels. Those hold machine output, and the doc graph's block is a *report* whose job is to LIST the dangling references it found; read as links, the graph's 40 findings became 40 findings of this checker's own, in a file no human wrote a link into. *(SCC-285, SCC-288.)* |
 | `walkthrough_roster.py` | **A review that was narrated instead of run.** A walkthrough's `Verdict: PASS @ <sha>` was the *only* record a code review left behind — so a verdict written without a review looked exactly like one written after a thorough one, and merged just as cleanly. Found by SCC-163's own self-audit *while that lane was closing*, and nothing here could have caught it. Now the review must also record **which lenses ran and how they ended** (`ok` · `recovered-inline` · `dead`), and one parser reads that for both close-out paths — story lanes through `closeout_preflight.py`, Task lanes through `task_preflight.py`. Each caller hands it the verdict **its own** reader resolved, so the two gates cannot drift apart. ⛔ **It BLOCKS** (operator, 2026-08-15: *"I dont see a case in enterprise dev where a warn should make it to prod?"*). **Six** things stop a close: a verdict with **no roster at all** (that is UNKNOWN, not clean); a **PASS with a dead lens** (a lens that saw nothing cannot support a pass); a header declaring `review-runtime: inline` while a lens reports `ok` (the header and the data disagree); a Step 0.7 re-derivation shorter than its three lines; and **a lens recorded `n/a` under a declared `fan-out`** (SCC-203), or **an `n/a` with no reason**. **The last two close a hole the ruling itself opened.** Telling the engine to DROP a contaminated Blind Hunter rather than fake it was right, but a dropped lens is recorded on `lenses_na:` — a different field from the roster — so for a while the engine was writing a state nothing downstream could read, and a caller could drop the highest-value lens in the set and still gate green. A drop is legal only under `inline`, where the builder's own context is the reason; a fan-out hands every lens a clean context **by construction**, so "mine was contaminated" is not a claim that runtime can make. Run it, or declare the runtime honestly. **The exit is not a bypass — there is no `--force`.** It is the inline ladder: run the lenses inline, record `recovered-inline`, and take the **CONCERNS** floor. *CONCERNS + a dead lens is consistent and passes*, because that is the engine's own designed end state; if it blocked, a lane with one dead lens could never close and the gate would get routed around instead of used. Scope is a **fixed date, 2026-08-15** — 130 of 142 walkthroughs have no roster and are left alone, never backfilled. The date is literal rather than "today" on purpose: a moving cutoff would have exempted the very lane that built the check. **You can RUN it, and its refusal tells you which of three things happened (SCC-240).** `python3 .agents/scripts/walkthrough_roster.py <walkthrough.md>` *(PC: `python`)* prints everything it read — every lens and its state, `lenses_na`, the runtime header, `dispositions:`, `drift:`, the Step 0.7 line count. ⛔ **Bare, it answers ONE question — can the roster be READ?** — exit 0 yes, exit 1 naming which of the three things went wrong, exit 2 for a path it cannot read (missing, a directory, undecodable bytes; never a verdict about content). That narrowness is the point: both review commands run it at Step 4 **right after pasting the roster**, when `dispositions:`, `drift:`, Step 0.7 and the `Verdict:` line do not exist yet — so a full-gate run there would refuse on a missing `dispositions:` line and send the author hunting a fence that is not there, and with no stamp at all it would exit **0** on the fenced roster it exists to catch. Add **`--gate`** once the section is complete for the whole close-out judgement, with **`--verdict <V>`** when the stamp is not written. ⚠️ **A re-reviewed STORY lane must pass `--verdict`:** `--gate` reads the LAST `Verdict:` stamp, `closeout_preflight` reads the FIRST, so a FAIL-then-PASS file resolves differently in the two; Task lanes go through `task_preflight`, which reads the last and agrees. **The refusal used to be one sentence for three different failures**, and the other two are the ones that cost time: a roster **inside a code fence** (stripped before reading, SCC-154 — so the instruction's own example, copied verbatim, produced an invisible roster) and a header whose rows are **not contiguous** with it (a blank line ends the roster). Both now name themselves and say what to change; the genuinely-absent message is unchanged. Measured on SCC-210: two preflight round trips, ~12 minutes, on one lane that had done nothing wrong. *(SCC-173 + SCC-177 + SCC-240.)* |
-| `code-review-engine` → the review commands | **The roster the row above reads never getting written in the first place.** A gate that blocks on evidence is only worth what the surface upstream of it records — and until now the engine handed back `lenses_run: 5/5` as a single counted line, which is the engine's *claim* about itself in exactly the way `Verdict: PASS` is the caller's. Three changes close the loop. **(1)** The engine's return block is now the roster itself — one `- <lens> · ok | recovered-inline | dead` row per lens — and `/smh-code-review` and `/cicd-code-review` paste it into `## Code Review` **verbatim** at their Step 4. Summarising it back to "all lenses clean" deletes the only evidence that survives the chat. **(2)** Both review commands, and `/smh-quick-dev`, now **probe** at Step 0 whether this runtime can fan out to subagents and write `review-runtime: fan-out|inline` into the walkthrough header — probed, never assumed, because a headless pipeline or a platform with no subagent tool makes the answer `inline` and that is invisible until a lens fails to launch. ⛔ **The probe asks about CAPABILITY, never POLICY (SCC-203).** *Does a subagent tool exist here?* is the whole question; *am I allowed to use it?* is a different one, and answering it there is how a session directive — "do not spawn subagents unless asked" — got read as "this runtime is inline", ran a whole review inside the builder's own context, and had the flow record that as legitimate. **Subagents are the default and invoking the review command IS the request**, so you never have to ask for them — a `/` command **is** a user request, and that sentence is now in the law rather than left to be inferred. ⛔ **And there is a third door, because forbidding both moves left no legal one:** an agent that still believes it cannot launch a subagent may not record a bare `inline` — it writes `review-runtime: inline (blocked: <what blocked it>)`, which puts the belief where `walkthrough_roster.py` can see it instead of laundering it into a clean-looking `inline` (SCC-263, hit live on the lane that fixed it). ⛔ **Step 0, not Step 4:** recorded afterwards the header is read off the roster it exists to check, and the contradiction rule can never fire. **(3)** The engine reads that header — under `inline` the ladder runs **once**, blind lens first on the diff alone, every lens that ran recorded `recovered-inline`; ⛔ **and where that context is already contaminated — you are the builder, you hold the plan — the Blind Hunter is DROPPED rather than faked (SCC-203, operator ruling)**, recorded `n/a` with its reason and left out of the count, because a roster carrying a lens that ran without its defining property reports a review more independent than it was. It is the only lens that needs starvation; the other four are handed context on purpose. **The ladder** never tries the fan-out first "just in case" nor re-attempts it after, which would burn the budget twice and re-order the blind lens behind a loaded context. The blind lens *may* run concurrently with the suite, on one condition the walkthrough states: **the sha the lenses ran against and the sha on the receipt are the same value.** **(4)** `/cicd-code-review-AP` — the autopilot twin — runs the lenses inline **by design**, so it is the lane this header was written for: it now declares `review-runtime: inline` and records every lens as `recovered-inline`, which is what its own blind-lens-first ordering already required and never wrote down. *(SCC-173 + SCC-177.)* |
+| `code-review-engine` → the review commands | **The roster the row above reads never getting written in the first place.** A gate that blocks on evidence is only worth what the surface upstream of it records — and until now the engine handed back `lenses_run: 5/5` as a single counted line, which is the engine's *claim* about itself in exactly the way `Verdict: PASS` is the caller's. Three changes close the loop. **(1)** The engine's return block is now the roster itself — one `- <lens> · ok | recovered-inline | dead` row per lens — and `/smh-code-review` and `/cicd-code-review` paste it into `## Code Review` **verbatim** at their Step 4. Summarising it back to "all lenses clean" deletes the only evidence that survives the chat. **(2)** Both review commands, and `/smh-quick-dev`, now **probe** at Step 0 whether this runtime can fan out to subagents and write `review-runtime: fan-out|inline` into the walkthrough header — probed, never assumed, because a headless pipeline or a platform with no subagent tool makes the answer `inline` and that is invisible until a lens fails to launch. ⛔ **The probe asks about CAPABILITY, never POLICY (SCC-203).** *Does a subagent tool exist here?* is the whole question; *am I allowed to use it?* is a different one, and answering it there is how a session directive — "Do not call the AgentTool unless the user requested it" — got read as "this runtime is inline", ran a whole review inside the builder's own context, and had the flow record that as legitimate. ⛔ **Quote that directive VERBATIM — it names the tool (SCC-285).** The real text is a constant compiled into the Claude Code binary and injected on Opus 5; five commands rebutted a paraphrase that did not name `AgentTool`, and an agent took the gap as an escape hatch and ran a whole review inline. There is no local lever to disable it. `.agents/scripts/tests/test_directive_quote.py` holds the line two ways: any QUOTATION that names a subagent/Agent-tool concept and carries an `unless` clause must be the verbatim directive (so a re-wording is caught without guessing at wording, and ordinary unquoted prose is never touched), and every rebutter must carry that quote **within the sentence that claims it is satisfied** — because presence-anywhere is satisfied by parking a copy in a comment while the rebuttal is deleted. **Subagents are the default and invoking the review command IS the request**, so you never have to ask for them — a `/` command **is** a user request, and that sentence is now in the law rather than left to be inferred. ⛔ **And there is a third door, because forbidding both moves left no legal one:** an agent that still believes it cannot launch a subagent may not record a bare `inline` — it writes `review-runtime: inline (blocked: <what blocked it>)`, which puts the belief where `walkthrough_roster.py` can see it instead of laundering it into a clean-looking `inline` (SCC-263, hit live on the lane that fixed it). ⛔ **Step 0, not Step 4:** recorded afterwards the header is read off the roster it exists to check, and the contradiction rule can never fire. **(3)** The engine reads that header — under `inline` the ladder runs **once**, blind lens first on the diff alone, every lens that ran recorded `recovered-inline`; ⛔ **and where that context is already contaminated — you are the builder, you hold the plan — the Blind Hunter is DROPPED rather than faked (SCC-203, operator ruling)**, recorded `n/a` with its reason and left out of the count, because a roster carrying a lens that ran without its defining property reports a review more independent than it was. It is the only lens that needs starvation; the other four are handed context on purpose. **The ladder** never tries the fan-out first "just in case" nor re-attempts it after, which would burn the budget twice and re-order the blind lens behind a loaded context. The blind lens *may* run concurrently with the suite, on one condition the walkthrough states: **the sha the lenses ran against and the sha on the receipt are the same value.** **(4)** `/cicd-code-review-AP` — the autopilot twin — runs the lenses inline **by design**, so it is the lane this header was written for: it now declares `review-runtime: inline` and records every lens as `recovered-inline`, which is what its own blind-lens-first ordering already required and never wrote down. *(SCC-173 + SCC-177.)* |
 | `tests/test_main_ruleset_armed.py` | **The GitHub half being switched off without leaving a trace in any commit.** The ruleset lives on the server and can be deleted or disabled from a browser; no file in this repo would change. This asks GitHub directly, on every suite run, and **fails hard** if the ruleset is missing, disabled, or has picked up a bypass actor — a bypass for "repository admin" would re-open the whole hole while still *looking* armed, because the agent merges as you. When it cannot reach GitHub at all (offline, no `gh`, no credentials) it prints `[SIGNAL]` and passes: that is refusing to claim knowledge it does not have, not a soft gate. |
 | `hooks_armed.py` | **Every other check on this page reporting green while switched OFF.** **Five** ways a gate dies quietly, and it reports all five — the three below, plus the two SCC-140 added (an **orphaned flag**, tracked while the gate script it names is not; and an untracked **dispatcher**, so nothing calls the gate at all). — *and the history behind it, below.* |
 | `evidence_extract.py` | **Nothing — and it is on this list on purpose.** It is the one entry here that is *not* a gate: it refuses nothing, no hook calls it, and you never type it. It is the review engine's fact-fetcher (SCC-123), and what it prevents is a reviewer reasoning about only the files it happened to open — it reads the changed files and their callers *first* and hands the lens a dossier. It is listed because this table calls itself the live list, and a script in `.agents/scripts/` missing from it would make that sentence false. **Its caller snippets are RANKED, and you will see the tags in a review's evidence:** each one leads with `[importer]` (the calling file really imports the file the finding is on) or `[name-match]` (the identifier matched, nothing more). Importer hits are searched first and sorted first, so they survive the ten-snippet cap — but **nothing is filtered out**, because a name-match is weaker evidence rather than absent evidence, and dropping it would take attribute-dispatch call sites with it. ⛔ **The ten-snippet cap reserves a slot for the weaker class**, so a heavily-imported file cannot fill the whole dossier with importers and make attribute dispatch disappear — that regression was caught in review, not by a test, and now has one. ⚠ A third tag, `[unranked]`, means the importer walk hit its 10-second deadline: it could not finish, so *not* an importer is unknown rather than false. Read `[unranked]` as "nobody checked", never as `[name-match]`. ⚠ Only `--findings` mode runs today; `--pack` still has no caller, and the docstring says what must be fixed before anything wires it in. |
@@ -2211,6 +2445,37 @@ AviationChat. The sprint holds the current batch, the backlog holds everything e
 links to its branches and commits through the key. How to drive it by hand:
 [jira_manual.md](jira_manual.md); why it's built this way:
 [jira_integration_guide.md](jira_integration_guide.md).
+
+**A ticket description is a FAST READ, never a plan.** Four short sections and nothing else:
+
+| Section | What goes in it |
+|---|---|
+| `Why:` | one paragraph, before any heading — the **problem**, not the solution |
+| `## Plan` | a checklist of **4-8 lines**, which renders as real Jira checkboxes you can tick |
+| `## Done` | empty at first; filled from the walkthrough when the work lands |
+| `## Files` | where the real plan lives in the repo, plus the plan file **attached** to the ticket |
+
+⛔ **The plan itself goes in `_artifacts/`, on the branch, and is ATTACHED to the ticket — never
+pasted into the description.** Pasting it hits Jira's size limit, goes stale the moment the plan is
+edited on the branch, and nobody reads it. The description's source is a small markdown file beside
+the plan (`_artifacts/_main/<folder>/tickets/<KEY>.md`) so it rides the lane and gets reviewed like
+anything else. `/smh-plan-task` writes and attaches it when it mints; `/smh-close-task-merge-tree
+--after-merge` ticks the checklist and fills `## Done` when it closes. The tool underneath is
+`.agents/scripts/jira_ticket.py`, and the full walk-through with every command is
+[jira_integration_guide.md](jira_integration_guide.md) §12.5.
+
+⚠ **Attaching a file needs an Atlassian API token — a one-time setup per machine, and only that one
+thing needs it.** `acli` cannot attach at all. Until you do it, uploading exits **5** and prints the
+instructions, while the description still lands normally:
+[jira-api-token-setup.md](../migrations/install_guides/jira-api-token-setup.md).
+**The credential-store item must be named `sudo-jira`** — that name is the contract every script
+looks the token up by. The label you type on Atlassian's own site is cosmetic and need not match.
+**Done on the Mac, 2026-08-23; still owed on the PC.**
+
+⭐ **You do not pass `--site` or `--email`** — `attach` reads both from `acli jira auth status`.
+That read was broken until 2026-08-23 (SCC-288 R8): it required a `https://` prefix that `acli`
+never prints, so uploads failed with *"could not determine the Jira site"* on machines holding a
+perfectly good token. **If you ever see that message, it is the parse, not your credential.**
 
 **Any agent can read and write the board — live.** There is no "export it for me" step: every
 platform (Claude, Gemini, opencode, Codex, Antigravity) shells out to the authenticated `acli` CLI.
@@ -3819,7 +4084,7 @@ flowchart TD
 |---|---|
 | `/smh-update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. It **does not touch the memory store** — that is `/smh-memory-audit`'s job. ⚠ **If you ran it in Antigravity before 2026-08-12, re-check what it edited** — its door was then a full body that Antigravity truncated at 12,000 chars, so a run could reconcile partially, with no approval gate and no findings report. It is a normal thin launcher. |
 | `/smh-memory-audit` | Cleans up the shared memory store (`_artifacts/_memory/`) — the one document every model on every machine loads *before* doing any work, which is why letting it fill costs you on every session everywhere. It checks each memory's claim against the live repo, then shows you *retire · merge · compress · relocate* with the bytes each frees, and waits. **Nothing is deleted without your yes on that specific item**; git is the undo either way. See the box below. |
-| `/smh-sync-agents` | Publishes the toolkit to all four platforms — one door each. **It SHORTENS the description it writes into `.agents/workflows/`:** Antigravity builds its slash-command menu from those descriptions, and full-length ones blow the menu's context budget (workflows get dropped from the agent's list outright) — so the generator cuts each one to **135 characters** on a word boundary. ⛔ **Do not shorten them by hand in `.agents/workflows/`** — those files are generated, so the next sync overwrites you, *and* the door-parity check demands the mirror match its brain, so a hand-edit turns `main-write-gate` red (`chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable). The COMMANDS keep their full descriptions; only the menu has a budget. The one hand-owned door, `smh-adviser-board.md`, is shortened in place because it sits in the same menu. It reaches **the lobby and this machine's caches only**; projects read from the center, so there is nothing to push. It *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and purges the two retired doors. Hand-written skills are never overwritten. What a command *declares* decides where it publishes — nothing is inferred from its filename. |
+| `/smh-sync-agents` | Publishes the toolkit to all four platforms — one door each. **It SHORTENS the description it writes into `.agents/workflows/`:** Antigravity builds its slash-command menu from those descriptions, and full-length ones blow the menu's context budget (workflows get dropped from the agent's list outright) — so the generator cuts each one to **135 characters** on a word boundary. ⛔ **Do not shorten them by hand in `.agents/workflows/`** — those files are generated, so the next sync overwrites you, *and* the door-parity check demands the mirror match its brain, so a hand-edit turns `main-write-gate` red (`chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable). The COMMANDS keep their full descriptions; only the menu has a budget. The one hand-owned door, `smh-adviser-board.md`, is shortened in place because it sits in the same menu. It reaches **the lobby and this machine's caches only**; projects read from the center, so there is nothing to push. It *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and purges the two retired doors. Hand-written skills are never overwritten. What a command *declares* decides where it publishes — nothing is inferred from its filename. Hooks are executed directly from `.agents/hooks/` via `run-hook.sh` (the duplicate `.claude/hooks/` mirror is retired under SCC-300), and in-session sandboxed runs catch `.claude/skills` write restrictions gracefully. |
 | `/smh-slash-command-updating` | A thin alias for the globals-only half of `/smh-sync-agents`. Plain `/smh-sync-agents` does this *and* the local dirs, so prefer it. |
 | `/smh-review` | Reviews the working diff outside the story loop — the quick read when there's no story to hang ③ on. |
 | `/smh-new-project` | Scaffold a new workspace. |

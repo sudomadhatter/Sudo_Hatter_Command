@@ -103,6 +103,79 @@ def main() -> int:
                     and git(repo, "diff", "--quiet").returncode == 0,
                     (repo / SRC).read_text(encoding="utf-8"))
 
+    # ── K7 · THE RESTORE MUST ALSO INVALIDATE THE BYTECODE ────────────────────────────────
+    # ⛔ FOUND LIVE, SCC-288 close-out. `restore()` rewrote the SOURCE and stopped there. Python
+    # had already compiled the MUTANT to `__pycache__/<mod>.cpython-XY.pyc`, and CPython decides
+    # whether a `.pyc` is current by comparing the source's (mtime, size) with the pair recorded
+    # inside it — a comparison a same-second restore can satisfy while the bytecode is the
+    # mutant's. The measured consequence: after a clean 32/32 sweep, `generate_doc_graph` still
+    # ran M16 ("the artifact carries an ABSOLUTE root again"), and the next `refresh_maps
+    # --repair` wrote that mutant's output into a TRACKED artifact. Source clean, git clean,
+    # sweep green, artifact corrupt — the exact shape of a green that lies.
+    #
+    # The invariant is the deterministic half and it is what this case pins: a sweep leaves NO
+    # bytecode cache beside a file it mutated. The behavioural half is checked too, but it can
+    # pass by luck (invalidation usually works), so it is the corroboration, not the assertion.
+    if c.block("K7 · SCC-288 · the restore purges __pycache__, so no mutant bytecode survives"):
+        with TempDir() as t:
+            repo = build(t)
+            # A stand-in test that IMPORTS the module, so the sweep really does compile a .pyc.
+            (repo / "t.py").write_text(
+                "import sys, pathlib\n"
+                "sys.path.insert(0, str(pathlib.Path(__file__).parent))\n"
+                "import src\n"
+                "argv = sys.argv[1:]\n"
+                "case = argv[argv.index('--case') + 1] if '--case' in argv else None\n"
+                "labels = ['CASE-A gate is on', 'CASE-B unrelated']\n"
+                "sel = [l for l in labels if case is None or case.lower() in l.lower()]\n"
+                "if case is not None and not sel:\n"
+                "    print('NO CASES RAN: no block matched'); sys.exit(3)\n"
+                "bad = [l for l in sel if l.startswith('CASE-A') and src.gate('on') != 1]\n"
+                "for l in sel:\n"
+                "    print(('[FAIL] ' if l in bad else '[PASS] ') + l)\n"
+                "print(f'-- {len(sel) - len(bad)}/{len(sel)} passed --')\n"
+                "if bad:\n"
+                "    print('FAILED: ' + ', '.join(bad))\n"
+                "sys.exit(1 if bad else 0)\n", encoding="utf-8")
+            git(repo, "add", "-A")
+            git(repo, "commit", "-qm", "importing stand-in")
+
+            tab = table(repo, [killer()])
+            code, out = _run(repo, ["--table", str(tab)])
+            c.check("K7a the sweep still kills the mutant", code == 0 and "KILLED" in out,
+                    f"exit={code} " + out[-400:])
+            c.check("K7b the source is restored", PATTERN in (repo / SRC).read_text(
+                encoding="utf-8"), (repo / SRC).read_text(encoding="utf-8"))
+
+            # ⛔ THE INVARIANT, and note what it is NOT. The first draft compared the
+            # (mtime, size) pair recorded INSIDE the .pyc against the source, and it passed with
+            # the fix and without it — vacuous. That is not a flaw in the check, it is the whole
+            # mechanism: this mutant is the same BYTE LENGTH as the original (and so is the live
+            # M16, `"root": rel_roots,` vs `"root": str(root),` — 26 characters each), the
+            # restore lands in the same wall-clock second, so the recorded pair still matches and
+            # CPython trusts bytecode compiled from code that no longer exists.
+            #
+            # What discriminates is ORDER: a cache compiled from the mutant is written BEFORE the
+            # restore rewrites the source, so its file mtime is older. A cache the closing run
+            # rebuilt from restored source is newer. Nothing survives the purge; the only .pyc
+            # that may exist post-sweep is one compiled after the last write to its source.
+            older = []
+            for q in sorted(repo.rglob("__pycache__/*.pyc")):
+                src_path = repo / (q.name.split(".")[0] + ".py")
+                if src_path.exists() and q.stat().st_mtime < src_path.stat().st_mtime:
+                    older.append(f"{q.name} predates {src_path.name} - compiled from the mutant")
+            c.check("K7c ⛔ no .pyc predates the source it claims to cache",
+                    older == [], str(older))
+
+            # Corroboration: a fresh interpreter, bytecode ENABLED, must see the original.
+            probe = subprocess.run(
+                [sys.executable, "-c",
+                 "import sys; sys.path.insert(0, '.'); import src; print(src.gate('on'))"],
+                cwd=str(repo), capture_output=True, text=True)
+            c.check("K7d and a fresh import runs the ORIGINAL behaviour, not the mutant's",
+                    probe.stdout.strip() == "1",
+                    f"gate('on') -> {probe.stdout.strip()!r} {probe.stderr[-200:]}")
+
     # ── K2 · a mutant that SURVIVES, and residue that survives the restore ──
     if c.block("K2 · a surviving mutant and surviving residue both FAIL the sweep"):
         with TempDir() as t:
@@ -370,6 +443,70 @@ def main() -> int:
             c.check("U4 the tree is still restored after all three",
                     git(repo, "diff", "--quiet").returncode == 0,
                     git(repo, "status", "--short").stdout)
+
+
+    # ── K6 · SCC-284: a DELETION mutant is legal; an ABSENT field is not ──────────────────
+    # "Remove this line entirely and see if anything notices" is declared as `"mutated": ""`.
+    # The loader tested the five required fields with `if not m.get(k)` - a FALSY test, not a
+    # presence test - so the empty string read as *missing* and the whole table was refused
+    # with "is missing mutated", sending the reader to look for a typo in a field that was
+    # sitting right there. SCC-244 worked around it three times by substituting an inert line
+    # (M16/M23/M26), which made the sweep record say "replaced" about a mutant that tested
+    # "removed" - wrong in the one file whose whole job is being right about what was proven.
+    if c.block("K6 · SCC-284: a DELETION mutant is legal; an ABSENT field is not"):
+        with TempDir() as t:
+            repo = build(t)
+            tab = table(repo, [dict(killer("M1 delete the guard line"), mutated="")])
+            code, out = _run(repo, ["--table", str(tab)])
+            c.check("K6a `\"mutated\": \"\"` LOADS - the table is not refused as missing a field",
+                    "is missing" not in out and "missing mutated" not in out,
+                    f"exit={code} " + out[-400:])
+            c.check("K6b ...and it APPLIES as a deletion and is scored like any other (KILLED, exit 0)",
+                    code == 0 and "KILLED" in out and "M1 delete the guard line" in out,
+                    f"exit={code} " + out[-400:])
+            c.check("K6c ...and the deleted line is back afterwards (restore proven)",
+                    PATTERN in (repo / SRC).read_text(encoding="utf-8")
+                    and git(repo, "diff", "--quiet").returncode == 0,
+                    (repo / SRC).read_text(encoding="utf-8"))
+
+        with TempDir() as t:
+            repo = build(t)
+            absent = killer("M2 no mutated key at all")
+            del absent["mutated"]
+            code, out = _run(repo, ["--table", str(table(repo, [absent]))])
+            c.check("K6d a mutant whose `mutated` key is genuinely ABSENT still refuses, exit 2",
+                    code == 2 and "mutated" in out, f"exit={code} " + out[-400:])
+            c.check("K6e ...and the message says ABSENT, so the reader does not hunt for a typo "
+                    "in a field that is there",
+                    "absent" in out.lower() and "empty" in out.lower(),
+                    out[-400:])
+
+        with TempDir() as t:
+            repo = build(t)
+            tab = table(repo, [dict(killer("M3 insert from nowhere"), original="")])
+            code, out = _run(repo, ["--table", str(tab)])
+            # ⛔ Pin the LOADER's refusal, not just "a refusal": the unique-anchor check
+            # downstream also dies on "" (it occurs len+1 times), so `code == 2 and "original"
+            # in out` was satisfied with the loader's guard deleted - mutant M5 of this lane's
+            # own sweep survived on exactly that. The loader's message is the one that tells
+            # the reader WHY ("only `mutated` may be empty"); the anchor-count message would
+            # send them counting occurrences of an empty string.
+            c.check("K6f `\"original\": \"\"` still refuses - a mutant that inserts from nowhere "
+                    "has no unique anchor, and the LOADER says so (EMPTY, not 'occurs N times')",
+                    code == 2 and "EMPTY" in out and "original" in out and "occurs" not in out,
+                    f"exit={code} " + out[-400:])
+
+        with TempDir() as t:
+            # K6g · review finding (three lenses, reproduced): `"mutated": null` used to be
+            # refused by the falsy check and now reached the apply loop, where
+            # `str.replace(original, None)` raised a TypeError - exit 1 with a traceback,
+            # the exit code that means "a mutant survived". Non-string is a refusal.
+            repo = build(t)
+            tab = table(repo, [dict(killer("M4 null is not a deletion"), mutated=None)])
+            code, out = _run(repo, ["--table", str(tab)])
+            c.check("K6g a NON-STRING `mutated` (null) refuses at the loader, exit 2, no traceback",
+                    code == 2 and "mutated" in out and "string" in out.lower()
+                    and "Traceback" not in out, f"exit={code} " + out[-400:])
 
     return c.finish()
 

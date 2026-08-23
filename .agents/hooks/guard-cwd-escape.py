@@ -29,6 +29,7 @@ that cannot run must never fail SILENTLY - but this one is advisory, so silence 
 Canonical source: `.agents/hooks/`. Deployed to `.claude/hooks/` - never hand-edit the copy."""
 import json
 import os
+import posixpath
 import shlex
 import sys
 
@@ -165,6 +166,42 @@ def unquote(s: str) -> str:
     return s
 
 
+ROOT_FILE = (".claude", "scratchpad-root")
+
+
+def is_scratchpad(target: str, root: str) -> bool:
+    """True if target is inside this machine/session's scratchpad root."""
+    norm = posixpath.normpath(target)
+    # 1. Configured scratchpad root if present
+    path = os.path.join(root, *ROOT_FILE)
+    try:
+        with open(path, encoding="utf-8") as fh:
+            for line in fh.read().splitlines():
+                line = line.strip()
+                if line and not line.startswith("#") and line.startswith("/"):
+                    cfg_root = posixpath.normpath(line)
+                    if norm == cfg_root or norm.startswith(cfg_root + "/"):
+                        return True
+    except OSError:
+        pass
+
+    # 2. Built-in POSIX fallback: <tmp>/claude-<uid>/<project>/<session>/scratchpad
+    #    ⛔ `claude-<uid>` is the PARENT of every session, not a scratchpad. Matching the
+    #    bare prefix made every sibling under it read as inside the workspace - including a
+    #    checkout at `/tmp/claude-<uid>/other-repo`, which is exactly the escape this hook
+    #    exists to catch, and which the harness builds its fixtures from. Require the
+    #    `scratchpad` component, and match on a `/` BOUNDARY so `claude-5011` is not a
+    #    prefix hit on `claude-501` (branch 1 above always did both; this one did neither).
+    getuid = getattr(os, "getuid", None)
+    if getuid is not None:
+        prefix = f"claude-{getuid()}"
+        for tmp in ("/private/tmp", "/tmp"):
+            base = f"{tmp}/{prefix}"
+            if norm.startswith(base + "/") and "scratchpad" in norm[len(base) + 1:].split("/"):
+                return True
+    return False
+
+
 def leaves_workspace(arg: str, root: str, cwd: str) -> bool | None:
     """True = leaves, False = stays, None = cannot tell (caller allows)."""
     arg = unquote(arg.strip())
@@ -185,10 +222,13 @@ def leaves_workspace(arg: str, root: str, cwd: str) -> bool | None:
     if not os.path.isabs(arg) and not base:
         return None
     target = os.path.normpath(arg if os.path.isabs(arg) else os.path.join(base, arg))
+    if is_scratchpad(target, root):
+        return False
     for r in {os.path.normpath(root), os.path.realpath(root)}:
         if target == r or target.startswith(r.rstrip("/") + "/"):
             return False
     return True
+
 
 
 REASON = (

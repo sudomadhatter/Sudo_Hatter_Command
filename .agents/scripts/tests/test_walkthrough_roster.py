@@ -164,6 +164,63 @@ def main() -> int:
                 roster.judge(wt(roster_rows=ALL_OK), POST, "PASS")[0],
                 "the silent answer is what is banned, not the short one")
 
+    if c.block("RR · a bare `inline` is UNREADABLE, and a POLICY reason is the SCC-203 incident"):
+        # ⛛ THE ONE CHECK THAT WOULD HAVE CAUGHT THE ORIGINAL INCIDENT (SCC-285).
+        # `/cicd-code-review` Step 0.7 has said since SCC-203: *"If you still believe you cannot
+        # launch one, you may not record a bare `inline`. Write the reason on the header line:
+        # `review-runtime: inline (blocked: <quote what blocked you>)`."* Nothing read it. A bare
+        # `inline` and a reasoned one were the same three characters to this parser, so the rule
+        # lived entirely in prose - and prose-only obligations run at the 12/142 compliance this
+        # module's own docstring measures.
+        #
+        # And the reason that MATTERS is the one the incident actually produced. A walkthrough in
+        # this very tree records `review-runtime: inline`. **Probed, not assumed: this session
+        # carries a standing directive that the subagent tool is not to...* - a POLICY answer to
+        # a CAPABILITY question, which is the whole of SCC-203. The step's law is that *does the
+        # tool exist?* is the only question; *am I allowed?* is already answered by the operator
+        # having typed the command. So a reason quoting a directive, a permission or an
+        # instruction is not a reason - it is the defect, spelled out, and it blocks.
+        NOW = "_artifacts/_main/2026-08-22_lane/walkthrough.md"
+        ok, why = roster.judge(wt(dispo=DISPO, drift=DRIFT, roster_rows=ALL_INLINE, runtime="inline"), NOW, "PASS")
+        c.check("RR1 · a BARE `inline` BLOCKS - the header records no reason",
+                not ok and "reason" in " ".join(why).lower(), str(why))
+        ok, why = roster.judge(
+            wt(dispo=DISPO, drift=DRIFT, roster_rows=ALL_INLINE, runtime="inline (no subagent tool)"), NOW, "PASS")
+        c.check("RR2 · (control) a CAPABILITY reason passes - that is the legal `inline`",
+                ok, f"`inline (no subagent tool)` is the shape Step 0.7 prescribes: {why}")
+        ok, why = roster.judge(
+            wt(dispo=DISPO, drift=DRIFT, roster_rows=ALL_INLINE,
+               runtime="inline (blocked: a standing directive says not to call the AgentTool "
+                       "unless the user requested it)"),
+            NOW, "PASS")
+        c.check("RR3 · ⛛ a POLICY reason BLOCKS - permission is not capability (SCC-203)",
+                not ok and "permission" in " ".join(why).lower(),
+                f"this is the original incident, quoted from the tree, and it must not pass: {why}")
+        ok, why = roster.judge(
+            wt(dispo=DISPO, drift=DRIFT, roster_rows=ALL_INLINE,
+               runtime="inline (blocked: the Agent tool is absent from this runtime)"), NOW, "PASS")
+        c.check("RR4 · (control) a `blocked:` reason that names a CAPABILITY passes",
+                ok, f"a real blocker is still recordable - RR3 must not ban the whole clause: {why}")
+        ok, why = roster.judge(wt(dispo=DISPO, drift=DRIFT, roster_rows=ALL_OK, runtime="fan-out"), NOW, "PASS")
+        c.check("RR5 · (control) `fan-out` needs no reason",
+                ok, f"only `inline` owes a reason; a fan-out that ran is self-evident: {why}")
+        ok, why = roster.judge(wt(dispo=DISPO, drift=DRIFT, roster_rows=ALL_INLINE, runtime="inline"), PRE, "PASS")
+        c.check("RR6 · (control) a LEGACY lane is not backfilled",
+                ok, f"the dated cutoff is the scope limiter here as everywhere: {why}")
+        # ⛔ RR8 IS THE SCAR OF THIS BLOCK'S OWN FIRST DRAFT. The reason regex was written
+        # `...(fan-out|inline)`?\s*(.*)$` - and `\s` matches a NEWLINE, so the greedy run walked
+        # off the end of the header and group 2 came back holding the NEXT LINE (`'## Code
+        # Review'`). RR1 then never fired, and RR2/RR4 went green on a reason nobody wrote. A
+        # header field must be read from ITS OWN LINE; this pins that.
+        _b = roster.parse("review-runtime: inline\n\n## Code Review\n\nlenses_run:\n- a \u00b7 ok\n")
+        c.check("RR8 \u00b7 the reason is read from the HEADER LINE - `\\s*` would eat the newline",
+                (_b["runtime_reason"] or "") == "",
+                f"a bare header must yield an EMPTY reason, not the next line: {_b['runtime_reason']!r}")
+        _r = roster.parse(wt(runtime="inline (no subagent tool)"))
+        c.check("RR7 · anti-vacuity - the parser CAPTURES the reason, it does not drop it",
+                _r["runtime"] == "inline" and "no subagent tool" in (_r["runtime_reason"] or ""),
+                f"if the reason never reaches the data, RR1 fires on everything: {_r}")
+
     if c.block("I3 · a declared `inline` runtime and a lens reporting `ok` disagree"):
         # F20. Under `inline` the ladder runs ONCE, so `recovered-inline` is the only legal
         # per-lens state — an `ok` means a fan-out was attempted against the declaration, or

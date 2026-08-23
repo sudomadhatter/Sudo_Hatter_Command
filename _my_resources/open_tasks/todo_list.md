@@ -33,5 +33,8 @@ These are folder paths to see the open todo list in the sub projects:
 
 1. We switched the /config Output Styles to BLUF, change back in the terminal.
 2. ⌘ + ⌥ + R for the source control panel view toggle
+3. For permissions with the sandbox activated. /Users/sudohatter/Sudo_Hatter_Command/.claude/settings.local.json
+
+- will need to do this for PC still
 
 <!-- CHECKPOINT id="ckpt_mrk3jkm0_qa7nw6" time="2026-07-14T03:33:28.728Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

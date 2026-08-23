@@ -22,7 +22,7 @@ the sweep appends `--case <kills>` itself, and runs it bare once at the end:
         {"id":  "M1 widen the exemption to all of _artifacts/",
          "file": ".agents/scripts/gate_receipt.py",
          "original": "<exact text, must occur EXACTLY once>",
-         "mutated":  "<what to replace it with>",
+         "mutated":  "<what to replace it with; \"\" DELETES the anchor (SCC-284)>",
          "case":  "J3c",
          "block": "SCC-178"}
       ]
@@ -77,6 +77,7 @@ from __future__ import annotations
 import argparse
 import json
 import signal
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -134,9 +135,30 @@ def load_table(path: Path) -> tuple[dict, str | None]:
             # `kills` was one field doing two jobs in two namespaces (SCC-179, found by this
             # script's sweep of itself). Read it as `case` so an old table still runs.
             m["case"] = m.pop("kills")
-        missing = [k for k in ("id", "file", "original", "mutated", "case") if not m.get(k)]
-        if missing:
-            return {}, f"{path}: mutant #{i + 1} is missing {', '.join(missing)}"
+        # ⛔ ABSENT and EMPTY are different questions (SCC-284). This used to be one falsy
+        # test over all five fields, so a DELETION mutant - `"mutated": ""`, "remove this
+        # line entirely and see if anything notices" - was refused as "missing mutated",
+        # sending the reader to hunt for a typo in a field that was sitting right there.
+        # SCC-244 worked around it three times with an inert substitute line, and its sweep
+        # record then said "replaced" about mutants that tested "removed". Deletion is one
+        # of the most valuable mutants there is: it proves a guard fires because the line is
+        # THERE, not because some other line happens to be. So: every field must be PRESENT;
+        # every field but `mutated` must be non-empty; `mutated` may be "" and means delete.
+        absent = [k for k in ("id", "file", "original", "mutated", "case") if k not in m]
+        if absent:
+            return {}, (f"{path}: mutant #{i + 1} is missing {', '.join(absent)} - the key is "
+                        f"ABSENT (an EMPTY `\"mutated\": \"\"` is legal and declares a deletion)")
+        if not isinstance(m["mutated"], str):
+            # Review (three lenses, reproduced): `null` used to be refused by the falsy check
+            # and reached the apply loop, where `str.replace(..., None)` raised - exit 1 with
+            # a traceback, the exit code that means "a mutant survived".
+            return {}, (f"{path}: mutant #{i + 1} has a non-string `mutated` "
+                        f"({type(m['mutated']).__name__}) - it must be a string; \"\" is a "
+                        f"deletion")
+        empty = [k for k in ("id", "file", "original", "case") if not m.get(k)]
+        if empty:
+            return {}, (f"{path}: mutant #{i + 1} has an EMPTY {', '.join(empty)} - only "
+                        f"`mutated` may be empty (a deletion); `original` must be a unique anchor")
         if m["original"] == m["mutated"]:
             return {}, f"{path}: mutant {m['id']} does not change anything"
         if m.get("unfiltered") and m.get("block"):
@@ -232,10 +254,26 @@ def main() -> int:
     pre_sha = git(["rev-parse", "HEAD"], repo).stdout.strip()
     snapshot = {f: (repo / f).read_bytes() for f in files}
 
+    # Every directory that could hold bytecode compiled from a file this sweep mutates.
+    cache_dirs = sorted({(repo / f).resolve().parent / "__pycache__" for f in files})
+
     def restore() -> None:
         for rel, blob in snapshot.items():
             if (repo / rel).read_bytes() != blob:
                 (repo / rel).write_bytes(blob)
+        # ⛔ RESTORING THE SOURCE IS NOT ENOUGH - THE BYTECODE HAS TO GO WITH IT (SCC-288).
+        # A test run against the mutant compiles it to `__pycache__/<mod>.cpython-XY.pyc`, and
+        # CPython decides that cache is current by comparing the source's (mtime, size) against
+        # the pair recorded inside the `.pyc` - a comparison a same-second restore can satisfy
+        # while the BYTECODE is still the mutant's. Found live at the SCC-288 close-out: after a
+        # green 32/32 sweep, `generate_doc_graph` kept running M16 ("the artifact carries an
+        # ABSOLUTE root again"), and the next `refresh_maps --repair` wrote that mutant's output
+        # into a TRACKED artifact. Source clean, `git status` clean, sweep green, artifact
+        # corrupt - a green that lies, and the sweep is the one tool that must never produce one.
+        # Deleting the cache costs one recompile and closes the class outright. K7 pins it.
+        for d in cache_dirs:
+            if d.is_dir():
+                shutil.rmtree(d, ignore_errors=True)
 
     def on_signal(signum, _frame):
         raise Terminated(f"signal {signum}")

@@ -333,6 +333,52 @@ def main() -> int:
             )
 
         with TempDir() as temp:
+            fixture_source = temp / "source"
+            fixture_source.mkdir()
+            (fixture_source / "payload.txt").write_text("safe\n", encoding="utf-8")
+            outside = temp / "machine-local.json"
+            outside.write_text('{"local": true}\n', encoding="utf-8")
+            os.symlink(outside, fixture_source / "settings.local.json")
+            fixture_manifest = fixture_source / "manifest.json"
+            fixture_manifest.write_text(
+                json.dumps(
+                    {
+                        "name": "excluded symlink probe",
+                        "source": ".",
+                        "include": ["."],
+                        "exclude": ["settings.local.json", "manifest.json"],
+                        "leakScan": {"literals": [], "wordLiterals": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            excluded_link_proc = subprocess.run(
+                [
+                    "pwsh",
+                    "-NoProfile",
+                    "-File",
+                    str(exporter),
+                    "-Manifest",
+                    str(fixture_manifest),
+                    "-Target",
+                    str(temp / "public"),
+                    "-WhatIf",
+                ],
+                cwd=REPO,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+            excluded_link_transcript = (
+                (excluded_link_proc.stdout or "") + (excluded_link_proc.stderr or "")
+            )
+            c.check(
+                "explicitly excluded machine-local symlink is skipped without dereferencing",
+                excluded_link_proc.returncode == 0,
+                excluded_link_transcript,
+            )
+
+        with TempDir() as temp:
             fixture = temp / "source"
             fixture.mkdir()
             (fixture / ".env").write_text(
