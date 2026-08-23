@@ -283,6 +283,66 @@
       "mutated": "    if False:",
       "case": "RM-F [maps-ok] in the message re-baselines, on the record",
       "block": "RM-F \u00b7 SCC-290 \u00b7 the ratchet refuses a NEW broken reference, and names it"
+    },
+    {
+      "id": "M28 --repair is trigger-gated like --staged, so an empty index fixes nothing",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    return converge(root, {\"repo-map\", \"doc-graph\"})",
+      "mutated": "    return converge(root, triggered(staged_paths(root), root))",
+      "case": "RM-D2 \u26d4 ONE --repair converges",
+      "block": "RM-D2 \u00b7 SCC-290 \u00b7 --repair fixes a stale tree with an EMPTY index",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_refresh_maps.py"
+      ]
+    },
+    {
+      "id": "M29 --repair regenerates but never stages, so the fix is not one commit away",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    if wrote:\n        r = sh([\"git\", \"add\", \"--\"] + sorted(wrote), root)",
+      "mutated": "    if False:\n        r = sh([\"git\", \"add\", \"--\"] + sorted(wrote), root)",
+      "case": "RM-D2 it STAGES what it wrote, so the fix is one `git commit` away",
+      "block": "RM-D2 \u00b7 SCC-290 \u00b7 --repair fixes a stale tree with an EMPTY index",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_refresh_maps.py"
+      ]
+    },
+    {
+      "id": "M30 --verify goes back to naming the mode that cannot fix an empty index",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    print(\"    regenerate: python3 .agents/scripts/refresh_maps.py --repair   (PC: python)\")",
+      "mutated": "    print(\"    regenerate: python3 .agents/scripts/refresh_maps.py --staged   (PC: python)\")",
+      "case": "RM-D the remedy printed is --repair, NOT the trigger-gated --staged",
+      "block": "RM-D \u00b7 SCC-290 \u00b7 --verify refuses a stale map and NAMES it",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_refresh_maps.py"
+      ]
+    },
+    {
+      "id": "M31 check 10's remedy names --staged again",
+      "file": ".agents/scripts/check_maps.py",
+      "original": "    return [f\"{rel} is STALE - regenerate: python3 .agents/scripts/refresh_maps.py --repair \"",
+      "mutated": "    return [f\"{rel} is STALE - regenerate: python3 .agents/scripts/refresh_maps.py --staged \"",
+      "case": "CM10 C the report names --repair, the mode that works on an empty index",
+      "unfiltered": true,
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_check_maps.py"
+      ]
+    },
+    {
+      "id": "M32 --repair is accepted alongside another mode instead of exit 2",
+      "file": ".agents/scripts/refresh_maps.py",
+      "original": "    modes = [args.staged, args.truth is not None, args.verify, args.repair]",
+      "mutated": "    modes = [args.staged, args.truth is not None, args.verify]",
+      "case": "RM-I ['--repair', '--verify'] is exit 2",
+      "block": "RM-I \u00b7 SCC-290 \u00b7 exactly one mode, or exit 2",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_refresh_maps.py"
+      ]
     }
   ]
 }

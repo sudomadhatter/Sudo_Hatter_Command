@@ -23,6 +23,10 @@ the commit is complete. The post-commit drift recorder already journals the same
 
   --staged   pre-commit. Regenerate what the staged set can have changed, write only on a real
              difference, and `git add` exactly those paths. Regeneration ONLY.
+  --repair   by hand. The same write, with NO trigger gate: the remedy for a tree that is stale
+             with an EMPTY index -- a merge commit, a `--no-verify` commit, or a clone whose
+             hooks were never armed. `--verify` names this mode, because `--staged` cannot fix
+             any of those three (nothing is staged, so nothing triggers).
   --truth    commit-msg. The two truth checks below, fatal, honouring `[maps-ok]` in the message.
   --verify   pre-push and `check_maps` check 10. Regenerate to memory, byte-compare with disk,
              name what differs, exit 1. This is what catches a merge commit and a `--no-verify`.
@@ -303,11 +307,29 @@ def _land(root, rel, text, wrote):
 
 
 def run_staged(root):
-    paths = staged_paths(root)
-    want = triggered(paths, root)
+    want = triggered(staged_paths(root), root)
     if not want:
         return 0
+    return converge(root, want)
 
+
+def run_repair(root):
+    """Regenerate EVERYTHING and stage it, with no trigger gate. (SCC-290, found at close-out)
+
+    ⛔ WHY THIS EXISTS AND `--staged` IS NOT ENOUGH. `--staged` asks "what can the STAGED set have
+    changed?" and does nothing when the answer is nothing — which is right on a commit and wrong
+    everywhere else. Three trees are stale with an EMPTY index, and `--staged` cannot touch any of
+    them: a merge commit (`git merge` runs `pre-merge-commit`, never `pre-commit`), a
+    `--no-verify` commit, and a clone whose `core.hooksPath` was never set. Those are the exact
+    three `--verify` was built to catch, so `--verify` printing `--staged` as the remedy handed the
+    operator a command that returns 0 and fixes nothing, leaving `--no-verify` as the only way
+    past. A gate whose only escape is the bypass is a gate everybody bypasses.
+    """
+    return converge(root, {"repo-map", "doc-graph"})
+
+
+def converge(root, want):
+    """Write the wanted maps, in the one order that settles, and stage what actually changed."""
     # ⛔ ORDER IS LOAD-BEARING: THE DOC GRAPH FIRST, THE REPO-MAP AFTER IT LANDS.
     # `docs/doc-graph.md` and `.json` live under `docs/`, which the repo-map WALKS. A repo-map
     # built from the pre-write tree is therefore stale the instant those two files change, and the
@@ -378,7 +400,7 @@ def verify(root):
 
     The write-order caveat in `run_staged` does not apply here: nothing is written, so the
     repo-map is measured against the tree as it stands. If the doc graph is stale this reports
-    THAT too, and the `--staged` run that fixes it re-derives the repo-map in the right order.
+    THAT too, and the `--repair` run that fixes it re-derives the repo-map in the right order.
     """
     fresh = regenerate(root, {"repo-map", "doc-graph"})
     return [rel for rel, text in sorted(fresh.items()) if differs(root, rel, text)]
@@ -391,8 +413,9 @@ def run_verify(root):
     print("  ! refresh-maps: generated maps are STALE:")
     for rel in stale:
         print(f"      {rel}")
-    print("    regenerate: python3 .agents/scripts/refresh_maps.py --staged   (PC: python)")
-    print("    then commit them. A merge commit or a --no-verify commit is the usual cause.")
+    print("    regenerate: python3 .agents/scripts/refresh_maps.py --repair   (PC: python)")
+    print("    then commit them. A merge commit or a --no-verify commit is the usual cause -")
+    print("    neither runs pre-commit, so --repair (no trigger gate) is the one that fixes it.")
     return 1
 
 
@@ -406,13 +429,16 @@ def main(argv=None):
                     help="pre-commit: regenerate what the staged set changed and stage it")
     ap.add_argument("--truth", metavar="MSGFILE", nargs="?", const="", default=None,
                     help="commit-msg: the ratchet + the reverse door check; [maps-ok] opts out")
+    ap.add_argument("--repair", action="store_true",
+                    help="by hand: regenerate ALL the maps and stage them, with no trigger gate "
+                         "- the remedy after a merge or a --no-verify commit")
     ap.add_argument("--verify", action="store_true",
                     help="pre-push / check 10: compare a fresh regen with disk, exit 1 if stale")
     ap.add_argument("--root", default=None, help="repo to act on (default: the git repo of CWD)")
     args = ap.parse_args(argv)
-    modes = [args.staged, args.truth is not None, args.verify]
+    modes = [args.staged, args.truth is not None, args.verify, args.repair]
     if sum(bool(m) for m in modes) != 1:
-        ap.error("pass exactly one of --staged, --truth <msgfile> or --verify")
+        ap.error("pass exactly one of --staged, --repair, --truth <msgfile> or --verify")
 
     root = Path(args.root).resolve() if args.root else repo_root()
     if root is None:
@@ -421,6 +447,8 @@ def main(argv=None):
         return 0
     if args.staged:
         return run_staged(root)
+    if args.repair:
+        return run_repair(root)
     if args.truth is not None:
         return run_truth(root, args.truth)
     return run_verify(root)

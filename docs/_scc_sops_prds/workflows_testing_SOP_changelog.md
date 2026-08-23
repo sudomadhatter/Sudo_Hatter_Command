@@ -18,6 +18,7 @@ of `—` means the page recorded the ticket but not the day; the ticket's sessio
 
 | Date | Ticket | What changed for the operator |
 |---|---|---|
+| 2026-08-22 | SCC-290 | When a map goes stale with nothing staged — after a merge, a `--no-verify` commit, or on a clone whose hooks were never armed — the fix is `refresh_maps.py --repair`. `--staged` only regenerates what a staged file could have changed, so on those trees it exits 0 and writes nothing; every message that names a remedy now names `--repair`. |
 | 2026-08-22 | SCC-289 | The code graph is PROJECTS ONLY. The command centre carries none — no MCP server, no ignore file, no index — because a code graph parses code and this repo is markdown; `unclassified` is the permanent right answer here. Reviewing a project from here passes `risk_seam.py classify --repo <worktree>`, and the JSON echoes `root` so the answer says which tree it is about. |
 | 2026-08-22 | SCC-290 | The generated maps refresh themselves. A `pre-commit` hook regenerates `docs/repo-map.md`'s tree block and `docs/doc-graph.*` and adds them to your commit; a stale map refuses the PUSH. Two checks refuse work rather than warn: broken doc references may not increase, and every door in `.agents/commands/` must be named in this page. |
 | 2026-08-22 | SCC-290 | The doc graph covers `docs/` as well as `.agents/` — so this SOP, every PRD and every migration guide are mapped for the first time. |

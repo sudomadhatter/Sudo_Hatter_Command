@@ -338,8 +338,11 @@ def main() -> int:
         probs = cm.check_doc_graph_fresh(root)
         c.check("CM10 B a workspace WITH a doc graph is checked, and drift is reported",
                 any("doc-graph.md" in p and "STALE" in p for p in probs), str(probs))
-        c.check("CM10 C the report names the regeneration command",
-                any("refresh_maps.py --staged" in p for p in probs), str(probs))
+        # ⛔ It must name the mode that can fix THIS tree. Everything check 10 fires on has an
+        # empty index, where `--staged` writes nothing and exits 0.
+        c.check("CM10 C the report names --repair, the mode that works on an empty index",
+                any("refresh_maps.py --repair" in p for p in probs)
+                and not any("--staged" in p for p in probs), str(probs))
 
         # and it goes quiet once the tree agrees
         for rel, text in rm.regenerate(root, {"doc-graph"}).items():

@@ -1589,7 +1589,7 @@ where hooks were never armed — the **push** is refused instead, and the map ch
 failure. Either way the message tells you the one command that fixes it:
 
 ```bash
-python3 .agents/scripts/refresh_maps.py --staged     # PC: python
+python3 .agents/scripts/refresh_maps.py --repair     # PC: python
 ```
 
 `--verify` is the read-only form: it tells you whether the maps match the tree and changes nothing.

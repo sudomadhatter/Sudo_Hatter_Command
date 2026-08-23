@@ -612,7 +612,10 @@ def check_doc_graph_fresh(root):
         stale = refresh_maps.verify(root)
     except Exception as exc:                          # noqa: BLE001 — a lint never takes a session down
         return [f"doc-graph freshness could not be checked ({type(exc).__name__}: {exc})"]
-    return [f"{rel} is STALE - regenerate: python3 .agents/scripts/refresh_maps.py --staged "
+    # ⛔ `--repair`, NOT `--staged`. Every tree this check fires on has an EMPTY index (a merge,
+    # a --no-verify, an unarmed clone), and `--staged` is gated on the staged set - it would exit
+    # 0 having written nothing. `--repair` is the trigger-free mode. CM10 C pins the string.
+    return [f"{rel} is STALE - regenerate: python3 .agents/scripts/refresh_maps.py --repair "
             "(PC: python)" for rel in stale]
 
 

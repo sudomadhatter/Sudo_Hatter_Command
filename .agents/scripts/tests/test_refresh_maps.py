@@ -279,10 +279,58 @@ def main() -> int:
             r = run(root, "--verify")
             c.check("RM-D exit 1", r.returncode == 1, f"rc={r.returncode} {r.stdout}")
             c.check("RM-D the stale file is NAMED", "docs/repo-map.md" in r.stdout, repr(r.stdout))
-            c.check("RM-D and the remedy is printed", "--staged" in r.stdout, repr(r.stdout))
+            # ⛔ THE REMEDY MUST BE THE MODE THAT CAN ACTUALLY FIX THIS. `--verify` fires on a
+            # merge / --no-verify / unarmed-clone tree, and all three have an EMPTY index, which
+            # `--staged` is gated on. Printing `--staged` here sent the operator to a command
+            # that exits 0 and writes nothing. Asserted both ways so the wrong one cannot creep
+            # back beside the right one.
+            c.check("RM-D the remedy printed is --repair, NOT the trigger-gated --staged",
+                    "--repair" in r.stdout and "--staged" not in r.stdout, repr(r.stdout))
             c.check("RM-D ⛔ --verify WROTE NOTHING (it is a read-only check)",
                     "HAND EDITED" in p.read_text(encoding="utf-8"),
                     "verify repaired the file instead of reporting it")
+
+    # ── D2 · THE MERGE CASE: stale tree, NOTHING staged — the remedy must actually work ───────
+    # ⛔ FOUND AT THIS LANE'S OWN CLOSE-OUT, by the hook refusing this lane's push. `git merge`
+    # runs `pre-merge-commit`, NOT `pre-commit`, so a merge that brings in a `docs/` file leaves
+    # the maps stale with a CLEAN tree behind it. `--verify` then refuses the push and prints
+    # `--staged` as the remedy — but `--staged` is trigger-gated on the STAGED set, and after a
+    # merge nothing is staged, so it returns 0 having written nothing. The operator is handed a
+    # command that cannot fix what it was named to fix, and the only way out is `--no-verify`:
+    # a gate whose only escape is the bypass teaches everyone to reach for the bypass.
+    # `--repair` is the trigger-free mode, and it is what `--verify` must name.
+    if c.block("RM-D2 · SCC-290 · --repair fixes a stale tree with an EMPTY index"):
+        with TempDir() as tmp:
+            root = seed_repo(tmp)
+            # A merge's shape: new content on disk, committed, index empty, maps not regenerated.
+            write(root / "docs" / "merged.md", "# merged\n\nSee [x](x.md).\n")
+            git(root, "add", "--", "docs/merged.md")
+            git(root, "commit", "-qm", "SCC-290 arrive by merge", "--no-verify")
+            c.check("RM-D2 the fixture really is stale", run(root, "--verify").returncode == 1,
+                    "the merge shape did not go stale - the case proves nothing")
+            c.check("RM-D2 and the index really is empty", staged(root) == [], str(staged(root)))
+
+            # The documented remedy, on the tree it is documented for.
+            s1 = run(root, "--staged")
+            c.check("RM-D2 --staged alone cannot fix it (this is WHY --repair exists)",
+                    run(root, "--verify").returncode == 1,
+                    f"--staged fixed an empty index; the trigger gate is gone: {s1.stdout}")
+
+            r = run(root, "--repair")
+            c.check("RM-D2 --repair exit 0", r.returncode == 0,
+                    f"rc={r.returncode} {r.stdout}{r.stderr}")
+            c.check("RM-D2 ⛔ ONE --repair converges", run(root, "--verify").returncode == 0,
+                    f"still stale after --repair: {run(root, '--verify').stdout}")
+            c.check("RM-D2 it STAGES what it wrote, so the fix is one `git commit` away",
+                    {"docs/doc-graph.md", "docs/doc-graph.json", "docs/repo-map.md"}
+                    <= set(staged(root)), str(sorted(staged(root))))
+            c.check("RM-D2 the new doc reached the graph",
+                    "docs/merged.md" in {n["path"] for n in json.loads(
+                        (root / "docs" / "doc-graph.json").read_text(encoding="utf-8"))["nodes"]},
+                    "the repair regenerated stale content")
+            c.check("RM-D2 a second --repair is a silent no-op",
+                    "regenerated and staged" not in run(root, "--repair").stdout,
+                    repr(run(root, "--repair").stdout))
 
     # ── E · the round trip: a commit made through the hook leaves --verify green ──────────────
     if c.block("RM-E · SCC-290 · a commit made with the hook leaves --verify at exit 0"):
@@ -405,7 +453,8 @@ def main() -> int:
     if c.block("RM-I · SCC-290 · exactly one mode, or exit 2"):
         with TempDir() as tmp:
             root = seed_repo(tmp)
-            for args in ([], ["--staged", "--verify"], ["--staged", "--truth", "x"]):
+            for args in ([], ["--staged", "--verify"], ["--staged", "--truth", "x"],
+                         ["--repair", "--verify"], ["--repair", "--staged"]):
                 r = run(root, *args)
                 c.check(f"RM-I {args or ['(no flag)']} is exit 2",
                         r.returncode == 2, f"rc={r.returncode} {r.stdout}{r.stderr}")

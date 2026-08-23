@@ -4,7 +4,7 @@
     "docs"
   ],
   "counts": {
-    "files": 361,
+    "files": 362,
     "packs": 1,
     "pack_docs": 2,
     "edges": 696,
@@ -1773,6 +1773,11 @@
     {
       "path": "docs/migrations/install_guides/antigravity-ide-extension-migration.md",
       "in": 2,
+      "out": 0
+    },
+    {
+      "path": "docs/migrations/install_guides/claude-permission-sandboxed.md",
+      "in": 0,
       "out": 0
     },
     {

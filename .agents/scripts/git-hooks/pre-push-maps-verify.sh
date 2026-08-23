@@ -43,7 +43,7 @@ if ! "$PY" "$REFRESH" --verify; then
   printf '\n'
   printf '  PUSH REFUSED - the generated maps do not match this tree.\n'
   printf '  Regenerate and commit them:\n'
-  printf '      %s .agents/scripts/refresh_maps.py --staged\n' "$PY"
+  printf '      %s .agents/scripts/refresh_maps.py --repair\n' "$PY"
   printf '      git commit --amend --no-edit      # or a new commit, either is fine\n'
   printf '  Bypass once: git push --no-verify\n'
   printf '\n'
