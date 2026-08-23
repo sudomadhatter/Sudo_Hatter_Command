@@ -99,14 +99,37 @@ unset T
   (not `comment --key`) · `comment update --key … --id … --body-file` · `comment delete --key … --id`
   · `attachment delete --id` **only**, no `--key` · `workitem view <KEY>` — the key is **positional**.
 
-## Evidence
+## Gates
+
+Run **bare, never piped** — a pipe hands back the last stage's exit code, so a red gate reads as
+green. Each line carries its own exit, at `ae5dc26`, the landing tree:
 
 ```
-lane_qualify (real diff, 5 paths)         -> LIGHT
-run_all.py                                -> 52/52 files passed
+lane_qualify.py (REAL diff, 5 paths)          -> LIGHT   (re-armed at close-out, not just at intent)
+task_preflight.py --fetch --expect-key SCC-294 -> exit 1  VERDICT: clear to close out and merge
+                                                 LANE: LOCAL · GATES: ARMED · 0 error(s), 2 warning(s)
+run_all.py                                    -> exit 0, 52/52 files passed
+workflow_lint.py --toolkit-only               -> exit 0, 0 error(s), 0 warning(s), 8 info
+check_maps.py --depth3-only --strict          -> exit 0, silent
+link + anchor check (7 changed .md)           -> 121 relative links, 0 broken
+sop_currency.classify() over all 8 changed paths -> no usage surface, so no SOP hunk and no `[sop-ok]`
 ```
 
-Gates re-run **bare** at the landing sha below, in `## Gates`.
+**The SOP answer was computed, not assumed.** `docs/migrations/` is not in `sop_currency._SURFACES`
+(`.agents/commands/` · `.agents/rules/` · `.agents/scripts/{git-hooks,*.py,*.ps1}` · `.githooks/`),
+so the armed `commit-msg` gate had nothing to demand — and none of the three commits carries
+`[sop-ok]`, which is the check that the exemption was real rather than opted out of.
+
+**The two preflight warnings, in full:**
+
+- `children` — **the board could not be read**, because `acli` cannot reach the credential store
+  inside the sandbox. That is transport, never a verdict on the ticket (`.agents/rules/jira.md`).
+  Checked by hand at Step 4, where the board is provably reachable because the next command
+  transitions the ticket: SCC-294 is a **Task with no subtasks**.
+- `worktree` — expected since SCC-62. Step 5 prunes it.
+
+Gates ran at `ae5dc26`; only the artifacts-only flight-event commit follows, and freshness here is
+content-based, so `ae5dc26` is the tree that lands.
 
 ## What was NOT done
 
