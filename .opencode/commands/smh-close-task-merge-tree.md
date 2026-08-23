@@ -413,7 +413,7 @@ finding). If the check is red, **STOP** — never disable the ruleset to get pas
 > did: each of those strings was judged separately by the agent's permission layer, several were
 > denied, and the state was left stranded halfway. Measured, same op and same target:
 > `git merge X --no-ff` **allowed**, `git -C <path> merge X --no-ff` **denied** — and `-C` is what
-> `.agents/rules/nothing-guards-the-merge-target.md` *mandates*. Obeying the safety law guaranteed
+> `.agents/rules/git-policy.md` §*"Pin the merge TARGET"* *mandates*. Obeying the safety law guaranteed
 > the permission miss. `gh pr create` has none of that: it is one command, it needs no checkout on
 > `main`, it writes nothing on this machine, and it is what actually landed PR #5, #6 and #8.
 
