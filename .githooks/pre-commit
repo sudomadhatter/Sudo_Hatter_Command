@@ -1,8 +1,22 @@
 #!/bin/sh
-# pre-commit-encoding (installed by .agents/scripts/git-hooks/install-encoding-hook.ps1)
+# pre-commit — two delegates, run in ORDER. Both must pass.
 #
-# GUARD (SCC-32): same worktree trap as commit-msg — `--show-toplevel` points at the worktree, so a tree
-# cut before this script existed would die on exec instead of committing. Missing script → allow.
-HOOK="$(git rev-parse --show-toplevel)/.agents/scripts/git-hooks/pre-commit-encoding.sh"
+#   1. pre-commit-maps      regenerate + stage the generated maps; ratchet + door checks (SCC-290)
+#   2. pre-commit-encoding  block a commit that would introduce broken bytes
+#
+# ⛔ MAPS FIRST, AND THE ORDER IS LOAD-BEARING. The maps delegate WRITES files and `git add`s them,
+# so it changes the staged set. The encoding lint reads the staged set — run second, it sees the
+# final one, including the two regenerated maps. Run first, it would pass on a set that no longer
+# exists by the time the commit is written.
+#
+# GUARD (SCC-32): same worktree trap as commit-msg — `--show-toplevel` points at the worktree, so a
+# tree cut before a script existed would die on exec instead of committing. Missing script → skip
+# that delegate, keep going. (Not `exec` on the first one any more: there are two.)
+ROOT="$(git rev-parse --show-toplevel)"
+
+MAPS="$ROOT/.agents/scripts/git-hooks/pre-commit-maps.sh"
+[ -x "$MAPS" ] && { "$MAPS" "$@" || exit $?; }
+
+HOOK="$ROOT/.agents/scripts/git-hooks/pre-commit-encoding.sh"
 [ -x "$HOOK" ] || exit 0
 exec "$HOOK" "$@"

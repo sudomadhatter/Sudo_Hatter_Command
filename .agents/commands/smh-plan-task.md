@@ -98,12 +98,21 @@ and the operator's ruling on SCC-155 itself was exactly that.
 
 ⛔ **STOP HERE.** Write nothing to the board until the operator says go.
 
-On the go, mint each one — parented to this ticket, bare, no `--assignee`:
+On the go, mint each one — parented to this ticket, bare, no `--assignee`. ⭐ **The description is
+the FAST READ, never the plan** (`.agents/rules/jira.md` §"The description is the fast read"). Write
+each rider's outline into the artifact folder first, then render it:
 
 ```bash
+# tickets/<SUBKEY>.md  =  Why: <one paragraph>  ##Plan (4-8 `- [ ]` lines)  ##Done  ##Files
 acli jira workitem create --project <PROJ> --type Subtask --parent <PARENT-KEY> \
-  --summary "…" --description "…"
+  --summary "…" \
+  --description-file <(python3 .agents/scripts/jira_ticket.py outline \
+                        _artifacts/_main/<folder>/tickets/<SUBKEY>.md)
 ```
+
+⛔ **`--description-file`, never `--description`.** The `## Plan` block is an ADF `taskList` — real
+Jira checkboxes the operator can watch progress on — and a plain `--description` string cannot carry
+one. On a shell without process substitution, render to a temp file and pass that.
 
 ## Step 2.5 — ⭐ Pick the MODE: one consolidated lane, or a lane per subtask (SCC-170)
 
@@ -198,6 +207,20 @@ Then, in that tree:
 3. **Invoke `/smh-self-audit`** on that plan. It appends `## Self-Audit (<date>)` and a canonical
    `Audit verdict: GO | NO-GO`. **A NO-GO stops that lane** — fix the plan and re-audit. Do not
    carry a NO-GO into the batch stop.
+3.5. **Point the ticket at the plan, and ATTACH it.** The description carries the outline; the plan
+   itself is a file on the branch and an attachment on the ticket — never pasted into the
+   description (`jira.md` §"The description is the fast read"):
+   ```bash
+   python3 .agents/scripts/jira_ticket.py describe --key <SUBKEY> \
+       --outline _artifacts/_main/<folder>/tickets/<SUBKEY>.md \
+       --files "Plan: _artifacts/_main/<folder>/implementation_plan.md on <branch> - attached - \
+   https://github.com/sudomadhatter/<repo>/blob/<branch>/_artifacts/_main/<folder>/implementation_plan.md"
+   python3 .agents/scripts/jira_ticket.py attach --key <SUBKEY> \
+       --file _artifacts/_main/<folder>/implementation_plan.md
+   ```
+   **Exit 5 from `attach` is not a failure of this step** — it means this machine has no Atlassian
+   API token yet, a one-time setup it prints in full. The description still landed. Note it in the
+   hand-back and carry on.
 4. **Commit and push the lane** (explicit paths; the key leads the subject):
    ```bash
    git -C "<tree>" add _artifacts/_main/<date>_<slug>/implementation_plan.md \
@@ -206,12 +229,17 @@ Then, in that tree:
    git -C "<tree>" push -u origin chore/<SUBKEY>-<slug>
    ```
    **Unpushed is stranded** — branches travel between machines, worktrees do not.
-5. **Update the subtask ticket** so the board points at the plan:
+5. **Update the subtask ticket** so the board points at the plan — this is Step 3.5 above, run
+   now that the branch exists and the `blob/` link resolves. ⛔ **Not `acli ... --description "…"`:**
+   a plain string cannot carry the `## Plan` checklist, and pasting the plan into the description is
+   exactly what SCC-291 retired.
    ```bash
-   acli jira workitem edit --key <SUBKEY> --yes --description "…checkable list… \
-     Plan: _artifacts/_main/<date>_<slug>/implementation_plan.md on chore/<SUBKEY>-<slug>"
+   python3 .agents/scripts/jira_ticket.py describe --key <SUBKEY> \
+       --outline _artifacts/_main/<date>_<slug>/tickets/<SUBKEY>.md
+   python3 .agents/scripts/jira_ticket.py attach --key <SUBKEY> \
+       --file _artifacts/_main/<date>_<slug>/implementation_plan.md
    ```
-   The tree stays the single source of truth; the ticket carries the pointer.
+   The tree stays the single source of truth; the ticket carries the outline and the attachment.
 
 ## Step 4 — Label the set
 

@@ -21,6 +21,7 @@ Both directions are asserted — a door in the wrong place is exactly as wrong a
 """
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -2328,6 +2329,126 @@ def main() -> int:
         c.check("CS-14 E the multi-lane door verifies landing by SHA, not by a deleted branch name",
                 "4.4 SHA" in body("cicd-merge-epic-workingtrees.md"),
                 "Step 6 deletes the branch Step 7 would name; capture the tip sha at 4.4")
+
+    # ── CS-15 · SCC-289 · the centre carries no code graph, and the seam is told which repo ───
+    # TWO defects, one root cause: the command centre is markdown, and a code graph parses code.
+    # (a) Three of the four MCP configs still started a `code-review-graph` server here — an index
+    #     of nothing, on every platform but opencode, which had already been trimmed.
+    # (b) `risk_seam.py` resolved its repo from CWD. The four review/audit doors run from the
+    #     CENTRE while reviewing a PROJECT worktree, so every project review classified the centre,
+    #     which has no graph — the answer was ALWAYS `unclassified` and read as "no index here".
+    if c.block("CS-15 · SCC-289 · no centre graph; every seam call names its repo"):
+        mcp_files = {
+            ".mcp.json": ROOT / ".mcp.json",
+            ".claude/mcp.json": ROOT / ".claude" / "mcp.json",
+            ".antigravity/mcp.json": ROOT / ".antigravity" / "mcp.json",
+            ".opencode/mcp.json": ROOT / ".opencode" / "mcp.json",
+        }
+        present = {k: v for k, v in mcp_files.items() if v.exists()}
+        c.check("CS-15 A all four platform MCP configs exist",
+                set(present) == set(mcp_files), f"missing: {sorted(set(mcp_files) - set(present))}")
+
+        server_sets = {}
+        for name, path in present.items():
+            try:
+                server_sets[name] = frozenset(
+                    json.loads(path.read_text(encoding="utf-8-sig")).get("mcpServers", {}))
+            except ValueError as exc:
+                server_sets[name] = frozenset({f"UNPARSEABLE: {exc}"})
+
+        c.check("CS-15 B ⛔ no platform starts a code-review-graph server in the CENTRE",
+                not any("code-review-graph" in v for v in server_sets.values()),
+                "; ".join(f"{k}={sorted(v)}" for k, v in server_sets.items()
+                          if "code-review-graph" in v)
+                or "clean")
+        c.check("CS-15 C the four configs declare the SAME server set",
+                len(set(server_sets.values())) == 1,
+                "; ".join(f"{k}={sorted(v)}" for k, v in server_sets.items()))
+
+        # (b) EVERY invocation carries --repo. Prose that merely names the script is not an
+        #     invocation; `risk_seam.py classify` is. The flag must sit ON the call — a paragraph
+        #     three lines below telling the reader to pass a root is not the call passing one.
+        seam_sites = []
+        for surface in (ROOT / ".agents" / "commands", ROOT / ".agents" / "workflows"):
+            for md in sorted(surface.rglob("*.md")):
+                text = md.read_text(encoding="utf-8-sig")
+                start = 0
+                while True:
+                    hit = text.find("risk_seam.py classify", start)
+                    if hit < 0:
+                        break
+                    start = hit + 1
+                    window = text[hit:hit + 60]
+                    rel = md.relative_to(ROOT).as_posix()
+                    seam_sites.append((rel, text[:hit].count(chr(10)) + 1, "--repo" in window))
+
+        c.check("CS-15 D there ARE seam call sites to check (a zero-site pass is vacuous)",
+                len(seam_sites) >= 4, f"{len(seam_sites)} sites: {[s[0] for s in seam_sites]}")
+        naked = [f"{f}:{ln}" for f, ln, ok in seam_sites if not ok]
+        c.check("CS-15 E ⛔ every `risk_seam.py classify` call passes --repo",
+                not naked,
+                f"naked calls: {naked} — without --repo the seam classifies CWD, which during a "
+                "project review is the command centre")
+
+        # (c) The ignore file the centre's index needed is gone, and nothing live still names it.
+        c.check("CS-15 F .code-review-graphignore is DELETED",
+                not (ROOT / ".code-review-graphignore").exists(),
+                "the centre keeps no index, so it needs no ignore list for one")
+        stale = []
+        for surface in (ROOT / ".agents", ROOT / "docs"):
+            for f in sorted(surface.rglob("*")):
+                if not f.is_file() or f.suffix.lower() not in (".md", ".py", ".ps1", ".sh"):
+                    continue
+                rel = f.relative_to(ROOT).as_posix()
+                # Two files may say the name: the tool reference that documents what a PROJECT
+                # carries, and this test, whose own assertion string is the word.
+                if rel in ("docs/code-review-graph.md",
+                           Path(__file__).resolve().relative_to(ROOT).as_posix()):
+                    continue
+                try:
+                    if "code-review-graphignore" in f.read_text(encoding="utf-8-sig"):
+                        stale.append(rel)
+                except (OSError, UnicodeDecodeError):
+                    continue
+        c.check("CS-15 G no live surface still names the deleted ignore file",
+                not stale, f"still naming it: {stale}")
+
+    # ── CS-16 · SCC-291 · the fast-read ticket tool is wired into BOTH ends of the lane ───────
+    # A tool nothing invokes is a tool nobody uses. The shape only holds if the door that MINTS
+    # a ticket renders it and the door that CLOSES one ticks it — one without the other leaves
+    # every ticket either unstructured at birth or permanently unticked at death.
+    if c.block("CS-16 · SCC-291 · both Task doors name jira_ticket.py, at the right end"):
+        cmds = ROOT / ".agents" / "commands"
+        plan = (cmds / "smh-plan-task.md").read_text(encoding="utf-8")
+        close = (cmds / "smh-close-task-merge-tree.md").read_text(encoding="utf-8")
+        c.check("CS-16 A the planning door renders the outline when it mints",
+                "jira_ticket.py outline" in plan, "smh-plan-task.md never calls the renderer")
+        # ⛔ SEARCH THE CODE FENCES, NOT THE PROSE. The door's own text says *"not
+        # `acli ... --description "…"`"* — a naive grep over the whole file matches that
+        # PROHIBITION and reports the door as still doing the thing it forbids. A guard a comment
+        # can invert is not a guard; only the fenced blocks are invocations.
+        def fences(body):
+            return "\n".join(re.findall(r"^```[a-z]*\n(.*?)^```", body, re.S | re.M))
+        plan_code = fences(plan)
+        c.check("CS-16 B ⛔ it mints with --description-file, not --description",
+                "--description-file" in plan_code
+                and not re.search(r"--description\s+[\"']", plan_code),
+                f"offending code lines: "
+                f"{[ln for ln in plan_code.splitlines() if re.search(chr(45) * 2 + 'description' + chr(92) + 's', ln)]}")
+        c.check("CS-16 C the planning door ATTACHES the plan rather than pasting it",
+                "jira_ticket.py attach" in plan, "smh-plan-task.md never attaches the plan")
+        c.check("CS-16 D the close-out door ticks the checklist and appends Done",
+                "jira_ticket.py done" in close and "--tick" in close,
+                "a ticket whose Plan boxes are all unticked reads as work that never happened")
+        c.check("CS-16 E and it rewrites the Files link to blob/main/ before the branch is pruned",
+                "blob/main/" in close,
+                "the planning-time link points at a branch --after-merge has already deleted")
+        # Neither door may treat a missing API token as a failure: attach is the ONLY verb that
+        # needs one, and the shape has to land on a machine that has not done the setup yet.
+        for name, body in (("smh-plan-task.md", plan), ("smh-close-task-merge-tree.md", close)):
+            c.check(f"CS-16 F {name} says exit 5 from attach does NOT block the lane",
+                    bool(re.search(r"exit(?:ing)? 5", body, re.I)),
+                    "an unset one-time token must not stop a lane from closing")
 
     return c.finish()
 

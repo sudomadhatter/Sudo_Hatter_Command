@@ -44,6 +44,10 @@ Run the runbook end to end with:
 - `PROJECT` = the runbook's default (`python-fastapi`) unless `$ARGUMENTS` names another slug.
 - **Lane = interactive** → Sentry **MCP** transport; `code-review-graph` enrichment when available; honor **every**
   guardrail (read-only; write ONLY the report; never merge/PR/push; anchor at the event's release SHA).
+  ⛔ **The enrichment reads AGY's OWN graph, never the command centre's** — the centre has none
+  (SCC-289). Every graph call is made against the AviationChat repo root, and `risk_seam.py` is
+  invoked as `classify --repo "$AGY_ROOT" …`; run from here without it, the seam classifies the
+  command centre and answers `unclassified` on every issue.
 
 Follow the runbook's five steps and its graceful-degrade rules exactly — this harness adds nothing and
 skips nothing.

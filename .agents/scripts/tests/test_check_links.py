@@ -132,6 +132,67 @@ def main() -> int:
             c.check("E4 scan() reports the dead one and not the live one", _ok,
                     "" if _ok else f"scan is not discriminating: dead={dead} checked={checked}")
 
+        if c.block("H · SCC-288 · a GENERATED block is machine output, not authored links"):
+            # ⛔ MEASURED, at the SCC-288 close-out. `docs/doc-graph.md`'s AUTO block is a REPORT:
+            # its job is to LIST the dangling references the graph found. check_links read that
+            # list as 40 dead links of its own — turning the graph's findings into the link
+            # checker's findings, in a file no human wrote a link into. This lane took the run
+            # from ~24 hits to 64, and SCC-285 already recorded what that costs: a check that
+            # cries wolf teaches the reader to skip the one real hit.
+            #
+            # The generator itself already draws this line — `generate_doc_graph.strip_auto()`
+            # refuses to parse AUTO blocks as link sources, for the same reason. This is the
+            # same rule, applied by the other reader of the same files.
+            (tmp / "gen.md").write_text(
+                "Authored: [live](docs/live.md) and [broken](docs/authored-dead.md)\n"
+                "<!-- DOC-GRAPH:AUTO-START -->\n"
+                # The REAL shape: the dangling table's cells are backticked paths, which is
+                # exactly what the checker's LINK pattern matches. A plain table cell does not
+                # match, so a fixture written that way passes without the fix - the first draft
+                # of this case did, and proved nothing.
+                "| `docs/src.md` | `docs/reported-dead.md` |\n"
+                "<!-- DOC-GRAPH:AUTO-END -->\n"
+                "After: [also broken](docs/after-dead.md)\n", encoding="utf-8")
+            (tmp / "docs").mkdir(exist_ok=True)
+            (tmp / "docs" / "live.md").write_text("ok\n", encoding="utf-8")
+            dead, _, checked = CL.scan(tmp, resolver(tmp), ["gen.md"])
+            _ok = not any("reported-dead" in d for d in dead)
+            c.check("H1 a dead path INSIDE the AUTO block is not the checker's finding", _ok,
+                    "" if _ok else f"the generated report is being read as links: {dead}")
+            # ⛔ AND IT MUST STILL BITE EITHER SIDE. A strip that swallows the rest of the file
+            # would satisfy H1 and blind the gate — the failure mode the mermaid strip had.
+            _ok = any("authored-dead" in d for d in dead)
+            c.check("H2 an authored dead link BEFORE the block is still reported", _ok,
+                    "" if _ok else f"the strip is eating authored content: {dead}")
+            _ok = any("after-dead" in d for d in dead)
+            c.check("H3 and one AFTER the block is too - the strip closes at AUTO-END", _ok,
+                    "" if _ok else f"the strip never turns back off: {dead}")
+            _ok = checked == 3
+            c.check("H4 exactly the three authored claims were checked, not the reported one",
+                    _ok, "" if _ok else f"checked={checked}, expected 3")
+            # ⛔ AN UNPAIRED `START` MUST STRIP NOTHING (Blind Hunter, SCC-288). A line scanner
+            # latches `inside` at START and clears it only at END, so a file whose END is missing
+            # — a truncated write, an interrupted `_land`, a hand-edited header — goes UNCHECKED
+            # from the sentinel to EOF. The gate would switch itself off exactly when the file is
+            # known to be corrupt, and report zero dead links as if that were good news.
+            (tmp / "torn.md").write_text(
+                "<!-- DOC-GRAPH:AUTO-START -->\n[x](docs/torn-dead.md)\n"
+                "still authored [y](docs/after-torn.md)\n", encoding="utf-8")
+            dead3, _, checked3 = CL.scan(tmp, resolver(tmp), ["torn.md"])
+            _ok = checked3 == 2 and len(dead3) == 2
+            c.check("H6 an UNPAIRED AUTO-START strips nothing - the file stays checked", _ok,
+                    "" if _ok else f"the gate went silent on a torn file: dead={dead3} "
+                                   f"checked={checked3}")
+
+            # The repo-map uses a different sentinel and must get the same treatment.
+            (tmp / "rm.md").write_text(
+                "<!-- REPO-MAP:AUTO-START -->\n[x](docs/tree-dead.md)\n"
+                "<!-- REPO-MAP:AUTO-END -->\n", encoding="utf-8")
+            dead2, _, checked2 = CL.scan(tmp, resolver(tmp), ["rm.md"])
+            _ok = not dead2 and checked2 == 0
+            c.check("H5 the REPO-MAP sentinel is honoured too", _ok,
+                    "" if _ok else f"dead={dead2} checked={checked2}")
+
         if c.block("F · anchors - `#L` must name lines the target has"):
             (tmp / "five.md").write_text("1\n2\n3\n4\n5\n", encoding="utf-8")
             _ok = CL.check_anchor(tmp, "five.md", "#L2-L4") is None

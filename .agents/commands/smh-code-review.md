@@ -85,31 +85,19 @@ git -C "$REPO" diff --name-only origin/main...HEAD   | sort > /tmp/mine.txt    #
 grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                        # the TRUE overlap
 git -C "$REPO" merge-tree --write-tree --messages HEAD origin/main | head -40  # conflicts, before they are real
 git -C "$REPO" worktree list                                                   # sibling lanes still live
-python3 .agents/scripts/risk_seam.py classify $(cat /tmp/mine.txt)             # risk tiers from the code graph
+python3 .agents/scripts/risk_seam.py classify --repo "$REPO" $(cat /tmp/mine.txt)  # risk tiers (see below)
 ```
 
-**Read the tier map beside the overlap list.** `risk_seam.py` asks the local code graph which of the
-files you changed carry the riskiest changed functions, how many flows they sit on, and which changed
-functions it can find no test for. `"status": "classified"` means the graph answered; every other
-state — no graph, a graph built at a different commit, the tool not installed — prints
-`"status": "unclassified"` and **that is a normal result, not a failure**. The pure-Python path is the
-normal path; the graph is context, and `gates_audit` is False by contract, so nothing here can fail a
-review on its own. If it comes back `unclassified` and you want the context, `code-review-graph update`
-in that repo and re-run this one line.
+**Read the tier map beside the overlap list — and know what it can say HERE.** ⛔ **The command
+centre carries no code graph at all (SCC-289): `unclassified` is the permanent, correct answer for
+this repo, not a machine that has not built an index yet.** A code graph parses code; this repo is
+markdown. So on a `smh-` lane this line is a one-second no-op you run for the shape, and every
+judgement in this review comes from reading the diff.
 
-⛔ **READ `test_links` BEFORE YOU READ `untested`, and in the command centre `test_links` is `0`.**
-That number is how many of the graph's TESTED_BY edges name a real subject. Measured here
-2026-08-22: the graph held **24** test edges and **not one** named a thing under test — 21 pointed at
-bare builtins (`str`, `Path`, `mkdir`, `isinstance`) and 3 at a test class's own `assertEqual`. So
-**every** changed function lands in `untested`, thoroughly-tested ones included, and the list reads
-exactly like a page of findings. When `test_links` is `0`, `untested` carries **no information**:
-do not open those files, do not write it down, do not mention it in the verdict.
-
-The cause is that a test link needs a statically resolvable import, and every test under
-`.agents/scripts/tests/` reaches its subject either by `subprocess` or by a runtime
-`sys.path.insert(...)` before the import — neither of which the resolver can follow. `risk` and
-`flows` are **not** affected: `CALLS` resolved 22135/22135 in the same measurement, so the call
-graph is trustworthy while the test layer is not.
+`--repo "$REPO"` is still mandatory and not decoration: the flag is what makes the JSON echo
+`"root"`, so the output states which tree it answered about. The same script, invoked from here with
+a project worktree in `--repo`, DOES read that project's graph — which is the whole reason the flag
+exists (`docs/code-review-graph.md`).
 
 ⚠ **`zsh` does not word-split an unquoted variable** the way `bash` does. Build file lists into a file
 and expand with `$(cat …)`, or the whole list arrives as one argument and your sweep silently checks

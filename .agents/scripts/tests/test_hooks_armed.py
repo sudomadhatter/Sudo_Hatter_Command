@@ -48,7 +48,12 @@ def git(*args: str, cwd: Path) -> str:
 def seed(d: Path, *, hooks=("commit-msg", "pre-commit", "post-commit", "pre-push"),
          flags=("JIRA-ENFORCE", "SOP-ENFORCE", "MAIN-PUSH-ENFORCE", "MERGE-TARGET-ENFORCE"),
          scripts=("commit-msg-jira.sh", "sop-currency.sh", "pre-push-main-approval.sh",
-                  "pre-commit-encoding.sh", "merge-target-guard.sh"),
+                  "pre-commit-encoding.sh", "merge-target-guard.sh",
+                  # SCC-290: two more flagless delegates. Like pre-commit-encoding.sh they are
+                  # armed unconditionally and have no *-ENFORCE row, so layer 2's "every tracked
+                  # *.sh is executable" sweep is the ONLY thing that covers them.
+                  "pre-commit-maps.sh", "pre-push-maps-verify.sh",
+                  "commit-msg-maps.sh"),
          arm=True) -> None:
     """A minimal repo shaped like this one: hook dispatchers, inner scripts, arm flags.
 
@@ -542,6 +547,26 @@ def main() -> int:
         finally:
             hooks_armed.subprocess.run = real_run
 
+    # ── MAPS · SCC-290 · the two flagless maps delegates are armed like the encoding gate ────
+    # They carry no `*-ENFORCE` flag by design (the encoding gate's own shape), so nothing in
+    # ARM_FLAGS covers them and layer 2 is the whole guard. A delegate committed at mode 644 is a
+    # gate that silently never runs — `.githooks/pre-commit` tests `-x` and skips it in silence.
+    # MAPS · SCC-290 · pre-commit-maps.sh and pre-push-maps-verify.sh are armed
+    listing = git("ls-files", "-s", ".agents/scripts/git-hooks/", cwd=REPO)
+    for name in ("pre-commit-maps.sh", "pre-push-maps-verify.sh", "commit-msg-maps.sh"):
+        row = [ln for ln in listing.splitlines() if ln.endswith(name)]
+        c.check(f"MAPS {name} is TRACKED at mode 100755",
+                len(row) == 1 and row[0].startswith("100755"),
+                row[0] if row else "not tracked at all")
+    if POSIX_ONLY:
+        with TempDir() as d:
+            seed(d)
+            c.check("MAPS a clean seeded repo (both delegates present) is ARMED",
+                    not errs(hooks_armed.scan(d)), str(errs(hooks_armed.scan(d))))
+            (d / ".agents/scripts/git-hooks/pre-commit-maps.sh").chmod(0o644)
+            bad = errs(hooks_armed.scan(d))
+            c.check("MAPS ⛔ dropping the maps delegate to 644 is REPORTED",
+                    any("pre-commit-maps.sh" in m for m in bad), str(bad))
     return c.finish()
 
 

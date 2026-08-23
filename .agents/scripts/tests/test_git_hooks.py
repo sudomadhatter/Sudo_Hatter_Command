@@ -1491,6 +1491,57 @@ def main() -> int:
                     "this is the whole reason the banner changed — `--hard` here would have "
                     "eaten both files without a word:\n" + (got.stdout + got.stderr).strip()[:200])
 
+    # ── MAPS · SCC-290 · the dispatchers chain the maps delegates, in the right ORDER ────────
+    # These are read off the LIVE dispatchers, not a fixture, because the dispatchers ARE the
+    # wiring — a fixture copy would only prove the fixture.
+    if c.block("MAPS · SCC-290 · pre-commit chains maps THEN encoding; pre-push verifies first"):
+        pc = (REPO / ".githooks" / "pre-commit").read_text(encoding="utf-8")
+        i_maps, i_enc = pc.find("pre-commit-maps.sh"), pc.find("pre-commit-encoding.sh")
+        c.check("MAPS pre-commit invokes the maps delegate", i_maps >= 0, pc[:200])
+        c.check("MAPS pre-commit still invokes the encoding gate", i_enc >= 0, pc[:200])
+        # ⛔ ORDER IS LOAD-BEARING. The maps delegate `git add`s what it regenerates, so it CHANGES
+        # the staged set. The encoding lint reads the staged set — second, it sees the final one
+        # including both maps; first, it would pass on a set that no longer exists at commit time.
+        c.check("MAPS ⛔ maps runs BEFORE encoding (it mutates the staged set)",
+                0 <= i_maps < i_enc, f"maps@{i_maps} encoding@{i_enc}")
+        c.check("MAPS the maps delegate is NOT exec'd (there is a second delegate after it)",
+                'exec "$MAPS"' not in pc,
+                "exec replaces the shell — the encoding gate would never run")
+        c.check("MAPS a missing maps delegate is SKIPPED, not fatal (SCC-32 stale worktree)",
+                '[ -x "$MAPS" ]' in pc, pc)
+
+        # ⛔ THE THIRD DELEGATE, AND WHY IT IS ON A DIFFERENT HOOK. The truth checks need the
+        # commit MESSAGE (their escape hatch is `[maps-ok]`), and pre-commit cannot see one — the
+        # same reason sop-currency.sh sits on commit-msg. Staging needs pre-commit; the hatch needs
+        # commit-msg. Two hooks, one script, and this pins that they did not drift back together.
+        cm = (REPO / ".githooks" / "commit-msg").read_text(encoding="utf-8")
+        c.check("MAPS commit-msg chains the maps TRUTH gate",
+                "commit-msg-maps.sh" in cm, cm[:200])
+        c.check("MAPS the truth gate runs BEFORE the SOP gate (which is exec'd last)",
+                0 <= cm.find("commit-msg-maps.sh") < cm.find("sop-currency.sh"),
+                f"maps@{cm.find('commit-msg-maps.sh')} sop@{cm.find('sop-currency.sh')}")
+        c.check("MAPS ⛔ the truth checks are NOT also run from pre-commit (no message there)",
+                "--truth" not in pc,
+                "pre-commit cannot read the commit message, so [maps-ok] would be unreachable")
+        c.check("MAPS a missing truth gate is a WARNING, not fatal (SCC-32 stale worktree)",
+                '[ ! -x "$MAPS" ]' in cm, cm[:400])
+
+        pp = (REPO / ".githooks" / "pre-push").read_text(encoding="utf-8")
+        i_v = pp.find("pre-push-maps-verify.sh")
+        i_back = pp.find("pre-push-merge-backstop.sh")
+        i_refs = pp.find('cat > "$REFS"')
+        c.check("MAPS pre-push invokes the maps verify", i_v >= 0, pp[:200])
+        c.check("MAPS the verify runs BEFORE the merge backstop",
+                0 <= i_v < i_back, f"verify@{i_v} backstop@{i_back}")
+        # ⛔ THE STDIN HAZARD. pre-push gets ONE stdin; the dispatcher tees it into a file for the
+        # gates that need refs. This gate needs none, so it must run before that capture AND be
+        # fed /dev/null — otherwise it could consume the stream and the ref-reading gates below
+        # would see EOF and exit 0, silently allowing every push.
+        c.check("MAPS ⛔ it runs before the refs are captured AND is fed /dev/null",
+                0 <= i_v < i_refs and "< /dev/null" in pp[i_v:i_refs],
+                f"verify@{i_v} refs-capture@{i_refs}; "
+                f"segment={pp[i_v:i_v + 200]!r}")
+
     return c.finish()
 
 

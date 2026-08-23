@@ -14,7 +14,8 @@
 # have been retired now that those workspaces are under Projects/.
 
 # code-review-graph index (disposable, machine-local, per-worktree — never committed).
-# Rebuilt in seconds by `code-review-graph build`; scoped by `.code-review-graphignore`.
+# Rebuilt in seconds by `code-review-graph build`, in a PROJECT. The command centre carries no
+# code graph at all (SCC-289), so nothing here writes one - this pattern is a guard, not a hint.
 **/.code-review-graph/
 
 # Map-drift journal (machine-local commit-time cache written by .githooks/post-commit — a HINT the

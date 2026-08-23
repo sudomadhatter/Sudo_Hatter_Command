@@ -30,6 +30,15 @@
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 0
 
+# GATE 0 (SCC-290): the generated maps match this tree. It needs NO refs — it is a statement about
+# the tree, not about what is being pushed — so it runs BEFORE the refs are captured and is fed
+# /dev/null, which is what keeps it out of the stdin hazard described above. It catches the three
+# commits pre-commit never sees: a github.com merge, a `--no-verify`, and an unarmed clone.
+MAPSV="$ROOT/.agents/scripts/git-hooks/pre-push-maps-verify.sh"
+if [ -x "$MAPSV" ]; then
+  "$MAPSV" "$@" < /dev/null || exit $?
+fi
+
 # Under the git dir, so it never travels with a clone and can never land in a commit. `--git-path`
 # rather than a literal `.git/...`: in a worktree `.git` is a FILE, and a path probe there is
 # always false — the same bug this lane fixed in commit-msg-jira.sh and sop-currency.sh.

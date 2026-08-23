@@ -128,9 +128,44 @@ def strip_fences(text: str) -> str:
     return "\n".join(out)
 
 
+# ⛔ A GENERATED BLOCK IS MACHINE OUTPUT, NOT AUTHORED LINKS (SCC-288). `docs/doc-graph.md`'s
+# AUTO block is a REPORT whose whole job is to LIST the dangling references the graph found, and
+# every one of them is a backticked path this checker's LINK pattern matches. Read literally, the
+# graph's 40 findings became 40 findings of this checker's own, in a file no human wrote a link
+# into. `generate_doc_graph.strip_auto()` already draws this exact line for the same reason; this
+# is the same rule applied by the other reader of the same files. The sentinels are the ones the
+# two generators splice on.
+AUTO_SENTINEL = re.compile(r"<!--\s*(?:REPO-MAP|DOC-GRAPH):AUTO-(START|END)\s*-->")
+
+
+def strip_auto(text: str) -> str:
+    """Blank generated AUTO blocks, preserving line numbers so reports stay accurate.
+
+    ⛔ AN UNPAIRED `START` STRIPS NOTHING. A line scanner that latches `inside` on `START` and
+    only clears it on `END` goes SILENT over the whole remainder of a file whose `END` is missing
+    — a truncated write, an interrupted `_land`, a hand-edit of the curated header. That is the
+    link gate switching itself off at the exact moment the file is known to be corrupt. So the
+    pairs are resolved FIRST, and only a block with both ends is blanked; a dangling sentinel is
+    left in place and its content stays checked. `generate_doc_graph.AUTO_BLOCK_RE` reaches the
+    same answer by requiring a matching `END` in the pattern — this is that rule, line-wise.
+    """
+    lines = text.splitlines()
+    blank, open_at = set(), None
+    for i, line in enumerate(lines):
+        m = AUTO_SENTINEL.search(line)
+        if not m:
+            continue
+        if m.group(1) == "START":
+            open_at = i                       # a second START just re-opens; the last one wins
+        elif open_at is not None:
+            blank.update(range(open_at, i + 1))
+            open_at = None
+    return "\n".join("" if i in blank else ln for i, ln in enumerate(lines))
+
+
 def candidates(text: str):
     """Yield (line_no, token, anchor) for every token that CLAIMS to be a path."""
-    for n, line in enumerate(strip_fences(text).splitlines(), 1):
+    for n, line in enumerate(strip_auto(strip_fences(text)).splitlines(), 1):
         for m in LINK.finditer(line):
             yield n, m.group(1), m.group(2)
         for m in TICKED.finditer(line):

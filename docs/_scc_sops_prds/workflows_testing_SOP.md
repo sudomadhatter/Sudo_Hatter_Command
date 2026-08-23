@@ -1473,47 +1473,129 @@ fail the same quiet way — a rule that never loads looks exactly like a rule wi
 
 ### The code graph — what the review commands ask before they judge
 
-The command centre and each project carry a **local code graph**: a small SQLite index built by
-`code-review-graph`, which reads your code and answers structural questions the review commands would
-otherwise answer by guessing. *Who calls this function? What breaks if I change it? Which of these
-changed functions has no test?* The reviews and audits ask it for you — there is nothing to type in
-the normal flow.
+**Each project carries a local code graph. The command centre does not, and never will.**
 
-You do see it in one place: a **risk map** printed beside the overlap list when a review re-checks
-its blast radius. Per changed file it names the riskiest thing you changed in it, how many flows run
-through it, and which of your changed functions it can find no test for — a shortlist of where to
-look hardest, nothing more. It also prints `test_links`; when that reads `0`, the "no test" column is
-empty of meaning and the fourth point below says why. When it says `unclassified`, the graph simply had no answer to give (see
-the first point below); that is a normal line, not a problem to solve.
+A code graph is a small SQLite index built by `code-review-graph`, which reads your **code** and
+answers structural questions the review commands would otherwise answer by guessing. *Who calls this
+function? What breaks if I change it? Which of these changed functions has no test?* Inside a project
+the reviews and audits ask it for you — there is nothing to type in the normal flow.
 
-Four things are worth knowing, because each one has bitten:
+⛔ **This repo has no graph of its own, by design.** A code graph parses code, and the command centre
+is markdown: commands, rules, procedure. An index here described almost nothing. There is no server
+for it in any of the four platform configs, no ignore file, and no index — and the map check saying
+"no code graph in this workspace" is the permanent right answer here, not something waiting to be
+built. What maps this repo instead is the **doc graph** (below).
+
+So when you run a review here, the risk map says `unclassified`. **That is correct and expected**, not
+a machine that needs setting up.
+
+#### What you see, in a project
+
+A **risk map** printed beside the overlap list when a review re-checks its blast radius. Per changed
+file it names the riskiest thing you changed in it, how many flows run through it, and which of your
+changed functions it can find no test for — a shortlist of where to look hardest, nothing more. It
+also echoes `root`, so the output states **which repository it answered about**.
+
+#### Reviewing a project from the command centre
+
+Every review and audit door runs from here, so the tool has to be told which tree it is judging:
+
+```bash
+python3 .agents/scripts/risk_seam.py classify --repo "<the project worktree>" <paths…>
+```
+
+⛔ **Without `--repo` it reads whatever directory you are standing in** — the command centre — which
+has no graph, so it answers `unclassified` for every file and that looks exactly like a project whose
+index was never built. The four doors pass it for you; you would type this by hand only to look at a
+project's risk map directly.
+
+#### Three things worth knowing, because each one has bitten
 
 - **It is per machine and per workspace, and it goes stale.** It is not in git. A fresh clone, a fresh
-  worktree, or someone else's commits pulled down means the map no longer matches the code. The map
-  check (`/smh-update-maps-indexes`) notices and tells you; the fix is one command in that repo:
-  `code-review-graph update`.
+  worktree, or someone else's commits pulled down means the index no longer matches the code. The map
+  check notices and tells you; the fix is one command in that repo: `code-review-graph update`.
 - **Installing it is a per-machine step, like `gh` or `firebase`.** `pipx install code-review-graph`
-  on each machine, then `code-review-graph build` once in each repo you work in. The new-machine guide
-  carries both, including the one editor quirk that makes the tools silently absent on the Mac.
+  on each machine, then `code-review-graph build` once in each **project** you work in — never here.
+  The new-machine guide carries both, including the one editor quirk that makes the tools silently
+  absent on the Mac.
 - **It narrows where to look; it does not replace looking.** It is exact about who calls a normal
   function, and it gets confused when one file defines several nested functions with the same name.
   So a reviewer confirms a caller's identity before acting on it. That habit is written into the
   commands.
-- **In THIS repo, "no test" from the graph means nothing at all — and in a project repo it means "go
-  and check".** The graph links a test to its subject only when it can follow the import statically.
-  AviationChat's code is laid out that way, so it finds **3427** real links and a gap there is worth
-  chasing. The command centre's own tests all run their subject as a separate program or rewire the
-  import path first, so it finds **zero** — and therefore reports **every** function you changed as
-  untested, including the ones with thorough tests. Left unchecked that reads as a page of missing
-  tests that are not missing.
-
-  You do not have to remember which repo is which: the risk map prints `test_links`, the count of real
-  links it found. **Zero means ignore the "no test" column entirely.** A high number means treat it as
-  a shortlist to check. Either way the *risk* and *flow* columns are unaffected — the call graph works
-  fine in both repos; it is only the test half that is repo-dependent.
+- **Read `test_links` before you read the "no test" column.** The graph links a test to its subject
+  only when it can follow the import statically. AviationChat's code is laid out that way, so it finds
+  thousands of real links and a gap there is worth chasing. A repo whose tests run their subject as a
+  separate program finds **zero** — and then reports *every* changed function as untested, including
+  the thoroughly tested ones. The risk map prints the count so you never have to remember which repo
+  is which: **zero means ignore that column entirely.** The *risk* and *flow* columns are unaffected.
 
 Full reference — every tool, the freshness commands, the install recipe for both machines:
 [`docs/code-review-graph.md`](../code-review-graph.md).
+
+### The doc graph — what maps the command centre instead
+
+Because the code graph cannot read markdown, this repo is mapped by a **doc graph**: a link graph over
+every `.md` file under `.agents/` (the toolkit) and `docs/` (the procedure — every SOP and PRD,
+including this page). It answers *what references what*, and it is what catches a link that quietly
+stopped resolving when a file moved.
+
+It lives at [`docs/doc-graph.md`](../doc-graph.md) (readable) and `docs/doc-graph.json` (complete).
+**You never have to run it.** A `pre-commit` hook regenerates it — and the repo-map's generated
+block — on any commit that touches those two folders, and commits the result alongside your work.
+See "Maps refresh" below.
+
+Two counts are worth understanding when you read it. A **broken-path** reference contains a `/` and
+almost always means a real link that stopped resolving — that is the number that matters. A
+**bare-name** reference is a filename with no path (`walkthrough.md`), which is usually a workflow
+naming a file it will generate rather than linking to one; those are noise.
+
+### Maps refresh — the generated maps keep themselves current
+
+Two files in `docs/` are machine-written: the repo map's tree block, and the doc graph. They used to
+go stale between manual reconciliation runs, which is the worst state a map can be in — it is still
+read as if it were current.
+
+**They now refresh themselves.** A `pre-commit` hook regenerates both and adds them to your commit
+whenever you have touched `.agents/` or `docs/`. A commit that touches neither costs nothing.
+
+That leaves a clean split, and it is the point of the whole thing:
+
+| Layer | Who owns it |
+|---|---|
+| **Generated** — the tree block, the node and edge lists | the hook, on every commit |
+| **Curated** — one-line purposes, INDEX prose, the pointers in `AGENTS.md`, the hand-written blocks at the top of both files | you, via `/smh-update-maps-indexes` |
+
+A hook cannot write prose. What it buys you is that a drift report is now only ever about the half a
+person has to fix.
+
+**Two checks refuse work rather than warn about it.** They run as the commit message is written,
+not as the files are staged — because each has a recorded way out and a `pre-commit` hook cannot see
+a commit message:
+
+- **The broken-reference ratchet.** Your commit may not raise the count of broken references above
+  what it already was. It does not demand zero — there are stale links inside old migration guides —
+  it demands that you not add one. If you do, it names the new reference and the file it is in.
+- **Every door must be named in this page.** Add or rename a command in `.agents/commands/` without
+  giving it a line in this SOP and the commit is refused, naming the door. Retiring a door means
+  deleting its file, and a deleted door cannot be un-named.
+
+Putting **`[maps-ok]`** in the commit message re-baselines both checks for that one commit, and the
+token stays in the log forever — which is the point, the same way `[sop-ok]` works. Use it when the
+graph's **scope** changed (a new folder brought into it), never to wave a real broken link through.
+A mention of the token inside a `#` comment line does not count.
+
+If a commit slips past the hooks — a merge made on GitHub, a `git commit --no-verify`, or a clone
+where hooks were never armed — the **push** is refused instead, and the map check reports it as a
+failure. Either way the message tells you the one command that fixes it:
+
+```bash
+python3 .agents/scripts/refresh_maps.py --repair     # PC: python
+```
+
+`--verify` is the read-only form: it tells you whether the maps match the tree and changes nothing.
+
+Bypasses, if you genuinely need one: `git commit --no-verify` for a single commit, or creating
+`.agents/scripts/git-hooks/DISABLE` to turn the whole thing off on this machine.
 
 ## 9. The Task lane — work on the system itself
 
@@ -1867,6 +1949,7 @@ not change: the declared `case` must still name a case on the `FAILED:` line. De
 | A mutant that **removes nothing** is **DEFECTIVE** — a SKIP that **counts as a survivor** | SCC-144's `M3` commented out one `echo` of a two-line message; the second line still printed the asserted word, so the case passed **correctly**. Read as a coverage gap it buys a test for a hole that does not exist |
 | Mutants are **CODE-DERIVED**, never drawn from your own cases | case-derived mutants are circular — they prove only that the suite agrees with itself. Measured in SCC-144: its 14 case-derived mutants were all killed, and a later set drawn from the code left **24 of 25 surviving** — every survivor a hole the first sweep had reported as covered |
 | **RESTORE** in a `finally`/trap; never start dirty; re-check `git status` after | a `timeout`-killed sweep left a **mutated gate on disk, uncommitted** — and a mutated gate is committable. **Enforced by `mutation_sweep.py`**, which also names the file it refuses to start on |
+| The restore takes the **bytecode** with the source | restoring the text alone is not enough. Python caches the compiled mutant in `__pycache__`, and it decides that cache is current by comparing the source's *timestamp and size* — not its contents. A mutant the same length as the line it replaced, restored in the same second, satisfies both, so later runs execute code that no longer exists on disk: source clean, `git status` clean, sweep green, **behaviour still the mutant's**. `mutation_sweep.py` deletes the cache as part of every restore |
 | A kill must be attributable to the **DECLARED** case | a non-zero exit only says *something* died. `--case "E"` once matched 40 blocks and the sweep recorded "killed by case E" for a case that never ran alone (SCC-156 #1), so a kill needs the declared label on the `FAILED:` line |
 | The **FULL file runs unfiltered** before the next commit | `8681d83`: every scoped case green, the mutant still in the tree, and the bill was a red receipt, a diagnosis, a fix commit and another full suite run |
 
@@ -2085,7 +2168,7 @@ flowchart LR
 | `pre-push-main-approval.sh` | **Anything reaching `main` without a fresh, single-use sign-off.** The `pre-push` hook refuses a push landing on `main` unless a token minted for that exact sha is present, and the token is spent on use — so one approval buys exactly one push. It closed the hole where six merges rode a single sign-off. ⛔ **SCC-171 — it was broken on the PC, and it failed in the worst direction: it refused *everything*.** Both this and `mint-push-token.sh` took git's answer for "where is the shared git dir" and re-normalised it by hand, which is a no-op on the Mac and wrong on Windows — git-for-windows answers `C:/Users/…`, that does not look like a Unix absolute path, so the repo root got glued in front of it and the token was written to a folder that cannot exist. The gate then looked in the same impossible place, found nothing, and refused every push to `main`. **Every lane in this system is a worktree, and that is the case where it bites.** Worse, the minter never checked that the write worked: it printed `🔑 main-push token minted` and exited 0 with nothing on disk, so you were handed a success message and then a refusal that contradicted it. Both are now used as git gives them, and the minter asks the filesystem whether the token is actually there. ⛔ **SCC-172 — and three separate ways it said `✅ main push approved` without having checked anything.** (1) The rung that binds a token to the branch it names was the *only* one requiring the push to be a merge at all, and it was skipped whenever that branch did not resolve locally — so a **plain commit** pushed straight onto `main`, with a token naming a branch that never existed, was **approved**. Reachable with no ill intent: a fresh clone, the other machine, a lane pruned before the sign-off, a typo. (2) **Every** check lived inside "the remote already has a `main`", with nothing on the other side — so a push that **creates** `main` on a remote skipped the lot; measured as three stacked merges riding one token onto a bare remote, with a green banner. (3) A worktree cut before the gate existed has no hook to run, and the dispatcher allowed the push while *saying* it was unchecked — but `main` is shared, so whether landing on it was gated depended on **which directory you happened to be standing in**. All three now refuse, each naming its own reason rather than the shared banner, and each with a control proving the legitimate case still passes. **The suite was measuring from inside hole (2):** its fixtures drove every case through the no-remote-`main` arm, so the happy path was green *because of* the bug. *(Shipped 2026-08-10 by SCC-77; PC path + silent-write-failure closed 2026-08-16 by SCC-171; the three fail-opens by SCC-172.)* |
 | `pre-push-merge-backstop.sh` | **A lane quietly carrying another lane's unlanded work.** The row above and the merge-target guard both act on a *commit*; a **fast-forward** merge creates no commit, so nothing at commit time can see it — and SCC-97's own recovery deliberately used `--ff-only`, so that path is not hypothetical. What a fast-forward cannot hide is the evidence: another lane's commits are now inside yours. So when you push a `chore/*` or `claude/*` lane, this refuses if any **other** lane branch is contained in it and is **not** reachable from `origin/main`. **An `epic/*` counts as one of those "other" branches — but only for a `chore/*` lane (SCC-163).** — *and the history behind it, below.* |
 | `main_write_gate.py` | **A merge made on GitHub itself reaching `main` with no gate having run.** Everything in the row above happens on your computer, at `git push`; a merge performed in the browser or through the API happens on GitHub's servers and never touches your computer, so that hook is not bypassed — it is **absent**. This is the half that runs *there*, as a required check called `main-write-gate`: the real enforcement suite, the toolkit lint, and a check that the merge came from an `epic/*` or `chore/*` branch with a key this repo answers to (and, for a pre-flighted local merge, that `main` advances by exactly one merge of a genuinely pushed branch). — *and the history behind it, below.* |
-| `check_links.py` | **A doc that cites a file which is no longer there.** The clean-code floor had a `Link + anchor` row that named **no command** — the only prose row on a floor of scripts — so every agent improvised a matcher, and an improvised matcher is worse than none: one reported **31 unresolved paths of which ~30 were false**, because it did not know this repo cites scripts short (`tests/test_twin_parity.py` for `.agents/scripts/tests/test_twin_parity.py`). A gate that cries wolf thirty times teaches the reader to skip the one real hit. This resolves the claims a diff's markdown makes, against **seven** house conventions, each of which is a measured false positive from one of its own drafts: short citations · relative `../..` links · the **branch's** index rather than `main`'s (or every file the lane ADDED reads as dead) · gitignored assets that live only in the main checkout · URLs, placeholders, fenced examples and directories, which are not claims · child-project paths that `cicd-*` commands cite correctly and the lobby cannot resolve · and the narrative ledgers, where a row naming a deleted file is history — which includes `_artifacts/_main/active-context.md`, on `check_maps.py`'s authority rather than a preference: it carries `PRUNE_KEEP_BLOCKS = 10`, so the house already models a continuity brief as a dated log whose old end is **pruned**, never repaired. The cost of that one is written into the code: 11 real dead paths in the lobby's brief stop being reported, every one inside a 2026-07 block. It does not excuse a stale pointer in the LIVE header — those are prose, which no version of this checker ever read. ⛔ Its second draft shipped `lstrip("./")`, which takes a character SET and ate the leading dot off every `.agents/…` path — 168 false findings, and the identical trap `sop_currency.py` already carried a comment about. That case is pinned in `tests/test_check_links.py`, which also proves the checker still BITES: a dead path, a plausible-looking dead path, an out-of-range `#L` anchor and a reversed range are each asserted to be reported. ⛔ **It is a LOBBY script, and every door that cites the floor row says so.** The `smh-*` doors name the command; `/cicd-quick-dev` deliberately keeps prose, because a thin project's `.agents/scripts/` carries only `git-hooks/` and `tests/` — naming the command there would cite a file that is not on the target. *(SCC-285.)* |
+| `check_links.py` | **A doc that cites a file which is no longer there.** The clean-code floor had a `Link + anchor` row that named **no command** — the only prose row on a floor of scripts — so every agent improvised a matcher, and an improvised matcher is worse than none: one reported **31 unresolved paths of which ~30 were false**, because it did not know this repo cites scripts short (`tests/test_twin_parity.py` for `.agents/scripts/tests/test_twin_parity.py`). A gate that cries wolf thirty times teaches the reader to skip the one real hit. This resolves the claims a diff's markdown makes, against **seven** house conventions, each of which is a measured false positive from one of its own drafts: short citations · relative `../..` links · the **branch's** index rather than `main`'s (or every file the lane ADDED reads as dead) · gitignored assets that live only in the main checkout · URLs, placeholders, fenced examples and directories, which are not claims · child-project paths that `cicd-*` commands cite correctly and the lobby cannot resolve · and the narrative ledgers, where a row naming a deleted file is history — which includes `_artifacts/_main/active-context.md`, on `check_maps.py`'s authority rather than a preference: it carries `PRUNE_KEEP_BLOCKS = 10`, so the house already models a continuity brief as a dated log whose old end is **pruned**, never repaired. The cost of that one is written into the code: 11 real dead paths in the lobby's brief stop being reported, every one inside a 2026-07 block. It does not excuse a stale pointer in the LIVE header — those are prose, which no version of this checker ever read. ⛔ Its second draft shipped `lstrip("./")`, which takes a character SET and ate the leading dot off every `.agents/…` path — 168 false findings, and the identical trap `sop_currency.py` already carried a comment about. That case is pinned in `tests/test_check_links.py`, which also proves the checker still BITES: a dead path, a plausible-looking dead path, an out-of-range `#L` anchor and a reversed range are each asserted to be reported. ⛔ **It is a LOBBY script, and every door that cites the floor row says so.** The `smh-*` doors name the command; `/cicd-quick-dev` deliberately keeps prose, because a thin project's `.agents/scripts/` carries only `git-hooks/` and `tests/` — naming the command there would cite a file that is not on the target. It also skips **generated blocks** — the `REPO-MAP:AUTO-*` and `DOC-GRAPH:AUTO-*` sentinels. Those hold machine output, and the doc graph's block is a *report* whose job is to LIST the dangling references it found; read as links, the graph's 40 findings became 40 findings of this checker's own, in a file no human wrote a link into. *(SCC-285, SCC-288.)* |
 | `walkthrough_roster.py` | **A review that was narrated instead of run.** A walkthrough's `Verdict: PASS @ <sha>` was the *only* record a code review left behind — so a verdict written without a review looked exactly like one written after a thorough one, and merged just as cleanly. Found by SCC-163's own self-audit *while that lane was closing*, and nothing here could have caught it. Now the review must also record **which lenses ran and how they ended** (`ok` · `recovered-inline` · `dead`), and one parser reads that for both close-out paths — story lanes through `closeout_preflight.py`, Task lanes through `task_preflight.py`. Each caller hands it the verdict **its own** reader resolved, so the two gates cannot drift apart. ⛔ **It BLOCKS** (operator, 2026-08-15: *"I dont see a case in enterprise dev where a warn should make it to prod?"*). **Six** things stop a close: a verdict with **no roster at all** (that is UNKNOWN, not clean); a **PASS with a dead lens** (a lens that saw nothing cannot support a pass); a header declaring `review-runtime: inline` while a lens reports `ok` (the header and the data disagree); a Step 0.7 re-derivation shorter than its three lines; and **a lens recorded `n/a` under a declared `fan-out`** (SCC-203), or **an `n/a` with no reason**. **The last two close a hole the ruling itself opened.** Telling the engine to DROP a contaminated Blind Hunter rather than fake it was right, but a dropped lens is recorded on `lenses_na:` — a different field from the roster — so for a while the engine was writing a state nothing downstream could read, and a caller could drop the highest-value lens in the set and still gate green. A drop is legal only under `inline`, where the builder's own context is the reason; a fan-out hands every lens a clean context **by construction**, so "mine was contaminated" is not a claim that runtime can make. Run it, or declare the runtime honestly. **The exit is not a bypass — there is no `--force`.** It is the inline ladder: run the lenses inline, record `recovered-inline`, and take the **CONCERNS** floor. *CONCERNS + a dead lens is consistent and passes*, because that is the engine's own designed end state; if it blocked, a lane with one dead lens could never close and the gate would get routed around instead of used. Scope is a **fixed date, 2026-08-15** — 130 of 142 walkthroughs have no roster and are left alone, never backfilled. The date is literal rather than "today" on purpose: a moving cutoff would have exempted the very lane that built the check. **You can RUN it, and its refusal tells you which of three things happened (SCC-240).** `python3 .agents/scripts/walkthrough_roster.py <walkthrough.md>` *(PC: `python`)* prints everything it read — every lens and its state, `lenses_na`, the runtime header, `dispositions:`, `drift:`, the Step 0.7 line count. ⛔ **Bare, it answers ONE question — can the roster be READ?** — exit 0 yes, exit 1 naming which of the three things went wrong, exit 2 for a path it cannot read (missing, a directory, undecodable bytes; never a verdict about content). That narrowness is the point: both review commands run it at Step 4 **right after pasting the roster**, when `dispositions:`, `drift:`, Step 0.7 and the `Verdict:` line do not exist yet — so a full-gate run there would refuse on a missing `dispositions:` line and send the author hunting a fence that is not there, and with no stamp at all it would exit **0** on the fenced roster it exists to catch. Add **`--gate`** once the section is complete for the whole close-out judgement, with **`--verdict <V>`** when the stamp is not written. ⚠️ **A re-reviewed STORY lane must pass `--verdict`:** `--gate` reads the LAST `Verdict:` stamp, `closeout_preflight` reads the FIRST, so a FAIL-then-PASS file resolves differently in the two; Task lanes go through `task_preflight`, which reads the last and agrees. **The refusal used to be one sentence for three different failures**, and the other two are the ones that cost time: a roster **inside a code fence** (stripped before reading, SCC-154 — so the instruction's own example, copied verbatim, produced an invisible roster) and a header whose rows are **not contiguous** with it (a blank line ends the roster). Both now name themselves and say what to change; the genuinely-absent message is unchanged. Measured on SCC-210: two preflight round trips, ~12 minutes, on one lane that had done nothing wrong. *(SCC-173 + SCC-177 + SCC-240.)* |
 | `code-review-engine` → the review commands | **The roster the row above reads never getting written in the first place.** A gate that blocks on evidence is only worth what the surface upstream of it records — and until now the engine handed back `lenses_run: 5/5` as a single counted line, which is the engine's *claim* about itself in exactly the way `Verdict: PASS` is the caller's. Three changes close the loop. **(1)** The engine's return block is now the roster itself — one `- <lens> · ok | recovered-inline | dead` row per lens — and `/smh-code-review` and `/cicd-code-review` paste it into `## Code Review` **verbatim** at their Step 4. Summarising it back to "all lenses clean" deletes the only evidence that survives the chat. **(2)** Both review commands, and `/smh-quick-dev`, now **probe** at Step 0 whether this runtime can fan out to subagents and write `review-runtime: fan-out|inline` into the walkthrough header — probed, never assumed, because a headless pipeline or a platform with no subagent tool makes the answer `inline` and that is invisible until a lens fails to launch. ⛔ **The probe asks about CAPABILITY, never POLICY (SCC-203).** *Does a subagent tool exist here?* is the whole question; *am I allowed to use it?* is a different one, and answering it there is how a session directive — "Do not call the AgentTool unless the user requested it" — got read as "this runtime is inline", ran a whole review inside the builder's own context, and had the flow record that as legitimate. ⛔ **Quote that directive VERBATIM — it names the tool (SCC-285).** The real text is a constant compiled into the Claude Code binary and injected on Opus 5; five commands rebutted a paraphrase that did not name `AgentTool`, and an agent took the gap as an escape hatch and ran a whole review inline. There is no local lever to disable it. `.agents/scripts/tests/test_directive_quote.py` holds the line two ways: any QUOTATION that names a subagent/Agent-tool concept and carries an `unless` clause must be the verbatim directive (so a re-wording is caught without guessing at wording, and ordinary unquoted prose is never touched), and every rebutter must carry that quote **within the sentence that claims it is satisfied** — because presence-anywhere is satisfied by parking a copy in a comment while the rebuttal is deleted. **Subagents are the default and invoking the review command IS the request**, so you never have to ask for them — a `/` command **is** a user request, and that sentence is now in the law rather than left to be inferred. ⛔ **And there is a third door, because forbidding both moves left no legal one:** an agent that still believes it cannot launch a subagent may not record a bare `inline` — it writes `review-runtime: inline (blocked: <what blocked it>)`, which puts the belief where `walkthrough_roster.py` can see it instead of laundering it into a clean-looking `inline` (SCC-263, hit live on the lane that fixed it). ⛔ **Step 0, not Step 4:** recorded afterwards the header is read off the roster it exists to check, and the contradiction rule can never fire. **(3)** The engine reads that header — under `inline` the ladder runs **once**, blind lens first on the diff alone, every lens that ran recorded `recovered-inline`; ⛔ **and where that context is already contaminated — you are the builder, you hold the plan — the Blind Hunter is DROPPED rather than faked (SCC-203, operator ruling)**, recorded `n/a` with its reason and left out of the count, because a roster carrying a lens that ran without its defining property reports a review more independent than it was. It is the only lens that needs starvation; the other four are handed context on purpose. **The ladder** never tries the fan-out first "just in case" nor re-attempts it after, which would burn the budget twice and re-order the blind lens behind a loaded context. The blind lens *may* run concurrently with the suite, on one condition the walkthrough states: **the sha the lenses ran against and the sha on the receipt are the same value.** **(4)** `/cicd-code-review-AP` — the autopilot twin — runs the lenses inline **by design**, so it is the lane this header was written for: it now declares `review-runtime: inline` and records every lens as `recovered-inline`, which is what its own blind-lens-first ordering already required and never wrote down. *(SCC-173 + SCC-177.)* |
 | `tests/test_main_ruleset_armed.py` | **The GitHub half being switched off without leaving a trace in any commit.** The ruleset lives on the server and can be deleted or disabled from a browser; no file in this repo would change. This asks GitHub directly, on every suite run, and **fails hard** if the ruleset is missing, disabled, or has picked up a bypass actor — a bypass for "repository admin" would re-open the whole hole while still *looking* armed, because the agent merges as you. When it cannot reach GitHub at all (offline, no `gh`, no credentials) it prints `[SIGNAL]` and passes: that is refusing to claim knowledge it does not have, not a soft gate. |
@@ -2230,6 +2313,29 @@ AviationChat. The sprint holds the current batch, the backlog holds everything e
 links to its branches and commits through the key. How to drive it by hand:
 [jira_manual.md](jira_manual.md); why it's built this way:
 [jira_integration_guide.md](jira_integration_guide.md).
+
+**A ticket description is a FAST READ, never a plan.** Four short sections and nothing else:
+
+| Section | What goes in it |
+|---|---|
+| `Why:` | one paragraph, before any heading — the **problem**, not the solution |
+| `## Plan` | a checklist of **4-8 lines**, which renders as real Jira checkboxes you can tick |
+| `## Done` | empty at first; filled from the walkthrough when the work lands |
+| `## Files` | where the real plan lives in the repo, plus the plan file **attached** to the ticket |
+
+⛔ **The plan itself goes in `_artifacts/`, on the branch, and is ATTACHED to the ticket — never
+pasted into the description.** Pasting it hits Jira's size limit, goes stale the moment the plan is
+edited on the branch, and nobody reads it. The description's source is a small markdown file beside
+the plan (`_artifacts/_main/<folder>/tickets/<KEY>.md`) so it rides the lane and gets reviewed like
+anything else. `/smh-plan-task` writes and attaches it when it mints; `/smh-close-task-merge-tree
+--after-merge` ticks the checklist and fills `## Done` when it closes. The tool underneath is
+`.agents/scripts/jira_ticket.py`, and the full walk-through with every command is
+[jira_integration_guide.md](jira_integration_guide.md) §12.5.
+
+⚠ **Attaching a file needs an Atlassian API token — a one-time setup per machine, and only that one
+thing needs it.** `acli` cannot attach at all. Until you do it, uploading exits **5** and prints the
+instructions, while the description still lands normally:
+[jira-api-token-setup.md](../migrations/install_guides/jira-api-token-setup.md).
 
 **Any agent can read and write the board — live.** There is no "export it for me" step: every
 platform (Claude, Gemini, opencode, Codex, Antigravity) shells out to the authenticated `acli` CLI.
