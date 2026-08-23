@@ -107,7 +107,7 @@ block D fails both directions before either is believed.
 
 | Gate | Result |
 |---|---|
-| `run_all.py` **through `gate_receipt.py`** | **PASS exit=0**, `dirty_tree: false`. Receipt at `gates/suite.json`, **stamped at `2cfd576`** — the last code-bearing sha, after `origin/main` (SCC-281) was absorbed. The first stamp (`436a66e`) was **red** — the mechanism working, not a failure: it caught the missing `_artifacts/_main/INDEX.md` row. Two later stamps went stale as HEAD moved; all three receipts (suite, links, lint) are re-stamped **together**, every time, because three shas for one certification is not a certification. |
+| `run_all.py` **through `gate_receipt.py`** | **PASS exit=0**, `dirty_tree: false`. Receipt at `gates/suite.json`, **stamped at `dd772b2`** — the landing sha, after **two** rounds of absorbing `origin/main` mid-close-out (SCC-281 as PR #56, then SCC-294 as PR #57). The first stamp (`436a66e`) was **red** — the mechanism working, not a failure: it caught the missing `_artifacts/_main/INDEX.md` row. Two later stamps went stale as HEAD moved; all three receipts (suite, links, lint) are re-stamped **together**, every time, because three shas for one certification is not a certification. |
 | `test_directive_quote.py` | **31/31**, exit 0 (RED 10/16 first) |
 | `test_twin_parity.py` | **66/66**, exit 0 |
 | `test_walkthrough_roster.py` | **83/83**, exit 0 |
