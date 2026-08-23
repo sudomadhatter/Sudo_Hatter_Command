@@ -316,8 +316,27 @@ def manifest_landing(repo: Path, expect: str, branch: str) -> str | None:
     return value
 
 
+KEY_RE = re.compile(r"\b([A-Z][A-Z0-9]+-\d+)\b")
+
+
+def subject_keys(subject: str) -> frozenset[str]:
+    """Every Jira key NAMED in one commit subject - not just the one that leads it.
+
+    ⛔ SCC-282. This used to be `re.match` on the leading key only, and that collided with the
+    house convention rather than with the gate: every command body leads a subject with the
+    LANE's key (git-policy.md "lead the subject with the repo's Jira key"), so a consolidated
+    lane's commits all lead with the PARENT key and no rider was ever found. Live proof on main:
+    d9d9a9d reads "SCC-244 rider SCC-253: scripts/INDEX.md names a lever that is worth two
+    seconds" - it IS that rider's whole implementation, and the leading-key reader did not see
+    SCC-253 in it. The check fires at CLOSE-OUT, when every commit is immutable, so the only
+    exits were rewriting history or abandoning the partial declaration. A rider's evidence is
+    its key named ANYWHERE in a subject on the lane; `SCC-244 rider SCC-253: ...` and
+    `SCC-253 fix: ...` both count."""
+    return frozenset(k.upper() for k in KEY_RE.findall(subject))
+
+
 def lane_commit_keys(repo: Path, branch: str) -> frozenset[str]:
-    """Every Jira key that leads a commit subject on THIS lane, ahead of the mainline.
+    """Every Jira key NAMED in a commit subject on THIS lane, ahead of the mainline.
 
     The evidence half of `landing_mode: partial`. Declaring a rider says "this child's work is in
     this diff", and the ceremony flips it to Done on that word alone - so on a partial landing
@@ -333,9 +352,7 @@ def lane_commit_keys(repo: Path, branch: str) -> frozenset[str]:
         return frozenset()
     keys: set[str] = set()
     for line in log.stdout.splitlines():
-        m = re.match(r"\s*([A-Z][A-Z0-9]+-\d+)\b", line.strip())
-        if m:
-            keys.add(m.group(1).upper())
+        keys |= subject_keys(line)
     return frozenset(keys)
 
 
@@ -726,7 +743,8 @@ def check_children(key: str | None, rep: wf.Report,
         absent = sorted(r for r in riders if r not in lane_keys)
         if absent:
             rep.err("children", f"{key}: a partial landing flips ONLY riders whose work is on "
-                                f"this lane, and {', '.join(absent)} lead(s) no commit here - "
+                                f"this lane, and {', '.join(absent)} is/are named in no commit "
+                                f"subject here - "
                                 f"trim riders: to the subset that actually landed before you "
                                 f"close, and carry the rest into the next lane's task.yaml. "
                                 f"Never declare a ticket whose work is not real.")

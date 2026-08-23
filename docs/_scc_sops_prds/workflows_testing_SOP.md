@@ -1636,7 +1636,7 @@ points this lane's upstream at **main itself**.
 **Shipping before every part is built — partial landing.** Write `landing_mode: partial` into `task.yaml`
 and **trim `riders:` to the subset actually on the branch**. Then the trimmed riders flip, the
 **parent stays open**, and the remainder becomes the next lane. `task_preflight.py` checks every
-declared rider against the lane's commits and refuses one that leads no commit there; an unrecognised
+declared rider against the lane's commits and refuses one that is NAMED in no commit subject there — the key may sit anywhere in the subject, so the house shape `SCC-244 rider SCC-253: …` earns it (SCC-282; until then only the LEADING key was read and no rider on a consolidated lane could ever earn `partial`); an unrecognised
 `landing_mode:` **value** fails CLOSED, so a typo in the value blocks rather than relaxes.
 ⛔ The **key** is `landing_mode`, never `landing` — `task.yaml` already has a different `landing:`
 nested under each `secondary_repos:` entry, which is why the name was changed. A bare `landing: partial`
