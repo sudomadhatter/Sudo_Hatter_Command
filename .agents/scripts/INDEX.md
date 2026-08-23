@@ -25,7 +25,7 @@ Maintenance scripts (MASTER here): `check_maps.py` (drift linter), `generate_rep
 | `label_tasks.py` | which of this parent's children can run side by side, which are quick-dev sized — and is that answer still current? (SCC-56, two-mode since SCC-155) | `label_tasks.py plan --parent AVCH-13` · `label_tasks.py plan --parent SCC-99` · `label_tasks.py check --parent AVCH-13` |
 | `hooks_armed.py` | are this repo's git gates actually **running**, or silently off? (SCC-110) | `hooks_armed.py --repo . ` · imported by `task_preflight.py` |
 | `lane_qualify.py` | **which lane is this work in** — is it light enough to just do? (SCC-162) | `lane_qualify.py --paths docs/guide.md` · `lane_qualify.py --no-file-changes` |
-| `mutation_sweep.py` | did the mutant sweep really run — and did the tree come BACK? (SCC-179) | `mutation_sweep.py --table sweep.json` |
+| `mutation_sweep.py` | did the mutant sweep really run — and did the tree come BACK? (SCC-179) The restore takes `__pycache__` with it: a same-length mutant restored in the same second leaves bytecode Python still trusts (SCC-288) | `mutation_sweep.py --table sweep.json` |
 | `check_links.py` | does every Markdown path claim and `#L` anchor a diff touched actually RESOLVE? (SCC-285) | `check_links.py --base origin/main` |
 | `evidence_extract.py` | what does the code actually say — for a review that is already scoped? (SCC-123) | `evidence_extract.py --repo . --pack <files>` · `--findings <json>` |
 

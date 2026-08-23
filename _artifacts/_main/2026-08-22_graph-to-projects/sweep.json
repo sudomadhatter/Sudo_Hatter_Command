@@ -343,6 +343,30 @@
         "python3",
         ".agents/scripts/tests/test_refresh_maps.py"
       ]
+    },
+    {
+      "id": "M33 the restore leaves the mutant's bytecode behind",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "        for d in cache_dirs:\n            if d.is_dir():\n                shutil.rmtree(d, ignore_errors=True)",
+      "mutated": "        pass",
+      "case": "K7d and a fresh import runs the ORIGINAL behaviour, not the mutant's",
+      "block": "K7 \u00b7 SCC-288 \u00b7 the restore purges __pycache__, so no mutant bytecode survives",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_mutation_sweep.py"
+      ]
+    },
+    {
+      "id": "M34 the purge looks in the wrong place, so it clears nothing",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "    cache_dirs = sorted({(repo / f).resolve().parent / \"__pycache__\" for f in files})",
+      "mutated": "    cache_dirs = []",
+      "case": "K7c \u26d4 no .pyc predates the source it claims to cache",
+      "block": "K7 \u00b7 SCC-288 \u00b7 the restore purges __pycache__, so no mutant bytecode survives",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_mutation_sweep.py"
+      ]
     }
   ]
 }

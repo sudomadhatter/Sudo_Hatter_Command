@@ -77,6 +77,7 @@ from __future__ import annotations
 import argparse
 import json
 import signal
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -253,10 +254,26 @@ def main() -> int:
     pre_sha = git(["rev-parse", "HEAD"], repo).stdout.strip()
     snapshot = {f: (repo / f).read_bytes() for f in files}
 
+    # Every directory that could hold bytecode compiled from a file this sweep mutates.
+    cache_dirs = sorted({(repo / f).resolve().parent / "__pycache__" for f in files})
+
     def restore() -> None:
         for rel, blob in snapshot.items():
             if (repo / rel).read_bytes() != blob:
                 (repo / rel).write_bytes(blob)
+        # ⛔ RESTORING THE SOURCE IS NOT ENOUGH - THE BYTECODE HAS TO GO WITH IT (SCC-288).
+        # A test run against the mutant compiles it to `__pycache__/<mod>.cpython-XY.pyc`, and
+        # CPython decides that cache is current by comparing the source's (mtime, size) against
+        # the pair recorded inside the `.pyc` - a comparison a same-second restore can satisfy
+        # while the BYTECODE is still the mutant's. Found live at the SCC-288 close-out: after a
+        # green 32/32 sweep, `generate_doc_graph` kept running M16 ("the artifact carries an
+        # ABSOLUTE root again"), and the next `refresh_maps --repair` wrote that mutant's output
+        # into a TRACKED artifact. Source clean, `git status` clean, sweep green, artifact
+        # corrupt - a green that lies, and the sweep is the one tool that must never produce one.
+        # Deleting the cache costs one recompile and closes the class outright. K7 pins it.
+        for d in cache_dirs:
+            if d.is_dir():
+                shutil.rmtree(d, ignore_errors=True)
 
     def on_signal(signum, _frame):
         raise Terminated(f"signal {signum}")
