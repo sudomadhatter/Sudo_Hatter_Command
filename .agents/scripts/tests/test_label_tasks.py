@@ -382,8 +382,10 @@ def main() -> int:
     # ── SCC-295 · `lstrip("./")` was a CHARACTER SET, not a prefix ─────────────
     # Written to turn `./x.py` into `x.py`; it also ate the leading dot off every
     # hidden path. Two consumers, two consequences: the normalised string is joined
-    # into the board `evidence` field (`:897`/`:910`), AND it is the key the overlap
-    # math intersects (`:757`) - so `.agents/x` and `agents/x` collapsed into one.
+    # into the board `evidence` field built by `cmd_resolve`, AND it is the key the
+    # overlap math intersects in `conflict_graph` - so `.agents/x` and `agents/x`
+    # collapsed into one. ⛔ Named, not numbered: the first draft of these comments
+    # cited line numbers, and the diff that added them shifted every one by 21.
     dotted_dir = lt.source_paths({"paths": [".agents/scripts/risk_seam.py"]})
     c.check("SCC-295 A1 a dotted directory keeps its dot",
             dotted_dir == {".agents/scripts/risk_seam.py"}, str(dotted_dir))
@@ -414,11 +416,12 @@ def main() -> int:
     c.check("SCC-295 A3 a dotted path and its dotless twin are DIFFERENT keys",
             not (dotted & dotless), f"{sorted(dotted)} vs {sorted(dotless)}")
 
-    # `creates` feeds the SAME displayed, intersected set (`:715`).
+    # `creates` feeds the SAME displayed, intersected set - `source_paths` reads both
+    # `paths` and `creates` into one set.
     made = lt.source_paths({"creates": [".agents/scripts/new_helper.py"]})
     c.check("SCC-295 A5 a dotted `creates` entry keeps its dot too",
             made == {".agents/scripts/new_helper.py"}, str(made))
-    # `conflict_graph` carried a SECOND inline copy of this normalisation (`:758`)
+    # `conflict_graph` carried a SECOND inline copy of this normalisation
     # with nothing asserting the two agreed. One shared helper is the fix; this
     # pins the helper's contract directly, both directions.
     # ⛔ Resolved with getattr, on purpose. Calling `lt.norm_path` directly before the

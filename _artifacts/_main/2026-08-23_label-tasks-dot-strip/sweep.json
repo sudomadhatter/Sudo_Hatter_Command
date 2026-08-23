@@ -1,53 +1,72 @@
 {
-  "test": ["python3", ".agents/scripts/tests/test_label_tasks.py"],
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_label_tasks.py"
+  ],
   "mutants": [
-    {"id": "M1 revert to the character-SET strip (the original defect)",
-     "file": ".agents/scripts/label_tasks.py",
-     "original": "    s = str(p).strip()\n    while s.startswith(\"./\"):\n        s = s[2:]\n    return s",
-     "mutated": "    return str(p).strip().lstrip(\"./\")",
-     "unfiltered": true,
-     "case": "SCC-295 A1 a dotted directory keeps its dot"},
-
-    {"id": "M2 strip the prefix ONCE instead of repeatedly",
-     "file": ".agents/scripts/label_tasks.py",
-     "original": "    while s.startswith(\"./\"):",
-     "mutated": "    if s.startswith(\"./\"):",
-     "unfiltered": true,
-     "case": "SCC-295 A2b CONTROL a repeated `././` prefix is stripped WHOLE"},
-
-    {"id": "M3 drop one character instead of the two-char prefix",
-     "file": ".agents/scripts/label_tasks.py",
-     "original": "        s = s[2:]",
-     "mutated": "        s = s[1:]",
-     "unfiltered": true,
-     "case": "SCC-295 A2 CONTROL `./x.py` still normalises to `x.py`"},
-
-    {"id": "M4 match a bare dot instead of the ./ prefix",
-     "file": ".agents/scripts/label_tasks.py",
-     "original": "    while s.startswith(\"./\"):\n        s = s[2:]",
-     "mutated": "    while s.startswith(\".\"):\n        s = s[2:]",
-     "unfiltered": true,
-     "case": "SCC-295 A1 a dotted directory keeps its dot"},
-
-    {"id": "M5 drop the surrounding-whitespace strip",
-     "file": ".agents/scripts/label_tasks.py",
-     "original": "    s = str(p).strip()\n    while",
-     "mutated": "    s = str(p)\n    while",
-     "unfiltered": true,
-     "case": "SCC-295 A5b norm_path strips the `./` PREFIX and nothing else"},
-
-    {"id": "M6 leave conflict_graph's creates on its OWN inline copy",
-     "file": ".agents/scripts/label_tasks.py",
-     "original": "    creates = {k: {norm_path(c) for c in (touch.get(k) or {}).get(\"creates\") or []}",
-     "mutated": "    creates = {k: {str(c).strip().lstrip(\"./\") for c in (touch.get(k) or {}).get(\"creates\") or []}",
-     "unfiltered": true,
-     "case": "SCC-295 A5c an import of `.agents` matches a dotted `creates` entry"},
-
-    {"id": "M7 bypass normalisation entirely",
-     "file": ".agents/scripts/label_tasks.py",
-     "original": "    while s.startswith(\"./\"):\n        s = s[2:]\n    return s",
-     "mutated": "    return str(p)",
-     "unfiltered": true,
-     "case": "SCC-295 A2 CONTROL `./x.py` still normalises to `x.py`"}
+    {
+      "id": "M1 revert the whole helper to the character-SET strip",
+      "file": ".agents/scripts/label_tasks.py",
+      "original": "    s, prev = str(p).strip(), None\n    while s != prev:\n        prev = s\n        if s.startswith(\"./\"):\n            s = s[2:]\n        s = s.lstrip(\"/\").strip()\n    return s",
+      "mutated": "    return str(p).strip().lstrip(\"./\")",
+      "unfiltered": true,
+      "case": "SCC-295 A1 a dotted directory keeps its dot"
+    },
+    {
+      "id": "M2 drop the leading-slash strip (the regression the review caught)",
+      "file": ".agents/scripts/label_tasks.py",
+      "original": "        s = s.lstrip(\"/\").strip()",
+      "mutated": "        s = s.strip()",
+      "unfiltered": true,
+      "case": "SCC-295 A8 a leading `/` is the SAME key as its slashless spelling"
+    },
+    {
+      "id": "M3 drop the trailing whitespace re-strip",
+      "file": ".agents/scripts/label_tasks.py",
+      "original": "        s = s.lstrip(\"/\").strip()",
+      "mutated": "        s = s.lstrip(\"/\")",
+      "unfiltered": true,
+      "case": "SCC-295 A8c whitespace AFTER the prefix is stripped too"
+    },
+    {
+      "id": "M4 overshoot the prefix by one (s[3:]). \u26d4 The obvious mutant here, s[1:], is EQUIVALENT and was replaced: startswith('./') guarantees s[1] == '/', which the next line's lstrip('/') removes, so s[1:] and s[2:] are the same function. Proven exhaustively over 14 inputs \u2014 0 differ. A sweep cannot tell an equivalent mutant from a test gap; the human must.",
+      "file": ".agents/scripts/label_tasks.py",
+      "original": "            s = s[2:]",
+      "mutated": "            s = s[3:]",
+      "unfiltered": true,
+      "case": "SCC-295 A2 CONTROL `./x.py` still normalises to `x.py`"
+    },
+    {
+      "id": "M5 match a bare dot instead of the ./ prefix",
+      "file": ".agents/scripts/label_tasks.py",
+      "original": "        if s.startswith(\"./\"):",
+      "mutated": "        if s.startswith(\".\"):",
+      "unfiltered": true,
+      "case": "SCC-295 A1 a dotted directory keeps its dot"
+    },
+    {
+      "id": "M6 one pass instead of a fixed point",
+      "file": ".agents/scripts/label_tasks.py",
+      "original": "    s, prev = str(p).strip(), None\n    while s != prev:\n        prev = s\n",
+      "mutated": "    s, prev = str(p).strip(), None\n    for _ in range(1):\n        prev = s\n",
+      "unfiltered": true,
+      "case": "SCC-295 A2b CONTROL a repeated `././` prefix is stripped WHOLE"
+    },
+    {
+      "id": "M7 drop the empty-entry filter on creates",
+      "file": ".agents/scripts/label_tasks.py",
+      "original": "    creates = {k: {n for n in (norm_path(c) for c in (touch.get(k) or {}).get(\"creates\") or [])\n                   if n}",
+      "mutated": "    creates = {k: {n for n in (norm_path(c) for c in (touch.get(k) or {}).get(\"creates\") or [])}",
+      "unfiltered": true,
+      "case": "SCC-295 A10 an empty `creates` entry does not lock every lane"
+    },
+    {
+      "id": "M8 leave conflict_graph's creates on its own inline lstrip",
+      "file": ".agents/scripts/label_tasks.py",
+      "original": "{n for n in (norm_path(c) for c in (touch.get(k) or {}).get(\"creates\") or [])",
+      "mutated": "{n for n in (str(c).strip().lstrip(\"./\") for c in (touch.get(k) or {}).get(\"creates\") or [])",
+      "unfiltered": true,
+      "case": "SCC-295 A5c an import of `.agents` matches a dotted `creates` entry"
+    }
   ]
 }

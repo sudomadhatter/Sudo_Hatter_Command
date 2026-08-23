@@ -716,7 +716,7 @@ def norm_path(p) -> str:
     ⛔ This was `str(p).strip().lstrip("./")` at two sites, and `str.lstrip` takes a
     SET OF CHARACTERS, not a prefix. It was written to turn `./x.py` into `x.py`; it
     also ate the leading dot off every hidden path, and the damage was not cosmetic:
-    the string it returns is BOTH the `evidence` shown on the board (`verdicts_for`)
+    the string it returns is BOTH the `evidence` shown on the board (built in `cmd_resolve`)
     and the key `conflict_graph` intersects, so `.agents/x.py` and `agents/x.py`
     collapsed into one and two lanes touching different files read as a collision.
     Reproduced: `both touch agents/x.py`, locking a lane that had no overlap (SCC-295).
