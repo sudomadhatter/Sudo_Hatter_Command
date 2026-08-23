@@ -96,6 +96,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [Dev Record forks on `--story` slug](devrecord-story-slug-forks-the-record.md) — different slug creates duplicate record; check existing title.
 - [⭐ Memory is EVERY platform's, on every machine](memory-store-is-read-by-every-platform.md) — AGENTS.md §7 routes all models; memory audit due at 90%.
 - **Local plumbing** — [hooks live in .githooks](git-hooks-live-in-githooks-not-git-hooks.md) (.git/hooks silently inert) · [memory lives in repo](portable-memory-store-dot-slug-trap.md) (_artifacts/_memory/ + junction) · [PS console fakes mojibake](powershell-console-fakes-mojibake.md) (check bytes) · [PS `,@()` unrolls ONCE](powershell-comma-array-wrapper-unrolls-once.md) (bare assignment only).
+- [⛔ Sandbox denies `.claude/hooks` + `.claude/skills`](sandbox-denies-writes-under-dot-claude-hooks-skills.md) — breaks `git merge`/`checkout` for every lane and blocks `/smh-sync-agents` in-session (SCC-300).
 - [Claude notifications: Mac + phone](claude-notifications-mac-and-phone.md) — array schema required for hooks; phone notifications via ntfy mac-sudo-command.
 - [Antigravity SCM repo list](antigravity-scm-repo-list-collapses.md) — git.path shim unstacks; a click collapses the multi-repo view (cmd+alt+r restores).
 
