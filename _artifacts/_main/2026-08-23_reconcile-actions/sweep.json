@@ -133,7 +133,7 @@
    "file": ".agents/scripts/jira_feed.py",
    "original": "_GENERIC_EVIDENCE = frozenset({",
    "mutated": "_GENERIC_EVIDENCE = frozenset()\n_UNUSED_EVIDENCE = frozenset({",
-   "case": "A3i ...and the set is not empty, which would also satisfy the row above",
+   "case": "A3i ...and EVERY entry is genuinely refused, not just listed",
    "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
   },
   {
