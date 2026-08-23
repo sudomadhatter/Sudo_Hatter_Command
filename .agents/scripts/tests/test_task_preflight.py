@@ -22,7 +22,9 @@ itself. Commits use --no-verify: these fixtures must not inherit the machine's h
 """
 from __future__ import annotations
 
+import subprocess
 import sys
+from pathlib import Path
 
 from _harness import Cases, TempDir
 from _pf_fixtures import (MANIFEST, WALKTHROUGH, WALKTHROUGH_NO_ACTIONS, board, branch,
@@ -832,6 +834,52 @@ def main() -> int:
             c.check("CONTROL riders that really committed on the lane pass the trim check",
                     code == 1 and "clear to close out and merge" in out,
                     f"exit {code}: " + out.strip()[-600:])
+
+        with TempDir() as t:
+            # ⛔ SCC-282 · THE CONVENTION THE READER COULD NOT SEE. Every command body in this
+            # repo leads a commit subject with the LANE's key (git-policy.md: "lead the subject
+            # with the repo's Jira key"), and SCC-244 landed eight riders exactly that way -
+            # `SCC-244 rider SCC-253: ...`. lane_commit_keys() read only the LEADING key, so on
+            # a consolidated lane no rider was ever found and `landing_mode: partial` could not
+            # be earned by any commit the convention allowed. The check fires at CLOSE-OUT, when
+            # every commit is immutable - the only exits were rewriting history or abandoning
+            # the declaration. A rider's evidence is its key NAMED in a subject, anywhere.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            for k in ("SCC-21", "SCC-22"):
+                git(repo, "commit", "--no-verify", "-q", "--allow-empty",
+                    "-m", f"SCC-11 rider {k}: the rider's work, parent key leading")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            declare_manifest(repo, "riders: [SCC-21, SCC-22]\nlanding_mode: partial\n")
+            board(t, children=[("SCC-21", "In Progress"), ("SCC-22", "To Do")])
+            code, out = preflight(repo)
+            c.check("SCC-282 a rider NAMED in a subject the lane key leads earns its evidence "
+                    "(the house convention is not a declaration error)",
+                    code == 1 and "clear to close out and merge" in out,
+                    f"exit {code}: " + out.strip()[-600:])
+
+            # The pure function, on the LIVE proof: commit d9d9a9d on main reads
+            # "SCC-244 rider SCC-253: scripts/INDEX.md names a lever that is worth two seconds
+            # [sop-ok]" - it IS that rider's whole implementation, and the leading-key reader
+            # did not see SCC-253 in it. The verbatim subject is the fixture; when the sha is
+            # reachable from the repo under test, the live subject must still equal it.
+            sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+            import task_preflight as tp
+            fixture = ("SCC-244 rider SCC-253: scripts/INDEX.md names a lever that is worth "
+                       "two seconds [sop-ok]")
+            found = set(tp.subject_keys(fixture)) if hasattr(tp, "subject_keys") else set()
+            c.check("SCC-282 subject_keys() finds EVERY key in d9d9a9d's verbatim subject, "
+                    "not just the leading one",
+                    found == {"SCC-244", "SCC-253"}, f"found {sorted(found)}")
+            here = Path(__file__).resolve().parent
+            live = subprocess.run(["git", "log", "-1", "--format=%s", "d9d9a9d"], cwd=str(here),
+                                  capture_output=True, text=True)
+            if live.returncode == 0 and live.stdout.strip():
+                c.check("SCC-282 ...and the fixture IS the live subject of d9d9a9d",
+                        live.stdout.strip() == fixture, live.stdout.strip())
+            else:
+                print("   (d9d9a9d not reachable here - shallow clone; live read skipped, "
+                      "fixture still asserted)")
 
         with TempDir() as t:
             # `landing_mode: partial` with NOTHING left open is just a normal close - it must not
