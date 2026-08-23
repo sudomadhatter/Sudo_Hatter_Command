@@ -99,6 +99,7 @@
     { "from": "AvCh", "to": "Project" },
     { "from": "avch", "to": "project" },
     { "from": "SCC-", "to": "HISTORY-" },
+    { "from": "SCC", "to": "YOUR_KEY", "word": true },
     { "from": "NEXGen", "to": "YOUR_PROJECT" },
     { "from": "NEXgen", "to": "YOUR_PROJECT" },
     { "from": "DANIEL", "to": "THE OPERATOR" },
@@ -133,6 +134,8 @@
   "transforms": [
     { "path": ".agents/rules/operator-profile.md", "replaceWith": "replacements/operator-profile.md" },
     { "path": ".agents/maintained-projects.txt", "replaceWith": "replacements/maintained-projects.txt" },
+    { "path": "_artifacts/_memory/MEMORY.md", "replaceWith": "replacements/memory-MEMORY.md" },
+    { "path": "_artifacts/_memory/README.md", "replaceWith": "replacements/memory-README.md" },
     { "path": "router.md", "replaceWith": "replacements/router.md" },
     { "path": ".training-mode", "replaceWith": "replacements/training-mode-sentinel" },
     { "path": ".agents/jira.conf.example", "replaceWith": "replacements/jira-conf.example" },
@@ -155,6 +158,7 @@
       "clean-bmad",
       "sudo-command.atlassian.net"
     ],
-    "wordLiterals": ["Sully", "Igor", "AVCH"]
+    "wordLiterals": ["Sully", "Igor", "AVCH"],
+    "wholeWordLiterals": ["SCC"]
   }
 }

@@ -177,7 +177,7 @@ def main() -> int:
 
                 private_probe = target / "privacy-probe.txt"
                 private_probe.write_text(
-                    "Daniel AviationChat AVCH dlohneiss dlohn Sudos-MacBook-Pro.local "
+                    "Daniel AviationChat AVCH SCC dlohneiss dlohn Sudos-MacBook-Pro.local "
                     "SullySessionTelemetry igor_temp\n",
                     encoding="utf-8",
                 )
@@ -186,6 +186,11 @@ def main() -> int:
                     "shipped validator retains the source privacy denylist",
                     any("private literal" in finding for finding in private_findings)
                     and any("private alias" in finding for finding in private_findings),
+                    " | ".join(private_findings[:12]),
+                )
+                c.check(
+                    "shipped validator rejects the source Jira key",
+                    any("source Jira key" in finding for finding in private_findings),
                     " | ".join(private_findings[:12]),
                 )
                 private_probe.unlink()
@@ -238,7 +243,7 @@ def main() -> int:
         transcript = (proc.stdout or "") + (proc.stderr or "")
         c.check(
             "leak matcher self-test passes",
-            proc.returncode == 0 and "LEAK MATCHER SELF-TEST VALID (11/11)" in transcript,
+            proc.returncode == 0 and "LEAK MATCHER SELF-TEST VALID (12/12)" in transcript,
             transcript,
         )
 
@@ -331,9 +336,11 @@ def main() -> int:
             fixture = temp / "source"
             fixture.mkdir()
             (fixture / ".env").write_text(
-                "API_KEY=secretvalue12345 # production\n", encoding="utf-8"
+                "API_KEY='secret\\qwerty123456' # production\n", encoding="utf-8"
             )
-            (fixture / "payload.txt").write_bytes("secretvalue12345\n".encode("utf-32-be"))
+            (fixture / "payload.txt").write_bytes(
+                "secret\\qwerty123456\n".encode("utf-32-be")
+            )
             fixture_manifest = fixture / "manifest.json"
             fixture_manifest.write_text(
                 json.dumps(
@@ -367,8 +374,57 @@ def main() -> int:
                 "inline-comment secret is blocked without echoing it",
                 redaction_proc.returncode != 0
                 and "LEAK SCAN FAILED" in redaction_transcript
-                and "secretvalue12345" not in redaction_transcript,
+                and "qwerty123456" not in redaction_transcript,
                 redaction_transcript,
+            )
+
+        with TempDir() as temp:
+            fixture = temp / "source"
+            fixture.mkdir()
+            (fixture / "payload.txt").write_text("safe\n", encoding="utf-8")
+            (fixture / "replacement.txt").write_text("replacement\n", encoding="utf-8")
+            victim = temp / "victim.txt"
+            victim.write_text("keep\n", encoding="utf-8")
+            fixture_manifest = fixture / "manifest.json"
+            fixture_manifest.write_text(
+                json.dumps(
+                    {
+                        "name": "transform traversal probe",
+                        "source": ".",
+                        "include": ["payload.txt"],
+                        "transforms": [
+                            {"path": "../victim.txt", "replaceWith": "replacement.txt"}
+                        ],
+                        "leakScan": {"literals": [], "wordLiterals": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            traversal_proc = subprocess.run(
+                [
+                    "pwsh",
+                    "-NoProfile",
+                    "-File",
+                    str(exporter),
+                    "-Manifest",
+                    str(fixture_manifest),
+                    "-Target",
+                    str(temp / "public"),
+                ],
+                cwd=REPO,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+            traversal_transcript = (
+                (traversal_proc.stdout or "") + (traversal_proc.stderr or "")
+            )
+            c.check(
+                "transform destination traversal is refused without overwriting its sibling",
+                traversal_proc.returncode != 0
+                and "outside the export target" in traversal_transcript
+                and victim.read_text(encoding="utf-8") == "keep\n",
+                traversal_transcript,
             )
 
         with TempDir() as temp:
@@ -399,8 +455,8 @@ def main() -> int:
         original_exporter = exporter.read_text(encoding="utf-8")
         mutants = {
             "git-prefix boundary mutant is killed": original_exporter.replace(
-                "$candidatePath.StartsWith($directoryPrefix, [StringComparison]::OrdinalIgnoreCase)",
-                "$candidatePath.StartsWith($directoryPath, [StringComparison]::OrdinalIgnoreCase)",
+                "$candidatePath.StartsWith($directoryPrefix, $comparison)",
+                "$candidatePath.StartsWith($directoryPath, $comparison)",
                 1,
             ),
             "wildcard-secret matcher mutant is killed": original_exporter.replace(

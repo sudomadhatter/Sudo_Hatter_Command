@@ -83,7 +83,9 @@ the twin is an AVCH ticket of its own, not something a lobby lane may do.
 > from the lobby, a child project, or an extracted shell. The committed `.training-mode` ships on;
 > an ignored `.training-mode-off` stores the local choice, so `off` → `on` leaves tracked files clean.
 > Jira is also repo-bound: with no `.agents/jira.conf`, an agent reports that no board is configured
-> and stops before `acli` instead of letting ambient credentials choose the wrong project.
+> and stops before `acli` instead of letting ambient credentials choose the wrong project. A later
+> project binding declares both `JIRA_SITE` and `JIRA_KEYS`; the authenticated site from
+> `acli jira auth status` must match before the agent reads or writes that board.
 
 **I want to…**
 

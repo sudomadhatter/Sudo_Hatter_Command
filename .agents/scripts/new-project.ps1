@@ -41,12 +41,18 @@ Remove-Item -Recurse -Force (Join-Path $Dest ".git")
 Push-Location $Dest
 try {
   git init  | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "project git init failed (rc=$LASTEXITCODE)" }
   # Hooks are per-clone AND per-machine: git never carries core.hooksPath. Arm it now so the encoding
   # guard and the commit-msg Jira gate are live from the first commit. (The Jira gate stays SILENT
   # until .agents/jira.conf exists — see .agents/jira.conf.example for the 4-step arming procedure.)
   git config core.hooksPath .githooks | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "could not arm project git hooks (rc=$LASTEXITCODE)" }
   git add -A                            | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "could not stage the scaffold (rc=$LASTEXITCODE)" }
   git commit -q -m "chore: scaffold $Name from the thin project skeleton" | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "scaffold commit failed (rc=$LASTEXITCODE). Configure git user.name/user.email, then commit the staged scaffold in Projects/$Name; the tour must not report success until HEAD exists."
+  }
 } finally { Pop-Location }
 
 Write-Host ""
@@ -61,7 +67,8 @@ Write-Host "  3. Fill the placeholders: grep for '{{' and for '<PROJECT_NAME>' (
 Write-Host "     .agents/INDEX.md, _bmad-output/project-context.md, _my_resources/open_tasks/todo_list.md)."
 Write-Host ""
 Write-Host "  Optional, when it gets a Jira board: cp .agents/jira.conf.example .agents/jira.conf,"
-Write-Host "  set JIRA_KEYS, then touch .agents/scripts/git-hooks/JIRA-ENFORCE to arm REJECT mode."
+Write-Host "  set JIRA_SITE and JIRA_KEYS, confirm acli auth uses that site, then"
+Write-Host "  touch .agents/scripts/git-hooks/JIRA-ENFORCE to arm REJECT mode."
 Write-Host ""
 Write-Host "  Add it to .agents/maintained-projects.txt only if you want the lint to cover it."
 exit 0

@@ -54,8 +54,13 @@ function Test-IsWithinDirectory {
         [System.IO.Path]::GetFullPath($Directory)
     )
     $directoryPrefix = $directoryPath + [System.IO.Path]::DirectorySeparatorChar
-    return $candidatePath.Equals($directoryPath, [StringComparison]::OrdinalIgnoreCase) -or
-        $candidatePath.StartsWith($directoryPrefix, [StringComparison]::OrdinalIgnoreCase)
+    $comparison = if ([System.IO.Path]::DirectorySeparatorChar -eq '\') {
+        [StringComparison]::OrdinalIgnoreCase
+    } else {
+        [StringComparison]::Ordinal
+    }
+    return $candidatePath.Equals($directoryPath, $comparison) -or
+        $candidatePath.StartsWith($directoryPrefix, $comparison)
 }
 
 function Resolve-PhysicalPath {
@@ -95,6 +100,20 @@ function Resolve-PhysicalPath {
     return [System.IO.Path]::GetFullPath($current)
 }
 
+function Resolve-SafeTargetPath {
+    param([string]$Root, [string]$Relative, [string]$Purpose)
+    if ([System.IO.Path]::IsPathRooted($Relative)) {
+        throw "$Purpose path must be target-relative"
+    }
+    $candidate = [System.IO.Path]::GetFullPath((Join-Path $Root $Relative))
+    $physicalRoot = Resolve-PhysicalPath $Root
+    $physicalCandidate = Resolve-PhysicalPath $candidate
+    if (-not (Test-IsWithinDirectory $physicalCandidate $physicalRoot)) {
+        throw "$Purpose path resolves outside the export target"
+    }
+    return $candidate
+}
+
 function ConvertFrom-DotEnvValue {
     param([AllowNull()][string]$ValueText)
     if ($null -eq $ValueText) { return '' }
@@ -119,6 +138,34 @@ function ConvertFrom-DotEnvValue {
         return $result.ToString()
     }
     # dotenv treats a # after whitespace as an inline comment for an unquoted value.
+    return ($value -replace '\s+#.*$', '').Trim()
+}
+
+function ConvertFrom-DotEnvRawValue {
+    param([AllowNull()][string]$ValueText)
+    if ($null -eq $ValueText) { return '' }
+    $value = $ValueText.Trim()
+    if ($value.Length -ge 2 -and ($value[0] -eq '"' -or $value[0] -eq "'")) {
+        $quote = $value[0]
+        $result = New-Object System.Text.StringBuilder
+        $escaped = $false
+        for ($i = 1; $i -lt $value.Length; $i++) {
+            $char = $value[$i]
+            if ($escaped) {
+                [void]$result.Append('\')
+                [void]$result.Append($char)
+                $escaped = $false
+            } elseif ($char -eq '\') {
+                $escaped = $true
+            } elseif ($char -eq $quote) {
+                return $result.ToString()
+            } else {
+                [void]$result.Append($char)
+            }
+        }
+        if ($escaped) { [void]$result.Append('\') }
+        return $result.ToString()
+    }
     return ($value -replace '\s+#.*$', '').Trim()
 }
 
@@ -154,6 +201,9 @@ if ($SelfTestLeakMatcher) {
         @('real .git child is skipped', (Test-IsWithinDirectory (Join-Path $probeGit 'config') $probeGit), $true),
         @('.githooks is scanned', (Test-IsWithinDirectory (Join-Path $probeRoot '.githooks/hook.ps1') $probeGit), $false),
         @('.gitignore is scanned', (Test-IsWithinDirectory (Join-Path $probeRoot '.gitignore') $probeGit), $false),
+        @('case-distinct sibling obeys the host filesystem',
+          (Test-IsWithinDirectory (Join-Path $probeRoot.ToUpperInvariant() 'private.txt') $probeRoot),
+          ([System.IO.Path]::DirectorySeparatorChar -eq '\')),
         @('bracket secret matches literally', (Test-LiteralContains 'prefix secret[abc]token123 suffix' 'secret[abc]token123'), $true),
         @('bracket secret is not a wildcard', (Test-LiteralContains 'prefix secretatoken123 suffix' 'secret[abc]token123'), $false),
         @('unquoted dotenv comment is stripped', (ConvertFrom-DotEnvValue 'secretvalue123 # production'), 'secretvalue123'),
@@ -271,7 +321,7 @@ foreach ($inc in $m.include) {
 $lineTransformCount = 0
 if (-not $WhatIf) {
     foreach ($rule in (Get-ManifestList $m "lineTransforms")) {
-        $dest = Join-Path $Target $rule.path
+        $dest = Resolve-SafeTargetPath $Target ([string]$rule.path) 'Line-transform'
         if (-not (Test-Path -LiteralPath $dest -PathType Leaf)) {
             throw "Line-transform target missing: $($rule.path)"
         }
@@ -316,7 +366,7 @@ if (-not $WhatIf) {
         $dirs = @(Get-Item -LiteralPath $src) + @(Get-ChildItem -LiteralPath $src -Recurse -Directory -Force)
         foreach ($d in $dirs) {
             $r = $d.FullName.Substring($sourceRoot.Path.Length).TrimStart('\', '/')
-            $dest = Join-Path $Target $r
+            $dest = Resolve-SafeTargetPath $Target $r 'Structure'
             if (-not (Test-Path -LiteralPath $dest)) {
                 New-Item -ItemType Directory -Path $dest -Force | Out-Null
             }
@@ -327,7 +377,7 @@ if (-not $WhatIf) {
     # Top-level only: the folder exists, nothing inside it (its real subfolders are named
     # after the owner's projects, so recreating them would leak the names).
     foreach ($rel in (Get-ManifestList $m "emptyDirs")) {
-        $dest = Join-Path $Target $rel
+        $dest = Resolve-SafeTargetPath $Target ([string]$rel) 'Empty-directory'
         if (-not (Test-Path -LiteralPath $dest)) {
             New-Item -ItemType Directory -Path $dest -Force | Out-Null
         }
@@ -356,8 +406,12 @@ $subList = @(Get-ManifestList $m "substitutions")
 if (-not $WhatIf -and $subList.Count -gt 0) {
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     foreach ($file in Get-ChildItem -LiteralPath $Target -Recurse -File -Force) {
+        $relTextPath = $file.FullName.Substring(([System.IO.Path]::GetFullPath($Target)).Length).TrimStart('\', '/') -replace '\\', '/'
+        $isExtensionlessGate = $relTextPath.StartsWith('.githooks/') -or
+            $relTextPath.StartsWith('.agents/scripts/git-hooks/')
         if ($TEXT_EXT -notcontains $file.Extension.ToLower() -and
-            $TEXT_EXT -notcontains $file.Name.ToLower()) { continue }
+            $TEXT_EXT -notcontains $file.Name.ToLower() -and
+            -not $isExtensionlessGate) { continue }
         $text = [System.IO.File]::ReadAllText($file.FullName)
         $orig = $text
         foreach ($s in $subList) {
@@ -402,7 +456,7 @@ foreach ($t in (Get-ManifestList $m "transforms")) {
     $transformed.Add("$($t.path)  <-  $($t.replaceWith)")
     if ($WhatIf) { continue }
 
-    $dest = Join-Path $Target $t.path
+    $dest = Resolve-SafeTargetPath $Target ([string]$t.path) 'Transform'
     $destDir = Split-Path -Parent $dest
     if (-not (Test-Path -LiteralPath $destDir)) {
         New-Item -ItemType Directory -Path $destDir -Force | Out-Null
@@ -459,6 +513,7 @@ $needles = @(Get-ManifestList $m.leakScan "literals")
 # cries wolf ("Igor" inside "Rigor") - and a scanner that cries wolf gets muted, which is
 # the same outcome as having no scanner.
 $wordNeedles = @(Get-ManifestList $m.leakScan "wordLiterals")
+$wholeWordNeedles = @(Get-ManifestList $m.leakScan "wholeWordLiterals")
 
 # Every VALUE from the live .env, so a key that was pasted into a doc is caught even
 # though the .env itself was excluded.
@@ -467,9 +522,15 @@ if (Test-Path -LiteralPath $envPath) {
     foreach ($line in Get-Content -LiteralPath $envPath) {
         if ($line -match '^\s*[#;]') { continue }
         if ($line -notmatch '=') { continue }
-        $val = ConvertFrom-DotEnvValue (($line -split '=', 2)[1])
-        # Short values are common words, not secrets - they would only produce noise.
-        if ($val.Length -ge 12) { $needles += $val }
+        $valueText = ($line -split '=', 2)[1]
+        $values = @(
+            (ConvertFrom-DotEnvValue $valueText),
+            (ConvertFrom-DotEnvRawValue $valueText)
+        ) | Select-Object -Unique
+        foreach ($val in $values) {
+            # Short values are common words, not secrets - they would only produce noise.
+            if ($val.Length -ge 12) { $needles += $val }
+        }
     }
 }
 
@@ -521,6 +582,16 @@ if ($scanRoot -and (Test-Path -LiteralPath $scanRoot)) {
                 if ($text -match ('(?<![A-Za-z0-9])' + [regex]::Escape($n))) {
                     $hits += New-RedactedLeakHit -Kind content -MatchType word
                 }
+            }
+        }
+        # Jira keys are short enough that decoding UTF-8 bytes as every other supported
+        # encoding can manufacture a coincidental three-letter match. They are operational
+        # text, so check the actual UTF-8 view once; the longer privacy needles above still
+        # receive the multi-encoding scan needed for UTF-16/32 secrets.
+        $utf8Text = [System.Text.Encoding]::UTF8.GetString([System.IO.File]::ReadAllBytes($file.FullName))
+        foreach ($n in $wholeWordNeedles) {
+            if ($utf8Text -cmatch ('(?<![A-Za-z0-9])' + [regex]::Escape($n) + '(?![A-Za-z0-9])')) {
+                $hits += New-RedactedLeakHit -Kind content -MatchType word
             }
         }
     }

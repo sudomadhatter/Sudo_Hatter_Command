@@ -73,9 +73,10 @@ When you create a Jira site/project/board for that project:
 
 1. Copy `Projects/<name>/.agents/jira.conf.example` to
    `Projects/<name>/.agents/jira.conf`.
-2. Replace the placeholder site/key with that project's values.
-3. Add the workflow columns the SOP describes, including `To Do Next` if you want operator ranking.
-4. Arm that project's repo-local Jira enforcement marker only after the board works.
+2. Set `JIRA_SITE` and `JIRA_KEYS` to that project's values.
+3. Run `acli jira auth status` and confirm its active site matches `JIRA_SITE`.
+4. Add the workflow columns the SOP describes, including `To Do Next` if you want operator ranking.
+5. Arm that project's repo-local Jira enforcement marker only after the board works.
 
 Each project owns its board and key. This exported shell never points at the source owner's board.
 

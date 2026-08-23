@@ -186,6 +186,7 @@ checks are explicit:
 - NEW `.agents/commands/smh-training.md` — sentinel on/off/status control → 2
 - EDIT `.agents/rules/INDEX.md` — conditional training rule classification/trigger → 2
 - EDIT `.agents/rules/jira.md` — no-binding preflight for a fresh command center → 3, 4
+- EDIT `.agents/jira.conf` — bind the source lobby to both its site and key so the rule can reject an authenticated-site mismatch → 3, 4
 - NEW `.agents/rules/training-mode.md` — tutor behavior and live-source hard stop → 2
 - EDIT `.agents/scripts/INDEX.md` — exporter and validator inventory → 4, 6
 - NEW `.agents/scripts/export-teaching-edition.ps1` — current one-shell export, portable map generation, blocking validation → 4, 6
@@ -195,12 +196,15 @@ checks are explicit:
 - NEW `.agents/scripts/teaching-edition/lobby.manifest.json` — current include/exclude/transform/leak contract → 3, 4
 - NEW `.agents/scripts/teaching-edition/replacements/lobby-README.md` — naming, empty shell, named skeleton clone, first-project/Jira onboarding → 3, 4
 - NEW `.agents/scripts/teaching-edition/replacements/jira-conf.example` — generic optional binding only → 3, 4
+- NEW `.agents/scripts/teaching-edition/replacements/memory-MEMORY.md` — valid empty generic memory index for the generated shell → 3, 4
+- NEW `.agents/scripts/teaching-edition/replacements/memory-README.md` — generic memory-store operating contract without source-owner history → 3, 4
 - NEW `.agents/scripts/teaching-edition/replacements/maintained-projects.txt` — empty current lint worklist → 3, 4
 - NEW `.agents/scripts/teaching-edition/replacements/operator-profile.md` — generic current nine-obligation operator contract → 4
 - NEW `.agents/scripts/teaching-edition/replacements/router.md` — empty current routing shell → 3, 4
 - NEW `.agents/scripts/teaching-edition/replacements/training-mode-sentinel` — tutor ships on → 2
 - EDIT `.env.example` — generic command-center environment names/instructions, values absent → 4
 - EDIT `.gitignore` — keep the local training-off override from dirtying a fresh clone → 2, 3
+- EDIT `.agents/scripts/new-project.ps1` — refuse a false-success scaffold when git initialization or the first commit fails → 3, 6
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — branch-only teaching entry points; workflow remains canonical/live → 2, 5
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — teaching-branch SOP currency row → 2, 5
 - NEW (generated) `.agents/skills/smh-tour/SKILL.md` → 5
@@ -393,3 +397,21 @@ paths. Acceptance now includes 27 executable checks, required line-pruning of th
 row, physical containment of every included file, five text decoders including UTF-32BE, explicit
 worktree-tree exclusion plus validator rejection, and independent deny-list mutations for both
 machine identifiers. A new clean fan-out is required because this amendment changed the reviewed SHA.
+
+## Final-Review Amendment — export boundary and project binding
+
+The fan-out on `5da739e8` withheld PASS and reproduced eight final-boundary defects: the source Jira
+project key survived as a standalone operational token; Linux containment comparisons were
+case-insensitive; a quoted dotenv value containing a literal backslash could be decoded into the wrong
+secret; the fresh shell omitted a valid generic memory-store index; the tutor could imply that the
+source-only full suite was the generated-shell gate; manifest transform destinations could traverse
+outside the target; `/smh-new-project` could print success after a failed first commit; and Jira binding
+declared a project key without pinning the authenticated site.
+
+The fixes remain within the declared source binding, exporter, manifest/replacements, tutor,
+new-project script, validator, tests, generated mirrors, SOP, and artifact surfaces. Acceptance now
+requires a case-sensitive operational-key scan, OS-appropriate path comparison, raw and decoded dotenv
+needles, generic memory-store files, the generated-shell validator as Stop 1's explicit gate, a
+non-overwriting transform-traversal regression, an existing scaffold `HEAD`, and matching
+`JIRA_SITE`/`JIRA_KEYS` before any board operation. A fresh full review and receipt are required on the
+resulting SHA.

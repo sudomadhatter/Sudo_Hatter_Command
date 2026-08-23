@@ -50,10 +50,13 @@ say what the agent proposes, what the owner approves, and what survives to the n
 ## Stop 1 — verify the command-center shell
 
 Read SOP §10 and §14 plus `.agents/scripts/INDEX.md`. Verify Git, PowerShell 7, the platform's Python
-spelling, GitHub authentication, and the command-center test harness. Explain optional environment
-keys from `.env.example`; never request or echo secret values. State plainly: **this shell has no Jira
-board and no active Jira binding.** Checkpoint: the local gate runs and the owner knows which missing
-optional integration can safely remain missing.
+spelling, GitHub authentication, and the generated-shell gate. In a teaching export, run
+`python3 .agents/scripts/validate_teaching_edition.py .` (on Windows, use the available Python
+spelling); do **not** substitute the source repository's `tests/run_all.py` suite, whose source-only
+export tests are deliberately absent. Explain optional environment keys from `.env.example`; never
+request or echo secret values. State plainly: **this shell has no Jira board and no active Jira
+binding.** Checkpoint: the teaching validator passes and the owner knows which missing optional
+integration can safely remain missing.
 
 ## Stop 2 — ask for the first project name, then clone the paired skeleton
 
@@ -69,9 +72,10 @@ create/publish a GitHub repository without the owner's separate authorization.
 
 Jira remains optional. Only after this project actually has its own Jira site/project/board should the
 owner copy `Projects/<name>/.agents/jira.conf.example` to
-`Projects/<name>/.agents/jira.conf`, set that project's key, and arm its repo-local enforcement
-marker. Checkpoint: `Projects/<name>/AGENTS.md` exists, its local git history starts with the scaffold
-commit, and `router.md` reaches it.
+`Projects/<name>/.agents/jira.conf`, set that project's `JIRA_SITE` and `JIRA_KEYS`, verify the active
+site from `acli jira auth status` matches `JIRA_SITE`, and arm its repo-local enforcement marker.
+Checkpoint: `Projects/<name>/AGENTS.md` exists, its local git history starts with the scaffold commit,
+and `router.md` reaches it.
 
 ## Stop 3 — choose the right lane
 

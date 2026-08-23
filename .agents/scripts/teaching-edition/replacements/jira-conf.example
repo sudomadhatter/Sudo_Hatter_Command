@@ -2,6 +2,6 @@
 # A fresh command-center shell has no board and does not activate this example.
 # Copy this file to the PROJECT's .agents/jira.conf only after its board exists.
 # Keep this to plain shell assignments: the repo-local commit hook sources it.
-#
-# Site: https://YOUR-SITE.atlassian.net
+# The authenticated `acli jira auth status` site must match JIRA_SITE.
+JIRA_SITE="https://YOUR-SITE.atlassian.net"
 JIRA_KEYS="YOUR_JIRA_KEY"

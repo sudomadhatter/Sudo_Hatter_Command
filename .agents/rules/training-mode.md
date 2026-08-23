@@ -1,6 +1,8 @@
 ---
 name: training-mode
 description: "Tutor lane — active while the committed `.training-mode` exists and the ignored local `.training-mode-off` override does not. The person you are talking to is LEARNING this system, not operating it. Every answer is a teaching answer; explain before you execute; never invent a command. Supersedes `operator-profile` for as long as it is on, and nothing else."
+trigger: model_decision
+triggers: [training mode, teaching edition, smh-training, smh-tour, .training-mode]
 why: "The rule set assumes an operator who designed the system and delegates the how. A newcomer inverts that: they need the why behind every step, and an agent optimizing for the expert reader will move too fast, skip the reasoning, and lose them at the first gate."
 since: 2026-08-04
 ---

@@ -29,6 +29,7 @@ PRIVATE_LITERALS = (
 )
 
 PRIVATE_PREFIX_LITERALS = ("Sul" + "ly", "Ig" + "or")
+PRIVATE_WORD_LITERALS = ("S" + "CC",)
 
 LIVE_TUTOR_FILES = (
     "README.md",
@@ -69,6 +70,8 @@ REQUIRED_PATHS = (
     ".opencode/commands/smh-tour.md",
     ".opencode/commands/smh-training.md",
     "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "_artifacts/_memory/MEMORY.md",
+    "_artifacts/_memory/README.md",
 )
 
 RETIRED_PATHS = (
@@ -195,6 +198,8 @@ def validate(root: Path) -> list[str]:
             errors.append(f"tour missing current workflow hand-off: {token}")
     if "Projects/<name>/.agents/jira.conf" not in tour:
         errors.append("tour does not bind optional Jira inside the named project")
+    if "validate_teaching_edition.py ." not in tour or "do **not** substitute" not in tour:
+        errors.append("tour does not use the generated-shell validator at Stop 1")
 
     for rel in LIVE_TUTOR_FILES:
         path = root / rel
@@ -209,11 +214,15 @@ def validate(root: Path) -> list[str]:
     example = _text(root / ".agents/jira.conf.example", errors)
     if "YOUR_JIRA_KEY" not in example or "YOUR-SITE.atlassian.net" not in example:
         errors.append("Jira example is not an inert site/key template")
-    if 'JIRA_KEYS="SCC"' in example or "sudo-command.atlassian.net" in example:
+    source_jira_key = "S" + "CC"
+    if f'JIRA_KEYS="{source_jira_key}"' in example or "sudo-command.atlassian.net" in example:
         errors.append("Jira example leaks the source command center binding")
     assignments = [line.strip() for line in example.splitlines()
                    if line.strip() and not line.lstrip().startswith("#") and "=" in line]
-    if assignments != ['JIRA_KEYS="YOUR_JIRA_KEY"']:
+    if assignments != [
+        'JIRA_SITE="https://YOUR-SITE.atlassian.net"',
+        'JIRA_KEYS="YOUR_JIRA_KEY"',
+    ]:
         errors.append("Jira example contains active or extra assignments")
     sites = re.findall(r"https://([^/\s]+\.atlassian\.net)", example, flags=re.IGNORECASE)
     if sites != ["YOUR-SITE.atlassian.net"]:
@@ -237,6 +246,10 @@ def validate(root: Path) -> list[str]:
     sync_manifest = _text(root / ".agents/.sync-manifest.json", errors)
     if "sentry-security-team-" in sync_manifest:
         errors.append("sync ownership manifest claims an excluded incident door")
+
+    new_project = _text(root / ".agents/scripts/new-project.ps1", errors)
+    if "scaffold commit failed" not in new_project or "until HEAD exists" not in new_project:
+        errors.append("new-project scaffold can report success without a first commit")
 
     sop = _text(root / "docs/_scc_sops_prds/workflows_testing_SOP.md", errors)
     command_index = _text(root / ".agents/commands/INDEX.md", errors)
@@ -275,6 +288,16 @@ def validate(root: Path) -> list[str]:
                 if re.search(rf"(?<![A-Za-z0-9]){re.escape(prefix)}", text,
                              flags=re.IGNORECASE):
                     errors.append(f"private alias in exported content: {rel} ({prefix})")
+        try:
+            operational_text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            operational_text = ""
+        for word in PRIVATE_WORD_LITERALS:
+            if re.search(
+                rf"(?<![A-Za-z0-9]){re.escape(word)}(?![A-Za-z0-9])",
+                operational_text,
+            ):
+                errors.append(f"source Jira key in exported content: {rel}")
 
     return sorted(set(errors))
 
