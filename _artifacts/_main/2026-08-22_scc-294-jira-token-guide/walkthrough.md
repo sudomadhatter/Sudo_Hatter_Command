@@ -128,8 +128,42 @@ so the armed `commit-msg` gate had nothing to demand — and none of the three c
   transitions the ticket: SCC-294 is a **Task with no subtasks**.
 - `worktree` — expected since SCC-62. Step 5 prunes it.
 
-Gates ran at `ae5dc26`; only the artifacts-only flight-event commit follows, and freshness here is
-content-based, so `ae5dc26` is the tree that lands.
+## ⚠ Landing order — another lane landed while this PR was open
+
+**PR #57 came back `CONFLICTING`, and the lane was not wrong** — SCC-281 landed as PR #56 while this
+PR sat waiting. One file overlapped, and it is the predictable one: both lanes appended a row to
+`_artifacts/_main/INDEX.md` for the same date. That is the exact collision SCC-271 recorded, and the
+resolution is the same — **keep BOTH rows, newest first**, and count rather than eyeball:
+
+```
+common base a634c35   -> 179 rows
+this lane             -> 180  (+1, SCC-294)
+origin/main           -> 180  (+1, SCC-281)
+resolution (c149f71)  -> 181
+```
+
+`INDEX.md` was the **only** file the two lanes both touched; everything else auto-merged. Dropping
+either row is the silent, unrecoverable index loss the guard exists to stop.
+
+⭐ **SCC-281 also edited this very door and `task_preflight.py`** — which is why the door tells you to
+check that the copy you are following is current. Its change is Step 4's rider-evidence clause (a
+rider must be *named in a commit subject* to be declared); this lane declares no riders, so it does
+not apply. Read, not assumed.
+
+**Gates re-run bare on the ABSORBED tree** (`c149f71`), because the tree that merges is not the tree
+they first ran on:
+
+```
+run_all.py                                    -> exit 0, 52/52 files passed
+workflow_lint.py --toolkit-only               -> exit 0, 0 error(s), 0 warning(s), 8 info
+check_maps.py --depth3-only --strict          -> exit 0, silent
+task_preflight.py --fetch --expect-key SCC-294 -> exit 1  VERDICT: clear to close out and merge
+                                                 origin/main fully absorbed · 0 error(s), 2 warning(s)
+```
+
+⭐ The re-run preflight also refused to let the neighbour's evidence stand in for this lane's:
+*"verdict stamp(s) exist only in 1 walkthrough(s) whose `task.yaml` does not declare SCC-294 —
+foreign evidence never gates this lane; the full gate runs."* Exactly right.
 
 ## What was NOT done
 
@@ -142,6 +176,8 @@ verified. A guide that claims coverage it does not have is worse than one that a
 - [x] The merge itself — lands via this branch's PR.
 - [x] The guide, the three kit edits and the repo-map regen — done and listed above.
 - [x] The live token — created, stored, verified on both paths, expiry recorded on SCC-294.
+- [x] The `_artifacts/_main/INDEX.md` collision with SCC-281 — resolved on this lane, both rows
+      kept, counted (179 → 181).
 
 **Nothing is owed on this ticket.** SCC-294's deliverable is the *document*, and the document is
 written, verified against a live token and attached to the ticket.
