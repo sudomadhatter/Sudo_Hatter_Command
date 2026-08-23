@@ -55,25 +55,52 @@ mandatory SOP edit and its own tests. It is written down where the next lane wil
 
 ## Gates
 
-Bare, never piped — each line carries its own exit code:
+Bare, never piped — each line carries its own exit code, on the **absorbed** tree (`52273a4`):
 
 ```
-task_preflight.py --fetch --expect-key SCC-296 -> exit 1  VERDICT: clear to close out and merge
+task_preflight.py --fetch --expect-key SCC-296 -> exit 0  VERDICT: clear to close out and merge
                                                   LANE: LOCAL · 0 error(s), 1 warning(s)
                                                   children: SCC-296: no subtasks (board reachable)
-run_all.py                                     -> exit 0, 52/52 files passed
+run_all.py                                     -> exit 0, 54/54 files passed
 workflow_lint.py --toolkit-only                -> exit 0, 0 error(s), 0 warning(s), 8 info
 check_maps.py --depth3-only --strict           -> exit 0, silent
+check_links.py --base origin/main              -> exit 0, 4 files, 125 path claims, clean
 ```
 
-The single warning is the worktree, which Step 5 prunes. `docs/migrations/` and
-`_artifacts/` are not SOP usage surfaces, so no SOP hunk was owed and no commit here
-carries `[sop-ok]`.
+The single warning is the worktree, which Step 5 prunes. `_artifacts/` is not an SOP usage
+surface, so no SOP hunk was owed and no commit here carries `[sop-ok]`.
+
+⭐ **`check_links.py` is run, not improvised.** SCC-285 landed it *during* this lane and the
+close-out door now says so in as many words — *"Run the command; never improvise a matcher. An
+improvised one reported 31 unresolved paths of which ~30 were false."* SCC-294, an hour earlier,
+used a hand-rolled matcher. It happened to agree (0 broken), but agreeing by luck is not the same
+as being right, and this lane used the real one.
+
+## ⚠ Landing order — the SAME collision, twice in one night
+
+**SCC-285 landed as PR #58 while this lane was being built**, and before that SCC-281 landed as
+PR #56 during SCC-294. Both times the conflict was one file and the same file:
+`_artifacts/_main/INDEX.md`, because two lanes appended a row for the same date. Both times the
+resolution is *keep both rows, and count*:
+
+```
+common base be61799   -> 181 rows
+this lane             -> 182  (+1, SCC-296)
+origin/main           -> 182  (+1, SCC-285)
+resolution (52273a4)  -> 183
+```
+
+That file was the only overlap; everything else auto-merged. SCC-285 also edited **this lane's own
+close-out door** and added `.agents/scripts/check_links.py` — which is why the door tells you to
+check that the copy you are following is current, and why the preflight was re-read after the
+absorb rather than assumed unchanged.
 
 ## Your Actions
 
 - [x] The merge itself — lands via this branch's PR.
 - [x] The memory file and its single index line — carried onto the lane and committed here.
 - [x] The shared checkout — restored, and only the files this session wrote were removed from it.
+- [x] The `_artifacts/_main/INDEX.md` collision with SCC-285 — resolved here, both rows kept,
+      counted (181 → 183).
 
 Nothing is owed. The `jira_feed.py` scrape defect above is recorded for a later lane, not held here.
