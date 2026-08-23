@@ -167,3 +167,110 @@ presented as a red is not. The sweep (M3, M11, M13) is what proves they bite.
       lane synced only the in-repo mirrors (`-NoGlobals`), deliberately, because it had not landed.
       The machine-global caches still carry the pre-SCC-298 text, and opencode needs a restart to
       rebuild its catalog either way.
+
+---
+
+## Code Review (2026-08-23)
+
+Verdict: CONCERNS @ 2804483
+Suite evidence measured @ `23c47d73` — `run_all.py` **59/59 files, exit 0**, 85.6 s, clean tree.
+
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted:  5/5
+lenses_na:
+- none — `review_mode: full` (the plan's acceptance table is the spec), so every lens was applicable
+
+dispositions:    per-lens: blind=7/2/0 · edge=8/0/0 · literal=5/0/0 · acceptance=8/0/0 · test-adequacy=12/0/0 (a multi-lens finding counts once per contributing lens; 5 anchors were reached by 2+ lenses and are merged in the table below)
+drift:           undeclared=0 · unimplemented=0 · incomplete=0 — seven generated files (four `.opencode` mirrors, the sync manifest, the doc-graph pair) were undeclared at first pass and are now named in the block with their reasons
+
+**Scope:** `origin/main...HEAD`, 24 files. **Method:** `review_level: standard`, `review_runtime:
+fan-out`, `lens_budget: standard`. Five lenses in parallel clean contexts; the Blind Hunter was fed
+the diff text from outside the repo and never opened it.
+
+**Changes applied: many — see the table.** Every finding that survived the relevance gate was fixed
+in this lane before this verdict. No finding left as future work; no ticket minted.
+
+### Why CONCERNS and not PASS
+
+Every gate is green at the shipping sha and every acceptance row is evidenced. The verdict is
+CONCERNS because of **what the review had to find**, not what remains: two of the findings were
+**critical and reproduced**, both in code this lane had already declared green, and the lane's own
+RED run, its 16-mutant sweep and a 456-case suite were all green over them. A verdict of PASS would
+say the process caught its own defects. It did not — the fan-out did.
+
+### Findings
+
+| # | file:line | severity | failure scenario | disposition |
+|---|---|---|---|---|
+| F1 | `jira_feed.py` `evidence_ok`/`tick_row` (edge ×1, literal ×1) | **critical** | Evidence containing a newline was written verbatim. A line starting `## ` ends the section for `_collect`; a stray fence hides the rest of the file. `open_actions` returns `[]` not `None`, `finish` takes the "nothing owed" path and **closes the ticket over unchecked rows** — while the verb prints *"is now CLEAR"*. Reproduced twice. | **applied @ `815a4b0`** — `_CONTROL_RE` refuses any control char; `--date` validated the same way |
+| F2 | 4 × `.agents/commands/*.md` (acceptance, blind, literal) | **critical** | The reconcile step sat beside the `finish` call — inside `smh-close-task-merge-tree` **Step 4**, whose first line is *"After the merge, never before"*, with Step 5 pruning the worktree. `cmd_finish` reads the **working tree**, so the tick clears the hold and Jira goes `Done` while the landed copy keeps `- [ ]`. The lane would have shipped the defect it exists to fix. | **applied @ `dafa066`** — moved into each door's pre-landing window; `CS-17 G` asserts the order and was **proven to bite** |
+| F3 | `jira_feed.py` `cmd_reconcile_actions` (blind) | **important** | The verb counted the MERGE row as open — a row it refuses to tick and that `finish` clears from the repo. Almost every walkthrough has one, so it could essentially never reach 0 and would report a finished lane as HELD. Live in this lane's own dogfood run. | **applied @ `815a4b0`** — the count is settleable rows only |
+| F4 | `jira_feed.py` `tick_row` (blind, edge) | **important** | The listing's own *"DELETE the row"* tag shifts every row below it; the next tick then settles a **different** obligation with evidence that was never about it, and `--tick`'s only guard was "is this line open" — which it is. | **applied @ `815a4b0`** — `--expect` verifies the row, banner warns to re-list after a delete, docstring names its precondition |
+| F5 | `jira_feed.py` `tick_row` (acceptance) | **important** | The proof was appended to the checkbox line, splicing machine text through the middle of a wrapped row and orphaning the rest. Fires on **this lane's own walkthrough**. | **applied @ `dafa066`** — `_collect` carries the row's end line |
+| F6 | `jira_feed.py` read/write path (edge, literal, blind) | **important** | The verb rewrites the whole file through a lossy reader: an undecodable byte became **U+FFFD permanently**, a BOM was swallowed, CRLF was rewritten wholly to LF. All three reproduced. | **applied @ `815a4b0`** — `wf.read_exact`/`write_exact`, the pair the repo already ships for this |
+| F7 | `jira_feed.py` `tick_row` (edge, literal) | **important** | Evidence naming a merge door **manufactured** a merge row out of an ordinary one, so `finish` re-opened a row the file never contained. | **applied @ `815a4b0`** |
+| F8 | `jira_feed.py` `tick_row` (edge) | **important** | `splitlines` breaks on `\v \f \x85    `; `rstrip("\r\n")` knew two of them, so an exotic separator was dropped on write — two rows welded and the open one below vanished. | **applied @ `815a4b0`** — the terminator comes from the line, via the reader's own splitter |
+| F9 | `test_command_surfaces.py` CS-17 (acceptance) | **important** | Presence, length, byte-equality and a law citation cannot see **order** — all six rows were green over F2. `source-grep-guards-cannot-see-order`, in a guard written in this lane while that memory was on screen. | **applied @ `dafa066`** — `CS-17 G`, with an anti-vacuity row because `-1 < 5` is True |
+| F10 | `jira_feed.py` `_EVIDENCE_TRIM` (test-adequacy) | **important** | Emptying the decoration strip survived all 462 cases: the code's own claim that *"a deny-set is defeated by adding a full stop"* was unpinned. | **applied @ `815a4b0`** — `A3n` |
+| F11 | `jira_feed.py` `_TICK_RE` (test-adequacy) | **important** | Narrowing it to `^(- )\[\s\]` survived 462 cases — every fixture was a flush `- [ ]`, so the two regexes' agreement was untested. | **applied @ `815a4b0`** — `A2e` |
+| F12 | `jira_feed.py` (test-adequacy ×3) | suggestion | Three guards with no case at all: the missing-walkthrough refusal, the listing's guidance tags, and the `-- verified` marker + date. Each survived as a mutant. | **applied @ `815a4b0`** — `A1g`, `A1h`, `A2f` |
+| F13 | `jira_feed.py` `evidence_ok` (test-adequacy) | suggestion | The punctuation-only branch decided nothing — `if False:` survived, because the floor already refuses anything normalising to `""`. | **applied @ `815a4b0`** — **deleted**, not kept with a nicer message |
+| F14 | `jira_feed.py` `open_actions` (test-adequacy) | suggestion | SCC-155's "every section, not just the first" fix existed in **two copies** with nothing asserting they agreed. | **applied @ `815a4b0`** — `open_actions` delegates; `A1i` pins it |
+| F15 | `test_command_surfaces.py` `CLOSING_DOORS` (test-adequacy) | suggestion | A hand-written four-name tuple cannot enforce §4's *"every command that runs `jira_feed.py finish`"*; a fifth door would pass in silence. | **applied @ `815a4b0`** — derived from the tree by the real call |
+| F16 | plan `## Design`, `INDEX.md`, SOP fence (acceptance, blind) | suggestion | The plan described the em-dash marker and a deny-set of short words the lane does not ship; an unescaped `\|` truncated the INDEX row at `--source measured`; a run of spaces replaced a `\` continuation in the SOP. | **applied @ `815a4b0`, `2804483`** |
+| — | `_MIN_EVIDENCE_CHARS`/`_WORDS` (blind) | suggestion | **dismissed — relevance leg 1.** The floor refuses `exit 0` and `HTTP 200`. Deliberate: those name no subject, so they are not checkable by a later reader, and the refusal message says exactly how to fix it. One reword, no blocked flow. The tension with *"over-refusing is not recoverable"* is real and is recorded rather than resolved by loosening the floor. |
+| — | blank line before the block in one door (blind) | nitpick | **dismissed — moot.** The block moved in F2; all four now sit at a paragraph boundary. |
+
+### Gates at the shipping sha
+
+| Gate | Result |
+|---|---|
+| `run_all.py` via `gate_receipt` | **PASS, exit 0, 85.6 s @ `23c47d73`**, `dirty_tree: false` |
+| `test_jira_feed.py` | **502/502** · the SCC-298 block **83/83** |
+| `test_command_surfaces.py` | **214/214** · `CS-17` **17/17** |
+| `mutation_sweep.py --table sweep.json` | **30/30 killed**, restore verified byte-identical, both closing unfiltered runs exit 0 |
+| `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, 8 info |
+| `check_links.py --base origin/main` | exit 0, clean |
+| `sop_currency.py` | exit 0 |
+| `declared_change_set.py diff` | undeclared 0 · unimplemented 0 · incomplete 0 |
+
+### Acceptance matrix
+
+| Row | Proving assertion | Result |
+|---|---|---|
+| A1 | exit 3 with padded `L<n>` per open row; settled rows and `## Task Checklist` invisible; empty section exits 0; **`A1e`** a merge row alone exits 0 like `finish`; **`A1c`** no section is a refusal both ways | **satisfied** |
+| A2 | one line changes for a flat row, **`A2b`** two for a wrapped one with the count preserved; **`A2c`** BOM/CRLF/undecodable bytes survive; **`A2e`** indent and `*` bullets; **`A2f`** marker and caller's date | **satisfied** |
+| A3 | seven refusals, each `exit 2` **with the `jira-feed: REFUSED` marker** and `read_bytes()` unchanged, plus an accept-control | **satisfied** |
+| A4 | `CS-17` A–G over a **derived** door set: non-empty block, >200 chars, byte-equal, names the verb, cites the law, **and ordered before the landing** | **satisfied** |
+| A5 | tick the only open row → `open_actions()` `[]` → re-list exits 0 | **satisfied** |
+| A6 | clause 4 in the rule; `CS-17 F` × 4 | **satisfied** |
+| A7 | `mutation_sweep` **30/30**, every mutant drawn from the code and killed by a NAMED case | **satisfied** |
+
+### Step 0.7 — re-derivation
+
+1. **Nothing this diff references moved.** `origin/main` is still `0ec1fe4` — the exact base this lane branched from, so zero files landed while it was built. All ten repo paths the diff names were re-resolved and exist.
+2. **True overlap: none.** `merge-base..origin/main` is empty; `git merge-tree --write-tree HEAD origin/main` returned a clean tree (`413b2f37`) with no conflict messages.
+3. **One live sibling: SCC-280** (`claude/teaching-edition`), uncommitted, touching `docs/_scc_sops_prds/workflows_testing_SOP.md` and `.agents/.sync-manifest.json` — both of which this lane also stages. **This lane should land first**: it is complete and pushed, theirs is mid-flight. If theirs lands first, `git merge origin/main` here and re-resolve two independently appended SOP paragraphs — text-level only, no shared machinery.
+
+### Clean-Code Gate
+
+Machine floor imported from the gates above (SCC-146) rather than re-run. Ran only what they did not:
+
+| Check | Result |
+|---|---|
+| `py_compile` on all three changed `.py` files | clean, exit 0 |
+| Secrets / credential literals in the diff | none |
+| `TODO`/`FIXME`/`XXX`/`HACK` introduced | none |
+| Comment contract (§2A) | every new guard carries the measured failure that motivated it, and names it as measured rather than feared |
+| Convention table (§2C) | `python3` with the PC note on every doc command line; stdlib only; explicit paths in every commit |
+| Drift / bloat (imported from Step 1) | one deletion on merit — `evidence_ok`'s punctuation-only branch (F13) |
+
+⚠️ **Two process observations, recorded because they cost real work.**
+
+1. **Lens subagents write to the lane's working tree.** Two of them ran `mutation_sweep.py` and hand-edited `jira_feed.py` to test whether cases notice — correct behaviour for the instruction *"prefer executing to reasoning"*, which I wrote. One sweep's restore **silently reverted my concurrent edits**, and one of my reads caught the file mid-mutation and reported a defect that did not exist. Committed history was verified clean afterwards: zero `if False:` residue across all commits. A reviewing lens needs its own copy or its own worktree.
+2. **`/smh-sync-agents` cannot complete under the sandbox** — it is denied writes into `.claude/`. The `.opencode` mirrors are byte-for-byte copies of the command bodies, so its exact copy step was performed for the four moved doors; `CS-03` door parity (11/11) is the proof.
