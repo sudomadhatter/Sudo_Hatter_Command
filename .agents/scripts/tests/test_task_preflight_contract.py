@@ -809,6 +809,49 @@ def main() -> int:
                     "never a sibling lane", code == 2 and "uncommitted change(s)" in out,
                     f"exit {code}: " + out.strip()[-400:])
 
+        with TempDir() as t:
+            # B5 · THE TICKET'S OWN SHAPE: a TRACKED file, MODIFIED (` M`), as the FIRST status
+            # line - `M .claude/settings.json` is exactly how SCC-244's close-out met it. Found
+            # by this lane's mutant M7 surviving: B4 above "passed" for the wrong reason. The
+            # classifier `.strip()`ped the whole porcelain output before splitting, which eats
+            # the leading space of the FIRST line only, so ` M .claude/x.json` arrived as
+            # `M .claude/x.json` and `ln[3:]` read `claude/x.json` - a path that does not
+            # exist, so the sibling match could never fire on the one shape the ticket named.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {".claude/x.json": "{}\n"})
+            git(repo, "checkout", "-q", "main")
+            git(repo, "merge", "-q", "--no-verify", "chore/SCC-11-thing")   # main has the file too
+            git(repo, "checkout", "-q", "chore/SCC-11-thing")
+            sibling(t, repo, ".claude/x.json", '{"hooks": "edited on the sibling lane"}\n')
+            (repo / ".claude" / "x.json").write_text('{"hooks": "edited on the sibling lane"}\n',
+                                                     encoding="utf-8")
+            st = git(repo, "status", "--porcelain").stdout
+            c.check("B5 fixture: the sibling's file is a TRACKED-MODIFIED first line (` M`)",
+                    st.startswith(" M .claude/x.json"), repr(st))
+            code, out = preflight(repo)
+            c.check("SCC-283 a TRACKED-MODIFIED sibling copy on the FIRST status line is owned "
+                    "(the ticket's `M .claude/settings.json` shape)",
+                    code != 2 and any("chore/SCC-12-other" in ln and "working copy" in ln
+                                      for ln in out.splitlines()),
+                    f"exit {code}: " + out.strip()[-500:])
+
+        with TempDir() as t:
+            # B6 · the SAME parse bug hit the memory ruling: a tracked-modified memory file as the
+            # only dirty line read as `M _artifacts/_memory/...` -> `ln[3:]` = `artifacts/...`,
+            # which does not start with `_artifacts/_memory/`, so SCC-64's park-don't-sweep
+            # instruction was replaced by the generic "commit before merging" - the one
+            # instruction that ruling forbids when another session wrote the file.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"_artifacts/_memory/lesson.md": "v1\n"})
+            (repo / "_artifacts/_memory/lesson.md").write_text("v2, another session\n",
+                                                               encoding="utf-8")
+            code, out = preflight(repo)
+            c.check("SCC-283 a TRACKED-MODIFIED memory file on the FIRST status line still gets "
+                    "the memory ruling, not the generic count",
+                    code == 2 and "memory file(s) dirty" in out
+                    and "uncommitted change(s)" not in out,
+                    f"exit {code}: " + out.strip()[-500:])
+
     return c.finish()
 
 

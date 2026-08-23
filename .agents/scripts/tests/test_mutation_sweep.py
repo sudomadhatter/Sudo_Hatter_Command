@@ -412,9 +412,16 @@ def main() -> int:
             repo = build(t)
             tab = table(repo, [dict(killer("M3 insert from nowhere"), original="")])
             code, out = _run(repo, ["--table", str(tab)])
+            # ⛔ Pin the LOADER's refusal, not just "a refusal": the unique-anchor check
+            # downstream also dies on "" (it occurs len+1 times), so `code == 2 and "original"
+            # in out` was satisfied with the loader's guard deleted - mutant M5 of this lane's
+            # own sweep survived on exactly that. The loader's message is the one that tells
+            # the reader WHY ("only `mutated` may be empty"); the anchor-count message would
+            # send them counting occurrences of an empty string.
             c.check("K6f `\"original\": \"\"` still refuses - a mutant that inserts from nowhere "
-                    "has no unique anchor",
-                    code == 2 and "original" in out, f"exit={code} " + out[-400:])
+                    "has no unique anchor, and the LOADER says so (EMPTY, not 'occurs N times')",
+                    code == 2 and "EMPTY" in out and "original" in out and "occurs" not in out,
+                    f"exit={code} " + out[-400:])
 
     return c.finish()
 
