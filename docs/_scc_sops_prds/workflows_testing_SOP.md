@@ -1649,6 +1649,9 @@ sessions' work (SCC-180). Now a dirty path whose BYTES equal a sibling `chore/` 
 worktree's COMMITTED copy is reported as *that lane's working copy* with the branch named, as a
 warning. Different bytes still error; a path no lane committed still errors; and `main` is never a
 sibling lane, so a hand-revert to main's content in your working copy still errors.
+⛔ The same lane found that the classifier had been mis-reading the FIRST dirty line whenever it was a
+tracked modification (` M path` lost its leading space to a whole-output `.strip()`), so the memory ruling and
+the sibling match both silently missed exactly the `M .claude/settings.json` shape the ticket was filed on — fixed.
 ⛔ The **key** is `landing_mode`, never `landing` — `task.yaml` already has a different `landing:`
 nested under each `secondary_repos:` entry, which is why the name was changed. A bare `landing: partial`
 at column 0 is not recognised at all: it fails **silently**, not closed — nothing reads it, no

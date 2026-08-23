@@ -821,6 +821,7 @@ def main() -> int:
             branch(repo, "chore/SCC-11-thing", {".claude/x.json": "{}\n"})
             git(repo, "checkout", "-q", "main")
             git(repo, "merge", "-q", "--no-verify", "chore/SCC-11-thing")   # main has the file too
+            git(repo, "push", "-q", "origin", "main")     # or the STALLED-LANDING check fires instead
             git(repo, "checkout", "-q", "chore/SCC-11-thing")
             sibling(t, repo, ".claude/x.json", '{"hooks": "edited on the sibling lane"}\n')
             (repo / ".claude" / "x.json").write_text('{"hooks": "edited on the sibling lane"}\n',

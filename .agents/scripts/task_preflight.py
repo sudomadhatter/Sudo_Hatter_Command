@@ -1044,9 +1044,16 @@ def _check_tree_dirt(repo: Path, label: str, manifest: Path | None, rep: wf.Repo
     """The dirty-tree classification for ONE tree. Body unchanged since SCC-192 except for the
     fourth bucket (SCC-283); it moved out of `check_sync` only so it can be applied to every
     tree that could be gated (SCC-211)."""
-    dirty = wf.git(["-c", "core.quotepath=false", "status", "--porcelain"], repo).stdout.strip()
-    if dirty:
-        lines = dirty.splitlines()
+    # ⛔ SPLIT FIRST, THEN DROP BLANKS - never `.strip()` the whole porcelain output (SCC-283,
+    # found by this lane's own mutant M7 surviving). Porcelain's first column is the INDEX
+    # state and is a SPACE for a worktree-only change, so `.strip()` ate the leading space of
+    # the FIRST line only: ` M .claude/x.json` arrived as `M .claude/x.json`, `ln[3:]` read
+    # `claude/x.json`, and every path-reading rule below - the memory ruling, the own-receipt
+    # exclusion, the sibling match - silently missed the first dirty file whenever it was a
+    # tracked modification. `M .claude/settings.json`, the exact shape SCC-283 was filed on.
+    lines = [ln for ln in wf.git(["-c", "core.quotepath=false", "status", "--porcelain"],
+                                 repo).stdout.splitlines() if ln.strip()]
+    if lines:
         mem = [ln for ln in lines if ln[3:].startswith("_artifacts/_memory/")]
         # ⭐ SCC-192/SCC-178 · THE WRITER IS NOT ITS OWN DIRT. This script now writes a receipt
         # under `_artifacts/`, and on the very next run that file would read as an uncommitted
