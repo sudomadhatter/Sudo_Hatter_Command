@@ -263,7 +263,34 @@ def main() -> int:
             c.check("B3 --unlink leaves the TARGETS alone",
                     (plain / ".env").is_file() and (plain / "node_modules").is_dir())
 
+    if c.block("B4 · claude-local-assets-link: settings.local.json and scratchpad-root travel into worktree"):
+        with TempDir() as tmp:
+            plain = seed(tmp / "plain")
+            (plain / ".claude").mkdir()
+            (plain / ".claude" / "tracked.txt").write_text("tracked\n", encoding="utf-8")
+            git(plain, "add", ".claude/tracked.txt")
+            git(plain, "commit", "-qm", "claude dir")
+            (plain / ".claude" / "settings.local.json").write_text('{"permissions": {}}\n', encoding="utf-8")
+            (plain / ".claude" / "scratchpad-root").write_text("/tmp/scratchpad\n", encoding="utf-8")
+            lane = tmp / "lane"
+            git(plain, "worktree", "add", "-q", str(lane), "-b", "lane")
+
+            code, out = link(str(lane))
+            c.check("B4 exits 0", code == 0, f"exit={code}\n{out}")
+            c.check("B4 links .claude/settings.local.json", (lane / ".claude" / "settings.local.json").is_symlink())
+            c.check("B4 links .claude/scratchpad-root", (lane / ".claude" / "scratchpad-root").is_symlink())
+
+            code, out = link("--unlink", str(lane))
+            c.check("B4 --unlink removes both links", code == 0
+                    and not (lane / ".claude" / "settings.local.json").exists()
+                    and not (lane / ".claude" / "scratchpad-root").exists(),
+                    f"exit={code}\n{out}")
+            c.check("B4 --unlink leaves the TARGETS alone",
+                    (plain / ".claude" / "settings.local.json").is_file()
+                    and (plain / ".claude" / "scratchpad-root").is_file())
+
     return c.finish()
+
 
 
 if __name__ == "__main__":
