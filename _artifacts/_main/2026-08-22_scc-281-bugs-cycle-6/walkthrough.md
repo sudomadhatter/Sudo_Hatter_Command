@@ -170,7 +170,17 @@ exit=0
 
 ### Enforcement suite — receipt
 
-<!-- SUITE-RESULT -->
+Stamped once, on the committed tip, through the receipt writer (`gate_receipt.py run --task SCC-281 --gate suite --root … --cwd <worktree> -- python3 .agents/scripts/tests/run_all.py`):
+```
+[PASS] suite exit=0 75.1s @ 72b3df2e
+        receipt: gates/suite.json
+…
+-- 59/59 passed --
+============================================================
+52/52 files passed
+```
+Receipt: [gates/suite.json](gates/suite.json) — `result: pass`, `sha: 72b3df2e5fa9a7778d6ed72705a4ab835d36adac`, `dirty_tree: false`. `git rev-parse HEAD` at the run: `72b3df2e5fa9a7778d6ed72705a4ab835d36adac`.
+Toolkit lint (bare): `-- 0 error(s), 0 warning(s), 8 info --`. `py_compile` on the five changed `.py` files: OK.
 
 ---
 
