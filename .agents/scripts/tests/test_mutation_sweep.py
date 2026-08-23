@@ -423,6 +423,18 @@ def main() -> int:
                     code == 2 and "EMPTY" in out and "original" in out and "occurs" not in out,
                     f"exit={code} " + out[-400:])
 
+        with TempDir() as t:
+            # K6g · review finding (three lenses, reproduced): `"mutated": null` used to be
+            # refused by the falsy check and now reached the apply loop, where
+            # `str.replace(original, None)` raised a TypeError - exit 1 with a traceback,
+            # the exit code that means "a mutant survived". Non-string is a refusal.
+            repo = build(t)
+            tab = table(repo, [dict(killer("M4 null is not a deletion"), mutated=None)])
+            code, out = _run(repo, ["--table", str(tab)])
+            c.check("K6g a NON-STRING `mutated` (null) refuses at the loader, exit 2, no traceback",
+                    code == 2 and "mutated" in out and "string" in out.lower()
+                    and "Traceback" not in out, f"exit={code} " + out[-400:])
+
     return c.finish()
 
 

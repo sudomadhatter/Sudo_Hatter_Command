@@ -23,6 +23,7 @@ Stdlib only, no pytest, matching every other file here.
 from __future__ import annotations
 
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -804,6 +805,10 @@ def main() -> int:
             git(repo, "worktree", "add", "-q", str(t / "main-tree"), "main")
             (repo / ".agents/scripts/tests/run_all.py").write_text("# fixture\n",
                                                                    encoding="utf-8")
+            # The pin is only a pin if the bytes really ARE main's (review: AA1) - assert it.
+            c.check("B4 fixture: the reverted bytes equal main's committed copy",
+                    git(repo, "show", "main:.agents/scripts/tests/run_all.py").stdout
+                    == "# fixture\n", "fixture drift - B4 would pass for the wrong reason")
             code, out = preflight(repo)
             c.check("SCC-283 a revert-to-main in the working copy still errors - `main` is "
                     "never a sibling lane", code == 2 and "uncommitted change(s)" in out,
@@ -852,6 +857,160 @@ def main() -> int:
                     "the memory ruling, not the generic count",
                     code == 2 and "memory file(s) dirty" in out
                     and "uncommitted change(s)" not in out,
+                    f"exit {code}: " + out.strip()[-500:])
+
+        # ── Review round (five clean-context lenses over the diff) — the pins below ──────
+        with TempDir() as t:
+            # B7 · THE HOLE FOUR LENSES FOUND AND THREE REPRODUCED: a sibling lane's committed
+            # TREE carries main's bytes for every file it never touched, so B4's hand-revert
+            # matched `<sibling>:<path>` the moment ONE unrelated sibling worktree was live -
+            # the normal state of this repo (six live today). B4 passed only because its
+            # fixture had no sibling. A sibling owns a path only if it actually CHANGED it:
+            # its blob must differ from the base's blob.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing",
+                   {".agents/scripts/tests/run_all.py": "# changed on the lane\n"})
+            sibling(t, repo, "docs/unrelated.md", "the sibling works on something else\n")
+            (repo / ".agents/scripts/tests/run_all.py").write_text("# fixture\n",
+                                                                   encoding="utf-8")
+            code, out = preflight(repo)
+            c.check("B7 a revert-to-main still errors when an UNRELATED sibling lane is live "
+                    "(its tree holds main's bytes for that path)",
+                    code == 2 and "uncommitted change(s)" in out and "working copy" not in out,
+                    f"exit {code}: " + out.strip()[-500:])
+
+        with TempDir() as t:
+            # B8 · THE OWNING LANE CLOSES. The lane that edited `.claude/settings.json` in the
+            # shared checkout (required - that is where the running Claude reads it) and
+            # committed those bytes on its own branch must be able to close ITSELF: measured
+            # from the shared checkout, the dirty file is this lane's own committed copy and
+            # lands with this very merge. Excluding the lane's own branch from the match (the
+            # first cut) wedged exactly that close-out.
+            repo = make_repo(t)
+            write(repo, ".claude/x.json", "{}\n")
+            commit(repo, "SCC-11 chore: the shared config exists on main")
+            git(repo, "push", "-q", "origin", "main")
+            git(repo, "branch", "-q", "chore/SCC-11-thing", "main")
+            lane = t / "lane-tree"
+            git(repo, "worktree", "add", "-q", str(lane), "chore/SCC-11-thing")
+            (lane / ".claude" / "x.json").write_text('{"hooks": "edited by THIS lane"}\n',
+                                                     encoding="utf-8")
+            (lane / "docs").mkdir(exist_ok=True)
+            (lane / "docs" / "x.md").write_text("x\n", encoding="utf-8")
+            git(lane, "add", ".claude/x.json", "docs/x.md")
+            git(lane, "commit", "--no-verify", "-q", "-m", "SCC-11 chore: the lane's work")
+            git(lane, "push", "-q", "-u", "origin", "chore/SCC-11-thing")
+            (repo / ".claude" / "x.json").write_text('{"hooks": "edited by THIS lane"}\n',
+                                                     encoding="utf-8")
+            code, out = preflight(repo, "--branch", "chore/SCC-11-thing")
+            c.check("B8 the OWNING lane's committed bytes, dirty in the shared checkout, do not "
+                    "wedge its own close-out",
+                    code != 2 and any("chore/SCC-11-thing" in ln and "working copy" in ln
+                                      for ln in out.splitlines()),
+                    f"exit {code}: " + out.strip()[-500:])
+
+        with TempDir() as t:
+            # B9 · the ticket's literal second shape: a single untracked FILE under a TRACKED
+            # directory (`?? .claude/hooks/allow-scratchpad.py`) - the file-level `??` line.
+            repo = make_repo(t)
+            write(repo, ".claude/keep.json", "{}\n")
+            commit(repo, "SCC-11 chore: .claude/ is tracked")
+            git(repo, "push", "-q", "origin", "main")
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sibling(t, repo, ".claude/allow.py", "# the sibling's new hook\n")
+            (repo / ".claude" / "allow.py").write_text("# the sibling's new hook\n",
+                                                       encoding="utf-8")
+            st = git(repo, "status", "--porcelain").stdout
+            c.check("B9 fixture: a file-level `??` line (the directory is tracked)",
+                    "?? .claude/allow.py" in st, repr(st))
+            code, out = preflight(repo)
+            c.check("B9 a single untracked file under a tracked dir is owned when the sibling "
+                    "committed it", code != 2 and "working copy" in out,
+                    f"exit {code}: " + out.strip()[-500:])
+
+        with TempDir() as t:
+            # B10 · ALL must match, not ANY: a collapsed `?? dir/` holding one sibling-owned
+            # file AND one stray nobody committed stays dirt. `all` -> `any` survived this
+            # lane's first sweep because no case exercised the mixed directory.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sibling(t, repo, ".claude/x.json", "theirs\n")
+            (repo / ".claude").mkdir(exist_ok=True)
+            (repo / ".claude" / "x.json").write_text("theirs\n", encoding="utf-8")
+            (repo / ".claude" / "stray.json").write_text("nobody committed this\n",
+                                                         encoding="utf-8")
+            code, out = preflight(repo)
+            c.check("B10 a collapsed untracked dir with ONE stray file is still dirt "
+                    "(all-must-match, never any)",
+                    code == 2 and "uncommitted change(s)" in out and "working copy" not in out,
+                    f"exit {code}: " + out.strip()[-500:])
+
+        with TempDir() as t:
+            # B11 · non-ASCII names under a collapsed dir: `status` runs with
+            # `core.quotepath=false`, the `ls-files` expansion must too, or the path comes
+            # back octal-quoted and can never be read.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sibling(t, repo, ".claude/caf\u00e9.json", "theirs\n")
+            (repo / ".claude").mkdir(exist_ok=True)
+            (repo / ".claude" / "caf\u00e9.json").write_text("theirs\n", encoding="utf-8")
+            code, out = preflight(repo)
+            c.check("B11 a non-ASCII filename under a collapsed untracked dir is still owned",
+                    code != 2 and "working copy" in out,
+                    f"exit {code}: " + out.strip()[-500:])
+
+        with TempDir() as t:
+            # B12 · a worktree whose directory is GONE but not pruned is not a live lane:
+            # `git worktree list` keeps its block with a `prunable` line. Its leftover copy
+            # in the shared checkout must not be "leave it alone" forever.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            wt = sibling(t, repo, ".claude/x.json", "theirs\n")
+            (repo / ".claude").mkdir(exist_ok=True)
+            (repo / ".claude" / "x.json").write_text("theirs\n", encoding="utf-8")
+            shutil.rmtree(wt)
+            c.check("B12 fixture: the sibling worktree is listed as prunable",
+                    "prunable" in git(repo, "worktree", "list", "--porcelain").stdout,
+                    git(repo, "worktree", "list", "--porcelain").stdout)
+            code, out = preflight(repo)
+            c.check("B12 a PRUNABLE sibling worktree is not a live lane - its leftover copy "
+                    "is dirt", code == 2 and "uncommitted change(s)" in out
+                    and "working copy" not in out, f"exit {code}: " + out.strip()[-500:])
+
+        with TempDir() as t:
+            # B13 · STAGED in the shared checkout (`A `): the bytes are the sibling's, but
+            # staging is an act of THIS tree and the index would be committed under this
+            # key. Not owned - but the remedy must name the unstage, not "commit it".
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sibling(t, repo, ".claude/x.json", "theirs\n")
+            (repo / ".claude").mkdir(exist_ok=True)
+            (repo / ".claude" / "x.json").write_text("theirs\n", encoding="utf-8")
+            git(repo, "add", ".claude/x.json")
+            c.check("B13 fixture: the line is `A ` (staged new)",
+                    git(repo, "status", "--porcelain").stdout.startswith("A  .claude/x.json"),
+                    git(repo, "status", "--porcelain").stdout)
+            code, out = preflight(repo)
+            c.check("B13 a STAGED sibling copy still errors, with the UNSTAGE remedy named",
+                    code == 2 and "restore --staged" in out and "chore/SCC-12-other" in out,
+                    f"exit {code}: " + out.strip()[-500:])
+
+        with TempDir() as t:
+            # B15 · the PC runs `core.autocrlf=true` (.gitattributes says so): the working
+            # copy is CRLF, the sibling's blob is LF. Raw bytes never match there; the
+            # comparison must go through git's clean filter (blob ids), or the whole bucket
+            # is dead on one of the two machines and the ticket's shape still hard-blocks.
+            repo = make_repo(t)
+            write(repo, ".claude/keep.json", "{}\n")
+            commit(repo, "SCC-11 chore: .claude/ is tracked")
+            git(repo, "push", "-q", "origin", "main")
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sibling(t, repo, ".claude/x.json", '{"a": 1}\n')
+            git(repo, "config", "core.autocrlf", "true")
+            (repo / ".claude" / "x.json").write_bytes(b'{"a": 1}\r\n')
+            code, out = preflight(repo)
+            c.check("B15 under core.autocrlf=true a CRLF working copy of the sibling's LF "
+                    "blob is still owned", code != 2 and "working copy" in out,
                     f"exit {code}: " + out.strip()[-500:])
 
     return c.finish()
