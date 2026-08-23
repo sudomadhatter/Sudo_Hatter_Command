@@ -379,6 +379,75 @@ def main() -> int:
     c.check("docs/ is NOT treated as a planning dir (projects ship from it)",
             "docs/guide.md" in lt.source_paths({"paths": ["docs/guide.md"]}))
 
+    # ── SCC-295 · `lstrip("./")` was a CHARACTER SET, not a prefix ─────────────
+    # Written to turn `./x.py` into `x.py`; it also ate the leading dot off every
+    # hidden path. Two consumers, two consequences: the normalised string is joined
+    # into the board `evidence` field (`:897`/`:910`), AND it is the key the overlap
+    # math intersects (`:757`) - so `.agents/x` and `agents/x` collapsed into one.
+    dotted_dir = lt.source_paths({"paths": [".agents/scripts/risk_seam.py"]})
+    c.check("SCC-295 A1 a dotted directory keeps its dot",
+            dotted_dir == {".agents/scripts/risk_seam.py"}, str(dotted_dir))
+    dotfiles = lt.source_paths({"paths": [".mcp.json", ".code-review-graphignore"]})
+    c.check("SCC-295 A1b a dotfile at the repo root keeps its dot",
+            dotfiles == {".mcp.json", ".code-review-graphignore"}, str(dotfiles))
+
+    # CONTROLS - green BEFORE the fix and after. A control that starts red is
+    # measuring the wrong thing, so these two are the proof the fix is surgical.
+    c.check("SCC-295 A2 CONTROL `./x.py` still normalises to `x.py`",
+            lt.source_paths({"paths": ["./x.py"]}) == {"x.py"},
+            str(lt.source_paths({"paths": ["./x.py"]})))
+    c.check("SCC-295 A2b CONTROL a repeated `././` prefix is stripped WHOLE",
+            lt.source_paths({"paths": ["././x.py"]}) == {"x.py"},
+            str(lt.source_paths({"paths": ["././x.py"]})))
+    c.check("SCC-295 A7 CONTROL `./_artifacts/a.md` is still dropped as planning",
+            lt.source_paths({"paths": ["./_artifacts/a.md"]}) == set(),
+            str(lt.source_paths({"paths": ["./_artifacts/a.md"]})))
+
+    # The consequence the ticket did NOT claim: two different real files reading
+    # as one overlap key. Unreachable in this tree only because nothing sits at a
+    # dotless `agents/` - a property of the tree, not of the code.
+    dotted = lt.source_paths({"paths": [".agents/x.py"]})
+    dotless = lt.source_paths({"paths": ["agents/x.py"]})
+    c.check("SCC-295 A3 a dotted path and its dotless twin are DIFFERENT keys",
+            not (dotted & dotless), f"{sorted(dotted)} vs {sorted(dotless)}")
+
+    # `creates` feeds the SAME displayed, intersected set (`:715`).
+    made = lt.source_paths({"creates": [".agents/scripts/new_helper.py"]})
+    c.check("SCC-295 A5 a dotted `creates` entry keeps its dot too",
+            made == {".agents/scripts/new_helper.py"}, str(made))
+    # `conflict_graph` carried a SECOND inline copy of this normalisation (`:758`)
+    # with nothing asserting the two agreed. One shared helper is the fix; this
+    # pins the helper's contract directly, both directions.
+    # ⛔ Resolved with getattr, on purpose. Calling `lt.norm_path` directly before the
+    # helper exists raises AttributeError, which KILLS the file at this line - so A4
+    # and A6 below never run and the file still exits 1, indistinguishable from a real
+    # red. `red-test-can-die-before-its-assertion`, reproduced here while writing it.
+    _norm = getattr(lt, "norm_path", None)
+    c.check("SCC-295 A5b norm_path strips the `./` PREFIX and nothing else",
+            _norm is not None
+            and _norm("  ./a/b.py  ") == "a/b.py"
+            and _norm(".agents/x") == ".agents/x"
+            and _norm("././a") == "a"
+            and _norm("..hidden") == "..hidden",
+            "label_tasks.norm_path does not exist" if _norm is None else
+            f'{_norm("  ./a/b.py  ")!r} {_norm(".agents/x")!r} '
+            f'{_norm("././a")!r} {_norm("..hidden")!r}')
+
+    # ── SCC-295 · end to end, through the board surface itself ────────────────
+    with TempDir() as tmp:
+        r = run_resolve(tmp, [child("A-1", "1.1"), child("A-2", "1.2")],
+                        {"A-1": {"paths": [".agents/x.py"]},
+                         "A-2": {"paths": ["agents/x.py"]}})
+        c.check("SCC-295 A4 dotted and dotless twins are NOT a collision",
+                len(r["approved"]) == 2, str(r["approved"]) + " " + str(r["verdicts"]))
+    with TempDir() as tmp:
+        r = run_resolve(tmp, [child("A-1", "1.1"), child("A-2", "1.2")],
+                        {"A-1": {"paths": [".agents/scripts/label_tasks.py"]},
+                         "A-2": {"paths": ["backend/b.py"]}})
+        c.check("SCC-295 A6 the board evidence shows the dotted path WITH its dot",
+                ".agents/scripts/label_tasks.py" in r["_by"]["A-1"]["evidence"],
+                r["_by"]["A-1"]["evidence"])
+
     # ── umbrella detection, directly ───────────────────────────────────────────
     kids = [{"key": "K-0", "story_id": "12.3"}, {"key": "K-1", "story_id": "12.3.4"},
             {"key": "K-2", "story_id": "12.3.7"}, {"key": "K-3", "story_id": "12.4"}]

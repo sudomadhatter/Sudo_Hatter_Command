@@ -710,12 +710,33 @@ def cmd_plan(args) -> int:
 
 # ── resolve: the set math ──────────────────────────────────────────────────────
 
+def norm_path(p) -> str:
+    """Normalise a declared touch-set path — for the overlap key AND for display.
+
+    ⛔ This was `str(p).strip().lstrip("./")` at two sites, and `str.lstrip` takes a
+    SET OF CHARACTERS, not a prefix. It was written to turn `./x.py` into `x.py`; it
+    also ate the leading dot off every hidden path, and the damage was not cosmetic:
+    the string it returns is BOTH the `evidence` shown on the board (`verdicts_for`)
+    and the key `conflict_graph` intersects, so `.agents/x.py` and `agents/x.py`
+    collapsed into one and two lanes touching different files read as a collision.
+    Reproduced: `both touch agents/x.py`, locking a lane that had no overlap (SCC-295).
+
+    Strips the `./` PREFIX only, repeated (`././a` -> `a`), and nothing else. Not
+    `os.path.normpath`, which would also resolve `..` and change what a declared path
+    means. One helper rather than two copies, so the two sites cannot disagree.
+    """
+    s = str(p).strip()
+    while s.startswith("./"):
+        s = s[2:]
+    return s
+
+
 def source_paths(entry: dict) -> set[str]:
     """Planning artifacts never count as overlap — only source paths decide."""
     raw = list(entry.get("paths") or []) + list(entry.get("creates") or [])
     out = set()
     for p in raw:
-        p = str(p).strip().lstrip("./")
+        p = norm_path(p)
         if not p or p.startswith(PLANNING_PREFIXES):
             continue
         out.add(p)
@@ -755,7 +776,7 @@ def conflict_graph(candidates: list[str], touch: dict) -> dict[str, dict[str, st
     its evidence is an assertion, and extraction from a story file is a judgment."""
     g: dict[str, dict[str, str]] = {k: {} for k in candidates}
     paths = {k: source_paths(touch.get(k) or {}) for k in candidates}
-    creates = {k: {str(c).strip().lstrip("./") for c in (touch.get(k) or {}).get("creates") or []}
+    creates = {k: {norm_path(c) for c in (touch.get(k) or {}).get("creates") or []}
                for k in candidates}
     imports = {k: {str(i).strip() for i in (touch.get(k) or {}).get("imports") or []}
                for k in candidates}
