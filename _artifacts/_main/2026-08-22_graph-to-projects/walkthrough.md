@@ -441,8 +441,11 @@ is the machinery working exactly as designed.
       one item in this lane an agent cannot do). Until then `jira_ticket.py attach` exits 5 and
       prints the setup; `describe` and `done` work now, so the fast-read shape lands either way.
       Guide: `docs/migrations/install_guides/jira-api-token-setup.md`.
-- [ ] **Decide whether `jira_feed.py mint` should adopt the fast-read shape** on a BMAD-lane ticket
-      (deferred C5 above). It is a scope call, not a defect.
+*(No second box. `jira_feed.py mint` adopting the fast-read shape was posed here as a decision for
+the operator, and that was the wrong section: it is already the first row of `## Deferred`, carrying
+its structural reason — it is the BMAD **story** lane's seam and this is the Task lane, so the change
+needs the story-lane doors with it. Deferred work is recorded, not handed over; `finish` refused the
+row and was right to.)*
 
 ---
 
