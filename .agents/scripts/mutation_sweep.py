@@ -22,7 +22,7 @@ the sweep appends `--case <kills>` itself, and runs it bare once at the end:
         {"id":  "M1 widen the exemption to all of _artifacts/",
          "file": ".agents/scripts/gate_receipt.py",
          "original": "<exact text, must occur EXACTLY once>",
-         "mutated":  "<what to replace it with>",
+         "mutated":  "<what to replace it with; \"\" DELETES the anchor (SCC-284)>",
          "case":  "J3c",
          "block": "SCC-178"}
       ]
@@ -134,9 +134,23 @@ def load_table(path: Path) -> tuple[dict, str | None]:
             # `kills` was one field doing two jobs in two namespaces (SCC-179, found by this
             # script's sweep of itself). Read it as `case` so an old table still runs.
             m["case"] = m.pop("kills")
-        missing = [k for k in ("id", "file", "original", "mutated", "case") if not m.get(k)]
-        if missing:
-            return {}, f"{path}: mutant #{i + 1} is missing {', '.join(missing)}"
+        # ⛔ ABSENT and EMPTY are different questions (SCC-284). This used to be one falsy
+        # test over all five fields, so a DELETION mutant - `"mutated": ""`, "remove this
+        # line entirely and see if anything notices" - was refused as "missing mutated",
+        # sending the reader to hunt for a typo in a field that was sitting right there.
+        # SCC-244 worked around it three times with an inert substitute line, and its sweep
+        # record then said "replaced" about mutants that tested "removed". Deletion is one
+        # of the most valuable mutants there is: it proves a guard fires because the line is
+        # THERE, not because some other line happens to be. So: every field must be PRESENT;
+        # every field but `mutated` must be non-empty; `mutated` may be "" and means delete.
+        absent = [k for k in ("id", "file", "original", "mutated", "case") if k not in m]
+        if absent:
+            return {}, (f"{path}: mutant #{i + 1} is missing {', '.join(absent)} - the key is "
+                        f"ABSENT (an EMPTY `\"mutated\": \"\"` is legal and declares a deletion)")
+        empty = [k for k in ("id", "file", "original", "case") if not m.get(k)]
+        if empty:
+            return {}, (f"{path}: mutant #{i + 1} has an EMPTY {', '.join(empty)} - only "
+                        f"`mutated` may be empty (a deletion); `original` must be a unique anchor")
         if m["original"] == m["mutated"]:
             return {}, f"{path}: mutant {m['id']} does not change anything"
         if m.get("unfiltered") and m.get("block"):
