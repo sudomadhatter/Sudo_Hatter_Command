@@ -56,7 +56,7 @@ KILLED    M3 readonly-chain hook wiring check rejects stray .claude/hooks path
 ```
 
 ### Commit SHA
-`44e9057`
+`ebade3b`
 
 ---
 
@@ -75,7 +75,7 @@ review-runtime: fan-out
 
 ## Code Review (2026-08-23)
 
-Verdict: PASS @ 44e9057
+Verdict: PASS @ ebade3b
 
 lenses_run:
 - blind-hunter · ok
