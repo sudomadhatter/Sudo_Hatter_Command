@@ -719,6 +719,96 @@ def main() -> int:
             c.check("SCC-211 memory dirt in the LANE tree keeps its own ruling",
                     "memory file(s) dirty" in out, out.strip()[-400:])
 
+
+    # ── SCC-283 · a live sibling lane's working copy is NOT unswept dirt ──────────────
+    #
+    # The classifier splits dirt three ways: this script's own receipt (by exact path), memory
+    # files (named separately so a close-out cannot sweep another session's store), and
+    # everything else - a hard error. "Everything else" had no way to recognise ANOTHER LIVE
+    # LANE'S WORKING COPY. During SCC-244's close-out the shared checkout carried
+    # `M .claude/settings.json` and `?? .claude/hooks/allow-scratchpad.py`, both belonging to
+    # the live chore/SCC-263 lane, which had ALREADY COMMITTED them on its branch - its live
+    # config, not unswept dirt (`.claude/settings.json` can ONLY be edited in the shared
+    # checkout, because that is where the running Claude reads it). The preflight errored and
+    # an agent adjudicated by hand - and the two answers have OPPOSITE correct actions: unswept
+    # dirt is committed or parked, another lane's live copy is left alone. Backwards either
+    # wedges a close-out or destroys someone else's work, and the second has happened once
+    # already (SCC-180: a `reset --hard` remedy that ate three sessions' uncommitted work).
+    # SCC-246 answered the same shape for `_artifacts/_memory/` by AUTHORSHIP; this is the
+    # fourth bucket for the rest of the tree, and it is earned by BYTES: the dirty working
+    # copy must equal the sibling lane's COMMITTED copy, or it is still dirt.
+    if c.block("SCC-283 · a live sibling lane's working copy is not unswept dirt"):
+        def sibling(t, repo, rel, text):
+            """A live sibling worktree on chore/SCC-12-other that COMMITS `rel`."""
+            git(repo, "branch", "-q", "chore/SCC-12-other", "main")
+            wt = t / "sibling-tree"
+            git(repo, "worktree", "add", "-q", str(wt), "chore/SCC-12-other")
+            (wt / rel).parent.mkdir(parents=True, exist_ok=True)
+            (wt / rel).write_text(text, encoding="utf-8")
+            git(wt, "add", rel)
+            git(wt, "commit", "--no-verify", "-q", "-m", "SCC-12 chore: the sibling's live config")
+            return wt
+
+        with TempDir() as t:
+            # B1 · THE case: the shared checkout carries the sibling's file, byte-identical to
+            # the copy that lane committed. Not this lane's dirt - say whose it is, do not error.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sibling(t, repo, ".claude/x.json", '{"hooks": "the sibling lane\'s live config"}\n')
+            (repo / ".claude").mkdir(exist_ok=True)
+            (repo / ".claude" / "x.json").write_text(
+                '{"hooks": "the sibling lane\'s live config"}\n', encoding="utf-8")
+            code, out = preflight(repo)
+            c.check("SCC-283 a dirty path byte-identical to a live sibling lane's committed "
+                    "copy does NOT error", code != 2, f"exit {code}: " + out.strip()[-500:])
+            c.check("SCC-283 ...and it is reported as THAT lane's working copy, naming the branch",
+                    any("chore/SCC-12-other" in ln and "working copy" in ln
+                        for ln in out.splitlines()), out.strip()[-500:])
+
+        with TempDir() as t:
+            # B2 · POSITIVE CONTROL: a dirty path NO live lane committed still errors exactly
+            # as before - the bucket did not simply go quiet.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sibling(t, repo, ".claude/x.json", "theirs\n")
+            (repo / "docs" / "stray.md").write_text("nobody committed this anywhere\n",
+                                                    encoding="utf-8")
+            code, out = preflight(repo)
+            c.check("SCC-283 CONTROL a dirty path matching NO live lane still errors",
+                    code == 2 and "uncommitted change(s)" in out,
+                    f"exit {code}: " + out.strip()[-400:])
+
+        with TempDir() as t:
+            # B3 · same path as the sibling's, DIFFERENT bytes: uncommitted work is uncommitted
+            # work, whoever owns it. Matching by path alone would wave real edits through.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sibling(t, repo, ".claude/x.json", "theirs, committed\n")
+            (repo / ".claude").mkdir(exist_ok=True)
+            (repo / ".claude" / "x.json").write_text("theirs, but EDITED since\n",
+                                                     encoding="utf-8")
+            code, out = preflight(repo)
+            c.check("SCC-283 a sibling's path whose CONTENT differs from its committed copy "
+                    "still errors", code == 2 and "uncommitted change(s)" in out,
+                    f"exit {code}: " + out.strip()[-400:])
+
+        with TempDir() as t:
+            # B4 · THE BASE BRANCH IS NEVER A SIBLING LANE (self-audit finding). A file this
+            # lane changed and committed, then reverted by hand in the working copy to main's
+            # bytes, is dirty AND byte-identical to `main:<path>` - and a checkout on `main`
+            # is a worktree like any other. Treating it as "main's working copy" would wave an
+            # uncommitted revert through: permissive in exactly the SCC-180 direction.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing",
+                   {".agents/scripts/tests/run_all.py": "# changed on the lane\n"})
+            git(repo, "worktree", "add", "-q", str(t / "main-tree"), "main")
+            (repo / ".agents/scripts/tests/run_all.py").write_text("# fixture\n",
+                                                                   encoding="utf-8")
+            code, out = preflight(repo)
+            c.check("SCC-283 a revert-to-main in the working copy still errors - `main` is "
+                    "never a sibling lane", code == 2 and "uncommitted change(s)" in out,
+                    f"exit {code}: " + out.strip()[-400:])
+
     return c.finish()
 
 
