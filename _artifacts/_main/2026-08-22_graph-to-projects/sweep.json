@@ -367,6 +367,30 @@
         "python3",
         ".agents/scripts/tests/test_mutation_sweep.py"
       ]
+    },
+    {
+      "id": "M35 the generated AUTO block is read as authored links again",
+      "file": ".agents/scripts/check_links.py",
+      "original": "    for n, line in enumerate(strip_auto(strip_fences(text)).splitlines(), 1):",
+      "mutated": "    for n, line in enumerate(strip_fences(text).splitlines(), 1):",
+      "case": "H1 a dead path INSIDE the AUTO block is not the checker's finding",
+      "block": "H \u00b7 SCC-288 \u00b7 a GENERATED block is machine output, not authored links",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_check_links.py"
+      ]
+    },
+    {
+      "id": "M36 the AUTO strip never turns back off, blinding the rest of the file",
+      "file": ".agents/scripts/check_links.py",
+      "original": "            inside = m.group(1) == \"START\"",
+      "mutated": "            inside = True",
+      "case": "H3 and one AFTER the block is too - the strip closes at AUTO-END",
+      "block": "H \u00b7 SCC-288 \u00b7 a GENERATED block is machine output, not authored links",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_check_links.py"
+      ]
     }
   ]
 }

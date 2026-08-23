@@ -14,7 +14,8 @@
 > second root, which meant `_scc_sops_prds/workflows_testing_SOP.md`, the one document the operator
 > ever asked to have mapped, was in none either.
 >
-> **Node ids are lobby-relative** (`.agents/rules/x.md`, `docs/_scc_sops_prds/y.md`) and no absolute
+> **Node ids are lobby-relative** (`.agents/rules/git-policy.md`,
+> `docs/_scc_sops_prds/workflows_testing_SOP.md`) and no absolute
 > path reaches this file. That is what makes the artifact identical whoever regenerates it — a hook
 > can stage it, `refresh_maps.py --verify` can byte-check it at push, and lanes stop conflicting on
 > it. It previously recorded the worktree it was last built in, one that had since been pruned.
