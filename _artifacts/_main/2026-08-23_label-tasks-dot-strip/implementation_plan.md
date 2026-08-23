@@ -11,15 +11,16 @@
 p = str(p).strip().lstrip("./")          # :718, and again inline at :758 for `creates`
 ```
 
-`str.lstrip` takes a **set of characters**. It was written to turn `./x.py` into `x.py`; it also
-eats the leading dot off every hidden path. Measured:
+`str.lstrip` takes a **set of characters**. It was written to strip a leading `./`; it also eats
+the leading dot off every hidden path. Measured — fenced, because these are path-shaped DATA and a
+link checker cannot tell an illustration from a reference:
 
-| Input | Becomes |
-|---|---|
-| `.agents/scripts/risk_seam.py` | `agents/scripts/risk_seam.py` |
-| `.mcp.json` | `mcp.json` |
-| `.code-review-graphignore` | `code-review-graphignore` |
-| `./x.py` | `x.py` ✅ *(the one intended case)* |
+```text
+.agents/scripts/risk_seam.py   ->  agents/scripts/risk_seam.py      # dot eaten
+.mcp.json                      ->  mcp.json                         # dot eaten
+.gitignore                     ->  gitignore                        # dot eaten
+./x.py                         ->  x.py                             # the one intended case
+```
 
 ## Two consequences, not one
 
@@ -30,8 +31,8 @@ is worth a test rather than a one-line patch.**
    and `:910`, which is what the board comment and the printed table show. Every dotted path is
    rendered wrong.
 2. **⛔ The overlap math, which the ticket does not claim.** `:757` computes `paths[a] & paths[b]`
-   over these same normalised strings. `.agents/x.py` and `agents/x.py` both normalise to
-   `agents/x.py`, so **two lanes touching genuinely different files read as a collision** — a lane
+   over these same normalised strings. A dotted path and its dotless twin normalise to the SAME
+   key, so **two lanes touching genuinely different files read as a collision** — a lane
    is denied `parallel-ok` for a conflict that does not exist. It is unreachable in this repo today
    only because nothing sits at a dotless `agents/` or `claude/`. That is a property of the current
    tree, not of the code, and it is exactly what a test should pin.
@@ -62,14 +63,24 @@ declared path means.
 
 | # | Statement | The assertion that proves it |
 |---|---|---|
-| A1 | A dotted path keeps its dot through `source_paths()` | `source_paths({"paths": [".agents/scripts/risk_seam.py"]}) == {".agents/scripts/risk_seam.py"}`; same for `.mcp.json` |
-| A2 | `./x.py` still normalises to `x.py` — the intended case is not regressed | `source_paths({"paths": ["./x.py"]}) == {"x.py"}`, and the existing `./frontend/y.tsx` case stays green |
-| A3 | A dotted path and its dotless twin are **different keys** | `source_paths({"paths": [".agents/x.py"]}) & source_paths({"paths": ["agents/x.py"]}) == set()` |
-| A4 | Two lanes touching `.agents/x.py` and `agents/x.py` are **not** in conflict | `conflict_graph(["A","B"], touch)` returns no edge between them |
-| A5 | `creates` (`:758`) normalises identically to `paths` (`:718`) | one helper, and a `creates: [".agents/new.py"]` keeps its dot through `conflict_graph`'s import-edge check |
-| A6 | The board `evidence` string shows dotted paths | the `evidence` field built at `:897`/`:910` contains `.agents/…` with its dot |
-| A7 | Planning-dir filtering is unchanged | `./_artifacts/a.md` is still dropped; `docs/guide.md` is still kept |
-| A8 | The whole file and the whole suite stay green | `test_label_tasks.py` full run; `run_all.py` 59/59; `workflow_lint --toolkit-only` 0/0 |
+| A1 | A dotted directory keeps its dot through `source_paths()` | case `SCC-295 A1` — a hidden-dir path in, the same string out |
+| A1b | A dotfile at the repo root keeps its dot | case `SCC-295 A1b` |
+| A2 | The intended case is not regressed | cases `SCC-295 A2` / `A2b` — CONTROLS, green before the fix and after |
+| A3 | A dotted path and its dotless twin are **different keys** | case `SCC-295 A3` — the two sets do not intersect |
+| A4 | Two lanes touching those twins are **not** in conflict | case `SCC-295 A4` — driven through `resolve`, both approved |
+| A5 | `creates` normalises identically to `paths` | cases `SCC-295 A5` / `A5b` — one shared helper, contract pinned both directions |
+| A6 | The board `evidence` string shows dotted paths | case `SCC-295 A6` — read off the real `evidence` field, not a re-implementation |
+| A7 | Planning-dir filtering is unchanged | case `SCC-295 A7` — CONTROL |
+| A8 | The whole file and the whole suite stay green | `test_label_tasks.py` full run; `run_all.py` through `gate_receipt.py`; `workflow_lint --toolkit-only` |
+
+The literal fixtures those cases use, fenced for the same reason as above:
+
+```text
+A1   .agents/scripts/risk_seam.py     A1b  .mcp.json  .gitignore
+A2   ./x.py -> x.py                   A2b  ././x.py -> x.py
+A3   .agents/x.py  vs  agents/x.py    A7   ./_artifacts/a.md -> dropped
+A5   creates: .agents/scripts/new_helper.py
+```
 
 ## Declared Change Set
 
