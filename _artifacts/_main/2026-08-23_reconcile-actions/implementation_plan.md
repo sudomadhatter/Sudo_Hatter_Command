@@ -91,11 +91,24 @@ lane's own commit, where a human and the review both read it.
 ### What a ticked row looks like
 
 ```
-- [x] **C0 — store the Jira API token.** — verified 2026-08-23 (measured): keychain item `sudo-jira`
+- [x] **C0 - store the Jira API token.** -- verified 2026-08-23 (measured): keychain item `sudo-jira`
 ```
 
-Same line, so `_ANY_ROW_RE` still matches it and `_collect`'s continuation window still closes on it.
-Nothing about the existing parse changes.
+⚠️ **REVIEW CORRECTION (2026-08-23).** This block and refusal 3 above both described code the lane
+does not ship, and the plan is part of the diff, so a reader would have been misled by the artifact
+of record:
+
+- The marker is **ASCII `--`**, not an em dash. It is written by a machine into a tracked file on a
+  Mac *and* a PC, and an em dash there is one console-encoding difference from a diff nobody can
+  explain (`powershell-console-fakes-mojibake`). The reason lived only in a code comment.
+- **Refusal 3's deny-set example list is wrong.** It named `done`, `verified`, `ok`, `n/a` — the
+  shipped `_GENERIC_EVIDENCE` contains **none** of those. Mutant M2 proved 35 of the original 37
+  entries were unreachable behind the length/word floor, so the set is now 19 **long** contentless
+  phrases, every one ≥16 chars and ≥3 words, which is the one shape a floor cannot see.
+- **The proof does not always land on the checkbox line.** A wrapped row keeps its box on the first
+  line and takes the proof after its **last** word; the line count never changes either way.
+
+`_ANY_ROW_RE` still matches the ticked row and `_collect`'s continuation window still closes on it.
 
 ### Where the doors change
 

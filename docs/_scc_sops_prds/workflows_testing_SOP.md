@@ -1015,7 +1015,8 @@ is what makes this reachable, so it is not a hypothetical.
 Then you settle rows one at a time:
 
 ```bash
-… reconcile-actions --walkthrough <path> --tick <line> --evidence "<what proves it>"       --source measured|operator
+… reconcile-actions --walkthrough <path> --tick <line> \
+      --evidence "<what proves it>" --source measured|operator [--expect "<text from the row>"]
 ```
 
 **The rule for ticking, and it is the operator's ruling of 2026-08-23:** derive the check and RUN
