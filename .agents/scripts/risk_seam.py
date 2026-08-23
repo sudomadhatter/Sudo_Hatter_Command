@@ -72,6 +72,23 @@ def _unclassified() -> dict:
     return {"status": "unclassified", "tiers": {}}
 
 
+def _rooted(result: dict, top: "Path | None") -> dict:
+    """Echo WHICH repo the answer is about, whenever one was resolved (SCC-289).
+
+    ⛔ Without this a caller cannot tell "no graph in the project" from "I classified the wrong
+    tree". The four review/audit doors run from the command centre while reviewing a PROJECT
+    worktree; before `--repo` existed they all resolved the CENTRE, which has no graph, so every
+    project review returned `unclassified` and read as a missing index. The echo makes the mistake
+    visible in the output the reviewer already pastes.
+
+    Absent when no root resolved at all — and absent on the empty-input early return, which stays
+    byte-identical to the shape SCC-228 froze.
+    """
+    if top is not None:
+        result["root"] = str(top)
+    return result
+
+
 def _git(root: Path, *args: str) -> str | None:
     try:
         r = subprocess.run(["git", *args], cwd=str(root), capture_output=True,
@@ -231,16 +248,17 @@ def classify(paths: list[str], root: str | os.PathLike | None = None) -> dict:
     """
     if not paths:
         return _unclassified()
+    top = None
     try:
         top = _repo_root(root)
         if top is None or not _graph_is_fresh(top):
-            return _unclassified()
+            return _rooted(_unclassified(), top)
         exe = _cli()
         if not exe:
-            return _unclassified()
+            return _rooted(_unclassified(), top)
         data = _detect_changes(top, exe)
         if data is None:
-            return _unclassified()
+            return _rooted(_unclassified(), top)
 
         wanted = {}
         for given in paths:
@@ -275,9 +293,10 @@ def classify(paths: list[str], root: str | os.PathLike | None = None) -> dict:
                 if key in tiers:
                     tiers[key]["flows"] += 1
 
-        return {"status": "classified", "test_links": _test_link_count(top), "tiers": tiers}
+        return _rooted(
+            {"status": "classified", "test_links": _test_link_count(top), "tiers": tiers}, top)
     except Exception:                       # noqa: BLE001 — ⛔ the seam degrades, never raises
-        return _unclassified()
+        return _rooted(_unclassified(), top)
 
 
 def gates_audit(result: dict) -> bool:
@@ -287,12 +306,48 @@ def gates_audit(result: dict) -> bool:
     return False
 
 
+USAGE = (
+    "usage: risk_seam.py classify [--repo <repo-root>] <path> [<path> ...]\n"
+    "  --repo  the repository the paths belong to. Default: the git repo of CWD.\n"
+    "          Pass it from any door that reviews a tree it is not standing in - a review run\n"
+    "          from the command centre with no --repo classifies the CENTRE (SCC-289).\n"
+)
+
+
+def _bad(msg: str) -> int:
+    print(f"risk_seam.py: {msg}\n{USAGE}", file=sys.stderr)
+    return 2
+
+
 def main() -> int:
     args = sys.argv[1:]
     if not args or args[0] != "classify":
-        print("usage: risk_seam.py classify <path> [<path> ...]", file=sys.stderr)
+        print(USAGE, file=sys.stderr)
         return 2
-    print(json.dumps(classify(args[1:]), indent=1))
+
+    rest, root, paths, i = args[1:], None, [], 0
+    while i < len(rest):
+        a = rest[i]
+        if a == "--repo":
+            # ⛔ A bare --repo is exit 2, never a silent fall back to CWD. An unset shell variable
+            # expands to nothing, and the quiet fallback is exactly the wrong-tree answer this
+            # flag exists to stop.
+            if i + 1 >= len(rest):
+                return _bad("--repo needs a value")
+            root, i = rest[i + 1], i + 2
+            continue
+        if a.startswith("--repo="):
+            root = a.split("=", 1)[1]
+            if not root:
+                return _bad("--repo needs a value")
+            i += 1
+            continue
+        paths.append(a)
+        i += 1
+
+    if not paths:
+        return _bad("classify needs at least one path")
+    print(json.dumps(classify(paths, root=root), indent=1))
     return 0
 
 

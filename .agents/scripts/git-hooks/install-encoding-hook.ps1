@@ -57,23 +57,40 @@ function Install-One([string]$root) {
     return
   }
 
-  if (Test-Path $hook) {
-    $existing = Get-Content $hook -Raw
-    if ($existing -notmatch $MARKER) {
-      Write-Host "  REFUSED $root - a different pre-commit hook is already installed:"
-      Write-Host ($existing -split "`n" | Select-Object -First 5 | ForEach-Object { "      $_" })
-      Write-Host "      chain it by hand if you want both."
-      return
-    }
-  }
-
   $body = @"
 #!/bin/sh
 # $MARKER (installed by .agents/scripts/git-hooks/install-encoding-hook.ps1)
 exec "`$(git rev-parse --show-toplevel)/.agents/scripts/git-hooks/pre-commit-encoding.sh" "`$@"
 "@
+  $bodyLf = ($body -replace "`r`n", "`n")
+
+  # ⛔ AUDIT FINDING F2 (SCC-290). THE MARKER TEST ALONE IS NOT AN OWNERSHIP TEST, and reading it
+  # as one silently DISARMS a gate. `.githooks/pre-commit` is a tracked DISPATCHER that chains two
+  # delegates — the maps refresh and this encoding gate — and it necessarily contains the string
+  # `pre-commit-encoding`. So `-match $MARKER` was true, the installer called the file its own, and
+  # overwrote it with the three-line body below: the maps delegate gone, `git status` showing a
+  # modified `.githooks/pre-commit` the operator reads as "the installer touched its own file", and
+  # the maps silently stale on that machine until a push is refused.
+  #
+  # So ownership is now byte equality, and the three outcomes are distinct:
+  #   no marker         -> a FOREIGN hook. Refuse, print it, tell them to chain by hand.
+  #   marker, different -> OURS BUT EXTENDED (the dispatcher). Refuse — same message, because the
+  #                        answer is the same: chain it, do not clobber it.
+  #   marker, identical -> ours and unchanged. Rewriting is a no-op; keep the existing behaviour.
+  if (Test-Path $hook) {
+    $existing = Get-Content $hook -Raw
+    $existingLf = ($existing -replace "`r`n", "`n")
+    if (($existing -notmatch $MARKER) -or ($existingLf.TrimEnd() -ne $bodyLf.TrimEnd())) {
+      $why = if ($existing -notmatch $MARKER) { "a different pre-commit hook is already installed" }
+             else { "the pre-commit hook here CHAINS more than the encoding gate (overwriting it would drop the others)" }
+      Write-Host "  REFUSED $root - ${why}:"
+      Write-Host ($existing -split "`n" | Select-Object -First 5 | ForEach-Object { "      $_" })
+      Write-Host "      chain it by hand if you want both."
+      return
+    }
+  }
   # LF only: git runs this through sh, and CRLF here is a "bad interpreter" error.
-  [System.IO.File]::WriteAllText($hook, ($body -replace "`r`n", "`n"), `
+  [System.IO.File]::WriteAllText($hook, $bodyLf, `
     (New-Object System.Text.UTF8Encoding $false))
   Write-Host "  installed $hook"
 }

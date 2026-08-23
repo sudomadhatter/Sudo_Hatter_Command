@@ -19,6 +19,18 @@ scripts / hooks / commands / rules / docs, zero deployable paths), and the parts
 this lane (its commit gate answers only to `AVCH`) — it is **AVCH-78**, its own lane in that repo, with
 its own plan at `Projects/AGY_AVIATIONCHAT/.claude/worktrees/AVCH-78-graph-scope-hooks/_artifacts/_main/2026-08-22_avch-78-graph-scope-hooks/implementation_plan.md`.
 
+**⭐ Operator directive (2026-08-22, mid-lane): all three parts land on THIS working tree as ONE
+commit at the end.** Build order below is unchanged — it is the order the edits are *made*, not the
+number of commits. Three consequences, stated so nobody rediscovers them at the gate:
+1. `sop_currency.py` is per-commit, so the SOP hunks for A9, B12 and C4 all stage in that single commit
+   (the Observation at the end of the Self-Audit is superseded for this lane only).
+2. B's proof "the pre-commit fires on every B-onward commit" collapses to **one** firing — that one
+   commit is the hook's live exercise and the walkthrough quotes it. `refresh_maps.py --verify` and
+   `check_maps --all` at the tip carry the rest of the weight.
+3. The three riders SCC-289/290/291 cannot each key a commit. The single subject leads with the LANE
+   key `SCC-288` and names the riders; `lane_commit_keys()` reads every key in a subject (SCC-282), so
+   `landing_mode: partial` still resolves per rider.
+
 **Build order: A → B → C.** A is the smallest and removes noise from every later gate run. B changes
 the hooks, so every commit after it exercises the new pre-commit on real work. C last, so this lane's
 own close-out is the first to use the new ticket tool on its own tickets.

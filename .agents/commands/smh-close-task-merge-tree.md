@@ -540,6 +540,32 @@ python3 .agents/scripts/jira_feed.py finish --key <JIRA-KEY> \
 python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY> --project "$REPO"   # must exit 0
 ```
 
+⭐ **Then close the DESCRIPTION out too — the `## Plan` checklist and `## Done`.** A ticket whose
+Plan boxes are all still unticked reads, forever, as work that never happened. `jira_ticket.py done`
+ticks them and appends what shipped by rewriting the outline file in the tree and re-rendering from
+it — the tree stays the source, so the board and the branch cannot disagree
+(`.agents/rules/jira.md` §"The description is the fast read"). Do this for the lane's key **and each
+rider**:
+
+```bash
+python3 .agents/scripts/jira_ticket.py done --key <JIRA-KEY> \
+       --outline _artifacts/_main/<folder>/tickets/<JIRA-KEY>.md \
+       --tick 1,2,3,4 \
+       --done-line "<what shipped, from the walkthrough - one line per Done row>" \
+       --files "Plan: _artifacts/_main/<folder>/implementation_plan.md - attached - \
+https://github.com/sudomadhatter/<repo>/blob/main/_artifacts/_main/<folder>/implementation_plan.md"
+
+python3 .agents/scripts/jira_ticket.py attach --key <JIRA-KEY> \
+       --file _artifacts/_main/<folder>/walkthrough.md
+```
+
+⛔ **Rewrite the `Files` link to `blob/main/`.** The one written at planning time points at the lane
+branch, and `--after-merge` runs *after* that branch is pruned — a dead link on a closed ticket.
+
+⚠ **`attach` exiting 5 does not block the close-out.** It means this machine has no Atlassian API
+token (a one-time setup it prints in full); `done` still landed through acli. Record it as a line in
+the hand-back, not as a failure.
+
 ⛔ **`--project "$REPO"` is REQUIRED on both.** Both subcommands resolve their repo by walking up
 from **cwd**, and cwd is not intent — it resets to the shared checkout at slash-command boundaries,
 and that checkout is on whatever branch the operator left it on. `devrecord`'s slug default reads

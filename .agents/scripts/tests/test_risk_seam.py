@@ -139,6 +139,25 @@ def git_only_path() -> str | None:
     return None if shutil.which("code-review-graph", path=d) else d
 
 
+def unclassified_shape(got: dict, root: "Path | None" = None) -> bool:
+    """The degraded shape, WHOLE — status + tiers + (since SCC-289) the `root` echo.
+
+    ⛔ Still a whole-shape check, not a loosened one: any key outside {status, tiers, root} fails,
+    `tiers` must be empty, and when a repo is named the echo must be THAT repo. The six degradation
+    cases used to compare against a two-key literal; the echo is the only field allowed to join it,
+    and it is required whenever a root resolved — a degraded answer that cannot say which tree it
+    was about is the ambiguity SCC-289 exists to remove.
+    """
+    if set(got) - {"status", "tiers", "root"}:
+        return False
+    if got.get("status") != "unclassified" or got.get("tiers") != {}:
+        return False
+    if root is None:
+        return True
+    echoed = got.get("root")
+    return echoed is not None and Path(echoed).resolve() == Path(root).resolve()
+
+
 def call_classify(root: Path, paths: list[str], env: dict[str, str]) -> dict:
     """Out of process, because PATH is read at call time and this suite runs concurrently."""
     code = ("import json,sys;sys.path.insert(0,%r);import risk_seam as rs;"
@@ -150,6 +169,21 @@ def call_classify(root: Path, paths: list[str], env: dict[str, str]) -> dict:
         return json.loads(r.stdout)
     except ValueError:
         return {"status": f"UNPARSEABLE rc={r.returncode}", "stderr": r.stderr[-400:]}
+
+
+def call_cli(cwd: Path, argv: list[str], env: dict[str, str]) -> tuple[int, dict, str]:
+    """Run risk_seam.py as the DOORS run it — a real argv, a real cwd, a real process.
+
+    ⛔ `classify(paths, root=…)` has taken a root since SCC-278; the defect SCC-289 fixes is that
+    the CLI had no way to pass one, so every door invoking it from the command centre classified
+    the CENTRE's cwd. Calling the function with `root=` cannot see that bug — only argv can.
+    """
+    r = subprocess.run([sys.executable, str(REPO / ".agents" / "scripts" / "risk_seam.py"), *argv],
+                       capture_output=True, text=True, env=env, cwd=str(cwd))
+    try:
+        return r.returncode, json.loads(r.stdout), r.stderr
+    except ValueError:
+        return r.returncode, {}, (r.stderr or r.stdout)[-400:]
 
 
 def main() -> int:
@@ -226,16 +260,16 @@ def main() -> int:
             graph_at(tmp, "0" * 40)          # a sha that is not HEAD
             fake_cli(tmp / "bin", CANNED)
             got = call_classify(tmp, ["src/a.py"], with_path(tmp / "bin"))
-            c.check("E unclassified on a stale graph",
-                    got == {"status": "unclassified", "tiers": {}}, str(got)[:300])
+            c.check("E unclassified on a stale graph, and it says WHICH tree",
+                    unclassified_shape(got, tmp), str(got)[:300])
 
     if c.block("F · ⛔ no graph at all is unclassified"):
         with TempDir() as tmp:
             git_repo(tmp)
             fake_cli(tmp / "bin", CANNED)
             got = call_classify(tmp, ["src/a.py"], with_path(tmp / "bin"))
-            c.check("F unclassified with no graph db",
-                    got == {"status": "unclassified", "tiers": {}}, str(got)[:300])
+            c.check("F unclassified with no graph db, and it says WHICH tree",
+                    unclassified_shape(got, tmp), str(got)[:300])
 
     if c.block("G · ⛔ no CLI on this machine is unclassified"):
         with TempDir() as tmp:
@@ -250,7 +284,7 @@ def main() -> int:
                            HOME=str(tmp / "home"), USERPROFILE=str(tmp / "home"))
                 got = call_classify(tmp, ["src/a.py"], env)
                 c.check("G unclassified with the tool absent (git still present)",
-                        got == {"status": "unclassified", "tiers": {}}, str(got)[:300])
+                        unclassified_shape(got, tmp), str(got)[:300])
 
     # ── I · the pipx fallback. G alone does NOT pin the probe ─────────────────────────────────
     # G shows only that the seam degrades when the tool is missing — it says nothing about HOW the
@@ -283,11 +317,11 @@ def main() -> int:
             fake_cli(tmp / "bin", CANNED, rc=1)
             got = call_classify(tmp, ["src/a.py"], with_path(tmp / "bin"))
             c.check("H unclassified on a non-zero exit",
-                    got == {"status": "unclassified", "tiers": {}}, str(got)[:300])
+                    unclassified_shape(got, tmp), str(got)[:300])
             fake_cli(tmp / "bin2", "not json at all")
             got2 = call_classify(tmp, ["src/a.py"], with_path(tmp / "bin2"))
             c.check("H unclassified on unparseable stdout",
-                    got2 == {"status": "unclassified", "tiers": {}}, str(got2)[:300])
+                    unclassified_shape(got2, tmp), str(got2)[:300])
 
     # ── J · a corrupt graph db must not raise out of the seam ─────────────────────────────────
     if c.block("J · ⛔ a corrupt graph db degrades, it does not raise"):
@@ -298,7 +332,7 @@ def main() -> int:
             fake_cli(tmp / "bin", CANNED)
             got = call_classify(tmp, ["src/a.py"], with_path(tmp / "bin"))
             c.check("J unclassified, no traceback",
-                    got == {"status": "unclassified", "tiers": {}}, str(got)[:300])
+                    unclassified_shape(got, tmp), str(got)[:300])
 
     # ── K · the CLI door prints the tiers the review command reads ────────────────────────────
     if c.block("K · the CLI prints the same JSON the commands quote"):
@@ -393,6 +427,62 @@ def main() -> int:
             c.check("L SKIPPED — no code-review-graph and/or no graph db on this machine "
                     "(the canned shape in this file is therefore UNVERIFIED here)", True,
                     f"exe={exe} exists={Path(exe).exists()} db={db.exists()}")
+
+    # ── N · SCC-289 · the CLI takes --repo, and the answer is about THAT repo ─────────────────
+    # THE BUG THIS PINS: `_repo_root(None)` falls back to `git rev-parse --show-toplevel` of CWD.
+    # The four review/audit doors run from the command centre while reviewing a PROJECT worktree,
+    # so every project review resolved the CENTRE as the repo — which carries no graph, so the
+    # answer was ALWAYS `unclassified`, and looked exactly like "this machine has no graph".
+    if c.block("N · SCC-289 · classify --repo reads the named repo, not cwd"):
+        with TempDir() as fixture, TempDir() as elsewhere:
+            head = git_repo(fixture)
+            graph_at(fixture, head)
+            fake_cli(fixture / "bin", CANNED)
+            git_repo(elsewhere)                     # a REAL, DIFFERENT git repo — with no graph
+            env = with_path(fixture / "bin")
+
+            rc, got, err = call_cli(elsewhere, ["classify", "--repo", str(fixture), "src/a.py"], env)
+            c.check("N exit 0", rc == 0, f"rc={rc} err={err[:200]}")
+            c.check("N the JSON ECHOES the root it classified against",
+                    got.get("root") == str(fixture), f"root={got.get('root')!r} want={fixture}")
+            c.check("N status is classified — the FIXTURE's graph was read, not cwd's absent one",
+                    got.get("status") == "classified", str(got)[:300])
+            c.check("N the tier belongs to the FIXTURE's path",
+                    got.get("tiers", {}).get("src/a.py", {}).get("risk") == 0.7,
+                    str(got.get("tiers"))[:300])
+
+            # The other half, and it is what makes the first half mean something: WITHOUT the flag
+            # the same command from the same cwd is unclassified. If this passed too, `--repo`
+            # would be decoration.
+            rc2, got2, err2 = call_cli(elsewhere, ["classify", "src/a.py"], env)
+            c.check("N control · no --repo from that cwd is unclassified",
+                    rc2 == 0 and got2.get("status") == "unclassified",
+                    f"rc={rc2} got={str(got2)[:200]} err={err2[:150]}")
+            # Compared RESOLVED: this root came from `git rev-parse`, which reports the physical
+            # path, and on this Mac `/tmp` is a symlink to `/private/tmp`. The `--repo` half above
+            # is compared EXACTLY on purpose — an argument is used as given (Port Check 1).
+            root2 = got2.get("root")
+            c.check("N control · and it echoes the CWD repo as its root, not the fixture",
+                    root2 is not None and Path(root2).resolve() == elsewhere.resolve()
+                    and Path(root2).resolve() != fixture.resolve(),
+                    f"root={root2!r} want={elsewhere.resolve()}")
+
+    if c.block("O · SCC-289 · --repo is discoverable and argument errors are exit 2"):
+        rc, _got, err = call_cli(REPO, ["classify"], dict(os.environ))
+        c.check("O no paths is exit 2 and the usage names --repo",
+                rc == 2 and "--repo" in err, f"rc={rc} err={err[:200]}")
+        # ⛔ `classify --repo` ALONE CANNOT TEST THIS, and the mutation sweep is what proved it
+        # (M2 survived). Skip the flag and there are no paths left either, so the no-paths error
+        # produces the same exit 2 — the case passed against code that had silently dropped the
+        # value check. The path must come FIRST, so a fall-through would be a perfectly valid
+        # command classified against CWD.
+        rc3, got3, err3 = call_cli(REPO, ["classify", ".agents", "--repo"], dict(os.environ))
+        c.check("O a trailing --repo with no value is exit 2, never a silent cwd fallback",
+                rc3 == 2 and "--repo needs a value" in err3,
+                f"rc={rc3} got={str(got3)[:120]} err={err3[:200]}")
+        rc4, _g4, err4 = call_cli(REPO, ["classify", ".agents", "--repo="], dict(os.environ))
+        c.check("O an EMPTY --repo= is exit 2 too (an unset shell variable expands to this)",
+                rc4 == 2, f"rc={rc4} err={err4[:200]}")
 
     return c.finish()
 

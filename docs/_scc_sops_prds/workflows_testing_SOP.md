@@ -1473,47 +1473,129 @@ fail the same quiet way — a rule that never loads looks exactly like a rule wi
 
 ### The code graph — what the review commands ask before they judge
 
-The command centre and each project carry a **local code graph**: a small SQLite index built by
-`code-review-graph`, which reads your code and answers structural questions the review commands would
-otherwise answer by guessing. *Who calls this function? What breaks if I change it? Which of these
-changed functions has no test?* The reviews and audits ask it for you — there is nothing to type in
-the normal flow.
+**Each project carries a local code graph. The command centre does not, and never will.**
 
-You do see it in one place: a **risk map** printed beside the overlap list when a review re-checks
-its blast radius. Per changed file it names the riskiest thing you changed in it, how many flows run
-through it, and which of your changed functions it can find no test for — a shortlist of where to
-look hardest, nothing more. It also prints `test_links`; when that reads `0`, the "no test" column is
-empty of meaning and the fourth point below says why. When it says `unclassified`, the graph simply had no answer to give (see
-the first point below); that is a normal line, not a problem to solve.
+A code graph is a small SQLite index built by `code-review-graph`, which reads your **code** and
+answers structural questions the review commands would otherwise answer by guessing. *Who calls this
+function? What breaks if I change it? Which of these changed functions has no test?* Inside a project
+the reviews and audits ask it for you — there is nothing to type in the normal flow.
 
-Four things are worth knowing, because each one has bitten:
+⛔ **This repo has no graph of its own, by design.** A code graph parses code, and the command centre
+is markdown: commands, rules, procedure. An index here described almost nothing. There is no server
+for it in any of the four platform configs, no ignore file, and no index — and the map check saying
+"no code graph in this workspace" is the permanent right answer here, not something waiting to be
+built. What maps this repo instead is the **doc graph** (below).
+
+So when you run a review here, the risk map says `unclassified`. **That is correct and expected**, not
+a machine that needs setting up.
+
+#### What you see, in a project
+
+A **risk map** printed beside the overlap list when a review re-checks its blast radius. Per changed
+file it names the riskiest thing you changed in it, how many flows run through it, and which of your
+changed functions it can find no test for — a shortlist of where to look hardest, nothing more. It
+also echoes `root`, so the output states **which repository it answered about**.
+
+#### Reviewing a project from the command centre
+
+Every review and audit door runs from here, so the tool has to be told which tree it is judging:
+
+```bash
+python3 .agents/scripts/risk_seam.py classify --repo "<the project worktree>" <paths…>
+```
+
+⛔ **Without `--repo` it reads whatever directory you are standing in** — the command centre — which
+has no graph, so it answers `unclassified` for every file and that looks exactly like a project whose
+index was never built. The four doors pass it for you; you would type this by hand only to look at a
+project's risk map directly.
+
+#### Three things worth knowing, because each one has bitten
 
 - **It is per machine and per workspace, and it goes stale.** It is not in git. A fresh clone, a fresh
-  worktree, or someone else's commits pulled down means the map no longer matches the code. The map
-  check (`/smh-update-maps-indexes`) notices and tells you; the fix is one command in that repo:
-  `code-review-graph update`.
+  worktree, or someone else's commits pulled down means the index no longer matches the code. The map
+  check notices and tells you; the fix is one command in that repo: `code-review-graph update`.
 - **Installing it is a per-machine step, like `gh` or `firebase`.** `pipx install code-review-graph`
-  on each machine, then `code-review-graph build` once in each repo you work in. The new-machine guide
-  carries both, including the one editor quirk that makes the tools silently absent on the Mac.
+  on each machine, then `code-review-graph build` once in each **project** you work in — never here.
+  The new-machine guide carries both, including the one editor quirk that makes the tools silently
+  absent on the Mac.
 - **It narrows where to look; it does not replace looking.** It is exact about who calls a normal
   function, and it gets confused when one file defines several nested functions with the same name.
   So a reviewer confirms a caller's identity before acting on it. That habit is written into the
   commands.
-- **In THIS repo, "no test" from the graph means nothing at all — and in a project repo it means "go
-  and check".** The graph links a test to its subject only when it can follow the import statically.
-  AviationChat's code is laid out that way, so it finds **3427** real links and a gap there is worth
-  chasing. The command centre's own tests all run their subject as a separate program or rewire the
-  import path first, so it finds **zero** — and therefore reports **every** function you changed as
-  untested, including the ones with thorough tests. Left unchecked that reads as a page of missing
-  tests that are not missing.
-
-  You do not have to remember which repo is which: the risk map prints `test_links`, the count of real
-  links it found. **Zero means ignore the "no test" column entirely.** A high number means treat it as
-  a shortlist to check. Either way the *risk* and *flow* columns are unaffected — the call graph works
-  fine in both repos; it is only the test half that is repo-dependent.
+- **Read `test_links` before you read the "no test" column.** The graph links a test to its subject
+  only when it can follow the import statically. AviationChat's code is laid out that way, so it finds
+  thousands of real links and a gap there is worth chasing. A repo whose tests run their subject as a
+  separate program finds **zero** — and then reports *every* changed function as untested, including
+  the thoroughly tested ones. The risk map prints the count so you never have to remember which repo
+  is which: **zero means ignore that column entirely.** The *risk* and *flow* columns are unaffected.
 
 Full reference — every tool, the freshness commands, the install recipe for both machines:
 [`docs/code-review-graph.md`](../code-review-graph.md).
+
+### The doc graph — what maps the command centre instead
+
+Because the code graph cannot read markdown, this repo is mapped by a **doc graph**: a link graph over
+every `.md` file under `.agents/` (the toolkit) and `docs/` (the procedure — every SOP and PRD,
+including this page). It answers *what references what*, and it is what catches a link that quietly
+stopped resolving when a file moved.
+
+It lives at [`docs/doc-graph.md`](../doc-graph.md) (readable) and `docs/doc-graph.json` (complete).
+**You never have to run it.** A `pre-commit` hook regenerates it — and the repo-map's generated
+block — on any commit that touches those two folders, and commits the result alongside your work.
+See "Maps refresh" below.
+
+Two counts are worth understanding when you read it. A **broken-path** reference contains a `/` and
+almost always means a real link that stopped resolving — that is the number that matters. A
+**bare-name** reference is a filename with no path (`walkthrough.md`), which is usually a workflow
+naming a file it will generate rather than linking to one; those are noise.
+
+### Maps refresh — the generated maps keep themselves current
+
+Two files in `docs/` are machine-written: the repo map's tree block, and the doc graph. They used to
+go stale between manual reconciliation runs, which is the worst state a map can be in — it is still
+read as if it were current.
+
+**They now refresh themselves.** A `pre-commit` hook regenerates both and adds them to your commit
+whenever you have touched `.agents/` or `docs/`. A commit that touches neither costs nothing.
+
+That leaves a clean split, and it is the point of the whole thing:
+
+| Layer | Who owns it |
+|---|---|
+| **Generated** — the tree block, the node and edge lists | the hook, on every commit |
+| **Curated** — one-line purposes, INDEX prose, the pointers in `AGENTS.md`, the hand-written blocks at the top of both files | you, via `/smh-update-maps-indexes` |
+
+A hook cannot write prose. What it buys you is that a drift report is now only ever about the half a
+person has to fix.
+
+**Two checks refuse work rather than warn about it.** They run as the commit message is written,
+not as the files are staged — because each has a recorded way out and a `pre-commit` hook cannot see
+a commit message:
+
+- **The broken-reference ratchet.** Your commit may not raise the count of broken references above
+  what it already was. It does not demand zero — there are stale links inside old migration guides —
+  it demands that you not add one. If you do, it names the new reference and the file it is in.
+- **Every door must be named in this page.** Add or rename a command in `.agents/commands/` without
+  giving it a line in this SOP and the commit is refused, naming the door. Retiring a door means
+  deleting its file, and a deleted door cannot be un-named.
+
+Putting **`[maps-ok]`** in the commit message re-baselines both checks for that one commit, and the
+token stays in the log forever — which is the point, the same way `[sop-ok]` works. Use it when the
+graph's **scope** changed (a new folder brought into it), never to wave a real broken link through.
+A mention of the token inside a `#` comment line does not count.
+
+If a commit slips past the hooks — a merge made on GitHub, a `git commit --no-verify`, or a clone
+where hooks were never armed — the **push** is refused instead, and the map check reports it as a
+failure. Either way the message tells you the one command that fixes it:
+
+```bash
+python3 .agents/scripts/refresh_maps.py --staged     # PC: python
+```
+
+`--verify` is the read-only form: it tells you whether the maps match the tree and changes nothing.
+
+Bypasses, if you genuinely need one: `git commit --no-verify` for a single commit, or creating
+`.agents/scripts/git-hooks/DISABLE` to turn the whole thing off on this machine.
 
 ## 9. The Task lane — work on the system itself
 
@@ -2230,6 +2312,29 @@ AviationChat. The sprint holds the current batch, the backlog holds everything e
 links to its branches and commits through the key. How to drive it by hand:
 [jira_manual.md](jira_manual.md); why it's built this way:
 [jira_integration_guide.md](jira_integration_guide.md).
+
+**A ticket description is a FAST READ, never a plan.** Four short sections and nothing else:
+
+| Section | What goes in it |
+|---|---|
+| `Why:` | one paragraph, before any heading — the **problem**, not the solution |
+| `## Plan` | a checklist of **4-8 lines**, which renders as real Jira checkboxes you can tick |
+| `## Done` | empty at first; filled from the walkthrough when the work lands |
+| `## Files` | where the real plan lives in the repo, plus the plan file **attached** to the ticket |
+
+⛔ **The plan itself goes in `_artifacts/`, on the branch, and is ATTACHED to the ticket — never
+pasted into the description.** Pasting it hits Jira's size limit, goes stale the moment the plan is
+edited on the branch, and nobody reads it. The description's source is a small markdown file beside
+the plan (`_artifacts/_main/<folder>/tickets/<KEY>.md`) so it rides the lane and gets reviewed like
+anything else. `/smh-plan-task` writes and attaches it when it mints; `/smh-close-task-merge-tree
+--after-merge` ticks the checklist and fills `## Done` when it closes. The tool underneath is
+`.agents/scripts/jira_ticket.py`, and the full walk-through with every command is
+[jira_integration_guide.md](jira_integration_guide.md) §12.5.
+
+⚠ **Attaching a file needs an Atlassian API token — a one-time setup per machine, and only that one
+thing needs it.** `acli` cannot attach at all. Until you do it, uploading exits **5** and prints the
+instructions, while the description still lands normally:
+[jira-api-token-setup.md](../migrations/install_guides/jira-api-token-setup.md).
 
 **Any agent can read and write the board — live.** There is no "export it for me" step: every
 platform (Claude, Gemini, opencode, Codex, Antigravity) shells out to the authenticated `acli` CLI.

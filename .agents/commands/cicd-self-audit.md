@@ -163,8 +163,11 @@ as the normal fallback:
   ref is the story's EPIC branch (`epic/<KEY>-<slug>`), never `origin/main` (SCC-165). A file in both
   their set and this plan's declared set is a **landing-order dependency**: name which lane lands
   first and what happens to this work if it does not.
-- **Risk context (the code-graph seam):** `python3 .agents/scripts/risk_seam.py classify <declared
-  paths>` *(PC: `python`)* informs this lens's depth — per file, the highest risk score among its
+- **Risk context (the code-graph seam):** `python3 .agents/scripts/risk_seam.py classify --repo
+  "$WORKTREE" <declared paths>` *(PC: `python`)* informs this lens's depth. ⛔ **`--repo` is not
+  optional here (SCC-289).** Without it the seam resolves the repo from CWD, which during a project
+  audit run from the command centre is the CENTRE — and the centre carries no graph, so the answer
+  is always `unclassified` and looks exactly like a project whose index was never built — per file, the highest risk score among its
   changed functions, how many flows it sits on, and which changed functions have no test.
   **Informs, never gates** — `gates_audit()` is False for every return by pinned contract, so audit
   semantics are identical whatever it says. `"status": "unclassified"` is a **normal result** (no

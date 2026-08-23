@@ -1,12 +1,12 @@
 {
   "mcpServers": {
-    "code-review-graph": {
-      "command": "code-review-graph",
-      "args": ["serve"]
-    },
     "md-feedback": {
       "command": "npx",
-      "args": ["-y", "md-feedback", "--workspace=/Users/sudohatter/Sudo_Hatter_Command"]
+      "args": [
+        "-y",
+        "md-feedback",
+        "--workspace=/Users/sudohatter/Sudo_Hatter_Command"
+      ]
     }
   }
 }

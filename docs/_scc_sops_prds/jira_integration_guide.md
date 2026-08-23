@@ -749,6 +749,74 @@ across either board carries **any** label. That is not a filter bug; the JQL is 
 
 ---
 
+## 12.5 Fast-read tickets — the description is the outline, not the plan
+
+**The rule, in one line: the tree is the spec, the description is the outline, and the plan is an
+attachment.**
+
+Descriptions used to carry whole implementation plans. That failed three ways at once — Jira has a
+size limit and long plans hit it, the copy in the ticket went stale the moment the real plan was
+edited on the branch, and nobody read a wall of text on a board. So a ticket description is now a
+**fast read**: four short sections that answer *why*, *what will be done*, *what was done*, and
+*where the real plan lives*.
+
+### The shape
+
+| Section | What goes in it |
+|---|---|
+| `Why:` | one paragraph, before any heading — the **problem**, not the solution |
+| `## Plan` | a checklist of **4–8 lines**. These render as real Jira checkboxes you can tick |
+| `## Done` | empty at first (`(filled at close-out)`); filled from the walkthrough when the work lands |
+| `## Files` | the plan's path in the repo, its GitHub link, and the plan file **attached** to the ticket |
+
+The source of that description is a small markdown file that lives **beside the plan** in the repo —
+`_artifacts/_main/<folder>/tickets/<KEY>.md`. It rides the branch, it shows up in the diff, and it
+gets reviewed like anything else. Nobody types a description into Jira by hand.
+
+### The tool
+
+```bash
+# render it and look at it - no network, nothing is written anywhere
+python3 .agents/scripts/jira_ticket.py outline _artifacts/_main/<folder>/tickets/SCC-291.md
+
+# write it to the ticket's description
+python3 .agents/scripts/jira_ticket.py describe --key SCC-291 \
+        --outline _artifacts/_main/<folder>/tickets/SCC-291.md
+
+# attach the actual plan to the ticket
+python3 .agents/scripts/jira_ticket.py attach --key SCC-291 \
+        --file _artifacts/_main/<folder>/implementation_plan.md
+
+# at close-out: tick Plan items 1 and 3, and record what shipped
+python3 .agents/scripts/jira_ticket.py done --key SCC-291 \
+        --outline _artifacts/_main/<folder>/tickets/SCC-291.md \
+        --tick 1,3 --done-line "the graph moved to the projects"
+```
+
+On Windows use `python` instead of `python3`. The commands are otherwise identical.
+
+The two Task doors run these for you — `/smh-plan-task` when it mints the tickets, and
+`/smh-close-task-merge-tree --after-merge` when it closes them. You would type them by hand only to
+fix up a ticket outside a lane.
+
+### One-time setup per machine: the API token (only `attach` needs it)
+
+⛔ **`acli` cannot attach a file.** Its `attachment` subcommand has `list` and `delete` and no `add`,
+and the credential `acli` stores for itself is a wrapped copy that is rejected by the REST API. So
+uploading needs a real Atlassian API token of its own, stored once per machine:
+
+- **Mac / PC:** follow `docs/migrations/install_guides/jira-api-token-setup.md`. The credential item
+  is named **`sudo-jira`** on every machine — that name is the contract.
+- The tool looks for `$JIRA_API_TOKEN` first, then that stored item.
+
+**Until you do it, nothing is broken.** `attach` exits **5** and prints the setup instructions;
+`describe` and `done` go through `acli` and work fine, so the fast-read shape lands either way. The
+only thing missing is the attached plan file, and the `## Files` link still points at it on GitHub.
+
+⚠ Two ways of storing that token corrupt it **silently**, and both look like a wrong password
+afterwards: `security add-generic-password -w` with no value truncates at exactly 128 characters, and
+`-w "$(pbpaste)"` stores the command text rather than the token. The guide gives the safe form.
+
 ## 13. What is live, and what is not
 
 **LIVE — re-verified against the board 2026-08-09:**

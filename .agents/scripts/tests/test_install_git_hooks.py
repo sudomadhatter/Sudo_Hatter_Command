@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -124,6 +125,60 @@ def main() -> int:
     c.check("live repository reports ARMED", live_res["armed"] is True)
     c.check("live repository has 0 errors", len(live_res["errors"]) == 0, str(live_res["errors"]))
 
+    # ── F2 · SCC-290 · install-encoding-hook.ps1 must not CLOBBER the chained dispatcher ─────
+    # ⛔ THE AUDIT FINDING, run for real. `.githooks/pre-commit` is a tracked dispatcher that now
+    # chains TWO delegates (the maps refresh, then the encoding gate), and it necessarily contains
+    # the string `pre-commit-encoding`. The installer's ownership test was `-match $MARKER`, so it
+    # called that file its own and overwrote it with its three-line body — silently deleting the
+    # maps delegate on any PC that ran the new-machine guide. `git status` would show a modified
+    # `.githooks/pre-commit`, which reads as "the installer touched its own file".
+    #
+    # Ownership is now byte equality. Three outcomes, all asserted: foreign -> refuse,
+    # ours-but-extended -> refuse, ours-and-identical -> allowed (rewriting is a no-op).
+    ps = shutil.which("pwsh") or shutil.which("powershell")
+    installer = REPO / ".agents" / "scripts" / "git-hooks" / "install-encoding-hook.ps1"
+    # F2 · SCC-290 · the PS installer refuses to clobber an EXTENDED dispatcher
+    if not ps:
+        c.check("F2 SKIPPED - no PowerShell on this machine (the PC path is unverified here)",
+                True, "install pwsh to run this case")
+    else:
+        own_body = (
+            "#!/bin/sh\n"
+            "# pre-commit-encoding (installed by "
+            ".agents/scripts/git-hooks/install-encoding-hook.ps1)\n"
+            'exec "$(git rev-parse --show-toplevel)'
+            '/.agents/scripts/git-hooks/pre-commit-encoding.sh" "$@"\n'
+        )
+        shapes = {
+            "extended (ours + the maps delegate)":
+                ("REFUSED",
+                 "#!/bin/sh\n# two delegates\n"
+                 'MAPS="$ROOT/.agents/scripts/git-hooks/pre-commit-maps.sh"\n'
+                 '[ -x "$MAPS" ] && { "$MAPS" "$@" || exit $?; }\n'
+                 'exec "$ROOT/.agents/scripts/git-hooks/pre-commit-encoding.sh" "$@"\n'),
+            "foreign (no marker at all)":
+                ("REFUSED", "#!/bin/sh\nsomeone-elses-hook\n"),
+            "ours, byte-identical": ("installed", own_body),
+        }
+        for label, (want, body) in shapes.items():
+            with TempDir() as tmp:
+                d = tmp / "wk"
+                seed_fixture_repo(d)
+                subprocess.run(["git", "config", "core.hooksPath", ".githooks"],
+                               cwd=str(d), capture_output=True)
+                (d / ".githooks" / "pre-commit").write_text(body, encoding="utf-8")
+                r = subprocess.run([ps, "-NoProfile", "-File", str(installer),
+                                    "-Repo", str(d)],
+                                   capture_output=True, text=True)
+                after = (d / ".githooks" / "pre-commit").read_text(encoding="utf-8")
+                said = "REFUSED" if "REFUSED" in r.stdout else (
+                    "installed" if "installed" in r.stdout else f"?? {r.stdout[-160:]}")
+                c.check(f"F2 {label} -> {want}", said == want,
+                        f"said {said!r}; rc={r.returncode}; stderr={r.stderr[-200:]}")
+                if want == "REFUSED":
+                    c.check(f"F2 {label}: and the file on disk is UNTOUCHED",
+                            after == body,
+                            "the installer rewrote a hook it had just refused")
     return c.finish()
 
 

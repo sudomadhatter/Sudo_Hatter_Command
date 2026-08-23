@@ -115,7 +115,7 @@ test -s /tmp/mine.txt || { echo 'EMPTY DIFF — STOP (Step 0.6 said so)'; exit 1
 grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                               # the TRUE overlap
 git -C "$WORKTREE" merge-tree --write-tree --messages HEAD "origin/$EPIC" | head -40  # conflicts, before they are real
 git -C "$PROJECT_ROOT" worktree list                                                  # sibling story lanes still live
-python3 .agents/scripts/risk_seam.py classify $(cat /tmp/mine.txt)                    # risk tiers from the code graph
+python3 .agents/scripts/risk_seam.py classify --repo "$WORKTREE" $(cat /tmp/mine.txt) # risk tiers from the PROJECT graph
 ```
 
 **Read the tier map beside the overlap list.** `risk_seam.py` *(PC: `python`)* asks the local code

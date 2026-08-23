@@ -6,8 +6,10 @@ and `_my_resources/diagrams_guides/` until this ticket moved them.
 
   -- WHY THEY ROTTED, WHICH IS THE WHOLE POINT ---------------------------------------------
 They did not rot from neglect. They rotted because `_my_resources/` is named in SCAN_IGNORES
-(check_maps.py), in DEFAULT_REGEN_IGNORE for the repo-map, and in .code-review-graphignore --
-and its own local law says "excluded from repo-map regen + linter scans ... do not fix that."
+(check_maps.py), in DEFAULT_REGEN_IGNORE for the repo-map, and in the code graph's own exclusion
+list -- and its own local law says "excluded from repo-map regen + linter scans ... do not fix
+that." (SCC-289 removed the centre's code graph entirely; projects keep theirs. The other two
+exclusions are live, so the reason below still holds.)
 Ten of the thirteen lived inside a folder every drift-checker in this system is FORBIDDEN to
 look at. No automation could reach them, so nothing could notice when they went wrong. It
 showed: the index they lived under listed 2 files that did not exist and omitted 4 that did.

@@ -80,15 +80,20 @@ This is the one distinction worth memorising, because getting it wrong is how do
 | What it is | the **maintained** surface | Daniel's **thinking + brainstorming space** |
 | Agents | read it, keep it correct | **ignore it** unless he links a specific document |
 | Staleness | must never happen | **fine by design** — it is a scratchpad, not a contract |
-| Drift-checked | yes — `check_maps.py`, repo-map regen, the code graph | **no, deliberately** |
+| Drift-checked | yes — `check_maps.py`, repo-map regen, the doc graph | **no, deliberately** |
 
 **Why the split had to become a rule.** Every procedural doc in this system used to live in
 `_my_resources/`. That folder is named in `SCAN_IGNORES` (`check_maps.py`), in
-`DEFAULT_REGEN_IGNORE`, and in `.code-review-graphignore` — its own local law says *"excluded from
-repo-map regen + linter scans … do not fix that."* So thirteen documents that tell the operator what
+`DEFAULT_REGEN_IGNORE`, and in the code graph's exclusion list — its own local law says *"excluded
+from repo-map regen + linter scans … do not fix that."* So thirteen documents that tell the operator what
 to type sat where **every drift-checker in this system is forbidden to look.** They did not rot from
 neglect; nothing was *able* to notice. The proof was sitting in the open: the index they lived under
 listed 2 files that did not exist and omitted 4 that did.
+
+> **Since SCC-289 the centre carries no code graph at all** — it is markdown, and a code graph
+> parses code. The exclusion that mattered is still live in `SCAN_IGNORES` and
+> `DEFAULT_REGEN_IGNORE`, and `docs/` is now a root of the **doc graph**, which is what actually
+> checks these pages for drift. See `docs/doc-graph.md`.
 
 SCC-74 moved them to `docs/_scc_sops_prds/`, which put them in scanner scope for free — and because
 it is a **level-2 folder**, `check_maps.py` check 2.5 now *requires* it to carry an accurate

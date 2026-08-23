@@ -176,22 +176,19 @@ set. Then `git worktree list`, then per tree
 set and this plan's declared set is a **landing-order dependency**: name which lane lands first
 and what happens if it does not.
 
-**Risk context (the code-graph seam):** `python3 .agents/scripts/risk_seam.py classify <declared
-paths>` *(PC: `python`)* — where risk lives informs THIS lens's depth. It answers from the local
+**Risk context (the code-graph seam):** `python3 .agents/scripts/risk_seam.py classify --repo
+"$REPO" <declared paths>` *(PC: `python`)* — where risk lives informs THIS lens's depth. It answers from the local
 code graph: per file, the highest risk score among its changed functions, how many flows it sits on,
 and which changed functions have no test. It **informs, never gates**: `gates_audit()` is False for
 every possible return, by pinned contract, so the audit's semantics are identical whatever the
 classifier says.
 
-⛔ **`test_links` says whether `untested` means anything, and in the command centre it is `0`.** The
-graph's 24 TESTED_BY edges all point at builtins or a test's own assert methods (measured
-2026-08-22), so `untested` lists every changed function whether or not it is covered. Treat a `0`
-here as "the graph has no opinion on tests" and ignore the list. `risk` and `flows` stay trustworthy
-— `CALLS` resolved 22135/22135 in the same measurement.
+⛔ **In the command centre this returns `unclassified`, permanently and correctly (SCC-289).** The
+centre carries no code graph — a code graph parses code, and this repo is markdown. Run the line for
+the shape, read `"root"` to confirm which tree it answered about, and take every judgement in this
+lens from the diff. Pointed at a PROJECT worktree via `--repo`, the same script reads that project's
+graph and the tiers mean something.
 
-`"status": "unclassified"` is a **normal result, not a failure** — no graph, a graph built at a
-different commit, or the tool not installed all return it, and the pure-Python path is the normal
-path. `code-review-graph update` in that repo is the fix if you want the context.
 ⚠ `untested` reads the CALL GRAPH: a script exercised by spawning it as a subprocess reads as a test
 gap even when it is thoroughly covered. Treat it as *where to look*, never as a finding on its own.
 

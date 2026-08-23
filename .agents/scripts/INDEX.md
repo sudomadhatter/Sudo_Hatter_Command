@@ -1,6 +1,6 @@
 # scripts — INDEX
 
-Maintenance scripts (MASTER here): `check_maps.py` (drift linter), `generate_repo_map.py` (repo-map generator), `sync-agents.ps1` (toolkit sync), `new-project.ps1` (workspace scaffolder), `generate_doc_graph.py` (doc graph). Mirrored to project vendored copies via `/smh-sync-agents`.
+Maintenance scripts (MASTER here): `check_maps.py` (drift linter), `generate_repo_map.py` (repo-map generator), `sync-agents.ps1` (toolkit sync), `new-project.ps1` (workspace scaffolder), `generate_doc_graph.py` (doc graph), `refresh_maps.py` (the pre-commit maps refresh that keeps the last two current). Mirrored to project vendored copies via `/smh-sync-agents`.
 
 **Workflow-enforcement scripts** (Wave 1, 2026-08-03) — these turn checklist prose into executable checks, so a command can say "run the check" instead of asking an agent to hold eight invariants in its head. Stdlib-only Python 3.11, no `yq`/`jq`.
 
@@ -12,7 +12,9 @@ Maintenance scripts (MASTER here): `check_maps.py` (drift linter), `generate_rep
 | `gate_receipt.py` | did this gate actually run, at this commit? | `gate_receipt.py run --story 21.8b --gate ruff -- ruff check backend/` |
 | `flight_recorder.py` | what keeps recurring across closed Task lanes? one event file per close-out (verdict-sha keyed, idempotent) → evidence/candidate/action-required ladder, surfaced as PROPOSALS at SessionStart (SCC-133) | `flight_recorder.py record --task SCC-160 --root _artifacts/_main/<folder> --apply` · `flight_recorder.py surface` |
 | `closeout_preflight.py` | is this story safe to close out? | `closeout_preflight.py --story 21.8b --expect-key AVCH-91 --project AGY_AVIATIONCHAT --branch claude/AVCH-91-slug` |
-| `risk_seam.py` | risk classification for a path set, behind the stable seam the reviews and self-audits call — answers from the local code graph (per file: worst changed-function risk, flow count, untested functions) plus `test_links`, the count of TESTED_BY edges naming a real subject — **0 in this repo, so `untested` here is noise, not signal**; degrades to `unclassified` with no/stale graph or no CLI; `gates_audit` is False by contract (SCC-228 · SCC-278) | `risk_seam.py classify <paths…>` |
+| `risk_seam.py` | risk classification for a path set, behind the stable seam the reviews and self-audits call — answers from a PROJECT's local code graph (per file: worst changed-function risk, flow count, untested functions) plus `test_links`. ⛔ **`--repo` is mandatory from any door reviewing a tree it is not standing in (SCC-289):** without it the seam resolves the repo from CWD, which during a project review is the command centre — and **the centre carries no code graph at all**, so the answer is always `unclassified`. The JSON echoes `root` so the output states its own subject; degrades to `unclassified` with no/stale graph or no CLI; `gates_audit` is False by contract (SCC-228 · SCC-278 · SCC-289) | `risk_seam.py classify --repo <project-worktree> <paths…>` |
+| `refresh_maps.py` | keeps the GENERATED maps current with no ceremony — regenerates `docs/doc-graph.*` + the `docs/repo-map.md` AUTO block, stages exactly what changed, and refuses the commit on two truth checks: the broken-reference **ratchet** (may not exceed the count at HEAD) and the **reverse door check** (every house door is named in the SOP). Wired into `pre-commit` (`--staged`), `pre-push` (`--verify`) and `check_maps` check 10 (SCC-290) | `refresh_maps.py --staged` · `refresh_maps.py --verify` |
+| `jira_ticket.py` | renders the house **fast-read** ticket description from an outline file in the tree — `Why:` / `## Plan` (real Jira checkboxes) / `## Done` / `## Files` — writes it via acli, and **attaches** the plan over REST, which is the one Jira verb `acli` cannot do at all. Needs an API token (`$JIRA_API_TOKEN` → OS store `sudo-jira`) for `attach` only; everything else works without one (SCC-291) | `jira_ticket.py outline <f.md>` · `describe --key K --outline <f.md>` · `attach --key K --file <p>` · `done --key K --outline <f.md> --tick 1,3` |
 | `declared_change_set.py` | which files did the plan DECLARE it would touch — parsed from the `## Declared Change Set` block, plus the two-sided drift diff (SCC-226) | `declared_change_set.py diff <plan.md> --changed $(git diff --name-only main...)` |
 | `walkthrough_roster.py` | did the review actually RUN — the `lenses_run:` roster, `lenses_na:`, the runtime header and the `dispositions:`/`drift:` record lines, read for both close-out preflights; run it yourself to see what it saw BEFORE the gate does (SCC-240) — bare, it answers only "can the roster be READ?" (the question answerable at Step 4, before the stamp and record lines exist); `--gate` runs the full close-out judgement, `--verdict` supplies a stamp that is not written yet | `walkthrough_roster.py <walkthrough.md> [--gate [--verdict PASS\|CONCERNS\|FAIL\|WAIVED]]` |
 | `split_sprint_status.py` | move board narrative to history, provably losslessly (Wave 4) | `split_sprint_status.py verify --sha <src> --project P` |
@@ -68,5 +70,7 @@ Tests: **`python3 .agents/scripts/tests/run_all.py`** (stdlib only, no pytest; f
 - `check-repo-map-drift.ps1`
 - `generate_doc_graph.py`
 - `generate_repo_map.py`
+- `jira_ticket.py`
+- `refresh_maps.py`
 - `new-project.ps1`
 - `sync-agents.ps1`

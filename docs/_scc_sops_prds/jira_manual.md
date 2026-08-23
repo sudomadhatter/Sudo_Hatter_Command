@@ -106,7 +106,11 @@ Every arrow in that diagram is **you clicking something**. None of it happens on
 2. **+ Create** — the button in the top bar, or the `+ Create` at the bottom of the Backlog list.
 3. **Work type** — see the rule immediately below. **This is not a style choice.**
 4. **Summary** — one line, what it is. This becomes the branch slug later, so keep it plain.
-5. **Description** — what's in scope, what's explicitly *out* of scope, and which repos it touches.
+5. **Description** — the **outline**, never the plan. Four short sections: `Why:` (one paragraph,
+   the problem), `## Plan` (a 4-8 line checklist that renders as real Jira checkboxes), `## Done`
+   (left as `(filled at close-out)`), and `## Files` (where the real plan lives, plus the plan
+   attached to the ticket). If you find yourself pasting more than a screenful, it belongs in
+   `_artifacts/` and attached — see the integration guide, "Fast-read tickets".
    Out-of-scope is the half people skip and then argue about later.
 6. **Parent** — pick the epic it belongs under. Everything is parented; nothing floats loose.
 7. Leave assignee and sprint blank. It lands in the Backlog.

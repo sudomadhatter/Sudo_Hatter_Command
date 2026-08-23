@@ -36,13 +36,19 @@
 | `docs/system-builder.md` | Growing/maintaining the home base itself — `/new-project`, `/sync-agents`, workspace-conversion rules |
 | `docs/migrations/INDEX.md` | New-machine setup / repopulating any `.env` or `auth_keys/` file (→ `new_machine-migration-guide.md`; the manifest inside the hand-carried master.env lists every secret file + its exact path). Standing reference kit. Moved out of `_my_resources/` (excluded from regen) into `docs/` under SCC-89, so it now DOES appear in the AUTO tree below — its `auth_keys/` subtree does not, being ignored by name |
 
-**code-review-graph (the code graph — on-demand, disposable, machine-local).** ONE index, rooted at the
-repo root, covering everything `git ls-files` tracks minus the exclusions in `.code-review-graphignore`.
-In practice that is the master toolkit: **1073 of its 1102 nodes are `.agents/`** — the scripts, commands,
-rules, skills and hooks — plus `docs/` and `.githooks/`. The sync mirrors (`.claude/`, `.opencode/`,
-`.agent/`, `.antigravity/`) are excluded on purpose: they are generated copies of `.agents/` and indexing
-them counts every toolkit symbol three to four times. No project source is indexed here — each project
-under `Projects/` is its own repo with its own graph.
+**code-review-graph (the code graph) — ⛔ THE CENTRE CARRIES NONE, BY DESIGN (SCC-289).** A code graph
+parses code; this repo is markdown, so an index here described almost nothing. There is no MCP server for
+it on any of the four platforms, no ignore file, and no index — `check_maps.py` check 9 says *"no index →
+skip"* and that is the permanent answer here, not a machine that has not built one yet.
+
+The graph is **project-level tooling** and the centre keeps only the project-facing half of it: the
+`code-review-graph` skill, `risk_seam.py`, and `docs/code-review-graph.md`. Inside a project under
+`Projects/`, that project is its own repo with its own index, and a review run *from here* must say which
+one — `risk_seam.py classify --repo <the project worktree> …`. Without `--repo` the seam resolves the repo
+from CWD, which during a project review is this repo, and the answer is always `unclassified`.
+
+What maps the centre instead is the **doc graph** (`docs/doc-graph.md`) — markdown link structure over
+`.agents/` and `docs/` — plus the AUTO tree below.
 
 ```bash
 code-review-graph build      # full rebuild, ~4s here

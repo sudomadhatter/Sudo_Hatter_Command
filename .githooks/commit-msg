@@ -3,10 +3,17 @@
 #
 #   1. merge-target  a merge lands on a branch the model allows     (merge-target-guard.sh)
 #   2. jira          every commit carries this repo's work-item key (commit-msg-jira.sh)
-#   3. sop           usage changes move the SOP quick-reference     (sop-currency.sh)
+#   3. maps          no NEW broken doc ref; every door named in the SOP (commit-msg-maps.sh)
+#   4. sop           usage changes move the SOP quick-reference     (sop-currency.sh)
 #
-# ⭐ GATE 1 IS THE ONLY ONE HERE THAT EXISTS *FOR* MERGES (SCC-144). Gates 2 and 3 both carve merges
-# OUT — git writes those messages, so blocking them blocks the tool. Gate 1 runs on nothing else.
+# ⭐ GATE 1 IS THE ONLY ONE HERE THAT EXISTS *FOR* MERGES (SCC-144). Gates 2, 3 and 4 all carve
+# merges OUT — git writes those messages, so blocking them blocks the tool. Gate 1 runs on nothing
+# else.
+#
+# ⛔ GATE 3 IS HERE, NOT IN pre-commit, FOR THE SAME REASON GATE 4 IS (SCC-290): its escape hatch is
+# a token in the MESSAGE (`[maps-ok]`), and pre-commit cannot see one. The maps REGENERATION half
+# does run at pre-commit — it has to, because it stages files. Truth checks need the message;
+# staging needs to happen before the commit is written. Two hooks, one script.
 # It is FIRST because a merge landing on the wrong branch should not be assessed for message
 # content at all, and because it is the cheapest of the three (a few rev-parses, no interpreter spawn).
 #
@@ -39,6 +46,14 @@ if [ ! -x "$JIRA" ]; then
   echo "    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it."
 else
   "$JIRA" "$@" || exit $?
+fi
+
+MAPS="$ROOT/.agents/scripts/git-hooks/commit-msg-maps.sh"
+if [ ! -x "$MAPS" ]; then
+  echo "  ⚠ maps truth gate not present in this worktree ($MAPS) — a new broken doc reference or"
+  echo "    an unnamed door would pass unchecked. Merge/rebase onto a commit that carries it."
+else
+  "$MAPS" "$@" || exit $?
 fi
 
 SOP="$ROOT/.agents/scripts/git-hooks/sop-currency.sh"

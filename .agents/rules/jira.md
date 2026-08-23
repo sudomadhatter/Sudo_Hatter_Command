@@ -310,13 +310,14 @@ parented (§Work-item types), so *having* a parent says nothing. Parent is an `E
 | Lane | What already holds the breakdown | Subtasks? |
 |---|---|---|
 | **BMAD Story** (AVCH) | the story file's `Tasks / Subtasks` section **+** its `sprint-status.yaml` row | ⛔ **NEVER** |
-| **Command-centre Task** (SCC) | nothing — the ticket description **is** the spec | ✅ **the only place it can live** |
+| **Command-centre Task** (SCC) | `implementation_plan.md` in the tree, **attached to the ticket**, and the ticket's own `## Plan` checklist | ✅ **the only place it can live** |
 
 This is the same question `work_type()` already asks (*is this BMAD sprint work?*), so it adds no new
 axis. A story's breakdown is already written down and machine-joined (`jira_key:` frontmatter, a YAML
 row key that never changes); mirroring it onto the board makes a **second copy that nothing syncs**, and
-it drifts on the first edit of either side. A Task has no such file. **The live boards already match
-this rule exactly: AVCH has zero subtasks, SCC has fourteen.**
+it drifts on the first edit of either side. A Task has no such file — it has a plan in `_artifacts/`,
+which is the same thing one rung lower, and the ticket carries the OUTLINE of it, never the plan itself.
+**The live boards already match this rule exactly: AVCH has zero subtasks, SCC has fourteen.**
 
 ### The threshold — its own branch AND its own worktree, or it is not a ticket
 
@@ -338,13 +339,55 @@ a subtask has none.
 
 ```bash
 acli jira workitem create --project SCC --type Subtask --parent <PARENT-TASK-KEY> \
-  --summary "…" --description "…"        # bare, never --assignee
+  --summary "…" --description-file <(python3 .agents/scripts/jira_ticket.py outline <rider>.md)
 ```
+
+⛔ **`--description-file`, never `--description`** — the shape below is ADF, and a `--description`
+string cannot carry a checklist. Write each rider's outline beside the plan
+(`_artifacts/_main/<folder>/tickets/<KEY>.md`), render it, and mint from that.
 
 ⛔ **The agent PROPOSES the set and writes nothing until the operator says go**, and it proposes only
 **after the `implementation_plan.md` is approved.** Minting off a first read of the ticket is
 speculative work (guardrail 3), and placement stays the operator's (guardrail 2). Print one line per
 subtask naming the branch each will get, then stop.
+
+### The description is the FAST READ — the plan lives in the tree
+
+⛔ **A ticket description is not the place for an implementation plan**, and putting one there fails
+three ways at once: it hits Jira's size limit, it goes stale the moment the plan is edited in the tree,
+and **nobody reads it.** The operator's ruling (2026-08-22): *"those need to be fast reads in the
+description of what the plan is, not the plan. The plan should always be in the artifacts and attached
+to the ticket."*
+
+So: **the tree is the spec, the description is the outline, and the plan is an ATTACHMENT.**
+
+| Section | What goes in it |
+|---|---|
+| `Why:` | ONE paragraph, before any heading. The **problem**, not the solution. |
+| `## Plan` | a checklist, **4–8 lines**. Renders as real Jira checkboxes. One line per thing that will be observably done — a file, a script, a gate. |
+| `## Done` | empty at mint (`(filled at close-out)`); filled from the walkthrough when the lane closes. |
+| `## Files` | the plan's repo path + its GitHub `blob/` link. The plan file itself is attached. |
+
+The outline lives beside the plan as `_artifacts/_main/<folder>/tickets/<KEY>.md` — in the tree, in the
+lane's diff, reviewable — and `.agents/scripts/jira_ticket.py` is what renders and writes it:
+
+```bash
+jira_ticket.py outline  tickets/SCC-291.md                        # the dry run; no network
+jira_ticket.py describe --key SCC-291 --outline tickets/SCC-291.md
+jira_ticket.py attach   --key SCC-291 --file <plan>.md            # REST; acli CANNOT attach
+jira_ticket.py done     --key SCC-291 --outline tickets/SCC-291.md \
+                        --tick 1,3 --done-line "what shipped"      # at close-out
+```
+
+⚠ **`attach` needs an Atlassian API token and nothing else does.** `acli jira workitem attachment` has
+`list` and `delete` and no `add`, and acli's own stored credential is a wrapped copy that 401s against
+REST. Resolution is `$JIRA_API_TOKEN` → OS store item `sudo-jira` → **exit 5 printing the one-time
+setup**. Until that is done `describe` and `done` still work, so the fast-read shape lands either way.
+Setup: `docs/migrations/install_guides/jira-api-token-setup.md`.
+
+⛔ **`done` rewrites the OUTLINE FILE and re-renders from it** — it never edits the description in
+place. The tree stays the source; a ticket edited directly disagrees with the tree the first time
+either is touched, and only one of them is under version control.
 
 ### Lifecycle
 
