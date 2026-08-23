@@ -17,7 +17,7 @@
    "file": ".agents/scripts/jira_feed.py",
    "original": "    if norm in _GENERIC_EVIDENCE:",
    "mutated": "    if norm in ():",
-   "case": "A3d generic evidence is refused",
+   "case": "A3d contentless evidence that CLEARS the floor is still refused",
    "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
   },
   {
@@ -119,6 +119,22 @@
     "python3",
     ".agents/scripts/tests/test_command_surfaces.py"
    ]
+  },
+  {
+   "id": "M15 a SHORT word is added to the deny-set (dead weight returns)",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    \"confirmed by operator\", \"operator confirmed it\", \"the operator confirmed\",",
+   "mutated": "    \"ok\", \"confirmed by operator\", \"operator confirmed it\", \"the operator confirmed\",",
+   "case": "A3i every deny-set entry CLEARS the floor (else it is dead weight)",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M16 the deny-set is emptied outright",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "_GENERIC_EVIDENCE = frozenset({",
+   "mutated": "_GENERIC_EVIDENCE = frozenset()\n_UNUSED_EVIDENCE = frozenset({",
+   "case": "A3i ...and the set is not empty, which would also satisfy the row above",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
   }
  ]
 }

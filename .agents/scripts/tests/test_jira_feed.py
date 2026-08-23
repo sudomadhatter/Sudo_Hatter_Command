@@ -4033,7 +4033,14 @@ As **an admin**, I want **archive**, so that **nothing is lost.**
             ("A3a a line that is already ticked is not an open row", L_C1, GOOD, "measured"),
             ("A3b a line OUTSIDE `## Your Actions` is not tickable", 5, GOOD, "measured"),
             ("A3c empty evidence is refused", L_C0, "   ", "measured"),
-            ("A3d generic evidence is refused", L_C0, "done", "operator"),
+            # ⛔ LONG on purpose. "done" is 4 characters, so the FLOOR refuses it and this
+            # row never reached the deny-set at all - which is precisely how mutant M2
+            # survived a green suite. This phrase clears the floor (21 chars, 3 words) and
+            # can only be refused by the set.
+            ("A3d contentless evidence that CLEARS the floor is still refused",
+             L_C0, "confirmed by operator", "operator"),
+            ("A3d2 ...and the archetypal one-word claim is refused too",
+             L_C0, "done", "operator"),
             ("A3e a CEREMONY row is refused (SCC-193 - the agent RUNS those)",
              L_CLICK, GOOD, "measured"),
             ("A3f a MERGE row is refused (SCC-175 - `finish` computes it from the repo)",
@@ -4056,6 +4063,22 @@ As **an admin**, I want **archive**, so that **nothing is lost.**
                         f"{out.strip()[:300]}")
                 c.check(label + " - and NOTHING was written",
                         p.read_bytes() == raw, "the file changed on a refusal")
+
+        # ⛔ A3i · THE DENY-SET POLICES ITSELF. Every entry must be something the FLOOR cannot
+        # already refuse, or it is an unreachable branch that looks like a guard. The first draft
+        # was 37 short words and 35 of them were dead - measured, not guessed: mutant M2 gutted
+        # the whole set to `()` and the suite stayed green. This row is what stops that returning
+        # the next time somebody adds "ok" to the list.
+        c.check("A3i every deny-set entry CLEARS the floor (else it is dead weight)",
+                not [e for e in jira_feed._GENERIC_EVIDENCE
+                     if len(e) < jira_feed._MIN_EVIDENCE_CHARS
+                     or len(e.split()) < jira_feed._MIN_EVIDENCE_WORDS],
+                str(sorted(e for e in jira_feed._GENERIC_EVIDENCE
+                           if len(e) < jira_feed._MIN_EVIDENCE_CHARS
+                           or len(e.split()) < jira_feed._MIN_EVIDENCE_WORDS)))
+        c.check("A3i ...and the set is not empty, which would also satisfy the row above",
+                len(jira_feed._GENERIC_EVIDENCE) >= 10,
+                str(len(jira_feed._GENERIC_EVIDENCE)))
 
         # ⛔ THE FLOOR NEEDS ITS OWN CASE, and designing the mutant table is what showed it.
         # A3d ticks with "done", which the DENY-SET catches - so deleting the length/word floor

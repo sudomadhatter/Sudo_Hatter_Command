@@ -1012,10 +1012,22 @@ the ticket, and it is the only kind that should.
 It refuses five ways and writes nothing on any of them: a line that is not an open row (a stale
 number, an already-settled row, a `- [ ]` from the agent's own `## Task Checklist`, a fenced
 example) · **empty** evidence · **contentless** evidence · a **ceremony** row (SCC-193 — the agent
-runs those; delete the row) · and the **merge** row (SCC-175 — `finish` computes that one). ⚠️ The
-contentless check is a **floor, not a content judge**: it refuses the forms that carry nothing
-(`done`, `verified`, under 16 characters or 3 words), and no check can tell a real measurement from
-a plausible sentence. The real guard is that the evidence lands in the file. ⛔ **The verb never
+runs those; delete the row) · and the **merge** row (SCC-175 — `finish` computes that one).
+
+⚠️ **The contentless check is a FLOOR, not a content judge, and it is two layers with a division of
+labour worth knowing.** A **length/word floor** does the volume — under **16 characters** or **3
+words** is refused whatever it says, so `done`, `ok`, `verified` and `n/a` never get further. A
+short **exact-match phrase set** sits above it for the one shape a floor structurally cannot see:
+**long and contentless** — *"confirmed by operator"*, *"it has been done"*, *"already taken care
+of"*. Every phrase in that set clears the floor, and a test asserts exactly that, so a short word
+added to it later fails the suite instead of silently doing nothing (the first draft was 37 words
+and 35 of them were unreachable — a mutant, not a review, is what found it).
+
+⛔ **The match is exact on purpose, and it will never grow into a judge.** A fuzzy *"does this
+sentence carry content"* test would refuse real operator quotes, and a **false refusal HOLDS a
+ticket** — the exact failure this feature exists to end. Over-accepting is recoverable by a human
+reading the file; over-refusing is not recoverable by anyone. So the real guard is that the
+evidence lands in the file, not that a regex approved it. ⛔ **The verb never
 derives its own evidence** — an agent that could both invent the check and pass it is
 self-certifying, which is the thing this closes. Law: `.agents/rules/completion-not-illusion.md`
 §4, and the step is mandatory in all four doors that call `finish --apply`

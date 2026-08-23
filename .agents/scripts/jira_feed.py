@@ -2421,12 +2421,29 @@ REFUSED = "jira-feed: REFUSED"
 # The real guard is that the evidence lands in the file, in the lane's own commit, where the
 # operator and `/smh-code-review` both read it.
 _GENERIC_EVIDENCE = frozenset({
-    "done", "verified", "confirmed", "complete", "completed", "checked", "check",
-    "yes", "no", "ok", "okay", "true", "n/a", "na", "none", "nil",
-    "it works", "works", "working", "fine", "good", "all good", "looks good",
-    "tested", "passed", "pass", "green", "as discussed", "as agreed",
-    "operator confirmed", "confirmed by operator", "operator said yes",
-    "already done", "was done", "did it", "sorted", "handled",
+    # ⛔ EVERY ENTRY HERE MUST CLEAR THE FLOOR BELOW, or it is dead weight wearing a guard's
+    # clothes. Mutant M2 measured that: gutting this set to `()` changed NOTHING, because the
+    # first draft was 37 short words ("done", "ok", "verified") and the length/word floor was
+    # already refusing all but two of them. An unreachable branch that looks like a check is
+    # worse than no check - it collects trust it cannot pay out.
+    #
+    # So the division of labour is explicit. The FLOOR does the volume: anything under 16
+    # characters or 3 words is refused whatever it says. This set exists for the one shape the
+    # floor structurally cannot see - LONG and contentless. Every phrase below is >= 16
+    # characters AND >= 3 words, and `test_jira_feed.py` case A3i asserts that of the whole set,
+    # so a short word added here fails the suite instead of silently doing nothing.
+    #
+    # Exact match, deliberately. A fuzzy "does this sentence carry content" test would refuse
+    # real operator quotes, and a false refusal HOLDS a ticket - which is the failure this whole
+    # ticket exists to end. Over-accepting is recoverable by a human reading the file;
+    # over-refusing is not recoverable by anyone.
+    "confirmed by operator", "operator confirmed it", "the operator confirmed",
+    "operator said yes", "operator says it is done", "operator confirmed done",
+    "done and confirmed", "verified and done", "checked and confirmed",
+    "confirmed it is done", "confirmed this is done",
+    "it has been done", "this has been done", "it is already done",
+    "it was done already", "all of it is done", "yes it is all done",
+    "already taken care of", "taken care of already",
 })
 _MIN_EVIDENCE_CHARS = 16
 _MIN_EVIDENCE_WORDS = 3
