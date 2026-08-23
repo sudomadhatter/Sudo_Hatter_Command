@@ -53,6 +53,14 @@ close-out fixes in Findings 4–6.
     `--verify` printed could not fix it. See Finding 4.
 - [x] **E (SCC-288) — a green mutation sweep was leaving the mutant running.** See Finding 5.
 - [x] **F (SCC-288) — the link checker read the doc graph's report as its own findings.** Finding 6.
+- [x] **G (SCC-288) — the adversarial review, and the three `important` findings it left open.**
+  - Five lenses at `27870ba`; eight patches at `7a311c6`; verdict **`CONCERNS @ a722228`**.
+  - R1 a map may only name what git HAS — `--verify` was refusing pushes over untracked scratch
+    files and `--repair` was writing them into the committed map. `2982b7a`.
+  - R2 `-Uninstall` deleted the tracked `.githooks/pre-commit` dispatcher. `2982b7a`.
+  - R3 the three maps delegates had zero executable coverage — four mutants survived at 58/58.
+    NEW `test_maps_hooks.py`, driving real `git commit` / `git push` / `git merge`. `2982b7a`.
+  - R4–R7 carried, reproduced and tabled — see the last section.
 - [x] The merge itself — lands via this branch's PR
 
 ---
@@ -332,19 +340,26 @@ the second vacuous first draft on this lane, both caught by running RED before G
 
 ---
 
-## Mutation sweep — 36/36 killed
+## Mutation sweep — 46/46 killed
 
 `python3 .agents/scripts/mutation_sweep.py --table _artifacts/_main/2026-08-22_graph-to-projects/sweep.json`
 
 ```
--- sweep clean: 36/36 killed by their declared case --
+-- sweep clean: 46/46 killed by their declared case --
 ```
 
 Every mutant is drawn from a **decision in the source**, not from the cases. Coverage: `risk_seam`
 (M1–M3), the triggers (M4–M5), the ratchet and door check (M6–M8, M26–M27), the kill switch (M9),
 `--verify` read-only (M10), ordering and self-inclusion (M11–M12), the mermaid strip in both
 directions (M13–M14), lobby-relative ids and relative roots (M15–M16), the label (M17), check 10's
-project skip (M18), the PS installer (M19), and `jira_ticket` (M20–M25).
+project skip (M18), the PS installer (M19), and `jira_ticket` (M20–M25). The close-out findings
+added M28–M36 (`--repair`, the bytecode purge, the AUTO-block strip), and the code review's three
+`important` findings added ten more: **M37–M41** for the index filter that closes R1 (no filtering ·
+files-only ancestry · directories unfiltered · the doc graph unfiltered · the doc graph staged last),
+**M42** for the `-Uninstall` ownership test that closes R2, and **S1–S4** for the hook delegates that
+close R3 (the dispatcher never calling the delegate · the delegate exiting 0 · the push remedy
+reverting to `--staged` · the `MERGE_HEAD` carve-out deleted). All four of S1–S4 survived the suite
+at **58/58** before `test_maps_hooks.py` existed; all four die now.
 
 **Five survived the first run, and every one was a real gap or a defective mutant:**
 
@@ -365,6 +380,16 @@ returned exit 3 (`NO_MATCH`) because they target block-free test files, so they 
 `test_hooks_armed.py` and `test_install_git_hooks.py` carry **no `c.block(`** by convention.
 Introducing the first one into each made every pre-existing bare `c.check` an ORPHAN and failed
 `test_suite_runner.py`. The new cases were rewritten in each file's own style.
+
+⛔ **THAT CONVENTION IS A TRAP, and R2's fix walked into it.** A file with no `c.block(` is not
+"wired", so `test_suite_runner.py`'s ORPHAN check exempts it entirely - and the sweep's `--case`
+filter cannot reach anything inside it either, which is why M17/M18/M19 had to run `unfiltered`.
+Adding one block to `test_install_git_hooks.py` for case F3 flipped the file to wired and made
+every one of its pre-existing bare checks an orphan at once. Rewriting the new case "in the file's
+own style" was the wrong answer the first time: it keeps the file unselectable. So the whole file
+was wired instead (`da04d0f`) - five named blocks for the SCC-115 sections, F2 and F3 as SIBLING
+top-level blocks, never nested, because a block inside another block's body is only ever reached
+when the outer label matches and a mutant aimed at it returns exit 3 forever.
 
 ⛔ **THE SANDBOX MADE A GREEN LIE, and it is worth writing down.** `test_jira_ticket.py` reports
 **32/32 inside the sandbox and 39/39 outside it**: `PermissionError` on binding `127.0.0.1:0` makes
@@ -392,14 +417,15 @@ certifying sweep was run outside the sandbox.
 
 **What landed:** `52edbb2` (all three riders' scope) and `14ed813`, `1624a5d` and `4aa9ef2`
 (Findings 4, 5 and 6 — all three found while closing the lane out, the second by the first one's
-symptom), on `chore/SCC-288-graph-to-projects`. Gates green at the tip,
-36/36 mutants killed.
+symptom), then `7a311c6` (the eight patches the five review lenses earned) and `2982b7a` /
+`c733b3f` / `da04d0f` (R1, R2 and R3 — the three `important` findings the review left open), on
+`chore/SCC-288-graph-to-projects`. Gates green at the shipping sha, **46/46** mutants killed.
 
-⛔ **No adversarial review verdict on this lane.** `/smh-code-review` was the next door and it was
-not run — the close-out was invoked straight after the build. Nothing was waved through: with no
-verdict the preflight grants **no SKIP**, so the full mechanical gate ran at the landing sha rather
-than being cited from a review. Stated here because the walkthrough carries no `Verdict:` line and
-that absence should be a fact on the record, not something a later reader has to notice.
+⭐ **The adversarial review DID run, and its verdict is `CONCERNS @ a722228`.** Five lenses, fifteen
+real findings, eleven fixed in-lane and four carried with reasons — the full record is in the Code
+Review section above. It was run because `flight_recorder record` refuses a lane whose walkthrough
+carries no canonical `Verdict:` line (`main_write_gate.py:368`, and `:411` is the refusal), which
+is the machinery working exactly as designed.
 
 **What I decided, and why, without asking:**
 - Moved the two truth checks from `pre-commit` to a new `commit-msg` delegate. The ratchet could not
@@ -420,22 +446,141 @@ that absence should be a fact on the record, not something a later reader has to
 
 ---
 
-## Review findings STILL OPEN at this commit — not fixed, deliberately recorded
+## Code Review (2026-08-22)
 
-Five lenses ran at `27870ba`. The patches that landed are in the commit above. These survived
-assessment as **real** and are **not yet fixed** — they are written here so the next commit on this
-lane picks them up rather than the next reader rediscovering them.
+Verdict: CONCERNS @ a722228
+
+review-runtime:  fan-out
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted:  5/5
+lenses_na:       none
+findings:        15 real · 8 patched at review · 3 patched after (R1-R3) · 4 open (R4-R7)   (2 dismissed under code-standards §6.5)
+dispositions:    5 lenses, 17 findings assessed: 15 survived, 2 dismissed, 0 relevance-killed. ⛔ Per-lens attribution is NOT reconstructed here: this review ran fan-out with no `FINDINGS_SINK`, so the engine's per-lens counts were never written to a file and the orchestrator's context was compacted before the section was authored. Inventing the split would be worse than saying so. Two attributions ARE on the record because they were written down at the time: R2 was raised independently by two lenses, and R3 came from the test-adequacy auditor.
+drift:           undeclared=17 · unimplemented=0 · incomplete=0
+severity_floor:  CONCERNS
+notes:           No optional `FINDINGS_SINK` or `EVIDENCE_PACK` was supplied, so findings live in this section and nowhere else. The 17 undeclared changes are a BOOKKEEPING defect, not scope creep - the acceptance auditor ruled all three close-out findings (the unusable `--verify` remedy, the poisoned bytecode, the `check_links` noise) legitimately in scope; what was never done is amending the Declared Change Set block as they landed.
+
+### The verdict, and why it is not PASS
+
+Three `important` findings came back that this lane had to own, and all three are now FIXED with
+RED-first cases and declared mutants (`2982b7a`, `c733b3f`, `da04d0f`). What keeps the verdict off
+PASS is the four that are **recorded and not fixed** - R4 through R7 below. None of them is a gate
+that fails open, which is what would force FAIL under `tests-must-gate-for-real` §5; R7 is the
+closest, and it is an UNCOVERED behaviour rather than an uncoverable one.
+
+⛔ It is not WAIVED either. A waiver says the finding does not need fixing. These do; they are
+carried, named, and reproduced, so the next commit on this surface picks them up from a table
+rather than rediscovering them.
+
+### Findings
+
+| # | Finding | Severity | Disposition |
+|---|---|---|---|
+| 1 | The changelog claimed "every message that names a remedy now names `--repair`" - four sites in `/smh-update-maps-indexes` still said `--staged`, the exact door an operator lands on after check 10 fires | important | FIXED @ `7a311c6`, pinned by `RM-D4` (anti-vacuity: `seen > 20`) |
+| 2 | `check_links.strip_auto` went SILENT on a torn file - an unpaired `AUTO-START` blanked to EOF. Measured on the real tree: path claims 887 -> 541; `workspace-standard.md` alone lost 408 of 467, because line 390 mentions the sentinel in prose | important | FIXED @ `7a311c6`, cases `H1`-`H6`, mutants `M35`/`M36` |
+| 3 | `jira_ticket` crashed on Windows - `$TMPDIR` is POSIX-only, the PC resolved `C:\tmp`, uncaught, and in `done` it lands AFTER the outline file was rewritten | important | FIXED @ `7a311c6` (`tempfile.gettempdir()`) |
+| 4 | `risk_seam` swallowed a typo'd `--flag` as a path, answering about the wrong tree in silence | medium | FIXED @ `7a311c6`, case `O` |
+| 5 | `reverse_door_check` was satisfied by a FILE PATH - `.agents/commands/x.md` matched at the `/` and `.` passed the lookahead | medium | FIXED @ `7a311c6`, case `RM-G4` |
+| 6 | `converge` walked the whole tree to build a repo-map it could not use | low | FIXED @ `7a311c6` |
+| 7 | `.gitignore:17` still named the deleted `.code-review-graphignore` | suggestion | FIXED @ `7a311c6` |
+| 8 | The PowerShell installer's refusal claimed a hook "CHAINS more than the encoding gate" about one that may merely be ours-but-older | suggestion | FIXED @ `7a311c6` |
+| R1 | `--verify` measured the WORKING TREE, so an untracked scratch `.md` refused the push of unrelated committed work - and the `--repair` it prints as the remedy then STAGED the phantom into a tracked artifact bound for main | important | **FIXED @ `2982b7a`** - `refresh_maps.in_index` passes an index predicate into both generators; cases `RM-J`/`RM-J2`, mutants `M37`-`M41` |
+| R2 | `install-encoding-hook.ps1 -Uninstall` kept the marker-only ownership test and DELETED the tracked `.githooks/pre-commit` dispatcher; this lane made it worse by chaining the maps refresh into that same file | important | **FIXED @ `2982b7a`** - one byte-equality test serves both directions; case `F3`, mutant `M42` |
+| R3 | The three maps delegates had ZERO executable coverage - 146 lines of shell pinned only by source greps, with four mutants surviving at 58/58 | important | **FIXED @ `2982b7a`** - `test_maps_hooks.py` drives real `git commit` / `git push` / `git merge`; mutants `S1`-`S4` all killed |
+| R4 | `check_maps` check 10 is fatal on `docs/repo-map.md` but reports under the doc-graph heading, and `check_doc_graph_fresh(root)` silently discards the operator's `--ignore` | medium | **OPEN** - see the table below |
+| R5 | `attach()` raises `AttributeError` on a 2xx body that is not a JSON array; `except ValueError` does not catch it | low | **OPEN** |
+| R6 | `triggered()` reads git's quoted path form literally, so a non-ASCII staged filename regenerates the wrong artifact | suggestion | **OPEN** |
+| R7 | `generate_doc_graph.strip_auto` has no named case and no mutant | medium | **OPEN** |
+
+**Dismissed under `code-standards` §6.5** (the assessor decides, not the lens): the repo-map's
+hard-coded `threshold=8` - no door passes `--threshold`, so no operator can reach the divergence,
+which makes it unreachable rather than latent · `_land`'s read-back - correct that it has no
+observable, but it is the Port Check 3 idiom this house mandates and it costs one read.
+
+### Gate results at the shipping SHA
+
+| Gate | Result |
+|---|---|
+| `run_all.py` | **59/59 files** (`test_maps_hooks.py` joins by auto-discovery) |
+| `mutation_sweep.py --table sweep.json` | **46/46 killed**, restore verified byte-identical, closing full-file green on every affected suite |
+| `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, 8 info |
+| `refresh_maps.py --verify` | exit 0 - and with ZERO map churn: the R1 fix removes nothing the repository actually has |
+| `check_maps.py --depth3-only --strict` | exit 0 |
+| `check_links.py` | 26 unresolved (from 64): 15 pre-existing, 11 fixture examples in this lane's own artifacts. Zero new dead links in authored prose |
+| doc graph | 362 nodes · 77 broken paths (the ratchet's baseline, unchanged) |
+
+⛔ **Three mutants needed an unsandboxed run** (`M22`, `M23`, `M25` - the Jira upload path). Under
+the sandbox `test_jira_ticket.py` cannot bind a local listener, prints `SKIPPED (UNVERIFIED HERE)`,
+and those three SURVIVE for the environment's reason rather than the code's. The 46/46 above is the
+unsandboxed run. A sweep read from a sandboxed shell would have reported three false holes.
+
+### Acceptance matrix
+
+| Part | Ticket | Items | Result |
+|---|---|---|---|
+| A - centre drops its own code graph; `risk_seam` reads the PROJECT's | SCC-289 | A1-A10 | **10/10** |
+| B - the SOP and the docs folder cannot go stale | SCC-290 | B1-B12 | **12/12** |
+| C - Jira descriptions are fast reads, the plan rides as an artifact | SCC-291 | C0-C5 | **5/5** (C0 is the operator's token step, in `## Your Actions`) |
+
+The auditor re-checked all 27 items against the SHIPPED CODE, not against this walkthrough's
+claims. B9 was `partial` at review time on the door remedy alone; that is finding 1 above and it
+is fixed.
+
+### Step 0.7 - re-derivation of the review radius
+
+1. **Nothing this diff references has moved.** `origin/main` has landed **0 commits** since the
+   merge-base `7c8105a3`, so no reference can have been moved out from under this branch.
+2. **True overlap with `main` is zero files.** `git diff --name-only <merge-base>..HEAD` and the
+   same against `origin/main` share no path; `merge-tree --write-tree` is clean with no conflict
+   messages.
+3. **One sibling lane is live** - `SCC-280-teaching-edition` on `claude/teaching-edition`, a story
+   lane with no landing-order dependency on this diff.
+
+Level was `standard` rather than `quick` because the radius covers gate, hook, rule and contract
+surfaces across 72 files.
+
+### Clean-Code Gate (Step 3.5)
+
+⛔ **`/smh-clean-code-audit` was NOT run as a separate step, and this is the record of what was
+done instead.** The `code-standards` §6 machine floor is a FastAPI + Next.js contract - `ruff`,
+`pyrefly`, `npm run lint`, `tsc` - and this repository has no `backend/`, no `frontend/` and no
+venv, so all four commands are **N/A here**, not skipped. Under the audit's own rule a missing
+tool is a finding rather than a skip, so it is named: the objective half of the gate has no
+runnable check in the command centre, which is itself worth a ticket one day.
+
+The judgment half was performed against §1 and §2 over this lane's diff:
+
+- **Comment contract (§1)** - every non-obvious block added here carries its `SCC-<n>` provenance
+  and the trap it closes. No `TODO`/`FIXME` was added.
+- **No new abstraction with a single caller (§2)** - `stage()` has two call sites by construction
+  (that is the R1 ordering fix); `in_index()` has two (both generators); `run_installer()` in the
+  installer test has two blocks calling it.
+- **No re-implementing what exists** - `in_index` is passed INTO the two existing generators
+  rather than a third walker being written beside them.
+- **Both machines (§5)** - the one finding of this class in the whole lane was `jira_ticket`'s
+  `$TMPDIR`, fixed at `7a311c6`. Every hook added here probes `python3 -> python -> py`, and
+  `test_maps_hooks.py` asserts nothing but ASCII reaches the console.
+
+## Review findings STILL OPEN at this commit - not fixed, deliberately recorded
+
+Five lenses ran at `27870ba`. R1, R2 and R3 were the three `important` ones and are now **CLOSED**
+at `2982b7a` with RED-first cases and declared mutants - see the Code Review section above. What
+follows is what remains: none of it is a gate that fails open, and all of it is reproduced, so the
+next commit on these surfaces picks it up from a table rather than rediscovering it.
 
 | # | Finding | Severity | Why it is real |
 |---|---|---|---|
-| R1 | **`--verify` measures the WORKING TREE, so an untracked scratch `.md` refuses the push — and the printed `--repair` remedy then STAGES the phantom into a tracked artifact.** Reproduced: one untracked `.agents/rules/zz-scratch-probe.md`, nothing staged, nothing committed → `--verify` exit 1; `--repair` writes and `git add`s graph nodes for a file that is not in the repository. | **important** | `collect_md` walks the filesystem with `os.walk` and consults neither the index nor `.gitignore`. The module's stated "ACCEPTED LIMIT" covers unstaged edits to TRACKED files; it does not cover untracked ones. Scratch files are constant in this workflow, so this blocks pushes of unrelated committed work — and the documented fix makes it worse. |
-| R2 | **`install-encoding-hook.ps1 -Uninstall` still uses the marker-only ownership test that F2 just replaced on the install path — it DELETES the tracked `.githooks/pre-commit` dispatcher.** Found independently by two lenses; one reproduced it in a scratch repo. | **important** | `core.hooksPath` is `.githooks` here, the dispatcher necessarily contains `pre-commit-encoding`, so `-match $MARKER` is true and `Remove-Item` runs. **This lane made it strictly worse**: the dispatcher now chains the maps gate too, so uninstalling the encoding gate silently disarms maps refresh as well. The `$Uninstall` block sits above where `$body` is defined, so it structurally cannot use the byte-equality test. `test_install_git_hooks.py` never invokes `-Uninstall`. |
-| R3 | **The three new hook delegates have ZERO executable coverage — 146 lines of shell pinned only by source greps over dispatcher text.** Proved: four mutants (never invoke the delegate · `exit 0` instead of regenerating · put `--staged` back in the push remedy · delete the `MERGE_HEAD` carve-out) all survive with `run_all.py` **58/58 files passed**. | **important** | This is the source-grep blindness the house already records, on the one surface where it matters most — the gates. `RM-D4` does not cover it either: it scans `*.md` doors, so a `--staged` remedy inside `pre-push-maps-verify.sh` stays invisible to it. |
-| R4 | **`check_maps` check 10 is fatal on `docs/repo-map.md`, not just the doc graph, and it silently discards the operator's `--ignore`.** Reproduced both. | medium | `refresh_maps.verify()` regenerates BOTH artifacts, but the guard tests only for `docs/doc-graph.md` and the heading says doc-graph — so a repo-map failure prints under the wrong name. And `check_doc_graph_fresh(root)` takes no ignore argument, so `--ignore` is honoured by check 1 and dropped by check 10; the documented escape hatch cannot suppress the drift it exists for, and `--repair` would write the excluded entry into the committed map. |
-| R5 | **`attach()` crashes with a traceback on a 2xx body that is not a JSON array.** `except ValueError` does not catch the `AttributeError` a JSON object produces. | low | The function's own docstring says success is the filename in the response, never HTTP 200 — it is written to survive a well-formed-but-wrong 2xx and return `TRANSPORT`. An error envelope makes the comprehension iterate dict keys and die instead. |
-| R6 | **`triggered()` reads git's quoted path form literally**, so a non-ASCII staged filename regenerates the wrong artifact and leaves the doc graph stale. | suggestion | `git diff --cached --name-only` emits `".agents/rules/caf\303\251.md"` under default `core.quotepath`; the leading quote breaks both the top-segment split and the `.md` suffix test. Fix is `-z` + NUL split. ASCII-strict repo, so unlikely — but it is the exact failure the function was widened to avoid. |
-| R7 | **`generate_doc_graph.strip_auto` has no named case and no mutant.** Removing it from the pipeline leaves `test_doc_graph.py` at 24/24 and `test_check_maps.py` at 35/35; `test_refresh_maps.py` exits 1 but with **zero `[FAIL]` lines** — it dies in `seed_repo`'s assert, the "red test dies before its assertion" shape. | medium | The file that owns the behaviour cannot see it. |
+| R4 | **`check_maps` check 10 is fatal on `docs/repo-map.md`, not just the doc graph, and it silently discards the operator's `--ignore`.** Reproduced both. | medium | `refresh_maps.verify()` regenerates BOTH artifacts, but the guard tests only for `docs/doc-graph.md` and the heading says doc-graph - so a repo-map failure prints under the wrong name. And `check_doc_graph_fresh(root)` takes no ignore argument, so `--ignore` is honoured by check 1 and dropped by check 10; the documented escape hatch cannot suppress the drift it exists for, and `--repair` would write the excluded entry into the committed map. |
+| R5 | **`attach()` crashes with a traceback on a 2xx body that is not a JSON array.** `except ValueError` does not catch the `AttributeError` a JSON object produces. | low | The function's own docstring says success is the filename in the response, never HTTP 200 - it is written to survive a well-formed-but-wrong 2xx and return `TRANSPORT`. An error envelope makes the comprehension iterate dict keys and die instead. |
+| R6 | **`triggered()` reads git's quoted path form literally**, so a non-ASCII staged filename regenerates the wrong artifact and leaves the doc graph stale. | suggestion | `git diff --cached --name-only` emits `".agents/rules/caf\303\251.md"` under default `core.quotepath`; the leading quote breaks both the top-segment split and the `.md` suffix test. Fix is `-z` + NUL split. ASCII-strict repo, so unlikely - but it is the exact failure the function was widened to avoid. |
+| R7 | **`generate_doc_graph.strip_auto` has no named case and no mutant.** Removing it from the pipeline leaves `test_doc_graph.py` at 24/24 and `test_check_maps.py` at 35/35; `test_refresh_maps.py` exits 1 but with **zero `[FAIL]` lines** - it dies in `seed_repo`'s assert, the "red test dies before its assertion" shape. | medium | The file that owns the behaviour cannot see it. |
 
-**Dismissed, with reasons:** the repo-map's hard-coded `threshold=8` (no door passes `--threshold`, so
-no operator can reach the divergence — unreachable, not latent) · `_land`'s read-back (correct that it
-has no observable, but it is the Port Check 3 idiom this house mandates, and it costs one read).
+**Dismissed, with reasons:** the repo-map's hard-coded `threshold=8` (no door passes `--threshold`,
+so no operator can reach the divergence - unreachable, not latent) · `_land`'s read-back (correct
+that it has no observable, but it is the Port Check 3 idiom this house mandates, and it costs one
+read).
