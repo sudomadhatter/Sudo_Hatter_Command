@@ -284,6 +284,26 @@ through each as needed:
   to alias**: every hook probes `python3 → python → py`, so the gates work on either OS untouched.
   Only the commands *you type* differ.
 
+- ### ⛔ **Jira board access — `acli` + ONE API token** *(added 2026-08-22, SCC-294)*
+
+  Full procedure: [`jira-api-token-setup.md`](jira-api-token-setup.md). Do not improvise it —
+  it carries the traps.
+
+  **Why it sits beside the commit gates rather than with the logins below.** Every ticket this
+  system mints, moves, describes or closes goes through `acli`, and `acli` needs a credential the
+  credential store holds and git cannot carry. Unset, an agent reports *"I have no Jira
+  integration"* — which is false, the CLI **is** the integration — and then quietly stops writing
+  the board while everything else looks normal. Same silent-failure shape as an unarmed
+  `core.hooksPath`, and the first symptom is the same: a board with holes in it.
+
+  The **same** token is the only way to upload a file to a ticket: `acli`'s `workitem attachment`
+  has `list` and `delete` and no `add` (measured on 1.3.22-stable). Store it once, under the name
+  `sudo-jira`, and both consumers read it.
+
+  ```bash
+  acli jira auth status      # the whole check: expect a site, an email, and api_token
+  ```
+
 - **gcloud**: `gcloud auth login` + `gcloud auth application-default login`,
   set the project from `GCP_PROJECT_ID` in `.env`.
 - **GitHub CLI**: `gh auth login` (the PATs in `.env` are for the incident
