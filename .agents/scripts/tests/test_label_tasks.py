@@ -387,9 +387,12 @@ def main() -> int:
     dotted_dir = lt.source_paths({"paths": [".agents/scripts/risk_seam.py"]})
     c.check("SCC-295 A1 a dotted directory keeps its dot",
             dotted_dir == {".agents/scripts/risk_seam.py"}, str(dotted_dir))
-    dotfiles = lt.source_paths({"paths": [".mcp.json", ".code-review-graphignore"]})
+    # ⛔ Live dotfiles only. An earlier draft used a RETIRED filename as a fixture and
+    # tripped `CS-15 G` ("no live surface still names the deleted ignore file") - a test
+    # fixture is a live surface to a source-grep guard (SCC-295).
+    dotfiles = lt.source_paths({"paths": [".mcp.json", ".gitignore"]})
     c.check("SCC-295 A1b a dotfile at the repo root keeps its dot",
-            dotfiles == {".mcp.json", ".code-review-graphignore"}, str(dotfiles))
+            dotfiles == {".mcp.json", ".gitignore"}, str(dotfiles))
 
     # CONTROLS - green BEFORE the fix and after. A control that starts red is
     # measuring the wrong thing, so these two are the proof the fix is surgical.

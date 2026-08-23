@@ -1,0 +1,5 @@
+task_key: SCC-295
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-295-label-tasks-dot-strip
+close_command: smh-close-task-merge-tree
+secondary_repos: []
