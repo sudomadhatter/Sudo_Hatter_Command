@@ -29,6 +29,11 @@
             "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .claude/hooks/guard-cwd-escape.py",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .claude/hooks/allow-readonly-chain.py",
+            "timeout": 10
           }
         ]
       }
