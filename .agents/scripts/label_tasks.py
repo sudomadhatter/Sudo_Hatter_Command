@@ -710,12 +710,48 @@ def cmd_plan(args) -> int:
 
 # ── resolve: the set math ──────────────────────────────────────────────────────
 
+def norm_path(p) -> str:
+    """Normalise a declared touch-set path — for the overlap key AND for display.
+
+    ⛔ This was `str(p).strip().lstrip("./")` at two sites, and `str.lstrip` takes a
+    SET OF CHARACTERS, not a prefix. It was written to turn `./x.py` into `x.py`; it
+    also ate the leading dot off every hidden path, and the damage was not cosmetic:
+    the string it returns is BOTH the `evidence` shown on the board (built in `cmd_resolve`)
+    and the key `conflict_graph` intersects, so `.agents/x.py` and `agents/x.py`
+    collapsed into one and two lanes touching different files read as a collision.
+    Reproduced: `both touch agents/x.py`, locking a lane that had no overlap (SCC-295).
+
+    ⛔ It must ALSO drop a leading `/`, and the first cut of this fix did not — found by
+    the review's blind and edge-case lenses, independently. `lstrip("./")` ate a leading
+    slash as a side effect of being a character set, so `/src/a.py` and `src/a.py` — the
+    SAME file, two spellings — used to collapse to one key. A prefix-only strip separated
+    them, and the labeller then stamped BOTH lanes `parallel-ok` on one file. Note the
+    direction: the original bug over-serialised, which `cmd_resolve` itself calls the
+    acceptable side ("a false green puts two lanes on the same line, a false lock costs
+    only serialisation"). The regression failed the other way. Second consequence, same
+    root: `/_artifacts/plan.md` stopped matching PLANNING_PREFIXES, so planning artifacts
+    re-entered the overlap set — and every planned lane writes under `_artifacts/`.
+
+    So: strip the `./` prefix and any leading `/`, repeated to a fixed point, re-stripping
+    whitespace each pass (`./ a/b.py` -> `a/b.py`; a leading space is invisible corruption
+    in a key). Never `os.path.normpath`, which would resolve `..` and change what a
+    declared path means. One helper rather than two copies, so the sites cannot disagree.
+    """
+    s, prev = str(p).strip(), None
+    while s != prev:
+        prev = s
+        if s.startswith("./"):
+            s = s[2:]
+        s = s.lstrip("/").strip()
+    return s
+
+
 def source_paths(entry: dict) -> set[str]:
     """Planning artifacts never count as overlap — only source paths decide."""
     raw = list(entry.get("paths") or []) + list(entry.get("creates") or [])
     out = set()
     for p in raw:
-        p = str(p).strip().lstrip("./")
+        p = norm_path(p)
         if not p or p.startswith(PLANNING_PREFIXES):
             continue
         out.add(p)
@@ -755,7 +791,12 @@ def conflict_graph(candidates: list[str], touch: dict) -> dict[str, dict[str, st
     its evidence is an assertion, and extraction from a story file is a judgment."""
     g: dict[str, dict[str, str]] = {k: {} for k in candidates}
     paths = {k: source_paths(touch.get(k) or {}) for k in candidates}
-    creates = {k: {str(c).strip().lstrip("./") for c in (touch.get(k) or {}).get("creates") or []}
+    # `if n` matters: norm_path("./") is "", and `"" in s` is True for EVERY import
+    # string, so one empty entry locks its lane against every other and prints a
+    # fabricated reason onto the board. `source_paths` filters empties six lines up;
+    # this copy never did (SCC-295, both hunter lenses).
+    creates = {k: {n for n in (norm_path(c) for c in (touch.get(k) or {}).get("creates") or [])
+                   if n}
                for k in candidates}
     imports = {k: {str(i).strip() for i in (touch.get(k) or {}).get("imports") or []}
                for k in candidates}
