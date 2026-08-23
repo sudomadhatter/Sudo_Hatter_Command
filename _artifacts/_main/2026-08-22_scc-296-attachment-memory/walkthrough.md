@@ -58,7 +58,7 @@ mandatory SOP edit and its own tests. It is written down where the next lane wil
 Bare, never piped — each line carries its own exit code, on the **absorbed** tree (`52273a4`):
 
 ```
-task_preflight.py --fetch --expect-key SCC-296 -> exit 0  VERDICT: clear to close out and merge
+task_preflight.py --fetch --expect-key SCC-296 -> exit 1  VERDICT: clear to close out and merge
                                                   LANE: LOCAL · 0 error(s), 1 warning(s)
                                                   children: SCC-296: no subtasks (board reachable)
 run_all.py                                     -> exit 0, 54/54 files passed
@@ -66,6 +66,13 @@ workflow_lint.py --toolkit-only                -> exit 0, 0 error(s), 0 warning(
 check_maps.py --depth3-only --strict           -> exit 0, silent
 check_links.py --base origin/main              -> exit 0, 4 files, 125 path claims, clean
 ```
+
+⛔ **That `exit 1` was first written down as `exit 0`, and the reason is worth keeping.** The
+preflight was run as `… | tail -14`, so `$?` reported **`tail`'s** exit, not the script's — the
+exact trap `piping-a-gate-hides-its-exit-code` names, walked into while running a gate whose
+purpose is to be trusted. Caught by reading the committed `preflight-receipt.json`, which records
+`"exit": 1` from the script itself and cannot be fooled by a pipe. Re-run bare to confirm. **Run
+gates bare; the receipt is the second witness.**
 
 The single warning is the worktree, which Step 5 prunes. `_artifacts/` is not an SOP usage
 surface, so no SOP hunk was owed and no commit here carries `[sop-ok]`.
