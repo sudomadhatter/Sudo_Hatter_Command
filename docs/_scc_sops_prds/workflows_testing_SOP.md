@@ -1590,7 +1590,11 @@ token stays in the log forever — which is the point, the same way `[sop-ok]` w
 graph's **scope** changed (a new folder brought into it), never to wave a real broken link through.
 ⛔ **And never to get a worktree commit through** — that was R9, and reaching for the hatch is how it
 stayed hidden for a release. A hatch you need on every commit is a bug report, not an escape.
-A mention of the token inside a `#` comment line does not count.
+⛔ **The token must OPEN or CLOSE a line** — `<subject> [maps-ok]`, or a trailer line that
+begins with it. A mention inside a `#` comment line does not count, and since SCC-288 R10
+neither does one buried mid-sentence: the check used to be a bare substring test, so a commit
+message saying it did *not* use the hatch pulled it anyway. Where the rule is unsure it fails
+closed — an honest re-baseline is one line-break away.
 
 If a commit slips past the hooks — a merge made on GitHub, a `git commit --no-verify`, or a clone
 where hooks were never armed — the **push** is refused instead, and the map check reports it as a

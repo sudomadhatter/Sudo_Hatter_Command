@@ -681,3 +681,40 @@ reported in the header line so the blind spot is visible instead of being an inv
 blind, and pins that `broken_paths` **and** `unresolvable` match across both, with a negative
 control (`Projects/NotASub/...`, a directory no `.gitmodules` declares) that must still be broken so
 the fix cannot degrade into "excuse everything under `Projects/`".
+
+---
+
+## Follow-on — 2026-08-23 · the re-baseline hatch fired on a sentence denying it (R10)
+
+Found by the R9 fix's own commit. The message contained the line *"This commit carries NO
+`[maps-ok]` token, which is the point: the hook now passes from a worktree on its own"* — and the
+hook answered **"the truth checks are re-baselined by this commit, on the record."** The commit
+claiming to need no hatch had silently pulled it.
+
+| # | Finding | Severity | Why it is real |
+|---|---|---|---|
+| R10 | **The `[maps-ok]` opt-out was a bare substring test over the message, so any MENTION of the token — including one denying its use — bypassed both truth checks.** | **high** — a gate that fails OPEN | `refresh_maps.run_truth` did `if OPT_OUT in body`. A message that describes the hatch pulls it; a walkthrough quoted into a commit message pulls it; **a sentence saying the commit does not use it pulls it.** Measured on this lane's own commit, twice. |
+
+⛔ **The guard reasoned its way to this exact hazard and then stopped one line short.** The comment
+above the check reads *"a template that merely MENTIONS the token would opt every commit out
+silently"* — correct, and it was implemented only for lines starting with `#`. Prose in the body was
+never covered.
+
+⭐ **The contract now: the token is a MARKER, so it must OPEN or CLOSE a line.** Both deliberate
+forms survive — the established idiom is a subject line ending in the token
+(`SCC-290 widen the graph's scope [maps-ok]`, pinned by RM-F since SCC-290), and a trailer line
+begins with it. A token buried mid-sentence is a mention.
+
+This cannot separate every negation from every assertion — nothing reading English can. It separates
+the two forms that actually occur, and where it is unsure it **fails closed**, which is the correct
+direction for a gate: an honest re-baseline is one line-break away, a silent bypass is not.
+
+**Evidence.** `test_refresh_maps.py` **73/73**, up from 71. RM-F now drives four forms against one
+seeded broken reference: the subject-line idiom re-baselines (unchanged), a trailer line
+re-baselines (new), a `#` comment does not (unchanged), and **the two prose mentions measured on
+this lane's own commit message do not** (new, RED first — both returned `rc=0` with "re-baselined"
+before the fix).
+
+⭐ **The first commit of the R9 fix was made with the hatch silently pulled, and was amended.** The
+shipped commit carries zero occurrences of the token and `refresh_maps.py --verify` exits 0 — the
+ratchet passes from a worktree on its own merit, which was the whole claim R9 was making.
