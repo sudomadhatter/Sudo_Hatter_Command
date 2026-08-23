@@ -1,0 +1,124 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_jira_feed.py"
+ ],
+ "mutants": [
+  {
+   "id": "M1 the empty-evidence guard ACCEPTS instead of refusing",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "        return False, \"the evidence is empty - an empty proof is not a proof\"",
+   "mutated": "        return True, \"\"",
+   "case": "A3c empty evidence is refused",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M2 the contentless deny-set is gutted to nothing",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    if norm in _GENERIC_EVIDENCE:",
+   "mutated": "    if norm in ():",
+   "case": "A3d generic evidence is refused",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M3 the length/word floor is removed",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    if len(norm) < _MIN_EVIDENCE_CHARS or len(norm.split()) < _MIN_EVIDENCE_WORDS:",
+   "mutated": "    if False:",
+   "case": "A3g thin evidence the deny-set has never seen is STILL refused",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M4 the MERGE-row refusal never fires (SCC-175 handed back)",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    if is_merge_row(row):\n        return None, (f\"L{line} is the MERGE row",
+   "mutated": "    if False:\n        return None, (f\"L{line} is the MERGE row",
+   "case": "A3f a MERGE row is refused (SCC-175 - `finish` computes it from the repo)",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M5 the CEREMONY-row refusal never fires (SCC-193 handed back)",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "        if crow == row:",
+   "mutated": "        if False:",
+   "case": "A3e a CEREMONY row is refused (SCC-193 - the agent RUNS those)",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M6 the target is not checked against the OPEN rows",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    if line not in by_line:",
+   "mutated": "    if False:",
+   "case": "A3a a line that is already ticked is not an open row",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M7 the line number is off by one",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "            items.append((i + 1, m.group(1).strip()))",
+   "mutated": "            items.append((i, m.group(1).strip()))",
+   "case": "A1 ...and every open row is named with its line number",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M8 an open section reports 0 instead of the HELD 3",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "      --source measured|operator\\n\")\n    return 3",
+   "mutated": "      --source measured|operator\\n\")\n    return 0",
+   "case": "A1 an open section EXITS 3 - the same HELD code `finish` uses",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M9 the row records the claim but not its SOURCE",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    proof = f\"{TICK_MARK} {today} ({source}): {evidence.strip()}\"",
+   "mutated": "    proof = f\"{TICK_MARK} {today}: {evidence.strip()}\"",
+   "case": "A2 ...the SOURCE is recorded, not just the claim",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M10 the tick writes the proof but leaves the box OPEN",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    lines[line - 1] = f\"{prefix}[x]{gap}",
+   "mutated": "    lines[line - 1] = f\"{prefix}[ ]{gap}",
+   "case": "A2 the row is now ticked",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M11 a MISSING section reads as nothing owed (fail-open)",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    if rows is None:\n        say(f\"{REFUSED}",
+   "mutated": "    if False:\n        say(f\"{REFUSED}",
+   "case": "A1c no `## Your Actions` section at all REFUSES when listing",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M12 the tick reports success and writes nothing",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "        wt.write_text(new, encoding=\"utf-8\")",
+   "mutated": "        pass",
+   "case": "A2 EXACTLY ONE line changed, and it is the one asked for",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M13 --tick no longer needs a recorded source",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "        if missing:",
+   "mutated": "        if False:",
+   "case": "A3h --tick without its companion is refused (gave only --evidence)",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M14 ONE door's copy of the reconcile passage drifts by one word",
+   "file": ".agents/commands/cicd-merge-epic-workingtrees.md",
+   "original": "python3 .agents/scripts/jira_feed.py reconcile-actions --walkthrough <the walkthrough>   # PC: `python`",
+   "mutated": "python3 .agents/scripts/jira_feed.py reconcile-actions --walkthrough <the walkthrough>   # PC: `python3`",
+   "case": "CS-17 D all four copies are BYTE-IDENTICAL",
+   "block": "CS-17 · SCC-298: the reconcile passage is IDENTICAL in all four closing doors",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_command_surfaces.py"
+   ]
+  }
+ ]
+}

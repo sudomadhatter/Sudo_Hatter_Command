@@ -4057,6 +4057,46 @@ As **an admin**, I want **archive**, so that **nothing is lost.**
                 c.check(label + " - and NOTHING was written",
                         p.read_bytes() == raw, "the file changed on a refusal")
 
+        # ⛔ THE FLOOR NEEDS ITS OWN CASE, and designing the mutant table is what showed it.
+        # A3d ticks with "done", which the DENY-SET catches - so deleting the length/word floor
+        # entirely left every case green. This row refuses on the floor ALONE: "ran it" is in no
+        # deny-set and says nothing.
+        with TempDir() as tmp:
+            p = wt_file(tmp)
+            raw = p.read_bytes()
+            code, out = ra(p, "--tick", str(L_C0), "--evidence", "ran it", "--source", "measured")
+            c.check("A3g thin evidence the deny-set has never seen is STILL refused",
+                    code == 2 and REFUSAL_MARK in out, f"exit={code}: {out.strip()[:300]}")
+            c.check("A3g - and NOTHING was written", p.read_bytes() == raw, "the file changed")
+
+        # ⛔ FAIL CLOSED, exactly as `finish` does. A walkthrough with no section at all is a
+        # REFUSAL, never "nothing is owed" - an absent section is not evidence of anything, and
+        # collapsing the two is the empty-input-reads-as-pass shape. Also found by the sweep
+        # table: nothing here distinguished `None` from `[]`.
+        for label, args_ in (("listing", ()),
+                             ("ticking", ("--tick", "5", "--evidence", GOOD,
+                                          "--source", "measured"))):
+            with TempDir() as tmp:
+                p = wt_file(tmp, "# W\n\n## Task Checklist\n\n- [ ] the agent's own row\n")
+                raw = p.read_bytes()
+                code, out = ra(p, *args_)
+                c.check(f"A1c no `## Your Actions` section at all REFUSES when {label}",
+                        code == 2 and REFUSAL_MARK in out, f"exit={code}: {out.strip()[:300]}")
+                c.check(f"A1c - and NOTHING was written when {label}",
+                        p.read_bytes() == raw, "the file changed")
+
+        # A3h · `--tick` with no recorded source is the unattributed claim this verb replaces.
+        # argparse cannot say "required WITH another flag", so the parser says it by hand.
+        for missing in (("--evidence", GOOD), ("--source", "measured")):
+            with TempDir() as tmp:
+                p = wt_file(tmp)
+                raw = p.read_bytes()
+                code, out = ra(p, "--tick", str(L_C0), *missing)
+                c.check(f"A3h --tick without its companion is refused (gave only {missing[0]})",
+                        code != 0 and "--tick needs" in out, f"exit={code}: {out.strip()[:250]}")
+                c.check(f"A3h - and NOTHING was written (gave only {missing[0]})",
+                        p.read_bytes() == raw, "the file changed")
+
         # ⛔ THE CONTROL THAT FORBIDS THE LAZY FIX. Every refusal above passes if the verb
         # refuses everything, and a gate that rejects every case is as broken as one that
         # rejects none. This row must stay green.
