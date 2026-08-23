@@ -8,10 +8,10 @@
     "packs": 1,
     "pack_docs": 2,
     "edges": 696,
-    "external": 39,
+    "external": 42,
     "ambiguous": 163,
-    "dangling": 301,
-    "broken_paths": 77,
+    "dangling": 298,
+    "broken_paths": 74,
     "unresolved_names": 224
   },
   "nodes": [
@@ -5977,10 +5977,6 @@
       "target": "constitution.project.md"
     },
     {
-      "from": ".agents/rules/sop-currency.md",
-      "target": "Projects/AGY_AVIATIONCHAT/_my_resources/_quick_reference/sudo_workflows_testing.md"
-    },
-    {
       "from": ".agents/rules/work-consolidation.md",
       "target": "implementation_plan.md"
     },
@@ -6238,10 +6234,6 @@
     },
     {
       "from": "docs/_scc_sops_prds/sentry_error_response_team.md",
-      "target": "Projects/AGY_AVIATIONCHAT/_artifacts/_main/2026-07-09_incident-response-story-draft/always-live-trigger-brainstorm.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/sentry_error_response_team.md",
       "target": "incident-triage.md"
     },
     {
@@ -6303,10 +6295,6 @@
     {
       "from": "docs/_scc_sops_prds/tea_testing_guide.md",
       "target": "/walkthrough.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/tea_testing_guide.md",
-      "target": "Projects/AGY_AVIATIONCHAT/.agents/rules/prompt-tdd.md"
     },
     {
       "from": "docs/_scc_sops_prds/tea_testing_guide.md",
@@ -6583,6 +6571,10 @@
       "target": "_my_resources/open_tasks/todo_list.md"
     },
     {
+      "from": ".agents/rules/sop-currency.md",
+      "target": "Projects/AGY_AVIATIONCHAT/_my_resources/_quick_reference/sudo_workflows_testing.md"
+    },
+    {
       "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
       "target": "_artifacts/_main/2026-08-12_scc-124-baseline-trial/scoring.md"
     },
@@ -6617,6 +6609,14 @@
     {
       "from": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
       "target": "router.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/sentry_error_response_team.md",
+      "target": "Projects/AGY_AVIATIONCHAT/_artifacts/_main/2026-07-09_incident-response-story-draft/always-live-trigger-brainstorm.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/tea_testing_guide.md",
+      "target": "Projects/AGY_AVIATIONCHAT/.agents/rules/prompt-tdd.md"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
