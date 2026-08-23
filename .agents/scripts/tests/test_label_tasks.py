@@ -433,6 +433,18 @@ def main() -> int:
             f'{_norm("  ./a/b.py  ")!r} {_norm(".agents/x")!r} '
             f'{_norm("././a")!r} {_norm("..hidden")!r}')
 
+    # ⛔ A5c exists because the SWEEP found the hole, not because the plan did: M6
+    # (conflict_graph keeping its own inline `lstrip`) SURVIVED every case above.
+    # That set feeds a SUBSTRING match both ways, which is dot-insensitive by
+    # accident - `agents/x.py in .agents/x.py` is True, so almost any pair matches
+    # either way. This is the shape that discriminates: an import of the DIRECTORY
+    # `.agents` is a substring of `.agents/x.py` but of neither side of `agents/x.py`.
+    g = lt.conflict_graph(["A", "B"], {
+        "A": {"paths": ["backend/a.py"], "imports": [".agents"]},
+        "B": {"paths": ["backend/b.py"], "creates": [".agents/x.py"]}})
+    c.check("SCC-295 A5c an import of `.agents` matches a dotted `creates` entry",
+            "B" in g["A"] and "A" in g["B"], str(g))
+
     # ── SCC-295 · end to end, through the board surface itself ────────────────
     with TempDir() as tmp:
         r = run_resolve(tmp, [child("A-1", "1.1"), child("A-2", "1.2")],
