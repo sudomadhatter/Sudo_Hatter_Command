@@ -113,7 +113,7 @@ Sudo_Hatter_Command/
       gemini_extensions/
           [2 files: .mdx1, .shx1 | e.g. gemini-extensions-sync-guide.md]
       install_guides/
-          [5 files: .mdx5 | e.g. antigravity-ide-extension-migration.md]
+          [7 files: .mdx7 | e.g. antigravity-ide-extension-migration.md]
       scripts/
           [9 files: .ps1x4, .pyx2, .shx2, .patchx1 | e.g. Export-EnvMaster.ps1]
         [1 files: .mdx1 | e.g. INDEX.md]
