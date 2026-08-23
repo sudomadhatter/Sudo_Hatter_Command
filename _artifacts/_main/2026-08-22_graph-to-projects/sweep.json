@@ -99,16 +99,16 @@
     {
       "id": "M11 a doc-graph write no longer forces the repo-map rebuild (the ordering fix's teeth)",
       "file": ".agents/scripts/refresh_maps.py",
-      "original": "    if rm is not None and (\"repo-map\" in want or wrote):",
-      "mutated": "    if rm is not None and \"repo-map\" in want:",
+      "original": "    rm = fresh_repo_map(root) if (\"repo-map\" in want or wrote) else None",
+      "mutated": "    rm = fresh_repo_map(root) if (\"repo-map\" in want) else None",
       "case": "RM-B4 ⛔ ONE run converges",
       "block": "RM-B4 · SCC-290 · the FIRST refresh converges in ONE run"
     },
     {
       "id": "M12 the doc graph reads its OWN output (never settles)",
       "file": ".agents/scripts/refresh_maps.py",
-      "original": "    graph = dg.build_graph(roots, set(dg.DEFAULT_IGNORES), root, exclude=[DOC_GRAPH_MD])",
-      "mutated": "    graph = dg.build_graph(roots, set(dg.DEFAULT_IGNORES), root)",
+      "original": "    graph = dg.build_graph(roots, set(dg.DEFAULT_IGNORES), root, exclude=[DOC_GRAPH_MD],\n                           keep=in_index(root))",
+      "mutated": "    graph = dg.build_graph(roots, set(dg.DEFAULT_IGNORES), root,\n                           keep=in_index(root))",
       "case": "RM-B4 ⛔ ONE run converges",
       "block": "RM-B4 · SCC-290 · the FIRST refresh converges in ONE run"
     },
@@ -187,8 +187,8 @@
     {
       "id": "M19 the PS installer clobbers an extended dispatcher again (audit F2)",
       "file": ".agents/scripts/git-hooks/install-encoding-hook.ps1",
-      "original": "    if (($existing -notmatch $MARKER) -or ($existingLf.TrimEnd() -ne $bodyLf.TrimEnd())) {",
-      "mutated": "    if ($existing -notmatch $MARKER) {",
+      "original": "  if ((Test-Path $hook) -and (-not $ours)) {",
+      "mutated": "  if ((Test-Path $hook) -and ($existing -notmatch $MARKER)) {",
       "case": "F2 extended (ours + the maps delegate) -> REFUSED",
       "test": [
         "python3",
@@ -299,8 +299,8 @@
     {
       "id": "M29 --repair regenerates but never stages, so the fix is not one commit away",
       "file": ".agents/scripts/refresh_maps.py",
-      "original": "    if wrote:\n        r = sh([\"git\", \"add\", \"--\"] + sorted(wrote), root)",
-      "mutated": "    if False:\n        r = sh([\"git\", \"add\", \"--\"] + sorted(wrote), root)",
+      "original": "    r = sh([\"git\", \"add\", \"--\"] + sorted(rels), root)",
+      "mutated": "    r = sh([\"git\", \"status\", \"--short\"], root)",
       "case": "RM-D2 it STAGES what it wrote, so the fix is one `git commit` away",
       "block": "RM-D2 · SCC-290 · --repair fixes a stale tree with an EMPTY index",
       "test": [
