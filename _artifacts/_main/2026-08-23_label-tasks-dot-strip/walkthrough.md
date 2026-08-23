@@ -26,8 +26,8 @@ review-runtime: fan-out
 
 - `.agents/scripts/label_tasks.py` — new `norm_path()`; `source_paths()` (`:718`) and
   `conflict_graph()`'s own inline copy both route through it.
-- `.agents/scripts/tests/test_label_tasks.py` — ten `SCC-295` cases: six behaviours, three controls,
-  one sweep-driven.
+- `.agents/scripts/tests/test_label_tasks.py` — **fifteen** `SCC-295` cases: seven behaviours,
+  three controls, one sweep-driven, and **four regression guards the code review forced** (A8-A10).
 - `_artifacts/_main/INDEX.md` — the lane's ledger row.
 
 ## The defect, and the half the ticket got wrong
@@ -86,10 +86,16 @@ the file still exited 1, indistinguishable from a real red at the exit code.
 
 ⭐ **The first sweep was 6/7: M6 SURVIVED, and that is the lane's best finding.** M6 leaves
 `conflict_graph`'s `creates` on its own inline `lstrip`. Every case passed anyway, because that set
-feeds a **substring match both ways** and a leading dot is invisible to it — `agents/x.py` is a
-substring of `.agents/x.py`, so almost any pair matches whichever spelling is used. `A5c` is the
-shape that discriminates: an import of the **directory** `.agents` is a substring of `.agents/x.py`
-but of neither side of `agents/x.py`. ⛔ `A5c` was written **because the sweep found the hole**, not
+feeds a **substring match both ways** and a leading dot is invisible to it:
+
+```text
+"agents/x.py" in ".agents/x.py"   ->  True    # so almost any pair matches either spelling
+".agents"     in ".agents/x.py"   ->  True    # A5c: an import of the DIRECTORY
+".agents"     in "agents/x.py"    ->  False   # ...matches neither side of the dotless twin
+"agents/x.py" in ".agents"        ->  False
+```
+
+`A5c` is that discriminating shape. ⛔ It was written **because the sweep found the hole**, not
 because the plan predicted it — recorded as sweep-driven rather than presented as test-first.
 
 **Gates at the shipping sha:**
@@ -128,6 +134,79 @@ pointing at this lane's own test. The `A1b` fixture used a filename an earlier l
   Verified against `git show HEAD:` before reporting anything — the committed line reads `norm_path(c)`.
 - **A test that dies is not a test that fails**, and the exit code cannot tell you which. See A5b.
 - **A test fixture is a live surface** to a source-grep guard. See `CS-15 G`.
+
+## Code Review (2026-08-23)
+
+Verdict: CONCERNS @ fcce5e9
+Suite evidence re-stamped at the landing sha — see the gate table below.
+
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted:  5/5
+lenses_na:       none
+
+dispositions:    per-lens: blind=4/1/0 · edge=2/0/0 · literal=4/0/0 · acceptance=3/1/0 · test-adequacy=1/4/0 (a multi-lens finding counts once per contributing lens; the leading-slash regression was reached by three lenses independently and is merged into F1 below)
+drift:           undeclared=0 · unimplemented=0 · incomplete=0 — `declared_change_set.py diff` against the real diff, 8 declared, 8 changed
+
+**Scope:** `origin/main...HEAD`, 8 files (2 source, 6 artifacts). **Method:** `review_level: standard`,
+`review_runtime: fan-out`, `lens_budget: standard`. Five lenses in parallel; the Blind Hunter was fed
+the diff text and never opened the repo.
+
+### Why CONCERNS and not PASS
+
+**The review found a regression the builder introduced, and the builder's own gates were green over
+it.** RED-first, a 7-mutant sweep and 140 passing cases all passed a change that made the labeller
+fail in the direction its own source calls unacceptable. Three of the four defects below are mine,
+written after the plan was approved and the audit said GO. A PASS would claim the process caught its
+own work. It did not.
+
+### Findings
+
+| # | file | severity | failure scenario | disposition |
+|---|---|---|---|---|
+| F1 | `label_tasks.py` `norm_path` (blind ×2, edge, literal) | **critical** | `lstrip("./")` also stripped a leading `/`. The prefix-only replacement did not, so `/src/a.py` and `src/a.py` — the SAME file, two spellings — stopped intersecting and **both lanes were stamped `parallel-ok` and dispatched to edit one file**. ⛔ Direction matters: `cmd_resolve` states *"a false green puts two lanes on the same line, a false lock costs only serialisation."* The original bug erred safe; this regression erred unsafe. Reproduced by three lenses independently. | **applied @ `bf5bccd`** — fixed-point loop stripping `./`, any leading `/`, and whitespace each pass; `A8`/`A8b`/`A8c` pin all three shapes, `A8d` is the control that the dot still survives |
+| F2 | `label_tasks.py` `source_paths` (edge, literal) | **important** | Same root: `PLANNING_PREFIXES` is tested **after** normalisation, so a surviving `/` made `/_artifacts/plan.md` read as a real source path. Every planned lane writes under `_artifacts/`, so two lanes would collide over their own planning files. | **applied @ `bf5bccd`** — `A9` |
+| F3 | `label_tasks.py` `conflict_graph` (blind, edge, literal) | **important** | `norm_path("./")` is `""`, and `"" in s` is True for **every** import string, so one empty `creates` entry locked its lane against every other and printed an invented reason onto the board. `source_paths` filtered empties six lines above; this copy never did. | **applied @ `bf5bccd`** — `A10` |
+| F4 | `test_label_tasks.py` (test-adequacy) | **important** | A mutant survived all 146 cases: `lstrip("./")` **inside** the prefix branch. Observable on exactly one shape — `./` in front of a dotted path — where both halves of the bug meet. Every fixture missed it: `./x.py` has no dot to eat, `.agents/x.py` has no prefix to strip. Under it the whole SCC-295 defect returns. | **applied @ `fcce5e9`** — `A11` + sweep `M9` |
+| F5 | walkthrough gate table (acceptance) | **important** | The table claimed `check_links … clean`. Measured while the walkthrough was still **untracked**, so it was not in the scanned set; the real answer at HEAD was **4 dead paths**. A gate result recorded before the file it measured existed. | **applied @ `2196217`** — fenced; re-run scans 3 files / 20 claims, exit 0 |
+| F6 | `label_tasks.py` docstring + test comments (literal) | suggestion | The docstring cited **`verdicts_for`, a function that exists nowhere in the repo**; and all five line-number references were stale — this diff shifted them 21 lines, so `:757`/`:758` landed inside `blocked_by_of`. | **applied @ `9fea6d1`** — numbers removed entirely, functions named instead |
+| — | sweep `M4` (`s[2:]`→`s[1:]`) | — | **Not a finding — an EQUIVALENT mutant.** `startswith("./")` guarantees `s[1] == "/"`, which the next line's `lstrip("/")` removes, so the two are the same function. Proven over 14 inputs, 0 differ. Re-aimed to `s[3:]`, which is observable. ⛔ A sweep cannot tell an equivalent mutant from a test gap. | **re-aimed @ `9fea6d1`** |
+| — | uppercase keys · `../` · tab whitespace · trailing slash · `str()` coercion · `imports` normalisation (test-adequacy ×5) | suggestion | **dismissed — no reproduced failure.** Each is a surviving mutant with no concrete input/state/wrong-output chain, on behaviour identical before and after this diff. Recorded rather than chased: the engine's own rule is that a lens always returns findings and treating them as a work queue is how a lane never closes. | dismissed |
+
+### Step 0.7 — re-derivation
+
+1. **Nothing this diff references moved.** Re-derived against `origin/main` after absorbing it: the lane is 0 behind, and the merge-base diff of what landed while building is **0 files**. Earlier in the lane SCC-299 and SCC-300 both landed and were absorbed at `57f347d`.
+2. **True overlap is empty and the merge is clean.** `grep -Fxf mine theirs` → no shared paths; `merge-tree --write-tree` returned a tree sha with no conflict messages.
+3. **One sibling lane is live and it is a ledger dependency only.** `claude/teaching-edition` (SCC-280, 40 files) shares `_artifacts/_main/INDEX.md`. Either order lands; whichever is second absorbs `main` and keeps both rows. No code overlap.
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| `tests/test_label_tasks.py` | **147/147, exit 0** |
+| `tests/run_all.py` via `gate_receipt.py` | re-stamped at the landing sha — see `gates/suite.json` |
+| `mutation_sweep.py` | 8/8 killed on the 8-mutant table; `M9` added with `A11` and re-run at the landing sha |
+| `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, 8 info |
+| `check_maps.py --depth3-only --strict` | exit 0 |
+| `check_links.py --base origin/main` | clean — 3 files, 20 claims |
+| `declared_change_set.py diff` | undeclared 0 · unimplemented 0 · incomplete 0 |
+
+### Process findings — bigger than this ticket
+
+- ⛔ **`code-review-engine` runs its lenses in the builder's own worktree.** Three of the five wrote
+  to `label_tasks.py` while this lane was editing it. One produced a RED run reporting `'rc/a.py'` —
+  arithmetic no version of this code performs — which was a mutant being measured as if it were the
+  build. It was caught only because the number was impossible. The Agent tool has
+  `isolation: "worktree"`; the engine does not use it. **A review that can edit the code under
+  review is not a review.**
+- ⛔ **`lane_qualify.py` sizes by path prefix, not blast radius.** Anything under `.agents/scripts/`
+  returns `TASK`. Ten lines and a 24-file door rewrite are indistinguishable to it, and there is no
+  lane between "no ceremony" and "all of it". This ticket was typed as `/smh-quick-fix` and ran the
+  heaviest process in the system.
 
 ## Your Actions
 
