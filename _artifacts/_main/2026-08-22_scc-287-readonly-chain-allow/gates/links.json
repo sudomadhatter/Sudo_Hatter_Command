@@ -1,0 +1,20 @@
+{
+  "gate": "links",
+  "story": "scc-287",
+  "result": "pass",
+  "exit_code": 0,
+  "sha": "8774d85b32331b75d8c1e146598c8eb7af7595ff",
+  "dirty_tree": false,
+  "dirty_paths": [],
+  "totals": null,
+  "command": [
+    "python3",
+    ".agents/scripts/check_links.py",
+    "--base",
+    "origin/main"
+  ],
+  "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/scc-287-readonly-chain-allow",
+  "duration_s": 0.1,
+  "recorded_at": "2026-08-23T01:47:23+00:00",
+  "output_tail": "check_links: 4 markdown file(s), 9 path claim(s) checked\n  clean\n"
+}
