@@ -4028,6 +4028,39 @@ As **an admin**, I want **archive**, so that **nothing is lost.**
             c.check("A2 ...and the evidence itself is in the file, where a human reads it",
                     GOOD in row, row)
 
+        # ⛔ A2b · A WRAPPED ROW. Found by the review, reproduced before it was fixed: the proof
+        # was appended to the CHECKBOX line, which for a row that wraps splices machine text
+        # through the middle of the operator's sentence and orphans the rest of it -
+        #     - [x] **Decide ...** This lane synced only the in-repo -- verified ... (operator): ...
+        #           mirrors, deliberately, because it had not landed.
+        # This lane's OWN walkthrough carries a three-line row, so it fired on its own artifact.
+        # SCC-206 taught continuations to ride along because truncating them meant "the half that
+        # says WHY reached nobody"; writing through them is that injury by another route.
+        with TempDir() as tmp:
+            p = wt_file(tmp, "# W\n\n## Your Actions\n\n"
+                             "- [ ] **Decide the menu refresh.** This lane synced only the in-repo\n"
+                             "      mirrors, deliberately, because it had not landed.\n"
+                             "- [ ] A single-line row that must be untouched.\n")
+            before = p.read_text(encoding="utf-8").splitlines()
+            code, out = ra(p, "--tick", "5", "--evidence", GOOD, "--source", "operator")
+            after = p.read_text(encoding="utf-8").splitlines()
+            c.check("A2b a wrapped row ticks", code == 0, f"exit={code}: {out.strip()[:250]}")
+            c.check("A2b the checkbox flips on the FIRST line and its text is NOT cut",
+                    after[4].startswith("- [x] ")
+                    and after[4].endswith("This lane synced only the in-repo"),
+                    repr(after[4] if len(after) > 4 else after))
+            c.check("A2b the proof lands after the operator's LAST word, not through the middle",
+                    after[5].rstrip().endswith(GOOD) and "mirrors, deliberately," in after[5],
+                    repr(after[5] if len(after) > 5 else after))
+            c.check("A2b the line COUNT is unchanged, so every other row keeps its number",
+                    len(before) == len(after), f"{len(before)} -> {len(after)}")
+            c.check("A2b the sibling row is byte-identical",
+                    before[6] == after[6], repr(after[6] if len(after) > 6 else after))
+            c.check("A2b ...and the row is settled as far as `finish` is concerned",
+                    jira_feed.open_actions(p.read_text(encoding="utf-8"))
+                    == ["A single-line row that must be untouched."],
+                    str(jira_feed.open_actions(p.read_text(encoding="utf-8"))))
+
         # ── A3 · the five refusals. Each must write NOTHING. ─────────────────────────
         REFUSALS = [
             ("A3a a line that is already ticked is not an open row", L_C1, GOOD, "measured"),

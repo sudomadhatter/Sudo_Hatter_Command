@@ -2496,6 +2496,36 @@ def main() -> int:
         c.check("CS-17 E ...and the passage names `reconcile-actions`",
                 "reconcile-actions" in first, first[:200])
 
+        # ⛔ G · POSITION, NOT JUST PRESENCE — and this row exists because the first cut got it
+        # wrong in all four doors at once. The passage was dropped in beside the `finish` call,
+        # which in `smh-close-task-merge-tree.md` is inside **Step 4**, whose opening line is
+        # "**After the merge, never before.**" — and Step 5 prunes the worktree the tick was
+        # written into. That same door's Step 3 already carries the heading "⛔ Everything Step 4
+        # will demand of `walkthrough.md` must be committed ON THIS BRANCH, NOW". Rows A-F were
+        # ALL GREEN over it: presence, length, byte-equality and the law citation cannot see
+        # order (`source-grep-guards-cannot-see-order`). The consequence was live, not
+        # theoretical - `cmd_finish` reads the WORKING TREE for these rows, so the tick clears
+        # the hold and Jira goes `Done` while the copy that lands still reads `- [ ]`.
+        #
+        # So the order is asserted: reconcile, THEN the pre-landing `check-actions` each door
+        # already carves out, THEN `finish`.
+        FINISH_CALL = re.compile(r"jira_feed\.py finish (?:--key|--walkthrough)")
+        for name in CLOSING_DOORS:
+            body = (CDIR / name).read_text(encoding="utf-8-sig") if (CDIR / name).is_file() else ""
+            r = body.find(OPEN)
+            ca = body.find("check-actions --walkthrough")
+            m = FINISH_CALL.search(body)
+            fin = m.start() if m else -1
+            # ANTI-VACUITY: `-1 < -1` is False, but `-1 < 5` is True - a missing marker must not
+            # satisfy an ordering test by being "early".
+            c.check(f"CS-17 G {name} has all three markers to order",
+                    r >= 0 and ca >= 0 and fin >= 0,
+                    f"reconcile={r} check-actions={ca} finish={fin}")
+            c.check(f"CS-17 G {name} reconciles BEFORE it lands and BEFORE finish",
+                    0 <= r < ca < fin,
+                    f"reconcile={r} check-actions={ca} finish={fin} - the passage must precede "
+                    f"the pre-landing pass and the close, or the tick dies in a pruned worktree")
+
         # F · the law the passage acts under, cited where an agent reading the door will see it.
         for name in CLOSING_DOORS:
             body = (CDIR / name).read_text(encoding="utf-8-sig") if (CDIR / name).is_file() else ""

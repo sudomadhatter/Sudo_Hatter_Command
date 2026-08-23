@@ -1027,7 +1027,25 @@ and 35 of them were unreachable — a mutant, not a review, is what found it).
 sentence carry content"* test would refuse real operator quotes, and a **false refusal HOLDS a
 ticket** — the exact failure this feature exists to end. Over-accepting is recoverable by a human
 reading the file; over-refusing is not recoverable by anyone. So the real guard is that the
-evidence lands in the file, not that a regex approved it. ⛔ **The verb never
+evidence lands in the file, not that a regex approved it.
+
+⭐ **WHERE it runs is as load-bearing as what it does, and the first cut got it wrong.** The step
+sits in each door's **pre-landing** window — immediately before the `check-actions` block every one
+of them already carves out — and never beside the `finish` call. `finish` runs **after** the merge:
+in `/smh-close-task-merge-tree` that is Step 4, whose opening line is *"After the merge, never
+before"*, and Step 5 prunes the worktree. ⛔ **`cmd_finish` reads the WORKING TREE for these rows**
+— only the merge row is read from `HEAD` — so a tick made there clears the hold and writes `Done`
+while the copy that actually lands still reads `- [ ]`, in a tree about to be deleted. **An open box
+on a closed ticket is exactly what §4 forbids.** So: reconcile → `check-actions` → commit → land →
+`finish`. `test_command_surfaces.py` **CS-17 G** asserts that order by file offset in all four
+doors, because CS-17's other six rows are all satisfied by a block sitting anywhere in the file
+(`source-grep-guards-cannot-see-order`).
+
+ⓘ **A wrapped row keeps its shape.** `## Your Actions` rows routinely run to two or three lines, and
+SCC-206 taught the reader to fold those continuations in. The tick flips the box on the row's **first**
+line and writes the proof after its **last word** — never through the middle of the sentence — and the
+file's line COUNT never changes, which is what keeps every other row's printed line number valid for
+the whole pass. ⛔ **The verb never
 derives its own evidence** — an agent that could both invent the check and pass it is
 self-certifying, which is the thing this closes. Law: `.agents/rules/completion-not-illusion.md`
 §4, and the step is mandatory in all four doors that call `finish --apply`

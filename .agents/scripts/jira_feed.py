@@ -1760,18 +1760,18 @@ def open_actions(text: str) -> list[str] | None:
     starts = [i for i, ln in live if ln.strip().lower() == YOUR_ACTIONS.lower()]
     if not starts:
         return None
-    items: list[tuple[int, str]] = []
+    items: list[tuple[int, int, str]] = []
     # EVERY such section, not just the first. `next(...)` took the first heading only, so a
     # walkthrough that opened a second `## Your Actions` later (a close-out appending its own
     # asks is exactly how) had those items silently dropped and the ticket closed over them
     # (SCC-155 review finding).
     for start in starts:
         _collect(live, start, items)
-    return [t for _, t in items]
+    return [t for _, _, t in items]
 
 
-def open_action_rows(text: str) -> list[tuple[int, str]] | None:
-    """`open_actions`, but each row keeps the 1-based line it was read from. `None` = no section.
+def open_action_rows(text: str) -> list[tuple[int, int, str]] | None:
+    """`open_actions`, but each row keeps `(first line, last line, text)`. `None` = no section.
 
     ⭐ SCC-298 · THE LINE NUMBER *IS* THE STABLE ID, and it is stable for a real reason rather
     than by luck: ticking rewrites `- [ ]` to `- [x]` **in place** - same line, same line count -
@@ -1783,15 +1783,15 @@ def open_action_rows(text: str) -> list[tuple[int, str]] | None:
     starts = [i for i, ln in live if ln.strip().lower() == YOUR_ACTIONS.lower()]
     if not starts:
         return None
-    items: list[tuple[int, str]] = []
+    items: list[tuple[int, int, str]] = []
     for start in starts:
         _collect(live, start, items)
     return items
 
 
 def _collect(live: list[tuple[int, str]], start: int,
-             items: list[tuple[int, str]]) -> None:
-    """Append this section's OPEN items to `items` as `(1-based line, text)`, folded.
+             items: list[tuple[int, int, str]]) -> None:
+    """Append this section's OPEN items as `(first line, LAST line, text)`, continuations folded.
 
     ⭐ SCC-298 · THE LINE NUMBER RIDES ALONG SO THERE IS ONLY EVER ONE READER. `reconcile-actions`
     has to name a row by line so the operator (or an agent) can tick exactly it - and a second
@@ -1845,7 +1845,7 @@ def _collect(live: list[tuple[int, str]], start: int,
             continue
         m = _OPEN_ITEM_RE.match(ln)
         if m:
-            items.append((i + 1, m.group(1).strip()))
+            items.append((i + 1, i + 1, m.group(1).strip()))
             open_window = True
         elif _ANY_ITEM_RE.match(ln):
             # A ticked item, or any other list row. It owns nothing here, and it ENDS the
@@ -1857,7 +1857,14 @@ def _collect(live: list[tuple[int, str]], start: int,
             # ride along"), and dropping them truncated the operator's own instructions to
             # their first line - the half that says WHY reached nobody. It must NOT become a
             # second owed item, so it folds into the item above rather than appending.
-            items[-1] = (items[-1][0], items[-1][1] + " " + s)
+            # ⛔ SCC-298 REVIEW · THE END LINE IS WHY THIS IS A 3-TUPLE. A row wraps, and the
+            # proof `--tick` writes has to land after the operator's LAST word, never spliced
+            # through the middle of their sentence. Reproduced before it was fixed: appending to
+            # the checkbox line turned a two-line row into "...synced only the in-repo -- verified
+            # 2026-08-23 (operator): <proof>" with "mirrors, deliberately..." orphaned beneath it.
+            # SCC-206 taught continuations to ride along because truncating them meant "the half
+            # that says WHY reached nobody"; writing THROUGH them is the same injury by a new route.
+            items[-1] = (items[-1][0], i + 1, items[-1][2] + " " + s)
     return items
 
 
@@ -2509,13 +2516,13 @@ def tick_row(text: str, line: int, evidence: str, source: str,
     if rows is None:
         return None, (f"`{YOUR_ACTIONS}` is not in this file. An absent section is not evidence "
                       f"that nothing is owed - add it (even empty) and re-run")
-    by_line = dict(rows)
+    by_line = {start: (end, body) for start, end, body in rows}
     if line not in by_line:
-        open_ns = ", ".join(f"L{n}" for n, _ in rows) or "(none)"
+        open_ns = ", ".join(f"L{n}" for n, _, _ in rows) or "(none)"
         return None, (f"line {line} is not an OPEN row under `{YOUR_ACTIONS}`. Open rows: "
                       f"{open_ns}. A settled row, the agent's own `{'## Task Checklist'}`, a "
                       f"fenced example and a stale number all land here")
-    row = by_line[line]
+    end, row = by_line[line]
     ok, why = evidence_ok(evidence)
     if not ok:
         return None, why
@@ -2536,7 +2543,15 @@ def tick_row(text: str, line: int, evidence: str, source: str,
         return None, f"line {line} does not parse as an open checkbox row"
     prefix, gap, body = m.group(1), m.group(2) or " ", m.group(3)
     proof = f"{TICK_MARK} {today} ({source}): {evidence.strip()}"
-    lines[line - 1] = f"{prefix}[x]{gap}{(body + ' ') if body else ''}{proof}{nl}"
+    # ⛔ THE BOX IS ON THE FIRST LINE; THE PROOF GOES AFTER THE LAST WORD. When the row does
+    # not wrap these are the same line and exactly one line changes, as before.
+    if end == line:
+        lines[line - 1] = f"{prefix}[x]{gap}{(body + ' ') if body else ''}{proof}{nl}"
+    else:
+        lines[line - 1] = f"{prefix}[x]{gap}{body}{nl}"
+        tail = lines[end - 1]
+        tail_nl = tail[len(tail.rstrip("\r\n")):]
+        lines[end - 1] = f"{tail.rstrip()} {proof}{tail_nl}"
     return "".join(lines), ""
 
 
@@ -2575,7 +2590,7 @@ def cmd_reconcile_actions(args) -> int:
         return 0
 
     say(f"jira-feed: `{wt}` -> `{YOUR_ACTIONS}`: {len(rows)} row(s) still open.\n")
-    for n, row in rows:
+    for n, _end, row in rows:
         tag = ""
         if is_merge_row(row):
             tag = "   [merge row - `finish` computes this one; leave it]"
