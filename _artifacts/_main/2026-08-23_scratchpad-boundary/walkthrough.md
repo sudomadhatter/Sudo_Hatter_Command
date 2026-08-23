@@ -55,11 +55,15 @@ Branch 2 now requires a `scratchpad` path component under the `claude-<uid>` roo
 
 | Gate | Result |
 |---|---|
-| `tests/test_cwd_escape_hook.py` (sandboxed, `TMPDIR=/tmp/claude-501`) | **51/51, exit 0** |
-| `tests/run_all.py` | see below |
-| `workflow_lint.py --toolkit-only` | see below |
-| `check_maps.py --depth3-only --strict` | see below |
-| `check_links.py --base origin/main` | see below |
+| `tests/test_cwd_escape_hook.py` (sandboxed, `TMPDIR=/tmp/claude-501`) | **51/51, exit 0** — was 46/51 on `main` @ `391a838` |
+| `tests/run_all.py` | **59/59 files, exit 0** |
+| `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, 8 info — exit 0 |
+| `check_maps.py --depth3-only --strict` | exit 0 |
+| `check_links.py --base origin/main` | clean, exit 0 |
+
+The first suite run was **58/59** — `test_check_maps.py` `F2` caught this lane's own new artifacts
+folder with no `_artifacts/_main/INDEX.md` row. The row is in this commit; the check that found it is
+the one that now passes.
 
 ## Decisions
 
