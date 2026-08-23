@@ -5,6 +5,7 @@
 
 ## ⛔ Read first
 - [TWO machines: Mac AND PC](two-machines-mac-and-pc.md) — shared docs read on both; python3 vs python; core.hooksPath is per-machine.
+- [⭐ The SANDBOX is the approval-fatigue fix](sandbox-is-the-approval-fatigue-fix.md) — no hook can match a piped command; Mac only, WSL2 on PC; four things break under it.
 
 ## Project stores
 <!-- Paths stay BACKTICKED, never markdown links: check_store() resolves every markdown link to a
