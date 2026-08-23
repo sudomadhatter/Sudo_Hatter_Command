@@ -1,0 +1,12 @@
+task_key: SCC-281
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-281-bugs-cycle-6
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# Cycle 6 of the rolling ticket, run as ONE consolidated lane on the operator's word
+# (2026-08-22: "lets one shot the ticket on one working tree"). All three riders were carried
+# forward from SCC-262 (SCC-264/265/266), found at SCC-244's close-out.
+# Each part's commits name the SUBTASK key in the subject (work-consolidation.md rule 2).
+# NO `landing_mode:` line: this landing closes SCC-281. The successor SCC-293 (cycle 7) already
+# holds the `running-bug-list` baton - handed at `jira_feed.py start`.
+riders: [SCC-282, SCC-283, SCC-284]

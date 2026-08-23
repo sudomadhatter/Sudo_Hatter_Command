@@ -255,7 +255,11 @@ duplication** — keep both runs and do not "clean up" the wider one into the na
 Plus, because task work is almost always **docs and rules**, the two checks `/cicd-quick-dev` Step 3
 runs on a docs-only diff:
 
-- **Link + anchor check** on every path and `#L` anchor the diff touched.
+- **Link + anchor check** — `python3 .agents/scripts/check_links.py --base origin/main`, over every
+  path and `#L` anchor the diff touched. ⛔ Run the command; never improvise a matcher. An
+  improvised one reported **31 unresolved paths of which ~30 were false**, because it did not know
+  this repo cites scripts short — and a check that cries wolf thirty times teaches the reader to
+  skip the one real hit (SCC-285).
 - **SOP currency** — a usage-surface change (`.agents/commands/`, `.agents/rules/`,
   `.agents/scripts/`, git hooks, root `AGENTS.md`) must have moved
   `docs/_scc_sops_prds/workflows_testing_SOP.md`. The armed commit-msg gate already
@@ -409,7 +413,7 @@ finding). If the check is red, **STOP** — never disable the ruleset to get pas
 > did: each of those strings was judged separately by the agent's permission layer, several were
 > denied, and the state was left stranded halfway. Measured, same op and same target:
 > `git merge X --no-ff` **allowed**, `git -C <path> merge X --no-ff` **denied** — and `-C` is what
-> `.agents/rules/nothing-guards-the-merge-target.md` *mandates*. Obeying the safety law guaranteed
+> `.agents/rules/git-policy.md` §*"Pin the merge TARGET"* *mandates*. Obeying the safety law guaranteed
 > the permission miss. `gh pr create` has none of that: it is one command, it needs no checkout on
 > `main`, it writes nothing on this machine, and it is what actually landed PR #5, #6 and #8.
 
@@ -489,8 +493,12 @@ recoverable failure.
 >
 > 1. **Trim `riders:` in `task.yaml` to the subset whose work is actually on this branch** — and
 >    commit that trim on the lane, before the preflight. `task_preflight.py` checks every declared
->    rider against the lane's commits and refuses one that leads no commit here. *Never declare a
->    ticket whose work is not real.*
+>    rider against the lane's commits and refuses one that is named in no commit subject here.
+>    *Never declare a ticket whose work is not real.* ⭐ **How a rider EARNS its evidence (SCC-282):**
+>    its key is NAMED in at least one commit subject on the lane — anywhere in the subject, so
+>    `SCC-244 rider SCC-253: …` (lane key leading, the house convention) and `SCC-253 fix: …`
+>    both count. Know this BEFORE the commits are written: the check runs here, at close-out, when
+>    every subject is immutable, and a rider with no subject naming it has no remedy but a trim.
 > 2. **Add `landing_mode: partial`** to the same `task.yaml`. Without it an open undeclared child blocks,
 >    exactly as it always has — the mode is a thing you say, and an unrecognised value fails CLOSED.
 > 3. **The trimmed riders flip** as above. **The PARENT STAYS OPEN** — do not transition it, and do

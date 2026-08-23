@@ -1,0 +1,50 @@
+{
+  "v": 1,
+  "task": "SCC-281",
+  "sha": "02dc7b804dd2b3a54afc1f7ed60a7d6613df7fa4",
+  "tip": "d2d2369c9d2690b7d3d54977d9efb81c20fc3258",
+  "trigger": "close-out",
+  "when": "2026-08-22T19:48:44-05:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/smh-close-task-merge-tree.md",
+    ".agents/commands/smh-plan-task.md",
+    ".agents/rules/jira.md",
+    ".agents/rules/work-consolidation.md",
+    ".agents/scripts/mutation_sweep.py",
+    ".agents/scripts/task_preflight.py",
+    ".agents/scripts/tests/test_mutation_sweep.py",
+    ".agents/scripts/tests/test_task_preflight.py",
+    ".agents/scripts/tests/test_task_preflight_contract.py",
+    ".opencode/commands/smh-close-task-merge-tree.md",
+    ".opencode/commands/smh-plan-task.md",
+    "_artifacts/_main/2026-08-21_scc-244-bugs-updates-cycle-4/sweep.json",
+    "_artifacts/_main/2026-08-22_scc-281-bugs-cycle-6/gates/suite.json",
+    "_artifacts/_main/2026-08-22_scc-281-bugs-cycle-6/implementation_plan.md",
+    "_artifacts/_main/2026-08-22_scc-281-bugs-cycle-6/sweep.json",
+    "_artifacts/_main/2026-08-22_scc-281-bugs-cycle-6/task.yaml",
+    "_artifacts/_main/2026-08-22_scc-281-bugs-cycle-6/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-22_scc-281-bugs-cycle-6/walkthrough.md",
+    "verdict": "PASS @ 02dc7b8",
+    "gates": {
+      "suite": "pass@d00e9d1"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/jira.md",
+    "rule-edited:.agents/rules/work-consolidation.md"
+  ]
+}
