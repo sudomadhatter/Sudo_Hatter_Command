@@ -169,6 +169,34 @@ anything could see three behaviours, and nothing could, but the behaviour was al
 when the question was asked. A characterization check written green is honest; a green check
 presented as a red is not. The sweep (M3, M11, M13) is what proves they bite.
 
+## Landing — the gate run at the shipping sha, and the detour that delayed it
+
+The `Verdict: CONCERNS @ 2804483` above stands for that sha. Between it and the landing, this lane
+absorbed `origin/main` twice, so the preflight refused the suite SKIP (*"code moved since the verdict
+(4 non-artifact files) — the full gate runs"*) and every gate was re-walked at the landing sha:
+
+| Gate at the landing sha | Result |
+|---|---|
+| `tests/run_all.py` | **59/59 files, exit 0** |
+| `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, 8 info — exit 0 |
+| `check_maps.py --depth3-only --strict` | exit 0 |
+| `check_links.py --base origin/main` | 16 files, 205 path claims — clean, exit 0 |
+| `task_preflight.py --fetch` | **clear to close out and merge**, `LANE: LOCAL` |
+
+⭐ **This close-out found `main` red and stopped to fix it.** The first absorb of `origin/main`
+brought in SCC-299 (`4e5e09f`, PR #66), whose new `is_scratchpad()` matched the bare
+`/tmp/claude-<uid>` **parent of every session** — so `test_cwd_escape_hook.py` was 46/51 and the
+cwd-escape guard had stopped refusing real escapes. This lane's suite went 58/59 on inherited code.
+It was fixed on its own lane rather than folded in here, because this lane's verdict is stamped at a
+sha and mixing another ticket's regression in would invalidate that stamp: SCC-299 flagged `Bug`,
+fixed, landed as PR #67 @ `bfdf379`, closed `Done`. Only then did this lane re-absorb and go green.
+
+⛔ **Two other things this landing hit, both now filed as SCC-300.** The OS sandbox denies every
+write under `.claude/hooks/` and `.claude/skills/` at any depth regardless of `allowWrite`, so
+`git merge` died on `unable to unlink old '.claude/hooks/guard-cwd-escape.py'` and had to be re-run
+with the sandbox off; and `gh pr create` fails TLS as a Go CLI under the same sandbox. Neither is a
+defect in this lane's work, and neither is fixable from inside this repo.
+
 ## Your Actions
 
 - [ ] **The merge itself** — lands via this branch's PR against `main`.
