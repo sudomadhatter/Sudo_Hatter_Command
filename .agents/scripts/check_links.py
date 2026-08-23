@@ -139,16 +139,28 @@ AUTO_SENTINEL = re.compile(r"<!--\s*(?:REPO-MAP|DOC-GRAPH):AUTO-(START|END)\s*--
 
 
 def strip_auto(text: str) -> str:
-    """Blank generated AUTO blocks, preserving line numbers so reports stay accurate."""
-    out, inside = [], False
-    for line in text.splitlines():
+    """Blank generated AUTO blocks, preserving line numbers so reports stay accurate.
+
+    ⛔ AN UNPAIRED `START` STRIPS NOTHING. A line scanner that latches `inside` on `START` and
+    only clears it on `END` goes SILENT over the whole remainder of a file whose `END` is missing
+    — a truncated write, an interrupted `_land`, a hand-edit of the curated header. That is the
+    link gate switching itself off at the exact moment the file is known to be corrupt. So the
+    pairs are resolved FIRST, and only a block with both ends is blanked; a dangling sentinel is
+    left in place and its content stays checked. `generate_doc_graph.AUTO_BLOCK_RE` reaches the
+    same answer by requiring a matching `END` in the pattern — this is that rule, line-wise.
+    """
+    lines = text.splitlines()
+    blank, open_at = set(), None
+    for i, line in enumerate(lines):
         m = AUTO_SENTINEL.search(line)
-        if m:
-            inside = m.group(1) == "START"
-            out.append("")
+        if not m:
             continue
-        out.append("" if inside else line)
-    return "\n".join(out)
+        if m.group(1) == "START":
+            open_at = i                       # a second START just re-opens; the last one wins
+        elif open_at is not None:
+            blank.update(range(open_at, i + 1))
+            open_at = None
+    return "\n".join("" if i in blank else ln for i, ln in enumerate(lines))
 
 
 def candidates(text: str):

@@ -182,7 +182,9 @@ project** (listed in `.agents/maintained-projects.txt`); `/smh-update-maps-index
    python3 .agents/scripts/refresh_maps.py --verify    # PC: python. Exit 0 = both are current.
    ```
    Non-zero means a commit bypassed the hook — a merge made on github.com, a `--no-verify`, or a
-   clone where `core.hooksPath` was never set. Fix it with `refresh_maps.py --staged` and commit.
+   clone where `core.hooksPath` was never set. Fix it with `refresh_maps.py --repair` and commit.
+   ⛔ `--repair`, never `--staged`: all three of those trees have an EMPTY index, and `--staged`
+   is gated on the staged set, so it exits 0 having written nothing.
 
    ⭐ **THE SPLIT THIS CEREMONY NOW OWNS.** The hook owns the **generated** layer; you own the
    **curated** one — one-line purposes, INDEX prose, the `AGENTS.md` pointers, the CURATED blocks
@@ -475,7 +477,7 @@ edits, say so and proceed (a regen that produces no diff needs no approval).
   ```
   **Check 10 (doc-graph freshness) is FATAL and lobby-only.** It runs only where `docs/doc-graph.md`
   exists, so it is silent on every project — a project carries no doc graph and must not be made to.
-  If it fires in the lobby, a commit bypassed the pre-commit hook: `refresh_maps.py --staged`, then
+  If it fires in the lobby, a commit bypassed the pre-commit hook: `refresh_maps.py --repair`, then
   commit the two files. Do **not** answer it by generating a doc graph inside a project.
 - Summarise what changed (files + line counts) and what was flagged, **grouped by repo**.
 - **This one lands by hand** — it is a multi-repo sweep, not story work, so there is no single story

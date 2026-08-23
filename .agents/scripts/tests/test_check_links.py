@@ -170,6 +170,20 @@ def main() -> int:
             _ok = checked == 3
             c.check("H4 exactly the three authored claims were checked, not the reported one",
                     _ok, "" if _ok else f"checked={checked}, expected 3")
+            # ⛔ AN UNPAIRED `START` MUST STRIP NOTHING (Blind Hunter, SCC-288). A line scanner
+            # latches `inside` at START and clears it only at END, so a file whose END is missing
+            # — a truncated write, an interrupted `_land`, a hand-edited header — goes UNCHECKED
+            # from the sentinel to EOF. The gate would switch itself off exactly when the file is
+            # known to be corrupt, and report zero dead links as if that were good news.
+            (tmp / "torn.md").write_text(
+                "<!-- DOC-GRAPH:AUTO-START -->\n[x](docs/torn-dead.md)\n"
+                "still authored [y](docs/after-torn.md)\n", encoding="utf-8")
+            dead3, _, checked3 = CL.scan(tmp, resolver(tmp), ["torn.md"])
+            _ok = checked3 == 2 and len(dead3) == 2
+            c.check("H6 an UNPAIRED AUTO-START strips nothing - the file stays checked", _ok,
+                    "" if _ok else f"the gate went silent on a torn file: dead={dead3} "
+                                   f"checked={checked3}")
+
             # The repo-map uses a different sentinel and must get the same treatment.
             (tmp / "rm.md").write_text(
                 "<!-- REPO-MAP:AUTO-START -->\n[x](docs/tree-dead.md)\n"

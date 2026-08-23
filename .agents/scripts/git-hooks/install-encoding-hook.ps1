@@ -80,9 +80,13 @@ exec "`$(git rev-parse --show-toplevel)/.agents/scripts/git-hooks/pre-commit-enc
   if (Test-Path $hook) {
     $existing = Get-Content $hook -Raw
     $existingLf = ($existing -replace "`r`n", "`n")
-    if (($existing -notmatch $MARKER) -or ($existingLf.TrimEnd() -ne $bodyLf.TrimEnd())) {
+    # Three states, and the message must not conflate them: not ours · ours but DIFFERENT (chained
+# by someone, or written by an older installer) · ours and byte-identical. Only the last is
+# rewritten. Saying "it chains more than the encoding gate" about a merely stale own-hook sends
+# the operator to look for a chain that is not there.
+if (($existing -notmatch $MARKER) -or ($existingLf.TrimEnd() -ne $bodyLf.TrimEnd())) {
       $why = if ($existing -notmatch $MARKER) { "a different pre-commit hook is already installed" }
-             else { "the pre-commit hook here CHAINS more than the encoding gate (overwriting it would drop the others)" }
+             else { "the pre-commit hook here is OURS but DIFFERENT - either it chains more than the encoding gate, or it was written by an older installer. Overwriting blind could drop a chain, so read the head below and decide" }
       Write-Host "  REFUSED $root - ${why}:"
       Write-Host ($existing -split "`n" | Select-Object -First 5 | ForEach-Object { "      $_" })
       Write-Host "      chain it by hand if you want both."

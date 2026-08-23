@@ -332,6 +332,31 @@ def main() -> int:
                     "regenerated and staged" not in run(root, "--repair").stdout,
                     repr(run(root, "--repair").stdout))
 
+    # ── D4 · THE DOORS MUST NAME THE REMEDY THAT WORKS ────────────────────────────────────────
+    # ⛔ THE ACCEPTANCE LENS CAUGHT THIS, NOT A TEST. The --repair commit's own changelog row
+    # claimed "every message that names a remedy now names --repair" -- and four sites in
+    # /smh-update-maps-indexes still said --staged, in both mirrors. That door is exactly where an
+    # operator lands after check 10 fires, so it handed them the loop --repair exists to close.
+    # A prose claim nothing checks is a claim that rots; this is the check.
+    if c.block("RM-D4 · SCC-290 · no house door prescribes --staged as the stale-maps remedy"):
+        root = Path(__file__).resolve().parents[3]
+        offenders = []
+        for d in ("\u002eagents/commands", "\u002eopencode/commands", "\u002eclaude/skills"):
+            base = root / d
+            if not base.is_dir():
+                continue
+            for f in sorted(base.rglob("*.md")):
+                for i, line in enumerate(f.read_text(encoding="utf-8",
+                                                     errors="replace").splitlines(), 1):
+                    if "refresh_maps.py --staged" in line and "never `--staged`" not in line:
+                        offenders.append(f"{f.relative_to(root)}:{i}")
+        c.check("RM-D4 no door hands the operator the trigger-gated mode", not offenders,
+                str(offenders))
+        # ⛔ ANTI-VACUITY. If the scan reaches no doors at all, the check above passes on nothing -
+        # exactly the empty-input pass `tests-must-gate-for-real` §5 bans.
+        seen = sum(1 for f in (root / ".agents" / "commands").rglob("*.md"))
+        c.check("RM-D4 the scan actually reached the door folder", seen > 20, f"{seen} doors seen")
+
     # ── E · the round trip: a commit made through the hook leaves --verify green ──────────────
     if c.block("RM-E · SCC-290 · a commit made with the hook leaves --verify at exit 0"):
         with TempDir() as tmp:
@@ -427,6 +452,26 @@ def main() -> int:
             r = truth(root)
             c.check("RM-G3 exit 0 once the SOP names it", r.returncode == 0,
                     f"rc={r.returncode} {r.stdout}")
+
+    # ── G4 · a FILE PATH is not the door being NAMED ─────────────────────────────────────────
+    # ⛔ Blind Hunter, SCC-288. The regex anchored on `/` with a `(?![\w-])` lookahead, and `.md`
+    # passes that lookahead -- so `.agents/commands/cicd-new.md` appearing anywhere in the SOP
+    # (a file-layout table, a fenced `cat`) satisfied the check. The whole point is that the
+    # OPERATOR-facing page names the door the operator types.
+    if c.block("RM-G4 · SCC-290 · the SOP mentioning the FILE does not count as naming the door"):
+        with TempDir() as tmp:
+            root = seed_repo(tmp)
+            write(root / ".agents" / "commands" / "cicd-new.md", "# new door\n")
+            sop = root / "docs" / "_scc_sops_prds" / "workflows_testing_SOP.md"
+            sop.write_text(sop.read_text(encoding="utf-8")
+                           + "See `.agents/commands/cicd-new.md` for the file.\n",
+                           encoding="utf-8")
+            git(root, "add", "--", ".agents/commands/cicd-new.md",
+                "docs/_scc_sops_prds/workflows_testing_SOP.md")
+            run(root, "--staged")
+            r = truth(root)
+            c.check("RM-G4 the commit is still REFUSED - the file path is not the door",
+                    r.returncode == 1, f"rc={r.returncode} {r.stdout}")
 
     # ── H · both machines: the kill switch, and ASCII-only output ─────────────────────────────
     if c.block("RM-H · SCC-290 · the DISABLE kill switch, and ASCII-only console output"):

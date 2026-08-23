@@ -480,6 +480,14 @@ def main() -> int:
         c.check("O a trailing --repo with no value is exit 2, never a silent cwd fallback",
                 rc3 == 2 and "--repo needs a value" in err3,
                 f"rc={rc3} got={str(got3)[:120]} err={err3[:200]}")
+        # ⛔ AN UNKNOWN FLAG IS THE SAME DEFECT THROUGH THE BACK DOOR (Blind Hunter, SCC-288).
+        # The loop used to `paths.append` anything it did not recognise, so a one-character typo
+        # left `root` unset and `classify` answered about CWD -- the command centre -- while the
+        # new `root` echo stated that wrong tree with confidence. The guarded spellings above are
+        # worth nothing if every other spelling reopens the hole.
+        rc5, _g5, err5 = call_cli(REPO, ["classify", "--rep", "/x", ".agents"], dict(os.environ))
+        c.check("O a MISSPELLED flag is exit 2, not a path (no silent cwd fallback)",
+                rc5 == 2 and "--rep" in err5, f"rc={rc5} err={err5[:200]}")
         rc4, _g4, err4 = call_cli(REPO, ["classify", ".agents", "--repo="], dict(os.environ))
         c.check("O an EMPTY --repo= is exit 2 too (an unset shell variable expands to this)",
                 rc4 == 2, f"rc={rc4} err={err4[:200]}")

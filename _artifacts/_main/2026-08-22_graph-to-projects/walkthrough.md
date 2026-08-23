@@ -382,7 +382,7 @@ certifying sweep was run outside the sandbox.
 |---|---|
 | `jira_feed.py mint` still renders a Story description from the story file, in the old shape | It is the **BMAD story lane's** seam and this is the Task lane. Adopting the fast-read shape there needs the story-lane doors in the same change (plan C5) |
 | The two `check_maps` dead-path rows for `docs/migrations/auth_keys/_secrets/master.env` | Pre-existing on `origin/main`; the target is a gitignored, hand-carried secrets file that is absent from every clone by design. Not in this lane's diff |
-| The 75 broken doc references repo-wide | The ratchet's whole design (Decision 5): it forbids an INCREASE, it does not demand zero on day one. Most are stale references inside old migration guides |
+| The 77 broken doc references repo-wide | The ratchet's whole design (Decision 5): it forbids an INCREASE, it does not demand zero on day one. Most are stale references inside old migration guides |
 | AGY's vendored `scripts/check_maps.py`, `generate_repo_map.py` | All three already differ from the masters, and check 10 is lobby-only by construction (F1), so porting would add a check that never fires. Cross-repo work needs an **AVCH** key (plan §7, F8) |
 | The PC half — `commit-msg-maps.sh`, `pre-commit-maps.sh`, `pre-push-maps-verify.sh` and the F2 installer fix | Written for both machines (`python3 → python → py`, ASCII output, `printf` only) and **verified on the Mac only**. The PowerShell installer case DID run here on `pwsh`. Re-verify on the next PC session |
 
@@ -417,3 +417,25 @@ that absence should be a fact on the record, not something a later reader has to
       Guide: `docs/migrations/install_guides/jira-api-token-setup.md`.
 - [ ] **Decide whether `jira_feed.py mint` should adopt the fast-read shape** on a BMAD-lane ticket
       (deferred C5 above). It is a scope call, not a defect.
+
+---
+
+## Review findings STILL OPEN at this commit — not fixed, deliberately recorded
+
+Five lenses ran at `27870ba`. The patches that landed are in the commit above. These survived
+assessment as **real** and are **not yet fixed** — they are written here so the next commit on this
+lane picks them up rather than the next reader rediscovering them.
+
+| # | Finding | Severity | Why it is real |
+|---|---|---|---|
+| R1 | **`--verify` measures the WORKING TREE, so an untracked scratch `.md` refuses the push — and the printed `--repair` remedy then STAGES the phantom into a tracked artifact.** Reproduced: one untracked `.agents/rules/zz-scratch-probe.md`, nothing staged, nothing committed → `--verify` exit 1; `--repair` writes and `git add`s graph nodes for a file that is not in the repository. | **important** | `collect_md` walks the filesystem with `os.walk` and consults neither the index nor `.gitignore`. The module's stated "ACCEPTED LIMIT" covers unstaged edits to TRACKED files; it does not cover untracked ones. Scratch files are constant in this workflow, so this blocks pushes of unrelated committed work — and the documented fix makes it worse. |
+| R2 | **`install-encoding-hook.ps1 -Uninstall` still uses the marker-only ownership test that F2 just replaced on the install path — it DELETES the tracked `.githooks/pre-commit` dispatcher.** Found independently by two lenses; one reproduced it in a scratch repo. | **important** | `core.hooksPath` is `.githooks` here, the dispatcher necessarily contains `pre-commit-encoding`, so `-match $MARKER` is true and `Remove-Item` runs. **This lane made it strictly worse**: the dispatcher now chains the maps gate too, so uninstalling the encoding gate silently disarms maps refresh as well. The `$Uninstall` block sits above where `$body` is defined, so it structurally cannot use the byte-equality test. `test_install_git_hooks.py` never invokes `-Uninstall`. |
+| R3 | **The three new hook delegates have ZERO executable coverage — 146 lines of shell pinned only by source greps over dispatcher text.** Proved: four mutants (never invoke the delegate · `exit 0` instead of regenerating · put `--staged` back in the push remedy · delete the `MERGE_HEAD` carve-out) all survive with `run_all.py` **58/58 files passed**. | **important** | This is the source-grep blindness the house already records, on the one surface where it matters most — the gates. `RM-D4` does not cover it either: it scans `*.md` doors, so a `--staged` remedy inside `pre-push-maps-verify.sh` stays invisible to it. |
+| R4 | **`check_maps` check 10 is fatal on `docs/repo-map.md`, not just the doc graph, and it silently discards the operator's `--ignore`.** Reproduced both. | medium | `refresh_maps.verify()` regenerates BOTH artifacts, but the guard tests only for `docs/doc-graph.md` and the heading says doc-graph — so a repo-map failure prints under the wrong name. And `check_doc_graph_fresh(root)` takes no ignore argument, so `--ignore` is honoured by check 1 and dropped by check 10; the documented escape hatch cannot suppress the drift it exists for, and `--repair` would write the excluded entry into the committed map. |
+| R5 | **`attach()` crashes with a traceback on a 2xx body that is not a JSON array.** `except ValueError` does not catch the `AttributeError` a JSON object produces. | low | The function's own docstring says success is the filename in the response, never HTTP 200 — it is written to survive a well-formed-but-wrong 2xx and return `TRANSPORT`. An error envelope makes the comprehension iterate dict keys and die instead. |
+| R6 | **`triggered()` reads git's quoted path form literally**, so a non-ASCII staged filename regenerates the wrong artifact and leaves the doc graph stale. | suggestion | `git diff --cached --name-only` emits `".agents/rules/caf\303\251.md"` under default `core.quotepath`; the leading quote breaks both the top-segment split and the `.md` suffix test. Fix is `-z` + NUL split. ASCII-strict repo, so unlikely — but it is the exact failure the function was widened to avoid. |
+| R7 | **`generate_doc_graph.strip_auto` has no named case and no mutant.** Removing it from the pipeline leaves `test_doc_graph.py` at 24/24 and `test_check_maps.py` at 35/35; `test_refresh_maps.py` exits 1 but with **zero `[FAIL]` lines** — it dies in `seed_repo`'s assert, the "red test dies before its assertion" shape. | medium | The file that owns the behaviour cannot see it. |
+
+**Dismissed, with reasons:** the repo-map's hard-coded `threshold=8` (no door passes `--threshold`, so
+no operator can reach the divergence — unreachable, not latent) · `_land`'s read-back (correct that it
+has no observable, but it is the Port Check 3 idiom this house mandates, and it costs one read).

@@ -52,6 +52,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.request
 import uuid
@@ -213,7 +214,11 @@ def acli_bin(explicit=None):
 def write_description(key, adf, acli=None, timeout=90):
     """`acli ... edit --description-file` — the whole description, never `--description`."""
     binary = acli_bin(acli)
-    tmp = Path(os.environ.get("TMPDIR", "/tmp")) / f"jira-ticket-{os.getpid()}.json"
+    # ⛔ `tempfile.gettempdir()`, never `$TMPDIR`. TMPDIR is a POSIX variable; Windows sets TEMP
+    # and TMP, so the old default resolved to `C:\\tmp`, which a stock install does not have -
+    # a raw FileNotFoundError above the try, and in `done` it lands AFTER the outline file has
+    # already been rewritten. This module claims both machines; this was the one line that lied.
+    tmp = Path(tempfile.gettempdir()) / f"jira-ticket-{os.getpid()}.json"
     tmp.write_text(json.dumps(adf), encoding="utf-8")
     try:
         r = subprocess.run([binary, "jira", "workitem", "edit", "--key", key,

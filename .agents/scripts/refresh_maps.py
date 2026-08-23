@@ -281,7 +281,10 @@ def reverse_door_check(root):
         return []                                     # a project clone has no SOP to keep current
     text = sop.read_text(encoding="utf-8")
     missing = [n for n in house_doors(root)
-               if not re.search(r"/" + re.escape(n) + r"(?![\w-])", text)]
+               # ⛔ `(?![\w-])` alone lets a FILE PATH satisfy the check: `.agents/commands/x.md`
+               # matches at the `/`, and `.` passes the lookahead. The SOP must name the DOOR
+               # (`/x`), not merely mention the file, so `.md` is excluded explicitly.
+               if not re.search(r"/" + re.escape(n) + r"(?![\w-]|\.md)", text)]
     if not missing:
         return []
     return [f"door(s) not named in {SOP}: " + ", ".join("/" + m for m in missing),
@@ -345,8 +348,10 @@ def converge(root, want):
                     return 1
 
     # Always after: a doc-graph write can itself have changed what the repo-map sees.
-    rm = fresh_repo_map(root)
-    if rm is not None and ("repo-map" in want or wrote):
+    # Compute it only when it can be used - a full tree walk plus a `git rev-parse` subprocess
+    # on every commit is exactly the cost RM-A argues a hook must not pay to do nothing.
+    rm = fresh_repo_map(root) if ("repo-map" in want or wrote) else None
+    if rm is not None:
         fresh[REPO_MAP] = rm
         if not _land(root, REPO_MAP, rm, wrote):
             return 1

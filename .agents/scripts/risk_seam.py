@@ -342,6 +342,12 @@ def main() -> int:
                 return _bad("--repo needs a value")
             i += 1
             continue
+        # ⛔ AN UNKNOWN FLAG IS AN ERROR, NOT A PATH. Falling through to `paths.append` meant a
+        # one-character typo (`--rep`) left `root` unset, and `classify` then answered about CWD -
+        # the command centre - with a confident `root` echo naming the wrong tree. That is exactly
+        # the silent fallback `--repo` exists to stop, arriving through the back door.
+        if a.startswith("--"):
+            return _bad(f"unknown option {a}")
         paths.append(a)
         i += 1
 
