@@ -238,7 +238,13 @@ Receipt: [gates/suite.json](gates/suite.json) — `result: pass`, `sha: 72b3df2e
 Toolkit lint (bare): `-- 0 error(s), 0 warning(s), 8 info --`. `py_compile` on the five changed `.py` files: OK.
 
 **Re-stamped after the review-round fixes** (the last code-touching commit is `02dc7b80`; the receipt below is the one that governs):
-<!-- RECEIPT2 -->
+```
+[PASS] suite exit=0 83.1s @ d00e9d12
+        receipt: gates/suite.json
+…
+52/52 files passed
+```
+Receipt: [gates/suite.json](gates/suite.json) — `result: pass`, `sha: d00e9d127418e0f4f72568897ebcbfc949f91be8`, `dirty_tree: false`. `d00e9d1` is the commit carrying this Code Review section; the tree outside `_artifacts/` is identical to `02dc7b80`, the verdict sha (`git diff --quiet 02dc7b80 d00e9d1 -- . ':(exclude)_artifacts/**'` → clean), so the receipt governs the code the verdict names.
 
 ---
 
@@ -315,7 +321,7 @@ notes:           lenses ran against the frozen diff at `72b3df2` (10 source/test
 | B4 | B4 with the bytes-equal-main precondition · **B7 with a live sibling** · M12 |
 | (review) | B8 owning lane · B13 staged remedy · K6g non-string |
 
-Drift: none beyond the list (the parse fix and the review-round changes are named in the plan bullet and in this walkthrough).
+Beyond the list: nothing — the parse fix and the review-round changes are named in the plan bullet and in this walkthrough.
 
 ### Clean-Code Gate — PASS
 
