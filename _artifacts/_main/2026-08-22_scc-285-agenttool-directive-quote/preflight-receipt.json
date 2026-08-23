@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-285-agenttool-directive-quote",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-285",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": null,
+  "warnings": 2,
+  "when": null
+}

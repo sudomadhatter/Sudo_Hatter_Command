@@ -1,0 +1,5 @@
+task_key: SCC-285
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-285-agenttool-directive-quote
+close_command: smh-close-task-merge-tree
+secondary_repos: []

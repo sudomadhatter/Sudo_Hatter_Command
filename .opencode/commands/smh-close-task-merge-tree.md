@@ -255,7 +255,11 @@ duplication** — keep both runs and do not "clean up" the wider one into the na
 Plus, because task work is almost always **docs and rules**, the two checks `/cicd-quick-dev` Step 3
 runs on a docs-only diff:
 
-- **Link + anchor check** on every path and `#L` anchor the diff touched.
+- **Link + anchor check** — `python3 .agents/scripts/check_links.py --base origin/main`, over every
+  path and `#L` anchor the diff touched. ⛔ Run the command; never improvise a matcher. An
+  improvised one reported **31 unresolved paths of which ~30 were false**, because it did not know
+  this repo cites scripts short — and a check that cries wolf thirty times teaches the reader to
+  skip the one real hit (SCC-285).
 - **SOP currency** — a usage-surface change (`.agents/commands/`, `.agents/rules/`,
   `.agents/scripts/`, git hooks, root `AGENTS.md`) must have moved
   `docs/_scc_sops_prds/workflows_testing_SOP.md`. The armed commit-msg gate already
@@ -409,7 +413,7 @@ finding). If the check is red, **STOP** — never disable the ruleset to get pas
 > did: each of those strings was judged separately by the agent's permission layer, several were
 > denied, and the state was left stranded halfway. Measured, same op and same target:
 > `git merge X --no-ff` **allowed**, `git -C <path> merge X --no-ff` **denied** — and `-C` is what
-> `.agents/rules/nothing-guards-the-merge-target.md` *mandates*. Obeying the safety law guaranteed
+> `.agents/rules/git-policy.md` §*"Pin the merge TARGET"* *mandates*. Obeying the safety law guaranteed
 > the permission miss. `gh pr create` has none of that: it is one command, it needs no checkout on
 > `main`, it writes nothing on this machine, and it is what actually landed PR #5, #6 and #8.
 

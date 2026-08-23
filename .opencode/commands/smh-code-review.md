@@ -155,11 +155,12 @@ verdict about code that will never exist.
 happens: a headless pipeline or a platform without a subagent tool makes the answer `inline`, and
 both are invisible until a lens fails to launch.
 
+<!-- twin-law: subagent-probe -->
 ⛔ **The question is a **capability**, never a **policy** — and conflating the two silently gutted a
 review on SCC-197 (SCC-203).** *Does a subagent tool exist in this runtime?* is the whole question.
 *Am I permitted to use it right now?* is a different one, and answering it here is how a session
-directive — *"do not spawn subagents unless the user asks"* — got read as *"this runtime is
-inline"*. The entire review then ran in the builder's own context and the flow recorded it as a
+directive — *"Do not call the AgentTool unless the user requested it"* — got read as *"this
+runtime is inline"*. The entire review then ran in the builder's own context and the flow recorded it as a
 legitimate outcome. The operator caught it by reading the chat; nothing in the system would have.
 
 ⭐ **Answer ONE question: does a subagent tool exist in this runtime?**
@@ -168,8 +169,8 @@ legitimate outcome. The operator caught it by reading the chat; nothing in the s
 - **No → `review-runtime: inline (no subagent tool)`.**
 
 ⛔ **Do not ask a second question.** *"Am I allowed to?"* is already answered: **the operator
-invoked this command, and a `/` command IS a user request.** A session directive reading *"do not
-use subagents unless the user requested it"* is **satisfied here** — typing the command is the
+invoked this command, and a `/` command IS a user request.** The standing directive *"Do not call
+the AgentTool unless the user requested it"* is **satisfied here** — typing the command is the
 operator asking, and this step is where that ask lands. Do not stop and put it to them again.
 
 ⛔ **If you still believe you cannot launch one, you may not record a bare `inline`.** Write the
@@ -177,7 +178,10 @@ reason on the header line: `review-runtime: inline (blocked: <quote what blocked
 `inline` from a runtime that HAS the tool is a false record, and at close-out it is
 indistinguishable from a runtime that never had one — which IS the SCC-203 defect. This third door
 exists so an agent that believes it is forbidden has somewhere to put that belief where a reader
-can see it, instead of laundering it into a clean-looking `inline`.
+can see it, instead of laundering it into a clean-looking `inline`. **`walkthrough_roster.py`
+READS that reason (SCC-285):** a bare `inline`, or one resting on permission rather than on
+capability, is refused at close-out — this rule stopped being prose.
+<!-- /twin-law -->
 
 And if you are `inline` while holding this lane's plan and walkthrough, the engine **drops** the
 Blind Hunter rather than faking it — see step-01 § *When the order CANNOT protect it*. A roster is
@@ -327,7 +331,7 @@ exit code, which is how a red gate reads as green.
 | **Toolkit lint** | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **always** — errors FAIL, warnings are CONCERNS |
 | **Assertion evidence** | re-run the task's own Step 2 RED assertions — `--case "<label>"` where the suite declares blocks, so this row cites the NAMED cases rather than a whole file | **always** — they must be GREEN now |
 | **SOP currency** | `python3 .agents/scripts/sop_currency.py --paths <changed> --message "<subject>"` | a usage surface is in the diff |
-| **Link + anchor** | resolve every path and `#L` anchor the diff touched | any `.md` in the diff |
+| **Link + anchor** | `python3 .agents/scripts/check_links.py --base origin/main` | any `.md` in the diff |
 | **Door parity** | every added/renamed command has exactly the doors its `platforms:` claims | a command was added, renamed or deleted |
 
 **Receipts ride this lane too (SCC-146).** `/smh-quick-dev` Step 3 stamps the suite run at

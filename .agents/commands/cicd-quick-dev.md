@@ -184,8 +184,8 @@ input in Step 3:
 <!-- twin-law: review-runtime-probe -->
 ⛔ **The probe asks ONE question: does a subagent tool exist in this runtime? (SCC-203)** Yes →
 `fan-out`. No → `inline (no subagent tool)`. ⭐ *Am I permitted?* is **already answered — the
-operator invoked a `/` command, and a command IS a user request**; a session directive reading
-*"do not use subagents unless the user requested it"* is **satisfied by that invocation**, so you
+operator invoked a `/` command, and a command IS a user request**; the standing directive
+*"Do not call the AgentTool unless the user requested it"* is **satisfied by that invocation**, so you
 never stop to ask and never quietly downgrade. ⛔ If you still believe you cannot, you may not
 record a bare `inline` — write `inline (blocked: <what blocked you, verbatim>)`. A bare `inline`
 from a runtime that HAS the tool is indistinguishable from one that never had it, and that
@@ -318,7 +318,11 @@ indistinguishable from it in the artifact.
   Paste the **actual** output. Bug fixes add ONE pinning regression test.
 
 **Docs / config only — no lint floor (there is nothing to lint)**
-- Link + anchor check on every path and `#L` anchor touched.
+- Link + anchor check on every path and `#L` anchor touched. ⛔ **Prose here on purpose.**
+  `check_links.py` is a LOBBY script and a thin project does not carry it — a project's
+  `.agents/scripts/` holds only `git-hooks/` and `tests/`. The `smh-*` doors name the command
+  because they run in the command centre; naming it here would cite a file that is not on the
+  target (SCC-285).
 - **SOP-currency check** — a usage-surface change (`.agents/commands/`, `.agents/rules/`,
   `.agents/scripts/`, git hooks, root `AGENTS.md`) must move
   `docs/_scc_sops_prds/workflows_testing_SOP.md` in the same commit, or the armed gate
