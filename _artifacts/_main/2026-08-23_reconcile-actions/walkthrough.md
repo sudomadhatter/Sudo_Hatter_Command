@@ -191,15 +191,15 @@ lenses_run:
 - acceptance-auditor · ok
 - test-adequacy-auditor · ok
 lenses_counted:  5/5
-lenses_na:
-- none — `review_mode: full` (the plan's acceptance table is the spec), so every lens was applicable
+lenses_na:       none
 
 dispositions:    per-lens: blind=7/2/0 · edge=8/0/0 · literal=5/0/0 · acceptance=8/0/0 · test-adequacy=12/0/0 (a multi-lens finding counts once per contributing lens; 5 anchors were reached by 2+ lenses and are merged in the table below)
 drift:           undeclared=0 · unimplemented=0 · incomplete=0 — seven generated files (four `.opencode` mirrors, the sync manifest, the doc-graph pair) were undeclared at first pass and are now named in the block with their reasons
 
 **Scope:** `origin/main...HEAD`, 24 files. **Method:** `review_level: standard`, `review_runtime:
 fan-out`, `lens_budget: standard`. Five lenses in parallel clean contexts; the Blind Hunter was fed
-the diff text from outside the repo and never opened it.
+the diff text from outside the repo and never opened it. `lenses_na: none` because `review_mode`
+was `full` — the plan's acceptance table is the spec — so every lens was applicable and every one ran.
 
 **Changes applied: many — see the table.** Every finding that survived the relevance gate was fixed
 in this lane before this verdict. No finding left as future work; no ticket minted.
