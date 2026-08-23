@@ -448,6 +448,46 @@ def main() -> int:
     c.check("SCC-295 A5c an import of `.agents` matches a dotted `creates` entry",
             "B" in g["A"] and "A" in g["B"], str(g))
 
+    # ⛔ A8 · REGRESSION GUARD, found by the review's blind lens. `lstrip("./")` also ate
+    # a leading `/` as a side effect of being a character set, and a prefix-only strip
+    # does not - so `/src/a.py` and `src/a.py`, which are the SAME file spelled two ways,
+    # stopped intersecting and BOTH lanes were stamped parallel-ok. ⛔ Note the direction:
+    # the original bug over-serialised (safe); dropping this would under-serialise, which
+    # is the exact failure the labeller exists to prevent (SCC-295).
+    _n = getattr(lt, "norm_path", None)
+    c.check("SCC-295 A8 a leading `/` is the SAME key as its slashless spelling",
+            _n is not None and _n("/src/a.py") == _n("src/a.py") == "src/a.py",
+            "no norm_path" if _n is None else f'{_n("/src/a.py")!r} vs {_n("src/a.py")!r}')
+    c.check("SCC-295 A8b `.//a.py` normalises WHOLE, not to `/a.py`",
+            _n is not None and _n(".//a.py") == "a.py" and _n("././/a.py") == "a.py",
+            "no norm_path" if _n is None else f'{_n(".//a.py")!r} {_n("././/a.py")!r}')
+    c.check("SCC-295 A8c whitespace AFTER the prefix is stripped too",
+            _n is not None and _n("./ agents/x.py") == "agents/x.py",
+            "no norm_path" if _n is None else repr(_n("./ agents/x.py")))
+    # and the whole point of the lane must survive the regression guard
+    c.check("SCC-295 A8d CONTROL the dot is STILL preserved after all of that",
+            _n is not None and _n(".agents/x.py") == ".agents/x.py"
+            and _n("..hidden") == "..hidden",
+            "no norm_path" if _n is None else f'{_n(".agents/x.py")!r} {_n("..hidden")!r}')
+
+    # A9 · the SECOND consequence of the same root cause, found by the edge-case lens:
+    # PLANNING_PREFIXES is checked AFTER normalisation, so a surviving leading `/` made
+    # `/_artifacts/plan.md` read as a real source path. Every planned lane writes under
+    # `_artifacts/`, so two lanes would collide over their own planning files.
+    c.check("SCC-295 A9 a leading `/` does not smuggle a planning path into the key set",
+            lt.source_paths({"paths": ["/_artifacts/plan.md", "/_bmad/z.md"]}) == set(),
+            str(lt.source_paths({"paths": ["/_artifacts/plan.md", "/_bmad/z.md"]})))
+
+    # A10 · an EMPTY `creates` entry made `c in s` true for EVERY import string, so one
+    # lane locked against every other and the board printed a reason it had invented.
+    # `source_paths` filtered empties six lines up; this second copy never did.
+    # Both hunter lenses found it independently (SCC-295).
+    g2 = lt.conflict_graph(["A", "B"], {
+        "A": {"paths": ["backend/a.py"], "imports": ["totally/unrelated/module.py"]},
+        "B": {"paths": ["frontend/b.tsx"], "creates": ["./", "frontend/new.tsx"]}})
+    c.check("SCC-295 A10 an empty `creates` entry does not lock every lane",
+            not g2["A"] and not g2["B"], str(g2))
+
     # ── SCC-295 · end to end, through the board surface itself ────────────────
     with TempDir() as tmp:
         r = run_resolve(tmp, [child("A-1", "1.1"), child("A-2", "1.2")],
