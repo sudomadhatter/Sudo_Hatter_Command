@@ -818,11 +818,12 @@ def main() -> int:
             # `M .claude/x.json` and `ln[3:]` read `claude/x.json` - a path that does not
             # exist, so the sibling match could never fire on the one shape the ticket named.
             repo = make_repo(t)
-            branch(repo, "chore/SCC-11-thing", {".claude/x.json": "{}\n"})
-            git(repo, "checkout", "-q", "main")
-            git(repo, "merge", "-q", "--no-verify", "chore/SCC-11-thing")   # main has the file too
-            git(repo, "push", "-q", "origin", "main")     # or the STALLED-LANDING check fires instead
-            git(repo, "checkout", "-q", "chore/SCC-11-thing")
+            # The file must be TRACKED on main BEFORE the lane is cut (so the lane still has its
+            # own commit to merge, and the sibling's edit shows as ` M`, not `??`).
+            write(repo, ".claude/x.json", "{}\n")
+            commit(repo, "SCC-11 chore: the shared config exists on main")
+            git(repo, "push", "-q", "origin", "main")
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
             sibling(t, repo, ".claude/x.json", '{"hooks": "edited on the sibling lane"}\n')
             (repo / ".claude" / "x.json").write_text('{"hooks": "edited on the sibling lane"}\n',
                                                      encoding="utf-8")
