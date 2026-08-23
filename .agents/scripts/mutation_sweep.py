@@ -147,6 +147,13 @@ def load_table(path: Path) -> tuple[dict, str | None]:
         if absent:
             return {}, (f"{path}: mutant #{i + 1} is missing {', '.join(absent)} - the key is "
                         f"ABSENT (an EMPTY `\"mutated\": \"\"` is legal and declares a deletion)")
+        if not isinstance(m["mutated"], str):
+            # Review (three lenses, reproduced): `null` used to be refused by the falsy check
+            # and reached the apply loop, where `str.replace(..., None)` raised - exit 1 with
+            # a traceback, the exit code that means "a mutant survived".
+            return {}, (f"{path}: mutant #{i + 1} has a non-string `mutated` "
+                        f"({type(m['mutated']).__name__}) - it must be a string; \"\" is a "
+                        f"deletion")
         empty = [k for k in ("id", "file", "original", "case") if not m.get(k)]
         if empty:
             return {}, (f"{path}: mutant #{i + 1} has an EMPTY {', '.join(empty)} - only "

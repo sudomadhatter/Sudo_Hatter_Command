@@ -155,7 +155,7 @@ ate three sessions) and SCC-246 (the authorship answer for `_artifacts/_memory/`
 > still errors.
 
 ### Step 4 — mutants, suite, SOP, artifacts (rule 3: one block)
-- `sweep.json` for THIS lane, drawn from the code: M1 `findall`→`match` (kills A1a), M2 `subject_keys`
+- `sweep.json` for THIS lane, drawn from the code (⚠ the numbering below was the plan's; the FINAL table in `sweep.json` and the walkthrough is authoritative — it grew to 17 across two review rounds): M1 `findall`→`match` (kills A1a), M2 `subject_keys`
   returns only `group(1)` (kills A1b), M3 loader `k not in m` → `not m.get(k)` (kills C1), M4 absent-
   message loses the word *absent* (kills C2), M5 `sibling_lane_copies` compares to `b""` instead of the
   blob (kills B3), M6 the helper returns `{}` (kills B1), M7 the matched paths are NOT removed from
@@ -174,7 +174,7 @@ ate three sessions) and SCC-246 (the authorship answer for `_artifacts/_memory/`
 ### Scripts and their tests
 - EDIT `.agents/scripts/mutation_sweep.py` — loader distinguishes ABSENT from EMPTY; `"mutated": ""` is a legal deletion; template comment says so → C1, C2, C3
 - EDIT `.agents/scripts/tests/test_mutation_sweep.py` — block K6: deletion legal, absent refused, empty original refused → C1, C2, C3
-- EDIT `.agents/scripts/task_preflight.py` — `subject_keys()` + `lane_commit_keys()` read every key; `sibling_lane_copies()` + fourth bucket in `_check_tree_dirt()` → A1, B1, B2, B3
+- EDIT `.agents/scripts/task_preflight.py` — `subject_keys()` + `lane_commit_keys()` read every key; `sibling_lane_copies()` + fourth bucket in `_check_tree_dirt()`; discovered in the build: the porcelain output is split BEFORE stripping (first-line ` M` parse bug, B5/B6); review round: base-blob predicate, own-lane owner, prunable skip, staged remedy, blob-id compare (B7–B15) → A1, B1, B2, B3
 - EDIT `.agents/scripts/tests/test_task_preflight.py` — parent-key-leads riders pass; `d9d9a9d` verbatim subject fixture → A1, A2
 - EDIT `.agents/scripts/tests/test_task_preflight_contract.py` — block SCC-283: sibling copy warns, unknown errors, differing errors → B1, B2, B3
 

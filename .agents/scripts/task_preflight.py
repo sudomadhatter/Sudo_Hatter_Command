@@ -966,68 +966,102 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report,
 
 
 LANE_BRANCH_RE = re.compile(r"^(chore|claude|epic)/")
+OWNABLE = (" M", "??")                 # worktree-only change, or untracked: never staged
+STAGED = ("M ", "MM", "A ", "AM")      # the INDEX holds it - an act of THIS tree
 
 
-def sibling_lane_copies(repo: Path, lines: list[str], branch: str) -> dict[str, str]:
-    """`{dirty path: sibling lane branch}` for every dirty path whose working-copy BYTES equal
-    that lane's COMMITTED copy - the fourth dirt bucket (SCC-283).
+def sibling_lane_copies(repo: Path, lines: list[str],
+                        branch: str) -> tuple[dict[str, str], dict[str, str]]:
+    """`(owned, staged)` - the fourth dirt bucket (SCC-283), earned by blob ids.
+
+    `owned`: `{dirty path: lane branch}` for every ` M`/`??` path whose working copy is the
+    blob a LIVE lane committed - AND that lane actually CHANGED the path (its blob differs
+    from the base's). `staged`: the same match for a path sitting in the INDEX (`A `, `M `,
+    `MM`, `AM`) - never owned, but reported with the unstage remedy rather than "commit it".
 
     The classifier below could not tell a live sibling lane's working copy from unswept
     dirt, and the two have OPPOSITE correct actions: dirt is committed or parked, another
     lane's live copy is left alone. Backwards, it either wedges a close-out or destroys
     someone else's work - and the second has happened once (SCC-180, a `reset --hard` remedy
     that ate three sessions' uncommitted work). SCC-246 answered the same shape for
-    `_artifacts/_memory/` by AUTHORSHIP; this answers the rest of the tree by BYTES. The
+    `_artifacts/_memory/` by AUTHORSHIP; this answers the rest of the tree by BLOBS. The
     sharp case is `.claude/settings.json`: it can ONLY be edited in the shared checkout,
     because that is where the running Claude reads it, so a lane working on it is REQUIRED
     to leave the shared tree dirty. That is not a lane doing it wrong.
 
-    ⛔ A "sibling lane" is a worktree on a LANE branch - `chore/` · `claude/` · `epic/` - and
-    never the base branch, and never `branch` itself (self-audit, SCC-281). A checkout on
-    `main` is a worktree like any other, and a file this lane changed, committed, then
-    reverted by hand in the working copy is dirty AND byte-identical to `main:<path>`;
-    calling that "main's working copy" would wave an uncommitted revert through -
-    permissive in exactly the SCC-180 direction. A second tree on this lane's own branch is
-    `check_worktree`'s warning, not a sibling. Renames and deletions never match: a deletion
-    cannot equal a committed blob, and a rename's bytes live under another name."""
+    ⛔ THE PREDICATE IS "THE LANE CHANGED IT", NOT "THE LANE HAS IT" (review of this lane:
+    four lenses, three reproductions). A lane's committed TREE carries the base's bytes for
+    every file it never touched, so "working copy == `<lane>:<path>`" is also true of a
+    hand-revert to main's bytes the moment ONE unrelated sibling worktree is live - the
+    normal state here. Excluding `main` by NAME was the first cut and it was dead code on
+    every real run. A sibling owns a path only if its blob differs from `base_ref`'s blob
+    for that path; a revert-to-base therefore never matches anyone.
+
+    ⭐ The lane's OWN branch is a legitimate owner. Measured from the shared checkout at
+    its own close-out, the lane that edited `.claude/settings.json` there and committed
+    those bytes on its branch sees its own committed copy - it lands with this very merge.
+    The first cut excluded `branch` and wedged exactly that close-out. (In the lane's own
+    worktree a dirty file can never equal its own HEAD, so the inclusion costs nothing.)
+
+    Blob ids, not bytes: `git hash-object --path` applies the clean filter, so a CRLF
+    working copy on the PC (`core.autocrlf=true`, see .gitattributes) still matches the LF
+    blob. A raw byte compare made the whole bucket dead on one of the two machines. A
+    worktree listed `prunable` (directory gone, not pruned) is not a live lane. Renames,
+    deletions, conflicts and typechanges never match."""
     here = repo.resolve()
     lanes: list[str] = []
     for block in wf.git(["worktree", "list", "--porcelain"], repo).stdout.split("\n\n"):
         wt = re.search(r"^worktree (.+)$", block, re.MULTILINE)
         br = re.search(r"^branch refs/heads/(.+)$", block, re.MULTILINE)
-        if not wt or not br:
+        if not wt or not br or re.search(r"^prunable", block, re.MULTILINE):
             continue
         name = br.group(1).strip()
-        if Path(wt.group(1).strip()).resolve() == here or name == branch:
+        if Path(wt.group(1).strip()).resolve() == here:
             continue
         if LANE_BRANCH_RE.match(name):
             lanes.append(name)
     owned: dict[str, str] = {}
+    staged: dict[str, str] = {}
     if not lanes:
-        return owned
+        return owned, staged
+    base = base_ref(repo)
+
+    def blob_at(ref: str, rel: str) -> str:
+        r = wf.git(["rev-parse", "--verify", "--quiet", f"{ref}:{rel}"], repo)
+        return r.stdout.strip() if r.returncode == 0 else ""
+
     def lane_of(rel: str) -> str | None:
-        try:
-            blob = (repo / rel).read_bytes()
-        except OSError:
+        if not (repo / rel).is_file():
             return None
+        h = wf.git(["hash-object", "--path", rel, "--", str(repo / rel)], repo)
+        if h.returncode != 0 or not h.stdout.strip():
+            return None
+        mine, base_blob = h.stdout.strip(), blob_at(base, rel)
+        if mine == base_blob:
+            return None                    # the base's bytes belong to nobody's lane
         for lane in lanes:
-            show = subprocess.run(["git", "-C", str(repo), "show", f"{lane}:{rel}"],
-                                  capture_output=True)
-            if show.returncode == 0 and show.stdout == blob:
+            if blob_at(lane, rel) == mine:
                 return lane
         return None
 
     for ln in lines:
-        if ln[:2] not in (" M", "M ", "MM", "??"):
-            continue                      # a rename, a deletion, a conflict: never a match
-        rel = ln[3:].strip()
-        if ln[:2] == "??" and rel.endswith("/"):
+        code, rel = ln[:2], ln[3:].strip()
+        if code in STAGED:
+            lane = lane_of(rel)
+            if lane:
+                staged[rel] = lane
+            continue
+        if code not in OWNABLE:
+            continue                       # rename, deletion, conflict, typechange: never
+        if code == "??" and rel.endswith("/"):
             # ⛔ `git status` COLLAPSES an untracked directory to one `?? dir/` line (measured
             # on the first run of this helper: `.claude/x.json` arrived as `?? .claude/`).
-            # Expand it, and own the entry only if EVERY file under it is some live lane's
-            # committed copy - one unowned file and the whole entry stays dirt, because the
-            # count the error prints is the status line, not the file.
-            ls = wf.git(["ls-files", "--others", "--exclude-standard", "--", rel], repo)
+            # Expand it - with the same quotepath setting `status` ran under, or a non-ASCII
+            # name comes back octal-quoted and unreadable - and own the entry only if EVERY
+            # file under it is some live lane's committed copy: one unowned file and the
+            # whole entry stays dirt, because the count the error prints is the status line.
+            ls = wf.git(["-c", "core.quotepath=false", "ls-files", "--others",
+                         "--exclude-standard", "--", rel], repo)
             files = [f for f in ls.stdout.splitlines() if f.strip()]
             found = [lane_of(f) for f in files]
             if files and all(found):
@@ -1036,7 +1070,7 @@ def sibling_lane_copies(repo: Path, lines: list[str], branch: str) -> dict[str, 
         lane = lane_of(rel)
         if lane:
             owned[rel] = lane
-    return owned
+    return owned, staged
 
 
 def _check_tree_dirt(repo: Path, label: str, manifest: Path | None, rep: wf.Report,
@@ -1080,13 +1114,22 @@ def _check_tree_dirt(repo: Path, label: str, manifest: Path | None, rep: wf.Repo
         # ⭐ SCC-283 · THE FOURTH BUCKET: a dirty path that is byte-identical to a live
         # sibling lane's COMMITTED copy is that lane's working copy, not this lane's dirt.
         # Named, never errored, and never touched - see `sibling_lane_copies`.
-        owned = sibling_lane_copies(repo, rest, branch)
+        owned, staged = sibling_lane_copies(repo, rest, branch)
         rest = [ln for ln in rest if ln[3:].strip() not in owned]
         for rel, lane in owned.items():
-            rep.warn("sync", f"{label}: {rel} is {lane}'s working copy (byte-identical to the "
-                             f"copy that live lane committed) - leave it alone; it is not this "
-                             f"lane's dirt and must not be swept, parked or committed under "
-                             f"this key")
+            if lane == branch:
+                rep.warn("sync", f"{label}: {rel} is THIS lane's own working copy (the blob "
+                                 f"{branch} committed, living in the shared checkout) - it "
+                                 f"lands with this merge; leave it alone")
+            else:
+                rep.warn("sync", f"{label}: {rel} is {lane}'s working copy (the blob that live "
+                                 f"lane committed, and changed) - leave it alone; it is not "
+                                 f"this lane's dirt and must not be swept, parked or committed "
+                                 f"under this key")
+        for rel, lane in staged.items():
+            rep.err("sync", f"{label}: {rel} is STAGED here but is {lane}'s committed copy - "
+                            f"`git restore --staged {rel}` in {label}; staged content would be "
+                            f"committed under this key, and it is not this lane's work")
         if rest:
             rep.err("sync", f"{label}: {len(rest)} uncommitted change(s) - commit "
                             f"(explicit paths) and push before merging")

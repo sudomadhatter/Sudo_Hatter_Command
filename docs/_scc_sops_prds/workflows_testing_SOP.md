@@ -1652,6 +1652,15 @@ sibling lane, so a hand-revert to main's content in your working copy still erro
 ⛔ The same lane found that the classifier had been mis-reading the FIRST dirty line whenever it was a
 tracked modification (` M path` lost its leading space to a whole-output `.strip()`), so the memory ruling and
 the sibling match both silently missed exactly the `M .claude/settings.json` shape the ticket was filed on — fixed.
+⭐ **The review of that lane then found the hole in its own fix, four lenses independently:** a sibling's committed TREE
+carries main's bytes for every file it never touched, so "working copy equals `<sibling>:<path>`" was also true of a
+hand-revert to main — the moment ONE unrelated sibling worktree was live (the normal state here). Excluding `main` by
+name was dead code on every real run. **The predicate is now "the lane CHANGED it"**: a sibling owns a path only when its
+blob differs from the base's blob. Three more rulings ride with it: the lane's **own** branch is a legitimate owner (the
+lane that dirtied the shared checkout must be able to close itself); a **`prunable`** worktree is not a live lane; a
+**staged** sibling copy (`A `, `M `, `MM`) is never owned — it errors with the `git restore --staged` remedy, because
+staging is an act of this tree. And the compare is by **blob id through the clean filter** (`git hash-object --path`),
+so the PC's `core.autocrlf=true` CRLF working copy still matches the LF blob — raw bytes made the bucket dead there.
 ⛔ The **key** is `landing_mode`, never `landing` — `task.yaml` already has a different `landing:`
 nested under each `secondary_repos:` entry, which is why the name was changed. A bare `landing: partial`
 at column 0 is not recognised at all: it fails **silently**, not closed — nothing reads it, no

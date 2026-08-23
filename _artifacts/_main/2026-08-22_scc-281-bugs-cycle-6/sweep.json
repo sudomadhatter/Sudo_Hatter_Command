@@ -69,20 +69,8 @@
    "file": ".agents/scripts/task_preflight.py",
    "block": "SCC-283",
    "case": "SCC-283 a sibling's path whose CONTENT differs from its committed copy still errors",
-   "original": "            if show.returncode == 0 and show.stdout == blob:\n",
-   "mutated": "            if show.returncode == 0:\n"
-  },
-  {
-   "id": "M7 (B) every worktree is a sibling, `main` included - the self-audit's revert-to-main hole",
-   "test": [
-    "python3",
-    ".agents/scripts/tests/test_task_preflight_contract.py"
-   ],
-   "file": ".agents/scripts/task_preflight.py",
-   "block": "SCC-283",
-   "case": "SCC-283 a revert-to-main in the working copy still errors",
-   "original": "        if LANE_BRANCH_RE.match(name):\n            lanes.append(name)\n",
-   "mutated": "        lanes.append(name)\n"
+   "original": "            if blob_at(lane, rel) == mine:\n",
+   "mutated": "            if blob_at(lane, rel):\n"
   },
   {
    "id": "M8 (B) DELETION - the owned paths are never removed from `rest`, so the bucket reports and STILL errors",
@@ -105,8 +93,8 @@
    "file": ".agents/scripts/task_preflight.py",
    "block": "SCC-283",
    "case": "SCC-283 ...and it is reported as THAT lane's working copy, naming the branch",
-   "original": "            rep.warn(\"sync\", f\"{label}: {rel} is {lane}'s working copy (byte-identical to the \"\n",
-   "mutated": "            rep.warn(\"sync\", f\"{label}: {rel} is {lane}'s live file (byte-identical to the \"\n"
+   "original": "                rep.warn(\"sync\", f\"{label}: {rel} is {lane}'s working copy (the blob that live \"\n",
+   "mutated": "                rep.warn(\"sync\", f\"{label}: {rel} is {lane}'s live file (the blob that live \"\n"
   },
   {
    "id": "M10 (B) the porcelain output is stripped whole again - the FIRST tracked-modified line loses its path",
@@ -119,6 +107,93 @@
    "case": "SCC-283 a TRACKED-MODIFIED sibling copy on the FIRST status line is owned",
    "original": "                                 repo).stdout.splitlines() if ln.strip()]\n",
    "mutated": "                                 repo).stdout.strip().splitlines() if ln.strip()]\n"
+  },
+  {
+   "id": "M11 (B) ANY instead of ALL on a collapsed untracked dir - one stray file rides along",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_task_preflight_contract.py"
+   ],
+   "file": ".agents/scripts/task_preflight.py",
+   "block": "SCC-283",
+   "case": "B10 a collapsed untracked dir with ONE stray file is still dirt",
+   "original": "            if files and all(found):\n",
+   "mutated": "            if files and any(found):\n"
+  },
+  {
+   "id": "M12 (B) the base-blob predicate is removed - a sibling 'owns' every file it never touched (the four-lens hole)",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_task_preflight_contract.py"
+   ],
+   "file": ".agents/scripts/task_preflight.py",
+   "block": "SCC-283",
+   "case": "B7 a revert-to-main still errors when an UNRELATED sibling lane is live",
+   "original": "        if mine == base_blob:\n",
+   "mutated": "        if mine == base_blob and False:\n"
+  },
+  {
+   "id": "M13 (B) a prunable worktree counts as a live lane again",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_task_preflight_contract.py"
+   ],
+   "file": ".agents/scripts/task_preflight.py",
+   "block": "SCC-283",
+   "case": "B12 a PRUNABLE sibling worktree is not a live lane",
+   "original": "        if not wt or not br or re.search(r\"^prunable\", block, re.MULTILINE):\n",
+   "mutated": "        if not wt or not br:\n"
+  },
+  {
+   "id": "M14 (B) the clean filter is bypassed - raw bytes again, dead on the CRLF machine",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_task_preflight_contract.py"
+   ],
+   "file": ".agents/scripts/task_preflight.py",
+   "block": "SCC-283",
+   "case": "B15 under core.autocrlf=true a CRLF working copy of the sibling's LF blob is still owned",
+   "original": "        h = wf.git([\"hash-object\", \"--path\", rel, \"--\", str(repo / rel)], repo)\n",
+   "mutated": "        h = wf.git([\"hash-object\", \"--no-filters\", \"--\", str(repo / rel)], repo)\n"
+  },
+  {
+   "id": "M15 (C) the non-string refusal is disabled - null reaches the apply loop",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_mutation_sweep.py"
+   ],
+   "file": ".agents/scripts/mutation_sweep.py",
+   "block": "K6",
+   "case": "K6g",
+   "original": "        if not isinstance(m[\"mutated\"], str):\n",
+   "mutated": "        if False and not isinstance(m[\"mutated\"], str):\n"
+  },
+  {
+   "id": "M16 (B) staged sibling copies lose their remedy - they fall through to the generic error",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_task_preflight_contract.py"
+   ],
+   "file": ".agents/scripts/task_preflight.py",
+   "block": "SCC-283",
+   "case": "B13 a STAGED sibling copy still errors, with the UNSTAGE remedy named",
+   "original": "        if code in STAGED:\n",
+   "mutated": "        if False and code in STAGED:\n"
+  },
+  {
+   "id": "M17 (B) the lane's OWN branch is excluded from the owners again - the owning lane wedges itself",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_task_preflight_contract.py"
+   ],
+   "file": ".agents/scripts/task_preflight.py",
+   "block": "SCC-283",
+   "case": "B8 the OWNING lane's committed bytes, dirty in the shared checkout, do not wedge its own close-out",
+   "original": "        if LANE_BRANCH_RE.match(name):\n            lanes.append(name)\n",
+   "mutated": "        if LANE_BRANCH_RE.match(name) and name != branch:\n            lanes.append(name)\n"
   }
+ ],
+ "retired": [
+  "M7 (B) [RETIRED after the review round - EQUIVALENT under the base-blob predicate: main's blob == base blob, so main can own nothing even as a 'sibling'; replaced by M17] every worktree is a sibling, main included"
  ]
 }
