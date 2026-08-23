@@ -56,6 +56,8 @@ Three riders, each a real defect re-verified on `a634c35` before a line was writ
   - finding (reproduced ×3): `"mutated": null` crashed the sweep with a TypeError → refused, K6g
   - finding (reproduced ×2, `.gitattributes` confirms the PC's `autocrlf=true`): raw-byte compare was dead on CRLF → blob ids through the clean filter, B15
   - findings: `ls-files` without `quotepath` (B11) · prunable worktree counted live (B12) · staged sibling copy got the wrong remedy (B13) · all-must-match had no case and `all→any` survived (B10, M11)
+- [x] Flight event recorded @ `02dc7b8` + preflight receipt committed (`c6ae792`); lint 0/0/8, check_maps strict 0, suite SKIP at a code-fresh verdict
+- [x] The merge itself — lands via this branch's PR
 
 ## Evidence
 
