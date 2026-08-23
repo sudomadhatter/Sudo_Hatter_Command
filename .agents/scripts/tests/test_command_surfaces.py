@@ -1818,7 +1818,7 @@ def main() -> int:
         # ── B · the retired janitor name cannot come back ─────────────────────────
         # A rename is only finished when the OLD name is unreachable from anything an agent
         # reads: commands, rules, scripts, docs, and all four platform door caches.
-        SWEEP_ROOTS = (".agents", "docs", ".opencode", ".claude/skills", ".claude/hooks",
+        SWEEP_ROOTS = (".agents", "docs", ".opencode", ".claude/skills",
                        ".githooks", "_bmad/custom")
         # ⛔ `.claude/worktrees` IS EXCLUDED BY DIRECTORY NAME, and that exclusion is the
         # difference between a check that measures THIS lane and one that measures whoever else
