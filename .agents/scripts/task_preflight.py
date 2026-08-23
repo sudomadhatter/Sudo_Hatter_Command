@@ -37,6 +37,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -949,7 +950,7 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report,
     # `/cicd-close-story-merge-tree`, so the three doors cannot disagree about what they
     # measured.
     for tree_label, tree in wf.trees_to_measure(repo, branch):
-        _check_tree_dirt(tree, tree_label, manifest, rep)
+        _check_tree_dirt(tree, tree_label, manifest, rep, branch)
 
     counts = wf.git(["rev-list", "--left-right", "--count",
                      f"origin/{branch}...{branch}"], repo)
@@ -964,9 +965,85 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report,
     return fresh
 
 
-def _check_tree_dirt(repo: Path, label: str, manifest: Path | None, rep: wf.Report) -> None:
-    """The dirty-tree classification for ONE tree. Body unchanged since SCC-192; it moved out
-    of `check_sync` only so it can be applied to every tree that could be gated (SCC-211)."""
+LANE_BRANCH_RE = re.compile(r"^(chore|claude|epic)/")
+
+
+def sibling_lane_copies(repo: Path, lines: list[str], branch: str) -> dict[str, str]:
+    """`{dirty path: sibling lane branch}` for every dirty path whose working-copy BYTES equal
+    that lane's COMMITTED copy - the fourth dirt bucket (SCC-283).
+
+    The classifier below could not tell a live sibling lane's working copy from unswept
+    dirt, and the two have OPPOSITE correct actions: dirt is committed or parked, another
+    lane's live copy is left alone. Backwards, it either wedges a close-out or destroys
+    someone else's work - and the second has happened once (SCC-180, a `reset --hard` remedy
+    that ate three sessions' uncommitted work). SCC-246 answered the same shape for
+    `_artifacts/_memory/` by AUTHORSHIP; this answers the rest of the tree by BYTES. The
+    sharp case is `.claude/settings.json`: it can ONLY be edited in the shared checkout,
+    because that is where the running Claude reads it, so a lane working on it is REQUIRED
+    to leave the shared tree dirty. That is not a lane doing it wrong.
+
+    ⛔ A "sibling lane" is a worktree on a LANE branch - `chore/` · `claude/` · `epic/` - and
+    never the base branch, and never `branch` itself (self-audit, SCC-281). A checkout on
+    `main` is a worktree like any other, and a file this lane changed, committed, then
+    reverted by hand in the working copy is dirty AND byte-identical to `main:<path>`;
+    calling that "main's working copy" would wave an uncommitted revert through -
+    permissive in exactly the SCC-180 direction. A second tree on this lane's own branch is
+    `check_worktree`'s warning, not a sibling. Renames and deletions never match: a deletion
+    cannot equal a committed blob, and a rename's bytes live under another name."""
+    here = repo.resolve()
+    lanes: list[str] = []
+    for block in wf.git(["worktree", "list", "--porcelain"], repo).stdout.split("\n\n"):
+        wt = re.search(r"^worktree (.+)$", block, re.MULTILINE)
+        br = re.search(r"^branch refs/heads/(.+)$", block, re.MULTILINE)
+        if not wt or not br:
+            continue
+        name = br.group(1).strip()
+        if Path(wt.group(1).strip()).resolve() == here or name == branch:
+            continue
+        if LANE_BRANCH_RE.match(name):
+            lanes.append(name)
+    owned: dict[str, str] = {}
+    if not lanes:
+        return owned
+    def lane_of(rel: str) -> str | None:
+        try:
+            blob = (repo / rel).read_bytes()
+        except OSError:
+            return None
+        for lane in lanes:
+            show = subprocess.run(["git", "-C", str(repo), "show", f"{lane}:{rel}"],
+                                  capture_output=True)
+            if show.returncode == 0 and show.stdout == blob:
+                return lane
+        return None
+
+    for ln in lines:
+        if ln[:2] not in (" M", "M ", "MM", "??"):
+            continue                      # a rename, a deletion, a conflict: never a match
+        rel = ln[3:].strip()
+        if ln[:2] == "??" and rel.endswith("/"):
+            # ⛔ `git status` COLLAPSES an untracked directory to one `?? dir/` line (measured
+            # on the first run of this helper: `.claude/x.json` arrived as `?? .claude/`).
+            # Expand it, and own the entry only if EVERY file under it is some live lane's
+            # committed copy - one unowned file and the whole entry stays dirt, because the
+            # count the error prints is the status line, not the file.
+            ls = wf.git(["ls-files", "--others", "--exclude-standard", "--", rel], repo)
+            files = [f for f in ls.stdout.splitlines() if f.strip()]
+            found = [lane_of(f) for f in files]
+            if files and all(found):
+                owned[rel] = ", ".join(sorted(set(found)))   # type: ignore[arg-type]
+            continue
+        lane = lane_of(rel)
+        if lane:
+            owned[rel] = lane
+    return owned
+
+
+def _check_tree_dirt(repo: Path, label: str, manifest: Path | None, rep: wf.Report,
+                     branch: str = "") -> None:
+    """The dirty-tree classification for ONE tree. Body unchanged since SCC-192 except for the
+    fourth bucket (SCC-283); it moved out of `check_sync` only so it can be applied to every
+    tree that could be gated (SCC-211)."""
     dirty = wf.git(["-c", "core.quotepath=false", "status", "--porcelain"], repo).stdout.strip()
     if dirty:
         lines = dirty.splitlines()
@@ -993,6 +1070,16 @@ def _check_tree_dirt(repo: Path, label: str, manifest: Path | None, rep: wf.Repo
         mine = [ln for ln in lines
                 if own and ln[3:].split(" -> ")[-1].strip() == own]
         rest = [ln for ln in lines if ln not in mem and ln not in mine]
+        # ⭐ SCC-283 · THE FOURTH BUCKET: a dirty path that is byte-identical to a live
+        # sibling lane's COMMITTED copy is that lane's working copy, not this lane's dirt.
+        # Named, never errored, and never touched - see `sibling_lane_copies`.
+        owned = sibling_lane_copies(repo, rest, branch)
+        rest = [ln for ln in rest if ln[3:].strip() not in owned]
+        for rel, lane in owned.items():
+            rep.warn("sync", f"{label}: {rel} is {lane}'s working copy (byte-identical to the "
+                             f"copy that live lane committed) - leave it alone; it is not this "
+                             f"lane's dirt and must not be swept, parked or committed under "
+                             f"this key")
         if rest:
             rep.err("sync", f"{label}: {len(rest)} uncommitted change(s) - commit "
                             f"(explicit paths) and push before merging")
@@ -1006,7 +1093,7 @@ def _check_tree_dirt(repo: Path, label: str, manifest: Path | None, rep: wf.Repo
                             f"sweep, delete, or commit them under this task); if THIS "
                             f"session wrote them, commit them with explicit paths under "
                             f"this task's key first")
-        if mine and not rest and not mem:
+        if mine and not rest and not mem and not owned:
             rep.info("sync", f"{label} is clean ({len(mine)} uncommitted "
                              f"{RECEIPT_NAME} - this script's own receipt, not the lane's "
                              f"dirt; the close-out commits it with the flight event)")

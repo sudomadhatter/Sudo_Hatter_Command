@@ -1638,6 +1638,17 @@ and **trim `riders:` to the subset actually on the branch**. Then the trimmed ri
 **parent stays open**, and the remainder becomes the next lane. `task_preflight.py` checks every
 declared rider against the lane's commits and refuses one that is NAMED in no commit subject there — the key may sit anywhere in the subject, so the house shape `SCC-244 rider SCC-253: …` earns it (SCC-282; until then only the LEADING key was read and no rider on a consolidated lane could ever earn `partial`); an unrecognised
 `landing_mode:` **value** fails CLOSED, so a typo in the value blocks rather than relaxes.
+
+**A dirty path that belongs to a LIVE SIBLING LANE is named, not errored (SCC-283).** The close-out
+classifies every dirty path in the shared checkout: its own receipt, memory files, and everything
+else — which used to be a hard error with no way to recognise another live lane's working copy
+(`.claude/settings.json` can only be edited in the shared checkout, so a lane working on it is
+*required* to leave that tree dirty). The two answers have opposite correct actions — unswept dirt
+is committed or parked, another lane's copy is left alone — and guessing wrong once cost three
+sessions' work (SCC-180). Now a dirty path whose BYTES equal a sibling `chore/` · `claude/` · `epic/`
+worktree's COMMITTED copy is reported as *that lane's working copy* with the branch named, as a
+warning. Different bytes still error; a path no lane committed still errors; and `main` is never a
+sibling lane, so a hand-revert to main's content in your working copy still errors.
 ⛔ The **key** is `landing_mode`, never `landing` — `task.yaml` already has a different `landing:`
 nested under each `secondary_repos:` entry, which is why the name was changed. A bare `landing: partial`
 at column 0 is not recognised at all: it fails **silently**, not closed — nothing reads it, no
