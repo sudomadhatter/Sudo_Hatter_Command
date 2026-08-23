@@ -107,7 +107,7 @@ block D fails both directions before either is believed.
 
 | Gate | Result |
 |---|---|
-| `run_all.py` **through `gate_receipt.py`** | **PASS exit=0**, `dirty_tree: false`. Receipt at `gates/suite.json`, **stamped at `ac90bcb`** — the shipping sha. The first stamp (`436a66e`) was **red** — the mechanism working, not a failure: it caught the missing `_artifacts/_main/INDEX.md` row. A later stamp at `15bfa72e` went stale when HEAD moved twice; all three receipts (suite, links, lint) were re-stamped together at `ac90bcb`, because three shas for one certification is not a certification. |
+| `run_all.py` **through `gate_receipt.py`** | **PASS exit=0**, `dirty_tree: false`. Receipt at `gates/suite.json`, **stamped at `2cfd576`** — the last code-bearing sha, after `origin/main` (SCC-281) was absorbed. The first stamp (`436a66e`) was **red** — the mechanism working, not a failure: it caught the missing `_artifacts/_main/INDEX.md` row. Two later stamps went stale as HEAD moved; all three receipts (suite, links, lint) are re-stamped **together**, every time, because three shas for one certification is not a certification. |
 | `test_directive_quote.py` | **31/31**, exit 0 (RED 10/16 first) |
 | `test_twin_parity.py` | **66/66**, exit 0 |
 | `test_walkthrough_roster.py` | **83/83**, exit 0 |
@@ -118,6 +118,24 @@ block D fails both directions before either is believed.
 | `check_maps.py` bare | **exit 1 — none of it mine**, proven below |
 
 ⛔ **All gates run bare, never piped** — a `| tail` reports the pipe's exit code, not the gate's.
+⚠ **And not redirected out of the workspace either.** `workflow_lint > /tmp/lint.txt` reported
+`LINT_EXIT=1` while the gate itself was green: the sandbox refuses a write outside the workspace,
+so the **redirect** failed and the shell reported the redirect's failure as the gate's. Same class
+as the pipe, new cause.
+
+⛔ **NO REVIEW VERDICT, AND THE RECORD SAYS SO RATHER THAN IMPLYING ONE.** The five-lens fan-out was
+stopped mid-flight on the operator's word, so this walkthrough carries no `Verdict: … @ <sha>` line.
+Three mechanical consequences, all of them the system behaving correctly:
+
+- `task_preflight` prints `gate: no review Verdict line in this task's own walkthrough - the full
+  gate runs` — **nothing was skipped**; every gate above ran at the shipping sha.
+- `flight_recorder record` **REFUSES** — it keys its event on the verdict sha, and there is none.
+- `main_write_gate --mode pr` still passes, and that is deliberate rather than lucky:
+  `main_write_gate.py:213` records that the recorder refuses verdict-less walkthroughs, so the gate
+  requires the **preflight receipt**, not the event.
+
+What is missing is an independent read of this diff, not a green check. Anyone re-opening this lane
+should know that the gates certify it and no second pair of eyes did.
 
 **`check_maps` attribution.** Three findings, all accounted for:
 

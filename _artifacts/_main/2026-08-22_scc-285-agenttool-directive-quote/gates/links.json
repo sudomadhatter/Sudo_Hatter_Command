@@ -3,7 +3,7 @@
   "story": "scc-285",
   "result": "pass",
   "exit_code": 0,
-  "sha": "ac90bcbbfd14c022244aa2ca4c2a5a162a7c3c1a",
+  "sha": "2cfd57634a672cbc278221693c113780402f3a40",
   "dirty_tree": false,
   "dirty_paths": [],
   "totals": null,
@@ -15,6 +15,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/scc-285-agenttool-directive-quote",
   "duration_s": 0.1,
-  "recorded_at": "2026-08-22T23:27:27+00:00",
-  "output_tail": "check_links: 19 markdown file(s), 238 path claim(s) checked\n  clean\n"
+  "recorded_at": "2026-08-23T01:22:07+00:00",
+  "output_tail": "check_links: 21 markdown file(s), 259 path claim(s) checked\n  clean\n"
 }
