@@ -52,6 +52,8 @@ ASSETS: list[tuple[str, str]] = [
     (".venv", "dir"),
     (".env", "file"),
     (".env.local", "file"),
+    ("settings.local.json", "file"),
+    ("scratchpad-root", "file"),
 ]
 
 
