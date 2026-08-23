@@ -46,22 +46,31 @@ row and its **answer** is written into the file beside it.
 - [x] **Step 1.6 — no subtasks.** Nothing earns its own branch, and a `Subtask` cannot have
       children (`hierarchyLevel -1` is the floor).
 - [x] **Step 2 — RED, and the RED caught its own vacuity.** 15/27 → tightened → **6/27**.
-- [x] **Step 3 — GREEN.** Block **41/41**; `test_jira_feed.py` **456/456**;
-      `test_command_surfaces.py` **208/208**.
+- [x] **Step 3 — GREEN.** Block **83/83** after the review; `test_jira_feed.py` **502/502**;
+      `test_command_surfaces.py` **214/214**.
   - ⚠️ **The suite caught an assumption I had not checked**: `.opencode/commands/*` are FULL
     copies of the brain, not thin launchers. Four went stale; `/smh-sync-agents -NoGlobals` fixed
     them. `.agents/workflows/` and the launcher skills *are* thin — git saw no change in either.
   - ⚠️ **The sweep found a real defect**: mutant **M2** survived. The contentless deny-set was
     **35/37 unreachable**, and the case meant to cover it was exercising the floor instead.
-- [x] **Step 3 — sweep.** **16/16 killed**, restore verified byte-identical, both closing
-      full-file runs green.
+- [x] **Step 3 — sweep.** **30/30 killed** (16 before the review, 14 added for its findings),
+      restore verified byte-identical, both closing full-file runs green.
 - [x] **Step 3.5 — eject tripwire clear.** No deployable path in the diff, no story shape, no
       NO-GO. Every acceptance row reduced to a command.
-- [ ] **Step 4 — review gate** (`/smh-code-review`) — appends `## Code Review` and the verdict.
+- [x] **Step 4 — review gate.** `/smh-code-review`, five lenses, `fan-out`. **Verdict: CONCERNS**
+      @ `2804483`. 16 findings applied in-lane, 2 dismissed with reasons; drift 0/0/0.
+  - ⚠️ **Two CRITICAL findings, both reproduced, both in code this lane had called green** — a
+    newline in `--evidence` closing tickets over unchecked rows, and the reconcile step placed
+    after the merge in all four doors. The RED run, a 16-mutant sweep and 456 cases were green
+    over both.
+  - ⚠️ **A lens's mutation sweep silently reverted my concurrent edits** in the shared worktree,
+    and one of my reads caught the file mid-mutation. Committed history verified clean after.
 
 ## Evidence
 
-**HEAD `854d350`.** Four commits on `chore/SCC-298-reconcile-actions`:
+**Shipping sha `2804483`.** Twelve commits on `chore/SCC-298-reconcile-actions`; the
+first four built it, the rest are the review's. The `## Code Review` section below is the
+authoritative record of what changed and why.
 
 | sha | what |
 |---|---|
@@ -119,9 +128,9 @@ A5 the only open row reconciles, A5 …`open_actions` is now CLEAR, A5 …so the
 | Gate | Result |
 |---|---|
 | `run_all.py` **through the receipt writer** | **PASS exit 0, 92.3 s @ `854d3501`**, `dirty_tree: false` — receipt at `gates/suite.json` |
-| `test_jira_feed.py` | **456/456** |
-| `test_command_surfaces.py` | **208/208** (was 207/208 — the stale-mirror catch) |
-| `mutation_sweep.py --table sweep.json` | **16/16 killed**; *"restore verified: bytes match, nothing was committed"*; both closing unfiltered full-file runs exit 0 |
+| `test_jira_feed.py` | **502/502** (was 456 before the review's cases) |
+| `test_command_surfaces.py` | **214/214** (was 207/208 — the stale-mirror catch) |
+| `mutation_sweep.py --table sweep.json` | **30/30 killed**; *"restore verified: bytes match, nothing was committed"*; both closing unfiltered full-file runs exit 0 |
 | `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, 8 info (pre-existing BOM notes) |
 | maps ratchet on every commit | passed from a **worktree**, with **no `[maps-ok]`** — SCC-288's R9 fix holding |
 
