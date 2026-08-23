@@ -1,0 +1,124 @@
+{
+ "mutants": [
+  {
+   "id": "M1 (A) lane_commit_keys reads only the LEADING key again - the SCC-282 regression itself",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_task_preflight.py"
+   ],
+   "file": ".agents/scripts/task_preflight.py",
+   "block": "SCC-170 partial landing",
+   "case": "SCC-282 a rider NAMED in a subject the lane key leads earns its evidence",
+   "original": "        keys |= subject_keys(line)\n",
+   "mutated": "        m = re.match(r\"\\s*([A-Z][A-Z0-9]+-\\d+)\\b\", line.strip())\n        keys |= frozenset([m.group(1).upper()] if m else [])\n"
+  },
+  {
+   "id": "M2 (A) subject_keys returns only the FIRST key it finds",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_task_preflight.py"
+   ],
+   "file": ".agents/scripts/task_preflight.py",
+   "block": "SCC-170 partial landing",
+   "case": "SCC-282 subject_keys() finds EVERY key in d9d9a9d's verbatim subject",
+   "original": "    return frozenset(k.upper() for k in KEY_RE.findall(subject))\n",
+   "mutated": "    return frozenset(k.upper() for k in KEY_RE.findall(subject)[:1])\n"
+  },
+  {
+   "id": "M3 (C) the loader goes back to a FALSY presence test - a deletion mutant reads as missing",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_mutation_sweep.py"
+   ],
+   "file": ".agents/scripts/mutation_sweep.py",
+   "block": "K6",
+   "case": "K6a",
+   "original": "        absent = [k for k in (\"id\", \"file\", \"original\", \"mutated\", \"case\") if k not in m]\n",
+   "mutated": "        absent = [k for k in (\"id\", \"file\", \"original\", \"mutated\", \"case\") if not m.get(k)]\n"
+  },
+  {
+   "id": "M4 (C) the refusal stops saying ABSENT - the reader hunts for a typo again",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_mutation_sweep.py"
+   ],
+   "file": ".agents/scripts/mutation_sweep.py",
+   "block": "K6",
+   "case": "K6e",
+   "original": "the key is \"\n                        f\"ABSENT (an EMPTY",
+   "mutated": "the key is \"\n                        f\"gone (an EMPTY"
+  },
+  {
+   "id": "M5 (C) `original` drops out of the non-empty check - a mutant that inserts from nowhere loads",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_mutation_sweep.py"
+   ],
+   "file": ".agents/scripts/mutation_sweep.py",
+   "block": "K6",
+   "case": "K6f",
+   "original": "        empty = [k for k in (\"id\", \"file\", \"original\", \"case\") if not m.get(k)]\n",
+   "mutated": "        empty = [k for k in (\"id\", \"file\", \"case\") if not m.get(k)]\n"
+  },
+  {
+   "id": "M6 (B) the sibling match is by PATH only - different bytes still read as the lane's copy",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_task_preflight_contract.py"
+   ],
+   "file": ".agents/scripts/task_preflight.py",
+   "block": "SCC-283",
+   "case": "SCC-283 a sibling's path whose CONTENT differs from its committed copy still errors",
+   "original": "            if show.returncode == 0 and show.stdout == blob:\n",
+   "mutated": "            if show.returncode == 0:\n"
+  },
+  {
+   "id": "M7 (B) every worktree is a sibling, `main` included - the self-audit's revert-to-main hole",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_task_preflight_contract.py"
+   ],
+   "file": ".agents/scripts/task_preflight.py",
+   "block": "SCC-283",
+   "case": "SCC-283 a revert-to-main in the working copy still errors",
+   "original": "        if LANE_BRANCH_RE.match(name):\n            lanes.append(name)\n",
+   "mutated": "        lanes.append(name)\n"
+  },
+  {
+   "id": "M8 (B) DELETION - the owned paths are never removed from `rest`, so the bucket reports and STILL errors",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_task_preflight_contract.py"
+   ],
+   "file": ".agents/scripts/task_preflight.py",
+   "block": "SCC-283",
+   "case": "SCC-283 a dirty path byte-identical to a live sibling lane's committed copy does NOT error",
+   "original": "        rest = [ln for ln in rest if ln[3:].strip() not in owned]\n",
+   "mutated": ""
+  },
+  {
+   "id": "M9 (B) the warning stops saying whose WORKING COPY it is - the operator cannot act on it",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_task_preflight_contract.py"
+   ],
+   "file": ".agents/scripts/task_preflight.py",
+   "block": "SCC-283",
+   "case": "SCC-283 ...and it is reported as THAT lane's working copy, naming the branch",
+   "original": "            rep.warn(\"sync\", f\"{label}: {rel} is {lane}'s working copy (byte-identical to the \"\n",
+   "mutated": "            rep.warn(\"sync\", f\"{label}: {rel} is {lane}'s live file (byte-identical to the \"\n"
+  },
+  {
+   "id": "M10 (B) the porcelain output is stripped whole again - the FIRST tracked-modified line loses its path",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_task_preflight_contract.py"
+   ],
+   "file": ".agents/scripts/task_preflight.py",
+   "block": "SCC-283",
+   "case": "SCC-283 a TRACKED-MODIFIED sibling copy on the FIRST status line is owned",
+   "original": "                                 repo).stdout.splitlines() if ln.strip()]\n",
+   "mutated": "                                 repo).stdout.strip().splitlines() if ln.strip()]\n"
+  }
+ ]
+}
