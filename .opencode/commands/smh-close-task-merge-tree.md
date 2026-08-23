@@ -255,7 +255,11 @@ duplication** — keep both runs and do not "clean up" the wider one into the na
 Plus, because task work is almost always **docs and rules**, the two checks `/cicd-quick-dev` Step 3
 runs on a docs-only diff:
 
-- **Link + anchor check** on every path and `#L` anchor the diff touched.
+- **Link + anchor check** — `python3 .agents/scripts/check_links.py --base origin/main`, over every
+  path and `#L` anchor the diff touched. ⛔ Run the command; never improvise a matcher. An
+  improvised one reported **31 unresolved paths of which ~30 were false**, because it did not know
+  this repo cites scripts short — and a check that cries wolf thirty times teaches the reader to
+  skip the one real hit (SCC-285).
 - **SOP currency** — a usage-surface change (`.agents/commands/`, `.agents/rules/`,
   `.agents/scripts/`, git hooks, root `AGENTS.md`) must have moved
   `docs/_scc_sops_prds/workflows_testing_SOP.md`. The armed commit-msg gate already

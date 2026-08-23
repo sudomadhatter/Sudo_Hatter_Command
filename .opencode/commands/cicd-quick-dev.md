@@ -318,7 +318,11 @@ indistinguishable from it in the artifact.
   Paste the **actual** output. Bug fixes add ONE pinning regression test.
 
 **Docs / config only — no lint floor (there is nothing to lint)**
-- Link + anchor check on every path and `#L` anchor touched.
+- Link + anchor check on every path and `#L` anchor touched. ⛔ **Prose here on purpose.**
+  `check_links.py` is a LOBBY script and a thin project does not carry it — a project's
+  `.agents/scripts/` holds only `git-hooks/` and `tests/`. The `smh-*` doors name the command
+  because they run in the command centre; naming it here would cite a file that is not on the
+  target (SCC-285).
 - **SOP-currency check** — a usage-surface change (`.agents/commands/`, `.agents/rules/`,
   `.agents/scripts/`, git hooks, root `AGENTS.md`) must move
   `docs/_scc_sops_prds/workflows_testing_SOP.md` in the same commit, or the armed gate

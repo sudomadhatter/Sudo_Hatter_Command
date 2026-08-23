@@ -331,7 +331,7 @@ exit code, which is how a red gate reads as green.
 | **Toolkit lint** | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **always** — errors FAIL, warnings are CONCERNS |
 | **Assertion evidence** | re-run the task's own Step 2 RED assertions — `--case "<label>"` where the suite declares blocks, so this row cites the NAMED cases rather than a whole file | **always** — they must be GREEN now |
 | **SOP currency** | `python3 .agents/scripts/sop_currency.py --paths <changed> --message "<subject>"` | a usage surface is in the diff |
-| **Link + anchor** | resolve every path and `#L` anchor the diff touched | any `.md` in the diff |
+| **Link + anchor** | `python3 .agents/scripts/check_links.py --base origin/main` | any `.md` in the diff |
 | **Door parity** | every added/renamed command has exactly the doors its `platforms:` claims | a command was added, renamed or deleted |
 
 **Receipts ride this lane too (SCC-146).** `/smh-quick-dev` Step 3 stamps the suite run at
