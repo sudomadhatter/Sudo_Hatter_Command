@@ -191,12 +191,17 @@ def main() -> int:
         # Same three outcomes as F2, and the middle one is the finding: ours-but-EXTENDED is
         # refused, not deleted. Only a byte-identical hook of ours is removed, because that is the
         # only file this installer can prove it wrote.
-        for label, (want, body) in {
+        # ⛔ A NAMED BLOCK, not a bare loop: `_harness`'s `--case` filter selects BLOCKS, and the
+        # mutation sweep drives its kills through that filter. F2 above predates the filter and is
+        # unreachable from it -- a mutant aimed at these lines returned exit 3 (NO_MATCH), which
+        # the sweep reports as an error in the sweep rather than a result about the code.
+        if c.block("F3 · SCC-288 · -Uninstall must not delete a hook it did not write"):
+          for label, (want, body) in {
             "extended (ours + the maps delegate)": ("REFUSED", shapes[
                 "extended (ours + the maps delegate)"][1]),
             "foreign (no marker at all)": ("SKIP", shapes["foreign (no marker at all)"][1]),
             "ours, byte-identical": ("removed", own_body),
-        }.items():
+          }.items():
             with TempDir() as tmp:
                 d = tmp / "wk"
                 seed_fixture_repo(d)

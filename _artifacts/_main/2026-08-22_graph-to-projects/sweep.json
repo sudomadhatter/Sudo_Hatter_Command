@@ -458,7 +458,7 @@
       "original": "    } elseif ($ours) {",
       "mutated": "    } elseif ($existing -match $MARKER) {",
       "case": "F3 extended (ours + the maps delegate): the file SURVIVES with its bytes intact",
-      "block": "install_git_hooks (SCC-115)",
+      "block": "F3 · SCC-288 · -Uninstall must not delete a hook it did not write",
       "test": [
         "python3",
         ".agents/scripts/tests/test_install_git_hooks.py"
