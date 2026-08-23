@@ -14,7 +14,8 @@ review-runtime: fan-out
 # SCC-288 — walkthrough
 
 **One consolidated lane, ONE commit, on the operator's word (2026-08-22): *"we will do all subtasks
-in one shot on this working tree, one commit at the end."*** Shipping sha `52edbb2` for A/B/C; `14ed813` adds the close-out fix in Finding 4.
+in one shot on this working tree, one commit at the end."*** Shipping sha `52edbb2` for A/B/C; `14ed813` and `1624a5d` add the two close-out fixes in
+Findings 4 and 5.
 
 ---
 
@@ -50,6 +51,7 @@ in one shot on this working tree, one commit at the end."*** Shipping sha `52edb
 - [x] **D (SCC-290 follow-on) — `--repair`, found by this lane's gate at its own close-out.**
   - The merge that absorbed `origin/main` left the maps stale behind a clean tree, and the remedy
     `--verify` printed could not fix it. See Finding 4.
+- [x] **E (SCC-288) — a green mutation sweep was leaving the mutant running.** See Finding 5.
 - [x] The merge itself — lands via this branch's PR
 
 ---
@@ -155,9 +157,10 @@ docstring rather than leaving a reader to assume otherwise.
 | `check_maps.py --all` | exit 1 — **two pre-existing dead-path reports, not this lane** (below) |
 | `mutation_sweep.py` (27 mutants) | **27/27 killed by their declared case** |
 
-**Re-run at the close-out tip `14ed813`**, after `origin/main` was absorbed and Finding 4 was
+**Re-run at the close-out tip `1624a5d`**, after `origin/main` was absorbed and Finding 4 was
 fixed: `run_all.py` **58/58 files**, `refresh_maps.py --verify` **exit 0**, `mutation_sweep.py`
-**32/32 killed** (M28–M32 added for `--repair`). `check_maps --all` still exits 1 on the same
+**34/34 killed** (M28–M32 for `--repair`, M33–M34 for the bytecode purge), with
+`test_jira_ticket.py` at **41/41** because the sweep was run outside the sandbox. `check_maps --all` still exits 1 on the same
 two pre-existing rows below and nothing else.
 
 ⚠ **`check_maps --all` exits 1 on two rows and both are pre-existing.** Both name
@@ -251,6 +254,38 @@ the defect, kept as a case so the trigger gate cannot be deleted to "simplify" i
 the printed remedy **both ways** (`--repair` present, `--staged` absent); `CM10 C` pins check 10's;
 `RM-I` covers the new mode collision. Mutants **M28–M32** kill all five.
 
+### 5. ⛔ A green 32/32 sweep left M16 still executing — the sweep produced a green that lies
+
+**Found minutes after Finding 4, by its own symptom.** `refresh_maps --repair` wrote an **absolute**
+`root` into `docs/doc-graph.json` — the precise output of **M16**, *"the artifact carries an
+ABSOLUTE root again"*, a mutant the sweep had reported **KILLED and restored**. Source clean,
+`git status` clean, sweep green, tracked artifact corrupt. Deleting `.agents/scripts/__pycache__`
+made the generator correct again, and the tree returned to HEAD's bytes with no other change.
+
+**The mechanism, and why no case covered it.** `restore()` rewrote the source **text** and stopped.
+Python had already compiled the mutant to `__pycache__/<mod>.cpython-XY.pyc`, and it decides that
+cache is current by comparing the source's **timestamp and size** against the pair recorded inside
+the `.pyc` — never the contents. M16 is `"root": rel_roots,` → `"root": str(root),`: **26
+characters each**. Same size, same wall-clock second, so the pair matched and the import machinery
+served bytecode compiled from code that no longer existed on disk.
+
+This is the one failure the sweep exists to make impossible. It also means a stale mutant can be
+live while the *next* mutant is judged — kills attributable to the wrong code.
+
+**Fixed:** `restore()` deletes the `__pycache__` beside every table file. One recompile, class
+closed.
+
+**RED first.** `K7` sweeps a module the stand-in test **imports** — the existing stand-in only read
+the source as text, so it never compiled anything, which is exactly why no case reached this.
+`K7d`: after the sweep a fresh interpreter importing restored source returns the **mutant's**
+answer without the fix (`0`), the original's with it (`1`). `K7c`: no `.pyc` may predate the source
+it caches. Mutants **M33** and **M34** kill against them.
+
+⛔ **`K7c`'s first draft was vacuous, and vacuous for the same reason the bug exists.** It compared
+the `(mtime, size)` pair recorded in the `.pyc` header against the source — and passed **with the
+fix and without it**, because that pair matching *is* the defect. Kept in the case comment rather
+than quietly replaced.
+
 ---
 
 ## Corrections to the plan, made on measured evidence
@@ -265,12 +300,12 @@ the printed remedy **both ways** (`--repair` present, `--staged` absent); `CM10 
 
 ---
 
-## Mutation sweep — 32/32 killed
+## Mutation sweep — 34/34 killed
 
 `python3 .agents/scripts/mutation_sweep.py --table _artifacts/_main/2026-08-22_graph-to-projects/sweep.json`
 
 ```
--- sweep clean: 32/32 killed by their declared case --
+-- sweep clean: 34/34 killed by their declared case --
 ```
 
 Every mutant is drawn from a **decision in the source**, not from the cases. Coverage: `risk_seam`
@@ -323,9 +358,9 @@ certifying sweep was run outside the sandbox.
 
 ## Your Actions
 
-**What landed:** `52edbb2` (all three riders' scope) and `14ed813` (Finding 4, found by this
-lane's own gate while closing it out), on `chore/SCC-288-graph-to-projects`. Gates green at the tip,
-32/32 mutants killed.
+**What landed:** `52edbb2` (all three riders' scope) and `14ed813` and `1624a5d` (Findings 4 and 5,
+both found while closing the lane out — the second by the first one's symptom), on `chore/SCC-288-graph-to-projects`. Gates green at the tip,
+34/34 mutants killed.
 
 ⛔ **No adversarial review verdict on this lane.** `/smh-code-review` was the next door and it was
 not run — the close-out was invoked straight after the build. Nothing was waved through: with no
