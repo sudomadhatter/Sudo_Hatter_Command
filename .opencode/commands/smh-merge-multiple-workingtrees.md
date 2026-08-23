@@ -335,6 +335,37 @@ URL, which is how you pick a lane back up.
 > the operator's stop held only by prose. Now there is nothing to hold: this step **cannot** merge
 > anything, on any platform. The authorisation lives on a button only the operator can press.
 
+<!-- reconcile-law -->
+⛔ **RECONCILE `## Your Actions` BEFORE you ask `finish` to close.** `finish` decides `Done` from
+what that section **claims**, and until SCC-298 nothing had ever checked whether a row's claim was
+still true — so a ticket sat at `Review Required` over work that was finished. SCC-288 sat for a
+day on one box whose token already existed, authenticated, and was attached. Law:
+`.agents/rules/completion-not-illusion.md` §4 — **an unverified open box is not evidence of owed
+work.**
+
+```bash
+python3 .agents/scripts/jira_feed.py reconcile-actions --walkthrough <the walkthrough>   # PC: `python`
+```
+
+Exit `3` lists every open row with its line number. **Take each one, in this order:**
+
+1. **Derive the check and RUN it.** A keychain item, a live endpoint, a file on disk, a board
+   field — most rows have one. Tick on what it returned:
+   `--tick <line> --evidence "<what you ran and what it returned>" --source measured`
+2. **No machine check exists? ASK the operator** and tick on their word, quoted:
+   `--tick <line> --evidence "<their words>" --source operator`
+3. **Neither proved nor answered → it STAYS OPEN**, and you report it. That is a row genuinely
+   holding the ticket, and it is the only kind that should.
+
+⛔ **Never tick a row you have not checked.** The verb refuses empty and contentless evidence, a
+line that is not an open row, a **ceremony** row (SCC-193 — the agent RUNS those; delete it) and
+the **merge** row (SCC-175 — `finish` computes that one from the repo). It never derives evidence
+by itself: an agent that could both invent the check and pass it is self-certifying.
+
+Commit the ticked walkthrough **on the lane, before the PR** — an uncommitted tick is the SCC-169
+shape, and `finish` reads the committed copy.
+<!-- /reconcile-law -->
+
 **4e — Dev Record, then the ticket — per lane, at ITS merge, never batched.**
 `jira_feed.py devrecord --key <KEY> … --closing --apply` (updates in place — never `--append-new`),
 # ⭐ SCC-193 · check `## Your Actions` BEFORE the merge, exactly as the single-lane door does.
