@@ -5,6 +5,7 @@
 
 ## ⛔ Read first
 - [TWO machines: Mac AND PC](two-machines-mac-and-pc.md) — shared docs read on both; python3 vs python; core.hooksPath is per-machine.
+- [⭐ The SANDBOX is the approval-fatigue fix](sandbox-is-the-approval-fatigue-fix.md) — no hook can match a piped command; Mac only, WSL2 on PC; four things break under it.
 
 ## Project stores
 <!-- Paths stay BACKTICKED, never markdown links: check_store() resolves every markdown link to a
@@ -19,6 +20,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 ## Jira & tickets
 - [Jira is LIVE (SCC + AVCH)](jira-integration-live.md) — acli authed; branch/commit carries key; wrong-project key rejected.
 - [⛔ acli CANNOT re-parent a subtask](acli-cannot-reparent-a-subtask.md) — create takes --parent, edit has no such flag; partial landing keeps parent open.
+- [⛔ acli CANNOT attach a file](jira-attachments-need-the-rest-token.md) — upload is REST + the token in keychain `sudo-jira`; storing it corrupts silently two ways.
 - [Cross-repo work = a ticket PER REPO](cross-repo-work-needs-a-ticket-per-repo.md) — ticket per repo required; key from epic/* branch, not BMAD number.
 - [`To Do Next` IS the queue](to-do-next-is-the-queue.md) — lead every "what's next" with it; todo_list.md retired as agent source; use Blocking.
 - [VS Code hides hook output](vscode-hides-git-hook-output.md) — warn-only hooks look like clean success; ship hooks ARMED.
