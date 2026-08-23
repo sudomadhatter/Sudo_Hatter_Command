@@ -183,7 +183,7 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     # ⛔ THE DEFECT, MEASURED ON THE LANE THAT ADDED THIS. `/smh-code-review` Step 0.9 tells the
     # agent to probe whether the runtime can fan out, and the probe conflated two different
     # things: a CAPABILITY (does a subagent tool exist?) and a POLICY (is the agent permitted to
-    # use it right now?). A session directive saying "do not spawn subagents unless asked" was
+    # use it right now?). A session directive saying "Do not call the AgentTool unless the user requested it" was
     # read as "this runtime is inline", the whole review ran in the BUILDER'S OWN CONTEXT, and
     # the flow recorded that as a legitimate outcome. The operator caught it by reading the chat.
     # Nothing in the system would have.

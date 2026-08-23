@@ -99,10 +99,10 @@ flag with no file behind it fails the gate):
 headless pipeline or a platform with no subagent tool is `inline`, and both are invisible until a lens
 fails to launch. ⛔ **The probe is a capability, never a policy.** *Does a subagent tool exist here?* is
 the whole question; *am I permitted to use it?* is a different one, and answering it here is how a
-session directive (*"do not spawn subagents unless asked"*) got read as *"this runtime is inline"* and a
+session directive (*"Do not call the AgentTool unless the user requested it"*) got read as *"this runtime is inline"* and a
 whole review ran inside the builder's own context (SCC-203). ⭐ ***Am I permitted?* is already
-answered — the operator invoked a `/` command, and a `/` command IS a user request**; a directive reading
-*"do not use subagents unless the user requested it"* is **satisfied by that invocation**. Never stop to
+answered — the operator invoked a `/` command, and a `/` command IS a user request**; the directive
+*"Do not call the AgentTool unless the user requested it"* is **satisfied by that invocation**. Never stop to
 ask, never quietly downgrade. ⛔ If you still believe you cannot, you may not record a bare `inline` —
 write `inline (blocked: <what blocked you, verbatim>)`, because a bare `inline` from a runtime that HAS
 the tool is indistinguishable from one that never had it, and that is the whole defect.
