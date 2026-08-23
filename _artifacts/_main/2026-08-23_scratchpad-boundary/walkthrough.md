@@ -65,6 +65,14 @@ The first suite run was **58/59** — `test_check_maps.py` `F2` caught this lane
 folder with no `_artifacts/_main/INDEX.md` row. The row is in this commit; the check that found it is
 the one that now passes.
 
+## No review verdict — said plainly
+
+This lane carries **no `Verdict:` line**, because the multi-lens review never ran: the session
+directive in force bars spawning subagents unless the operator asked, and they did not. The
+deterministic gates above certify this diff and no second pair of eyes did. `task_preflight.py`
+records the same thing (*"no review Verdict line in this task's own walkthrough - the full gate
+runs"*) and the full gate ran — nothing was skipped on a verdict's authority. Same shape as SCC-287.
+
 ## Decisions
 
 - **The deployed `.claude/hooks/` copy is committed too.** `M7` compares it byte-for-byte against
