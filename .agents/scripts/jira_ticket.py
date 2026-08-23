@@ -262,6 +262,43 @@ def resolve_token():
     return (os.environ.get("JIRA_API_TOKEN") or "").strip() or _keychain_token()
 
 
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+_SITE_LABEL_RE = re.compile(r"^[ \t]*Site:[ \t]*(\S+)[ \t]*$", re.MULTILINE)
+_SITE_URL_RE = re.compile(r"https?://[\w.-]+(?::\d+)?")
+_SITE_HOST_RE = re.compile(r"[\w-]+(?:\.[\w-]+)*\.atlassian\.net")
+
+
+def parse_site(text):
+    """The site URL out of `acli jira auth status` text, always scheme-qualified. `""` if absent.
+
+    \u26d4 SCC-288 \u00b7 ACLI PRINTS THE SITE AS A BARE HOST, AND THE OLD READ REQUIRED A SCHEME.
+    The real binary answers four labelled lines:
+
+        \u2713 Authenticated
+          Site: sudo-command.atlassian.net
+          Email: someone@example.com
+          Authentication Type: api_token
+
+    The previous read was `re.search(r"https://[\\w.-]+\\.atlassian\\.net", text)`, which that
+    output can never satisfy. So `attach` reported "could not determine the Jira site" on a
+    machine holding a perfectly good token \u2014 the one failure mode that sends the operator
+    hunting the credential instead of the parse. The test fixture had invented a one-line
+    scheme-carrying shape, so the suite never saw it.
+
+    The LABEL is the primary read, because that is what the binary actually prints. The loose-URL
+    and `*.atlassian.net` scans stay behind it as fallbacks for an `acli` that renames the label.
+    """
+    text = _ANSI_RE.sub("", text or "")
+    m = _SITE_LABEL_RE.search(text)
+    raw = m.group(1) if m else ""
+    if not raw:
+        m = _SITE_URL_RE.search(text) or _SITE_HOST_RE.search(text)
+        raw = m.group(0) if m else ""
+    if not raw:
+        return ""
+    return raw if "://" in raw else "https://" + raw
+
+
 def auth_identity(acli=None):
     """(site_url, email) from `acli jira auth status`. The Atlassian ACCOUNT email, which is not
     necessarily the git email."""
@@ -276,10 +313,9 @@ def auth_identity(acli=None):
     except (SystemExit, subprocess.SubprocessError, OSError):
         text = ""
     if not site:
-        m = re.search(r"https://[\w.-]+\.atlassian\.net", text)
-        site = m.group(0) if m else ""
+        site = parse_site(text)
     if not email:
-        m = re.search(r"[\w.+-]+@[\w.-]+\.\w+", text)
+        m = re.search(r"[\w.+-]+@[\w.-]+\.\w+", _ANSI_RE.sub("", text))
         email = m.group(0) if m else ""
     return site, email
 

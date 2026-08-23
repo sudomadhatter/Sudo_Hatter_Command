@@ -403,6 +403,35 @@ def main() -> int:
                     commented.returncode == 1,
                     "a template that merely mentions the token would exempt every commit")
 
+            # ⛔ SCC-288 R10 · NOR DOES A PROSE MENTION, and this one is MEASURED, not imagined:
+            # the commit that fixed R9 carried the sentence "This commit carries NO [maps-ok]
+            # token, which is the point" and SILENTLY TOOK THE OPT-OUT it was claiming not to
+            # need. `OPT_OUT in body` is a bare substring test, so a message that DENIES using
+            # the hatch uses it. The guard above reasoned its way to exactly this hazard - "a
+            # template that merely MENTIONS the token" - and then stopped at comment lines.
+            #
+            # THE CONTRACT: the token is a MARKER, so it must open or close a line. The
+            # established idiom (`<subject> [maps-ok]`, RM-F above) is a line ending, and a
+            # deliberate trailer line is a line beginning. A token buried mid-sentence is prose.
+            denied = truth(root, "SCC-290 fix the ratchet\n\n"
+                                 "This commit carries NO [maps-ok] token, which is the point.\n")
+            c.check("RM-F ⛔ R10: a mid-sentence mention does NOT opt out - a gate whose "
+                    "escape hatch fires on the word 'no' fails OPEN",
+                    denied.returncode == 1,
+                    f"rc={denied.returncode} {denied.stdout[:300]}")
+            described = truth(root, "SCC-290 a commit\n\n"
+                                    "It was papered over with [maps-ok], which banks a number "
+                                    "only one checkout can reproduce.\n")
+            c.check("RM-F ⛔ R10: describing the hatch in prose does not pull it",
+                    described.returncode == 1,
+                    f"rc={described.returncode} {described.stdout[:300]}")
+            # ⭐ AND THE HATCH MUST STILL WORK BOTH DELIBERATE WAYS, or this is not a fix.
+            trailer = truth(root, "SCC-290 widen the scope\n\n[maps-ok] a new folder joined "
+                                  "the graph, so the two counts are not the same measurement.\n")
+            c.check("RM-F ⭐ ALLOW: the token OPENING a trailer line still re-baselines",
+                    trailer.returncode == 0 and "on the record" in trailer.stdout,
+                    f"rc={trailer.returncode} {trailer.stdout[:300]}")
+
     if c.block("RM-F2 · SCC-290 · ALLOW: a commit that adds no broken ref passes the ratchet"):
         with TempDir() as tmp:
             root = seed_repo(tmp)

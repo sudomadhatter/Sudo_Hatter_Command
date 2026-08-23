@@ -425,6 +425,34 @@ def stage(root, rels):
 OPT_OUT = "[maps-ok]"
 
 
+def opted_out(body):
+    """Did this message DELIBERATELY pull the re-baseline hatch?
+
+    \u26d4 SCC-288 R10 \u00b7 A MENTION IS NOT A DECISION, AND `OPT_OUT in body` COULD NOT TELL
+    THEM APART. This was measured, not imagined: the commit that fixed R9 carried the sentence
+    *"This commit carries NO [maps-ok] token, which is the point"* and silently took the very
+    opt-out it was claiming not to need. A bare substring test means a message that DENIES using
+    the hatch uses it, and a walkthrough quoting the hatch pulls it. The comment-line guard above
+    reasoned its way to exactly this hazard \u2014 "a template that merely MENTIONS the token"
+    \u2014 and then stopped at `#`.
+
+    \u2b50 THE CONTRACT: the token is a MARKER, so it must OPEN or CLOSE a line. Both deliberate
+    forms are preserved \u2014 the established idiom is a subject line ending in the token
+    (`SCC-290 widen the graph's scope [maps-ok]`), and a trailer line begins with it. Prose that
+    happens to name the token mid-sentence is a mention, and mentions no longer count.
+
+    This cannot separate every negation from every assertion \u2014 nothing reading English can.
+    It separates the two forms that actually occur, and it fails CLOSED where it is unsure, which
+    is the correct direction for a gate: an honest re-baseline is one line-break away, and a
+    silent bypass is not.
+    """
+    for raw in (body or "").splitlines():
+        ln = raw.strip()
+        if ln.startswith(OPT_OUT) or ln.endswith(OPT_OUT):
+            return True
+    return False
+
+
 def run_truth(root, msg_file):
     """The ratchet and the reverse door check, from `commit-msg`. `[maps-ok]` re-baselines."""
     message = ""
@@ -436,7 +464,7 @@ def run_truth(root, msg_file):
     # ⛔ A COMMENT LINE IS NOT A DECISION. `git commit` seeds the file with `# ...` help text, and a
     # template that merely MENTIONS the token would opt every commit out silently.
     body = "\n".join(ln for ln in message.splitlines() if not ln.lstrip().startswith("#"))
-    if OPT_OUT in body:
+    if opted_out(body):
         print(f"  refresh-maps: {OPT_OUT} - the truth checks are re-baselined by this commit, "
               "on the record.")
         return 0

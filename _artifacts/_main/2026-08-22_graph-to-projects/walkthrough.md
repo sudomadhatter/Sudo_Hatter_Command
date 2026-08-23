@@ -437,10 +437,17 @@ is the machinery working exactly as designed.
   It was required for B to work at all, and it retires a long-standing false positive.
 - Left the two `auth_keys` dead-path rows alone; they are pre-existing and outside this diff.
 
-- [ ] **Create an Atlassian API token on this Mac and store it as `sudo-jira`** (plan step C0 — the
-      one item in this lane an agent cannot do). Until then `jira_ticket.py attach` exits 5 and
-      prints the setup; `describe` and `done` work now, so the fast-read shape lands either way.
-      Guide: `docs/migrations/install_guides/jira-api-token-setup.md`.
+- [x] **Create an Atlassian API token on this Mac and store it as `sudo-jira`** (plan step C0 — the
+      one item in this lane an agent cannot do). Guide:
+      `docs/migrations/install_guides/jira-api-token-setup.md`.
+      **Done by the operator 2026-08-23. Verified by measurement, not by their word:**
+      `security find-generic-password -s sudo-jira` returns an item created `20260823002015Z`;
+      the value reads back at **192 chars** (the guide's floor is ~190, and both silent-corruption
+      routes land at 128 or at the command text); and a live `GET /rest/api/3/issue/SCC-288`
+      authenticated with it returns **200** and lists `implementation_plan.md` already attached.
+      The token is labelled `acli-mac-files-upload` on Atlassian's own site — that label is
+      cosmetic and need not match; the **credential-store item name** is the contract, and it is
+      `sudo-jira` as specified.
 *(No second box. `jira_feed.py mint` adopting the fast-read shape was posed here as a decision for
 the operator, and that was the wrong section: it is already the first row of `## Deferred`, carrying
 its structural reason — it is the BMAD **story** lane's seam and this is the Task lane, so the change
@@ -587,3 +594,127 @@ next commit on these surfaces picks it up from a table rather than rediscovering
 so no operator can reach the divergence - unreachable, not latent) · `_land`'s read-back (correct
 that it has no observable, but it is the Port Check 3 idiom this house mandates, and it costs one
 read).
+
+---
+
+## Follow-on — 2026-08-23 · the `attach` door could not run at all (R8)
+
+Found while verifying C0 before ticking its box. **The operator's token step was done and correct;
+the door it exists to unlock was broken**, so the box could not have been honestly ticked without
+this fix. Landed on `chore/SCC-288-attach-site-parse`.
+
+| # | Finding | Severity | Why it is real |
+|---|---|---|---|
+| R8 | **`auth_identity` could never parse a real `acli jira auth status`, so `attach` died at "could not determine the Jira site" while holding a valid token.** | **high** — it is the whole of C0's payoff | The read was `re.search(r"https://[\w.-]+\.atlassian\.net", text)`. `acli` 1.x prints four labelled lines and the site line carries **no scheme**: `  Site: sudo-command.atlassian.net`. A scheme-anchored pattern can never match it. Measured on the real binary, this machine, 2026-08-23. |
+
+⛔ **Why the suite was green over it.** `test_jira_ticket.py`'s `acli_stub` printed an **invented**
+one-line shape — `https://sudo-command.atlassian.net  account: t@example.com` — that nothing in the
+world produces, and it happened to satisfy the very regex under test. Every upload case (JT-F, JT-G,
+JT-T) passes `--site/--email` explicitly, so `auth_identity` had **no** coverage against reality at
+all. A fixture that does not match the contract is not coverage; it is the bug, written twice.
+
+**The fix, RED first.**
+
+1. The stub now prints what the binary actually prints (four lines, bare host), measured with
+   `acli jira auth status | od -c`. That alone turned **JT-I** red: `site == ''`.
+2. `parse_site()` replaces the regex — it reads the `Site:` **label** first (what acli prints),
+   falls back to a loose URL then `*.atlassian.net`, strips ANSI, and always returns a
+   scheme-qualified URL. `auth_identity` also strips ANSI before the email read.
+3. **JT-I** pins both halves: a bare host comes back as `https://sudo-command.atlassian.net`, **and**
+   `attach` completes with **no** `--site/--email` against a real local listener. It owns its own
+   listener because `srv` is already shut down by JT-T — pointing at the dead one hangs to the
+   socket timeout instead of failing honestly.
+
+**Evidence.** `python3 .agents/scripts/tests/test_jira_ticket.py` → **44/44 passed** (was 42/44 with
+the corrected fixture and the old regex — the two new assertions failing for exactly the right
+reason). Against the real binary: `jt.auth_identity()` → `('https://sudo-command.atlassian.net',
+'sudomadhatter@gmail.com')`.
+
+**Not fixed here:** R5 above (`attach()` on a non-array 2xx) is the same function and still open. It
+is a different failure mode, it is already recorded with a reproduction, and widening this follow-on
+to chase it would be the scope creep the lane rules exist to stop.
+
+---
+
+## Follow-on — 2026-08-23 · the maps ratchet refused every worktree commit (R9)
+
+Found by this lane's own commit being refused. **Not worked around** — the operator's ruling when
+shown the `[maps-ok]` escape hatch: *"dont work around it lets fix it."*
+
+| # | Finding | Severity | Why it is real |
+|---|---|---|---|
+| R9 | **`generate_doc_graph` counted references into an uninitialized submodule as broken links, so the doc-reference ratchet was tree-dependent and refused every commit made in a worktree.** | **high** — every lane in this system works in a worktree | `git worktree add` does not initialize submodules. `Projects/*` is ten empty directories in a worktree and ten populated repos in the main checkout. `resolve()` probed those targets with a plain `is_file()`, got False, and recorded them dangling. The same tree, the same commit: **74** broken refs from the main checkout, **77** from a worktree. `commit-msg-maps.sh` reads that as a rise and refuses. |
+
+⛔ **This is what `[maps-ok]` was hiding.** The previous lane recorded using it as a *"recorded
+re-baseline"*; it was in fact banking a number that only one checkout could ever reproduce. A gate
+whose escape hatch is needed on every commit is not a gate.
+
+**The fix, and the second thing it exposed.** The first cut excused only the submodules this tree
+cannot see. That cleared the refusal — and left the count still tree-dependent, **measured on the
+live repo as main `74` / worktree `71`**: three of the six refs into `Projects/*` are real files the
+main checkout can stat and a worktree cannot. A commit from a worktree would bank `71`, and the
+next regeneration from the main checkout would read as a rise to `74` and be refused — the same bug
+pointing the other way.
+
+⭐ So the rule is **every declared submodule, in every checkout state: the lobby graph does not
+adjudicate links into another repo.** That is the existing design rather than a new carve-out —
+each project is an independent repo with its own map artifacts and its own `check_maps` run, and
+lobby checks are lobby-only by construction. A broken link inside a project is that project's gate
+to catch, and it is the only gate that can catch it reliably.
+
+**Shape of the change** — `blind_submodules()` parses `.gitmodules` textually (no subprocess: the
+module's cwd-independence and "git may not be on PATH" contracts), a fourth `resolve()` status
+`unresolvable` is returned **before** the `is_file()` probe rather than after, and the count is
+reported in the header line so the blind spot is visible instead of being an invisible subtraction.
+
+**Evidence.**
+
+| | `broken_paths` | `unresolvable` |
+|---|---|---|
+| Main checkout, before | 74 | — |
+| Worktree, before | **77** (the refusal) | — |
+| Worktree, first cut | 71 | 6 |
+| **Main checkout, fixed** | **71** | **6** |
+| **Worktree, fixed** | **71** | **6** |
+
+`test_doc_graph.py` **32/32**, up from 30 — DG-S drives the same fixture twice, checked out and
+blind, and pins that `broken_paths` **and** `unresolvable` match across both, with a negative
+control (`Projects/NotASub/...`, a directory no `.gitmodules` declares) that must still be broken so
+the fix cannot degrade into "excuse everything under `Projects/`".
+
+---
+
+## Follow-on — 2026-08-23 · the re-baseline hatch fired on a sentence denying it (R10)
+
+Found by the R9 fix's own commit. The message contained the line *"This commit carries NO
+`[maps-ok]` token, which is the point: the hook now passes from a worktree on its own"* — and the
+hook answered **"the truth checks are re-baselined by this commit, on the record."** The commit
+claiming to need no hatch had silently pulled it.
+
+| # | Finding | Severity | Why it is real |
+|---|---|---|---|
+| R10 | **The `[maps-ok]` opt-out was a bare substring test over the message, so any MENTION of the token — including one denying its use — bypassed both truth checks.** | **high** — a gate that fails OPEN | `refresh_maps.run_truth` did `if OPT_OUT in body`. A message that describes the hatch pulls it; a walkthrough quoted into a commit message pulls it; **a sentence saying the commit does not use it pulls it.** Measured on this lane's own commit, twice. |
+
+⛔ **The guard reasoned its way to this exact hazard and then stopped one line short.** The comment
+above the check reads *"a template that merely MENTIONS the token would opt every commit out
+silently"* — correct, and it was implemented only for lines starting with `#`. Prose in the body was
+never covered.
+
+⭐ **The contract now: the token is a MARKER, so it must OPEN or CLOSE a line.** Both deliberate
+forms survive — the established idiom is a subject line ending in the token
+(`SCC-290 widen the graph's scope [maps-ok]`, pinned by RM-F since SCC-290), and a trailer line
+begins with it. A token buried mid-sentence is a mention.
+
+This cannot separate every negation from every assertion — nothing reading English can. It separates
+the two forms that actually occur, and where it is unsure it **fails closed**, which is the correct
+direction for a gate: an honest re-baseline is one line-break away, a silent bypass is not.
+
+**Evidence.** `test_refresh_maps.py` **73/73**, up from 71. RM-F now drives four forms against one
+seeded broken reference: the subject-line idiom re-baselines (unchanged), a trailer line
+re-baselines (new), a `#` comment does not (unchanged), and **the two prose mentions measured on
+this lane's own commit message do not** (new, RED first — both returned `rc=0` with "re-baselined"
+before the fix).
+
+⭐ **The first commit of the R9 fix was made with the hatch silently pulled, and was amended.** The
+shipped commit carries zero occurrences of the token and `refresh_maps.py --verify` exits 0 — the
+ratchet passes from a worktree on its own merit, which was the whole claim R9 was making.
