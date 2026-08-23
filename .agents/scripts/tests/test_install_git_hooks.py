@@ -179,6 +179,46 @@ def main() -> int:
                     c.check(f"F2 {label}: and the file on disk is UNTOUCHED",
                             after == body,
                             "the installer rewrote a hook it had just refused")
+
+        # ── F3 · SCC-288 · -Uninstall must use the SAME ownership test as -Install ────────────
+        # ⛔ REVIEW FINDING R2. F2 replaced the marker-only ownership test on the INSTALL path and
+        # left `-Uninstall` on the old one, where the consequence is worse: install overwrites a
+        # tracked file (visible in `git status`, recoverable with `git checkout`), uninstall
+        # DELETES it. `.githooks/pre-commit` is tracked, it necessarily contains the marker, and
+        # SCC-290 made it chain the maps refresh as well — so removing "the encoding hook"
+        # silently disarmed two gates and left the operator with no hook file at all.
+        #
+        # Same three outcomes as F2, and the middle one is the finding: ours-but-EXTENDED is
+        # refused, not deleted. Only a byte-identical hook of ours is removed, because that is the
+        # only file this installer can prove it wrote.
+        for label, (want, body) in {
+            "extended (ours + the maps delegate)": ("REFUSED", shapes[
+                "extended (ours + the maps delegate)"][1]),
+            "foreign (no marker at all)": ("SKIP", shapes["foreign (no marker at all)"][1]),
+            "ours, byte-identical": ("removed", own_body),
+        }.items():
+            with TempDir() as tmp:
+                d = tmp / "wk"
+                seed_fixture_repo(d)
+                subprocess.run(["git", "config", "core.hooksPath", ".githooks"],
+                               cwd=str(d), capture_output=True)
+                hook = d / ".githooks" / "pre-commit"
+                hook.write_text(body, encoding="utf-8")
+                r = subprocess.run([ps, "-NoProfile", "-File", str(installer),
+                                    "-Repo", str(d), "-Uninstall"],
+                                   capture_output=True, text=True)
+                said = ("REFUSED" if "REFUSED" in r.stdout else
+                        "removed" if "removed" in r.stdout else
+                        "SKIP" if "SKIP" in r.stdout else f"?? {r.stdout[-160:]}")
+                c.check(f"F3 -Uninstall {label} -> {want}", said == want,
+                        f"said {said!r}; rc={r.returncode}; stderr={r.stderr[-200:]}")
+                if want == "removed":
+                    c.check("F3 ours, byte-identical: the file is GONE", not hook.exists(),
+                            "the installer refused to remove the hook it wrote itself")
+                else:
+                    c.check(f"F3 {label}: the file SURVIVES with its bytes intact",
+                            hook.exists() and hook.read_text(encoding="utf-8") == body,
+                            "-Uninstall deleted a hook this installer did not write")
     return c.finish()
 
 

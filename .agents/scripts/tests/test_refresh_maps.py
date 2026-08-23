@@ -494,6 +494,71 @@ def main() -> int:
                     both.isascii(),
                     repr([ch for ch in both if not ch.isascii()][:10]))
 
+    # ── J · an UNTRACKED file is not part of the repository, and no map may name it ──────────
+    # ⛔ REVIEW FINDING R1 (SCC-288), reproduced then closed. The generators walk the FILESYSTEM,
+    # so a scratch `.md` nobody committed became a graph node. Two consequences, and the second is
+    # the worse one: `--verify` refuses the PUSH of unrelated committed work, and the `--repair`
+    # it prints as the remedy then WRITES that phantom into a tracked artifact bound for main.
+    # Scratch files are constant in this workflow. The module's stated ACCEPTED LIMIT covers
+    # unstaged edits to TRACKED files; it never covered files git does not have.
+    #
+    # Both generators are asserted, because they fail differently: the doc graph gains a NODE, and
+    # the repo-map's content-mode summary is a FILE COUNT that ticks up.
+    if c.block("RM-J · SCC-288 · an untracked scratch file changes NO map, and blocks NO push"):
+        with TempDir() as tmp:
+            root = seed_repo(tmp)
+            before = {rel: (root / rel).read_bytes()
+                      for rel in ("docs/repo-map.md", "docs/doc-graph.json")}
+            write(root / ".agents" / "rules" / "zz-scratch-probe.md", "# scratch\n")
+            write(root / "docs" / "zz-scratch-probe.md", "# scratch\n")
+
+            v = run(root, "--verify")
+            c.check("RM-J --verify still exit 0 - a scratch file cannot refuse a push",
+                    v.returncode == 0, f"rc={v.returncode} {v.stdout}")
+
+            r = run(root, "--repair")
+            c.check("RM-J --repair exit 0", r.returncode == 0, f"rc={r.returncode} {r.stdout}")
+            c.check("RM-J --repair wrote NOTHING (it must not stage a phantom)",
+                    all((root / rel).read_bytes() == b for rel, b in before.items()),
+                    "the remedy the gate prints edited a tracked map to name an untracked file")
+            c.check("RM-J and nothing at all was staged", staged(root) == [], str(staged(root)))
+            c.check("RM-J the phantom is not a node in the graph",
+                    "zz-scratch-probe" not in (root / "docs" / "doc-graph.json")
+                    .read_text(encoding="utf-8"),
+                    "an untracked file is in the committed graph")
+
+            # ⭐ THE OTHER HALF, or the fix is just "ignore new files". The instant it is STAGED it
+            # is part of the commit being made, and both maps must pick it up.
+            git(root, "add", "--", ".agents/rules/zz-scratch-probe.md",
+                "docs/zz-scratch-probe.md")
+            s = run(root, "--staged")
+            c.check("RM-J once STAGED, the same file regenerates the maps", s.returncode == 0,
+                    f"rc={s.returncode} {s.stdout}")
+            c.check("RM-J and it IS a node now",
+                    "zz-scratch-probe" in (root / "docs" / "doc-graph.json")
+                    .read_text(encoding="utf-8"),
+                    "staging it changed nothing - the filter is too wide")
+
+    # ── J2 · the DIRECTORY half of the same rule, both ways ──────────────────────────────────
+    # ⛔ The first cut of the R1 fix pruned a directory when its subtree "produced no lines",
+    # which is a different fact from "git does not have it" — measured against the real map, it
+    # dropped two tracked directories whose only files are DOTFILES the walk already hides. So the
+    # predicate answers for the directory itself, and both halves are asserted here: a directory
+    # git has something under survives even when nothing in it is visible, and a directory that
+    # exists only because of untracked files never reaches the map.
+    if c.block("RM-J2 · SCC-288 · a tracked dir survives; an untracked-only dir never appears"):
+        with TempDir() as tmp:
+            root = seed_repo(tmp)
+            write(root / "keepme" / ".memlog.md", "# hidden but tracked\n")
+            git(root, "add", "--", "keepme/.memlog.md")
+            write(root / "phantom" / "scratch.md", "# never committed\n")
+            run(root, "--repair")
+            book = (root / "docs" / "repo-map.md").read_text(encoding="utf-8")
+            c.check("RM-J2 the tracked dir is in the map though its only file is hidden",
+                    "keepme/" in book, "a real tracked directory was pruned out of the map")
+            c.check("RM-J2 the untracked-only dir is NOT",
+                    "phantom/" not in book, "an untracked directory reached a committed map")
+
     # ── I · argument discipline ───────────────────────────────────────────────────────────────
     if c.block("RM-I · SCC-290 · exactly one mode, or exit 2"):
         with TempDir() as tmp:

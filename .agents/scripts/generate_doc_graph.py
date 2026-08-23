@@ -157,14 +157,23 @@ TOKEN_RE = re.compile(r"(?<![\w./\\-])([\w./\\-]+\.md)\b")
 LINK_RE = re.compile(r"\]\(\s*<?([^)>\s]+)")
 
 
-def collect_md(root, ignores):
-    """Return sorted list of .md paths relative to root (posix)."""
+def collect_md(root, ignores, keep=None):
+    """Return sorted list of .md paths relative to root (posix).
+
+    `keep` is an optional predicate on the ABSOLUTE path of each candidate file. `None` keeps
+    everything on disk, which is what the standalone CLI wants -- it is asked to map a directory,
+    and a directory is what is there. `refresh_maps.py` passes one that answers "is this file in
+    git's index", because a map it regenerates is a map that gets COMMITTED (SCC-288 / R1).
+    """
     out = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in ignores and not d.startswith(".")]
         for fn in filenames:
             if fn.lower().endswith(".md"):
-                rel = os.path.relpath(os.path.join(dirpath, fn), root)
+                full = os.path.join(dirpath, fn)
+                if keep is not None and not keep(full):
+                    continue
+                rel = os.path.relpath(full, root)
                 out.append(rel.replace(os.sep, "/"))
     return sorted(out)
 
@@ -258,12 +267,16 @@ def canon(rel):
     return pack_root(rel) or rel
 
 
-def build_graph(roots, ignores, lobby=None, exclude=()):
+def build_graph(roots, ignores, lobby=None, exclude=(), keep=None):
     """Scan every root, anchor every id at the lobby, return the graph dict.
 
     `roots` may be one path or several. Ids are lobby-relative and the whole list is SORTED, so
     the artifact does not depend on the order the roots were typed -- two lanes regenerating the
     same tree must produce identical bytes or the pre-commit hook stages a phantom diff.
+
+    `keep` is the file-level predicate described on `collect_md` -- it decides which files EXIST
+    for this run. `exclude` drops named nodes after the fact. Two different jobs: `exclude` is
+    about this generator's own output, `keep` is about whose files these are.
 
     `exclude` holds lobby-relative paths this generator WRITES. ⛔ Without it the graph is not
     deterministic: `docs/doc-graph.md` lands inside a scanned root, so the run that creates it
@@ -287,7 +300,7 @@ def build_graph(roots, ignores, lobby=None, exclude=()):
             raise SystemExit(f"doc-graph: --root {r} is not inside --lobby {lobby}")
         rel_roots.append(prefix or ".")
         excluded = {str(x) for x in exclude}
-        for rel in collect_md(str(r), ignores):
+        for rel in collect_md(str(r), ignores, keep):
             node = posixpath.join(prefix, rel) if prefix else rel
             if node not in excluded:
                 scope_list.append(node)

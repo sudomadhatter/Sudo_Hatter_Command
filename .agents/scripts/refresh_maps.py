@@ -53,9 +53,15 @@ itself in the log forever), `git commit --no-verify` (everything, once), and
 `.agents/scripts/git-hooks/DISABLE` (the kill switch every hook in this repo honours). `--verify` at
 push, `check_maps` check 10 and `run_all.py` are the three that a bypass still has to get past.
 
-ACCEPTED LIMIT, stated rather than hidden: this regenerates from the WORKING TREE, not the index.
-An unstaged `.agents/` edit therefore leaks into the staged map. The alternative -- checking the
-index out to a temp dir -- costs seconds on every commit. `--verify` at push and check 10 catch it.
+SCOPE, and it is not the whole working tree: only files GIT'S INDEX HAS are mapped (`in_index`).
+An untracked scratch `.md` is not part of the repository, so no committed map may name one -- and
+until SCC-288 one did, which refused pushes of unrelated work and then wrote the phantom in when
+the operator ran the printed remedy. A file `git add`ed a moment ago IS in the index and IS mapped.
+
+ACCEPTED LIMIT, stated rather than hidden: the CONTENT read from each of those files is the working
+tree's, not the index's, so an unstaged edit to a TRACKED file leaks into the staged map. The
+alternative -- checking the index out to a temp dir -- costs seconds on every commit. `--verify` at
+push and check 10 catch it.
 
 Both machines: stdlib only, ASCII output, `sys.executable` never assumed. Run from anywhere.
 """
@@ -159,6 +165,39 @@ def triggered(paths, root):
 
 # --- regeneration, to memory --------------------------------------------------------------------
 
+def in_index(root):
+    """A predicate on an absolute path: does git's INDEX have this?  None if git cannot say.
+
+    It answers for DIRECTORIES as well as files -- a directory is "had" when the index holds
+    anything beneath it. `generate_repo_map.walk` needs that: pruning a directory on "it produced
+    no visible lines" instead dropped two real tracked directories from the live map, because
+    their only files are dotfiles the walk already hides.
+
+    ⛔ REVIEW FINDING R1 (SCC-288). Both generators walk the FILESYSTEM, so an untracked scratch
+    `.md` -- and this workflow makes those constantly -- became a graph node and ticked the
+    repo-map's content-mode file count up. Two consequences, and the second is the worse one:
+    `--verify` read the difference as a stale map and REFUSED THE PUSH of unrelated committed
+    work, and the `--repair` it prints as the remedy then WROTE the phantom into a tracked
+    artifact bound for `main`. The gate blocked correct work and its own fix corrupted the map.
+
+    THE INDEX, not `HEAD`, and not "tracked": a file `git add`ed a moment ago IS part of the
+    commit being made and both maps must pick it up. That is exactly what `--staged` exists for,
+    so the rule is "git has it", which the index answers and `HEAD` does not.
+
+    Returns None -- meaning DO NOT FILTER -- when git cannot answer. A generator that mapped
+    nothing because a subprocess failed would hand `--repair` an empty tree to commit.
+    """
+    r = sh(["git", "ls-files", "--cached", "-z"], root)
+    if r.returncode != 0:
+        return None
+    have = {(root / p).resolve() for p in r.stdout.split("\0") if p}
+    if not have:
+        return None                                   # an empty repo: nothing to filter against
+    for f in list(have):
+        have.update(f.parents)                        # every ancestor directory git implies
+    return lambda full: Path(full).resolve() in have
+
+
 def fresh_repo_map(root):
     """The repo-map with a freshly built AUTO block spliced in. None when there is no map."""
     path = root / REPO_MAP
@@ -168,7 +207,8 @@ def fresh_repo_map(root):
     if grm.AUTO_START not in text or grm.AUTO_END not in text:
         return None                                   # unscaffolded: the ceremony's job, not ours
     body = grm.build_auto_body(str(root), threshold=8,
-                               mode=cm.declared_mode(text), ignores=ignored_tops(root))
+                               mode=cm.declared_mode(text), ignores=ignored_tops(root),
+                               keep=in_index(root))
     head = text.split(grm.AUTO_START, 1)[0]
     tail = text.split(grm.AUTO_END, 1)[1]
     return head + body + tail
@@ -179,7 +219,8 @@ def fresh_doc_graph(root):
     roots = [root / n for n in dg.DEFAULT_ROOT_NAMES if (root / n).is_dir()]
     if not roots:
         return None, None
-    graph = dg.build_graph(roots, set(dg.DEFAULT_IGNORES), root, exclude=[DOC_GRAPH_MD])
+    graph = dg.build_graph(roots, set(dg.DEFAULT_IGNORES), root, exclude=[DOC_GRAPH_MD],
+                           keep=in_index(root))
     md = dg.splice(str(root / DOC_GRAPH_MD), dg.render_auto(graph, 15))
     return md, json.dumps(graph, indent=2)
 
@@ -346,6 +387,13 @@ def converge(root, want):
             for rel in (DOC_GRAPH_MD, DOC_GRAPH_JSON):
                 if not _land(root, rel, fresh[rel], wrote):
                     return 1
+            # ⛔ STAGED HERE, NOT AT THE END, AND THAT IS PART OF THE SAME ORDER. The repo-map is
+            # built from the files GIT'S INDEX HAS (`in_index`, SCC-288 / R1), and a doc-graph
+            # this run has only written to disk is not in the index yet. Staging at the end left
+            # the repo-map blind to two files it walks, so the commit landed a map that `--verify`
+            # immediately called stale -- convergence lost on the very first generation.
+            if not stage(root, wrote):
+                return 1
 
     # Always after: a doc-graph write can itself have changed what the repo-map sees.
     # Compute it only when it can be used - a full tree walk plus a `git rev-parse` subprocess
@@ -355,16 +403,23 @@ def converge(root, want):
         fresh[REPO_MAP] = rm
         if not _land(root, REPO_MAP, rm, wrote):
             return 1
-
-    if wrote:
-        r = sh(["git", "add", "--"] + sorted(wrote), root)
-        if r.returncode != 0:
-            print(f"  ! refresh-maps: could not stage {wrote}: {r.stderr.strip()[:200]}")
+        if REPO_MAP in wrote and not stage(root, [REPO_MAP]):
             return 1
-        for rel in sorted(wrote):
-            print(f"  refresh-maps: regenerated and staged {rel}")
 
+    for rel in sorted(wrote):
+        print(f"  refresh-maps: regenerated and staged {rel}")
     return 0
+
+
+def stage(root, rels):
+    """`git add` exactly these paths. False on failure, having said why."""
+    if not rels:
+        return True
+    r = sh(["git", "add", "--"] + sorted(rels), root)
+    if r.returncode != 0:
+        print(f"  ! refresh-maps: could not stage {sorted(rels)}: {r.stderr.strip()[:200]}")
+        return False
+    return True
 
 
 OPT_OUT = "[maps-ok]"

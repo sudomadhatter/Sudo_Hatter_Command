@@ -12,7 +12,8 @@
 
 .PARAMETER Repo   Repo root to install into. Default: the current repo.
 .PARAMETER All    Install into the lobby + every name in .agents/maintained-projects.txt.
-.PARAMETER Uninstall  Remove the hook (only if it is ours).
+.PARAMETER Uninstall  Remove the hook - only if it is BYTE-IDENTICAL to the one this
+                      script writes. A chained or extended hook is refused, not deleted.
 #>
 param(
   [string]$Repo,
@@ -47,22 +48,48 @@ function Install-One([string]$root) {
   if (-not (Test-Path $hookDir)) { New-Item -ItemType Directory -Path $hookDir -Force | Out-Null }
   $hook = Join-Path $hookDir 'pre-commit'
 
-  if ($Uninstall) {
-    if ((Test-Path $hook) -and ((Get-Content $hook -Raw) -match $MARKER)) {
-      Remove-Item $hook -Force -Confirm:$false
-      Write-Host "  removed  $hook"
-    } else {
-      Write-Host "  SKIP $root (no hook of ours)"
-    }
-    return
-  }
-
+  # ⛔ THE BODY IS BUILT BEFORE THE UNINSTALL BRANCH, NOT AFTER IT (SCC-288 / R2). It used to be
+  # defined below, which is structurally why `-Uninstall` could not use the byte-equality
+  # ownership test the install path had just been given and stayed on `-match $MARKER`.
   $body = @"
 #!/bin/sh
 # $MARKER (installed by .agents/scripts/git-hooks/install-encoding-hook.ps1)
 exec "`$(git rev-parse --show-toplevel)/.agents/scripts/git-hooks/pre-commit-encoding.sh" "`$@"
 "@
   $bodyLf = ($body -replace "`r`n", "`n")
+
+  # ONE ownership test, used by both directions. Ours means "byte-identical to what this script
+  # writes" — nothing else is a file this installer can prove it wrote.
+  $ours = $false
+  $existing = $null
+  if (Test-Path $hook) {
+    $existing = Get-Content $hook -Raw
+    $ours = (($existing -match $MARKER) -and
+             (($existing -replace "`r`n", "`n").TrimEnd() -eq $bodyLf.TrimEnd()))
+  }
+
+  if ($Uninstall) {
+    # ⛔ UNINSTALL IS THE DESTRUCTIVE DIRECTION, AND IT HAD THE WEAKER TEST. `-match $MARKER` alone
+    # matched the TRACKED `.githooks/pre-commit` dispatcher — which contains the string because it
+    # CHAINS this gate — and `Remove-Item` deleted it. Install merely overwrote that file, which
+    # `git status` shows and `git checkout` undoes; uninstall left no hook at all, disarming the
+    # encoding gate AND the maps refresh that SCC-290 chained in front of it.
+    if (-not (Test-Path $hook)) {
+      Write-Host "  SKIP $root (no hook of ours)"
+    } elseif ($ours) {
+      Remove-Item $hook -Force -Confirm:$false
+      Write-Host "  removed  $hook"
+    } elseif ($existing -match $MARKER) {
+      Write-Host "  REFUSED $root - the pre-commit hook here carries our marker but is NOT the"
+      Write-Host "      file this installer writes: it chains other gates, or an older installer"
+      Write-Host "      wrote it. Deleting it would disarm more than the encoding gate."
+      Write-Host ($existing -split "`n" | Select-Object -First 5 | ForEach-Object { "      $_" })
+      Write-Host "      remove it by hand if that is really what you want."
+    } else {
+      Write-Host "  SKIP $root (no hook of ours)"
+    }
+    return
+  }
 
   # ⛔ AUDIT FINDING F2 (SCC-290). THE MARKER TEST ALONE IS NOT AN OWNERSHIP TEST, and reading it
   # as one silently DISARMS a gate. `.githooks/pre-commit` is a tracked DISPATCHER that chains two
@@ -77,21 +104,17 @@ exec "`$(git rev-parse --show-toplevel)/.agents/scripts/git-hooks/pre-commit-enc
   #   marker, different -> OURS BUT EXTENDED (the dispatcher). Refuse — same message, because the
   #                        answer is the same: chain it, do not clobber it.
   #   marker, identical -> ours and unchanged. Rewriting is a no-op; keep the existing behaviour.
-  if (Test-Path $hook) {
-    $existing = Get-Content $hook -Raw
-    $existingLf = ($existing -replace "`r`n", "`n")
-    # Three states, and the message must not conflate them: not ours · ours but DIFFERENT (chained
-# by someone, or written by an older installer) · ours and byte-identical. Only the last is
-# rewritten. Saying "it chains more than the encoding gate" about a merely stale own-hook sends
-# the operator to look for a chain that is not there.
-if (($existing -notmatch $MARKER) -or ($existingLf.TrimEnd() -ne $bodyLf.TrimEnd())) {
-      $why = if ($existing -notmatch $MARKER) { "a different pre-commit hook is already installed" }
-             else { "the pre-commit hook here is OURS but DIFFERENT - either it chains more than the encoding gate, or it was written by an older installer. Overwriting blind could drop a chain, so read the head below and decide" }
-      Write-Host "  REFUSED $root - ${why}:"
-      Write-Host ($existing -split "`n" | Select-Object -First 5 | ForEach-Object { "      $_" })
-      Write-Host "      chain it by hand if you want both."
-      return
-    }
+  # Three states, and the message must not conflate them: not ours - ours but DIFFERENT (chained
+  # by someone, or written by an older installer) - ours and byte-identical. Only the last is
+  # rewritten. Saying "it chains more than the encoding gate" about a merely stale own-hook sends
+  # the operator to look for a chain that is not there.
+  if ((Test-Path $hook) -and (-not $ours)) {
+    $why = if ($existing -notmatch $MARKER) { "a different pre-commit hook is already installed" }
+           else { "the pre-commit hook here is OURS but DIFFERENT - either it chains more than the encoding gate, or it was written by an older installer. Overwriting blind could drop a chain, so read the head below and decide" }
+    Write-Host "  REFUSED $root - ${why}:"
+    Write-Host ($existing -split "`n" | Select-Object -First 5 | ForEach-Object { "      $_" })
+    Write-Host "      chain it by hand if you want both."
+    return
   }
   # LF only: git runs this through sh, and CRLF here is a "bad interpreter" error.
   [System.IO.File]::WriteAllText($hook, $bodyLf, `
