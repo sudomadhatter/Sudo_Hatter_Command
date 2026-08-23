@@ -1,0 +1,5 @@
+task_key: SCC-297
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-297-memory-symlink-sandbox-note
+close_command: smh-close-task-merge-tree
+secondary_repos: []
