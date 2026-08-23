@@ -188,8 +188,8 @@ own work. It did not.
 | Gate | Result |
 |---|---|
 | `tests/test_label_tasks.py` | **147/147, exit 0** |
-| `tests/run_all.py` via `gate_receipt.py` | re-stamped at the landing sha — see `gates/suite.json` |
-| `mutation_sweep.py` | 8/8 killed on the 8-mutant table; `M9` added with `A11` and re-run at the landing sha |
+| `tests/run_all.py` via `gate_receipt.py` | **PASS, exit 0, 83.5 s @ `19f5933e`**, `dirty_tree: false` |
+| `mutation_sweep.py` | **9/9 killed @ `19f5933`**, restore verified byte-identical, unfiltered close-out run exit 0 |
 | `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, 8 info |
 | `check_maps.py --depth3-only --strict` | exit 0 |
 | `check_links.py --base origin/main` | clean — 3 files, 20 claims |
