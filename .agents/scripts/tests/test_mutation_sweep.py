@@ -371,6 +371,51 @@ def main() -> int:
                     git(repo, "diff", "--quiet").returncode == 0,
                     git(repo, "status", "--short").stdout)
 
+
+    # ── K6 · SCC-284: a DELETION mutant is legal; an ABSENT field is not ──────────────────
+    # "Remove this line entirely and see if anything notices" is declared as `"mutated": ""`.
+    # The loader tested the five required fields with `if not m.get(k)` - a FALSY test, not a
+    # presence test - so the empty string read as *missing* and the whole table was refused
+    # with "is missing mutated", sending the reader to look for a typo in a field that was
+    # sitting right there. SCC-244 worked around it three times by substituting an inert line
+    # (M16/M23/M26), which made the sweep record say "replaced" about a mutant that tested
+    # "removed" - wrong in the one file whose whole job is being right about what was proven.
+    if c.block("K6 · SCC-284: a DELETION mutant is legal; an ABSENT field is not"):
+        with TempDir() as t:
+            repo = build(t)
+            tab = table(repo, [dict(killer("M1 delete the guard line"), mutated="")])
+            code, out = _run(repo, ["--table", str(tab)])
+            c.check("K6a `\"mutated\": \"\"` LOADS - the table is not refused as missing a field",
+                    "is missing" not in out and "missing mutated" not in out,
+                    f"exit={code} " + out[-400:])
+            c.check("K6b ...and it APPLIES as a deletion and is scored like any other (KILLED, exit 0)",
+                    code == 0 and "KILLED" in out and "M1 delete the guard line" in out,
+                    f"exit={code} " + out[-400:])
+            c.check("K6c ...and the deleted line is back afterwards (restore proven)",
+                    PATTERN in (repo / SRC).read_text(encoding="utf-8")
+                    and git(repo, "diff", "--quiet").returncode == 0,
+                    (repo / SRC).read_text(encoding="utf-8"))
+
+        with TempDir() as t:
+            repo = build(t)
+            absent = killer("M2 no mutated key at all")
+            del absent["mutated"]
+            code, out = _run(repo, ["--table", str(table(repo, [absent]))])
+            c.check("K6d a mutant whose `mutated` key is genuinely ABSENT still refuses, exit 2",
+                    code == 2 and "mutated" in out, f"exit={code} " + out[-400:])
+            c.check("K6e ...and the message says ABSENT, so the reader does not hunt for a typo "
+                    "in a field that is there",
+                    "absent" in out.lower() and "empty" in out.lower(),
+                    out[-400:])
+
+        with TempDir() as t:
+            repo = build(t)
+            tab = table(repo, [dict(killer("M3 insert from nowhere"), original="")])
+            code, out = _run(repo, ["--table", str(tab)])
+            c.check("K6f `\"original\": \"\"` still refuses - a mutant that inserts from nowhere "
+                    "has no unique anchor",
+                    code == 2 and "original" in out, f"exit={code} " + out[-400:])
+
     return c.finish()
 
 
