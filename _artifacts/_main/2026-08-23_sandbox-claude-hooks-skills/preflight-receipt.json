@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-300-sandbox-claude-hooks-skills",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-300",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "ebade3bc934043723688d229c25a7a1d819c393f",
+  "warnings": 1,
+  "when": "2026-08-23T13:19:47-05:00"
+}

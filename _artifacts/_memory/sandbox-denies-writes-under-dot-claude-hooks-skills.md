@@ -25,7 +25,7 @@ hook or a skill. It is also why `/smh-sync-agents` cannot write launcher skills 
 session — the command is fine (`-WhatIf` exits 0, the 59 opencode mirrors are byte-identical); the
 write is what is blocked. See [[toolkit-sync-covers-agents-not-docs]] and [[one-door-per-platform-per-command]].
 
-**How to apply:** run only the specific git command with the sandbox disabled, never the whole flow,
-and say in the report that you did. ⛔ **Disabling the sandbox also moves `TMPDIR`** from
-`/tmp/claude-<uid>` to `/var/folders/…`, so a test re-run that way is measuring different conditions —
-a green there can be vacuous ([[red-test-can-die-before-its-assertion]]). Tracked as SCC-300.
+**How to apply (Resolved in SCC-300):**
+1. **Hooks Single-Sourced**: `.claude/hooks/` is completely retired and untracked. `.claude/settings.json` executes hooks directly from `.agents/hooks/` via `run-hook.sh`. Because `.agents/hooks/` is explicitly writable in the sandbox, `git merge` on `main` hook updates never encounters sandbox denials.
+2. **Plumbing & Sync**: `sync-agents.ps1` no longer attempts to sync `.claude/hooks/` and catches `.claude/skills/` sandbox write blocks gracefully in-session, reporting an informative warning while maintaining all other surfaces (.agents/skills, .agents/workflows, .opencode/commands, and machine caches).
+3. If `.claude/skills/` updates must be written to disk, run `/smh-sync-agents` outside the Claude Code OS sandbox (e.g. from terminal, Antigravity, or Opencode). ⛔ **Disabling the sandbox in Claude Code also moves `TMPDIR`** from `/tmp/claude-<uid>` to `/var/folders/…`, so test executions should remain sandboxed to avoid vacuous test results ([[red-test-can-die-before-its-assertion]]). Resolved under SCC-300.

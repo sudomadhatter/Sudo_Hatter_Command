@@ -481,15 +481,9 @@ def main() -> int:
         c.check("CONFIG · with NO file the built-in POSIX root still grants",
                 allowed(out), out.strip()[:160])
 
-    if c.block("WIRING · the deployed copy and the settings entry agree with the master"):
+    if c.block("WIRING · the master and the settings entry agree on the single source"):
         master = ROOT / ".agents/hooks/allow-scratchpad.py"
-        deployed = ROOT / ".claude/hooks/allow-scratchpad.py"
         c.check("WIRING · the master exists", master.is_file(), str(master))
-        c.check("WIRING · the deployed copy exists", deployed.is_file(), str(deployed))
-        if master.is_file() and deployed.is_file():
-            same = master.read_bytes() == deployed.read_bytes()
-            c.check("WIRING · deployed copy is byte-identical to the master", same,
-                    "" if same else "they have diverged — re-run /smh-sync-agents")
         settings = json.loads((ROOT / ".claude/settings.json").read_text(encoding="utf-8"))
         groups = [g for g in settings["hooks"]["PreToolUse"] if g.get("matcher") == "Bash"]
         c.check("WIRING · there is exactly one PreToolUse Bash matcher", len(groups) == 1,
@@ -497,6 +491,8 @@ def main() -> int:
         cmds = [h["command"] for h in groups[0]["hooks"]] if groups else []
         mine = [x for x in cmds if "allow-scratchpad.py" in x]
         c.check("WIRING · the hook is wired into it", len(mine) == 1, str(cmds))
+        c.check("WIRING · it points directly to .agents/hooks/allow-scratchpad.py",
+                any(".agents/hooks/allow-scratchpad.py" in x for x in mine), str(mine))
         c.check("WIRING · it is FIRST in the chain",
                 bool(cmds) and "allow-scratchpad.py" in cmds[0], str(cmds[:1]))
         # ⛔ The interpreter seam. `.claude/settings.json` is shared across a Mac with no bare
@@ -522,7 +518,7 @@ def main() -> int:
         # main's file while reporting on the lane's, the wrong-tree class `_harness._tree_guard`
         # exists to prevent (SCC-263 review, Literal-Correctness Hunter).
         p = subprocess.run(["sh", str(SCRIPTS.parent / "hooks" / "run-hook.sh"),
-                            ".claude/hooks/allow-scratchpad.py"],
+                            ".agents/hooks/allow-scratchpad.py"],
                            input=payload, capture_output=True, text=True,
                            cwd=str(ROOT), env={**os.environ, "CLAUDE_PROJECT_DIR": str(ROOT)},
                            errors="replace")

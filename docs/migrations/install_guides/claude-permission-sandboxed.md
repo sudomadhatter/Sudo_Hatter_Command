@@ -48,7 +48,11 @@ To prevent false-positive approval prompts during test harness and verification 
 - On **PC / Windows**: The hook reads the machine-local `.claude/scratchpad-root` file or Windows temp configuration.
 - Generic directory escapes (`cd /tmp`, `cd ~`, `cd ../other-repo`) remain strictly guarded and require confirmation.
 
-### 4. Sandbox Filesystem Boundaries
+### 4. Direct `.agents/hooks` Execution (SCC-300)
+
+Claude Code settings in `.claude/settings.json` execute hooks directly from `.agents/hooks/` through `run-hook.sh` (e.g. `sh "$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh" .agents/hooks/guard-cwd-escape.py`). The duplicate `.claude/hooks/` directory is retired and untracked from git, ensuring git merges involving hook changes are never denied by the OS sandbox.
+
+### 5. Sandbox Filesystem Boundaries
 
 Ensure `/tmp` and `/private/tmp` are explicitly allowed in `sandbox.filesystem.allowWrite` along with the project and worktree paths:
 

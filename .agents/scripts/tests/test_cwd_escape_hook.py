@@ -201,10 +201,9 @@ def main() -> int:
                 all("run-hook.sh" in x for x in cmds if "guard-cwd-escape.py" in x), f"{cmds}")
         c.check("M7 the existing push-approval hook is still wired beside it",
                 any("require-push-approval.py" in x for x in cmds), f"{cmds}")
-        c.check("M7 the deployed .claude/hooks copy matches the canonical .agents/hooks source",
-                (ROOT / ".claude/hooks/guard-cwd-escape.py").is_file()
-                and (ROOT / ".claude/hooks/guard-cwd-escape.py").read_bytes() == HOOK.read_bytes(),
-                "deployed copy missing or drifted")
+        c.check("M7 it points directly to .agents/hooks/guard-cwd-escape.py (the single source)",
+                any(".agents/hooks/guard-cwd-escape.py" in x for x in cmds),
+                f"expected direct .agents/hooks wiring in {cmds}")
 
     tmp_ctx.__exit__()
     return c.finish()

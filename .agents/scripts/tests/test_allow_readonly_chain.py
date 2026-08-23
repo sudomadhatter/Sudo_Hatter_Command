@@ -512,15 +512,9 @@ def main() -> int:
             c.check(f"P · {label}", got == want, f"Bash({rule}) vs {text!r}: got {got}")
 
     # ── WIRING · reads the REAL repo files, not a fixture ───────────────────────────────────
-    if c.block("WIRING · the deployed copy and the settings entry agree with the master"):
+    if c.block("WIRING · the master and the settings entry agree on the single source"):
         master = ROOT / ".agents/hooks/allow-readonly-chain.py"
-        deployed = ROOT / ".claude/hooks/allow-readonly-chain.py"
         c.check("WIRING · the master exists", master.is_file(), str(master))
-        c.check("WIRING · the deployed copy exists", deployed.is_file(), str(deployed))
-        if master.is_file() and deployed.is_file():
-            same = master.read_bytes() == deployed.read_bytes()
-            c.check("WIRING · deployed copy is byte-identical to the master", same,
-                    "" if same else "they have diverged - re-run /smh-sync-agents")
         settings = json.loads((ROOT / ".claude/settings.json").read_text(encoding="utf-8"))
         groups = [g for g in settings["hooks"]["PreToolUse"] if g.get("matcher") == "Bash"]
         c.check("WIRING · there is exactly one PreToolUse Bash matcher", len(groups) == 1,
@@ -528,6 +522,8 @@ def main() -> int:
         cmds = [h["command"] for h in groups[0]["hooks"]] if groups else []
         mine = [x for x in cmds if "allow-readonly-chain.py" in x]
         c.check("WIRING · the hook is wired into it", len(mine) == 1, str(cmds))
+        c.check("WIRING · it points directly to .agents/hooks/allow-readonly-chain.py",
+                any(".agents/hooks/allow-readonly-chain.py" in x for x in mine), str(mine))
         # ⛔ The interpreter seam. `.claude/settings.json` is shared across a Mac with no bare
         # `python` and a PC with no `python3`; naming either directly is the SCC-77 exit-127 bug,
         # which is silent. `run-hook.sh` probes.
