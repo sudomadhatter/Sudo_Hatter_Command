@@ -1,0 +1,5 @@
+task_key: SCC-300
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-300-sandbox-claude-hooks-skills
+close_command: smh-close-task-merge-tree
+secondary_repos: []

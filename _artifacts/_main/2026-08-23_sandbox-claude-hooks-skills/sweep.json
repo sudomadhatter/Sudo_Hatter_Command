@@ -1,0 +1,44 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_cwd_escape_hook.py"
+ ],
+ "mutants": [
+  {
+   "id": "M1 cwd-escape hook wiring check rejects stray .claude/hooks path",
+   "file": ".claude/settings.json",
+   "original": "\"command\": \"sh \\\"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\\\" .agents/hooks/guard-cwd-escape.py\"",
+   "mutated": "\"command\": \"sh \\\"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\\\" .claude/hooks/guard-cwd-escape.py\"",
+   "case": "M7 it points directly to .agents/hooks/guard-cwd-escape.py (the single source)",
+   "block": "M7 · the hook is WIRED, on the run-hook seam",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_cwd_escape_hook.py"
+   ]
+  },
+  {
+   "id": "M2 scratchpad allow hook wiring check rejects stray .claude/hooks path",
+   "file": ".claude/settings.json",
+   "original": "\"command\": \"sh \\\"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\\\" .agents/hooks/allow-scratchpad.py\"",
+   "mutated": "\"command\": \"sh \\\"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\\\" .claude/hooks/allow-scratchpad.py\"",
+   "case": "WIRING · it points directly to .agents/hooks/allow-scratchpad.py",
+   "block": "WIRING · the master and the settings entry agree on the single source",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_allow_scratchpad.py"
+   ]
+  },
+  {
+   "id": "M3 readonly-chain hook wiring check rejects stray .claude/hooks path",
+   "file": ".claude/settings.json",
+   "original": "\"command\": \"sh \\\"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\\\" .agents/hooks/allow-readonly-chain.py\"",
+   "mutated": "\"command\": \"sh \\\"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\\\" .claude/hooks/allow-readonly-chain.py\"",
+   "case": "WIRING · it points directly to .agents/hooks/allow-readonly-chain.py",
+   "block": "WIRING · the master and the settings entry agree on the single source",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_allow_readonly_chain.py"
+   ]
+  }
+ ]
+}
