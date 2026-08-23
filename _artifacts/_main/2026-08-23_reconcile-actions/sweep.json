@@ -55,16 +55,16 @@
   {
    "id": "M7 the line number is off by one",
    "file": ".agents/scripts/jira_feed.py",
-   "original": "            items.append((i + 1, m.group(1).strip()))",
-   "mutated": "            items.append((i, m.group(1).strip()))",
+   "original": "            items.append((i + 1, i + 1, m.group(1).strip()))",
+   "mutated": "            items.append((i, i + 1, m.group(1).strip()))",
    "case": "A1 ...and every open row is named with its line number",
    "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
   },
   {
    "id": "M8 an open section reports 0 instead of the HELD 3",
    "file": ".agents/scripts/jira_feed.py",
-   "original": "      --source measured|operator\\n\")\n    return 3",
-   "mutated": "      --source measured|operator\\n\")\n    return 0",
+   "original": "   can end the section and close the ticket over rows nobody checked.\\n\")\n    return 3",
+   "mutated": "   can end the section and close the ticket over rows nobody checked.\\n\")\n    return 0",
    "case": "A1 an open section EXITS 3 - the same HELD code `finish` uses",
    "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
   },
@@ -79,8 +79,8 @@
   {
    "id": "M10 the tick writes the proof but leaves the box OPEN",
    "file": ".agents/scripts/jira_feed.py",
-   "original": "    lines[line - 1] = f\"{prefix}[x]{gap}",
-   "mutated": "    lines[line - 1] = f\"{prefix}[ ]{gap}",
+   "original": "    if end == line:\n        lines[line - 1] = f\"{prefix}[x]{gap}",
+   "mutated": "    if end == line:\n        lines[line - 1] = f\"{prefix}[ ]{gap}",
    "case": "A2 the row is now ticked",
    "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
   },
@@ -95,7 +95,7 @@
   {
    "id": "M12 the tick reports success and writes nothing",
    "file": ".agents/scripts/jira_feed.py",
-   "original": "        wt.write_text(new, encoding=\"utf-8\")",
+   "original": "        wf.write_exact(wt, new)",
    "mutated": "        pass",
    "case": "A2 EXACTLY ONE line changed, and it is the one asked for",
    "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
