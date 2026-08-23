@@ -2458,16 +2458,28 @@ def main() -> int:
         # ("the Task DOOR - it opens a PR against main and stops"), and its law blocks loop over
         # `PAIRS` - so a `twin-law` marker in these files is never compared. A `grep -c` proves
         # the string appears; it cannot see that one copy drifted.
-        CLOSING_DOORS = ("smh-close-task-merge-tree.md", "cicd-close-story-merge-tree.md",
-                         "smh-merge-multiple-workingtrees.md", "cicd-merge-epic-workingtrees.md")
         OPEN, CLOSE = "<!-- reconcile-law -->", "<!-- /reconcile-law -->"
         CDIR = ROOT / ".agents/commands"
+        # ⛔ DERIVED FROM THE TREE, NEVER A HAND-WRITTEN LIST. `completion-not-illusion.md` §4
+        # says reconcile is mandatory in EVERY command that runs `jira_feed.py finish`; a literal
+        # four-name tuple cannot enforce that, and a fifth closing door added later would pass
+        # this block in silence. Same reasoning `test_twin_parity.counterparts()` states for
+        # PAIRS: "a list that checks itself against itself is a list that cannot go stale in the
+        # one direction that matters". Keyed on the CALL, not a mention - three other command
+        # bodies name the verb in prose and are correctly not closing doors.
+        CALL = re.compile(r"jira_feed\.py finish (?:--key|--walkthrough)")
+        CLOSING_DOORS = tuple(sorted(
+            f.name for f in CDIR.glob("*.md")
+            if CALL.search(f.read_text(encoding="utf-8-sig", errors="replace"))))
 
         # ANTI-VACUITY FIRST: every row below loops over these files, and a loop over a missing
         # set passes silently.
-        c.check("CS-17 A all four closing doors exist",
-                all((CDIR / n).is_file() for n in CLOSING_DOORS),
-                str([n for n in CLOSING_DOORS if not (CDIR / n).is_file()]))
+        # ANTI-VACUITY, and it has to bite BOTH ways now that the set is derived: an empty or
+        # one-element set would satisfy every loop below it, and "all copies are byte-equal" is
+        # trivially true of one copy.
+        c.check("CS-17 A the closing-door set is derived and plural",
+                len(CLOSING_DOORS) >= 4 and all((CDIR / n).is_file() for n in CLOSING_DOORS),
+                f"derived: {CLOSING_DOORS}")
 
         blocks: dict[str, str] = {}
         for name in CLOSING_DOORS:

@@ -996,7 +996,23 @@ python3 .agents/scripts/jira_feed.py reconcile-actions --walkthrough <path>   # 
 ```
 
 Bare, it lists every open row **with its line number** and exits `3` — `finish`'s own HELD code. It
-reads a file and writes that file: no board, no key, no network. Then you settle rows one at a time:
+reads a file and writes that file: no board, no key, no network.
+
+⛔ **It counts only what YOU can settle, and that is the point of reusing `finish`'s codes.** The
+**merge row** is listed and tagged but never counted: `finish` computes that one from the repo
+(SCC-175) and the verb refuses to tick it, so counting it would mean answering **HELD** on a file
+`finish` answers **CLEAR** — and since almost every walkthrough carries a merge row, the verb could
+essentially never reach `0`. That was live and shipped-adjacent: caught by a review lens after the
+author had read the wrong output as correct. A **ceremony** row still blocks, because `finish`
+refuses on one — but it is reported as something to **DELETE**, not as work you owe.
+
+⛔ **If you delete a row, RE-RUN the listing before the next tick.** Ticking preserves line numbers
+by construction; **deleting shifts every row below it**, and a number from the stale listing then
+lands on a different open row — which `--tick` would accept, because that line really is open. Pass
+`--expect "<text from the row>"` and it is checked for you. The listing's own *"DELETE the row"* tag
+is what makes this reachable, so it is not a hypothetical.
+
+Then you settle rows one at a time:
 
 ```bash
 … reconcile-actions --walkthrough <path> --tick <line> --evidence "<what proves it>"       --source measured|operator
@@ -1009,10 +1025,27 @@ written into the row, in the lane's own commit, where you and the review both re
 is neither proved nor answered **stays open** and gets reported — that is a row genuinely holding
 the ticket, and it is the only kind that should.
 
-It refuses five ways and writes nothing on any of them: a line that is not an open row (a stale
-number, an already-settled row, a `- [ ]` from the agent's own `## Task Checklist`, a fenced
-example) · **empty** evidence · **contentless** evidence · a **ceremony** row (SCC-193 — the agent
-runs those; delete the row) · and the **merge** row (SCC-175 — `finish` computes that one).
+It refuses **seven** ways and writes nothing on any of them: no `## Your Actions` section at all ·
+a line that is not an open row (a stale number, an already-settled row, a `- [ ]` from the agent's
+own `## Task Checklist`, a fenced example) · an `--expect` the row no longer contains · **empty**,
+**contentless**, or **multi-line** evidence · a **merge** row (SCC-175 — `finish` computes that one)
+· a **ceremony** row (SCC-193 — the agent runs those; delete the row) · and evidence that would
+*manufacture* a merge row out of an ordinary one.
+
+⛔ **EVIDENCE IS ONE LINE, and this is a fail-open the review caught, not a style rule.** The proof
+is written into the walkthrough **verbatim**. A newline in it puts a new line into the file: one
+starting `## ` **ends the section**, one carrying a fence marker **hides the rest of the file**, and
+either way `finish` reads *"nothing owed"* and **closes the ticket over rows nobody checked** —
+while the verb prints *"`## Your Actions` is now CLEAR"*. Measured before the fix, on real output
+pasted into `--evidence`. It is refused rather than silently collapsed: reflowing a paste would put
+words in the operator's mouth in the one place the file exists to quote them. `--date` takes the
+same vector and must be a plain `YYYY-MM-DD`.
+
+ⓘ **The verb rewrites the whole file, so it reads the way a writer must.** `wf.read_exact` /
+`write_exact` — *"Byte-preserving read for files we will WRITE BACK"* — because the ordinary reader
+is `utf-8-sig` + `errors="replace"` + universal newlines, and on a round trip each of those is
+destructive: an undecodable byte came back **U+FFFD permanently**, a BOM was swallowed, and a CRLF
+walkthrough was rewritten wholly to LF (the reverse on the PC). All three measured.
 
 ⚠️ **The contentless check is a FLOOR, not a content judge, and it is two layers with a division of
 labour worth knowing.** A **length/word floor** does the volume — under **16 characters** or **3

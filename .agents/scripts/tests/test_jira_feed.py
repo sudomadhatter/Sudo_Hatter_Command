@@ -3990,13 +3990,15 @@ As **an admin**, I want **archive**, so that **nothing is lost.**
             code, out = ra(p)
             c.check("A1 an open section EXITS 3 - the same HELD code `finish` uses",
                     code == 3, f"exit={code}: {out.strip()[:300]}")
+            # ⛔ PADDED, because `f"L{n}" in out` is a SUBSTRING test: "L1" matches "L10", so a
+            # fixture whose rows moved into double digits would stop discriminating silently.
             c.check("A1 ...and every open row is named with its line number",
-                    all(f"L{n}" in out for n in (L_C0, L_CLICK, L_MERGE, L_ORDER)),
+                    all(f"  L{n}  " in out for n in (L_C0, L_CLICK, L_MERGE, L_ORDER)),
                     f"missing a line number: {out.strip()[:400]}")
             # Bound to `code == 3` for the same reason as the refusal marker above: "the
             # string is absent" is trivially true of the empty output an unknown verb produces.
             c.check("A1 ...the SETTLED row is not listed",
-                    code == 3 and f"L{L_C1}" not in out, out.strip()[:300])
+                    code == 3 and f"  L{L_C1}  " not in out, out.strip()[:300])
             # ⛔ ANTI-VACUITY. `## Task Checklist` is full of `- [ ]` rows that are the AGENT's.
             # Listing them would hold every ticket forever - the mirror of the bug being fixed.
             c.check("A1 ...and the AGENT's own checklist rows are invisible",
@@ -4109,9 +4111,13 @@ As **an admin**, I want **archive**, so that **nothing is lost.**
                 str(sorted(e for e in jira_feed._GENERIC_EVIDENCE
                            if len(e) < jira_feed._MIN_EVIDENCE_CHARS
                            or len(e.split()) < jira_feed._MIN_EVIDENCE_WORDS)))
-        c.check("A3i ...and the set is not empty, which would also satisfy the row above",
-                len(jira_feed._GENERIC_EVIDENCE) >= 10,
-                str(len(jira_feed._GENERIC_EVIDENCE)))
+        # ⛔ "Not empty" was `>= 10` against a 19-entry set - pruning nine would have passed.
+        # The property that actually matters is that every entry is REFUSED end to end, which
+        # also fails if the set is emptied (`all([])` is True, so the count guards that).
+        c.check("A3i ...and EVERY entry is genuinely refused, not just listed",
+                len(jira_feed._GENERIC_EVIDENCE) > 0
+                and all(not jira_feed.evidence_ok(e)[0] for e in jira_feed._GENERIC_EVIDENCE),
+                str([e for e in jira_feed._GENERIC_EVIDENCE if jira_feed.evidence_ok(e)[0]]))
 
         # ⛔ THE FLOOR NEEDS ITS OWN CASE, and designing the mutant table is what showed it.
         # A3d ticks with "done", which the DENY-SET catches - so deleting the length/word floor
@@ -4163,6 +4169,205 @@ As **an admin**, I want **archive**, so that **nothing is lost.**
                            "--source", "operator")
             c.check("A3 (control, must stay green) a REAL operator row with REAL words is ACCEPTED",
                     code == 0, f"exit={code}: {out.strip()[:300]}")
+
+        # ── The review's edge-case findings, every one reproduced on the real CLI first ──
+        #
+        # ⛔ A3j IS THE CRITICAL ONE. `evidence_ok` normalised a COLLAPSED copy while `tick_row`
+        # wrote the RAW string, so a newline in the evidence went into the walkthrough. A line
+        # starting `## ` ends the section for `_collect`; a stray ``` opens a fence `_unfenced`
+        # hides the rest of the file behind. Either way `open_actions` returns `[]` rather than
+        # `None`, `cmd_finish` takes the "nothing owed" path, and the ticket CLOSES over rows
+        # nobody checked - while this verb prints "`## Your Actions` is now CLEAR". Measured
+        # before the fix: two open rows survived and `open_actions` returned `[]`.
+        for label, ev in (("a heading", "ran the suite:\n## Summary\n12 passed"),
+                          ("a fence", "the doc opens with\n```bash\npython3 check_gate.py"),
+                          ("a bare newline", "ran the suite\nand it passed cleanly here")):
+            with TempDir() as tmp:
+                p = wt_file(tmp)
+                raw = p.read_bytes()
+                code, out = ra(p, "--tick", str(L_C0), "--evidence", ev, "--source", "measured")
+                c.check(f"A3j evidence carrying {label} is refused",
+                        code == 2 and REFUSAL_MARK in out, f"exit={code}: {out.strip()[:250]}")
+                c.check(f"A3j - and NOTHING was written ({label})",
+                        p.read_bytes() == raw, "a line break reached the file")
+        with TempDir() as tmp:   # the whole point: the OTHER rows must still hold the ticket
+            p = wt_file(tmp)
+            ra(p, "--tick", str(L_C0), "--evidence", "ran it:\n## Summary\nok", "--source", "measured")
+            c.check("A3j ...so `open_actions` still HOLDS the ticket",
+                    len(jira_feed.open_actions(p.read_text(encoding="utf-8"))) == 4,
+                    str(jira_feed.open_actions(p.read_text(encoding="utf-8"))))
+
+        # A3k · the proof becomes part of the row, so it can CREATE a merge row that `finish`
+        # then re-opens forever. `tick_row` refused to TICK one; nothing stopped it writing one.
+        with TempDir() as tmp:
+            p = wt_file(tmp)
+            raw = p.read_bytes()
+            code, out = ra(p, "--tick", str(L_C0), "--source", "operator",
+                           "--evidence", "SCC-280 lands first, then /smh-close-task-merge-tree")
+            c.check("A3k evidence that would MANUFACTURE a merge row is refused",
+                    code == 2 and REFUSAL_MARK in out, f"exit={code}: {out.strip()[:250]}")
+            c.check("A3k - and NOTHING was written", p.read_bytes() == raw, "the file changed")
+
+        # A3l · `--expect` verifies the ROW, not the number. Both directions.
+        with TempDir() as tmp:
+            p = wt_file(tmp)
+            raw = p.read_bytes()
+            code, out = ra(p, "--tick", str(L_ORDER), "--evidence", GOOD, "--source", "measured",
+                           "--expect", "store the Jira API token")
+            c.check("A3l --expect refuses when the row is not the one you read",
+                    code == 2 and REFUSAL_MARK in out, f"exit={code}: {out.strip()[:250]}")
+            c.check("A3l - and NOTHING was written", p.read_bytes() == raw, "the file changed")
+        with TempDir() as tmp:
+            p = wt_file(tmp)
+            code, _ = ra(p, "--tick", str(L_C0), "--evidence", GOOD, "--source", "measured",
+                         "--expect", "store the Jira API token")
+            c.check("A3l (control) --expect ACCEPTS when it does match", code == 0, f"exit={code}")
+
+        # A3m · `--date` lands on the same line as the evidence and took the same vector.
+        with TempDir() as tmp:
+            p = wt_file(tmp)
+            raw = p.read_bytes()
+            code, out = ra(p, "--tick", str(L_C0), "--evidence", GOOD, "--source", "measured",
+                           "--date", "today\n## Summary")
+            c.check("A3m --date must be a plain ISO date",
+                    code == 2 and REFUSAL_MARK in out, f"exit={code}: {out.strip()[:200]}")
+            c.check("A3m - and NOTHING was written", p.read_bytes() == raw, "the file changed")
+
+        # ⛔ A2c · THIS VERB REWRITES THE WHOLE FILE, so it must not damage the bytes it did not
+        # touch. `wf.read_text` is utf-8-sig + errors="replace" + universal newlines, and all
+        # three are destructive on a round trip. Measured before the fix: `caf\xe9` came back
+        # U+FFFD permanently, a BOM was swallowed, and a CRLF walkthrough was rewritten to LF.
+        with TempDir() as tmp:
+            p = tmp / "walkthrough.md"
+            p.write_bytes(b"\xef\xbb\xbf# W\r\n\r\n## Your Actions\r\n\r\n"
+                          b"- [ ] **C0** store the token for caf\xe9.\r\n"
+                          b"- [ ] **C1** attach the plan.\r\n")
+            code, out = ra(p, "--tick", "5", "--evidence", GOOD, "--source", "measured")
+            got = p.read_bytes()
+            c.check("A2c the tick lands on a CRLF/BOM/invalid-byte file",
+                    code == 0, f"exit={code}: {out.strip()[:200]}")
+            c.check("A2c the BOM survives", got.startswith(b"\xef\xbb\xbf"), repr(got[:8]))
+            c.check("A2c CRLF is not rewritten to LF",
+                    got.count(b"\r\n") == 6 and b"\n\n" not in got.replace(b"\r\n", b"|"),
+                    f"crlf={got.count(bytes([13,10]))}")
+            c.check("A2c the undecodable byte is preserved, not replaced with U+FFFD",
+                    b"caf\xe9" in got and b"\xef\xbf\xbd" not in got, repr(got[-90:]))
+
+        # A2d · `splitlines` breaks on \u2028 but `rstrip("\r\n")` never knew about it, so the
+        # separator was dropped on write: two rows welded and the open one below it vanished.
+        with TempDir() as tmp:
+            p = wt_file(tmp, "# W\n\n## Your Actions\n\n"
+                             "- [ ] **C0** first row.\u2028- [ ] **C1** second row.\n")
+            code, _ = ra(p, "--tick", "5", "--evidence", GOOD, "--source", "measured")
+            left = jira_feed.open_actions(p.read_text(encoding="utf-8"))
+            c.check("A2d an exotic line separator does not weld the row below into the tick",
+                    code == 0 and left == ["**C1** second row."], f"exit={code} left={left}")
+
+        # A1d · an empty `- [ ]` is a real obligation, but printed bare it is a line number with
+        # nothing to check, next to a banner ordering the reader to check it.
+        with TempDir() as tmp:
+            p = wt_file(tmp, "# W\n\n## Your Actions\n\n- [ ]\n")
+            code, out = ra(p)
+            c.check("A1d an empty row is listed with a placeholder, not as a bare number",
+                    code == 3 and "(empty row" in out, f"exit={code}: {out.strip()[:200]}")
+
+        # ⛔ A1e · THE EXIT CODE MUST ANSWER THE QUESTION `finish` ANSWERS. Reproduced: with every
+        # operator obligation settled, the verb still said "1 row(s) still open" and exited 3 -
+        # over the MERGE row, which it refuses to tick and which `finish` clears from the repo
+        # (SCC-175). Almost every walkthrough carries one, so the verb could essentially never
+        # reach 0, and the door's rule 3 would report a finished lane as held: SCC-288 rebuilt
+        # for the merge row. Found by the blind lens; it was live in this lane's own dogfood run
+        # and I had read that output as correct.
+        with TempDir() as tmp:
+            p = wt_file(tmp, "# W\n\n## Your Actions\n\n"
+                             "- [x] **C0** settled.\n"
+                             "- [ ] **The merge itself** - lands via this branch's PR.\n")
+            code, out = ra(p)
+            c.check("A1e a merge row ALONE does not hold the verb - it exits 0 like `finish`",
+                    code == 0, f"exit={code}: {out.strip()[:300]}")
+            c.check("A1e ...and it is still LISTED, attributed to `finish`",
+                    "  L6  " in out and "merge row" in out, out.strip()[:300])
+        with TempDir() as tmp:   # the complement: a real row still holds
+            p = wt_file(tmp, "# W\n\n## Your Actions\n\n"
+                             "- [ ] **C0** store the token.\n"
+                             "- [ ] **The merge itself** - lands via this branch's PR.\n")
+            code, out = ra(p)
+            c.check("A1e (complement) a settleable row beside it STILL holds at 3",
+                    code == 3 and "1 row(s) you must settle" in out,
+                    f"exit={code}: {out.strip()[:300]}")
+
+        # A1f · a CEREMONY row is not operator work, but it still blocks - `finish` REFUSES on
+        # one (exit 2). So it is reported as something to DELETE, and the listing says to re-run
+        # afterwards, because deleting shifts every number below it.
+        with TempDir() as tmp:
+            p = wt_file(tmp, "# W\n\n## Your Actions\n\n"
+                             "- [ ] Click **Merge** on the PR when CI is green.\n")
+            code, out = ra(p)
+            c.check("A1f a ceremony row still blocks, and is reported as a DELETE",
+                    code == 3 and "DELETE" in out, f"exit={code}: {out.strip()[:300]}")
+            c.check("A1f ...and the banner warns that deleting invalidates the numbers",
+                    "RE-RUN" in out.upper(), out.strip()[:600])
+
+        # TA-2 · the decoration strip is the deny-set's ONLY defence against "add a full stop",
+        # and a mutant emptying `_EVIDENCE_TRIM` survived all 462 cases. The code comment claims
+        # "a deny-set alone is defeated by adding a full stop"; this is that claim, pinned.
+        for variant in ("`Confirmed By Operator.`", "confirmed by operator!!",
+                        "  *Confirmed by operator*  "):
+            c.check(f"A3n decorated/cased deny-set text is still refused: {variant!r}",
+                    not jira_feed.evidence_ok(variant)[0], jira_feed.evidence_ok(variant)[1])
+
+        # TA-3 · `_TICK_RE` and `_OPEN_ITEM_RE` must agree about what an open row looks like.
+        # Narrowing `_TICK_RE` to `^(- )\[\s\]` survived all 462 cases: every fixture was a
+        # flush `- [ ]`, so the "unreachable, kept as a hard stop" comment was untested.
+        with TempDir() as tmp:
+            p = wt_file(tmp, "# W\n\n## Your Actions\n\n"
+                             "  - [ ] **C0** an indented row.\n"
+                             "* [ ] **C1** a star bullet.\n")
+            code, _ = ra(p, "--tick", "5", "--evidence", GOOD, "--source", "measured")
+            code2, _ = ra(p, "--tick", "6", "--evidence", GOOD, "--source", "measured")
+            got = p.read_text(encoding="utf-8").splitlines()
+            c.check("A2e an INDENTED row ticks and keeps its indentation verbatim",
+                    code == 0 and got[4].startswith("  - [x] **C0**"), repr(got[4]))
+            c.check("A2e a `*` bullet ticks and keeps its bullet character",
+                    code2 == 0 and got[5].startswith("* [x] **C1**"), repr(got[5]))
+
+        # TA-6 · neither the marker nor the date was pinned; deleting both from the proof string
+        # survived all 462 cases, because A2 only checked `(measured)` and the evidence text.
+        with TempDir() as tmp:
+            p = wt_file(tmp)
+            ra(p, "--tick", str(L_C0), "--evidence", GOOD, "--source", "measured",
+               "--date", "2026-01-01")
+            row = p.read_text(encoding="utf-8").splitlines()[L_C0 - 1]
+            c.check("A2f the `-- verified` marker is in the row",
+                    jira_feed.TICK_MARK in row, repr(row))
+            c.check("A2f ...and the DATE the caller gave, not today's",
+                    "2026-01-01" in row, repr(row))
+
+        # TA-4 · the missing-walkthrough refusal is the one branch with no case; `if False:`
+        # survived the whole suite. The reject half of a gate is half the gate.
+        with TempDir() as tmp:
+            code, out = ra(tmp / "nope.md")
+            c.check("A1g a walkthrough that does not exist is REFUSED, with the marker",
+                    code == 2 and REFUSAL_MARK in out, f"exit={code}: {out.strip()[:200]}")
+
+        # TA-5 · the listing's guidance tags are what the agent acts on; blanking them survived.
+        with TempDir() as tmp:
+            p = wt_file(tmp)
+            _, out = ra(p)
+            c.check("A1h the listing TELLS the agent what to do with each special row",
+                    "leave it" in out and "DELETE the row" in out, out.strip()[:600])
+
+        # TA-9 · one walk, so the two readers cannot disagree - pinned across TWO sections,
+        # which is the shape SCC-155 was raised on.
+        TWO = ("# W\n\n## Your Actions\n\n- [ ] A\n\n## Notes\n\nx\n\n"
+               "## Your Actions\n\n- [ ] B that\n      wraps\n")
+        c.check("A1i `open_actions` and `open_action_rows` agree, across two sections",
+                jira_feed.open_actions(TWO) == [r for _, _, r in jira_feed.open_action_rows(TWO)]
+                == ["A", "B that wraps"],
+                f"{jira_feed.open_actions(TWO)} vs {jira_feed.open_action_rows(TWO)}")
+        c.check("A1i ...and both answer None for a file with no section",
+                jira_feed.open_actions("# W\n") is None
+                and jira_feed.open_action_rows("# W\n") is None, "one of them collapsed to []")
 
         # ── A5 · end to end: the row SCC-288 hung on, reconciled, then finish is clear ──
         with TempDir() as tmp:

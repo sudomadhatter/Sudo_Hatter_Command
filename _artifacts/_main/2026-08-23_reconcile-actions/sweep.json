@@ -135,6 +135,118 @@
    "mutated": "_GENERIC_EVIDENCE = frozenset()\n_UNUSED_EVIDENCE = frozenset({",
    "case": "A3i ...and the set is not empty, which would also satisfy the row above",
    "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M17 a line break in the evidence reaches the file again (the critical fail-open)",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    m = _CONTROL_RE.search(raw)\n    if m:",
+   "mutated": "    m = _CONTROL_RE.search(raw)\n    if False:",
+   "case": "A3j evidence carrying a heading is refused",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M18 the proof may MANUFACTURE a merge row again",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    if not is_merge_row(row) and is_merge_row(f\"{row} {proof}\"):",
+   "mutated": "    if False:",
+   "case": "A3k evidence that would MANUFACTURE a merge row is refused",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M19 --expect stops verifying the row",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    if expect and expect not in row:",
+   "mutated": "    if False:",
+   "case": "A3l --expect refuses when the row is not the one you read",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M20 --date accepts free text again",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "        if not _ISO_DATE_RE.match(args.date or \"\"):",
+   "mutated": "        if False:",
+   "case": "A3m --date must be a plain ISO date",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M21 the read goes back to the lossy, newline-translating one",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    text = wf.read_exact(wt)",
+   "mutated": "    text = wf.read_text(wt)",
+   "case": "A2c the undecodable byte is preserved, not replaced with U+FFFD",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M22 the write goes back to os.linesep translation",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "        wf.write_exact(wt, new)",
+   "mutated": "        wt.write_text(new, encoding=\"utf-8\")",
+   "case": "A2c CRLF is not rewritten to LF",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M23 the terminator is guessed from CR/LF again, welding exotic separators",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    parts = raw.splitlines()\n    content = parts[0] if parts else raw\n    nl = raw[len(content):]",
+   "mutated": "    content = raw.rstrip(\"\\r\\n\")\n    nl = raw[len(content):]",
+   "case": "A2d an exotic line separator does not weld the row below into the tick",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M24 the merge row is counted as operator work again (HELD where finish says CLEAR)",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    settleable = [(n, e, r) for n, e, r in rows if not is_merge_row(r) and r not in cer]",
+   "mutated": "    settleable = [(n, e, r) for n, e, r in rows]",
+   "case": "A1e a merge row ALONE does not hold the verb - it exits 0 like `finish`",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M25 the wrapped-row branch collapses and the proof splices through the sentence",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    if end == line:",
+   "mutated": "    if True:",
+   "case": "A2b the proof lands after the operator's LAST word, not through the middle",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M26 the decoration strip is emptied - a full stop defeats the deny-set",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "_EVIDENCE_TRIM = \" \\t`'\\\"*_.!?,;:\"",
+   "mutated": "_EVIDENCE_TRIM = \" \"",
+   "case": "A3n decorated/cased deny-set text is still refused: '`Confirmed By Operator.`'",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M27 _TICK_RE narrows and stops agreeing with _OPEN_ITEM_RE",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "_TICK_RE = re.compile(r\"^(\\s*[-*]\\s*)\\[\\s\\](\\s*)(.*?)\\s*$\")",
+   "mutated": "_TICK_RE = re.compile(r\"^(- )\\[\\s\\](\\s*)(.*?)\\s*$\")",
+   "case": "A2e an INDENTED row ticks and keeps its indentation verbatim",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M28 a missing walkthrough is no longer refused",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    if not wt.is_file():\n        say(f\"{REFUSED} no walkthrough at `{wt}`\")",
+   "mutated": "    if False:\n        say(f\"{REFUSED} no walkthrough at `{wt}`\")",
+   "case": "A1g a walkthrough that does not exist is REFUSED, with the marker",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M29 the listing stops telling the agent what to do with a special row",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "            tag = \"   [merge row - `finish` computes this one; leave it]\"",
+   "mutated": "            tag = \"\"",
+   "case": "A1h the listing TELLS the agent what to do with each special row",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
+  },
+  {
+   "id": "M30 open_actions collapses `no section` into `nothing owed`",
+   "file": ".agents/scripts/jira_feed.py",
+   "original": "    return None if rows is None else [t for _, _, t in rows]",
+   "mutated": "    return [] if rows is None else [t for _, _, t in rows]",
+   "case": "A1i ...and both answer None for a file with no section",
+   "block": "SCC-298 · reconcile-actions: the close-out VERIFIES the task list"
   }
  ]
 }
