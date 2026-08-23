@@ -67,6 +67,14 @@
       "mutated": "{n for n in (str(c).strip().lstrip(\"./\") for c in (touch.get(k) or {}).get(\"creates\") or [])",
       "unfiltered": true,
       "case": "SCC-295 A5c an import of `.agents` matches a dotted `creates` entry"
+    },
+    {
+      "id": "M9 lstrip('./') INSIDE the prefix branch - the defect reborn for `./`+dotted",
+      "file": ".agents/scripts/label_tasks.py",
+      "original": "            s = s[2:]",
+      "mutated": "            s = s.lstrip(\"./\")",
+      "unfiltered": true,
+      "case": "SCC-295 A11 a `./` prefix in front of a DOTTED path strips only the prefix"
     }
   ]
 }

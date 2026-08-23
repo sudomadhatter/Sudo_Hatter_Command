@@ -491,6 +491,18 @@ def main() -> int:
     c.check("SCC-295 A10 an empty `creates` entry does not lock every lane",
             not g2["A"] and not g2["B"], str(g2))
 
+    # ⛔ A11 · the LAST uncovered shape, found by the test-adequacy lens: a `./` prefix
+    # in front of a DOTTED path. Both halves of the bug meet on one input, and every
+    # other case misses it - `./x.py` has no dot to eat, `.agents/x.py` has no prefix
+    # to strip. Swapping `s[2:]` for `lstrip("./")` INSIDE the branch resurrects the
+    # whole SCC-295 defect for exactly this shape and leaves 146 cases green.
+    c.check("SCC-295 A11 a `./` prefix in front of a DOTTED path strips only the prefix",
+            _n is not None and _n("./.agents/x.py") == ".agents/x.py"
+            and _n("./.mcp.json") == ".mcp.json"
+            and _n("././.gitignore") == ".gitignore",
+            "no norm_path" if _n is None else
+            f'{_n("./.agents/x.py")!r} {_n("./.mcp.json")!r} {_n("././.gitignore")!r}')
+
     # ── SCC-295 · end to end, through the board surface itself ────────────────
     with TempDir() as tmp:
         r = run_resolve(tmp, [child("A-1", "1.1"), child("A-2", "1.2")],
