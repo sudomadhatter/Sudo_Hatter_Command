@@ -200,10 +200,10 @@ defect in this lane's work, and neither is fixable from inside this repo.
 ## Your Actions
 
 - [ ] **The merge itself** — lands via this branch's PR against `main`.
-- [ ] **Decide when your opencode and Antigravity menus should pick up the changed doors.** This
+- [x] **Decide when your opencode and Antigravity menus should pick up the changed doors.** This
       lane synced only the in-repo mirrors (`-NoGlobals`), deliberately, because it had not landed.
       The machine-global caches still carry the pre-SCC-298 text, and opencode needs a restart to
-      rebuild its catalog either way.
+      rebuild its catalog either way. -- verified 2026-08-23 (measured): Ran sync-agents.ps1 -GlobalsOnly at main 461152c: opencode global 59 cmds, antigravity global 38 cmds, codex skills 56 bmad-*. Verified after: all four close-out doors carry the reconcile-law block in BOTH caches (grep -c reconcile-law = 2 each; it was 0 in both before the run). Restart opencode to rebuild its catalog.
 
 ---
 
