@@ -55,11 +55,20 @@ mandatory SOP edit and its own tests. It is written down where the next lane wil
 
 ## Gates
 
+Bare, never piped — each line carries its own exit code:
+
 ```
-run_all.py                              -> see below, bare, own exit code
-workflow_lint.py --toolkit-only         -> see below
-check_maps.py --depth3-only --strict    -> see below
+task_preflight.py --fetch --expect-key SCC-296 -> exit 1  VERDICT: clear to close out and merge
+                                                  LANE: LOCAL · 0 error(s), 1 warning(s)
+                                                  children: SCC-296: no subtasks (board reachable)
+run_all.py                                     -> exit 0, 52/52 files passed
+workflow_lint.py --toolkit-only                -> exit 0, 0 error(s), 0 warning(s), 8 info
+check_maps.py --depth3-only --strict           -> exit 0, silent
 ```
+
+The single warning is the worktree, which Step 5 prunes. `docs/migrations/` and
+`_artifacts/` are not SOP usage surfaces, so no SOP hunk was owed and no commit here
+carries `[sop-ok]`.
 
 ## Your Actions
 
