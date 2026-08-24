@@ -1,9 +1,9 @@
 # Skills INDEX — when to use which (family map)
 
-Router for the **skill surface an agent actually sees (~90)**, which comes from two places: the **32**
-authored skills in `.agents/skills/` (this repo is their master — shared, project-agnostic ONLY; a
-product's domain packs live in that product's own `.agents/skills/`, per `project-law.md`) plus the **56** `bmad-*` skills BMAD
-installs directly into `.claude/skills/` — the BMAD families below live there, not here, so don't go
+Router for the **skill surface an agent actually sees (~129)**: **73** local directories in
+`.agents/skills/` (**34** hand-authored skills + **39** generated command launchers), plus the **56**
+`bmad-*` skills BMAD installs directly into `.claude/skills/`. This repo is the local skills' master — shared, project-agnostic ONLY; a
+product's domain packs live in that product's own `.agents/skills/`, per `project-law.md`. The BMAD families below live there, not here, so don't go
 looking for them in the master dir. Unlike rules, **skills already self-route**: each has a
 `SKILL.md` with a `description:` that the harness surfaces, so you rarely pick one by hand — you invoke
 by intent or `/<skill-name>`. This INDEX is therefore a **family map** (so you know what domains exist),
@@ -20,7 +20,7 @@ skill's own description.
 | **Firebase / GCP** | infra + deploy | `firebase-*-basics` (auth, firestore, hosting, app-hosting, data-connect, ai-logic) · `cicd-deploy-backend` · `troubleshoot-cloudrun-deployment` |
 | **Backend / Python** | server + language patterns | `backend-dev-guidelines` · `python-patterns` |
 | **Frontend / UI** | React, design systems & fluid motion | `react-best-practices` · `ui-ux-pro-max` (styles, palettes, charts, stacks) · `playwright-frontend-check` (**read a running frontend** — console, `pageerror`, failing network rows with bodies, screenshots; Node, and it carries the sandbox + project-dependency traps. The instrument `/cicd-live-testing-team` reaches for; NOT the E2E door, which is `/cicd-e2e`) · `webm-alpha-video` (green-screen MP4 → alpha-transparent WebM) · **Emil motion & UI craft:** `emil-design-eng` · `apple-design` · `animate` · `animate-expo` · `review-animations` · `find-animation-opportunities` · `improve-animations` · `animation-vocabulary` · `ask-sonner` · `pick-ui-library` · `prototype` · `write-swift` · *PRD Guide:* `docs/_scc_sops_prds/frontend_UI_design_guide.md` |
-| **Prompting / diagrams / debug** | cross-cutting craft | `adk-prompting` · `v3-prompt-architecture` · `mermaid-diagram-standards` · `systematic-debugging` |
+| **Prompting / diagrams / debug** | cross-cutting craft | `v3-prompt-architecture` · `mermaid-diagram-standards` · `systematic-debugging` |
 | **Code quality gates** | is the code clean, and can you prove it | `cicd-clean-code-audit` — the auditor for `.agents/rules/code-standards.md`: machine floor (ruff · eslint · pyrefly · tsc) that can FAIL + a judgment pass (comment contract, AI-drift bans) that caps at CONCERNS. Diff-scoped. Runs standalone and as `/cicd-code-review` Step 3.5. · `code-review-engine` — the house review engine (SCC-116): lens fan-out → verify → triage → record over a diff the CALLER resolved, returning a severity floor. Invoked by the review commands, never run standalone. · `code-review-graph` — the house contract for the local code graph (MIT, Tree-sitter + SQLite, 30 MCP tools): ask it who-calls-this, what-breaks, what-has-no-test and what-does-this-diff-risk before you grep. Carries the merge-base rule and the measured precision limit. |
 | **Workspace / system craft** | how the repo is organized, secrets, and Task work lands | `workspace-structure` (tier model · reading-order · AGENTS.md-vs-INDEX.md · naming — the decision layer over `docs/workspace-standard.md`) · `keyway-secrets` (cross-platform secrets sharing & in-memory execution via Keyway) · `smh-close-task-merge-tree` (gate · merge · Jira Dev Record · prune for a non-BMAD Task) |
 

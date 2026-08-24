@@ -104,6 +104,9 @@ def main() -> int:
             _ok = "_artifacts/_main/INDEX.md".endswith(CL.NARRATIVE_LEDGERS)
             c.check("B11 convention 7 - the narrative ledgers are declared", _ok,
                     "" if _ok else "a ledger row naming a deleted file is history, not a broken link")
+            _ok = "_artifacts/INDEX-archive.md".endswith(CL.NARRATIVE_LEDGERS)
+            c.check("B11b convention 7 - the archive remains historical after the newest-50 rollover", _ok,
+                    "" if _ok else "archiving a ledger row must not turn its historical paths into live claims")
             # The continuity brief is one too, and `check_maps.py` is the authority: it carries
             # `PRUNE_KEEP_BLOCKS = 10`, so the house already models this file as a dated log whose
             # old end is PRUNED. A path in a five-week-old block is a mention; the fix is the prune.
