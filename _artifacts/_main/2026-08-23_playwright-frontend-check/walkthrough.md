@@ -193,6 +193,7 @@ lenses_counted:  5/5
 lenses_na:       none
 dispositions:    per-lens: blind-hunter=7/0/0 · edge-case-hunter=9/0/0 · literal-correctness-hunter=4/0/0 · acceptance-auditor=9/2/0 · test-adequacy-auditor=8/0/0
 severity_floor:  CONCERNS (raised by test-adequacy's `critical`; cleared by fixing it in-thread and re-gating)
+drift:           undeclared=0 · unimplemented=0 · incomplete=0 - dispositions in the findings table
 
 ⛔ **Disclosure — the fan-out ran at `18283ba`; this verdict is stamped at `a3c0cebd`.** The delta is
 exactly the fixes the lenses asked for. They were applied in-thread as the door requires, then
