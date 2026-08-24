@@ -335,9 +335,9 @@ MUST hold the TWO living docs, each carrying the `IsArtifact: true` + `ArtifactM
       BOTH, by machine, not by eye:
       1. `Status: review` — the file's Status agrees with the `sprint-status.yaml` row this step wrote.
       2. `## Dev Agent Record` is FILLED — context reference, completion notes, file list, change log —
-         with **no placeholder text**. The placeholders are fixed literals, so the check is one grep
-         that must return NOTHING:
-         `grep -nE '\{\{|\(2 fills:' <story-file>` — a hit inside the file is a story that finished ②
+         with **no placeholder text**. The template's placeholders are all `{{...}}` fills, so the
+         check is one grep that must return NOTHING:
+         `grep -n '{{' <story-file>` — a hit inside the file is a story that finished ②
          with its record unwritten, and it FAILS this checklist (the record is where agent-taken
          defaults are declared for ratification; unwritten, they ship unratified).
 

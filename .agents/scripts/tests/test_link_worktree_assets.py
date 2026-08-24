@@ -337,6 +337,38 @@ def main() -> int:
                     code == 0 and "link-worktree-assets" not in text,
                     f"exit={code} exclude:\n{text}")
 
+    if c.block("SCC-310 X5 · a TRUNCATED managed block (END sentinel lost) never eats user patterns"):
+        # Review finding (VERIFIED): with BEGIN present and END missing, the first cut treated
+        # everything to end-of-file as managed - the user's own exclude patterns below the
+        # block were rewritten away, and last-lane unlink deleted them outright.
+        with TempDir() as tmp:
+            plain = seed(tmp / "plain")
+            (plain / ".gitignore").write_text(".env\n", encoding="utf-8")
+            git(plain, "add", ".gitignore")
+            git(plain, "commit", "-qm", "ignore")
+            (plain / ".env").write_text("KEY=1\n", encoding="utf-8")
+            excl = plain / ".git" / "info" / "exclude"
+            excl.parent.mkdir(parents=True, exist_ok=True)
+            excl.write_text("user-above.txt\n"
+                            "# BEGIN link-worktree-assets (auto-managed - do not edit this block)\n"
+                            "/stale-managed-entry\n"
+                            "user-below.txt\n", encoding="utf-8")
+
+            lane = tmp / "lane"
+            git(plain, "worktree", "add", "-q", str(lane), "-b", "lane")
+            code, out = link(str(lane))
+            text = excl.read_text(encoding="utf-8")
+            c.check("X5a linking over a truncated block keeps BOTH user patterns",
+                    code == 0 and "user-above.txt" in text and "user-below.txt" in text,
+                    f"exit={code} exclude:\n{text}")
+
+            code, out = link("--unlink", str(lane))
+            text = excl.read_text(encoding="utf-8") if excl.is_file() else ""
+            c.check("X5b last-lane unlink removes only the managed block - user patterns survive",
+                    code == 0 and "user-above.txt" in text and "user-below.txt" in text
+                    and "link-worktree-assets" not in text,
+                    f"exit={code} exclude:\n{text}")
+
     return c.finish()
 
 

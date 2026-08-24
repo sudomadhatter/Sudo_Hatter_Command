@@ -91,7 +91,12 @@ def _split_managed_block(text: str) -> tuple[str, list[str]]:
     try:
         end = lines.index(EXCLUDE_END, start)
     except ValueError:
-        end = len(lines) - 1
+        # END sentinel lost (truncated edit): claiming everything below BEGIN would absorb
+        # the USER'S own exclude patterns into the managed block and delete them on
+        # last-lane unlink (review finding, verified). Claim only the sentinel line itself;
+        # any stale entries below it are kept as user content - residue, never data loss.
+        rest = lines[:start] + lines[start + 1:]
+        return "\n".join(rest).rstrip("\n") + ("\n" if rest else ""), []
     entries = [ln for ln in lines[start + 1:end] if ln.strip()]
     rest = lines[:start] + lines[end + 1:]
     return "\n".join(rest).rstrip("\n") + ("\n" if rest else ""), entries

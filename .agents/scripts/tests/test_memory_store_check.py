@@ -117,8 +117,50 @@ def main() -> int:
             c.check("I3c the delta run SHOUTS and names every removed file",
                     "similarity-gate.md" in out and "transition-probe.md" in out
                     and "field-paths.md" in out, out[-400:])
+            c.check("I3c2 ...and exits 2 (regression, not integrity)", code == 2, f"exit={code}")
             # Integrity alone would stay green here - MEMORY.md was reverted with the files.
             # The shout must not depend on a dead index row existing.
+
+            # The confirming re-run: the operator saw a shout (or VS Code hid it), runs the
+            # checker again by hand. A baseline advanced by the DETECTING run would answer
+            # "all fine" and the evidence would be gone - review finding, x3 corroborated.
+            code, out = check("--store", str(store), "--delta")
+            c.check("I3d a second run after damage still SHOUTS (baseline held, not advanced)",
+                    code == 2 and "similarity-gate.md" in out, f"exit={code}\n{out[-300:]}")
+
+            # Recovery restores the files; only THEN does the baseline move on.
+            git(repo, "checkout", "keeper", "--", "_artifacts/_memory")
+            code, out = check("--store", str(store), "--delta")
+            c.check("I3e after recovery the delta is silent again",
+                    code == 0 and "MISSING" not in out, f"exit={code}\n{out}")
+
+    if c.block("SCC-319 I6 · deliberate removal: --rebaseline is the acknowledgment, not silence"):
+        with TempDir() as tmp:
+            repo = seed_repo_with_store(tmp)
+            store = repo / "_artifacts" / "_memory"
+            check("--store", str(store), "--delta")            # baseline the 2-file store
+            # A memory-audit retirement: file AND its index row removed together.
+            (store / "mem-2.md").unlink()
+            idx = store / "MEMORY.md"
+            idx.write_text("\n".join(ln for ln in idx.read_text(encoding="utf-8").splitlines()
+                                     if "mem-2.md" not in ln) + "\n", encoding="utf-8")
+            code, out = check("--store", str(store), "--delta")
+            c.check("I6a a deliberate removal still shouts (the checker cannot read intent)",
+                    code == 2 and "mem-2.md" in out, f"exit={code}")
+            code, out = check("--store", str(store), "--delta", "--rebaseline")
+            c.check("I6b --rebaseline accepts the current store as the new baseline",
+                    code == 0, f"exit={code}\n{out}")
+            code, out = check("--store", str(store), "--delta")
+            c.check("I6c ...and the next run is silent", code == 0 and "MISSING" not in out,
+                    f"exit={code}\n{out}")
+
+    if c.block("SCC-319 I7 · an EXPLICIT --store that does not exist is an error, never a silent pass"):
+        with TempDir() as tmp:
+            code, out = check("--store", str(tmp / "no-such-dir"))
+            c.check("I7a explicit missing store exits non-zero and says so",
+                    code != 0 and "no-such" in out, f"exit={code}\n{out}")
+            # The no-flag default stays silent when the repo has no store (three of four
+            # covered repos have one; a hook firing in a storeless repo must not shout).
 
     if c.block("SCC-319 I4 · silent on a move that touches nothing under the store"):
         with TempDir() as tmp:

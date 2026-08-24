@@ -84,11 +84,16 @@ def _git_dir(store: Path) -> Path | None:
     return Path(rp.stdout.strip())
 
 
-def check_delta(store: Path) -> list[str]:
-    """Files present at the last check and gone now, by name. Updates the baseline.
+def check_delta(store: Path, rebaseline: bool = False) -> list[str]:
+    """Files present at the last check and gone now, by name.
 
     First run writes the baseline and reports nothing — there is nothing to compare.
-    A GROWN store is never a problem; only a drop is the incident's signature."""
+    A GROWN store is never a problem; only a drop is the incident's signature.
+
+    The baseline only advances when nothing is missing (review finding, x3): the DETECTING
+    run must not eat its own evidence — the operator's confirming re-run has to shout the
+    same names, not answer "all fine". A deliberate removal (memory-audit retirement) is
+    acknowledged with `rebaseline=True`, which accepts the current store as the new baseline."""
     gd = _git_dir(store)
     if gd is None:
         return []          # not in a git repo - no working-tree moves to guard against
@@ -99,12 +104,21 @@ def check_delta(store: Path) -> list[str]:
         try:
             previous = json.loads(state_path.read_text(encoding="utf-8")).get("files", [])
         except (json.JSONDecodeError, OSError):
-            previous = []
-    try:
-        state_path.write_text(json.dumps({"files": current}, indent=1) + "\n", encoding="utf-8")
-    except OSError:
-        pass               # a read-only git dir must not turn the checker into a crash
-    return [n for n in previous if n not in current]
+            # A corrupt baseline exactly when storage misbehaves must not re-baseline
+            # silently - say so, once, on stderr (advisory: hooks still exit 0).
+            print(f"memory-store-check: baseline {state_path} is unreadable - "
+                  f"re-baselining from the current store", file=sys.stderr)
+    gone = [] if rebaseline else [n for n in previous if n not in current]
+    if rebaseline or not gone:
+        try:
+            state_path.write_text(json.dumps({"files": current}, indent=1) + "\n",
+                                  encoding="utf-8")
+        except OSError:
+            # A read-only git dir must not crash the checker, but a delta that can never
+            # baseline is permanently inert - that must be visible, not silent.
+            print(f"memory-store-check: cannot write baseline {state_path} - "
+                  f"the delta check is NOT armed for this tree", file=sys.stderr)
+    return gone
 
 
 def main() -> int:
@@ -116,10 +130,19 @@ def main() -> int:
                          "that vanished (the git-move damage integrity cannot see)")
     ap.add_argument("--from-hook", metavar="HOOK",
                     help="label the output with the hook that fired (advisory context only)")
+    ap.add_argument("--rebaseline", action="store_true",
+                    help="accept the CURRENT store as the new delta baseline - the "
+                         "acknowledgment after a deliberate removal (memory-audit "
+                         "retirement); without it the shout repeats until recovery")
     args = ap.parse_args()
 
     if args.store:
         store = Path(args.store).resolve()
+        if not store.is_dir():
+            # An explicit path that does not exist is a caller error - answering exit 0
+            # would read as "store is whole" for a store never looked at (review finding).
+            print(f"memory-store-check: --store {store} is not a directory", file=sys.stderr)
+            return 2
     else:
         rp = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--show-toplevel"],
                             capture_output=True, text=True)
@@ -127,17 +150,16 @@ def main() -> int:
             print("memory-store-check: not inside a git repo and no --store given", file=sys.stderr)
             return 2
         store = Path(rp.stdout.strip()) / "_artifacts" / "_memory"
-
-    if not store.is_dir():
-        # A repo with no store is whole by definition (three of the four covered repos have
-        # one; a fresh project may not yet) - a hook firing there must stay silent.
-        return 0
+        if not store.is_dir():
+            # A repo with no store is whole by definition (three of the four covered repos
+            # have one; a fresh project may not yet) - a hook firing there stays silent.
+            return 0
 
     tag = f" ({args.from_hook})" if args.from_hook else ""
     code = 0
 
-    if args.delta:
-        gone = check_delta(store)
+    if args.delta or args.rebaseline:
+        gone = check_delta(store, rebaseline=args.rebaseline)
         if gone:
             print(f"⛔ MEMORY STORE REGRESSION{tag}: {len(gone)} file(s) present at the last "
                   f"check are MISSING from {store}:")
@@ -145,6 +167,8 @@ def main() -> int:
                 print(f"     MISSING  {n}")
             print("   A git working-tree move (reset/checkout/merge) removes store files "
                   "silently - recover with `git checkout <ref> -- <paths>` and verify by sha.")
+            print("   This repeats every run until the files are back; acknowledge a "
+                  "DELIBERATE removal with --rebaseline.")
             code = 2
 
     problems = check_store(store)

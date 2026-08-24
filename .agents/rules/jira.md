@@ -237,6 +237,8 @@ that actually rot. It now checks **placement** instead of type (no parent · par
 nested under another subtask · a parent lagging its children) and **never auto-fixes any of them**,
 because re-parenting is a board move and the right parent is the operator's call.
 
+### Labels
+
 **Label vocabulary** — a card holds ONE status but stacks labels, which is exactly why these are
 labels (a story can be quick-dev-eligible AND blocked at once). **Two writers, and which one owns a
 label is not cosmetic:**
@@ -247,7 +249,7 @@ label is not cosmetic:**
 | `blocked` | waiting on a linked blocker (the `Blocks` link names WHAT; pair with the `Blocking` status where the board has it) | ① `/cicd-write-story-tests`, at pickup |
 | **`parallel-ok`** | in the approved set the last check computed — safe to run beside **every other** 🟢 under that parent | ⭐ **the labelling pass, and nothing else** |
 | **`user-tasks`** | merged, but the walkthrough leaves something only the operator can decide — read the "User tasks" comment | ⭐ **`jira_feed.py finish`, at close-out** (SCC-155) |
-| **`running-bug-list`** / **`bugs-and-updates`** | **the ROLLING ticket** — the always-open `Bugs and Updates - <YYYY-MM>` Task that discovered work files under as a Subtask when no thematic parent fits (`work-consolidation.md` rule 1, rung 3). TWO labels, one ticket-at-a-time: `running-bug-list` is the BATON on the not-yet-started successor; `bugs-and-updates` is what a cycle wears once it has STARTED. Find the open one with BOTH labels — `labels IN (bugs-and-updates, running-bug-list) AND statusCategory != Done` — before you mint anything; a one-label search returns empty at the wrong moment and reads as "no rolling ticket", which is how a duplicate gets minted or a Done key reused (SCC-317). The pair is CROSS-BOARD: AVCH carries it too (AVCH-80), so a project lane finds its rolling ticket the same way | `jira_feed.py start` hands the baton on clone; the family label is by hand on the Task that opens the cycle (SCC-191) |
+| **`running-bug-list`** / **`bugs-and-updates`** | **the ROLLING ticket** — the always-open `Bugs and Updates - <YYYY-MM>` Task that discovered work files under as a Subtask when no thematic parent fits (`work-consolidation.md` rule 1, rung 3). TWO labels, one ticket-at-a-time: `running-bug-list` is the BATON on the not-yet-started successor; `bugs-and-updates` is what a cycle wears once it has STARTED. Find the open one with BOTH labels — `labels IN (bugs-and-updates, running-bug-list) AND statusCategory != Done` — before you mint anything; a one-label search returns empty at the wrong moment and reads as "no rolling ticket", which is how a duplicate gets minted or a Done key reused (SCC-317). During the handoff window the dual search returns TWO open rows — file new bugs into the `bugs-and-updates` one (the started cycle); the `running-bug-list` row only holds the baton. The pair is CROSS-BOARD: AVCH carries it too (AVCH-80), so a project lane finds its rolling ticket the same way | `jira_feed.py start` hands the baton on clone; the family label is by hand on the Task that opens the cycle (SCC-191) |
 
 **The labelling pass is one engine behind two commands**, and which one you run is decided by the
 parent, not by preference:
