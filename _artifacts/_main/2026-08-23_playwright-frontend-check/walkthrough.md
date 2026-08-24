@@ -177,6 +177,30 @@ frontend, or via `createRequire(ownerDir + '/')` from anywhere → resolves.
 
 ## Code Review (2026-08-23)
 
+### Step 0.7 — blast radius re-derived against current `origin/main`
+
+what moved: nothing. `origin/main` is still `fa490f7`, which is this lane's own merge-base, so 0 files landed while this was built and the TRUE overlap with `main` is empty. `git merge-tree --write-tree HEAD origin/main` returns a clean tree (`bad84e2`) with no conflict messages.
+what it changes here: nothing to re-resolve — no path this diff references was moved, renamed or deleted on `main`, and `check_links --base origin/main` re-resolved every path claim the diff touches (only the 3 pre-existing `<PROJECT_ROOT>` placeholders remain, all on line 19, all untouched by this lane).
+what was re-measured: the full gate set at the shipping sha (suite 60/60 via receipt, toolkit lint 0/0, check_maps 0, SOP currency 0, door parity 216/216, guard 26/26, sweep 9/9), plus the declared-set reconciliation (0/0/0) and a fresh `git worktree list` — which surfaced a sibling lane that did not exist when this lane opened. See the landing-order note below.
+
+⛔ **Landing-order dependency — `chore/SCC-293-bugs-cycle-7` (opened mid-lane, not on `main` yet).**
+Three files overlap, and they are not all the harmless kind:
+
+| Shared file | Kind | Resolution |
+|---|---|---|
+| `.agents/.sync-manifest.json` | generated | **regenerate**, never hand-merge — whoever lands second re-runs `/smh-sync-agents` |
+| `docs/_scc_sops_prds/workflows_testing_SOP.md` | **hand-edited on both sides** | a real reconcile; the two edits are in different sections (that lane touches the `smh-quick-fix` / non-crit-push entries, this one the `/cicd-live-testing-team` entry) but a text conflict is likely |
+| `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` | append-only ledger | both prepend a row under the same header — conflict is near-certain, resolution is to keep **both** rows |
+
+⭐ **And the collision is GATES, not files.** That lane changes `check_links.py`, `lane_qualify.py` and
+`jira_feed.py` — three of the scripts this lane RAN as gates. So whichever lands second owes more than
+a text merge: it must re-run this lane's full gate set against **their** versions of those scripts,
+because a green measured against the old `check_links.py` says nothing about the new one.
+
+**Neither lane blocks the other and no order is required by correctness** — this one is review-complete
+and theirs is still building, so this landing first leaves them the (smaller) reconcile.
+
+
 Verdict: PASS @ a3c0cebd0aa4f5bbcb1d2fd6e4bcbbbdb42dcb0e
 Suite evidence measured at the same sha: `gates/suite.json` — `result: pass`, `exit_code: 0`,
 `dirty_tree: False`, 60/60 files.
