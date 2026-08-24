@@ -1,0 +1,40 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_check_links.py"
+  ],
+  "mutants": [
+    {
+      "id": "M1 revert SCC-303: drop the untracked sweep entirely",
+      "file": ".agents/scripts/check_links.py",
+      "original": "        untracked = [u for u in others\n                     if str(Path(u).parent) in dirs\n                     or any(str(Path(u)).startswith(d + \"/\") for d in dirs if d != \".\")]\n        files += [u for u in untracked if u not in files]",
+      "mutated": "        untracked = []",
+      "case": "I1 an untracked .md with a dead path in a diffed dir must NOT produce a clean exit 0",
+      "block": "I · SCC-303 · --base must not narrow its own scope silently"
+    },
+    {
+      "id": "M2 sweep EVERY untracked .md, ignoring the diff's directories",
+      "file": ".agents/scripts/check_links.py",
+      "original": "        untracked = [u for u in others\n                     if str(Path(u).parent) in dirs\n                     or any(str(Path(u)).startswith(d + \"/\") for d in dirs if d != \".\")]",
+      "mutated": "        untracked = list(others)",
+      "case": "I4 CONTROL: an untracked .md OUTSIDE the diff's directories stays out of scope",
+      "block": "I · SCC-303 · --base must not narrow its own scope silently"
+    },
+    {
+      "id": "M3 stop printing the scanned names",
+      "file": ".agents/scripts/check_links.py",
+      "original": "    swept = set(untracked)\n    for f in files:\n        print(f\"  [scanned] {f}\" + (\"  (untracked - swept in)\" if f in swept else \"\"))",
+      "mutated": "    swept = set(untracked)",
+      "case": "I2 the run prints the scanned file NAMES, not only a count",
+      "block": "I · SCC-303 · --base must not narrow its own scope silently"
+    },
+    {
+      "id": "M4 print the names but never mark a swept file as untracked",
+      "file": ".agents/scripts/check_links.py",
+      "original": "        print(f\"  [scanned] {f}\" + (\"  (untracked - swept in)\" if f in swept else \"\"))",
+      "mutated": "        print(f\"  [scanned] {f}\")",
+      "case": "I3 ...and says the untracked file was swept IN, so the reader knows the scope widened",
+      "block": "I · SCC-303 · --base must not narrow its own scope silently"
+    }
+  ]
+}
