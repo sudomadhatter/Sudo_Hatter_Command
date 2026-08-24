@@ -1,7 +1,4 @@
 {
-  "worktree": {
-    "baseRef": "head"
-  },
   "permissions": {
     "ask": [
       "mcp__github__merge_pull_request",
@@ -92,5 +89,16 @@
         ]
       }
     ]
+  },
+  "worktree": {
+    "baseRef": "head"
+  },
+  "enabledPlugins": {
+    "playwright@claude-plugins-official": true,
+    "atlassian@claude-plugins-official": true,
+    "sentry@claude-plugins-official": true,
+    "firebase@claude-plugins-official": true,
+    "claude-security@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true
   }
 }
