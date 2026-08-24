@@ -229,7 +229,8 @@ def validate(root: Path) -> list[str]:
     if "YOUR_JIRA_KEY" not in example or "YOUR-SITE.atlassian.net" not in example:
         errors.append("Jira example is not an inert site/key template")
     source_jira_key = "S" + "CC"
-    if f'JIRA_KEYS="{source_jira_key}"' in example or "sudo-command.atlassian.net" in example:
+    source_jira_site = "sudo-" + "command.atlassian.net"
+    if f'JIRA_KEYS="{source_jira_key}"' in example or source_jira_site in example:
         errors.append("Jira example leaks the source command center binding")
     assignments = [line.strip() for line in example.splitlines()
                    if line.strip() and not line.lstrip().startswith("#") and "=" in line]

@@ -54,6 +54,20 @@ def main() -> int:
             )
             findings = validate(target) if target.exists() else ["target was not created"]
             c.check("generated shell validates", not findings, " | ".join(findings[:8]))
+            shipped_validator = target / ".agents" / "scripts" / "validate_teaching_edition.py"
+            shipped_proc = subprocess.run(
+                [sys.executable, str(shipped_validator), str(target)],
+                cwd=target,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+            c.check(
+                "generated shell validates with its own shipped validator",
+                shipped_proc.returncode == 0
+                and "TEACHING EDITION VALID" in (shipped_proc.stdout or ""),
+                (shipped_proc.stdout or "") + (shipped_proc.stderr or ""),
+            )
             c.check("export has no git history", not (target / ".git").exists())
             c.check(
                 "export writes no unscanned sibling report",
