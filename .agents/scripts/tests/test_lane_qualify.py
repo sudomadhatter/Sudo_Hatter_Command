@@ -182,6 +182,32 @@ with TempDir() as tmp:
                              "--paths", "docs/guide.md", "--lines", "1")
         c.check("C2f CONTROL: --lines does not disturb a LIGHT verdict",
                 verdict(out) == "LIGHT", out.strip()[:200])
+        # ⛔ Review (reproduced): zero and negative are CONTRADICTORY evidence - paths named,
+        # no lines changed - and the same script refuses the analogous contradiction
+        # (--no-file-changes + paths). Never read the permissive way.
+        for bogus in ("0", "-5"):
+            rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                                 "--paths", ".agents/scripts/lane_qualify.py",
+                                 "--lines", bogus)
+            c.check(f"C2h --lines {bogus} is a self-contradiction and stays TASK",
+                    verdict(out) == "TASK", out.strip()[:200])
+        # The exact boundary VALUES, pinned - the clauses were mutant-proofed but 10 and 2
+        # themselves were only bracketed (review finding), and three caller tables print them.
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".agents/scripts/a.py", ".agents/scripts/b.py",
+                             "--lines", "10")
+        c.check("C2i exactly 10 lines across exactly 2 files is TASK-LIGHT - both "
+                "boundaries inclusive", verdict(out) == "TASK-LIGHT", out.strip()[:200])
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".agents/scripts/a.py", "--lines", "11")
+        c.check("C2j eleven lines is TASK - the line boundary is 10, as the caller "
+                "tables print", verdict(out) == "TASK", out.strip()[:200])
+        # A TOOLKIT_FILES member (not a prefix): the size door serves it identically.
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", "AGENTS.md", "--lines", "1")
+        c.check("C2k a one-line edit to a TOOLKIT_FILES member (AGENTS.md) is TASK-LIGHT "
+                "- the door is the toolkit branch's, prefixes and members alike",
+                verdict(out) == "TASK-LIGHT", out.strip()[:200])
         # One file is not enough on its own either - the LINE threshold must gate alone.
         rc, out = run_script("lane_qualify.py", "--repo", str(root),
                              "--paths", ".agents/scripts/lane_qualify.py", "--lines", "50")

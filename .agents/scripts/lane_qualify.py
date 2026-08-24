@@ -150,7 +150,11 @@ def classify(repo: Path, paths: list[str], no_file_changes: bool,
     tool = [p for p in clean
             if p.startswith(TOOLKIT_PREFIXES) or p in TOOLKIT_FILES]
     if tool:
-        if (lines is not None and lines <= SMALL_TOOLKIT_LINES
+        # ⛔ `1 <=`, not merely `<=`: zero or negative lines alongside NAMED paths is a
+        # self-contradiction (a numstat summation bug, or a caller guessing), and this
+        # script already refuses the analogous one - `--no-file-changes` with paths - on
+        # the rule that a contradiction is never read the permissive way (review, SCC-293).
+        if (lines is not None and 1 <= lines <= SMALL_TOOLKIT_LINES
                 and len(clean) <= SMALL_TOOLKIT_FILES):
             return ("TASK-LIGHT",
                     f"toolkit path(s), small blast radius ({lines} line(s), {len(clean)} "

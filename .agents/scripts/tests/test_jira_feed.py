@@ -3239,6 +3239,9 @@ Nothing is actually owed.
             c.check("A8 E1: a PARKED ticket holding the baton still clones its successor",
                     st.get("clones") == ["TEST-7"],
                     f"rc={rc} clones={st.get('clones')}: " + out.strip()[-200:])
+            c.check("A8f ...and it SAYS the roll ran on a parked ticket - a silent roll "
+                    "is unauditable (review)",
+                    "parked" in out.lower(), out.strip()[-250:])
             c.check("A8b E2: ...and the refusal is intact - exit 3, status untouched, "
                     "NO transition written",
                     rc == 3 and st.get("statuses", {}).get("TEST-7") == "Rolling Tickets"

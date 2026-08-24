@@ -259,7 +259,9 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     # with the OBSOLETE flat-rate "always" as its mutant - the asymmetric pinning that steered
     # maintainers back toward "always" (executed, SCC-225 review wave) is retired with it.
     # SCC-301: a Tree cell sits between Gets and the routing cell, so the row regexes
-    # allow exactly TWO cells there - one would miss every row, zero would match the header.
+    # allow exactly TWO cells there - one cell would miss every row now that the table
+    # carries six columns, and an unbounded [^|]*-chain would stop anchoring WHICH cell
+    # holds the routing text.
     ("step-01: Blind Hunter routes standard-only (quick skips it)", STEPS[0],
      r"^\|\s*\*\*Blind Hunter\*\*\s*\|(?:[^|]*\|){2}\s*standard level \(quick skips it\)\s*\|", re.M,
      "| **Blind Hunter** | `DIFF` only — no spec, no repo access, no context docs | **no tree** — repo access is withheld by design | standard level (quick skips it) |",

@@ -228,7 +228,7 @@ That is B6's baseline: the mirror is equal now and must be equal after.
 - EDIT `.claude/skills/code-review-engine/steps/step-01-review.md` — byte-identical mirror → B6
 - EDIT `.claude/skills/code-review-engine/SKILL.md` — byte-identical mirror → B6
 - EDIT `.claude/skills/code-review-engine/steps/step-04-record.md` — byte-identical mirror → B6
-- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — C's command change and E's corrected retry promise → C5, E5
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — C's command change, E's corrected retry promise, and D's gate-table row (declared post-review: shipped in 82b0584, found undeclared by the Acceptance Auditor) → C5, E5, D2
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — one line per SOP delta, same commit (sop-currency habit 4) → C5, E5
 - NEW `_artifacts/_main/2026-08-23_bugs-cycle-7/implementation_plan.md` — this plan → all
 - NEW `_artifacts/_main/2026-08-23_bugs-cycle-7/task.yaml` — the lane manifest → all

@@ -207,6 +207,15 @@ def main() -> int:
     blind = next((ln for ln in t.splitlines() if ln.startswith("| **Blind Hunter**")), "")
     c.check("SCC-301 B2b: ...and the Blind Hunter's row says NO tree at all",
             "no tree" in blind, f"DIFF-only lens must not get a repo copy: {blind[:160]}")
+    # Every lens row's Tree cell individually (review: B1's whole-file grep let one row's
+    # cell be rewritten while the string survived in the other rows).
+    rows = [ln for ln in t.splitlines()
+            if ln.startswith("| **") and "Hunter**" in ln or ln.startswith("| **") and "Auditor**" in ln]
+    bad = [ln.split("|")[1].strip() for ln in rows
+           if 'isolation: "worktree"' not in ln.split("|")[3] and "no tree" not in ln.split("|")[3]]
+    c.check("SCC-301 B2c: EVERY lens row's Tree cell is a worktree copy or an explicit "
+            "no-tree - none may share the builder's tree",
+            len(rows) == 5 and not bad, f"rows={len(rows)} bad={bad}")
     c.check("SCC-301 B4: a lens that writes to its tree is a HARD FAILURE, not a warning",
             "A lens that WRITES is a hard failure" in t,
             "without this the roster records `ok` for a lens that rewrote its own subject")

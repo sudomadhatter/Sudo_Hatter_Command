@@ -36,8 +36,11 @@ version of the code under review can produce — the builder was reading a lens'
 launch contract has a TREE half, per lens from the table's **Tree** column: a repo-reading lens is
 launched with the Agent tool's `isolation: "worktree"`, so anything it writes lands in its own
 disposable copy, never the tree it is reviewing; a `DIFF`-only lens gets **no tree at all** — no
-repo access is part of what starves it. Record the mode once for the run as `lens_isolation:`
-(worktree · or `shared — <why>` when the runtime cannot isolate), in the return and the roster.
+repo access is part of what starves it. Record the mode as `lens_isolation:`, in the return and the roster —
+`worktree` when every repo-reading lens was isolated; `mixed — <lens>: <mode>, …` when they
+differed (name each un-isolated lens: a partially isolated run recorded as one word hides exactly
+the lens this contract exists to expose); `shared — <why>` when the runtime could not isolate at
+all.
 **A lens that WRITES is a hard failure, never a warning:** builder-tree bytes changed by a lens, or
 a lens report describing edits it made, marks that lens `dead — wrote to the tree`, its findings are
 discarded unread, and the roster must not record it `ok`.
