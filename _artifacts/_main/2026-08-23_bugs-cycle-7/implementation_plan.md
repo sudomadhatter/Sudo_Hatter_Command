@@ -165,7 +165,7 @@ lane) reopens. The middle verdict, if minted, sits strictly between — and the 
 with a clean **context** but never an isolated **tree**
 ([`step-01-review.md:27`](.agents/skills/code-review-engine/steps/step-01-review.md#L27)), so every
 lens inherits write access to the worktree under review. On SCC-295 three of five lenses edited the
-builder's working tree mid-review, and one reported a RED test returning `rc/a.py` — **a result no
+builder's working tree mid-review, and one reported a RED test returning the string "rc/a.py" (the lens's own fabrication, not a path in any tree) — **a result no
 version of the code under review can produce.** The builder was reading a lens's own mutant and
 nearly acted on it. A review that can rewrite its own subject cannot certify anything, and the roster
 records it `ok` either way.
