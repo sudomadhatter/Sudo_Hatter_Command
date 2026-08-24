@@ -125,7 +125,7 @@ the branch after the merge.
 
 ## Step 2 — Create the epic and its stories — then STOP
 Invoke the **`bmad-create-epics-and-stories`** skill for the requirements in `$ARGUMENTS` (a PRD, a
-fix-list path, or a described scope — e.g. `_my_resources/open_tasks/fix_list_admin_sudoadmin.md`). It
+fix-list path, or a described scope — e.g. `_my_resources/open_tasks/<fix-list>.md`). It
 writes the epic + its user stories with acceptance criteria into
 `_bmad-output/planning-artifacts/epics.md` (stories live in that file; **no per-story files are written
 here** — ① creates those). Confirm the new `## Epic <N>` section and its stories are in `epics.md`

@@ -10,8 +10,8 @@
     "edges": 701,
     "external": 39,
     "ambiguous": 165,
-    "dangling": 296,
-    "broken_paths": 71,
+    "dangling": 295,
+    "broken_paths": 70,
     "unresolved_names": 225,
     "unresolvable": 6
   },
@@ -5470,10 +5470,6 @@
     {
       "from": ".agents/commands/cicd-create-epic-sprint.md",
       "target": "_bmad-output/planning-artifacts/epics.md"
-    },
-    {
-      "from": ".agents/commands/cicd-create-epic-sprint.md",
-      "target": "_my_resources/open_tasks/fix_list_admin_sudoadmin.md"
     },
     {
       "from": ".agents/commands/cicd-create-epic-sprint.md",
