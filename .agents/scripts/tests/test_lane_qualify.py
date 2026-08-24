@@ -182,6 +182,11 @@ with TempDir() as tmp:
                              "--paths", "docs/guide.md", "--lines", "1")
         c.check("C2f CONTROL: --lines does not disturb a LIGHT verdict",
                 verdict(out) == "LIGHT", out.strip()[:200])
+        # One file is not enough on its own either - the LINE threshold must gate alone.
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".agents/scripts/lane_qualify.py", "--lines", "50")
+        c.check("C2g a single-file FIFTY-line rewrite is TASK - the line cap gates by itself",
+                verdict(out) == "TASK", out.strip()[:200])
 
     if c.block("drift - never more permissive than the armed commit gate"):
         # Every path sop_currency calls a usage surface must come back non-LIGHT here.
