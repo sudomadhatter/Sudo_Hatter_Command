@@ -77,7 +77,15 @@ the twin is an AVCH ticket of its own, not something a lobby lane may do.
 
 | …do this | → run / read |
 |---|---|
-| know what to work on | **put the card in `To Do Next` on the board — that column *is* the answer** ([§12](#12-the-board--what-runs-next)). On a project: `/cicd-boot-sprint-memory`. In the command centre: just ask. |
+| know what to work on | **put the card in `To Do Next` on the board — that column *is* the answer** ([§12](#12-the-board--what-runs-next)).
+
+**An epic branch carries two numbers, and `epic/` always comes first.** Its ticket key and its
+sprint number are different numbers that drift apart — `AVCH-18` is the ticket, `epic-19` is what
+the board, the story files and `_artifacts/epic_19/` are named after — so the branch shows both:
+`epic/AVCH-18-epic-19-adk-2x-runtime`. Put the sprint number in the slug, never in front of the
+prefix. Everything that finds an epic branch looks for something starting with `epic/`, including
+the hook that guards `main`; a branch called `epic-19/...` is invisible to all of it and quietly
+gets treated as if it were `main`. On a project: `/cicd-boot-sprint-memory`. In the command centre: just ask. |
 | see or move the sprint board | ask any agent — the live board answers via `acli` ([§12](#12-the-board--what-runs-next)) |
 | work out which lane my work belongs in | [§5 — the lane chooser](#5-which-lane-am-i-in) |
 | know which stories can run side by side | `/cicd-label-tasks <EPIC-KEY>` — once the stories are written ([§6](#6-the-story-lane)) |
@@ -199,7 +207,7 @@ Read this once. The rest of the page assumes it.
 | **Task** | Everything else you actually spend days on: the toolkit, rules, `/` commands, docs, IDE work. No story file, no epic. | It has its **own** loop and its **own** close-out. Confusing the two is the single most common mistake. |
 | **Lane** | One unit of work in flight, with its own branch and its own folder on disk. | Several run at once. Most of the safety rules exist because of that. |
 | **Worktree** | A second, separate checkout of the same repo, on its own branch, in its own folder. Looks like `.claude/worktrees/<slug>/`. | Two lanes can't corrupt each other's files or test runs. **Every lane that will commit gets one.** |
-| **Epic branch** | `epic/<JIRA-KEY>-<slug>`. Short-lived. Stories land here, not on `main`. | This is the thing that makes "landed" different from "shipped." |
+| **Epic branch** | `epic/<JIRA-KEY>-epic-<N>-<slug>` — e.g. `epic/AVCH-18-epic-19-adk-2x-runtime`. Short-lived. Stories land here, not on `main`. | This is the thing that makes "landed" different from "shipped." The name carries **both** numbers on purpose: `AVCH-18` is the epic's Jira ticket, `epic-19` is its sprint number — the one everything on disk is filed under. |
 | **`main`** | The only long-lived branch. On a project with CI/CD, a push to it **is** a deploy. | One command reaches it for product work; one other reaches it for Task work. Nothing else. |
 | **Gate** | A check that can refuse. Some are scripts you run; two are git hooks that fire on every commit. | A gate that only warns is a gate nobody obeys — see [§10](#10-the-safety-net--what-checks-your-work). |
 | **Verdict** | The line `Verdict: PASS \| CONCERNS \| FAIL \| WAIVED @ <sha>` written into the walkthrough by a review. | The close-out reads this line before it will land anything. The `@ <sha>` is what makes it expire. |

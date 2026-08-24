@@ -100,22 +100,32 @@ Then take exactly one arm, and say in one line which and why:
 - **neither** → cut it:
 
 ```bash
-git -C "$PROJECT_ROOT" checkout -b epic/<JIRA-KEY>-<slug> origin/main
-git -C "$PROJECT_ROOT" push -u origin epic/<JIRA-KEY>-<slug>
+git -C "$PROJECT_ROOT" checkout -b epic/<JIRA-KEY>-epic-<N>-<slug> origin/main
+git -C "$PROJECT_ROOT" push -u origin epic/<JIRA-KEY>-epic-<N>-<slug>
 ```
+
+⛔ **BOTH numbers, and in this order** (`git-policy` § Branch model). `<JIRA-KEY>` is the epic's
+**ticket** (`AVCH-18`); `epic-<N>` is its **sprint / BMAD epic number** (`epic-19`) — the number the
+board key, `sprint-status.yaml`, `epics.md` and `_artifacts/epic_<N>/` are filed under. They are
+different numbers that do not track each other, and a branch naming only one makes every reader hold
+the mapping: `epic/AVCH-18-…` beside artifacts at `epic_19/` reads as drift every time.
+The `epic/` **prefix stays in front** — never `epic-19/AVCH-18-…`. Every `$EPIC` resolution in this
+system globs `epic/*`, and `merge-target-guard.sh` matches a `case` arm literally spelled `epic/*)`;
+moving the number ahead of the prefix silently sends all of them to `origin/main` (SCC-165) and makes
+the armed guard classify the branch `unknown`.
 
 ```bash
 BRANCH=$(git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD); echo "Epic branch: $BRANCH"
 ```
 
-The echoed line must read `Epic branch: epic/<JIRA-KEY>-<slug>` — anything else → STOP. Story worktrees
+The echoed line must read `Epic branch: epic/<JIRA-KEY>-epic-<N>-<slug>` — anything else → STOP. Story worktrees
 (`/cicd-write-story-tests` ①) branch FROM this branch — it must exist, with the kickoff's output pushed
 onto it, before the first one opens. The epic reaches `main` only via `/cicd-push-e2e`, which deletes
 the branch after the merge.
 
 ## Step 2 — Create the epic and its stories — then STOP
 Invoke the **`bmad-create-epics-and-stories`** skill for the requirements in `$ARGUMENTS` (a PRD, a
-fix-list path, or a described scope — e.g. `_my_resources/open_tasks/fix_list_admin_sudoadmin.md`). It
+fix-list path, or a described scope — e.g. `_my_resources/open_tasks/<fix-list>.md`). It
 writes the epic + its user stories with acceptance criteria into
 `_bmad-output/planning-artifacts/epics.md` (stories live in that file; **no per-story files are written
 here** — ① creates those). Confirm the new `## Epic <N>` section and its stories are in `epics.md`

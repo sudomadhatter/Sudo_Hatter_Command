@@ -11,8 +11,8 @@
     "external": 39,
     "ambiguous": 165,
     "dangling": 295,
-    "broken_paths": 71,
-    "unresolved_names": 224,
+    "broken_paths": 70,
+    "unresolved_names": 225,
     "unresolvable": 6
   },
   "nodes": [
@@ -5473,10 +5473,6 @@
     },
     {
       "from": ".agents/commands/cicd-create-epic-sprint.md",
-      "target": "_my_resources/open_tasks/fix_list_admin_sudoadmin.md"
-    },
-    {
-      "from": ".agents/commands/cicd-create-epic-sprint.md",
       "target": "epics.md"
     },
     {
@@ -5974,6 +5970,10 @@
     {
       "from": ".agents/rules/git-policy.md",
       "target": "active-context.md"
+    },
+    {
+      "from": ".agents/rules/git-policy.md",
+      "target": "epics.md"
     },
     {
       "from": ".agents/rules/git-policy.md",
