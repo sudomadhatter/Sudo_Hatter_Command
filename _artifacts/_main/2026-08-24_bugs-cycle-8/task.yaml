@@ -3,3 +3,4 @@ primary_repo: Sudo_Hatter_Command
 branch: chore/SCC-305-bugs-cycle-8
 close_command: smh-close-task-merge-tree
 secondary_repos: []
+riders: [SCC-309, SCC-310, SCC-311, SCC-312, SCC-313, SCC-314, SCC-315, SCC-317, SCC-319]
