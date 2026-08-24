@@ -39,7 +39,7 @@
     {
       "id": "M5 drop lens_isolation from the return contract",
       "file": ".agents/skills/code-review-engine/SKILL.md",
-      "original": "lens_isolation:  worktree | shared \u2014 <why, when the runtime could not isolate>\n",
+      "original": "lens_isolation:  worktree | mixed \u2014 <lens>: <mode>, \u2026 | shared \u2014 <why, when the runtime could not isolate>\n",
       "mutated": "",
       "unfiltered": true,
       "case": "SCC-301 B3a: the engine's return states the isolation mode (SKILL.md)"
@@ -47,7 +47,7 @@
     {
       "id": "M6 drop lens_isolation from the recorded roster",
       "file": ".agents/skills/code-review-engine/steps/step-04-record.md",
-      "original": "lens_isolation:  worktree | shared \u2014 <why, when the runtime could not isolate>\n",
+      "original": "lens_isolation:  worktree | mixed \u2014 <lens>: <mode>, \u2026 | shared \u2014 <why, when the runtime could not isolate>\n",
       "mutated": "",
       "unfiltered": true,
       "case": "SCC-301 B3b: ...and the recorded roster carries the same line (step-04)"

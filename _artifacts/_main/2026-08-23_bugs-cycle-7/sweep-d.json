@@ -15,7 +15,7 @@
     {
       "id": "M2 sweep EVERY untracked .md, ignoring the diff's directories",
       "file": ".agents/scripts/check_links.py",
-      "original": "        untracked = [u for u in others\n                     if str(Path(u).parent) in dirs\n                     or any(str(Path(u)).startswith(d + \"/\") for d in dirs if d != \".\")]",
+      "original": "        untracked = [u for u in others\n                     if _parent(u) in dirs\n                     or any(u.startswith(d + \"/\") for d in dirs if d != \".\")]",
       "mutated": "        untracked = list(others)",
       "case": "I4 CONTROL: an untracked .md OUTSIDE the diff's directories stays out of scope",
       "block": "I \u00b7 SCC-303 \u00b7 --base must not narrow its own scope silently"
