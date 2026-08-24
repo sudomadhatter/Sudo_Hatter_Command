@@ -1,0 +1,6 @@
+task_key: SCC-293
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-293-bugs-cycle-7
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: [SCC-301, SCC-302, SCC-303, SCC-306]
