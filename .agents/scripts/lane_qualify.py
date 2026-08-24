@@ -80,7 +80,20 @@ from task_preflight import PRODUCT_DIRS
 TOOLKIT_PREFIXES = (".agents/", ".githooks/", ".github/", "_bmad/", "_bmad-output/")
 TOOLKIT_FILES = frozenset({"AGENTS.md"})
 
-VERDICTS = {"LIGHT": 0, "LIGHT-VCS": 0, "TASK": 1, "HANDOFF": 2, "NOT-COMMAND-CENTRE": 3}
+VERDICTS = {"LIGHT": 0, "LIGHT-VCS": 0, "TASK": 1, "TASK-LIGHT": 1, "HANDOFF": 2,
+            "NOT-COMMAND-CENTRE": 3}
+
+# ⭐ SCC-302 · the size gate for TASK-LIGHT. A one-character fix and a forty-file rewrite used
+# to be indistinguishable - the toolkit branch decided by path prefix alone, with no size input,
+# and the verdict set had nothing between LIGHT and TASK, so SCC-295 (one line, one function)
+# consumed a full session's lane. TASK-LIGHT is the middle door: still the TASK family (exit 1,
+# never the light lane - the drift case below stays intact), but the caller may right-size the
+# ceremony - assertion-first and the gates stay, the five-lens review fan-out may collapse to a
+# single inline pass. Size is EVIDENCE the caller supplies (--lines, e.g. git diff --numstat);
+# no --lines means no evidence, and no evidence means TASK - size silence is not smallness,
+# exactly as path silence is not empty scope (F2).
+SMALL_TOOLKIT_LINES = 10
+SMALL_TOOLKIT_FILES = 2
 
 
 def norm(path: str) -> str:
@@ -103,7 +116,8 @@ def is_command_centre(repo: Path) -> bool:
     return d.is_dir() and any(d.glob("*.md"))
 
 
-def classify(repo: Path, paths: list[str], no_file_changes: bool) -> tuple[str, str]:
+def classify(repo: Path, paths: list[str], no_file_changes: bool,
+             lines: int | None = None) -> tuple[str, str]:
     """Return (verdict, one-line reason). Order matters — see the module docstring."""
     if not is_command_centre(repo):
         return ("NOT-COMMAND-CENTRE",
@@ -136,6 +150,12 @@ def classify(repo: Path, paths: list[str], no_file_changes: bool) -> tuple[str, 
     tool = [p for p in clean
             if p.startswith(TOOLKIT_PREFIXES) or p in TOOLKIT_FILES]
     if tool:
+        if (lines is not None and lines <= SMALL_TOOLKIT_LINES
+                and len(clean) <= SMALL_TOOLKIT_FILES):
+            return ("TASK-LIGHT",
+                    f"toolkit path(s), small blast radius ({lines} line(s), {len(clean)} "
+                    f"file(s)): assertion-first and the gates stay; the review fan-out may "
+                    f"collapse to one inline pass (SCC-302)")
         return ("TASK",
                 f"toolkit path(s): {', '.join(tool[:3])} - this changes the development "
                 f"system, so it takes the full lane (plan, audit, RED, review)")
@@ -152,9 +172,14 @@ def main(argv: list[str] | None = None) -> int:
                     help="the paths the work will change; omitting this is UNKNOWN, not empty")
     ap.add_argument("--no-file-changes", action="store_true",
                     help="declare a git-hygiene action that edits no files")
+    ap.add_argument("--lines", type=int, default=None,
+                    help="total changed lines across the named paths (e.g. git diff "
+                         "--numstat summed) - size evidence that lets a small toolkit "
+                         "edit answer TASK-LIGHT instead of the full TASK lane (SCC-302)")
     args = ap.parse_args(argv)
 
-    verdict, why = classify(Path(args.repo).resolve(), args.paths, args.no_file_changes)
+    verdict, why = classify(Path(args.repo).resolve(), args.paths, args.no_file_changes,
+                            args.lines)
     print(verdict)
     print(why)
     return VERDICTS[verdict]

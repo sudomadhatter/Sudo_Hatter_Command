@@ -1928,8 +1928,16 @@ python3 .agents/scripts/lane_qualify.py --repo "$(git rev-parse --show-toplevel)
 | `LIGHT` | do it |
 | `LIGHT-VCS` | a declared source-control tidy that changes no files |
 | `TASK` | it touches the development system → `/smh-quick-dev`, with a plan |
+| `TASK-LIGHT` | the development system, but a **small, measured** edit (`--lines` ≤ 10, ≤ 2 files) → still `/smh-quick-dev`, right-sized: assertion-first, gates and sweep stay; the plan may be a paragraph and the review fan-out may collapse to one inline pass *(SCC-302)* |
 | `HANDOFF` | a deployable path → `/cicd-push-e2e` |
 | `NOT-COMMAND-CENTRE` | you are in a project repo → the `cicd-*` lanes |
+
+**What you type does not change with `TASK-LIGHT`** — the road is still `/smh-quick-dev`; the
+verdict's job is to license that lane to right-size itself, and it fires only on **evidence**: the
+caller passes `--lines` (e.g. `git diff --numstat` summed), and no `--lines` means no evidence
+means `TASK` — size silence is not smallness, exactly as path silence is not empty scope. SCC-295
+is why the door exists: one line in one function drew the full plan-audit-RED-sweep-five-lens
+train, a whole session for a change the operator said they should have made by hand.
 
 Two of those answers are there because of how this check could be gamed. **Naming no paths is
 `TASK`, not "nothing to see"** — silence is unknown scope, and an agent that declares nothing would
@@ -1943,7 +1951,8 @@ commands call it — `/smh-quick-fix`, `/smh-non-crit-pr-push`, `/cicd-non-crit-
 command does not list is a verdict it has no instruction for, so
 the agent answers by judgement — the exact thing putting the question in a script prevents.
 `tests/test_lane_qualify.py` **discovers the callers by invocation** and fails if any table is
-missing a verdict, so a sixth verdict cannot be added without every caller learning it.
+missing a verdict, so a new verdict cannot be added without every caller learning it — `TASK-LIGHT`
+(SCC-302) landed through exactly that gate.
 
 ⛔ **And `NOT-COMMAND-CENTRE` means opposite things in the two non-crit twins, on purpose.** In
 `/smh-non-crit-pr-push` it is a STOP — you are in a child project, use the other lane. In

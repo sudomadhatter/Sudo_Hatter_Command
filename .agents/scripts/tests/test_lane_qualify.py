@@ -138,6 +138,51 @@ with TempDir() as tmp:
         c.check("--no-file-changes CONTRADICTED by paths is refused",
                 verdict(out) == "TASK", out.strip()[:200])
 
+    if c.block("SCC-302 · size draws the lane - a one-liner and a rewrite are different work"):
+        # ⛔ THE SCAR: classify() decided by PATH PREFIX alone, so a one-character fix and a
+        # forty-file rewrite were indistinguishable - SCC-295 was one line in one function,
+        # the operator asked for /smh-quick-fix, and the qualifier ejected it into a lane
+        # that consumed a whole session. There was also nowhere to eject TO: the verdict set
+        # had nothing between LIGHT and TASK.
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".agents/scripts/lane_qualify.py", "--lines", "1")
+        c.check("C2 a ONE-LINE toolkit edit is TASK-LIGHT, not the full fan-out",
+                verdict(out) == "TASK-LIGHT", out.strip()[:200])
+        c.check("C2 ...and its exit stays in the TASK family (nonzero - never the light lane)",
+                rc == 1, f"rc={rc}")
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".agents/scripts/a.py", ".agents/scripts/b.py",
+                             ".agents/rules/c.md", "--lines", "400")
+        c.check("C2 a multi-file toolkit rewrite stays TASK - different verdicts, same prefix",
+                verdict(out) == "TASK", out.strip()[:200])
+        # No --lines -> no size evidence -> the conservative verdict, exactly as before this
+        # ticket. Silence about size is not smallness (the F2 principle, applied to the
+        # second input an agent controls completely).
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".agents/scripts/lane_qualify.py")
+        c.check("C2d WITHOUT --lines a toolkit path is still TASK - size silence is not small",
+                verdict(out) == "TASK", out.strip()[:200])
+        # A small edit to MANY files is not small work - the file count caps it too.
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".agents/scripts/a.py", ".agents/scripts/b.py",
+                             ".agents/rules/c.md", "--lines", "3")
+        c.check("C2e three files at one line each is TASK - the blast is the file count",
+                verdict(out) == "TASK", out.strip()[:200])
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", "frontend/app.tsx", "--lines", "1")
+        c.check("C3 a one-line change under PRODUCT_DIRS is still HANDOFF - size never buys "
+                "an exception", verdict(out) == "HANDOFF", out.strip()[:200])
+        proj2 = tmp / "sized-project"
+        (proj2 / "docs").mkdir(parents=True, exist_ok=True)
+        rc, out = run_script("lane_qualify.py", "--repo", str(proj2),
+                             "--paths", "docs/x.md", "--lines", "1")
+        c.check("C4 NOT-COMMAND-CENTRE keeps winning regardless of size",
+                verdict(out) == "NOT-COMMAND-CENTRE", out.strip()[:200])
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", "docs/guide.md", "--lines", "1")
+        c.check("C2f CONTROL: --lines does not disturb a LIGHT verdict",
+                verdict(out) == "LIGHT", out.strip()[:200])
+
     if c.block("drift - never more permissive than the armed commit gate"):
         # Every path sop_currency calls a usage surface must come back non-LIGHT here.
         # Not an import of its list (F3): a cross-check, so widening THERE cannot quietly
