@@ -191,6 +191,8 @@ lenses_run:
 - test-adequacy-auditor · ok
 lenses_counted:  5/5
 lenses_na:       none
+dispositions:    per-lens: blind-hunter=7/0/0 · edge-case-hunter=9/0/0 · literal-correctness-hunter=4/0/0 · acceptance-auditor=9/2/0 · test-adequacy-auditor=8/0/0
+severity_floor:  CONCERNS (raised by test-adequacy's `critical`; cleared by fixing it in-thread and re-gating)
 
 ⛔ **Disclosure — the fan-out ran at `18283ba`; this verdict is stamped at `a3c0cebd`.** The delta is
 exactly the fixes the lenses asked for. They were applied in-thread as the door requires, then
@@ -207,7 +209,12 @@ the part that matters. *(This paragraph first claimed two files, naming a `repo-
 not exist in this repo — corrected, because a disclosure about accuracy that is itself inaccurate is
 worth less than none.)*
 
-### Findings — 30 returned across 5 lenses, 15 assessed real and fixed, the rest dismissed
+### Findings — 39 returned across 5 lenses, 37 survived assessment, 2 dismissed
+
+Deduplicated across lenses that found the same thing, that is **31 distinct defects fixed in-thread**
+(`require @playwright/test` was found by three lenses; the trailing slash, the missing `try/finally`
+and the response race by two each). The table below names the ones that changed the shipped artifact;
+the full per-lens counts are on the `dispositions:` line above.
 
 Per `code-standards` §6.5 the assessor decides, not the lens. Named individually only where the
 assessment disagreed with the label, or where the finding changed the shipped artifact materially.
