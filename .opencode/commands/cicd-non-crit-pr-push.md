@@ -42,6 +42,7 @@ python3 .agents/scripts/lane_qualify.py --repo "$REPO" --paths <every path you w
 | `LIGHT` | carry on |
 | `LIGHT-VCS` | carry on — a **declared** git-hygiene action (`--no-file-changes`) that edits no files |
 | `TASK` | **stop.** This touches product code or build tooling — use `/cicd-quick-dev` or the story loop |
+| `TASK-LIGHT` | **stop.** Same road as `TASK` — a small measured toolkit edit still isn't this lane's work (SCC-302) |
 | `HANDOFF` | **stop.** Deployable product change — route to `/cicd-push-e2e` |
 
 <!-- twin-divergence: lane-verdict-not-command-centre — the smh- twin reads NOT-COMMAND-CENTRE as a STOP ("you are in a child project"); here it is the EXPECTED answer, because a child project is exactly where this lane runs. Same verdict, opposite instruction, on purpose (SCC-243). -->
