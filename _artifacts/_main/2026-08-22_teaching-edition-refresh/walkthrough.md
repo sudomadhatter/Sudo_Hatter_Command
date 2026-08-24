@@ -174,7 +174,7 @@ the 46-check contract.
 
 - [x] SCC-280 engineering is complete; sharing/publishing the generated export remains an
   owner-controlled action.
-- [ ] Move SCC-286 into the new standalone skeleton-modernization ticket; SCC-286 and parent SCC-280
-  remain open until that follow-on board move is complete.
+- [ ] Create the replacement standalone skeleton-modernization ticket now that SCC-286 is closed;
+  keep SCC-280 at `Review Required` until that follow-on ticket exists.
 
 Verdict: PASS @ 0c66c7de5ab3402efe585b75fc0ef903d04729f2

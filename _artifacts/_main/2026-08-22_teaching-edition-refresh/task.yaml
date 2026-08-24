@@ -4,4 +4,3 @@ branch: chore/SCC-280-teaching-edition-close
 close_command: smh-close-task-merge-tree
 secondary_repos: []
 riders: []
-landing_mode: partial

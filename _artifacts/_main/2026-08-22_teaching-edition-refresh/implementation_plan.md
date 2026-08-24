@@ -483,6 +483,6 @@ teaching-branch tip. This preserves the long-lived distribution branch while giv
 ceremony the required SCC-280 Task identity.
 
 SCC-286 is intentionally excluded from this landing. It is the separately deferred skeleton
-modernization the operator confirmed still needs to happen under a new ticket. The manifest therefore
-declares a partial landing with no riders: SCC-286 stays open, and SCC-280 stays open after this PR
-until that board reorganization is complete.
+modernization the operator confirmed still needs to happen under a new ticket. The operator closed
+SCC-286 before the PR; SCC-280 therefore lands normally but remains at `Review Required` on the open
+walkthrough action to create the replacement standalone ticket.

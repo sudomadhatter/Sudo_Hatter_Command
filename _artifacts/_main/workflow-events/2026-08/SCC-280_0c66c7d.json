@@ -1,0 +1,77 @@
+{
+  "v": 1,
+  "task": "SCC-280",
+  "sha": "0c66c7de5ab3402efe585b75fc0ef903d04729f2",
+  "tip": "b62a54855206dde67fff9ea05bccff566c57be72",
+  "trigger": "close-out",
+  "when": "2026-08-23T22:43:55-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/INDEX.md",
+    ".agents/commands/smh-new-project.md",
+    ".agents/commands/smh-tour.md",
+    ".agents/commands/smh-training.md",
+    ".agents/jira.conf",
+    ".agents/rules/INDEX.md",
+    ".agents/rules/jira.md",
+    ".agents/rules/training-mode.md",
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/export-teaching-edition.ps1",
+    ".agents/scripts/new-project.ps1",
+    ".agents/scripts/teaching-edition/lobby.manifest.json",
+    ".agents/scripts/teaching-edition/replacements/jira-conf.example",
+    ".agents/scripts/teaching-edition/replacements/jira.md",
+    ".agents/scripts/teaching-edition/replacements/lobby-README.md",
+    ".agents/scripts/teaching-edition/replacements/maintained-projects.txt",
+    ".agents/scripts/teaching-edition/replacements/memory-MEMORY.md",
+    ".agents/scripts/teaching-edition/replacements/memory-README.md",
+    ".agents/scripts/teaching-edition/replacements/operator-profile.md",
+    ".agents/scripts/teaching-edition/replacements/router.md",
+    ".agents/scripts/teaching-edition/replacements/training-mode-sentinel",
+    ".agents/scripts/tests/test_teaching_edition.py",
+    ".agents/scripts/tests/test_twin_parity.py",
+    ".agents/scripts/validate_teaching_edition.py",
+    ".agents/skills/smh-tour/SKILL.md",
+    ".agents/skills/smh-training/SKILL.md",
+    ".agents/workflows/smh-new-project.md",
+    ".agents/workflows/smh-tour.md",
+    ".agents/workflows/smh-training.md",
+    ".claude/skills/smh-tour/SKILL.md",
+    ".claude/skills/smh-training/SKILL.md",
+    ".env.example",
+    ".gitignore",
+    ".opencode/commands/smh-new-project.md",
+    ".opencode/commands/smh-tour.md",
+    ".opencode/commands/smh-training.md",
+    "AGENTS.md",
+    "_artifacts/_main/2026-08-22_teaching-edition-refresh/gates/suite.json",
+    "_artifacts/_main/2026-08-22_teaching-edition-refresh/implementation_plan.md",
+    "_artifacts/_main/2026-08-22_teaching-edition-refresh/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-22_teaching-edition-refresh/walkthrough.md",
+    "verdict": "PASS @ 0c66c7d",
+    "gates": {
+      "suite": "pass@0c66c7d"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/INDEX.md",
+    "rule-edited:.agents/rules/jira.md",
+    "rule-edited:.agents/rules/training-mode.md"
+  ]
+}
