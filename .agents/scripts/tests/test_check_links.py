@@ -193,6 +193,38 @@ def main() -> int:
             c.check("H5 the REPO-MAP sentinel is honoured too", _ok,
                     "" if _ok else f"dead={dead2} checked={checked2}")
 
+        if c.block("J · SCC-293 · three conventions that did not reach far enough"):
+            # Surfaced by running the UPGRADED gate over this lane's own merged diff: an
+            # unrelated edit pulled two long-standing files into scope for the first time and
+            # all three hits were placeholder/project prose, not claims. Each belongs to a
+            # convention that already exists (5, 5, 6) and simply did not match.
+            r = resolver(tmp)
+            for tok, why in (
+                ("PROJECT_ROOT/.agents/INDEX.md",
+                 "convention 5: an ALL-CAPS variable stands for a path, like <KEY>"),
+                ("relative/path",
+                 "convention 5: a SHAPE placeholder, same class as path/to"),
+                ("quick_fixes/INDEX.md",
+                 "convention 6: a child-project register the lobby cannot resolve"),
+            ):
+                dead, _, checked = CL.scan(tmp, r, ["j.md"]) if False else (None, None, None)
+                (tmp / "j.md").write_text(f"see `{tok}` for details\n", encoding="utf-8")
+                dead, _, checked = CL.scan(tmp, r, ["j.md"])
+                c.check(f"J {tok} is not a claim - {why}", not dead,
+                        f"reported dead: {dead}")
+            # ...and the conventions must still BITE (tests-must-gate-for-real §5): a real
+            # dead path that merely LOOKS like these is still reported.
+            (tmp / "j.md").write_text("see `docs/PROJECT_NOTES.md` for details\n",
+                                      encoding="utf-8")
+            dead, _, _ = CL.scan(tmp, r, ["j.md"])
+            c.check("J CONTROL: an ALL-CAPS FILENAME is still a claim, and still dead",
+                    dead, "an uppercase basename must not read as a variable placeholder")
+            (tmp / "j.md").write_text("see `quick_fixes_local/INDEX.md` for details\n",
+                                      encoding="utf-8")
+            dead, _, _ = CL.scan(tmp, r, ["j.md"])
+            c.check("J CONTROL: a lookalike of the project register is still a claim",
+                    dead, "the carve-out must be the exact prefix, not a substring")
+
         if c.block("F · anchors - `#L` must name lines the target has"):
             (tmp / "five.md").write_text("1\n2\n3\n4\n5\n", encoding="utf-8")
             _ok = CL.check_anchor(tmp, "five.md", "#L2-L4") is None
@@ -220,6 +252,148 @@ def main() -> int:
             _ok = checked == 0 and not dead
             c.check("G2 an empty document yields no claims", _ok,
                     "" if _ok else "an empty document is producing findings")
+
+        if c.block("I · SCC-303 · --base must not narrow its own scope silently"):
+            # ⛔ THE SCAR: `git diff --name-only` is tracked-only BY CONSTRUCTION, so the
+            # SCC-295 lane's walkthrough - untracked at the moment the gate ran - was never
+            # scanned; the gate printed "3 markdown file(s) ... clean", exit 0, while the
+            # file it skipped held FOUR dead paths. The author had guarded EMPTY scope in
+            # capitals (block G); PARTIAL scope had no guard, and partial is what ships.
+            # End-to-end on a real fixture repo, because the defect lives in main()'s file
+            # selection, not in scan().
+            import os as _os
+            import subprocess as _sp
+
+            def _git(cwd, *a):
+                _sp.run(["git", *a], cwd=cwd, check=True,
+                        stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+
+            def _cl(cwd, *a):
+                env = dict(_os.environ, GIT_CONFIG_GLOBAL="/dev/null")
+                r = _sp.run([sys.executable,
+                             str(Path(CL.__file__).resolve()), *a],
+                            cwd=cwd, capture_output=True, text=True, env=env)
+                return r.returncode, r.stdout + r.stderr
+
+            with TempDir() as repo:
+                _git(repo, "init", "-q")
+                _git(repo, "config", "user.email", "t@t")
+                _git(repo, "config", "user.name", "t")
+                (repo / "docs").mkdir()
+                (repo / "docs" / "doc.md").write_text("plain prose, no claims\n",
+                                                      encoding="utf-8")
+                _git(repo, "add", "docs/doc.md")
+                _git(repo, "commit", "-q", "-m", "base")
+                _git(repo, "branch", "base")
+                (repo / "docs" / "doc.md").write_text("edited prose, no claims\n",
+                                                      encoding="utf-8")
+                _git(repo, "add", "docs/doc.md")
+                _git(repo, "commit", "-q", "-m", "edit")
+                # the walkthrough shape: UNTRACKED markdown in a directory the diff touches,
+                # carrying a dead path claim
+                (repo / "docs" / "ghost.md").write_text(
+                    "see `docs/nope_not_here.md` for details\n", encoding="utf-8")
+                # ...and an untracked file OUTSIDE the diff's directories - out of scope
+                (repo / "elsewhere").mkdir()
+                (repo / "elsewhere" / "stray.md").write_text(
+                    "see `docs/also_not_here.md`\n", encoding="utf-8")
+
+                code, out = _cl(repo, "--base", "base")
+                # ⛔ exit 1 + the [dead] marker SPECIFICALLY - `code != 0` alone also accepts
+                # a crash whose traceback happens to name the file (the
+                # red-test-can-die-before-its-assertion scar, applied here by review).
+                c.check("I1 an untracked .md with a dead path in a diffed dir must NOT "
+                        "produce a clean exit 0",
+                        code == 1 and "[dead]" in out and "ghost.md" in out,
+                        f"exit={code}: " + out.strip()[-300:])
+                c.check("I2 the run prints the scanned file NAMES, not only a count",
+                        "docs/doc.md" in out,
+                        "nothing in the output distinguishes 'all clean' from "
+                        "'one file was invisible': " + out.strip()[-200:])
+                c.check("I3 ...and says the untracked file was swept IN, so the reader "
+                        "knows the scope widened",
+                        "untracked" in out.lower(), out.strip()[-300:])
+                c.check("I4 CONTROL: an untracked .md OUTSIDE the diff's directories "
+                        "stays out of scope",
+                        "stray.md" not in out, out.strip()[-300:])
+
+            # ── the review's reproduced holes: the scar re-entered three more ways ──────
+            with TempDir() as repo:
+                _git(repo, "init", "-q")
+                _git(repo, "config", "user.email", "t@t")
+                _git(repo, "config", "user.name", "t")
+                (repo / "docs").mkdir()
+                (repo / "docs" / "tool.py").write_text("x = 1\n", encoding="utf-8")
+                _git(repo, "add", "docs/tool.py")
+                _git(repo, "commit", "-q", "-m", "base")
+                _git(repo, "branch", "base")
+                (repo / "docs" / "tool.py").write_text("x = 2\n", encoding="utf-8")
+                _git(repo, "add", "docs/tool.py")
+                _git(repo, "commit", "-q", "-m", "edit")
+                (repo / "docs" / "ghost2.md").write_text(
+                    "see `docs/nope2.md`\n", encoding="utf-8")
+                code, out = _cl(repo, "--base", "base")
+                c.check("I5 a CODE-only diff still sweeps the untracked .md beside it - "
+                        "dirs come from the DIFF, not from its markdown subset",
+                        code == 1 and "ghost2.md" in out,
+                        f"exit={code}: " + out.strip()[-300:])
+
+            with TempDir() as repo:
+                _git(repo, "init", "-q")
+                _git(repo, "config", "user.email", "t@t")
+                _git(repo, "config", "user.name", "t")
+                (repo / "docs").mkdir()
+                (repo / "docs" / "doc.md").write_text("prose\n", encoding="utf-8")
+                _git(repo, "add", "docs/doc.md")
+                _git(repo, "commit", "-q", "-m", "base")
+                _git(repo, "branch", "base")
+                (repo / "docs" / "doc.md").write_text("edited\n", encoding="utf-8")
+                _git(repo, "add", "docs/doc.md")
+                _git(repo, "commit", "-q", "-m", "edit")
+                (repo / "docs" / "my notes.md").write_text(
+                    "see `docs/nope3.md`\n", encoding="utf-8")
+                (repo / "docs" / "sub").mkdir()
+                (repo / "docs" / "sub" / "deep.md").write_text(
+                    "see `docs/nope4.md`\n", encoding="utf-8")
+                code, out = _cl(repo, "--base", "base")
+                c.check("I6 a filename with a SPACE survives the untracked listing - "
+                        "whitespace-split dropped it silently",
+                        code == 1 and "my notes.md" in out,
+                        f"exit={code}: " + out.strip()[-300:])
+                c.check("I7 an untracked .md one level BELOW a diffed dir is swept "
+                        "(the startswith clause has a killer now)",
+                        "sub/deep.md" in out, out.strip()[-300:])
+
+            with TempDir() as repo:
+                _git(repo, "init", "-q")
+                _git(repo, "config", "user.email", "t@t")
+                _git(repo, "config", "user.name", "t")
+                (repo / "docs").mkdir()
+                (repo / "docs" / "gone.md").write_text("prose\n", encoding="utf-8")
+                (repo / "docs" / "keep.md").write_text("prose\n", encoding="utf-8")
+                _git(repo, "add", "docs/gone.md", "docs/keep.md")
+                _git(repo, "commit", "-q", "-m", "base")
+                _git(repo, "branch", "base")
+                _git(repo, "rm", "-q", "docs/gone.md")
+                _git(repo, "commit", "-q", "-m", "delete")
+                code, out = _cl(repo, "--base", "base")
+                c.check("I8 a diff-DELETED .md is not claimed as [scanned] - a file that "
+                        "was invisible must not read as examined",
+                        "[scanned] docs/gone.md" not in out
+                        and "docs/gone.md" in out,
+                        out.strip()[-300:])
+
+            with TempDir() as repo:
+                _git(repo, "init", "-q")
+                _git(repo, "config", "user.email", "t@t")
+                _git(repo, "config", "user.name", "t")
+                (repo / "n.md").write_text("prose, no claims\n", encoding="utf-8")
+                _git(repo, "add", "n.md")
+                _git(repo, "commit", "-q", "-m", "base")
+                code, out = _cl(repo, "--paths", "n.md")
+                c.check("I9 --paths mode prints the [scanned] names too - the loop is "
+                        "common to every mode",
+                        "[scanned] n.md" in out, out.strip()[-200:])
 
     return c.finish()
 

@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-304-playwright-frontend-check",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-304",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "a3c0cebdf160a51015c579b94b39bbc85e22c2ca",
+  "warnings": 1,
+  "when": "2026-08-23T21:19:54-04:00"
+}

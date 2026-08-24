@@ -1,0 +1,72 @@
+{
+  "v": 1,
+  "task": "SCC-293",
+  "sha": "da8f4b4d5e57d5d0cd23f9964bc37b79eb2fe8fa",
+  "tip": "34317c4beef0a5653be7efa430c5d93153c204ca",
+  "trigger": "close-out",
+  "when": "2026-08-23T22:26:49-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/INDEX.md",
+    ".agents/commands/cicd-non-crit-pr-push.md",
+    ".agents/commands/smh-non-crit-pr-push.md",
+    ".agents/commands/smh-quick-fix.md",
+    ".agents/rules/artifacts-always-first.md",
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/check_links.py",
+    ".agents/scripts/jira_feed.py",
+    ".agents/scripts/lane_qualify.py",
+    ".agents/scripts/tests/test_check_links.py",
+    ".agents/scripts/tests/test_jira_feed.py",
+    ".agents/scripts/tests/test_lane_qualify.py",
+    ".agents/scripts/tests/test_lens_roster_contract.py",
+    ".agents/scripts/tests/test_review_engine.py",
+    ".agents/skills/code-review-engine/SKILL.md",
+    ".agents/skills/code-review-engine/steps/step-01-review.md",
+    ".agents/skills/code-review-engine/steps/step-04-record.md",
+    ".agents/workflows/cicd-non-crit-pr-push.md",
+    ".agents/workflows/smh-non-crit-pr-push.md",
+    ".agents/workflows/smh-quick-fix.md",
+    ".claude/settings.json",
+    ".claude/skills/code-review-engine/SKILL.md",
+    ".claude/skills/code-review-engine/steps/step-01-review.md",
+    ".claude/skills/code-review-engine/steps/step-04-record.md",
+    ".opencode/commands/cicd-non-crit-pr-push.md",
+    ".opencode/commands/smh-non-crit-pr-push.md",
+    ".opencode/commands/smh-quick-fix.md",
+    "AGENTS.md",
+    "_artifacts/_main/2026-08-23_bugs-cycle-7/gates/suite.json",
+    "_artifacts/_main/2026-08-23_bugs-cycle-7/implementation_plan.md",
+    "_artifacts/_main/2026-08-23_bugs-cycle-7/sweep-b.json",
+    "_artifacts/_main/2026-08-23_bugs-cycle-7/sweep-c.json",
+    "_artifacts/_main/2026-08-23_bugs-cycle-7/sweep-d.json",
+    "_artifacts/_main/2026-08-23_bugs-cycle-7/sweep-e.json",
+    "_artifacts/_main/2026-08-23_bugs-cycle-7/task.yaml",
+    "_artifacts/_main/2026-08-23_bugs-cycle-7/tickets/SCC-306.md",
+    "_artifacts/_main/2026-08-23_bugs-cycle-7/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-23_bugs-cycle-7/walkthrough.md",
+    "verdict": "PASS @ da8f4b4",
+    "gates": {
+      "suite": "pass@da8f4b4"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/artifacts-always-first.md"
+  ]
+}

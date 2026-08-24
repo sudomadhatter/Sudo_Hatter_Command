@@ -64,9 +64,17 @@ PATHISH = re.compile(r"^[\w./@-]+/[\w./@-]*\.(md|py|ps1|sh|json|ya?ml|txt|cjs|js
 # Convention 5. A doc showing the SHAPE of a path is not claiming one exists.
 PLACEHOLDER = re.compile(
     r"<[^>]+>|\{[^}]+\}|\.\.\.|\*|"
-    r"\b(path/to|your|example|some|foo|bar|baz|NAME|SLUG|KEY)\b",
+    r"\b(path/to|relative/path|your|example|some|foo|bar|baz|NAME|SLUG|KEY)\b",
     re.I,
 )
+# Convention 5, second form (SCC-293). An ALL-CAPS_UNDERSCORE segment used as a DIRECTORY is a
+# variable standing in for a path - `PROJECT_ROOT/.agents/INDEX.md` is the shape a rule uses to
+# say "in the project you bound", exactly like `<KEY>`. It must stay narrow: the trailing slash
+# is what distinguishes a stand-in DIRECTORY from a real SHOUTY FILENAME, so `docs/README_OLD.md`
+# and `docs/PROJECT_NOTES.md` remain claims and are still resolved. Found by running this gate
+# over a lane that had merely EDITED two long-standing files, pulling them into scope for the
+# first time - the hits were prose, not rot.
+CAPS_VAR_DIR = re.compile(r"(?:^|/)[A-Z][A-Z0-9]*_[A-Z0-9_]*/")
 URL = re.compile(r"^(https?|mailto|ftp|file):", re.I)
 FENCE = re.compile(r"^\s*(```|~~~)")
 
@@ -74,7 +82,7 @@ FENCE = re.compile(r"^\s*(```|~~~)")
 # `backend/requirements.txt`, `_bmad-output/sudo-tests.yaml`. Those paths are correct and simply do
 # not exist in the lobby. Resolving them would need the target repo, which the audit does not bind.
 PROJECT_ROOTS = ("backend/", "frontend/", "firebase/", "functions/", "mobile/",
-                 "_bmad-output/", "_bmad/", "docs/stories/")
+                 "_bmad-output/", "_bmad/", "docs/stories/", "quick_fixes/")
 
 # Convention 7. A NARRATIVE LEDGER records what a session did, including deleting things. A row
 # naming a file that a later lane removed is HISTORY, not a broken link — the same carve-out
@@ -243,7 +251,7 @@ def scan(worktree: Path, resolver: Resolver, files: list[str]):
             continue
         ledger = f.endswith(NARRATIVE_LEDGERS)      # convention 7
         for n, tok, anc in candidates(p.read_text(encoding="utf-8", errors="replace")):
-            if URL.match(tok) or PLACEHOLDER.search(tok):
+            if URL.match(tok) or PLACEHOLDER.search(tok) or CAPS_VAR_DIR.search(tok):
                 continue
             if tok.startswith(PROJECT_ROOTS):       # convention 6
                 continue
@@ -277,6 +285,7 @@ def main() -> int:
         print(f"check_links: cannot run - {e}", file=sys.stderr)
         return 2
 
+    untracked: list[str] = []          # SCC-303: filled on the --base path only
     if a.paths:
         files = [f for f in a.paths if f.endswith(".md")]
     elif a.all:
@@ -284,11 +293,44 @@ def main() -> int:
     else:
         base = a.base or "origin/main"
         try:
-            files = [f for f in run(["git", "diff", "--name-only", f"{base}...HEAD"], wt).split()
-                     if f.endswith(".md")]
+            # -z + NUL split: a filename with a space, or one git would C-quote (non-ASCII
+            # under core.quotePath), fractures under whitespace .split() and silently leaves
+            # the sweep - the reviewed defect, reproduced. Same idiom on both git calls.
+            changed = [f for f in run(["git", "diff", "--name-only", "-z",
+                                       f"{base}...HEAD"], wt).split("\0") if f]
         except Exception as e:
             print(f"check_links: cannot diff against {base} - {e}", file=sys.stderr)
             return 2
+        files = [f for f in changed if f.endswith(".md")]
+        # ⛔ SCC-303: `git diff --name-only` is tracked-only BY CONSTRUCTION, so an untracked
+        # markdown file - the lane's own walkthrough, at exactly the moment the gate runs - was
+        # never scanned, and the run printed a clean count over a set it had narrowed silently.
+        # Untracked .md under the DIFF'S directories is swept in and scanned like anything else;
+        # untracked files elsewhere stay out of scope (a stray note is not this diff's business).
+        # ⛔ "The diff's directories" means the directories of EVERY changed path, not of the
+        # changed *markdown* - a code-only diff beside an untracked walkthrough was the scar's
+        # general form, and the first cut of this sweep re-opened it (review, reproduced).
+        # Paths are compared as git gives them (forward slashes) - `str(Path(...))` flips to
+        # backslashes on the PC and disables the subdirectory clause there.
+        try:
+            others = [u for u in run(["git", "ls-files", "--others", "--exclude-standard",
+                                      "-z"], wt).split("\0")
+                      if u.endswith(".md")]
+        except Exception as e:
+            others = []
+            # A silent [] here IS the narrowed-scope-under-green defect this sweep closes -
+            # degrade loudly, and keep exit 0 only because the tracked scan still ran.
+            print(f"[WARN] check_links: could not list untracked files - untracked "
+                  f"markdown was NOT swept in ({e})", file=sys.stderr)
+
+        def _parent(p: str) -> str:
+            return p.rsplit("/", 1)[0] if "/" in p else "."
+
+        dirs = {_parent(f) for f in changed}
+        untracked = [u for u in others
+                     if _parent(u) in dirs
+                     or any(u.startswith(d + "/") for d in dirs if d != ".")]
+        files += [u for u in untracked if u not in files]
 
     if not files:
         # ⛔ An empty input is NOT a pass (`tests-must-gate-for-real` §5). Say so plainly.
@@ -297,6 +339,16 @@ def main() -> int:
 
     dead, anchors, checked = scan(wt, res, files)
     print(f"check_links: {len(files)} markdown file(s), {checked} path claim(s) checked")
+    # SCC-303: the NAMES, every run - a count cannot distinguish "all clean" from "one file
+    # was invisible", and that ambiguity is what shipped four dead paths under a green gate.
+    swept = set(untracked)
+    for f in files:
+        # A file the diff DELETED is in the name list but was never opened (scan() skips a
+        # non-file) - claiming [scanned] for it is the count ambiguity all over again.
+        if not (wt / f).is_file():
+            print(f"  [absent]  {f}  (not on disk - deleted in this diff, nothing to scan)")
+            continue
+        print(f"  [scanned] {f}" + ("  (untracked - swept in)" if f in swept else ""))
     for d in sorted(set(dead)):
         print(f"  [dead]   {d}")
     for x in sorted(set(anchors)):

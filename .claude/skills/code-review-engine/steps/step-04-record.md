@@ -50,6 +50,7 @@ answerable from data; N is not fixed here — fixing it would be a hard-coded ca
 
 ```
 review-runtime:  fan-out | inline
+lens_isolation:  worktree | mixed — <lens>: <mode>, … | shared — <why, when the runtime could not isolate>
 lenses_run:
 - <lens> · ok | recovered-inline | dead — <why, when it is not `ok`>
 - <one row per lens that was applicable — the ROSTER, not a summary of it>

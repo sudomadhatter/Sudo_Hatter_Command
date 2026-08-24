@@ -1,0 +1,64 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_check_links.py"
+  ],
+  "mutants": [
+    {
+      "id": "M1 revert SCC-303: drop the untracked sweep entirely",
+      "file": ".agents/scripts/check_links.py",
+      "original": "        untracked = [u for u in others\n                     if _parent(u) in dirs\n                     or any(u.startswith(d + \"/\") for d in dirs if d != \".\")]\n        files += [u for u in untracked if u not in files]",
+      "mutated": "        untracked = []",
+      "case": "I1 an untracked .md with a dead path in a diffed dir must NOT produce a clean exit 0",
+      "block": "I \u00b7 SCC-303 \u00b7 --base must not narrow its own scope silently"
+    },
+    {
+      "id": "M2 sweep EVERY untracked .md, ignoring the diff's directories",
+      "file": ".agents/scripts/check_links.py",
+      "original": "        untracked = [u for u in others\n                     if _parent(u) in dirs\n                     or any(u.startswith(d + \"/\") for d in dirs if d != \".\")]",
+      "mutated": "        untracked = list(others)",
+      "case": "I4 CONTROL: an untracked .md OUTSIDE the diff's directories stays out of scope",
+      "block": "I \u00b7 SCC-303 \u00b7 --base must not narrow its own scope silently"
+    },
+    {
+      "id": "M3 stop printing the scanned names",
+      "file": ".agents/scripts/check_links.py",
+      "original": "    swept = set(untracked)\n    for f in files:\n        # A file the diff DELETED is in the name list but was never opened (scan() skips a\n        # non-file) - claiming [scanned] for it is the count ambiguity all over again.\n        if not (wt / f).is_file():\n            print(f\"  [absent]  {f}  (not on disk - deleted in this diff, nothing to scan)\")\n            continue\n        print(f\"  [scanned] {f}\" + (\"  (untracked - swept in)\" if f in swept else \"\"))",
+      "mutated": "    swept = set(untracked)",
+      "case": "I2 the run prints the scanned file NAMES, not only a count",
+      "block": "I \u00b7 SCC-303 \u00b7 --base must not narrow its own scope silently"
+    },
+    {
+      "id": "M4 print the names but never mark a swept file as untracked",
+      "file": ".agents/scripts/check_links.py",
+      "original": "        print(f\"  [scanned] {f}\" + (\"  (untracked - swept in)\" if f in swept else \"\"))",
+      "mutated": "        print(f\"  [scanned] {f}\")",
+      "case": "I3 ...and says the untracked file was swept IN, so the reader knows the scope widened",
+      "block": "I \u00b7 SCC-303 \u00b7 --base must not narrow its own scope silently"
+    },
+    {
+      "id": "M5 build dirs from the markdown subset again (the review's reproduced hole)",
+      "file": ".agents/scripts/check_links.py",
+      "original": "        dirs = {_parent(f) for f in changed}",
+      "mutated": "        dirs = {_parent(f) for f in files}",
+      "case": "I5 a CODE-only diff still sweeps the untracked .md beside it - dirs come from the DIFF, not from its markdown subset",
+      "block": "I \u00b7 SCC-303 \u00b7 --base must not narrow its own scope silently"
+    },
+    {
+      "id": "M6 whitespace-split the untracked listing again",
+      "file": ".agents/scripts/check_links.py",
+      "original": "            others = [u for u in run([\"git\", \"ls-files\", \"--others\", \"--exclude-standard\",\n                                      \"-z\"], wt).split(\"\\0\")\n                      if u.endswith(\".md\")]",
+      "mutated": "            others = [u for u in run([\"git\", \"ls-files\", \"--others\", \"--exclude-standard\"], wt).split()\n                      if u.endswith(\".md\")]",
+      "case": "I6 a filename with a SPACE survives the untracked listing - whitespace-split dropped it silently",
+      "block": "I \u00b7 SCC-303 \u00b7 --base must not narrow its own scope silently"
+    },
+    {
+      "id": "M7 claim [scanned] for a file not on disk",
+      "file": ".agents/scripts/check_links.py",
+      "original": "        if not (wt / f).is_file():\n            print(f\"  [absent]  {f}  (not on disk - deleted in this diff, nothing to scan)\")\n            continue\n",
+      "mutated": "",
+      "case": "I8 a diff-DELETED .md is not claimed as [scanned] - a file that was invisible must not read as examined",
+      "block": "I \u00b7 SCC-303 \u00b7 --base must not narrow its own scope silently"
+    }
+  ]
+}

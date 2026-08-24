@@ -48,6 +48,7 @@ lane. *(PC: `python`, not `python3`.)*
 | `LIGHT` | carry on |
 | `LIGHT-VCS` | carry on — a **declared** git-hygiene action (see Step 3's rider) |
 | `TASK` | **stop.** This is `/smh-quick-dev` — it needs a plan and the literal `approved` |
+| `TASK-LIGHT` | **stop — but the lane you eject to is right-sized (SCC-302).** Toolkit work with a small, measured blast radius (`--lines` ≤ 10, ≤ 2 files): `/smh-quick-dev` still owns it — assertion-first, gates and sweep all stay — but the plan may be a paragraph and the review fan-out may collapse to one inline pass. Say the verdict in the walkthrough |
 | `HANDOFF` | **stop.** A deployable path; the product's one road to `main` is `/cicd-push-e2e` |
 | `NOT-COMMAND-CENTRE` | **stop.** You are in a project repo; use the `cicd-*` lanes |
 

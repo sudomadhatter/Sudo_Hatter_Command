@@ -332,7 +332,7 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
     python3 .agents/scripts/lane_qualify.py --repo "$(git rev-parse --show-toplevel)" \
             --paths <the paths you will touch>                                  # PC: `python`
     ```
-    `LIGHT` (or `LIGHT-VCS`) qualifies. `TASK` / `HANDOFF` / `NOT-COMMAND-CENTRE` do not — and note
+    `LIGHT` (or `LIGHT-VCS`) qualifies. `TASK` / `TASK-LIGHT` / `HANDOFF` / `NOT-COMMAND-CENTRE` do not — and note
     that **no paths at all is `TASK`**, because silence is unknown scope, never empty scope. A
     git-hygiene action that genuinely edits no files declares `--no-file-changes` and may delete only
     refs the operator named, never a swept set.

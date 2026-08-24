@@ -189,6 +189,41 @@ def main() -> int:
                 and data["dispositions"].startswith("per-lens:"),
                 repr(data["dispositions"]))
 
+    # ── SCC-301: the TREE half of isolation - a lens could edit the tree it reviews ──────
+    # Measured twice (SCC-298, SCC-295 lanes): three of five lenses edited the builder's
+    # working tree mid-review, and one reported a RED result no version of the code under
+    # review can produce - the builder was reading a lens's own mutant. "Clean context" was
+    # only half the launch contract; this is the other half, pinned.
+    SKILL = (ROOT / ".agents/skills/code-review-engine/SKILL.md").read_text(encoding="utf-8")
+    dup = t.count("in parallel, each in its own clean context")
+    c.check("SCC-301 B5: the launch sentence appears exactly ONCE (aafe0d4's duplicate gone)",
+            dup == 1, f"{dup}x - the sentence was pasted twice at :27-31 by aafe0d4 (SCC-190)")
+    c.check("SCC-301 B1: the launch states the TREE half - worktree isolation, by name",
+            'isolation: "worktree"' in t,
+            "the launch paragraph must name the Agent tool's worktree isolation, or every "
+            "lens inherits write access to the tree under review")
+    c.check("SCC-301 B2: the lens table carries a Tree column",
+            "| Tree |" in t, "per-lens isolation is table wiring, not prose")
+    blind = next((ln for ln in t.splitlines() if ln.startswith("| **Blind Hunter**")), "")
+    c.check("SCC-301 B2b: ...and the Blind Hunter's row says NO tree at all",
+            "no tree" in blind, f"DIFF-only lens must not get a repo copy: {blind[:160]}")
+    # Every lens row's Tree cell individually (review: B1's whole-file grep let one row's
+    # cell be rewritten while the string survived in the other rows).
+    rows = [ln for ln in t.splitlines()
+            if ln.startswith("| **") and "Hunter**" in ln or ln.startswith("| **") and "Auditor**" in ln]
+    bad = [ln.split("|")[1].strip() for ln in rows
+           if 'isolation: "worktree"' not in ln.split("|")[3] and "no tree" not in ln.split("|")[3]]
+    c.check("SCC-301 B2c: EVERY lens row's Tree cell is a worktree copy or an explicit "
+            "no-tree - none may share the builder's tree",
+            len(rows) == 5 and not bad, f"rows={len(rows)} bad={bad}")
+    c.check("SCC-301 B4: a lens that writes to its tree is a HARD FAILURE, not a warning",
+            "A lens that WRITES is a hard failure" in t,
+            "without this the roster records `ok` for a lens that rewrote its own subject")
+    c.check("SCC-301 B3a: the engine's return states the isolation mode (SKILL.md)",
+            "lens_isolation:" in SKILL, "the contract line is the checkable surface")
+    c.check("SCC-301 B3b: ...and the recorded roster carries the same line (step-04)",
+            "lens_isolation:" in STEP04, "a mode stated but never recorded cannot be audited")
+
     return c.finish()
 
 

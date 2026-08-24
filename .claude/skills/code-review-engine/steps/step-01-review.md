@@ -24,21 +24,36 @@ rest were lenses doing exactly what they were told to do.
 **So: assess, then act. Never act, then assess.** The disposition rule below is binding and it is
 yours alone — no lens, and no severity label a lens assigned, decides it for you.
 
-Launch every lens **in parallel, each in its own clean context.** They do not see this
-conversation, they do not see each other, and none of them sees the builder's reasoning — that
-independence is the entire value of the fan-out. Wall-clock is the slowest lens, not their sum. **in parallel, each in its own clean context.** They do not see this
-conversation, they do not see each other, and none of them sees the builder's reasoning — that
-independence is the entire value of the fan-out. Wall-clock is the slowest lens, not their sum.
+Launch every lens **in parallel, each in its own clean context — and each in its own TREE.** They
+do not see this conversation, they do not see each other, and none of them sees the builder's
+reasoning — that independence is the entire value of the fan-out. Wall-clock is the slowest lens,
+not their sum.
+
+⛔ **The context half alone is not isolation (SCC-301).** A clean context still inherits write
+access to the worktree under review, and that is not hypothetical: measured on the SCC-295 lane,
+three of five lenses edited the builder's working tree mid-review, and one reported a RED result no
+version of the code under review can produce — the builder was reading a lens's own mutant. So the
+launch contract has a TREE half, per lens from the table's **Tree** column: a repo-reading lens is
+launched with the Agent tool's `isolation: "worktree"`, so anything it writes lands in its own
+disposable copy, never the tree it is reviewing; a `DIFF`-only lens gets **no tree at all** — no
+repo access is part of what starves it. Record the mode as `lens_isolation:`, in the return and the roster —
+`worktree` when every repo-reading lens was isolated; `mixed — <lens>: <mode>, …` when they
+differed (name each un-isolated lens: a partially isolated run recorded as one word hides exactly
+the lens this contract exists to expose); `shared — <why>` when the runtime could not isolate at
+all.
+**A lens that WRITES is a hard failure, never a warning:** builder-tree bytes changed by a lens, or
+a lens report describing edits it made, marks that lens `dead — wrote to the tree`, its findings are
+discarded unread, and the roster must not record it `ok`.
 
 ## The lenses
 
-| Lens | Gets | Runs when | How | Primed with `EVIDENCE_PACK` |
-|---|---|---|---|---|
-| **Blind Hunter** | `DIFF` only — no spec, no repo access, no context docs | standard level (quick skips it) | the `bmad-review-adversarial-general` skill + the hunter contract | **never** — starved by design |
-| **Edge Case Hunter** | `DIFF` + read access to `REPO` | standard level (quick skips it) | the `bmad-review-edge-case-hunter` skill + the hunter contract | yes |
-| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | standard level (quick skips it) | the literal-correctness discipline + the hunter contract | yes |
-| **Acceptance Auditor** | `DIFF` + `STORY_FILE` + any context docs | `review_mode: full` only | the auditor rubric | **never** — cannot verify it |
-| **Test-Adequacy Auditor** | `DIFF` + read access to `REPO` | always | the auditor rubric | yes |
+| Lens | Gets | Tree | Runs when | How | Primed with `EVIDENCE_PACK` |
+|---|---|---|---|---|---|
+| **Blind Hunter** | `DIFF` only — no spec, no repo access, no context docs | **no tree** — repo access is withheld by design | standard level (quick skips it) | the `bmad-review-adversarial-general` skill + the hunter contract | **never** — starved by design |
+| **Edge Case Hunter** | `DIFF` + read access to `REPO` | own worktree copy (`isolation: "worktree"`) | standard level (quick skips it) | the `bmad-review-edge-case-hunter` skill + the hunter contract | yes |
+| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | own worktree copy (`isolation: "worktree"`) | standard level (quick skips it) | the literal-correctness discipline + the hunter contract | yes |
+| **Acceptance Auditor** | `DIFF` + `STORY_FILE` + any context docs | own worktree copy (`isolation: "worktree"`) | `review_mode: full` only | the auditor rubric | **never** — cannot verify it |
+| **Test-Adequacy Auditor** | `DIFF` + read access to `REPO` | own worktree copy (`isolation: "worktree"`) | always | the auditor rubric | yes |
 
 **The `Runs when` column defers to § The two levels (SCC-232)** — `standard level` cells are
 skipped-by-mode at `quick` and recorded on `lenses_na`, never dead; `always` means both levels.
