@@ -1,0 +1,8 @@
+task_key: SCC-308
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-308-update-maps-indexes
+close_command: smh-close-task-merge-tree
+secondary_repos:
+  - repo: Projects/AGY_AVIATIONCHAT
+    landing: independent-task
+    ticket: AVCH-87

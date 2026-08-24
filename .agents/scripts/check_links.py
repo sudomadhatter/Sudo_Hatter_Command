@@ -99,7 +99,8 @@ PROJECT_ROOTS = ("backend/", "frontend/", "firebase/", "functions/", "mobile/",
 # LIVE header, and that is not a gap this exemption opens: the stale SOP path fixed at
 # `active-context.md:9` this lane was prose, not a path claim, so no version of this checker
 # ever saw it. The brief is 5x over its declared 20 KB budget; the prune is what it is owed.
-NARRATIVE_LEDGERS = ("_artifacts/INDEX.md", "_artifacts/_main/INDEX.md",
+NARRATIVE_LEDGERS = ("_artifacts/INDEX.md", "_artifacts/INDEX-archive.md",
+                     "_artifacts/_main/INDEX.md",
                      "_artifacts/_main/active-context.md")
 
 

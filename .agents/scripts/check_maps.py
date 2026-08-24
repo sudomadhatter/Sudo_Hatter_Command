@@ -20,9 +20,10 @@ Mode detection (PATH CONTRACT, two columns):
                  its continuity brief at `_bmad-output/active-context/active-context.md` and uses `_artifacts/`
                  for session *history*; a non-BMAD project uses `_artifacts/active-context.md`.
 
-Nine checks (1-3 fatal drift; 4 informational; 5 + 8 + 9 non-fatal hints; 6-7 fatal):
+Eleven checks (1-3 + 6-7 + 10 fatal drift; 2.5 fatal; 4 informational; 5 + 8 + 9 non-fatal hints):
   1. AUTO-block freshness   — regenerate the map's AUTO body in memory (mode-preserving) and diff.
   2. Path existence         — every backticked table-row path in the map CURATED block + each INDEX.md resolves.
+  2.5 Level-2 INDEX         — every real level-2 folder carries an INDEX.md unless its local law exempts it.
   3. Folder coverage        — every real TOP-LEVEL folder appears in the map text.
   4. Git baseline           — diff HEAD against the last reconciled SHA (<docs>/.maps-state.json); list renames.
                              (Informational — it feeds the workflow's judgment steps, never the exit code.)
@@ -39,6 +40,7 @@ Nine checks (1-3 fatal drift; 4 informational; 5 + 8 + 9 non-fatal hints; 6-7 fa
                              (.code-review-graph/graph.db), its built-at commit must equal HEAD. A git pull moves HEAD past
                              the gitignored index and impact/test-selection answers go silently wrong
                              (dirty tree != stale — only commits count). No index -> skip.
+ 10. Doc-graph freshness    — generated doc-graph outputs match their current source documents when present.
 """
 import argparse
 import json
@@ -693,7 +695,7 @@ def check_conformance(root, is_home, is_bmad, map_path):
 
 
 def lint_one(root, ignore_override=None):
-    """Run all six checks + the hygiene nag for ONE workspace, print its section, and return has_drift (bool).
+    """Run all eleven checks for ONE workspace, print its section, and return has_drift (bool).
     The fan-out loop calls this once per workspace; a single-workspace run calls it once. The final verdict
     line is printed by main() (once, combined) so a fan-out shows one overall pass/fail."""
     is_home, is_bmad = detect_mode(root)

@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-308-update-maps-indexes",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-308",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "9c21f27a98f2b4a4af1eaa6e48d3551132c07e8e",
+  "warnings": 1,
+  "when": "2026-08-24T00:19:15-04:00"
+}
