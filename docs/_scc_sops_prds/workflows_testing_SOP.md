@@ -508,7 +508,7 @@ defaults somewhere else, and nothing in this system is edited inside BMAD to cha
 
 **Opening the story tree does not move your shared checkout.** The tree is cut with the epic ref
 named as an operand — `git worktree add --no-track <path> -b claude/<KEY>-<story-slug>
-origin/epic/<KEY>-<slug>` — so nothing has to be checked out first and the shared checkout stays on
+origin/epic/<KEY>-epic-<N>-<slug>` — so nothing has to be checked out first and the shared checkout stays on
 `main`, where every later `git status`, `worktree add` and boot expects to find it. The one exception
 is the `EnterWorktree` door, which inherits the current HEAD by configuration: take that door and you
 check the epic branch out first and go **straight back to `main`** once the tree is open.
@@ -607,7 +607,7 @@ merged.
 
 > ⓘ **Why 0.7 re-derives against the epic, not `main` (SCC-166).** These steps were ported from
 > `/smh-code-review`, where a Task lane merges into `main` and so re-derives against `origin/main`.
-> A story lane merges into `epic/<JIRA-KEY>-<slug>` — pasting the Task step verbatim would re-derive
+> A story lane merges into `epic/<JIRA-KEY>-epic-<N>-<slug>` — pasting the Task step verbatim would re-derive
 > against a branch the story never meets, reporting "nothing moved" while the epic-mate that *did*
 > move the file lands anyway. `tests/test_command_surfaces.py` pins it both ways: the cicd step must
 > name `origin/$EPIC` **and must not name `origin/main`**. The `quick` level's lens membership was
@@ -1089,7 +1089,7 @@ self-certifying, which is the thing this closes. Law: `.agents/rules/completion-
 doors sit in its `NOT_PAIRED` list.
 
 **The landing target is resolved, not assumed.** A Task lands on `main`; a **story** lands on
-`epic/<KEY>-<slug>`, which is not an ancestor of `main` until the epic itself ships — so a
+`epic/<KEY>-epic-<N>-<slug>`, which is not an ancestor of `main` until the epic itself ships — so a
 hardcoded `origin/main` would answer *"held"* forever on a finished story. The target resolves
 **explicit flag → the lane's `task.yaml` `landing_ref:` → `origin/main`**, so a lane that says
 nothing lands where a Task lands. ⛔ **A landing ref that does not resolve HOLDS the row and names
@@ -1101,7 +1101,7 @@ Step 4b transitions its ticket by running:
 
 ```bash
 python3 .agents/scripts/jira_feed.py finish --key <KEY> --apply \
-  --walkthrough "<the story walkthrough>" --landing-ref "origin/epic/<JIRA-KEY>-<slug>"
+  --walkthrough "<the story walkthrough>" --landing-ref "origin/epic/<JIRA-KEY>-epic-<N>-<slug>"
 ```
 
 Three things you get back by typing that instead of `acli`: the `--yes` flag and the **status
@@ -2785,7 +2785,7 @@ the robot is never typing into the same files as you or another lane. It looks l
 
 **You launch it from the epic branch.** The robot cuts the story's branch from whatever the project
 has checked out, and that has to be the epic branch — so switch to it first, or pass
-`-EpicBranch epic/<KEY>-<slug>`. It refuses to start rather than guess, because a story branched off
+`-EpicBranch epic/<KEY>-epic-<N>-<slug>`. It refuses to start rather than guess, because a story branched off
 `main` can't be landed.
 
 **When it's green it commits, files the ticket, and stops.** It saves the work on the story branch

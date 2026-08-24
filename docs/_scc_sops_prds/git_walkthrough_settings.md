@@ -295,7 +295,7 @@ flowchart TD
 |---|---|---|
 | `claude/<JIRA-KEY>-<slug>` | you, in one story worktree | **free** — commit as often as you like |
 | `chore/<JIRA-KEY>-<slug>` | you, for work outside any epic (its own ticket) | **free** |
-| `epic/<JIRA-KEY>-<slug>` | several story lanes land here | **sign-off per landing** |
+| `epic/<JIRA-KEY>-epic-<N>-<slug>` | several story lanes land here | **sign-off per landing** |
 | `main` | everyone; a push here **deploys** | **`/cicd-push-e2e` only** |
 
 **How each setting earns its keep here:**

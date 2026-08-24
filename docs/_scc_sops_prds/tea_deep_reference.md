@@ -150,7 +150,7 @@ invocation. It never touches `main` (that stays `/cicd-push-e2e`'s).
 0.  resolve project · sync the branch · preflight → one call, before the save reads the board
 1.  /cicd-update-sprint-memory        → THE SAVE (below) — the board, the story file, the learnings
 2.  commit the close-out edits        → explicit paths, on the story branch, so they ride the landing
-3.  LAND: git push origin HEAD:epic/<KEY>-<slug>
+3.  LAND: git push origin HEAD:epic/<KEY>-epic-<N>-<slug>
                                       → the one sanctioned push. HEAD must be a claude/* branch inside the
                                         worktree, else STOP; a red merge gate lands nothing.
 4.  Jira: Dev Record, THEN ticket → Done (+ clears any Bug flag)

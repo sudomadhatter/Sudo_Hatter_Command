@@ -248,7 +248,7 @@ python3 .agents/scripts/jira_feed.py audit --jira-project SCC --project Sudo_Hat
 |---|---|---|---|
 | **`Story`** | `claude/<KEY>-<slug>` off the epic branch | `/cicd-close-story-merge-tree` | it lands on the **epic** branch, never `main` |
 | **`Task`** | `chore/<KEY>-<slug>` off `main` | **`/smh-close-task-merge-tree`** | the story close-out reads a sprint board, flips a story status and lands on an epic branch — a Task has **none of the three** |
-| **`Epic`** | `epic/<KEY>-<slug>` off `main` | `/cicd-push-e2e` | — |
+| **`Epic`** | `epic/<KEY>-epic-<N>-<slug>` off `main` | `/cicd-push-e2e` | — |
 
 ### `Bug` is a flag, not a category of work
 
