@@ -11,11 +11,13 @@ paragraph in a rule for one reason: **the previous version of this rule was pros
 agent talked itself past it.** A qualification an agent evaluates by judgement is a
 qualification it can want its way through; a path list it must run is a fact.
 
-    lane_qualify.py [--repo PATH] [--paths P ...] [--no-file-changes]
+    lane_qualify.py [--repo PATH] [--paths P ...] [--no-file-changes] [--lines N]
 
     LIGHT               the lightweight lane - do it, push it, hand back        (exit 0)
     LIGHT-VCS           a DECLARED git-hygiene action that changes no files      (exit 0)
     TASK                the full /smh-quick-dev lane: plan, audit, RED, review   (exit 1)
+    TASK-LIGHT          the same road, small measured blast radius (--lines 1-10,
+                        <=2 files) - the lane may right-size its ceremony (SCC-302) (exit 1)
     HANDOFF             a deployable path - /cicd-push-e2e's road, never a Task  (exit 2)
     NOT-COMMAND-CENTRE  a project repo - use the cicd-* lanes                    (exit 3)
 

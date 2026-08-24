@@ -96,7 +96,7 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 > source-control state. Invoking **`/smh-quick-fix`** IS the "skip the plan" instruction, and so is
 > saying *"skip the plan, just do it"*. ⛔ **Do not ask whether to mint a ticket or open a lane** —
 > asking is the over-engineering the ruling names. **Qualification is a script, never a judgement:**
-> `python3 .agents/scripts/lane_qualify.py --paths <paths>` — `LIGHT`/`LIGHT-VCS` qualify, and **no
+> `python3 .agents/scripts/lane_qualify.py --paths <paths>` — `LIGHT`/`LIGHT-VCS` qualify (`TASK-LIGHT` does NOT — it right-sizes `/smh-quick-dev`, SCC-302), and **no
 > paths at all is `TASK`**, because silence is unknown scope. The lane still takes a Jira key, a
 > `chore/*` worktree, the gates, a lean walkthrough, and `/smh-close-task-merge-tree` — there is no
 > lighter door to `main`.
