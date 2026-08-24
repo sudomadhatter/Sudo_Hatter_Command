@@ -18,6 +18,7 @@ of `—` means the page recorded the ticket but not the day; the ticket's sessio
 
 | Date | Ticket | What changed for the operator |
 |---|---|---|
+| 2026-08-23 | SCC-303 | The link gate stops reporting clean on a scope it silently narrowed: untracked markdown in a diffed directory is now swept in and scanned, and every run prints the scanned file names (`[scanned]`), so a file the diff could not see no longer hides behind a green count. |
 | 2026-08-23 | SCC-306 | A rolling ticket parked in the Rolling Tickets column now mints its successor on `jira_feed.py start --apply` — the roll runs before the status refusal instead of after it. The refusal keeps its shape (exit 3, nothing written), so parking the un-started successor there is safe again; no more hand-driven clones. |
 | 2026-08-22 | SCC-288 | The link checker no longer reports the doc graph's own findings as its own. A generated `AUTO` block is machine output, and the doc graph's block lists every dangling reference it found — 40 of them, read as 40 dead links in a file nobody wrote a link into. Both generated-block sentinels are now skipped; the run went from 64 hits to 26, none of them new prose. |
 | 2026-08-22 | SCC-288 | A mutation sweep no longer leaves the mutant's compiled bytecode behind. Restoring the source text alone let later runs keep executing a mutant whose code was gone from disk — measured live: a green 32/32 sweep, then a generator writing the mutant's output into a tracked file. The restore now clears `__pycache__` too. |

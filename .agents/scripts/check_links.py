@@ -277,6 +277,7 @@ def main() -> int:
         print(f"check_links: cannot run - {e}", file=sys.stderr)
         return 2
 
+    untracked: list[str] = []          # SCC-303: filled on the --base path only
     if a.paths:
         files = [f for f in a.paths if f.endswith(".md")]
     elif a.all:
@@ -289,6 +290,21 @@ def main() -> int:
         except Exception as e:
             print(f"check_links: cannot diff against {base} - {e}", file=sys.stderr)
             return 2
+        # ⛔ SCC-303: `git diff --name-only` is tracked-only BY CONSTRUCTION, so an untracked
+        # markdown file - the lane's own walkthrough, at exactly the moment the gate runs - was
+        # never scanned, and the run printed a clean count over a set it had narrowed silently.
+        # Untracked .md under the DIFF'S directories is swept in and scanned like anything else;
+        # untracked files elsewhere stay out of scope (a stray note is not this diff's business).
+        try:
+            others = [u for u in run(["git", "ls-files", "--others", "--exclude-standard"],
+                                     wt).split() if u.endswith(".md")]
+        except Exception:
+            others = []
+        dirs = {str(Path(f).parent) for f in files}
+        untracked = [u for u in others
+                     if str(Path(u).parent) in dirs
+                     or any(str(Path(u)).startswith(d + "/") for d in dirs if d != ".")]
+        files += [u for u in untracked if u not in files]
 
     if not files:
         # ⛔ An empty input is NOT a pass (`tests-must-gate-for-real` §5). Say so plainly.
@@ -297,6 +313,11 @@ def main() -> int:
 
     dead, anchors, checked = scan(wt, res, files)
     print(f"check_links: {len(files)} markdown file(s), {checked} path claim(s) checked")
+    # SCC-303: the NAMES, every run - a count cannot distinguish "all clean" from "one file
+    # was invisible", and that ambiguity is what shipped four dead paths under a green gate.
+    swept = set(untracked)
+    for f in files:
+        print(f"  [scanned] {f}" + ("  (untracked - swept in)" if f in swept else ""))
     for d in sorted(set(dead)):
         print(f"  [dead]   {d}")
     for x in sorted(set(anchors)):

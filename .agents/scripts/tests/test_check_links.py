@@ -221,6 +221,67 @@ def main() -> int:
             c.check("G2 an empty document yields no claims", _ok,
                     "" if _ok else "an empty document is producing findings")
 
+        if c.block("I · SCC-303 · --base must not narrow its own scope silently"):
+            # ⛔ THE SCAR: `git diff --name-only` is tracked-only BY CONSTRUCTION, so the
+            # SCC-295 lane's walkthrough - untracked at the moment the gate ran - was never
+            # scanned; the gate printed "3 markdown file(s) ... clean", exit 0, while the
+            # file it skipped held FOUR dead paths. The author had guarded EMPTY scope in
+            # capitals (block G); PARTIAL scope had no guard, and partial is what ships.
+            # End-to-end on a real fixture repo, because the defect lives in main()'s file
+            # selection, not in scan().
+            import os as _os
+            import subprocess as _sp
+
+            def _git(cwd, *a):
+                _sp.run(["git", *a], cwd=cwd, check=True,
+                        stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+
+            def _cl(cwd, *a):
+                env = dict(_os.environ, GIT_CONFIG_GLOBAL="/dev/null")
+                r = _sp.run([sys.executable,
+                             str(Path(CL.__file__).resolve()), *a],
+                            cwd=cwd, capture_output=True, text=True, env=env)
+                return r.returncode, r.stdout + r.stderr
+
+            with TempDir() as repo:
+                _git(repo, "init", "-q")
+                _git(repo, "config", "user.email", "t@t")
+                _git(repo, "config", "user.name", "t")
+                (repo / "docs").mkdir()
+                (repo / "docs" / "doc.md").write_text("plain prose, no claims\n",
+                                                      encoding="utf-8")
+                _git(repo, "add", "docs/doc.md")
+                _git(repo, "commit", "-q", "-m", "base")
+                _git(repo, "branch", "base")
+                (repo / "docs" / "doc.md").write_text("edited prose, no claims\n",
+                                                      encoding="utf-8")
+                _git(repo, "add", "docs/doc.md")
+                _git(repo, "commit", "-q", "-m", "edit")
+                # the walkthrough shape: UNTRACKED markdown in a directory the diff touches,
+                # carrying a dead path claim
+                (repo / "docs" / "ghost.md").write_text(
+                    "see `docs/nope_not_here.md` for details\n", encoding="utf-8")
+                # ...and an untracked file OUTSIDE the diff's directories - out of scope
+                (repo / "elsewhere").mkdir()
+                (repo / "elsewhere" / "stray.md").write_text(
+                    "see `docs/also_not_here.md`\n", encoding="utf-8")
+
+                code, out = _cl(repo, "--base", "base")
+                c.check("I1 an untracked .md with a dead path in a diffed dir must NOT "
+                        "produce a clean exit 0",
+                        code != 0 and "ghost.md" in out,
+                        f"exit={code}: " + out.strip()[-300:])
+                c.check("I2 the run prints the scanned file NAMES, not only a count",
+                        "docs/doc.md" in out,
+                        "nothing in the output distinguishes 'all clean' from "
+                        "'one file was invisible': " + out.strip()[-200:])
+                c.check("I3 ...and says the untracked file was swept IN, so the reader "
+                        "knows the scope widened",
+                        "untracked" in out.lower(), out.strip()[-300:])
+                c.check("I4 CONTROL: an untracked .md OUTSIDE the diff's directories "
+                        "stays out of scope",
+                        "stray.md" not in out, out.strip()[-300:])
+
     return c.finish()
 
 
