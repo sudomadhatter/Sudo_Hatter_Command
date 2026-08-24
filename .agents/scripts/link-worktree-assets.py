@@ -61,6 +61,88 @@ class ResolutionError(RuntimeError):
     """The repo behind this worktree does not resolve to a working tree (SCC-255)."""
 
 
+# SCC-310: a trailing-slash gitignore pattern (`auth_keys/`, `.venv/`) matches a DIRECTORY
+# only - never the symlink this script creates - so every linked lane read `?? auth_keys`
+# and stamped its gate receipts dirty_tree: true. Measured 2026-08-24: git reads ONLY the
+# COMMON `info/exclude` (a per-worktree one is silently ignored), so the entries below are
+# shared by every lane of the repo. They are root-anchored with NO trailing slash, matching
+# the symlink in a lane and the real dir in the main checkout alike; removal is gated on
+# being the last linked worktree, so pruning one lane never dirties its siblings.
+EXCLUDE_BEGIN = "# BEGIN link-worktree-assets (auto-managed - do not edit this block)"
+EXCLUDE_END = "# END link-worktree-assets"
+
+
+def common_exclude_path(worktree: Path) -> Path | None:
+    rp = subprocess.run(
+        ["git", "-C", str(worktree), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+        capture_output=True, text=True,
+    )
+    if rp.returncode != 0 or not rp.stdout.strip():
+        return None
+    return Path(rp.stdout.strip()) / "info" / "exclude"
+
+
+def _split_managed_block(text: str) -> tuple[str, list[str]]:
+    """(text without the managed block, the entries the block held)."""
+    lines = text.splitlines()
+    if EXCLUDE_BEGIN not in lines:
+        return text, []
+    start = lines.index(EXCLUDE_BEGIN)
+    try:
+        end = lines.index(EXCLUDE_END, start)
+    except ValueError:
+        end = len(lines) - 1
+    entries = [ln for ln in lines[start + 1:end] if ln.strip()]
+    rest = lines[:start] + lines[end + 1:]
+    return "\n".join(rest).rstrip("\n") + ("\n" if rest else ""), entries
+
+
+def write_exclude_entries(worktree: Path, rels: list[str]) -> None:
+    """Union the placed assets into the managed block (idempotent per lane)."""
+    excl = common_exclude_path(worktree)
+    if excl is None or not rels:
+        return
+    excl.parent.mkdir(parents=True, exist_ok=True)
+    text = excl.read_text(encoding="utf-8") if excl.is_file() else ""
+    rest, existing = _split_managed_block(text)
+    entries = sorted(set(existing) | {"/" + r for r in rels})
+    block = "\n".join([EXCLUDE_BEGIN, *entries, EXCLUDE_END])
+    excl.write_text(rest + ("\n" if rest and not rest.endswith("\n") else "") + block + "\n",
+                    encoding="utf-8")
+    print(f"  exclude:  {len(entries)} entry(ies) in the shared info/exclude "
+          f"(links must not read as dirt)")
+
+
+def other_linked_worktrees(worktree: Path) -> list[str]:
+    """Linked worktrees of this repo OTHER than `worktree` (the main checkout not counted)."""
+    rp = subprocess.run(
+        ["git", "-C", str(worktree), "worktree", "list", "--porcelain"],
+        capture_output=True, text=True,
+    )
+    if rp.returncode != 0:
+        return []
+    trees = [ln[len("worktree "):] for ln in rp.stdout.splitlines() if ln.startswith("worktree ")]
+    me = os.path.realpath(str(worktree))
+    return [t for t in trees[1:] if os.path.realpath(t) != me]   # trees[0] is the main checkout
+
+
+def remove_exclude_entries(worktree: Path) -> None:
+    """Drop the managed block - but only when no OTHER linked worktree still needs it."""
+    excl = common_exclude_path(worktree)
+    if excl is None or not excl.is_file():
+        return
+    text = excl.read_text(encoding="utf-8")
+    if EXCLUDE_BEGIN not in text:
+        return
+    others = other_linked_worktrees(worktree)
+    if others:
+        print(f"  exclude:  kept - {len(others)} other linked worktree(s) still use the entries")
+        return
+    rest, _ = _split_managed_block(text)
+    excl.write_text(rest, encoding="utf-8")
+    print("  exclude:  managed block removed (this was the last linked worktree)")
+
+
 def repo_root(start: Path) -> Path:
     """The main WORKING TREE — from a linked worktree, and from inside a SUBMODULE.
 
@@ -184,6 +266,7 @@ def do_link(worktree: Path, repo: Path, copy_env: bool, require_assets: bool = F
     assets = find_assets(repo)
     linked = skipped = unplaceable = 0
     env_symlinked = shared_node_modules = False
+    placed_rels: list[str] = []
     for src, kind in assets:
         rel = src.relative_to(repo)
         dst = worktree / rel
@@ -198,6 +281,7 @@ def do_link(worktree: Path, repo: Path, copy_env: bool, require_assets: bool = F
             how = link_dir(src, dst) if kind == "dir" else link_file(src, dst, copy_env)
             print(f"  + {str(rel):<24} {how}")
             linked += 1
+        placed_rels.append(rel.as_posix())
         env_symlinked = env_symlinked or (kind == "file" and dst.is_symlink())
         shared_node_modules = shared_node_modules or (rel.name == "node_modules" and dst.exists())
 
@@ -227,6 +311,7 @@ def do_link(worktree: Path, repo: Path, copy_env: bool, require_assets: bool = F
             return 1
         return 0
 
+    write_exclude_entries(worktree, placed_rels)   # SCC-310: links must not read as dirt
     print(f"\n{linked} linked, {skipped} already present.")
     if env_symlinked:
         print(
@@ -299,6 +384,7 @@ def do_unlink(worktree: Path) -> int:
     links = find_links(worktree)
     if not links:
         print("  (no reparse points found)")
+        remove_exclude_entries(worktree)
         print("\nSafe to `git worktree remove` now.")
         return 0
 
@@ -319,6 +405,7 @@ def do_unlink(worktree: Path) -> int:
             print(f"  ! {p}", file=sys.stderr)
         return 1
 
+    remove_exclude_entries(worktree)
     print(f"\n{len(links)} unlinked, 0 remaining. Safe to `git worktree remove` now.")
     return 0
 

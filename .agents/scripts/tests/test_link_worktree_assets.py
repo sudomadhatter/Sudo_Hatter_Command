@@ -289,6 +289,54 @@ def main() -> int:
                     (plain / ".claude" / "settings.local.json").is_file()
                     and (plain / ".claude" / "scratchpad-root").is_file())
 
+    if c.block("SCC-310 · linked lanes stamp CLEAN: exclude entries hide the links, real dirt stays"):
+        # A trailing-slash gitignore pattern (`auth_keys/`, `.venv/`) matches a DIRECTORY only,
+        # never the symlink this script creates - so every linked lane read `?? auth_keys` etc.
+        # and stamped its gate receipts dirty_tree: true. Measured (2026-08-24): a per-worktree
+        # info/exclude is IGNORED by git (`--git-path info/exclude` resolves to the COMMON one),
+        # so the fix is a managed block in `<common>/.git/info/exclude`.
+        with TempDir() as tmp:
+            plain = seed(tmp / "plain")
+            (plain / ".gitignore").write_text(".env\nauth_keys/\n.venv/\n", encoding="utf-8")
+            git(plain, "add", ".gitignore")
+            git(plain, "commit", "-qm", "ignore")
+            (plain / ".env").write_text("KEY=1\n", encoding="utf-8")
+            (plain / "auth_keys").mkdir()
+            (plain / ".venv").mkdir()
+            excl = plain / ".git" / "info" / "exclude"
+
+            lane = tmp / "lane"
+            git(plain, "worktree", "add", "-q", str(lane), "-b", "lane")
+            code, out = link(str(lane))
+            st = git(lane, "status", "--short").stdout
+            c.check("X1 a freshly linked worktree reports a CLEAN git status",
+                    code == 0 and st.strip() == "", f"exit={code} status:\n{st}")
+
+            (lane / "stray.md").write_text("real work\n", encoding="utf-8")
+            st = git(lane, "status", "--short").stdout
+            c.check("X2 real uncommitted work STILL reads dirty (no blanket silence)",
+                    "stray.md" in st, f"status:\n{st}")
+            (lane / "stray.md").unlink()
+
+            # A SECOND lane shares the one exclude file - unlinking lane 1 must not dirty lane 2.
+            lane2 = tmp / "lane2"
+            git(plain, "worktree", "add", "-q", str(lane2), "-b", "lane2")
+            link(str(lane2))
+            code, out = link("--unlink", str(lane))
+            text = excl.read_text(encoding="utf-8") if excl.is_file() else ""
+            st2 = git(lane2, "status", "--short").stdout
+            c.check("X3 unlinking ONE lane keeps the entries the sibling lane still needs",
+                    code == 0 and "link-worktree-assets" in text and st2.strip() == "",
+                    f"exit={code} exclude:\n{text}\nlane2 status:\n{st2}")
+
+            # Unlinking the LAST lane removes the managed block - no stale entries left behind.
+            git(plain, "worktree", "remove", "--force", str(lane))
+            code, out = link("--unlink", str(lane2))
+            text = excl.read_text(encoding="utf-8") if excl.is_file() else ""
+            c.check("X4 unlinking the LAST lane leaves no managed exclude entries behind",
+                    code == 0 and "link-worktree-assets" not in text,
+                    f"exit={code} exclude:\n{text}")
+
     return c.finish()
 
 

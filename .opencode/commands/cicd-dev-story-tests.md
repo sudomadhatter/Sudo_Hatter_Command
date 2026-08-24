@@ -121,9 +121,20 @@ blocks the close-out when the roster disagrees with the header (`inline` + a len
 ## Step 1 — Plan
 Invoke **`bmad-dev-story`** in PLAN mode for the story in `$ARGUMENTS`. Produce its `implementation_plan.md`
 **into `ARTIFACT_DIR`** — not the BMAD stories dir, not the `_artifacts/` root. The plan carries the
-**`## Declared Change Set` block** (`artifacts-always-first.md` §2 Create the artifact folder + plan, SCC-226): one path per
-bullet, `NEW`/`EDIT`/`DELETE`, `→ <the AC it serves>` — Step 1.5's drift check reconciles the real
-diff against exactly this list.
+**`## Declared Change Set` block** (`artifacts-always-first.md` §2 Create the artifact folder + plan, SCC-226): one bullet
+per path, **op marker FIRST** — `NEW`/`EDIT`/`DELETE`, then the backticked path, then `→ <the AC it
+serves>` as the LAST arrow on the line. One literal bullet, exactly as the parser reads it:
+
+```
+- EDIT `backend/api/routes.py` — add the SSE heartbeat → AC-2
+```
+
+⛔ Path-first bullets parse to ZERO entries and land in `incomplete` — and a block that parses
+empty is invisible to Step 1.5's drift check, which then reconciles the diff against NOTHING and
+reports clean (SCC-311). Prove the block before leaving this step:
+`python3 .agents/scripts/declared_change_set.py parse <the plan>` *(PC: `python`)* must report
+your N entries, `incomplete: []` — Step 1.5's drift check reconciles the real diff against
+exactly this list.
 
 ## Step 2 — Self-audit STOP gate (MANDATORY — stop the moment the plan is written)
 The plan exists; **STOP before the audit and before any code.** This stop lets the human switch the model
@@ -318,13 +329,27 @@ MUST hold the TWO living docs, each carrying the `IsArtifact: true` + `ArtifactM
 - [ ] **Automate evidence (Step 4)** — `_bmad-output/test-artifacts/automation-summary-<story>.md` exists,
       OR the walkthrough carries an explicit `## Automate: skipped — <rationale>` section. (Lives with the
       TEA outputs, not `ARTIFACT_DIR`.) A silent skip fails this checklist.
+- [ ] **The STORY FILE itself (SCC-315)** — the one artifact the board is reconciled against, and the one
+      this checklist never covered: a lane shipped with the board at `review`, the story file at
+      `Status: ready-for-dev` and a placeholder Dev Agent Record, and every item above passed. Check
+      BOTH, by machine, not by eye:
+      1. `Status: review` — the file's Status agrees with the `sprint-status.yaml` row this step wrote.
+      2. `## Dev Agent Record` is FILLED — context reference, completion notes, file list, change log —
+         with **no placeholder text**. The placeholders are fixed literals, so the check is one grep
+         that must return NOTHING:
+         `grep -nE '\{\{|\(2 fills:' <story-file>` — a hit inside the file is a story that finished ②
+         with its record unwritten, and it FAILS this checklist (the record is where agent-taken
+         defaults are declared for ratification; unwritten, they ship unratified).
 
 Post a clickable Markdown link to every artifact in the chat that same turn — never a bare path.
 
 ## Done
 Report: plan-vs-built deltas, audit findings applied, tests now green (paste output), coverage added, and
-the two Step-5 artifact links. Hand to `cicd-code-review`. The dev step **may advance the story to
-`review`** — bmad-dev-story's Step 9 does this and we let it. **Never flip to `done`** — Daniel's call at
+the two Step-5 artifact links. Hand to `cicd-code-review`. The dev step **MUST advance the story file to
+`Status: review`** — bmad-dev-story's Step 9 normally does it, but the nested step is not the gate:
+Step 5's story-file checkbox is, and a file still reading `ready-for-dev` fails it (SCC-315 — the board
+moved, the file did not, and nothing in the whole ①②③ + close-out chain compared the two).
+**Never flip to `done`** — Daniel's call at
 close-out via `/cicd-close-story-merge-tree`, whose `/cicd-update-sprint-memory` save owns the flip.
 **Git:** commit freely inside the story worktree (explicit paths, never `git add -A`; `-F <file>` when
 the message holds a backtick); do NOT land it on

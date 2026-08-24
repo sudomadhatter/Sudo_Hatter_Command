@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -52,6 +53,12 @@ import wf_common as wf
 # No match -> totals stays null; a fabricated count is worse than an absent one.
 _TOTALS_PATTERNS = (
     re.compile(r"^=+ .*\b\d+ (?:passed|failed|error).*?=+$", re.MULTILINE),   # pytest
+    # pytest under -q prints the summary BARE - `3043 passed, 35 skipped in 9.14s` - and the
+    # banner pattern above misses it, recording totals: null on a pass (SCC-309). Anchored on
+    # a leading count and the trailing `in <seconds>s`, so it is still the tool's own line
+    # verbatim; output with no recognisable summary still records null.
+    re.compile(r"^\d+ (?:passed|failed|errors?|skipped|xfailed|xpassed|warnings?|deselected)\b"
+               r".*\bin \d+(?:\.\d+)?s(?: \([^)]*\))?\s*$", re.MULTILINE),    # pytest -q
     re.compile(r"^\s*Tests\s+.*\b\d+ (?:passed|failed).*$", re.MULTILINE),    # vitest
     re.compile(r"^Found \d+ error.*$", re.MULTILINE),                         # ruff
     re.compile(r"^\s*(?:INFO )?\d+ error(?:s)? \(.*\)\s*$", re.MULTILINE),    # pyrefly
@@ -102,6 +109,32 @@ def receipt_dir(project: Path, story: str, flat: bool = False) -> Path:
         return project / "gates"
     return project / wf.GATES_REL / wf.norm_id(story)
 
+
+
+def lane_receipts_root(project: Path, cwd: Path) -> Path:
+    """The tree receipts belong to when --cwd names a linked worktree of the project (SCC-317).
+
+    --project resolves the MAIN checkout, so a worktree lane's receipt was written into the
+    shared tree: it never rode the lane's branch, left the shared checkout dirty, and `check`
+    reported NO RECEIPT for a receipt that exists and is valid. When --cwd resolves to a
+    DIFFERENT working tree of the SAME repo (compared by git common dir), the receipts root is
+    that tree. A --cwd in a different repo entirely is ambiguity - refuse and name both trees;
+    writing silently into a tree the caller did not name is the defect, mirrored.
+    """
+    top = wf.git(["rev-parse", "--path-format=absolute", "--show-toplevel"], cwd).stdout.strip()
+    if not top or os.path.realpath(top) == os.path.realpath(str(project)):
+        return project
+    common_cwd = wf.git(["rev-parse", "--path-format=absolute", "--git-common-dir"],
+                        Path(top)).stdout.strip()
+    common_proj = wf.git(["rev-parse", "--path-format=absolute", "--git-common-dir"],
+                         project).stdout.strip()
+    if common_cwd and common_proj and \
+            os.path.realpath(common_cwd) == os.path.realpath(common_proj):
+        return Path(top)
+    wf.die(f"--cwd resolves to the working tree {top}, which belongs to a DIFFERENT repo "
+           f"than --project {project} - refusing to pick a receipts tree between them; "
+           f"pass a --cwd inside the project (or one of its worktrees), or drop --project")
+    return project  # unreachable - wf.die exits; keeps the signature honest for readers
 
 
 def _porcelain_z_paths(z: str) -> list[str]:
@@ -417,6 +450,9 @@ def main() -> int:
         project = root.resolve()
     else:
         project = wf.resolve_project_root(args.project)
+        # SCC-317: a --cwd naming another working tree of this repo owns its receipts.
+        if getattr(args, "cwd", None):
+            project = lane_receipts_root(project, Path(args.cwd).resolve())
 
     if args.cmd == "run":
         command = args.command[1:] if args.command[:1] == ["--"] else args.command

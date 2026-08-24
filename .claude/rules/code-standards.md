@@ -130,7 +130,7 @@ they are what the judgment half of the audit hunts for.
 | Check | Command (from the project root) |
 |---|---|
 | Backend lint | `<VENV>/ruff check backend/` |
-| Backend types | `<VENV>/pyrefly check` |
+| Backend types | `<VENV>/pyrefly check --python-interpreter-path <VENV>/python` |
 | Frontend lint | `npm run lint` (in `frontend/`) |
 | Frontend types | `npx tsc --noEmit` (in `frontend/`) |
 
@@ -147,6 +147,13 @@ they are what the judgment half of the audit hunts for.
 > **Use the venv's own executables.** Bare `python` / bare `ruff` is the drifted global install and
 > produces false missing-dependency findings — and bare `python` does not exist on the Mac at all
 > (§5, Both machines).
+>
+> **And pyrefly needs the interpreter PINNED even when invoked from the venv** (SCC-312, measured
+> 2026-08-24 on the Mac): `<VENV>/pyrefly check` bare resolves its site-packages from the SYSTEM
+> python — 949 errors, 669 of them fabricated `missing-import`, burying the real findings — while
+> the same run with `--python-interpreter-path <VENV>/python` reported 0 missing-import. The pin
+> belongs at the CALL SITE, never in a project's `pyrefly.toml` (AGY's states why: an absolute
+> path or interpreter pin in config would split CI and local onto different interpreters).
 
 A project whose stack differs declares its own commands in its `AGENTS.md`; these are the defaults for
 the FastAPI + Next.js house shape.

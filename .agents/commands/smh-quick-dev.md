@@ -188,8 +188,11 @@ done — verify the box's four conditions and go straight to Step 2.**
 1. **Write `implementation_plan.md`** *(skip if this lane arrived with an approved plan — see the box)* into `_artifacts/_main/<YYYY-MM-DD>_<slug>/`, right-sized to the
    work. Each acceptance item maps to a step, and each step names **the assertion that will prove it**.
    Carry the **`## Declared Change Set` block** (`artifacts-always-first.md` §2 Create the artifact folder + plan, SCC-226):
-   one path per bullet, `NEW`/`EDIT`/`DELETE`, `→ <acceptance row>` — `/smh-code-review` Step 2 diffs
-   the real diff against exactly this list.
+   one bullet per path, **op marker FIRST** — `NEW`/`EDIT`/`DELETE`, then the backticked path, then
+   `→ <acceptance row>` as the last arrow on the line, e.g.
+   ``- EDIT `scripts/thing.py` — why this file moves → A`` (path-first bullets parse to ZERO
+   entries, SCC-311; prove it with `declared_change_set.py parse <plan>` before the audit) —
+   `/smh-code-review` Step 2 diffs the real diff against exactly this list.
 2. **Invoke `/smh-self-audit`** on that plan. It appends its `## Self-Audit (<date>)` section and a
    canonical `Audit verdict: GO | NO-GO`. A **NO-GO stops the lane** — fix the plan and re-audit; do not
    proceed on a NO-GO and do not re-run it hoping for a different answer.
@@ -235,7 +238,8 @@ a one-line doc tweak. Say which, then proceed. Anything above that gets the gate
 > there an **open parent** whose surface this belongs to (then it is the next lettered
 > **Subtask** under it, with an index row added via `jira_feed.py index-row`, which reads the
 > parent's description back and refuses if a line went missing)? no thematic parent — then it is a
-> subtask on the **OPEN ROLLING TICKET** (`Bugs and Updates - <YYYY-MM>`, label `bugs-and-updates`; `SCC-190` today), which is rung 3 and the normal answer for a
+> subtask on the **OPEN ROLLING TICKET** (`Bugs and Updates - <YYYY-MM>` — find it by BOTH labels,
+> `labels IN (bugs-and-updates, running-bug-list)`, per `jira.md` §labels), which is rung 3 and the normal answer for a
 > finding a landing exposes; only then mint, for work that is a lane in its own right — and say in
 > ONE line what you looked at. Judgment, not a gate; the unstated choice is the thing that is banned.
 > *"we are not developing 3 task for every 1 we try to fix"* (operator, 2026-08-15).
