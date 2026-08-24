@@ -19,6 +19,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 ## Jira & tickets
 - [Jira is LIVE (SCC + AVCH)](jira-integration-live.md) — acli authed; branch/commit carries key; wrong-project key rejected.
 - [⛔ acli CANNOT re-parent a subtask](acli-cannot-reparent-a-subtask.md) — create takes --parent, edit has no such flag; partial landing keeps parent open.
+- [⛔ Probing a transition name IS a write](acli-transition-probe-is-a-write.md) — no --list flag; a candidate loop landed `Done` on a mid-flight story. AVCH has no reachable `In Review`.
 - [⛔ acli CANNOT attach a file](jira-attachments-need-the-rest-token.md) — upload is REST + the token in keychain `sudo-jira`; storing it corrupts silently two ways.
 - [Cross-repo work = a ticket PER REPO](cross-repo-work-needs-a-ticket-per-repo.md) — ticket per repo required; key from epic/* branch, not BMAD number.
 - [`To Do Next` IS the queue](to-do-next-is-the-queue.md) — lead every "what's next" with it; todo_list.md retired as agent source; use Blocking.
@@ -48,6 +49,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - **Per-machine, never travels** — [env migration kit](env-migration-kit.md) (clone first, restore second) · [`.zshrc` invisible to automation](zshrc-is-invisible-to-automation.md) (shared env in ~/.zshenv) · [gitconfig didn't travel](gitconfig-never-migrated-to-the-mac.md) (set autoSetupRemote).
 - [Commit and push are ONE action](commit-and-push-are-one-action.md) — never end step unpushed; verify 0 0 + clean per repo.
 - [⛔ Backticks in `-m "…"` EXECUTE](commit-message-backticks-execute.md) — message quoting git commands runs them; use -F <file>.
+- [⭐ Epic branch carries BOTH numbers](epic-branch-carries-both-numbers.md) — `epic/<KEY>-epic-<N>-<slug>`; prefix stays in front or every `epic/*` glob + the armed guard miss it.
 - [⭐ Git branch model + the main gate](git-branch-model-standard.md) — prefix names work; main reached only via /cicd-push-e2e or /smh-close-task-merge-tree with single-use token.
 - [⛔ Bash cwd resets to the MAIN checkout](bash-cwd-resets-to-main-checkout.md) — cd outside workspace resets cwd to main; relative paths read wrong tree.
 - [⛔ Nothing guards the merge TARGET](nothing-guards-the-merge-target.md) — gates check merge source not target; use -C on every git call.
@@ -61,6 +63,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [GitHub 408 on satellite wifi](github-408-on-satellite-uplink.md) — push times out mid-upload; chunk via scratch refs or wait for stable link.
 
 ## Testing
+- [⭐⛔ A similarity gate needs BOTH bands measured](similarity-gate-needs-both-bands-measured.md) — same-input variance vs cross-input similarity; if they overlap NO threshold discriminates. Score goldens against each other.
 - **A green or a red can lie** — [red can die pre-assertion](red-test-can-die-before-its-assertion.md) (setup failure masks bug) · [stubbed children = vacuous green](stubbed-children-make-green-vacuous.md) (mocks test nav only) · [piped gate hides exit code](piping-a-gate-hides-its-exit-code.md) (run gates bare) · [zsh doesn't word-split gate args](zsh-does-not-word-split-gate-args.md) (quote carefully) · [`echo` truncates at `\c`](echo-truncates-at-backslash-c.md) (use printf).
 - **Source-grep guards are blind THREE ways** — [comments invert them](comment-literals-invert-source-grep-tests.md) (comment matches first) · [cannot see order](source-grep-guards-cannot-see-order.md) (moved guard passes) · [prose-pinning is vacuous](prose-pinning-guards-are-vacuous.md) (pin wiring, fail mutants first).
 - **Toolchain pins** — [rules tests need Java](firestore-rules-tests-need-java.md) (brew openjdk@17; JAVA_HOME in ~/.zshenv) · [Node 26 breaks vitest jsdom storage](node-26-breaks-vitest-jsdom-storage.md) (run Node 22 LTS).
@@ -77,6 +80,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [New read regresses siblings](new-read-on-shared-endpoint-regresses-siblings.md) — run whole endpoint suite, not just local test.
 - [Relocating drops mount guards](relocating-drops-mount-guards.md) — conditional inside render guard drops mount preconditions.
 - [Destructive re-verify reads FRESH](destructive-reverify-must-read-fresh.md) — cached re-check no-ops delete and looks green.
+- [⛔ Firestore `update()` splits keys on DOTS](firestore-update-splits-field-paths-on-dots.md) — every Gemini model ID has a dot; f-string paths corrupt the doc and report success. Use FieldPath + read back.
 
 ## GitNexus
 - [⛔ `base` is NOT a GitNexus replacement; review-weighted MIT swap = code-review-graph (1st) / codebase-memory-mcp (2nd); rules layer = native `.claude/rules paths:` + Antigravity `.agents/rules` + trigger hook, no product](base-is-not-a-gitnexus-replacement.md) — same NC license as GitNexus; CodeGraphContext below both.
