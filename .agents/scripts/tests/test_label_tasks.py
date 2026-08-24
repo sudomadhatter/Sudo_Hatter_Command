@@ -379,6 +379,145 @@ def main() -> int:
     c.check("docs/ is NOT treated as a planning dir (projects ship from it)",
             "docs/guide.md" in lt.source_paths({"paths": ["docs/guide.md"]}))
 
+    # ── SCC-295 · `lstrip("./")` was a CHARACTER SET, not a prefix ─────────────
+    # Written to turn `./x.py` into `x.py`; it also ate the leading dot off every
+    # hidden path. Two consumers, two consequences: the normalised string is joined
+    # into the board `evidence` field built by `cmd_resolve`, AND it is the key the
+    # overlap math intersects in `conflict_graph` - so `.agents/x` and `agents/x`
+    # collapsed into one. ⛔ Named, not numbered: the first draft of these comments
+    # cited line numbers, and the diff that added them shifted every one by 21.
+    dotted_dir = lt.source_paths({"paths": [".agents/scripts/risk_seam.py"]})
+    c.check("SCC-295 A1 a dotted directory keeps its dot",
+            dotted_dir == {".agents/scripts/risk_seam.py"}, str(dotted_dir))
+    # ⛔ Live dotfiles only. An earlier draft used a RETIRED filename as a fixture and
+    # tripped `CS-15 G` ("no live surface still names the deleted ignore file") - a test
+    # fixture is a live surface to a source-grep guard (SCC-295).
+    dotfiles = lt.source_paths({"paths": [".mcp.json", ".gitignore"]})
+    c.check("SCC-295 A1b a dotfile at the repo root keeps its dot",
+            dotfiles == {".mcp.json", ".gitignore"}, str(dotfiles))
+
+    # CONTROLS - green BEFORE the fix and after. A control that starts red is
+    # measuring the wrong thing, so these two are the proof the fix is surgical.
+    c.check("SCC-295 A2 CONTROL `./x.py` still normalises to `x.py`",
+            lt.source_paths({"paths": ["./x.py"]}) == {"x.py"},
+            str(lt.source_paths({"paths": ["./x.py"]})))
+    c.check("SCC-295 A2b CONTROL a repeated `././` prefix is stripped WHOLE",
+            lt.source_paths({"paths": ["././x.py"]}) == {"x.py"},
+            str(lt.source_paths({"paths": ["././x.py"]})))
+    c.check("SCC-295 A7 CONTROL `./_artifacts/a.md` is still dropped as planning",
+            lt.source_paths({"paths": ["./_artifacts/a.md"]}) == set(),
+            str(lt.source_paths({"paths": ["./_artifacts/a.md"]})))
+
+    # The consequence the ticket did NOT claim: two different real files reading
+    # as one overlap key. Unreachable in this tree only because nothing sits at a
+    # dotless `agents/` - a property of the tree, not of the code.
+    dotted = lt.source_paths({"paths": [".agents/x.py"]})
+    dotless = lt.source_paths({"paths": ["agents/x.py"]})
+    c.check("SCC-295 A3 a dotted path and its dotless twin are DIFFERENT keys",
+            not (dotted & dotless), f"{sorted(dotted)} vs {sorted(dotless)}")
+
+    # `creates` feeds the SAME displayed, intersected set - `source_paths` reads both
+    # `paths` and `creates` into one set.
+    made = lt.source_paths({"creates": [".agents/scripts/new_helper.py"]})
+    c.check("SCC-295 A5 a dotted `creates` entry keeps its dot too",
+            made == {".agents/scripts/new_helper.py"}, str(made))
+    # `conflict_graph` carried a SECOND inline copy of this normalisation
+    # with nothing asserting the two agreed. One shared helper is the fix; this
+    # pins the helper's contract directly, both directions.
+    # ⛔ Resolved with getattr, on purpose. Calling `lt.norm_path` directly before the
+    # helper exists raises AttributeError, which KILLS the file at this line - so A4
+    # and A6 below never run and the file still exits 1, indistinguishable from a real
+    # red. `red-test-can-die-before-its-assertion`, reproduced here while writing it.
+    _norm = getattr(lt, "norm_path", None)
+    c.check("SCC-295 A5b norm_path strips the `./` PREFIX and nothing else",
+            _norm is not None
+            and _norm("  ./a/b.py  ") == "a/b.py"
+            and _norm(".agents/x") == ".agents/x"
+            and _norm("././a") == "a"
+            and _norm("..hidden") == "..hidden",
+            "label_tasks.norm_path does not exist" if _norm is None else
+            f'{_norm("  ./a/b.py  ")!r} {_norm(".agents/x")!r} '
+            f'{_norm("././a")!r} {_norm("..hidden")!r}')
+
+    # ⛔ A5c exists because the SWEEP found the hole, not because the plan did: M6
+    # (conflict_graph keeping its own inline `lstrip`) SURVIVED every case above.
+    # That set feeds a SUBSTRING match both ways, which is dot-insensitive by
+    # accident - `agents/x.py in .agents/x.py` is True, so almost any pair matches
+    # either way. This is the shape that discriminates: an import of the DIRECTORY
+    # `.agents` is a substring of `.agents/x.py` but of neither side of `agents/x.py`.
+    g = lt.conflict_graph(["A", "B"], {
+        "A": {"paths": ["backend/a.py"], "imports": [".agents"]},
+        "B": {"paths": ["backend/b.py"], "creates": [".agents/x.py"]}})
+    c.check("SCC-295 A5c an import of `.agents` matches a dotted `creates` entry",
+            "B" in g["A"] and "A" in g["B"], str(g))
+
+    # ⛔ A8 · REGRESSION GUARD, found by the review's blind lens. `lstrip("./")` also ate
+    # a leading `/` as a side effect of being a character set, and a prefix-only strip
+    # does not - so `/src/a.py` and `src/a.py`, which are the SAME file spelled two ways,
+    # stopped intersecting and BOTH lanes were stamped parallel-ok. ⛔ Note the direction:
+    # the original bug over-serialised (safe); dropping this would under-serialise, which
+    # is the exact failure the labeller exists to prevent (SCC-295).
+    _n = getattr(lt, "norm_path", None)
+    c.check("SCC-295 A8 a leading `/` is the SAME key as its slashless spelling",
+            _n is not None and _n("/src/a.py") == _n("src/a.py") == "src/a.py",
+            "no norm_path" if _n is None else f'{_n("/src/a.py")!r} vs {_n("src/a.py")!r}')
+    c.check("SCC-295 A8b `.//a.py` normalises WHOLE, not to `/a.py`",
+            _n is not None and _n(".//a.py") == "a.py" and _n("././/a.py") == "a.py",
+            "no norm_path" if _n is None else f'{_n(".//a.py")!r} {_n("././/a.py")!r}')
+    c.check("SCC-295 A8c whitespace AFTER the prefix is stripped too",
+            _n is not None and _n("./ agents/x.py") == "agents/x.py",
+            "no norm_path" if _n is None else repr(_n("./ agents/x.py")))
+    # and the whole point of the lane must survive the regression guard
+    c.check("SCC-295 A8d CONTROL the dot is STILL preserved after all of that",
+            _n is not None and _n(".agents/x.py") == ".agents/x.py"
+            and _n("..hidden") == "..hidden",
+            "no norm_path" if _n is None else f'{_n(".agents/x.py")!r} {_n("..hidden")!r}')
+
+    # A9 · the SECOND consequence of the same root cause, found by the edge-case lens:
+    # PLANNING_PREFIXES is checked AFTER normalisation, so a surviving leading `/` made
+    # `/_artifacts/plan.md` read as a real source path. Every planned lane writes under
+    # `_artifacts/`, so two lanes would collide over their own planning files.
+    c.check("SCC-295 A9 a leading `/` does not smuggle a planning path into the key set",
+            lt.source_paths({"paths": ["/_artifacts/plan.md", "/_bmad/z.md"]}) == set(),
+            str(lt.source_paths({"paths": ["/_artifacts/plan.md", "/_bmad/z.md"]})))
+
+    # A10 · an EMPTY `creates` entry made `c in s` true for EVERY import string, so one
+    # lane locked against every other and the board printed a reason it had invented.
+    # `source_paths` filtered empties six lines up; this second copy never did.
+    # Both hunter lenses found it independently (SCC-295).
+    g2 = lt.conflict_graph(["A", "B"], {
+        "A": {"paths": ["backend/a.py"], "imports": ["totally/unrelated/module.py"]},
+        "B": {"paths": ["frontend/b.tsx"], "creates": ["./", "frontend/new.tsx"]}})
+    c.check("SCC-295 A10 an empty `creates` entry does not lock every lane",
+            not g2["A"] and not g2["B"], str(g2))
+
+    # ⛔ A11 · the LAST uncovered shape, found by the test-adequacy lens: a `./` prefix
+    # in front of a DOTTED path. Both halves of the bug meet on one input, and every
+    # other case misses it - `./x.py` has no dot to eat, `.agents/x.py` has no prefix
+    # to strip. Swapping `s[2:]` for `lstrip("./")` INSIDE the branch resurrects the
+    # whole SCC-295 defect for exactly this shape and leaves 146 cases green.
+    c.check("SCC-295 A11 a `./` prefix in front of a DOTTED path strips only the prefix",
+            _n is not None and _n("./.agents/x.py") == ".agents/x.py"
+            and _n("./.mcp.json") == ".mcp.json"
+            and _n("././.gitignore") == ".gitignore",
+            "no norm_path" if _n is None else
+            f'{_n("./.agents/x.py")!r} {_n("./.mcp.json")!r} {_n("././.gitignore")!r}')
+
+    # ── SCC-295 · end to end, through the board surface itself ────────────────
+    with TempDir() as tmp:
+        r = run_resolve(tmp, [child("A-1", "1.1"), child("A-2", "1.2")],
+                        {"A-1": {"paths": [".agents/x.py"]},
+                         "A-2": {"paths": ["agents/x.py"]}})
+        c.check("SCC-295 A4 dotted and dotless twins are NOT a collision",
+                len(r["approved"]) == 2, str(r["approved"]) + " " + str(r["verdicts"]))
+    with TempDir() as tmp:
+        r = run_resolve(tmp, [child("A-1", "1.1"), child("A-2", "1.2")],
+                        {"A-1": {"paths": [".agents/scripts/label_tasks.py"]},
+                         "A-2": {"paths": ["backend/b.py"]}})
+        c.check("SCC-295 A6 the board evidence shows the dotted path WITH its dot",
+                ".agents/scripts/label_tasks.py" in r["_by"]["A-1"]["evidence"],
+                r["_by"]["A-1"]["evidence"])
+
     # ── umbrella detection, directly ───────────────────────────────────────────
     kids = [{"key": "K-0", "story_id": "12.3"}, {"key": "K-1", "story_id": "12.3.4"},
             {"key": "K-2", "story_id": "12.3.7"}, {"key": "K-3", "story_id": "12.4"}]
