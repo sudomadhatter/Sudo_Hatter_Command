@@ -47,6 +47,7 @@ This is one half of the operator-confirmed two-repo scope: the Command Center pl
 - EDIT `.claude/skills/INDEX.md` → keeps the generated Claude cache index byte-identical to its master
 - EDIT `.agents/scripts/check_links.py` → treats the rolled archive as the same historical ledger class as the live ledger
 - EDIT `.agents/scripts/tests/test_check_links.py` → proves archive claims are skipped while equivalent current claims still fail
+- EDIT `.agents/scripts/check_maps.py` → reconciles its eleven-check self-description with the implemented linter
 - EDIT `_artifacts/_main/active-context.md` → records the two-repo reconciliation handoff
 
 ## Open questions
