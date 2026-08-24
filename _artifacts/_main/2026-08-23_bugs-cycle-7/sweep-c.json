@@ -7,7 +7,7 @@
     {
       "id": "M1 revert SCC-302: delete the TASK-LIGHT branch",
       "file": ".agents/scripts/lane_qualify.py",
-      "original": "        if (lines is not None and lines <= SMALL_TOOLKIT_LINES\n                and len(clean) <= SMALL_TOOLKIT_FILES):\n            return (\"TASK-LIGHT\",\n                    f\"toolkit path(s), small blast radius ({lines} line(s), {len(clean)} \"\n                    f\"file(s)): assertion-first and the gates stay; the review fan-out may \"\n                    f\"collapse to one inline pass (SCC-302)\")\n        return (\"TASK\",",
+      "original": "        if (lines is not None and 1 <= lines <= SMALL_TOOLKIT_LINES\n                and len(clean) <= SMALL_TOOLKIT_FILES):\n            return (\"TASK-LIGHT\",\n                    f\"toolkit path(s), small blast radius ({lines} line(s), {len(clean)} \"\n                    f\"file(s)): assertion-first and the gates stay; the review fan-out may \"\n                    f\"collapse to one inline pass (SCC-302)\")\n        return (\"TASK\",",
       "mutated": "        return (\"TASK\",",
       "case": "C2 a ONE-LINE toolkit edit is TASK-LIGHT, not the full fan-out",
       "block": "SCC-302 \u00b7 size draws the lane - a one-liner and a rewrite are different work"
@@ -15,16 +15,16 @@
     {
       "id": "M2 drop the file-count clause",
       "file": ".agents/scripts/lane_qualify.py",
-      "original": "        if (lines is not None and lines <= SMALL_TOOLKIT_LINES\n                and len(clean) <= SMALL_TOOLKIT_FILES):",
-      "mutated": "        if lines is not None and lines <= SMALL_TOOLKIT_LINES:",
+      "original": "        if (lines is not None and 1 <= lines <= SMALL_TOOLKIT_LINES\n                and len(clean) <= SMALL_TOOLKIT_FILES):",
+      "mutated": "        if lines is not None and 1 <= lines <= SMALL_TOOLKIT_LINES:",
       "case": "C2e three files at one line each is TASK - the blast is the file count",
       "block": "SCC-302 \u00b7 size draws the lane - a one-liner and a rewrite are different work"
     },
     {
       "id": "M3 no size evidence reads as small",
       "file": ".agents/scripts/lane_qualify.py",
-      "original": "        if (lines is not None and lines <= SMALL_TOOLKIT_LINES\n                and len(clean) <= SMALL_TOOLKIT_FILES):",
-      "mutated": "        if ((lines is None or lines <= SMALL_TOOLKIT_LINES)\n                and len(clean) <= SMALL_TOOLKIT_FILES):",
+      "original": "        if (lines is not None and 1 <= lines <= SMALL_TOOLKIT_LINES\n                and len(clean) <= SMALL_TOOLKIT_FILES):",
+      "mutated": "        if ((lines is None or 1 <= lines <= SMALL_TOOLKIT_LINES)\n                and len(clean) <= SMALL_TOOLKIT_FILES):",
       "case": "C2d WITHOUT --lines a toolkit path is still TASK - size silence is not small",
       "block": "SCC-302 \u00b7 size draws the lane - a one-liner and a rewrite are different work"
     },

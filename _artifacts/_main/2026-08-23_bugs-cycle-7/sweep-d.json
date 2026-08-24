@@ -7,7 +7,7 @@
     {
       "id": "M1 revert SCC-303: drop the untracked sweep entirely",
       "file": ".agents/scripts/check_links.py",
-      "original": "        untracked = [u for u in others\n                     if str(Path(u).parent) in dirs\n                     or any(str(Path(u)).startswith(d + \"/\") for d in dirs if d != \".\")]\n        files += [u for u in untracked if u not in files]",
+      "original": "        untracked = [u for u in others\n                     if _parent(u) in dirs\n                     or any(u.startswith(d + \"/\") for d in dirs if d != \".\")]\n        files += [u for u in untracked if u not in files]",
       "mutated": "        untracked = []",
       "case": "I1 an untracked .md with a dead path in a diffed dir must NOT produce a clean exit 0",
       "block": "I \u00b7 SCC-303 \u00b7 --base must not narrow its own scope silently"
