@@ -1,6 +1,7 @@
 ---
 name: operator-profile
 description: "Who this command center serves and how agents communicate; fill in the profile as the working relationship develops."
+trigger: always_on
 ---
 
 # Operator Profile — fill this in for the owner

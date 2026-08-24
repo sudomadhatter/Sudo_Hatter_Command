@@ -27,6 +27,15 @@ param(
 $ErrorActionPreference = "Stop"
 $Master   = Split-Path $PSScriptRoot -Parent      # ...\.agents
 $HomeRoot = Split-Path $Master -Parent            # ...\Sudo_Hatter_Command
+
+# A project name becomes a folder, repository identity, and command argument on both Mac and
+# Windows. Keep it to one portable segment so `../name`, drive paths, and Windows device names can
+# never escape Projects/ or create a clone that another machine cannot check out.
+if ($Name -notmatch '^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,78}[A-Za-z0-9_-])?$' -or
+    $Name -match '^(?i:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)') {
+  throw "Project name must be one portable folder name (letters, digits, dot, underscore, or hyphen; no paths or trailing dot): $Name"
+}
+
 $Dest     = Join-Path $HomeRoot "Projects/$Name"
 
 if (Test-Path $Dest) { throw "Project already exists: $Dest" }
@@ -66,9 +75,11 @@ Write-Host "       git submodule add <remote-url> Projects/$Name"
 Write-Host "  3. Fill the placeholders: grep for '{{' and for '<PROJECT_NAME>' (AGENTS.md,"
 Write-Host "     .agents/INDEX.md, _bmad-output/project-context.md, _my_resources/open_tasks/todo_list.md)."
 Write-Host ""
-Write-Host "  Optional, when it gets a Jira board: cp .agents/jira.conf.example .agents/jira.conf,"
-Write-Host "  set JIRA_SITE and JIRA_KEYS, confirm acli auth uses that site, then"
-Write-Host "  touch .agents/scripts/git-hooks/JIRA-ENFORCE to arm REJECT mode."
+Write-Host "  Optional, only after this project gets a Jira board:"
+Write-Host "       cd Projects/$Name"
+Write-Host "       cp .agents/jira.conf.example .agents/jira.conf"
+Write-Host "  Set JIRA_SITE and JIRA_KEYS, run 'acli jira auth status', and require its site to match."
+Write-Host "  Only then touch .agents/scripts/git-hooks/JIRA-ENFORCE to arm REJECT mode."
 Write-Host ""
 Write-Host "  Add it to .agents/maintained-projects.txt only if you want the lint to cover it."
 exit 0

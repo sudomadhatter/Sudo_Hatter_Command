@@ -184,6 +184,7 @@ checks are explicit:
 - EDIT `.agents/commands/INDEX.md` — teaching commands in the current `smh-*` family → 2, 5
 - NEW `.agents/commands/smh-tour.md` — resumable live-SOP curriculum → 2, 3
 - NEW `.agents/commands/smh-training.md` — sentinel on/off/status control → 2
+- EDIT `.agents/commands/smh-new-project.md` — require optional Jira site/key/auth agreement before enforcement → 3, 4
 - EDIT `.agents/rules/INDEX.md` — conditional training rule classification/trigger → 2
 - EDIT `.agents/rules/jira.md` — no-binding preflight for a fresh command center → 3, 4
 - EDIT `.agents/jira.conf` — bind the source lobby to both its site and key so the rule can reject an authenticated-site mismatch → 3, 4
@@ -200,11 +201,12 @@ checks are explicit:
 - NEW `.agents/scripts/teaching-edition/replacements/memory-README.md` — generic memory-store operating contract without source-owner history → 3, 4
 - NEW `.agents/scripts/teaching-edition/replacements/maintained-projects.txt` — empty current lint worklist → 3, 4
 - NEW `.agents/scripts/teaching-edition/replacements/operator-profile.md` — generic current nine-obligation operator contract → 4
+- NEW `.agents/scripts/teaching-edition/replacements/jira.md` — generic no-board default and project-owned Jira operating law → 3, 4
 - NEW `.agents/scripts/teaching-edition/replacements/router.md` — empty current routing shell → 3, 4
 - NEW `.agents/scripts/teaching-edition/replacements/training-mode-sentinel` — tutor ships on → 2
 - EDIT `.env.example` — generic command-center environment names/instructions, values absent → 4
 - EDIT `.gitignore` — keep the local training-off override from dirtying a fresh clone → 2, 3
-- EDIT `.agents/scripts/new-project.ps1` — refuse a false-success scaffold when git initialization or the first commit fails → 3, 6
+- EDIT `.agents/scripts/new-project.ps1` — validate a portable single-segment name and refuse clone/init/commit false success → 3, 6
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — branch-only teaching entry points; workflow remains canonical/live → 2, 5
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — teaching-branch SOP currency row → 2, 5
 - EDIT `docs/doc-graph.md` — generated navigation reflects the teaching-only commands and artifacts on this branch → 2, 5
@@ -213,10 +215,12 @@ checks are explicit:
 - NEW (generated) `.agents/skills/smh-training/SKILL.md` → 5
 - NEW (generated) `.agents/workflows/smh-tour.md` → 5
 - NEW (generated) `.agents/workflows/smh-training.md` → 5
+- EDIT (generated) `.agents/workflows/smh-new-project.md` → 3, 5
 - NEW (generated) `.claude/skills/smh-tour/SKILL.md` → 5
 - NEW (generated) `.claude/skills/smh-training/SKILL.md` → 5
 - NEW (generated) `.opencode/commands/smh-tour.md` → 5
 - NEW (generated) `.opencode/commands/smh-training.md` → 5
+- EDIT (generated) `.opencode/commands/smh-new-project.md` → 3, 5
 - EDIT `.agents/.sync-manifest.json` — generated tutor-door ownership → 5
 - NEW `_artifacts/_main/2026-08-22_teaching-edition-refresh/walkthrough.md` — implementation and verification evidence → 1, 6
 
@@ -432,3 +436,22 @@ graph is deliberately excluded because it describes omitted/private files, so th
 regenerating both doc-graph outputs against its sanitized `.agents/` + `docs/` tree using the exported
 generator itself. The contract is now 30 checks, including the hermetic excluded-symlink case, and the
 post-merge generated shell passes privacy, link, map, and tutor validation.
+
+## Post-Main Review Amendment — generic Jira and fail-closed privacy
+
+The standard review of the current-main-integrated branch reproduced six final teaching-export
+defects, all within the approved distribution boundary:
+
+1. the generic operator-profile replacement lost its required `trigger: always_on` metadata;
+2. the export copied the source command center's two-board Jira topology and only renamed its keys;
+3. `/smh-new-project` required only `JIRA_KEYS`, despite the binding rule requiring site and key;
+4. the source Jira key was scanned in file contents but not in exported path names;
+5. the shipped validator omitted two configured private literals; and
+6. short credentials under explicitly secret-named dotenv keys could escape, while a permissive
+   manifest could attempt to include source `.git` history that the final scanner deliberately skips.
+
+The fixes add a readable generic Jira replacement, preserve the floor-rule trigger, synchronize the
+new-project instructions on every generated platform door, and make all three privacy boundaries fail
+closed. Compound verification then closed interactions in the script's printed Jira handoff, Windows
+reserved project names, secret-key classification, and `.git`-as-source handling. The executable
+teaching contract is now 46 checks and includes an independent regression for every verified defect.

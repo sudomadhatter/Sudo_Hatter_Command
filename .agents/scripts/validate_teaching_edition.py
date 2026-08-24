@@ -25,6 +25,8 @@ PRIVATE_LITERALS = (
     "NEX" + "gen",
     "Sudo_Hatter" + "_Command",
     "Fresh_Workspace" + "_BMAD",
+    "sudo" + "madhatter@gmail.com",
+    "clean-" + "bmad",
     "sudo-command" + ".atlassian.net",
 )
 
@@ -184,6 +186,16 @@ def validate(root: Path) -> list[str]:
     if "re-open" not in training.lower() and "open the current" not in training.lower():
         errors.append("training rule does not require a fresh SOP read")
 
+    operator_profile = _text(root / ".agents/rules/operator-profile.md", errors)
+    if "trigger: always_on" not in operator_profile:
+        errors.append("exported floor operator profile is not marked always-on")
+
+    jira_rule = _text(root / ".agents/rules/jira.md", errors)
+    if not all(token in jira_rule for token in ("No binding means no board", "JIRA_SITE", "JIRA_KEYS")):
+        errors.append("exported Jira rule does not enforce the generic binding-first contract")
+    if "two team-managed projects" in jira_rule or "P=YOUR_KEY" in jira_rule or "P=PROJECT" in jira_rule:
+        errors.append("exported Jira rule retains source-specific board topology")
+
     tour = _text(root / ".agents/commands/smh-tour.md", errors)
     for token in (
         "/smh-new-project",
@@ -252,6 +264,12 @@ def validate(root: Path) -> list[str]:
     new_project = _text(root / ".agents/scripts/new-project.ps1", errors)
     if "scaffold commit failed" not in new_project or "until HEAD exists" not in new_project:
         errors.append("new-project scaffold can report success without a first commit")
+    new_project_command = _text(root / ".agents/commands/smh-new-project.md", errors)
+    if not all(
+        token in new_project_command
+        for token in ("JIRA_SITE", "JIRA_KEYS", "acli jira auth status")
+    ):
+        errors.append("new-project command does not validate the optional Jira site/key binding")
 
     sop = _text(root / "docs/_scc_sops_prds/workflows_testing_SOP.md", errors)
     command_index = _text(root / ".agents/commands/INDEX.md", errors)
@@ -282,6 +300,9 @@ def validate(root: Path) -> list[str]:
         for prefix in PRIVATE_PREFIX_LITERALS:
             if re.search(rf"(?<![A-Za-z0-9]){re.escape(prefix)}", rel, flags=re.IGNORECASE):
                 errors.append(f"private alias in exported path: {rel} ({prefix})")
+        for word in PRIVATE_WORD_LITERALS:
+            if re.search(rf"(?<![A-Za-z0-9]){re.escape(word)}(?![A-Za-z0-9])", rel):
+                errors.append(f"source Jira key in exported path: {rel}")
         for text in _decoded_texts(path):
             for literal in PRIVATE_LITERALS:
                 if literal.lower() in text.lower():

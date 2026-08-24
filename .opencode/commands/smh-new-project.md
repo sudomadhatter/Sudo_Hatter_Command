@@ -31,8 +31,10 @@ Then finish the wiring — the script prints these, do them in order:
    --ignore _my_resources,_bmad --mode auto` (run from the lobby; the template's AUTO tree carries the
    skeleton's own root name until you regenerate, so `check_maps` would flag it stale).
 
-**Optional, when it gets a Jira board:** `cp .agents/jira.conf.example .agents/jira.conf`, set
-`JIRA_KEYS`, then `touch .agents/scripts/git-hooks/JIRA-ENFORCE` to arm REJECT mode. Until then the
+**Optional, only after this project gets a Jira site, project key, and board:** from the new project,
+copy `.agents/jira.conf.example` to `.agents/jira.conf`, set both `JIRA_SITE` and `JIRA_KEYS`, then
+run `acli jira auth status` and confirm its active site exactly matches `JIRA_SITE`. Only after that
+check succeeds, create `.agents/scripts/git-hooks/JIRA-ENFORCE` to arm REJECT mode. Until then the
 commit gate no-ops — a fresh project is never blocked by a board it doesn't have yet.
 
 **Optional:** add it to `.agents/maintained-projects.txt` if the `check_maps --all` lint should cover it.

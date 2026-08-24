@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import textwrap
@@ -178,7 +179,7 @@ def main() -> int:
                 private_probe = target / "privacy-probe.txt"
                 private_probe.write_text(
                     "Daniel AviationChat AVCH SCC dlohneiss dlohn Sudos-MacBook-Pro.local "
-                    "SullySessionTelemetry igor_temp\n",
+                    "sudomadhatter@gmail.com clean-bmad SullySessionTelemetry igor_temp\n",
                     encoding="utf-8",
                 )
                 private_findings = validate(target)
@@ -193,7 +194,36 @@ def main() -> int:
                     any("source Jira key" in finding for finding in private_findings),
                     " | ".join(private_findings[:12]),
                 )
+
+                private_probe.write_text(
+                    "sudomadhatter@gmail.com\n", encoding="utf-8"
+                )
+                email_only_findings = validate(target)
+                c.check(
+                    "shipped validator independently rejects the source account literal",
+                    any("private literal" in finding for finding in email_only_findings),
+                    " | ".join(email_only_findings[:8]),
+                )
+                private_probe.write_text("clean-bmad\n", encoding="utf-8")
+                legacy_name_only_findings = validate(target)
+                c.check(
+                    "shipped validator independently rejects the legacy skeleton literal",
+                    any("private literal" in finding
+                        for finding in legacy_name_only_findings),
+                    " | ".join(legacy_name_only_findings[:8]),
+                )
                 private_probe.unlink()
+
+                private_path_probe = target / "docs" / "SCC-private.md"
+                private_path_probe.write_text("sanitized content\n", encoding="utf-8")
+                private_path_findings = validate(target)
+                c.check(
+                    "shipped validator rejects the source Jira key in a path",
+                    any("source Jira key in exported path" in finding
+                        for finding in private_path_findings),
+                    " | ".join(private_path_findings[:12]),
+                )
+                private_path_probe.unlink()
 
                 nested_worktree = target / ".claude" / "worktrees" / "foreign-lane"
                 nested_worktree.mkdir(parents=True)
@@ -230,6 +260,40 @@ def main() -> int:
                     mcp_text.count("--workspace=.") == len(mcp_files)
                     and "/Users/" not in mcp_text,
                     mcp_text,
+                )
+
+                operator_profile = (
+                    target / ".agents" / "rules" / "operator-profile.md"
+                ).read_text(encoding="utf-8")
+                c.check(
+                    "exported floor profile remains always-on",
+                    "trigger: always_on" in operator_profile,
+                    operator_profile[:500],
+                )
+
+                jira_rule = (target / ".agents" / "rules" / "jira.md").read_text(
+                    encoding="utf-8"
+                )
+                c.check(
+                    "exported Jira rule is generic and binding-first",
+                    "No binding means no board" in jira_rule
+                    and "JIRA_SITE" in jira_rule
+                    and "JIRA_KEYS" in jira_rule
+                    and "two team-managed projects" not in jira_rule
+                    and "P=YOUR_KEY" not in jira_rule
+                    and "P=PROJECT" not in jira_rule,
+                    jira_rule[:2500],
+                )
+
+                new_project_command = (
+                    target / ".agents" / "commands" / "smh-new-project.md"
+                ).read_text(encoding="utf-8")
+                c.check(
+                    "new-project hand-off validates Jira site and key together",
+                    "JIRA_SITE" in new_project_command
+                    and "JIRA_KEYS" in new_project_command
+                    and "acli jira auth status" in new_project_command,
+                    new_project_command,
                 )
 
     if c.block("B · leak matcher is literal, boundary-safe, and mutation-proven"):
@@ -427,6 +491,164 @@ def main() -> int:
         with TempDir() as temp:
             fixture = temp / "source"
             fixture.mkdir()
+            short_secret = "A7x!pQ9z2#"
+            (fixture / ".env").write_text(
+                f"API_KEY={short_secret}\nPUBLIC_MODE=testing\n", encoding="utf-8"
+            )
+            (fixture / "payload.txt").write_text(
+                f"copied credential: {short_secret}\n", encoding="utf-8"
+            )
+            fixture_manifest = fixture / "manifest.json"
+            fixture_manifest.write_text(
+                json.dumps(
+                    {
+                        "name": "short secret probe",
+                        "source": ".",
+                        "include": ["payload.txt"],
+                        "leakScan": {"literals": [], "wordLiterals": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            short_secret_proc = subprocess.run(
+                [
+                    "pwsh", "-NoProfile", "-File", str(exporter),
+                    "-Manifest", str(fixture_manifest),
+                    "-Target", str(temp / "public"),
+                ],
+                cwd=REPO,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+            short_secret_transcript = (
+                (short_secret_proc.stdout or "") + (short_secret_proc.stderr or "")
+            )
+            c.check(
+                "short value from a secret-named dotenv key is blocked",
+                short_secret_proc.returncode != 0
+                and "LEAK SCAN FAILED" in short_secret_transcript
+                and short_secret not in short_secret_transcript,
+                short_secret_transcript,
+            )
+
+        with TempDir() as temp:
+            fixture = temp / "source"
+            fixture.mkdir()
+            (fixture / ".env").write_text(
+                "API_KEY=abc\nBYPASS_SSL=true\n", encoding="utf-8"
+            )
+            (fixture / "payload.txt").write_text("safe\n", encoding="utf-8")
+            fixture_manifest = fixture / "manifest.json"
+            fixture_manifest.write_text(
+                json.dumps(
+                    {
+                        "name": "tiny secret probe",
+                        "source": ".",
+                        "include": ["payload.txt"],
+                        "leakScan": {"literals": [], "wordLiterals": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            tiny_secret_proc = subprocess.run(
+                [
+                    "pwsh", "-NoProfile", "-File", str(exporter),
+                    "-Manifest", str(fixture_manifest),
+                    "-Target", str(temp / "public"),
+                ],
+                cwd=REPO,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+            tiny_secret_transcript = (
+                (tiny_secret_proc.stdout or "") + (tiny_secret_proc.stderr or "")
+            )
+            c.check(
+                "tiny secret is refused without treating BYPASS as a password key",
+                tiny_secret_proc.returncode != 0
+                and "too short for safe leak matching" in tiny_secret_transcript
+                and "abc" not in tiny_secret_transcript,
+                tiny_secret_transcript,
+            )
+
+        with TempDir() as temp:
+            fixture = temp / "source"
+            fixture.mkdir()
+            subprocess.run(["git", "init", "-q"], cwd=fixture, check=True)
+            (fixture / "payload.txt").write_text("safe\n", encoding="utf-8")
+            fixture_manifest = fixture / "manifest.json"
+            fixture_manifest.write_text(
+                json.dumps(
+                    {
+                        "name": "source git probe",
+                        "source": ".",
+                        "include": ["."],
+                        "exclude": ["manifest.json"],
+                        "leakScan": {"literals": [], "wordLiterals": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            source_git_proc = subprocess.run(
+                [
+                    "pwsh", "-NoProfile", "-File", str(exporter),
+                    "-Manifest", str(fixture_manifest),
+                    "-Target", str(temp / "public"),
+                    "-WhatIf",
+                ],
+                cwd=REPO,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+            source_git_transcript = (
+                (source_git_proc.stdout or "") + (source_git_proc.stderr or "")
+            )
+            c.check(
+                "source git history is refused even when a manifest tries to include it",
+                source_git_proc.returncode != 0
+                and "Source .git cannot be exported" in source_git_transcript,
+                source_git_transcript,
+            )
+
+            fixture_manifest.write_text(
+                json.dumps(
+                    {
+                        "name": "git-as-source probe",
+                        "source": ".git",
+                        "include": ["config"],
+                        "leakScan": {"literals": [], "wordLiterals": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            git_source_proc = subprocess.run(
+                [
+                    "pwsh", "-NoProfile", "-File", str(exporter),
+                    "-Manifest", str(fixture_manifest),
+                    "-Target", str(temp / "public-source"),
+                    "-WhatIf",
+                ],
+                cwd=REPO,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+            git_source_transcript = (
+                (git_source_proc.stdout or "") + (git_source_proc.stderr or "")
+            )
+            c.check(
+                "a manifest cannot select source git metadata as its source root",
+                git_source_proc.returncode != 0
+                and "Source .git cannot be exported" in git_source_transcript,
+                git_source_transcript,
+            )
+
+        with TempDir() as temp:
+            fixture = temp / "source"
+            fixture.mkdir()
             (fixture / "payload.txt").write_text("safe\n", encoding="utf-8")
             (fixture / "replacement.txt").write_text("replacement\n", encoding="utf-8")
             victim = temp / "victim.txt"
@@ -543,6 +765,235 @@ def main() -> int:
                 / "skeleton-active-context.md"
             ).exists(),
         )
+
+    if c.block("D · new-project clones a safe named skeleton and fails honestly"):
+        with TempDir() as temp:
+            shell = temp / "command-center"
+            scripts = shell / ".agents" / "scripts"
+            projects = shell / "Projects"
+            scripts.mkdir(parents=True)
+            projects.mkdir()
+            local_script = scripts / "new-project.ps1"
+            shutil.copy2(SCRIPTS / "new-project.ps1", local_script)
+
+            skeleton = temp / "skeleton"
+            skeleton.mkdir()
+            (skeleton / "README.md").write_text("# Local skeleton\n", encoding="utf-8")
+            (skeleton / ".githooks").mkdir()
+            (skeleton / ".githooks" / ".gitkeep").write_text("", encoding="utf-8")
+            subprocess.run(["git", "init", "-q"], cwd=skeleton, check=True)
+            subprocess.run(["git", "add", "README.md", ".githooks/.gitkeep"],
+                           cwd=skeleton, check=True)
+            identity_env = os.environ.copy()
+            identity_env.update(
+                {
+                    "GIT_AUTHOR_NAME": "Teaching Test",
+                    "GIT_AUTHOR_EMAIL": "teaching@example.invalid",
+                    "GIT_COMMITTER_NAME": "Teaching Test",
+                    "GIT_COMMITTER_EMAIL": "teaching@example.invalid",
+                }
+            )
+            subprocess.run(
+                ["git", "commit", "-qm", "local skeleton"],
+                cwd=skeleton,
+                env=identity_env,
+                check=True,
+            )
+
+            success = subprocess.run(
+                [
+                    "pwsh", "-NoProfile", "-File", str(local_script),
+                    "-Name", "First_Project", "-SkeletonUrl", str(skeleton),
+                ],
+                cwd=shell,
+                env=identity_env,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+            success_transcript = (success.stdout or "") + (success.stderr or "")
+            created = projects / "First_Project"
+            head = subprocess.run(
+                ["git", "rev-parse", "--verify", "HEAD"],
+                cwd=created if created.is_dir() else shell,
+                capture_output=True,
+                text=True,
+            )
+            hook_path = subprocess.run(
+                ["git", "config", "--get", "core.hooksPath"],
+                cwd=created if created.is_dir() else shell,
+                capture_output=True,
+                text=True,
+            )
+            c.check(
+                "named local skeleton becomes an independent project with hooks and HEAD",
+                success.returncode == 0
+                and (created / "README.md").is_file()
+                and head.returncode == 0
+                and hook_path.stdout.strip() == ".githooks",
+                success_transcript,
+            )
+            c.check(
+                "successful scaffold prints project-local optional Jira setup",
+                "cd Projects/First_Project" in success_transcript
+                and "JIRA_SITE" in success_transcript
+                and "JIRA_KEYS" in success_transcript
+                and "acli jira auth status" in success_transcript,
+                success_transcript,
+            )
+
+        with TempDir() as temp:
+            shell = temp / "command-center"
+            scripts = shell / ".agents" / "scripts"
+            projects = shell / "Projects"
+            scripts.mkdir(parents=True)
+            projects.mkdir()
+            local_script = scripts / "new-project.ps1"
+            shutil.copy2(SCRIPTS / "new-project.ps1", local_script)
+            skeleton = temp / "skeleton"
+            skeleton.mkdir()
+            (skeleton / "README.md").write_text("safe\n", encoding="utf-8")
+            subprocess.run(["git", "init", "-q"], cwd=skeleton, check=True)
+            subprocess.run(["git", "add", "README.md"], cwd=skeleton, check=True)
+            subprocess.run(
+                [
+                    "git", "-c", "user.name=Teaching Test",
+                    "-c", "user.email=teaching@example.invalid",
+                    "commit", "-qm", "local skeleton",
+                ],
+                cwd=skeleton,
+                check=True,
+            )
+            unsafe = subprocess.run(
+                [
+                    "pwsh", "-NoProfile", "-File", str(local_script),
+                    "-Name", "../escape", "-SkeletonUrl", str(skeleton),
+                ],
+                cwd=shell,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+            unsafe_transcript = (unsafe.stdout or "") + (unsafe.stderr or "")
+            c.check(
+                "unsafe project name is refused before clone",
+                unsafe.returncode != 0
+                and "portable folder name" in unsafe_transcript
+                and not (shell / "escape").exists(),
+                unsafe_transcript,
+            )
+            reserved = subprocess.run(
+                [
+                    "pwsh", "-NoProfile", "-File", str(local_script),
+                    "-Name", "CON.txt", "-SkeletonUrl", str(skeleton),
+                ],
+                cwd=shell,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+            reserved_transcript = (reserved.stdout or "") + (reserved.stderr or "")
+            c.check(
+                "Windows reserved device basename is refused before clone",
+                reserved.returncode != 0
+                and "portable folder name" in reserved_transcript
+                and not (projects / "CON.txt").exists(),
+                reserved_transcript,
+            )
+
+        with TempDir() as temp:
+            shell = temp / "command-center"
+            scripts = shell / ".agents" / "scripts"
+            projects = shell / "Projects"
+            scripts.mkdir(parents=True)
+            projects.mkdir()
+            local_script = scripts / "new-project.ps1"
+            shutil.copy2(SCRIPTS / "new-project.ps1", local_script)
+            missing_dest = projects / "Missing_Project"
+            clone_failure = subprocess.run(
+                [
+                    "pwsh", "-NoProfile", "-File", str(local_script),
+                    "-Name", "Missing_Project",
+                    "-SkeletonUrl", str(temp / "does-not-exist"),
+                ],
+                cwd=shell,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+            clone_failure_transcript = (
+                (clone_failure.stdout or "") + (clone_failure.stderr or "")
+            )
+            c.check(
+                "clone failure is reported without a project directory",
+                clone_failure.returncode != 0
+                and "skeleton clone failed" in clone_failure_transcript
+                and not missing_dest.exists(),
+                clone_failure_transcript,
+            )
+
+        with TempDir() as temp:
+            shell = temp / "command-center"
+            scripts = shell / ".agents" / "scripts"
+            projects = shell / "Projects"
+            scripts.mkdir(parents=True)
+            projects.mkdir()
+            local_script = scripts / "new-project.ps1"
+            shutil.copy2(SCRIPTS / "new-project.ps1", local_script)
+            skeleton = temp / "skeleton"
+            skeleton.mkdir()
+            (skeleton / "README.md").write_text("safe\n", encoding="utf-8")
+            subprocess.run(["git", "init", "-q"], cwd=skeleton, check=True)
+            subprocess.run(["git", "add", "README.md"], cwd=skeleton, check=True)
+            subprocess.run(
+                [
+                    "git", "-c", "user.name=Teaching Test",
+                    "-c", "user.email=teaching@example.invalid",
+                    "commit", "-qm", "local skeleton",
+                ],
+                cwd=skeleton,
+                check=True,
+            )
+            no_identity_env = os.environ.copy()
+            no_identity_env.update(
+                {
+                    "GIT_CONFIG_NOSYSTEM": "1",
+                    "GIT_CONFIG_GLOBAL": str(temp / "empty-gitconfig"),
+                    "GIT_AUTHOR_NAME": "",
+                    "GIT_AUTHOR_EMAIL": "",
+                    "GIT_COMMITTER_NAME": "",
+                    "GIT_COMMITTER_EMAIL": "",
+                }
+            )
+            commit_failure = subprocess.run(
+                [
+                    "pwsh", "-NoProfile", "-File", str(local_script),
+                    "-Name", "No_Identity", "-SkeletonUrl", str(skeleton),
+                ],
+                cwd=shell,
+                env=no_identity_env,
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+            failed_project = projects / "No_Identity"
+            failed_head = subprocess.run(
+                ["git", "rev-parse", "--verify", "HEAD"],
+                cwd=failed_project if failed_project.is_dir() else shell,
+                capture_output=True,
+                text=True,
+            )
+            commit_failure_transcript = (
+                (commit_failure.stdout or "") + (commit_failure.stderr or "")
+            )
+            c.check(
+                "failed scaffold commit cannot be reported as a created project",
+                commit_failure.returncode != 0
+                and "scaffold commit failed" in commit_failure_transcript
+                and failed_head.returncode != 0
+                and "new-project: created" not in commit_failure_transcript,
+                commit_failure_transcript,
+            )
 
     return c.finish()
 

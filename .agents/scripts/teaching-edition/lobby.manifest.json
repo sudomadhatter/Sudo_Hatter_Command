@@ -134,6 +134,7 @@
 
   "transforms": [
     { "path": ".agents/rules/operator-profile.md", "replaceWith": "replacements/operator-profile.md" },
+    { "path": ".agents/rules/jira.md", "replaceWith": "replacements/jira.md" },
     { "path": ".agents/maintained-projects.txt", "replaceWith": "replacements/maintained-projects.txt" },
     { "path": "_artifacts/_memory/MEMORY.md", "replaceWith": "replacements/memory-MEMORY.md" },
     { "path": "_artifacts/_memory/README.md", "replaceWith": "replacements/memory-README.md" },

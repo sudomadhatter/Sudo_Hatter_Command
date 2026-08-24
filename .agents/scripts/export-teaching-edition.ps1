@@ -233,6 +233,10 @@ if (-not (Test-Path -LiteralPath $sourceRoot)) { throw "Source not found: $sourc
 
 $targetRoot = Resolve-PhysicalPath $Target
 $sourcePhysical = Resolve-PhysicalPath $sourceRoot.Path
+$sourceSegments = $sourcePhysical -split '[\\/]'
+if ($sourceSegments -contains '.git') {
+    throw "Source .git cannot be exported; choose the repository working tree as the source"
+}
 if (Test-IsWithinDirectory $targetRoot $sourcePhysical) {
     throw "Target must be outside the source tree to prevent recursive self-copy: $Target"
 }
@@ -299,6 +303,11 @@ foreach ($inc in $m.include) {
         $rel = $item.FullName.Substring($sourceRoot.Path.Length).TrimStart('\', '/')
         $hit = Test-Excluded -Rel $rel
         if ($hit) { $excluded.Add("$rel   [$hit]"); continue }
+
+        $relSlash = $rel -replace '\\', '/'
+        if ($relSlash -eq '.git' -or $relSlash.StartsWith('.git/')) {
+            throw "Source .git cannot be exported; add .git to excludeAnywhere"
+        }
 
         if (-not (Test-IsWithinDirectory (Resolve-PhysicalPath $item.FullName) $sourcePhysical)) {
             throw "Required include resolves outside the source tree: $inc"
@@ -550,14 +559,25 @@ if (Test-Path -LiteralPath $envPath) {
     foreach ($line in Get-Content -LiteralPath $envPath) {
         if ($line -match '^\s*[#;]') { continue }
         if ($line -notmatch '=') { continue }
-        $valueText = ($line -split '=', 2)[1]
+        $parts = $line -split '=', 2
+        $keyName = $parts[0].Trim()
+        $valueText = $parts[1]
+        $secretNamed = $keyName -match '(?i)(^|[_-])(SECRET|TOKEN|PASSWORD|PASS|API[_-]?KEY|PRIVATE[_-]?KEY|CREDENTIAL)([_-]|$)'
         $values = @(
             (ConvertFrom-DotEnvValue $valueText),
             (ConvertFrom-DotEnvRawValue $valueText)
         ) | Select-Object -Unique
         foreach ($val in $values) {
-            # Short values are common words, not secrets - they would only produce noise.
-            if ($val.Length -ge 12) { $needles += $val }
+            # Ordinary short values (true, local, test) are too noisy to scan globally, but a
+            # secret-named key is an explicit declaration. Values under four characters cannot be
+            # matched globally without turning ordinary text into false leaks, so fail immediately
+            # instead of silently dropping them or weakening the privacy boundary.
+            if ($secretNamed -and $val.Length -gt 0 -and $val.Length -lt 4) {
+                throw "Secret-named environment value is too short for safe leak matching"
+            }
+            if (($secretNamed -and $val.Length -ge 4) -or $val.Length -ge 12) {
+                $needles += $val
+            }
         }
     }
 }
@@ -595,6 +615,11 @@ if ($scanRoot -and (Test-Path -LiteralPath $scanRoot)) {
         }
         foreach ($n in $wordNeedles) {
             if ($relSlash -match ('(?<![A-Za-z0-9])' + [regex]::Escape($n))) {
+                $hits += New-RedactedLeakHit -Kind path -MatchType word
+            }
+        }
+        foreach ($n in $wholeWordNeedles) {
+            if ($relSlash -cmatch ('(?<![A-Za-z0-9])' + [regex]::Escape($n) + '(?![A-Za-z0-9])')) {
                 $hits += New-RedactedLeakHit -Kind path -MatchType word
             }
         }
