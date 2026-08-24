@@ -11,135 +11,167 @@ ArtifactMetadata:
 # SCC-280 — teaching edition refresh
 
 review-runtime: fan-out
+review-level: standard
 
 ## Outcome
 
-The long-lived teaching branch now builds one sanitized, zero-history command-center shell from the
-current command-center implementation. The tutor reads the local
-`docs/_scc_sops_prds/workflows_testing_SOP.md` and relevant command body at every teaching stop rather
-than carrying a frozen copy of the workflow.
+`claude/teaching-edition` is refreshed through `origin/main` SHA
+`fa490f79e95f9a77387888b62cbc2ee2a59d5742`. It now builds one sanitized, zero-history command-center
+shell whose tutor opens the current local SOP and current command bodies at every checkpoint. The tutor
+does not preserve a second, stale copy of the workflow.
 
-The exported shell begins with an empty `Projects/` directory and no active Jira binding. Its front
-door lets the owner choose the command-center folder name. During the tour, the agent asks what to
-name the first project and routes through `/smh-new-project <name>` to clone
-`https://github.com/sudomadhatter/sudo-project-skeleton` into `Projects/<name>`. Jira remains optional
-until that project has a site, project, and board.
+The owner can choose the command-center folder name at clone/download time. The tour then asks what to
+name the first project and runs `/smh-new-project <name>`, which clones the paired
+`sudo-project-skeleton` into `Projects/<name>`. A fresh shell and fresh project have no assumed Jira
+board. Project-local Jira configuration is taught only after that project has a site, key, and board.
 
-The generated export is the shareable artifact. This source branch is the maintained export recipe;
-SCC-280 does not create a public repository or change repository visibility.
+The shareable artifact is the generated export. This branch maintains the export recipe; SCC-280 does
+not publish a repository, change visibility, or modernize the paired skeleton.
 
 ## Source and integration
 
-- Source `origin/main`: `5069d4df42e79f02bf80061725bdd75b3cc0e573`
-- Main integration commit: `abbdb0a637e595858d9c5359dec5098e20ef75ef`
-- `origin/main` was re-fetched at final integration and remained on the same SHA.
-- SCC-271 is present in that source SHA. SCC-270 remains an explicit landing-order dependency until
-  its separate lane reaches `main`; SCC-280 will not claim final acceptance before that refresh.
+- Final source main: `fa490f79e95f9a77387888b62cbc2ee2a59d5742`.
+- Final main integration commit: `a0c18555008ada6460fbe8026facf945565b5d8a`.
+- `git merge-base --is-ancestor origin/main HEAD` returned 0.
+- The final merge conflict was limited to `_artifacts/_main/INDEX.md`; both SCC-280 and newly landed
+  SCC-295 rows were preserved.
+- Final product delta: 45 paths relative to `origin/main`; Declared Change Set reports no incomplete,
+  undeclared, or unimplemented paths.
 
 ## What changed
 
-- Added `/smh-tour` and `/smh-training on|off|status` with current generated doors for Claude/Codex,
-  opencode, and Antigravity.
-- Bound training mode to the live SOP and current command bodies.
-- Rebuilt the exporter and manifest as a one-shell distribution with blocking validation.
-- Replaced active Jira configuration with an inactive generic example in generated output.
-- Added a real-export contract test and mutation controls for retired commands and active Jira state.
-- Removed the legacy branch's two-export concept, old tutor doors, personal notes, and session artifacts
-  from the final `origin/main...HEAD` product delta.
+- Added `/smh-tour` and reversible `/smh-training on|off|status`, with current Claude/Codex, opencode,
+  and Antigravity doors.
+- Bound every tutor stop to `docs/_scc_sops_prds/workflows_testing_SOP.md` plus the relevant live command.
+- Rebuilt the exporter as a one-shell distribution with blocking privacy and integrity validation.
+- Added a generic, inactive Jira example and a binding-first Jira rule: no project binding means no board.
+- Hardened `/smh-new-project` so a safe user-chosen name becomes `Projects/<name>`, clone/init/commit
+  failures cannot be reported as success, and Jira stays optional until a real board exists.
+- Added the real-export contract, negative controls, generated navigation, and SOP currency updates.
 
-## RED to GREEN
+## Generated export evidence
 
-The first new contract run against the stale exporter failed before product changes: the old exporter
-could not enumerate the current hidden-file tree, and the generated shell failed the current teaching
-contract. After implementation, a fresh export produced:
+The final focused run at `a0c18555` produced one shell with:
 
 ```text
-Copied files: 2666
-Excluded files: 49
-Created empty directories: 4
-Identity substitutions: 4886 across 322 files
-Replacement transforms: 6
-Leak scan: 39 needles, 0 hits
-TEACHING EDITION VALID
-test_teaching_edition.py: 12/12 passed
+copied      : 2673 files
+excluded    : 62 files
+structure   : 4 empty folders kept
+substituted : 5598 tokens across 350 files
+line-pruned : 9 source-only catalog rows
+transformed : 9 files
+leak scan   : 42 needles, 0 hits
+validator   : TEACHING EDITION VALID
+contract    : 46/46 passed
 ```
 
-The same test injects two bad states into otherwise-valid exports. A retired `/sudo-tour` reference
-and an active `.agents/jira.conf` binding are both rejected, proving the validator can fail.
+The generated shell has no `.git` history, active `.agents/jira.conf`, source worktree, private
+account/host/project literals, or retired `/sudo-*` tutor instruction. Mutants prove those states are
+rejected rather than merely absent from one happy-path export.
+
+## Tour checkpoint dry-run
+
+This is a non-mutating stop-by-stop inspection. It proves what the agent must open and report; it does
+not create a sample project or fake a Jira board.
+
+| Stop | Live sources opened | Checkpoint output verified |
+|---|---|---|
+| 0 | SOP Start here and §1–§4; `AGENTS.md`; `router.md` | Asks for the command-center name; teaches destination-name clone/archive rename, plan-first, owner sign-off, and persistence. |
+| 1 | SOP §10 and §14; `.agents/scripts/INDEX.md`; exported validator | Runs the generated-shell validator, explains optional integrations without reading secrets, and states that the shell has no Jira board or binding. |
+| 2 | `smh-new-project.md`; `new-project.ps1` | Asks “What do you want to name your first project?”, validates one portable folder segment, clones the canonical skeleton to `Projects/<name>`, and leaves Jira unconfigured. |
+| 3 | SOP §5, §8, and §9 plus the chosen lane command | Explains story, project quick-dev, command-center Task, and lightweight command-center lanes; owner can state why the chosen lane fits. |
+| 4 | SOP §6, §10, §11, §14 and the five current story/ship command bodies | Teaches RED→GREEN, literal approval, adversarial review, story landing versus epic shipping, and stops instead of inventing a ticket when no board exists. |
+| 5 | SOP §7, §12–§19 and current Task close-out/operations commands | Covers close-out, machine switching, optional live queue/autopilot, incidents, command atlas, remaining actions, and optional training-off. |
+
+Every stop begins with the live-source hard stop: if the SOP and command disagree, the tutor reports the
+mismatch and pauses instead of teaching remembered mechanics.
 
 ## Acceptance evidence
 
 | # | Result | Evidence |
 |---|---|---|
-| 1 | Pending final SCC-270 absorb | Current `origin/main` is already an ancestor; final diff reconciliation waits for the named sibling dependency. |
-| 2 | Pass | Tutor/rule validator, live-SOP assertions, current command inventory, and tour checkpoint inspection. |
-| 3 | Pass | Real export asserts the clone destination syntax, project-name prompt, exact skeleton URL/destination, empty `Projects/`, no active Jira binding, and optional Jira path. |
-| 4 | Pass | Real export, zero-history assertion, 38-needle leak scan, manifest inventory, and removed second-export path. |
-| 5 | Pass | `sync-agents.ps1 -Status` clean; `test_command_surfaces.py` 185/185; retired doors absent. |
-| 6 | Pending final full gate | Focused test 12/12, SOP test 61/61, toolkit lint 0 errors/0 warnings, Python compile and JSON parse green. Full receipt and review follow the last content commit. |
+| 1 | Pass | Latest `origin/main` is an ancestor of HEAD; final integration and overlap are recorded above. |
+| 2 | Pass | Six-stop live-SOP curriculum, current-command inventory checks, generated-door parity, and manual checkpoint dry-run. |
+| 3 | Pass | Real scaffold test asks for/uses a name, clones the canonical skeleton to `Projects/First_Project`, creates its own HEAD and hooks, and prints project-local optional Jira setup. |
+| 4 | Pass | Zero-history real export, 42-needle/0-hit leak scan, fail-closed privacy controls, one-shell manifest, and shipped validator. |
+| 5 | Pass | Repo-local generated surfaces are synchronized; retired tutor doors and commands are rejected. |
+| 6 | Pass | Focused 46/46 and receipt-backed full suite 60/60 at `a0c18555`; clean-code and review gates below. |
 
-## Evidence
+## Gate evidence
 
-| Check | Result |
+| Gate | Result |
 |---|---|
-| `python3 .agents/scripts/tests/test_teaching_edition.py` | 12/12 passed, including retired-command, active-Jira, Git-prefix, and wildcard-secret negative controls |
-| `python3 .agents/scripts/tests/test_command_surfaces.py` | 185/185 passed |
-| `python3 .agents/scripts/tests/test_sops_prds_folder.py` | 61/61 passed |
-| `python3 .agents/scripts/workflow_lint.py --toolkit-only` | 0 errors, 0 warnings; 8 informational BOM notices |
-| `pwsh ... sync-agents.ps1 -Status` | Repo-local mirrors and launcher skills match their generated sources |
-| `python3 -m py_compile ...` | Validator and teaching-edition test compile |
-| manifest JSON parse | Valid |
-| `git diff --check origin/main` | Clean |
+| `test_teaching_edition.py` | 46/46 passed after final main merge |
+| receipt-backed `tests/run_all.py` | 60/60 files passed in 151.1 s; `gates/suite.json`, clean tree, SHA `a0c18555` |
+| `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, 8 existing BOM information notices |
+| Python compile | validator and focused contract compile cleanly |
+| PowerShell parser | exporter and new-project script parse cleanly |
+| `sync-agents.ps1 -Status` | every repo-local invocable surface matches its master |
+| SOP currency | pass; SOP and changelog are updated on this branch |
+| `check_links.py --base origin/main` | 247 claims checked; 0 branch-introduced failures; two baseline `PROJECT_ROOT` placeholders remain |
+| Declared Change Set | present; incomplete 0, undeclared 0, unimplemented 0 |
 
-The first receipt-backed full run passed 48/50 files and found two completion omissions rather than
-being reported green: the missing `_artifacts/_main/INDEX.md` row and missing twin-parity declarations
-for the two teaching-only `smh-*` commands. Both were corrected in this lane. Its other map-test
-failure was the restricted sandbox refusing the test's temporary Git worktree; the test and full
-suite are rerun with Git metadata access after the corrections.
+## Paired skeleton boundary
 
-## Review fixes before the final verdict
+The canonical repository was inspected read-only at
+`d463613fa03e75bc46d2dd719be10937ebeefcd7`. It contains `.agents/jira.conf.example` and no active
+`.agents/jira.conf`, which matches the no-board teaching contract. No skeleton file was changed here.
+The broader AviationChat-derived skeleton upgrade—especially Playwright and current reusable development
+machinery—is deliberately a separate follow-on with its own repository binding, plan, tests, and approval.
 
-The first clean-room fan-out found nine unique failures. All passed the relevance gate because each
-reproduced a wrong export, a dead advertised command, or false privacy evidence; all were fixed in this
-lane:
+## Clean-Code Gate
 
-| Surface | Reproduced failure | Applied disposition |
-|---|---|---|
-| exporter `.git` skip | `.githooks`/`.gitignore` were skipped by a raw prefix | directory-boundary matcher plus mutation-killed self-test |
-| exporter literal scan | bracket-bearing secrets were interpreted as wildcard patterns | ordinal literal matcher plus mutation-killed self-test |
-| `/smh-training on` | its restore template was excluded from the product | self-contained sentinel creation |
-| archive root | `git rev-parse` failed before any training action | live-SOP upward fallback; Git checkout behavior retained |
-| retired-command validator | quotes and Markdown brackets bypassed the regex | URL-safe negative-lookbehind matcher plus real export mutant |
-| Jira onboarding | relative destination could bind the lobby | both paths explicitly use `Projects/<name>/.agents/` |
-| MCP configs | source-machine absolute workspace survived | exact-root substitution to `--workspace=.` plus export assertion |
-| README verification | source full suite fails in a deliberately thin shell | generated stdlib validator ships and is the documented gate |
-| scripts index | source-only exporter looked available in the product | explicit source-only inventory label; product validator retained |
-| leak failure transcript | matched `.env` values were printed verbatim | findings redact both token and potentially secret-bearing path |
-| dotenv parser | `secret # comment` produced a needle containing the comment | unquoted inline comments stripped; quoted hashes preserved |
-| private aliases | standalone `AVCH` and spaced `Aviation Chat` survived a green export | substitution and blocking privacy lists cover every reproduced form |
-| nested target | an output under an included source folder could self-enumerate | target must resolve outside the source tree, including `-WhatIf` |
-| generated tutor mirrors | stale `/sudo-*` lessons outside authored files passed validation | every generated tutor door joins the live-surface scan plus mutant |
-| training sentinel | `off` → `on` restored different bytes | one canonical three-line payload is exported and embedded in the command |
-| scripts top-level inventory | both new scripts were absent from the auto-listed block | exporter and validator appear in the folder inventory |
+Result: PASS.
+
+- Machine floor: full suite, toolkit lint, Python/PowerShell parse, SOP currency, link delta, and sync
+  status all pass for the authored change.
+- Human floor: no credential values, source-specific absolute paths, debug residue, broad exception
+  handling, or commented-out implementation were introduced.
+- One audit finding was returned and fixed: the tutor's runtime-state path was written as one
+  backticked nonexistent path, so it now names the real directory and filename without creating a false
+  link claim. The two remaining link reports are baseline placeholders and were dismissed by diff scope.
+
+## Code Review
+
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted: 5/5
+lenses_na: none
+
+dispositions: per-lens findings with a reproduced wrong output were applied and regression-tested; duplicate findings were merged; non-reproducing lowercase-key and platform-CI suggestions were dismissed with the canonical-key and current-machine boundaries recorded.
+drift: declared=43 · changed=45 (two artifact/index carve-outs) · incomplete=0 · undeclared=0 · unimplemented=0
+
+The review ran in fan-out at standard depth, followed by evidence verification and compound synthesis.
+It repeatedly withheld PASS as real distribution-boundary issues were reproduced. Applied fixes include
+literal `.git` boundaries, safe secret matching, no credential echo, physical source containment,
+UTF-16/32 privacy scanning, generic always-on operator law, generic project-owned Jira, site/key/auth
+agreement, path-level Jira-key scanning, Windows-reserved names, false-success prevention, generated
+navigation, and the real project-clone handoff. Each surviving finding has an executable regression in
+the 46-check contract.
+
+### Step 0.7 — re-derivation
+
+1. **Referenced movement:** `origin/main` advanced first to `310824a` and finally to `fa490f7`; both were absorbed. The final movement was SCC-295 and did not move a tutor/export dependency.
+2. **True overlap and merge:** the final merge had one additive overlap, `_artifacts/_main/INDEX.md`; both session rows remain, no conflict marker survives, `origin/main` is an ancestor, and the merge-tree materializes the branch result without an unresolved conflict.
+3. **Sibling landing order:** SCC-295 is already landed and absorbed. The only remaining live sibling is SCC-304 from the same final main and has no SCC-280 dependency; skeleton modernization remains a separately authorized follow-on, not a landing dependency.
 
 ## Task Checklist
 
-- [x] Merge current `origin/main` without rewriting the teaching branch.
+- [x] Re-pull and merge the latest `origin/main` without rewriting the teaching branch.
 - [x] Replace the stale tutor with a live-SOP curriculum using current command families.
 - [x] Teach command-center naming and named first-project creation from the maintained skeleton.
 - [x] Export one sanitized shell with no assumed Jira board.
-- [x] Regenerate all current platform doors and remove retired tutor doors from the final delta.
-- [x] Prove the validator rejects retired-command and active-Jira mutants.
-- [ ] Re-absorb `main` after SCC-270 lands, run the final full gate and review, then push the branch.
+- [x] Regenerate current platform doors and reject retired tutor surfaces.
+- [x] Run focused, full-suite, clean-code, drift, and review gates against the final main integration.
+- [x] Keep the paired-skeleton modernization outside this first fix.
 
 ## Your Actions
 
-- [x] None required for SCC-280 implementation. The separate skeleton modernization will be planned
-  after this refresh is complete; it is not hidden inside this lane.
+- [x] None required for SCC-280 engineering. The branch is ready to push; sharing/publishing the
+  generated export remains an owner-controlled action.
 
-## Follow-on boundary
-
-After SCC-280 is complete, plan a separate upgrade of `sudo-project-skeleton` using only reusable
-project infrastructure learned from AviationChat, specifically Playwright and newer shared
-development/testing machinery. That follow-on gets its own repository binding, Jira key, plan,
-worktree, compatibility audit, tests, and approval.
+Verdict: PASS @ a0c18555008ada6460fbe8026facf945565b5d8a

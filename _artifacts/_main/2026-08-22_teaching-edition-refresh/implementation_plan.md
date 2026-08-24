@@ -455,3 +455,12 @@ new-project instructions on every generated platform door, and make all three pr
 closed. Compound verification then closed interactions in the script's printed Jira handoff, Windows
 reserved project names, secret-key classification, and `.git`-as-source handling. The executable
 teaching contract is now 46 checks and includes an independent regression for every verified defect.
+
+## Final Main Refresh Amendment
+
+Immediately before close-out, `origin/main` advanced again to
+`fa490f79e95f9a77387888b62cbc2ee2a59d5742` with SCC-295. Per the operator's explicit instruction,
+that SHA was merged before the final gate. The sole conflict was the additive home-base artifact index;
+both rows were preserved. No tutor/export dependency moved. Acceptance requires `origin/main` to remain
+an ancestor of the teaching branch, the focused 46-case contract to pass, and a new receipt-backed full
+suite to be stamped after this merge.
