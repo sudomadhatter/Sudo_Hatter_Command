@@ -230,6 +230,18 @@ That is B6's baseline: the mirror is equal now and must be equal after.
 - EDIT `.claude/skills/code-review-engine/steps/step-04-record.md` — byte-identical mirror → B6
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — C's command change, E's corrected retry promise, and D's gate-table row (declared post-review: shipped in 82b0584, found undeclared by the Acceptance Auditor) → C5, E5, D2
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — one line per SOP delta, same commit (sop-currency habit 4) → C5, E5
+- EDIT `.agents/commands/smh-quick-fix.md` — TASK-LIGHT verdict row (SCC-243 parity; declared post-review — the plan missed that a new verdict obligates every caller table) → C5
+- EDIT `.agents/commands/smh-non-crit-pr-push.md` — same row, same reason → C5
+- EDIT `.agents/commands/cicd-non-crit-pr-push.md` — same row, same reason → C5
+- EDIT `.agents/workflows/smh-quick-fix.md` — generated mirror (sync-agents; never hand-edited) → C5
+- EDIT `.agents/workflows/smh-non-crit-pr-push.md` — generated mirror → C5
+- EDIT `.agents/workflows/cicd-non-crit-pr-push.md` — generated mirror → C5
+- EDIT `.opencode/commands/smh-quick-fix.md` — generated mirror → C5
+- EDIT `.opencode/commands/smh-non-crit-pr-push.md` — generated mirror → C5
+- EDIT `.opencode/commands/cicd-non-crit-pr-push.md` — generated mirror → C5
+- EDIT `.agents/.sync-manifest.json` — sync-agents bookkeeping of the mirror regeneration → C5
+- EDIT `.agents/scripts/tests/test_lens_roster_contract.py` — the B1–B5 contract pins (declared post-review) → B1, B2, B3, B4, B5
+- EDIT `.agents/scripts/tests/test_review_engine.py` — 15 row pins learn the Tree cell (found by the receipt's first stamp) → B2
 - NEW `_artifacts/_main/2026-08-23_bugs-cycle-7/implementation_plan.md` — this plan → all
 - NEW `_artifacts/_main/2026-08-23_bugs-cycle-7/task.yaml` — the lane manifest → all
 - NEW `_artifacts/_main/2026-08-23_bugs-cycle-7/tickets/SCC-306.md` — Part E's ticket outline → E1
