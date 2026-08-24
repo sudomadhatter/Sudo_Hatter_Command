@@ -10,9 +10,9 @@
     "edges": 704,
     "external": 39,
     "ambiguous": 165,
-    "dangling": 295,
+    "dangling": 297,
     "broken_paths": 70,
-    "unresolved_names": 225,
+    "unresolved_names": 227,
     "unresolvable": 6
   },
   "nodes": [
@@ -6400,6 +6400,10 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "target": "MEMORY.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "active-context.md"
     },
     {
@@ -6433,6 +6437,10 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "walkthrough.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "MEMORY.md"
     },
     {
       "from": "docs/code-review-graph.md",

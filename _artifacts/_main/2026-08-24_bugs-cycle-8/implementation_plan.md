@@ -190,3 +190,33 @@ verdict:     findings below (attachments)
   placeholder against the new grep line — no BMAD lane needs to run here.
 
 Audit verdict: GO
+
+## Addendum (2026-08-24, mid-lane): Part I — SCC-319, operator-added
+
+Operator, mid-lane: "you also have a new subtask you need to do … SCC-319 was added to your job."
+Scope from the ticket: promote `check_store()` out of the test file into a callable
+`memory_store_check.py` (one implementation, two callers), and wire advisory-loud
+`post-checkout` / `post-merge` / `post-rewrite` hooks that shout when store files vanish.
+
+Acceptance (from SCC-319): (I-1) standalone runs against any store, exit 0 whole / non-zero on a
+dead MEMORY.md row; (I-2) `test_memory_store.py` imports the promoted function, existing test
+unchanged-green; (I-3) the incident repro (`reset --keep`) prints a loud warning naming the
+removed files AND stays silent on a store-untouched move; (I-4) interpreter probe, both
+machines; (I-5) all four stores covered — store resolved relative to the repo the hook fires in.
+
+Design decision (measured): the incident reverts MEMORY.md along with the files, so integrity
+alone stays green — the checker keeps a per-WORKING-TREE baseline
+(`<git-dir>/memory-store-state.json`; per-worktree on purpose, a lane on an older branch must
+not shout about the main store) and reports files present last check and gone now. `git reset`
+fires no hook, so the shout lands on the next post-move hook or standalone run — within one
+command, which is the ticket's bar.
+
+Declared Change Set additions:
+
+- NEW `.agents/scripts/memory_store_check.py` — promoted check_store + delta baseline + CLI → I-1, I-3
+- NEW `.agents/scripts/tests/test_memory_store_check.py` — I1–I5 blocks, seen RED (module absent) → I-1..I-5
+- EDIT `.agents/scripts/tests/test_memory_store.py` — imports the promoted function → I-2
+- NEW `.githooks/post-checkout` — advisory delta check → I-3, I-4
+- NEW `.githooks/post-merge` — advisory delta check → I-3, I-4
+- NEW `.githooks/post-rewrite` — advisory delta check → I-3, I-4
+- EDIT `_artifacts/_main/INDEX.md` — the lane's ledger row (check_maps F2) → suite
