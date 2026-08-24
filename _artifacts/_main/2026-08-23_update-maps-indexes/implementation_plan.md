@@ -19,8 +19,8 @@ This is one half of the operator-confirmed two-repo scope: the Command Center pl
 1. The lobby repo-map and doc graph remain byte-current in `mode=content`.
 2. The root artifact ledger shows the newest 50 sessions, with older rows moved verbatim to the archive; the `_main` bucket remains one-row-per-session.
 3. Current navigation text names `/smh-update-maps-indexes`, not the retired `/update-maps-indexes` door.
-4. The skills family map states the measured inventory (73 local skill directories: 34 hand-authored + 39 generated launchers, plus 56 BMAD-installed skills), and removes the retired `adk-prompting` example.
-5. The commands INDEX no longer claims Claude receives `.claude/commands/`; the workflows INDEX describes the current ten-check map linter.
+4. The skills family map states the measured inventory (73 master skill directories: 50 hand-authored + 23 generated launchers; Claude exposes 74 non-BMAD + 56 BMAD skills), and removes the retired `adk-prompting` example.
+5. The commands INDEX no longer claims Claude receives `.claude/commands/`; the workflows INDEX describes the current eleven-check map linter.
 6. Lobby-only map lint and generated-doc verification pass. The focused Command Center + AviationChat verification is clean; NEXgen VR remains untouched.
 
 ## Execution order
@@ -30,7 +30,7 @@ This is one half of the operator-confirmed two-repo scope: the Command Center pl
 3. Repair the three current artifact-navigation references.
 4. Correct the three master `.agents/*/INDEX.md` inventory/structure claims.
 5. Re-run the lobby linter and generated-doc verification; inspect the diff for historical-text preservation.
-6. Update the lobby continuity brief and write one walkthrough with evidence and exact hand-landing commands. Do not commit or push.
+6. Update the lobby continuity brief and write one walkthrough with evidence; after the operator's later shipping instruction, land through the ticketed SCC-308 and AVCH-87 lanes.
 
 ## Declared Change Set
 
@@ -43,7 +43,10 @@ This is one half of the operator-confirmed two-repo scope: the Command Center pl
 - EDIT `_artifacts/README.md` → repairs the current map-maintenance command pointer
 - EDIT `.agents/skills/INDEX.md` → reconciles measured skill counts and removes a retired example
 - EDIT `.agents/commands/INDEX.md` → removes the retired Claude command-door claim
-- EDIT `.agents/workflows/INDEX.md` → updates the map linter from nine to ten checks
+- EDIT `.agents/workflows/INDEX.md` → reconciles the map linter's eleven checks and seven fatal checks
+- EDIT `.claude/skills/INDEX.md` → keeps the generated Claude cache index byte-identical to its master
+- EDIT `.agents/scripts/check_links.py` → treats the rolled archive as the same historical ledger class as the live ledger
+- EDIT `.agents/scripts/tests/test_check_links.py` → proves archive claims are skipped while equivalent current claims still fail
 - EDIT `_artifacts/_main/active-context.md` → records the two-repo reconciliation handoff
 
 ## Open questions

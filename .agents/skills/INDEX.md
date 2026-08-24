@@ -1,8 +1,9 @@
 # Skills INDEX — when to use which (family map)
 
-Router for the **skill surface an agent actually sees (~129)**: **73** local directories in
-`.agents/skills/` (**34** hand-authored skills + **39** generated command launchers), plus the **56**
-`bmad-*` skills BMAD installs directly into `.claude/skills/`. This repo is the local skills' master — shared, project-agnostic ONLY; a
+Router for the platform skill surfaces: **73** master directories in `.agents/skills/` (**50**
+hand-authored skills + **23** generated command launchers). Claude's cache exposes **74** non-BMAD
+skills plus the **56** `bmad-*` skills BMAD installs directly into `.claude/skills/` (**130** total).
+This repo is the local skills' master — shared, project-agnostic ONLY; a
 product's domain packs live in that product's own `.agents/skills/`, per `project-law.md`. The BMAD families below live there, not here, so don't go
 looking for them in the master dir. Unlike rules, **skills already self-route**: each has a
 `SKILL.md` with a `description:` that the harness surfaces, so you rarely pick one by hand — you invoke

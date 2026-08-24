@@ -12,8 +12,9 @@ ArtifactMetadata:
 
 ## Outcome
 
-The approved two-repo scope is reconciled. The Command Center and AviationChat map gates pass; NEXgen VR
-was removed from the run and is clean. No commit or push was made.
+The approved two-repo scope is reconciled through separate repository-owned lanes: SCC-308 for the
+Command Center and AVCH-87 for AviationChat. Both chore branches are pushed. NEXgen VR was excluded and
+remains untouched.
 
 ## Command Center
 
@@ -21,9 +22,11 @@ was removed from the run and is clean. No commit or push was made.
 - Added 110 previously unrepresented `_main` sessions (including this session), retained exactly the newest
   50 rows live, and moved 110 overflow rows verbatim into the archive. Archive total: 168 rows.
 - Repaired the current `/smh-update-maps-indexes` pointers in the artifact law and README.
-- Reconciled the skill inventory to 73 local directories (34 hand-authored + 39 generated launchers) plus
-  56 BMAD skills, removed the retired `adk-prompting` example, corrected Claude's launcher-skill surface,
-  and updated the workflow inventory to the ten-check linter.
+- Reconciled the skill inventory to 73 master directories (50 hand-authored + 23 generated launchers),
+  measured Claude's 74 non-BMAD + 56 BMAD surface, removed the retired `adk-prompting` example, corrected
+  Claude's cache index, and reconciled the workflow inventory to the eleven-check linter.
+- Added a behavioral regression test proving archived ledger paths remain historical while an equivalent
+  current-document path still fails the link gate.
 
 ## AviationChat
 
@@ -40,8 +43,9 @@ $ python3 .agents/scripts/check_maps.py --root Projects/AGY_AVIATIONCHAT
 All maps & INDEXes agree with disk. [ok]
 ```
 
-The AviationChat gate also reports `[ok] graph matches HEAD`; the lobby correctly reports that it carries
-no code graph. `check_links.py` was clean for the edited lobby navigation files.
+The AviationChat branch's map was regenerated without machine-local logs/build outputs and reproduced
+cleanly in a detached verification tree named `AGY_AVIATIONCHAT`. The lobby correctly reports that it
+carries no code graph. `check_links.py` is clean for the edited lobby navigation files.
 
 ## Task Checklist
 
