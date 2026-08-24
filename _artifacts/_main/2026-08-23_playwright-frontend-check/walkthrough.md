@@ -286,6 +286,7 @@ confident wrong answer rather than a visible failure.
 
 ## Your Actions
 
+- [x] The merge itself — lands via this branch's PR
 - [x] Approve the plan — given in-session: **"approved"** (2026-08-23), after the Self-Audit returned GO.
 - [x] Sandbox turned off so the browser probe could run — you did this mid-lane and confirmed
       **"it was on its off now"**; re-probed clean with no override. My earlier claim that a toggle
