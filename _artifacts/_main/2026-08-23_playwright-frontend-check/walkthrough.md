@@ -201,7 +201,11 @@ because a green measured against the old `check_links.py` says nothing about the
 and theirs is still building, so this landing first leaves them the (smaller) reconcile.
 
 
-Verdict: PASS @ a3c0cebd0aa4f5bbcb1d2fd6e4bcbbbdb42dcb0e
+Verdict: PASS @ a3c0cebdf160a51015c579b94b39bbc85e22c2ca
+⚠️ *(This line first carried a 40-char sha whose first 8 characters were right and whose
+remaining 32 were invented. `flight_recorder.py` refused to key an event on it — which is
+exactly what keying on the sha is for. Corrected to the real commit.)*
+
 Suite evidence measured at the same sha: `gates/suite.json` — `result: pass`, `exit_code: 0`,
 `dirty_tree: False`, 60/60 files.
 
