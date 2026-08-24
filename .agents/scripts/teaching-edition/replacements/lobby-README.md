@@ -7,12 +7,14 @@ It works as a maintained pair:
 
 | Repository | Role |
 |---|---|
-| [`sudo-command-center`](https://github.com/sudomadhatter/sudo-command-center) | The home base you open with your agent. Shared workflow law lives here. |
+| [`sudo-command-center`](https://github.com/sudomadhatter/sudo-command-center) | The home base you open with your agent. Shared workflow law, slash commands, and multi-agent coordination live here. |
 | [`sudo-project-skeleton`](https://github.com/sudomadhatter/sudo-project-skeleton) | The project-level starting point cloned once per real project into `Projects/<name>`. |
 
 The command center begins as a shell: `Projects/` is empty and there is **no Jira board** or active
 Jira binding. The onboarding agent asks what to name your command center and first project, then builds
 that first project from the paired skeleton.
+
+---
 
 ## 1. Choose the command-center name
 
@@ -35,7 +37,7 @@ Codex, opencode, or Antigravity/Gemini. GitHub CLI is needed when you later crea
 ```bash
 git --version
 pwsh --version
-python3 --version                 # Windows may use: python --version
+python3 --version                                        # Windows may use: python --version
 python3 .agents/scripts/validate_teaching_edition.py .   # Windows may use: python
 ```
 
@@ -59,12 +61,53 @@ During onboarding the agent asks:
 
 It then runs `/smh-new-project <name>`, which clones
 `https://github.com/sudomadhatter/sudo-project-skeleton` into `Projects/<name>`, drops the template's
-history, and initializes the project's own repository. The command then prints the required routing,
-placeholder, and map-localization steps; the onboarding agent completes those steps with you instead
-of treating the clone as fully wired. Creating or publishing a remote repository remains your
-separate decision.
+history, initializes the project's own repository, and runs `python3 scripts/rename-project.py --name <name>`
+to substitute all project placeholders.
 
-## Jira comes later
+---
+
+## 4. Working on Projects from the Command Center
+
+All product code lives inside `Projects/<name>/`. You can add new projects at any time:
+
+### Automatic Project Creation (Recommended)
+
+From your command center agent session:
+
+```text
+/smh-new-project <my-new-project>
+```
+
+This automates cloning `sudo-project-skeleton`, initializing git, arming hooks, and replacing placeholders.
+
+### Manual Project Cloning
+
+Alternatively, clone the skeleton directly into `Projects/`:
+
+```bash
+git clone https://github.com/sudomadhatter/sudo-project-skeleton.git Projects/<name>
+cd Projects/<name>
+rm -rf .git && git init
+python3 scripts/rename-project.py --name "<name>"
+git config core.hooksPath .githooks
+```
+
+### Developing Features (The `/cicd-*` Loop)
+
+With a project in `Projects/<name>`, execute features test-first from the command center:
+
+1. **Plan & Kickoff**: `/cicd-create-epic-sprint`
+2. **Write Story Tests (ATDD Red)**: `/cicd-write-story-tests`
+3. **Develop Story Test-First**: `/cicd-dev-story-tests`
+4. **Adversarial Code Review**: `/cicd-code-review`
+5. **Close Out Story**: `/cicd-close-story-merge-tree`
+6. **Ship Epic to Main**: `/cicd-push-e2e`
+
+Every commit-producing lane isolates in its own git worktree. No code is written without an approved plan.
+
+---
+
+## 5. Jira comes later
 
 The command-center shell has no Jira board. A new project also starts without an active Jira binding,
 so its commit gate does not demand a board that does not exist.
@@ -80,7 +123,7 @@ When you create a Jira site/project/board for that project:
 
 Each project owns its board and key. This exported shell never points at the source owner's board.
 
-## Training mode
+## 6. Training mode
 
 The committed `.training-mode` sentinel ships teaching on. The ignored `.training-mode-off` marker
 lets the command change that local preference without dirtying tracked files. Control it at any time:
@@ -94,23 +137,7 @@ lets the command change that local preference without dirtying tracked files. Co
 Turning it off changes only the teaching voice and leaves `git status` clean. The plan, worktree,
 test, review, and shipping gates remain the real system.
 
-## The workflow in one screen
-
-The current procedure always lives in
-[`docs/_scc_sops_prds/workflows_testing_SOP.md`](docs/_scc_sops_prds/workflows_testing_SOP.md).
-The tutor opens these sections instead of copying them:
-
-- §5 chooses the lane.
-- The story loop is `/cicd-write-story-tests` → `/cicd-dev-story-tests` →
-  `/cicd-code-review` → `/cicd-close-story-merge-tree`.
-- A finished epic ships through `/cicd-push-e2e`.
-- Command-center Task work uses `/smh-quick-dev` → `/smh-code-review` →
-  `/smh-close-task-merge-tree`.
-
-Every commit-producing lane gets its own worktree. No implementation begins until an approved plan
-exists, and no agent decides on your behalf that work is done.
-
-## What the main folders mean
+## 7. What the main folders mean
 
 | Path | Purpose |
 |---|---|

@@ -3603,7 +3603,7 @@
     {
       "from": ".agents/scripts/teaching-edition/replacements/lobby-README.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "kind": "link"
+      "kind": "ref"
     },
     {
       "from": ".agents/scripts/teaching-edition/replacements/lobby-README.md",

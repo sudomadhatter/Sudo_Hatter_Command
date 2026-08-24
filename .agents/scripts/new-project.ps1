@@ -51,6 +51,17 @@ Push-Location $Dest
 try {
   git init  | Out-Null
   if ($LASTEXITCODE -ne 0) { throw "project git init failed (rc=$LASTEXITCODE)" }
+
+  # Automated placeholder renaming
+  $RenameScript = Join-Path $Dest "scripts/rename-project.py"
+  if (Test-Path $RenameScript) {
+    try {
+      python3 $RenameScript --name $Name | Out-Null
+    } catch {
+      Write-Warning "Automated rename step encountered an issue: $_"
+    }
+  }
+
   # Hooks are per-clone AND per-machine: git never carries core.hooksPath. Arm it now so the encoding
   # guard and the commit-msg Jira gate are live from the first commit. (The Jira gate stays SILENT
   # until .agents/jira.conf exists — see .agents/jira.conf.example for the 4-step arming procedure.)
@@ -68,12 +79,11 @@ Write-Host ""
 Write-Host "new-project: created Projects/$Name — own git repo, hooks armed, NO vendored toolkit."
 Write-Host "  Its .agents/ holds only its own law; the shared toolkit stays here at the command center."
 Write-Host ""
-Write-Host "NEXT (manual, three steps):"
+Write-Host "NEXT (three steps):"
 Write-Host "  1. router.md — add a row mapping 'work about <X>' -> Projects/$Name/"
 Write-Host "  2. .gitmodules + gitlink — add it as a submodule if it should travel with the lobby:"
 Write-Host "       git submodule add <remote-url> Projects/$Name"
-Write-Host "  3. Fill the placeholders: grep for '{{' and for '<PROJECT_NAME>' (AGENTS.md,"
-Write-Host "     .agents/INDEX.md, _bmad-output/project-context.md, _my_resources/open_tasks/todo_list.md)."
+Write-Host "  3. Optional: Create remote repository (gh repo create $Name --private --source Projects/$Name)"
 Write-Host ""
 Write-Host "  Optional, only after this project gets a Jira board:"
 Write-Host "       cd Projects/$Name"
