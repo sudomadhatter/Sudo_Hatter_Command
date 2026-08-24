@@ -161,6 +161,7 @@ the 46-check contract.
 
 ## Task Checklist
 
+- [x] The merge itself — lands via this branch's PR
 - [x] Re-pull and merge the latest `origin/main` without rewriting the teaching branch.
 - [x] Replace the stale tutor with a live-SOP curriculum using current command families.
 - [x] Teach command-center naming and named first-project creation from the maintained skeleton.

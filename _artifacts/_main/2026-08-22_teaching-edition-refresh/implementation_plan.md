@@ -223,6 +223,7 @@ checks are explicit:
 - EDIT (generated) `.opencode/commands/smh-new-project.md` → 3, 5
 - EDIT `.agents/.sync-manifest.json` — generated tutor-door ownership → 5
 - NEW `_artifacts/_main/2026-08-22_teaching-edition-refresh/walkthrough.md` — implementation and verification evidence → 1, 6
+- NEW `_artifacts/_main/2026-08-22_teaching-edition-refresh/task.yaml` — SCC-280 Task close-out intent after converting the legacy teaching branch to a compliant chore lane → 1, 6
 
 All current-main files brought in unchanged by the merge are baseline integration, not authored scope.
 All legacy teaching-branch changes that are reset to `origin/main` or deleted and therefore disappear
@@ -472,3 +473,11 @@ remote `main` had advanced to `c8f9c8c57708c745b29778269666f5e9b9829867`; an exp
 corrected the stale local tracking ref. That main lands SCC-293 and SCC-304. The merge preserves both
 additive ledgers, regenerates the sync manifest and document graph, and requires the focused teaching
 contract plus a new receipt-backed full suite before the branch is pushed again.
+
+## Close-Out Lane Conversion Amendment
+
+The legacy distribution branch is intentionally named `claude/teaching-edition`, but the mechanical
+Task close-out correctly refuses every generic `claude/*` branch. On the operator's “fix it” direction,
+close-out proceeds from `chore/SCC-280-teaching-edition-close`, created at the reviewed and pushed
+teaching-branch tip. This preserves the long-lived distribution branch while giving the PR and Jira
+ceremony the required SCC-280 Task identity.
