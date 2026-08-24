@@ -2859,9 +2859,10 @@ flowchart TD
 The responder **re-diagnoses independently** rather than trusting the automated triage — an automated
 first guess is a lead, not a diagnosis. It stops twice for you and never merges on its own initiative.
 
-`/cicd-live-testing-team` is the other half of this: it boots the app and watches the logs while
-**you** click around, files researched bug reports, writes no code, and traces each bug back to the
-ticket that shipped it ([§12](#12-the-board--what-runs-next)).
+`/cicd-live-testing-team` is the other half of this: it boots the app, watches the logs and reads the
+frontend with Playwright while **you** click around, files researched bug reports carrying the
+captured console output and screenshots, writes no code, and traces each bug back to the ticket that
+shipped it ([§12](#12-the-board--what-runs-next)).
 
 *[↑ back to Contents](#contents)*
 
@@ -3888,16 +3889,29 @@ flowchart TD
 
 #### /cicd-live-testing-team
 
-*You fly the running app; the agent boots the dev env, watches the backend log live, coaches the
-DevTools check, files researched bug docs, and traces each bug back to the ticket that shipped it —
-flagging `Bug` only on your word. Writes no product code. Explained in
+*You fly the running app; the agent boots the dev env, watches the backend log live, **reads the
+frontend itself with Playwright**, files researched bug docs, and traces each bug back to the ticket
+that shipped it — flagging `Bug` only on your word. Writes no product code. Explained in
 [§12](#12-the-board--what-runs-next) and [§16](#16-incidents). Calls: `jira_feed.py trace / flag`.
 Hands to: `/cicd-quick-dev` or ① for the fix.*
+
+**What this means for you: stop retyping the Console.** The agent captures the browser's own output —
+error lines, uncaught exceptions, the failing request *with its response body*, and a full-page
+screenshot — and attaches those files to the bug doc. You are asked only for what a script genuinely
+cannot reach: anything behind a login, a flow only you can drive, or "does this feel wrong to you".
+The mechanism is the `playwright-frontend-check` skill, which the command loads on its own.
+
+ⓘ **Why it works this way.** Playwright is a **project** dependency, not a machine-wide tool, so the
+agent uses whichever project has it installed (today: `Projects/AGY_AVIATIONCHAT/frontend`). If the
+agent says it cannot launch a browser, two things are worth checking before anything else: whether
+the **sandbox is on** (it blocks the browser from starting, and the error never says so), and whether
+the project you are testing has Playwright installed at all. This is observation only — the actual
+end-to-end test suite is still `/cicd-e2e`.
 
 ```mermaid
 flowchart TD
     S0["Step 0 — resolve the project"] --> S1["Step 1 — boot the dev env\nreap stale processes (each kill prompt-gated)\nboth servers in the background"]
-    S1 --> S2["Step 2 — the co-pilot loop, until you end it\nre-read the backend log every turn\nit cannot see your browser: ONE DevTools ask at a time"]
+    S1 --> S2["Step 2 — the co-pilot loop, until you end it\nre-read the backend log every turn\nread the frontend with Playwright: console, errors, network, screenshot\nask you only for what a script cannot reach"]
     S2 --> S3["Step 3 — per confirmed symptom, a bug doc\nsymptom · evidence · ranked causes (verified vs docs-say)\nfix direction · suggested lane"]
     S3 --> S35["Step 3.5 — jira_feed.py trace\ngit history only — proposes the shipping ticket"]
     S35 --> STOP["🛑 STOP — show you the ranked candidates\nnever pass a traced key to flag itself"]
@@ -4072,7 +4086,7 @@ flowchart TD
 
 | Command | What it does for you |
 |---|---|
-| `/cicd-live-testing-team` | Boots the app and watches the logs while **you** click around. Files researched bug reports. Writes no code. Traces each bug back to the ticket that shipped it — never flags one without your word. |
+| `/cicd-live-testing-team` | Boots the app and watches the logs while **you** click around — and reads the frontend itself with Playwright, so the console error, the failing request's response body and a screenshot land in the bug doc instead of being retyped. Files researched bug reports. Writes no code. Traces each bug back to the ticket that shipped it — never flags one without your word. |
 | `/cicd-mobile-error-team` | Live incident responder, works from your phone. Re-diagnoses independently, gives you a rollback-vs-fix decision, writes the fix and a test that proves it. |
 | `/smh-adviser-board` | Convene historical minds in 5 challenge teams (+ a Real-World marketing squad) to flip assumptions and surface what people *need*. Runs Brainstorm → Plan → Market → Brief; advances only on your word. Saves the brief to `_my_resources/board_sessions/`. |
 
