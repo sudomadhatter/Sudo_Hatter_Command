@@ -141,7 +141,10 @@ def js_fence(text: str) -> str:
     `[0]` measured 299 chars and reported every capture channel missing. The instrument is the
     LARGEST js fence, which is stable under reordering and under adding more small examples.
     """
-    fences = re.findall(r"```js\n(.*?)```", text, re.S)
+    # ⛔ COMMENT-STRIPPED first. Found by this file's own sweep (M7): reading raw text meant an
+    # instrument commented out with `<!--` still satisfied block B, so the skill could be gutted
+    # to a heading with the whole suite green. Same scar as C1, one level down.
+    fences = re.findall(r"```js\n(.*?)```", strip_comments(text), re.S)
     return max(fences, key=len) if fences else ""
 
 

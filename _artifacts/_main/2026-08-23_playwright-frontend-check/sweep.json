@@ -32,7 +32,7 @@
     "file": ".agents/commands/cicd-live-testing-team.md",
     "original": "- **Read the browser yourself — load the `playwright-frontend-check` skill.**",
     "mutated":  "- **You have no eyes on the browser; do NOT load the `playwright-frontend-check` skill here.**",
-    "case": "C1 every live command body ROUTES to the skill (imperative, not just the slug)",
+    "case": "C1b no live body NEGATES the routing instruction",
     "block": "C · the WIRING chain"},
 
    {"id": "M6 SURVIVED ONCE - blindness claim REWORDED, not respelled",
