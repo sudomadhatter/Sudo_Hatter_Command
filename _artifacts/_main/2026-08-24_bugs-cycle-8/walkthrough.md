@@ -113,6 +113,7 @@ was run mid-lane, so the machine caches carry this lane's doc text ahead of the 
 post-merge sync re-converges them; (5) the memory-store delta baseline only advances on a clean
 run — after a deliberate retirement the shout repeats until `--delta --rebaseline` acknowledges it.
 
+- [x] The merge itself — lands via this branch's PR
 - [ ] DECISION — PC half of Part D: paste `<VENV>/pyrefly check --python-interpreter-path <VENV>/python`
       into a PC shell from an AGY checkout and confirm 0 fabricated missing-import (SCC-312
       acceptance 2/4; this Mac session cannot run it).
