@@ -193,6 +193,38 @@ def main() -> int:
             c.check("H5 the REPO-MAP sentinel is honoured too", _ok,
                     "" if _ok else f"dead={dead2} checked={checked2}")
 
+        if c.block("J · SCC-293 · three conventions that did not reach far enough"):
+            # Surfaced by running the UPGRADED gate over this lane's own merged diff: an
+            # unrelated edit pulled two long-standing files into scope for the first time and
+            # all three hits were placeholder/project prose, not claims. Each belongs to a
+            # convention that already exists (5, 5, 6) and simply did not match.
+            r = resolver(tmp)
+            for tok, why in (
+                ("PROJECT_ROOT/.agents/INDEX.md",
+                 "convention 5: an ALL-CAPS variable stands for a path, like <KEY>"),
+                ("relative/path",
+                 "convention 5: a SHAPE placeholder, same class as path/to"),
+                ("quick_fixes/INDEX.md",
+                 "convention 6: a child-project register the lobby cannot resolve"),
+            ):
+                dead, _, checked = CL.scan(tmp, r, ["j.md"]) if False else (None, None, None)
+                (tmp / "j.md").write_text(f"see `{tok}` for details\n", encoding="utf-8")
+                dead, _, checked = CL.scan(tmp, r, ["j.md"])
+                c.check(f"J {tok} is not a claim - {why}", not dead,
+                        f"reported dead: {dead}")
+            # ...and the conventions must still BITE (tests-must-gate-for-real §5): a real
+            # dead path that merely LOOKS like these is still reported.
+            (tmp / "j.md").write_text("see `docs/PROJECT_NOTES.md` for details\n",
+                                      encoding="utf-8")
+            dead, _, _ = CL.scan(tmp, r, ["j.md"])
+            c.check("J CONTROL: an ALL-CAPS FILENAME is still a claim, and still dead",
+                    dead, "an uppercase basename must not read as a variable placeholder")
+            (tmp / "j.md").write_text("see `quick_fixes_local/INDEX.md` for details\n",
+                                      encoding="utf-8")
+            dead, _, _ = CL.scan(tmp, r, ["j.md"])
+            c.check("J CONTROL: a lookalike of the project register is still a claim",
+                    dead, "the carve-out must be the exact prefix, not a substring")
+
         if c.block("F · anchors - `#L` must name lines the target has"):
             (tmp / "five.md").write_text("1\n2\n3\n4\n5\n", encoding="utf-8")
             _ok = CL.check_anchor(tmp, "five.md", "#L2-L4") is None

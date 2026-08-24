@@ -64,9 +64,17 @@ PATHISH = re.compile(r"^[\w./@-]+/[\w./@-]*\.(md|py|ps1|sh|json|ya?ml|txt|cjs|js
 # Convention 5. A doc showing the SHAPE of a path is not claiming one exists.
 PLACEHOLDER = re.compile(
     r"<[^>]+>|\{[^}]+\}|\.\.\.|\*|"
-    r"\b(path/to|your|example|some|foo|bar|baz|NAME|SLUG|KEY)\b",
+    r"\b(path/to|relative/path|your|example|some|foo|bar|baz|NAME|SLUG|KEY)\b",
     re.I,
 )
+# Convention 5, second form (SCC-293). An ALL-CAPS_UNDERSCORE segment used as a DIRECTORY is a
+# variable standing in for a path - `PROJECT_ROOT/.agents/INDEX.md` is the shape a rule uses to
+# say "in the project you bound", exactly like `<KEY>`. It must stay narrow: the trailing slash
+# is what distinguishes a stand-in DIRECTORY from a real SHOUTY FILENAME, so `docs/README_OLD.md`
+# and `docs/PROJECT_NOTES.md` remain claims and are still resolved. Found by running this gate
+# over a lane that had merely EDITED two long-standing files, pulling them into scope for the
+# first time - the hits were prose, not rot.
+CAPS_VAR_DIR = re.compile(r"(?:^|/)[A-Z][A-Z0-9]*_[A-Z0-9_]*/")
 URL = re.compile(r"^(https?|mailto|ftp|file):", re.I)
 FENCE = re.compile(r"^\s*(```|~~~)")
 
@@ -74,7 +82,7 @@ FENCE = re.compile(r"^\s*(```|~~~)")
 # `backend/requirements.txt`, `_bmad-output/sudo-tests.yaml`. Those paths are correct and simply do
 # not exist in the lobby. Resolving them would need the target repo, which the audit does not bind.
 PROJECT_ROOTS = ("backend/", "frontend/", "firebase/", "functions/", "mobile/",
-                 "_bmad-output/", "_bmad/", "docs/stories/")
+                 "_bmad-output/", "_bmad/", "docs/stories/", "quick_fixes/")
 
 # Convention 7. A NARRATIVE LEDGER records what a session did, including deleting things. A row
 # naming a file that a later lane removed is HISTORY, not a broken link — the same carve-out
@@ -243,7 +251,7 @@ def scan(worktree: Path, resolver: Resolver, files: list[str]):
             continue
         ledger = f.endswith(NARRATIVE_LEDGERS)      # convention 7
         for n, tok, anc in candidates(p.read_text(encoding="utf-8", errors="replace")):
-            if URL.match(tok) or PLACEHOLDER.search(tok):
+            if URL.match(tok) or PLACEHOLDER.search(tok) or CAPS_VAR_DIR.search(tok):
                 continue
             if tok.startswith(PROJECT_ROOTS):       # convention 6
                 continue
