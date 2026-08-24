@@ -1,0 +1,67 @@
+{
+  "v": 1,
+  "task": "SCC-305",
+  "sha": "d3e006e4070830b110423f61be8a82969ef2ff9b",
+  "tip": "87369d15fd4a9e5f74698db3037405778c39132d",
+  "trigger": "close-out",
+  "when": "2026-08-24T16:25:33-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/cicd-code-review.md",
+    ".agents/commands/cicd-dev-story-tests.md",
+    ".agents/commands/smh-quick-dev.md",
+    ".agents/commands/smh-quick-fix.md",
+    ".agents/rules/artifacts-always-first.md",
+    ".agents/rules/code-standards.md",
+    ".agents/rules/jira.md",
+    ".agents/scripts/gate_receipt.py",
+    ".agents/scripts/link-worktree-assets.py",
+    ".agents/scripts/memory_store_check.py",
+    ".agents/scripts/tests/test_gate_receipt.py",
+    ".agents/scripts/tests/test_link_worktree_assets.py",
+    ".agents/scripts/tests/test_memory_store.py",
+    ".agents/scripts/tests/test_memory_store_check.py",
+    ".agents/skills/code-review-engine/steps/step-01-review.md",
+    ".agents/workflows/smh-quick-fix.md",
+    ".claude/rules/code-standards.md",
+    ".claude/skills/code-review-engine/steps/step-01-review.md",
+    ".githooks/post-checkout",
+    ".githooks/post-merge",
+    ".githooks/post-rewrite",
+    ".opencode/commands/cicd-code-review.md",
+    ".opencode/commands/cicd-dev-story-tests.md",
+    ".opencode/commands/smh-quick-dev.md",
+    ".opencode/commands/smh-quick-fix.md",
+    "_artifacts/_main/2026-08-24_bugs-cycle-8/gates/suite.json",
+    "_artifacts/_main/2026-08-24_bugs-cycle-8/implementation_plan.md",
+    "_artifacts/_main/2026-08-24_bugs-cycle-8/sweep-gate-receipt.json",
+    "_artifacts/_main/2026-08-24_bugs-cycle-8/sweep-link-assets.json",
+    "_artifacts/_main/2026-08-24_bugs-cycle-8/sweep-memory-check.json",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-24_bugs-cycle-8/walkthrough.md",
+    "verdict": "PASS @ d3e006e",
+    "gates": {
+      "suite": "pass@d3e006e"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/artifacts-always-first.md",
+    "rule-edited:.agents/rules/code-standards.md",
+    "rule-edited:.agents/rules/jira.md"
+  ]
+}

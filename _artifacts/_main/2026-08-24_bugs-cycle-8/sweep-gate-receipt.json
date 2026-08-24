@@ -1,0 +1,21 @@
+{"test": ["python3", ".agents/scripts/tests/test_gate_receipt.py"],
+ "mutants": [
+  {"id": "M1 -q pattern loses the `failed` class member (width narrowing)",
+   "file": ".agents/scripts/gate_receipt.py",
+   "original": "re.compile(r\"^\\d+ (?:passed|failed|errors?|skipped|xfailed|xpassed|warnings?|deselected)\\b\"",
+   "mutated": "re.compile(r\"^\\d+ (?:passed|errors?|skipped|xfailed|xpassed|warnings?|deselected)\\b\"",
+   "case": "Q2 the failed-first -q form is quoted too",
+   "block": "SCC-309/317: -q totals are quoted, and a worktree lane's receipts live IN the lane"},
+  {"id": "M2 same-repo comparison inverted in lane_receipts_root",
+   "file": ".agents/scripts/gate_receipt.py",
+   "original": "    if common_cwd and common_proj and \\\n            os.path.realpath(common_cwd) == os.path.realpath(common_proj):",
+   "mutated": "    if common_cwd and common_proj and \\\n            os.path.realpath(common_cwd) != os.path.realpath(common_proj):",
+   "case": "W1 run --project + --cwd <worktree> writes the receipt INSIDE the worktree",
+   "block": "SCC-309/317: -q totals are quoted, and a worktree lane's receipts live IN the lane"},
+  {"id": "M3 the main() wiring dropped - SCC-317 defect restored",
+   "file": ".agents/scripts/gate_receipt.py",
+   "original": "        if getattr(args, \"cwd\", None):\n            project = lane_receipts_root(project, Path(args.cwd).resolve())",
+   "mutated": "        if False and getattr(args, \"cwd\", None):\n            project = lane_receipts_root(project, Path(args.cwd).resolve())",
+   "case": "W1 run --project + --cwd <worktree> writes the receipt INSIDE the worktree",
+   "block": "SCC-309/317: -q totals are quoted, and a worktree lane's receipts live IN the lane"}
+ ]}

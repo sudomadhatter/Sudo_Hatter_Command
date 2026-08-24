@@ -1,0 +1,19 @@
+#!/bin/sh
+# post-checkout — memory-store regression check (advisory-LOUD, never blocking; SCC-319).
+# The memory store (_artifacts/_memory/) is a LIVE symlinked asset every session reads, and
+# the operation that just finished moved the working tree — which can silently remove or
+# revert store files (measured 2026-08-24: git reset --keep removed three memories with no
+# error, no diff, no red). A post-* hook cannot veto what already happened; the value is
+# that a human SEES the regression within one command. The checker keeps a per-worktree
+# baseline in the git dir and SHOUTS files that were present last check and are gone now.
+#
+# Enable per machine (once):  git config core.hooksPath .githooks
+# Same interpreter probe as every other hook here: python3 -> python -> py (two machines).
+PY=""
+for c in python3 python py; do
+  if command -v "$c" >/dev/null 2>&1; then PY="$c"; break; fi
+done
+if [ -n "$PY" ] && [ -f .agents/scripts/memory_store_check.py ]; then
+  "$PY" .agents/scripts/memory_store_check.py --delta --from-hook post-checkout || true
+fi
+exit 0

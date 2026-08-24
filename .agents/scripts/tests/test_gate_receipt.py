@@ -458,6 +458,123 @@ def main() -> int:
             finally:
                 os.chdir(prev_cwd)
 
+    if c.block("SCC-309/317: -q totals are quoted, and a worktree lane's receipts live IN the lane"):
+        with TempDir() as tmp:
+            repo = build(tmp)
+
+            def gr(*args: str) -> tuple[int, str]:
+                return run_script("gate_receipt.py", *args)
+
+            def receipt_at(base: Path, gate: str) -> dict:
+                return json.loads((base / "_bmad-output" / "gates" / "21-8b" / f"{gate}.json")
+                                  .read_text(encoding="utf-8"))
+
+            # SCC-309: pytest under -q prints the summary BARE (no === banner). The banner
+            # pattern misses it and totals fell through to null while result recorded pass -
+            # the one field downstream certification derives from, silently absent.
+            code, _ = gr("run", "--story", "21.8b", "--gate", "quiet", "--project", str(repo),
+                         "--", sys.executable, "-c",
+                         "print('3043 passed, 35 skipped, 547 warnings in 9.14s')")
+            r = receipt_at(repo, "quiet")
+            c.check("Q1 a -q bare summary is quoted into totals, not dropped",
+                    code == 0 and r["totals"] == "3043 passed, 35 skipped, 547 warnings in 9.14s",
+                    f"exit={code} totals={r['totals']!r}")
+
+            code, _ = gr("run", "--story", "21.8b", "--gate", "quietfail", "--project", str(repo),
+                         "--", sys.executable, "-c",
+                         "import sys; print('3 failed, 275 passed in 12.0s'); sys.exit(1)")
+            r = receipt_at(repo, "quietfail")
+            c.check("Q2 the failed-first -q form is quoted too",
+                    r["totals"] == "3 failed, 275 passed in 12.0s", f"totals={r['totals']!r}")
+
+            # Absence must STAY possible - a fabricated count is worse than an absent one.
+            code, _ = gr("run", "--story", "21.8b", "--gate", "nosummary", "--project", str(repo),
+                         "--", sys.executable, "-c", "print('did some stuff, no summary line')")
+            r = receipt_at(repo, "nosummary")
+            c.check("Q3 output with no recognisable summary still records null",
+                    r["totals"] is None, f"totals={r['totals']!r}")
+
+            # Review findings (edge-case lens, both VERIFIED): the first cut of the -q pattern
+            # fully matched retry/progress prose ending `in <n>s`, and _totals took the FIRST
+            # match, so an inner suite's early summary beat the run's real final one.
+            code, _ = gr("run", "--story", "21.8b", "--gate", "retry", "--project", str(repo),
+                         "--", sys.executable, "-c",
+                         "print('2 failed, retrying in 30s'); print('all good after retry')")
+            r = receipt_at(repo, "retry")
+            c.check("Q4 a retry/progress line ending 'in Ns' is NOT quoted as totals",
+                    r["totals"] is None, f"totals={r['totals']!r}")
+
+            code, _ = gr("run", "--story", "21.8b", "--gate", "nested", "--project", str(repo),
+                         "--", sys.executable, "-c",
+                         "print('3 passed in 1.0s'); print('outer run continues');"
+                         "print('10 passed, 2 failed in 9.0s')")
+            r = receipt_at(repo, "nested")
+            c.check("Q5 the LAST bare summary wins - the run's own final line, not an inner one",
+                    r["totals"] == "10 passed, 2 failed in 9.0s", f"totals={r['totals']!r}")
+
+            # SCC-317: --project resolves the MAIN checkout, so a worktree lane's receipt was
+            # written into the shared tree - it never rode the lane's branch, left the shared
+            # checkout dirty, and `check` reported NO RECEIPT for a receipt that exists.
+            wt = tmp / "lane"
+            git(repo, "worktree", "add", "-q", str(wt), "-b", "lane")
+            code, out = gr("run", "--story", "21.8b", "--gate", "suite",
+                           "--project", str(repo), "--cwd", str(wt),
+                           "--", sys.executable, "-c", "print('ok')")
+            in_lane = (wt / "_bmad-output" / "gates" / "21-8b" / "suite.json").is_file()
+            in_main = (repo / "_bmad-output" / "gates" / "21-8b" / "suite.json").is_file()
+            c.check("W1 run --project + --cwd <worktree> writes the receipt INSIDE the worktree",
+                    code == 0 and in_lane and not in_main,
+                    f"exit={code} in_lane={in_lane} in_main={in_main}")
+
+            code, out = gr("check", "--story", "21.8b", "--require", "suite",
+                           "--project", str(repo), "--cwd", str(wt))
+            c.check("W2 check with the same flags FINDS the lane's receipt (exit 0)",
+                    code == 0, f"exit={code}\n{out[-300:]}")
+
+            # A --cwd inside the MAIN checkout keeps today's behaviour byte-identical.
+            sub = repo / "subdir"
+            sub.mkdir()
+            code, _ = gr("run", "--story", "21.8b", "--gate", "athome",
+                         "--project", str(repo), "--cwd", str(repo),
+                         "--", sys.executable, "-c", "print('ok')")
+            c.check("W3 a --cwd at the project root still lands receipts in the project",
+                    code == 0 and (repo / "_bmad-output" / "gates" / "21-8b" / "athome.json").is_file(),
+                    f"exit={code}")
+            code, _ = gr("run", "--story", "21.8b", "--gate", "subhome",
+                         "--project", str(repo), "--cwd", str(sub),
+                         "--", sys.executable, "-c", "print('ok')")
+            c.check("W3b a --cwd in a SUBDIR of the project resolves to the project too",
+                    code == 0 and (repo / "_bmad-output" / "gates" / "21-8b" / "subhome.json").is_file(),
+                    f"exit={code}")
+
+            # A --cwd in a DIFFERENT repo is ambiguity: refuse and NAME both trees -
+            # silently picking one is the measured defect, just mirrored.
+            other = tmp / "other"
+            other.mkdir()
+            git(other, "init", "-q")
+            git(other, "config", "user.email", "t@t.t")
+            git(other, "config", "user.name", "t")
+            (other / "f.txt").write_text("x\n", encoding="utf-8")
+            git(other, "add", "f.txt")
+            git(other, "commit", "-qm", "seed")
+            code, out = gr("run", "--story", "21.8b", "--gate", "foreign",
+                           "--project", str(repo), "--cwd", str(other),
+                           "--", sys.executable, "-c", "print('ok')")
+            c.check("W4 a --cwd in a DIFFERENT repo refuses and names both trees",
+                    code != 0 and f"{os.sep}repo" in out and f"{os.sep}other" in out,
+                    f"exit={code}\n{out[-300:]}")
+
+            # Review finding (x2): a --cwd outside ANY git repo fell back to --project
+            # SILENTLY - a typo'd path recreates the measured defect's shape (a tree the
+            # caller did not name gets the write). Refuse, same as the different-repo case.
+            loose = tmp / "loose-dir"
+            loose.mkdir()
+            code, out = gr("run", "--story", "21.8b", "--gate", "nowhere",
+                           "--project", str(repo), "--cwd", str(loose),
+                           "--", sys.executable, "-c", "print('ok')")
+            c.check("W5 a --cwd outside any git repo refuses instead of silently using --project",
+                    code != 0 and "loose-dir" in out, f"exit={code}\n{out[-300:]}")
+
     return c.finish()
 
 

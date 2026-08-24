@@ -7,12 +7,12 @@
     "files": 363,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 701,
+    "edges": 704,
     "external": 39,
     "ambiguous": 165,
-    "dangling": 295,
+    "dangling": 297,
     "broken_paths": 70,
-    "unresolved_names": 225,
+    "unresolved_names": 227,
     "unresolvable": 6
   },
   "nodes": [
@@ -284,7 +284,7 @@
     {
       "path": ".agents/commands/smh-quick-fix.md",
       "in": 1,
-      "out": 5
+      "out": 6
     },
     {
       "path": ".agents/commands/smh-review.md",
@@ -483,7 +483,7 @@
     },
     {
       "path": ".agents/rules/jira.md",
-      "in": 39,
+      "in": 42,
       "out": 3
     },
     {
@@ -814,7 +814,7 @@
     {
       "path": ".agents/skills/code-review-engine/steps/step-01-review.md",
       "in": 3,
-      "out": 2
+      "out": 3
     },
     {
       "path": ".agents/skills/code-review-engine/steps/step-02-verify.md",
@@ -1639,7 +1639,7 @@
     {
       "path": ".agents/workflows/smh-quick-fix.md",
       "in": 0,
-      "out": 5
+      "out": 6
     },
     {
       "path": ".agents/workflows/smh-review.md",
@@ -2827,6 +2827,11 @@
     },
     {
       "from": ".agents/commands/smh-quick-fix.md",
+      "to": ".agents/rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-quick-fix.md",
       "to": ".agents/rules/work-consolidation.md",
       "kind": "ref"
     },
@@ -3807,6 +3812,11 @@
     },
     {
       "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
+      "to": ".agents/rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
       "to": ".agents/skills/code-review-engine/steps/step-02-verify.md",
       "kind": "ref"
     },
@@ -4433,6 +4443,11 @@
     {
       "from": ".agents/workflows/smh-quick-fix.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/workflows/smh-quick-fix.md",
+      "to": ".agents/rules/jira.md",
       "kind": "ref"
     },
     {
@@ -6385,6 +6400,10 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "target": "MEMORY.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "active-context.md"
     },
     {
@@ -6418,6 +6437,10 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "walkthrough.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "MEMORY.md"
     },
     {
       "from": "docs/code-review-graph.md",

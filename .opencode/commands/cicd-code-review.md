@@ -371,19 +371,32 @@ distinct from `fail`, because per Step 3.5 a missing tool is a **finding, not a 
    - **Inherit ②'s baseline instead of re-running it — via a MECHANICAL check, not a judgment call.**
      ② Step 4.5 emits `_bmad-output/test-artifacts/certification-<story>.json`
      (`{story, sha, utc, stacks:{<stack>:{cmd, passed, skipped, failed, seconds}}}`). Read it and compare
-     its `sha` to `git rev-parse HEAD` on the worktree under review:
-     - **`sha` == HEAD and `failed: 0`** → adopt as the entry baseline. Cite the file. Do not re-run.
-     - **File absent, `sha` mismatched, a touched stack missing from `stacks`, or any `failed` > 0** →
-       run the full suite up front yourself. **Fail toward running, never toward trusting.**
+     its `sha` to `git rev-parse HEAD` on the worktree under review — **freshness is a TREE comparison,
+     never sha equality** (SCC-314). Two mechanical layers, in order:
+     - **Layer 1 — identical trees.** `gate_receipt.check_receipt` asks `wf.same_tree(repo, sha, target)`
+       — literally `git diff --quiet <sha> <HEAD>` — so a commit that moved HEAD without changing ANY
+       content (a merge whose tree is identical; a sha that IS HEAD is the trivial case) leaves the
+       certification **valid**. Identical and `failed: 0` → adopt as the entry baseline, cite the
+       file, do not re-run.
+     - **Layer 2 — trees differ, but only on evidence surfaces.** `same_tree` has no carve-outs — an
+       `_artifacts/` receipt commit fails it — so when it says the trees differ, run
+       `git diff --name-only <sha> HEAD`: if EVERY path is under `_artifacts/` or `_bmad-output/`,
+       the certification is still about this code (the same rule `task_preflight` implements as
+       code-fresh for the task lane). Any other path — `docs/` included (SCC-154) — invalidates.
+     - **File absent, a non-evidence path in the diff, a touched stack missing from `stacks`, or any
+       `failed` > 0** → run the full suite up front yourself. **Fail toward running, never toward
+       trusting.**
      No file (a pre-contract story, or a lane that skipped ② Step 4.5) → fall back to ②'s pasted
-     walkthrough totals + SHA under the same equality test; anything less specific than an exact SHA is a
+     walkthrough totals + SHA under the same tree test; anything less specific than an exact SHA is a
      miss, not a partial credit.
    - **While reviewing/fixing, run scoped** — the story's contract file + the suites of the modules you
      touched.
    - **After your LAST code/test change, run the FULL suite once** and paste the real output; record
      `git rev-parse HEAD` beside it, and **refresh `certification-<story>.json` to your SHA** (you are now
-     the certifying run). Artifact/doc-only commits after this run do NOT invalidate it — only code or test
-     changes force a re-run. Changed nothing at all? Then ②'s inherited green (SHA verified) IS the
+     the certifying run). Only `_artifacts/` and `_bmad-output/` commits after this run leave it
+     valid — a `docs/` commit is a content change and DOES invalidate (SCC-154); the mechanical
+     arbiter is the same two-layer check as the entry test (`same_tree`, then the
+     `git diff --name-only` path filter). Changed nothing at all? Then ②'s inherited green (SHA verified) IS the
      evidence — spot-run the story's own test file as a cheap independent probe and cite both. This
      replaces the old "full suite on arrival" rule, which could land a final SHA whose full green was
      measured on a DIFFERENT (pre-fix) SHA — the new invariant is strictly stronger.
