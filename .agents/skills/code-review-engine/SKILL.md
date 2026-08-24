@@ -67,6 +67,7 @@ Read each step file fully and follow it. Start with `steps/step-01-review.md`.
 
 ```
 review-runtime:  fan-out | inline
+lens_isolation:  worktree | shared — <why, when the runtime could not isolate>
 lenses_run:
 - <lens> · ok | recovered-inline | dead — <why, when it is not `ok`>
 - <one row per lens that was applicable — the ROSTER, not a summary of it>

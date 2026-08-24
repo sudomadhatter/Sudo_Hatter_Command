@@ -189,6 +189,32 @@ def main() -> int:
                 and data["dispositions"].startswith("per-lens:"),
                 repr(data["dispositions"]))
 
+    # ── SCC-301: the TREE half of isolation - a lens could edit the tree it reviews ──────
+    # Measured twice (SCC-298, SCC-295 lanes): three of five lenses edited the builder's
+    # working tree mid-review, and one reported a RED result no version of the code under
+    # review can produce - the builder was reading a lens's own mutant. "Clean context" was
+    # only half the launch contract; this is the other half, pinned.
+    SKILL = (ROOT / ".agents/skills/code-review-engine/SKILL.md").read_text(encoding="utf-8")
+    dup = t.count("in parallel, each in its own clean context")
+    c.check("SCC-301 B5: the launch sentence appears exactly ONCE (aafe0d4's duplicate gone)",
+            dup == 1, f"{dup}x - the sentence was pasted twice at :27-31 by aafe0d4 (SCC-190)")
+    c.check("SCC-301 B1: the launch states the TREE half - worktree isolation, by name",
+            'isolation: "worktree"' in t,
+            "the launch paragraph must name the Agent tool's worktree isolation, or every "
+            "lens inherits write access to the tree under review")
+    c.check("SCC-301 B2: the lens table carries a Tree column",
+            "| Tree |" in t, "per-lens isolation is table wiring, not prose")
+    blind = next((ln for ln in t.splitlines() if ln.startswith("| **Blind Hunter**")), "")
+    c.check("SCC-301 B2b: ...and the Blind Hunter's row says NO tree at all",
+            "no tree" in blind, f"DIFF-only lens must not get a repo copy: {blind[:160]}")
+    c.check("SCC-301 B4: a lens that writes to its tree is a HARD FAILURE, not a warning",
+            "A lens that WRITES is a hard failure" in t,
+            "without this the roster records `ok` for a lens that rewrote its own subject")
+    c.check("SCC-301 B3a: the engine's return states the isolation mode (SKILL.md)",
+            "lens_isolation:" in SKILL, "the contract line is the checkable surface")
+    c.check("SCC-301 B3b: ...and the recorded roster carries the same line (step-04)",
+            "lens_isolation:" in STEP04, "a mode stated but never recorded cannot be audited")
+
     return c.finish()
 
 
