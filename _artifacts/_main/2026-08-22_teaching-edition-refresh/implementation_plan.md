@@ -481,3 +481,8 @@ Task close-out correctly refuses every generic `claude/*` branch. On the operato
 close-out proceeds from `chore/SCC-280-teaching-edition-close`, created at the reviewed and pushed
 teaching-branch tip. This preserves the long-lived distribution branch while giving the PR and Jira
 ceremony the required SCC-280 Task identity.
+
+SCC-286 is intentionally excluded from this landing. It is the separately deferred skeleton
+modernization the operator confirmed still needs to happen under a new ticket. The manifest therefore
+declares a partial landing with no riders: SCC-286 stays open, and SCC-280 stays open after this PR
+until that board reorganization is complete.

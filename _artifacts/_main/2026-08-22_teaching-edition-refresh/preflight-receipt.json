@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-280-teaching-edition-close",
+  "errors": 1,
+  "exit": 2,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-280",
+  "verdict": "BLOCKED - resolve the errors above",
+  "verdict_sha": "0c66c7de5ab3402efe585b75fc0ef903d04729f2",
+  "warnings": 1,
+  "when": "2026-08-23T22:43:55-04:00"
+}

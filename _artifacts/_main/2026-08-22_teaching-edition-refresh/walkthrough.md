@@ -172,7 +172,9 @@ the 46-check contract.
 
 ## Your Actions
 
-- [x] None required for SCC-280 engineering. The branch is ready to push; sharing/publishing the
-  generated export remains an owner-controlled action.
+- [x] SCC-280 engineering is complete; sharing/publishing the generated export remains an
+  owner-controlled action.
+- [ ] Move SCC-286 into the new standalone skeleton-modernization ticket; SCC-286 and parent SCC-280
+  remain open until that follow-on board move is complete.
 
 Verdict: PASS @ 0c66c7de5ab3402efe585b75fc0ef903d04729f2
