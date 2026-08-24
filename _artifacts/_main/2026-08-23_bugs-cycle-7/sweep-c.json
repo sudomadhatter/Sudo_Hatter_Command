@@ -1,0 +1,48 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_lane_qualify.py"
+  ],
+  "mutants": [
+    {
+      "id": "M1 revert SCC-302: delete the TASK-LIGHT branch",
+      "file": ".agents/scripts/lane_qualify.py",
+      "original": "        if (lines is not None and lines <= SMALL_TOOLKIT_LINES\n                and len(clean) <= SMALL_TOOLKIT_FILES):\n            return (\"TASK-LIGHT\",\n                    f\"toolkit path(s), small blast radius ({lines} line(s), {len(clean)} \"\n                    f\"file(s)): assertion-first and the gates stay; the review fan-out may \"\n                    f\"collapse to one inline pass (SCC-302)\")\n        return (\"TASK\",",
+      "mutated": "        return (\"TASK\",",
+      "case": "C2 a ONE-LINE toolkit edit is TASK-LIGHT, not the full fan-out",
+      "block": "SCC-302 · size draws the lane - a one-liner and a rewrite are different work"
+    },
+    {
+      "id": "M2 drop the file-count clause",
+      "file": ".agents/scripts/lane_qualify.py",
+      "original": "        if (lines is not None and lines <= SMALL_TOOLKIT_LINES\n                and len(clean) <= SMALL_TOOLKIT_FILES):",
+      "mutated": "        if lines is not None and lines <= SMALL_TOOLKIT_LINES:",
+      "case": "C2e three files at one line each is TASK - the blast is the file count",
+      "block": "SCC-302 · size draws the lane - a one-liner and a rewrite are different work"
+    },
+    {
+      "id": "M3 no size evidence reads as small",
+      "file": ".agents/scripts/lane_qualify.py",
+      "original": "        if (lines is not None and lines <= SMALL_TOOLKIT_LINES\n                and len(clean) <= SMALL_TOOLKIT_FILES):",
+      "mutated": "        if ((lines is None or lines <= SMALL_TOOLKIT_LINES)\n                and len(clean) <= SMALL_TOOLKIT_FILES):",
+      "case": "C2d WITHOUT --lines a toolkit path is still TASK - size silence is not small",
+      "block": "SCC-302 · size draws the lane - a one-liner and a rewrite are different work"
+    },
+    {
+      "id": "M4 TASK-LIGHT leaks into the light lane's exit code",
+      "file": ".agents/scripts/lane_qualify.py",
+      "original": "VERDICTS = {\"LIGHT\": 0, \"LIGHT-VCS\": 0, \"TASK\": 1, \"TASK-LIGHT\": 1, \"HANDOFF\": 2,\n            \"NOT-COMMAND-CENTRE\": 3}",
+      "mutated": "VERDICTS = {\"LIGHT\": 0, \"LIGHT-VCS\": 0, \"TASK\": 1, \"TASK-LIGHT\": 0, \"HANDOFF\": 2,\n            \"NOT-COMMAND-CENTRE\": 3}",
+      "case": "C2 ...and its exit stays in the TASK family (nonzero - never the light lane)",
+      "block": "SCC-302 · size draws the lane - a one-liner and a rewrite are different work"
+    },
+    {
+      "id": "M5 widen the line cap tenfold",
+      "file": ".agents/scripts/lane_qualify.py",
+      "original": "SMALL_TOOLKIT_LINES = 10",
+      "mutated": "SMALL_TOOLKIT_LINES = 100",
+      "case": "C2g a single-file FIFTY-line rewrite is TASK - the line cap gates by itself",
+      "block": "SCC-302 · size draws the lane - a one-liner and a rewrite are different work"
+    }
+  ]
+}
