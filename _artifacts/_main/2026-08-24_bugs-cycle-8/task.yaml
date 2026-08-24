@@ -1,0 +1,5 @@
+task_key: SCC-305
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-305-bugs-cycle-8
+close_command: smh-close-task-merge-tree
+secondary_repos: []
