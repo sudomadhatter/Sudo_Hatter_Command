@@ -1,5 +1,5 @@
 ---
-description: Live Testing Team — the human flies the app while the agent boots the dev env, watches the backend logs live, coaches the frontend...
+description: Live Testing Team — the human flies the app while the agent boots the dev env, watches the backend logs live, reads the frontend...
 ---
 
 # /cicd-live-testing-team — Live Testing Team (co-pilot debugging loop)
@@ -31,12 +31,20 @@ before any work.
 ## Step 2 — The co-pilot loop (repeat until the human ends the session)
 - **Re-read the captured backend output every turn.** Proactively flag tracebacks, 4xx/5xx, and silent
   anomalies even when unprompted; deep-dive reactively the moment the human reports a symptom.
-- **You cannot see the browser.** For frontend symptoms, coach the human with ONE specific ask at a
-  time — the exact Console error line, the failing Network row (URL + status + response body), the
-  component state — never a vague "check DevTools".
-- **Instruments, cheapest first:** backend logs (always on) → browser DevTools via the human →
-  Firestore reads (`get_db()`) → temporary debug logs (reload picks them up; remove at close) →
-  Cloud Run / `gcloud` (ask first). Always ask before reaching outside the local box.
+- **Read the browser yourself — load the `playwright-frontend-check` skill.** Playwright is installed
+  on this machine, so a frontend symptom is something you CAPTURE, not something you ask a human to
+  retype: console lines, uncaught exceptions (`pageerror` — a different channel from `console`, and
+  the one carrying the error that actually broke the page), 4xx/5xx rows **with their response
+  bodies**, and a full-page screenshot. The skill carries the two traps that make this fail silently
+  (the Bash sandbox kills chromium's launch; Playwright is a project dependency, not a global).
+- **The human flies; ask them only for what a script cannot reach.** Auth-gated state, an MFA step, a
+  flow only they can drive, or "does this FEEL wrong to you" — that is what a person is for. When you
+  do ask, ask for ONE specific thing at a time, never a vague "check DevTools". Expensive state is
+  better attached to (`connectOverCDP`) than rebuilt.
+- **Instruments, cheapest first:** backend logs (always on) → **Playwright capture of the frontend**
+  → the human's own eyes for anything auth-gated or subjective → Firestore reads (`get_db()`) →
+  temporary debug logs (reload picks them up; remove at close) → Cloud Run / `gcloud` (ask first).
+  Always ask before reaching outside the local box.
 
 ## Step 3 — Recon every confirmed symptom into a bug doc
 For each distinct bug, research the ROOT cause: read the code path, correlate the log evidence, and
@@ -44,7 +52,12 @@ check claims against the docs — mark every finding **verified** (evidence in h
 (plausible, needs confirmation). Then file one doc per bug at
 `PROJECT_ROOT/_artifacts/debugging/<YYYY-MM-DD>_live-testing/<n>-<slug>.md` containing:
 - **Symptom** — what the human saw, in their words
-- **Evidence** — exact log lines / network rows / console output captured
+- **Evidence** — exact log lines / network rows / console output captured. **Attach the artifacts
+  the `playwright-frontend-check` skill produced** — the captured JSON (console, `pageerror`, the
+  4xx/5xx body) and the screenshot, written beside the doc in the same
+  `_artifacts/debugging/<YYYY-MM-DD>_live-testing/` folder. *"The console showed an error"* is a
+  description; the captured string, the response body and the PNG are evidence, and `Root cause`
+  below gets ranked against them
 - **Root cause** — ranked hypotheses, each tagged verified vs docs-say
 - **Proposed fix direction** — where the fix lives, NOT the fix itself
 - **Suggested lane** — `/cicd-quick-dev` (small/contained) or the full ①②③ story loop (risky/cross-cutting)
@@ -76,7 +89,8 @@ no traceable ticket is new work, not a reopen.
 
 ## Step 4 — Close out
 Post a session summary table (bug → doc link → **traced ticket, if any** → suggested lane). Ask whether to keep or kill the
-servers. Remove every temporary debug log you added. The fixes themselves happen in the sudo dev
-flow — never in this chat.
+servers. Remove every temporary debug log you added, close any browser the capture skill opened, and
+delete scratch capture scripts and one-off screenshots you did not attach to a bug doc. The fixes
+themselves happen in the sudo dev flow — never in this chat.
 
 Optional additional input (area under test / known-flaky route): $ARGUMENTS
