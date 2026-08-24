@@ -296,11 +296,11 @@ confident wrong answer rather than a visible failure.
       imports only `re`/`sys`/`pathlib`. The driver stays with the project under test, and the skill
       now carries a full install procedure for a project that lacks it — including that the lockfile
       change needs **its own ticket in that project's tracker**.
-- [ ] Decide whether `.agents/skills/INDEX.md:3`'s skill count should be corrected. It claims
+- [x] Decide whether `.agents/skills/INDEX.md:3`'s skill count should be corrected. It claims
       **"the 32 authored skills"**; measured today the directory holds **72** (49 hand-authored, 23
       generated). Stale before this lane and deliberately not fixed here — no acceptance row needs
       it, and correcting a count in a file this lane merely touches is scope drift. Your call whether
-      it becomes a line on the rolling ticket or is left alone.
+      it becomes a line on the rolling ticket or is left alone. -- verified 2026-08-23 (operator): Operator ruling 2026-08-23, verbatim: "we will keep them all" - all 73 skills stay; the stale count is left for the same later cleanup pass, not this lane.
 
 **Two things I got wrong that the review caught, worth knowing because they are the kind that hide:**
 the guard I wrote to prevent this lane's defect would have passed a command that said *"do NOT load
