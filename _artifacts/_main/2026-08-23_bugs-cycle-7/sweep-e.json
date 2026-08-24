@@ -1,0 +1,36 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+  ],
+  "mutants": [
+    {
+      "id": "M1 revert SCC-306: delete the parked-path roll block entirely",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "        if args.apply and TRIGGER_LABEL in [str(x) for x in (fields.get(\"labels\") or [])]:\n            say(f\"jira-feed: {args.key} still holds `{TRIGGER_LABEL}` - its successor was \"\n                f\"never minted, so the roll runs even though the ticket is parked.\")\n            roll_the_cycle(binary, args.key, args.timeout)\n        # Exit 3, NOT 0. This ticket is not settled - it is waiting on something (an",
+      "mutated": "        # Exit 3, NOT 0. This ticket is not settled - it is waiting on something (an",
+      "case": "SCC-198 · start clones the successor and hands the baton on"
+    },
+    {
+      "id": "M2 the refusal stops refusing: return 0 instead of 3",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "            f\"is never overwritten. Nothing was recorded; ask again later.\")\n        return 3",
+      "mutated": "            f\"is never overwritten. Nothing was recorded; ask again later.\")\n        return 0",
+      "case": "SCC-198 · start clones the successor and hands the baton on"
+    },
+    {
+      "id": "M3 drop the dry-run guard on the parked path",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "        if args.apply and TRIGGER_LABEL in [str(x) for x in (fields.get(\"labels\") or [])]:\n            say(f\"jira-feed: {args.key} still holds `{TRIGGER_LABEL}` - its successor was \"\n                f\"never minted, so the roll runs even though the ticket is parked.\")",
+      "mutated": "        if TRIGGER_LABEL in [str(x) for x in (fields.get(\"labels\") or [])]:\n            say(f\"jira-feed: {args.key} still holds `{TRIGGER_LABEL}` - its successor was \"\n                f\"never minted, so the roll runs even though the ticket is parked.\")",
+      "case": "SCC-198 · start clones the successor and hands the baton on"
+    },
+    {
+      "id": "M4 roll keys on the WRONG label: the spent identity marker instead of the baton",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "        if args.apply and TRIGGER_LABEL in [str(x) for x in (fields.get(\"labels\") or [])]:\n            say(f\"jira-feed: {args.key} still holds `{TRIGGER_LABEL}` - its successor was \"\n                f\"never minted, so the roll runs even though the ticket is parked.\")",
+      "mutated": "        if args.apply and \"bugs-and-updates\" in [str(x) for x in (fields.get(\"labels\") or [])]:\n            say(f\"jira-feed: {args.key} still holds `{TRIGGER_LABEL}` - its successor was \"\n                f\"never minted, so the roll runs even though the ticket is parked.\")",
+      "case": "SCC-198 · start clones the successor and hands the baton on"
+    }
+  ]
+}

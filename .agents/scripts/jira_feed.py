@@ -1632,6 +1632,19 @@ def cmd_start(args) -> int:
         return 2
 
     if status.lower() not in STARTABLE:
+        # ⛔ THE ROLL RUNS BEFORE THE REFUSAL RETURNS (SCC-306) - the FOURTH dead end on the
+        # list above. The operator's convention parks the un-started successor in the board's
+        # `Rolling Tickets` column (SCC-186 lives there permanently), so every cycle's rolling
+        # ticket arrives at this branch - and with the roll below the `return 3`, the promise
+        # that "the next `start` tries again" was false from that column too. Measured live on
+        # SCC-293 (2026-08-23): the ticket sat parked holding an un-honoured baton and the
+        # clone had to be hand-driven with raw acli. Same state-bound reasoning as the
+        # already-started path: only an un-spent trigger rolls, so this is a no-op for every
+        # ordinary held ticket, and the refusal itself is untouched - exit 3, no transition.
+        if args.apply and TRIGGER_LABEL in [str(x) for x in (fields.get("labels") or [])]:
+            say(f"jira-feed: {args.key} still holds `{TRIGGER_LABEL}` - its successor was "
+                f"never minted, so the roll runs even though the ticket is parked.")
+            roll_the_cycle(binary, args.key, args.timeout)
         # Exit 3, NOT 0. This ticket is not settled - it is waiting on something (an
         # impediment, a reviewer, a descope decision). Whatever asked must ask again.
         say(f"jira-feed: {args.key} is {status or '?'} - left alone. `start` only moves a "

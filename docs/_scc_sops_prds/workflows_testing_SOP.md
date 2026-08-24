@@ -1798,7 +1798,12 @@ Cloning happens at **start** rather than close-out because running the rolling t
 window in which nothing else is open to catch new findings. A failed clone is not a lost cycle: the
 marker stays put and the next start tries again — a retry that is real only because the roll is
 bound to the ticket's **state** rather than to the moment it changed, so a later start still looks
-at the marker even though the ticket is already In Progress.
+at the marker even though the ticket is already In Progress — **or parked**. Since SCC-306 the roll
+runs *before* `start`'s status refusal, so a rolling ticket sitting in the **Rolling Tickets**
+column (where the un-started successor is parked by convention, next to SCC-186) still mints its
+successor on any `start --apply`; the refusal itself is unchanged — exit 3, no transition written.
+Before that fix the refusal returned first, and from that column the promised retry could never
+fire — SCC-293's clone had to be hand-driven.
 
 **The count is the health check, and it breaks in both directions.** **Two** open tickets carrying
 `running-bug-list` means a hand-off failed after its clone landed — loud, since the query returns
