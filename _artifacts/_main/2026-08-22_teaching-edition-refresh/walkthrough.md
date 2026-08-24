@@ -16,7 +16,7 @@ review-level: standard
 ## Outcome
 
 `claude/teaching-edition` is refreshed through `origin/main` SHA
-`fa490f79e95f9a77387888b62cbc2ee2a59d5742`. It now builds one sanitized, zero-history command-center
+`c8f9c8c57708c745b29778269666f5e9b9829867`. It now builds one sanitized, zero-history command-center
 shell whose tutor opens the current local SOP and current command bodies at every checkpoint. The tutor
 does not preserve a second, stale copy of the workflow.
 
@@ -30,11 +30,11 @@ not publish a repository, change visibility, or modernize the paired skeleton.
 
 ## Source and integration
 
-- Final source main: `fa490f79e95f9a77387888b62cbc2ee2a59d5742`.
-- Final main integration commit: `a0c18555008ada6460fbe8026facf945565b5d8a`.
+- Final source main: `c8f9c8c57708c745b29778269666f5e9b9829867`.
+- Final main integration commit: `0c66c7de5ab3402efe585b75fc0ef903d04729f2`.
 - `git merge-base --is-ancestor origin/main HEAD` returned 0.
-- The final merge conflict was limited to `_artifacts/_main/INDEX.md`; both SCC-280 and newly landed
-  SCC-295 rows were preserved.
+- The final merge reconciled two additive ledgers and three generated surfaces. SCC-280, SCC-293, and
+  SCC-304 records were all preserved; command mirrors and the document graph were regenerated.
 - Final product delta: 45 paths relative to `origin/main`; Declared Change Set reports no incomplete,
   undeclared, or unimplemented paths.
 
@@ -51,13 +51,13 @@ not publish a repository, change visibility, or modernize the paired skeleton.
 
 ## Generated export evidence
 
-The final focused run at `a0c18555` produced one shell with:
+The final focused run at `0c66c7de` produced one shell with:
 
 ```text
-copied      : 2673 files
+copied      : 2676 files
 excluded    : 62 files
 structure   : 4 empty folders kept
-substituted : 5598 tokens across 350 files
+substituted : 5674 tokens across 353 files
 line-pruned : 9 source-only catalog rows
 transformed : 9 files
 leak scan   : 42 needles, 0 hits
@@ -95,14 +95,14 @@ mismatch and pauses instead of teaching remembered mechanics.
 | 3 | Pass | Real scaffold test asks for/uses a name, clones the canonical skeleton to `Projects/First_Project`, creates its own HEAD and hooks, and prints project-local optional Jira setup. |
 | 4 | Pass | Zero-history real export, 42-needle/0-hit leak scan, fail-closed privacy controls, one-shell manifest, and shipped validator. |
 | 5 | Pass | Repo-local generated surfaces are synchronized; retired tutor doors and commands are rejected. |
-| 6 | Pass | Focused 46/46 and receipt-backed full suite 60/60 at `a0c18555`; clean-code and review gates below. |
+| 6 | Pass | Focused 46/46 and receipt-backed full suite 61/61 at `0c66c7de`; clean-code and review gates below. |
 
 ## Gate evidence
 
 | Gate | Result |
 |---|---|
 | `test_teaching_edition.py` | 46/46 passed after final main merge |
-| receipt-backed `tests/run_all.py` | 60/60 files passed in 151.1 s; `gates/suite.json`, clean tree, SHA `a0c18555` |
+| receipt-backed `tests/run_all.py` | 61/61 files passed in 139.9 s; `gates/suite.json`, clean tree, SHA `0c66c7de` |
 | `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, 8 existing BOM information notices |
 | Python compile | validator and focused contract compile cleanly |
 | PowerShell parser | exporter and new-project script parse cleanly |
@@ -155,9 +155,9 @@ the 46-check contract.
 
 ### Step 0.7 — re-derivation
 
-1. **Referenced movement:** `origin/main` advanced first to `310824a` and finally to `fa490f7`; both were absorbed. The final movement was SCC-295 and did not move a tutor/export dependency.
-2. **True overlap and merge:** the final merge had one additive overlap, `_artifacts/_main/INDEX.md`; both session rows remain, no conflict marker survives, `origin/main` is an ancestor, and the merge-tree materializes the branch result without an unresolved conflict.
-3. **Sibling landing order:** SCC-295 is already landed and absorbed. The only remaining live sibling is SCC-304 from the same final main and has no SCC-280 dependency; skeleton modernization remains a separately authorized follow-on, not a landing dependency.
+1. **Referenced movement:** `origin/main` advanced through `310824a`, `fa490f7`, and finally `c8f9c8c`; all were absorbed. The latest movement landed SCC-293 and SCC-304, adding link/review and Playwright machinery that the fresh export and full suite now exercise.
+2. **True overlap and merge:** the latest merge reconciled `.sync-manifest.json`, `_artifacts/_main/INDEX.md`, the SOP changelog, and both doc-graph outputs. Both ledgers remain additive, generated files were rebuilt, no conflict marker survives, and `origin/main` is an ancestor.
+3. **Sibling landing order:** SCC-293 and SCC-304 are landed and absorbed; no remaining sibling is a teaching-edition dependency. Skeleton modernization remains a separately authorized follow-on, not a landing dependency.
 
 ## Task Checklist
 
@@ -174,4 +174,4 @@ the 46-check contract.
 - [x] None required for SCC-280 engineering. The branch is ready to push; sharing/publishing the
   generated export remains an owner-controlled action.
 
-Verdict: PASS @ a0c18555008ada6460fbe8026facf945565b5d8a
+Verdict: PASS @ 0c66c7de5ab3402efe585b75fc0ef903d04729f2

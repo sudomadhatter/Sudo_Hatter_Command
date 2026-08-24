@@ -464,3 +464,11 @@ that SHA was merged before the final gate. The sole conflict was the additive ho
 both rows were preserved. No tutor/export dependency moved. Acceptance requires `origin/main` to remain
 an ancestor of the teaching branch, the focused 46-case contract to pass, and a new receipt-backed full
 suite to be stamped after this merge.
+
+## Second Final Main Refresh Amendment
+
+The remote tracking ref initially appeared unchanged at `fa490f7`, but a direct `ls-remote` proved
+remote `main` had advanced to `c8f9c8c57708c745b29778269666f5e9b9829867`; an explicit refspec fetch
+corrected the stale local tracking ref. That main lands SCC-293 and SCC-304. The merge preserves both
+additive ledgers, regenerates the sync manifest and document graph, and requires the focused teaching
+contract plus a new receipt-backed full suite before the branch is pushed again.
