@@ -18,7 +18,7 @@ pick `cicd-` or `smh-` by the target rule above; `workflow_lint.py --toolkit-onl
 Router for `.agents/commands/`. **Scan to dispatch.** Each command is invoked by natural-language intent
 or through the platform surface named below and carries its own frontmatter `description:`; this groups
 them by purpose. `.agents/commands/` is the canonical workflow body even when a platform enters through a
-thin native skill launcher. `/smh-sync-agents` publishes it to Claude (`.claude/commands/` and skills),
+thin native skill launcher. `/smh-sync-agents` publishes it to Claude through launcher skills in `.claude/skills/`,
 opencode (`.opencode/commands/` + global `~/.config/opencode/commands`), and Antigravity/Gemini (global
 `~/.gemini/antigravity/global_workflows` — it calls our commands "workflows"). Codex discovers
 `.agents/skills/` natively; its deprecated custom-prompt fallback is namespaced `/prompts:<name>`, never
