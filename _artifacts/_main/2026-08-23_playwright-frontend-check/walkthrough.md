@@ -58,21 +58,47 @@ FAILED: C1 the command body names the skill slug, C2 the slug resolves to a SKIL
 
 **GREEN after:** `-- 10/10 passed --`
 
-**Mutation sweep — the guard is not vacuous.** Five mutants, five killed:
+**Gate receipt (SCC-146), stamped on the clean tree at `c7abce5`:**
 
-| Mutant | Result |
+```
+[PASS] suite exit=0 85.4s @ c7abce56
+        receipt: gates/suite.json
+```
+
+`result: pass · exit_code: 0 · dirty_tree: False · dirty_paths: []` — so the review and the close-out
+inherit this run instead of paying for it again.
+
+**Mutation sweep — the guard is not vacuous.** Run as a SCRIPT
+([`sweep.json`](sweep.json) → `mutation_sweep.py`), not improvised one at a time; the mutants are
+drawn from the shipped files, not from the test's own cases.
+
+```
+-- sweep clean: 4/4 killed by their declared case --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet c7abce56` is clean --
+-- full file, unfiltered: … -> exit 0 --  (10/10)
+```
+
+| Mutant | Killed by |
 |---|---|
-| M1 delete `.agents/skills/playwright-frontend-check/` | 7/10 — **killed** |
-| M2 typo the slug in the command body | 9/10 — **killed** |
-| M3 rename `name:` in the skill's frontmatter | 9/10 — **killed** |
-| M4 comment out **every** reference in the command | 9/10 — **killed** |
-| M5 restore the *"You cannot see the browser"* sentence | 9/10 — **killed** |
+| M1 frontmatter `name:` stops matching its directory | `C3 the skill's frontmatter name matches its directory` |
+| M2 the skill loses its `description:` | `C4 the skill carries a description (CS-06 loadability)` |
+| M3 the skills INDEX stops routing to the skill | `E2 the skills INDEX routes to the skill` |
+| M4 the browser-blindness sentence comes back beside the instrument | `D1 the bare 'cannot see the browser' claim is gone` |
 
-⚠️ **M4 survived on its first construction and the mutant was wrong, not the guard.** The slug appears
-in two live places in the command; commenting one out left the other, so `C1` still found it. Rebuilt
-to comment every line carrying the slug, it dies. Recorded because a mutant that "survives" for a
-reason like this reads identically to a blind guard in a transcript, and the difference is the whole
-value of the sweep.
+**Two further mutants were run BY HAND and are labelled as such**, because neither is a single
+unique-text swap the sweep script can express — one deletes a directory, the other edits two
+separated lines:
+
+| Manual mutant | Result |
+|---|---|
+| delete `.agents/skills/playwright-frontend-check/` | 7/10 — **killed** (`C2`) |
+| comment out **every** reference to the slug in the command | 9/10 — **killed** (`C1`) |
+
+⚠️ **The comment-out mutant SURVIVED on its first construction, and the MUTANT was wrong, not the
+guard.** The slug appears in two live places in the command; commenting one out left the other, so
+`C1` still found it (10/10, a false survivor). Rebuilt to comment every line carrying the slug, it
+dies at `C1`. Recorded because a survivor for that reason reads identically in a transcript to a
+genuinely blind guard, and telling them apart is the entire value of running the sweep.
 
 **A2 — the recipe actually runs.** Not a suite row, by design (`run_all.py` is stdlib-only and must
 pass on a machine with no Playwright and no browsers). Transcript, this machine, one script that

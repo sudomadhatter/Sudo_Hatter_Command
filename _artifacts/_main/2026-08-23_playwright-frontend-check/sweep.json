@@ -1,0 +1,30 @@
+{"test": ["python3", ".agents/scripts/tests/test_live_testing_browser_instrument.py"],
+ "mutants": [
+   {"id": "M1 frontmatter name stops matching its directory",
+    "file": ".agents/skills/playwright-frontend-check/SKILL.md",
+    "original": "name: playwright-frontend-check",
+    "mutated":  "name: pw-check",
+    "case":  "C3 the skill's frontmatter name matches its directory",
+    "block": "C · the WIRING chain"},
+
+   {"id": "M2 the skill loses its description (CS-06 loadability)",
+    "file": ".agents/skills/playwright-frontend-check/SKILL.md",
+    "original": "description: Read a running frontend",
+    "mutated":  "summary_only: Read a running frontend",
+    "case":  "C4 the skill carries a description (CS-06 loadability)",
+    "block": "C · the WIRING chain"},
+
+   {"id": "M3 the skills INDEX stops routing to the skill (only caller left is the command)",
+    "file": ".agents/skills/INDEX.md",
+    "original": "playwright-frontend-check",
+    "mutated":  "playwright-frontend-chekc",
+    "case":  "E2 the skills INDEX routes to the skill",
+    "block": "E · the skill has a second, independent caller"},
+
+   {"id": "M4 the browser-blindness sentence comes back beside the instrument",
+    "file": ".agents/commands/cicd-live-testing-team.md",
+    "original": "- **Read the browser yourself",
+    "mutated":  "- **You cannot see the browser.** Read the browser yourself",
+    "case":  "D1 the bare 'cannot see the browser' claim is gone",
+    "block": "D · the browser-blindness claim is retired"}
+ ]}
