@@ -3227,6 +3227,49 @@ Nothing is actually owed.
             c.check("A7b ...and start still succeeds, loudly", rc == 0 and TRIG in out,
                     f"rc={rc}: " + out.strip()[-300:])
 
+        # ⛔ A8 · SCC-306 · A PARKED ROLLING TICKET STILL ROLLS. The operator's convention parks
+        # the un-started successor in the board's `Rolling Tickets` column (SCC-186 lives there
+        # permanently), and A4d's fix bound the roll to STATE - but the STARTABLE refusal at
+        # `return 3` sat ABOVE the trigger check, so from that column the roll was unreachable:
+        # a fourth dead end, measured live on SCC-293 (2026-08-23), whose clone was hand-driven.
+        # The column is correct and the code was wrong: roll BEFORE refusing, keep the refusal.
+        with TempDir() as tmp:
+            rc, out, st = started(tmp, labels=[TRIG],
+                                  statuses={"TEST-7": "Rolling Tickets"})
+            c.check("A8 E1: a PARKED ticket holding the baton still clones its successor",
+                    st.get("clones") == ["TEST-7"],
+                    f"rc={rc} clones={st.get('clones')}: " + out.strip()[-200:])
+            c.check("A8f ...and it SAYS the roll ran on a parked ticket - a silent roll "
+                    "is unauditable (review)",
+                    "parked" in out.lower(), out.strip()[-250:])
+            c.check("A8b E2: ...and the refusal is intact - exit 3, status untouched, "
+                    "NO transition written",
+                    rc == 3 and st.get("statuses", {}).get("TEST-7") == "Rolling Tickets"
+                    and not st.get("transitions"),
+                    f"rc={rc} statuses={st.get('statuses')} "
+                    f"transitions={st.get('transitions')}")
+            # Both ends of the handoff, exactly as A1b/A1c pin the happy path - a half-fix
+            # that clones without swapping ends the cycle one ticket later, silently.
+            lab = st.get("labels", {})
+            c.check("A8c ...the successor inherits the baton and the original swaps",
+                    TRIG in lab.get("TEST-CLONE", []) and lab.get("TEST-7") == [ROLL],
+                    f"labels={lab}")
+        with TempDir() as tmp:
+            rc, out, st = started(tmp, labels=[ROLL],
+                                  statuses={"TEST-7": "Rolling Tickets"})
+            c.check("A8d E4 CONTROL: a PARKED ticket with a SPENT baton clones nothing "
+                    "and still exits 3",
+                    rc == 3 and not st.get("clones") and not st.get("edit_args"),
+                    f"rc={rc} clones={st.get('clones')} edit={st.get('edit_args')}")
+        # A4f's dry-run pin, extended to the parked path - the A8 cases all pass --apply,
+        # so without this control a mutant dropping the apply guard survives the sweep.
+        with TempDir() as tmp:
+            rc, out, st = started(tmp, labels=[TRIG],
+                                  statuses={"TEST-7": "Rolling Tickets"}, apply=False)
+            c.check("A8e a DRY RUN on a parked baton-holder rolls nothing",
+                    not st.get("clones") and not st.get("edit_args"),
+                    f"clones={st.get('clones')} edit={st.get('edit_args')}")
+
     # ══ SCC-193 Part D · the SCC-175 merge-row pin, run BOTH ways ══════════════════════════
     #
     # THE SUSPECTED DEFECT, RECORDED SO IT IS NEVER RE-DIAGNOSED FROM MEMORY. At SCC-164's

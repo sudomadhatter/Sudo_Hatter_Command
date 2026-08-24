@@ -138,6 +138,82 @@ with TempDir() as tmp:
         c.check("--no-file-changes CONTRADICTED by paths is refused",
                 verdict(out) == "TASK", out.strip()[:200])
 
+    if c.block("SCC-302 · size draws the lane - a one-liner and a rewrite are different work"):
+        # ⛔ THE SCAR: classify() decided by PATH PREFIX alone, so a one-character fix and a
+        # forty-file rewrite were indistinguishable - SCC-295 was one line in one function,
+        # the operator asked for /smh-quick-fix, and the qualifier ejected it into a lane
+        # that consumed a whole session. There was also nowhere to eject TO: the verdict set
+        # had nothing between LIGHT and TASK.
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".agents/scripts/lane_qualify.py", "--lines", "1")
+        c.check("C2 a ONE-LINE toolkit edit is TASK-LIGHT, not the full fan-out",
+                verdict(out) == "TASK-LIGHT", out.strip()[:200])
+        c.check("C2 ...and its exit stays in the TASK family (nonzero - never the light lane)",
+                rc == 1, f"rc={rc}")
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".agents/scripts/a.py", ".agents/scripts/b.py",
+                             ".agents/rules/c.md", "--lines", "400")
+        c.check("C2 a multi-file toolkit rewrite stays TASK - different verdicts, same prefix",
+                verdict(out) == "TASK", out.strip()[:200])
+        # No --lines -> no size evidence -> the conservative verdict, exactly as before this
+        # ticket. Silence about size is not smallness (the F2 principle, applied to the
+        # second input an agent controls completely).
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".agents/scripts/lane_qualify.py")
+        c.check("C2d WITHOUT --lines a toolkit path is still TASK - size silence is not small",
+                verdict(out) == "TASK", out.strip()[:200])
+        # A small edit to MANY files is not small work - the file count caps it too.
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".agents/scripts/a.py", ".agents/scripts/b.py",
+                             ".agents/rules/c.md", "--lines", "3")
+        c.check("C2e three files at one line each is TASK - the blast is the file count",
+                verdict(out) == "TASK", out.strip()[:200])
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", "frontend/app.tsx", "--lines", "1")
+        c.check("C3 a one-line change under PRODUCT_DIRS is still HANDOFF - size never buys "
+                "an exception", verdict(out) == "HANDOFF", out.strip()[:200])
+        proj2 = tmp / "sized-project"
+        (proj2 / "docs").mkdir(parents=True, exist_ok=True)
+        rc, out = run_script("lane_qualify.py", "--repo", str(proj2),
+                             "--paths", "docs/x.md", "--lines", "1")
+        c.check("C4 NOT-COMMAND-CENTRE keeps winning regardless of size",
+                verdict(out) == "NOT-COMMAND-CENTRE", out.strip()[:200])
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", "docs/guide.md", "--lines", "1")
+        c.check("C2f CONTROL: --lines does not disturb a LIGHT verdict",
+                verdict(out) == "LIGHT", out.strip()[:200])
+        # ⛔ Review (reproduced): zero and negative are CONTRADICTORY evidence - paths named,
+        # no lines changed - and the same script refuses the analogous contradiction
+        # (--no-file-changes + paths). Never read the permissive way.
+        for bogus in ("0", "-5"):
+            rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                                 "--paths", ".agents/scripts/lane_qualify.py",
+                                 "--lines", bogus)
+            c.check(f"C2h --lines {bogus} is a self-contradiction and stays TASK",
+                    verdict(out) == "TASK", out.strip()[:200])
+        # The exact boundary VALUES, pinned - the clauses were mutant-proofed but 10 and 2
+        # themselves were only bracketed (review finding), and three caller tables print them.
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".agents/scripts/a.py", ".agents/scripts/b.py",
+                             "--lines", "10")
+        c.check("C2i exactly 10 lines across exactly 2 files is TASK-LIGHT - both "
+                "boundaries inclusive", verdict(out) == "TASK-LIGHT", out.strip()[:200])
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".agents/scripts/a.py", "--lines", "11")
+        c.check("C2j eleven lines is TASK - the line boundary is 10, as the caller "
+                "tables print", verdict(out) == "TASK", out.strip()[:200])
+        # A TOOLKIT_FILES member (not a prefix): the size door serves it identically.
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", "AGENTS.md", "--lines", "1")
+        c.check("C2k a one-line edit to a TOOLKIT_FILES member (AGENTS.md) is TASK-LIGHT "
+                "- the door is the toolkit branch's, prefixes and members alike",
+                verdict(out) == "TASK-LIGHT", out.strip()[:200])
+        # One file is not enough on its own either - the LINE threshold must gate alone.
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".agents/scripts/lane_qualify.py", "--lines", "50")
+        c.check("C2g a single-file FIFTY-line rewrite is TASK - the line cap gates by itself",
+                verdict(out) == "TASK", out.strip()[:200])
+
     if c.block("drift - never more permissive than the armed commit gate"):
         # Every path sop_currency calls a usage surface must come back non-LIGHT here.
         # Not an import of its list (F3): a cross-check, so widening THERE cannot quietly

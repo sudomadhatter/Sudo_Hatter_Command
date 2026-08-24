@@ -1,0 +1,56 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_lens_roster_contract.py"
+  ],
+  "mutants": [
+    {
+      "id": "M1 paste the duplicated launch sentence back",
+      "file": ".agents/skills/code-review-engine/steps/step-01-review.md",
+      "original": "Launch every lens **in parallel, each in its own clean context \u2014 and each in its own TREE.** They",
+      "mutated": "Launch every lens **in parallel, each in its own clean context \u2014 and each in its own TREE.** in parallel, each in its own clean context They",
+      "unfiltered": true,
+      "case": "SCC-301 B5: the launch sentence appears exactly ONCE (aafe0d4's duplicate gone)"
+    },
+    {
+      "id": "M2 drop the Tree column from the lens table header",
+      "file": ".agents/skills/code-review-engine/steps/step-01-review.md",
+      "original": "| Lens | Gets | Tree | Runs when | How | Primed with `EVIDENCE_PACK` |",
+      "mutated": "| Lens | Gets | Runs when | How | Primed with `EVIDENCE_PACK` |",
+      "unfiltered": true,
+      "case": "SCC-301 B2: the lens table carries a Tree column"
+    },
+    {
+      "id": "M3 hand the Blind Hunter a worktree copy",
+      "file": ".agents/skills/code-review-engine/steps/step-01-review.md",
+      "original": "| **Blind Hunter** | `DIFF` only \u2014 no spec, no repo access, no context docs | **no tree** \u2014 repo access is withheld by design |",
+      "mutated": "| **Blind Hunter** | `DIFF` only \u2014 no spec, no repo access, no context docs | own worktree copy (`isolation: \"worktree\"`) |",
+      "unfiltered": true,
+      "case": "SCC-301 B2b: ...and the Blind Hunter's row says NO tree at all"
+    },
+    {
+      "id": "M4 soften the write to a warning",
+      "file": ".agents/skills/code-review-engine/steps/step-01-review.md",
+      "original": "**A lens that WRITES is a hard failure, never a warning:**",
+      "mutated": "**A lens that writes should be noted as a warning:**",
+      "unfiltered": true,
+      "case": "SCC-301 B4: a lens that writes to its tree is a HARD FAILURE, not a warning"
+    },
+    {
+      "id": "M5 drop lens_isolation from the return contract",
+      "file": ".agents/skills/code-review-engine/SKILL.md",
+      "original": "lens_isolation:  worktree | mixed \u2014 <lens>: <mode>, \u2026 | shared \u2014 <why, when the runtime could not isolate>\n",
+      "mutated": "",
+      "unfiltered": true,
+      "case": "SCC-301 B3a: the engine's return states the isolation mode (SKILL.md)"
+    },
+    {
+      "id": "M6 drop lens_isolation from the recorded roster",
+      "file": ".agents/skills/code-review-engine/steps/step-04-record.md",
+      "original": "lens_isolation:  worktree | mixed \u2014 <lens>: <mode>, \u2026 | shared \u2014 <why, when the runtime could not isolate>\n",
+      "mutated": "",
+      "unfiltered": true,
+      "case": "SCC-301 B3b: ...and the recorded roster carries the same line (step-04)"
+    }
+  ]
+}
