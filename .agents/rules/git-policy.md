@@ -1,6 +1,6 @@
 ---
 name: git-policy
-description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<JIRA-KEY>-<slug>` branch off main; story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Daniel's in-the-moment 'approved' or via /cicd-close-story-merge-tree. The epic reaches `main` only through /cicd-push-e2e — full gate + E2E green + Daniel's sign-off."
+description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<JIRA-KEY>-epic-<N>-<slug>` branch off main (BOTH numbers: ticket AND sprint); story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Daniel's in-the-moment 'approved' or via /cicd-close-story-merge-tree. The epic reaches `main` only through /cicd-push-e2e — full gate + E2E green + Daniel's sign-off."
 trigger: model_decision
 # Protocol tier (rules/INDEX.md): conditional, not floor. Every gate it carries is ALSO
 # stated inline in AGENTS.md and constitution.md, so the stop binds even in a session
@@ -28,9 +28,31 @@ trigger: model_decision
 - **`main` is LIVE PRODUCTION and the ONLY long-lived branch — never work on it directly, never
   auto-target it, never branch a worktree straight from it for story work.** It stays deployable;
   on projects with CI/CD, a push to `main` IS a deploy.
-- **Each epic gets one short-lived branch: `epic/<JIRA-KEY>-<slug>`, cut from `main`** at epic
-  kickoff (`/cicd-create-epic-sprint`). All of the epic's stories integrate there. This is the
+- **Each epic gets one short-lived branch: `epic/<JIRA-KEY>-epic-<N>-<slug>`, cut from `main`** at
+  epic kickoff (`/cicd-create-epic-sprint`). All of the epic's stories integrate there. This is the
   "one place to send everything" — scoped to the epic, not eternal.
+
+  ⭐ **The name carries BOTH numbers, because they are different numbers and they do not track
+  each other.** `<JIRA-KEY>` is the epic's **ticket** (`AVCH-18`); `epic-<N>` is its **sprint /
+  BMAD epic number** (`epic-19`) — the one the board key, `sprint-status.yaml`, `epics.md` and
+  `_artifacts/epic_<N>/` are all filed under. A branch naming only one of them forces every reader
+  to hold the mapping in their head, and the two are close enough to look like a typo of each other:
+  `epic/AVCH-18-…` sitting under artifacts filed at `epic_19/` reads as drift on every glance.
+
+  ```text
+  epic/AVCH-18-epic-19-adk-2x-runtime
+       └ ticket  └ sprint  └ slug
+  ```
+
+  ⛔ **The `epic/` prefix is load-bearing — the sprint number goes in the SLUG, never in front of
+  it.** Every `$EPIC` resolution in this system globs `epic/*` (`git branch --list 'epic/*'`,
+  `for-each-ref 'refs/remotes/origin/epic/*'`), and `merge-target-guard.sh` classifies branches with
+  a `case` arm that is literally `epic/*)`. A branch named `epic-19/AVCH-18-…` matches **none** of
+  them: every resolution falls back to `origin/main` — the stale-ref defect SCC-165 swept out of this
+  family — and the **armed** merge-target guard classifies it `unknown`. Measured 2026-08-24 while
+  renaming Epic 19's branch: **147 references across 38 files**, including three git hooks,
+  `main_write_gate.py`, `closeout_preflight.py`, `ship_preflight.py` and six test files. Keeping the
+  prefix costs nothing and buys both numbers.
 - **Story work happens in a worktree on a `claude/<JIRA-KEY>-<slug>` branch cut from the epic
   branch**, and lands back on the epic branch at close-out (see "The landing").
 - **Ad-hoc work outside any epic** — quick fixes, toolkit/system maintenance — takes a short-lived

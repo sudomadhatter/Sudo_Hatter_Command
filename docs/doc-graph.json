@@ -10,9 +10,9 @@
     "edges": 701,
     "external": 39,
     "ambiguous": 165,
-    "dangling": 295,
+    "dangling": 296,
     "broken_paths": 71,
-    "unresolved_names": 224,
+    "unresolved_names": 225,
     "unresolvable": 6
   },
   "nodes": [
@@ -5974,6 +5974,10 @@
     {
       "from": ".agents/rules/git-policy.md",
       "target": "active-context.md"
+    },
+    {
+      "from": ".agents/rules/git-policy.md",
+      "target": "epics.md"
     },
     {
       "from": ".agents/rules/git-policy.md",
