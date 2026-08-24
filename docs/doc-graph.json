@@ -11,8 +11,8 @@
     "external": 30,
     "ambiguous": 181,
     "dangling": 297,
-    "broken_paths": 72,
-    "unresolved_names": 225,
+    "broken_paths": 70,
+    "unresolved_names": 227,
     "unresolvable": 6
   },
   "nodes": [
@@ -5934,7 +5934,7 @@
     },
     {
       "from": ".agents/commands/smh-tour.md",
-      "target": "_artifacts/_main/onboarding/tour-state.md"
+      "target": "tour-state.md"
     },
     {
       "from": ".agents/commands/smh-update-maps-indexes.md",
@@ -6354,7 +6354,7 @@
     },
     {
       "from": ".agents/workflows/smh-tour.md",
-      "target": "_artifacts/_main/onboarding/tour-state.md"
+      "target": "tour-state.md"
     },
     {
       "from": "docs/_scc_sops_prds/INDEX.md",

@@ -23,10 +23,10 @@ hundreds of lines that will become stale.
 
 ## State and resuming
 
-Look for `_artifacts/_main/onboarding/tour-state.md`. If it exists, read it and offer to resume at the
-first incomplete stop. If it does not exist, begin at Stop 0. After each checkpoint the operator
-accepts, write the completed stop, chosen command-center name, chosen project name, and relevant paths
-to that file. Never store credentials there.
+Look in `_artifacts/_main/onboarding/` for the runtime file named `tour-state.md`. If it exists, read
+it and offer to resume at the first incomplete stop. If it does not exist, begin at Stop 0. After each
+checkpoint the operator accepts, write the completed stop, chosen command-center name, chosen project
+name, and relevant paths to that file. Never store credentials there.
 
 Training mode is optional throughout. `/smh-training off` changes the voice, not the tour or system.
 
