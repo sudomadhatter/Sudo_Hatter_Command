@@ -25,7 +25,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _harness import Cases, TempDir  # noqa: E402
+from _harness import Cases, TempDir, utf8_env  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 HARNESS = HERE / "_harness.py"
@@ -128,8 +128,13 @@ def sandbox(root: Path, body: str, name: str = "test_fake.py") -> Path:
 
 
 def run(path: Path, *args: str) -> tuple[int, str]:
+    # ⛔ Encoding pinned on BOTH sides — see `_harness.utf8_env` (SCC-321). Block labels here
+    # carry `·`, and `text=True` alone decodes with the locale: on Windows that is cp1252 against
+    # a UTF-8 child, so every label came back as `BETA Â· one` and eight cases failed on strings
+    # that were never wrong.
     r = subprocess.run([sys.executable, str(path), *args],
-                       capture_output=True, text=True, errors="replace")
+                       capture_output=True, text=True, errors="replace",
+                       encoding="utf-8", env=utf8_env())
     return r.returncode, (r.stdout or "") + (r.stderr or "")
 
 

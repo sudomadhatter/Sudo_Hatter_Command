@@ -232,9 +232,26 @@ class Cases:
         return 1 if failed else 0
 
 
+def utf8_env(**extra: str) -> dict:
+    """`os.environ` with the child's text encoding PINNED to UTF-8 (SCC-321).
+
+    ⛔ `text=True` WITHOUT `encoding=` DECODES WITH THE LOCALE, and on Windows that is `cp1252`
+    while the child writes UTF-8 — so `·` came back as `Â·` and any case comparing a label
+    containing a non-ASCII character failed on a string that was never wrong, only mis-decoded.
+
+    Pinning ONE side is not enough, and that is the subtle half. This machine happens to export
+    `PYTHONIOENCODING=utf-8`, so the child writes UTF-8 and only the parent needed fixing; a
+    machine WITHOUT it writes `cp1252`, and a parent hard-coded to UTF-8 would then mis-decode in
+    the opposite direction. Both ends are pinned so the answer does not depend on either
+    machine's locale. On the Mac, where the locale is already UTF-8, all of this is a no-op.
+    """
+    return {**os.environ, "PYTHONIOENCODING": "utf-8", **extra}
+
+
 def run_script(name: str, *args: str) -> tuple[int, str]:
     r = subprocess.run([sys.executable, str(SCRIPTS / name), *args],
-                       capture_output=True, text=True, errors="replace")
+                       capture_output=True, text=True, errors="replace",
+                       encoding="utf-8", env=utf8_env())
     return r.returncode, (r.stdout or "") + (r.stderr or "")
 
 

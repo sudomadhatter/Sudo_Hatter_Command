@@ -280,6 +280,16 @@ ABSENT_BY_DESIGN = {
     # off." Flagging it asks the author to delete the warning. (Structurally it could never
     # resolve anyway: `.git` is pruned from the index, and in a worktree it is a FILE.)
     ".git/hooks": "named as the empty default core.hooksPath bypasses - the SOP's point",
+    # ⭐ THE PAIR IS THE POINT, AND NEITHER HALF CAN EVER RESOLVE (SCC-321). These name the
+    # CONVENTION a virtualenv follows - `bin` on POSIX, `Scripts` on Windows - which is the
+    # `code-standards` §6 rule that a venv path must be resolved and never hardcoded. Whichever
+    # machine reads the doc, the other machine's spelling is absent BY DEFINITION; and neither
+    # is a repo-relative path in the first place, since a real one lives at `backend/.venv/…`.
+    # So flagging them asks an author to delete the one sentence that stops the next agent
+    # hardcoding a Windows path into a script the Mac has to run - the same inversion
+    # DISCUSSED_AS_RETIRED exists to prevent, one tier down.
+    ".venv/bin": "names the POSIX half of the venv convention - code-standards §6",
+    ".venv/Scripts": "names the Windows half of the venv convention - code-standards §6",
 
     # -- class 2: PROSPECTIVE -- the doc is telling you to create it -------------------
     # Each of these sits in a sentence whose whole job is "make this". Flagging them asks
