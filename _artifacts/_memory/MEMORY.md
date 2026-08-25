@@ -61,7 +61,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [GitHub 408 on satellite wifi](github-408-on-satellite-uplink.md) — push times out mid-upload; chunk via scratch refs or wait for stable link.
 
 ## Testing
-- **A green or a red can lie** — [red can die pre-assertion](red-test-can-die-before-its-assertion.md) (setup failure masks bug) · [stubbed children = vacuous green](stubbed-children-make-green-vacuous.md) (mocks test nav only) · [piped gate hides exit code](piping-a-gate-hides-its-exit-code.md) (run gates bare) · [zsh doesn't word-split gate args](zsh-does-not-word-split-gate-args.md) (quote carefully) · [`echo` truncates at `\c`](echo-truncates-at-backslash-c.md) (use printf).
+- **A green or a red can lie** — [⭐⛔ a red FILE may have run NOTHING](suite-red-file-may-have-run-nothing.md) (file count hides 0 cases; read the per-file tally) · [red can die pre-assertion](red-test-can-die-before-its-assertion.md) (setup failure masks bug) · [stubbed children = vacuous green](stubbed-children-make-green-vacuous.md) (mocks test nav only) · [piped gate hides exit code](piping-a-gate-hides-its-exit-code.md) (run gates bare) · [zsh doesn't word-split gate args](zsh-does-not-word-split-gate-args.md) (quote carefully) · [`echo` truncates at `\c`](echo-truncates-at-backslash-c.md) (use printf).
 - **Source-grep guards are blind THREE ways** — [comments invert them](comment-literals-invert-source-grep-tests.md) (comment matches first) · [cannot see order](source-grep-guards-cannot-see-order.md) (moved guard passes) · [prose-pinning is vacuous](prose-pinning-guards-are-vacuous.md) (pin wiring, fail mutants first).
 - **Toolchain pins** — [rules tests need Java](firestore-rules-tests-need-java.md) (brew openjdk@17; JAVA_HOME in ~/.zshenv) · [Node 26 breaks vitest jsdom storage](node-26-breaks-vitest-jsdom-storage.md) (run Node 22 LTS).
 - **BDD** — [Vision Lock right-sized](bdd-vision-lock-rightsized.md) (vision lock mandatory, standalone .feature opt-in) · [sync step needs asyncio.run](bdd-sync-step-needs-asyncio-run.md) (skip-guarded red masks it).
@@ -70,7 +70,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - **Secrets in tests** — lesson from closed Gemini-key leak: **`setdefault` is wrong idiom for secrets** — assign unconditionally in conftest.
 - [full-suite contention](vitest-full-suite-contends-across-lanes.md) — locks per-stack; bg shells die on chat close.
 - **Spec + fixture conventions** — [eval negative controls](eval-harness-negative-control-convention.md) (_negative_control:true + NC_ id) · [E2E gate fiction](e2e-gate-fiction-test-guardrails.md) (report-only gate hid fiction spec) · [ATDD mocks match contract](atdd-mock-shape-must-match-backend-contract.md) · [domain-gated fixtures](domain-gated-fixtures-web-verify.md) (verify against primary sources).
-- [Windows-authored code hides POSIX bugs](windows-authored-code-hides-posix-bugs.md) — chmod, C:/ paths, ;, robocopy, bare python fail on POSIX.
+- **Portability runs BOTH ways** — [Windows-authored code hides POSIX bugs](windows-authored-code-hides-posix-bugs.md) (chmod, C:/ paths, ;, robocopy, bare python) · [⭐ Mac-authored code hides WINDOWS bugs](mac-authored-code-hides-windows-bugs.md) (CRLF at two seams, PATHEXT, `d / "C:"` IS `d`, SIGTERM undeliverable; fork behaviour, converge data).
 - [JWT last-char tamper is a no-op](jwt-tamper-last-char-is-a-noop.md) — last base64 char carries 4 bits; mutate leading chars.
 
 ## Code-change hazards
