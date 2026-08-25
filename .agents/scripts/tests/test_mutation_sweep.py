@@ -339,15 +339,28 @@ def main() -> int:
                     break
                 time.sleep(0.1)
             interrupt(proc)
+            # ⛔⛔ THE KILL-ON-TIMEOUT IS ITSELF A RESIDUE GENERATOR (SCC-321). The sweep restores
+            # in a `finally`; kill it DURING that and the file stays mutated — manufacturing
+            # exactly the state K3b2 asserts is impossible, and blaming the sweep for it. At 15 s
+            # this fired intermittently under `run_all`'s 61-way concurrency: the file passed
+            # alone, passed once in the suite, and failed the next. So the window is generous, and
+            # a timeout is reported as ITS OWN named failure rather than being silently converted
+            # into a red about the restore.
+            timed_out = False
             try:
-                proc.communicate(timeout=15)
+                proc.communicate(timeout=90)
             except subprocess.TimeoutExpired:
+                timed_out = True
                 hard_kill(proc)
                 proc.communicate()
             if IS_WINDOWS:
                 hard_kill(proc)      # the spawned test command outlives its parent — see hard_kill
             c.check("K3b the fixture really did reach the mutated state",
                     mutated, "the sweep never wrote the mutant - the case proves nothing")
+            c.check("K3b1 the interrupted sweep EXITED on its own, rather than being killed",
+                    not timed_out,
+                    "it did not exit within 90s of the interrupt, so it was killed - and a kill "
+                    "mid-restore leaves residue by itself, which makes K3b2 unreadable either way")
             c.check("K3b2 SIGTERM mid-sweep still RESTORES the file (trap/finally)",
                     PATTERN in (repo / SRC).read_text(encoding="utf-8"),
                     (repo / SRC).read_text(encoding="utf-8"))
