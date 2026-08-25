@@ -5,7 +5,6 @@
 
 ## ⛔ Read first
 - [TWO machines: Mac AND PC](two-machines-mac-and-pc.md) — shared docs read on both; python3 vs python; core.hooksPath is per-machine.
-- [⛔ hooksPath REVERTS to absolute on the Mac](hookspath-reverts-to-absolute-on-the-mac.md) — reds two suite files; check it BEFORE stamping a suite; no repo script writes it.
 
 ## Project stores
 <!-- Paths stay BACKTICKED, never markdown links: check_store() resolves every markdown link to a
