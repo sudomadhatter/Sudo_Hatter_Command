@@ -6,27 +6,27 @@ If you want to sync your installed Gemini/Antigravity extensions (plugins and sk
 
 First, run the export command to copy your installed extensions into this git repository:
 ```bash
-cd docs/migrations/gemini_extensions
+cd docs/migrations/antigravity_extensions
 ./sync-gemini-extensions.sh export
 ```
 
 Then, commit and push those files to your Git remote:
 ```bash
-git add gemini_extensions/
+git add docs/migrations/antigravity_extensions/
 git commit -m "Export latest Gemini extensions"
 git push
 ```
 
 ## 2. On the "Target" Device (The machine you want to update)
 
-First, pull the latest changes so you have the `gemini_extensions` folder from the source device:
+First, pull the latest changes so you have the `antigravity_extensions` folder from the source device:
 ```bash
 git pull
 ```
 
 Next, run the import command to copy those extensions into this machine's local Gemini configuration:
 ```bash
-cd docs/migrations/gemini_extensions
+cd docs/migrations/antigravity_extensions
 ./sync-gemini-extensions.sh import
 ```
 
