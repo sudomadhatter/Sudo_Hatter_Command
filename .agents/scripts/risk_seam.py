@@ -144,8 +144,12 @@ def _test_link_count(root: Path) -> int:
         # name the resolver never placed", this returned 0, and 0 is the value that means "the
         # graph has NO test-link data" — so `untested` listed every changed function including the
         # thoroughly tested ones, and the callers dutifully explained that the layer was broken.
-        # A separator-specific path test is never right; normalise, then ask.
-        subject = str((row[0] if row else "") or "").replace("\\", "/")
+        # A separator-specific path test is never right; normalise, then ask — and normalise
+        # only where `\` IS a separator. On POSIX it is a legal filename character, so rewriting
+        # it there would promote a bare name like `a\b` into something this reads as a path.
+        subject = str((row[0] if row else "") or "")
+        if os.name == "nt":
+            subject = subject.replace("\\", "/")
         if "/" not in subject:              # a bare name the resolver never placed
             continue
         base = subject.split("::", 1)[0].rsplit("/", 1)[-1]
