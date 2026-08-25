@@ -17,6 +17,18 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS))
 
+# ⛔ THE SUITE'S OWN CASE NAMES CONTAIN `⛔` AND `⭐`, AND cp1252 CANNOT ENCODE EITHER (SCC-321).
+# Windows gives a NON-CONSOLE stdout - a pipe, a redirect, `run_all.py`'s child - the locale
+# codec, so `check()` raises UnicodeEncodeError mid-print and the file dies part-run. Nothing
+# distinguishes that from an ordinary red, so it reads as a test failure about the code.
+# `run_all.py` pins its children through the environment; this pins the OTHER door - the single
+# file run by hand or by `mutation_sweep.py`, which never passes through the runner at all.
+# Windows-only: POSIX streams are already UTF-8, so the Mac is byte-identical.
+if os.name == "nt":  # pragma: no cover - platform branch
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+
 
 def _tree_guard() -> None:
     """SCC-190's wrong-tree refusal, at the one chokepoint every test file passes through.
@@ -239,11 +251,16 @@ def utf8_env(**extra: str) -> dict:
     while the child writes UTF-8 — so `·` came back as `Â·` and any case comparing a label
     containing a non-ASCII character failed on a string that was never wrong, only mis-decoded.
 
-    Pinning ONE side is not enough, and that is the subtle half. This machine happens to export
-    `PYTHONIOENCODING=utf-8`, so the child writes UTF-8 and only the parent needed fixing; a
-    machine WITHOUT it writes `cp1252`, and a parent hard-coded to UTF-8 would then mis-decode in
-    the opposite direction. Both ends are pinned so the answer does not depend on either
-    machine's locale. On the Mac, where the locale is already UTF-8, all of this is a no-op.
+    Pinning ONE side is not enough, and that is the subtle half: a child left on the locale
+    writes `cp1252`, and a parent hard-coded to UTF-8 then mis-decodes in the opposite
+    direction. Both ends are pinned here so the answer cannot depend on the machine's locale.
+    On the Mac, where the locale is already UTF-8, all of this is a no-op.
+
+    ⛔ An earlier draft of this docstring said "this machine happens to export
+    PYTHONIOENCODING=utf-8" and treated that as the reason only the parent needed fixing. **It
+    does not export it** — that was true of the one shell the fix was measured in, and believing
+    it is what let 22 files sit red on a bare run while a suite total of 61/61 stood recorded.
+    Nothing in this file may assume that variable is set; that is why it is passed explicitly.
     """
     return {**os.environ, "PYTHONIOENCODING": "utf-8", **extra}
 

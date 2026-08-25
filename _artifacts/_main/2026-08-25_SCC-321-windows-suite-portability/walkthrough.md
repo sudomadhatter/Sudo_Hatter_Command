@@ -15,7 +15,7 @@ run before anything lands. On this machine the gate had always been *"green exce
 which is indistinguishable from a real regression, and trains everyone to wave it through. No lane
 worked on this PC had ever had a fully green gate.
 
-## Eight live defects — in shipped code, not in tests
+## Nine live defects — in shipped code, not in tests
 
 The suite was authored on the Mac and this machine had never driven it, so nothing ever forced the
 portability question. Each of these was **silent by construction**:
@@ -30,6 +30,7 @@ portability question. Each of these was **silent by construction**:
 | `.agents/scripts/tests/_pf_fixtures.py` | shared `$ACLI_BIN` shipped **writable**, directly under a comment saying it was frozen |
 | `.agents/scripts/tests/_repo_template.py` | every template shipped a live path back to itself, and **nothing was ever frozen** |
 | `.agents/scripts/link-worktree-assets.py` | the same asset printed two different ways on the two machines |
+| `.agents/scripts/tests/run_all.py` + `_harness.py` | **the runner itself.** Both ends of the child pipe pinned at the locale codec, which cannot encode the `⛔`/`⭐` in the suite's own case names → files died mid-print and were scored as ordinary reds. **22 files at once**, found only by running bare at close-out |
 
 Plus `.agents/hooks/run-hook.sh`, where a Windows-absolute path fell to the relative branch and got
 the repo root glued in front of it.
@@ -66,6 +67,28 @@ the repo root glued in front of it.
   C5) recurred in `run-hook.sh` and `allow-readonly-chain.cd_ok`; *"`encoding="utf-8"` is
   load-bearing"* (SCC-160, fixed in `wf_common.git` with a comment explaining it) recurred in
   `main_write_gate.py`'s own local `git()`.
+- ⛔⛔ **THE CERTIFICATION ITSELF WAS ENVIRONMENT-DEPENDENT, AND THE CLOSE-OUT CAUGHT IT.** The
+  `61/61` recorded mid-lane was measured in a shell that exported `PYTHONIOENCODING=utf-8`. Run
+  **bare** — the way `/smh-close-task-merge-tree` and CI actually run it — the same tree scored
+  **39/61**, with 22 files red. Cause: this suite's own case *names* carry `⛔` (U+26D4) and `⭐`
+  (U+2B50); Windows gives a **non-console** stdout the locale codec, cp1252 can encode neither, and
+  `check()` raised `UnicodeEncodeError` mid-print. The file died part-run and was scored as one
+  ordinary red — indistinguishable from a genuine assertion failure, which is why every one of those
+  22 looked like a different bug.
+
+  `run_all.py` had a comment forbidding `encoding=` on the child pipe, on the grounds that parent and
+  child must share an encoding. **That invariant was right; the encoding it pinned them at was
+  wrong** — cp1252 cannot hold what the suite prints. Both ends are now pinned at UTF-8: `run_all.py`
+  sets it in `os.environ` before spawning (children inherit, as `WF_ON_MAIN` already relies on), and
+  `_harness.py` reconfigures the streams at import so the **single-file** door — the review loop, and
+  the only way `mutation_sweep.py` runs a test — is covered too. Both Windows-gated; POSIX streams
+  are already UTF-8.
+
+  ⭐ **The lesson is about the measurement, not the encoding.** A gate must be run in the environment
+  the gate actually runs in. A green obtained under an exported variable that the door does not set
+  certifies the shell, not the suite. It also means a `[sop-ok]`-clean lane with every gate green can
+  still be resting on a number that was never reproducible — the re-run at close-out is what made the
+  difference, and skipping it because "the suite was green yesterday" would have landed this.
 - **The kill-on-timeout manufactured the residue it denied.** `test_mutation_sweep` passed alone,
   passed once under `run_all`, and failed the next run — twice, in opposite directions, both times the
   harness racing a real subprocess under 61-way concurrency. Caught only by re-running rather than
@@ -73,7 +96,21 @@ the repo root glued in front of it.
 
 ## Verification
 
-- **Enforcement suite: 61/61 files** on Windows — three consecutive clean full-suite runs.
+Every total below was produced with **`env -u PYTHONIOENCODING`**, deliberately, so that no result
+here can depend on a variable the door does not set:
+
+| Gate | Result |
+|---|---|
+| `python .agents/scripts/tests/run_all.py` | **61/61 files**, exit 0 — twice consecutively, bare |
+| single-file door (`test_git_hooks.py` direct) | 163/163, exit 0 — the `mutation_sweep` / review-loop path |
+| `python .agents/scripts/workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, exit 0 |
+| `python .agents/scripts/check_maps.py --depth3-only --strict` | exit 0 |
+| `python .agents/scripts/check_links.py --base origin/main` | 137 path claims over 6 files — clean, exit 0 |
+
+**SOP currency:** this lane's commits carry `[sop-ok]`. Justified rather than reflexive — the page's
+instruction is already correct and already machine-aware (*"on the PC, `python …`"*, with no count
+to go stale), and nothing here changes what the operator types or what a gate permits. The code was
+wrong; the page was not.
 - No LLM code review ran on this lane, so there is **no `Verdict:` stamp** and the preflight's suite
   SKIP does not apply. The gate is run in full at close-out, which is the correct fallback.
 - **The POSIX control is CI, and it is automatic and blocking.**
