@@ -185,20 +185,97 @@ green, `allow_readonly_chain` **145/149** (only the Windows-path `cd` cases left
 file-level count is too coarse to show any of that, which is worth remembering when judging the next
 step by it.
 
-## 9. Remaining, classified
+## 9. Complete — 61/61 on Windows
 
-| Class | Work | Files |
+**Every file in §9's original classification is green.** Three consecutive full-suite runs at
+**61/61**, on Windows 11 Home 25H2, python 3.11.9, `sh` at `C:\Git\bin\sh.exe`. The lane opened at
+43/61.
+
+### 9.1 The classification was wrong in an instructive way
+
+The original six classes described *symptoms*. Two root causes accounted for most of them, and
+neither was in the table:
+
+| Root cause | Files it explained |
+|---|---|
+| **Text-mode newline translation** — `Path.write_text` and `subprocess(text=True, input=…)` both emit CRLF on Windows | `main_push_gate` and most of what looked like "assorted assertion failures" |
+| **A stub binary Windows cannot see or launch** — `PATHEXT`, and no shebang support | `jira_ticket`, `risk_seam`, `ship_preflight` — two of which ran **zero cases** |
+
+⭐ **The lesson worth keeping: a file reported as ONE failure may have run NOTHING.** `run_all`'s
+file-level count cannot distinguish "one bad assertion" from "died at import". Four files in this
+lane were in the second state, and their symptoms named the wrong cause every time.
+
+### 9.2 Live defects found — in shipped code, not in tests
+
+Each of these was **silent by construction**, which is why a suite nobody ran on this machine did
+not surface them:
+
+| Where | Defect | Consequence on Windows |
 |---|---|---|
-| 1b | `os.chmod` on Windows toggles only the read-only attribute — the fixture "freeze" does not hold | `test_repo_template` |
-| 2 | 41 uid-root ALLOW cases: on Windows the hook grants via `.claude/scratchpad-root`, not a uid root | `test_allow_scratchpad` |
-| 3c | 16 POSIX-bound gate fixtures (§8.3) | `test_main_push_gate` |
-| 4 | Windows path / drive-letter colon in command parsing | `test_allow_readonly_chain` (block Q), `test_cwd_escape_hook`, `test_evidence_extract`, `test_sops_prds_folder` |
-| 5 | `WinError 32` — unlink of an open file | `test_mutation_sweep` |
-| 6 | Undiagnosed | `test_gate_receipt`, `test_hooks_armed`, `test_install_git_hooks`, `test_jira_ticket`, `test_link_worktree_assets`, `test_main_write_gate_ci`, `test_risk_seam`, `test_ship_preflight`, `test_suite_runner` |
+| `guard-cwd-escape.py` | containment test compared raw strings and appended a **forward** slash | **Every `cd` refused.** `ask` is auto-DENY in headless mode, so the guard blocked `cd .agents/scripts` inside its own repo |
+| `allow-readonly-chain.py` | `cd_ok` spelled "absolute" as `startswith("/")` | The hook could **never** grant an in-workspace `cd` — it fails safe, so the only symptom is the prompt it exists to remove, on every command |
+| `main_write_gate.py` | local `git()` decoded with the **locale** codec, not UTF-8 | A non-ASCII artifacts path came back mangled, matched nothing, and **the lane was never judged** — a close-out reaching `main` with nothing looking at it |
+| `mutation_sweep.py` | restore handler on `SIGTERM`, which Windows **never delivers** | An interrupted sweep left a **live mutant on disk** — verbatim the SCC-144 incident the mechanism exists to prevent |
+| `risk_seam.py` | `"/" not in subject`; `.exists()` on an extensionless pipx path | Test-link count read 0 (= "no data", so `untested` listed everything); the tool reported **absent** on a machine that has it |
+| `_pf_fixtures.py` | launcher frozen inside the POSIX branch only | Shared `$ACLI_BIN` shipped **writable**, under a comment saying it was frozen |
+| `_repo_template.py` | `str(root)` vs git's **backslash-escaped** config value; exec-bit selector | Every template shipped a live path back to itself; **nothing was ever frozen** |
+| `link-worktree-assets.py` | `str(rel)` in printed output | The same asset printed two different ways on the two machines |
+
+### 9.3 Two recurrences of lessons this house had already written down
+
+- **"Absolute has two spellings"** — diagnosed under SCC-171/172, fixed in the push-gate scripts and
+  quoted verbatim in `test_main_push_gate`'s own case C5. It recurred in **`run-hook.sh`** and in
+  **`allow-readonly-chain.cd_ok`**, neither of which had a guard.
+- **"`encoding="utf-8"` is load-bearing on the PC"** — fixed in `wf_common.git` under SCC-160, with a
+  comment explaining it. `main_write_gate.py`'s own local `git()` never got it.
+
+⭐ Both are copies that drifted from a fixed sibling. The fix landed where it was found; nothing
+carried it to the other call sites.
+
+### 9.4 Where a platform fork was right, and where it was wrong
+
+The rule applied throughout: **fork behaviour, converge data.**
+
+- **Fork** where the platforms genuinely differ and no code changes that — a uid root cannot exist on
+  Windows, `PATHEXT` has no POSIX equivalent, `CreateProcess` appends `.exe` and nothing else, `:` is
+  illegal in a Windows filename, a junction is not a symlink. Both arms assert something real; neither
+  is a skip.
+- **Converge** where the divergence was accidental — line endings, stdin translation, output
+  separators. The Mac was already right. Forking there would mean writing CRLF and then teaching
+  every consumer to strip `\r`: preserving the bug and paying for it at every reader, forever.
+
+⛔ **And a fork that is not gated is a regression.** Three separator rewrites were written
+unconditionally at first. On POSIX a backslash is a legal **filename** character, so rewriting it
+there is not a separator fix but a path rewrite: `/ws\x` is a sibling file at `/`, and canonicalising
+it to `/ws/x` reads as *inside* a workspace rooted at `/ws`. A one-machine fix that widens the other
+machine's security guard is worse than the bug it closed. Gated in `433bf8fa` and `4f411e75`.
+
+### 9.5 Flake, caught by not trusting one green
+
+`test_mutation_sweep` passed alone, passed once under `run_all`, and failed the next run — twice, in
+opposite directions. Both were the harness racing a real subprocess under 61-way concurrency: once
+"the mutant had not been written yet", once "the restore had not finished, and the kill-on-timeout
+manufactured the residue the case denies". Windows are generous now, and **each race is its own named
+failure** rather than a red about the code. Verified with three consecutive clean full-suite runs.
 
 ---
 
-## ⛔ Awaiting approval
+## 10. ⛔ The Mac is the control, and it has NOT been run
 
-Per the ARTIFACTS gate this stops here. **Step 1 needs the operator regardless** — Developer Mode
-cannot be enabled from this session.
+**Nothing here is certified until `python3 .agents/scripts/tests/run_all.py` is green on the Mac at
+this branch.** §5 binds it and every commit message on this lane repeats it.
+
+The risk is auditable rather than guessed:
+
+| Class | Mac impact | Count |
+|---|---|---|
+| Guarded by an early `return` on `os.name`, or an untouched `else` arm | Cannot execute — byte-identical | most |
+| Same bytes, different code (`run_stdin_lf`, the `C:` path build, shim quoting) | POSIX text mode never translated, so the wire bytes are unchanged | 3 |
+| **Mac behaviour genuinely changes** | needs the control run | **2** |
+
+The two: **`sh_with_path`** (the shim now joins `$PATH` inside the shell rather than via `env=` — plain
+POSIX, but it is the Mac's path changing) and **`risk_seam._cli`** (`shutil.which(path=…)` instead of
+`.exists()`, so a *non-executable* file at `~/.local/bin/code-review-graph` is now skipped — strictly
+more correct, and pipx sets the exec bit).
+
+⛔ **This is an argument, not a measurement.** Run the Mac.
