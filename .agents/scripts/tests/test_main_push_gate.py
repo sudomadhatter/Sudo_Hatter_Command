@@ -25,7 +25,7 @@ import time
 import pathlib
 from pathlib import Path
 
-from _harness import Cases, TempDir
+from _harness import Cases, TempDir, posix_sh
 import hooks_armed  # SCC-110 — _harness puts .agents/scripts on sys.path
 
 REPO = Path(__file__).resolve().parents[3]
@@ -42,6 +42,11 @@ def sh(*args: str, cwd: Path, stdin: str = "") -> tuple[int, str]:
     r = subprocess.run(list(args), cwd=str(cwd), input=stdin,
                        capture_output=True, text=True, errors="replace")
     return r.returncode, (r.stdout or "") + (r.stderr or "")
+
+
+# The POSIX shell these git hooks are written for, resolved once (SCC-321). ⛔ Never the bare
+# string "sh": Windows has no `sh` on PATH, and subprocess RAISES rather than returning a code.
+SH = posix_sh() or "sh"
 
 
 def make_repo(tmp: Path, name: str = "work") -> tuple[Path, Path]:
@@ -129,8 +134,10 @@ def gate(d: Path, sha: str, ref: str = "refs/heads/main",
     the one arm where the gate checks nothing (SCC-172)."""
     if remote_sha is None:
         remote_sha = remote_main(d) or ZERO
-    sh_bin = shutil.which("sh") or shutil.which("bash") or "bash"
-    return sh(sh_bin, str(d / ".agents/scripts/git-hooks/pre-push-main-approval.sh"),
+    # ⛔ This read `shutil.which("sh") or shutil.which("bash") or "bash"`, and on Windows that
+    # tail resolves to the WSL launcher, which reads this drive as `/mnt/c` — see
+    # `_harness.posix_sh` (SCC-321). It also ignored its own answer at three other call sites.
+    return sh(SH, str(d / ".agents/scripts/git-hooks/pre-push-main-approval.sh"),
               "origin", "url", cwd=d, stdin=f"{ref} {sha} {ref} {remote_sha}\n")
 
 
@@ -275,6 +282,18 @@ def main() -> int:
                 "proves that stripping comments was load-bearing")
 
     if os.name == "nt":
+        # ⛔⛔ THIS SKIP USED TO BE SILENT, AND IT IS THE MAIN WRITE GATE (SCC-321).
+        # A bare `return c.finish()` here printed `15/15 passed`, exit 0, on a machine that had
+        # tested NONE of the gate's behaviour — every refusal rung, the token path, the real
+        # `git push`. `tests-must-gate-for-real` §5 names exactly this: a check that reports
+        # green having verified nothing is worse than no check, because the green is believed.
+        # Measured 2026-08-25 with a real `sh` resolved: 69 of 85 cases DO pass on Windows. The
+        # 16 that do not are POSIX-bound FIXTURES (a fake path chosen to be unwritable on POSIX
+        # is perfectly writable here), not platform limits — so this is owed work, not a wall.
+        c.check("NT · the BEHAVIOURAL half of the main write gate is NOT verified on Windows",
+                False,
+                "static checks only. 69/85 already pass here; the other 16 are POSIX-bound "
+                "fixtures. This FAILS on purpose — it must not read as green (SCC-321).")
         return c.finish()
 
     with TempDir() as tmp:
@@ -359,7 +378,8 @@ def main() -> int:
             # main wherever main appears in that list — not only when it is the first line.
             write_token(d, sha)
             r = subprocess.run(
-                ["sh", str(d / ".agents/scripts/git-hooks/pre-push-main-approval.sh"), "origin", "url"],
+                [SH, str(d / ".agents/scripts/git-hooks/pre-push-main-approval.sh"),
+                 "origin", "url"],
                 cwd=str(d), text=True, capture_output=True,
                 input=f"refs/heads/a {sha} refs/heads/a {ZERO}\n"
                       f"refs/heads/main {sha} refs/heads/main {remote_main(d)}\n"
@@ -384,7 +404,7 @@ def main() -> int:
 
         if c.block("MINT · the minter's own refusals"):
             # ── MINTER ───────────────────────────────────────────────────────────────────────
-            rc, out = sh("sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
+            rc, out = sh(SH,str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
                          "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x",
                          "--key", "SCC-77", "--operator-approval", "yes, merge SCC-77-x now", cwd=d)
             c.check("minter writes a token from main", rc == 0 and token_path(d).exists())
@@ -397,7 +417,7 @@ def main() -> int:
             # ⭐ SCC-37: the spend prints the words back — what claimed to authorise the merge is
             # visible in the push output, not only in a file nobody opens.
             # (re-mint for the echo check — the gate above consumed the token)
-            sh("sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
+            sh(SH,str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
                "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x",
                "--key", "SCC-77", "--operator-approval", "yes, merge SCC-77-x now", cwd=d)
             rc, out = gate(d, sha)
@@ -405,7 +425,7 @@ def main() -> int:
                     rc == 0 and 'AUTHORIZED BY OPERATOR: "yes, merge SCC-77-x now"' in out,
                     "a stretched quote must survive being read back at push time")
 
-            rc, out = sh("sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
+            rc, out = sh(SH,str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
                          "--branch", "chore/x", cwd=d)
             c.check("minter requires --command", rc != 0)
 
@@ -413,7 +433,7 @@ def main() -> int:
             # mint without the operator's verbatim words. "You can move the ticket to done" read as a
             # merge sign-off is the live failure this closes: the minter now demands the words
             # themselves, so an inference has nothing to type.
-            rc, out = sh("sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
+            rc, out = sh(SH,str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
                          "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x",
                          "--key", "SCC-77", cwd=d)
             c.check("minter REFUSES without operator approval in a non-TTY shell",
@@ -425,7 +445,7 @@ def main() -> int:
 
             # `-B`, not `-b`: `chore/SCC-77-x` is the staged lane and already exists.
             sh("git", "checkout", "-qB", "chore/SCC-77-off-main", cwd=d)
-            rc, out = sh("sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
+            rc, out = sh(SH,str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
                          "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x",
                          "--operator-approval", "merge it", cwd=d)
             c.check("minter refuses when HEAD is not main", rc != 0 and "not 'main'" in out,
@@ -455,7 +475,7 @@ def main() -> int:
             fake_common = "C:/Users/dan/Sudo_Hatter_Command/.git/worktrees/gate-cluster"
             shim_dir = make_git_shim(tmp, fake_common)
             r = subprocess.run(
-                ["sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
+                [SH, str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
                  "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x",
                  "--key", "SCC-77", "--operator-approval", "pc path check"],
                 cwd=str(d), text=True, capture_output=True,
@@ -504,7 +524,7 @@ def main() -> int:
                     "D2 question instead of the real one) — so the assertion is that it is UNMOVED")
 
             lane = stage_one_merge(d)
-            sh("sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
+            sh(SH,str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
                "--command", "/smh-close-task-merge-tree", "--branch", lane,
                "--key", "SCC-77", "--operator-approval", "yes - land it", cwd=d)
             rc, out = sh("git", "push", "origin", "main", cwd=d)
@@ -541,7 +561,7 @@ def main() -> int:
 
             # --- the happy path must still work, or the fix is worse than the bug ---
             merge_lane("chore/SCC-77-a")
-            rc, out = sh("sh", mint, "--command", "/smh-close-task-merge-tree",
+            rc, out = sh(SH,mint, "--command", "/smh-close-task-merge-tree",
                          "--branch", "chore/SCC-77-a", "--key", "SCC-77",
                          "--operator-approval", "yes - land it", cwd=d)
             c.check("minter accepts a single merge sitting on origin/main", rc == 0, out.strip()[:160])
@@ -554,7 +574,7 @@ def main() -> int:
             sh("git", "fetch", "-q", "origin", cwd=d)
             for lane in ("chore/SCC-77-b", "chore/SCC-77-c", "chore/SCC-77-d"):
                 merge_lane(lane)
-            rc, out = sh("sh", mint, "--command", "/smh-close-task-merge-tree",
+            rc, out = sh(SH,mint, "--command", "/smh-close-task-merge-tree",
                          "--branch", "chore/SCC-77-b", "--key", "SCC-77",
                          "--operator-approval", "yes - land it", cwd=d)
             c.check("minter REFUSES to mint for a batch of merges", rc != 0 and "exactly one merge" in out,

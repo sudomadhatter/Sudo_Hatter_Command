@@ -5,6 +5,7 @@ machine before anything is installed, which is exactly when the workflow scripts
 """
 from __future__ import annotations
 
+import functools
 import os
 import shutil
 import subprocess
@@ -184,6 +185,48 @@ def run_script(name: str, *args: str) -> tuple[int, str]:
     r = subprocess.run([sys.executable, str(SCRIPTS / name), *args],
                        capture_output=True, text=True, errors="replace")
     return r.returncode, (r.stdout or "") + (r.stderr or "")
+
+
+@functools.lru_cache(maxsize=1)
+def posix_sh() -> str | None:
+    """Absolute path to a POSIX shell that can read THIS machine's paths, or None (SCC-321).
+
+    ⛔ Never write `subprocess.run(["sh", ...])`. Windows has no `sh` on PATH, so that call
+    raises `FileNotFoundError [WinError 2]` — and because it raises rather than returning a
+    bad exit code, it takes the ENTIRE file down before a single case is scored. The file
+    reads as one failure in the summary; it is really "none of this ran".
+
+    ⛔ `bash` is not a fallback on Windows. `System32\\bash.exe` is the WSL launcher, and WSL
+    mounts this drive at `/mnt/c`, so a `C:\\...` argument resolves to nothing inside it. It
+    would fail later, and far less legibly, than finding no shell at all. Git for Windows
+    ships the shell these scripts were written for, so ask `git` where it lives instead of
+    guessing an install directory — the answer is right whether Git sits in `C:\\Git` or in
+    `C:\\Program Files\\Git`.
+    """
+    def usable(p: str | None) -> str | None:
+        if not p:
+            return None
+        if os.name == "nt" and Path(p).parent.name.lower() == "system32":
+            return None                       # the WSL launcher — a different filesystem view
+        return p
+
+    found = usable(shutil.which("sh"))
+    if found:
+        return found
+
+    if os.name == "nt":
+        try:
+            exec_path = subprocess.run(["git", "--exec-path"], capture_output=True,
+                                       text=True, timeout=15).stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            exec_path = ""
+        if exec_path:
+            # …/<git-root>/mingw64/libexec/git-core  ->  …/<git-root>/bin/sh.exe
+            candidate = Path(exec_path).parents[2] / "bin" / "sh.exe"
+            if candidate.is_file():
+                return str(candidate)
+
+    return usable(shutil.which("bash"))
 
 
 class TempDir:

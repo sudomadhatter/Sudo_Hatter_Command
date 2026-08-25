@@ -32,7 +32,7 @@ import subprocess
 import sys
 import tempfile
 
-from _harness import SCRIPTS, Cases
+from _harness import SCRIPTS, Cases, posix_sh
 
 # ⛔ Imported, not re-typed. The constants below are pinned as CLOSED SETS, and a pin that
 # restates the literal by hand drifts away from the module it claims to guard.
@@ -53,7 +53,14 @@ SID = "697c65e7-558e-4bf4-975f-ad474d8bb76d"
 # shapes red — because the runner's uid is not 501. A suite that can only pass on the machine that
 # wrote it proves nothing about the hook anywhere else, and neither does a mutation sweep run
 # against it. `FOREIGN_UID` is derived the same way, so it stays foreign wherever this runs.
-UID = os.getuid()
+# ⛔ …AND `os.getuid` DOES NOT EXIST ON WINDOWS (SCC-321). The hook itself already knows this —
+# it reads `getattr(os, "getuid", None)` and treats absence as NO GRANT via the uid root — but
+# this file called it at MODULE level, so on the PC it raised at import and not one of the 100+
+# cases below ran. The file was reported as a single failure; it was really "none of this
+# executed". A machine with no uid gets a stand-in here purely so the module loads; the cases
+# that genuinely depend on a uid root are POSIX-only and say so where they are skipped.
+_getuid = getattr(os, "getuid", None)
+UID = _getuid() if _getuid is not None else 0
 FOREIGN_UID = UID + 1
 PROJ = "-Users-sudohatter-Sudo-Hatter-Command"
 SB = f"/private/tmp/claude-{UID}/{PROJ}/{SID}/scratchpad"
@@ -517,14 +524,22 @@ def main() -> int:
         # at the MAIN checkout, which carries its own copy of this hook — so this block measured
         # main's file while reporting on the lane's, the wrong-tree class `_harness._tree_guard`
         # exists to prevent (SCC-263 review, Literal-Correctness Hunter).
-        p = subprocess.run(["sh", str(SCRIPTS.parent / "hooks" / "run-hook.sh"),
-                            ".agents/hooks/allow-scratchpad.py"],
-                           input=payload, capture_output=True, text=True,
-                           cwd=str(ROOT), env={**os.environ, "CLAUDE_PROJECT_DIR": str(ROOT)},
-                           errors="replace")
-        c.check("E2E · run-hook.sh dispatches it and it allows", allowed(p.stdout),
-                (p.stdout + p.stderr).strip()[:200])
-        c.check("E2E · exit 0 through the seam", p.returncode == 0, f"exit={p.returncode}")
+        # ⛔ Never `["sh", ...]` — see `_harness.posix_sh` (SCC-321). Windows has no `sh` on
+        # PATH, and the FileNotFoundError RAISES, killing the rest of this file uncounted.
+        sh_bin = posix_sh()
+        if sh_bin is None:
+            c.check("E2E · a POSIX shell is available to dispatch run-hook.sh", False,
+                    "no usable sh found — WSL's bash does not count, it cannot read a C:\\ path")
+        else:
+            p = subprocess.run([sh_bin, str(SCRIPTS.parent / "hooks" / "run-hook.sh"),
+                                ".agents/hooks/allow-scratchpad.py"],
+                               input=payload, capture_output=True, text=True,
+                               cwd=str(ROOT),
+                               env={**os.environ, "CLAUDE_PROJECT_DIR": str(ROOT)},
+                               errors="replace")
+            c.check("E2E · run-hook.sh dispatches it and it allows", allowed(p.stdout),
+                    (p.stdout + p.stderr).strip()[:200])
+            c.check("E2E · exit 0 through the seam", p.returncode == 0, f"exit={p.returncode}")
 
     return c.finish()
 
