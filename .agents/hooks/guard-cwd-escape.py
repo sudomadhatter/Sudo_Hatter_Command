@@ -171,7 +171,10 @@ ROOT_FILE = (".claude", "scratchpad-root")
 
 def is_scratchpad(target: str, root: str) -> bool:
     """True if target is inside this machine/session's scratchpad root."""
-    norm = posixpath.normpath(target)
+    # ⛔ `target` arrives ALREADY normalised by `os.path`, which on Windows returns BACKslashes —
+    # and every comparison below is `posixpath`, so `\private\tmp\…` matched none of them and the
+    # configured-root branch was unreachable on that machine (SCC-321). Re-spell before asking.
+    norm = posixpath.normpath(target.replace("\\", "/"))
     # 1. Configured scratchpad root if present
     path = os.path.join(root, *ROOT_FILE)
     try:
@@ -224,8 +227,23 @@ def leaves_workspace(arg: str, root: str, cwd: str) -> bool | None:
     target = os.path.normpath(arg if os.path.isabs(arg) else os.path.join(base, arg))
     if is_scratchpad(target, root):
         return False
+    # ⛔⛔ THE CONTAINMENT TEST MUST NOT CARE WHICH SLASH THE MACHINE USES (SCC-321).
+    # This compared raw strings and appended a FORWARD slash — while `os.path.normpath` on
+    # Windows returns BACKslashes. So `C:\ws\.agents` was tested for `C:\ws/` as a prefix,
+    # which is never true, and EVERY `cd` on that machine read as "leaves the workspace".
+    # This hook answers `ask`, and `ask` is an auto-DENY in headless mode: the effect was a
+    # guard that blocks `cd .agents/scripts` inside its own repo, on one of this system's two
+    # machines, while looking exactly like the guard working. The one-machine tests never saw it.
+    # Windows paths are also case-insensitive, so `c:\ws` and `C:\WS` are the same directory and
+    # a case-sensitive compare is the same false refusal wearing a different hat.
+    def canon(p: str) -> str:
+        p = p.replace("\\", "/").rstrip("/")
+        return p.casefold() if os.name == "nt" else p
+
+    t = canon(target)
     for r in {os.path.normpath(root), os.path.realpath(root)}:
-        if target == r or target.startswith(r.rstrip("/") + "/"):
+        r = canon(r)
+        if t == r or t.startswith(r + "/"):
             return False
     return True
 

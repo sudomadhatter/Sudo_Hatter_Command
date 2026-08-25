@@ -25,6 +25,7 @@ says so - it reads the real repo files.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import pathlib
@@ -69,15 +70,47 @@ SB_ALT = f"/tmp/claude-{UID}/{PROJ}/{SID}/scratchpad"
 REPO = "/Users/sudohatter/Sudo_Hatter_Command"
 
 
+NO_UID = _getuid is None
+DEFAULT_ROOT = f"/private/tmp/claude-{UID}"
+
+
 def call(command: str, tool: str = "Bash", raw: str | None = None,
-         session: str | None = SID) -> tuple[int, str]:
+         session: str | None = SID, root: str = DEFAULT_ROOT) -> tuple[int, str]:
+    """Drive the hook with a RESOLVABLE sandbox root on either machine (SCC-321).
+
+    ⛔⛔ WITHOUT THIS, EVERY REFUSAL CASE IN THIS FILE PASSES ON WINDOWS FOR THE WRONG REASON.
+    The hook's built-in root is `_uid_root()`, and `os.getuid` does not exist on Windows — so
+    `sandbox_root()` answers None, which means NO GRANT, which means the hook prints NOTHING.
+    Every `silent(out)` case — the twelve ESCAPES holes, the traversal rules, the metacharacter
+    ban — then passes without a single rule having been consulted. That is the shape
+    `tests-must-gate-for-real` §5 calls worse than no check: 100+ green cases certifying nothing,
+    on the machine where the hook is least exercised. (The ALLOW cases failed honestly, which is
+    the only reason the vacuum was visible at all.)
+
+    So where there is no uid, the root arrives by the OTHER supported route — the machine-local
+    `.claude/scratchpad-root` file, which `_configured_root()` reads and which needs no uid. The
+    rules under test are identical either way; only the resolver that supplied the root differs,
+    and `PLATFORM`/`CONFIG` below pin the resolvers themselves.
+
+    ⓘ This does NOT claim the hook grants anything on a real Windows box. It cannot: a native
+    `C:\\…` root is refused by `_configured_root` on purpose, and `\\` is a forbidden character.
+    Windows genuinely gets silence, and `PLATFORM` is where that is asserted.
+    """
     if raw is None:
         payload: dict = {"tool_name": tool, "tool_input": {"command": command}}
         if session is not None:
             payload["session_id"] = session
         raw = json.dumps(payload)
-    p = subprocess.run([sys.executable, str(HOOK)], input=raw,
-                       capture_output=True, text=True, errors="replace")
+    env = dict(os.environ)
+    with contextlib.ExitStack() as stack:
+        if NO_UID:
+            repo = stack.enter_context(tempfile.TemporaryDirectory())
+            cfg = pathlib.Path(repo, ".claude")
+            cfg.mkdir(parents=True, exist_ok=True)
+            (cfg / "scratchpad-root").write_text(root, encoding="utf-8")
+            env["CLAUDE_PROJECT_DIR"] = repo
+        p = subprocess.run([sys.executable, str(HOOK)], input=raw,
+                           capture_output=True, text=True, errors="replace", env=env)
     return p.returncode, (p.stdout or "") + (p.stderr or "")
 
 
@@ -135,7 +168,8 @@ def main() -> int:
 
     # ── A · the traffic the hook exists to permit ────────────────────────────────────────
     if c.block("A · real harness shapes are ALLOWED"):
-        for label, cmd in [
+        # A third element overrides the sandbox root for that case (see `the /tmp spelling`).
+        for label, cmd, *root in [
             ("mkdir -p, two dirs", f"mkdir -p {SB}/rt/notarepo {SB}/rt/lane"),
             ("bash a script", f"bash {SB}/rt/run.sh"),
             ("python3 with spaced flags", f"python3 {SB}/rt/h.py --repo {SB}/a --worktree {SB}/b"),
@@ -146,7 +180,12 @@ def main() -> int:
             ("cat", f"cat {SB}/out.txt"),
             ("head -20", f"head -20 {SB}/out.txt"),
             ("cp within the sandbox", f"cp {SB}/a {SB}/b"),
-            ("the /tmp spelling", f"bash {SB_ALT}/rt/run.sh"),
+            # ⛔ This one needs its own root where there is no uid (SCC-321). The built-in root
+            # regex accepts BOTH spellings because macOS symlinks `/tmp` -> `/private/tmp`; a
+            # configured root is one exact path, so `/tmp/…` has to be configured to be granted.
+            # The macOS alias is a macOS fact; what stays checked on both machines is that the
+            # shape logic handles this spelling once the root names it.
+            ("the /tmp spelling", f"bash {SB_ALT}/rt/run.sh", f"/tmp/claude-{UID}"),
             # These four were REFUSED before the second review and are ordinary harness spelling.
             # Each miss is a prompt this hook exists to remove, so they are pinned as ALLOWED.
             ("chmod -R with the mode after the flag", f"chmod -R 755 {SB}/rt"),
@@ -154,7 +193,7 @@ def main() -> int:
             ("tail -c with a separate count", f"tail -c 100 {SB}/out.txt"),
             ("-- end-of-options", f"rm -rf -- {SB}/rt"),
         ]:
-            code, out = call(cmd)
+            code, out = call(cmd, root=root[0] if root else DEFAULT_ROOT)
             c.check(f"A · {label} is allowed", allowed(out), out.strip()[:160])
             c.check(f"A · {label} exits 0", code == 0, f"exit={code}")
 
@@ -484,9 +523,21 @@ def main() -> int:
                 allowed(out), out.strip()[:160])
         # ⭐ And the Mac default is untouched when no file exists — the regression that matters
         # most, because every other case in this suite depends on it.
+        #
+        # ⛔ TWO ARMS, AND BOTH ARE REAL (SCC-321). "No file" means the built-in `_uid_root()`,
+        # which exists only where `os.getuid` does. On Windows the correct answer is the OPPOSITE
+        # one — no resolver, therefore no root, therefore no grant — so asserting the POSIX answer
+        # there was a red about the machine rather than about the code. Each machine pins the
+        # behaviour it actually has, and the uid-less arm is the safe direction: silence gives the
+        # operator back the ordinary approval prompt, which is what this hook promises never to add.
         _, out = call_in(f"cat {SB}/f")
-        c.check("CONFIG · with NO file the built-in POSIX root still grants",
-                allowed(out), out.strip()[:160])
+        if NO_UID:
+            c.check("CONFIG · with NO file and no uid there is NO root, so no grant",
+                    silent(out),
+                    "a machine with neither resolver must fall silent — never grant, never ask")
+        else:
+            c.check("CONFIG · with NO file the built-in POSIX root still grants",
+                    allowed(out), out.strip()[:160])
 
     if c.block("WIRING · the master and the settings entry agree on the single source"):
         master = ROOT / ".agents/hooks/allow-scratchpad.py"
@@ -537,9 +588,25 @@ def main() -> int:
                                cwd=str(ROOT),
                                env={**os.environ, "CLAUDE_PROJECT_DIR": str(ROOT)},
                                errors="replace")
-            c.check("E2E · run-hook.sh dispatches it and it allows", allowed(p.stdout),
+            # ⛔ THE SEAM IS WHAT THIS BLOCK IS FOR, AND IT IS ASSERTED ON BOTH MACHINES (SCC-321).
+            # `run-hook.sh` announces `<path> not found — skipped` and exits 0 when it cannot
+            # resolve the target — the exact shape of the Windows absolute-path bug this lane
+            # fixed. So "did it dispatch at all" is checked first and separately: without it, a
+            # silent non-dispatch and a silent hook are indistinguishable, and both exit 0.
+            c.check("E2E · run-hook.sh RESOLVED the hook (not 'not found — skipped')",
+                    "not found" not in (p.stdout + p.stderr),
                     (p.stdout + p.stderr).strip()[:200])
             c.check("E2E · exit 0 through the seam", p.returncode == 0, f"exit={p.returncode}")
+            # The DECISION forks with the machine, for the reason CONFIG spells out: this lane
+            # carries no `.claude/scratchpad-root` (it is per-machine and gitignored), so a box
+            # with no uid has no root to grant from and correctly says nothing.
+            if NO_UID:
+                c.check("E2E · and with no uid and no root file, it is SILENT through the seam",
+                        silent(p.stdout),
+                        "no root resolves here, so the only correct answer is no answer")
+            else:
+                c.check("E2E · run-hook.sh dispatches it and it allows", allowed(p.stdout),
+                        (p.stdout + p.stderr).strip()[:200])
 
     return c.finish()
 
