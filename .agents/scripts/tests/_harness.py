@@ -59,6 +59,56 @@ def _tree_guard() -> None:
           f"{'MAIN CHECKOUT' if is_main else 'worktree'} --")
 
 
+def _write_text_lf() -> bool:
+    """Make `Path.write_text` emit LF on Windows, as it already does on the Mac (SCC-321).
+
+    ⛔⛔ THIS IS THE SINGLE ROOT CAUSE OF MOST OF THIS SUITE'S WINDOWS FAILURES, AND IT IS
+    INVISIBLE AT EVERY CALL SITE. Python's text mode translates `\\n` to `os.linesep` on write,
+    so on Windows `p.write_text("minted=1756143820\\n")` puts `minted=1756143820\\r\\n` on disk.
+    The fixture LOOKS right in every editor and in `read_text()`, which translates back. Then a
+    POSIX consumer reads the field as `1756143820\\r`:
+
+        `$(( minted ))`  -> "the approval token's timestamp is not a number"   (the main write gate)
+        `#!/bin/sh\\r`    -> shebang names an interpreter that does not exist   (any written script)
+        `grep -x val`    -> no match, because the line ends in a carriage return
+
+    Every one of those reads as a REAL failure of the thing under test. The main write gate's
+    behavioural half failed 16 cases this way, and the diagnosis for each looked like a
+    different bug.
+
+    ⭐ WHY PATCH THE SEAM AND NOT 482 CALL SITES. This directory has 482 `write_text` calls
+    across 49 files. Every one of them is writing a fixture for a POSIX consumer, and every one
+    of them wants LF — there is no call site here that wants CRLF, because THE MAC HAS NEVER
+    WRITTEN ONE and the suite is green there. So this does not introduce a behaviour: it deletes
+    a platform divergence nobody chose, and makes the two machines write byte-identical
+    fixtures. Patching call sites instead would be 482 edits that the 483rd would undo.
+
+    Scoped deliberately: the test process only, writes only, and `newline=` still wins if a
+    caller passes it explicitly. `_harness` is the seam every file in this directory imports,
+    which is why it goes here and not in a file someone can forget to import.
+
+    Returns whether the patch was applied, so `test_suite_runner` can assert it is live — a
+    silent seam that silently stops working is the failure mode this whole suite exists to
+    catch.
+    """
+    if os.name != "nt":
+        return False                          # POSIX already writes LF; nothing to correct
+
+    original = Path.write_text
+
+    @functools.wraps(original)
+    def write_text(self, data, encoding=None, errors=None, newline=None):
+        return original(self, data, encoding=encoding, errors=errors,
+                        newline="\n" if newline is None else newline)
+
+    Path.write_text = write_text               # type: ignore[method-assign]
+    return True
+
+
+WRITES_LF = _write_text_lf()
+"""True when `Path.write_text` has been corrected to emit LF (Windows only) — see above."""
+
+
 NO_MATCH = 3
 """Exit code for a filter that selected NOTHING to run (SCC-156).
 
@@ -185,6 +235,76 @@ def run_script(name: str, *args: str) -> tuple[int, str]:
     r = subprocess.run([sys.executable, str(SCRIPTS / name), *args],
                        capture_output=True, text=True, errors="replace")
     return r.returncode, (r.stdout or "") + (r.stderr or "")
+
+
+def path_entry(p) -> str:
+    """`p` spelled the way a POSIX shell's `$PATH` can actually read it (SCC-321).
+
+    ⛔ A POSIX `$PATH` is COLON-separated, and a Windows path carries a colon at character two.
+    So `C:/Users/me/shim` in `$PATH` is not one entry — it is two, `C` and `/Users/me/shim`, and
+    neither exists. Nothing errors; the directory is simply never searched.
+
+    Git Bash reads `/c/Users/me/shim`, which has no colon and resolves to the same place.
+    On POSIX this is the identity function.
+    """
+    if os.name != "nt":
+        return str(p)
+    drive, rest = os.path.splitdrive(str(p))
+    if not drive:
+        return str(p).replace(os.sep, "/")
+    return f"/{drive[0].lower()}{rest.replace(os.sep, '/')}"
+
+
+def sh_with_path(sh: str, prepend, argv: list[str]) -> list[str]:
+    """An argv that runs `argv` under `sh` with `prepend` FIRST on `$PATH` (SCC-321).
+
+    ⛔⛔ PASSING PATH IN `env=` DOES NOT WORK ON WINDOWS, AND IT FAILS SILENTLY. `C:\\Git\\bin\\sh.exe`
+    rewrites the environment it is given and puts its OWN `/mingw64/bin:/usr/bin` at the FRONT — so
+    an injected shim lands behind the very binary it exists to shadow, the real one runs, and the
+    test measures the unshimmed system while reporting normally. Measured: `command -v git` answered
+    `/mingw64/bin/git` with the shim dir present but later in the list.
+
+    Setting `$PATH` INSIDE the started shell is after that rewrite, so it wins. Combined with
+    `path_entry` (a Windows path is unreadable in a colon-separated `$PATH`), the shim resolves.
+
+    `sh -c '<script>' <argv0> <args...>` is the POSIX form: `$0` is the name, `$@` the rest — hence
+    the `"sh"` placeholder before the real command.
+    """
+    return [sh, "-c", 'PATH="$1:$PATH"; shift; exec "$@"', "sh", path_entry(prepend), *argv]
+
+
+def run_stdin_lf(args, *, stdin: str = "", **kw) -> subprocess.CompletedProcess:
+    """Run `args` feeding `stdin` BYTE-EXACT, and hand back decoded text (SCC-321).
+
+    ⛔⛔ `subprocess.run(..., text=True, input="a b\\n")` DOES NOT SEND WHAT IT SAYS ON WINDOWS.
+    Text mode wraps the child's stdin in a `TextIOWrapper` with `newline=None`, which translates
+    `\\n` to `os.linesep` on write — so the child receives `a b\\r\\n`. It is the same defect as
+    `Path.write_text` (see `_write_text_lf`), reached by a completely different road, and it is
+    the one the main write gate died on.
+
+    ⭐ WHAT IT LOOKS LIKE, because it is worth recognising on sight. `pre-push` is fed
+    `<ref> <local> <ref> <remote>` on stdin; the trailing field arrived as `84ad225…\\r`, so the
+    gate's `[ "$parent1" != "$remote_sha" ]` was TRUE and it refused a perfectly good merge. Its
+    refusal then printed both values — and they looked IDENTICAL, because a carriage return just
+    moves the cursor to the start of the line. A diagnosis by reading the error message is
+    therefore guaranteed to be wrong: the message is honest, the terminal is not.
+
+    ⭐ WHY A HELPER AND NOT A SEAM PATCH like the `write_text` one. Neutralising this inside
+    `subprocess` means rebuilding the child's stdin wrapper after `Popen.__init__` has already
+    made it — two wrappers over one buffer, with the close/detach hazard that implies. That is
+    fragile magic in the file every test imports, which is a worse trade than nineteen explicit
+    call sites. Here the byte-exactness is *visible where it matters*.
+
+    Returns a `CompletedProcess` whose `stdout`/`stderr` are `str`, so it drops into a call site
+    that had `text=True, capture_output=True` unchanged.
+    """
+    kw.pop("text", None)
+    kw.pop("universal_newlines", None)
+    kw.pop("input", None)
+    kw.setdefault("capture_output", True)
+    r = subprocess.run(list(args), input=stdin.encode("utf-8"), **kw)
+    decode = lambda b: b.decode("utf-8", "replace") if isinstance(b, bytes) else b   # noqa: E731
+    return subprocess.CompletedProcess(r.args, r.returncode, decode(r.stdout), decode(r.stderr))
 
 
 @functools.lru_cache(maxsize=1)

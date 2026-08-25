@@ -25,7 +25,7 @@ import time
 import pathlib
 from pathlib import Path
 
-from _harness import Cases, TempDir, posix_sh
+from _harness import Cases, TempDir, posix_sh, run_stdin_lf, sh_with_path
 import hooks_armed  # SCC-110 — _harness puts .agents/scripts on sys.path
 
 REPO = Path(__file__).resolve().parents[3]
@@ -39,8 +39,10 @@ ZERO = "0" * 40
 
 
 def sh(*args: str, cwd: Path, stdin: str = "") -> tuple[int, str]:
-    r = subprocess.run(list(args), cwd=str(cwd), input=stdin,
-                       capture_output=True, text=True, errors="replace")
+    # ⛔ `input=stdin, text=True` would send `\r\n` on Windows — pre-push reads its refs off
+    # stdin, and the trailing `\r` rode into the remote sha, so the gate refused a good merge
+    # while PRINTING two values that looked identical. See `_harness.run_stdin_lf` (SCC-321).
+    r = run_stdin_lf(list(args), cwd=str(cwd), stdin=stdin)
     return r.returncode, (r.stdout or "") + (r.stderr or "")
 
 
@@ -158,6 +160,12 @@ def make_git_shim(tmp: Path, fake_common: str) -> Path:
     d = tmp / "shim"
     d.mkdir(exist_ok=True)
     shim = d / "git"
+    # ⛔ The delegate path is rewritten to forward slashes and QUOTED (SCC-321). `real` comes back
+    # from `shutil.which` as `C:\Git\cmd\git.exe`, and a bare backslash is an ESCAPE to the shell —
+    # `exec C:\Git\cmd\git.exe` runs `C:Gitcmdgit.exe`, which does not exist. Git Bash reads
+    # `C:/Git/cmd/git.exe` natively. Quoting covers an install under `C:\Program Files\Git`.
+    # (The shebang needs LF, which `_harness` now guarantees — a `#!/bin/sh\r` names no interpreter.)
+    delegate = str(real).replace("\\", "/")
     shim.write_text(
         "#!/bin/sh\n"
         "# Answer --git-common-dir with a Windows-shaped absolute path; delegate the rest.\n"
@@ -167,7 +175,7 @@ def make_git_shim(tmp: Path, fake_common: str) -> Path:
         "    exit 0\n"
         "  fi\n"
         "done\n"
-        f'exec {real} "$@"\n'
+        f'exec "{delegate}" "$@"\n'
     )
     shim.chmod(0o755)
     return d
@@ -281,20 +289,14 @@ def main() -> int:
                 "the comment-literal fixture is gone, so C5 is now an ordinary grep and no longer "
                 "proves that stripping comments was load-bearing")
 
-    if os.name == "nt":
-        # ⛔⛔ THIS SKIP USED TO BE SILENT, AND IT IS THE MAIN WRITE GATE (SCC-321).
-        # A bare `return c.finish()` here printed `15/15 passed`, exit 0, on a machine that had
-        # tested NONE of the gate's behaviour — every refusal rung, the token path, the real
-        # `git push`. `tests-must-gate-for-real` §5 names exactly this: a check that reports
-        # green having verified nothing is worse than no check, because the green is believed.
-        # Measured 2026-08-25 with a real `sh` resolved: 69 of 85 cases DO pass on Windows. The
-        # 16 that do not are POSIX-bound FIXTURES (a fake path chosen to be unwritable on POSIX
-        # is perfectly writable here), not platform limits — so this is owed work, not a wall.
-        c.check("NT · the BEHAVIOURAL half of the main write gate is NOT verified on Windows",
-                False,
-                "static checks only. 69/85 already pass here; the other 16 are POSIX-bound "
-                "fixtures. This FAILS on purpose — it must not read as green (SCC-321).")
-        return c.finish()
+    # ⛔⛔ THERE WAS AN `if os.name == "nt": return c.finish()` HERE, AND IT WAS SILENT (SCC-321).
+    # It printed `15/15 passed`, exit 0, on a machine that had tested NONE of this gate's
+    # behaviour — no refusal rung, no token path, no real `git push`. This is the MAIN WRITE
+    # GATE; `tests-must-gate-for-real` §5 names exactly that shape: a check reporting green
+    # having verified nothing is worse than no check, because the green is believed.
+    # The behavioural half now runs on BOTH machines. Where a case genuinely cannot hold the
+    # same shape on Windows, it says so AT THE CASE and still asserts something real — never by
+    # returning early from the file.
 
     with TempDir() as tmp:
         d, bare = make_repo(tmp)
@@ -377,11 +379,11 @@ def main() -> int:
             # pre-push receives ONE LINE PER REF. A push carrying several refs must still be gated on
             # main wherever main appears in that list — not only when it is the first line.
             write_token(d, sha)
-            r = subprocess.run(
+            r = run_stdin_lf(
                 [SH, str(d / ".agents/scripts/git-hooks/pre-push-main-approval.sh"),
                  "origin", "url"],
-                cwd=str(d), text=True, capture_output=True,
-                input=f"refs/heads/a {sha} refs/heads/a {ZERO}\n"
+                cwd=str(d),
+                stdin=f"refs/heads/a {sha} refs/heads/a {ZERO}\n"
                       f"refs/heads/main {sha} refs/heads/main {remote_main(d)}\n"
                       f"refs/heads/z {sha} refs/heads/z {ZERO}\n")
             c.check("multi-ref push is gated on main wherever it appears",
@@ -474,18 +476,39 @@ def main() -> int:
             token_path(d).unlink(missing_ok=True)
             fake_common = "C:/Users/dan/Sudo_Hatter_Command/.git/worktrees/gate-cluster"
             shim_dir = make_git_shim(tmp, fake_common)
-            r = subprocess.run(
-                [SH, str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
-                 "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x",
-                 "--key", "SCC-77", "--operator-approval", "pc path check"],
-                cwd=str(d), text=True, capture_output=True,
-                env={**os.environ, "PATH": f"{shim_dir}{os.pathsep}{os.environ.get('PATH', '')}",
-                     "GIT_TERMINAL_PROMPT": "0"})
+            # ⛔ The shim goes on `$PATH` INSIDE the shell, not through `env=` (SCC-321). Git Bash
+            # rewrites the environment it is handed and puts its own `/mingw64/bin` first, so an
+            # `env=`-injected shim sits BEHIND the real git and never runs — the block then measures
+            # the unshimmed system and only C4, the control, can tell. See `_harness.sh_with_path`.
+            r = run_stdin_lf(
+                sh_with_path(SH, shim_dir,
+                             [str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
+                              "--command", "/smh-close-task-merge-tree",
+                              "--branch", "chore/SCC-77-x",
+                              "--key", "SCC-77", "--operator-approval", "pc path check"]),
+                cwd=str(d), env={**os.environ, "GIT_TERMINAL_PROMPT": "0"})
             c_out = (r.stdout or "") + (r.stderr or "")
             # `C:/…` is a RELATIVE path on POSIX, so a *correct* run resolves it under the repo
             # root too — both spellings are checked, and neither can exist because the parents
             # do not.
-            wrote = token_path(d).is_file() or (d / "C:").exists()
+            #
+            # ⛔⛔ NEVER WRITE `d / "C:"` (SCC-321). Windows pathlib reads a component that is a
+            # bare drive letter as a DRIVE, not a name, so the join COLLAPSES: `d / "C:"` is `d`
+            # itself. Both uses of it in this block were silently wrong, in opposite directions:
+            #
+            #   `wrote = … or (d / "C:").exists()`      -> `d.exists()` -> ALWAYS TRUE, so C1-C3
+            #        passed vacuously on every Windows run and only C4, the control, noticed.
+            #   `shutil.rmtree(d / "C:", …)`            -> `shutil.rmtree(d)` -> DELETED THE WHOLE
+            #        TEST REPO, with `ignore_errors=True` swallowing the evidence. The E2E block
+            #        below then pushed from a directory with no `.git` and reported four failures
+            #        that were really this one line. It passes in isolation and fails in the file.
+            #
+            # Built from ONE string, because the collapse is a rule about JOINING: parsing keeps a
+            # trailing `C:` as a name. On Windows that name is illegal, so the artifact can never
+            # exist — which is the correct answer here, since a repo-root-prefixed `C:/…` write is
+            # exactly what the OS refuses. The bug still shows up in C2/C3.
+            bug_artifact = Path(f"{d}{os.sep}C:")
+            wrote = token_path(d).is_file() or bug_artifact.exists()
             banner = ("token minted" in c_out) or ("🔑" in c_out)
 
             c.check("C1 · the repo root is NOT prepended to an absolute `C:/` path",
@@ -503,7 +526,10 @@ def main() -> int:
                     not wrote,
                     "a token WAS written — C2/C3 proved nothing this run")
             token_path(d).unlink(missing_ok=True)
-            shutil.rmtree(d / "C:", ignore_errors=True)
+            # The guard is the POINT, not belt-and-braces: this exact call, one character
+            # different, recursively deleted the repo every case below depends on.
+            if bug_artifact != d and bug_artifact.is_dir():
+                shutil.rmtree(bug_artifact, ignore_errors=True)
 
         if c.block("E2E · a REAL git push through core.hooksPath at a real remote"):
             # ── END TO END: a real `git push`, through core.hooksPath, at a real remote ───────
