@@ -135,8 +135,17 @@ def authorised_branch(name: str, keys: list[str]) -> tuple[bool, str]:
 
 
 def git(repo: Path, *args: str) -> tuple[int, str]:
+    # ⛔⛔ `encoding="utf-8"` IS LOAD-BEARING, AND THIS HELPER DRIFTED AWAY FROM ITS SIBLING.
+    # `wf_common.git` has carried this exact fix since SCC-160, in these words: git writes UTF-8
+    # (paths, messages, `--porcelain -z` filenames), while `text=True` alone decodes with the
+    # LOCALE codec — cp1252 on Windows. This local copy never got it, so `_artifacts/…-café/`
+    # came back as `cafÃ©`, matched no artifacts path, and the lane was NEVER JUDGED: a close-out
+    # reaching main with nothing looking at it, which is the failure case A9 exists to catch,
+    # recurring one layer below the check. `-c core.quotepath=false` is already passed at the
+    # call sites; it stops git OCTAL-quoting the path and cannot help with how we decode it.
+    # (SCC-321)
     r = subprocess.run(["git", *args], cwd=str(repo), capture_output=True,
-                       text=True, errors="replace")
+                       text=True, encoding="utf-8", errors="replace")
     return r.returncode, (r.stdout or "").strip()
 
 

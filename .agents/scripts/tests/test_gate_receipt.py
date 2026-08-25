@@ -560,8 +560,14 @@ def main() -> int:
             code, out = gr("run", "--story", "21.8b", "--gate", "foreign",
                            "--project", str(repo), "--cwd", str(other),
                            "--", sys.executable, "-c", "print('ok')")
+            # ⛔ SEPARATOR-AGNOSTIC, because ONE message legitimately carries BOTH spellings
+            # (SCC-321). The `--cwd` tree is git's answer, and git-for-windows returns
+            # `C:/Users/...`; `--project` is echoed back as the operator TYPED it, which from a
+            # Windows shell is `C:\Users\...`. Both trees really are named — an `os.sep` search
+            # could only ever find one of them, and which one is an accident of who produced it.
+            seen = out.replace("\\", "/") if os.name == "nt" else out
             c.check("W4 a --cwd in a DIFFERENT repo refuses and names both trees",
-                    code != 0 and f"{os.sep}repo" in out and f"{os.sep}other" in out,
+                    code != 0 and "/repo" in seen and "/other" in seen,
                     f"exit={code}\n{out[-300:]}")
 
             # Review finding (x2): a --cwd outside ANY git repo fell back to --project
