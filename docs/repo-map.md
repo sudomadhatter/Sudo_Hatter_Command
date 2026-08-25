@@ -119,7 +119,7 @@ Sudo_Hatter_Command/
       install_guides/
           [9 files: .mdx9 | e.g. antigravity-ide-extension-migration.md]
       scripts/
-          [9 files: .ps1x4, .pyx2, .shx2, .patchx1 | e.g. Export-EnvMaster.ps1]
+          [11 files: .ps1x5, .pyx3, .shx2, .patchx1 | e.g. Arm-HooksPath.ps1]
         [1 files: .mdx1 | e.g. INDEX.md]
       [10 files: .mdx9, .jsonx1 | e.g. AGENTS.md]
   scratch/
