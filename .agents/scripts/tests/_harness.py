@@ -5,6 +5,7 @@ machine before anything is installed, which is exactly when the workflow scripts
 """
 from __future__ import annotations
 
+import contextlib
 import functools
 import os
 import shutil
@@ -235,6 +236,41 @@ def run_script(name: str, *args: str) -> tuple[int, str]:
     r = subprocess.run([sys.executable, str(SCRIPTS / name), *args],
                        capture_output=True, text=True, errors="replace")
     return r.returncode, (r.stdout or "") + (r.stderr or "")
+
+
+@contextlib.contextmanager
+def unset_hooks_path():
+    """Make a fixture repo's `core.hooksPath` genuinely UNSET, whatever this machine sets.
+
+    ⛔⛔ A FIXTURE CANNOT ASSUME "UNSET" — IT HAS TO ENFORCE IT (SCC-321). `core.hooksPath` is
+    inherited from GLOBAL config, and this system's own setup instructions tell the operator to
+    run `git config --global core.hooksPath .githooks` so every repo on a machine is armed. Where
+    that was done, a brand-new temp repo is born ARMED: the "fresh clone has no gates" fixture
+    describes a state the machine cannot produce, and cases asserting an error find none.
+
+    The real damage is that such a case measures the OPERATOR'S GIT CONFIG rather than the code.
+    It flips between machines, and between two clones on one machine, for reasons that have
+    nothing to do with what is under test. `GIT_CONFIG_GLOBAL` / `GIT_CONFIG_SYSTEM` pointed at an
+    empty file is git's own supported way to say "read no config except this repo's" (git ≥ 2.32).
+
+    ⓘ Separately worth the operator's attention: `hooks_armed`'s own REMEDY constant says NOT
+    `--global`, because a relative path set globally arms `.githooks/` in every repo on the
+    machine — including third-party clones that happen to ship that directory.
+    """
+    saved = {k: os.environ.get(k) for k in ("GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM")}
+    with tempfile.TemporaryDirectory() as cfg:
+        empty = Path(cfg, "empty-gitconfig")
+        empty.write_text("", encoding="utf-8")
+        os.environ["GIT_CONFIG_GLOBAL"] = str(empty)
+        os.environ["GIT_CONFIG_SYSTEM"] = str(empty)
+        try:
+            yield
+        finally:
+            for k, v in saved.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
 
 
 def fake_exe(bindir, name: str, body: str) -> str:

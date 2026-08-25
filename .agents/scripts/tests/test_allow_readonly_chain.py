@@ -366,7 +366,12 @@ def main() -> int:
         # exactly that set, so the two can never disagree about one command. A RELATIVE target is
         # refused outright: there is no cwd here to resolve it against.
         if c.block("Q · multi-line commands, `cd` inside the workspace, and `echo`"):
-            inside = str(root)
+            # ⛔ POSIX-spelled, because this string goes INSIDE a shell command (SCC-321). The
+            # Bash tool runs Git Bash on Windows, where `\` is the ESCAPE character — so a native
+            # `C:\Users\me\ws` reaches the hook (and the shell) as `C:Usersmews`. The payload's
+            # root stays native, because that is what Claude Code actually sends; `cd_ok` is what
+            # reconciles the two spellings.
+            inside = str(root).replace("\\", "/")
             for label, cmd in [
                 ("a leading cd to the workspace root",
                  f"cd {inside}\ngit status --short\nls -la"),
