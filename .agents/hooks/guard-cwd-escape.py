@@ -173,8 +173,10 @@ def is_scratchpad(target: str, root: str) -> bool:
     """True if target is inside this machine/session's scratchpad root."""
     # ⛔ `target` arrives ALREADY normalised by `os.path`, which on Windows returns BACKslashes —
     # and every comparison below is `posixpath`, so `\private\tmp\…` matched none of them and the
-    # configured-root branch was unreachable on that machine (SCC-321). Re-spell before asking.
-    norm = posixpath.normpath(target.replace("\\", "/"))
+    # configured-root branch was unreachable on that machine (SCC-321). Re-spell before asking —
+    # but ONLY there: on POSIX a backslash is a legal filename character, and rewriting it would
+    # turn a file named `ws\x` into the path `ws/x` and widen what counts as "inside".
+    norm = posixpath.normpath(target.replace("\\", "/") if os.name == "nt" else target)
     # 1. Configured scratchpad root if present
     path = os.path.join(root, *ROOT_FILE)
     try:
@@ -236,9 +238,15 @@ def leaves_workspace(arg: str, root: str, cwd: str) -> bool | None:
     # machines, while looking exactly like the guard working. The one-machine tests never saw it.
     # Windows paths are also case-insensitive, so `c:\ws` and `C:\WS` are the same directory and
     # a case-sensitive compare is the same false refusal wearing a different hat.
+    # ⛔ WINDOWS-ONLY, AND THE GUARD IS NOT COSMETIC. On POSIX a backslash is an ORDINARY
+    # FILENAME CHARACTER, so rewriting it there would WEAKEN this hook: `/ws\x` is a sibling
+    # file named `ws\x` sitting at `/`, and canonicalising it to `/ws/x` would read as INSIDE a
+    # workspace rooted at `/ws`. A separator fix for one machine must never become a path
+    # rewrite on the other.
     def canon(p: str) -> str:
-        p = p.replace("\\", "/").rstrip("/")
-        return p.casefold() if os.name == "nt" else p
+        if os.name != "nt":
+            return p.rstrip("/")
+        return p.replace("\\", "/").rstrip("/").casefold()
 
     t = canon(target)
     for r in {os.path.normpath(root), os.path.realpath(root)}:
