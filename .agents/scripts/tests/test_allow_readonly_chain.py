@@ -36,7 +36,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from _harness import SCRIPTS, Cases, TempDir
+from _harness import SCRIPTS, Cases, TempDir, posix_sh
 
 ROOT = SCRIPTS.parents[1]
 HOOK = SCRIPTS.parent / "hooks" / "allow-readonly-chain.py"
@@ -366,7 +366,12 @@ def main() -> int:
         # exactly that set, so the two can never disagree about one command. A RELATIVE target is
         # refused outright: there is no cwd here to resolve it against.
         if c.block("Q · multi-line commands, `cd` inside the workspace, and `echo`"):
-            inside = str(root)
+            # ⛔ POSIX-spelled, because this string goes INSIDE a shell command (SCC-321). The
+            # Bash tool runs Git Bash on Windows, where `\` is the ESCAPE character — so a native
+            # `C:\Users\me\ws` reaches the hook (and the shell) as `C:Usersmews`. The payload's
+            # root stays native, because that is what Claude Code actually sends; `cd_ok` is what
+            # reconciles the two spellings.
+            inside = str(root).replace("\\", "/")
             for label, cmd in [
                 ("a leading cd to the workspace root",
                  f"cd {inside}\ngit status --short\nls -la"),
@@ -537,24 +542,35 @@ def main() -> int:
 
     # ── E2E · through the seam Claude Code actually uses ────────────────────────────────────
     if c.block("E2E · the hook answers correctly through run-hook.sh"):
-        with TempDir() as tmp:
-            # ⛔ The fixture rules must live where `CLAUDE_PROJECT_DIR` points, because that is
-            # what the hook reads - but run-hook.sh resolves the SCRIPT relative to the same
-            # variable. So the script is dispatched by absolute path here and the variable is
-            # left pointing at the fixture, which is the only way both halves stay honest.
-            root = seed(tmp)
-            payload = json.dumps({"tool_name": "Bash",
-                                  "tool_input": {"command": "git diff | grep -n def"},
-                                  "session_id": "fixture"})
-            p = subprocess.run(["sh", str(SCRIPTS.parent / "hooks" / "run-hook.sh"),
-                                str(HOOK)],
-                               input=payload, capture_output=True, text=True,
-                               cwd=str(ROOT), errors="replace",
-                               env={**os.environ, "CLAUDE_PROJECT_DIR": str(root),
-                                    "HOME": str(root), "USERPROFILE": str(root)})
-            c.check("E2E · run-hook.sh dispatches it and it allows", allowed(p.stdout),
-                    (p.stdout + p.stderr).strip()[:200])
-            c.check("E2E · exit 0 through the seam", p.returncode == 0, f"exit={p.returncode}")
+        # ⛔ Never `["sh", ...]` (SCC-321): Windows has no `sh` on PATH, and the resulting
+        # FileNotFoundError RAISES — killing every remaining case in this file rather than
+        # failing one. A NAMED failure, never a silent skip: any machine with git installed
+        # has a POSIX shell, so "none found" is a real finding about the machine.
+        sh = posix_sh()
+        if sh is None:
+            c.check("E2E · a POSIX shell is available to dispatch run-hook.sh", False,
+                    "no usable sh found — WSL's bash does not count, it cannot read a C:\\ path")
+        else:
+            with TempDir() as tmp:
+                # ⛔ The fixture rules must live where `CLAUDE_PROJECT_DIR` points, because
+                # that is what the hook reads - but run-hook.sh resolves the SCRIPT relative
+                # to the same variable. So the script is dispatched by absolute path here and
+                # the variable is left pointing at the fixture, which is the only way both
+                # halves stay honest.
+                root = seed(tmp)
+                payload = json.dumps({"tool_name": "Bash",
+                                      "tool_input": {"command": "git diff | grep -n def"},
+                                      "session_id": "fixture"})
+                p = subprocess.run([sh, str(SCRIPTS.parent / "hooks" / "run-hook.sh"),
+                                    str(HOOK)],
+                                   input=payload, capture_output=True, text=True,
+                                   cwd=str(ROOT), errors="replace",
+                                   env={**os.environ, "CLAUDE_PROJECT_DIR": str(root),
+                                        "HOME": str(root), "USERPROFILE": str(root)})
+                c.check("E2E · run-hook.sh dispatches it and it allows", allowed(p.stdout),
+                        (p.stdout + p.stderr).strip()[:200])
+                c.check("E2E · exit 0 through the seam", p.returncode == 0,
+                        f"exit={p.returncode}")
 
     return c.finish()
 

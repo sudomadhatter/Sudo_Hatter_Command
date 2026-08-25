@@ -22,13 +22,15 @@ import subprocess
 import sys
 from pathlib import Path
 
-from _harness import Cases, TempDir, run_script
+from _harness import Cases, TempDir, run_script, unset_hooks_path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import hooks_armed  # noqa: E402 — _harness puts .agents/scripts on sys.path
 import wf_common as wf  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[3]
+
+
 
 # ⚠ THE EXEC-BIT CASES CANNOT RUN ON THE PC, AND SHIPPING THEM RED WAS THE BUG (SCC-140).
 # `is_executable` returns True for any existing file on Windows — correctly: git-for-windows
@@ -117,7 +119,10 @@ def main() -> int:
         c.check("A · live repo has no ERROR findings", not errs(live), str(errs(live)))
 
     # ── B · core.hooksPath unset — the fresh-clone case ───────────────────────────────────
-    with TempDir() as d:
+    # ⛔ `unset_hooks_path()` or this case measures the OPERATOR'S GLOBAL CONFIG (SCC-321): a temp
+    # repo inherits `core.hooksPath` from it, and this system's setup tells the operator to set
+    # exactly that globally — so on such a machine the "fresh clone" fixture is born ARMED.
+    with TempDir() as d, unset_hooks_path():
         seed(d, arm=False)
         r = hooks_armed.scan(d)
         c.check("B · unset hooksPath is NOT armed", r["armed"] is False)
@@ -208,7 +213,7 @@ def main() -> int:
     # task_preflight's VERDICT prints "clear to close out and merge" only when the error count
     # is zero, so an ERROR provably removes it. Assert the propagation here, and assert the
     # wiring by running preflight for real — a source grep would prove neither.
-    with TempDir() as d:
+    with TempDir() as d, unset_hooks_path():        # see B — the fixture must ENFORCE "unset"
         seed(d, arm=False)
         rep = wf.Report()
         hooks_armed.check(d, rep)
@@ -473,13 +478,16 @@ def main() -> int:
     # dispatcher as "absent from the directory git actually reads (None)". A fresh clone is
     # the first time anyone reads this output, and it opened with four lines of noise
     # printing the word None around the one line that mattered.
-    with TempDir() as d:
+    with TempDir() as d, unset_hooks_path():
         seed(d, arm=False)
         r = hooks_armed.scan(d)
         c.check("Y · an unset hooksPath is ONE error, not one per hook", len(errs(r)) == 1,
                 f"{len(errs(r))} errors: {errs(r)}")
+        # ⛔ Guarded, not indexed blind. `errs(r)[0]` on an empty list raises IndexError, which
+        # takes the WHOLE FILE down before any later case is scored — so a machine whose global
+        # config arms every repo reported one failure that was really "nothing after this ran".
         c.check("Y · ...and it is the one naming the actual cause",
-                "core.hooksPath is UNSET" in errs(r)[0], str(errs(r)))
+                bool(errs(r)) and "core.hooksPath is UNSET" in errs(r)[0], str(errs(r)))
         c.check("Y · ...and no finding prints the word None at the operator",
                 not any("(None)" in m for m in errs(r)), str(errs(r)))
 

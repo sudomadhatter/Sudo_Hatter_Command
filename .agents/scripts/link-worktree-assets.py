@@ -275,18 +275,24 @@ def do_link(worktree: Path, repo: Path, copy_env: bool, require_assets: bool = F
     for src, kind in assets:
         rel = src.relative_to(repo)
         dst = worktree / rel
+        # ⛔ `as_posix()` in every PRINTED path, matching `placed_rels` below (SCC-321). `str(rel)`
+        # renders `backend\.venv` on Windows and `backend/.venv` on the Mac, so this tool's output
+        # said something different on each machine about the same asset — and anything reading it
+        # (a doc, a receipt, an operator following a runbook) has to know which one it is looking
+        # at. git prints POSIX separators on Windows for the same reason.
+        shown = rel.as_posix()
         if not dst.parent.is_dir():
-            print(f"  ! {rel} — its parent dir is not in the worktree, skipped")
+            print(f"  ! {shown} — its parent dir is not in the worktree, skipped")
             unplaceable += 1
             continue
         if dst.exists() or dst.is_symlink():
-            print(f"  = {str(rel):<24} already present — left alone")
+            print(f"  = {shown:<24} already present — left alone")
             skipped += 1
         else:
             how = link_dir(src, dst) if kind == "dir" else link_file(src, dst, copy_env)
-            print(f"  + {str(rel):<24} {how}")
+            print(f"  + {shown:<24} {how}")
             linked += 1
-        placed_rels.append(rel.as_posix())
+        placed_rels.append(shown)
         env_symlinked = env_symlinked or (kind == "file" and dst.is_symlink())
         shared_node_modules = shared_node_modules or (rel.name == "node_modules" and dst.exists())
 

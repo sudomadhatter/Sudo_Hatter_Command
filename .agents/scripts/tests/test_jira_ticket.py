@@ -33,7 +33,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _harness import Cases, TempDir  # noqa: E402
+from _harness import Cases, TempDir, fake_exe  # noqa: E402
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS))
@@ -94,10 +94,16 @@ def acli_stub(d: Path, log: Path):
     happened to satisfy a scheme-anchored regex that the real output can never satisfy. Every
     upload case passes `--site/--email` explicitly, so nothing else covered the gap: `attach` with
     a perfectly good token died at "could not determine the Jira site" on the real machine while
-    the suite stayed green. A fixture that does not match the contract is not coverage."""
-    p = d / "acli-stub"
-    p.write_text(
-        "#!/usr/bin/env python3\n"
+    the suite stayed green. A fixture that does not match the contract is not coverage.
+
+    ⛔ AND ON WINDOWS A SHEBANG SCRIPT IS NOT AN EXECUTABLE (SCC-321). This wrote `acli-stub`
+    carrying `#!/usr/bin/env python3`, which Windows has no way to honour — so the stub never ran,
+    the `argv.json` every case below reads was never written, and THE FILE DIED at
+    `FileNotFoundError` before scoring a single case. It was reported as one failure; it was
+    really "none of this executed". `fake_exe` keeps the shebang on POSIX and puts a `.cmd`
+    launcher on `PATHEXT` for Windows."""
+    return Path(fake_exe(
+        d, "acli-stub",
         "import json, sys, pathlib\n"
         f"pathlib.Path({str(log)!r}).write_text(json.dumps(sys.argv[1:]), encoding='utf-8')\n"
         "if 'status' in sys.argv:\n"
@@ -105,9 +111,7 @@ def acli_stub(d: Path, log: Path):
         "    print('  Site: sudo-command.atlassian.net')\n"
         "    print('  Email: t@example.com')\n"
         "    print('  Authentication Type: api_token')\n"
-        "sys.exit(0)\n", encoding="utf-8")
-    p.chmod(0o755)
-    return p
+        "sys.exit(0)\n"))
 
 
 class Upload(BaseHTTPRequestHandler):
@@ -405,16 +409,15 @@ def main() -> int:
                         "re-run outside the sandbox to verify it")
             else:
                 base = f"http://127.0.0.1:{srv2.server_address[1]}"
-                stub2 = d / "acli-stub2"
-                stub2.write_text(
-                    "#!/usr/bin/env python3\n"
+                # ⛔ `fake_exe`, not a bare shebang script — Windows cannot run one (SCC-321).
+                stub2 = fake_exe(
+                    d, "acli-stub2",
                     "import sys\n"
                     "if 'status' in sys.argv:\n"
                     "    print('OK Authenticated')\n"
                     f"    print('  Site: {base}')\n"
                     "    print('  Email: t@example.com')\n"
-                    "sys.exit(0)\n", encoding="utf-8")
-                stub2.chmod(0o755)
+                    "sys.exit(0)\n")
                 Upload.reply = b'[{"filename": "plan.md", "id": "1"}]'
                 r = run("--acli", str(stub2), "attach", "--key", "SCC-288",
                         "--file", str(d / "plan.md"),

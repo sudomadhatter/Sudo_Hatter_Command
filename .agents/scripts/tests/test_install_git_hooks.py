@@ -15,7 +15,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from _harness import Cases, TempDir
+from _harness import Cases, TempDir, unset_hooks_path
 
 REPO = Path(__file__).resolve().parents[3]
 INSTALLER_PATH = REPO / "docs" / "migrations" / "scripts" / "install_git_hooks.py"
@@ -82,7 +82,11 @@ def main() -> int:
 
     # ── 2 · single repo arming ───────────────────────────────────────────────────────
     if c.block("SCC-115 · 2 · arming a single repo sets core.hooksPath"):
-        with TempDir() as d:
+        # ⛔ `unset_hooks_path()` or the "initially unset" assertion measures the OPERATOR'S GLOBAL
+        # CONFIG, not the installer (SCC-321). A temp repo INHERITS `core.hooksPath`, and this
+        # system tells the operator to set exactly that globally — so on such a machine the
+        # fixture is born armed and the case is red for a reason the installer cannot control.
+        with TempDir() as d, unset_hooks_path():
             seed_fixture_repo(d, has_hooks=True)
             c.check("initially core.hooksPath is unset", git("config", "--get", "core.hooksPath", cwd=d) == "")
 
@@ -94,7 +98,7 @@ def main() -> int:
 
     # ── 3 · verify-only flag preserves config ────────────────────────────────────────
     if c.block("SCC-115 · 3 · --verify-only inspects without writing config"):
-        with TempDir() as d:
+        with TempDir() as d, unset_hooks_path():   # see block 2 — the fixture must ENFORCE unset
             seed_fixture_repo(d, has_hooks=True)
             res_verify = install_git_hooks.arm_single_repo(d, verify_only=True)
             c.check("verify_only does not set hooksPath", res_verify["hooksPath"] == "")
