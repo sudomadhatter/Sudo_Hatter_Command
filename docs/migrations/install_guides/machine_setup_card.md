@@ -14,8 +14,10 @@
 powershell -File docs/migrations/scripts/Install-GitHooks.ps1   # Windows
 bash docs/migrations/scripts/install-git-hooks.sh             # Mac
 
-# Or set directly via git:
-git config --global core.hooksPath .githooks
+# Or arm one repo by hand:
+python3 docs/migrations/scripts/arm_hooks_include.py .   # PC: python
+
+# NEVER `git config core.hooksPath .githooks` — see below.
 ```
 
 **Why this is first.** Every gate we have — the Jira key check, the encoding check, and the

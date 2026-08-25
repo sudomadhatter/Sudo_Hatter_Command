@@ -195,8 +195,10 @@ here reads `origin/main` — a remote-tracking ref, true regardless of what any 
    consulted. **First command on any new clone:**
 
    ```bash
-   git config core.hooksPath .githooks    # relative — an absolute path cannot survive the next clone
+   python3 docs/migrations/scripts/arm_hooks_include.py .    # PC: python
    ```
+
+   ⛔ NOT `git config core.hooksPath .githooks`. That writes the key into `.git/config`, and Claude Code's worktree setup parses that file, resolves the relative value to an ABSOLUTE one and writes it back to the SHARED config — after which every worktree runs the MAIN checkout's hooks instead of its own, so a lane's gates are not the gates being enforced on it. The installer puts the value in an INCLUDED file that git follows and a plain ini reader does not (SCC-323).
 
    It is **loudly** off rather than silently off: `run_all.py` asserts `core.hooksPath` is set *and*
    relative, so the enforcement suite stays RED until you arm it.

@@ -68,7 +68,15 @@ SCRIPT_DIR = ".agents/scripts/git-hooks"
 # NOT `--global`. A relative path set globally arms `.githooks/` in EVERY repo on the machine,
 # including third-party clones that happen to ship that directory. Per-repo is what the rest of
 # this system actually does — see `.githooks/post-commit` and `new-project.ps1`.
-REMEDY = "git config core.hooksPath .githooks"
+# ⛔ NOT `git config core.hooksPath .githooks`. That writes the key into .git/config, and
+# Claude Code's worktree setup parses that file, resolves the relative value to an ABSOLUTE
+# one and writes it back to the SHARED config — after which every worktree runs the MAIN
+# checkout's hooks instead of its own, so a lane's gates are not the gates being enforced on
+# it. The arming script puts core.hooksPath in an INCLUDED file that git follows and a plain
+# ini reader does not, so the rewrite never fires (SCC-323).
+REMEDY = ("python3 docs/migrations/scripts/arm_hooks_include.py <repo>  (PC: python) — "
+          "it sets core.hooksPath the way that survives a worktree; do NOT set it with a "
+          "bare `git config core.hooksPath`")
 
 # ⛔ DECLARED, not derived — and that is deliberate. `core.hooksPath` tells you which hook FILES
 # git runs. Nothing on disk tells you which inner script a `*-ENFORCE` flag arms, because the

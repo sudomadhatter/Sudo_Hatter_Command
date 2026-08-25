@@ -96,6 +96,25 @@ def main() -> int:
             c.check("arm_single_repo has zero errors", len(res_arm["errors"]) == 0)
             c.check("git config reflects .githooks", git("config", "--get", "core.hooksPath", cwd=d) == ".githooks")
 
+            # ⛔⛔ THE EFFECTIVE VALUE ALONE PASSES ON THE BROKEN ARRANGEMENT (SCC-323). Claude
+            # Code's worktree setup parses .git/config, resolves a relative core.hooksPath to an
+            # ABSOLUTE one and writes it back to the SHARED config — after which every worktree
+            # runs the MAIN checkout's hooks instead of its own. It can only do that when the key
+            # is IN .git/config. So "armed" has two halves: git resolves .githooks, AND the key is
+            # not sitting in the file that gets rewritten. Assert both, or the installer is free to
+            # regress to a bare `git config` and every case above stays green.
+            cfg = (d / ".git" / "config").read_text(encoding="utf-8")
+            c.check("the key is NOT written into .git/config - that key IS the rewrite trigger",
+                    "hooksPath" not in cfg, cfg)
+            c.check("it is reached through an include git follows", "hooks.conf" in cfg, cfg)
+            c.check("and the included file carries the RELATIVE value",
+                    "hooksPath = .githooks" in (d / ".git" / "hooks.conf").read_text(encoding="utf-8"))
+
+            # idempotent: arming twice must not stack includes or change the answer
+            install_git_hooks.arm_single_repo(d, verify_only=False)
+            cfg2 = (d / ".git" / "config").read_text(encoding="utf-8")
+            c.check("arming twice is a no-op", cfg2 == cfg and cfg2.count("hooks.conf") == 1, cfg2)
+
     # ── 3 · verify-only flag preserves config ────────────────────────────────────────
     if c.block("SCC-115 · 3 · --verify-only inspects without writing config"):
         with TempDir() as d, unset_hooks_path():   # see block 2 — the fixture must ENFORCE unset

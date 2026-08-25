@@ -19,7 +19,7 @@ Two halves:
 Called standalone (`--store <path>`), and by the advisory `.githooks/post-checkout`,
 `post-merge` and `post-rewrite` hooks — which always exit 0, because a post-* hook cannot
 veto an operation that already happened; the value is that a human SEES the shout within
-one command. Hooks are inert until `git config core.hooksPath .githooks` (per machine).
+one command. Hooks are inert until `arm_hooks_include.py` has run here (per machine).
 """
 from __future__ import annotations
 
