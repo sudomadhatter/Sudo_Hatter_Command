@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: e09cdc62-ac2b-4838-bec1-339add00efb0
-  modified: 2026-07-25T19:17:01.151Z
+  modified: 2026-08-25T03:53:34.008Z
 ---
 
 AGY_AVIATIONCHAT production (`aviationchat-database`) holds **real beta users, not test data**.
@@ -22,6 +22,14 @@ Two further traps a blanket wipe would have sprung:
 2. The three admin identities (`super_admin`/owner, a `school_admin`, and a demo account) are
    **interleaved in the same Firebase Auth list** as the learners — they are not in a separate bucket.
    Deleting "all Auth accounts" locks the operator out of the admin console.
+
+**Update 2026-08-24 (story 19.3 ③ decision):** the operator restated the claim — "we only have
+testing data there we have no users … even the NDAs are tests" — and ruled the nested
+`lessons/{id}/session_feedback_log` rows wipeable on that basis. The 19.3 wipe honors this memory's
+guards REGARDLESS of which reading is true: it never deletes `users/{uid}` docs, `nda_signatures`
+stays keep-listed, and deletion is allowlist-only. So the ruling was safe to apply as scoped. The
+open tension (operator's "all test data" vs the 2026-07-20 audit's 6 NDA-signed docs) matters only
+if a users/-or-NDA wipe is ever requested — then this memory's audit-first rule still governs.
 
 **How to apply:** never bulk-delete `users/` or Auth from a stated assumption. Run the read-only audit
 first (`python -m backend.scripts.firebase_user_manager list`), show the operator the real inventory,

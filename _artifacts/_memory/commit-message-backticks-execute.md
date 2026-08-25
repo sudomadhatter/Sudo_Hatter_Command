@@ -34,3 +34,15 @@ prove it with `git branch --list` and `git ls-remote --heads origin`.
 Relates to [[commit-and-push-are-one-action]] and [[piping-a-gate-hides-its-exit-code]] — all three are
 the same lesson: the shell is a participant in your command, and its exit code or side effects are not
 the ones you assumed.
+
+## ⛔ Same substitution, second door: an UNQUOTED bash heredoc (2026-08-24, AVCH-33)
+
+`python3 - <<PY` (delimiter unquoted) substitutes backticks in the ENTIRE heredoc body before
+python runs: a Python string literal containing `` `temp:` `` executed `temp:` as a command
+mid-script and corrupted the assignment. Cure: **`<<'PY'` — quote the delimiter** whenever the body
+contains backticks/`$`; pass dynamic values via `export VAR` + `os.environ`.
+
+**And the compounding failure:** an edit script that does `open(path,"w")` then raises has already
+TRUNCATED the file to 0 bytes — a `write(None)` TypeError after a bad `s.replace()` chain emptied a
+91-line walkthrough (recovered via `git checkout HEAD --`). Cure: assert every replace anchor
+BEFORE opening for write, and never build `s` with conditional expressions that can yield None.
