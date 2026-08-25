@@ -5,7 +5,8 @@
 # is sealed, so it can never block or corrupt a commit; every error is swallowed so a broken recorder
 # is invisible to your workflow. The journal is a CACHE — check_maps.py (git diff vs anchor) stays truth.
 #
-# Enable per repo (once):  git config core.hooksPath .githooks
+# Enable per machine (once):  python3 docs/migrations/scripts/arm_hooks_include.py .
+#   (PC: python. NOT a bare `git config core.hooksPath` - see SCC-323.)
 # It is shared/tracked, so every clone that runs that one command gets the recorder.
 
 # Same probe order as the two armed gates (SCC-49): python3 -> python -> py. This one is a

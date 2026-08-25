@@ -247,7 +247,7 @@ through each as needed:
 - ### ⛔ **The commit gates — do this FIRST, it is one command** *(added 2026-08-08, SCC-31)*
 
   ```bash
-  git config --global core.hooksPath .githooks
+  python3 docs/migrations/scripts/arm_hooks_include.py .   # PC: python
   ```
 
   **Why this leads the list.** Every commit gate we have — the Jira key check, the encoding
@@ -258,12 +258,22 @@ through each as needed:
   weeks producing unkeyed commits and stale docs, and the first symptom is a Jira board with
   holes in it.
 
-  Setting it **globally with a RELATIVE value** is the fix, and the relative part is the trick:
-  git resolves it against *each repo's own working-tree root*, so this one command arms every
-  clone on the machine — the lobby, every project, and every repo you clone later — while
-  staying a harmless no-op in any repo that has no `.githooks/` directory. A per-repo
-  `git config core.hooksPath .githooks` also works but has to be repeated forever, which is how
-  it ended up set in three of four repos here.
+  ⛔ **Do not arm it with `git config core.hooksPath .githooks`** — not locally, and not with
+  `--global`. Two separate reasons, both measured (SCC-323):
+
+  - **The local form gets rewritten.** Claude Code's worktree setup parses `.git/config`, finds
+    the relative value, resolves it to an **absolute** path and writes it back to the **shared**
+    config. Every worktree then runs the **main checkout's** hooks instead of its own, so a
+    lane's gates are not the gates being enforced on it.
+  - **The global form breaks the test suite.** A global value is inherited by every temporary
+    repo the enforcement suite creates, so its negative controls — the cases asserting
+    *"core.hooksPath is unset"* — can no longer be reached. Measured: 58/60, with
+    `test_hooks_armed.py` and `test_install_git_hooks.py` red for that reason alone.
+
+  The arming script routes the value through an included file instead: `.git/config` gains
+  `[include] path = hooks.conf`, and the relative value lives in `hooks.conf`. Git follows
+  `include.path`; a plain ini reader does not. Run it per repo, or bare from the lobby to do
+  every repo that has a `.githooks/`.
 
   **Verify it fires** (from the lobby, on a throwaway branch — a rejected commit is a no-op,
   your staged files are untouched):
@@ -275,8 +285,10 @@ through each as needed:
   git checkout - && git branch -D tmp/gate-check
   ```
 
-  If the first one *succeeds*, the gates are not armed on this machine — re-run the config
-  command and check `git config --global core.hooksPath` reads `.githooks`.
+  If the first one *succeeds*, the gates are not armed on this machine — re-run the arming
+  script and check that `git config --get core.hooksPath` reads `.githooks` **and** that
+  `grep -c hooksPath .git/config` reads `0`. Both halves matter: the value being right while
+  the key still sits in `.git/config` is exactly the state the next worktree rewrites.
 
 - **Python's name differs per OS.** The Mac has **only `python3`** (no bare `python`, not even in
   a login shell); a python.org install on Windows has **only `python`**; `py` is the Windows

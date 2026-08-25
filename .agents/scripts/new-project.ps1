@@ -44,7 +44,10 @@ try {
   # Hooks are per-clone AND per-machine: git never carries core.hooksPath. Arm it now so the encoding
   # guard and the commit-msg Jira gate are live from the first commit. (The Jira gate stays SILENT
   # until .agents/jira.conf exists — see .agents/jira.conf.example for the 4-step arming procedure.)
-  git config core.hooksPath .githooks | Out-Null
+  # ⛔ NOT `git config core.hooksPath .githooks`: that key, sitting in .git/config, is what
+  # Claude Code's worktree setup finds, resolves to an ABSOLUTE path and writes back to the
+  # SHARED config - after which every worktree runs the MAIN checkout's hooks (SCC-323).
+  & (Join-Path $PSScriptRoot '..\..\docs\migrations\scripts\Arm-HooksInclude.ps1') -Repos @('.') | Out-Null
   git add -A                            | Out-Null
   git commit -q -m "chore: scaffold $Name from the thin project skeleton" | Out-Null
 } finally { Pop-Location }

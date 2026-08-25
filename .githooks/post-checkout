@@ -7,7 +7,8 @@
 # that a human SEES the regression within one command. The checker keeps a per-worktree
 # baseline in the git dir and SHOUTS files that were present last check and are gone now.
 #
-# Enable per machine (once):  git config core.hooksPath .githooks
+# Enable per machine (once):  python3 docs/migrations/scripts/arm_hooks_include.py .
+#   (PC: python. NOT a bare `git config core.hooksPath` - see SCC-323.)
 # Same interpreter probe as every other hook here: python3 -> python -> py (two machines).
 PY=""
 for c in python3 python py; do

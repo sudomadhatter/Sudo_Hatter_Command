@@ -51,15 +51,20 @@ def git_common_dir(repo: Path) -> Path | None:
     return Path(out)
 
 
-def arm(repo: Path) -> str:
+def arm_repo(repo: Path) -> tuple[bool, str]:
+    """Point `repo` at its own .githooks/ via the include arrangement. Idempotent.
+
+    Returns (ok, detail). `ok` is False for a real failure only — a repo with no .githooks/ to
+    point at is not a failure, it is nothing to do, and it reports ok with a SKIP detail.
+    """
     if not (repo / ".git").exists():
-        return f"SKIP  {repo}  (not a git repo)"
+        return True, "SKIP  (not a git repo)"
     if not (repo / ".githooks").is_dir():
-        return f"SKIP  {repo}  (no .githooks/ to point at)"
+        return True, "SKIP  (no .githooks/ to point at)"
 
     gitdir = git_common_dir(repo)
     if gitdir is None:
-        return f"ERROR {repo}  (could not resolve the git dir)"
+        return False, "could not resolve the git dir"
 
     config = gitdir / "config"
     conf = gitdir / CONF_NAME
@@ -78,12 +83,20 @@ def arm(repo: Path) -> str:
         config.write_text(text.rstrip("\n") + f"\n[include]\n\tpath = {CONF_NAME}\n",
                           encoding="utf-8")
 
-    # 4. verify by asking GIT, not by trusting the write
-    rc, effective = git(repo, "config", "--get", "core.hooksPath")
+    # 4. verify by asking GIT, not by trusting the write. BOTH halves matter: an effective
+    #    `.githooks` with the key still sitting in .git/config is exactly the state the next
+    #    worktree rewrites, so checking the effective value alone would pass on the broken shape.
+    _, effective = git(repo, "config", "--get", "core.hooksPath")
     visible = "hooksPath" in config.read_text(encoding="utf-8")
     ok = effective == ".githooks" and not visible
-    return (f"{'OK   ' if ok else 'FAIL '} {repo}  effective={effective or '(unset)'}  "
-            f"visible-in-.git/config={visible}")
+    return ok, f"effective={effective or '(unset)'}  visible-in-.git/config={visible}"
+
+
+def arm(repo: Path) -> str:
+    """CLI line for one repo."""
+    ok, detail = arm_repo(repo)
+    tag = "SKIP " if detail.startswith("SKIP") else ("OK   " if ok else "FAIL ")
+    return f"{tag} {repo}  {detail}"
 
 
 def main(argv: list[str]) -> int:

@@ -894,7 +894,7 @@ Revoking is instant and total — the old string dies everywhere at once, so you
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Hook prints nothing, ever | `core.hooksPath` unset in that repo | `git config core.hooksPath .githooks` |
+| Hook prints nothing, ever | `core.hooksPath` unset in that repo | `python3 docs/migrations/scripts/arm_hooks_include.py .` (PC: `python`) — not a bare `git config`, see SCC-323 |
 | Commit passes with no key | `JIRA-ENFORCE` missing, or repo has no `jira.conf` | Check both |
 | Committed from VS Code and saw no hook output | The panel hides it | `View → Output → Git`. In ENFORCE mode a rejection also raises a notification |
 | `SCC-9` rejected in AviationChat | Working as designed — wrong project | Use an `AVCH` key |
