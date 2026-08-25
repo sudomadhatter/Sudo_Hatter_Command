@@ -118,7 +118,7 @@ keyway push --prune
 ### Pulling Secrets to Local Disk
 ```bash
 # Pull 'development' secrets into your local .env:
-keyway pull
+keyway pull -e development
 
 # Pull 'production' secrets into a specific file:
 keyway pull -e production -f .env.production
@@ -132,16 +132,28 @@ keyway pull -e production -f .env.production
 The most secure method for running applications locally, in CI/CD, or with AI coding agents:
 ```bash
 # Run web frontend (Node/Next.js):
-keyway run -- npm run dev
+keyway run -e development -- npm run dev
 
 # Run Python backend:
-keyway run -- python backend/main.py
+keyway run -e development -- python backend/main.py
 
 # Run specific environment:
 keyway run -e production -- ./deploy.sh
 ```
 - **How it works:** Keyway fetches secrets directly from the vault into process memory (RAM).
 - **Security:** No `.env` file is written to disk, preventing AI agents, watchers, or malware from reading raw secrets.
+
+> [!WARNING]
+> **⛔ `-e` is MANDATORY on `run` and `pull` in any agent context.** Without it, neither command
+> defaults to `development` — both open an interactive environment picker
+> (`Environment: > development / staging / production`) and block until a human presses a key. In a
+> headless shell that is an unrecoverable hang: no error, no log line, the call simply burns its
+> entire timeout. Measured on 0.5.3 — a bare `keyway run -- node probe.js` timed out at 90 s, while
+> the same call with `-e development` returned `✓ Injected 37 secrets` immediately.
+>
+> This is the same failure already documented for `keyway sync` below. A stated default governs which
+> entry is *pre-selected in the menu*, never whether the menu appears — so never infer "it has a
+> default" as "it is safe to omit."
 
 ### B. Single Secret Updates (`keyway set`)
 Quickly add or rotate a single secret without modifying `.env` files:
@@ -203,6 +215,7 @@ keyway logout                      # clear stored credentials on this machine
 | `keyway set -l` | Writes to the local file, **not** the vault (legacy) | Looks like a vault update. It is not — teammates receive nothing. |
 | `keyway diff --show-values` | Prints live secret values | A disclosure on any shared screen or recording. |
 | `-y` / `--yes` | Skips the confirmation prompt | The prompt is the last guard before `--prune`. Never pair them reflexively. |
+| **`run` / `pull` with no `-e`** | Opens an interactive environment picker | ⛔ **Hangs forever in any headless or agent shell** — no error, no output, the call burns its whole timeout. Measured on 0.5.3. Always name `-e`. |
 
 ---
 
@@ -265,3 +278,9 @@ Keyway Cloud Vault (Automatic Sync)
 The human-facing version of this page — install → auth → daily loop → **correct team usage** →
 failure modes, written for the operator rather than for an agent — is
 `docs/_scc_sops_prds/sharing_keys_secrets_secure.md`. Point the operator there rather than restating it.
+
+**Setting up a machine, or changing who has access?** That is a separate page:
+`docs/migrations/install_guides/keyway-setup.md` — step 6c of the migrations kit. It carries the
+per-machine install/login split, the `keyway doctor` success canary (**`5 passed, 1 warning`** is the
+finished state; `4 passed, 2 warnings` means the login never happened), and the `gh` commands for
+adding, re-scoping, and removing a teammate.

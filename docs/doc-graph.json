@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 363,
+    "files": 364,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 704,
+    "edges": 710,
     "external": 39,
     "ambiguous": 165,
     "dangling": 297,
@@ -1003,8 +1003,8 @@
     },
     {
       "path": ".agents/skills/keyway-secrets/SKILL.md",
-      "in": 1,
-      "out": 1
+      "in": 2,
+      "out": 2
     },
     {
       "path": ".agents/skills/mermaid-diagram-standards/SKILL.md",
@@ -1723,7 +1723,7 @@
     },
     {
       "path": "docs/_scc_sops_prds/sharing_keys_secrets_secure.md",
-      "in": 4,
+      "in": 5,
       "out": 3
     },
     {
@@ -1768,11 +1768,11 @@
     },
     {
       "path": "docs/migrations/INDEX.md",
-      "in": 5,
-      "out": 17
+      "in": 6,
+      "out": 19
     },
     {
-      "path": "docs/migrations/gemini_extensions/gemini-extensions-sync-guide.md",
+      "path": "docs/migrations/antigravity_extensions/gemini-extensions-sync-guide.md",
       "in": 2,
       "out": 0
     },
@@ -1792,8 +1792,13 @@
       "out": 2
     },
     {
+      "path": "docs/migrations/install_guides/keyway-setup.md",
+      "in": 4,
+      "out": 5
+    },
+    {
       "path": "docs/migrations/install_guides/machine_setup_card.md",
-      "in": 5,
+      "in": 6,
       "out": 3
     },
     {
@@ -3981,6 +3986,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/skills/keyway-secrets/SKILL.md",
+      "to": "docs/migrations/install_guides/keyway-setup.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/skills/prototype/SKILL.md",
       "to": ".agents/skills/prototype/PICKER.md",
       "kind": "link"
@@ -5102,17 +5112,22 @@
     },
     {
       "from": "docs/migrations/INDEX.md",
+      "to": "docs/migrations/antigravity_extensions/gemini-extensions-sync-guide.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/INDEX.md",
       "to": "docs/system-builder.md",
       "kind": "ref"
     },
     {
       "from": "docs/migrations/INDEX.md",
-      "to": "docs/migrations/gemini_extensions/gemini-extensions-sync-guide.md",
-      "kind": "ref"
+      "to": "docs/migrations/install_guides/jira-api-token-setup.md",
+      "kind": "link"
     },
     {
       "from": "docs/migrations/INDEX.md",
-      "to": "docs/migrations/install_guides/jira-api-token-setup.md",
+      "to": "docs/migrations/install_guides/keyway-setup.md",
       "kind": "link"
     },
     {
@@ -5151,18 +5166,38 @@
       "kind": "link"
     },
     {
+      "from": "docs/migrations/install_guides/keyway-setup.md",
+      "to": "docs/_scc_sops_prds/sharing_keys_secrets_secure.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/install_guides/keyway-setup.md",
+      "to": "docs/migrations/INDEX.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/install_guides/keyway-setup.md",
+      "to": ".agents/skills/keyway-secrets/SKILL.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/migrations/install_guides/keyway-setup.md",
+      "to": "docs/migrations/install_guides/machine_setup_card.md",
+      "kind": "link"
+    },
+    {
       "from": "docs/migrations/install_guides/machine_setup_card.md",
       "to": "docs/migrations/INDEX.md",
       "kind": "link"
     },
     {
       "from": "docs/migrations/install_guides/machine_setup_card.md",
-      "to": "docs/_scc_sops_prds/sharing_keys_secrets_secure.md",
-      "kind": "ref"
+      "to": "docs/migrations/install_guides/jira-api-token-setup.md",
+      "kind": "link"
     },
     {
       "from": "docs/migrations/install_guides/machine_setup_card.md",
-      "to": "docs/migrations/install_guides/jira-api-token-setup.md",
+      "to": "docs/migrations/install_guides/keyway-setup.md",
       "kind": "link"
     },
     {

@@ -169,8 +169,8 @@ keyway push -f .env.production  -e production
 
 | Command | What it does | When |
 |---|---|---|
-| `keyway run -- <cmd>` | Runs `<cmd>` with secrets injected **into memory only** | ★ every day — the default |
-| `keyway pull` | Writes the vault into a local `.env` | when a tool *demands* a real file |
+| `keyway run -e <env> -- <cmd>` | Runs `<cmd>` with secrets injected **into memory only** | ★ every day — the default |
+| `keyway pull -e <env>` | Writes the vault into a local `.env` | when a tool *demands* a real file |
 | `keyway push` | Uploads your local file into the vault | after adding a new key |
 | `keyway set KEY` | Adds/rotates **one** secret, prompted and masked | rotating a single key |
 | `keyway diff a b` | Compares which keys exist in two environments | "why does staging break?" |
@@ -180,12 +180,34 @@ keyway push -f .env.production  -e production
 ### The daily loop
 
 ```bash
-keyway run -- npm run dev            # frontend
-keyway run -- python backend/main.py # backend
-keyway run -e production -- ./deploy.sh
+keyway run -e development -- npm run dev             # frontend
+keyway run -e development -- python backend/main.py  # backend
+keyway run -e production  -- ./deploy.sh
 ```
 
 Nothing is written to disk. Close the terminal and the secrets are gone from the machine.
+
+> ### ⛔ Always name `-e`. Without it, `run` and `pull` stop and wait for a human.
+>
+> `keyway run` with no `-e` does **not** quietly default to `development`. It draws an interactive
+> menu and blocks until somebody presses a key:
+>
+> ```
+> ┃ Environment:
+> ┃ > development
+> ┃   staging
+> ┃   production
+> ```
+>
+> At your own terminal that is a mild surprise — you pick one and carry on. Anywhere without a human
+> attached it is a hang: a CI job, a `cron` entry, a script, or an AI agent will sit there until it
+> is killed, with no error message and nothing in the log to explain it. The menu is drawn, nobody
+> answers, and the run burns its entire timeout.
+>
+> This is the same behaviour §7 describes for `keyway sync`, and it is the reason **every** command
+> in this guide names its environment explicitly. Treat "the docs say it defaults to development" as
+> insufficient: the default decides which environment is *pre-selected in the menu*, not whether the
+> menu appears.
 
 ### Adding a new secret
 
@@ -323,6 +345,104 @@ keyway diff development production --keys-only
 
 Use `--show-values` only when you truly must, and never in a shared screen-share or a recorded call —
 it prints live secrets to the terminal.
+
+### 6.8 Doing it — the actual commands for changing and sharing access
+
+Everything above says *what* the rules are. This is *how you carry them out*. Every command runs the
+same on the Mac and the PC.
+
+These use the GitHub CLI, `gh`, which is already installed and authenticated on both machines. If you
+would rather click than type, each one names the equivalent page in GitHub's web interface.
+
+#### Who can read this vault right now?
+
+Ask this before granting anything, and again before you rotate anything. It is the only honest
+answer to "who has our keys" — and it is two questions, not one:
+
+```bash
+# 1. Who has accepted access
+gh api repos/<owner>/<repo>/collaborators --jq '.[] | "\(.login) \(.role_name)"'
+
+# 2. Who has been invited but has NOT accepted yet
+gh api repos/<owner>/<repo>/invitations --jq '.[] | .invitee.login'
+```
+
+⛔ **Run both.** A pending invitation does **not** appear in the collaborator list, so checking only
+the first gives you a clean-looking answer while somebody is one click away from full vault access.
+An empty second list is the confirmation; skipping it is an assumption.
+
+Web equivalent: **Settings → Collaborators and teams**, which shows both lists on one page.
+
+#### Adding somebody
+
+```bash
+gh api --method PUT repos/<owner>/<repo>/collaborators/<username> -f permission=push
+```
+
+`permission` takes `pull` (read), `push` (read + write), or `admin`. **Give the least that lets them
+do their job** — and understand what you are actually granting, which §2 stated and this makes
+concrete: the GitHub role is the vault key. `push` on the repo is `read` on every secret in it.
+
+They then run `keyway login` on their own machine and it works. You send them nothing.
+
+Web equivalent: **Settings → Collaborators and teams → Add people**.
+
+#### Changing what somebody can reach
+
+There are **two separate levers**, and mixing them up is how access quietly drifts:
+
+| Lever | Where | What it decides | Use it for |
+|---|---|---|---|
+| **GitHub role** | `gh api` above, or repo Settings | whether they are in **at all**, and for which repo | joining, leaving, read-vs-write |
+| **Keyway environment role** | [app.keyway.sh](https://app.keyway.sh) | which **environments** an already-approved person may open | keeping `production` away from everyone but you |
+
+The rule from §6.1 restated as a procedure: **membership decisions go on GitHub; scope decisions go
+in the dashboard.** Never use the dashboard to grant somebody access GitHub did not, because then two
+lists disagree and only one of them is the one you will remember to check.
+
+To narrow someone from all-environments to development-only, you change the **dashboard** role — not
+their GitHub permission. To remove them entirely, you change **GitHub** — see below.
+
+#### Removing somebody — all three steps
+
+```bash
+# Step 1 - revoke future access
+gh api --method DELETE repos/<owner>/<repo>/collaborators/<username>
+
+# Step 1b - clear any per-environment role at app.keyway.sh (nothing to type; check, do not assume)
+
+# Step 2 - find out what they could have taken
+keyway diff development production --keys-only
+
+# Step 3 - rotate every key from step 2: regenerate at the provider, then
+keyway set <KEY> -e <env>
+```
+
+Step 2 is the one people skip, and it is what makes step 3 finishable rather than a vague dread.
+`--keys-only` prints the **names** of every secret in each environment without printing a single
+value, so it is safe to run on a shared screen and safe to paste into a checklist. That list *is*
+your rotation worklist: anything on it, in an environment they could open, is now a credential of
+unknown custody.
+
+Repeat the whole sequence for **every repository they were on** — access is per repo, so removing
+somebody from one leaves the others untouched.
+
+> ### ⛔ Removal does not reach backwards, so step 3 is not optional
+>
+> §6.4 says this and it is worth saying twice in the place where the commands live. If they ever ran
+> `keyway pull`, a plain-text `.env` is on their laptop right now. Step 1 stops the next read; it does
+> nothing to the copy they already have. **Only rotation at the provider makes that copy worthless.**
+
+#### One thing to confirm before trusting the model on a public repository
+
+This guide's one-line summary is *"if you can push to the repo, you can read its secrets."* On a
+**private** repository that is unambiguous, because only invited people can reach it at all.
+
+On a **public** repository, read access is universal and push access is not — and those two things
+being different is exactly the case the one-liner does not settle. Before putting any secret in a
+public repository's vault, confirm with Keyway which of the two it actually gates on. Treat the
+answer as unknown until you have it in writing from the vendor, rather than reasoning it out from
+this page.
 
 ---
 
