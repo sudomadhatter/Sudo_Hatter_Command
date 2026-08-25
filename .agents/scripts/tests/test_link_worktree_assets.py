@@ -22,10 +22,45 @@ and `--require-assets` is there for the caller that knows better.
 """
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
 from _harness import Cases, TempDir, run_script
+
+IS_WINDOWS = os.name == "nt"
+
+
+def linked_dir(p: Path) -> bool:
+    """A directory asset was placed as a LINK: symlink on POSIX, JUNCTION on Windows (SCC-321).
+
+    ⛔ `p.is_symlink()` is FALSE for a junction, so asserting it made every directory case red on
+    Windows against a script doing exactly the right thing — the script's docstring has said
+    "Mac: symlink   PC: junction" since it was written, and a junction is used precisely because
+    it needs no admin rights. The assertion, not the behaviour, was the one-machine artefact.
+    """
+    if p.is_symlink():
+        return True
+    if not IS_WINDOWS:
+        return False
+    if hasattr(os.path, "isjunction"):       # 3.12+
+        return os.path.isjunction(p)
+    try:                                     # 3.11 and earlier: read the reparse tag
+        return bool(getattr(os.lstat(p), "st_reparse_tag", 0))
+    except OSError:
+        return False
+
+
+def placed_file(p: Path) -> bool:
+    """A FILE asset was placed the way this platform places it: symlink on POSIX, COPY on Windows.
+
+    ⛔ The copy is deliberate and is NOT a degraded symlink. A Windows file-symlink needs admin or
+    Developer Mode, and — the larger reason — the script's own docstring rules that "anything a
+    lane MUTATES should be copied, not linked". A copied `.env` is the SAFER state: it is not
+    shared across lanes. So the two machines differ in what is CORRECT here, and the test has to
+    ask each one its own question rather than assert the Mac's answer twice.
+    """
+    return (p.is_file() and not p.is_symlink()) if IS_WINDOWS else p.is_symlink()
 
 
 def git(cwd: Path, *args: str) -> subprocess.CompletedProcess:
@@ -93,10 +128,10 @@ def main() -> int:
             c.check("B1 exits 0", code == 0, f"exit={code}\n{out}")
             c.check("B1 names the submodule WORKING TREE as the repo",
                     f"repo:     {sub.resolve()}" in out, out.splitlines()[0] if out else "(no output)")
-            c.check("B1 links the root .env", (lane / ".env").is_symlink(),
+            c.check("B1 places the root .env", placed_file(lane / ".env"),
                     f"exists={(lane / '.env').exists()} symlink={(lane / '.env').is_symlink()}")
-            c.check("B1 links backend/.venv one level down", (lane / "backend" / ".venv").is_symlink(),
-                    f"symlink={(lane / 'backend' / '.venv').is_symlink()}")
+            c.check("B1 links backend/.venv one level down", linked_dir(lane / "backend" / ".venv"),
+                    f"exists={(lane / 'backend' / '.venv').exists()}")
             c.check("B1 does NOT report 'nothing to link'", "nothing to link" not in out,
                     out)
 
@@ -252,14 +287,31 @@ def main() -> int:
             code, out = link(str(lane))
             c.check("B3 exits 0", code == 0, f"exit={code}\n{out}")
             c.check("B3 resolves the plain repo", f"repo:     {plain.resolve()}" in out, out)
-            c.check("B3 links .env", (lane / ".env").is_symlink())
-            c.check("B3 links node_modules", (lane / "node_modules").is_symlink())
-            c.check("B3 still warns that .env is shared state", "SHARED STATE" in out, out)
+            c.check("B3 places .env", placed_file(lane / ".env"))
+            c.check("B3 links node_modules", linked_dir(lane / "node_modules"))
+            # ⛔ THE WARNING IS ABOUT SHARED STATE, AND ON WINDOWS THERE IS NONE (SCC-321).
+            # `.env` is COPIED there, so editing it in this lane cannot reach any other — the
+            # warning would be false, and a tool that cries shared-state at a private copy trains
+            # the operator to ignore it. Each machine asserts its own truth, and the Windows arm
+            # is the stronger claim of the two: the warning must be ABSENT.
+            if IS_WINDOWS:
+                c.check("B3 does NOT claim shared state for a COPIED .env",
+                        "SHARED STATE" not in out, out)
+            else:
+                c.check("B3 still warns that .env is shared state", "SHARED STATE" in out, out)
 
             code, out = link("--unlink", str(lane))
-            c.check("B3 --unlink removes both links", code == 0
-                    and not (lane / ".env").exists() and not (lane / "node_modules").exists(),
+            # ⛔ `--unlink` removes LINKS, never files — `find_links` enumerates reparse points,
+            # deliberately ("ENUMERATE, never assume"). So a copied `.env` survives it on Windows,
+            # which is correct: it is this lane's own file, not a door into a shared target.
+            c.check("B3 --unlink removes the link(s)", code == 0
+                    and not (lane / "node_modules").exists()
+                    and (IS_WINDOWS or not (lane / ".env").exists()),
                     f"exit={code}\n{out}")
+            if IS_WINDOWS:
+                c.check("B3 --unlink leaves the lane's own COPY of .env in place",
+                        (lane / ".env").is_file(),
+                        "a copy is not a link; removing it is not this command's job")
             c.check("B3 --unlink leaves the TARGETS alone",
                     (plain / ".env").is_file() and (plain / "node_modules").is_dir())
 
@@ -277,13 +329,17 @@ def main() -> int:
 
             code, out = link(str(lane))
             c.check("B4 exits 0", code == 0, f"exit={code}\n{out}")
-            c.check("B4 links .claude/settings.local.json", (lane / ".claude" / "settings.local.json").is_symlink())
-            c.check("B4 links .claude/scratchpad-root", (lane / ".claude" / "scratchpad-root").is_symlink())
+            c.check("B4 places .claude/settings.local.json",
+                    placed_file(lane / ".claude" / "settings.local.json"))
+            c.check("B4 places .claude/scratchpad-root",
+                    placed_file(lane / ".claude" / "scratchpad-root"))
 
             code, out = link("--unlink", str(lane))
+            # Both are FILES, so both are copies on Windows and survive --unlink — see B3.
             c.check("B4 --unlink removes both links", code == 0
-                    and not (lane / ".claude" / "settings.local.json").exists()
-                    and not (lane / ".claude" / "scratchpad-root").exists(),
+                    and (IS_WINDOWS or (
+                        not (lane / ".claude" / "settings.local.json").exists()
+                        and not (lane / ".claude" / "scratchpad-root").exists())),
                     f"exit={code}\n{out}")
             c.check("B4 --unlink leaves the TARGETS alone",
                     (plain / ".claude" / "settings.local.json").is_file()

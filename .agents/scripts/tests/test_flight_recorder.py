@@ -27,7 +27,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from _harness import SCRIPTS, Cases, TempDir, run_script
+from _harness import SCRIPTS, Cases, TempDir, posix_sh, run_script
 
 HOOK = SCRIPTS.parent / "hooks" / "session-start-context.sh"
 EVENTS_REL = Path("_artifacts/_main/workflow-events")
@@ -266,6 +266,13 @@ def main() -> int:
 
     # ── A3 · surface + the SessionStart hook ──────────────────────────────────────
     if c.block("A3 · surface: empty is silent, seeded proposes, hook emits"):
+        # ⛔ Never `["sh", ...]` — see `_harness.posix_sh` (SCC-321). Windows has no `sh` on
+        # PATH, and the FileNotFoundError RAISES: before this, the whole file died here and
+        # every case above was reported as one failure instead of the passes they were.
+        sh_bin = posix_sh()
+        c.check("A3 a POSIX shell is available to run the SessionStart hook",
+                sh_bin is not None,
+                "no usable sh found — WSL's bash does not count, it cannot read a C:\\ path")
         with TempDir() as tmp:
             repo = build(tmp)
             code, out = run_script("flight_recorder.py", "surface", "--repo", str(repo))
@@ -292,18 +299,23 @@ def main() -> int:
                     all(t in out for t in ("SCC-11", "SCC-12", "SCC-13")), out[-240:])
             # the REAL hook, pointed at the seeded repo
             env = dict(os.environ, CLAUDE_PROJECT_DIR=str(repo))
-            r = subprocess.run(["sh", str(HOOK)], capture_output=True, text=True, env=env, cwd=str(repo))
-            c.check("A3 SessionStart hook emits the proposal line and exits 0",
-                    r.returncode == 0 and "gate-red:suite" in r.stdout, (r.stdout + r.stderr)[-300:])
-            c.check("A3 hook still prints its standing gate text (nothing lost)",
-                    "MAIN IS GATED" in r.stdout, "")
+            if sh_bin:
+                r = subprocess.run([sh_bin, str(HOOK)], capture_output=True, text=True,
+                                   env=env, cwd=str(repo))
+                c.check("A3 SessionStart hook emits the proposal line and exits 0",
+                        r.returncode == 0 and "gate-red:suite" in r.stdout,
+                        (r.stdout + r.stderr)[-300:])
+                c.check("A3 hook still prints its standing gate text (nothing lost)",
+                        "MAIN IS GATED" in r.stdout, "")
         with TempDir() as tmp:
             repo = build(tmp)                                     # empty ledger
             env = dict(os.environ, CLAUDE_PROJECT_DIR=str(repo))
-            r = subprocess.run(["sh", str(HOOK)], capture_output=True, text=True, env=env, cwd=str(tmp))
-            c.check("A3 hook on an EMPTY ledger adds no recorder text and no extra blank line (run from a foreign cwd)",
-                    r.returncode == 0 and "FLIGHT-RECORDER" not in r.stdout
-                    and not r.stdout.rstrip("\n").endswith("\n\n"), r.stdout[-160:])
+            if sh_bin:
+                r = subprocess.run([sh_bin, str(HOOK)], capture_output=True, text=True,
+                                   env=env, cwd=str(tmp))
+                c.check("A3 hook on an EMPTY ledger adds no recorder text and no extra blank line (run from a foreign cwd)",
+                        r.returncode == 0 and "FLIGHT-RECORDER" not in r.stdout
+                        and not r.stdout.rstrip("\n").endswith("\n\n"), r.stdout[-160:])
 
     return c.finish()
 

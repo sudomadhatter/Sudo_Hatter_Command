@@ -27,6 +27,39 @@ from _harness import Cases, TempDir
 SRC = "src.py"
 PATTERN = 'if flag == "on":'
 
+IS_WINDOWS = os.name == "nt"
+# A new process GROUP is what makes a Ctrl+Break deliverable to the child alone (SCC-321).
+GROUP_FLAGS = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if IS_WINDOWS else {}
+
+
+def interrupt(proc: subprocess.Popen) -> None:
+    """A TRAPPABLE interruption — the one the sweep's restore handler can actually catch.
+
+    ⛔ `SIGTERM` IS NOT DELIVERABLE ON WINDOWS. `proc.send_signal(SIGTERM)` there calls
+    `TerminateProcess`, which stops the process dead without a signal, so no handler and no
+    `finally` runs — the case asserting "an interrupted sweep restores the file" could only ever
+    fail, against a sweep whose POSIX behaviour is correct. `CTRL_BREAK_EVENT` is the interruption
+    Windows does deliver, and it needs the new process group set at spawn time.
+    """
+    proc.send_signal(signal.CTRL_BREAK_EVENT if IS_WINDOWS else signal.SIGTERM)
+
+
+def hard_kill(proc: subprocess.Popen) -> None:
+    """Kill `proc` AND its children, then wait for the handles to close.
+
+    ⛔ ON WINDOWS A DIRECTORY CANNOT BE DELETED WHILE A PROCESS HAS IT AS ITS CWD, and
+    `proc.kill()` does not reach GRANDchildren — the sweep spawns the test command, so killing the
+    sweep leaves `python slow.py` alive for its full 30-second sleep, holding the fixture repo.
+    `TempDir.__exit__` then raised `PermissionError [WinError 32]` and took the whole file down
+    AFTER its cases had passed. POSIX simply unlinks a busy directory, which is why one machine
+    never saw it.
+    """
+    if IS_WINDOWS:
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)],
+                       capture_output=True)
+    proc.kill()
+    proc.wait()
+
 
 def git(repo: Path, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(["git", *args], cwd=str(repo), capture_output=True, text=True)
@@ -297,22 +330,37 @@ def main() -> int:
             script = Path(__file__).resolve().parents[1] / "mutation_sweep.py"
             proc = subprocess.Popen([sys.executable, str(script), "--table", str(tab)],
                                     cwd=str(repo), stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT, text=True)
-            deadline = time.time() + 15
+                                    stderr=subprocess.STDOUT, text=True, **GROUP_FLAGS)
+            deadline = time.time() + 90     # see K3c: 61 files run concurrently under run_all
             mutated = False
             while time.time() < deadline:
                 if PATTERN not in (repo / SRC).read_text(encoding="utf-8"):
                     mutated = True
                     break
                 time.sleep(0.1)
-            proc.send_signal(signal.SIGTERM)
+            interrupt(proc)
+            # ⛔⛔ THE KILL-ON-TIMEOUT IS ITSELF A RESIDUE GENERATOR (SCC-321). The sweep restores
+            # in a `finally`; kill it DURING that and the file stays mutated — manufacturing
+            # exactly the state K3b2 asserts is impossible, and blaming the sweep for it. At 15 s
+            # this fired intermittently under `run_all`'s 61-way concurrency: the file passed
+            # alone, passed once in the suite, and failed the next. So the window is generous, and
+            # a timeout is reported as ITS OWN named failure rather than being silently converted
+            # into a red about the restore.
+            timed_out = False
             try:
-                proc.communicate(timeout=15)
+                proc.communicate(timeout=90)
             except subprocess.TimeoutExpired:
-                proc.kill()
+                timed_out = True
+                hard_kill(proc)
                 proc.communicate()
+            if IS_WINDOWS:
+                hard_kill(proc)      # the spawned test command outlives its parent — see hard_kill
             c.check("K3b the fixture really did reach the mutated state",
                     mutated, "the sweep never wrote the mutant - the case proves nothing")
+            c.check("K3b1 the interrupted sweep EXITED on its own, rather than being killed",
+                    not timed_out,
+                    "it did not exit within 90s of the interrupt, so it was killed - and a kill "
+                    "mid-restore leaves residue by itself, which makes K3b2 unreadable either way")
             c.check("K3b2 SIGTERM mid-sweep still RESTORES the file (trap/finally)",
                     PATTERN in (repo / SRC).read_text(encoding="utf-8"),
                     (repo / SRC).read_text(encoding="utf-8"))
@@ -331,16 +379,31 @@ def main() -> int:
             script = Path(__file__).resolve().parents[1] / "mutation_sweep.py"
             proc = subprocess.Popen([sys.executable, str(script), "--table", str(tab)],
                                     cwd=str(repo), stdout=subprocess.DEVNULL,
-                                    stderr=subprocess.DEVNULL)
-            deadline = time.time() + 15
+                                    stderr=subprocess.DEVNULL, **GROUP_FLAGS)
+            # ⛔ WAIT FOR THE MUTANT, AND SAY SO IF IT NEVER ARRIVES (SCC-321). This block races
+            # a real subprocess, and `run_all.py` runs 61 files CONCURRENTLY — under that load the
+            # sweep had not written the mutant inside 15 s, so the kill left nothing behind and
+            # both cases failed reporting "no residue". That reads as the sweep being WRONG when
+            # the truth is the fixture never reached the state under test: the file passed alone
+            # and failed in the suite, which is the worst shape a red can take. A generous window,
+            # and an explicit precondition control (K3b already has one; this block never did).
+            deadline = time.time() + 90
+            reached = False
             while time.time() < deadline:
                 if PATTERN not in (repo / SRC).read_text(encoding="utf-8"):
+                    reached = True
                     break
                 time.sleep(0.1)
-            proc.kill()
-            proc.wait()
+            # ⛔ The TREE, not just this process: an untrappable kill is the POINT of this case
+            # (residue must survive), but the sweep's spawned test command holds the fixture repo
+            # as its cwd and Windows cannot delete a directory in that state — see `hard_kill`.
+            hard_kill(proc)
             residue = PATTERN not in (repo / SRC).read_text(encoding="utf-8")
             code, out = _run(repo, ["--table", str(table(repo, [killer()]))])
+            c.check("K3c the fixture really did reach the mutated state before the kill",
+                    reached,
+                    "the sweep never wrote the mutant within the window - the two cases below "
+                    "measure nothing, and this is a FIXTURE timeout, not a defect in the sweep")
             c.check("K3c SIGKILL leaves residue (untrappable - this is the SCC-144 shape)",
                     residue, "no residue: the case below would prove nothing")
             c.check("K3c2 ...and the NEXT sweep refuses to start on it, naming the file",

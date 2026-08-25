@@ -138,7 +138,18 @@ def _test_link_count(root: Path) -> int:
         return 0
     real = 0
     for row in rows:
+        # ⛔ BOTH SEPARATORS (SCC-321). "does this subject look like a path" was asked as
+        # `"/" not in subject`, and a Windows-shaped qualified name — `C:\repo\src\a.py::alpha` —
+        # contains no forward slash at all. Every real subject was therefore discarded as "a bare
+        # name the resolver never placed", this returned 0, and 0 is the value that means "the
+        # graph has NO test-link data" — so `untested` listed every changed function including the
+        # thoroughly tested ones, and the callers dutifully explained that the layer was broken.
+        # A separator-specific path test is never right; normalise, then ask — and normalise
+        # only where `\` IS a separator. On POSIX it is a legal filename character, so rewriting
+        # it there would promote a bare name like `a\b` into something this reads as a path.
         subject = str((row[0] if row else "") or "")
+        if os.name == "nt":
+            subject = subject.replace("\\", "/")
         if "/" not in subject:              # a bare name the resolver never placed
             continue
         base = subject.split("::", 1)[0].rsplit("/", 1)[-1]
@@ -173,8 +184,12 @@ def _cli() -> str | None:
     found = shutil.which("code-review-graph")
     if found:
         return found
-    fallback = Path.home() / ".local" / "bin" / "code-review-graph"
-    return str(fallback) if fallback.exists() else None
+    # ⛔ `which` FOR THE FALLBACK TOO, not `.exists()` on a bare name (SCC-321). pipx on Windows
+    # installs an `.exe` shim, so a probe for the extensionless spelling can never succeed there —
+    # the tool would be reported ABSENT on a machine that has it, and every caller degrades to
+    # `unclassified` for a reason that is not true. `which` applies `PATHEXT` on Windows and the
+    # executable bit on POSIX, which is the question actually being asked: can we RUN this.
+    return shutil.which("code-review-graph", path=str(Path.home() / ".local" / "bin"))
 
 
 def _base(root: Path) -> str | None:

@@ -942,27 +942,54 @@ def main() -> int:
     with TempDir() as tmp:
         if c.block("SCC-187-A1g · a colon in the path"):
             repo = Path(tmp)
-            # `<rel>:<line>` is the snippet header, and a POSIX path may hold a colon, so the file
-            # must be recovered from the header's LAST colon. Splitting on the first one cut
-            # `pkg/a:b.py:3` to `pkg/a`, which is in no importer set — so a genuine importer was
-            # labelled [name-match] while IMPORTED BY listed it, in the same JSON object.
-            write(repo, "pkg/__init__.py", "")
-            write(repo, "pkg/target.py", "def target_fn(v):\n    return v\n")
-            write(repo, "pkg/a:b.py",
-                  "from pkg.target import target_fn\n\nq = target_fn(1)  # COLON_IMPORTER\n")
-            cpath = findings_file(repo, [{"title": "colon", "body": "`target_fn` is wrong",
-                                          "evidence": "", "file_path": "pkg/target.py",
-                                          "line_start": 1}])
-            rc, out, _ = run_ee("--repo", str(repo), "--findings", cpath)
-            colon_pkg = pkg_for(out, "colon")
-            colon_tags = dict(zip(caller_files(colon_pkg),
-                                  [caller_tag(s) for s in colon_pkg.get("caller_snippets", [])]))
-            c.check("a colon in the path: the importer is still tagged [importer]",
-                    colon_tags.get("pkg/a:b.py") == "[importer]",
-                    f"tagged {colon_tags.get('pkg/a:b.py')!r}; files={list(colon_tags)}")
-            c.check("a colon in the path COUNTER-EXAMPLE: the package does not contradict itself",
-                    "pkg/a:b.py" in imported_by(colon_pkg.get("import_context", "")),
-                    imported_by(colon_pkg.get("import_context", ""))[:120])
+            # ⛔ WINDOWS CANNOT HOLD THIS FIXTURE, AND THAT IS A FILESYSTEM FACT, NOT A SKIP
+            # (SCC-321). `:` is reserved there — it introduces an NTFS alternate data stream —
+            # so `pkg/a:b.py` cannot be created and the end-to-end arm below found no files at
+            # all. The DEFECT, though, is pure string handling: `_snippet_file` must take the
+            # header's LAST colon, because a first-colon split cuts `pkg/a:b.py:4` to `pkg/a`,
+            # which is in no importer set — so a genuine importer is labelled `[name-match]`
+            # while `IMPORTED BY` lists it, and one JSON object contradicts itself.
+            # That function is importable and needs no filesystem, so the Windows arm measures
+            # the actual defect directly rather than standing down.
+            if os.name == "nt":
+                import importlib.util as _ilu
+                _s = _ilu.spec_from_file_location("_ee_colon", TARGET)
+                ee = _ilu.module_from_spec(_s)
+                _s.loader.exec_module(ee)
+                header = "pkg/a:b.py:4\nq = target_fn(1)  # COLON_IMPORTER"
+                c.check("a colon in the path: the header's LAST colon delimits the line number",
+                        ee._snippet_file(header) == "pkg/a:b.py",
+                        repr(ee._snippet_file(header)))
+                c.check("a colon in the path CONTROL: an ordinary path is unaffected",
+                        ee._snippet_file("pkg/plain.py:12\nq = 1") == "pkg/plain.py",
+                        repr(ee._snippet_file("pkg/plain.py:12\nq = 1")))
+                # ⛔ The control that keeps the two above from being vacuous: it pins that the
+                # WRONG implementation really would answer differently on this input. Without
+                # it, both cases would still pass against a `_snippet_file` that had quietly
+                # stopped being about colons at all.
+                c.check("a colon in the path CONTROL: a first-colon split WOULD have broken it",
+                        header.split("\n", 1)[0].split(":", 1)[0] == "pkg/a",
+                        "the defect this case exists to pin no longer behaves as described")
+            else:
+                # POSIX: the same defect, end to end through the real extractor. A POSIX path may
+                # legally hold a colon, so the file must be recovered from the header's LAST one.
+                write(repo, "pkg/__init__.py", "")
+                write(repo, "pkg/target.py", "def target_fn(v):\n    return v\n")
+                write(repo, "pkg/a:b.py",
+                      "from pkg.target import target_fn\n\nq = target_fn(1)  # COLON_IMPORTER\n")
+                cpath = findings_file(repo, [{"title": "colon", "body": "`target_fn` is wrong",
+                                              "evidence": "", "file_path": "pkg/target.py",
+                                              "line_start": 1}])
+                rc, out, _ = run_ee("--repo", str(repo), "--findings", cpath)
+                colon_pkg = pkg_for(out, "colon")
+                colon_tags = dict(zip(caller_files(colon_pkg),
+                                      [caller_tag(s) for s in colon_pkg.get("caller_snippets", [])]))
+                c.check("a colon in the path: the importer is still tagged [importer]",
+                        colon_tags.get("pkg/a:b.py") == "[importer]",
+                        f"tagged {colon_tags.get('pkg/a:b.py')!r}; files={list(colon_tags)}")
+                c.check("a colon in the path COUNTER-EXAMPLE: the package does not contradict itself",
+                        "pkg/a:b.py" in imported_by(colon_pkg.get("import_context", "")),
+                        imported_by(colon_pkg.get("import_context", ""))[:120])
 
     # ── 2i. the precomputed importer list is really SPENT, not just accepted ──
     with TempDir() as tmp:

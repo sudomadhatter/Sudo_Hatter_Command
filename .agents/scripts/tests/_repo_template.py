@@ -108,6 +108,33 @@ def _cleanup() -> None:
     _ROOT = None
 
 
+def _is_executable_asset(p: Path) -> bool:
+    """Is `p` a file the freeze must cover? (SCC-321)
+
+    ⛔ THE POSIX EXEC BIT IS NOT AVAILABLE ON WINDOWS. CPython synthesises `st_mode` from file
+    attributes there and sets `0o111` only for `.exe/.bat/.cmd/.com`, so a mode-only test skips
+    every `.sh` dispatcher in a template and freezes nothing at all. Extension is the only signal
+    that machine has, so it is what is used there — in ADDITION to the mode, never instead of it.
+    """
+    if not p.is_file() or p.is_symlink():
+        return False
+    if p.stat().st_mode & 0o111:
+        return True
+    return os.name == "nt" and p.suffix.lower() in (".exe", ".bat", ".cmd", ".com", ".ps1", ".sh")
+
+
+def _is_frozen(p: Path) -> bool:
+    """Is `p` actually un-writable? ⛔ ASK ABOUT WRITABILITY, NOT ABOUT AN EXACT MODE (SCC-321).
+
+    `_verify_sealed` compared against a literal `0o555`, which a frozen file reports only where
+    the exec bit is real. On Windows a frozen `hook.sh` reads `0o444` — correctly frozen, wrong
+    number — so an exact-mode check would raise `TemplateCorrupted` about a perfectly sealed
+    template. What the invariant is actually about is that nobody can WRITE through the shared
+    inode, and that question has the same answer on both machines.
+    """
+    return (p.stat().st_mode & 0o222) == 0
+
+
 def _seal(root: Path) -> None:
     """Make a finished template safe to share: no path back to itself, no writable executable."""
     for fetch_head in root.rglob("FETCH_HEAD"):
@@ -122,11 +149,33 @@ def _seal(root: Path) -> None:
     for cfg in root.rglob("config"):
         if cfg.parent.name != ".git" and not cfg.parent.name.endswith(".git"):
             continue
+        # ⛔ THREE SPELLINGS OF THE ROOT ON WINDOWS, AND ONLY ONE OF THEM IS `str(root)` (SCC-321).
+        # `git config` ESCAPES a backslash in a value, so the URL is stored as
+        # `C:\\Users\\...\\origin.git` — measured, not assumed. A plain `str(root)` search matched
+        # none of it, so every template shipped with a live path back to itself: exactly the leak
+        # the paragraph above says is neutralised here. It is silent by construction, because a
+        # caller that re-points `origin` hides it — the "closed only by caller discipline" state
+        # this code exists to end. Escaped form FIRST: it is the longest, and a shorter spelling
+        # must never chew a piece out of it.
         text = cfg.read_text(encoding="utf-8", errors="replace")
-        if str(root) in text:
-            cfg.write_text(text.replace(str(root), SEALED_URL), encoding="utf-8")
+        native = str(root)
+        spellings = ([native.replace("\\", "\\\\"), native.replace("\\", "/"), native]
+                     if os.name == "nt" else [native])
+        new = text
+        for spelling in spellings:
+            new = new.replace(spelling, SEALED_URL)
+        if new != text:
+            cfg.write_text(new, encoding="utf-8")
     for p in root.rglob("*"):
-        if p.is_file() and not p.is_symlink() and (p.stat().st_mode & 0o111):
+        # ⛔ "EXECUTABLE" IS NOT A POSIX MODE BIT ON WINDOWS (SCC-321). CPython synthesises
+        # `st_mode` there from file attributes and sets `0o111` only for `.exe/.bat/.cmd/.com` —
+        # so `hook.sh`, every dispatcher, and every shell script in a template failed this test
+        # and NOTHING was frozen. Measured: `chmod(0o555)` on Windows DOES hold (the write raises
+        # PermissionError); it was never reached. The freeze protects a SHARED inode, which
+        # Windows does not have here (`HARD_LINKS` is False, see the module docstring) — but the
+        # `acli` launcher lives at one fixed path for the whole process and IS shared, on both
+        # machines. Freeze every regular file that is executable by mode OR by extension.
+        if _is_executable_asset(p):
             p.chmod(0o555)
 
 
@@ -143,13 +192,12 @@ def _verify_sealed(root: Path) -> None:
     the chmod this catches — so catching the chmod catches the write.
     """
     for p in sorted(root.rglob("*")):
-        if p.is_file() and not p.is_symlink() and (p.stat().st_mode & 0o111):
+        if _is_executable_asset(p) and not _is_frozen(p):
             mode = p.stat().st_mode & 0o777
-            if mode != 0o555:
-                raise TemplateCorrupted(
-                    f"{p} is {oct(mode)}, not 0o555 - a scenario chmod'd a SHARED template "
-                    f"inode, so every clone of this shape may carry its edits. This is the "
-                    f"'shared mutable repo' the fixture design forbids (SCC-214).")
+            raise TemplateCorrupted(
+                f"{p} is {oct(mode)} and WRITABLE - a scenario chmod'd a SHARED template "
+                f"inode, so every clone of this shape may carry its edits. This is the "
+                f"'shared mutable repo' the fixture design forbids (SCC-214).")
 
 
 class TemplateCorrupted(RuntimeError):
