@@ -1,0 +1,5 @@
+task_key: SCC-320
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-320-keyway-permissions-docs
+close_command: smh-close-task-merge-tree
+secondary_repos: []
