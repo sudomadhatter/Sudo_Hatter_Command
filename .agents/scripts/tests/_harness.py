@@ -237,6 +237,46 @@ def run_script(name: str, *args: str) -> tuple[int, str]:
     return r.returncode, (r.stdout or "") + (r.stderr or "")
 
 
+def fake_exe(bindir, name: str, body: str) -> str:
+    """A stub binary running `body` (Python source), findable and runnable on BOTH machines.
+
+    ⛔⛔ A SHEBANG SCRIPT IS NOT AN EXECUTABLE ON WINDOWS, AND IT IS INVISIBLE TWICE OVER (SCC-321).
+    `#!/usr/bin/env python3` is a kernel convention POSIX has and Windows does not, so:
+
+      `shutil.which("acli")`   finds NOTHING — Windows resolves names through `PATHEXT`, and an
+                               extensionless file is not on that list. Production code probing
+                               with `which` therefore reports the tool ABSENT, and the test reads
+                               as "the fallback works" when the fixture was simply never seen.
+      `subprocess.run([stub])` raises `OSError [WinError 193] %1 is not a valid Win32 application`
+                               — or, worse for a fixture whose whole job is to record its argv,
+                               never runs, so the `argv.json` the case reads is not there and the
+                               file dies at `FileNotFoundError` before scoring a single case.
+
+    Both failures name something other than their cause, which is why this is centralised rather
+    than solved three times. On Windows the stub is a `.cmd` launcher (on `PATHEXT`, and
+    CreateProcess runs it) delegating to a `.py` beside it; on POSIX it stays the shebang script
+    it always was. `__file__` inside `body` resolves to the same directory either way, so a stub
+    that writes `argv.json` next to itself keeps working unchanged.
+
+    Returns the path to invoke — pass it to `ACLI_BIN`-style env vars, or put `bindir` on `PATH`.
+    """
+    bindir = Path(bindir)
+    bindir.mkdir(parents=True, exist_ok=True)
+
+    if os.name != "nt":
+        script = bindir / name
+        script.write_text(f"#!{sys.executable}\n{body}", encoding="utf-8")
+        script.chmod(0o755)
+        return str(script)
+
+    (bindir / f"{name}.py").write_text(body, encoding="utf-8")
+    launcher = bindir / f"{name}.cmd"
+    # `%*` forwards every argument; cmd propagates the child's exit code as its own.
+    launcher.write_text(f'@echo off\r\n"{sys.executable}" "%~dp0{name}.py" %*\r\n',
+                        encoding="utf-8", newline="")
+    return str(launcher)
+
+
 def path_entry(p) -> str:
     """`p` spelled the way a POSIX shell's `$PATH` can actually read it (SCC-321).
 

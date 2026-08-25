@@ -31,7 +31,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _harness import Cases, TempDir  # noqa: E402
+from _harness import Cases, TempDir, fake_exe  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import risk_seam as rs  # noqa: E402
@@ -67,21 +67,23 @@ def fake_cli(bindir: Path, payload: object, rc: int = 0) -> None:
     It also writes its own argv to `argv.json` beside itself, which is the ONLY way to see what
     `--base` the seam chose — and `--base` is where the expensive mistake lives (see case C).
     """
-    bindir.mkdir(parents=True, exist_ok=True)
-    script = bindir / "code-review-graph"
     body = json.dumps(payload) if not isinstance(payload, str) else payload
     # ⛔ The interpreter is named ABSOLUTELY, not via `/usr/bin/env python3`. Case I empties `PATH`
     # to prove the pipx fallback, and `env` resolves through `PATH` — so an env shebang makes the
     # fixture unlaunchable in exactly the case it exists to test, and the failure looks identical
     # to "the fallback does not work". Found by case I failing against correct code.
-    script.write_text(
-        f"#!{sys.executable}\n"
-        "import json, sys, pathlib\n"
-        "pathlib.Path(__file__).with_name('argv.json').write_text(json.dumps(sys.argv[1:]))\n"
-        f"sys.stdout.write({json.dumps(body)})\n"
-        f"raise SystemExit({rc})\n",
-        encoding="utf-8")
-    script.chmod(0o755)
+    #
+    # ⛔ AND ON WINDOWS A SHEBANG IS NOT AN EXECUTABLE AT ALL (SCC-321). `_cli()` probes with
+    # `shutil.which("code-review-graph")`, which resolves through `PATHEXT` — an extensionless
+    # file is not on it, so this fixture was INVISIBLE and every case here measured the
+    # no-tool-installed path while reading normally. `fake_exe` puts a `.cmd` launcher on
+    # `PATHEXT` and keeps the shebang script on POSIX; `__file__` lands in `bindir` either way,
+    # so the `argv.json` case C reads is written where it has always been.
+    fake_exe(bindir, "code-review-graph",
+             "import json, sys, pathlib\n"
+             "pathlib.Path(__file__).with_name('argv.json').write_text(json.dumps(sys.argv[1:]))\n"
+             f"sys.stdout.write({json.dumps(body)})\n"
+             f"raise SystemExit({rc})\n")
 
 
 def graph_at(root: Path, sha: str, tested_by: list[str] | None = None) -> None:
