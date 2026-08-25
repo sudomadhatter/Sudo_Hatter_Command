@@ -128,11 +128,18 @@ wrong; the page was not.
   machine does not rediscover them.
 - `link-worktree-assets.py` does not cover `docs/migrations/auth_keys/`, so a fresh worktree reads
   `master.env` as a dead path in `check_maps`.
+- ⚠️ **Mac-side environment fault, recorded here because it would otherwise be blamed on a lane.**
+  Before the Mac confirmation run, that clone's **local `core.hooksPath` had again reverted** from the
+  relative `.githooks` to the absolute `/Users/sudohatter/Sudo_Hatter_Command/.githooks`. It was reset
+  to the relative value first; had it not been, `test_install_git_hooks.py` and `test_hooks_armed.py`
+  would have gone red and *this* lane would have worn it. **Third observed occurrence on that machine**
+  (twice on 2026-08-24 under SCC-305, once today). No script in the repo writes the absolute value —
+  the writer is machine-local and still unidentified. Out of scope here; it needs its own ticket.
 
 ## Your Actions
 
 - [x] The merge itself — lands via this branch's PR
-- [ ] **Confirm on the Mac.** CI already proves POSIX at the landing sha, so this is confirmation on
+- [x] **Confirm on the Mac.** CI already proves POSIX at the landing sha, so this is confirmation on
       the third environment rather than the gate — but the Mac is the machine that actually drives
       this system, and it has not run this branch. Expect `61/61 files passed`:
       ```bash
@@ -143,4 +150,4 @@ wrong; the page was not.
       python3 .agents/scripts/tests/run_all.py
       git checkout main                       # do not leave the clone parked on the lane
       ```
-      ⛔ `python3` on the Mac — there is no bare `python` there.
+      ⛔ `python3` on the Mac — there is no bare `python` there. -- verified 2026-08-25 (measured): Mac run on merged main @ 7182d74 (darwin 25.6.0, python3 3.14.7): python3 .agents/scripts/tests/run_all.py -> 61/61 files passed, exit 0 read from a BARE run; full transcript posted as a comment on SCC-321. Three environments now green - Windows 61/61, Linux CI main-write-gate PASS on PR #79 in 1m0s, Mac 61/61.
