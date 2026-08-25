@@ -90,13 +90,24 @@ reference repaired.
 
 ## Verification
 
+Every gate run bare with `env -u PYTHONIOENCODING`, so no result depends on a variable the door
+does not set:
+
 | Gate | Result |
 |---|---|
-| `python .agents/scripts/tests/run_all.py` | see the run recorded at close-out below |
-| `python .agents/scripts/workflow_lint.py --toolkit-only` | recorded at close-out |
-| `python .agents/scripts/check_maps.py --depth3-only --strict` | recorded at close-out |
-| `python .agents/scripts/check_links.py --base origin/main` | recorded at close-out |
+| `python .agents/scripts/tests/run_all.py` | **61/61 files**, exit 0 |
+| `python .agents/scripts/workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, exit 0 |
+| `python .agents/scripts/check_maps.py --depth3-only --strict` | exit 0 |
+| `python .agents/scripts/check_links.py --base origin/main` | exit 0, clean |
 | Every corrected command form | **verified by execution, not by reading** — `-e development` returns `✓ Injected 37 secrets`; the bare form hangs |
+
+⚠️ **`check_links` was red once, and the fix was to the prose, not to the checker.**
+`docs/migrations/INDEX.md` described the project-local autopilot engine with a backticked
+`scripts/autopilot-dev-story.ps1`, which the checker reads as a repo-relative path claim. The path is
+**correct-by-design absent** here — autopilot engines live in `Projects/`, and the lobby holds the
+spec only — and the line is pre-existing on `main`; this lane merely shifted its number. Reworded so
+the prose no longer looks like a claim about this repo. ⛔ Nothing was added to an ignore list: a
+checker taught to skip a shape stops finding the real hits of that shape (SCC-285).
 
 ⭐ **This lane could not be gated when it was written.** The enforcement suite answered **43/61** on
 this PC at the time, which is why the commit sat unpushed. **SCC-321** fixed that — the suite is now

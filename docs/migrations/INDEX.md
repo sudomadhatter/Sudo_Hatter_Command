@@ -166,8 +166,8 @@ cross-platform once `pwsh` is present.
 
 - [`propagate-autopilot-glm-hybrid.md`](install_guides/propagate-autopilot-glm-hybrid.md) +
   [`autopilot-glm-hybrid.patch`](scripts/autopilot-glm-hybrid.patch) — the GLM hybrid-lane autopilot port.
-  Kept because the autopilot engine is **project-local** (each project under `Projects/` has its own
-  `scripts/autopilot-dev-story.ps1`, and they are not synced), so this is the record for propagating
+  Kept because the autopilot engine is **project-local** (each project under `Projects/` ships its own
+  copy of `autopilot-dev-story.ps1`, and they are not synced), so this is the record for propagating
   the change into the next project. Nothing to do when setting up a machine.
 
 ---
