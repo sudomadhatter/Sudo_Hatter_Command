@@ -260,12 +260,41 @@ failure** rather than a red about the code. Verified with three consecutive clea
 
 ---
 
-## 10. ⛔ The Mac is the control, and it has NOT been run
+## 10. The POSIX control — what runs automatically, and what the Mac adds
 
-**Nothing here is certified until `python3 .agents/scripts/tests/run_all.py` is green on the Mac at
-this branch.** §5 binds it and every commit message on this lane repeats it.
+⚠️ **Correction to what this section said while the lane was open.** It read *"nothing here is
+certified until the Mac is green"* and named that the only control. That over-stated the gap: it was
+written without checking what CI actually runs. **`.github/workflows/main-write-gate.yml` runs
+`python3 .agents/scripts/tests/run_all.py` on `ubuntu-latest`, on every pull request into `main`, and
+the ruleset blocks the merge button until it passes.** A full POSIX control run of the identical
+entrypoint is therefore automatic and blocking — it is not something anyone has to remember to do.
 
-The risk is auditable rather than guessed:
+Both changes flagged below as *"Mac behaviour genuinely changes"* are **POSIX-generic, not
+Darwin-specific**: `sh_with_path` is plain POSIX `sh` parameter handling, and `risk_seam._cli` is
+`shutil.which`. Linux exercises both exactly as macOS would.
+
+**What Linux cannot see, and the Mac can:** a case-insensitive filesystem (APFS's default) and
+BSD-vs-GNU tool differences. Neither is in this diff — the one `.casefold()` added sits inside an
+`os.name == "nt"` branch, and no change here shells out to `sed`, `readlink`, or `stat`.
+
+### The Mac run — exact steps
+
+Still worth running, because the Mac is the machine that actually drives this system and CI is a
+third environment rather than either real one. It is **confirmation, not the gate**:
+
+```bash
+cd ~/Sudo_Hatter_Command                       # wherever the Mac clone lives
+git fetch origin
+git checkout chore/SCC-321-windows-suite-portability
+git config core.hooksPath .githooks            # per-machine; a fresh clone has NO gates at all
+python3 .agents/scripts/tests/run_all.py       # expect: 61/61 files passed
+git checkout main                              # do not leave the clone parked on the lane
+```
+
+⛔ Use `python3` on the Mac — there is no bare `python` there. If any file is red, name it; do not
+merge past it.
+
+### The residual risk, auditable rather than guessed
 
 | Class | Mac impact | Count |
 |---|---|---|
@@ -278,4 +307,6 @@ POSIX, but it is the Mac's path changing) and **`risk_seam._cli`** (`shutil.whic
 `.exists()`, so a *non-executable* file at `~/.local/bin/code-review-graph` is now skipped — strictly
 more correct, and pipx sets the exec bit).
 
-⛔ **This is an argument, not a measurement.** Run the Mac.
+⛔ **That table is an argument, not a measurement** — which is exactly why the argument is not what
+this rests on. The measurement is CI: the same suite, the same command, on a POSIX box, required by
+the ruleset before the merge button unlocks.
