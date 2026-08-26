@@ -945,7 +945,17 @@ def cmd_resolve(args) -> int:
             # (it names the declared blocker), not belt-and-braces - and the approve arm below
             # stays unreachable for them, because a follower always carries at least its
             # blocked_by edge in g. An unverdicted row is banned, so there is always an answer.
-            blockers = sorted(b for b in g[k] if b in approved) or sorted(g[k])
+            # ⛔ A DECLARED blocker is named whether or not it is itself approved (SCC-326).
+            # Filtering to `approved` alone silently drops a blocker that is ALSO a follower,
+            # which is the same single-dependency lie the note below bans, reached by another
+            # route - and the `or sorted(g[k])` fallback never fires to catch it, because the
+            # approved blocker already made the first arm non-empty. Measured on NVS-10:
+            # NVS-22 declares [NVS-19, NVS-20] and rendered "after NVS-19", because NVS-20
+            # follows NVS-19 and so never enters the approved set. OVERLAP blockers still
+            # filter to `approved` - those are the lanes you would actually be racing.
+            declared = {b for b in (match_key(d, g) for d in blocked_by_of(touch.get(k)))
+                        if b and b != k and b in g[k]}
+            blockers = sorted(declared | {b for b in g[k] if b in approved}) or sorted(g[k])
             if not blockers:
                 verdicts.append({"key": k, "verdict": "approved", "mark": "🟢", "detail": "",
                                  "evidence": ", ".join(sorted(source_paths(touch[k])))
