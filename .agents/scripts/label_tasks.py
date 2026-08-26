@@ -79,6 +79,11 @@ import wf_common as wf  # noqa: E402
 
 LABEL = "parallel-ok"
 QUICK = "quick-dev"
+# The wave family is a REWRITE, never an accretion: a child that moves between runs must lose
+# its old number, or the board ends up asserting `wave-2` and `wave-3` at once and the operator
+# schedules against whichever they read first. Matched as a family so a stale one is strippable
+# without the caller having to know which number was written last.
+WAVE_RE = re.compile(r"^wave-(\d+)$")
 # The marker string lives on the BOARD, not in this repo, so a rename here cannot be swept:
 # every stamp already posted would go invisible and read as never-checked. It is deliberately
 # frozen at the name the SCC-56 pass wrote, and `check` finds those older stamps unchanged.
@@ -836,6 +841,37 @@ def conflict_graph(candidates: list[str], touch: dict) -> dict[str, dict[str, st
     return g
 
 
+def compute_waves(candidates: list[str], touch: dict) -> list[list[str]]:
+    """The full schedule: wave 1 is `approved`, then land it and solve what is left, until
+    every child has a slot. Deterministic, same as the single solve it repeats.
+
+    ⛔ A CYCLE RETURNS NO SCHEDULE AT ALL, never a partial one. If a round approves nothing
+    while children remain, the declared dependencies contradict each other; emitting the waves
+    solved so far would put real-looking `wave-N` labels on the board and silently omit the
+    children the operator most needs to see. Empty says "re-run me", a truncated list does not.
+
+    The per-round graph is rebuilt over what REMAINS: a blocker that has landed is no longer a
+    candidate, so `match_key` stops resolving it and its edge disappears — the same mechanism
+    that already keeps a blocker OUTSIDE the run from locking its declarer."""
+    full = conflict_graph(candidates, touch)
+    deps = {k: {b for b in (match_key(d, full) for d in blocked_by_of(touch.get(k)))
+                if b and b != k}
+            for k in candidates}
+    waves: list[list[str]] = []
+    landed: set[str] = set()
+    remaining = list(candidates)
+    while remaining:
+        sub = conflict_graph(remaining, touch)
+        followers = {k for k in remaining if deps[k] - landed}
+        wave = largest_disjoint([k for k in remaining if k not in followers], sub)
+        if not wave:
+            return []
+        waves.append(wave)
+        landed |= set(wave)
+        remaining = [k for k in remaining if k not in landed]
+    return waves
+
+
 def largest_disjoint(candidates: list[str], g: dict[str, dict[str, str]]) -> list[str]:
     """The largest set in which EVERY pair is disjoint. Exhaustive with pruning — N is a
     handful of stories, and a deterministic answer matters more than speed: same input must
@@ -914,6 +950,18 @@ def cmd_resolve(args) -> int:
     unknown = sorted(c["key"] for c in live
                      if c.get("in_flight") and not c.get("grounded"))
 
+    # ⭐ THE WHOLE SCHEDULE, not one snapshot (SCC-328). `approved` answers "what can run
+    # together RIGHT NOW" and stops, which on a chained epic is one child wearing a label that
+    # means "safe beside every other approved sibling" when there are none. Waves keep solving:
+    # take the winners, land them, solve again. `approved` IS wave 1 by construction, so every
+    # existing caller reads the same answer it always did.
+    # ⛔ Suppressed entirely when a sibling is in flight with unknown surfaces — the same reason
+    # that already empties `approved`. A schedule computed AROUND an unknown reaches the board
+    # as a label, which is a guess wearing the authority of a measurement (rule 3).
+    waves = [] if unknown else compute_waves(candidates, touch)
+    wave_of = {k: n for n, w in enumerate(waves, 1) for k in w}
+    wave_size = {k: len(waves[n - 1]) for k, n in wave_of.items()}
+
     verdicts = []
     for c in sorted(live, key=lambda x: x["key"]):
         k = c["key"]
@@ -978,12 +1026,25 @@ def cmd_resolve(args) -> int:
         if "quick_dev" not in v:
             v["quick_dev"], v["quick_dev_evidence"] = quick_dev_of(touch.get(v["key"]) or {})
 
+    # ⭐ `parallel-ok` is a claim about SIBLINGS, so it belongs to a wave of TWO OR MORE and to
+    # nothing else (SCC-328). On a set of one it asserted nothing while READING as "this one
+    # parallelizes" - the exact opposite of why that child was approved, which is that it is
+    # alone. Stamped here, in the one pass that already fills quick_dev, rather than at each of
+    # the five append sites: a verdict row that silently missed a wave would land on the board
+    # as a stripped label, and five chances to forget is five ways to be wrong.
+    # The fallback is not decoration: when waves are suppressed `approved` is empty too, so
+    # every child correctly reads False and a stale label comes off, exactly as before.
+    for v in verdicts:
+        v["wave"] = wave_of.get(v["key"])
+        v["parallel_ok"] = (wave_size[v["key"]] >= 2 if v["key"] in wave_of
+                            else v["key"] in approved)
+
     stamp = (f"verified {date.today().isoformat()} against {len(packet['child_keys'])} "
              f"children: {', '.join(packet['child_keys'])}")
     result = {"parent": packet["parent"], "epic": packet.get("epic"), "mode": mode,
               "repo": packet.get("repo"), "approved": [] if unknown else approved,
               "unknown_in_flight": unknown, "umbrellas": umbrellas, "verdicts": verdicts,
-              "child_keys": packet["child_keys"], "stamp": stamp}
+              "waves": waves, "child_keys": packet["child_keys"], "stamp": stamp}
 
     out = json.dumps(result, indent=2, ensure_ascii=False)
     if args.out:
@@ -1013,7 +1074,20 @@ def render_comment(res: dict) -> str:
         lines += [f"_{u['key']} ({u['story_id']}) is an umbrella over "
                   + ", ".join(u["contains"]) + " — assessed as those, not as itself._", ""]
     mode = res.get("mode") or "story"
-    lines += ["| Ticket | Verdict | Quick-dev | Evidence |", "|---|---|---|---|"]
+    # ⭐ The schedule the operator actually manages the board from. Wave 1 is the set this run
+    # measured; everything after it is solved from touch-sets of work nobody has developed yet,
+    # so it is a PLAN and says so. Presenting all waves at one authority is how a projection
+    # gets scheduled against as a measurement.
+    if res.get("waves"):
+        lines += ["📅 **Schedule:** "
+                  + " → ".join(f"**wave {n}** " + " · ".join(w)
+                               for n, w in enumerate(res["waves"], 1)),
+                  "",
+                  "_Wave 1 is **certified** — it is the set this run measured. Later waves are "
+                  "**projected** from touch-sets of work that has not been developed yet; "
+                  "re-run after each wave lands._",
+                  ""]
+    lines += ["| Ticket | Wave | Verdict | Quick-dev | Evidence |", "|---|---|---|---|---|"]
     for v in res["verdicts"]:
         mark = {"approved": "🟢 approved", "after": f"🔒 {v['detail']}",
                 "waiting": f"⏳ {v['detail']}", "no-story": "📝 no story",
@@ -1021,8 +1095,13 @@ def render_comment(res: dict) -> str:
         q = {True: "⚡ yes", False: "—", None: ""}[v.get("quick_dev")]
         if v.get("quick_dev") and v.get("quick_dev_evidence"):
             q += f" ({v['quick_dev_evidence']})"
+        w = f"{v['wave']}" + (" 🧵" if v.get("parallel_ok") else "") if v.get("wave") else "—"
         eve = v["evidence"] + (f" → `{v['command']}`" if v.get("command") else "")
-        lines.append(f"| {v['key']} | {mark} | {q} | {eve} |")
+        lines.append(f"| {v['key']} | {w} | {mark} | {q} | {eve} |")
+    if res.get("waves"):
+        lines += ["", "_🧵 = `parallel-ok`: this wave holds two or more, so they run side by "
+                      "side. A wave of one carries no such label — there is nothing to run "
+                      "beside._"]
     unit = "story" if mode == "story" else "subtask"
     lines += ["", f"_A verdict is a SNAPSHOT. Writing another {unit} invalidates it — re-run "
                   f"`{COMMAND[mode]} " + res["parent"] + "`._"]
@@ -1109,9 +1188,21 @@ def cmd_stamp(args) -> int:
     changes = []
     for v in res["verdicts"]:
         c = by_key.get(v["key"]) or {}
-        act = set_labels(binary, v["key"], c.get("labels") or [],
-                         {LABEL: v["key"] in approved, QUICK: v.get("quick_dev")},
-                         args.apply)
+        current = c.get("labels") or []
+        # `parallel_ok` is the resolver's answer (wave of 2+); the `in approved` fallback keeps
+        # a verdicts file written before SCC-328 readable rather than stripping every label.
+        wanted = {LABEL: v.get("parallel_ok", v["key"] in approved),
+                  QUICK: v.get("quick_dev")}
+        # ⛔ Strip EVERY wave label the ticket currently wears before adding this run's, or a
+        # child that moved ends up asserting two waves at once. Order matters and is relied on:
+        # the target number is set True after the family sweep, so re-stamping an unchanged
+        # child is a no-op rather than a strip-then-add.
+        for existing in current:
+            if WAVE_RE.match(existing):
+                wanted[existing] = False
+        if v.get("wave"):
+            wanted[f"wave-{v['wave']}"] = True
+        act = set_labels(binary, v["key"], current, wanted, args.apply)
         if act:
             changes.append(f"{v['key']} {act}")
 

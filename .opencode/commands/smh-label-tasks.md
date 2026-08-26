@@ -1,5 +1,5 @@
 ---
-description: After a Task's subtasks are PLANNED, answer "which of these can I run side by side, and which are small enough for one light lane?" — one snapshot over ONE parent Task's Subtasks. Reads every lane's plan, extracts what each will actually modify, computes the largest set with no file overlap, and stamps `parallel-ok` + `quick-dev` on the winners. Stamps the set it was computed against so it can detect its own staleness. States, never starts.
+description: After a Task's subtasks are PLANNED, answer "in what ORDER do I run these, and which can go side by side?" — the whole wave schedule over ONE parent Task's Subtasks. Reads every lane's plan, extracts what each will actually modify, solves the largest set with no file overlap, lands it, and solves again until every lane has a slot. Stamps `wave-N` on every child, `parallel-ok` where a wave holds two or more, and `quick-dev` where one light lane fits. Stamps the set it was computed against so it can detect its own staleness. States, never starts.
 platforms: [opencode, antigravity, claude, codex]
 ---
 
@@ -26,6 +26,48 @@ unlock approval; nothing else does.
 **BMAD stories under a BMAD epic**, this one assesses **Subtasks under one Task** — work with no
 story file, no sprint board and no epic branch. Point either at the other's parent and it refuses
 by name and hands you across.
+
+## ⭐ It answers ORDER, not just "right now" — the wave schedule
+
+**The output is a schedule the operator manages the board from.** One solve answers *"which of
+these can run together right now"*, which on a chained Task is a single subtask and tells you
+nothing about what comes after it. So the engine keeps going: solve, land the winners, solve
+again, until every grounded child has a slot.
+
+```
+wave 1  SCC-310                ← certified: the set this run measured
+wave 2  SCC-311
+wave 3  SCC-313 · SCC-314       ← two members, so both are parallel-ok
+wave 4  SCC-312
+```
+
+| Label | Goes on | Means |
+|---|---|---|
+| **`wave-N`** | **every** grounded child | run it in wave N; the schedule, on the card |
+| **`parallel-ok`** | only a child whose wave holds **two or more** | run it beside the others in its wave |
+| `quick-dev` | a child the light lane fits | ships via `/smh-quick-dev` |
+
+A `Subtask` is grounded by its plan, so a chained Task produces exactly the same shape as
+a chained epic — one lane, then the next, with the occasional pair.
+
+<!-- twin-law: waves-are-the-answer-not-one-snapshot -->
+⛔ **A SOLO WAVE CARRIES NO `parallel-ok`, and that is the whole reason the label is trustworthy.**
+It is a claim about SIBLINGS. On a set of one it asserts nothing while *reading* as "this one
+parallelizes" — the exact opposite of why that child was approved, which is that it is **alone**.
+
+⭐ **Wave 1 is CERTIFIED; waves 2+ are PROJECTED, and the comment says so.** Later waves are solved
+from ground nobody has broken yet, and real work always turns up surfaces no plan named.
+**Re-run after each wave lands.** Presenting the whole schedule at one authority is how a
+projection gets scheduled against as a measurement.
+
+⛔ **No schedule past an unknown.** One in-flight sibling with no landed plan already empties the
+approved set; the waves are suppressed **entirely** for the same reason. A schedule solved *around*
+unknown ground reaches the board as a label, which is a guess wearing the authority of a
+measurement (rule 3).
+
+⛔ **A dependency CYCLE emits no schedule at all, never a partial one.** Truncated waves would put
+real-looking labels on the board and silently omit the children the operator most needs to see.
+<!-- /twin-law -->
 
 ## 🛑 MANDATORY RULES
 
@@ -175,10 +217,12 @@ Print the table the script renders, unedited — approved list first, then one v
 
 | Verdict | Meaning |
 |---|---|
-| 🟢 approved | safe to run beside **every other** 🟢 |
+| 🟢 approved | wave 1 — start here |
 | 🔒 after `<ticket>`, `<ticket>` | shares ground with EVERY ticket named — run after all of them land |
 | ⏳ waiting on `<ticket>` | an in-flight lane's surfaces are unknown; clears when its plan lands |
 | 📝 no plan | ungrounded — `/smh-plan-task <PARENT-KEY>` unlocks it |
+| **Wave `N`** | which wave the lane runs in (a column, not a verdict) |
+| **🧵** | in a wave of **two or more** — carries `parallel-ok` |
 | ⚡ quick-dev | small enough for one light lane (a separate column, not a verdict) |
 
 ## Step 5 — Stamp the board
@@ -188,11 +232,14 @@ python3 .agents/scripts/label_tasks.py stamp \
         --plan /tmp/lt-plan.json --verdicts /tmp/lt-verdicts.json --apply
 ```
 
-Adds `parallel-ok` to the 🟢 set **and strips it from everyone else** — that rewrite is what makes
-this self-correcting where a per-ticket writer rotted. `quick-dev` rides the same pass with the
-same rewrite, **except where you left it unassessed**, which is left untouched. Every other label
-is preserved. Posts one comment on the **parent Task** carrying the table, the evidence, and the
-stamp: `verified <date> against N children: <keys>`.
+Writes `wave-N` on every grounded child and `parallel-ok` on every child whose wave holds two or
+more — **and strips both from everyone else.** That rewrite is what makes this self-correcting
+where a per-ticket writer rotted. The wave family is stripped as a **family**: a lane that moves
+from wave 2 to wave 3 loses `wave-2`, or the card asserts two waves at once and the operator
+schedules against whichever they read first. `quick-dev` rides the same pass with the same
+rewrite, **except where you left it unassessed**, which is left untouched. Every other label is
+preserved. Posts one comment on the **parent Task** carrying the schedule, the table, the
+evidence, and the stamp: `verified <date> against N children: <keys>`.
 
 ⛔ **Labels and one comment only.** It does not transition anything (`jira.md` guardrail 4).
 
@@ -208,11 +255,12 @@ that no longer matches the parent's children is not a verdict** — it reads *"r
 ## Report
 
 `✅ Label check — <PARENT-KEY> (Task) in <repo>:`
-- `Approved (<n>): <keys>` *(or why nothing was)*
+- `Schedule: wave 1 <keys> → wave 2 <keys> → …` — ⛔ **every wave, in order.** This is the line the operator manages the board from; an approved-set-only report makes a chained Task look like one startable lane and nothing else.
+- `Approved (<n>): <keys>` *(or why nothing was)* — this is wave 1
 - `Locked: <key> after <key>, <key> — <the shared path per blocker>` per row — ⛔ **every** declared blocker, not the first. A row naming one of three reads as a single dependency, and the operator schedules against it.
 - `Quick-dev (<n>): <keys>`
 - `Ungrounded: <keys> → /smh-plan-task <PARENT-KEY>`
-- `Board: <n> labels added, <n> stripped · comment on <PARENT-KEY>`
+- `Board: <n> labels added, <n> stripped · comment on <PARENT-KEY>` — name wave 1 as **certified** and waves 2+ as **projected**; a schedule reported at one authority gets scheduled against as a measurement
 - `Stamp: verified <date> against <n> children`
 
 ⛔ Never end by starting one of them. The next move is the operator's.

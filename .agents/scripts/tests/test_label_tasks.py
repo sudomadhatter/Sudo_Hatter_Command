@@ -829,20 +829,28 @@ def main() -> int:
     with TempDir() as tmp:
         launcher, state = acli_stub(tmp)
         os.environ["STUB_STATE"] = str(state)
-        state.write_text(json.dumps({"labels": {"SCC-100": ["keep-me"],
+        # SCC-100 carries a STALE `wave-9` so the strip is measured through the REAL stamp
+        # path, not only through `label_plan` in isolation: W3 proves the pure function can
+        # strip a wave, and proves nothing about cmd_stamp finding the label to strip.
+        state.write_text(json.dumps({"labels": {"SCC-100": ["keep-me", "wave-9"],
                                                 "SCC-101": ["keep-me", "parallel-ok"]}}),
                          encoding="utf-8")
         # SCC-101 is UNGROUNDED and carries a stale `parallel-ok`, so which child loses the
         # label is deterministic - a two-way path collision would leave the tie-break to pick
         # the loser and the assertion would flap.
+        # ⭐ SCC-102 exists so wave 1 holds TWO grounded children (SCC-328). Without it SCC-100
+        # is a solo wave, correctly earns no `parallel-ok`, and the add-assertion below would
+        # have to be weakened to something that no longer proves the add path works at all.
         (tmp / "p.json").write_text(json.dumps(
-            packet([subtask("SCC-100", labels=["keep-me"]),
+            packet([subtask("SCC-100", labels=["keep-me", "wave-9"]),
                     subtask("SCC-101", grounded=False,
-                            labels=["keep-me", "parallel-ok"])], "SCC-99", "task")),
+                            labels=["keep-me", "parallel-ok"]),
+                    subtask("SCC-102")], "SCC-99", "task")),
             encoding="utf-8")
         (tmp / "t.json").write_text(json.dumps(
             {"SCC-100": {"paths": [".agents/a.py"],
-                         "quick_dev": {"eligible": True, "evidence": "one file"}}}),
+                         "quick_dev": {"eligible": True, "evidence": "one file"}},
+             "SCC-102": {"paths": [".agents/b.py"]}}),
             encoding="utf-8")
         run_script("label_tasks.py", "resolve", "--plan", str(tmp / "p.json"),
                    "--touchsets", str(tmp / "t.json"), "--out", str(tmp / "v.json"))
@@ -856,6 +864,10 @@ def main() -> int:
                 "keep-me" in wrote.get("SCC-100", []), str(wrote))
         c.check("the write carries quick-dev through to the board, not just to stdout",
                 "quick-dev" in wrote.get("SCC-100", []), str(wrote))
+        c.check("the wave label reaches the board through cmd_stamp",
+                "wave-1" in wrote.get("SCC-100", []), str(wrote))
+        c.check("a STALE wave label is stripped by cmd_stamp, not merely by label_plan",
+                "wave-9" not in wrote.get("SCC-100", []), str(wrote))
         c.check("and the STRIP reaches the board too - not merely the printed report",
                 "parallel-ok" not in wrote.get("SCC-101", []), str(wrote))
         c.check("the stamped verdict comment is POSTED, not just rendered",
@@ -1251,6 +1263,118 @@ def main() -> int:
         c.check(f"F3 {name}'s legend row agrees with the report row",
                 bool(legend) and legend[0].count("<ticket>") >= 2,
                 (legend[0] if legend else "(none)"))
+
+    # ── W · THE WHOLE SCHEDULE, not one snapshot (SCC-328) ───────────────────────────────
+    # The pass answered "which of these can run together RIGHT NOW" and stopped, which on a
+    # chained epic is a single ticket wearing `parallel-ok` — a label meaning "safe beside
+    # every other approved sibling" when there are none. True, useless, and it reads as the
+    # OPPOSITE of the truth: that child is approved BECAUSE it is alone. The engine already
+    # holds the rest of the answer; it just threw it away after the first solve.
+
+    # W1 · a fully chained epic resolves to one child per wave, in order.
+    with TempDir() as tmp:
+        kids = [child(f"A-{n}", f"1.{n}") for n in range(1, 4)]
+        touch = {"A-1": {"paths": ["backend/a.py"]},
+                 "A-2": {"paths": ["backend/b.py"], "blocked_by": ["A-1"]},
+                 "A-3": {"paths": ["backend/c.py"], "blocked_by": ["A-2"]}}
+        r = run_resolve(tmp, kids, touch)
+        by = r.get("_by") or {}
+        c.check("W1 every grounded child carries a wave",
+                all(by.get(k, {}).get("wave") for k in ("A-1", "A-2", "A-3")),
+                str({k: by.get(k, {}).get("wave") for k in ("A-1", "A-2", "A-3")}))
+        c.check("W1 a chain resolves to one child per wave, in dependency order",
+                [by.get(f"A-{n}", {}).get("wave") for n in range(1, 4)] == [1, 2, 3],
+                str([by.get(f"A-{n}", {}).get("wave") for n in range(1, 4)]))
+        c.check("W1 `approved` is still exactly wave 1 (nothing downstream reads it differently)",
+                r.get("approved") == ["A-1"], str(r.get("approved")))
+
+    # ⛔ W2 · A SOLO WAVE MUST NOT WEAR `parallel-ok`. This is the defect that started the
+    # ticket: the label is a claim about SIBLINGS, so on a set of one it asserts nothing while
+    # reading as "this one parallelizes". A wave of two or more is the only thing it can mean.
+    with TempDir() as tmp:
+        kids = [child(f"A-{n}", f"1.{n}") for n in range(1, 4)]
+        touch = {"A-1": {"paths": ["backend/a.py"]},
+                 "A-2": {"paths": ["backend/b.py"], "blocked_by": ["A-1"]},
+                 "A-3": {"paths": ["backend/c.py"], "blocked_by": ["A-1"]}}
+        r = run_resolve(tmp, kids, touch)
+        by = r.get("_by") or {}
+        c.check("W2 (control) the fixture really does make wave 1 a SOLO wave",
+                [k for k, v in by.items() if v.get("wave") == 1] == ["A-1"],
+                str({k: v.get("wave") for k, v in by.items()}))
+        c.check("W2 a solo wave does NOT get parallel-ok",
+                by.get("A-1", {}).get("parallel_ok") is False,
+                str(by.get("A-1", {}).get("parallel_ok")))
+        c.check("W2 (control) the 2-member wave DOES get parallel-ok on both members",
+                all(by.get(k, {}).get("parallel_ok") is True for k in ("A-2", "A-3")),
+                str({k: by.get(k, {}).get("parallel_ok") for k in ("A-2", "A-3")}))
+
+    # W3 · the wave label family is REWRITTEN, not accreted. A child that moves between runs
+    # must lose its old `wave-N`, the same self-correcting rewrite that makes `parallel-ok`
+    # trustworthy — otherwise a ticket ends up wearing wave-2 AND wave-3 and the board lies.
+    plan_labels = lt.label_plan(["wave-2", "parallel-ok"],
+                                {"wave-2": False, "wave-3": True, "parallel-ok": False})
+    c.check("W3 a stale wave-N is stripped when the child moves waves",
+            plan_labels[0] == ["wave-3"], str(plan_labels))
+
+    # ⛔ W4 · NO SCHEDULE PAST AN UNKNOWN. One in-flight sibling with no landed plan already
+    # empties `approved` — a wave list computed around it would be a guess wearing the same
+    # authority as wave 1, and it lands on the BOARD as a label. Rule 3: fail toward saying
+    # nothing.
+    with TempDir() as tmp:
+        kids = [child("A-1", "1.1"), child("A-2", "1.2"),
+                child("A-3", "1.3", grounded=False, in_flight=True)]
+        touch = {"A-1": {"paths": ["backend/a.py"]}, "A-2": {"paths": ["backend/b.py"]}}
+        r = run_resolve(tmp, kids, touch)
+        by = r.get("_by") or {}
+        c.check("W4 (control) the in-flight sibling really did empty `approved`",
+                r.get("approved") == [], str(r.get("approved")))
+        c.check("W4 no child carries a wave while a sibling's surfaces are unknown",
+                all(v.get("wave") is None for v in by.values()),
+                str({k: v.get("wave") for k, v in by.items()}))
+
+    # W5 · an UNGROUNDED child is not schedulable, so it carries no wave even when the rest
+    # of the set is clean — a wave number on a story nobody has written is an invented plan.
+    with TempDir() as tmp:
+        kids = [child("A-1", "1.1"), child("A-2", "1.2", grounded=False)]
+        touch = {"A-1": {"paths": ["backend/a.py"]}}
+        r = run_resolve(tmp, kids, touch)
+        by = r.get("_by") or {}
+        c.check("W5 the grounded child is scheduled", by.get("A-1", {}).get("wave") == 1,
+                str(by.get("A-1", {}).get("wave")))
+        c.check("W5 the ungrounded child carries NO wave",
+                by.get("A-2", {}).get("wave") is None,
+                str(by.get("A-2", {}).get("wave")))
+
+    # ⛔ W7 · A CYCLE EMITS NO SCHEDULE, NEVER A PARTIAL ONE. Found by mutation: replacing the
+    # cycle's `return []` with `break` left every case green, because nothing here declared a
+    # contradictory pair. A truncated wave list is the dangerous shape — the waves it DID solve
+    # look exactly as authoritative as a complete run, and the children it silently dropped are
+    # the ones the operator most needs to see. The verdict rows must still be emitted (mandatory
+    # rule 4: every ticket gets exactly one verdict), so "no schedule" is not "no answer".
+    with TempDir() as tmp:
+        kids = [child("A-1", "1.1"), child("A-2", "1.2"), child("A-3", "1.3")]
+        touch = {"A-1": {"paths": ["backend/a.py"], "blocked_by": ["A-2"]},
+                 "A-2": {"paths": ["backend/b.py"], "blocked_by": ["A-1"]},
+                 "A-3": {"paths": ["backend/c.py"]}}
+        r = run_resolve(tmp, kids, touch)
+        by = r.get("_by") or {}
+        c.check("W7 a dependency cycle emits NO waves at all",
+                r.get("waves") == [], str(r.get("waves")))
+        c.check("W7 ⛔ not even a PARTIAL schedule — A-3 is solvable and still gets no wave",
+                by.get("A-3", {}).get("wave") is None,
+                "a truncated list reads as authoritative as a complete one: "
+                + str({k: v.get("wave") for k, v in by.items()}))
+        c.check("W7 (control) every child still gets a verdict — no schedule is not no answer",
+                len(r.get("verdicts") or []) == 3, str(len(r.get("verdicts") or [])))
+
+    # W6 · both doors must describe the wave labels, or the operator reads a board the doc
+    # never mentions. Same twin-law shape as F3 above.
+    for name, path in doors.items():
+        body = path.read_text(encoding="utf-8") if path.is_file() else ""
+        c.check(f"W6 {name} documents the `wave-N` label", "`wave-N`" in body, str(path))
+        c.check(f"W6 {name} states that a SOLO wave carries no parallel-ok",
+                "two or more" in body and "parallel-ok" in body,
+                "the rule that makes the label mean something")
 
     return c.finish()
 

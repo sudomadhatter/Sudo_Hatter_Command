@@ -1,5 +1,5 @@
 ---
-description: After an epic's stories are WRITTEN, answer "which of these can I run side by side, and which are small enough for the quick lane?"...
+description: After an epic's stories are WRITTEN, answer "in what ORDER do I run these, and which can go side by side?" — the whole wave...
 platforms: [opencode, antigravity]
 ---
 
