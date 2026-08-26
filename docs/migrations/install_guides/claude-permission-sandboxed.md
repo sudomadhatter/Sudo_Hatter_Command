@@ -52,9 +52,13 @@ To prevent false-positive approval prompts during test harness and verification 
 
 Claude Code settings in `.claude/settings.json` execute hooks directly from `.agents/hooks/` through `run-hook.sh` (e.g. `sh "$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh" .agents/hooks/guard-cwd-escape.py`). The duplicate `.claude/hooks/` directory is retired and untracked from git, ensuring git merges involving hook changes are never denied by the OS sandbox.
 
-### 5. Sandbox Filesystem Boundaries
+### 5. Sandbox Filesystem Boundaries & Git Submodule Worktrees
 
-Ensure `/tmp` and `/private/tmp` are explicitly allowed in `sandbox.filesystem.allowWrite` along with the project and worktree paths:
+Because projects under `Projects/*` are Git submodules of `Sudo_Hatter_Command`, their administrative git directory is **not** inside `Projects/<name>/.git`—it resides in `Sudo_Hatter_Command/.git/modules/Projects/<name>`. Furthermore, when a worktree is created at `.claude/worktrees/<story>`, its git administrative state lives in `Sudo_Hatter_Command/.git/modules/Projects/<name>/worktrees/<story>`.
+
+If `sandbox.filesystem.allowWrite` omits `Sudo_Hatter_Command/.git` and `Sudo_Hatter_Command/.git/modules`, any `git` command executing inside a worktree (such as `git fetch`, `git commit`, `git checkout`, or `git status`) attempts to write to the parent repository's `.git/modules/` directory. The OS sandbox detects this as an unauthorized directory escape and immediately triggers a manual confirmation prompt.
+
+Ensure both `.git` and `.git/modules` are explicitly included in `sandbox.filesystem.allowWrite` alongside `/tmp` and project paths:
 
 ```json
 {
@@ -64,17 +68,23 @@ Ensure `/tmp` and `/private/tmp` are explicitly allowed in `sandbox.filesystem.a
     "filesystem": {
       "allowWrite": [
         "c:/Sudo_Hatter_Command",
-        "c:/Sudo_Hatter_Command/.claude/worktrees",
         "c:/Sudo_Hatter_Command/.git",
-        "c:/Sudo_Hatter_Command/Projects",
-        "C:/Users/dlohn/AppData/Local/Temp",
-        "C:/Users/dlohn/AppData/Local/Temp/claude",
+        "c:/Sudo_Hatter_Command/.git/modules",
+        "c:/Sudo_Hatter_Command/Projects/{{PROJECT_NAME}}",
+        "c:/Sudo_Hatter_Command/Projects/{{PROJECT_NAME}}/.claude",
+        "c:/Sudo_Hatter_Command/Projects/{{PROJECT_NAME}}/.claude/worktrees",
+        "c:/Sudo_Hatter_Command/Projects/{{PROJECT_NAME}}/.git",
+        "C:/Users/{{USER}}/AppData/Local/Temp",
+        "C:/Users/{{USER}}/AppData/Local/Temp/claude",
         "/c/Sudo_Hatter_Command",
-        "/c/Sudo_Hatter_Command/.claude/worktrees",
         "/c/Sudo_Hatter_Command/.git",
-        "/c/Sudo_Hatter_Command/Projects",
-        "/c/Users/dlohn/AppData/Local/Temp",
-        "/c/Users/dlohn/AppData/Local/Temp/claude",
+        "/c/Sudo_Hatter_Command/.git/modules",
+        "/c/Sudo_Hatter_Command/Projects/{{PROJECT_NAME}}",
+        "/c/Sudo_Hatter_Command/Projects/{{PROJECT_NAME}}/.claude",
+        "/c/Sudo_Hatter_Command/Projects/{{PROJECT_NAME}}/.claude/worktrees",
+        "/c/Sudo_Hatter_Command/Projects/{{PROJECT_NAME}}/.git",
+        "/c/Users/{{USER}}/AppData/Local/Temp",
+        "/c/Users/{{USER}}/AppData/Local/Temp/claude",
         "/tmp",
         "/private/tmp"
       ]
