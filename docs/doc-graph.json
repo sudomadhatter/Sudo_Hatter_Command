@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 365,
+    "files": 366,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 715,
+    "edges": 720,
     "external": 39,
     "ambiguous": 165,
     "dangling": 297,
@@ -478,7 +478,7 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 60,
+      "in": 61,
       "out": 3
     },
     {
@@ -553,7 +553,7 @@
     },
     {
       "path": ".agents/rules/tests-must-gate-for-real.md",
-      "in": 11,
+      "in": 12,
       "out": 0
     },
     {
@@ -1769,7 +1769,7 @@
     {
       "path": "docs/migrations/INDEX.md",
       "in": 6,
-      "out": 21
+      "out": 23
     },
     {
       "path": "docs/migrations/antigravity_extensions/gemini-extensions-sync-guide.md",
@@ -1785,6 +1785,11 @@
       "path": "docs/migrations/install_guides/claude-permission-sandboxed.md",
       "in": 0,
       "out": 0
+    },
+    {
+      "path": "docs/migrations/install_guides/github-ci-gates-setup.md",
+      "in": 3,
+      "out": 3
     },
     {
       "path": "docs/migrations/install_guides/jira-api-token-setup.md",
@@ -1818,8 +1823,8 @@
     },
     {
       "path": "docs/migrations/install_guides/repo-gate-stack-setup.md",
-      "in": 2,
-      "out": 4
+      "in": 3,
+      "out": 5
     },
     {
       "path": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
@@ -5127,6 +5132,11 @@
     },
     {
       "from": "docs/migrations/INDEX.md",
+      "to": "docs/migrations/install_guides/github-ci-gates-setup.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/migrations/INDEX.md",
       "to": "docs/migrations/install_guides/jira-api-token-setup.md",
       "kind": "link"
     },
@@ -5163,6 +5173,21 @@
     {
       "from": "docs/migrations/INDEX.md",
       "to": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/install_guides/github-ci-gates-setup.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/migrations/install_guides/github-ci-gates-setup.md",
+      "to": ".agents/rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/migrations/install_guides/github-ci-gates-setup.md",
+      "to": "docs/migrations/install_guides/repo-gate-stack-setup.md",
       "kind": "link"
     },
     {
@@ -5239,6 +5264,11 @@
       "from": "docs/migrations/install_guides/repo-gate-stack-setup.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
+    },
+    {
+      "from": "docs/migrations/install_guides/repo-gate-stack-setup.md",
+      "to": "docs/migrations/install_guides/github-ci-gates-setup.md",
+      "kind": "link"
     },
     {
       "from": "docs/migrations/install_guides/repo-gate-stack-setup.md",
