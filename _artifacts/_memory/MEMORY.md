@@ -78,9 +78,9 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [Relocating drops mount guards](relocating-drops-mount-guards.md) — conditional inside render guard drops mount preconditions.
 - [Destructive re-verify reads FRESH](destructive-reverify-must-read-fresh.md) — cached re-check no-ops delete and looks green.
 
-## GitNexus
-- [⛔ `base` is NOT a GitNexus replacement; review-weighted MIT swap = code-review-graph (1st) / codebase-memory-mcp (2nd); rules layer = native `.claude/rules paths:` + Antigravity `.agents/rules` + trigger hook, no product](base-is-not-a-gitnexus-replacement.md) — same NC license as GitNexus; CodeGraphContext below both.
-- **The index is a stale cache** — [machine-local](gitnexus-index-not-actually-live.md) (pass repo: explicitly).
+## Code graph (GitNexus is RETIRED)
+- [⛔ GitNexus is GONE — code-review-graph replaced it, PROJECTS-ONLY](gitnexus-index-not-actually-live.md) — SCC-272..288; never call impact()/context(); the lobby having no code graph is CORRECT (SCC-288). Leftover ~1.1 GB of `.gitnexus/` caches deleted 2026-08-25. Kept lesson: index and MCP registration are two per-machine problems, and registration fails silently.
+- [⛔ do not re-evaluate `base`](base-is-not-a-gitnexus-replacement.md) — RESOLVED, the swap it recommended was executed; same NC license as GitNexus, no MCP, no transitive impact.
 - **Search blind spots** — [grep skips gitignored projects](grep-skips-gitignored-projects.md) (blind to Projects/ from lobby) · [⭐ grep reads parked branch](grep-reads-the-branch-you-are-parked-on.md) (stale checkout fakes scope) · [relocated links are mis-pathed](relocated-doc-links-are-mispathed-not-dead.md) (target moved).
 
 ## Toolkit & sync

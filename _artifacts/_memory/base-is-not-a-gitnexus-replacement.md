@@ -5,6 +5,13 @@ metadata:
   type: project
 ---
 
+> **✅ RESOLVED — the swap happened.** This page's recommendation was executed: **code-review-graph
+> won and GitNexus is retired** (SCC-272 bake-off → SCC-288, all Done). It is deployed
+> **projects-only**; the command centre deliberately has no code graph. Read everything below as the
+> *reasoning that produced that decision*, not as an open question. The still-live instruction is the
+> first one under "How to apply": **do not re-evaluate `base`.** Current state:
+> [[gitnexus-index-not-actually-live]].
+
 **Evaluated 2026-08-22:** `base` (basemode, Rust, single author, repo created 2026-06-02, 18 stars, v0.13.0→0.13.2 cut within 31 min on 2026-08-21) is NOT a GitNexus replacement.
 
 - **License is identical** — both are PolyForm Noncommercial 1.0.0 (verified: `gitnexus` package.json + base `LICENSE.md`). Developing a paid product (AGY) with either is commercial use. GitNexus sells a commercial license (`founders@akonlabs.com`, Akonlabs enterprise); base says "separate commercial license granted individually".
