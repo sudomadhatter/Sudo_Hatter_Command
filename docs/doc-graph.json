@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 364,
+    "files": 365,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 710,
+    "edges": 715,
     "external": 39,
     "ambiguous": 165,
     "dangling": 297,
@@ -478,7 +478,7 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 59,
+      "in": 60,
       "out": 3
     },
     {
@@ -1769,7 +1769,7 @@
     {
       "path": "docs/migrations/INDEX.md",
       "in": 6,
-      "out": 19
+      "out": 21
     },
     {
       "path": "docs/migrations/antigravity_extensions/gemini-extensions-sync-guide.md",
@@ -1788,12 +1788,12 @@
     },
     {
       "path": "docs/migrations/install_guides/jira-api-token-setup.md",
-      "in": 8,
+      "in": 9,
       "out": 2
     },
     {
       "path": "docs/migrations/install_guides/keyway-setup.md",
-      "in": 4,
+      "in": 5,
       "out": 5
     },
     {
@@ -1803,7 +1803,7 @@
     },
     {
       "path": "docs/migrations/install_guides/new_machine-migration-guide.md",
-      "in": 6,
+      "in": 7,
       "out": 4
     },
     {
@@ -1815,6 +1815,11 @@
       "path": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
       "in": 3,
       "out": 1
+    },
+    {
+      "path": "docs/migrations/install_guides/repo-gate-stack-setup.md",
+      "in": 2,
+      "out": 4
     },
     {
       "path": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
@@ -5152,6 +5157,11 @@
     },
     {
       "from": "docs/migrations/INDEX.md",
+      "to": "docs/migrations/install_guides/repo-gate-stack-setup.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/INDEX.md",
       "to": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
       "kind": "link"
     },
@@ -5222,6 +5232,26 @@
     },
     {
       "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
+      "to": "docs/migrations/install_guides/new_machine-migration-guide.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/install_guides/repo-gate-stack-setup.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/migrations/install_guides/repo-gate-stack-setup.md",
+      "to": "docs/migrations/install_guides/jira-api-token-setup.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/install_guides/repo-gate-stack-setup.md",
+      "to": "docs/migrations/install_guides/keyway-setup.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/install_guides/repo-gate-stack-setup.md",
       "to": "docs/migrations/install_guides/new_machine-migration-guide.md",
       "kind": "link"
     },

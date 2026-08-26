@@ -117,7 +117,7 @@ Sudo_Hatter_Command/
       antigravity_extensions/
           [3 files: .txtx1, .mdx1, .shx1 | e.g. antigravity-extension-ids.txt]
       install_guides/
-          [9 files: .mdx9 | e.g. antigravity-ide-extension-migration.md]
+          [10 files: .mdx10 | e.g. antigravity-ide-extension-migration.md]
       scripts/
           [11 files: .ps1x5, .pyx3, .shx2, .patchx1 | e.g. Arm-HooksInclude.ps1]
         [1 files: .mdx1 | e.g. INDEX.md]
