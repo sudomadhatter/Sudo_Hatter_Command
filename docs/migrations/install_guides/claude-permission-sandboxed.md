@@ -63,10 +63,18 @@ Ensure `/tmp` and `/private/tmp` are explicitly allowed in `sandbox.filesystem.a
     "autoAllowBashIfSandboxed": true,
     "filesystem": {
       "allowWrite": [
-        "/Users/sudohatter/Sudo_Hatter_Command",
-        "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees",
-        "/Users/sudohatter/Sudo_Hatter_Command/.git",
-        "/Users/sudohatter/Sudo_Hatter_Command/Projects",
+        "c:/Sudo_Hatter_Command",
+        "c:/Sudo_Hatter_Command/.claude/worktrees",
+        "c:/Sudo_Hatter_Command/.git",
+        "c:/Sudo_Hatter_Command/Projects",
+        "C:/Users/dlohn/AppData/Local/Temp",
+        "C:/Users/dlohn/AppData/Local/Temp/claude",
+        "/c/Sudo_Hatter_Command",
+        "/c/Sudo_Hatter_Command/.claude/worktrees",
+        "/c/Sudo_Hatter_Command/.git",
+        "/c/Sudo_Hatter_Command/Projects",
+        "/c/Users/dlohn/AppData/Local/Temp",
+        "/c/Users/dlohn/AppData/Local/Temp/claude",
         "/tmp",
         "/private/tmp"
       ]
@@ -74,6 +82,76 @@ Ensure `/tmp` and `/private/tmp` are explicitly allowed in `sandbox.filesystem.a
   }
 }
 ```
+
+### 6. Project Scaffolding & Initializing Local Permissions
+
+Because `.claude/settings.local.json` is machine-local and gitignored, cloning a repository from GitHub leaves `.claude/settings.local.json` absent. Without this file in the project root:
+1. `link-worktree-assets.py` finds no `settings.local.json` to link into newly opened `.claude/worktrees/*` directories.
+2. In both Claude Code and Antigravity/Gemini IDE, tool invocations inside worktrees fail prefix matching and trigger repetitive manual approval prompts.
+
+#### The Canonical Tool Allowlist
+
+Every project's `.claude/settings.local.json` (and `sudo-project-skeleton/.claude/settings.local.json.example-{pc,mac}`) must include the full standard toolchain:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(cd:*)",
+      "Bash(echo:*)",
+      "Bash(git:*)",
+      "Bash(ls:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(sort:*)",
+      "Bash(uniq:*)",
+      "Bash(cut:*)",
+      "Bash(wc:*)",
+      "Bash(tr:*)",
+      "Bash(sed:*)",
+      "Bash(diff:*)",
+      "Bash(cmp:*)",
+      "Bash(stat:*)",
+      "Bash(file:*)",
+      "Bash(du:*)",
+      "Bash(df:*)",
+      "Bash(basename:*)",
+      "Bash(dirname:*)",
+      "Bash(readlink:*)",
+      "Bash(which:*)",
+      "Bash(date:*)",
+      "Bash(pwd:*)",
+      "Bash(printf:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(python.exe:*)",
+      "Bash(.venv/Scripts/python:*)",
+      "Bash(.venv/Scripts/python.exe:*)",
+      "Bash(acli:*)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(cargo:*)",
+      "Bash(cargo.exe:*)",
+      "Bash(rustc:*)",
+      "Bash(rustc.exe:*)",
+      "Bash(pytest:*)",
+      "Bash(pytest.exe:*)",
+      "Bash(pwsh:*)",
+      "Bash(powershell:*)",
+      "Bash(powershell.exe:*)"
+    ]
+  }
+}
+```
+
+#### Automated Initialization During Scaffolding
+
+`.agents/scripts/new-project.ps1` (and `/smh-new-project`) automatically seeds `.claude/settings.local.json` when cloning `sudo-project-skeleton` by copying the appropriate OS template (`settings.local.json.example-pc` or `settings.local.json.example-mac`) and configuring the project's own write boundaries.
 
 ---
 
