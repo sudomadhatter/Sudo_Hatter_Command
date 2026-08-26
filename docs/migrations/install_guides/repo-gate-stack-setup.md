@@ -165,6 +165,10 @@ platforms, and your own terminal share.
 
 ## 4. The GitHub half — and why it is not a duplicate
 
+> **Full treatment:** [`github-ci-gates-setup.md`](github-ci-gates-setup.md) — the workflow anatomy,
+> the ratchet pattern, the `fetch-depth` trap, rulesets, and how to prove each gate actually
+> refuses something. This section is the summary; that page is how you build it.
+
 Layers 1 and 2 live on a computer and run at `git push`. **A merge performed on GitHub's servers —
 the web "Merge pull request" button, or the REST API — never touches a computer.** Those layers are
 not bypassed there; they are *absent*. A PR has landed on `main` exactly that way, from a web
@@ -216,6 +220,7 @@ If that commit succeeds, the stack is not gating regardless of what the arm-chec
 
 ## Related
 
+- [`github-ci-gates-setup.md`](github-ci-gates-setup.md) — the server-side half in full
 - [`new_machine-migration-guide.md`](new_machine-migration-guide.md) — the wider per-machine setup
 - [`keyway-setup.md`](keyway-setup.md) · [`jira-api-token-setup.md`](jira-api-token-setup.md) — the
   credentials the Jira gate and `acli` need
