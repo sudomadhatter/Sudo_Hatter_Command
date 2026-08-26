@@ -1032,12 +1032,19 @@ def cmd_resolve(args) -> int:
     # alone. Stamped here, in the one pass that already fills quick_dev, rather than at each of
     # the five append sites: a verdict row that silently missed a wave would land on the board
     # as a stripped label, and five chances to forget is five ways to be wrong.
-    # The fallback is not decoration: when waves are suppressed `approved` is empty too, so
-    # every child correctly reads False and a stale label comes off, exactly as before.
+    # ⛔ THE FALLBACK MUST CARRY THE SUPPRESSION ITSELF. This comment used to read "when waves
+    # are suppressed `approved` is empty too, so every child correctly reads False" - and it was
+    # wrong about its own variable. Only the EMITTED `approved` is emptied (see the result dict
+    # below); the LOCAL one cannot be, because the verdict loop above needs it un-emptied to say
+    # "waiting on <the unknown>" at all. So under an unknown in-flight sibling the waves went
+    # silent while `parallel-ok` got LOUDER: `cmd_stamp` trusts this field and ADDED the label to
+    # the very children it had just marked `waiting`. That is the lane-collision hazard in one
+    # label - a waiting child wearing the one tag that says "safe beside your siblings" is how
+    # two lanes that must not run together get run together.
     for v in verdicts:
         v["wave"] = wave_of.get(v["key"])
         v["parallel_ok"] = (wave_size[v["key"]] >= 2 if v["key"] in wave_of
-                            else v["key"] in approved)
+                            else not unknown and v["key"] in approved)
 
     stamp = (f"verified {date.today().isoformat()} against {len(packet['child_keys'])} "
              f"children: {', '.join(packet['child_keys'])}")
