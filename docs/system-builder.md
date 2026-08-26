@@ -16,7 +16,7 @@ talk to *this* workspace to grow the home base.
 ## TOOLS
 - **`/smh-new-project <name>`** → scaffold `Projects/<name>/` by cloning the thin skeleton repo
   (`sudomadhatter/sudo-project-skeleton` — no vendored toolkit; see `.agents/rules/project-law.md`),
-  register it in `../router.md`, add it to `../.gitignore`, and `git init` its own repo.
+  register it in `../router.md`, add it to `../.gitignore`, `git init` its repo, arm its git hooks, and initialize `.claude/settings.local.json` permissions for zero-prompt worktree execution.
 - **`/smh-sync-agents [target]`** → push `.agents/{commands,skills,opencode-agents}` into a target's tool
   dirs (the lobby, or a project). Markdown only — never `node_modules`.
 - **`docs/migrations/scripts/rename-fix.ps1`** → rename-day restructure: move projects into
