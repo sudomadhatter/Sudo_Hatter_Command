@@ -88,7 +88,7 @@ the hook that guards `main`; a branch called `epic-19/...` is invisible to all o
 gets treated as if it were `main`. On a project: `/cicd-boot-sprint-memory`. In the command centre: just ask. |
 | see or move the sprint board | ask any agent — the live board answers via `acli` ([§12](#12-the-board--what-runs-next)) |
 | work out which lane my work belongs in | [§5 — the lane chooser](#5-which-lane-am-i-in) |
-| know which stories can run side by side | `/cicd-label-tasks <EPIC-KEY>` — once the stories are written ([§6](#6-the-story-lane)) |
+| know the running order — what goes first, what runs side by side | `/cicd-label-tasks <EPIC-KEY>` — once the stories are written ([§6](#6-the-story-lane)) |
 | start the next story | ① `/cicd-write-story-tests <id>` |
 | build a story that has failing tests waiting | ② `/cicd-dev-story-tests <id>` |
 | review code that's written | ③ `/cicd-code-review <id>` |
@@ -485,12 +485,27 @@ and only your word opens the next step — a correction re-presents the set and 
 
 ### `/cicd-label-tasks <EPIC-KEY>` — run it once the stories are written
 
-Tells you which stories you can run **side by side**, and which are small enough for the quick lane.
-It reads every story file, works out what each will actually *change* (as opposed to merely
-mention), and hands you the biggest group that touches no file in common — tagged `parallel-ok` on
-the board so the group is one filter away, and `quick-dev` on the ones that do not need the full
-loop. A story it could not assess keeps whatever labels it already had. Its twin for Task work is
-`/smh-label-tasks` ([§9](#9-the-task-lane--work-on-the-system-itself)).
+Gives you the **running order for the whole epic** — which story goes first, what unlocks after it,
+and which ones can go side by side. It reads every story file, works out what each will actually
+*change* (as opposed to merely mention), and finds the biggest group that touches no file in common.
+Then it does that again on what is left, and again, until every story has a slot. Those groups are
+the **waves**, and they land on the board as labels:
+
+| Label | On which cards | Read it as |
+|---|---|---|
+| `wave-1`, `wave-2`, … | every story it could assess | do this one in that wave |
+| `parallel-ok` | only a wave holding **two or more** | run these together |
+| `quick-dev` | the small ones | this does not need the full loop |
+
+So a filter on `wave-2` shows you exactly what to pick up next, and `parallel-ok` means what it
+says: there is a sibling to run alongside. **A wave of one gets no `parallel-ok`** — there is
+nothing to run beside it, and a label claiming otherwise would be read as the opposite of the truth.
+
+**Wave 1 is measured; the later waves are a plan.** They are worked out from stories nobody has
+built yet, and building a story always turns up files its description never mentioned. Re-run the
+command after each wave lands and it corrects itself. A story it could not assess keeps whatever
+labels it already had. Its twin for Task work is `/smh-label-tasks`
+([§9](#9-the-task-lane--work-on-the-system-itself)).
 
 **It never guesses.** A story with no file written yet gets "write the story first", not an opinion.
 When two stories are ambiguous it locks them rather than approving — a wrong green puts two lanes on
@@ -2019,18 +2034,21 @@ is the approval. That batch is deliberately narrow: it covers exactly the plans 
 and if any plan is edited afterwards that lane stops for its own approval again. A lane that came
 through a batch skips straight to writing its first failing check.
 
-### `/smh-label-tasks <TASK-KEY>` — which subtasks run side by side
+### `/smh-label-tasks <TASK-KEY>` — the running order for the subtasks
 
 The Task-lane twin of `/cicd-label-tasks`, and the same engine underneath. The difference is the
 unit: it assesses the **Subtasks under one Task** rather than the stories under an epic. A subtask
 is grounded by its branch diff, else the plan its `task.yaml` points at, else its ticket text — and
 where the evidence is thin it locks rather than approves, the same way the story side does.
 
-It stamps both labels: `parallel-ok` for the biggest group that shares no file, and `quick-dev` for
-the lanes small enough to ship in one light pass. Run it any time; the answer carries the set it was
-computed against, so a stale one reads *"re-run me"* rather than quietly lying. **It states, it
-never starts.** Point it at an epic and it refuses and sends you to `/cicd-label-tasks`; point that
-one at a Task and it sends you back here.
+It stamps the same labels the story side does: `wave-1`, `wave-2`, … giving the running order for
+every lane, `parallel-ok` on any wave holding **two or more** so you know there is a sibling to run
+alongside, and `quick-dev` on the lanes small enough to ship in one light pass. A wave of one gets
+no `parallel-ok` — there is nothing to run beside it. Wave 1 is the set it measured; later waves are
+worked out from plans nobody has executed yet, so re-run after each wave lands. Run it any time; the
+answer carries the set it was computed against, so a stale one reads *"re-run me"* rather than
+quietly lying. **It states, it never starts.** Point it at an epic and it refuses and sends you to
+`/cicd-label-tasks`; point that one at a Task and it sends you back here.
 
 ### `/smh-quick-dev` — assert-first development
 
