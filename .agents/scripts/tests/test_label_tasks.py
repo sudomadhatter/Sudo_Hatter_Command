@@ -1196,6 +1196,28 @@ def main() -> int:
                     for n in range(1, 5)),
                 str({k: x.get("verdict") for k, x in (r.get("_by") or {}).items()}))
 
+    # ⛔ F2b · THE SAME LOSS BY A DIFFERENT ROUTE, AND F2 ABOVE CANNOT SEE IT. Every one of
+    # F2's four blockers is APPROVED, so the `if b in approved` filter the row is built through
+    # is a no-op in that fixture and F2 passes against an engine that drops blockers. Give a
+    # follower ONE blocker that is itself a follower and the filter removes it: the row names
+    # the approved blocker and loses the other, which is the single-dependency lie F2 exists to
+    # prevent. Measured live on NVS-10 (2026-08-25) - NVS-22 and NVS-23 each declare
+    # [NVS-19, NVS-20] and both rendered "after NVS-19", because NVS-20 follows NVS-19 and so
+    # never enters the approved set. The control is load-bearing: without it a fixture where
+    # everything happens to be approved would report this case green while proving nothing.
+    with TempDir() as tmp:
+        kids = [child("A-1", "1.1"), child("A-2", "1.2"), child("A-9", "1.9")]
+        touch = {"A-1": {"paths": ["backend/m1.py"]},
+                 "A-2": {"paths": ["backend/m2.py"], "blocked_by": ["A-1"]},
+                 "A-9": {"paths": ["backend/m9.py"], "blocked_by": ["A-1", "A-2"]}}
+        r = run_resolve(tmp, kids, touch)
+        v = (r.get("_by") or {}).get("A-9", {})
+        c.check("F2b (control) A-2 is OUTSIDE the approved set - else this proves nothing",
+                r.get("approved") == ["A-1"], str(r.get("approved")))
+        c.check("F2b a declared blocker is named even when it is NOT itself approved",
+                all(b in v.get("detail", "") for b in ("A-1", "A-2")),
+                v.get("detail", "(none)"))
+
     # ── F3 · the ENGINE and its DOORS have to agree about `ref` (SCC-244 review) ──────────
     # The packet emits `{"kind": …, "path": …, "ref": "<branch>"}` when it read the file off the
     # lane's branch instead of the working tree. Both doors say "read them" and neither said
