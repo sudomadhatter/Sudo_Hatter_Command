@@ -1332,6 +1332,58 @@ def main() -> int:
                 all(v.get("wave") is None for v in by.values()),
                 str({k: v.get("wave") for k, v in by.items()}))
 
+    # ⛔ W4b · THE SUPPRESSION MUST REACH `parallel-ok` TOO, AND IT MUST REACH THE BOARD.
+    # W4 above asserted `approved == []` and `wave is None` and stopped there, so it never saw
+    # that SCC-328 left `parallel_ok` TRUE on the very children it had just marked `waiting`.
+    # `resolve` empties only the EMITTED `approved`; the `parallel_ok` fallback read the LOCAL
+    # list, which was not emptied, and `cmd_stamp` trusts that field and ADDS the label. The
+    # waves went silent while `parallel-ok` got LOUDER — the exact inversion this ticket shipped
+    # to end, and the `lane-collision-is-gates-not-files` hazard: a child that is WAITING wearing
+    # the one label that says "safe to run beside your siblings".
+    # ⭐ Asserted through `cmd_stamp --apply` against the acli stub, not off the verdict dict. The
+    # verdict-level check alone would have been satisfied by any later refactor that re-derived
+    # the label at the write site; the board is where the damage lands, so the board is the
+    # assertion.
+    c.check("W4b (control) the verdict-level field is where the defect lived",
+            all(v.get("parallel_ok") is False for v in by.values()),
+            str({k: v.get("parallel_ok") for k, v in by.items()}))
+
+    with TempDir() as tmp:
+        launcher, state = acli_stub(tmp)
+        os.environ["STUB_STATE"] = str(state)
+        # SCC-100 arrives ALREADY WEARING the label, seeded on both sides so the packet the tool
+        # reads and the board the stub keeps agree. This pins the OTHER half of the suppression:
+        # not adding is only half of it, and a self-correcting writer must also take a stale tag
+        # OFF when the run that justified it no longer holds. That strip is what pre-SCC-328
+        # behaviour did and what the regression silently stopped doing.
+        state.write_text(json.dumps({"labels": {"SCC-100": ["keep-me", "parallel-ok"]}}),
+                         encoding="utf-8")
+        (tmp / "p.json").write_text(json.dumps(
+            packet([subtask("SCC-100", labels=["keep-me", "parallel-ok"]), subtask("SCC-102"),
+                    subtask("SCC-103", grounded=False, in_flight=True)], "SCC-99", "task")),
+            encoding="utf-8")
+        (tmp / "t.json").write_text(json.dumps(
+            {"SCC-100": {"paths": [".agents/a.py"]},
+             "SCC-102": {"paths": [".agents/b.py"]}}), encoding="utf-8")
+        run_script("label_tasks.py", "resolve", "--plan", str(tmp / "p.json"),
+                   "--touchsets", str(tmp / "t.json"), "--out", str(tmp / "v.json"))
+        run_script("label_tasks.py", "stamp", "--plan", str(tmp / "p.json"),
+                   "--verdicts", str(tmp / "v.json"), "--apply", "--acli", str(launcher))
+        wrote = json.loads(state.read_text(encoding="utf-8")).get("labels", {})
+        c.check("W4b no `parallel-ok` reaches the BOARD while a sibling's surfaces are unknown",
+                not any("parallel-ok" in v for v in wrote.values()), str(wrote))
+        # A load-bearing control: `--labels` carries only the ADDS (SCC-202), so an empty write
+        # is indistinguishable from a stamp that ran and added nothing. Prove the run reached
+        # the write path at all, or the assertion above passes for the wrong reason forever.
+        c.check("W4b a STALE `parallel-ok` is STRIPPED under suppression, not merely not added",
+                "parallel-ok" not in wrote.get("SCC-100", []), str(wrote))
+        c.check("W4b (control) the strip is surgical - unmanaged labels survive it",
+                "keep-me" in wrote.get("SCC-100", []), str(wrote))
+        c.check("W4b (control) the stamp really did execute against the board",
+                json.loads(state.read_text(encoding="utf-8")).get("comments"),
+                "an empty label write must not be confused with a stamp that never ran")
+        os.environ.pop("STUB_STATE", None)
+
     # W5 · an UNGROUNDED child is not schedulable, so it carries no wave even when the rest
     # of the set is clean — a wave number on a story nobody has written is an invented plan.
     with TempDir() as tmp:
