@@ -4248,6 +4248,33 @@ flowchart TD
 > linter, then improvised a partial reconcile and edited files with no findings report and no approval.
 > Fixed by moving the body to `commands/` so it gets a launcher like everything else.
 >
+> **It escaped a SECOND way, on the other Antigravity surface (SCC-332, fixed 2026-08-27).** Antigravity
+> reads workflows from two places: `.agents/workflows/` inside a repo, and the machine-global cache
+> `~/.gemini/antigravity/global_workflows` outside one. The repo door honoured the launcher rule from the
+> day it shipped. The global cache never did — one line in `sync-agents.ps1` sourced BOTH machine caches
+> from `.agents/commands/`, which is correct for opencode (no size limit, wants the full body) and wrong
+> for Antigravity. Measured before the fix: **38 files in that cache, 23 of them over the cap**, topped by
+> `/smh-close-task-merge-tree` at 48,672 characters — the merge door, cut mid-sentence inside its own
+> safety table with 32 later headings gone. Each cache now names its own source, so the Antigravity cache
+> mirrors `.agents/workflows/` — 40 doors, none of them over the cap. Pinned by `CS-18` in
+> `tests/test_command_surfaces.py`.
+>
+> ⛔ **A CODE FIX DOES NOT MOVE A MACHINE CACHE, and the review of this very lane caught the author
+> claiming it had.** The cache lives in `$HOME`, so git cannot carry it: a pull gets the fixed script and
+> the fixed doors, and the cache changes only when `/smh-sync-agents` runs **on that machine**. Worse, the
+> globals block is gated on `$IsLobby -or $GlobalsOnly` and **`$IsLobby` is FALSE in a worktree** — so the
+> lane's own sync wrote its four local twins and left the cache untouched, while every source-side check
+> stayed green. `CS-18 L`/`M2` now read the real directory and go RED until the machine is synced. That
+> red is the feature: it is the only thing in the repo that can tell you this machine is still serving
+> truncated commands.
+>
+> **The doc came first, and the code followed it.** `docs/workspace-standard.md` stated the inverse rule —
+> that `.agents/workflows/` were reference process-docs "NOT pushed to any command cache" — and warned that
+> name-matching them to Antigravity's caches was "the exact bug this rule prevents." That is backwards:
+> `workflows/` IS Antigravity's menu, on both surfaces. Corrected in place, and `CS-18 J` fails if the old
+> sentence returns. **When a doc and a mechanism disagree, measure the mechanism** — an authoritative-sounding
+> rule is the most expensive kind of wrong, because the next person implements it faithfully.
+>
 > **The tell, if you ever see it again:** a command that starts correctly, does the first mechanical
 > thing right, then goes vague, skips its stop-and-ask, and produces a thinner result than it should.
 

@@ -249,10 +249,11 @@ Formatting is one-time; upkeep is forever. Who does what, and when.
 The **single canonical invocable set is `.agents/commands/`**. It mirrors to every platform via one command,
 `/smh-sync-agents` (engine: `.agents/scripts/sync-agents.ps1`) — there is no second sync tool to drift against.
 
-- **Surfaces it feeds.** Local tool dirs `.claude/{commands,skills}` + `.opencode/{commands,agent}`; and, on a
-  **lobby** sync, the **machine-global** caches `~/.config/opencode/commands`,
-  `~/.gemini/antigravity/global_workflows`, and `~/.codex/prompts` (Codex's `/commands` equivalent, invoked
-  `/prompts:<name>`). (A project sync vendors `.agents/` and refreshes that project's local dirs; it does
+- **Surfaces it feeds.** Local tool dirs `.claude/{commands,skills}` + `.opencode/{commands,agent}`; the
+  generated Antigravity door `.agents/workflows/`; and, on a **lobby** sync, the **machine-global** caches
+  `~/.config/opencode/commands` (sourced from `commands/`), `~/.gemini/antigravity/global_workflows`
+  (**sourced from `workflows/`**, so it carries thin launchers, never over-cap bodies), and `~/.codex/prompts`
+  (Codex's `/commands` equivalent, invoked `/prompts:<name>`). (A project sync vendors `.agents/` and refreshes that project's local dirs; it does
   **not** touch the globals — globals reflect the lobby's canonical set.)
 - **Codex is the lightest surface.** It reads `AGENTS.md` **and** the Agent Skills in `.agents/skills/`
   natively (open Agent Skills standard: `$REPO_ROOT/.agents/skills` + `~/.codex/skills`), so rules and our own
@@ -260,10 +261,16 @@ The **single canonical invocable set is `.agents/commands/`**. It mirrors to eve
   `.claude/skills` (manifest `ides: [claude-code, antigravity]`), which Codex doesn't read — so a lobby sync
   **mirrors the `bmad-*` skills into `~/.codex/skills`**, making BMAD reachable there via `/skills`. Both Codex
   caches are machine-local (like the opencode/AG caches), so re-run the sync per machine.
-- **`commands/` vs `workflows/`.** `.agents/commands/` are the invocable `/slash` units that mirror out.
-  `.agents/workflows/` are **in-repo reference process-docs** read via routing tables — they are NOT pushed to
-  any command cache. *(Antigravity confusingly calls its invocable units "workflows," but our source is always
-  `commands/` — name-matching that to `.agents/workflows/` is the exact bug this rule prevents.)*
+- **`commands/` vs `workflows/`.** `.agents/commands/` is where a command is **authored** — full body, any
+  length. `.agents/workflows/` is a **generated publishing surface for Antigravity only**: `/smh-sync-agents`
+  writes one file there per antigravity-eligible command, and any command over ~11.5 KB becomes a **thin
+  launcher** that points the agent back at `.agents/commands/<name>.md` instead of a doomed verbatim copy.
+  *(Antigravity — and only Antigravity — truncates a workflow at 12,000 chars rather than rejecting it, so a
+  raw 30 KB body runs on partial steps and looks fine. The launcher is the workaround. See SCC-135.)*
+  **Both Antigravity surfaces are fed from `workflows/`** — the per-project door and the machine-global cache.
+  Every other platform reads `commands/` directly and has no size limit. **Corrected 2026-08-27 (SCC-332):**
+  this bullet previously said `workflows/` were reference docs never pushed to a cache, and the global-cache
+  code followed that description — feeding Antigravity raw command bodies past its own launcher mechanism.
 - **Platform reach.** A command declares scope with frontmatter `platforms: [claude, opencode, antigravity,
   codex]`. **Absent = universal** (all four). The sync copies a command only to the platforms it lists, so a
   tool that can't run it (e.g. `/cicd-autopilot-claude` needs the `claude` CLI) never appears in the wrong surface.
@@ -271,8 +278,15 @@ The **single canonical invocable set is `.agents/commands/`**. It mirrors to eve
   commands are left alone). Global caches are **mirror-exact** — stale ghosts purged — **except `bmad-*`**,
   which BMAD installs globally and is never ours to delete. The Codex skills mirror likewise purges stale
   `bmad-*` dirs but preserves `.system` and any foreign (non-bmad) skill dirs.
-- **Gemini is global-only.** Antigravity has no project-local command dir; it reads from the global cache. That
-  asymmetry is a platform constraint, not a defect — the same canonical set still reaches it.
+- **Gemini reads two workflow surfaces.** Antigravity has no project-local *command* dir: in a repo it reads
+  `.agents/workflows/`, and outside one it reads the machine-global `~/.gemini/antigravity/global_workflows`.
+  Both are generated from the same canonical `commands/` set and both honour the launcher rule.
+  ⚠ **A launcher only resolves where `.agents/commands/` exists — the lobby.** Under the thin model a
+  project carries no tier-1 copy, so a big command invoked from the global menu inside a project STOPS
+  and says so, rather than running. That is a deliberate trade and the right direction: before SCC-332
+  that same entry delivered the first 12,000 characters of the body and the agent improvised the rest.
+  A command that fails visibly beats one that runs on 27% of its steps. Full bodies reach every other
+  platform directly from `commands/`.
 
 ### Git — one policy
 **Agents commit and push their own work** — explicit paths (never `git add -A`), the repo's Jira key leading

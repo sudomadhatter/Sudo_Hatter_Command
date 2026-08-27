@@ -1,14 +1,26 @@
+---
+description: Workflows INDEX - router for Antigravity's command surface (not a slash command itself)
+platforms: []
+---
+
 # Workflows INDEX — when to use which
 
-Router for `.agents/workflows/`. Workflows are **longer-form reference docs for multi-stage processes** —
-the map of how something runs, as opposed to `commands/` (the invocable `/slash` skills) and `rules/`
-(the always-on guardrails). Read the workflow to understand the process; trigger it via its command.
+Router for `.agents/workflows/`. This folder is **Antigravity's command menu** — it is how Gemini surfaces
+`/slash`, since it calls its invocable units "workflows". Most entries are **generated** from
+`.agents/commands/` by `/smh-sync-agents`, and anything over ~11.5 KB is generated as a **thin launcher**
+that sends the agent to `.agents/commands/<name>.md`, because Antigravity truncates a workflow at 12,000
+chars instead of rejecting it. This same folder is the source for the machine-global cache
+`~/.gemini/antigravity/global_workflows` (SCC-332). **This router is not itself a door** — it carries
+`platforms: []` for the same reason `commands/INDEX.md` does. The table below annotates the few entries
+worth reading as process maps; several of them are generated mirrors and say so. Exactly ONE file here is
+hand-authored and never regenerated: `smh-adviser-board.md`, prune-protected in the sync's `$excluded`
+list. `commands/` holds the authored bodies and `rules/` the always-on guardrails.
 
 | Workflow | What it documents | Reach for it when… |
 |---|---|---|
 | `smh-update-maps-indexes.md` | Reconciling a workspace's `repo-map.md` + every `INDEX.md` + the context-hygiene **prune** + the **open-tasks list** (`todo_list.md` → `## Open Work`) against disk: a deterministic linter (`.agents/scripts/check_maps.py`, eleven checks — 7 fatal + the git baseline + the context-hygiene / tier-2-law / code-graph-freshness hints) detects drift, the workflow writes the prose a script can't (folder purpose lines, INDEX rows, the manifest). Read-mostly until an approval gate; never commits. **Fans out from the home base** (`--all` = lobby + every conformant project, each its own repo/commit); inside a project it's a single-workspace pass. | a folder/INDEX/open-task looks stale, after renames/moves, or the SessionStart drift nag fires — run `/smh-update-maps-indexes` (from the top to clean everything). |
 | `smh-new-project.md` | Scaffolding a new workspace by cloning the thin `sudo-project-skeleton` repo — strip its history, git init, arm the hooks, fill the placeholders. NO toolkit is vendored (thin model, `project-law.md`). | you're standing up a new `Projects/<name>` and want it conformant from the first commit — run `/smh-new-project`. |
-| `smh-slash-command-updating.md` | **A thin alias for `/smh-sync-agents -GlobalsOnly`** — refreshes the two machine-global command caches (`~/.gemini/antigravity/global_workflows`, `~/.config/opencode/commands`) from the canonical `.agents/commands/`. Mirror-exact: purges ghosts, preserves `bmad-*`, honors `platforms:`. Nothing more. | Antigravity or opencode is showing a stale menu while the lobby is fine. Prefer plain `/smh-sync-agents` — it does the locals too. |
+| `smh-slash-command-updating.md` | **A thin alias for `/smh-sync-agents -GlobalsOnly`** — refreshes the two machine-global command caches, each from its own source (SCC-332): `~/.gemini/antigravity/global_workflows` from `.agents/workflows/` (thin launchers, cap-safe) and `~/.config/opencode/commands` from `.agents/commands/` (full bodies). Mirror-exact: purges ghosts, preserves `bmad-*`, honors `platforms:`. Nothing more. | Antigravity or opencode is showing a stale menu while the lobby is fine. Prefer plain `/smh-sync-agents` — it does the locals too. |
 | `sentry-security-team-avch.md` | The quarterly incident-response **DRILL** harness — a rehearsal of the runbook, deliberately NOT the live lane (that's `/cicd-mobile-error-team`) and deliberately absent from the Claude menu (`platforms: [opencode, antigravity, codex]`). | you're exercising the incident runbook on a schedule, not responding to a real page. |
 | `cicd-self-audit.md` *(generated mirror of `commands/cicd-self-audit.md`)* | The pre-dev adversarial gate: pressure-tests an `implementation_plan.md` or story against the codebase + ACs **before any code is written** — a Phase 0 right-size gate (Skip/Light/Full) then phased checks for AC↔plan traceability, gaps, over-engineering, and contract breaks. Audits the plan, not a diff (shipped code → `/cicd-code-review`). | you have an approved-shape plan/story and want to catch flaws while fixing is still free — run `/cicd-self-audit`. |
 
