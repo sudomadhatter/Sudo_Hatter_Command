@@ -38,3 +38,10 @@ Suite `run_all.py`, `workflow_lint.py --toolkit-only`, `check_links.py --base or
 in the commit's verification note. The one known red, `test_allow_scratchpad.py` case E
 (`os.getuid`, POSIX-only), reproduces identically on `origin/main` and is the pre-existing
 portability instance SCC-321 tracks.
+
+## Your Actions
+
+- [x] The merge itself — lands via this branch's PR
+
+Nothing else is owed. SCC-336 (the lane mis-routing this task surfaced) is filed and queued as its
+own work; SCC-335 (jira_feed cp1252 corruption) was filed earlier and is next in the queue.
