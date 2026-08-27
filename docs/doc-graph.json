@@ -4,7 +4,7 @@
     "docs"
   ],
   "counts": {
-    "files": 380,
+    "files": 386,
     "packs": 1,
     "pack_docs": 2,
     "edges": 730,
@@ -77,6 +77,11 @@
       "out": 0
     },
     {
+      "path": ".agents/commands/adviser-board/minds/darwin.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": ".agents/commands/adviser-board/minds/feynman.md",
       "in": 0,
       "out": 0
@@ -87,7 +92,27 @@
       "out": 0
     },
     {
+      "path": ".agents/commands/adviser-board/minds/haeckel.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": ".agents/commands/adviser-board/minds/kepler.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/nightingale.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/semmelweis.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/snow.md",
       "in": 0,
       "out": 0
     },
@@ -110,6 +135,11 @@
       "path": ".agents/commands/adviser-board/minds/ury.md",
       "in": 0,
       "out": 1
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/wegener.md",
+      "in": 0,
+      "out": 0
     },
     {
       "path": ".agents/commands/analyst.md",
