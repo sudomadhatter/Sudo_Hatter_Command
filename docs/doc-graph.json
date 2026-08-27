@@ -4,7 +4,7 @@
     "docs"
   ],
   "counts": {
-    "files": 392,
+    "files": 402,
     "packs": 1,
     "pack_docs": 2,
     "edges": 730,
@@ -92,6 +92,16 @@
       "out": 0
     },
     {
+      "path": ".agents/commands/adviser-board/minds/diogenes.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/drucker.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": ".agents/commands/adviser-board/minds/feynman.md",
       "in": 0,
       "out": 0
@@ -102,12 +112,27 @@
       "out": 0
     },
     {
+      "path": ".agents/commands/adviser-board/minds/fuller.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": ".agents/commands/adviser-board/minds/haeckel.md",
       "in": 0,
       "out": 0
     },
     {
+      "path": ".agents/commands/adviser-board/minds/houellebecq.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": ".agents/commands/adviser-board/minds/hutton.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/identity-engineer.md",
       "in": 0,
       "out": 0
     },
@@ -122,12 +147,37 @@
       "out": 0
     },
     {
+      "path": ".agents/commands/adviser-board/minds/margulis.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": ".agents/commands/adviser-board/minds/munger.md",
       "in": 0,
       "out": 0
     },
     {
+      "path": ".agents/commands/adviser-board/minds/nakamoto.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": ".agents/commands/adviser-board/minds/nightingale.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/ravikant.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/rubin.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/schwartz.md",
       "in": 0,
       "out": 0
     },
