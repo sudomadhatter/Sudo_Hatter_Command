@@ -77,15 +77,7 @@ the twin is an AVCH ticket of its own, not something a lobby lane may do.
 
 | …do this | → run / read |
 |---|---|
-| know what to work on | **put the card in `To Do Next` on the board — that column *is* the answer** ([§12](#12-the-board--what-runs-next)).
-
-**An epic branch carries two numbers, and `epic/` always comes first.** Its ticket key and its
-sprint number are different numbers that drift apart — `AVCH-18` is the ticket, `epic-19` is what
-the board, the story files and `_artifacts/epic_19/` are named after — so the branch shows both:
-`epic/AVCH-18-epic-19-adk-2x-runtime`. Put the sprint number in the slug, never in front of the
-prefix. Everything that finds an epic branch looks for something starting with `epic/`, including
-the hook that guards `main`; a branch called `epic-19/...` is invisible to all of it and quietly
-gets treated as if it were `main`. On a project: `/cicd-boot-sprint-memory`. In the command centre: just ask. |
+| know what to work on | **put the card in `To Do Next` on the board — that column *is* the answer** ([§12](#12-the-board--what-runs-next)). On a project: `/cicd-boot-sprint-memory`. In the command centre: just ask. |
 | see or move the sprint board | ask any agent — the live board answers via `acli` ([§12](#12-the-board--what-runs-next)) |
 | work out which lane my work belongs in | [§5 — the lane chooser](#5-which-lane-am-i-in) |
 | know the running order — what goes first, what runs side by side | `/cicd-label-tasks <EPIC-KEY>` — once the stories are written ([§6](#6-the-story-lane)) |
@@ -473,6 +465,14 @@ epic's **Jira ticket** itself at kickoff — never an invented key: it reads the
 just created, and the branch is never cut unkeyed. Before it mints, it **searches the board for an
 open Epic** and says in one line what it looked at — a re-run after a stall is the normal case, and a
 second Epic row for one BMAD epic is a row nothing will ever move again.
+
+**An epic branch carries two numbers, and `epic/` always comes first.** Its ticket key and its
+sprint number are different numbers that drift apart — `AVCH-18` is the ticket, `epic-19` is what
+the board, the story files and `_artifacts/epic_19/` are named after — so the branch shows both:
+`epic/AVCH-18-epic-19-adk-2x-runtime`. Put the sprint number in the slug, never in front of the
+prefix. Everything that finds an epic branch looks for something starting with `epic/`, including
+the hook that guards `main`; a branch called `epic-19/...` is invisible to all of it and quietly
+gets treated as if it were `main`.
 
 **The order is: branch first, then the epic.** Nothing is written into the project until the epic
 branch exists, and every artifact the kickoff produces — `epics.md`, the board, the test design — is
