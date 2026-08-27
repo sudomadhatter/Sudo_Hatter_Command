@@ -5,8 +5,11 @@
   thin model 2026-08-07, .agents/rules/project-law.md: projects carry tier-2 law only, no vendor.)
 
 .DESCRIPTION
-  Single source of authorship = <home>\.agents. The canonical invocable set is .agents\commands\ — it mirrors
-  to ALL FOUR platforms (Claude, opencode, Antigravity/Gemini, Codex). This copies commands / skills / hooks /
+  Single source of authorship = <home>\.agents. The canonical AUTHORING set is .agents\commands\ and it reaches
+  ALL FOUR platforms (Claude, opencode, Antigravity/Gemini, Codex) — but Antigravity is reached INDIRECTLY,
+  through the generated .agents\workflows\ door, because it truncates a workflow over 12,000 chars instead of
+  rejecting it. Both Antigravity surfaces (the repo door and the machine-global cache) mirror workflows\,
+  never commands\ (SCC-332). The other three read commands\ verbatim at any size. This copies commands / skills / hooks /
   opencode-agents into the target's .claude and .opencode dirs (Claude /commands + skills + hooks resolve there)
   and, for a LOBBY sync, also refreshes the machine-global caches so opencode, Antigravity, and Codex see the
   same set Claude does.
@@ -792,7 +795,9 @@ if ($Status) {
 }
 
 # Regenerate the Antigravity workflow mirrors in the master BEFORE vendoring, so projects pick them up via
-# the (additive) .agents vendor. (Global command cache still mirrors commands/ separately, unchanged.)
+# the (additive) .agents vendor. This also runs BEFORE the machine-global block below, which mirrors this
+# same workflows/ dir into the Antigravity cache (SCC-332) - so that cache is always built from a fresh
+# door set. Do NOT move this call below the globals block. The opencode cache still mirrors commands/.
 $agWf = Sync-AntigravityWorkflowMirror $Master -WhatIf:$WhatIf
 Write-Host "sync-agents: antigravity workflow mirror -> $($agWf.Count) commands in .agents/workflows/"
 
@@ -997,10 +1002,15 @@ if (-not $GlobalsOnly) {
 # Each cache is guarded independently: a missing/broken target (e.g. a dangling junction) is SKIPPED with a
 # warning, never crashes the run — so one bad path can't block the other cache or the (already-done) local sync.
 if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
+  # SCC-332: each cache names its OWN source. opencode reads /-commands and wants the full body.
+  # Antigravity TRUNCATES at 12,000 chars instead of rejecting (SCC-135), so a verbatim 30 KB command
+  # runs on partial steps and looks fine. It must be fed the already-generated thin-launcher surface in
+  # .agents\workflows - the same doors the per-project sync writes - never the raw command bodies.
   $GlobalCmdSrc = Join-Path $Master "commands"
+  $GlobalWfSrc  = Join-Path $Master "workflows"
   $caches = @(
-    @{ Name = 'opencode';    Platform = 'opencode';    Path = (Join-Path $UserHome ".config\opencode\commands") },
-    @{ Name = 'antigravity'; Platform = 'antigravity'; Path = (Join-Path $UserHome ".gemini\antigravity\global_workflows") }
+    @{ Name = 'opencode';    Platform = 'opencode';    Src = $GlobalCmdSrc; Path = (Join-Path $UserHome ".config\opencode\commands") },
+    @{ Name = 'antigravity'; Platform = 'antigravity'; Src = $GlobalWfSrc;  Path = (Join-Path $UserHome ".gemini\antigravity\global_workflows") }
   )
   foreach ($c in $caches) {
     try {
@@ -1017,7 +1027,7 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
       Write-Warning ("sync-agents: SKIPPED {0} global cache '{1}' - {2}" -f $c.Name, $c.Path, $_.Exception.Message)
       continue
     }
-    $names = Sync-CommandDir $GlobalCmdSrc $c.Path $c.Platform -Mirror -SkipAP -WhatIf:$WhatIf
+    $names = Sync-CommandDir $c.Src $c.Path $c.Platform -Mirror -SkipAP -WhatIf:$WhatIf
     Write-Host ("sync-agents: {0} global -> {1} cmds  ({2})" -f $c.Name, $names.Count, $c.Path)
   }
   Write-Host "sync-agents: (global caches mirror-exact; bmad-* preserved; restart opencode to pick up)"

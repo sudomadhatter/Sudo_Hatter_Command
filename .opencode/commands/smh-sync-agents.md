@@ -24,8 +24,10 @@ What it touches:
   are excluded from the `.claude/skills` copy.
 - **Local tool dirs** — `.claude/skills`, `.opencode/{commands,agent}`. **`.claude/commands` is a RETIRED
   door**: the sync writes nothing there and manifest-purges what previous runs wrote.
-- **Machine-global caches** — `~/.config/opencode/commands` and `~/.gemini/antigravity/global_workflows`.
-  Each receives only commands whose `platforms:` frontmatter includes that platform. **`~/.codex/prompts` is
+- **Machine-global caches** — `~/.config/opencode/commands`, sourced from `.agents/commands/` (full bodies),
+  and `~/.gemini/antigravity/global_workflows`, sourced from **`.agents/workflows/`** so Antigravity receives
+  the same thin launchers as its per-project door and never an over-cap body (SCC-332).
+  Each receives only files whose `platforms:` frontmatter includes that platform. **`~/.codex/prompts` is
   a RETIRED door** (the deprecated `/prompts:<name>` surface double-doored every command beside its skill);
   the sync purges our non-`bmad-*` prompts from it.
 - **Codex skills mirror** (on a LOBBY sync) — the 56 `bmad-*` skills from `.claude/skills` are mirrored to

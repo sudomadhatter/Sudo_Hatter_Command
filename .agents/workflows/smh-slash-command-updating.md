@@ -5,13 +5,17 @@ description: Refresh the machine-global command caches (Antigravity global_workf
 # /smh-slash-command-updating — refresh the global command caches
 
 **This is now a thin alias.** The global caches are refreshed by the one unified engine, `sync-agents.ps1`
-(see `/smh-sync-agents`). This command runs the **globals-only** pass — the canonical `.agents/commands/` set
-(the same canonical command set Claude uses) is mirror-synced into:
+(see `/smh-sync-agents`). This command runs the **globals-only** pass. **Each cache has its own source**
+(SCC-332) — they are not two copies of one folder:
 
-- `~/.gemini/antigravity/global_workflows` (Antigravity calls our commands "workflows")
-- `~/.config/opencode/commands`
+- `~/.gemini/antigravity/global_workflows` ← **`.agents/workflows/`**, the generated Antigravity door.
+  Antigravity calls its invocable units "workflows" and **truncates any one over 12,000 chars instead of
+  rejecting it**, so a big command must arrive as the generated thin launcher that points back at
+  `.agents/commands/<name>.md`. Sourcing this cache from `commands/` bypasses that and ships cut-off bodies.
+- `~/.config/opencode/commands` ← **`.agents/commands/`**, the full bodies. opencode has no size limit.
 
-Mirror-exact: stale ghosts are purged, `bmad-*` (BMAD's own global install) is preserved, and per-command
+The globals pass regenerates `.agents/workflows/` first, so the cache is always mirrored from a fresh door set.
+Mirror-exact: stale ghosts are purged, `bmad-*` (BMAD's own global install) is preserved, and per-file
 `platforms:` frontmatter is honored (a claude-only command is not pushed to the gemini/opencode caches).
 
 ## Run (PowerShell)
