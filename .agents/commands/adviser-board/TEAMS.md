@@ -13,6 +13,20 @@ Each charter carries a **when NOT to seat** clause, and it is load-bearing. The 
 convened all five teams every round regardless of relevance, which is what buried the chair. A lens with
 nothing to own this round stays observing; that is a correct outcome, not a failure.
 
+⛔ **These charters assume the topic is a PRODUCT, and many topics are not.** Ground Truth means
+telemetry and users; Unconventional Leverage means capability you cannot buy, hire or wait for. On a
+personal, human, or pure-judgment topic roughly half of this file goes inert, and translating a charter
+across *by analogy* to keep it seated is the borrowed-analogy failure 🔬 First Principles exists to
+catch — performed on the roster instead of on the advice. **If you are translating a charter to make it
+fit, it does not fit.** The command's Step 2 scale rule is what sizes this; a two-lens board on a
+personal topic is a correct outcome, not a thin one.
+
+⭐ **A room need not be a lens.** When the topic has no distinct failure surfaces, the orchestrator seats
+**one room of three cross-lens minds** drawn straight from the roster rather than filling any charter
+below. Three minds, two independent axes, five cycles, one card — the discipline is identical; only the
+container is gone. Read these charters then as *how to find* which minds are load-bearing, never as a
+set of boxes that must each be filled three at a time.
+
 **Pools, not lineups.** Every list below is who *may* be seated, not who is. The orchestrator picks three
 per seated team using the two-axis rule: the topic's natural owner, then a mind that collides with them,
 then a third that collides with *both* on a different axis. `Collides with` in each persona card is what

@@ -82,9 +82,13 @@ command to run next. That is the chair's call alone.
 
 ## Rendering
 
-Cards render **verbatim**, in board order, with nothing between them. The orchestrator never paraphrases,
-trims, merges or reorders a card, and never re-cuts one itself — a card that violates this contract is
-fixed by one corrective respawn at the source, not by editing.
+**A 3–5 sentence prose read comes before the block of cards** — the meeting told to a chair who sat in
+none of the rooms. That is `operator-profile` obligation 2 and the command's Step 5; it is the one thing
+allowed above the cards, it summarises no card, and it replaces none. Without it the chair reads a wall.
+
+Cards then render **verbatim**, in board order, with nothing between them. The orchestrator never
+paraphrases, trims, merges or reorders a card, and never re-cuts one itself — a card that violates this
+contract is fixed by one corrective respawn at the source, not by editing.
 
 After the last card, exactly one line:
 
