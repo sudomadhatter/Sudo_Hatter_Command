@@ -57,6 +57,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [⭐ Main merge needs the operator's VERBATIM words](main-merge-needs-operator-verbatim-approval.md) — minter requires verbatim approval quote; stage, CI green, then park.
 - [Hook `ask` = DENY in auto mode](hook-ask-becomes-autodeny-in-auto-mode.md) — gates main only; reads pass, mutations die in non-interactive shells.
 - [Pruned worktree blocks re-add](pruned-worktree-leaves-a-blocking-shell.md) — empty dir shell blocks worktree add; delete before re-adding.
+- [⛔ Pruning a story worktree can ORPHAN ①](story-worktree-prune-can-orphan-step1.md) — ①'s commit survives only as dangling; git fsck + cherry-pick, never re-run ① blind.
 - [Worktrees skip gitignored assets](worktrees-do-not-inherit-gitignored-assets.md) — link auth_keys, .env, and node_modules into new worktree.
 - [GitHub 408 on satellite wifi](github-408-on-satellite-uplink.md) — push times out mid-upload; chunk via scratch refs or wait for stable link.
 
@@ -70,7 +71,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - **Secrets in tests** — lesson from closed Gemini-key leak: **`setdefault` is wrong idiom for secrets** — assign unconditionally in conftest.
 - [full-suite contention](vitest-full-suite-contends-across-lanes.md) — locks per-stack; bg shells die on chat close.
 - **Spec + fixture conventions** — [eval negative controls](eval-harness-negative-control-convention.md) (_negative_control:true + NC_ id) · [E2E gate fiction](e2e-gate-fiction-test-guardrails.md) (report-only gate hid fiction spec) · [ATDD mocks match contract](atdd-mock-shape-must-match-backend-contract.md) · [domain-gated fixtures](domain-gated-fixtures-web-verify.md) (verify against primary sources).
-- **Portability runs BOTH ways** — [Windows-authored code hides POSIX bugs](windows-authored-code-hides-posix-bugs.md) (chmod, C:/ paths, ;, robocopy, bare python) · [⭐ Mac-authored code hides WINDOWS bugs](mac-authored-code-hides-windows-bugs.md) (CRLF at two seams, PATHEXT, `d / "C:"` IS `d`, SIGTERM undeliverable; fork behaviour, converge data).
+- **Portability runs BOTH ways** — [Windows-authored code hides POSIX bugs](windows-authored-code-hides-posix-bugs.md) (chmod, C:/ paths, ;, robocopy, bare python, TRACKED exec bit -> inert hooks) · [⭐ Mac-authored code hides WINDOWS bugs](mac-authored-code-hides-windows-bugs.md) (CRLF at two seams, PATHEXT, `d / "C:"` IS `d`, SIGTERM undeliverable; fork behaviour, converge data).
 - [JWT last-char tamper is a no-op](jwt-tamper-last-char-is-a-noop.md) — last base64 char carries 4 bits; mutate leading chars.
 
 ## Code-change hazards
