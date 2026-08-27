@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 410,
+    "files": 415,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 730,
+    "edges": 731,
     "external": 39,
     "ambiguous": 166,
     "dangling": 297,
@@ -48,7 +48,7 @@
     },
     {
       "path": ".agents/commands/adviser-board/DOCTRINE.md",
-      "in": 2,
+      "in": 3,
       "out": 0
     },
     {
@@ -93,6 +93,11 @@
     },
     {
       "path": ".agents/commands/adviser-board/minds/brunelleschi.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/brunson.md",
       "in": 0,
       "out": 0
     },
@@ -142,7 +147,17 @@
       "out": 0
     },
     {
+      "path": ".agents/commands/adviser-board/minds/godin.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": ".agents/commands/adviser-board/minds/haeckel.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/hopkins.md",
       "in": 0,
       "out": 0
     },
@@ -150,6 +165,11 @@
       "path": ".agents/commands/adviser-board/minds/hopper.md",
       "in": 0,
       "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/hormozi.md",
+      "in": 0,
+      "out": 1
     },
     {
       "path": ".agents/commands/adviser-board/minds/houellebecq.md",
@@ -255,6 +275,11 @@
       "path": ".agents/commands/adviser-board/minds/ury.md",
       "in": 0,
       "out": 1
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/vaynerchuk.md",
+      "in": 0,
+      "out": 0
     },
     {
       "path": ".agents/commands/adviser-board/minds/wegener.md",
@@ -2248,6 +2273,11 @@
     {
       "from": ".agents/commands/adviser-board/THIRD-SIDE.md",
       "to": ".agents/commands/adviser-board/CARD.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/minds/hormozi.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
       "kind": "ref"
     },
     {
