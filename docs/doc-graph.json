@@ -4,7 +4,7 @@
     "docs"
   ],
   "counts": {
-    "files": 402,
+    "files": 410,
     "packs": 1,
     "pack_docs": 2,
     "edges": 730,
@@ -72,12 +72,27 @@
       "out": 1
     },
     {
+      "path": ".agents/commands/adviser-board/minds/aurelius.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": ".agents/commands/adviser-board/minds/bastiat.md",
       "in": 0,
       "out": 0
     },
     {
+      "path": ".agents/commands/adviser-board/minds/boyd.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": ".agents/commands/adviser-board/minds/braudel.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/brunelleschi.md",
       "in": 0,
       "out": 0
     },
@@ -92,12 +107,22 @@
       "out": 0
     },
     {
+      "path": ".agents/commands/adviser-board/minds/deming.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": ".agents/commands/adviser-board/minds/diogenes.md",
       "in": 0,
       "out": 0
     },
     {
       "path": ".agents/commands/adviser-board/minds/drucker.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/eisenhower.md",
       "in": 0,
       "out": 0
     },
@@ -122,6 +147,11 @@
       "out": 0
     },
     {
+      "path": ".agents/commands/adviser-board/minds/hopper.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": ".agents/commands/adviser-board/minds/houellebecq.md",
       "in": 0,
       "out": 0
@@ -133,6 +163,11 @@
     },
     {
       "path": ".agents/commands/adviser-board/minds/identity-engineer.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/kelly-johnson.md",
       "in": 0,
       "out": 0
     },
@@ -163,6 +198,11 @@
     },
     {
       "path": ".agents/commands/adviser-board/minds/nightingale.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/ohno.md",
       "in": 0,
       "out": 0
     },
