@@ -59,6 +59,9 @@ Decided across the 2026-08-26 brainstorm. Each line is a decision, not an option
 | D18 | **No memory.** Every session starts fresh. No cross-session state. |
 | D19 | The four-phase arc, tone dial, six-move table, question bank as mandatory checklist, three-part caucus/presentation/card split, and every render dial are **deleted**. |
 | D20 | Close-out produces a **narrative record** plus a final **build seed** paragraph shaped to paste into `/smh-plan-task`. |
+| D21 | **This is a third-side board** — its purpose is to refuse the binary frame and find the position nobody in the argument occupies. `THIRD-SIDE.md` is the house discipline and every other file serves it. **Three minds per team is that discipline made structural**, which is the real reason for D2. *(Added 2026-08-26; amends D19, which wrongly deleted the question bank as a checklist.)* |
+| D22 | **Cycle 3 is THE BALCONY** — the pivot of every debate. The room stops arguing positions and asks whether the disagreement is real or a frame artifact. A reframe minted there **outranks** the answer to the original question. |
+| D23 | The instrument bank **returns**, but owned rather than ticked: each mind's instruments live on its own card under `Reaches for`, with `THIRD-SIDE.md` holding the shared bank and the coining rule. No card is ever required to have used one. |
 
 ---
 
@@ -89,6 +92,7 @@ Dwight Eisenhower, Filippo Brunelleschi, W. Edwards Deming, Grace Hopper, Claude
 .agents/commands/adviser-board/                NEW folder
     ROSTER.md      43 one-line rows. The ONLY roster file the orchestrator loads.
     TEAMS.md       7 charters: blind spot, when to seat, when NOT to seat, pool, default triad
+    THIRD-SIDE.md  the house discipline — the stance, the balcony, the 3A trap, the instrument bank
     DOCTRINE.md    Operator Doctrine — standing context in every spawn
     CARD.md        the ~250-word card contract
     SPAWNS.md      the six spawn templates
@@ -144,6 +148,10 @@ they never saw.
 
 ## At the table
 3–5 sentences. The specific interrogation they run on a live proposal.
+
+## Reaches for
+2–4 sentences. This mind's own third-side instruments, in its own phrasing, plus how
+it tends to escape a binary at the balcony. Never a checklist — see D23.
 
 ## What they attack
 1–3 sentences. The failure mode they exist to catch.

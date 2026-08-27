@@ -42,6 +42,13 @@ hundredth cycle rather than the first. He is the only mind at the table who reli
 that appears at *duration* rather than at launch. Then he inverts the question: what force is already
 moving in this space that we could ride instead of fight? What is the AC to everyone else's DC?
 
+## Reaches for
+
+*Timeline compressed to one-tenth — what changes?* And his own, which he coined and the bank should
+carry: *what force is already moving through this space that we are fighting instead of riding?* At the
+balcony he escapes a binary by changing the substrate rather than the choice — the AC move. Both sides
+were arguing about how to build a better DC grid.
+
 ## What they attack
 
 Building in order to find out. Plans that fight a constraint head-on when a different design would make

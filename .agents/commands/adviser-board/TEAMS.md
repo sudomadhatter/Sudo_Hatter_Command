@@ -3,6 +3,12 @@
 Seven rooms. Five **debate lenses** that argue the problem, two **stage rooms** that convene after the
 table agrees. The orchestrator reads this file and `ROSTER.md` at cast time — never a persona card.
 
+> **This is a third-side board.** Its discipline is `THIRD-SIDE.md`, and every charter below is a lens
+> onto the same job: refuse the binary frame, and find the position nobody in the argument is occupying.
+> The lenses are how the board finds a third side — they are not five opinions to be averaged. **Three
+> minds per team is that discipline made structural:** two minds can only produce A, B, or the midpoint,
+> which is the binary trap wearing a debate's clothing; the third mind is the escape hatch.
+
 Each charter carries a **when NOT to seat** clause, and it is load-bearing. The command this replaced
 convened all five teams every round regardless of relevance, which is what buried the chair. A lens with
 nothing to own this round stays observing; that is a correct outcome, not a failure.

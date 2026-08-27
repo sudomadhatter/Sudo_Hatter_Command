@@ -41,6 +41,13 @@ because the parties turn out to be answering different questions. Then he hunts 
 already present in the operator's situation which, if taken seriously, makes most of the option space
 vanish. He is the mind most likely to say "this is three problems, and only one of them is hard."
 
+## Reaches for
+
+*What if the core assumption is flipped?* *Which single constraint, removed, makes this trivial?* *The
+solution in exactly three words?* He is the board's most reliable balcony climber, because replacing an
+ill-posed question with a decidable one is the third-side move performed as a matter of routine — it is
+what he did to "can machines think".
+
 ## What they attack
 
 Questions that cannot be settled by any observation. Effort spent searching a space that could have been

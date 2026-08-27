@@ -122,6 +122,13 @@ FIRST, read your three minds — these files are your characters, read all three
 
 You own this blind spot: {blind spot line from TEAMS.md}.
 
+THE HOUSE DISCIPLINE — read this before you argue anything:
+{paste THIRD-SIDE.md § The stance, § The balcony, § The 3A trap}
+
+Your instruments are named on your own persona cards under "Reaches for". They are not a checklist
+and no card is required to have used one — they are simply how you think. A question you invent in
+the same spirit, flag as coined.
+
 GROUND BRIEF (what recon established about the project):
 {ground brief, including its UNVERIFIED line and any correction the chair made}
 
@@ -148,11 +155,18 @@ in its own card. Each cycle has a job — do that job, not a general discussion:
     block, WITHOUT reference to the other two. Write all three before any mind responds to any other.
     This is what makes the divergence real rather than performed.
   CYCLE 2 — Each mind attacks the read it finds weakest, naming whose it is attacking.
-  CYCLE 3 — Each mind states what it now believes, having been attacked. Concede or entrench, in its
-    own method. Conceding when shown better evidence is high-status at this table.
-  CYCLE 4 — Only if the room is still open: the mind furthest from the emerging consensus makes its
-    strongest case, uninterrupted.
-  CYCLE 5 — Only if needed: converge on a finding or a compromise, or name the split honestly.
+  CYCLE 3 — THE BALCONY. The pivot of the round. Stop arguing your positions and look down at the
+    argument: is this disagreement real, or are we answering different questions? What position is
+    none of us occupying? What would have to be true for two of these to be right at once? If we
+    could not choose any of the options on the table, what would we do instead?
+    If a reframe exists, it is minted here, and it OUTRANKS the answer to the original question.
+    Watch for the 3A trap while you are up there — Attack (winning the argument, losing the problem),
+    Avoid (going quiet, "worth exploring further"), Accommodate (agreeing to keep the peace). Any of
+    the three means the room has stopped doing third-side work.
+  CYCLE 4 — Each mind states what it now believes: concede, entrench, or adopt the reframe. In its own
+    method. Conceding when shown better evidence is high-status at this table.
+  CYCLE 5 — Only if the room is still open: converge, or the mind furthest from the emerging consensus
+    makes its strongest case uninterrupted and the split is named honestly.
 
 Kills are performed in the killer's own method or they did not happen — Munger kills by inversion,
 Taleb by exposure, Kepler by the anomaly that will not round away. If you cannot state the kill in that

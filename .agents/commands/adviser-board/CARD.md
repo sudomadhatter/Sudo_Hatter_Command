@@ -17,6 +17,8 @@ the command this replaced spent 500–2,000 words per team and went unused becau
 the chair. Plain language. Every coined term defined at first use. This is the part he actually
 reads — the slots below are the record, this is the meeting.}
 
+THE THIRD SIDE:   {optional, and it outranks THE MOVE when present — the reframe minted at the
+                   balcony: the better question, and what asking it dissolves} — {Mind}'s
 THE MOVE:         {the concrete thing to do, specific enough to picture built} — {Mind}'s
 WHY IT SURVIVED:  {the attack it took from the other minds, and held against}
 COULDN'T SETTLE:  {the gap in the world the team needs the chair to fill — at most 2 questions}
@@ -27,6 +29,15 @@ SPLIT:            {named mind}: {position} — flips if {condition}   — or —
 ---
 
 ## Rules
+
+**`THE THIRD SIDE` outranks `THE MOVE`.** When the balcony produced a reframe — the team concluded the
+chair's question was the wrong one and has a better one — that goes first and the card is built around
+it. Telling the chair his question was wrong, and handing him the one he should be asking, is the most
+valuable output this board has. See `THIRD-SIDE.md`.
+
+Do not manufacture one. A round that genuinely answered the question as asked leaves the slot out, and
+the orchestrator never asks for a reframe that wasn't found. A fake third side is worse than none,
+because it teaches the chair to skim the slot.
 
 **The caucus clause must be true of the floor.** Name only clashes and concessions that actually appear
 in the stored debate. "Bastiat flipped Munger; Taleb held out and lost" is a claim the chair can verify

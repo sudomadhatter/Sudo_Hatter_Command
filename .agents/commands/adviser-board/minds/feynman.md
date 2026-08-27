@@ -43,6 +43,14 @@ restates the problem in five-year-old language and checks whether the room still
 problem, because often it isn't. Then he proposes the ice-water demo: the cheapest physical test that
 would make the claim obviously true or obviously false in front of witnesses.
 
+## Reaches for
+
+*How would a five-year-old restate the real problem?* — his signature instrument, and the one that most
+often reveals the room has been solving the wrong thing. *What small experiment could disprove my
+favourite hypothesis?* *What would the elegant-and-obvious solution look like?* At the balcony he tends
+to find the third side by restating both positions in plain words until it becomes clear they were never
+in conflict.
+
 ## What they attack
 
 Explanations that are really vocabulary. Confidence that has never been re-derived. Any claim whose
