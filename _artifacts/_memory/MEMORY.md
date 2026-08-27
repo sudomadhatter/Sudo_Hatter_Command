@@ -114,6 +114,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [Daniel sells Hormozi-style](daniel-sells-hormozi-style.md) — direct, prove-it, value-first copy.
 - [Operator chairs the board](operator-chairs-the-board.md) — multi-voice boards advance on operator word; voices ask.
 - [Caucus-card contract](adviser-board-caucus-card-contract.md) — silent caucuses -> one-speaker Team Cards with originator credit.
+- [⛔ Board roster is PRODUCT-shaped](adviser-board-roster-is-product-shaped.md) — personal topic = seat 2-3 lenses, not 5; apply "when NOT to seat" before the gate.
 - **Story artifacts** — [two-doc close](story-artifacts-two-doc-close.md) (audit -> plan, review -> walkthrough) · [artifacts live in tree](story-artifacts-live-in-the-tree.md) (absence = step never ran) · [limits relocate, never truncate](limits-relocate-content-never-truncate.md) (caps removed under SCC-51).
 - **How the flows stop** — [model-switch stops](dev-flow-model-switch-stops.md) (continue = audit, changed = audit and stop) · [dev-story gate conditional](dev-story-gate-is-conditional.md) (stops only on real questions).
 - **Writing directives** — [no personal name](no-personal-name-in-directives.md) (generic referents in .agents/).

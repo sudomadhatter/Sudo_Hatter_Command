@@ -36,10 +36,14 @@ The cards also carry three sections this document never had, and they are what m
 Edit the files above directly — there is no longer a mirror to keep in sync.
 
 - **Reword a mind** → edit `minds/<slug>.md`. If the change alters what they are best against, update
-  their `ROSTER.md` row too, since that is what the orchestrator casts and swaps on.
-- **Add a mind** → write `minds/<slug>.md` against the eight-section contract, add a `ROSTER.md` row, and
-  add them to a pool in `TEAMS.md`. Name at least two existing minds in their `Collides with`, and add
-  yourself to *their* cards where the collision is mutual.
+  their `ROSTER.md` row too. If it alters *when you would reach for them* or *who they collide with*,
+  update their line in `ROSTER.md` § **Reach for them when** — that index is what the orchestrator
+  actually casts on, and the collision names there are the only ones it can see (SCC-333).
+- **Add a mind** → write `minds/<slug>.md` against the eight-section contract, add a `ROSTER.md` row,
+  add a line under the right lens in § **Reach for them when** (a *situation*, plus their `Collides:`
+  names), and add them to a pool in `TEAMS.md`. Name at least two existing minds in their `Collides
+  with`, and add yourself to *their* cards where the collision is mutual — the situation index and the
+  cards must agree, because the orchestrator reads the index and the debate spawn reads the cards.
 - **Add or retire a lens** → `TEAMS.md`, including its *when NOT to seat* clause, then re-home its minds
   in `ROSTER.md`.
 - **Add an instrument** → `THIRD-SIDE.md`, and put it on the card of whoever reaches for it.

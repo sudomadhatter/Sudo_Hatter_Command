@@ -1600,6 +1600,35 @@ one-line checks: one prints the pointer a prompt produces, the other shows a log
 tool loaded on its own. Worth running after a fresh clone or a new machine, because both mechanisms
 fail the same quiet way — a rule that never loads looks exactly like a rule with nothing to say.
 
+### The adviser board now sizes itself to the topic
+
+`/smh-adviser-board` used to convene three to five lenses of three minds each — a floor of nine
+historical minds even on a question that needed two. It now decides its **shape** before it picks
+anyone, by counting how many genuinely distinct ways the topic can fail:
+
+| Distinct failure surfaces | What convenes |
+|---|---|
+| four or five | 4–5 lenses — the full board |
+| two or three | 2–3 lenses |
+| one, or none distinct | **one room of three minds drawn from across the lenses** |
+
+A personal, judgment, or non-product question almost never has five, because the lens charters were
+written for product work — "Ground Truth" means telemetry and users, "Unconventional Leverage" means
+capability you cannot buy or hire. Reaching one of those across *by analogy* to keep it seated is the
+borrowed-analogy failure the board exists to catch, aimed at itself instead of at the advice.
+
+**Two things you will see change.** The cast gate now prints a line for **every** room, seated or
+observing — each refusal citing its own charter and naming what the cut costs you — so you can put a
+room back before the debate runs rather than after reading five cards you did not need. And the board
+no longer opens with the cards: a short prose read of what the rooms found comes first, with the cards
+as the record underneath. That was always the house rule (`operator-profile` obligation 2, which names
+this command as its home); the command had been quietly contradicting it.
+
+**One rule retired.** `prose-formatting.md` is gone. It claimed to implement obligation 2 and in fact
+inverted it — obligation 2 says a dense result gets narrative **and** the record, where that rule said
+strip the structure and prefer prose. The formatting doctrine now lives in `operator-profile.md` alone,
+which absorbed the one clause worth keeping: never push back in bullets.
+
 ### The code graph — what the review commands ask before they judge
 
 **Each project carries a local code graph. The command centre does not, and never will.**

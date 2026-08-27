@@ -1,5 +1,5 @@
 ---
-description: 'Convene the Adviser Board — a third-side thinking board of 43 historical minds. An orchestrator grounds the board in a real project (recon), casts 3–5 lenses with THREE minds each chosen to collide, and runs their debates in parallel subagents. Each team argues 3–5 cycles through a mandatory balcony beat — is this disagreement real, or is the frame wrong? — and returns ONE ~250-word card. Refuses the binary frame: a reframe outranks an answer. Teams must surface what they could not settle as questions to the chair. Stages into Execution Reality and Sales on the chair''s word. Use when the user says "convene the board" / "adviser board" / "/smh-adviser-board <topic>".'
+description: 'Convene the Adviser Board — a third-side thinking board of 43 historical minds. An orchestrator grounds the board in a real project (recon), then casts it to the topic''s real shape — one room of three cross-lens minds when the topic has no distinct failure surfaces, up to five full lenses when it earns them, never more — with THREE minds per room chosen to collide, and runs their debates in parallel subagents. Each team argues 3–5 cycles through a mandatory balcony beat — is this disagreement real, or is the frame wrong? — and returns ONE ~250-word card. Refuses the binary frame: a reframe outranks an answer. Teams must surface what they could not settle as questions to the chair. Stages into Execution Reality and Sales on the chair''s word. Use when the user says "convene the board" / "adviser board" / "/smh-adviser-board <topic>".'
 platforms: [claude, opencode, codex]
 ---
 
@@ -94,25 +94,83 @@ worse than the abstraction it replaced.
 
 ## Step 2 — Cast, and stop
 
-Read `TEAMS.md` and `ROSTER.md` against the brief. Seat **3–5 lenses that are actually load-bearing** —
-honour every charter's *when NOT to seat* clause; a lens left observing is a correct outcome.
+Read `TEAMS.md` and `ROSTER.md` against the brief. **Decide the shape before you decide the lenses.**
 
-Staff each with **three minds on two independent axes**: the topic's natural owner, one who collides
-with them, and a third who collides with **both on a different axis**. `Collides with` on each ROSTER row
-and card is what this reads. A third mind sitting between the other two has been cast wrong.
+### The scale rule
 
-Render the ground brief and the cast together as **one gate**, then wait:
+Count the topic's **genuinely distinct failure surfaces** — a surface is a way this can fail that no
+other surface would catch. The mechanism can be wrong; the evidence can be wrong; the downside can be
+unpriced; the capability can be unreachable; the person on the far end may not want it.
+
+| Distinct failure surfaces | Seat |
+|---|---|
+| four or five | 4–5 lenses — the full board, **earned, never assumed** |
+| two or three | 2–3 lenses |
+| one, or none that are distinct | ⭐ **ONE room of three cross-lens minds** — see below |
+
+⛔ **A personal, human, or judgment topic almost never has five.** The charters are written for product
+and engineering work — Ground Truth means telemetry and users, Unconventional Leverage means capability
+you cannot buy or hire. Porting one to a non-product topic *by analogy* is the borrowed-analogy failure
+🔬 First Principles exists to catch, performed on the roster instead of on the advice. **If you are
+translating a charter to make it fit, it does not fit.**
+
+### ⭐ The single-room cast
+
+When the topic has no distinct failure surfaces, **do not fill lenses**. Seat **one room of three
+cross-lens minds** picked straight off the roster for this topic, naming the lens each came from.
+Everything else is unchanged: three minds, two independent axes, five cycles, one card.
+
+The charters are how you *find* which minds are load-bearing. They are not a container you must fill
+three at a time, and the board's smallest move is not nine minds. One card the chair reads beats five he
+skims.
+
+There is **no verb** for this and the chair never asks for it — it is your read at cast time, and he
+restructures it at the gate like any other cast.
+
+### Staffing a room
+
+**Three minds on two independent axes**: the topic's natural owner, one who collides with them, and a
+third who collides with **both on a different axis**. `ROSTER.md` § *Reach for them when* is what this
+reads — its situation line says whether a mind belongs here at all, and its `Collides:` names give you
+the axes without opening a persona card, which you never do. A third mind sitting
+between the other two has been cast wrong — and because that is easy to claim and easy to fake, **name
+the axis each collision runs on**. Name it in one clause when a mind is staffed outside its primary lens.
+
+### The gate — one line for EVERY room, seated or not
+
+⛔ **Write the negative.** This step's original failure was that it only ever wrote down what it *seated*,
+so the *when NOT to seat* clauses went unapplied in practice: you cannot silently skip a positive
+judgment, but a negative one that is never written is a negative one that was never made.
+
+Emit **one line per room, all seven**, above the cast. A room left observing cites **its own charter's
+clause** and **what the cut costs**. The count then falls out of seven judgments instead of being picked
+first and justified after. **If you cannot write the sentence that refuses a room, seat it.**
+
+Render the ground brief and that table together as **one gate**, then wait:
 
 ```
-🔬 First Principles   Feynman × Tesla × Turing
+🔬 First Principles   SEAT — the mechanism has never been re-derived and two load-bearing
+                      terms are undefined.  Feynman × Tesla × Turing.
                       Feynman demands the mechanism; Tesla runs it to failure in his head;
-                      Turing asks what would count as an answer. They split on whether it
-                      can be built at all.
+                      Turing asks what would count as an answer. Feynman × Tesla collide on
+                      whether it works; Turing crosses both on whether the question is even
+                      decidable.
+🩺 Ground Truth       OBSERVING — nothing has been measured and there is no installed base.
+                      A lens with no ground is First Principles in a lab coat (its clause).
+                      Cost of the cut: Semmelweis's number that indicts us.
+🌊 Ruin & Ripple      OBSERVING — the decision is cheap and reversible, and pricing ruin into
+                      a two-hour experiment teaches the chair to ignore it when ruin is real.
+🧬 Unconv. Leverage   OBSERVING — the standard channel is available, cheap and fast; cleverness
+                      where a credit card would do is a cost, not a lever.
+🎯 Human Needs        SEAT — adoption is assumed rather than argued.
+                      Drucker × Diogenes × Houellebecq.  [axes: job-to-be-done vs proof;
+                      Houellebecq crosses both on the need nobody says out loud.]
+🔧 Execution Reality  OBSERVING — stage room; the debate has not agreed yet (its charter
+                      forbids seating it during debate).
+📣 Sales              OBSERVING — internal tooling, nothing to sell.
 
 Swap anyone, add a lens, or say "gavel".
 ```
-
-Name it in one clause when a mind is staffed outside its primary lens.
 
 ## Step 3 — The Read
 
@@ -146,13 +204,23 @@ Kills happen in the killer's own method or they did not happen. Teams may read *
 (Execution Reality: six) to settle a fact, and never write. What they cannot settle becomes a question,
 never an invention.
 
-## Step 5 — Render, then silence
+## Step 5 — Read it to him, then the record, then silence
 
-Every card **verbatim**, in board order, per `CARD.md`. Never paraphrase, trim, merge or reorder; a card
-that breaks the contract is fixed by one corrective respawn, never by editing.
+**The narrative comes first, and it is not optional.** `operator-profile` obligation 2 binds every dense
+or structured result in this house and names *this command* as the doctrine's home: flowing prose for
+someone who was not in the room, and **then** the compressed form as the record — never the record
+alone. Cards rendered cold are precisely the failure that obligation exists to prevent, and this step
+used to cause it.
 
-Then exactly one line — `⚖ {sharpest cross-team collision, named minds}` — then the deduped
-`COULDN'T SETTLE` questions, numbered, **capped at two**. Then stop.
+1. **The read — 3 to 5 sentences of prose.** What the rooms found, where they actually collided, and
+   what changed about the question he asked. Written for a chair who sat in none of them, naming the
+   minds who moved things. It is the meeting *told*; it never summarises a card and never replaces one.
+2. **Every card verbatim**, in board order, per `CARD.md`. Never paraphrase, trim, merge or reorder; a
+   card that breaks the contract is fixed by one corrective respawn, never by editing.
+3. **Exactly one line** — `⚖ {sharpest cross-team collision, named minds}`.
+4. **The deduped `COULDN'T SETTLE` questions**, numbered, **capped at two**.
+
+Then stop. No menu.
 
 ## Step 6 — Traffic
 

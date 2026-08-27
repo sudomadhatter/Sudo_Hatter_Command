@@ -11,7 +11,14 @@ three files open, opened by the agent that needs them. That is what keeps a 43-m
 topic warrants, and says so in one clause at the cast gate.
 
 `Sees` is what this mind notices that the others don't. `Best against` is the failure mode they are the
-sharpest tool for — it is what the cast decision and the `swap` substitute list are ranked by.
+sharpest tool for — it is what the `swap` substitute list is ranked by.
+
+⭐ **Cast from § Reach for them when, below the tables.** `Best against` names a *failure mode*, which is
+precise and unusable unless you already think in those terms; the situation index says plainly when to
+reach for each mind, and carries the **collision names** the two-axis rule needs. Those names used to
+live only inside the persona cards — which the orchestrator is forbidden to open — so the cast was being
+made on a field it could not see (fixed SCC-333). The *reasons* behind each collision stay in the cards,
+where the debate spawn reads them.
 
 ---
 
@@ -92,6 +99,78 @@ sharpest tool for — it is what the cast decision and the `swap` substitute lis
 | `vaynerchuk` | Gary Vaynerchuk | where attention is underpriced right now | spending on what used to work |
 | `brunson` | Russell Brunson | the ladder from free to flagship | funnels that never pay for themselves |
 | `hopkins` | Claude Hopkins | what the test actually said | believing your own copy |
+
+---
+
+## Reach for them when — the situation index
+
+**This is the casting surface.** One line per mind: the situation that calls for them, and who they
+collide with. A mind whose line does not describe the topic in front of you is not load-bearing, however
+good the mind is — that judgment is what Step 2's written negative is made of.
+
+### 🔬 First Principles
+
+- **`kepler`** — the model mostly works and a small residual keeps getting rounded off. *Collides:* Taleb · Feynman · Munger · Hopkins
+- **`feynman`** — a term or a claim is doing load-bearing work and nobody can re-derive it from scratch. *Collides:* Tesla · Turing · Nightingale · Ravikant/Hormozi
+- **`tesla`** — the plan has never been run end to end, not even in someone's head. *Collides:* Feynman · Hopper · Boyd · Kelly Johnson
+- **`turing`** — the goal has no observable; nobody can say what would count as having achieved it. *Collides:* Feynman · Houellebecq/Rubin · Tesla · Munger
+- **`curie`** — effort is scattered across five fronts and none of them is moving. *Collides:* Ravikant · Hopper · Vaynerchuk · Boyd
+- **`friston`** — anything with a nervous system, a feedback loop, or a system that has arranged itself never to be surprised. *Collides:* Feynman · Diogenes · Deming · Semmelweis
+- **`stevens`** — a structure is clever and its non-linearity is hidden, or the ask is simply to be less wrong today than yesterday. *Collides:* Taleb · Boyd · Tesla · Kepler
+
+### 🩺 Ground Truth
+
+- **`semmelweis`** — the number that would indict your own side exists and nobody has gone to look. *Collides:* Diogenes · Ury · Nightingale · Friston
+- **`snow`** — something goes wrong repeatedly and nobody has plotted where, when, or to whom. *Collides:* Tesla · Mandelbrot · Haeckel · Hopper
+- **`wegener`** — one field's consensus is being treated as settled while the disconfirming evidence sits in another discipline. *Collides:* Feynman · Margulis · Munger · Diogenes
+- **`nightingale`** — the data is true, everyone agrees, and still nobody has acted. *Collides:* Semmelweis · Feynman · Rubin · Hopkins
+- **`darwin`** — the question is what a decade of selection keeps, not what this quarter shows. *Collides:* Boyd · Hutton · Vaynerchuk · Semmelweis
+- **`haeckel`** — the dataset is too large to feel, and its shape would show what the table hides. *Collides:* Semmelweis · Snow · Turing · Nightingale
+
+### 🌊 Ruin & Ripple
+
+- **`mandelbrot`** — the model assumes smooth and the thing actually jumps. *Collides:* Kepler · Snow · Taleb · Hopkins
+- **`taleb`** — someone is forecasting when the real question is what you are exposed to if they are wrong. *Collides:* Kepler · Ury · Stevens · Hormozi
+- **`munger`** — you want the failure catalogue before committing: every way this dies. *Collides:* Ury · Turing · Hopper · Kepler
+- **`bastiat`** — the plan's cost is being counted and what it displaces is not. *Collides:* Hormozi · Vaynerchuk · Nakamoto · Fuller
+- **`hutton`** — everyone is watching for disruption while the real force is slow and already underway. *Collides:* Vaynerchuk · Boyd · Darwin · Taleb
+- **`braudel`** — strategy is being built on this quarter's events rather than the current running underneath them. *Collides:* Vaynerchuk · Boyd · Hutton · Ravikant
+
+### 🧬 Unconventional Leverage
+
+- **`margulis`** — a capability is needed that cannot be grown in the time available. *Collides:* Nakamoto · Ravikant · Wegener · Taleb
+- **`nakamoto`** — the design has a single trusted party, and that party is usually you. *Collides:* Margulis · Ury · Hormozi · Deming
+- **`ravikant`** — the plan scales only with hours, or is waiting on somebody's permission. *Collides:* Curie · Margulis · Brunson · Ohno
+- **`fuller`** — the answer is being brute-forced where geometry would do it for free. *Collides:* Kelly Johnson · Hormozi · Bastiat · Brunelleschi
+
+### 🎯 Human Needs
+
+- **`drucker`** — value is described from the inside out and nobody has asked what the user is hiring it to do. *Collides:* Diogenes · Rubin · Houellebecq · Curie
+- **`schwartz`** — the market is being pitched at the wrong awareness stage; desire is being manufactured rather than channelled. *Collides:* Godin · Hormozi · Rubin · Feynman
+- **`rubin`** — the thing is technically correct and nothing in it is alive. *Collides:* Turing · Hormozi · Nightingale · Hopkins
+- **`diogenes`** — a claim stands on prestige or authority and nobody has demanded the demo. *Collides:* Ury · Friston · Wegener · Hormozi/Vaynerchuk
+- **`houellebecq`** — the account of what people want is too polite to be true. *Collides:* Ury · Drucker · Hormozi · Godin
+- **`ury`** — the exposure is a relationship rather than a number, or the room has hardened into two sides. *Collides:* Diogenes · Houellebecq · Taleb · Munger · Hormozi
+- **`identity-engineer`** — everyone agrees on the move and it still is not happening. *Collides:* Aurelius · Rubin · Drucker · Houellebecq
+
+### 🔧 Execution Reality *(stage room)*
+
+- **`kelly-johnson`** — the plan is correct and too big to fly. *Collides:* Fuller · Deming · Tesla · Ohno
+- **`ohno`** — work is moving and nobody knows where it actually stops and waits. *Collides:* Ravikant · Hopper · Kelly Johnson · Boyd
+- **`aurelius`** — energy is going into things the operator does not control. *Collides:* the Identity Engineer · Vaynerchuk · Ury · Munger
+- **`boyd`** — the real contest is who iterates faster, not who planned better. *Collides:* Tesla · Darwin · Curie · Stevens
+- **`eisenhower`** — several enormous things must happen and the order is not obvious. *Collides:* Boyd · Hopper · Aurelius · Kelly Johnson
+- **`brunelleschi`** — the build has no known method and a tool has to be invented first. *Collides:* Fuller · Hopper · Margulis · Diogenes
+- **`deming`** — a person is being blamed for what the system reliably produces. *Collides:* Kelly Johnson · Boyd · Nakamoto · Semmelweis
+- **`hopper`** — the work is stalled on permission or theoretical purity and a working version could ship today. *Collides:* Tesla · Munger · Ohno · Curie
+
+### 📣 Sales *(stage room)*
+
+- **`hormozi`** — the offer is thin or price is being defended; and equally, any table where the question is what this is worth to whoever receives it. *Collides:* Rubin · Fuller · Schwartz · Bastiat · Taleb
+- **`godin`** — budget is about to be spent on a channel for something that is not remarkable. *Collides:* Schwartz · Vaynerchuk · Hormozi · Houellebecq
+- **`vaynerchuk`** — spend is going where attention used to be. *Collides:* Braudel · Hutton · Godin · Curie
+- **`brunson`** — there is no path from free to flagship, or the first rung does not pay for itself. *Collides:* Ravikant · Godin · Diogenes · Hormozi
+- **`hopkins`** — everyone believes the copy and no test has been run. *Collides:* Rubin · Hormozi · Mandelbrot · Kepler/Nightingale
 
 ---
 
