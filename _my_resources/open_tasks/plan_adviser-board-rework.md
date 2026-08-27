@@ -104,6 +104,12 @@ globs `.agents/commands/*.md` — both non-recursive. A subdirectory is invisibl
 launcher is minted and no lint fires on the persona cards. The folder sits beside the brain that reads
 it, and is reached by relative path at runtime rather than being synced as a skill.
 
+⚠ **`sop_currency.py` IS recursive** — corrected 2026-08-26 when it rejected the Phase A commit. It
+reads every `.md` under `.agents/commands/`, subfolders included, as command-menu surface. So every
+commit in this lane either stages `docs/_scc_sops_prds/workflows_testing_SOP.md` or logs `[sop-ok]`.
+Phases A and B are legitimately `[sop-ok]` — the folder is inert until the command reads it — and the
+real SOP edit lands with the Phase C rewrite, which is when usage actually changes.
+
 **Why lazy loading works.** The orchestrator reads `ROSTER.md` and `TEAMS.md` only — never a persona
 card. **The team subagent reads its own three cards** from `minds/`. Seat Feynman, Tesla and Turing and
 exactly three files open, opened by the agent that needs them. The orchestrator's context holds 43

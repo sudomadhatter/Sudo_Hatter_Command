@@ -4,12 +4,12 @@
     "docs"
   ],
   "counts": {
-    "files": 366,
+    "files": 371,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 720,
+    "edges": 725,
     "external": 39,
-    "ambiguous": 165,
+    "ambiguous": 166,
     "dangling": 297,
     "broken_paths": 70,
     "unresolved_names": 227,
@@ -40,6 +40,31 @@
       "path": ".agents/commands/INDEX.md",
       "in": 9,
       "out": 6
+    },
+    {
+      "path": ".agents/commands/adviser-board/CARD.md",
+      "in": 1,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/DOCTRINE.md",
+      "in": 2,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/ROSTER.md",
+      "in": 1,
+      "out": 1
+    },
+    {
+      "path": ".agents/commands/adviser-board/SPAWNS.md",
+      "in": 0,
+      "out": 2
+    },
+    {
+      "path": ".agents/commands/adviser-board/TEAMS.md",
+      "in": 1,
+      "out": 2
     },
     {
       "path": ".agents/commands/analyst.md",
@@ -1983,6 +2008,31 @@
     {
       "from": ".agents/commands/INDEX.md",
       "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/ROSTER.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/SPAWNS.md",
+      "to": ".agents/commands/adviser-board/CARD.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/SPAWNS.md",
+      "to": ".agents/commands/adviser-board/TEAMS.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/TEAMS.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/TEAMS.md",
+      "to": ".agents/commands/adviser-board/ROSTER.md",
       "kind": "ref"
     },
     {
@@ -6829,6 +6879,15 @@
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/adviser-board/SPAWNS.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {
