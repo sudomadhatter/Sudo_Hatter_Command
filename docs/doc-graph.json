@@ -4,7 +4,7 @@
     "docs"
   ],
   "counts": {
-    "files": 386,
+    "files": 392,
     "packs": 1,
     "pack_docs": 2,
     "edges": 730,
@@ -72,6 +72,16 @@
       "out": 1
     },
     {
+      "path": ".agents/commands/adviser-board/minds/bastiat.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/braudel.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": ".agents/commands/adviser-board/minds/curie.md",
       "in": 0,
       "out": 0
@@ -97,7 +107,22 @@
       "out": 0
     },
     {
+      "path": ".agents/commands/adviser-board/minds/hutton.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": ".agents/commands/adviser-board/minds/kepler.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/mandelbrot.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/munger.md",
       "in": 0,
       "out": 0
     },
@@ -118,6 +143,11 @@
     },
     {
       "path": ".agents/commands/adviser-board/minds/stevens.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/taleb.md",
       "in": 0,
       "out": 0
     },
