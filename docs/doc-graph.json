@@ -7,7 +7,7 @@
     "files": 414,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 740,
+    "edges": 742,
     "external": 40,
     "ambiguous": 166,
     "dangling": 300,
@@ -53,7 +53,7 @@
     },
     {
       "path": ".agents/commands/adviser-board/ROSTER.md",
-      "in": 5,
+      "in": 6,
       "out": 1
     },
     {
@@ -758,7 +758,7 @@
     },
     {
       "path": ".agents/rules/operator-profile.md",
-      "in": 6,
+      "in": 7,
       "out": 0
     },
     {
@@ -1994,7 +1994,7 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 8
+      "out": 10
     },
     {
       "path": "docs/code-review-graph.md",
@@ -5427,12 +5427,22 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/commands/adviser-board/ROSTER.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": "docs/code-review-graph.md",
       "kind": "ref"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": "docs/repo-map.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/operator-profile.md",
       "kind": "ref"
     },
     {
@@ -6871,10 +6881,6 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "target": "prose-formatting.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "sudo_workflows_testing.md"
     },
     {
@@ -6884,6 +6890,10 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "target": "MEMORY.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "prose-formatting.md"
     },
     {
       "from": "docs/code-review-graph.md",

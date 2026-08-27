@@ -3,6 +3,10 @@
 Seven rooms. Five **debate lenses** that argue the problem, two **stage rooms** that convene after the
 table agrees. The orchestrator reads this file and `ROSTER.md` at cast time — never a persona card.
 
+⛔ **The debate gate covers the five lenses.** The two stage rooms — Execution Reality and Sales — are
+normally cast at Step 7, and join the debate gate only when the topic *is* their subject: a question
+about what actually gets built, or one that opens as an offer.
+
 > **This is a third-side board.** Its discipline is `THIRD-SIDE.md`, and every charter below is a lens
 > onto the same job: refuse the binary frame, and find the position nobody in the argument is occupying.
 > The lenses are how the board finds a third side — they are not five opinions to be averaged. **Three
@@ -143,8 +147,9 @@ what gets cut so the rest can move. Its input is every debate card plus the agre
 
 **Seat it when** the chair takes an agreed direction to execution.
 
-**Do NOT seat it** during the debate stage. A room that costs the plan before the plan exists kills ideas
-at the moment they are cheapest and least defended.
+**Do NOT seat it when** the plan does not exist yet — a room that costs the plan before the plan exists
+kills ideas at the moment they are cheapest and least defended. When the question *is* the build, it
+owns the debate like any other lens.
 
 **Pool:** Kelly Johnson · Ohno · Aurelius · Boyd · Eisenhower · Brunelleschi · Deming · Hopper · Fuller
 
