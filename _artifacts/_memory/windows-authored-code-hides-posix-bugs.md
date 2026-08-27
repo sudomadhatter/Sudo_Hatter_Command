@@ -1,6 +1,6 @@
 ---
 name: windows-authored-code-hides-posix-bugs
-description: "This toolkit was authored on Windows, so Windows-only assumptions sat green for months and only failed on the Mac — chmod semantics, hardcoded C:/ discovery paths, ';' PATH separators, $env:USERPROFILE, robocopy, a path-separator mismatch that DELETED ~570 vendored files per project, and bare `python` in ~29 DOC lines when only `python3` exists here. Seven found 2026-08-06/08; three printed SUCCESS while failing."
+description: "This toolkit was authored on Windows, so Windows-only assumptions sat green for months and only failed on the Mac — chmod semantics, hardcoded C:/ discovery paths, ';' PATH separators, $env:USERPROFILE, robocopy, a path-separator mismatch that DELETED ~570 vendored files per project, bare `python` in ~29 DOC lines when only `python3` exists here, and the TRACKED git exec bit (100644 vs 100755) leaving 4 scripts/hooks silently inert on the Mac. Eight found 2026-08-06/08 and 2026-08-27; three printed SUCCESS while failing and one skipped hooks with only a hint."
 metadata: 
   node_type: memory
   type: project
@@ -62,6 +62,23 @@ run had already printed success lines**, so the sync looked like it worked (2026
    `/update-maps-indexes`, and `run_all.py`'s docstring; **the rest are still stale.** Hooks and
    scripts should probe `python3 → python → py` rather than hardcode one name.
 
+**An EIGHTH, and it is the quietest of all (2026-08-27, AVCH-91)** — the exec bit is TRACKED:
+
+8. **Git stores the executable bit in the tree itself (`100644` vs `100755`), and Windows git cannot
+   express it** — so a script or hook authored on the PC lands non-executable and is inert on every
+   POSIX machine, while the PC leg's CI stays 100% green because Windows never consults the bit.
+   Found four at once in AGY_AVIATIONCHAT: `scripts/tia_gate.sh` (its OWN usage block documents
+   `./scripts/tia_gate.sh`, which died `permission denied`; its sibling `scripts/code-graph-update.sh`
+   was already `100755`, so the odd-one-out was visible in `git ls-files -s scripts/`), plus
+   `.githooks/post-checkout`, `post-merge` and `post-rewrite` — the AVCH-89 **memory-store regression
+   hooks**, which had therefore never run on the Mac. **Git skips a non-executable hook with a HINT,
+   not an error** (`hook was ignored because it's not set as executable`), and that hint scrolls past
+   inside an unrelated command's output — so the whole gate stack reads as ARMED while doing nothing.
+   That compounds [[vscode-hides-git-hook-output]]. **`chmod +x` alone does NOT stage the change** —
+   the filesystem bit and the tracked bit are separate; you must
+   `git update-index --chmod=+x <path>` (a correct mode-only fix commits as
+   `N files changed, 0 insertions(+), 0 deletions(-)` with every blob SHA unchanged).
+
 **The rule this forces: a comparison against a TRACKED, cross-machine artifact is a portability
 surface.** Separator normalisation is not cosmetic there — it decides whether a purge is a no-op or
 a wipe. Anything of the form "delete what is in the manifest but not in the fresh scan" must
@@ -85,5 +102,7 @@ bug until proven otherwise — grep the failing path for `C:/`, `\\`, `.exe`, `;
 Windows-only call site fails at the point it is reached, which is routinely after several honest
 success messages. **And treat every documented command as code**: paste it into a shell before
 writing it down — a doc line is the one "call site" no test ever executes.
+**Audit for it with `git ls-files -s .githooks/ scripts/`** whenever you land on a new POSIX
+machine — every shebanged file should read `100755`.
 Related: [[zshrc-is-invisible-to-automation]], [[powershell-console-fakes-mojibake]],
 [[sop-doc-currency-gate]].

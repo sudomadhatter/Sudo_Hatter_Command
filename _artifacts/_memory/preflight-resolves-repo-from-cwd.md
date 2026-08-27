@@ -60,3 +60,16 @@ temptation is to "clean it up". Don't: park or leave it, exactly as the memory-s
 `python3 .agents/scripts/…` resolve against AGY and die on a missing file. Use absolute script
 paths and `git -C` on every call — [[nothing-guards-the-merge-target]] is the same failure class
 with a worse ending.
+
+## ⛔ `closeout_preflight --project <name>` reads the SHARED CHECKOUT even with `--worktree` (2026-08-27, AVCH-36)
+
+On a story lane, `--project AGY_AVIATIONCHAT` + `--worktree <path>` + correct `--branch/--expect-key`
+still answered every file-based row from the checkout parked on `main`: story status "deferred",
+"no walkthrough.md found", "gates: no receipt" — all three existed on the branch — and its `landed`
+rows compare against **main**, while a story lane lands on the **epic branch**. `--worktree` only
+adds a sync row; there is no landing-ref flag. So on an epic-lane story, expected-noise extends past
+the documented `landed` row: `story`/`artifacts`/`gates` rows are checkout reads, verify each
+directly on the branch (`walkthrough_roster.py --gate`, `gate_receipt.py` stamp, story frontmatter)
+before believing a BLOCKED. Same family: `story_status.py set --project <name>` wrote the flip to
+the checkout on 19.1 (reverted; pass the WORKTREE PATH as `--project` — that form works for
+story_status and did flip both surfaces correctly on 19.4).
