@@ -233,5 +233,17 @@ undelivered, no dead link was introduced, no gate is red here.
 
 ## Your Actions
 
-- [ ] **Run the sync on the PC — tracked as SCC-338, which carries the full runbook.** The Antigravity cache lives in the user profile, outside every repo, so git carries the fixed script and the fixed doors but never the cache; that machine still serves 23 truncated command bodies. ⛔ And the machine-global stage is gated on `$IsLobby -or $GlobalsOnly`, where `$IsLobby` is a path comparison against the repo root — so a sync run from a worktree updates the local surfaces, prints a normal summary, exits 0, and never touches the cache. That is exactly how this lane's own "after" figures were briefly a `-WhatIf` projection. `CS-18 L`/`M2` read the real directory and are red on the PC until the sync lands.
+**Nothing is owed on SCC-332.** The code, the tests, the docs and the Mac's cache are all done and
+measured; the review's findings were fixed in-lane.
+
+The one remaining piece of work — running the globals sync on the PC — is **SCC-338**, linked
+`SCC-332 Blocks SCC-338`, and it carries the full runbook: what to run, the `$IsLobby` trap that makes
+a sync silently skip the cache, the verify command, and what success looks like (39 files, 0 over cap).
+It is a separate ticket rather than a row here because its work happens on another machine and lands no
+bytes in this branch — it was briefly minted as a subtask and that deadlocked this close-out, since a
+parent cannot close while a child is open and that child needs this lane's code on the PC first.
+
+⚠ Until SCC-338 is done, `CS-18 L`/`M2` are **red on the PC**, correctly — they read the real cache
+directory, and that machine still serves 23 truncated command bodies.
+
 - [x] The merge itself — lands via this branch's PR
