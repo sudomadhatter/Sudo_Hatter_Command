@@ -4,12 +4,12 @@
     "docs"
   ],
   "counts": {
-    "files": 366,
+    "files": 415,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 720,
-    "external": 39,
-    "ambiguous": 165,
+    "edges": 743,
+    "external": 40,
+    "ambiguous": 166,
     "dangling": 297,
     "broken_paths": 70,
     "unresolved_names": 227,
@@ -39,7 +39,252 @@
     {
       "path": ".agents/commands/INDEX.md",
       "in": 9,
-      "out": 6
+      "out": 5
+    },
+    {
+      "path": ".agents/commands/adviser-board/CARD.md",
+      "in": 5,
+      "out": 1
+    },
+    {
+      "path": ".agents/commands/adviser-board/DOCTRINE.md",
+      "in": 5,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/ROSTER.md",
+      "in": 5,
+      "out": 1
+    },
+    {
+      "path": ".agents/commands/adviser-board/SPAWNS.md",
+      "in": 4,
+      "out": 3
+    },
+    {
+      "path": ".agents/commands/adviser-board/TEAMS.md",
+      "in": 5,
+      "out": 3
+    },
+    {
+      "path": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "in": 9,
+      "out": 1
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/aurelius.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/bastiat.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/boyd.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/braudel.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/brunelleschi.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/brunson.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/curie.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/darwin.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/deming.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/diogenes.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/drucker.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/eisenhower.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/feynman.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/friston.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/fuller.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/godin.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/haeckel.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/hopkins.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/hopper.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/hormozi.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/houellebecq.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/hutton.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/identity-engineer.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/kelly-johnson.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/kepler.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/mandelbrot.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/margulis.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/munger.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/nakamoto.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/nightingale.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/ohno.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/ravikant.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/rubin.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/schwartz.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/semmelweis.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/snow.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/stevens.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/taleb.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/tesla.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/turing.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/ury.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/vaynerchuk.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/wegener.md",
+      "in": 0,
+      "out": 0
     },
     {
       "path": ".agents/commands/analyst.md",
@@ -229,7 +474,7 @@
     {
       "path": ".agents/commands/smh-adviser-board.md",
       "in": 3,
-      "out": 2
+      "out": 13
     },
     {
       "path": ".agents/commands/smh-clean-code-audit.md",
@@ -1584,7 +1829,7 @@
     {
       "path": ".agents/workflows/smh-adviser-board.md",
       "in": 2,
-      "out": 1
+      "out": 2
     },
     {
       "path": ".agents/workflows/smh-clean-code-audit.md",
@@ -1728,8 +1973,8 @@
     },
     {
       "path": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
-      "in": 4,
-      "out": 1
+      "in": 2,
+      "out": 11
     },
     {
       "path": "docs/_scc_sops_prds/tdad_stack_install_guide.md",
@@ -1748,7 +1993,7 @@
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "in": 21,
+      "in": 22,
       "out": 49
     },
     {
@@ -1972,17 +2217,67 @@
     },
     {
       "from": ".agents/commands/INDEX.md",
-      "to": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/INDEX.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
     {
       "from": ".agents/commands/INDEX.md",
       "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/CARD.md",
+      "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/ROSTER.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/SPAWNS.md",
+      "to": ".agents/commands/adviser-board/CARD.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/SPAWNS.md",
+      "to": ".agents/commands/adviser-board/TEAMS.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/SPAWNS.md",
+      "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/TEAMS.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/TEAMS.md",
+      "to": ".agents/commands/adviser-board/ROSTER.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/TEAMS.md",
+      "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "to": ".agents/commands/adviser-board/CARD.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/minds/hormozi.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/minds/ury.md",
+      "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
       "kind": "ref"
     },
     {
@@ -2532,12 +2827,37 @@
     },
     {
       "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/CARD.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
       "to": ".agents/commands/INDEX.md",
       "kind": "ref"
     },
     {
       "from": ".agents/commands/smh-adviser-board.md",
-      "to": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/ROSTER.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/SPAWNS.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/TEAMS.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
       "kind": "ref"
     },
     {
@@ -4377,6 +4697,11 @@
     },
     {
       "from": ".agents/workflows/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/SPAWNS.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/workflows/smh-adviser-board.md",
       "to": ".agents/commands/smh-adviser-board.md",
       "kind": "ref"
     },
@@ -4872,7 +5197,42 @@
     },
     {
       "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/CARD.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/ROSTER.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/SPAWNS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/TEAMS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
       "to": ".agents/commands/smh-adviser-board.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "kind": "ref"
     },
     {
@@ -6744,6 +7104,10 @@
       "target": "router.md"
     },
     {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "target": "_my_resources/open_tasks/plan_adviser-board-rework.md"
+    },
+    {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "../doc-graph.md"
     },
@@ -6829,6 +7193,15 @@
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/adviser-board/SPAWNS.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {
