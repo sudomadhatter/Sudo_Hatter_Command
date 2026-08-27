@@ -7,8 +7,8 @@
     "files": 415,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 731,
-    "external": 39,
+    "edges": 742,
+    "external": 40,
     "ambiguous": 166,
     "dangling": 297,
     "broken_paths": 70,
@@ -39,36 +39,36 @@
     {
       "path": ".agents/commands/INDEX.md",
       "in": 9,
-      "out": 6
+      "out": 5
     },
     {
       "path": ".agents/commands/adviser-board/CARD.md",
-      "in": 2,
+      "in": 5,
       "out": 1
     },
     {
       "path": ".agents/commands/adviser-board/DOCTRINE.md",
-      "in": 3,
+      "in": 5,
       "out": 0
     },
     {
       "path": ".agents/commands/adviser-board/ROSTER.md",
-      "in": 1,
+      "in": 5,
       "out": 1
     },
     {
       "path": ".agents/commands/adviser-board/SPAWNS.md",
-      "in": 0,
+      "in": 3,
       "out": 3
     },
     {
       "path": ".agents/commands/adviser-board/TEAMS.md",
-      "in": 1,
+      "in": 5,
       "out": 3
     },
     {
       "path": ".agents/commands/adviser-board/THIRD-SIDE.md",
-      "in": 4,
+      "in": 9,
       "out": 1
     },
     {
@@ -474,7 +474,7 @@
     {
       "path": ".agents/commands/smh-adviser-board.md",
       "in": 3,
-      "out": 2
+      "out": 13
     },
     {
       "path": ".agents/commands/smh-clean-code-audit.md",
@@ -1973,8 +1973,8 @@
     },
     {
       "path": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
-      "in": 4,
-      "out": 1
+      "in": 2,
+      "out": 11
     },
     {
       "path": "docs/_scc_sops_prds/tdad_stack_install_guide.md",
@@ -1993,7 +1993,7 @@
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "in": 21,
+      "in": 22,
       "out": 49
     },
     {
@@ -2213,11 +2213,6 @@
     {
       "from": ".agents/commands/INDEX.md",
       "to": ".agents/rules/artifacts-always-first.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/INDEX.md",
-      "to": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
       "kind": "ref"
     },
     {
@@ -2832,12 +2827,37 @@
     },
     {
       "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/CARD.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
       "to": ".agents/commands/INDEX.md",
       "kind": "ref"
     },
     {
       "from": ".agents/commands/smh-adviser-board.md",
-      "to": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/ROSTER.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/SPAWNS.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/TEAMS.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
       "kind": "ref"
     },
     {
@@ -5172,7 +5192,42 @@
     },
     {
       "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/CARD.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/ROSTER.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/SPAWNS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/TEAMS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
       "to": ".agents/commands/smh-adviser-board.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "kind": "ref"
     },
     {
@@ -7042,6 +7097,10 @@
     {
       "from": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
       "target": "router.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "target": "_my_resources/open_tasks/plan_adviser-board-rework.md"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
