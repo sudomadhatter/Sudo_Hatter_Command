@@ -24,4 +24,6 @@ a markdown table, so every row below rendered as one illegible run-on line.
 
 ## Your Actions
 
-(none — nothing here needs an operator decision)
+- [x] The merge itself — lands via this branch's PR
+
+Nothing else — no operator decision is owed.
