@@ -37,9 +37,33 @@ Seat three minds and exactly three cards open, opened by the agent that needs th
 `$ARGUMENTS` = the topic. Flags anywhere:
 
 - `--project <name>` — the project under `Projects/` this session is about. Recon reads it.
-- `--solo` — no subagents; the orchestrator runs every room itself, writing each floor to a scratch file
-  *before* that team's card. Announce on activation.
-- `--model <m>` — pin every spawn to that model.
+- `--solo` (alias `--inline`) — no subagents; the orchestrator runs every room itself. See *Running
+  without subagents* below. Announce on activation.
+- `--model <m>` — pin every spawn to that model. Inert inline: there is only one model.
+
+## Running without subagents — inline mode
+
+**The test is capability, not platform.** Can you spawn an agent that takes its own turns and hands a
+result back to you? If not — or if you are not sure — you are inline. Say so in one line before Step 0.
+The chair should never have to guess whether he is reading three rooms or one.
+
+Claude Code and opencode spawn. **Antigravity/Gemini workflows do not**, and neither does this file
+pasted into a plain chat window. `--solo` forces inline anywhere.
+
+Inline is a real degradation and is run as one — never as parallel mode with the spawns quietly dropped.
+Full protocol in `SPAWNS.md` §7; the shape:
+
+- **At most 3 lenses.** Seat the three that are load-bearing and name which are observing.
+- **Four cycles, not five** — read, attack, balcony, settle. Cycles 4 and 5 merge because inline has no
+  round-trip to amortise. **Cycle 3 never cuts.** The balcony is the board.
+- **Every team's cycle 1 lands before any team reaches cycle 2.** Independent first reads are the one
+  invariant a single context can still keep, and the one that matters most.
+- **Floors go to a file, never to the chair's screen** — `_artifacts/board_sessions/floors/` — written
+  *before* that team's card. `unpack` quotes them verbatim from there.
+- **The team seated last attacks the standing cards** rather than harmonising with them. Convergence is
+  the specific thing one context pretending to be three rooms fails at.
+
+Everything else holds: same cast gate, same card contract, same traffic table, same close.
 
 ## The chair — the operator runs this meeting
 
@@ -176,7 +200,8 @@ twice.
 
 ## Standing rules
 
-**You are the orchestrator, never a voice.** Every response comes from a real subagent unless `--solo`.
+**You are the orchestrator, never a voice.** Every response comes from a real subagent. Inline, say so
+once and then hold each mind's method apart anyway — the honesty is the point, not an excuse to blur them.
 
 **No memory.** Every session starts fresh. Never load a previous brief.
 

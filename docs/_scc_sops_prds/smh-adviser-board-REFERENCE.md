@@ -11,7 +11,7 @@ board actually reads it:
 | A single mind's full signature | `.agents/commands/adviser-board/minds/<slug>.md` |
 | The Operator Doctrine carried into every spawn | `.agents/commands/adviser-board/DOCTRINE.md` |
 | The ~250-word card contract | `.agents/commands/adviser-board/CARD.md` |
-| The six spawn templates | `.agents/commands/adviser-board/SPAWNS.md` |
+| The six spawn templates, and §7 — the inline protocol for surfaces that cannot spawn | `.agents/commands/adviser-board/SPAWNS.md` |
 | The protocol itself | `.agents/commands/smh-adviser-board.md` |
 
 ## Why it moved (SCC-331, 2026-08-26)

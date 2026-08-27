@@ -1,6 +1,7 @@
 # Spawn Templates
 
-Six templates. `{braces}` are filled by the orchestrator. Paths are relative to the repo root.
+Six templates, plus §7 — the protocol for a surface that cannot spawn at all. `{braces}` are filled by
+the orchestrator. Paths are relative to the repo root.
 
 **Standing rule for every spawn:** the agent's final text *is* the return value. It is never addressed to
 a human reader and never wrapped in "here's what I found".
@@ -229,12 +230,71 @@ defending it (seed with the card, the kill, and the chair's interest), and drill
 
 ---
 
-## `--solo` mode
+## 7. Inline mode — no subagents on this surface
 
-No subagents. The orchestrator runs every room itself, writing each debate floor to a session scratch
-file **before** writing that team's card, and presenting identical cards. Those scratch files are the
-stored record — `unpack` quotes them verbatim under the same honesty rule. Announce solo mode on
-activation so the chair knows every voice came from one model.
+### When it applies
+
+**Capability, not platform.** Can you spawn an agent that takes its own turns and hands a result back to
+you? If not — or if you are not sure — you are inline. Claude Code and opencode can. Antigravity/Gemini
+workflows cannot; neither does this file pasted into a plain chat window. `--solo` (alias `--inline`)
+forces it anywhere.
+
+Announce it in one line before Step 0 and never after:
+
+```
+Inline on this surface — no subagents. Every voice below is one model holding several methods
+apart. Three lenses instead of five, four cycles instead of five, and the floors go to file.
+```
+
+Then run it as its own thing. Inline is never parallel mode with the spawns quietly dropped.
+
+### What it cannot preserve, said out loud
+
+Every mind is one model in one context, so by the third team it has already read the first two floors.
+Independence is simulated rather than structural, and the failure mode has a name: **convergence** —
+teams three and four drift toward whatever team one concluded, and the chair reads agreement that was
+never earned. The two counter-measures below exist for exactly that, and neither is optional.
+
+### The adaptations
+
+| Parallel | Inline | Why |
+|---|---|---|
+| 5 lenses | **at most 3** — name which are observing | one context, one budget; a fourth lens costs more than it returns |
+| Recon A ∥ Recon B | **one pass, evidence before claims** | see below |
+| a fast Read spawn per team | the orchestrator writes one line per team | same triage: silent / ≤2 questions / forward two |
+| 5 cycles | **4** — read, attack, balcony, settle | 4 and 5 merge; there is no round-trip to amortise |
+| floors held in the spawn's return | **floors written to file** | they must leave the chair's screen somehow |
+| `--model <m>` pins every spawn | inert | there is only one model |
+
+**Cycle 3 never cuts.** When something has to give it is cycle 5, then a lens, then a mind's word
+budget — never the balcony. A board that skips the balcony is a panel of opinions.
+
+### Recon, inline
+
+One pass instead of two, run in an order that keeps the guard the two-agent split was buying:
+**write what is actually built first, from file evidence, citing paths — then read the docs.** Any claim
+the docs make that no path supports goes on the `UNVERIFIED:` line rather than into the brief. Same
+≤500-word GROUND BRIEF, same mandatory `UNVERIFIED:` line.
+
+### Order of play
+
+1. **Cycle 1 for every seated team, before any team reaches cycle 2.** Write all three reads for team ①,
+   then all three for team ②, and so on. Never revise a read once the next one is written — a read that
+   has been edited to fit what came after is not an independent read, it is a summary.
+2. Then each team runs cycles 2–4 to completion, one team at a time, in the order they were seated.
+3. **The team seated last is told, in its own floor, to attack the standing cards** — find where the
+   earlier teams agreed too easily. If it cannot, it says so in one line and spends its round elsewhere.
+4. Cards render together at the end, in board order, exactly as in parallel mode.
+
+### The floor file
+
+`_artifacts/board_sessions/floors/YYYY-MM-DD-<topic-slug>-<lens-slug>.md`, written **before** that
+team's card — never after, and never reconstructed. Cap each mind's turn at ~50 words: the floor is a
+record of positions and kills, not a transcript of eloquence.
+
+Those files are the stored record. `unpack ②` quotes one verbatim under the same honesty rule that
+governs a spawned floor: if it was not written, it is not quoted, and a reconvene is announced as a
+reconvene.
 
 ## Model selection
 

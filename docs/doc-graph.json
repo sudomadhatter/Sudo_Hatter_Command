@@ -7,7 +7,7 @@
     "files": 415,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 742,
+    "edges": 743,
     "external": 40,
     "ambiguous": 166,
     "dangling": 297,
@@ -58,7 +58,7 @@
     },
     {
       "path": ".agents/commands/adviser-board/SPAWNS.md",
-      "in": 3,
+      "in": 4,
       "out": 3
     },
     {
@@ -1829,7 +1829,7 @@
     {
       "path": ".agents/workflows/smh-adviser-board.md",
       "in": 2,
-      "out": 1
+      "out": 2
     },
     {
       "path": ".agents/workflows/smh-clean-code-audit.md",
@@ -4693,6 +4693,11 @@
     {
       "from": ".agents/workflows/sentry-security-team-avch.md",
       "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/workflows/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/SPAWNS.md",
       "kind": "ref"
     },
     {
