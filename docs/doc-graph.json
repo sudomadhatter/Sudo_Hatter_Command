@@ -4,7 +4,7 @@
     "docs"
   ],
   "counts": {
-    "files": 371,
+    "files": 374,
     "packs": 1,
     "pack_docs": 2,
     "edges": 725,
@@ -65,6 +65,21 @@
       "path": ".agents/commands/adviser-board/TEAMS.md",
       "in": 1,
       "out": 2
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/feynman.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/tesla.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/turing.md",
+      "in": 0,
+      "out": 0
     },
     {
       "path": ".agents/commands/analyst.md",
