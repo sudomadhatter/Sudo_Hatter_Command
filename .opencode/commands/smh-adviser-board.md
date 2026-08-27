@@ -136,38 +136,41 @@ the axes without opening a persona card, which you never do. A third mind sittin
 between the other two has been cast wrong — and because that is easy to claim and easy to fake, **name
 the axis each collision runs on**. Name it in one clause when a mind is staffed outside its primary lens.
 
-### The gate — one line for EVERY room, seated or not
+### The gate — one line per debate lens, seated or not
 
 ⛔ **Write the negative.** This step's original failure was that it only ever wrote down what it *seated*,
 so the *when NOT to seat* clauses went unapplied in practice: you cannot silently skip a positive
 judgment, but a negative one that is never written is a negative one that was never made.
 
-Emit **one line per room, all seven**, above the cast. A room left observing cites **its own charter's
-clause** and **what the cut costs**. The count then falls out of seven judgments instead of being picked
-first and justified after. **If you cannot write the sentence that refuses a room, seat it.**
+Emit **one line per debate lens — all five**, above the cast. The count then falls out of five judgments
+instead of being picked first and justified after. **If you cannot write the sentence that refuses a
+room, seat it.**
 
-Render the ground brief and that table together as **one gate**, then wait:
+**The two stage rooms — 🔧 Execution Reality and 📣 Sales — are normally cast at Step 7, not here**, so
+the gate is five lines. Seat one on the debate gate when the topic *is* its subject: a question about
+what actually gets built, or one that opens as an offer. Your read, at cast time; if you seat one, its
+line looks like any other.
+
+**Seated rooms print first** — they are what the chair restructures — each with its triad and the **axis
+each collision runs on**. Then **one line for every room you cut, combined**: the room, a colon, and the
+short condition that makes it inert — its charter's *do NOT seat* clause is usually the sentence
+you are reaching for. The condition is the cost: a reason specific enough to be worth printing
+already says what goes unexamined, and a separate cost clause is the same sentence at twice the length.
+
+Render the ground brief and that block together as **one gate**, then wait:
 
 ```
 🔬 First Principles   SEAT — the mechanism has never been re-derived and two load-bearing
                       terms are undefined.  Feynman × Tesla × Turing.
-                      Feynman demands the mechanism; Tesla runs it to failure in his head;
-                      Turing asks what would count as an answer. Feynman × Tesla collide on
-                      whether it works; Turing crosses both on whether the question is even
-                      decidable.
-🩺 Ground Truth       OBSERVING — nothing has been measured and there is no installed base.
-                      A lens with no ground is First Principles in a lab coat (its clause).
-                      Cost of the cut: Semmelweis's number that indicts us.
-🌊 Ruin & Ripple      OBSERVING — the decision is cheap and reversible, and pricing ruin into
-                      a two-hour experiment teaches the chair to ignore it when ruin is real.
-🧬 Unconv. Leverage   OBSERVING — the standard channel is available, cheap and fast; cleverness
-                      where a credit card would do is a cost, not a lever.
+                      Feynman × Tesla collide on whether it works; Turing crosses both on
+                      whether the question is even decidable.
 🎯 Human Needs        SEAT — adoption is assumed rather than argued.
-                      Drucker × Diogenes × Houellebecq.  [axes: job-to-be-done vs proof;
-                      Houellebecq crosses both on the need nobody says out loud.]
-🔧 Execution Reality  OBSERVING — stage room; the debate has not agreed yet (its charter
-                      forbids seating it during debate).
-📣 Sales              OBSERVING — internal tooling, nothing to sell.
+                      Drucker × Diogenes × Houellebecq.
+                      Drucker × Diogenes collide on job-to-be-done versus proof;
+                      Houellebecq crosses both on the need nobody says out loud.
+
+Observing — 🩺 Ground Truth: nothing measured, no installed base · 🌊 Ruin & Ripple: cheap
+and fully reversible · 🧬 Unconventional Leverage: the standard channel is cheap and fast.
 
 Swap anyone, add a lens, or say "gavel".
 ```
@@ -248,9 +251,15 @@ round* differently. Ranked by `Best against`. He picks, or says `keep <mind>`.
 When the table converges — no live splits, cards agreeing — **ask, in one line**: *"The table's agreed
 on X. Execution, sales, or both?"* Never advance unasked.
 
-The stage room is cast fresh from the roster by topic, with the same cast gate and the same swap move,
-and receives every debate card plus the agreed direction in the chair's own words. Debate teams do not
-dissolve; they stay callable.
+The stage room is cast fresh from the roster by topic and receives every debate card plus the agreed
+direction in the chair's own words. Debate teams do not dissolve; they stay callable.
+
+⭐ **The stage gate — this stage's own, and the one Step 2 points at.** Step 2's gate judges the five
+debate lenses and cannot speak for a room it structurally excludes, so the stage change runs its own:
+same shape, different rooms. Emit **one line per stage room the chair's answer puts in play** — `SEAT`
+with its triad and the **axis each collision runs on**, or one line naming why that room is not needed
+for this direction. Then the same swap move, and wait. A stage room seated without a written judgment is
+the silent skip the debate gate exists to prevent, arriving one step later.
 
 A topic that opens as a sales question skips the debate stage and seats **Sales**, usually beside
 **Human Needs** — "will anyone buy this" and "what are they hiring it to do" are the same question asked
