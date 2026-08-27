@@ -4,15 +4,15 @@
     "docs"
   ],
   "counts": {
-    "files": 415,
+    "files": 414,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 743,
+    "edges": 742,
     "external": 40,
-    "ambiguous": 166,
-    "dangling": 297,
+    "ambiguous": 167,
+    "dangling": 300,
     "broken_paths": 70,
-    "unresolved_names": 227,
+    "unresolved_names": 230,
     "unresolvable": 6
   },
   "nodes": [
@@ -53,7 +53,7 @@
     },
     {
       "path": ".agents/commands/adviser-board/ROSTER.md",
-      "in": 5,
+      "in": 6,
       "out": 1
     },
     {
@@ -689,7 +689,7 @@
     {
       "path": ".agents/rules/INDEX.md",
       "in": 8,
-      "out": 27
+      "out": 26
     },
     {
       "path": ".agents/rules/artifacts-always-first.md",
@@ -758,7 +758,7 @@
     },
     {
       "path": ".agents/rules/operator-profile.md",
-      "in": 5,
+      "in": 7,
       "out": 0
     },
     {
@@ -775,11 +775,6 @@
       "path": ".agents/rules/project-law.md",
       "in": 16,
       "out": 4
-    },
-    {
-      "path": ".agents/rules/prose-formatting.md",
-      "in": 2,
-      "out": 1
     },
     {
       "path": ".agents/rules/reproduce-before-you-fix.md",
@@ -1994,12 +1989,12 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 22,
-      "out": 49
+      "out": 50
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 8
+      "out": 10
     },
     {
       "path": "docs/code-review-graph.md",
@@ -2078,7 +2073,7 @@
     },
     {
       "path": "docs/repo-map.md",
-      "in": 11,
+      "in": 10,
       "out": 9
     },
     {
@@ -2089,7 +2084,7 @@
     {
       "path": "docs/workspace-standard.md",
       "in": 12,
-      "out": 24
+      "out": 23
     },
     {
       "path": ".agents/bmad",
@@ -3562,11 +3557,6 @@
     },
     {
       "from": ".agents/rules/INDEX.md",
-      "to": ".agents/rules/prose-formatting.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/rules/INDEX.md",
       "to": ".agents/rules/reproduce-before-you-fix.md",
       "kind": "ref"
     },
@@ -3728,11 +3718,6 @@
     {
       "from": ".agents/rules/project-law.md",
       "to": ".agents/rules/smh-target-resolution.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/rules/prose-formatting.md",
-      "to": "docs/repo-map.md",
       "kind": "ref"
     },
     {
@@ -5442,12 +5427,22 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/commands/adviser-board/ROSTER.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": "docs/code-review-graph.md",
       "kind": "ref"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": "docs/repo-map.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/operator-profile.md",
       "kind": "ref"
     },
     {
@@ -5803,11 +5798,6 @@
     {
       "from": "docs/workspace-standard.md",
       "to": ".agents/rules/karpathy-guidelines.md",
-      "kind": "ref"
-    },
-    {
-      "from": "docs/workspace-standard.md",
-      "to": ".agents/rules/prose-formatting.md",
       "kind": "ref"
     },
     {
@@ -6336,6 +6326,10 @@
     {
       "from": ".agents/rules/INDEX.md",
       "target": "implementation_plan.md"
+    },
+    {
+      "from": ".agents/rules/INDEX.md",
+      "target": "prose-formatting.md"
     },
     {
       "from": ".agents/rules/artifacts-always-first.md",
@@ -6898,6 +6892,10 @@
       "target": "MEMORY.md"
     },
     {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "prose-formatting.md"
+    },
+    {
       "from": "docs/code-review-graph.md",
       "target": "_bmad/bmm/stories/tea-6-temp0-integration.md"
     },
@@ -6988,6 +6986,10 @@
     {
       "from": "docs/workspace-standard.md",
       "target": "open_tasks/todo_list.md"
+    },
+    {
+      "from": "docs/workspace-standard.md",
+      "target": "prose-formatting.md"
     },
     {
       "from": "docs/workspace-standard.md",
@@ -9603,6 +9605,23 @@
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
         ".agents/skills/react-best-practices/README.md"
+      ]
+    },
+    {
+      "from": ".agents/workflows/INDEX.md",
+      "target": "commands/INDEX.md",
+      "candidates": [
+        ".agents/INDEX.md",
+        ".agents/bmad",
+        ".agents/commands/INDEX.md",
+        ".agents/hooks/INDEX.md",
+        ".agents/opencode-agents/INDEX.md",
+        ".agents/rules/INDEX.md",
+        ".agents/scripts/INDEX.md",
+        ".agents/skills/INDEX.md",
+        ".agents/workflows/INDEX.md",
+        "docs/_scc_sops_prds/INDEX.md",
+        "docs/migrations/INDEX.md"
       ]
     },
     {

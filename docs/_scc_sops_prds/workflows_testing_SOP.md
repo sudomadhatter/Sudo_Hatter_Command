@@ -77,15 +77,7 @@ the twin is an AVCH ticket of its own, not something a lobby lane may do.
 
 | …do this | → run / read |
 |---|---|
-| know what to work on | **put the card in `To Do Next` on the board — that column *is* the answer** ([§12](#12-the-board--what-runs-next)).
-
-**An epic branch carries two numbers, and `epic/` always comes first.** Its ticket key and its
-sprint number are different numbers that drift apart — `AVCH-18` is the ticket, `epic-19` is what
-the board, the story files and `_artifacts/epic_19/` are named after — so the branch shows both:
-`epic/AVCH-18-epic-19-adk-2x-runtime`. Put the sprint number in the slug, never in front of the
-prefix. Everything that finds an epic branch looks for something starting with `epic/`, including
-the hook that guards `main`; a branch called `epic-19/...` is invisible to all of it and quietly
-gets treated as if it were `main`. On a project: `/cicd-boot-sprint-memory`. In the command centre: just ask. |
+| know what to work on | **put the card in `To Do Next` on the board — that column *is* the answer** ([§12](#12-the-board--what-runs-next)). On a project: `/cicd-boot-sprint-memory`. In the command centre: just ask. |
 | see or move the sprint board | ask any agent — the live board answers via `acli` ([§12](#12-the-board--what-runs-next)) |
 | work out which lane my work belongs in | [§5 — the lane chooser](#5-which-lane-am-i-in) |
 | know the running order — what goes first, what runs side by side | `/cicd-label-tasks <EPIC-KEY>` — once the stories are written ([§6](#6-the-story-lane)) |
@@ -473,6 +465,14 @@ epic's **Jira ticket** itself at kickoff — never an invented key: it reads the
 just created, and the branch is never cut unkeyed. Before it mints, it **searches the board for an
 open Epic** and says in one line what it looked at — a re-run after a stall is the normal case, and a
 second Epic row for one BMAD epic is a row nothing will ever move again.
+
+**An epic branch carries two numbers, and `epic/` always comes first.** Its ticket key and its
+sprint number are different numbers that drift apart — `AVCH-18` is the ticket, `epic-19` is what
+the board, the story files and `_artifacts/epic_19/` are named after — so the branch shows both:
+`epic/AVCH-18-epic-19-adk-2x-runtime`. Put the sprint number in the slug, never in front of the
+prefix. Everything that finds an epic branch looks for something starting with `epic/`, including
+the hook that guards `main`; a branch called `epic-19/...` is invisible to all of it and quietly
+gets treated as if it were `main`.
 
 **The order is: branch first, then the epic.** Nothing is written into the project until the epic
 branch exists, and every artifact the kickoff produces — `epics.md`, the board, the test design — is
@@ -1599,6 +1599,47 @@ about how to write the link, not a thing to remember to check.
 one-line checks: one prints the pointer a prompt produces, the other shows a log of every rule the
 tool loaded on its own. Worth running after a fresh clone or a new machine, because both mechanisms
 fail the same quiet way — a rule that never loads looks exactly like a rule with nothing to say.
+
+### How the adviser board sizes itself, and what the cast gate shows you
+
+`/smh-adviser-board` decides its **shape** before it picks anyone, by counting how many genuinely
+distinct ways your topic can fail:
+
+| Distinct failure surfaces | What convenes |
+|---|---|
+| four or five | 4–5 lenses — the full board |
+| two or three | 2–3 lenses |
+| one, or none distinct | **one room of three minds drawn from across the lenses** |
+
+A personal, judgment, or non-product question almost never has five, because the lens charters are
+written for product work — "Ground Truth" means telemetry and users, "Unconventional Leverage" means
+capability you cannot buy or hire. Reaching one of those across *by analogy* to keep it seated is the
+borrowed-analogy failure the board exists to catch, aimed at itself instead of at the advice.
+
+**The cast gate, before anyone speaks.** The board prints one line per **debate lens** — there are
+five — so you can put a room back before the debate runs rather than after reading cards you did not
+need. **Seated rooms come first**, each with its three minds and the axis on which they disagree,
+because those are the ones you would restructure. Every room it cut goes on a **single line
+underneath**, each with a short reason drawn from that room's own charter. Then it waits: swap anyone,
+add a lens, or say `gavel`.
+
+**Two of the seven rooms are normally not on that gate.** 🔧 **Execution Reality** and 📣 **Sales**
+are stage rooms — cast later, at the stage change, against a direction the table has already agreed.
+Either joins the debate gate instead when your topic *is* its subject: a question about what actually
+gets built, or one that opens as an offer, a launch, a channel, a funnel, or a message. When one is
+seated there, its line looks like any other.
+
+**The stage change has its own gate.** When you say `take it to execution` or `take it to sales`, you
+get the same shape again for the rooms that answer actually puts in play — seated with their three
+minds and the axis they disagree on, or one line saying why that room is not needed for this
+direction. You swap and gavel there exactly as you do at the debate gate.
+
+**The board opens with prose, not cards.** A short read of what the rooms found comes first, written
+for someone who was not in the room, with the cards underneath as the record — `operator-profile`
+obligation 2, which names this command as its home.
+
+**Formatting doctrine lives in `operator-profile.md`, and nowhere else.** A dense result gets a
+narrative **and** the record, never the record alone, and pushback is never delivered in bullets.
 
 ### The code graph — what the review commands ask before they judge
 
@@ -4206,6 +4247,33 @@ flowchart TD
 > Step 0.5, cut mid-sentence — 70% of the steps gone, **including the Step 4 approval gate**. It ran the
 > linter, then improvised a partial reconcile and edited files with no findings report and no approval.
 > Fixed by moving the body to `commands/` so it gets a launcher like everything else.
+>
+> **It escaped a SECOND way, on the other Antigravity surface (SCC-332, fixed 2026-08-27).** Antigravity
+> reads workflows from two places: `.agents/workflows/` inside a repo, and the machine-global cache
+> `~/.gemini/antigravity/global_workflows` outside one. The repo door honoured the launcher rule from the
+> day it shipped. The global cache never did — one line in `sync-agents.ps1` sourced BOTH machine caches
+> from `.agents/commands/`, which is correct for opencode (no size limit, wants the full body) and wrong
+> for Antigravity. Measured before the fix: **38 files in that cache, 23 of them over the cap**, topped by
+> `/smh-close-task-merge-tree` at 48,672 characters — the merge door, cut mid-sentence inside its own
+> safety table with 32 later headings gone. Each cache now names its own source, so the Antigravity cache
+> mirrors `.agents/workflows/` — 40 doors, none of them over the cap. Pinned by `CS-18` in
+> `tests/test_command_surfaces.py`.
+>
+> ⛔ **A CODE FIX DOES NOT MOVE A MACHINE CACHE, and the review of this very lane caught the author
+> claiming it had.** The cache lives in `$HOME`, so git cannot carry it: a pull gets the fixed script and
+> the fixed doors, and the cache changes only when `/smh-sync-agents` runs **on that machine**. Worse, the
+> globals block is gated on `$IsLobby -or $GlobalsOnly` and **`$IsLobby` is FALSE in a worktree** — so the
+> lane's own sync wrote its four local twins and left the cache untouched, while every source-side check
+> stayed green. `CS-18 L`/`M2` now read the real directory and go RED until the machine is synced. That
+> red is the feature: it is the only thing in the repo that can tell you this machine is still serving
+> truncated commands.
+>
+> **The doc came first, and the code followed it.** `docs/workspace-standard.md` stated the inverse rule —
+> that `.agents/workflows/` were reference process-docs "NOT pushed to any command cache" — and warned that
+> name-matching them to Antigravity's caches was "the exact bug this rule prevents." That is backwards:
+> `workflows/` IS Antigravity's menu, on both surfaces. Corrected in place, and `CS-18 J` fails if the old
+> sentence returns. **When a doc and a mechanism disagree, measure the mechanism** — an authoritative-sounding
+> rule is the most expensive kind of wrong, because the next person implements it faithfully.
 >
 > **The tell, if you ever see it again:** a command that starts correctly, does the first mechanical
 > thing right, then goes vague, skips its stop-and-ask, and produces a thinner result than it should.

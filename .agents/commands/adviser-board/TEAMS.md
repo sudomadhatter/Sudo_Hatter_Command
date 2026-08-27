@@ -3,6 +3,10 @@
 Seven rooms. Five **debate lenses** that argue the problem, two **stage rooms** that convene after the
 table agrees. The orchestrator reads this file and `ROSTER.md` at cast time — never a persona card.
 
+⛔ **The debate gate covers the five lenses.** The two stage rooms — Execution Reality and Sales — are
+normally cast at Step 7, and join the debate gate only when the topic *is* their subject: a question
+about what actually gets built, or one that opens as an offer.
+
 > **This is a third-side board.** Its discipline is `THIRD-SIDE.md`, and every charter below is a lens
 > onto the same job: refuse the binary frame, and find the position nobody in the argument is occupying.
 > The lenses are how the board finds a third side — they are not five opinions to be averaged. **Three
@@ -12,6 +16,20 @@ table agrees. The orchestrator reads this file and `ROSTER.md` at cast time — 
 Each charter carries a **when NOT to seat** clause, and it is load-bearing. The command this replaced
 convened all five teams every round regardless of relevance, which is what buried the chair. A lens with
 nothing to own this round stays observing; that is a correct outcome, not a failure.
+
+⛔ **These charters assume the topic is a PRODUCT, and many topics are not.** Ground Truth means
+telemetry and users; Unconventional Leverage means capability you cannot buy, hire or wait for. On a
+personal, human, or pure-judgment topic roughly half of this file goes inert, and translating a charter
+across *by analogy* to keep it seated is the borrowed-analogy failure 🔬 First Principles exists to
+catch — performed on the roster instead of on the advice. **If you are translating a charter to make it
+fit, it does not fit.** The command's Step 2 scale rule is what sizes this; a two-lens board on a
+personal topic is a correct outcome, not a thin one.
+
+⭐ **A room need not be a lens.** When the topic has no distinct failure surfaces, the orchestrator seats
+**one room of three cross-lens minds** drawn straight from the roster rather than filling any charter
+below. Three minds, two independent axes, five cycles, one card — the discipline is identical; only the
+container is gone. Read these charters then as *how to find* which minds are load-bearing, never as a
+set of boxes that must each be filled three at a time.
 
 **Pools, not lineups.** Every list below is who *may* be seated, not who is. The orchestrator picks three
 per seated team using the two-axis rule: the topic's natural owner, then a mind that collides with them,
@@ -129,8 +147,9 @@ what gets cut so the rest can move. Its input is every debate card plus the agre
 
 **Seat it when** the chair takes an agreed direction to execution.
 
-**Do NOT seat it** during the debate stage. A room that costs the plan before the plan exists kills ideas
-at the moment they are cheapest and least defended.
+**Do NOT seat it when** the plan does not exist yet — a room that costs the plan before the plan exists
+kills ideas at the moment they are cheapest and least defended. When the question *is* the build, it
+owns the debate like any other lens.
 
 **Pool:** Kelly Johnson · Ohno · Aurelius · Boyd · Eisenhower · Brunelleschi · Deming · Hopper · Fuller
 

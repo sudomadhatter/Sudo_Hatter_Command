@@ -1,0 +1,45 @@
+{
+  "v": 1,
+  "task": "SCC-332",
+  "sha": "20febc425830d259a66b1758d01a903344224d87",
+  "tip": "70e0a36167229453fb744867f11be82286e423e0",
+  "trigger": "close-out",
+  "when": "2026-08-27T12:46:31-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/INDEX.md",
+    ".agents/commands/smh-slash-command-updating.md",
+    ".agents/commands/smh-sync-agents.md",
+    ".agents/scripts/sync-agents.ps1",
+    ".agents/scripts/tests/test_command_surfaces.py",
+    ".agents/workflows/INDEX.md",
+    ".agents/workflows/smh-slash-command-updating.md",
+    ".agents/workflows/smh-sync-agents.md",
+    ".opencode/commands/smh-slash-command-updating.md",
+    ".opencode/commands/smh-sync-agents.md",
+    "_artifacts/_main/2026-08-27_SCC-332-ag-cache-source/acceptance-source-SCC-332.md",
+    "_artifacts/_main/2026-08-27_SCC-332-ag-cache-source/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md",
+    "docs/workspace-standard.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-27_SCC-332-ag-cache-source/walkthrough.md",
+    "verdict": "CONCERNS @ 20febc4",
+    "gates": {
+      "suite": "pass@20febc4"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "CONCERNS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
