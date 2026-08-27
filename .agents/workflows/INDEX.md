@@ -1,3 +1,8 @@
+---
+description: Workflows INDEX - router for Antigravity's command surface (not a slash command itself)
+platforms: []
+---
+
 # Workflows INDEX — when to use which
 
 Router for `.agents/workflows/`. This folder is **Antigravity's command menu** — it is how Gemini surfaces
@@ -5,8 +10,11 @@ Router for `.agents/workflows/`. This folder is **Antigravity's command menu** �
 `.agents/commands/` by `/smh-sync-agents`, and anything over ~11.5 KB is generated as a **thin launcher**
 that sends the agent to `.agents/commands/<name>.md`, because Antigravity truncates a workflow at 12,000
 chars instead of rejecting it. This same folder is the source for the machine-global cache
-`~/.gemini/antigravity/global_workflows` (SCC-332). The few hand-authored entries below are longer-form
-process maps; `commands/` holds the authored bodies and `rules/` the always-on guardrails.
+`~/.gemini/antigravity/global_workflows` (SCC-332). **This router is not itself a door** — it carries
+`platforms: []` for the same reason `commands/INDEX.md` does. The table below annotates the few entries
+worth reading as process maps; several of them are generated mirrors and say so. Exactly ONE file here is
+hand-authored and never regenerated: `smh-adviser-board.md`, prune-protected in the sync's `$excluded`
+list. `commands/` holds the authored bodies and `rules/` the always-on guardrails.
 
 | Workflow | What it documents | Reach for it when… |
 |---|---|---|

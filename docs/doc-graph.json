@@ -9,7 +9,7 @@
     "pack_docs": 2,
     "edges": 742,
     "external": 40,
-    "ambiguous": 166,
+    "ambiguous": 167,
     "dangling": 300,
     "broken_paths": 70,
     "unresolved_names": 230,
@@ -9605,6 +9605,23 @@
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
         ".agents/skills/react-best-practices/README.md"
+      ]
+    },
+    {
+      "from": ".agents/workflows/INDEX.md",
+      "target": "commands/INDEX.md",
+      "candidates": [
+        ".agents/INDEX.md",
+        ".agents/bmad",
+        ".agents/commands/INDEX.md",
+        ".agents/hooks/INDEX.md",
+        ".agents/opencode-agents/INDEX.md",
+        ".agents/rules/INDEX.md",
+        ".agents/scripts/INDEX.md",
+        ".agents/skills/INDEX.md",
+        ".agents/workflows/INDEX.md",
+        "docs/_scc_sops_prds/INDEX.md",
+        "docs/migrations/INDEX.md"
       ]
     },
     {

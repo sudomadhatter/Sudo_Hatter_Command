@@ -109,6 +109,63 @@ def read(p: Path) -> str:
     return p.read_text(encoding="utf-8-sig", errors="replace")
 
 
+def ps_code_only(text: str) -> str:
+    """PowerShell source with its comments removed - quote-aware, so a `#` inside a string stays.
+
+    ⛔ A source-grep that reads comments is INVERTIBLE, and this repo has the scar twice over
+    (`comment-literals-invert-source-grep-tests`). Measured on CS-18's first version: revert the
+    fix at the call site, leave the deleted literal in a `# NOTE:` line above it, and all ten
+    checks went green over the restored defect. Any check asking "does the CODE do X" must read
+    this view; a check about PROSE reads the raw text on purpose.
+    """
+    out, in_block = [], False
+    for line in text.splitlines():
+        if in_block:
+            if "#>" in line:
+                line, in_block = line.split("#>", 1)[1], False
+            else:
+                out.append("")
+                continue
+        buf, quote, i = [], None, 0
+        while i < len(line):
+            ch = line[i]
+            if quote:
+                buf.append(ch)
+                if ch == quote:
+                    quote = None
+            elif ch in "'\"":
+                quote = ch
+                buf.append(ch)
+            elif line.startswith("<#", i):
+                in_block = True
+                break
+            elif ch == "#":
+                break
+            else:
+                buf.append(ch)
+            i += 1
+        out.append("".join(buf))
+    return "\n".join(out)
+
+
+def ag_eligible(f: Path) -> bool:
+    """Mirror of Get-CommandPlatforms' antigravity answer (sync-agents.ps1:423-439).
+
+    No frontmatter at all => UNIVERSAL (all four platforms). An explicit `platforms: []` =>
+    NOWHERE. That asymmetry is exactly what made `.agents/workflows/INDEX.md` publishable when
+    the cache's source moved here: its `commands/` twin declares `platforms: []`, this one
+    declared nothing.
+    """
+    txt = read(f)
+    lines = txt.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return True
+    got = fm_field(txt, "platforms")
+    if got is None:
+        return True
+    return "antigravity" in got
+
+
 def fm_field(text: str, key: str) -> str | None:
     """A frontmatter scalar, or None. Used to compare a launcher against its brain."""
     lines = text.splitlines()
@@ -2545,80 +2602,155 @@ def main() -> int:
                     "completion-not-illusion" in body,
                     "a door doing the thing must point at its law")
 
-    # ── CS-18 · SCC-332 · the Antigravity global cache is fed LAUNCHERS, not command bodies ────
+    # -- CS-18 . SCC-332 . the Antigravity global cache is fed LAUNCHERS, not command bodies ----
     # Antigravity TRUNCATES a workflow over 12,000 chars instead of rejecting it (SCC-135, measured):
     # a dropped workflow fails visibly, a truncated one runs and looks fine. That is the whole reason
-    # .agents/workflows/ exists — every command over ~11.5 KB is published there as a thin launcher
+    # .agents/workflows/ exists - every command over ~11.5 KB is published there as a thin launcher
     # pointing back at .agents/commands/<name>.md. The machine-global cache sourced ONE dir for BOTH
-    # platforms, so Antigravity received raw 30-48 KB bodies and 20 of 38 arrived cut mid-sentence.
+    # platforms, so Antigravity received raw 30-48 KB bodies and 23 of 38 arrived cut mid-sentence.
     #
-    # ⛔ READ THE SCRIPT AS TEXT. Do NOT dot-source sync-agents.ps1 to test it: it runs top to bottom,
-    # so importing it fires a REAL sync and republishes the machine caches — once per mutant, from
-    # deliberately broken code. A dot-sourced `exit 0` does not terminate the caller in pwsh 7, so that
-    # failure mode is silent and green.
-    if c.block("CS-18 · SCC-332 · Antigravity's global cache mirrors workflows/, never commands/"):
-        sync = read(ROOT / ".agents/scripts/sync-agents.ps1")
+    # DO NOT DOT-SOURCE sync-agents.ps1 to test it: the script runs top to bottom, so importing it
+    # fires a REAL sync and republishes this machine's caches - once per mutant, from deliberately
+    # broken code - and a dot-sourced `exit 0` does not terminate the caller in pwsh 7, so that
+    # failure is silent and green. Read it as TEXT.
+    #
+    # ...but a RAW-text grep is invertible by a COMMENT, and the first version of this block shipped
+    # that way: a mutant reverting the call while leaving the deleted literal in a `#` line passed
+    # all ten checks. Every check asking "does the CODE do X" reads `sync` (comment-stripped);
+    # checks about PROSE read the raw file on purpose.
+    if c.block("CS-18 . SCC-332 . Antigravity's global cache mirrors workflows/, never commands/"):
+        sync_raw = read(ROOT / ".agents/scripts/sync-agents.ps1")
+        sync = ps_code_only(sync_raw)
         WFDIR = ROOT / ".agents/workflows"
 
-        # A · the invariant the launcher mechanism exists to hold, measured on the shipped doors.
-        # This is the ONLY check here that reads reality rather than source, and it is the one that
-        # would have caught the defect on either surface.
-        over = {f.name: len(f.read_text(encoding="utf-8-sig"))
-                for f in sorted(WFDIR.glob("*.md"))
-                if len(f.read_text(encoding="utf-8-sig")) > 12000}
-        doors = len(list(WFDIR.glob("*.md")))
+        # A/B . the cap invariant, measured on the SOURCE doors.
+        # This is a PROXY for the cache, not the cache - K below is the real thing. The first
+        # version claimed A/B "would have caught the defect on either surface". It would not have:
+        # .agents/workflows/ was never the broken surface, so B was green throughout the defect's
+        # entire life. Both are kept - B fails fast in the repo, K reports the machine.
+        sizes = {f.name: len(read(f)) for f in sorted(WFDIR.glob("*.md"))}
+        over = {n: v for n, v in sizes.items() if v > 12000}
         c.check("CS-18 A the Antigravity door set is non-empty",
-                doors > 0, "an empty workflows/ would make every check below vacuous")
+                len(sizes) > 0, "an empty workflows/ would make every check below vacuous")
         c.check("CS-18 B no published Antigravity door exceeds the 12,000-char cap",
-                not over, f"{doors} doors, over cap: {over} - Antigravity truncates these, it does "
-                          f"not reject them, so each would run on partial steps and look fine")
+                not over, f"{len(sizes)} doors; over cap: {over} - Antigravity truncates these, it "
+                          f"does not reject them, so each runs on partial steps and looks fine")
 
-        # C · the two caches must not share a source. Pinned as a RELATION, not a literal: a future
-        # rename of either variable keeps this true, while collapsing them back to one dir fails it.
+        # C-G . the wiring, read from CODE ONLY.
         blk = re.search(r"\$caches\s*=\s*@\((.*?)\n\s*\)", sync, re.S)
-        c.check("CS-18 C the global-cache table is still shaped as expected",
-                blk is not None, "could not find the $caches table - update this block, do not delete it")
+        c.check("CS-18 C the global-cache table was found",
+                blk is not None,
+                "no $caches table in the comment-stripped source - if it was renamed, update this "
+                "check; never delete it")
         if blk:
+            # re.S on the ROW regex too: splitting a row across physical lines is ordinary
+            # PowerShell formatting and must not read as a missing Src. (Measured: it did, and
+            # the failure text then asserted the opposite of what was true.)
             rows = {m.group(1): m.group(2) for m in
-                    re.finditer(r"Name\s*=\s*'([^']+)'.*?Src\s*=\s*(\$\w+)", blk.group(1))}
-            c.check("CS-18 D both caches declare their OWN source",
-                    set(rows) == {"opencode", "antigravity"},
-                    f"every cache entry must carry a Src field; parsed: {rows}")
-            c.check("CS-18 E ...and those sources DIFFER",
-                    len(set(rows.values())) == 2,
-                    f"one source feeding both platforms is the SCC-332 defect itself: {rows}")
-            ag = rows.get("antigravity", "")
-            m = re.search(re.escape(ag) + r'\s*=\s*Join-Path\s+\$Master\s+"([^"]+)"', sync)
+                    re.finditer(r"Name\s*=\s*'([^']+)'.*?Src\s*=\s*(\$\w+)", blk.group(1), re.S)}
+            missing = {"opencode", "antigravity"} - set(rows)
+            c.check("CS-18 D both known caches declare their OWN source",
+                    not missing,
+                    f"cache row(s) carrying no Src field: {sorted(missing)}; parsed: {rows}")
+            # A RELATION, never a count. `len(set(values)) == 2` red-fails a legitimate THIRD
+            # cache while printing "one source feeding both platforms" - the opposite of the truth.
+            oc, ag = rows.get("opencode"), rows.get("antigravity")
+            c.check("CS-18 E ...and opencode's source is NOT antigravity's",
+                    oc is not None and ag is not None and oc != ag,
+                    f"one source feeding both platforms IS the SCC-332 defect: "
+                    f"opencode={oc} antigravity={ag}")
+            mf = re.search(re.escape(ag or "\x00") + r'\s*=\s*Join-Path\s+\$Master\s+"([^"]+)"', sync)
             c.check("CS-18 F the antigravity source resolves to .agents/workflows",
-                    m is not None and m.group(1) == "workflows",
-                    f"{ag} resolves to {m.group(1) if m else '<unresolved>'!r}, not 'workflows'")
-            oc = rows.get("opencode", "")
-            m2 = re.search(re.escape(oc) + r'\s*=\s*Join-Path\s+\$Master\s+"([^"]+)"', sync)
+                    mf is not None and mf.group(1) == "workflows",
+                    (f"{ag} resolves to {mf.group(1)!r}; it must be 'workflows', the launcher surface"
+                     if mf else f"{ag} is never assigned from $Master anywhere in the code"))
+            mo = re.search(re.escape(oc or "\x00") + r'\s*=\s*Join-Path\s+\$Master\s+"([^"]+)"', sync)
             c.check("CS-18 G ...and opencode still gets the full command bodies",
-                    m2 is not None and m2.group(1) == "commands",
-                    f"{oc} resolves to {m2.group(1) if m2 else '<unresolved>'!r}, not 'commands'")
+                    mo is not None and mo.group(1) == "commands",
+                    (f"{oc} resolves to {mo.group(1)!r}; it must stay 'commands' - opencode has no cap"
+                     if mo else f"{oc} is never assigned from $Master anywhere in the code"))
 
-        # H · the copy call must READ that per-cache field. A correct table wired to a stale shared
-        # variable is the defect with extra steps, and every check above would still pass.
+        # H . the copy call must READ that per-cache field. A correct table wired to a stale shared
+        # variable is the defect with extra steps, and C-G would every one of them still pass.
+        # `$\w+` not `$c`: renaming the loop variable is a legal refactor, not a regression.
         c.check("CS-18 H the mirror call reads the per-cache source",
-                re.search(r"Sync-CommandDir\s+\$c\.Src\s", sync) is not None,
-                "the loop still passes a single shared source variable to both caches")
+                re.search(r"Sync-CommandDir\s+\$\w+\.Src\b", sync) is not None,
+                "the loop passes a single shared source variable to both caches")
 
-        # I · the door regeneration must run BEFORE the globals block, or the cache mirrors a stale
-        # workflows/ dir on the very run that was meant to refresh it.
-        gen = sync.find("Sync-AntigravityWorkflowMirror $Master")
-        glob_blk = sync.find("$caches = @(")
-        c.check("CS-18 I workflows/ is regenerated before the global cache mirrors it",
-                0 <= gen < glob_blk,
-                f"mirror-regen at {gen}, globals block at {glob_blk}")
+        # I . the doors must be regenerated BEFORE the globals block, or a -GlobalsOnly run
+        # (/smh-slash-command-updating) mirrors a stale door set on the very pass meant to refresh
+        # it. Anchored to a CODE line: a `#` naming the call must not stand in for the call.
+        gen = re.search(r"^\s*\$\w+\s*=\s*Sync-AntigravityWorkflowMirror\b", sync, re.M)
+        glb = re.search(r"^\s*\$caches\s*=\s*@\(", sync, re.M)
+        c.check("CS-18 I the regen call and the globals block both exist as CODE",
+                gen is not None and glb is not None,
+                f"regen={'found' if gen else 'MISSING'}, globals={'found' if glb else 'MISSING'}")
+        if gen and glb:
+            c.check("CS-18 I2 workflows/ is regenerated before the global cache mirrors it",
+                    gen.start() < glb.start(),
+                    f"regen at char {gen.start()}, globals at {glb.start()} - reversed, a "
+                    f"-GlobalsOnly run mirrors a stale door set into the cache")
 
-        # J · the doc that CAUSED this. workspace-standard.md stated the inverse rule - that
+        # J . the doc that CAUSED this. workspace-standard.md stated the inverse rule - that
         # workflows/ are reference docs never pushed to a command cache - and the code followed the
-        # doc. Pin the correction so the false claim cannot come back and re-arm the defect.
-        ws = read(ROOT / "docs/workspace-standard.md")
-        c.check("CS-18 J no live doc claims workflows/ reach no command cache",
-                "they are NOT pushed to" not in ws,
-                "workspace-standard.md still carries the inverted rule that caused SCC-332")
+        # doc. Pin the CLAIM, not one 21-character string: the first version matched only
+        # "they are NOT pushed to", so re-wording to "are never published to any command cache"
+        # restored the defect green. Scoped to the LIVE rule sites; history may quote it freely.
+        RULE_SITES = ("docs/workspace-standard.md", ".agents/commands/INDEX.md",
+                      ".agents/workflows/INDEX.md", ".agents/commands/smh-sync-agents.md",
+                      ".agents/commands/smh-slash-command-updating.md")
+        INVERTED = re.compile(
+            r"workflows/?[^.\n]{0,140}?(?:are|is)\s+(?:\*\*)?(?:NOT|not|never)(?:\*\*)?\s+"
+            r"(?:pushed|published|copied|mirrored|synced|sent)[^.\n]{0,80}?cache", re.I)
+        offenders = [rel for rel in RULE_SITES
+                     if (ROOT / rel).is_file() and INVERTED.search(read(ROOT / rel))]
+        c.check("CS-18 J no live rule doc claims workflows/ reach no command cache",
+                not offenders,
+                f"{offenders} carry the inverted rule that caused SCC-332 - workflows/ IS "
+                f"Antigravity's menu, on the repo door AND the machine-global cache")
+
+        # K . NOT A DOOR. `.agents/workflows/INDEX.md` is the router, and moving the cache's source
+        # here made it publishable: its `commands/` twin declares `platforms: []` (nowhere), this
+        # one declared no frontmatter at all, which Get-CommandPlatforms reads as UNIVERSAL. It
+        # would have shipped a description-less `/INDEX` into the global slash menu SCC-195 exists
+        # to protect. The old source actively PURGED it from that cache; the new source installs it.
+        c.check("CS-18 K the workflows router does not publish itself as a command",
+                not ag_eligible(WFDIR / "INDEX.md"),
+                "workflows/INDEX.md is antigravity-eligible - give it `platforms: []` like its "
+                "commands/ twin, or it becomes a `/INDEX` menu entry with no description")
+
+        # -- L/M . THE CACHE ITSELF -----------------------------------------------------------
+        # The ticket asked for a test on the CACHE; the first version of this block tested the
+        # SOURCE. They are NOT the same claim: the cache equals the source only after a lobby sync
+        # runs ON THIS MACHINE, and `$IsLobby` is false in a worktree - so this lane's own sync
+        # wrote 4 local twins and left the cache in its 23-over-cap defect state while every
+        # source-side check stayed green. A red here means "this machine has not synced since the
+        # fix"; the remedy is `/smh-sync-agents`, never an edit to the assertion.
+        CACHE = Path.home() / ".gemini" / "antigravity" / "global_workflows"
+        if not CACHE.is_dir():
+            c.check("CS-18 L SKIPPED: this machine has no Antigravity global cache",
+                    True,
+                    f"{CACHE} does not exist - nothing has ever synced here, so there is no machine "
+                    f"state to assert. This is a SKIP, not a pass about the cache.")
+        else:
+            # bmad-* is BMAD's own global install and is never ours to manage (Sync-CommandDir's
+            # -Mirror branch exempts it from purge), so it is out of scope for our cap claim.
+            cached = {f.name: len(read(f)) for f in sorted(CACHE.glob("*.md"))
+                      if not f.name.startswith("bmad-")}
+            cache_over = {n: v for n, v in cached.items() if v > 12000}
+            c.check("CS-18 L no file in the Antigravity global cache exceeds the cap",
+                    not cache_over,
+                    f"{len(cached)} cached files, {len(cache_over)} over 12,000 chars "
+                    f"(worst first): {dict(sorted(cache_over.items(), key=lambda kv: -kv[1]))} "
+                    f"- run /smh-sync-agents on this machine; these run truncated and look fine")
+            eligible = {n for n in sizes if ag_eligible(WFDIR / n)}
+            c.check("CS-18 M the eligible-door set is non-empty",
+                    bool(eligible), "an empty set would make the twin check below vacuous")
+            absent = sorted(eligible - set(cached))
+            c.check("CS-18 M2 every antigravity door in workflows/ has a cache twin",
+                    not absent,
+                    f"{len(eligible)} eligible doors; missing from the cache: {absent} "
+                    f"- run /smh-sync-agents on this machine")
 
 
     return c.finish()

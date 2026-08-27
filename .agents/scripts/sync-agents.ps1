@@ -560,7 +560,7 @@ function Sync-AntigravityWorkflowMirror {
   $mirrored = @()
 
   # HAND-OWNED files in workflows/: never written by this mirror, never pruned by it. Each has a reason.
-  #   smh-adviser-board.md   - hand-authored thin launcher (the command is ~52k, over AG's 12k cap).
+  #   smh-adviser-board.md   - hand-authored thin launcher (the command is 19.8k, over AG's 12k cap).
   #   INDEX.md               - the workflows router. It has NO frontmatter and NO source in commands/, and
   #                            survived only because it failed the old name filter. With that filter gone
   #                            the prune below would DELETE it on the next sync. Load-bearing guard.
@@ -1003,6 +1003,10 @@ if (-not $GlobalsOnly) {
 # warning, never crashes the run — so one bad path can't block the other cache or the (already-done) local sync.
 if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
   # SCC-332: each cache names its OWN source. opencode reads /-commands and wants the full body.
+  # -WhatIf FIDELITY, stated because it changed here: Sync-AntigravityWorkflowMirror writes nothing
+  # under -WhatIf, so a dry run enumerates the doors the LAST REAL SYNC wrote. A brand-new command
+  # prints "would emit LAUNCHER" above and then does not appear in this cache's preview. The opencode
+  # cache still previews from commands/ and is always current. Dry-run counts here are a floor.
   # Antigravity TRUNCATES at 12,000 chars instead of rejecting (SCC-135), so a verbatim 30 KB command
   # runs on partial steps and looks fine. It must be fed the already-generated thin-launcher surface in
   # .agents\workflows - the same doors the per-project sync writes - never the raw command bodies.

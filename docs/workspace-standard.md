@@ -280,8 +280,13 @@ The **single canonical invocable set is `.agents/commands/`**. It mirrors to eve
   `bmad-*` dirs but preserves `.system` and any foreign (non-bmad) skill dirs.
 - **Gemini reads two workflow surfaces.** Antigravity has no project-local *command* dir: in a repo it reads
   `.agents/workflows/`, and outside one it reads the machine-global `~/.gemini/antigravity/global_workflows`.
-  Both are generated from the same canonical `commands/` set, both honour the launcher rule, so a command's
-  full body is reachable from either — that asymmetry is a platform constraint, not a defect.
+  Both are generated from the same canonical `commands/` set and both honour the launcher rule.
+  ⚠ **A launcher only resolves where `.agents/commands/` exists — the lobby.** Under the thin model a
+  project carries no tier-1 copy, so a big command invoked from the global menu inside a project STOPS
+  and says so, rather than running. That is a deliberate trade and the right direction: before SCC-332
+  that same entry delivered the first 12,000 characters of the body and the agent improvised the rest.
+  A command that fails visibly beats one that runs on 27% of its steps. Full bodies reach every other
+  platform directly from `commands/`.
 
 ### Git — one policy
 **Agents commit and push their own work** — explicit paths (never `git add -A`), the repo's Jira key leading
