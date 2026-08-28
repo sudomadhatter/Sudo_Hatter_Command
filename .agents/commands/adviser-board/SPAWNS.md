@@ -165,8 +165,9 @@ Reality or 📣 Sales, used when its charter's subject is in play but the board 
 
 > Your filter's question is {what actually gets built, in what order, by whom, and what gets cut so the
 > rest can move | how this reaches the people who need it — the offer, the proof, the channel, the
-> ladder}. Whether the idea is right has been argued by the other filters; relitigating it is out of
-> scope unless your method genuinely turns on it.
+> ladder}. From wave 2 on, whether the idea is right has been argued by the other filters — relitigating
+> it is out of scope unless your method genuinely turns on it. In wave 1 nothing has been argued yet:
+> judge the idea on its own merits inside your charter's subject.
 
 **Research is centralised.** The orchestrator performs every lookup — project files, databases, the
 web — before the wave, and distils what the filters need into the research brief. A filter spawn that
@@ -199,6 +200,10 @@ If you need something only he can tell you, ask him plainly rather than assuming
 Also used for: a duel between two minds — the chair's `X vs Y` move (seed both with the exchange so
 far and his framing), a killed idea's owner defending it (seed with the statement, the kill, and the
 chair's interest), and drill-down on a statement.
+
+A call-out's output reaches the chair's screen only — it is not a statement, carries no slots, and
+does not circulate. To carry a duel's or call-out's resolution into later waves, the chair restates
+it in his reply; the next wave's transcript then carries it everywhere.
 
 ---
 

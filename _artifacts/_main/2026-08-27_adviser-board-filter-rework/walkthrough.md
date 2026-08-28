@@ -261,9 +261,11 @@ reconciled here.
 The chair flew the board live on a real topic before amending it. What the session showed, in order:
 
 1. **Round-0 cast menu rendered verbatim** — four filters seated (🔬 First Principles · 🎯 Human
-   Needs · 🌊 Ruin & Ripple · 🩺 Ground Truth cut last), each with its top-3 menu, and three cut
-   lines for the refused filters. The chair picked **"your pick ×4"**, seating Feynman · Semmelweis ·
-   Munger · Drucker — one mind per filter, exactly as row (a) specifies.
+    Needs · 🌊 Ruin & Ripple · 🩺 Ground Truth), each with its top-3 menu, and three cut lines for
+    the refused filters. The chair picked **"your pick ×4"**, seating Feynman · Semmelweis ·
+    Munger · Drucker — one mind per filter, exactly as row (a) specifies. (An earlier draft of this
+    line annotated Ground Truth "cut last", which contradicts Semmelweis — a Ground Truth mind —
+    being seated; the garbled annotation is removed. Review finding, 2026-08-28.)
 2. **Two full waves of real statements ran.** Wave 1: independent takes, one verbatim statement per
    filter. Wave 2: cross-filter attacks — including **Munger's concession to the record** and the
    **Feynman-vs-Semmelweis collision** (the same duel the traffic table now names as the `X vs Y`
@@ -283,9 +285,16 @@ The chair flew the board live on a real topic before amending it. What the sessi
    searching of databases and the web; the personalities receive that information and run in
    parallel, coming back with feedback — they do not individually search.
 
-**Evidence scope, stated honestly:** rows (a) and (b) are evidenced by this session. Row (b)'s
-**parallelism is a surface property of the command text** — this harness spawns subagents
-sequentially, so the one-message parallel spawn is specified in the command (and asserted present by
-the wave gate) but cannot be machine-proven from this runtime; the amendment's *content* — waves not
-a ladder, transcript circulation, chair-guided deepening, orchestrator research — is what the session
-actually exercised and what the landed text now implements.
+**Evidence scope, stated honestly:** rows (a) and (b) are evidenced by this session, with three
+caveats. (1) **The session ran the pre-amendment model** — it flew before the amendment, so its two
+waves were the then-current read/attack rounds; the amendment's *deepening moves* (`settle it` /
+`balcony` / `X vs Y`) and *research brief* are text-present, gate-asserted, and contract-consistent,
+but were never flown live. (2) Row (b)'s **parallelism is a surface property of the command text** —
+this harness spawns subagents sequentially, so the one-message parallel spawn is specified in the
+command (and asserted present by the wave gate) but cannot be machine-proven from this runtime.
+(3) The session produced no `board_sessions/` brief artifact — the record of it is this section's
+narrative alone. What the session *did* exercise: the Round-0 gate and menu end to end, two waves of
+verbatim statements with cross-filter circulation, the ⚖ line, and the render demo that prompted
+amendment line 1. (Evidence-scope correction applied by the 2026-08-28 re-review; the earlier
+wording claimed the session exercised chair-guided deepening and orchestrator research, which it
+did not.)

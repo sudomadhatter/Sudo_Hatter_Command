@@ -2,7 +2,7 @@
 
 Seven filters. Each charter is a **filter** — the lens the problem is viewed through — and the seated
 historical mind is who looks through it. Casting picks **ONE mind per filter** via the `ROSTER.md`
-top-3 rule — one seat each, and no special-status rooms. The orchestrator reads this file
+top-3 rule — one seat each, and no special-status filters. The orchestrator reads this file
 and `ROSTER.md` at cast time — never a persona card.
 
 ⛔ **The cast gate covers all seven filters.** Execution Reality and Sales are ordinary filters,

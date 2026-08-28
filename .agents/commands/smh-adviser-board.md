@@ -151,8 +151,11 @@ Render the ground brief, the gate, and the menu together as **one block**, then 
    2. Diogenes     — names the need nobody says out loud
    3. Houellebecq   — prices the want against what people settle for
 
-Cut — 🩺 Ground Truth: nothing measured, no installed base · 🌊 Ruin & Ripple: cheap
-and fully reversible · 🧬 Unconventional Leverage: the standard channel is cheap and fast.
+Cut — 🔧 Execution Reality: nothing is being built yet, so there is no build to
+      reality-check · 📣 Sales: no offer or audience in play for this topic ·
+      🩺 Ground Truth: nothing measured, no installed base ·
+      🌊 Ruin & Ripple: cheap and fully reversible ·
+      🧬 Unconventional Leverage: the standard channel is cheap and fast.
 
 Pick one mind per filter — or say "your pick" for mine — then say "gavel".
 ```
@@ -197,7 +200,10 @@ alone. Statements rendered cold are precisely the failure that obligation exists
     **words**, not the typography: never paraphrase, trim, merge or reorder the wording; the
     presentation is the orchestrator's to format. A statement that breaks the contract is fixed by one
     corrective respawn, never by editing.
-3. **Exactly one line** — `⚖ {sharpest cross-filter collision, named minds}`.
+3. **Exactly one line** — `⚖ {sharpest cross-filter collision, named minds}`. On a
+    one-filter board there is no cross-filter collision to name: the line keeps its `⚖`
+    format and names the sharpest internal tension the filter's own statement turns on
+    instead — never a manufactured disagreement.
 4. **The deduped `COULDN'T SETTLE` questions**, numbered, **capped at two**.
 
 Then stop. No menu.
@@ -212,7 +218,7 @@ Then stop. No menu.
 | `balcony` | a balcony wave: is the disagreement real, or is the frame wrong? A reframe minted here outranks the answer |
 | `Feynman vs Semmelweis` | a duel — the two named minds seeded with the exchange, one call-out each (`SPAWNS.md` §5) |
 | `swap Taleb` | top-3 menu for that seat — see below |
-| `unpack ②` | that filter's prior statement, **verbatim**, never summarised |
+| `unpack {filter}` | that filter's prior statement, **verbatim**, never summarised |
 | `just Feynman` | one mind, full voice, no waves, no statement contract |
 | `new angle: X` | recast from scratch |
 | `close the board` / `meeting closed` | close-out |

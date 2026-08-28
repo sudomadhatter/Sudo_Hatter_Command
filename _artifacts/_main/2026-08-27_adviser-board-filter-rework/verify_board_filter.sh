@@ -7,20 +7,36 @@ ROOT="${1:?usage: verify_board_filter.sh <repo-root>}"
 cd "$ROOT" || { echo "FAIL: cannot cd $ROOT"; exit 1; }
 rc=0
 
+# Surface-presence guard: a missing scanned file makes every grep below pass vacuously
+# (2>/dev/null swallows the error), so the gate refuses to run against a partial tree.
 BRAIN=".agents/commands/smh-adviser-board.md"
 FOLDER=".agents/commands/adviser-board"
 AG=".agents/workflows/smh-adviser-board.md"
 SKILL=".claude/skills/smh-adviser-board/SKILL.md"
 OC=".opencode/commands/smh-adviser-board.md"
 
+for _surface in "$BRAIN" "$FOLDER/CARD.md" "$FOLDER/TEAMS.md" "$FOLDER/DOCTRINE.md" \
+                "$FOLDER/THIRD-SIDE.md" "$FOLDER/SPAWNS.md" "$FOLDER/ROSTER.md" "$AG" "$SKILL" "$OC"; do
+  if [ ! -f "$_surface" ]; then
+    echo "FAIL(surface): missing $_surface — gates would pass vacuously without it"
+    rc=1
+  fi
+done
+[ "$rc" -eq 0 ] && echo "PASS(surface): all scanned surfaces present"
+
 # ---------------------------------------------------------------- (c) vocabulary grep gate
 # Retired vocabulary: triad, caucus, stage room, stage change, default triad,
 # three minds, team (case-insensitive). 'floor' is adjudicated separately (plan §8.2).
 # Justified exceptions live in the allowlist below (exact line content after the hit).
 ALLOWED=(
-  # (populated during GREEN if a justified exception survives — each with a reason)
+  # Justified exception (plan §8.2 / row c): the contract file keeps its historical TEAMS.md
+  # filename (declared EDIT, not RENAME), so content that REFERENCES the filename is a hit on
+  # the name only, not on team vocabulary. First exercised 2026-08-28 re-review.
+  "| \`adviser-board/TEAMS.md\` | orchestrator | at cast time |"
+  "Read \`TEAMS.md\` and \`ROSTER.md\` against the brief."
+  "{one-line blind spot from TEAMS.md}."
 )
-pattern='triad|caucus|stage room|stage change|three minds|\bteam\b'
+pattern='triad|caucus|stage room|stage change|three minds|\bteams?\b'
 hits=$(grep -rinE "$pattern" "$BRAIN" "$FOLDER" "$AG" 2>/dev/null | grep -v "$FOLDER/minds/")
 if [ -n "$hits" ]; then
   while IFS= read -r line; do
@@ -54,7 +70,7 @@ wave_req=0
 grep -qiE 'opinion wave' "$BRAIN"                       || { echo "FAIL(wave): brain lacks 'opinion wave'"; rc=1; }
 grep -qiE 'all Agent calls in a single message' "$BRAIN" || { echo "FAIL(wave): brain lacks one-message parallel spawns"; rc=1; }
 grep -qiE 'opinion wave' "$FOLDER/SPAWNS.md"            || { echo "FAIL(wave): SPAWNS lacks 'opinion wave'"; rc=1; }
-grep -q  'RESEARCH BRIEF' "$FOLDER/SPAWNS.md"           || { echo "FAIL(wave): SPAWNS lacks the orchestrator research brief"; rc=1; }
+grep -qi 'RESEARCH BRIEF' "$FOLDER/SPAWNS.md"           || { echo "FAIL(wave): SPAWNS lacks the orchestrator research brief"; rc=1; }
 grep -qiE 'settle it' "$BRAIN"                          || { echo "FAIL(wave): brain lacks the 'settle it' deepening move"; rc=1; }
 [ "$rc" -eq 0 ] && echo "PASS(wave): parallel-wave vocabulary present (brain + SPAWNS)"
 
@@ -87,6 +103,7 @@ else
 fi
 # Antigravity launcher description within the ~135-char menu budget.
 ag_desc=$(awk '/^description:/{print substr($0,14); exit}' "$AG")
+ag_desc="${ag_desc#\'}"; ag_desc="${ag_desc%\'}"   # strip the YAML quoting quotes — count the description, not its delimiters
 ag_len=${#ag_desc}
 if [ "$ag_len" -le 135 ] && [ "$ag_len" -gt 0 ]; then
   echo "PASS(door): AG launcher description ${ag_len} chars (budget 135)"

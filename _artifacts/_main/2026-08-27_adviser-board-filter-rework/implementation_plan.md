@@ -351,6 +351,27 @@ Out-of-implementation-scope (close-out work): memory-flow flags for
 routed via the sanctioned flows (`/smh-memory-audit` / `/cicd-update-sprint-memory`), never edited in
 this lane. No files created or deleted by this change set; `minds/` is untouched (§4.8).
 
+## 11b. Operator amendment (2026-08-28, live session) — supersedes the ladder text above
+
+Mid-session, after flying the board live (evidence in the walkthrough's `## Live Session
+Evidence`), the operator amended the design with two verbatim lines (quoted in full in the
+walkthrough). This block is the plan's record of that amendment; where the sections below
+contradict it, THIS BLOCK WINS:
+
+- **§1 model line, §3.4 (Board rounds), §4.1 Step-4 row, §4.5 (§3 Read spawn, §6/§7 numbering,
+  per-filter read caps), §8.1 (six-move traffic table), §12(b)** — all written against the fixed
+  R1→R4 ladder, which is RETIRED. The board runs **parallel opinion waves**: one spawn per seated
+  filter per wave, all Agent calls in a single message, each carrying the transcript and the
+  chair's reply; attack / balcony / settle are **chair-invoked deepening moves** (`settle it` /
+  `balcony` / `X vs Y`), never a forced sequence.
+- **Per-filter file-read caps (≤3 files; Execution Reality ≤6) are RETIRED** — the orchestrator
+  does all the searching (web, databases, project files) and hands every spawn a research brief;
+  filter spawns never search.
+- **Traffic table: twelve moves → six (first pass) → ten (amendment)** — the amendment added
+  `go again`/`next wave`, `settle it`, `balcony`, and `X vs Y` to the six.
+- **Rich-text rendering** — each statement renders as its own markdown section per `CARD.md`
+  § Rendering; the verbatim law governs the words, not the typography.
+
 ## 12. Acceptance
 
 Observable, checkable rows the lane is audited against (audit finding F2 — Scope Ledger precondition).
@@ -359,8 +380,10 @@ Observable, checkable rows the lane is audited against (audit finding F2 — Sco
   Round-0 cast menu showing the top-3 mind picks per seated filter (one line each on the angle that
   mind would take on THIS topic) and cut lines for refused filters; the operator's picks seat exactly
   one mind per filter.
-- **(b) Four visible rounds (full session):** a full session renders R1 READ / R2 ATTACK / R3 BALCONY /
-  R4 SETTLE with one verbatim statement per filter (~250-word ceiling) and no hidden caucus spawns.
+- **(b) Full session, parallel opinion waves (as amended 2026-08-28 — see §11b):** a full session
+  runs at least two opinion waves — one verbatim statement per filter per wave (~250-word ceiling),
+  every other filter's statements circulating verbatim, the deepening moves available to the chair —
+  with no hidden caucus spawns and no forced read→attack→balcony→settle sequence.
 - **(c) Vocabulary grep gate:** grep over `.agents/commands/smh-adviser-board.md`,
   `.agents/commands/adviser-board/` (excluding `minds/`) and `.agents/workflows/smh-adviser-board.md`
   returns zero unjustified hits for `triad`, `caucus`, `stage room`, `stage change`, `default triad`,

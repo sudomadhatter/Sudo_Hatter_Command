@@ -92,7 +92,10 @@ assumption; concedes the mechanism point"}*
 
 > {the statement's prose, verbatim, as a blockquote}
 
+**THE THIRD SIDE:** {verbatim slot content — when present it renders FIRST, above THE MOVE}
 **THE MOVE:** {verbatim slot content}
+**COULDN'T SETTLE:** {verbatim slot content}
+**ASSUMED:** {verbatim slot content}
 **SPLIT:** {verbatim slot content}
 ```
 
@@ -111,6 +114,9 @@ After the last statement, exactly one line:
 ```
 ⚖ {the sharpest cross-filter collision, naming the minds}
 ```
+
+(On a one-filter board there is no cross-filter collision: the line keeps its `⚖` format and
+names the sharpest internal tension the filter's own statement turns on instead.)
 
 Then the deduped `COULDN'T SETTLE` questions, numbered, capped at two. Then stop. No menu, no "what
 next?", no suggested commands.

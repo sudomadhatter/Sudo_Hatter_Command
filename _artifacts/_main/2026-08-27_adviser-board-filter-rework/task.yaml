@@ -7,7 +7,7 @@ riders:
   - key: SCC-341
     why: acceptance row (a) — Round-0 cast menu; same repo, same lane class, no own branch earned
   - key: SCC-342
-    why: acceptance row (b) — four visible rounds; same repo, same lane class, no own branch earned
+    why: acceptance row (b) — parallel opinion waves (as amended 2026-08-28); same repo, same lane class, no own branch earned
   - key: SCC-343
     why: acceptance row (c) — vocabulary grep gate; machine-proven in this lane
   - key: SCC-344
