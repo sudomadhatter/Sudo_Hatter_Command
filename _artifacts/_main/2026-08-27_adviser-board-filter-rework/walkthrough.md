@@ -1,7 +1,7 @@
 # Walkthrough — Adviser Board filter rework (SCC-340)
 
 <!-- twin-law: review-runtime-probe -->
-review-runtime: inline (no subagent tool)
+review-runtime: fan-out
 
 **Ticket:** [SCC-340](https://sudo-command.atlassian.net/browse/SCC-340) — Rework /smh-adviser-board to
 one-filter-one-mind board rounds · **Subtasks (riders):** SCC-341 (a) · SCC-342 (b) · SCC-343 (c) ·
@@ -97,14 +97,17 @@ Suite evidence measured on the same sha: `1aae5194` (receipt `gates/suite.json`,
 review-runtime: inline (no subagent tool)
 lens_isolation: shared — inline ladder in one context; no subagent tool exists in this runtime (SCC-177 probe)
 lenses_run:
-
 - edge-case-hunter · recovered-inline
 - literal-correctness-hunter · recovered-inline
 - acceptance-auditor · recovered-inline
 - test-adequacy-auditor · recovered-inline
 lenses_counted:  4/4
-lenses_na:
-- blind-hunter · n/a — context contaminated (holds the plan §11/§12, the walkthrough, and the Step 0.7 radius; dropped rather than faked, SCC-203)
+lenses_na: none
+
+(First review, inline ladder: blind-hunter was DROPPED rather than faked — context contaminated
+(holds the plan §11/§12, the walkthrough, and the Step 0.7 radius), SCC-203. This record moved to
+prose on 2026-08-28: the re-review's fan-out roster governs the machine-read field, and a stale
+first-found n/a block would contradict its fan-out header at close-out.)
 
 dispositions:    per-lens: edge-case-hunter=2/2/0 · literal-correctness-hunter=3/1/0 · acceptance-auditor=1/0/0 · test-adequacy-auditor=0/1/0
 drift:           undeclared=0 · unimplemented=0 · incomplete=0 — reconciled clean after the declared-set fix below (before it: 19 undeclared / 3 incomplete, because the plan's block was a table the `declared_change_set.py` grammar cannot parse)
@@ -318,7 +321,6 @@ Suite evidence measured on the same sha: `74ced3b3` (receipt `gates/suite.json`,
 review-runtime: fan-out
 lens_isolation: worktree — every repo-reading lens got its own detached copy of the repo at `f9b2270` (SCC-313 lobby rule); blind-hunter had no tree by design
 lenses_run:
-
 - blind-hunter · ok
 - edge-case-hunter · ok
 - literal-correctness-hunter · ok
