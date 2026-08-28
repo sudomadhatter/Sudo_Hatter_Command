@@ -1,7 +1,7 @@
 # The Statement — contract
 
-One statement per filter per round. **~250 words**, hard ceiling 320. This is the entire visible output
-of a filter's round; the chair reads it verbatim.
+One statement per filter per wave. **~250 words**, hard ceiling 320. This is the entire visible output
+of a filter's wave; the chair reads it verbatim.
 
 The chair reads three to five of these before he replies. That budget is the whole design constraint —
 the command this replaced spent 500–2,000 words per lens and went unused because of it.
@@ -37,7 +37,7 @@ chair's question was the wrong one and has a better one — that goes first and 
 around it. Telling the chair his question was wrong, and handing him the one he should be asking, is the
 most valuable output this board has. See `THIRD-SIDE.md`.
 
-Do not manufacture one. A round that genuinely answered the question as asked leaves the slot out, and
+Do not manufacture one. A wave that genuinely answered the question as asked leaves the slot out, and
 the orchestrator never asks for a reframe that wasn't found. A fake third side is worse than none,
 because it teaches the chair to skim the slot.
 
@@ -49,8 +49,8 @@ rewrite it from that mind's actual method, or cut it.
 **Kills are performed in the killer's method.** If Munger cannot state the kill as an inversion, or Taleb
 as an exposure, or Kepler as an un-rounded anomaly, it did not happen at this board.
 
-**`COULDN'T SETTLE` and `SPLIT` cannot both be empty.** A round in which every opposed filter settled
-everything and needed nothing from the chair is a round in which they did not dig. The orchestrator
+**`COULDN'T SETTLE` and `SPLIT` cannot both be empty.** A wave in which every opposed filter settled
+everything and needed nothing from the chair is a wave in which they did not dig. The orchestrator
 respawns such a statement **once**, quoting this rule; a second failure is presented as-is with a note.
 
 This inverts the usual instinct on purpose. A filter that asks nothing is not exemplary — it is
@@ -59,7 +59,7 @@ asks the chair are where its value concentrates: they are the places where only 
 surfacing them is worth more than another confident paragraph.
 
 **`COULDN'T SETTLE` is bounded.** At most two questions per filter, and the orchestrator forwards at most
-two across the whole round, ranked by how much advice each answer would move. Questions that don't make
+two across the whole wave, ranked by how much advice each answer would move. Questions that don't make
 the cut do not disappear — the filter proceeds on an explicit `ASSUMED` line so a wrong assumption is
 caught when the statement is read.
 
@@ -67,7 +67,7 @@ caught when the statement is read.
 is hiring it to do, Diogenes asks to be shown. Each persona card's `Asks the chair` section is what this
 draws on. A generic "what is your budget?" is a wasted question.
 
-**No process talk, ever.** A statement never suggests ending the session, moving to another round, or
+**No process talk, ever.** A statement never suggests ending the session, moving to another wave, or
 which command to run next. That is the chair's call alone.
 
 ---
@@ -75,13 +75,36 @@ which command to run next. That is the chair's call alone.
 ## Rendering
 
 **A 3–5 sentence prose read comes before the block of statements** — the meeting told to a chair who sat
-in none of the rounds. That is `operator-profile` obligation 2 and the command's Step 4; it is the one
+in none of the waves. That is `operator-profile` obligation 2 and the command's Step 4; it is the one
 thing allowed above the statements, it summarises no statement, and it replaces none. Without it the
 chair reads a wall.
 
-Statements then render **verbatim**, in board order, with nothing between them. The orchestrator never
-paraphrases, trims, merges or reorders a statement, and never re-cuts one itself — a statement that
-violates this contract is fixed by one corrective respawn at the source, not by editing.
+Statements then render **verbatim, in rich text**, in board order. The verbatim law governs the
+**words**, not the typography: the orchestrator never paraphrases, trims, merges, reorders or re-cuts a
+statement's wording — but it formats the presentation for reading. Each statement renders as its own
+markdown section:
+
+```markdown
+### {icon} {Filter} — {Mind}
+
+*{one-line stance note — what this mind is doing in this wave, e.g. "attacks the adoption
+assumption; concedes the mechanism point"}*
+
+> {the statement's prose, verbatim, as a blockquote}
+
+**THE MOVE:** {verbatim slot content}
+**SPLIT:** {verbatim slot content}
+```
+
+- The **heading** carries the icon, filter and mind — scannable at a glance.
+- The **italic stance note** is the orchestrator's one-line signpost, written fresh per wave. It
+  summarises the stance, never the words — it is the only non-verbatim text in the section, and it
+  never substitutes for reading the statement.
+- The **prose renders as a blockquote**; slot labels render **bold**, each slot on its own line.
+- Slots that are absent this wave are simply not rendered.
+
+A statement that violates this contract is fixed by one corrective respawn at the source, not by
+editing — and the respawn fixes the words, never the format.
 
 After the last statement, exactly one line:
 

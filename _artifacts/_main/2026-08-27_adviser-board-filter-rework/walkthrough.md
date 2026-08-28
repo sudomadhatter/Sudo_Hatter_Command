@@ -88,6 +88,7 @@ Suite evidence measured on the same sha: `1aae5194` (receipt `gates/suite.json`,
 review-runtime: inline (no subagent tool)
 lens_isolation: shared — inline ladder in one context; no subagent tool exists in this runtime (SCC-177 probe)
 lenses_run:
+
 - edge-case-hunter · recovered-inline
 - literal-correctness-hunter · recovered-inline
 - acceptance-auditor · recovered-inline
@@ -153,15 +154,15 @@ assessment disagreed with its lens label in either direction.
 - **bash -n** on `verify_board_filter.sh`: PARSE OK · **py_compile**: n/a (no `.py` in the diff) ·
   **lint/types**: not applicable to this repo (no venv, no ruff, no tsc).
 
-### Acceptance matrix (plan §12)
+### Acceptance matrix (plan §12, as amended 2026-08-28 — opinion waves, not R1–R4)
 
 | row | evidence |
 | --- | --- |
-| (a) Round-0 cast menu dry-run | **operator-pending** — live board session; the command text that implements it is landed and grep-clean, but only the chair can fly the dry-run |
-| (b) Four visible rounds full session | **operator-pending** — same; R1–R4 render/traffic/close text verified by reading, spawns proven only in a live session |
-| (c) vocabulary grep gate | machine-proven — PASS(vocab) + PASS(floor), exit 0 @ `1aae519` |
-| (d) door parity | machine-proven — cmp ×2 IDENTICAL + AG 127 ≤ 135 @ `1aae519` |
-| (e) enforcement suite | machine-proven — receipt PASS exit 0 @ `1aae5194`, incl. workflow_lint + sop_currency |
+| (a) Round-0 cast menu dry-run | **EVIDENCED** — live board session 2026-08-28; see `## Live Session Evidence` below |
+| (b) Full session, parallel opinion waves | **EVIDENCED** — two full waves of real statements flown live 2026-08-28; see `## Live Session Evidence` (the wave's parallelism is a surface property of the command text — this harness spawns sequentially, so the one-message parallel spawn is specified, not machine-provable here) |
+| (c) vocabulary grep gate | machine-proven — PASS(vocab) + PASS(floor), exit 0 @ `1aae519`; extended with the round-ladder + wave gates (below), exit 0 after the amendment |
+| (d) door parity | machine-proven — cmp ×2 IDENTICAL + AG 127 ≤ 135 @ `1aae519`; re-proven after the amendment (AG 130 ≤ 135) |
+| (e) enforcement suite | machine-proven — receipt PASS exit 0 @ `1aae5194`, incl. workflow_lint + sop_currency; re-stamped after the amendment |
 
 ### Clean-Code Gate — PASS
 
@@ -186,14 +187,98 @@ the dry-run and a full session, this lane closes via `/smh-close-task-merge-tree
 
 ## Your Actions
 
-Everything the lane could prove by machine is proven above. Two acceptance rows need the chair's own
-hands on the board:
-
-- [ ] (a) Dry-run `/smh-adviser-board <topic>` on a real topic and confirm the Round-0 cast menu renders
-  the top-3 mind picks per seated filter (one line each on the angle on THIS topic) with cut lines for
-  refused filters, and that your picks seat exactly one mind per filter.
-- [ ] (b) Run a full session and confirm R1 READ / R2 ATTACK / R3 BALCONY / R4 SETTLE render with one
-  verbatim statement per filter (~250-word ceiling), the ⚖ line, ≤2 questions, and no hidden caucus
-  spawns.
+Everything the lane could prove by machine is proven above, and the chair has now flown the board
+himself — see `## Live Session Evidence`. His mid-session amendment (parallel opinion waves +
+orchestrator-does-all-research + rich-text rendering) is applied and re-gated in this lane; nothing
+merged, nothing closed, no memory touched.
 
 Then review and close out with `/smh-close-task-merge-tree` when satisfied.
+
+## Operator amendment — parallel opinion waves (2026-08-28, live session)
+
+Mid-session, the chair amended the design with two verbatim lines (quoted in full in
+`## Live Session Evidence`): replies must be **easier to read** (rich text, headings), and the fixed
+R1→R4 ladder must become **parallel opinion waves** — every seated filter spawns at once, each reads
+what the others said and what the chair replied, and he gets several independent takes to choose from
+instead of a forced read→attack→balcony→settle sequence. In the same session he ruled the division of
+labour: **the orchestrator does all the searching** — database, web, project files — "the personalitys
+have access to that information… they dont individually search for it. then they run in parallel and
+come back with feed back."
+
+Applied (all in this lane, same commit set):
+
+- **Brain** (`smh-adviser-board.md`): Step 3 is now *Opinion waves (parallel)* — one wave per round of
+  the chair's attention, **all Agent calls in a single message**, no mandatory sequence; attack /
+  balcony / settle are **chair-invocable deepening moves** in the traffic table (`settle it` /
+  `balcony` / `X vs Y` duel). Step 1 gains the **research brief**: the orchestrator gathers web /
+  database / file research before the first wave and every spawn carries it; filter spawns never
+  search (the old per-filter read caps are retired). Step 4 renders statements in **rich text**.
+  Frontmatter description, chair rules, standing rules and the failure playbook all moved to wave
+  vocabulary.
+- **CARD.md**: rendering rules restructured — each statement is a markdown section (`### {icon}
+  {Filter} — {Mind}` heading, italic one-line stance note, prose as a blockquote, bold slot labels).
+  The verbatim law now governs the **words, not the typography** — stated explicitly.
+- **SPAWNS.md**: the four R1–R4 templates replaced by ONE opinion-wave template (§4) carrying mind
+  card, blind spot, house discipline, ground brief, **research brief**, doctrine, running summary
+  ≤400 words, every other filter's statements verbatim, and the chair's latest words; the call-out
+  template (§5) and the ER/Sales scope clause survive; inline mode is now §6 — one pass, all takes in
+  a wave written before any is revised, every called move intact.
+- **Consistency sweep**: THIRD-SIDE.md (balcony = chair-invoked move), TEAMS.md, the hand-maintained
+  AG launcher (description 130 ≤ 135), `smh-adviser-board-REFERENCE.md`, `.agents/commands/INDEX.md`,
+  the SOP row + cast-gate passage, and a new changelog line. Doors re-synced via
+  `sync-agents.ps1 -NoGlobals` in the worktree — opencode mirror byte-identical, claude skill
+  description matching.
+- **Assertion instrument**: `verify_board_filter.sh` extended with a round-ladder gate (R1 READ /
+  R2 ATTACK / R3 BALCONY / R4 SETTLE / four visible rounds / round ladder = retired) and wave-vocabulary
+  presence checks (`opinion wave`, one-message parallel spawns, `RESEARCH BRIEF`, `settle it`).
+
+**RED → GREEN.** RED before any source edit (worktree @ `764b2b2`): exit 1 — `FAIL(rounds)` × 7
+(brain description + Step 3, SPAWNS §4 heading, TEAMS, AG description + body) and `FAIL(wave)` × 4
+(brain lacks 'opinion wave' + 'settle it'; SPAWNS lacks 'opinion wave' + 'RESEARCH BRIEF'). Two
+self-inflicted hits ("no fixed round ladder" in the new text) were reworded rather than allowlisted,
+per the lane's own precedent. GREEN after build + re-sync: exit 0 —
+
+```
+PASS(vocab): zero unjustified retired-vocabulary hits
+PASS(rounds): zero retired R1–R4 ladder terms
+PASS(wave): parallel-wave vocabulary present (brain + SPAWNS)
+PASS(floor): no caucus-log sense of 'floor'
+PASS(door): opencode mirror byte-identical to brain
+PASS(door): claude skill description matches brain description
+PASS(door): AG launcher description 130 chars (budget 135)
+verify-exit=0
+```
+
+## Live Session Evidence (2026-08-28)
+
+The chair flew the board live on a real topic before amending it. What the session showed, in order:
+
+1. **Round-0 cast menu rendered verbatim** — four filters seated (🔬 First Principles · 🎯 Human
+   Needs · 🌊 Ruin & Ripple · 🩺 Ground Truth cut last), each with its top-3 menu, and three cut
+   lines for the refused filters. The chair picked **"your pick ×4"**, seating Feynman · Semmelweis ·
+   Munger · Drucker — one mind per filter, exactly as row (a) specifies.
+2. **Two full waves of real statements ran.** Wave 1: independent takes, one verbatim statement per
+   filter. Wave 2: cross-filter attacks — including **Munger's concession to the record** and the
+   **Feynman-vs-Semmelweis collision** (the same duel the traffic table now names as the `X vs Y`
+   example). Statements arrived verbatim with the ⚖ collision line and ≤2 questions.
+3. **The rich-text render demo was shown to the chair** — heading per mind, italic stance note,
+   blockquoted prose, bold slot labels — which prompted amendment line 1.
+4. **The chair then amended the design** (his words, verbatim):
+   > "Lets make the replys easier to read. I would prefer then to be well designed for easy read
+   > ability using rich text and headings"
+   >
+   > "Can we have them run in parallel instead of reading what each is saying as they go ? they just
+   > read what was said by the others in the chat, and then what I reply to everyone. Then I get 5
+   > different opinions to choose from and they can expand from there after I guide it to the track I
+   > am looking for. This gives me more ideas to brain storm with it doesnt block any ideas out of
+   > the gate. And it will speed things up alot. we can then run them in parallel."
+5. **Division of labour ruling** (same session, paraphrase-close): the orchestrator does all the
+   searching of databases and the web; the personalities receive that information and run in
+   parallel, coming back with feedback — they do not individually search.
+
+**Evidence scope, stated honestly:** rows (a) and (b) are evidenced by this session. Row (b)'s
+**parallelism is a surface property of the command text** — this harness spawns subagents
+sequentially, so the one-message parallel spawn is specified in the command (and asserted present by
+the wave gate) but cannot be machine-proven from this runtime; the amendment's *content* — waves not
+a ladder, transcript circulation, chair-guided deepening, orchestrator research — is what the session
+actually exercised and what the landed text now implements.

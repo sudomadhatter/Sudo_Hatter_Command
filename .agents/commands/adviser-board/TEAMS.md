@@ -12,8 +12,9 @@ written line when it is not.
 > **This is a third-side board.** Its discipline is `THIRD-SIDE.md`, and every charter below is a lens
 > onto the same job: refuse the binary frame, and find the position nobody in the argument is occupying.
 > The filters are how the board finds a third side — they are not five opinions to be averaged. The
-> collision happens across the board, in rounds the chair reads live: R2 ATTACK forces each filter
-> against the weakest opposing statement, and the balcony round is where the reframe is sought.
+> collision happens across the board, in parallel opinion waves the chair reads live: every filter
+> reads every other's statements and answers the chair, and the balcony — a deepening move he calls —
+> is where the reframe is sought.
 
 Each charter carries a **when NOT to seat** clause, and it is load-bearing. The command this replaced
 convened every lens every round regardless of relevance, which is what buried the chair. A filter with

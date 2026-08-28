@@ -11,7 +11,7 @@ board actually reads it:
 | A single mind's full signature | `.agents/commands/adviser-board/minds/<slug>.md` |
 | The Operator Doctrine carried into every spawn | `.agents/commands/adviser-board/DOCTRINE.md` |
 | The ~250-word statement contract | `.agents/commands/adviser-board/CARD.md` |
-| The spawn templates — recon, the Round-0 menu, the R1–R4 rounds, call-outs — and §7, the inline protocol for surfaces that cannot spawn | `.agents/commands/adviser-board/SPAWNS.md` |
+| The spawn templates — recon, the Round-0 menu, the opinion wave, call-outs — and §6, the inline protocol for surfaces that cannot spawn | `.agents/commands/adviser-board/SPAWNS.md` |
 | The protocol itself | `.agents/commands/smh-adviser-board.md` |
 
 ## Why it moved (SCC-331, 2026-08-26)
@@ -22,9 +22,16 @@ orchestrator reads only `ROSTER.md` (one line per mind) to cast, and **the filte
 its one mind's card**. Seat one mind, open one file.
 
 **The filter rework (SCC-340, 2026-08-28)** made one filter = one mind = one subagent: the hidden
-5-cycle caucus became four visible rounds (R1 READ / R2 ATTACK / R3 BALCONY / R4 SETTLE), the cast gate
-ends in a Round-0 top-3 menu per seated filter, and the stage rooms lost their special status —
-Execution Reality and Sales are ordinary filters on the same gate.
+5-cycle caucus became visible board work, the cast gate ends in a Round-0 top-3 menu per seated
+filter, and the stage rooms lost their special status — Execution Reality and Sales are ordinary
+filters on the same gate. The operator's live-session amendment the same week replaced the fixed
+R1→R4 ladder with **parallel opinion waves** — every seated filter spawns at once in a single message,
+each returning one opinion having read the transcript and the chair's words — and made attack,
+balcony and settle **chair-invocable deepening moves** (`settle it` / `balcony` / `X vs Y`) rather
+than a forced sequence. Research is centralised: the orchestrator does all searching (web, databases,
+project files) and hands every spawn a research brief; the minds reason, they do not search.
+Statements render in rich text — heading, italic stance note, blockquoted prose, bold slot labels —
+with the verbatim law governing the words, not the typography.
 
 The cards also carry three sections this document never had, and they are what make the board work:
 

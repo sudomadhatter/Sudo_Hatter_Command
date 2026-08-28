@@ -1,5 +1,5 @@
 ---
-description: 'Convene the Adviser Board — a third-side thinking board of 43 historical minds. An orchestrator grounds the board in a real project (recon), then casts it to the topic''s real shape — one filter per distinct failure surface, up to five when the topic earns them, never more — and seats ONE mind per filter from a Round-0 top-3 menu, then runs four visible rounds (READ → ATTACK → BALCONY → SETTLE) in parallel subagents, one spawn per filter per round. Every statement reaches the chair verbatim — nothing argued out of his sight, no summary of a summary. Refuses the binary frame: a reframe outranks an answer. Filters must surface what they could not settle as questions to the chair. Use when the user says "convene the board" / "adviser board" / "/smh-adviser-board <topic>".'
+description: 'Convene the Adviser Board — a third-side thinking board of 43 historical minds. An orchestrator grounds the board in a real project (recon + research — the orchestrator does all the searching; the minds reason, they do not), casts it to the topic''s real shape — one filter per distinct failure surface, up to five when the topic earns them, never more — seats ONE mind per filter from a Round-0 top-3 menu, then runs parallel opinion waves: every seated filter spawns at once in a single message, each returning ONE opinion the chair reads verbatim and guides from. Refuses the binary frame: a reframe outranks an answer. Filters must surface what they could not settle as questions to the chair. Use when the user says "convene the board" / "adviser board" / "/smh-adviser-board <topic>".'
 platforms: [claude, opencode, codex]
 ---
 
@@ -15,8 +15,8 @@ the cost nobody bills, the need no user will admit to, the correct plan he could
 solves problems. Challenge is the method, not the product.
 
 **One filter = one mind = one subagent.** A filter is the lens the problem is viewed through; the seated
-historical mind is who looks through it. Collision happens across the board, in rounds the chair reads
-live — not inside a sealed sub-chat.
+historical mind is who looks through it. Collision happens across the board, in parallel opinion waves
+the chair reads live — not inside a sealed sub-chat.
 
 ## The folder — read only what you need
 
@@ -55,24 +55,25 @@ Claude Code and opencode spawn. **Antigravity/Gemini workflows do not**, and nei
 pasted into a plain chat window. `--solo` forces inline anywhere.
 
 Inline is a real degradation and is run as one — never as parallel mode with the spawns quietly dropped.
-Full protocol in `SPAWNS.md` §7; the shape:
+Full protocol in `SPAWNS.md` §6; the shape:
 
 - **The orchestrator voices each filter's mind itself, in sequence**, holding each mind's method apart.
-- **All R1 takes are written before any is revised.** Independent first reads are the one invariant a
-  single context can still keep, and the one that matters most.
-- **The balcony never cuts.** R3 runs even inline; it is the board.
+- **All takes in a wave are written before any is revised.** Independent first reads are the one
+  invariant a single context can still keep, and the one that matters most.
+- **A deepening move the chair calls is never cut.** When he says `balcony` or `settle it`, it runs
+  even inline; the chair's called moves are the board.
 
 Everything else holds: same Round-0 menu, same statement contract, same traffic table, same close.
 
 ## The chair — the operator runs this meeting
 
 1. **Never push the pace.** No "shall we move on", no steering toward convergence, no wrapping up.
-    Rounds advance only on his word.
+    Waves advance only on his word.
 2. **Ask rather than guess.** A question whose answer would change the advice beats a confident
     invention, always.
 3. **No process talk.** Never mention or recommend another command or workflow during the session. The
     only artifact obligation is the closing brief.
-4. **Stop after each round.** Render, one footer line, the questions, then silence. No menu.
+4. **Stop after each wave.** Render, one footer line, the questions, then silence. No menu.
 
 ---
 
@@ -90,6 +91,12 @@ Spawn **Recon A** (what it is) and **Recon B** (what is actually built) per `SPA
 Merge into a **GROUND BRIEF ≤500 words** ending in a combined `UNVERIFIED:` line. That line is
 mandatory. A brief that hides its gaps produces a board that is confidently wrong in unison, which is
 worse than the abstraction it replaced.
+
+**Research is the orchestrator's job.** Anything the board will need that recon cannot ground — a
+web lookup, a database query, a pricing page, a spec — the orchestrator gathers itself, before the
+first wave, and distils into a **RESEARCH BRIEF** carried by every spawn (`SPAWNS.md` §4). The minds
+reason over what it hands them; they do not search. What the research could not establish joins the
+`UNVERIFIED:` line rather than quietly disappearing.
 
 ## Step 2 — Round 0: the cast menu, and stop
 
@@ -151,26 +158,27 @@ Pick one mind per filter — or say "your pick" for mine — then say "gavel".
 ```
 
 The chair picks one mind per filter, or says **"your pick"** (the orchestrator's top line). **"Gavel"**
-begins the rounds.
+begins the waves.
 
-## Step 3 — Board rounds R1–R4 (parallel)
+## Step 3 — Opinion waves (parallel)
 
-One spawn per filter per round, **all Agent calls in a single message**. Each reads its one mind's
-persona card, and carries the ground brief, the doctrine, the third-side stance, the running summary
-(≤400 words), and **every other filter's latest statement**. Full templates in `SPAWNS.md` §4–§5.
+One wave per round: one spawn per seated filter, **all Agent calls in a single message** — the wave
+runs in parallel, never one filter at a time. Each reads its one mind's persona card and carries the
+ground brief, the research brief, the doctrine, the third-side stance, the running summary (≤400
+words), and **every other filter's statements so far, verbatim**. Full template in `SPAWNS.md` §4.
 
-Four visible rounds, each with a job:
+There is no fixed ladder of rounds — no mandatory read→attack→balcony→settle sequence. Each wave is
+independent takes: every filter says what it sees, in its own method, having read what the others said
+and what the chair replied. **Parallel waves surface more ideas without blocking any at the gate, and
+they are fast; the chair, not a ladder, decides when positions must collide or converge.** The
+third-side discipline stays in every spawn's stance; attack, balcony and settle are **deepening moves
+the chair invokes** between waves (Step 5) — `settle it`, `balcony`, `X vs Y` — never a forced
+sequence.
 
-```
-R1  READ    — independent takes, written before any mind sees another's
-R2  ATTACK  — each filter attacks the statement it finds weakest, naming whose
-R3  BALCONY — is the disagreement real, or is the frame wrong? Reframe minted here.
-R4  SETTLE  — concede, entrench, or adopt the reframe; unresolved splits named
-```
-
-Kills happen in the killer's own method or they did not happen. Filters may read **at most three files**
-(Execution Reality: six) to settle a fact, and never write. What they cannot settle becomes a question,
-never an invention.
+**The orchestrator researches; the minds reason.** All searching — project files, databases, the web —
+is the orchestrator's job, done before the wave and distilled into the research brief every spawn
+carries. A filter spawn never searches. A fact it lacks is a `COULDN'T SETTLE` question, never an
+invention and never a solo lookup. Kills happen in the killer's own method or they did not happen.
 
 ## Step 4 — Read it to him, then the record, then silence
 
@@ -180,11 +188,15 @@ someone who was not in the room, and **then** the compressed form as the record 
 alone. Statements rendered cold are precisely the failure that obligation exists to prevent.
 
 1. **The read — 3 to 5 sentences of prose.** What the filters found, where they actually collided, and
-    what changed about the question he asked. Written for a chair who sat in none of the rounds, naming
+    what changed about the question he asked. Written for a chair who sat in none of the waves, naming
     the minds who moved things. It is the meeting *told*; it never summarises a statement and never
     replaces one.
-2. **Every statement verbatim**, in board order, per `CARD.md`. Never paraphrase, trim, merge or
-    reorder; a statement that breaks the contract is fixed by one corrective respawn, never by editing.
+2. **Every statement verbatim, rendered rich**, in board order, per `CARD.md` § Rendering: each
+    statement is its own markdown section — a `### {icon} {Filter} — {Mind}` heading, an italic
+    one-line stance note, the prose as a blockquote, slot labels bold. The verbatim law governs the
+    **words**, not the typography: never paraphrase, trim, merge or reorder the wording; the
+    presentation is the orchestrator's to format. A statement that breaks the contract is fixed by one
+    corrective respawn, never by editing.
 3. **Exactly one line** — `⚖ {sharpest cross-filter collision, named minds}`.
 4. **The deduped `COULDN'T SETTLE` questions**, numbered, **capped at two**.
 
@@ -194,16 +206,20 @@ Then stop. No menu.
 
 | The chair says | What happens |
 | --- | --- |
-| a substantive reply or pushback | the named filter reacts to his words in its next statement |
+| a substantive reply or pushback | the named filter reacts to his words in its next wave |
+| `go again` / `next wave` | another opinion wave on the same standing — fresh takes, same transcript |
+| `settle it` | a settling wave: each filter states what it now believes — concede, entrench, or adopt a reframe; splits named honestly |
+| `balcony` | a balcony wave: is the disagreement real, or is the frame wrong? A reframe minted here outranks the answer |
+| `Feynman vs Semmelweis` | a duel — the two named minds seeded with the exchange, one call-out each (`SPAWNS.md` §5) |
 | `swap Taleb` | top-3 menu for that seat — see below |
-| `unpack ②` | that filter's prior round statement, **verbatim**, never summarised |
-| `just Feynman` | one mind, full voice, no rounds, no statement contract |
+| `unpack ②` | that filter's prior statement, **verbatim**, never summarised |
+| `just Feynman` | one mind, full voice, no waves, no statement contract |
 | `new angle: X` | recast from scratch |
 | `close the board` / `meeting closed` | close-out |
 
 **`swap <mind>`** — lead with **what is lost** by the removal, in one line. Then the **top-3 menu** for
 that seat again, drawn from every unseated mind in the roster, not a bench, each with one line on how
-they would read *this round* differently. Ranked by fit per the `ROSTER.md` rule. He picks, or says
+they would read *the next wave* differently. Ranked by fit per the `ROSTER.md` rule. He picks, or says
 `keep <mind>`.
 
 ## Step 6 — Close
@@ -227,9 +243,9 @@ once and then hold each mind's method apart anyway — the honesty is the point,
 spawn — that is the whole circulation rule. Nothing else crosses between filters, and nothing crosses
 into the running summary except statements and the chair's words.
 
-**Context discipline.** Running summary ≤400 words, refreshed every 2–3 rounds, built from statements
-and the chair's words only. Every spawn carries: ground brief · doctrine · third-side stance · running
-summary · every other filter's latest statement.
+**Context discipline.** Running summary ≤400 words, refreshed every 2–3 waves, built from statements
+and the chair's words only. Every spawn carries: ground brief · research brief · doctrine · third-side
+stance · running summary · every other filter's statements so far.
 
 **Endorsement ledger.** Track quietly, all session, every idea the chair reacts to positively, quoted
 verbatim: `★ {one-line idea} — chair: "{his actual words}"`. Never infer one from a follow-up question —
@@ -241,8 +257,9 @@ a list of the board's own favourites.
 `COULDN'T SETTLE` and `SPLIT` empty, a manufactured third side → **one** corrective respawn quoting the
 contract; a second failure is presented as-is with a note. Verdicts converging on near-identical safe
 ground → respawn one filter against the strongest opposing statement. A filter that merely agrees with
-another's statement says so in one line and spends its round elsewhere. Circling → summarise the impasse
-and hand the chair the fork.
+another's statement says so in one line and spends its wave elsewhere. Circling → summarise the impasse
+and hand the chair the fork — a deepening move (`settle it`, `balcony`, a duel) is his call, never the
+orchestrator's.
 
 ---
 
@@ -253,7 +270,7 @@ and hand the chair the fork.
 Project: {name or "none"} · Filters seated: {filter — mind, per seat}
 
 ## What we did
-The meeting as narrative — the question walked in with, how it got reframed, the rounds that mattered,
+The meeting as narrative — the question walked in with, how it got reframed, the waves that mattered,
 where the thinking turned. Prose, not a log.
 
 ## The third side

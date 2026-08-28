@@ -21,13 +21,14 @@ is exactly why the discipline has to be structural rather than remembered.
 **The third side is no longer a third mind in a room — it is the third position across the board's
 filters.** One mind per filter means the board is not one argument with a referee; it is several
 methods looking at the same question from lenses that do not share each other's blind spots. The
-position nobody is occupying is the one no filter's lens naturally covers — and the balcony round (R3)
-is where the board goes looking for it, together.
+position nobody is occupying is the one no filter's lens naturally covers — and the balcony is where
+the board goes looking for it, together, whenever the chair calls the move.
 
 ## The balcony
 
-From Ury: **go to the balcony** — step out of the argument and look down at it. R3 of every board round
-is this move, made mandatory. Each filter stops arguing its position and the board asks:
+From Ury: **go to the balcony** — step out of the argument and look down at it. The balcony is a
+deepening move the chair invokes between waves — he says `balcony`, and the next wave is this move.
+Each filter stops arguing its position and the board asks:
 
 - Is this disagreement real, or are we answering different questions?
 - What is neither of us occupying?
