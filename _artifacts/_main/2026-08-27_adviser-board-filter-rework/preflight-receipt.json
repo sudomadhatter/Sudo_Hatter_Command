@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-340-adviser-board-filter-rework",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-340",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "74ced3b3e2c15bc4d911a748fafde0eec2edccc3",
+  "warnings": 6,
+  "when": "2026-08-28T10:18:12-05:00"
+}
