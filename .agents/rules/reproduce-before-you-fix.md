@@ -37,7 +37,7 @@ click path, a Sentry event id, or a failing test. *"I read the code and I can se
 
 Two legitimate exits, both endings rather than workarounds:
 
-- **You can't observe it but Daniel can** (browser console, network, Firestore, UI) →
+- **You can't observe it but Mr. Hatter can** (browser console, network, Firestore, UI) →
   `collaborative-debug-first`. One targeted log, one specific question, then resume at G1.5 with his
   output as the reproduction.
 - **It genuinely does not reproduce** — heisenbug, prod-only, race, one Sentry event and nothing since.
@@ -83,7 +83,7 @@ observation.** Never stack speculative fixes.
 *(Thresholds are house-set, not literature — tune them if they prove wrong; don't ignore them.)*
 
 Escalation is **not failure**. Hand over the reproduction, the minimized case, the red test, and the
-list of what is now **ruled out** — that is real progress, and exactly what the next agent or Daniel
+list of what is now **ruled out** — that is real progress, and exactly what the next agent or Mr. Hatter
 needs. In a `/cicd-quick-dev` lane it is the same signal as the EJECT tripwire: stop, this is not a
 quick fix.
 

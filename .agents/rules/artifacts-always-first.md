@@ -29,17 +29,17 @@ trigger: model_decision
 
 Keep it minimal — **TWO living docs** per session, hard-budgeted:
 
-1. **Task list** — DURING work, the live `TodoWrite` list is the single tracker (Daniel watches it
+1. **Task list** — DURING work, the live `TodoWrite` list is the single tracker (Mr. Hatter watches it
    update live). AT COMPLETION its end-state becomes the walkthrough's **`## Task Checklist`** outline
    (§5) — never a separate file, never a hand-maintained parallel `task.md`.
-2. **`implementation_plan.md`** — the plan Daniel signs off on (the "approved" gate) AND the pre-dev
+2. **`implementation_plan.md`** — the plan Mr. Hatter signs off on (the "approved" gate) AND the pre-dev
    audit's home: `/cicd-self-audit` **appends its `## Self-Audit (<date>)` section here** (§7). A
    living pre-dev doc — no standalone audit file.
 3. **`walkthrough.md`** — the SINGLE closing doc, outline-first (§5): header → **`## Task Checklist`**
    (the task outline — pitfalls/findings indented under the tasks that fought back) →
    **`## Evidence`** (the ONE AC→evidence matrix + LATEST suite totals + SHA) → **`## Suite Ledger`**
    → **`## Code Review (<date>)`** (appended by the review, §6) → **`## Your Actions`** (LAST — what
-   landed + what's still on Daniel). Everything final lives here; the review appends, never forks.
+   landed + what's still on Mr. Hatter). Everything final lives here; the review appends, never forks.
 4. **`bug-list.md`** — ONLY for debugging / live-testing sessions. A simple bug list.
 
 **Dense, not short — and there is NO byte cap.** Both docs are re-read on every pass of the loop: the
@@ -91,7 +91,7 @@ each of the three seams where an artifact is produced. That repetition is delibe
 
 ## The Rule
 
-**Do NOT modify any project file until Daniel has approved a plan in the current conversation.**
+**Do NOT modify any project file until Mr. Hatter has approved a plan in the current conversation.**
 
 "Project file" means EVERYTHING in the working tree: source code, story files,
 `sprint-status.yaml`, configs, YAML, `.env`, `package.json`. The ONLY exception is the shared
@@ -138,7 +138,7 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
   stories** (create `epic_<E>/` if it isn't there yet), so stories group under their parent epic
   (e.g. `epic_14/story-14.6-graph-insight/`, or an autopilot run `epic_14/2026-06-27_autopilot-14-6/`).
   Epic-scoped, not date-prefixed at the root. This holds for **any** story — whether the autopilot, a BMAD
-  flow, or Daniel devs it by hand; the parent is decided by the story id, **not** by the tool.
+  flow, or Mr. Hatter devs it by hand; the parent is decided by the story id, **not** by the tool.
 - **Quick fix** (**neither a story nor a bug-fix story**: infra/tooling/config repair, a recorded
   follow-on, one-off maintenance — anything that still deserves a record but does not earn a story)
   → the owning store's `quick_fixes/quick-fix-<track>.<n>-<slug>/`. **Operator ruling 2026-08-03.**
@@ -202,7 +202,7 @@ ArtifactMetadata:
 > for a desktop re-pass — see `mobile-mode.md` Override 3.
 
 **Paste the plan FULLY inline in the chat** AND link the artifact. Not a summary, not "key points", not a
-link with a teaser — the whole plan, in the conversation, so Daniel can approve or redirect without opening
+link with a teaser — the whole plan, in the conversation, so Mr. Hatter can approve or redirect without opening
 a file. A link alone (or a digest of a plan he cannot see) is a **gate violation**, not a style choice:
 he is being asked to approve something he has not been shown.
 
@@ -230,7 +230,7 @@ epic-level plan is NOT a license to implement stories without per-story approval
 
 ### 4. Execute
 Now — and only now — modify project files. Update the TodoWrite list (`pending` → `in_progress`
-→ `completed`) as you go so Daniel can watch progress live.
+→ `completed`) as you go so Mr. Hatter can watch progress live.
 
 ### 5. Write `walkthrough.md` (after completion — the ONE closing doc)
 An **outline, not a narrative** — the task list IS the structure; prose exists only where something
@@ -307,15 +307,15 @@ The plan's frontmatter `type:` stays `implementation_plan`.
 > never write a new one.
 
 ## MD Feedback / Review Protocol
-When Daniel says **"review"** (or asks to review a document/plan), EVERY agent must:
+When Mr. Hatter says **"review"** (or asks to review a document/plan), EVERY agent must:
 1. Immediately return to the Markdown document you were just working on.
-2. Check the `md-feedback` MCP server (or read the file's `<!-- USER_MEMO -->` blocks) for Daniel's highlights, fixes, and questions.
+2. Check the `md-feedback` MCP server (or read the file's `<!-- USER_MEMO -->` blocks) for Mr. Hatter's highlights, fixes, and questions.
 3. Address the fixes, answer the questions, and if applicable, use the MCP tools to resolve them. **NEVER manually edit the `<!-- USER_MEMO -->` HTML blocks with standard file write tools. You MUST use the MCP server tools (`apply_memo`, `batch_apply`, etc.) to update them, or you will corrupt the document's tracking hashes.**
 
 ## When to Skip
 - **Investigatory requests** ("explain how X works", "where is Y?") — no artifacts needed.
 - **Trivial one-liners** (typo, comment fix) — mention what you changed; skip the full cycle.
-- **Daniel explicitly says** "skip the plan, just do it" — that phrase names **the lightweight lane
+- **Mr. Hatter explicitly says** "skip the plan, just do it" — that phrase names **the lightweight lane
   below**, and everything written there applies. It used to dead-end here, telling an agent to skip the
   plan and nothing about what to do instead; that gap is what put a doc-only edit through the full Task
   ceremony on SCC-161. Saying it and typing `/smh-quick-fix` are the same instruction.
@@ -405,16 +405,16 @@ whatever a sibling lane left uncommitted. Explicit paths, the entries YOU wrote,
   link to it that same turn (see the "Link every artifact — and every file — in the chat" rule above).
 - NEVER claim the walkthrough is done without actual test output (totals + SHA in `## Evidence`).
 - NEVER finish a `walkthrough.md` without its `## Task Checklist`, `## Evidence` (+ `## Suite Ledger`
-  for story work), and `## Your Actions` sections (what landed + what's still on Daniel lives in the latter).
+  for story work), and `## Your Actions` sections (what landed + what's still on Mr. Hatter lives in the latter).
 - NEVER write the task outline, evidence, review, or "Your Actions" as separate files — they are sections inside `walkthrough.md` (§5).
 - NEVER let a living doc blow its budget (see The Lean Artifact Set) — compress in place; a re-run
   REPLACES pasted totals, only the `## Suite Ledger` accretes.
-- NEVER edit a project file for a commit-producing lane before opening its worktree — story and Task lanes alike (SCC-62: story → `claude/*` off the epic branch, ad-hoc/Task → `chore/*` off `main`) — then commit your own work inside it freely (explicit paths, never `git add -A`). Landing on the epic branch needs Daniel's sign-off; `main` is his alone (via `/cicd-push-e2e` for an epic, `/smh-close-task-merge-tree` for a Task). Full policy → the `git-policy` + `worktree-per-story` rules.
+- NEVER edit a project file for a commit-producing lane before opening its worktree — story and Task lanes alike (SCC-62: story → `claude/*` off the epic branch, ad-hoc/Task → `chore/*` off `main`) — then commit your own work inside it freely (explicit paths, never `git add -A`). Landing on the epic branch needs Mr. Hatter's sign-off; `main` is his alone (via `/cicd-push-e2e` for an epic, `/smh-close-task-merge-tree` for a Task). Full policy → the `git-policy` + `worktree-per-story` rules.
 - NEVER deliver code-review findings inline-only — append the `## Code Review (<date>)` section to the
   walkthrough (§6); never mint a standalone review file (legacy paths are read-only history).
 - NEVER deliver `/cicd-self-audit` findings inline-only — append the `## Self-Audit (<date>)` section
   to the plan (§7); never mint a standalone audit file.
 
 ## Why this matters
-Artifact files are Daniel's primary interface for reviewing session work, and the shared `_artifacts/`
+Artifact files are Mr. Hatter's primary interface for reviewing session work, and the shared `_artifacts/`
 store is the cross-project memory every agent reads. Skipping this breaks the entire collaboration model.

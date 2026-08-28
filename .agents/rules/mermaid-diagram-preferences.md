@@ -1,6 +1,6 @@
 ---
 name: mermaid-diagram-preferences
-description: "Activates whenever you generate a Mermaid diagram. Never use sequenceDiagram (Daniel finds them noise); use flowchart TD or LR instead."
+description: "Activates whenever you generate a Mermaid diagram. Never use sequenceDiagram (Mr. Hatter finds them noise); use flowchart TD or LR instead."
 trigger: model_decision
 triggers: [mermaid, diagram, flowchart, sequence diagram, chart the flow]
 # Intent-shaped: no glob can catch it, because the trigger is what the operator ASKS,
@@ -13,7 +13,7 @@ triggers: [mermaid, diagram, flowchart, sequence diagram, chart the flow]
 
 ## No Sequence Diagrams
 
-**Never use Mermaid `sequenceDiagram` for Daniel.** He has stated they do NOT help him visualize
+**Never use Mermaid `sequenceDiagram` for Mr. Hatter.** He has stated they do NOT help him visualize
 or understand things (2026-06-21). The participant-list-with-lifelines layout (the participant names
 printed across the top *and* the bottom, with vertical lanes and `loop`/`alt` frame boxes) reads as
 noise to him, not signal.

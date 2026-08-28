@@ -1,6 +1,6 @@
 # ROOT LAW — Sudo_Hatter_Command Operating System
 
-Prime mission: Sudo_Hatter_Command is Daniel's **home base**. From here, an agent (Claude, opencode, or
+Prime mission: Sudo_Hatter_Command is Mr. Hatter's (Sudo Mad Hatter / SMH) **home base**. From here, an agent (Claude, opencode, or
 Antigravity/Gemini) routes into the right workspace, loads **only what the task needs**, does the
 work, and persists everything to the shared `_artifacts/` memory. The folder is the app; markdown is
 the program; you **become** the agent the workspace describes.
@@ -33,7 +33,7 @@ drift silently — and intent-shaped triggers, which no glob can catch, are surf
 `.agents/hooks/rule-trigger.py`.
 
 **FLOOR — load now, every session:** `.agents/rules/operator-profile.md` (**who you're talking to** —
-Daniel is the visionary/chair, you are the engineer; the **nine** speaking obligations that govern every
+Mr. Hatter is the visionary/chair, you are the engineer; the **nine** speaking obligations that govern every
 reply), `.agents/rules/constitution.md` (hard stops + gates), and `.agents/rules/karpathy-guidelines.md`
 (how to work).
 
@@ -79,7 +79,7 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 > use the desktop defaults. `mobile-mode.md` owns the trigger (single source for the lane boundary).
 
 > **⛔ ARTIFACTS — MANDATORY FIRST ACTION.** Before modifying ANY file outside `_artifacts/`, write an
-> `implementation_plan.md` into the artifact store owned by the target workspace (§5) and **STOP until Daniel says "approved."** Track
+> `implementation_plan.md` into the artifact store owned by the target workspace (§5) and **STOP until Mr. Hatter says "approved."** Track
 > work with a live TodoWrite list; close with one `walkthrough.md`. **This applies at the lobby
 > too — not only inside projects.** Full protocol → `.agents/rules/artifacts-always-first.md`; the
 > priority-zero kill-chain that enforces it (and the `_bmad/custom/` guard tomls that load it into every
@@ -113,7 +113,7 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 | New-machine setup | `docs/migrations/` | secrets export/restore + rename-day tooling; start at its `INDEX.md`. Not day-to-day infra, but standing reference — run when pointed at, never deleted (moved out of `_my_resources/` under SCC-89) |
 | Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master. **One door per platform per command (SCC-66):** Claude + Codex enter through a **launcher skill** (generated per eligible command into `.agents/skills/`, tree-copied to `.claude/skills/`; hand-authored `SKILL.md` wins); opencode through `.opencode/commands/`; Antigravity through `.agents/workflows/`. `.claude/commands/` and `~/.codex/prompts` are **retired** doors; `platforms:` frontmatter limits a command's reach |
 | SOPs & PRDs | `docs/_scc_sops_prds/` | **every procedural doc** — what the *operator* does and types, as opposed to `.agents/`, which describes the system to an *agent*. Start at its `INDEX.md`; `workflows_testing_SOP.md` is THE quick reference and is gated by `sop-currency.md`. Consolidated here by SCC-74 |
-| Thinking space | `_my_resources/` | Daniel's brainstorming + personal notes. **⛔ IGNORE unless he links a specific document** (ruling 2026-08-10). Not authoritative, deliberately un-scanned, staleness fine by design. Standing exception: `open_tasks/todo_list.md` (the `## Open Tasks` list only). The `migrations/` exception is **retired** — SCC-89 moved that kit to `docs/migrations/`, so it is now scanned documentation like everything else under `docs/`. Local law → `_my_resources/AGENTS.md` |
+| Thinking space | `_my_resources/` | Mr. Hatter's brainstorming + personal notes. **⛔ IGNORE unless he links a specific document** (ruling 2026-08-10). Not authoritative, deliberately un-scanned, staleness fine by design. Standing exception: `open_tasks/todo_list.md` (the `## Open Tasks` list only). The `migrations/` exception is **retired** — SCC-89 moved that kit to `docs/migrations/`, so it is now scanned documentation like everything else under `docs/`. Local law → `_my_resources/AGENTS.md` |
 | BMAD (lobby) | `_bmad/` · `_bmad-output/` | BMAD module (regenerated — never hand-edit) + its state/output |
 | Projects | `Projects/<name>/` | project-owned workspaces, each with its own repo and `_artifacts/`, except the explicit Sudo-managed exceptions in `router.md` |
 
@@ -162,9 +162,9 @@ files, per §3); full model →
   `.agents/rules/worktree-per-story.md`.
 - **GIT WRITE APPROVAL — the gate is WHERE a write lands.** FREE: your own `claude/*` or `chore/*`
   branch — commits **and** pushes. SIGN-OFF (per-action, never carries): landing on **the epic branch** —
-  Daniel's in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (its Step 3 does the
+  Mr. Hatter's in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (its Step 3 does the
   landing; invoking it IS the sign-off). OWNER-ONLY: **`main`** — only via `/cicd-push-e2e` (epic merge,
-  full gate) or Daniel's direct ask. Full branch model + enforcement → `.agents/rules/git-policy.md`
+  full gate) or Mr. Hatter's direct ask. Full branch model + enforcement → `.agents/rules/git-policy.md`
   (web/mobile → `mobile-mode.md`).
 - Full hard stops + "ask first" list → `.agents/rules/constitution.md`.
 

@@ -44,7 +44,7 @@ Walk the cases in order; the first match wins:
    the name alone into `.agents/active-project.txt` (overwrite) so later commands inherit it.
 2. **Active pointer** — else read `.agents/active-project.txt`; if it names a folder under `Projects/`,
    use it.
-3. **Ask** — else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* —
+3. **Ask** — else STOP and ask Mr. Hatter *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* —
    never guess, never operate on the lobby.
 
 Then set `PROJECT_ROOT = Projects/<name>` (or `.` on the fast path) and **echo exactly**
@@ -55,9 +55,9 @@ Then set `PROJECT_ROOT = Projects/<name>` (or `.` on the fast path) and **echo e
 Cases 0–1 as in §STD (boot's case 1 is the normal way to set the session's active project, e.g.
 `/cicd-boot-sprint-memory AGY_AVIATIONCHAT`). But with no inline name (the usual case — most UIs fire `/`
 the instant it's selected), do NOT silently reuse the pointer: read `.agents/active-project.txt`, list the
-folders under `Projects/`, and ASK Daniel *"Active project is `<pointer, or none>`. Which project this
+folders under `Projects/`, and ASK Mr. Hatter *"Active project is `<pointer, or none>`. Which project this
 session?"* with that list. A plain confirmation keeps the pointer; otherwise write his choice into
-`.agents/active-project.txt` (overwrite). If Daniel already named a project in this chat, treat that as his
+`.agents/active-project.txt` (overwrite). If Mr. Hatter already named a project in this chat, treat that as his
 answer — don't re-ask. Never guess, never operate on the lobby.
 
 ## §DUAL — the machine-switch variant (`/cicd-park` · `/cicd-resume`)
