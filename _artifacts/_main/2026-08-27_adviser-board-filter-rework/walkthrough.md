@@ -88,7 +88,6 @@ Suite evidence measured on the same sha: `1aae5194` (receipt `gates/suite.json`,
 review-runtime: inline (no subagent tool)
 lens_isolation: shared — inline ladder in one context; no subagent tool exists in this runtime (SCC-177 probe)
 lenses_run:
-
 - edge-case-hunter · recovered-inline
 - literal-correctness-hunter · recovered-inline
 - acceptance-auditor · recovered-inline
