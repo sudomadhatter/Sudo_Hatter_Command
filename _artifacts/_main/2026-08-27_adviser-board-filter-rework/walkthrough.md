@@ -97,6 +97,7 @@ Suite evidence measured on the same sha: `1aae5194` (receipt `gates/suite.json`,
 review-runtime: inline (no subagent tool)
 lens_isolation: shared — inline ladder in one context; no subagent tool exists in this runtime (SCC-177 probe)
 lenses_run:
+
 - edge-case-hunter · recovered-inline
 - literal-correctness-hunter · recovered-inline
 - acceptance-auditor · recovered-inline
@@ -205,8 +206,7 @@ orchestrator-does-all-research + rich-text rendering) is applied and re-gated in
 re-review verdict is **PASS** @ `74ced3b3` with every finding applied or dismissed on the record.
 Nothing merged, nothing closed, no memory touched.
 
-Then close out with `/smh-close-task-merge-tree` when satisfied — the merge itself is the door's
-ledger line, landed via this branch's PR.
+- [x] The merge itself — lands via this branch's PR
 
 ## Operator amendment — parallel opinion waves (2026-08-28, live session)
 
@@ -321,6 +321,7 @@ Suite evidence measured on the same sha: `74ced3b3` (receipt `gates/suite.json`,
 review-runtime: fan-out
 lens_isolation: worktree — every repo-reading lens got its own detached copy of the repo at `f9b2270` (SCC-313 lobby rule); blind-hunter had no tree by design
 lenses_run:
+
 - blind-hunter · ok
 - edge-case-hunter · ok
 - literal-correctness-hunter · ok
