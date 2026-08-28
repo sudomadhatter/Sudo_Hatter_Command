@@ -4,28 +4,38 @@
 Seated versus observing is session state, not a property of the person.
 
 **This is the only roster file the orchestrator loads.** Full persona cards live in `minds/<slug>.md` and
-are read by the *team subagent that seats them* — never by the orchestrator. Seat three minds and exactly
-three files open, opened by the agent that needs them. That is what keeps a 43-mind board affordable.
+are read by the *filter's own subagent* — exactly its one mind's card, never by the orchestrator. Seat
+one mind and exactly one card opens, opened by the agent that needs it. That is what keeps a 43-mind
+board affordable.
 
-**Primary lens is a default, not a fence.** The orchestrator may staff a mind onto another team when the
-topic warrants, and says so in one clause at the cast gate.
+**Primary filter is a default, not a fence.** The orchestrator may seat a mind through another filter
+when the topic warrants, and says so in one clause at the cast gate.
 
 `Sees` is what this mind notices that the others don't. `Best against` is the failure mode they are the
 sharpest tool for — it is what the `swap` substitute list is ranked by.
 
 ⭐ **Cast from § Reach for them when, below the tables.** `Best against` names a *failure mode*, which is
 precise and unusable unless you already think in those terms; the situation index says plainly when to
-reach for each mind, and carries the **collision names** the two-axis rule needs. Those names used to
+reach for each mind, and carries the **collision names** the Round-0 menu reads. Those names used to
 live only inside the persona cards — which the orchestrator is forbidden to open — so the cast was being
 made on a field it could not see (fixed SCC-333). The *reasons* behind each collision stay in the cards,
-where the debate spawn reads them.
+where the filter's spawn reads them.
+
+## The Round-0 top-3 rule
+
+For **each seated filter**, rank **3 minds** by fit to THIS topic, informed by the mind's `Best against`
+line and the situation index below. The orchestrator writes **one line per candidate** on the angle that
+mind would take on this topic, and shows the menu to the chair. All 43 minds stay eligible — the menu is
+a shortlist, not a bench, and a mind from outside the filter's pool may rank when the topic warrants
+(say so in one clause). The chair picks one mind per filter, or says "your pick" for the orchestrator's
+top line.
 
 ---
 
 ## 🔬 First Principles
 
 | slug | Mind | Sees | Best against |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `kepler` | Johannes Kepler | the anomaly everyone else rounds off | beloved models that miss by a little |
 | `feynman` | Richard Feynman | mechanism; what he cannot rederive | jargon, hand-waving, borrowed authority |
 | `tesla` | Nikola Tesla | the whole machine, run in the mind first | plans never simulated end to end |
@@ -37,7 +47,7 @@ where the debate spawn reads them.
 ## 🩺 Ground Truth
 
 | slug | Mind | Sees | Best against |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `semmelweis` | Ignaz Semmelweis | the number that indicts us | findings rejected because they insult |
 | `snow` | John Snow | the map, and who was spared | waiting for theory before acting |
 | `wegener` | Alfred Wegener | evidence converging from foreign fields | a single field's consensus |
@@ -48,7 +58,7 @@ where the debate spawn reads them.
 ## 🌊 Ruin & Ripple
 
 | slug | Mind | Sees | Best against |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `mandelbrot` | Benoit Mandelbrot | the actual distribution, not the average | smooth models of jumpy things |
 | `taleb` | Nassim Taleb | exposure, never the forecast | fragility dressed as cleverness |
 | `munger` | Charlie Munger | every way this dies | incentives nobody mapped |
@@ -59,7 +69,7 @@ where the debate spawn reads them.
 ## 🧬 Unconventional Leverage
 
 | slug | Mind | Sees | Best against |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `margulis` | Lynn Margulis | the partner worth absorbing whole | capability you cannot grow in time |
 | `nakamoto` | Satoshi Nakamoto | the single point of trust to delete | central dependencies, adversarial incentives |
 | `ravikant` | Naval Ravikant | the permissionless, compounding version | plans that scale only with headcount |
@@ -68,7 +78,7 @@ where the debate spawn reads them.
 ## 🎯 Human Needs
 
 | slug | Mind | Sees | Best against |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `drucker` | Peter Drucker | what the user is actually hiring this to do | inside-out definitions of value |
 | `schwartz` | Eugene Schwartz | the desire that already burns | pitching to an unaware market |
 | `rubin` | Rick Rubin | the one element that is alive | soulless, metric-chased work |
@@ -77,10 +87,10 @@ where the debate spawn reads them.
 | `ury` | William Ury | the other side's victory speech | zero-sum framing, stuck negotiations |
 | `identity-engineer` | the Identity Engineer | the self-story vetoing the pivot | legacy identity blocking necessary change |
 
-## 🔧 Execution Reality *(stage room)*
+## 🔧 Execution Reality
 
 | slug | Mind | Sees | Best against |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `kelly-johnson` | Kelly Johnson | what to delete so the thing can fly | scope, process and headcount bloat |
 | `ohno` | Taiichi Ohno | where the flow actually stops | batch size, waste, the unasked why |
 | `aurelius` | Marcus Aurelius | what is genuinely yours to decide | energy spent on weather |
@@ -90,10 +100,10 @@ where the debate spawn reads them.
 | `deming` | W. Edwards Deming | the system, not the person | blaming effort for a bad process |
 | `hopper` | Grace Hopper | the working version, shipped now | permission-seeking, theoretical purity |
 
-## 📣 Sales *(stage room)*
+## 📣 Sales
 
 | slug | Mind | Sees | Best against |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `hormozi` | Alex Hormozi | the stack that makes "no" absurd | competing on price; thin offers |
 | `godin` | Seth Godin | whether it is remarkable at all | brown cows no channel can fix |
 | `vaynerchuk` | Gary Vaynerchuk | where attention is underpriced right now | spending on what used to work |
@@ -153,7 +163,7 @@ good the mind is — that judgment is what Step 2's written negative is made of.
 - **`ury`** — the exposure is a relationship rather than a number, or the room has hardened into two sides. *Collides:* Diogenes · Houellebecq · Taleb · Munger · Hormozi
 - **`identity-engineer`** — everyone agrees on the move and it still is not happening. *Collides:* Aurelius · Rubin · Drucker · Houellebecq
 
-### 🔧 Execution Reality *(stage room)*
+### 🔧 Execution Reality
 
 - **`kelly-johnson`** — the plan is correct and too big to fly. *Collides:* Fuller · Deming · Tesla · Ohno
 - **`ohno`** — work is moving and nobody knows where it actually stops and waits. *Collides:* Ravikant · Hopper · Kelly Johnson · Boyd
@@ -164,7 +174,7 @@ good the mind is — that judgment is what Step 2's written negative is made of.
 - **`deming`** — a person is being blamed for what the system reliably produces. *Collides:* Kelly Johnson · Boyd · Nakamoto · Semmelweis
 - **`hopper`** — the work is stalled on permission or theoretical purity and a working version could ship today. *Collides:* Tesla · Munger · Ohno · Curie
 
-### 📣 Sales *(stage room)*
+### 📣 Sales
 
 - **`hormozi`** — the offer is thin or price is being defended; and equally, any table where the question is what this is worth to whoever receives it. *Collides:* Rubin · Fuller · Schwartz · Bastiat · Taleb
 - **`godin`** — budget is about to be spent on a channel for something that is not remarkable. *Collides:* Schwartz · Vaynerchuk · Hormozi · Houellebecq

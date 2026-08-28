@@ -1,99 +1,92 @@
-# The Team Card — contract
+# The Statement — contract
 
-One card per team per round. **~250 words**, hard ceiling 320. This is the entire visible output of a
-team's round; the debate floor above it is stored and never rendered unless the chair asks.
+One statement per filter per round. **~250 words**, hard ceiling 320. This is the entire visible output
+of a filter's round; the chair reads it verbatim.
 
 The chair reads three to five of these before he replies. That budget is the whole design constraint —
-the command this replaced spent 500–2,000 words per team and went unused because of it.
+the command this replaced spent 500–2,000 words per lens and went unused because of it.
 
 ---
 
 ## Shape
 
 ```
-{icon} {TEAM} — {Mind A} × {Mind B} × {Mind C} · {one factual clause true of the floor}
+{icon} {FILTER} — {Mind}
 
-{4–6 sentences of prose in the speaker's voice. What the three of them found, and why it matters to
-the chair. Plain language. Every coined term defined at first use. This is the part he actually
-reads — the slots below are the record, this is the meeting.}
+{4–6 sentences of prose in the mind's own voice. What this mind found, and why it matters to the
+chair. Plain language. Every coined term defined at first use. This is the part he actually reads —
+the slots below are the record, this is the meeting.}
 
 THE THIRD SIDE:   {optional, and it outranks THE MOVE when present — the reframe minted at the
-                   balcony: the better question, and what asking it dissolves} — {Mind}'s
-THE MOVE:         {the concrete thing to do, specific enough to picture built} — {Mind}'s
-WHY IT SURVIVED:  {the attack it took from the other minds, and held against}
-COULDN'T SETTLE:  {the gap in the world the team needs the chair to fill — at most 2 questions}
+                   balcony: the better question, and what asking it dissolves}
+THE MOVE:         {the concrete thing to do, specific enough to picture built}
+COULDN'T SETTLE:  {the gap in the world this mind needs the chair to fill — at most 2 questions}
 ASSUMED:          {any assumption carried from a question that didn't reach the chair}
-SPLIT:            {named mind}: {position} — flips if {condition}   — or —   none, {Mind} conceded on {point}
+SPLIT:            {this mind's position} — flips if {condition}   — or —   none, conceded on {point}
 ```
 
 ---
 
 ## Rules
 
-**`THE THIRD SIDE` outranks `THE MOVE`.** When the balcony produced a reframe — the team concluded the
-chair's question was the wrong one and has a better one — that goes first and the card is built around
-it. Telling the chair his question was wrong, and handing him the one he should be asking, is the most
-valuable output this board has. See `THIRD-SIDE.md`.
+**The voice is the mind itself.** One mind per filter means one voice per statement — no presenting
+speaker, no blended voice, no "we". The prose is written as the seated mind, in its method.
+
+**`THE THIRD SIDE` outranks `THE MOVE`.** When the balcony produced a reframe — the filter concluded the
+chair's question was the wrong one and has a better one — that goes first and the statement is built
+around it. Telling the chair his question was wrong, and handing him the one he should be asking, is the
+most valuable output this board has. See `THIRD-SIDE.md`.
 
 Do not manufacture one. A round that genuinely answered the question as asked leaves the slot out, and
 the orchestrator never asks for a reframe that wasn't found. A fake third side is worse than none,
 because it teaches the chair to skim the slot.
 
-**The caucus clause must be true of the floor.** Name only clashes and concessions that actually appear
-in the stored debate. "Bastiat flipped Munger; Taleb held out and lost" is a claim the chair can verify
-by asking to unpack the room, and he will.
-
-**The prose is one voice.** The round's speaker — the mind whose move best fits the material — or the
-unattributed team. Clarity outranks character here; persona may colour the prose but a chair who was not
-in the room has to follow it cold.
-
-**Credit belongs to the originator, never the speaker.** A card where the speaker's name sits on every
-line is a failed card unless they genuinely minted every point. "The team feels…" is manufactured
-consensus and also a failed card — ideas belong to named minds.
-
-**Attribution carries the move.** If a credited line could be reassigned to another mind unchanged, it
-was decoration: rewrite it from that mind's actual method, or cut it.
+**Credit belongs to the originator.** One mind per statement makes this structural — the name in the
+header minted what is in the statement. The rule that survives from the old contract is decoration
+attribution: if a credited line could be reassigned to another mind unchanged, it was decoration —
+rewrite it from that mind's actual method, or cut it.
 
 **Kills are performed in the killer's method.** If Munger cannot state the kill as an inversion, or Taleb
-as an exposure, or Kepler as an un-rounded anomaly, it did not happen at this table.
+as an exposure, or Kepler as an un-rounded anomaly, it did not happen at this board.
 
-**`COULDN'T SETTLE` and `SPLIT` cannot both be empty.** A round in which three opposed minds settled
+**`COULDN'T SETTLE` and `SPLIT` cannot both be empty.** A round in which every opposed filter settled
 everything and needed nothing from the chair is a round in which they did not dig. The orchestrator
-respawns such a card **once**, quoting this rule; a second failure is presented as-is with a note.
+respawns such a statement **once**, quoting this rule; a second failure is presented as-is with a note.
 
-This inverts the usual instinct on purpose. A team that asks nothing is not exemplary — it is suspicious,
-because it either skipped the hard part or invented its way past it. The questions a board asks the chair
-are where its value concentrates: they are the places where only he holds the answer, and surfacing them
-is worth more than another confident paragraph.
+This inverts the usual instinct on purpose. A filter that asks nothing is not exemplary — it is
+suspicious, because it either skipped the hard part or invented its way past it. The questions a board
+asks the chair are where its value concentrates: they are the places where only he holds the answer, and
+surfacing them is worth more than another confident paragraph.
 
-**`COULDN'T SETTLE` is bounded.** At most two questions per team, and the orchestrator forwards at most
+**`COULDN'T SETTLE` is bounded.** At most two questions per filter, and the orchestrator forwards at most
 two across the whole round, ranked by how much advice each answer would move. Questions that don't make
-the cut do not disappear — the team proceeds on an explicit `ASSUMED` line so a wrong assumption is
-caught when the card is read.
+the cut do not disappear — the filter proceeds on an explicit `ASSUMED` line so a wrong assumption is
+caught when the statement is read.
 
 **Questions arrive in the mind's own method.** Feynman asks for the mechanism, Drucker asks what the user
 is hiring it to do, Diogenes asks to be shown. Each persona card's `Asks the chair` section is what this
 draws on. A generic "what is your budget?" is a wasted question.
 
-**No process talk, ever.** A card never suggests ending the session, moving to another stage, or which
-command to run next. That is the chair's call alone.
+**No process talk, ever.** A statement never suggests ending the session, moving to another round, or
+which command to run next. That is the chair's call alone.
 
 ---
 
 ## Rendering
 
-**A 3–5 sentence prose read comes before the block of cards** — the meeting told to a chair who sat in
-none of the rooms. That is `operator-profile` obligation 2 and the command's Step 5; it is the one thing
-allowed above the cards, it summarises no card, and it replaces none. Without it the chair reads a wall.
+**A 3–5 sentence prose read comes before the block of statements** — the meeting told to a chair who sat
+in none of the rounds. That is `operator-profile` obligation 2 and the command's Step 4; it is the one
+thing allowed above the statements, it summarises no statement, and it replaces none. Without it the
+chair reads a wall.
 
-Cards then render **verbatim**, in board order, with nothing between them. The orchestrator never
-paraphrases, trims, merges or reorders a card, and never re-cuts one itself — a card that violates this
-contract is fixed by one corrective respawn at the source, not by editing.
+Statements then render **verbatim**, in board order, with nothing between them. The orchestrator never
+paraphrases, trims, merges or reorders a statement, and never re-cuts one itself — a statement that
+violates this contract is fixed by one corrective respawn at the source, not by editing.
 
-After the last card, exactly one line:
+After the last statement, exactly one line:
 
 ```
-⚖ {the sharpest cross-team collision, naming the minds}
+⚖ {the sharpest cross-filter collision, naming the minds}
 ```
 
 Then the deduped `COULDN'T SETTLE` questions, numbered, capped at two. Then stop. No menu, no "what

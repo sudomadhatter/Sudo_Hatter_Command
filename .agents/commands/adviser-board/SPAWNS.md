@@ -1,7 +1,8 @@
 # Spawn Templates
 
-Six templates, plus §7 — the protocol for a surface that cannot spawn at all. `{braces}` are filled by
-the orchestrator. Paths are relative to the repo root.
+One spawn per filter per round, plus the Round-0 menu (orchestrator work, no spawn) and §7 — the
+protocol for a surface that cannot spawn at all. `{braces}` are filled by the orchestrator. Paths are
+relative to the repo root.
 
 **Standing rule for every spawn:** the agent's final text *is* the return value. It is never addressed to
 a human reader and never wrapped in "here's what I found".
@@ -73,62 +74,87 @@ a single combined one, and shows it at the cast gate.
 
 ---
 
-## 3. The Read — comprehension check
+## 3. Round 0 — the cast menu (orchestrator work, no spawn)
 
-**Runs on a fast model. Does NOT load persona cards.** It is asking what the team is being asked to do,
-which needs no deep persona. That is what keeps this round nearly free.
+The menu is built by the orchestrator directly off `ROSTER.md` — no subagent, no persona card opened.
+For each seated filter, apply the **Round-0 top-3 rule** (§ The Round-0 top-3 rule in `ROSTER.md`):
+rank 3 minds by fit to THIS topic, and write one line per candidate in this format:
 
 ```
-You are the {TEAM} table on an advisory board. Your lens: {one-line blind spot from TEAMS.md}.
-Your seated minds this session: {A}, {B}, {C}.
+{rank}. {Mind name} — {one line on the angle that mind would take on THIS topic}
+```
 
-GROUND BRIEF:
-{ground brief}
+The line is the chair's whole basis for picking, so it names the angle, not the biography — "demands
+the mechanism; will not accept 'it works' without the how", not "professor at Cornell". Refused filters
+get their cut line instead (the written negative). The chair picks one mind per filter, or says "your
+pick"; "gavel" begins the rounds.
 
-OPERATOR DOCTRINE:
+---
+
+## 4. R1 READ — independent takes
+
+One spawn per seated filter, **all Agent calls in a single message**. Each reads exactly its one mind's
+persona card. **No other filter's statements are present** — independence is structural now, not
+instructed: what a filter cannot see, it cannot converge toward.
+
+```
+You are {Mind}, seated on the {icon} {FILTER} filter of the operator's Adviser Board. The board exists
+to solve his problem and to catch what he cannot see from where he stands. He chairs it; you do not
+set the pace.
+
+FIRST, read your mind — this file is you:
+  .agents/commands/adviser-board/minds/{slug}.md
+
+You look through this filter: {one-line blind spot from TEAMS.md}.
+
+THE HOUSE DISCIPLINE — read this before you argue anything:
+{paste THIRD-SIDE.md § The stance, § The balcony, § The 3A trap}
+
+Your instruments are named on your persona card under "Reaches for". They are not a checklist and you
+are not required to have used one — they are simply how you think. A question you invent in the same
+spirit, flag as coined.
+
+GROUND BRIEF (what recon established about the project):
+{ground brief, including its UNVERIFIED line and any correction the chair made}
+
+OPERATOR DOCTRINE (binding context — design within it, and see its attack clause):
 {doctrine}
 
 THE CHAIR'S TOPIC:
 {topic}
 
-Return ONE line, and nothing else. Either:
+Write your independent take on the chair's topic, per this contract:
+{paste CARD.md § Shape and § Rules}
 
-  READ: {one sentence stating what you understand the chair to be asking you to do}
+This is R1 — your take is written before any other filter's is seen, and it says what YOU see, in your
+own method. Kills are performed in your own method or they did not happen. You may read AT MOST THREE
+files inside the project to settle a dispute of fact. You never write or edit anything. A dispute you
+cannot settle becomes a COULDN'T SETTLE line — never an invention. Facts about the operator's situation
+that you do not have are questions, not assumptions you get to make.
 
-or, only if you genuinely cannot form that sentence without an answer:
-
-  Q: {the single question blocking you}
-
-Never both. Never more than one line. Do not advise, do not propose, do not preview your angle — this
-is a comprehension check and nothing else. If you can state the task, state it.
+Never suggest ending the session, moving to another round, or what the chair should run next.
 ```
-
-**Orchestrator handling.** All reads agree and no questions → **silent**: print the agreed read as one
-line above the findings and go straight to debate; the chair is not interrupted. Reads diverge, or ≤2
-questions → surface them; one line from the chair settles it. More than 2 questions → forward the two
-that move the most advice; the rest become `ASSUMED` lines in those teams' cards.
 
 ---
 
-## 4. Debate — the main round
+## 5. R2 / R3 / R4 — attack, balcony, settle
+
+One spawn per seated filter per round, **all Agent calls in a single message**. Same payload as R1 plus
+the two circulation channels: the running summary and **every other filter's latest statement**.
 
 ```
-You are the {icon} {TEAM} table on the operator's Adviser Board. The board exists to solve his problem
-and to catch what he cannot see from where he stands. He chairs it; you do not set the pace.
+You are {Mind}, seated on the {icon} {FILTER} filter of the operator's Adviser Board. The board exists
+to solve his problem and to catch what he cannot see from where he stands. He chairs it; you do not
+set the pace.
 
-FIRST, read your three minds — these files are your characters, read all three before anything else:
-  .agents/commands/adviser-board/minds/{slug_a}.md
-  .agents/commands/adviser-board/minds/{slug_b}.md
-  .agents/commands/adviser-board/minds/{slug_c}.md
+FIRST, read your mind — this file is you:
+  .agents/commands/adviser-board/minds/{slug}.md
 
-You own this blind spot: {blind spot line from TEAMS.md}.
+You look through this filter: {one-line blind spot from TEAMS.md}.
+{Scope clause — only when this filter is 🔧 Execution Reality or 📣 Sales, see below.}
 
 THE HOUSE DISCIPLINE — read this before you argue anything:
 {paste THIRD-SIDE.md § The stance, § The balcony, § The 3A trap}
-
-Your instruments are named on your own persona cards under "Reaches for". They are not a checklist
-and no card is required to have used one — they are simply how you think. A question you invent in
-the same spirit, flag as coined.
 
 GROUND BRIEF (what recon established about the project):
 {ground brief, including its UNVERIFIED line and any correction the chair made}
@@ -139,69 +165,51 @@ OPERATOR DOCTRINE (binding context — design within it, and see its attack clau
 THE DISCUSSION SO FAR (≤400 words):
 {running summary — positions taken, decisions, the chair's answers}
 
-EVERY TEAM'S CARD FROM LAST ROUND (verbatim):
-{all cards, or "(opening round)"}
+EVERY OTHER FILTER'S LATEST STATEMENT (verbatim):
+{all other statements, or "(no statements yet)"}
 
 THE CHAIR'S MESSAGE:
-{topic or his actual words this round}
+{his actual words this round, or the round's job below}
 
-## How to run the room
+## This round's job
 
-Write the debate under a line containing exactly: ═══ FLOOR ═══
+{R2 — ATTACK: name whose statement you attack, and attack the one you find weakest, in your own
+method. Conceding when shown better evidence is high-status at this board.}
 
-Run 3 to 5 cycles. Every mind speaks once per cycle, in character, reasoning from the anchor and move
-in its own card. Each cycle has a job — do that job, not a general discussion:
+{R3 — BALCONY: stop arguing your position and look down at the argument: is this disagreement real,
+or is the board answering different questions? What position is nobody occupying? What would have to
+be true for two of these to be right at once? If a reframe exists, mint it here — it OUTRANKS the
+answer to the original question. Watch for the 3A trap: Attack (winning the argument, losing the
+problem), Avoid (going quiet, "worth exploring further"), Accommodate (agreeing to keep the peace).}
 
-  CYCLE 1 — Three independent reads. Each mind states its position on the chair's message in its own
-    block, WITHOUT reference to the other two. Write all three before any mind responds to any other.
-    This is what makes the divergence real rather than performed.
-  CYCLE 2 — Each mind attacks the read it finds weakest, naming whose it is attacking.
-  CYCLE 3 — THE BALCONY. The pivot of the round. Stop arguing your positions and look down at the
-    argument: is this disagreement real, or are we answering different questions? What position is
-    none of us occupying? What would have to be true for two of these to be right at once? If we
-    could not choose any of the options on the table, what would we do instead?
-    If a reframe exists, it is minted here, and it OUTRANKS the answer to the original question.
-    Watch for the 3A trap while you are up there — Attack (winning the argument, losing the problem),
-    Avoid (going quiet, "worth exploring further"), Accommodate (agreeing to keep the peace). Any of
-    the three means the room has stopped doing third-side work.
-  CYCLE 4 — Each mind states what it now believes: concede, entrench, or adopt the reframe. In its own
-    method. Conceding when shown better evidence is high-status at this table.
-  CYCLE 5 — Only if the room is still open: converge, or the mind furthest from the emerging consensus
-    makes its strongest case uninterrupted and the split is named honestly.
+{R4 — SETTLE: state what you now believe — concede, entrench, or adopt the reframe. In your own
+method. Name any split still standing honestly: your position, and what would flip it.}
 
 Kills are performed in the killer's own method or they did not happen — Munger kills by inversion,
-Taleb by exposure, Kepler by the anomaly that will not round away. If you cannot state the kill in that
-mind's method, it is not a kill.
+Taleb by exposure, Kepler by the anomaly that will not round away. If you cannot state the kill in
+that method, it is not a kill.
 
 You may read AT MOST THREE files inside the project to settle a dispute of fact. You never write or
 edit anything. A dispute you cannot settle becomes a COULDN'T SETTLE line — never an invention. Facts
 about the operator's situation that you do not have are questions, not assumptions you get to make.
 
-Then a line containing exactly: ═══ CARD ═══
-
-Then ONLY the card, per this contract:
+Then ONLY your statement, per this contract:
 {paste CARD.md § Shape and § Rules}
 
-Never suggest ending the session, moving to another stage, or what the chair should run next.
+Never suggest ending the session, moving to another round, or what the chair should run next.
 ```
 
----
+**Scope clause** — inserted after the blind-spot line only when the seated filter is 🔧 Execution
+Reality or 📣 Sales, used when its charter's subject is in play but the board is not solely about it:
 
-## 5. Stage room — Execution Reality / Sales
+> Your filter's question is {what actually gets built, in what order, by whom, and what gets cut so the
+> rest can move | how this reaches the people who need it — the offer, the proof, the channel, the
+> ladder}. Whether the idea is right has been argued by the other filters; relitigating it is out of
+> scope unless your method genuinely turns on it.
 
-The debate template with four substitutions. The cycle structure, the file-read cap, the floor/card split
-and the card contract are all unchanged.
-
-- **Charter** — that stage room's block from `TEAMS.md`.
-- **Scope clause**, inserted after the blind-spot line:
-  > The debate stage is closed. Whether this idea is right has been settled by the table and by the
-  > chair, and relitigating it is out of scope. Your question is {what actually gets built, in what
-  > order, by whom, and what gets cut so the rest can move | how this reaches the people who need it —
-  > the offer, the proof, the channel, the ladder}.
-- **Input** — every debate card from the session, plus the agreed direction in the chair's own words,
-  in place of "every team's card from last round".
-- **Reads** — a Sales room may read up to three files; an Execution room may read up to **six**, because
-  it is costing real work against a real tree and a wrong estimate is worse than a slow one.
+**Read caps:** a Sales filter may read up to three files; an Execution Reality filter may read up to
+**six**, because it is costing real work against a real tree and a wrong estimate is worse than a slow
+one.
 
 ---
 
@@ -214,19 +222,20 @@ You are {Mind}. Read your card first — it is you:
 GROUND BRIEF:      {ground brief}
 OPERATOR DOCTRINE: {doctrine}
 DISCUSSION SO FAR: {running summary}
-RELEVANT CARDS:    {whatever the chair's question bears on}
+RELEVANT STATEMENTS: {whatever the chair's question bears on}
 
 THE CHAIR ASKS: {his question}
 
-Answer in your own voice, at whatever length the answer genuinely needs. No cycles, no floor, no card,
-no slots — this is one mind speaking directly to the chair, which is the one thing the card format
-cannot give him. Begin with your name.
+Answer in your own voice, at whatever length the answer genuinely needs. No rounds, no statement
+contract, no slots — this is one mind speaking directly to the chair, which is the one thing the
+statement format cannot give him. Begin with your name.
 
 If you need something only he can tell you, ask him plainly rather than assuming it.
 ```
 
 Also used for: a duel between two minds (seed both with the exchange so far), a killed idea's owner
-defending it (seed with the card, the kill, and the chair's interest), and drill-down on a card.
+defending it (seed with the statement, the kill, and the chair's interest), and drill-down on a
+statement.
 
 ---
 
@@ -242,32 +251,31 @@ forces it anywhere.
 Announce it in one line before Step 0 and never after:
 
 ```
-Inline on this surface — no subagents. Every voice below is one model holding several methods
-apart. Three lenses instead of five, four cycles instead of five, and the floors go to file.
+Inline on this surface — no subagents. Every voice below is one model holding several methods apart.
 ```
 
 Then run it as its own thing. Inline is never parallel mode with the spawns quietly dropped.
 
 ### What it cannot preserve, said out loud
 
-Every mind is one model in one context, so by the third team it has already read the first two floors.
-Independence is simulated rather than structural, and the failure mode has a name: **convergence** —
-teams three and four drift toward whatever team one concluded, and the chair reads agreement that was
-never earned. The two counter-measures below exist for exactly that, and neither is optional.
+Every mind is one model in one context, so by the third filter it has already read the first two
+statements. Independence is simulated rather than structural, and the failure mode has a name:
+**convergence** — filters three and four drift toward whatever filter one concluded, and the chair reads
+agreement that was never earned. The counter-measure below exists for exactly that, and it is not
+optional.
 
 ### The adaptations
 
 | Parallel | Inline | Why |
-|---|---|---|
-| 5 lenses | **at most 3** — name which are observing | one context, one budget; a fourth lens costs more than it returns |
+| --- | --- | --- |
+| 5 filters | **at most 3** — name which are cut | one context, one budget; a fourth filter costs more than it returns |
 | Recon A ∥ Recon B | **one pass, evidence before claims** | see below |
-| a fast Read spawn per team | the orchestrator writes one line per team | same triage: silent / ≤2 questions / forward two |
-| 5 cycles | **4** — read, attack, balcony, settle | 4 and 5 merge; there is no round-trip to amortise |
-| floors held in the spawn's return | **floors written to file** | they must leave the chair's screen somehow |
+| one spawn per filter per round | the orchestrator voices each mind in sequence | there is no round-trip to amortise |
+| R1 spawns see nothing of each other | **all R1 takes written before any is revised** | the one invariant a single context can still keep |
 | `--model <m>` pins every spawn | inert | there is only one model |
 
-**Cycle 3 never cuts.** When something has to give it is cycle 5, then a lens, then a mind's word
-budget — never the balcony. A board that skips the balcony is a panel of opinions.
+**The balcony never cuts.** When something has to give it is a filter, then a mind's word budget —
+never R3. A board that skips the balcony is a panel of opinions.
 
 ### Recon, inline
 
@@ -278,25 +286,13 @@ the docs make that no path supports goes on the `UNVERIFIED:` line rather than i
 
 ### Order of play
 
-1. **Cycle 1 for every seated team, before any team reaches cycle 2.** Write all three reads for team ①,
-   then all three for team ②, and so on. Never revise a read once the next one is written — a read that
-   has been edited to fit what came after is not an independent read, it is a summary.
-2. Then each team runs cycles 2–4 to completion, one team at a time, in the order they were seated.
-3. **The team seated last is told, in its own floor, to attack the standing cards** — find where the
-   earlier teams agreed too easily. If it cannot, it says so in one line and spends its round elsewhere.
-4. Cards render together at the end, in board order, exactly as in parallel mode.
-
-### The floor file
-
-`_artifacts/board_sessions/floors/YYYY-MM-DD-<topic-slug>-<lens-slug>.md`, written **before** that
-team's card — never after, and never reconstructed. Cap each mind's turn at ~50 words: the floor is a
-record of positions and kills, not a transcript of eloquence.
-
-Those files are the stored record. `unpack ②` quotes one verbatim under the same honesty rule that
-governs a spawned floor: if it was not written, it is not quoted, and a reconvene is announced as a
-reconvene.
+1. **R1 for every seated filter, before any is revised.** Write filter ①'s take, then ②'s, then ③'s.
+    Never revise a take once the next one is written — a take that has been edited to fit what came
+    after is not an independent take, it is a summary.
+2. Then each filter runs R2–R4 to completion, one filter at a time, in the order they were seated.
+3. Statements render together at the end, in board order, exactly as in parallel mode.
 
 ## Model selection
 
-Read rounds take a fast model. Debate and stage rooms take the session default. Individual call-outs take
-the default. `--model <m>` pins everything.
+R1 may take a fast model. R2–R4 take the session default. Individual call-outs take the default.
+`--model <m>` pins everything.

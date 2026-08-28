@@ -20,7 +20,7 @@
 This page has **two reading levels**, and knowing which one you're in saves you an hour.
 
 | Level | What it looks like | Who it's for |
-|---|---|---|
+| --- | --- | --- |
 | **The spine** | Numbered sections, diagrams, tables, short paragraphs. | Everyone. Read it start to finish once and you can operate the system. |
 | **The asides** | Blocks that begin `ⓘ **Why it works this way**`. | Skip them on your first read. Every one records a real failure that produced the rule above it — they are the review surface, and the reason nothing here is arbitrary. |
 
@@ -56,7 +56,7 @@ it instantly**, and **binding a project means reading its `.agents/INDEX.md` fir
 file is now the only thing that tells you what's local to it.
 
 | | |
-|---|---|
+| --- | --- |
 | What runs next | the [SCC Jira board](https://sudo-command.atlassian.net/jira/software/projects/SCC/boards/2) — sprint view ([§12](#12-the-board--what-runs-next)) |
 | The shared toolkit — the only copy | [`.agents/`](../../.agents/) — commands, rules, skills, workflows, scripts |
 | What a project owns vs. what it reads from here | [`project-law.md`](../../.agents/rules/project-law.md) |
@@ -76,7 +76,7 @@ the twin is an AVCH ticket of its own, not something a lobby lane may do.
 **I want to…**
 
 | …do this | → run / read |
-|---|---|
+| --- | --- |
 | know what to work on | **put the card in `To Do Next` on the board — that column *is* the answer** ([§12](#12-the-board--what-runs-next)). On a project: `/cicd-boot-sprint-memory`. In the command centre: just ask. |
 | see or move the sprint board | ask any agent — the live board answers via `acli` ([§12](#12-the-board--what-runs-next)) |
 | work out which lane my work belongs in | [§5 — the lane chooser](#5-which-lane-am-i-in) |
@@ -181,7 +181,7 @@ any of that is missing. Nothing reaches production without you typing a specific
 The whole system exists to make **four claims impossible to fake**:
 
 | The claim | What makes it un-fakeable |
-|---|---|
+| --- | --- |
 | "The tests pass" | A gate script *runs* the tests and records the real exit code. There is no way to hand it a result. |
 | "It was reviewed" | The verdict is stamped with the exact code version it examined. Change the code and the verdict expires by itself. |
 | "It merged" | The close-out asks git, not the agent. |
@@ -194,7 +194,7 @@ Everything else on this page is a consequence of those four.
 Read this once. The rest of the page assumes it.
 
 | Word | What it means here | Why you care |
-|---|---|---|
+| --- | --- | --- |
 | **Story** | Sprint work with a number (`19.2`), a story file, a BMAD epic above it and a row on `sprint-status.yaml`. | It runs the ①②③ loop and closes one specific way. |
 | **Task** | Everything else you actually spend days on: the toolkit, rules, `/` commands, docs, IDE work. No story file, no epic. | It has its **own** loop and its **own** close-out. Confusing the two is the single most common mistake. |
 | **Lane** | One unit of work in flight, with its own branch and its own folder on disk. | Several run at once. Most of the safety rules exist because of that. |
@@ -248,7 +248,7 @@ under your task.** That protection did not move.
 
 Everything else is downstream of these.
 
-### Law 1 — Plan first. Nothing is touched until you type `approved`.
+### Law 1 — Plan first. Nothing is touched until you type `approved`
 
 No agent touches a project file until you type the literal word **`approved`** on an
 `implementation_plan.md`. "ok" / "looks good" / "continue" are deliberately **not** approval — the
@@ -274,7 +274,7 @@ gate only means something if it's one specific word.
 > The `approved` law and that command wording have not been reconciled; this page describes what the
 > command actually does, and the reconciliation is flagged as open.
 
-### Law 2 — You alone mark work `done`.
+### Law 2 — You alone mark work `done`
 
 Agents may set a story to `review`. Only you set `done`, and **the way you say it is to run the
 close-out command**. There is nothing else to sign — no separate approval step, no second
@@ -315,7 +315,7 @@ flowchart TD
     LIVE["/cicd-live-testing-team\nyou fly the app, agent watches the logs"] -.->|"becomes a story"| ONE
     QD["/cicd-quick-dev\nsmall, low-risk project work\nnever closes out"] -.->|"row → review"| CLOSE
     QD -.->|"ejects on risk"| ONE
-    ADV["/smh-adviser-board\nhistorical minds in challenge teams"] -.->|"seeds ideation/plan"| KICK
+    ADV["/smh-adviser-board\nhistorical minds in one-mind filters"] -.->|"seeds ideation/plan"| KICK
     AP["/cicd-autopilot-claude + 2 lanes\nthe robot runs ①②③ for you"] -.->|"alternate lane for ①②③"| TWO
     PT["/smh-plan-task\nplan a whole Task, subtasks and all\nONE approval stop"] --> SLABEL["/smh-label-tasks\nwhich subtasks run side by side"]
     SLABEL --> TASK["/smh-quick-dev → /smh-code-review\nwork on the SYSTEM: commands, rules, docs"]
@@ -377,7 +377,7 @@ that fire mid-build and send the work back to the full loop. You do not get to a
 ### The four lanes side by side
 
 | | Story lane | Fast lane | Task lane | Lightweight lane |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | **For** | sprint features, bug stories | a small project fix, a docs/config change | the toolkit, rules, `/` commands, gates, docs | a guide, a reference fix, tidying source control — **nothing that can break** |
 | **Build with** | ① `/cicd-write-story-tests` → ② `/cicd-dev-story-tests` | `/cicd-quick-dev` | `/smh-quick-dev` | `/smh-quick-fix` |
 | **Review with** | ③ `/cicd-code-review` | built into `/cicd-quick-dev` Step 3 | `/smh-code-review` | **none** — the gates run, no verdict |
@@ -492,7 +492,7 @@ Then it does that again on what is left, and again, until every story has a slot
 the **waves**, and they land on the board as labels:
 
 | Label | On which cards | Read it as |
-|---|---|---|
+| --- | --- | --- |
 | `wave-1`, `wave-2`, … | every story it could assess | do this one in that wave |
 | `parallel-ok` | only a wave holding **two or more** | run these together |
 | `quick-dev` | the small ones | this does not need the full loop |
@@ -640,7 +640,7 @@ merged.
 **The four verdicts, and what each one means for you:**
 
 | Verdict | Means | Does close-out land it? |
-|---|---|---|
+| --- | --- | --- |
 | **PASS** | every required tier green, and the clean-code floor green on changed lines | yes |
 | **CONCERNS** | soft issues only — bloat, duplication, an unowned TODO, a stale note, a review lens that never ran | yes, and they get recorded |
 | **FAIL** | a new test regression, a required tier missing, a machine-floor error on a changed line, or a banned pattern shipped | **no — this is the only thing that blocks** |
@@ -684,7 +684,7 @@ trees, so anything reading the fallback must name them as they are, not as the c
 Each command below operates on a different thing. None can substitute for another.
 
 | Altitude | The move | The command |
-|---|---|---|
+| --- | --- | --- |
 | **1. Lane → epic branch** | one finished story lands | `/cicd-close-story-merge-tree` |
 | **1. Lane → epic branch** | *several* finished stories of one epic land together | `/cicd-merge-epic-workingtrees` |
 | **2. Disk cleanup** | verify merged, remove the worktree, delete the branch | `/cicd-prune-worktree` |
@@ -1058,7 +1058,7 @@ own `## Task Checklist`, a fenced example) · an `--expect` the row no longer co
 
 ⛔ **EVIDENCE IS ONE LINE, and this is a fail-open the review caught, not a style rule.** The proof
 is written into the walkthrough **verbatim**. A newline in it puts a new line into the file: one
-starting `## ` **ends the section**, one carrying a fence marker **hides the rest of the file**, and
+starting `##` **ends the section**, one carrying a fence marker **hides the rest of the file**, and
 either way `finish` reads *"nothing owed"* and **closes the ticket over rows nobody checked** —
 while the verb prints *"`## Your Actions` is now CLEAR"*. Measured before the fix, on real output
 pasted into `--evidence`. It is refused rather than silently collapsed: reflowing a paste would put
@@ -1250,7 +1250,7 @@ once made an agent write *"Click Merge"* into your task list as though you owed 
 > supplemented.
 
 | Where | How it lands | Your sign-off |
-|---|---|---|
+| --- | --- | --- |
 | **This repo** (lobby) | the agent opens a PR and stops | **your click** on *Merge pull request* |
 | **Project repos** (AviationChat, etc.) | `/cicd-push-e2e`, unchanged — they publish no `main-write-gate` | the token, carrying your words |
 
@@ -1344,7 +1344,7 @@ don't.
 > **What it checks**, in order — every refusal names its own reason:
 >
 > | Check | Refused when |
-> |---|---|
+> | --- | --- |
 > | armed | `MAIN-PUSH-ENFORCE` deleted or `DISABLE` present → passes through, deliberately |
 > | destination | only `refs/heads/main`, whole-ref — so `epic/main-fix` never trips it |
 > | exists | no token at all |
@@ -1524,7 +1524,7 @@ that correctly have none.
 ### Where each check runs
 
 | Gate | Where | When |
-|---|---|---|
+| --- | --- | --- |
 | Pull-request checks | GitHub Actions | every PR into `main` or an epic branch |
 | **Jira key check** | local, armed git hook | **every commit** |
 | Test-selection gate | local, before push | picks the affected tests; falls back to the full suite when unsure |
@@ -1606,37 +1606,32 @@ fail the same quiet way — a rule that never loads looks exactly like a rule wi
 distinct ways your topic can fail:
 
 | Distinct failure surfaces | What convenes |
-|---|---|
-| four or five | 4–5 lenses — the full board |
-| two or three | 2–3 lenses |
-| one, or none distinct | **one room of three minds drawn from across the lenses** |
+| --- | --- |
+| four or five | 4–5 filters — the full board |
+| two or three | 2–3 filters |
+| one, or none distinct | **one filter** — the one whose charter owns the blind spot that actually threatens the topic |
 
-A personal, judgment, or non-product question almost never has five, because the lens charters are
+A personal, judgment, or non-product question almost never has five, because the filter charters are
 written for product work — "Ground Truth" means telemetry and users, "Unconventional Leverage" means
 capability you cannot buy or hire. Reaching one of those across *by analogy* to keep it seated is the
 borrowed-analogy failure the board exists to catch, aimed at itself instead of at the advice.
 
-**The cast gate, before anyone speaks.** The board prints one line per **debate lens** — there are
-five — so you can put a room back before the debate runs rather than after reading cards you did not
-need. **Seated rooms come first**, each with its three minds and the axis on which they disagree,
-because those are the ones you would restructure. Every room it cut goes on a **single line
-underneath**, each with a short reason drawn from that room's own charter. Then it waits: swap anyone,
-add a lens, or say `gavel`.
+**The cast gate, before anyone speaks.** The board prints one line per **filter** — there are
+seven — so you can seat a filter back before the rounds run rather than after reading statements you
+did not need. **Seated filters come first**, each with its **Round-0 top-3 menu** — one line per
+candidate on the angle that mind would take on your topic — because those are the ones you would
+restructure. Every filter it cut goes on a **single line underneath**, each with a short reason drawn
+from that filter's own charter. Then it waits: pick one mind per filter (or say "your pick"), or say
+`gavel`.
 
-**Two of the seven rooms are normally not on that gate.** 🔧 **Execution Reality** and 📣 **Sales**
-are stage rooms — cast later, at the stage change, against a direction the table has already agreed.
-Either joins the debate gate instead when your topic *is* its subject: a question about what actually
-gets built, or one that opens as an offer, a launch, a channel, a funnel, or a message. When one is
-seated there, its line looks like any other.
+**All seven filters sit on that gate.** 🔧 **Execution Reality** and 📣 **Sales** are ordinary
+filters — judged by the same gate lines as the other five, seated when your topic *is* their subject:
+a question about what actually gets built, or one that opens as an offer, a launch, a channel, a
+funnel, or a message.
 
-**The stage change has its own gate.** When you say `take it to execution` or `take it to sales`, you
-get the same shape again for the rooms that answer actually puts in play — seated with their three
-minds and the axis they disagree on, or one line saying why that room is not needed for this
-direction. You swap and gavel there exactly as you do at the debate gate.
-
-**The board opens with prose, not cards.** A short read of what the rooms found comes first, written
-for someone who was not in the room, with the cards underneath as the record — `operator-profile`
-obligation 2, which names this command as its home.
+**The board opens with prose, not statements.** A short read of what the filters found comes first,
+written for someone who was not in the room, with the statements underneath as the record —
+`operator-profile` obligation 2, which names this command as its home.
 
 **Formatting doctrine lives in `operator-profile.md`, and nowhere else.** A dense result gets a
 narrative **and** the record, never the record alone, and pushback is never delivered in bullets.
@@ -1731,7 +1726,7 @@ whenever you have touched `.agents/` or `docs/`. A commit that touches neither c
 That leaves a clean split, and it is the point of the whole thing:
 
 | Layer | Who owns it |
-|---|---|
+| --- | --- |
 | **Generated** — the tree block, the node and edge lists | the hook, on every commit |
 | **Curated** — one-line purposes, INDEX prose, the pointers in `AGENTS.md`, the hand-written blocks at the top of both files | you, via `/smh-update-maps-indexes` |
 
@@ -1833,7 +1828,7 @@ in thread (which are fixed in thread).
 moves to **In Progress**, `jira_feed.py start` clones its successor and hands a marker on:
 
 | Label | What it means | How many tickets have it |
-|---|---|---|
+| --- | --- | --- |
 | `running-bug-list` | next cycle, **not yet started** — this is the trigger | exactly one, always |
 | `bugs-and-updates` | a cycle that **has** started — **this is the one you file into** | every cycle ever run |
 
@@ -1890,7 +1885,7 @@ each with the command that answers it — a git-given path used exactly as git g
 and per-machine `core.hooksPath` · hooks stay repo-local and the port needs the target's **own** Jira
 key. It runs in **both directions**: the port BACK to the centre is a port too.
 
-The trigger is mechanical, never self-reported — `git diff --no-index -- <a>/<path> <b>/<path>`. 
+The trigger is mechanical, never self-reported — `git diff --no-index -- <a>/<path> <b>/<path>`.
 `/smh-plan-task` MANDATORY RULE 5 makes the plan carry the section; `/smh-self-audit` Lens 2 and
 `/cicd-self-audit` Lens 2 (Parity + Blast) make its absence a **NO-GO** on differing copies. The one mechanical piece
 is a `workflow_lint._RULE_POINTERS` row, which **warns** (exit 1) when a command describes a port and
@@ -1900,7 +1895,7 @@ gate that does not exist.
 **What changes when you run a Task as ONE lane:**
 
 | | Consolidated | Per-subtask |
-|---|---|---|
+| --- | --- | --- |
 | branch | ONE, keyed by the **parent** | one per subtask |
 | plan | ONE, with a part section each | one each |
 | `task.yaml` | `riders: [<every subtask key>]` | no riders |
@@ -1929,7 +1924,7 @@ worktree's COMMITTED copy is reported as *that lane's working copy* with the bra
 warning. Different bytes still error; a path no lane committed still errors; and `main` is never a
 sibling lane, so a hand-revert to main's content in your working copy still errors.
 ⛔ The same lane found that the classifier had been mis-reading the FIRST dirty line whenever it was a
-tracked modification (` M path` lost its leading space to a whole-output `.strip()`), so the memory ruling and
+tracked modification (`M path` lost its leading space to a whole-output `.strip()`), so the memory ruling and
 the sibling match both silently missed exactly the `M .claude/settings.json` shape the ticket was filed on — fixed.
 ⭐ **The review of that lane then found the hole in its own fix, four lenses independently:** a sibling's committed TREE
 carries main's bytes for every file it never touched, so "working copy equals `<sibling>:<path>`" was also true of a
@@ -1937,7 +1932,7 @@ hand-revert to main — the moment ONE unrelated sibling worktree was live (the 
 name was dead code on every real run. **The predicate is now "the lane CHANGED it"**: a sibling owns a path only when its
 blob differs from the base's blob. Three more rulings ride with it: the lane's **own** branch is a legitimate owner (the
 lane that dirtied the shared checkout must be able to close itself); a **`prunable`** worktree is not a live lane; a
-**staged** sibling copy (`A `, `M `, `MM`) is never owned — it errors with the `git restore --staged` remedy, because
+**staged** sibling copy (`A`, `M`, `MM`) is never owned — it errors with the `git restore --staged` remedy, because
 staging is an act of this tree. And the compare is by **blob id through the clean filter** (`git hash-object --path`),
 so the PC's `core.autocrlf=true` CRLF working copy still matches the LF blob — raw bytes made the bucket dead there.
 ⛔ The **key** is `landing_mode`, never `landing` — `task.yaml` already has a different `landing:`
@@ -1990,7 +1985,7 @@ python3 .agents/scripts/lane_qualify.py --repo "$(git rev-parse --show-toplevel)
 ```
 
 | It says | Meaning |
-|---|---|
+| --- | --- |
 | `LIGHT` | do it |
 | `LIGHT-VCS` | a declared source-control tidy that changes no files |
 | `TASK` | it touches the development system → `/smh-quick-dev`, with a plan |
@@ -2142,7 +2137,7 @@ not change: the declared `case` must still name a case on the `FAILED:` line. De
 `unfiltered` and `block` is a contradiction and is refused before the first mutant is written.
 
 | The rule | Why it exists |
-|---|---|
+| --- | --- |
 | A **surviving** mutant is a finding | the coverage hole you came to find |
 | A **DELETION** mutant is declared as `"mutated": ""` — remove the anchor entirely and see if anything notices | the most valuable mutant shape for a guard: it proves the guard fires because the line is THERE, not because some other line happens to be. ⛔ Until SCC-284 the loader tested fields with a FALSY check, so the empty string read as *missing* and the whole table was refused; SCC-244 worked around it three times with an inert substitute line, and its record then said *replaced* about mutants that tested *removed*. Now every field must be PRESENT (an absent key refuses and says **absent**), every field but `mutated` must be non-empty, and `original` still needs a unique anchor |
 | A mutant that **removes nothing** is **DEFECTIVE** — a SKIP that **counts as a survivor** | SCC-144's `M3` commented out one `echo` of a two-line message; the second line still printed the asserted word, so the case passed **correctly**. Read as a coverage gap it buys a test for a hole that does not exist |
@@ -2190,7 +2185,7 @@ is board noise. Three edits in one commit are not three subtasks.
 tree?**
 
 | Lane | What already holds the breakdown | Subtasks? |
-|---|---|---|
+| --- | --- | --- |
 | **BMAD story** (AVCH) | the story file's `Tasks / Subtasks` + its `sprint-status.yaml` row | ⛔ **NEVER** — mirroring it makes a second copy nothing syncs |
 | **Command-centre Task** (SCC) | nothing — the ticket description **is** the spec | ✅ the only place it can live |
 
@@ -2340,7 +2335,7 @@ flowchart LR
 ### The checks, and what each one refuses
 
 | The check | What it refuses to let happen |
-|---|---|
+| --- | --- |
 | `memory_store_check.py` | **Silent memory-store damage.** The memory store (`_artifacts/_memory/`) is the live, symlinked asset every session reads, and ordinary git commands that move the working tree (`reset`, `checkout`, `merge`, `rebase`) can remove or revert its files with no error and no diff — a store missing three files looks identical to one that never had them. This checker verifies the MEMORY.md contract (every row resolves to a file) and keeps a per-worktree baseline of the store's file names, SHOUTING any file present at the last check and gone now. In the **lobby repo**, the `post-checkout`, `post-merge` and `post-rewrite` hooks run it after every working-tree move — advisory-loud, never blocking (a post-hook cannot veto what already happened; the value is that you SEE the regression within one command). A project repo's store is covered only once that repo's own `.githooks/` carries the same three shims — until then, run the checker by hand there. By hand, any repo: `python3 .agents/scripts/memory_store_check.py --delta` (PC: `python`). The shout repeats every run until the files are restored; after a DELIBERATE removal (a memory-audit retirement), acknowledge it with `--delta --rebaseline`. Like every hook, inert on a fresh clone until `python3 docs/migrations/scripts/arm_hooks_include.py .` (PC: `python`). |
 | `gate_receipt.py` | **A claimed test result that never ran.** It *executes* the gate and writes down the real exit code. There is deliberately **no way to hand it a verdict** — a receipt existing means the thing actually ran. It also separates *"the tool is missing"* from *"the tests failed"*, because a missing tool is a finding, not a free pass. It records whether the tree was **dirty** at the time, and **it does not count its own receipt as that dirt (SCC-178)** — the `<root>/gates/` directory it writes into is excluded from the measurement, so the second gate of a lane stops reading DIRTY off the first one's receipt and no lane pays a second full suite run to clear it. The exemption is that one directory: a sibling file, another lane's artifacts, and any code path all still record DIRTY. In a story worktree, `--project` + `--cwd <worktree>` writes and reads the receipt **inside the worktree** — it rides the lane's branch, and the shared checkout stays clean; a `--cwd` that belongs to a *different repo* than `--project` is **refused with both trees named**, never silently resolved. And a linked lane stamps **clean**: `link-worktree-assets.py` records its links in the repo's shared `info/exclude` (removed again when the last lane unlinks), so the symlinks it creates no longer read as dirt in every receipt. |
 | `closeout_preflight.py` | **Closing out a story that didn't really land.** One command answers: did the code merge · is every repo clean and in sync · does the review verdict exist and does it still apply · do the files the story claims it changed actually exist. **`--expect-key` is required** — the resolved branch must carry the key you named, or it errors (`cwd` is not intent). Fetching is **on by default**; a verdict carrying **STALE** was computed against the last fetch and names its own remedy. **Exit 2 means blocked — except the `landed` row, which is expected before the landing** (the door's Step 3 is what lands it), so read the rows rather than the exit code. A warning that says *"landing was NOT verified"* means exactly that — it is not a pass. |
@@ -2356,6 +2351,7 @@ flowchart LR
 | `jira_feed.py` | **A Jira ticket that is only a title.** ① mints the ticket with an outline rendered *from the story file*, and the close-out files a **Dev Record**: the decisions, the pitfalls, and what is still owed. Both write paths **read the ticket back** and fail if what they claimed to write is not there. **Exactly one Dev Record per ticket.** It also picks the ticket **type** for you ([§12](#12-the-board--what-runs-next)). Its `start` verb moves a ticket to `In Progress` and is **idempotent**, which is what lets three different seams call it without any of them double-moving a card. ⛔ **Two ways it could report success over a ticket that held nothing are closed.** (1) *Themed acceptance criteria render in full.* A section ends at a heading of its **own level**, not at the first line that starts with a `#` — so stories that group their ACs under `### Theme …` sub-headings no longer come back as **"(none found in the story file)"**, which is the same sentence a story with genuinely no ACs gets. **The sub-heading itself renders, as a `[label]` row above the bullets it introduces** — a child can be `### Out of scope` just as easily as `### Theme A`, and dropping the heading turned "the mobile app" into a criterion the story is measured against. (2) *A hand-written description is not an outline.* When `mint` reuses an existing ticket it tests for the render trailer, not the **length** of what is already there — so a ticket somebody typed two sentences into gets its outline instead of being left alone and reported as *"carries its outline (213 chars)"*, and **your note is kept underneath under `PREVIOUS NOTE`**. Stale and overwritten were never the only two options. If the field comes back without the trailer, `mint` exits 2 and tells you to read the ticket — and re-running from there is safe: the preserved note is the note **a human typed**, so a retry replaces the `PREVIOUS NOTE` block rather than wrapping the whole field in a fresh one. `check` reads the same trailer for the same reason, so the line it prints at close-out says whether the ticket carries a **rendered outline** rather than whether the field is longer than 40 characters. `outline` also accepts `--jira-project` now, purely so a working `mint` line can be pasted back to it without `unrecognized arguments`. |
 | `post-commit-jira-start.sh` | **A ticket that never shows as in flight.** Your first commit on a `chore/ · claude/ · epic/` branch moves that ticket to `In Progress` — see [§12](#12-the-board--what-runs-next). It reads the key from the **branch name** and never invents one; `main` and unkeyed branches are silent. It costs **one exchange per branch** on the normal path (a marker short-circuits the rest before any network call), it **can never block or fail a commit**, and an offline commit simply retries on the next one. A ticket that is not startable yet (`Blocking`, `In Review`, `Deferred`) deliberately writes no marker, so that branch re-reads once per commit until it is — the price of never silencing a ticket that might still start. |
 | `ship_preflight.py` | **Production shipping something that was never gated.** `/cicd-push-e2e` is the only command that writes production `main` — and uncommitted work in the epic checkout would mean Step 3 gates a *tree* while Step 4 merges the *branch*. It answers four questions the door would otherwise take on trust — the branch SHAPE (`epic/*`, or a `chore/*` the lane check admits), the pinned `--expect-key` against the key the branch carries, a **clean** checkout that is `0 0` with its remote, and **the LANE**: a `chore/*` belongs here only when its diff reaches `backend/ frontend/ firebase/ functions/ mobile/ .github/`, which it derives by importing `task_preflight.PRODUCT_DIRS` rather than re-typing it, so the two doors cannot drift about what "deployable" means. Reads and prints; the merge, the mint and the push stay in the command where a human is watching. Exit 0/1/2, and the staleness of an unfetched comparison rides the VERDICT line itself — SCC-193's lesson, one door over, where a stale note sat under a verdict reading *clear*. |
+
 > **All three close-out doors answer "which tree gets gated?" the SAME way, and they derive it instead of trusting you (SCC-211).** Every one of them asks whether the working tree is clean, because a dirty tree means the gate measures content the merge does not carry — *what ships was never gated*. The shared body, **`wf_common.trees_to_measure`**, asks `git worktree list` which tree actually holds the branch — a required flag would be the weaker answer (it can still be aimed at the wrong tree, and it would break every caller that has none), so the tree is derived and `--worktree` survives as an *additional* tree rather than the only one. A dirty lane stops the close-out from wherever you run it, and the refusal **names the tree** so you know where to go. |
 | `task_preflight.py` | **A change to the product sneaking onto `main` labelled a "task".** It derives the lane from the repo rather than asking: does this repo **have** anything that deploys, and did **this diff** touch it? Touch one and it **stops dead and sends the work to `/cicd-push-e2e`. There is no override flag, on purpose.** It also checks the branch shape, the `--expect-key` match, the `task.yaml` manifest (a receipt already recorded blob-for-blob on `origin/main` is a **landed** lane's and no longer blocks follow-on lanes of the same ticket — SCC-113; an unlanded or edited-since-landing receipt still blocks hard), that the tree is clean and pushed, and that `origin/main` was absorbed. — *and the history behind it, below.* |
 | `check_maps.py` | **The maps and INDEXes drifting from what is actually on disk.** Every level-2 folder must carry an `INDEX.md`, every backticked path in a **map's** table row must resolve, and the repo-map must still name every top-level folder. Ledgers under `_artifacts/` are exempt on purpose — their rows are history, and a row describing work that *deleted* something has to be able to name it. **That exemption is why a session-folder row is matched on its FIRST cell written with a trailing `/` (SCC-96):** anything else in the row is prose, and prose is where a ledger explains *why* — including by naming the memory a decision rests on. Matching prose instead made every memory slugged `story-`/`tea-`/`epic-`/`autopilot-` read as a folder gone missing, so the gate fired on exactly the behaviour the convention asks for. — *and the history behind it, below.* |
@@ -2517,7 +2513,7 @@ links to its branches and commits through the key. How to drive it by hand:
 **A ticket description is a FAST READ, never a plan.** Four short sections and nothing else:
 
 | Section | What goes in it |
-|---|---|
+| --- | --- |
 | `Why:` | one paragraph, before any heading — the **problem**, not the solution |
 | `## Plan` | a checklist of **4-8 lines**, which renders as real Jira checkboxes you can tick |
 | `## Done` | empty at first; filled from the walkthrough when the work lands |
@@ -2568,7 +2564,7 @@ that rule to be corrected under its own ticket.
 **You do not have to drag cards.**
 
 | When | What moves it | To |
-|---|---|---|
+| --- | --- | --- |
 | **your first commit on a `chore/ · claude/ · epic/` branch** | the `post-commit` hook | **`In Progress`** |
 | you run `/smh-quick-dev` (Task lane) | its Step 0.5, at worktree-open | `In Progress` |
 | you run `/cicd-write-story-tests` ① (story lane) | its Step 1.6 | `In Progress` |
@@ -2652,13 +2648,14 @@ row of every fresh rolling ticket — telling you to restore a ticket that was f
 only against the lines it meant to keep, and says `· replaced the INDEX placeholder` when it swaps
 one out. A `MISSING … line(s)` refusal from `index-row` is therefore now always real: **stop and read
 the ticket.**
+
 ### Two shapes of work on one board — and why it decides the command
 
 Everything on the board is a **Story** or a **Task**, and that is not a label — **it decides which
 command is able to close it.**
 
 | | Story | Task |
-|---|---|---|
+| --- | --- | --- |
 | What it is | sprint work: a number (`19.2`), a story file, a BMAD epic, a `sprint-status.yaml` row | the toolkit, rules, `/` commands, IDE and skills work. No story file, no BMAD epic, in the command centre no sprint board at all |
 | Branch | `claude/<KEY>-<slug>`, off the epic branch | `chore/<KEY>-<slug>`, off `main` |
 | Closes with | `/cicd-close-story-merge-tree` | **`/smh-close-task-merge-tree`** |
@@ -2749,7 +2746,7 @@ your secrets. This is the category that produces "it works on the desktop but no
 and every item below has already cost a debug cycle.
 
 | | What breaks if it's missing | Fix — **once per machine** |
-|---|---|---|
+| --- | --- | --- |
 | **The commit gates** | `core.hooksPath` is *local* config and does **not** travel with a clone. Without it git reads `.git/hooks`, which is empty — so the Jira gate, the encoding gate, and the SOP gate are all **silently off** while the repo looks identical. | `bash docs/migrations/scripts/install-git-hooks.sh` (PC: `Install-GitHooks.ps1`) — arms the lobby and every project and **verifies** each gate. ⛔ Do **not** arm it with `git config core.hooksPath .githooks`, globally or locally: that writes the key into the repo's own git config file, where Claude Code's worktree setup resolves it to an absolute path and writes it back to the shared config — every worktree then runs the **main checkout's** hooks instead of its own (SCC-323). The installer routes the value through an included file instead. By hand, one repo: `python3 docs/migrations/scripts/arm_hooks_include.py <repo>` (PC: `python`). |
 | **Python's name** | The Mac has only `python3`; a python.org PC has only `python`. Typed commands differ; the gates don't (they probe). | Nothing to install — just use the name your box answers to. |
 | **Secrets / `.env` / `auth_keys/`** | All gitignored, so a fresh clone has none of them and things fail in confusing ways rather than obviously. | Restore from the master bundle with `python3 docs/migrations/scripts/env_master.py --restore` (PC: `Restore-EnvMaster.ps1`) — start at the [migrations kit](../migrations/INDEX.md). Team-shared keys travel by **Keyway** (`keyway login` + `keyway init` per repo), never by chat: [sharing_keys_secrets_secure.md](sharing_keys_secrets_secure.md). |
@@ -2789,7 +2786,7 @@ You rarely call these directly; the ①②③ steps fire them in the right order
 when you want that single piece:
 
 | Solo use | Why |
-|---|---|
+| --- | --- |
 | `/tea` | Activates the Test Architect persona for a strategy conversation. |
 | `/testarch-trace` | Shows which requirements have tests, without running a whole review. |
 | `bmad-teach-me-testing` | Structured lessons, if you want to go deeper on method. |
@@ -2804,7 +2801,7 @@ automated pipeline).
 ▶ **Diagram:** [`/cicd-autopilot-claude` in the command atlas](#cicd-autopilot-claude-and-its-lanes) — every step, stop and refusal, checked against the live command.
 
 | Command | Runs on | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `/cicd-autopilot-claude` | the `claude` CLI | The canonical robot loop: Plan → Audit → Build → Review — four stages in **three** sessions (Build resumes the Dev chat on purpose). |
 | `/cicd-autopilot-opencode` | the `opencode` binary | Port of the same loop. |
 | `/cicd-autopilot-deepseek4` | `claude` CLI plus a flag | Runs the token-heavy building half on a cheaper model, keeps review on Claude. A *lane* of `/cicd-autopilot-claude`, not a third engine. |
@@ -3054,7 +3051,7 @@ flowchart LR
 speak; "refuses" means it will not proceed at all and names the fix.*
 
 | Command | Stops for you at | Refuses when |
-|---|---|---|
+| --- | --- | --- |
 | `/cicd-boot-sprint-memory` | Step 0 if no project is named; Step 4 always (discovery only) | — |
 | `/cicd-create-epic-sprint` | **two** stops: Step 2, once, for the whole epic + story set; then Step 4, **once per story**, for its P-level | never cuts an unkeyed epic branch; an Epic whose description is not the Step 1a placeholder (it would be overwritten) |
 | `/cicd-label-tasks` · `/smh-label-tasks` | never — it states and stops | pointed at the wrong unit (epic ↔ Task); a story with no file |
@@ -3089,7 +3086,7 @@ it, and where the longer explanation lives.*
 **Find your command** — every name below jumps straight to its diagram:
 
 | Family | Commands |
-|---|---|
+| --- | --- |
 | **Session & planning** | [`/cicd-boot-sprint-memory`](#cicd-boot-sprint-memory) · [`/cicd-create-epic-sprint`](#cicd-create-epic-sprint) · [`/cicd-label-tasks` + `/smh-label-tasks`](#cicd-label-tasks-and-smh-label-tasks) · [`/smh-plan-task`](#smh-plan-task) |
 | **Story lane** | [`/cicd-write-story-tests`](#cicd-write-story-tests) · [`/cicd-bdd-tests`](#cicd-bdd-tests) · [`/cicd-dev-story-tests`](#cicd-dev-story-tests) · [`/cicd-self-audit`](#cicd-self-audit) · [`/cicd-code-review`](#cicd-code-review) · [`code-review-engine`](#code-review-engine-the-shared-reviewer) · [`/cicd-clean-code-audit` + `/smh-clean-code-audit`](#cicd-clean-code-audit-and-smh-clean-code-audit) |
 | **Fast lane** | [`/cicd-quick-dev`](#cicd-quick-dev) |
@@ -4100,7 +4097,7 @@ flowchart TD
 **The story loop** — [§6](#6-the-story-lane)
 
 | Command | What it does for you |
-|---|---|
+| --- | --- |
 | `/cicd-boot-sprint-memory` | Start of session. Reads the sprint, tells you the next story and exactly which command it needs. It **reads the review verdict from the artifact** rather than trusting the status file. **Also reads that project's own memory index** — the memory store is two-tier, so facts true only inside one project live in that project's store and are not in the lobby index your session already loaded. No memories yet is a normal answer, not a fault. |
 | `/cicd-create-epic-sprint` | **Once per epic.** Writes the epic and its stories, then risk-scores every story with you. Mints the epic's Jira ticket itself at kickoff. |
 | ① `/cicd-write-story-tests` | Creates the story, locks the intended behavior in plain language, then writes the **failing** tests. Also mints the story's Jira ticket and rules `quick-dev` and `blocked` onto the board as labels. |
@@ -4115,7 +4112,7 @@ flowchart TD
 **Landing and shipping** — [§7](#7-landing-and-shipping--the-close-out-family)
 
 | Command | What it does for you |
-|---|---|
+| --- | --- |
 | `/cicd-close-story-merge-tree` | **The door.** Close-out for **one story**: pre-flights everything mechanically, runs the save below, commits, lands the code on the **epic branch** — and only then files the Dev Record and moves the story's Jira ticket to match, with the evidence attached. Typing it IS your sign-off for that one landing. |
 | `/cicd-update-sprint-memory` | **The save inside it**, runnable on its own. Marks the story done on **your** word and saves what was learned: the learnings routed to their homes, the board and story file flipped, the context budget trimmed. It lands nothing and moves no ticket. |
 | `/cicd-merge-epic-workingtrees` | Lands **all** of one epic's finished lanes in a single reviewed pass. Ends at the epic branch. |
@@ -4128,14 +4125,14 @@ flowchart TD
 **The fast lane** — [§8](#8-the-fast-lane--cicd-quick-dev)
 
 | Command | What it does for you |
-|---|---|
+| --- | --- |
 | `/cicd-quick-dev` | Fast lane for genuinely small project work. Drops the *pipeline*, never the rigour: a worktree, ACs fixed before any code, an eject tripwire, and a mandatory review gate. **Low-risk only.** On a story it advances the row to `review` and **stops there — it never closes out**. |
 | `/cicd-non-crit-pr-push` | **Standing push lane for child projects** ([§8a](#8a-the-project-standing-push-lane--cicd-non-crit-pr-push)). Routine non-critical project changes (docs, memory, notes, quick references). Operates on the project's Standing Push Ticket + persistent `chore/<KEY>-standing-push` branch directly to PR with `main-write-gate` check. |
 
 **The Task lane** — [§9](#9-the-task-lane--work-on-the-system-itself)
 
 | Command | What it does for you |
-|---|---|
+| --- | --- |
 | `/smh-plan-task <TASK-KEY>` | Plans a **whole** Task in one pass — proposes the subtask breakdown and stops; on your go mints the Subtasks, and per lane writes the plan, audits it, cuts and pushes the worktree, points the ticket at the plan; labels the set; then **one** approval stop for everything. |
 | `/smh-label-tasks <TASK-KEY>` | The Task-lane twin of `/cicd-label-tasks`: which **Subtasks** of one Task can run side by side (`parallel-ok`) and which are quick-lane sized (`quick-dev`). States, never starts; a stale answer says "re-run me". |
 | `/smh-quick-dev` | The Task lane's build step. Fixes a checkable acceptance list before anything is written, plans, audits, waits for `approved`, then builds — with something failing first, always. Ends at the review gate and **stops**; it never merges. |
@@ -4148,22 +4145,22 @@ flowchart TD
 **Machine handoff** — [§13](#13-switching-machines)
 
 | Command | What it does for you |
-|---|---|
+| --- | --- |
 | `/cicd-park` | Before you close the laptop: commits and pushes everything in flight, and writes a note to your other machine about where you left off. |
 | `/cicd-resume` | On the machine you just opened: pulls everything back down and rebuilds your working setup. |
 
 **Debugging, incidents and thinking** — [§16](#16-incidents)
 
 | Command | What it does for you |
-|---|---|
+| --- | --- |
 | `/cicd-live-testing-team` | Boots the app and watches the logs while **you** click around — and reads the frontend itself with Playwright, so the console error, the failing request's response body and a screenshot land in the bug doc instead of being retyped. Files researched bug reports. Writes no code. Traces each bug back to the ticket that shipped it — never flags one without your word. |
 | `/cicd-mobile-error-team` | Live incident responder, works from your phone. Re-diagnoses independently, gives you a rollback-vs-fix decision, writes the fix and a test that proves it. |
-| `/smh-adviser-board` | Your **third-side thinking board** — 43 historical minds whose job is to refuse the binary frame and find the position nobody in the argument is occupying. Point it at a project (`--project <name>`) and recon reads that project first, so the board argues about what actually exists. An orchestrator then casts 3–5 lenses with **three** minds each, picked to collide, and shows you the cast before anyone speaks — swap anyone you don't want. Their debates run in parallel and each team returns **one ~250-word card**, so a round is about a thousand words and you can actually reply. Every debate hits a mandatory **balcony** beat: is this disagreement real, or is the question wrong? A reframe outranks an answer. Teams must surface what they couldn't settle as questions to you — a team that asks nothing is suspicious, not exemplary. On your word it stages into **Execution Reality** (can *you* ship this) and **Sales**. Brief saves to `_artifacts/board_sessions/`. On a surface that **cannot spawn subagents** — Antigravity/Gemini workflows, or this command pasted into a plain chat — it announces **inline mode** and runs a smaller, honest version of itself rather than the parallel one with the spawns quietly dropped: at most three lenses, four cycles instead of five with **the balcony never cut**, every team's opening reads written before any team argues, and the debate floors written to `_artifacts/board_sessions/floors/` instead of onto your screen. `--solo` (alias `--inline`) forces it anywhere. |
+| `/smh-adviser-board` | Your **third-side thinking board** — 43 historical minds whose job is to refuse the binary frame and find the position nobody in the argument is occupying. Point it at a project (`--project <name>`) and recon reads that project first, so the board argues about what actually exists. An orchestrator then seats **one filter per distinct failure surface** (up to five) and shows you a **Round-0 cast menu** — the top-3 mind picks per seated filter, one line each on the angle that mind would take on your topic; you pick one mind per filter, or say "your pick". The board then runs **four visible rounds** — READ → ATTACK → BALCONY → SETTLE — one spawn per filter per round, and you read every statement verbatim (~250 words each), so a round is about a thousand words and you can actually reply. The mandatory **balcony** beat asks: is this disagreement real, or is the question wrong? A reframe outranks an answer. Filters must surface what they couldn't settle as questions to you — a filter that asks nothing is suspicious, not exemplary. Brief saves to `_artifacts/board_sessions/`. On a surface that **cannot spawn subagents** — Antigravity/Gemini workflows, or this command pasted into a plain chat — it announces **inline mode** and runs a smaller, honest version of itself rather than the parallel one with the spawns quietly dropped: at most three filters, every R1 take written before any is revised, and **the balcony never cut**. `--solo` (alias `--inline`) forces it anywhere. |
 
 **Toolkit upkeep**
 
 | Command | What it does for you |
-|---|---|
+| --- | --- |
 | `/smh-update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. It **does not touch the memory store** — that is `/smh-memory-audit`'s job. ⚠ **If you ran it in Antigravity before 2026-08-12, re-check what it edited** — its door was then a full body that Antigravity truncated at 12,000 chars, so a run could reconcile partially, with no approval gate and no findings report. It is a normal thin launcher. |
 | `/smh-memory-audit` | Cleans up the shared memory store (`_artifacts/_memory/`) — the one document every model on every machine loads *before* doing any work, which is why letting it fill costs you on every session everywhere. It checks each memory's claim against the live repo, then shows you *retire · merge · compress · relocate* with the bytes each frees, and waits. **Nothing is deleted without your yes on that specific item**; git is the undo either way. See the box below. |
 | `/smh-sync-agents` | Publishes the toolkit to all four platforms — one door each. **It SHORTENS the description it writes into `.agents/workflows/`:** Antigravity builds its slash-command menu from those descriptions, and full-length ones blow the menu's context budget (workflows get dropped from the agent's list outright) — so the generator cuts each one to **135 characters** on a word boundary. ⛔ **Do not shorten them by hand in `.agents/workflows/`** — those files are generated, so the next sync overwrites you, *and* the door-parity check demands the mirror match its brain, so a hand-edit turns `main-write-gate` red (`chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable). The COMMANDS keep their full descriptions; only the menu has a budget. The one hand-owned door, `smh-adviser-board.md`, is shortened in place because it sits in the same menu. It reaches **the lobby and this machine's caches only**; projects read from the center, so there is nothing to push. It *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and purges the two retired doors. Hand-written skills are never overwritten. What a command *declares* decides where it publishes — nothing is inferred from its filename. Hooks are executed directly from `.agents/hooks/` via `run-hook.sh` (the duplicate `.claude/hooks/` mirror is retired under SCC-300), and in-session sandboxed runs catch `.claude/skills` write restrictions gracefully. |
@@ -4214,7 +4211,7 @@ flowchart TD
 > them all from the same command file:
 >
 > | Tool | How you invoke it |
-> |---|---|
+> | --- | --- |
 > | **Claude Code** | `/<name>` (the entry comes from a *skill*, not a command copy — same name, same behavior) |
 > | **Codex** | `/skills` → `<name>`, or `$<name>`. **Codex cannot have top-level `/name` commands at all** — that limit is Codex's, not ours, and it is why the skill is the door everywhere. |
 > | **opencode** | `/<name>` |
@@ -4281,7 +4278,7 @@ flowchart TD
 ### Not in your menu, on purpose
 
 | Name | Why |
-|---|---|
+| --- | --- |
 | `cicd-*-AP` | **Robot-only.** The autopilot engines call these. Never typed by a human, deliberately kept out of your menus. |
 | `/sentry-security-team-avch` | A fire-drill harness that rehearses the incident runbook. The *live* responder is `/cicd-mobile-error-team`. |
 
@@ -4290,7 +4287,7 @@ flowchart TD
 This page is the how-to. Everything longer lives elsewhere.
 
 | Want | Go to |
-|---|---|
+| --- | --- |
 | What a command does, step by step | [`.agents/commands/`](../../.agents/commands/) — one file per `/command` |
 | The rules themselves — the authority for everything above | [`.agents/rules/`](../../.agents/rules/) |
 | Jira from an agent's seat — the cheat-sheet + guardrails | [`.agents/rules/jira.md`](../../.agents/rules/jira.md) |

@@ -1,8 +1,8 @@
 # Operator Doctrine
 
-Standing context. This block goes into **every** spawn — recon, read, debate and stage rooms — beside the
-Ground Brief. It exists so no team wastes a round proposing something structurally incompatible with how
-the operator actually builds.
+Standing context. This block goes into **every** spawn — recon and every filter round — beside the
+Ground Brief. It exists so no filter wastes a round proposing something structurally incompatible with
+how the operator actually builds.
 
 ---
 
@@ -29,19 +29,19 @@ almost always a borrowed analogy rather than evidence. This is the reason the bo
 
 ## The rule attached
 
-Teams **design within** the doctrine. It is a constraint, the same way capacity and physics are
+Filters **design within** the doctrine. It is a constraint, the same way capacity and physics are
 constraints, and a proposal that ignores it is handing the chair work he would have to rewrite.
 
-**But the doctrine is not a sacred cow.** Any team that believes the doctrine itself is the thing failing
-on this particular problem must **say so out loud, in the card, naming which clause and why** — never
-quietly route around it, and never soften a finding to keep it compatible.
+**But the doctrine is not a sacred cow.** Any filter or mind that believes the doctrine itself is the
+thing failing on this particular problem must **say so out loud, in the statement, naming which clause
+and why** — never quietly route around it, and never soften a finding to keep it compatible.
 
 That licence is not decoration. This board's entire purpose is catching what the operator cannot see from
 where he stands, and the assumptions closest to him are the hardest ones for him to examine. A board that
 cannot question the doctrine has been pre-agreed with, which makes it worthless at exactly the moment it
 matters most.
 
-When a team does attack the doctrine, it carries the ordinary burden of any challenge at this table: an
+When a filter does attack the doctrine, it carries the ordinary burden of any challenge at this board: an
 alternative, a decisive test, or a named consequence. "The stack doesn't apply here" is not a finding.
 "The stack assumes the buyer can evaluate value before purchase, and this buyer cannot — here is what
 that changes" is.
