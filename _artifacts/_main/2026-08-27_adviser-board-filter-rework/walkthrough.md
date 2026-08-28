@@ -35,6 +35,12 @@ lane class; none earned its own branch).
 - [x] Enforcement suite — first receipt run RED on one real finding (below); fixed; re-stamped GREEN
 - [x] Review gate — `/smh-code-review` ran 2026-08-28; verdict **CONCERNS** @ `1aae519` (rows a/b
       operator-pending); 4 review fixes applied and re-gated — see `## Code Review` below
+  - Finding: rows (a)/(b) were operator-pending at that verdict; the chair's live session
+    (2026-08-28) evidences them — see `## Live Session Evidence`.
+- [x] Re-review gate — `/smh-code-review` re-run 2026-08-28 after the operator's amendment;
+      verdict **PASS** @ `74ced3b3`; 29 findings applied (incl. the standing gates test), 11
+      dismissed with reasons — see `## Code Review (2026-08-28, re-review after the operator's
+      amendment)`
 
 ### Suite finding that fought back
 
@@ -70,6 +76,9 @@ verify-exit=0
 re-stamped **GREEN** on the fixed tree — includes `workflow_lint.py --toolkit-only` and `sop_currency.py`.
 Re-stamped again after the review fixes: **PASS, exit 0, 81.8s @ `1aae5194`** (the review touched
 `.agents/commands/` surfaces, which invalidates a receipt — only `_artifacts/` is exempt).
+Re-stamped after the 2026-08-28 re-review fixes: **PASS, exit 0, 83.1s @ `74ced3b3`**, 62/62 files
+(the re-review's standing gates test joined the suite) — see `## Code Review (2026-08-28, re-review
+after the operator's amendment)`.
 
 **Acceptance rows:**
 
@@ -189,10 +198,12 @@ the dry-run and a full session, this lane closes via `/smh-close-task-merge-tree
 
 Everything the lane could prove by machine is proven above, and the chair has now flown the board
 himself — see `## Live Session Evidence`. His mid-session amendment (parallel opinion waves +
-orchestrator-does-all-research + rich-text rendering) is applied and re-gated in this lane; nothing
-merged, nothing closed, no memory touched.
+orchestrator-does-all-research + rich-text rendering) is applied and re-gated in this lane; the
+re-review verdict is **PASS** @ `74ced3b3` with every finding applied or dismissed on the record.
+Nothing merged, nothing closed, no memory touched.
 
-Then review and close out with `/smh-close-task-merge-tree` when satisfied.
+Then close out with `/smh-close-task-merge-tree` when satisfied — the merge itself is the door's
+ledger line, landed via this branch's PR.
 
 ## Operator amendment — parallel opinion waves (2026-08-28, live session)
 
@@ -298,3 +309,129 @@ verbatim statements with cross-filter circulation, the ⚖ line, and the render 
 amendment line 1. (Evidence-scope correction applied by the 2026-08-28 re-review; the earlier
 wording claimed the session exercised chair-guided deepening and orchestrator research, which it
 did not.)
+
+## Code Review (2026-08-28, re-review after the operator's amendment)
+
+Verdict: PASS @ 74ced3b3
+Suite evidence measured on the same sha: `74ced3b3` (receipt `gates/suite.json`, PASS exit 0, 83.1s, clean tree).
+
+review-runtime: fan-out
+lens_isolation: worktree — every repo-reading lens got its own detached copy of the repo at `f9b2270` (SCC-313 lobby rule); blind-hunter had no tree by design
+lenses_run:
+
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted:  5/5
+lenses_na:
+- none
+
+dispositions:    per-lens: blind-hunter=6/0/0 · edge-case-hunter=7/2/0 · literal-correctness-hunter=5/2/0 · acceptance-auditor=7/2/0 · test-adequacy-auditor=4/5/0 · compound=0/8/0 (all eight compound findings absorbed by their named parents' dispositions)
+drift:           undeclared=0 · unimplemented=0 · incomplete=0 — reconciled clean after declaring the re-review's own new standing test in the plan's machine block (1 undeclared before that declaration)
+
+**Scope:** the full `origin/main...HEAD` diff (33 files after the re-review's fixes), re-derived
+against current `origin/main`. **Method:** parallel lens fan-out per the engine contract — five
+lenses in separate contexts, four in isolated worktree copies, the Blind Hunter on the diff alone;
+evidence-verify wave ran (40/40 findings verified, 1 refuted by measurement); compound synthesis
+returned 8 findings, all absorbed by their parents; triage applied the assessor's three-question
+rule and the 2026-08-15 relevance gate.
+
+### Step 0.7 — re-derivation
+
+1. **Nothing this diff references moved on `main`.** Merge-base `007efd1` == current `origin/main`
+   tip; zero files landed while the lane built; every repo path and § pointer the diff names
+   re-resolved clean (the only stale records were the lane's own — finding 1 below).
+2. **True overlap: none — no conflicts.** `grep -Fxf mine theirs` → ∅; `merge-tree --write-tree`
+   clean; absorb is a no-op by construction (HEAD already contains `origin/main`).
+3. **No sibling lanes live** (`git worktree list`: `main` + this tree only) — no landing-order
+   dependency. `risk_seam.py classify` → `unclassified` (the permanent answer for this markdown
+   repo, SCC-289). Derived `review_level`: **standard** (contract surfaces in the radius, 32 files
+   > 3).
+
+### Findings
+
+40 raw findings across five lenses + 8 compound; 29 assessed real and applied @ `74ced3b`, 11
+dismissed (1 refuted by measurement, 10 relevance kills). Assessment disagreed with a lens label in
+two directions: the `team`-gate finding (literal #6, "the gate permanently fires on the filename")
+was REFUTED — the gate's grep measured zero hits (`\bteam\b` does not match `TEAMS`, and grep reads
+content, not filenames); the test-adequacy "critical" (gates not wired into the suite) was verified
+real but revised to important and then fixed by the standing test below.
+
+| file:line | severity | failure scenario | disposition |
+| --- | --- | --- | --- |
+| `_artifacts/.../implementation_plan.md` §1/§3.4/§3.6/§4.1/§4.5/§12(b) + tickets SCC-340/SCC-342 + `task.yaml` + `_artifacts/_main/INDEX.md:7` | important | the lane's governing records still teach the retired R1–R4 ladder, the six-move traffic table and the per-filter read caps the implemented command abolishes; acceptance row (b) was unsatisfiable as written; the INDEX row contradicted the walkthrough on whether (a)/(b) are evidenced | applied @ 74ced3b (plan §11b amendment block + §12(b) reworded; tickets + task.yaml + INDEX row amended to the wave model) |
+| `.agents/commands/smh-adviser-board.md:144–156` | important | the Round-0 example block rendered five of the seven filter lines its own gate rule demands — an orchestrator imitating it under-casts the gate | applied @ 74ced3b (example extended to all seven) |
+| `.agents/commands/adviser-board/CARD.md:87–97` | important | the render template showed only THE MOVE and SPLIT of the five Shape slots — THE THIRD SIDE, which outranks THE MOVE, had no home in the render and could be silently dropped every wave | applied @ 74ced3b (template renders all five slots, THIRD SIDE first) |
+| `.agents/commands/smh-adviser-board.md:200` + `CARD.md` ⚖ block | suggestion | a one-filter board (a sanctioned scale-rule outcome) renders the mandatory cross-filter ⚖ line unfillable | applied @ 74ced3b (one-filter guard: same ⚖ format, sharpest internal tension) |
+| `.agents/commands/adviser-board/SPAWNS.md:166–169` | suggestion | the ER/Sales scope clause presupposed prior argument that does not exist in wave 1 (parallel waves, empty transcript) | applied @ 74ced3b (wave-1 qualifier added) |
+| `.agents/commands/smh-adviser-board.md:242` + SPAWNS §5 | suggestion | duel/call-out outputs are neither statements nor the chair's words, so they cannot reach later waves; a "go again" without restating leaves spawns blind to the resolution | applied @ 74ced3b (circulation note: the chair restates it in his reply) |
+| `.agents/commands/smh-adviser-board.md:215` | nitpick | `unpack ②` — the circled numeral has no defined referent anywhere in the render | applied @ 74ced3b (`unpack {filter}`) |
+| `_artifacts/.../verify_board_filter.sh` | important | grep gates passed vacuously when a scanned surface was missing (`2>/dev/null` swallowed the error); nothing checked CARD/TEAMS/DOCTRINE/THIRD-SIDE presence | applied @ 74ced3b (surface-presence guard, FAIL(surface)) |
+| `_artifacts/.../verify_board_filter.sh:57` | nitpick | `RESEARCH BRIEF` check case-sensitive while its four siblings use `-i` — a legitimate rewording fails the gate spuriously | applied @ 74ced3b (`-i` added) |
+| `_artifacts/.../verify_board_filter.sh:23` | nitpick | `\bteam\b` blind to the plural "teams" | applied @ 74ced3b (`\bteams?\b` — which surfaced the TEAMS.md filename references; allowlisted as the plan's sanctioned justified-exception path, first real exercise of the ALLOWED mechanism) |
+| `_artifacts/.../verify_board_filter.sh:89` | suggestion | the AG description count included the YAML quoting quotes (+2) — the recorded 127-vs-125 counter discrepancy, dismissed as "unexplained" in the prior review, is exactly this | applied @ 74ced3b (quotes stripped; count now matches the description) |
+| `.agents/scripts/tests/` (absent file) | important | the lane's four gates lived only in the lane artifact folder that close-out prunes — after landing, nothing standing fails if retired vocabulary re-enters; the render amendment had zero assertions | applied @ 74ced3b (`test_adviser_board_filter_gates.py` in the standing suite: surfaces, vocab, round-ladder, wave vocabulary, floor adjudication, door parity, CARD render-contract markers — 29/29 pass, auto-discovered by `run_all`) |
+| `_artifacts/_main/INDEX.md` SCC-74/SCC-287 rows + `docs/_scc_sops_prds/workflows_testing_SOP.md:1061` | important | a formatting pass corrupted other lanes' recorded literals: the SCC-74 row's `[ -f <SOP doc> ] | | exit 0` lost its ` | | `, the SCC-287 row's`[^; | &]*` became a different character class `[^; | &]*` with lost spaces around a backtick span, and the SOP evidence-rule matcher `starting ## ` lost its trailing space | applied @ 74ced3b (all four literals restored to the pre-corruption text) |
+| `.agents/commands/adviser-board/TEAMS.md:5` | suggestion | "no special-status rooms" — residual retired-model vocabulary the walkthrough claimed was eliminated entirely | applied @ 74ced3b (reworded to "filters") |
+| `_artifacts/.../walkthrough.md` evidence-scope ¶ | important | claimed the live session exercised "chair-guided deepening, orchestrator research" — the session ran BEFORE the amendment; the deepening moves and research brief were never flown | applied @ 74ced3b (evidence-scope paragraph corrected with three honest caveats; garbled "Ground Truth cut last" annotation removed) |
+| `.agents/commands/adviser-board/ROSTER.md` / `TEAMS.md` | suggestion | nothing forbids seating the same mind on two filters (pools overlap by design) | dismissed — failed leg 1: the chair sees every menu and makes every pick himself; the "failure" requires him to not notice his own duplicate pick, and the old model explicitly acknowledged multi-seating |
+| `_artifacts/.../verify_board_filter.sh` floor gate | suggestion | fixed eight-phrase denylist; novel caucus phrasing passes; no negative-control fixture | dismissed — failed leg 1 + plan §8.2 explicitly accepts grep-adjudication's precision limit; no novel phrasing exists today |
+| `.agents/scripts/tests/run_all.py` `--case` | suggestion | "the claimed --case mechanism does not exist" | dismissed — the walkthrough never claims it; the command's `--case` row is conditional ("where the suite declares blocks") and this suite declares none; the mechanical fact (no `--case` in argparse) is recorded here |
+| `.agents/scripts/tests/` (absent judge harness) | suggestion | no LLM-as-judge behavioral test for the board's prompt behavior | dismissed — failed leg 1: this repo's suite has no LLM-judge harness and the lane's plan accepts live-session evidence as the tier for prompt behavior; building one here is coverage for symmetry |
+| `_artifacts/.../verify_board_filter.sh` wave gate | suggestion | exact-string presence greps are brittle in both directions | dismissed — same grep-adjudication limit the plan accepts; the standing test now owns the durable form |
+| plan §11 numbering gap | nitpick | §11 does not exist (Declared Change Set unnumbered between §10 and §12) | dismissed — doc symmetry in a planning artifact; §11b now exists beside it |
+| changelog row 2 "twelve moves → six" | nitpick | count superseded by the amendment row above it | dismissed — history row, newest-first ordering already supersedes it |
+
+### Gates (all re-run on the re-review-fixed tree @ `74ced3b3`)
+
+- **Enforcement suite** — receipt PASS, exit 0, 83.1s @ `74ced3b3`, stamped on a clean tree
+  (62/62 files — the new standing test joined the auto-discovery).
+- **Toolkit lint** — `workflow_lint.py --toolkit-only`: 0 errors, 0 warnings, 8 info (pre-existing
+  BOM infos on vendor `testarch-*` files).
+- **Assertion evidence** — `verify_board_filter.sh`: PASS(surface) · PASS(vocab) · PASS(rounds) ·
+  PASS(wave) · PASS(floor) · PASS(door) ×3, exit 0; standing test `test_adviser_board_filter_gates.py`
+  29/29 pass.
+- **SOP currency** — `sop_currency.py` exit 0; commit carries `[sop-ok]` (consistency fixes that
+  alter no operator usage; the SOP already describes the wave model).
+- **Link + anchor** — `check_links.py --base origin/main`: clean.
+- **Door parity** — opencode mirror re-synced byte-identical after the brain edits (`cmp`), claude
+  skill description matches, AG launcher description 128 ≤ 135 (quote-stripped count).
+- **Declared set** — `declared_change_set.py diff`: present, 0 undeclared / 0 unimplemented /
+  0 incomplete (the re-review's own new test file declared as a NEW row).
+- **py_compile** on the new test: OK · **bash -n** on the verify script: PARSE OK.
+
+### Acceptance matrix (plan §12, as amended — see §11b)
+
+| row | evidence |
+| --- | --- |
+| (a) Round-0 cast menu | **EVIDENCED** — live session 2026-08-28 (`## Live Session Evidence`); garbled cut-order annotation removed by this review |
+| (b) Full session, parallel opinion waves | **EVIDENCED** with recorded caveats — two waves of verbatim statements with cross-filter circulation flown live; the session predated the amendment (its waves were the then-current read/attack form), the deepening moves are text-present and machine-asserted but never invoked live, parallelism is a surface property of the command text, and no `board_sessions/` artifact exists — all three caveats now stated in the evidence-scope paragraph |
+| (c) vocabulary grep gate | machine-proven — PASS(vocab) + PASS(rounds) + PASS(floor), exit 0 @ `74ced3b3`; now also standing in the suite (block B/C/E) |
+| (d) door parity | machine-proven — cmp IDENTICAL + skill desc match + AG 128 ≤ 135 @ `74ced3b3`; standing in the suite (block F) |
+| (e) enforcement suite | machine-proven — receipt PASS exit 0 @ `74ced3b3`, 62/62 files, incl. workflow_lint + sop_currency |
+
+### Clean-Code Gate — PASS
+
+**Machine floor** (imported from Step 3 — no double run): run_all PASS 62/62 exit 0 @ `74ced3b3` ·
+workflow_lint 0 errors / 0 warnings · sop_currency exit 0 · link+anchor clean · door parity green ·
+declared set 0/0/0. **This step's own checks:** `py_compile` on the new test OK · `bash -n` on the
+verify script PARSE OK · comment contract (§2A): the diff's code is the verify script + the new
+test — comments carry SCC-340 provenance and state the allowlist-exception rule; no stale
+AIDEV-NOTE, no TODO/FIXME · banned-pattern scan over added lines: none · conventions (§2C): naming
+law clean (workflow_lint), one door per platform holds, generated files hand-edited: none (the AG
+launcher remains the sanctioned hand-owned exception), artifacts in the tree: yes. No findings above
+noise.
+
+**Changes applied:** the fixes in the findings table, commit `74ced3b` (explicit paths, `[sop-ok]`),
+plus the plan's declared-row amendment and this section — every gate re-run after the last
+code-touching change, receipt re-stamped on the clean tree. Nothing merged, nothing closed, no
+ticket transitioned, no memory touched.
+
+**Verdict basis:** every machine gate is green on the changed set; every engine finding is applied
+or dismissed with a reason; every acceptance row is evidenced (row (b) with its three caveats
+recorded in the evidence-scope paragraph rather than hidden). The wave model holds end to end after
+the boundary guards: Round-0 → opinion waves → render (all five slots) → traffic with the deepening
+moves → close, with no dangling R1–R4 reference in any gated surface and the governing records now
+amended to the design the build implements.

@@ -344,6 +344,7 @@ sync and map runs actually touch are declared explicitly rather than left to rea
 - EDIT (generated) `.agents/.sync-manifest.json` — written by `sync-agents.ps1` (§5.1) → d
 - EDIT (generated) `docs/doc-graph.json` — regenerated doc graph (§8) → e
 - EDIT (generated) `docs/doc-graph.md` — regenerated doc graph (§8) → e
+- NEW `.agents/scripts/tests/test_adviser_board_filter_gates.py` — standing suite test porting the lane's four gates + render-contract markers (2026-08-28 re-review: the gates died with the lane folder) → c, d
 
 Session-brief output path unchanged: `_artifacts/board_sessions/YYYY-MM-DD-<topic-slug>.md` (§3.7).
 Out-of-implementation-scope (close-out work): memory-flow flags for
