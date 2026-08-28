@@ -448,7 +448,7 @@ acli jira workitem comment create --key SCC-14 --body "…"        # TRAP: needs
 acli jira workitem transition --key SCC-14 --status "In Review" --yes  # TRAP: needs --key; --yes skips the interactive confirm
 acli jira workitem create --project SCC --type Task --summary "…" --description "…"
 #   children of an epic: add --parent <EPIC-KEY>; --type Epic works too; --label "a,b" at create
-#   ALWAYS create bare (no --assignee) — default-assignee is why everything once showed "assigned to Daniel"
+#   ALWAYS create bare (no --assignee) — default-assignee is why everything once showed "assigned to Daniel" (legacy account owner)
 acli jira workitem edit --key SCC-14 --labels "quick-dev,parallel-ok"   # REPLACES the label set
 acli jira workitem link create --out SCC-10 --in SCC-14 --type Blocks   # reads: SCC-10 blocks SCC-14
 ```

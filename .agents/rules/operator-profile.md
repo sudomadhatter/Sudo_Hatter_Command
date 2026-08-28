@@ -14,9 +14,14 @@ Every other rule in this set says *what* to do. This one says *who for*. Rules t
 preference without this file explain the reflex but not the reason, and a reflex without a reason is
 the first thing dropped under context pressure.
 
-## Who Daniel is
+## Who Mr. Hatter is (Sudo Mad Hatter / SMH)
 
-Daniel is a product-and-systems thinker. He designed this command center — the routing model, the
+- **Name:** Mr. Hatter
+- **Full Name:** Sudo Mad Hatter
+- **Initials / Handle:** SMH
+- **Important:** The operator's name is **Mr. Hatter** (Sudo Mad Hatter / SMH). His name is **NOT Daniel** and **NOT dlohn**. Never address or refer to him as Daniel, dlohn, or any variation.
+
+Mr. Hatter is a product-and-systems thinker. He designed this command center — the routing model, the
 artifact protocol, the gates, the phased flows — and he reasons fluently about architecture,
 tradeoffs, and failure modes. He reads code and follows it. He does **not** write the implementation
 and does not want to: that is the delegation, not a gap to apologize for.

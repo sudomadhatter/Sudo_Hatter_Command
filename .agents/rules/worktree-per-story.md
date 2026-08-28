@@ -116,7 +116,7 @@ a junction destroys the shared target, not just the link. Both close-outs do thi
   grows a second file, open the tree.
 - **`/cicd-push-e2e`** — it operates *on* branches (`epic/<JIRA-KEY>-<slug>` → `main`), so it must run in the
   main checkout.
-- **Daniel says otherwise** — an explicit "just do it here" in the moment wins.
+- **Mr. Hatter says otherwise** — an explicit "just do it here" in the moment wins.
 
 ### ⛔ Your tree is your world
 
@@ -202,7 +202,7 @@ exit code, not the gate's, so a failed gate prints `exit=0`. Run gates unpiped, 
 
 ## Inside the worktree — commit freely
 
-The worktree is your box. Commit your own work as you go; no approval, no handing Daniel a command.
+The worktree is your box. Commit your own work as you go; no approval, no handing Mr. Hatter a command.
 The safe-commit mechanics from `git-policy.md` still apply in full:
 
 | Gate | Rule |
@@ -210,7 +210,7 @@ The safe-commit mechanics from `git-policy.md` still apply in full:
 | **G1 · Location** | **Every** commit-producing lane commits inside its own worktree — a story lane on `claude/*`, ad-hoc/Task work on `chore/*` (see Trigger). HEAD at `main` while you are about to commit means you are in the shared checkout: open the worktree first. (The `require-push-approval.py` hook prompts on `main` either way.) |
 | **G2 · Scope** | `git add <explicit paths>` only. **`git add -A` / `.` / `-u` are banned** — they sweep other teams' work into your commit. Verify with `git diff --cached --stat` that only your files are staged. |
 | **G3 · Push** | No pushes to the epic branch during development — the landing at close-out is the one sanctioned push there. Pushing your own `claude/*` branch is free at any time. |
-| **G4 · `main`** | Never. Only Daniel, via `/cicd-push-e2e` (epic merge) or a direct in-the-moment ask (chore merge). |
+| **G4 · `main`** | Never. Only Mr. Hatter, via `/cicd-push-e2e` (epic merge) or a direct in-the-moment ask (chore merge). |
 
 ## Artifacts are authored in the tree
 
@@ -226,8 +226,8 @@ checkout read as "this story's review is done", and the confusion cost the actua
 
 The story lands on its **epic branch** as **one clean push**, triggered by either:
 
-- **`/cicd-close-story-merge-tree`** — invoking it IS Daniel's sign-off (its Step 3 does the landing), or
-- **Daniel's in-the-moment "approved"** — per-action, never carries to the next story.
+- **`/cicd-close-story-merge-tree`** — invoking it IS Mr. Hatter's sign-off (its Step 3 does the landing), or
+- **Mr. Hatter's in-the-moment "approved"** — per-action, never carries to the next story.
 
 **Several sibling lanes live at close-out time** (the standing multi-team case, or a LANDING RULE posted
 on the project's sprint board): the set goes through **`/cicd-merge-epic-workingtrees`** — the one-shot
@@ -261,4 +261,4 @@ is pruned later, by `/cicd-push-e2e`, after the epic merges to `main`.
 - NEVER `git add -A` / `.` / `-u`, inside a worktree or out.
 - NEVER check out the epic branch in the shared checkout to merge a story — land from inside the
   worktree; the shared checkout stays on `main`.
-- NEVER push to `main`. That is Daniel's, via `/cicd-push-e2e`.
+- NEVER push to `main`. That is Mr. Hatter's, via `/cicd-push-e2e`.

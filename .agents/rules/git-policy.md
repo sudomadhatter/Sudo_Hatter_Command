@@ -1,6 +1,6 @@
 ---
 name: git-policy
-description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<JIRA-KEY>-epic-<N>-<slug>` branch off main (BOTH numbers: ticket AND sprint); story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Daniel's in-the-moment 'approved' or via /cicd-close-story-merge-tree. The epic reaches `main` only through /cicd-push-e2e — full gate + E2E green + Daniel's sign-off."
+description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<JIRA-KEY>-epic-<N>-<slug>` branch off main (BOTH numbers: ticket AND sprint); story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Mr. Hatter's in-the-moment 'approved' or via /cicd-close-story-merge-tree. The epic reaches `main` only through /cicd-push-e2e — full gate + E2E green + Mr. Hatter's sign-off."
 trigger: model_decision
 # Protocol tier (rules/INDEX.md): conditional, not floor. Every gate it carries is ALSO
 # stated inline in AGENTS.md and constitution.md, so the stop binds even in a session
@@ -12,7 +12,7 @@ trigger: model_decision
 # Git Policy
 
 > The single, canonical git rule for the whole workspace. **Agents commit and push their own work now.**
-> This supersedes the old "never run git yourself — hand Daniel the command" default, which is gone:
+> This supersedes the old "never run git yourself — hand Mr. Hatter the command" default, which is gone:
 > that default is what produced commits carrying four unrelated sessions at once.
 
 ## Branch model — epic branches → `main` (THE dev standard)
@@ -86,7 +86,7 @@ trigger: model_decision
   `.agents/rules/jira.md` — the `acli` cheat-sheet, flag traps, and the ticket↔file join. The board
   is reachable from any shell-capable agent; no MCP or per-platform config exists or is needed.
 - **The epic reaches `main` exactly one way: `/cicd-push-e2e`** — the full gate (backend suite +
-  frontend build + `/cicd-e2e` GREEN) plus Daniel's explicit sign-off, then the merge. An agent
+  frontend build + `/cicd-e2e` GREEN) plus Mr. Hatter's explicit sign-off, then the merge. An agent
   never merges to `main` on its own initiative. The epic branch is deleted after it merges:
   branches are short-lived by design; nothing accumulates.
 
@@ -95,7 +95,7 @@ trigger: model_decision
 | Destination | Permission |
 |---|---|
 | Your own `claude/*` story branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
-| The epic branch (`epic/*`) — a story landing | **Daniel's sign-off** — his in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (which IS the sign-off) |
+| The epic branch (`epic/*`) — a story landing | **Mr. Hatter's sign-off** — his in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (which IS the sign-off) |
 | A `chore/*` branch (commits and pushes) | **FREE** — the merge back to `main` is what's gated |
 | `main` | **In this repo: a pull request the operator merges.** In project repos: `/cicd-push-e2e` — the epic, or a `chore/*` whose diff **reaches a deployable path** (`ship_preflight.py` derives which; a project `chore/*` touching nothing deployable takes the PR door instead). See below. Never on an agent's own initiative. |
 
@@ -286,7 +286,7 @@ a licence to leave work uncommitted or a landing unpushed.
 ## The landing — one story, one clean push
 
 The story lands on its **epic branch** at close-out (`/cicd-close-story-merge-tree` Step 3) or on
-Daniel's in-the-moment "approved". It merges **from inside the worktree**, never by checking out the
+Mr. Hatter's in-the-moment "approved". It merges **from inside the worktree**, never by checking out the
 epic branch in the shared checkout:
 
 ```bash
@@ -324,7 +324,7 @@ checkout boring: it is always exactly production.
 
 - **Commit your OWN work via explicit paths:** `git add path/one path/two …`.
 - **NEVER `git add -A`, `git add .`, or `git add -u`** — they sweep other parallel work (other
-  agents/teams, or Daniel's own uncommitted changes) into your commit. This is the most important rule,
+  agents/teams, or Mr. Hatter's own uncommitted changes) into your commit. This is the most important rule,
   and the worktree does not repeal it.
 - **Verify the staged set first:** `git diff --cached --stat` must show ONLY your files. If anything
   else appears, unstage it (`git restore --staged <path>`) before committing.
@@ -435,7 +435,7 @@ diverge → rejected-push tangle. Before the landing push:
    (`git rev-list --count HEAD..origin/epic/<JIRA-KEY>-<slug>` > 0).
 2. **If behind, merge `origin/epic/<JIRA-KEY>-<slug>` into your story branch first** (the landing block above
    does this by default) so you never land on top of a stale base.
-3. **If it will not merge cleanly**, **STOP and flag it** — hand Daniel the situation. Do NOT run a
+3. **If it will not merge cleanly**, **STOP and flag it** — hand Mr. Hatter the situation. Do NOT run a
    blind merge/rebase, and never force-push.
 
 The same applies one level up: before `/cicd-push-e2e` merges an epic into `main`, it first merges
@@ -445,7 +445,7 @@ then merges to `main` — so `main` never receives an unresolved conflict.
 ## Always
 
 - **Clear the Dummy GitHub Token:** The Antigravity IDE automatically injects a dummy `GITHUB_TOKEN` into the agent's environment as a sandbox security measure. Because Git and the `gh` CLI prioritize this environment variable over the Windows Credential Manager, it causes authentication failures. **Before running any `git` or `gh` commands, you MUST clear this variable** by prefixing the command or running: `Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; <command>`.
-- **Validate CI/CD credentials**: Before landing on a deployment-triggering branch (`main`), verify that the target repository's required secrets and variables are set up on GitHub using `gh secret list` and `gh variable list` (WIF-based workflows need neither — check what the workflow actually references). If credentials are missing, STOP and notify Daniel before proceeding.
+- **Validate CI/CD credentials**: Before landing on a deployment-triggering branch (`main`), verify that the target repository's required secrets and variables are set up on GitHub using `gh secret list` and `gh variable list` (WIF-based workflows need neither — check what the workflow actually references). If credentials are missing, STOP and notify Mr. Hatter before proceeding.
 - The `walkthrough.md` **"Your Actions"** section records what landed — the branch, the commit range,
   and **errands only**: what the operator must go and DO outside the chat (an epic promotion via
   `/cicd-push-e2e`, a live test). **Never a decision or a question** — ask those in the session
