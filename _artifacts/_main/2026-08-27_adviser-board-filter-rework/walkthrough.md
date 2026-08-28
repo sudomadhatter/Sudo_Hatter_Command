@@ -33,7 +33,8 @@ lane class; none earned its own branch).
 - [x] Commit `ebe7966` (explicit paths, ticket key in subject; SOP + changelog in the same commit per F3 —
       the armed `sop_currency.py` gate satisfied by update, not `[sop-ok]`)
 - [x] Enforcement suite — first receipt run RED on one real finding (below); fixed; re-stamped GREEN
-- [ ] Review gate — `/smh-code-review` is the operator's next step; nothing merged, nothing closed
+- [x] Review gate — `/smh-code-review` ran 2026-08-28; verdict **CONCERNS** @ `1aae519` (rows a/b
+      operator-pending); 4 review fixes applied and re-gated — see `## Code Review` below
 
 ### Suite finding that fought back
 
@@ -67,6 +68,8 @@ verify-exit=0
 
 **Enforcement suite (receipt [gates/suite.json](gates/suite.json)):** first run FAIL (INDEX row, above);
 re-stamped **GREEN** on the fixed tree — includes `workflow_lint.py --toolkit-only` and `sop_currency.py`.
+Re-stamped again after the review fixes: **PASS, exit 0, 81.8s @ `1aae5194`** (the review touched
+`.agents/commands/` surfaces, which invalidates a receipt — only `_artifacts/` is exempt).
 
 **Acceptance rows:**
 
@@ -77,10 +80,110 @@ re-stamped **GREEN** on the fixed tree — includes `workflow_lint.py --toolkit-
   flies; the command text that implements them is landed and grep-clean, but only a human can drive the
   dry-run/full session. Owed below.
 
-## Code Review
+## Code Review (2026-08-28)
 
-Pending — `/smh-code-review` runs at the operator's word (review gate STOP; this lane does not invoke it
-itself per the operator's directive).
+Verdict: CONCERNS @ 1aae519
+Suite evidence measured on the same sha: `1aae5194` (receipt `gates/suite.json`, PASS exit 0, 81.8s).
+
+review-runtime: inline (no subagent tool)
+lens_isolation: shared — inline ladder in one context; no subagent tool exists in this runtime (SCC-177 probe)
+lenses_run:
+
+- edge-case-hunter · recovered-inline
+- literal-correctness-hunter · recovered-inline
+- acceptance-auditor · recovered-inline
+- test-adequacy-auditor · recovered-inline
+lenses_counted:  4/4
+lenses_na:
+- blind-hunter · n/a — context contaminated (holds the plan §11/§12, the walkthrough, and the Step 0.7 radius; dropped rather than faked, SCC-203)
+
+dispositions:    per-lens: edge-case-hunter=2/2/0 · literal-correctness-hunter=3/1/0 · acceptance-auditor=1/0/0 · test-adequacy-auditor=0/1/0
+drift:           undeclared=0 · unimplemented=0 · incomplete=0 — reconciled clean after the declared-set fix below (before it: 19 undeclared / 3 incomplete, because the plan's block was a table the `declared_change_set.py` grammar cannot parse)
+
+**Scope:** the full `origin/main...HEAD` diff (32 files: command brain + 6 contracts + 3 doors + AG
+launcher + SOP set + 2 INDEXes + lane artifacts). **Method:** inline ladder per the engine contract —
+Edge-Case and Literal-Correctness hunted the diff with repo access, the Acceptance Auditor walked it
+against the plan, Test-Adequacy walked the assertion instrument; verify wave ran inline (cold — no
+dossier; `evidence_extract.py` is a subagent-side tool and this runtime has none); triage applied the
+assessor's three-question rule.
+
+### Step 0.7 — re-derivation
+
+1. **Nothing this diff references moved on `main`.** Merge-base `007efd1` == current `origin/main` tip;
+   zero files landed while the lane built (`/tmp/theirs.txt` empty), so no reference could have been
+   moved out from under it. The only stale references found were the lane's own (finding 3 below).
+2. **True overlap: none — no conflicts.** `grep -Fxf mine theirs` → ∅; `merge-tree --write-tree` clean.
+   Nothing to absorb; the review sha equals the built sha plus the review-fix commits.
+3. **No sibling lanes live** (`git worktree list`: `main` + this tree only) — no landing-order
+   dependency. `risk_seam.py classify` → `unclassified`, the permanent correct answer for this
+   markdown repo (SCC-289). Derived `review_level`: **standard** (contract surfaces in the radius,
+   32 files > 3).
+
+### Findings
+
+| file:line | severity | failure scenario | disposition |
+| --- | --- | --- | --- |
+| `.agents/commands/smh-adviser-board.md:160` | important | brain Step 3 says "Full templates in `SPAWNS.md` §3–§4" — after the renumbering, §3 is the Round-0 menu and the round templates live in §4–§5; a live session follows the pointer and misses the R2–R4 template | applied @ a962750 (§4–§5) |
+| `.agents/commands/adviser-board/ROSTER.md:15` | suggestion | `Best against` named as the sole `swap` ranking key, contradicting the Round-0 top-3 rule (Best against **+ situation index**) the brain's `swap` move cites — two ranking rules for one menu | applied @ a962750 (aligned to the top-3 rule) |
+| `_artifacts/.../self-audit.md:44–57` | important | 9 link targets written `path:line` — `check_links.py` resolves `#L<n>` anchors only, so all 9 read as dead paths the diff introduced (FAIL-class per the verdict rules) | applied @ a962750 (`#L<n>` anchors; check_links → clean) |
+| `_artifacts/.../implementation_plan.md` (Declared Change Set) | important | block was numbered (`## 11.`) and table-shaped — the drift parser's grammar is `^## Declared Change Set$` + `- OP \`path\` → rows` bullets, so it read `present: false` ("no declared set to reconcile against") and every file read as undeclared drift | applied @ a962750 + 1aae519 (unnumbered heading + machine rows beside the human table; reconciliation → 0/0/0) |
+| `docs/_scc_sops_prds/INDEX.md` | suggestion | declared in the plan's F4 prose ("rides with the fix") but had no machine row — read as undeclared drift | applied @ 1aae519 (row added) |
+| `.agents/.sync-manifest.json`, `docs/doc-graph.{json,md}`, `.agents/skills/smh-adviser-board/SKILL.md` | suggestion | present in the diff, absent from the declared table | dismissed — sync/map-generated files; now declared explicitly as `EDIT (generated)` rows in the machine block |
+| `.agents/workflows/smh-adviser-board.md` exists while `platforms:` excludes antigravity | suggestion | door on a platform the frontmatter does not claim | dismissed — pre-existing hand-authored, prune-protected door the plan maintains by name (§5.2 / F6); not introduced here |
+| `verify_board_filter.sh` reports the AG description as 127 chars; an independent count says 125 | nitpick | two counters disagree | dismissed — both under the 135 budget; the declared instrument's own count governs |
+| SPAWNS §5 R2–R4 template omits R1's "Reaches for" instruments paragraph | nitpick | R2–R4 spawn not reminded its instruments are optional | dismissed — the persona card it re-reads carries the same line; no concrete failure |
+
+Tail: 9 findings assessed; 5 real and applied, 4 dismissed under the 2026-08-17 ruling. No finding's
+assessment disagreed with its lens label in either direction.
+
+### Gates (all re-run on the review-fixed tree @ `1aae519`)
+
+- **Enforcement suite** — receipt PASS, exit 0, 81.8s @ `1aae5194` (re-stamped after the review fixes;
+  inherited `a882a1d6` receipt was invalidated by the `.agents/commands/` touches). 61/61 files.
+- **Toolkit lint** — `workflow_lint.py --toolkit-only`: 0 errors, 0 warnings, 8 info (BOM infos on
+  vendor `testarch-*` files — pre-existing, not this diff's).
+- **Assertion evidence** — `verify_board_filter.sh`: PASS(vocab) · PASS(floor) · PASS(door) ×3, exit 0.
+- **SOP currency** — `sop_currency.py` exit 0. Review-fix commits carry `[sop-ok]`: they alter no usage
+  (a §-pointer, a ranking-rule alignment, plan/self-audit mechanics — the SOP already describes the
+  filter model).
+- **Link + anchor** — `check_links.py --base origin/main`: clean (27 files, 225 claims, 0 dead) after
+  the anchor fix; was 9 dead before.
+- **Door parity** — opencode mirror byte-identical to the brain (`cmp`), claude skill == master skill
+  (`cmp`), AG launcher description 127 ≤ 135 budget.
+- **Declared set** — `declared_change_set.py diff`: present, 0 undeclared / 0 unimplemented / 0 incomplete.
+- **bash -n** on `verify_board_filter.sh`: PARSE OK · **py_compile**: n/a (no `.py` in the diff) ·
+  **lint/types**: not applicable to this repo (no venv, no ruff, no tsc).
+
+### Acceptance matrix (plan §12)
+
+| row | evidence |
+| --- | --- |
+| (a) Round-0 cast menu dry-run | **operator-pending** — live board session; the command text that implements it is landed and grep-clean, but only the chair can fly the dry-run |
+| (b) Four visible rounds full session | **operator-pending** — same; R1–R4 render/traffic/close text verified by reading, spawns proven only in a live session |
+| (c) vocabulary grep gate | machine-proven — PASS(vocab) + PASS(floor), exit 0 @ `1aae519` |
+| (d) door parity | machine-proven — cmp ×2 IDENTICAL + AG 127 ≤ 135 @ `1aae519` |
+| (e) enforcement suite | machine-proven — receipt PASS exit 0 @ `1aae5194`, incl. workflow_lint + sop_currency |
+
+### Clean-Code Gate — PASS
+
+**Machine floor** (imported from Step 3 — no double run): run_all PASS 61/61 exit 0 @ `1aae5194` ·
+workflow_lint 0 errors / 0 warnings · sop_currency exit 0 · link+anchor clean · door parity green.
+**This step's own checks:** `bash -n verify_board_filter.sh` PARSE OK · py_compile n/a (no `.py`) ·
+comment contract (§2A): the diff's only code is the verify script — its comments carry SCC-340
+provenance and state the floor-adjudication rule, no stale AIDEV-NOTE, no TODO/FIXME · banned-pattern
+scan over added lines: none · conventions (§2C): naming law clean (workflow_lint), one door per
+platform holds, generated files hand-edited: none (the AG launcher is the sanctioned hand-owned
+exception), artifacts in the tree: yes. No findings above noise.
+
+**Changes applied:** the five fixes in the findings table (commits `a962750`, `1aae519`, both
+explicit-path, `[sop-ok]` where the hook demanded a SOP call) — every gate re-run after the last one.
+Nothing merged, nothing closed, no ticket transitioned.
+
+**Verdict basis:** every machine gate is green on the changed set and every engine finding is applied
+or dismissed with a reason — but acceptance rows (a) and (b) have no evidence a machine can produce:
+they are live board sessions only the chair can fly. An acceptance item with no evidence caps the
+verdict at CONCERNS per the verdict rules; it is operator-pending, not failed. When the chair has flown
+the dry-run and a full session, this lane closes via `/smh-close-task-merge-tree`.
 
 ## Your Actions
 
