@@ -1,0 +1,16 @@
+task_key: SCC-340
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-340-adviser-board-filter-rework
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders:
+  - key: SCC-341
+    why: acceptance row (a) — Round-0 cast menu; same repo, same lane class, no own branch earned
+  - key: SCC-342
+    why: acceptance row (b) — four visible rounds; same repo, same lane class, no own branch earned
+  - key: SCC-343
+    why: acceptance row (c) — vocabulary grep gate; machine-proven in this lane
+  - key: SCC-344
+    why: acceptance row (d) — door parity; machine-proven in this lane
+  - key: SCC-345
+    why: acceptance row (e) — enforcement suite; machine-proven in this lane
