@@ -7,7 +7,7 @@
     "files": 414,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 742,
+    "edges": 743,
     "external": 40,
     "ambiguous": 167,
     "dangling": 300,
@@ -53,13 +53,13 @@
     },
     {
       "path": ".agents/commands/adviser-board/ROSTER.md",
-      "in": 6,
+      "in": 7,
       "out": 1
     },
     {
       "path": ".agents/commands/adviser-board/SPAWNS.md",
       "in": 4,
-      "out": 3
+      "out": 4
     },
     {
       "path": ".agents/commands/adviser-board/TEAMS.md",
@@ -2233,6 +2233,11 @@
     {
       "from": ".agents/commands/adviser-board/SPAWNS.md",
       "to": ".agents/commands/adviser-board/CARD.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/SPAWNS.md",
+      "to": ".agents/commands/adviser-board/ROSTER.md",
       "kind": "ref"
     },
     {

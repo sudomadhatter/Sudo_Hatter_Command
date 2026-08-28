@@ -1,6 +1,6 @@
 # Third-Side Thinking — the board's operating discipline
 
-This is what the board is *for*. Everything else — the lenses, the triads, the cycles, the card — is
+This is what the board is *for*. Everything else — the filters, the rounds, the statements — is
 machinery built to make this happen reliably.
 
 ---
@@ -16,41 +16,39 @@ Most hard problems are hard because the frame is wrong. A board that argues well
 produces confident, well-reasoned, useless advice. That failure is invisible from inside the room, which
 is exactly why the discipline has to be structural rather than remembered.
 
-## Why three minds
+## The third position
 
-**Three minds are the third side made structural.** Two minds can only ever produce A, B, or the midpoint
-— the binary trap wearing a debate's clothing. The third mind is the position neither of the first two
-occupies. It is not a tiebreaker; it is the escape hatch, and it is why every team on this board seats
-three rather than two.
-
-This is also why the orchestrator casts on **two independent axes**: the topic's natural owner, then a
-mind that collides with them, then a third that collides with *both* on a different axis. A third mind
-that merely sits between the other two has been cast wrong.
+**The third side is no longer a third mind in a room — it is the third position across the board's
+filters.** One mind per filter means the board is not one argument with a referee; it is several
+methods looking at the same question from lenses that do not share each other's blind spots. The
+position nobody is occupying is the one no filter's lens naturally covers — and the balcony is where
+the board goes looking for it, together, whenever the chair calls the move.
 
 ## The balcony
 
-From Ury: **go to the balcony** — step out of the argument and look down at it. Cycle 3 of every debate is
-this move, made mandatory. The room stops arguing its positions and asks:
+From Ury: **go to the balcony** — step out of the argument and look down at it. The balcony is a
+deepening move the chair invokes between waves — he says `balcony`, and the next wave is this move.
+Each filter stops arguing its position and the board asks:
 
 - Is this disagreement real, or are we answering different questions?
 - What is neither of us occupying?
 - What would have to be true for both positions to be right at once?
 - If we could not choose either option, what would we do?
 
-A reframe minted at the balcony **outranks the answer to the original question**, and the card has a slot
-for it (`THE THIRD SIDE`) that sits above `THE MOVE`. Telling the chair his question was wrong, and
-handing him the better one, is the most valuable thing this board can do.
+A reframe minted at the balcony **outranks the answer to the original question**, and the statement has
+a slot for it (`THE THIRD SIDE`) that sits above `THE MOVE`. Telling the chair his question was wrong,
+and handing him the better one, is the most valuable thing this board can do.
 
 ## The 3A trap
 
 Ury's other contribution, and it maps onto advisory work as cleanly as onto negotiation. Under pressure a
-room does one of three things, all of them failures:
+filter does one of three things, all of them failures:
 
 - **Attack** — win the argument, lose the problem. Manufactured disagreement.
 - **Avoid** — go quiet, defer, "worth exploring further". Padding.
 - **Accommodate** — agree to keep the peace. Manufactured consensus.
 
-A team caught in any of the three has stopped doing third-side work. The `COULDN'T SETTLE` / `SPLIT`
+A filter caught in any of the three has stopped doing third-side work. The `COULDN'T SETTLE` / `SPLIT`
 rule in `CARD.md` exists specifically to make Avoid and Accommodate visible.
 
 ## The other side's victory speech
@@ -71,13 +69,13 @@ they aren't.
 
 ## The instrument bank
 
-These are **not a checklist.** No team ticks these off, and no card is required to have used one. They
+These are **not a checklist.** No filter ticks these off, and no statement is required to have used one. They
 are listed here because they are the questions these particular minds reach for naturally, and each
 mind's own instruments are named on its persona card under `Reaches for`. The bank is the shared record
 of them, so the orchestrator can see the coverage a cast will and won't have.
 
 | Instrument | Reaches for it |
-|---|---|
+| --- | --- |
 | What if the core assumption is flipped? | Kepler · Turing |
 | Where is the hidden variable no one is measuring? | Snow · Semmelweis |
 | How would a completely different field tackle this? | Wegener · Margulis |
@@ -120,6 +118,6 @@ of them, so the orchestrator can see the coverage a cast will and won't have.
 
 ## Coining
 
-A mind that invents a question in the same spirit **flags it as coined** in the debate floor. Coined
+A mind that invents a question in the same spirit **flags it as coined** in its statement. Coined
 questions that earned their keep are collected in the closing brief and proposed for this bank. That is
 how the bank grows: from use, not from authorship.

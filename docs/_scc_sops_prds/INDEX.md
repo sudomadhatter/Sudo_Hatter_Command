@@ -16,7 +16,7 @@ under listed 2 files that did not exist and omitted 4 that did, and nothing coul
 Operator ruling 2026-08-10 makes the division permanent:
 
 | Folder | What it is | Staleness |
-|---|---|---|
+| --- | --- | --- |
 | `_my_resources/` | Daniel's human thinking + brainstorming space. **Agents ignore it unless he links a specific document.** | fine by design |
 | `docs/` | the maintained surface | **must never go stale** |
 
@@ -24,7 +24,7 @@ A procedural doc sitting in the first is therefore a defect by definition. Two m
 this folder, and they cover **different things** — neither is a substitute for the other:
 
 | Mechanism | What it actually catches | Blind to |
-|---|---|---|
+| --- | --- | --- |
 | `.agents/scripts/tests/test_sops_prds_folder.py` (in `run_all`) | this INDEX vs the directory **both ways**, every **markdown link** target, every `/command` reference resolving to a real master, the 13-doc manifest, and the SOP gate's two paths agreeing | prose that names no link |
 | `check_maps.py` | **backticked multi-segment paths inside table rows**, plus level-2 INDEX presence and repo-map coverage | markdown links, and anything outside a table row |
 | T9 in that same test (SCC-83) | **backticked paths in PROSE** — sentences and bullets: the gap between the two rows above | paths written *without* backticks, and the interior of a project this machine has not checked out |
@@ -72,14 +72,14 @@ boundary being drawn is "SOP vs setup," never "watched vs unwatched."
 ## The operator's PRD
 
 | Doc | What it is |
-|---|---|
+| --- | --- |
 | [workflows_testing_SOP_changelog.md](workflows_testing_SOP_changelog.md) | **The SOP's change history** — one line per change: date · ticket · what changed for the operator, newest first. Exists so the SOP itself can state the *current* system with no change-narration (the writing contract: `sop-currency.md` §Writing the update, habit 4). A gate-driven SOP update puts its delta description here, in the same commit. |
 | [workflows_testing_SOP.md](workflows_testing_SOP.md) | **THE quick reference — start here.** The whole dev system on one page: the lifecycle map, every `/` command by lane (story loop ①②③, shipping, autopilot, toolkit upkeep), the test gate + verdicts, the P0–P3 risk matrix, the TEA cheat-sheet — and, since SCC-161, **the command atlas** (Part VI): the call graph, who writes the board, where each command stops for you, and one mermaid diagram per critical command, each checked against the live command body. The one page that answers *what do I type*, and the only one an operator reads start to finish. Protected by an armed commit-msg gate (`sop_currency.py`): change how the system is USED and this page moves in the same commit, or the commit is rejected. Was the `sudo_workflows_testing.md` quick-reference in Daniel's personal area; renamed here because SCC-63 retired the `sudo-` prefix. |
 
 ## Jira & git — the manual half
 
 | Doc | What it is |
-|---|---|
+| --- | --- |
 | [jira_manual.md](jira_manual.md) | **Everything *you* do by hand** — no commands, no agents, no terminal. Creating a backlog item, §2.2.1 choosing the work type, moving it through a sprint, §2.6 flagging something broken (you never create a Bug ticket — the shipped ticket wears the flag), then the source-control half in the VS Code panel: branch naming, staging file-by-file, commit format, the three armed hooks and **where VS Code hides their output**, and §3.8 the one-command close-out. |
 | [jira_integration_guide.md](jira_integration_guide.md) | **How work becomes an auditable record** — and why almost none of it depends on a model being available. The two-channel model, §6 the work-item type rule, the BMAD-number↔Jira-key join, §7 all three lanes (Story · Task · Epic), Smart Commits, the `commit-msg` gate plus the encoding and SOP-currency hooks, an `acli` + `jira_feed.py` cheat-sheet, and the honest enforcement picture (GitHub Free = alarm, not lock). |
 | [git_walkthrough_settings.md](git_walkthrough_settings.md) | **The git config, explained from scratch** — what each of the ten machine-wide settings does and why. Picture-first; read once and merge-vs-rebase-vs-fast-forward stops being mysterious. ⚠ `~/.gitconfig` follows the *profile*, not you: it does not travel between machines. |
@@ -87,14 +87,14 @@ boundary being drawn is "SOP vs setup," never "watched vs unwatched."
 ## The system itself
 
 | Doc | What it is |
-|---|---|
+| --- | --- |
 | [file_folder_structure+maintaining.md](file_folder_structure+maintaining.md) | **The one-stop guide to the home base — and the single system overview.** SCC-80 retired `complete-system-overview.md` into it (2026-08-10): 7 of that doc's 10 sections had a counterpart here, its §8 named a script that no longer exists and its §9 was a completed rollout plan. Its Glossary survives as §10a. — the folder-as-workspace routing system, what lives where, and how it is kept healthy. The living overview that sits on top of `../workspace-standard.md`. |
 | [autopilot_bmad_dev_loop.md](autopilot_bmad_dev_loop.md) | **The autopilot reference** — the 4-stage Dev/QA relay (Plan → Audit → Implement → Review+Fix): engine/harness split, the Engine Adapter, session continuity, the resilience + test-gate model, the model/effort ladder (§5b), and the worktree-based concurrency model. Covers every engine — `/cicd-autopilot-claude`, `/cicd-autopilot-deepseek4`, `/cicd-autopilot-opencode`. Moved out of the toolkit's retired `reference` folder by SCC-74, which also resolved a six-week-stale duplicate. |
 
 ## Testing & quality
 
 | Doc | What it is |
-|---|---|
+| --- | --- |
 | [tea_testing_guide.md](tea_testing_guide.md) | The deep TEA reference: BMAD Test Architect agents, the ATDD red→green contract, test levels + the priorities matrix, and NFR / trace / gate mechanics. |
 | [tea_deep_reference.md](tea_deep_reference.md) | The deep archive `workflows_testing_SOP.md` was carved from (2026-07-14): full command call-graphs, the TEA method curriculum, the Epic-8 anchor index, and the 42-fragment library. Kept for depth, not daily use. |
 | [tdad_stack_install_guide.md](tdad_stack_install_guide.md) | Install/setup for the TDAD (test-driven agentic dev) stack — the BDD contract layer added to both the manual and autonomous workflows. |
@@ -102,10 +102,10 @@ boundary being drawn is "SOP vs setup," never "watched vs unwatched."
 ## Security & advisory
 
 | Doc | What it is |
-|---|---|
+| --- | --- |
 | [sentry_error_response_team.md](sentry_error_response_team.md) | AviationChat's automated incident-response system (Epic 16): production breaks → a cloud agent investigates, builds the fix on its own hotfix branch, and the report lands on Daniel's phone. |
 | [sharing_keys_secrets_secure.md](sharing_keys_secrets_secure.md) | **How to get a key onto a teammate's machine without it ever existing in a chat message.** The Keyway vault: install per machine, `keyway login` + `keyway init` per repo, and the daily loop — `keyway run` injects secrets into RAM so nothing durable lands on disk. The team half is the point: GitHub repo access decides **who is in at all**, production is a permission boundary rather than a label, and **offboarding is three steps — revoke, clear the dashboard role, then rotate**, because cutting GitHub access cannot un-copy a `.env` someone already pulled. Documents the flags that destroy data (`push --prune` against a stale file silently deletes your teammates' keys; `sync` is bidirectional and the one command defaulting to **production**; `-e` means `--exclude` on `scan` alone) and ⛔ **the hazard the tool creates itself: `keyway push` appends `.env*` to your `.gitignore` unprompted** — observed live, which is why `git diff .gitignore` after a first push is in the card. Also records why Keyway over GCP Secret Manager or Vault. Flags checked command-by-command against the live 0.5.3 binary (SCC-37). |
-| [smh-adviser-board-REFERENCE.md](smh-adviser-board-REFERENCE.md) | The `/smh-adviser-board` roster: every mind with a full cognitive signature, so any bench mind can be subbed into a seat with a copy-paste. |
+| [smh-adviser-board-REFERENCE.md](smh-adviser-board-REFERENCE.md) | Pointer to the `/smh-adviser-board` live contracts — filter charters, roster, doctrine, statement and spawn files in `.agents/commands/adviser-board/` — plus the roster-change how-to. |
 
 ## Frontend & UI/UX design
 
