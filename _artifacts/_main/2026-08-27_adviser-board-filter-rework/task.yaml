@@ -3,14 +3,10 @@ primary_repo: Sudo_Hatter_Command
 branch: chore/SCC-340-adviser-board-filter-rework
 close_command: smh-close-task-merge-tree
 secondary_repos: []
-riders:
-  - key: SCC-341
-    why: acceptance row (a) — Round-0 cast menu; same repo, same lane class, no own branch earned
-  - key: SCC-342
-    why: acceptance row (b) — parallel opinion waves (as amended 2026-08-28); same repo, same lane class, no own branch earned
-  - key: SCC-343
-    why: acceptance row (c) — vocabulary grep gate; machine-proven in this lane
-  - key: SCC-344
-    why: acceptance row (d) — door parity; machine-proven in this lane
-  - key: SCC-345
-    why: acceptance row (e) — enforcement suite; machine-proven in this lane
+# Riders (inline list form — task_preflight.py RIDERS_RE reads only this shape):
+# SCC-341 acceptance row (a) — Round-0 cast menu; same repo, same lane class, no own branch earned
+# SCC-342 acceptance row (b) — parallel opinion waves (as amended 2026-08-28); same repo, same lane class
+# SCC-343 acceptance row (c) — vocabulary grep gate; machine-proven in this lane
+# SCC-344 acceptance row (d) — door parity; machine-proven in this lane
+# SCC-345 acceptance row (e) — enforcement suite; machine-proven in this lane
+riders: [SCC-341, SCC-342, SCC-343, SCC-344, SCC-345]
