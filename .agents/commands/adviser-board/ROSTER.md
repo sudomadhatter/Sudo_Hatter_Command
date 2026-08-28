@@ -12,7 +12,7 @@ board affordable.
 when the topic warrants, and says so in one clause at the cast gate.
 
 `Sees` is what this mind notices that the others don't. `Best against` is the failure mode they are the
-sharpest tool for — it is what the `swap` substitute list is ranked by.
+sharpest tool for — it informs the `swap` substitute list's ranking, per the Round-0 top-3 rule below.
 
 ⭐ **Cast from § Reach for them when, below the tables.** `Best against` names a *failure mode*, which is
 precise and unusable unless you already think in those terms; the situation index says plainly when to

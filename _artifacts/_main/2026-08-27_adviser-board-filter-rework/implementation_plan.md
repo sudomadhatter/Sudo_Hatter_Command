@@ -297,7 +297,7 @@ worktree off `main`, explicit-path commits, gates, `/smh-close-task-merge-tree` 
 close-out runs **in the same session as the landing** (SCC-331's close-out ran 15 hours late; do not
 repeat that).
 
-## 11. Declared Change Set
+## Declared Change Set
 
 Every file the implementation will create / modify / delete. Change types: MODIFY · REWRITE ·
 REGENERATE · UNCHANGED. Paths relative to repo root. (Audit finding F1 — this block is the
@@ -321,12 +321,34 @@ drift-check consumer's contract; absence is a finding, presence is the baseline.
 | 14 | `docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md` | MODIFY | pointer doc → filter model (⚠️ F4) |
 | 15 | `.agents/commands/INDEX.md` | MODIFY | `smh-adviser-board` row (⚠️ F5) |
 
-- **Session-brief output path unchanged:** `_artifacts/board_sessions/YYYY-MM-DD-<topic-slug>.md` (§3.7).
-- **Out-of-implementation-scope (close-out work):** memory-flow flags for
-  `adviser-board-caucus-card-contract.md` and `adviser-board-roster-is-product-shaped.md` (⚠️ F7) —
-  routed via the sanctioned flows (`/smh-memory-audit` / `/cicd-update-sprint-memory`), never edited in
-  this lane.
-- **No files created or deleted** by this change set; `minds/` is untouched.
+Machine rows — the same set in the grammar `declared_change_set.py` parses (`- OP \`path\` — why → rows`);
+the table above is the human view, these are the drift-check consumer's entries. Generated files the
+sync and map runs actually touch are declared explicitly rather than left to read as drift:
+
+- EDIT `.agents/commands/smh-adviser-board.md` — §4.1 section-by-section → c, d
+- EDIT `.agents/commands/adviser-board/TEAMS.md` — filter charters (§4.2) → c
+- EDIT `.agents/commands/adviser-board/ROSTER.md` — per-filter top-3 ranking rule (§4.3) → c
+- EDIT `.agents/commands/adviser-board/CARD.md` — statement contract (§4.4) → c
+- EDIT `.agents/commands/adviser-board/SPAWNS.md` — one-mind spawns + round-0 menu (§4.5) → c
+- EDIT `.agents/commands/adviser-board/DOCTRINE.md` — vocabulary only (§4.6) → c
+- EDIT `.agents/commands/adviser-board/THIRD-SIDE.md` — team/triad references only (§4.7) → c
+- EDIT `.agents/workflows/smh-adviser-board.md` — hand-authored AG launcher, description budget + body (§5.2, ⚠️ F6) → c, d
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — four board-usage passages (⚠️ F3) → e
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — one convention row (⚠️ F3) → e
+- EDIT `docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md` — pointer doc → filter model (⚠️ F4) → c
+- EDIT `.agents/commands/INDEX.md` — `smh-adviser-board` row (⚠️ F5) → c
+- EDIT (generated) `.claude/skills/smh-adviser-board/SKILL.md` — via `/smh-sync-agents` (§5.1) → d
+- EDIT (generated) `.opencode/commands/smh-adviser-board.md` — via `/smh-sync-agents` (§5.1) → d
+- EDIT (generated) `.agents/skills/smh-adviser-board/SKILL.md` — sync master launcher, tree-copied to `.claude/` (§5.1) → d
+- EDIT (generated) `.agents/.sync-manifest.json` — written by `sync-agents.ps1` (§5.1) → d
+- EDIT (generated) `docs/doc-graph.json` — regenerated doc graph (§8) → e
+- EDIT (generated) `docs/doc-graph.md` — regenerated doc graph (§8) → e
+
+Session-brief output path unchanged: `_artifacts/board_sessions/YYYY-MM-DD-<topic-slug>.md` (§3.7).
+Out-of-implementation-scope (close-out work): memory-flow flags for
+`adviser-board-caucus-card-contract.md` and `adviser-board-roster-is-product-shaped.md` (⚠️ F7) —
+routed via the sanctioned flows (`/smh-memory-audit` / `/cicd-update-sprint-memory`), never edited in
+this lane. No files created or deleted by this change set; `minds/` is untouched (§4.8).
 
 ## 12. Acceptance
 

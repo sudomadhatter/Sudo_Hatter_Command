@@ -157,7 +157,7 @@ begins the rounds.
 
 One spawn per filter per round, **all Agent calls in a single message**. Each reads its one mind's
 persona card, and carries the ground brief, the doctrine, the third-side stance, the running summary
-(≤400 words), and **every other filter's latest statement**. Full templates in `SPAWNS.md` §3–§4.
+(≤400 words), and **every other filter's latest statement**. Full templates in `SPAWNS.md` §4–§5.
 
 Four visible rounds, each with a job:
 
