@@ -249,6 +249,13 @@ PASS(door): AG launcher description 130 chars (budget 135)
 verify-exit=0
 ```
 
+**Enforcement suite re-stamped on the amended tree:** receipt [gates/suite.json](gates/suite.json) —
+**PASS, exit 0, 85.4s @ `c575edd0`** (61/61 files, incl. `workflow_lint --toolkit-only` 0 errors /
+0 warnings, `sop_currency` exit 0, `check_links --base origin/main` clean). `check_maps` reports
+pre-existing drift only (4 renames + 2 dead `docs/migrations/auth_keys/...` paths from other lanes'
+landings in `e2d182f..764b2b2`, none this diff's; exit 0) — the known worktree false-stale, not
+reconciled here.
+
 ## Live Session Evidence (2026-08-28)
 
 The chair flew the board live on a real topic before amending it. What the session showed, in order:
