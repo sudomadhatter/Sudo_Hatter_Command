@@ -336,6 +336,7 @@ sync and map runs actually touch are declared explicitly rather than left to rea
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — four board-usage passages (⚠️ F3) → e
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — one convention row (⚠️ F3) → e
 - EDIT `docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md` — pointer doc → filter model (⚠️ F4) → c
+- EDIT `docs/_scc_sops_prds/INDEX.md` — REFERENCE-pointer row rides with F4's fix (⚠️ F4) → c
 - EDIT `.agents/commands/INDEX.md` — `smh-adviser-board` row (⚠️ F5) → c
 - EDIT (generated) `.claude/skills/smh-adviser-board/SKILL.md` — via `/smh-sync-agents` (§5.1) → d
 - EDIT (generated) `.opencode/commands/smh-adviser-board.md` — via `/smh-sync-agents` (§5.1) → d
