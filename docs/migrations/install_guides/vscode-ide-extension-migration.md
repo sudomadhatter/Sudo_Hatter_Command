@@ -196,7 +196,20 @@ they become functional.
 5. **PC only:** confirm `git config --global core.hooksPath .githooks` is set — a fresh clone has
    **no gates at all** without it — and remember the interpreter split: **PC = `python`,
    Mac = `python3`**.
-6. Uninstall Roo Code and (when ready) Antigravity IDE.
+6. **Port the user-level settings from Antigravity** (per machine — user settings never travel via
+   git). Antigravity's copy lives at
+   `~/Library/Application Support/Antigravity IDE/User/settings.json` (Mac) /
+   `%APPDATA%\Antigravity IDE\User\settings.json` (PC); VS Code's at the same path under `Code`.
+   Carry over: `editor.minimap.enabled: false`, `git.confirmSync: false`,
+   `scm.alwaysShowRepositories: true`, `scm.compactFolders: false`,
+   `githubPullRequests.notifications`, `workbench.editor.closeOnFileDelete: true`,
+   `window.customTitleBarVisibility`, `markdown-preview-enhanced.previewColorScheme`,
+   `google.cloud.project`. **Do NOT carry:** `git.path` (the `git-flat-scm` shim — Antigravity SCM
+   fix only), any `antigravity.*` key, any `roo-cline.*` key (retired namespace; the `zoo-code.*`
+   allowlists live in the tracked workspace `.vscode/settings.json`). Also port the `cmd+alt+r`
+   Source Control show-all-repos keybinding from Antigravity's `keybindings.json`; repoint
+   `cmd+o cmd+o` from `roo-cline.openInNewTab` to `zoo-code.openInNewTab`.
+7. Uninstall Roo Code and (when ready) Antigravity IDE.
 
 ## Expected exceptions
 
