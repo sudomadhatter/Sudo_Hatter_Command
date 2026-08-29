@@ -70,6 +70,7 @@ lens_isolation: worktree
 - [x] 4 Migration guide serves VS Code (D) — landed `987f42c`/earlier, link gate green
 - [x] 5 Zoo is sync-agents platform 5 (E) — test E1–E7, sync run output pasted in plan lane
 - [x] 6 Floor rules always-on everywhere (F) — test F1–F4
+- [x] The merge itself — lands via this branch's PR
 
 ## Your Actions
 
