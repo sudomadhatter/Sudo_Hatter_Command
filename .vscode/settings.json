@@ -10,7 +10,7 @@
   "python.defaultInterpreterPath": "${workspaceFolder}/Projects/AGY_AVIATIONCHAT/backend/.venv/Scripts/python.exe",
   "claudeCode.preferredLocation": "panel",
   "claudeCode.useTerminal": false,
-  "workbench.colorTheme": "Default Dark Modern",
+  "workbench.colorTheme": "Dark Modern",
   "workbench.view.alwaysShowHeaderActions": false,
   "workbench.editor.alwaysShowEditorActions": false,
   "workbench.editor.autoLockGroups": {
