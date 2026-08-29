@@ -1583,6 +1583,11 @@ that themselves, so each rule states when it applies:
 - **The three always-on rules and the four protocol rules are unchanged.** They bind the same way
   they always did, and their gates remain written into the front door as well, so nothing depends on
   a file being loaded at the right moment.
+- **A rule about the commands themselves** — `command-shape.md` — exists because every tool's
+  command allowlist matches the *front* of a command string. An agent that spells three approved
+  steps as one chained command (`cd repo && python3 gate.py; echo "EXIT=$?"`) has written a string
+  no allowlist can pre-approve, and you get the prompt. The rule bans the three shapes that cause
+  nearly all of those prompts: cd-chains, exit-echo tails, and piped gate runs.
 
 Nothing to type, and nothing to maintain by hand: the classification lives in one table
 (`.agents/rules/INDEX.md`), the per-rule markers mirror it, and a test fails if the two ever
