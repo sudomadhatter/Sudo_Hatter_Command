@@ -9,7 +9,7 @@
     "pack_docs": 2,
     "edges": 746,
     "external": 40,
-    "ambiguous": 168,
+    "ambiguous": 170,
     "dangling": 300,
     "broken_paths": 70,
     "unresolved_names": 230,
@@ -10041,6 +10041,15 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "target": "/.codex/AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "AGENTS.md",
       "candidates": [
         ".agents/AGENTS.md",
@@ -10113,6 +10122,15 @@
       "candidates": [
         ".agents/commands/smh-adviser-board.md",
         ".agents/workflows/smh-adviser-board.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "/.codex/AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {

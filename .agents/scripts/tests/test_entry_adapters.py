@@ -73,12 +73,21 @@ def tracked_adapters(root: Path) -> tuple[list[Path], list[tuple[Path, str]]]:
     return sorted(checked), sorted(exempt)
 
 
-def adapter_violations(text: str) -> list[str]:
+# A floor-rule IMPORT is a pointer, not law: `@.agents/rules/<name>.md` inlines a SHARED rule at
+# session start (Claude Code and Gemini both resolve the syntax). It is allowed on the ROOT
+# adapters only (SCC-346 Part F): a nested adapter also importing the floor would double-load it,
+# and an import of anything OUTSIDE .agents/rules/ is exactly the model-specific-law smell this
+# test exists to catch.
+FLOOR_IMPORT = __import__("re").compile(r"^@\.agents/rules/[A-Za-z0-9_\-]+\.md$")
+
+
+def adapter_violations(text: str, allow_floor_imports: bool = False) -> list[str]:
     """Every line that makes this file MORE than a redirect, quoted so the failure names itself.
 
     Allowed, and nothing else: one `#` title, the redirect sentence, and the house parenthetical
-    footnote. Blank lines are free. Anything else — a heading, a numbered rule, a mandate — is the
-    defect, because whatever it says binds only the platform whose name is on the file.
+    footnote — plus, on a ROOT adapter only, `@.agents/rules/<name>.md` floor imports. Blank lines
+    are free. Anything else — a heading, a numbered rule, a mandate — is the defect, because
+    whatever it says binds only the platform whose name is on the file.
     """
     problems: list[str] = []
     saw_title = False
@@ -94,6 +103,8 @@ def adapter_violations(text: str) -> list[str]:
             saw_redirect = True
             continue
         if ln.startswith("(") and ln.endswith(")"):
+            continue
+        if allow_floor_imports and FLOOR_IMPORT.match(ln):
             continue
         problems.append(f"L{i}: {ln[:72]}")
     if not saw_redirect:
@@ -133,6 +144,16 @@ def main() -> int:
         c.check("the canary's `agent.md` redirect does NOT pass as the house adapter",
                 adapter_violations("# _routing-canary — entry\n\nRead `agent.md` in this same "
                                    "folder and follow it exactly.\n") != [])
+        # SCC-346 Part F: floor imports — allowed at the root, flagged everywhere else, and never
+        # a licence to import something that is not a shared rule.
+        with_import = HOUSE + "\n@.agents/rules/constitution.md\n"
+        c.check("a floor import passes on a ROOT adapter (allow_floor_imports=True)",
+                adapter_violations(with_import, allow_floor_imports=True) == [])
+        c.check("the same import is flagged on a NESTED adapter (default strictness)",
+                adapter_violations(with_import) != [])
+        c.check("an import OUTSIDE .agents/rules/ is flagged even with the allowance",
+                adapter_violations(HOUSE + "\n@docs/some-model-notes.md\n",
+                                   allow_floor_imports=True) != [])
 
     if c.block("B · the real tree"):
         checked, exempt = tracked_adapters(REPO_ROOT)
@@ -140,7 +161,9 @@ def main() -> int:
                 len(checked) >= 4, f"{len(checked)} tracked adapters")
         bad: list[str] = []
         for rel in checked:
-            v = adapter_violations((REPO_ROOT / rel).read_text(encoding="utf-8", errors="replace"))
+            is_root = len(rel.parts) == 1        # only the ROOT adapters may import the floor
+            v = adapter_violations((REPO_ROOT / rel).read_text(encoding="utf-8", errors="replace"),
+                                   allow_floor_imports=is_root)
             if v:
                 bad.append(f"{rel}: {'; '.join(v)}")
         c.check("every tracked CLAUDE.md / GEMINI.md is the redirect and nothing more "

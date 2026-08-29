@@ -1580,9 +1580,16 @@ that themselves, so each rule states when it applies:
   own description against what you asked; in Claude Code a small hook watches your prompt and, when
   one of those words appears, tells the agent which rule to open. It only ever points; it never
   blocks and it never edits.
-- **The three always-on rules and the four protocol rules are unchanged.** They bind the same way
-  they always did, and their gates remain written into the front door as well, so nothing depends on
-  a file being loaded at the right moment.
+- **The three always-on rules are now delivered mechanically on every platform (SCC-346).** They
+  used to depend on the agent following the CLAUDE.md → AGENTS.md pointer chain — which is exactly
+  what failed in the VS Code transition. Now: `CLAUDE.md` and `GEMINI.md` carry three `@` import
+  lines that Claude Code and Gemini resolve at session start; `opencode.json` names all three in
+  its `instructions`; Zoo Code injects the generated copies in `.roo/rules/` into every prompt;
+  and the sync writes them into `~/.codex/AGENTS.md` (a machine cache, markers preserved) for
+  Codex's global merge. The law still lives only in `.agents/rules/` — everything else is a
+  generated pointer or cache, refreshed by `/smh-sync-agents`. The four protocol rules are
+  unchanged: their gates remain written into the front door as well, so nothing depends on a file
+  being loaded at the right moment.
 - **A rule about the commands themselves** — `command-shape.md` — exists because every tool's
   command allowlist matches the *front* of a command string. An agent that spells three approved
   steps as one chained command (`cd repo && python3 gate.py; echo "EXIT=$?"`) has written a string

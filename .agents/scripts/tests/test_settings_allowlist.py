@@ -16,6 +16,10 @@ the other machine ever sees:
       surfaces exist in the tree (`.roo/commands/` launchers, `.roomodes` with the six BMAD
       personas, per-persona `.roo/rules-<slug>/`, floor-rule copies in `.roo/rules/`); the six
       persona masters declare `zoo` and the opencode-runtime autopilot does NOT.
+  F · the three FLOOR rules are delivered MECHANICALLY on every platform (SCC-346 Part F):
+      CLAUDE.md and GEMINI.md carry `@` imports (resolved at session start by Claude Code and
+      Gemini respectively), opencode.json `instructions` names all three, and the sync engine
+      writes the `~/.codex/AGENTS.md` machine cache for Codex's global merge. Zoo's half is E5.
 
 Stdlib only, no pytest — same constraint as everything else in this suite.
 """
@@ -104,5 +108,24 @@ if c.block("E · zoo is sync-agents platform 5 (SCC-349)"):
     c.check("E6 the six persona masters declare zoo", not not_zoo, f"missing={not_zoo}")
     c.check("E7 cicd-autopilot-opencode stays opencode-only (runtime-specific)",
             not _declares_zoo("cicd-autopilot-opencode.md"))
+
+if c.block("F · floor rules always-on across the platforms"):
+    imports = tuple(f"@.agents/rules/{f}" for f in FLOOR)
+    claude_md = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+    missing_cl = [i for i in imports if i not in claude_md.splitlines()]
+    c.check("F1 CLAUDE.md imports the three floor rules via @path", not missing_cl,
+            f"missing={missing_cl}")
+    gemini_md = (ROOT / "GEMINI.md").read_text(encoding="utf-8")
+    missing_ge = [i for i in imports if i not in gemini_md.splitlines()]
+    c.check("F2 GEMINI.md imports the three floor rules via @path", not missing_ge,
+            f"missing={missing_ge}")
+    oc = json.loads((ROOT / "opencode.json").read_text(encoding="utf-8"))
+    instr = oc.get("instructions", [])
+    missing_oc = [f for f in FLOOR if f".agents/rules/{f}" not in instr]
+    c.check("F3 opencode.json instructions carries all three floor rules", not missing_oc,
+            f"missing={missing_oc}")
+    ps1_f = (ROOT / ".agents" / "scripts" / "sync-agents.ps1").read_text(encoding="utf-8")
+    c.check("F4 the sync engine writes the Codex machine cache (~/.codex/AGENTS.md)",
+            ".codex\\AGENTS.md" in ps1_f and "GENERATED floor-rules" in ps1_f)
 
 sys.exit(c.finish())

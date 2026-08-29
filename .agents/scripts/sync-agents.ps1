@@ -1192,6 +1192,47 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
     if ($stalePrompts.Count) { Write-Host ("sync-agents: codex prompts cache RETIRED - purged {0} prompt(s); Codex's door is .agents/skills" -f $stalePrompts.Count) }
   }
 
+  # Codex FLOOR-rule cache (SCC-346 Part F). Codex reads the repo's AGENTS.md natively and merges
+  # ~/.codex/AGENTS.md globally, but it has no @import mechanism, so the three FLOOR rules are
+  # written into that machine cache between GENERATED markers. Content OUTSIDE the markers is the
+  # operator's own and is preserved verbatim; the block is regenerated every sync. The law stays in
+  # .agents/rules/ - this is a delivery cache, exactly like .roo/rules/ and .claude/rules/.
+  $codexAgents = Join-Path $UserHome ".codex\AGENTS.md"
+  $floorBegin  = '<!-- BEGIN GENERATED floor-rules (sync-agents, SCC-346) - edit .agents/rules/, never this block -->'
+  $floorEnd    = '<!-- END GENERATED floor-rules -->'
+  $floorRules  = @('operator-profile.md', 'constitution.md', 'karpathy-guidelines.md')
+  $floorParts  = @($floorBegin)
+  foreach ($rn in $floorRules) {
+    $srcF = Join-Path (Join-Path $Master 'rules') $rn
+    if (Test-Path $srcF) { $floorParts += ('<!-- from .agents/rules/' + $rn + ' -->'); $floorParts += [IO.File]::ReadAllText($srcF) }
+    else { Write-Warning ("sync-agents: codex floor rule MISSING in master: '{0}'" -f $rn) }
+  }
+  $floorParts += $floorEnd
+  $floorBlock = ($floorParts -join "`n")
+  try {
+    if (Test-Path $codexAgents) {
+      $existing = [IO.File]::ReadAllText($codexAgents)
+      $bIdx = $existing.IndexOf($floorBegin)
+      $eIdx = $existing.IndexOf($floorEnd)
+      if (($bIdx -ge 0) -and ($eIdx -gt $bIdx)) {
+        $newText = $existing.Substring(0, $bIdx) + $floorBlock + $existing.Substring($eIdx + $floorEnd.Length)
+      } else {
+        $newText = $existing.TrimEnd() + "`n`n" + $floorBlock + "`n"
+      }
+    } else {
+      $newText = $floorBlock + "`n"
+    }
+    if (-not $WhatIf) {
+      New-Item -ItemType Directory -Force -Path (Split-Path $codexAgents -Parent) | Out-Null
+      [IO.File]::WriteAllText($codexAgents, $newText, (New-Object Text.UTF8Encoding($false)))
+      Write-Host ("sync-agents: codex floor cache -> {0} rule(s) in {1} (outside-marker content preserved)" -f $floorRules.Count, $codexAgents)
+    } else {
+      Write-Host ("WHATIF: would write floor-rules block ({0} rules) into '{1}'" -f $floorRules.Count, $codexAgents)
+    }
+  } catch {
+    Write-Warning ("sync-agents: SKIPPED codex floor cache '{0}' - {1}" -f $codexAgents, $_.Exception.Message)
+  }
+
   # Codex reads Agent Skills natively but NOT .claude/skills (where BMAD installs). Mirror the bmad-* skills
   # into ~/.codex/skills so BMAD is reachable from Codex via /skills (Daniel: "we use bmad in everything").
   $codexSkillsDst = Join-Path $UserHome ".codex\skills"
