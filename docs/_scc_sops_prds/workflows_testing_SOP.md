@@ -1580,9 +1580,21 @@ that themselves, so each rule states when it applies:
   own description against what you asked; in Claude Code a small hook watches your prompt and, when
   one of those words appears, tells the agent which rule to open. It only ever points; it never
   blocks and it never edits.
-- **The three always-on rules and the four protocol rules are unchanged.** They bind the same way
-  they always did, and their gates remain written into the front door as well, so nothing depends on
-  a file being loaded at the right moment.
+- **The three always-on rules are now delivered mechanically on every platform (SCC-346).** They
+  used to depend on the agent following the CLAUDE.md → AGENTS.md pointer chain — which is exactly
+  what failed in the VS Code transition. Now: `CLAUDE.md` and `GEMINI.md` carry three `@` import
+  lines that Claude Code and Gemini resolve at session start; `opencode.json` names all three in
+  its `instructions`; Zoo Code injects the generated copies in `.roo/rules/` into every prompt;
+  and the sync writes them into `~/.codex/AGENTS.md` (a machine cache, markers preserved) for
+  Codex's global merge. The law still lives only in `.agents/rules/` — everything else is a
+  generated pointer or cache, refreshed by `/smh-sync-agents`. The four protocol rules are
+  unchanged: their gates remain written into the front door as well, so nothing depends on a file
+  being loaded at the right moment.
+- **A rule about the commands themselves** — `command-shape.md` — exists because every tool's
+  command allowlist matches the *front* of a command string. An agent that spells three approved
+  steps as one chained command (`cd repo && python3 gate.py; echo "EXIT=$?"`) has written a string
+  no allowlist can pre-approve, and you get the prompt. The rule bans the three shapes that cause
+  nearly all of those prompts: cd-chains, exit-echo tails, and piped gate runs.
 
 Nothing to type, and nothing to maintain by hand: the classification lives in one table
 (`.agents/rules/INDEX.md`), the per-rule markers mirror it, and a test fails if the two ever
@@ -4017,9 +4029,11 @@ flowchart TD
 
 #### /smh-sync-agents
 
-*Publishes the toolkit to all four platforms — one door each — from the lobby's masters: generates
+*Publishes the toolkit to all five platforms — one door each — from the lobby's masters: generates
 the Claude/Codex launcher skill per command (a hand-authored skill always wins), mirrors opencode and
-Antigravity (thin launchers over ~11.5 KB), retires what the manifest says it wrote and the master
+Antigravity (thin launchers over ~11.5 KB), generates the Zoo Code doors (`.roo/commands/` launchers,
+`.roomodes` with the six BMAD personas, floor-rule copies in `.roo/rules/` — all tracked in git, so
+they travel to both machines), retires what the manifest says it wrote and the master
 no longer owns, and purges the two retired doors. Explained in
 [§19](#19-where-the-depth-lives). Called by: you, after any command change; the door-parity test
 tells you when it is owed.*
@@ -4163,7 +4177,7 @@ flowchart TD
 | --- | --- |
 | `/smh-update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. It **does not touch the memory store** — that is `/smh-memory-audit`'s job. ⚠ **If you ran it in Antigravity before 2026-08-12, re-check what it edited** — its door was then a full body that Antigravity truncated at 12,000 chars, so a run could reconcile partially, with no approval gate and no findings report. It is a normal thin launcher. |
 | `/smh-memory-audit` | Cleans up the shared memory store (`_artifacts/_memory/`) — the one document every model on every machine loads *before* doing any work, which is why letting it fill costs you on every session everywhere. It checks each memory's claim against the live repo, then shows you *retire · merge · compress · relocate* with the bytes each frees, and waits. **Nothing is deleted without your yes on that specific item**; git is the undo either way. See the box below. |
-| `/smh-sync-agents` | Publishes the toolkit to all four platforms — one door each. **It SHORTENS the description it writes into `.agents/workflows/`:** Antigravity builds its slash-command menu from those descriptions, and full-length ones blow the menu's context budget (workflows get dropped from the agent's list outright) — so the generator cuts each one to **135 characters** on a word boundary. ⛔ **Do not shorten them by hand in `.agents/workflows/`** — those files are generated, so the next sync overwrites you, *and* the door-parity check demands the mirror match its brain, so a hand-edit turns `main-write-gate` red (`chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable). The COMMANDS keep their full descriptions; only the menu has a budget. The one hand-owned door, `smh-adviser-board.md`, is shortened in place because it sits in the same menu. It reaches **the lobby and this machine's caches only**; projects read from the center, so there is nothing to push. It *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and purges the two retired doors. Hand-written skills are never overwritten. What a command *declares* decides where it publishes — nothing is inferred from its filename. Hooks are executed directly from `.agents/hooks/` via `run-hook.sh` (the duplicate `.claude/hooks/` mirror is retired under SCC-300), and in-session sandboxed runs catch `.claude/skills` write restrictions gracefully. |
+| `/smh-sync-agents` | Publishes the toolkit to all five platforms (Claude, Codex, opencode, Antigravity, Zoo Code) — one door each. **It SHORTENS the description it writes into `.agents/workflows/`:** Antigravity builds its slash-command menu from those descriptions, and full-length ones blow the menu's context budget (workflows get dropped from the agent's list outright) — so the generator cuts each one to **135 characters** on a word boundary. ⛔ **Do not shorten them by hand in `.agents/workflows/`** — those files are generated, so the next sync overwrites you, *and* the door-parity check demands the mirror match its brain, so a hand-edit turns `main-write-gate` red (`chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable). The COMMANDS keep their full descriptions; only the menu has a budget. The one hand-owned door, `smh-adviser-board.md`, is shortened in place because it sits in the same menu. It reaches **the lobby and this machine's caches only**; projects read from the center, so there is nothing to push. It *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and purges the two retired doors. Hand-written skills are never overwritten. What a command *declares* decides where it publishes — nothing is inferred from its filename. Hooks are executed directly from `.agents/hooks/` via `run-hook.sh` (the duplicate `.claude/hooks/` mirror is retired under SCC-300), and in-session sandboxed runs catch `.claude/skills` write restrictions gracefully. |
 | `/smh-slash-command-updating` | A thin alias for the globals-only half of `/smh-sync-agents`. Plain `/smh-sync-agents` does this *and* the local dirs, so prefer it. |
 | `/smh-review` | Reviews the working diff outside the story loop — the quick read when there's no story to hang ③ on. |
 | `/smh-new-project` | Scaffold a new workspace. |

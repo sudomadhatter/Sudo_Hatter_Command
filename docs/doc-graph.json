@@ -4,12 +4,12 @@
     "docs"
   ],
   "counts": {
-    "files": 414,
+    "files": 415,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 743,
+    "edges": 746,
     "external": 40,
-    "ambiguous": 167,
+    "ambiguous": 170,
     "dangling": 300,
     "broken_paths": 70,
     "unresolved_names": 230,
@@ -689,7 +689,7 @@
     {
       "path": ".agents/rules/INDEX.md",
       "in": 8,
-      "out": 26
+      "out": 27
     },
     {
       "path": ".agents/rules/artifacts-always-first.md",
@@ -705,6 +705,11 @@
       "path": ".agents/rules/collaborative-debug-first.md",
       "in": 1,
       "out": 1
+    },
+    {
+      "path": ".agents/rules/command-shape.md",
+      "in": 3,
+      "out": 0
     },
     {
       "path": ".agents/rules/completion-not-illusion.md",
@@ -1989,12 +1994,12 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 22,
-      "out": 50
+      "out": 51
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 10
+      "out": 11
     },
     {
       "path": "docs/code-review-graph.md",
@@ -2013,11 +2018,6 @@
     },
     {
       "path": "docs/migrations/antigravity_extensions/gemini-extensions-sync-guide.md",
-      "in": 2,
-      "out": 0
-    },
-    {
-      "path": "docs/migrations/install_guides/antigravity-ide-extension-migration.md",
       "in": 2,
       "out": 0
     },
@@ -2070,6 +2070,11 @@
       "path": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
       "in": 4,
       "out": 1
+    },
+    {
+      "path": "docs/migrations/install_guides/vscode-ide-extension-migration.md",
+      "in": 2,
+      "out": 0
     },
     {
       "path": "docs/repo-map.md",
@@ -3483,6 +3488,11 @@
     {
       "from": ".agents/rules/INDEX.md",
       "to": ".agents/rules/collaborative-debug-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/INDEX.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -5377,6 +5387,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
       "kind": "link"
     },
@@ -5437,6 +5452,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": "docs/code-review-graph.md",
       "kind": "ref"
     },
@@ -5473,11 +5493,6 @@
     {
       "from": "docs/code-review-graph.md",
       "to": "docs/AGENTS.md",
-      "kind": "ref"
-    },
-    {
-      "from": "docs/migrations/INDEX.md",
-      "to": "docs/migrations/install_guides/antigravity-ide-extension-migration.md",
       "kind": "ref"
     },
     {
@@ -5533,6 +5548,11 @@
     {
       "from": "docs/migrations/INDEX.md",
       "to": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/INDEX.md",
+      "to": "docs/migrations/install_guides/vscode-ide-extension-migration.md",
       "kind": "link"
     },
     {
@@ -10021,6 +10041,15 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "target": "/.codex/AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "AGENTS.md",
       "candidates": [
         ".agents/AGENTS.md",
@@ -10093,6 +10122,24 @@
       "candidates": [
         ".agents/commands/smh-adviser-board.md",
         ".agents/workflows/smh-adviser-board.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "/.codex/AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {

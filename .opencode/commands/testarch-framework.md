@@ -1,6 +1,6 @@
 ﻿---
 description: Initialize test framework (Playwright/Cypress)
-platforms: [opencode]
+platforms: [opencode, zoo]
 ---
 
 Invoke the `bmad-testarch-framework` skill with the user's intent.
