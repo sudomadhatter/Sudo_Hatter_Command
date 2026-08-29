@@ -51,7 +51,9 @@ Add `zoo-code.allowedCommands` / `zoo-code.deniedCommands` to tracked `.vscode/s
 (workspace scope — Mac+PC parity; namespace is `zoo-code.*`, NOT `roo-cline.*`). Seed the allowed
 list from the same stable command families as Part A (git, python3/python, acli, ls/grep-class
 read-onlys); denied list seeds with the destructive set (rm -rf, git push --force, etc.). Add
-`ZooCodeOrganization.zoo-code` to `.vscode/extensions.json` recommendations.
+`ZooCodeOrganization.zoo-code` AND `google.google-antigravity` (the Gemini agent surface in VS
+Code — verified installable, v1.1.0 on the Mac 2026-08-29) to `.vscode/extensions.json`
+recommendations.
 
 - Assertion (RED first): extend the Part A test file — keys exist, allowed non-empty, recommendation
   present.
