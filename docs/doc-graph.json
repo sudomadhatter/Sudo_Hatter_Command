@@ -2017,11 +2017,6 @@
       "out": 0
     },
     {
-      "path": "docs/migrations/install_guides/antigravity-ide-extension-migration.md",
-      "in": 2,
-      "out": 0
-    },
-    {
       "path": "docs/migrations/install_guides/claude-permission-sandboxed.md",
       "in": 0,
       "out": 0
@@ -2070,6 +2065,11 @@
       "path": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
       "in": 4,
       "out": 1
+    },
+    {
+      "path": "docs/migrations/install_guides/vscode-ide-extension-migration.md",
+      "in": 2,
+      "out": 0
     },
     {
       "path": "docs/repo-map.md",
@@ -5477,11 +5477,6 @@
     },
     {
       "from": "docs/migrations/INDEX.md",
-      "to": "docs/migrations/install_guides/antigravity-ide-extension-migration.md",
-      "kind": "ref"
-    },
-    {
-      "from": "docs/migrations/INDEX.md",
       "to": "docs/migrations/antigravity_extensions/gemini-extensions-sync-guide.md",
       "kind": "link"
     },
@@ -5533,6 +5528,11 @@
     {
       "from": "docs/migrations/INDEX.md",
       "to": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/INDEX.md",
+      "to": "docs/migrations/install_guides/vscode-ide-extension-migration.md",
       "kind": "link"
     },
     {

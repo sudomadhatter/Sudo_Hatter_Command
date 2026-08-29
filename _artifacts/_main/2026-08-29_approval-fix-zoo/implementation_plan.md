@@ -73,6 +73,10 @@ allowlist (Claude, Zoo, opencode) can match a compound command by design; the SC
 
 ### Part D — Migration guide repoint: Antigravity → VS Code (SCC-346)
 
+**Operator directive (2026-08-29, verbatim): "lets do part d first so its all here then we can move
+on to the rest"** — Part D executed on that word (doc-only, `lane_qualify` → LIGHT, operator-directed
+per `artifacts-always-first.md` §When to Skip). The batch approval gate for Parts A/B/C/E stays armed.
+
 `docs/migrations/install_guides/antigravity-ide-extension-migration.md` still drives `agy-ide`.
 Repoint to VS Code: install via `code --install-extension <id>`, reuse the portable IDs kit
 (`docs/migrations/antigravity_extensions/antigravity-extension-ids.txt`), mark Antigravity-only ids
