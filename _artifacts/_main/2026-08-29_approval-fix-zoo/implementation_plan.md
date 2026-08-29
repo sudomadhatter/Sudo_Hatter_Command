@@ -30,12 +30,6 @@
    `.roo/commands/*.md` launchers for eligible smh-/cicd- commands and `.roomodes` with the six BMAD
    personas, manifest-tracked; persona commands' `platforms:` frontmatter includes `zoo`. Check:
    grep on the script; generated files exist after a sync run; manifest rows present.
-6. **Hand-back templates demand LOCAL LINKS, not paths** (added 2026-08-29, operator's word this
-   session): every command report/hand-back section that names an implementation plan or a review
-   walkthrough renders it as a clickable **local** Markdown link (relative repo path) — the shape
-   `constitution.md:46` already mandates. No GitHub `blob/` URL in chat hand-backs (operator ruling,
-   same session); blob links remain only where Jira needs them (`jira.md` §Files — a ticket cannot
-   open a local path). Check: grep the report sections; no bare `plan @ <path>`-style rows survive.
 
 ## Part sections
 
@@ -117,33 +111,15 @@ platform, SCC-66):
 - Assertion (RED first): grep `$AllPlatforms` for `'zoo'`; after a lobby sync run, `.roo/commands/`
   holds launchers for every zoo-eligible command, `.roomodes` parses with 6 modes, manifest rows exist.
 
-### Part F — Hand-back templates link the plan and the review (SCC-346)
+### Part F — WITHDRAWN (2026-08-29, operator's correction, same session)
 
-Incident this session: the Step 5 hand-back printed `plan @ <path>` — the template's own shape —
-while `constitution.md:46` (always-on) demands clickable links, never bare paths. The rules load
-fine in VS Code (the house-rules banner fired on the very prompt that reported this); the defect is
-that the report templates contradict the constitution, so any agent copying the template ships the
-violation. Fix the templates: in the report/hand-back sections of the measured six —
-`smh-plan-task.md`, `smh-quick-dev.md`, `smh-code-review.md`, `smh-close-task-merge-tree.md`,
-`cicd-code-review.md`, `cicd-dev-story-tests.md` — every implementation-plan and review-walkthrough
-mention becomes a **local** Markdown link (relative repo path; NO GitHub `blob/` URL in chat —
-operator ruling this session; blob links live only in Jira `## Files` rows). Twin-drift
-rule: diff each smh-/cicd- twin pair after editing (`sudo-commands-have-ap-twins-that-drift`).
-Re-grep at dev time for any report section the six-file measurement missed.
-
-- **SOP currency:** command files are usage surfaces — rides the same-commit SOP staging already
-  planned in Parts C/E.
-- Assertion: grep the six report sections — zero bare plan/walkthrough path rows remain; each names
-  the link shape.
+Proposed as template edits requiring links in hand-backs; withdrawn on the operator's ruling: the
+obligation already exists in `constitution.md:46` (always-on law), and adding per-command template
+text is context an agent re-reads every session for a rule it already has. The incident was an
+agent skipping the AGENTS.md front-door read, not missing law. No files change under this part.
 
 ## Declared Change Set
 
-- EDIT `.agents/commands/smh-plan-task.md` — report section links the plan → 6
-- EDIT `.agents/commands/smh-quick-dev.md` — hand-off links plan + walkthrough → 6
-- EDIT `.agents/commands/smh-code-review.md` — verdict report links the walkthrough → 6
-- EDIT `.agents/commands/smh-close-task-merge-tree.md` — PR hand-back links the walkthrough → 6
-- EDIT `.agents/commands/cicd-code-review.md` — twin of smh-code-review, same link shape → 6
-- EDIT `.agents/commands/cicd-dev-story-tests.md` — twin hand-off, same link shape → 6
 - EDIT `.claude/settings.json` — promote stable allowlist, both spellings → 1
 - NEW `.agents/scripts/tests/test_settings_allowlist.py` — the Part A/B assertions → 1, 2
 - EDIT `.vscode/settings.json` — zoo-code.allowedCommands / deniedCommands → 2
@@ -193,8 +169,8 @@ minting is the operator's placement call.
 
 ## Build order
 
-C → F → A → B → D → E. C, F and E share the SOP page (sequenced); F precedes E so the zoo launcher
-generation mirrors already-corrected masters; A/B/D are file-disjoint from everything else.
+C → A → B → D → E. C and E share the SOP page (sequenced, C first); E is the largest and lands last
+so sync-generation runs against the finished rule set; A/B/D are file-disjoint from everything else.
 `/smh-label-tasks SCC-346` output supersedes this if it disagrees.
 
 ## Self-Audit (2026-08-29)
@@ -244,12 +220,9 @@ generating zero zoo persona modes with exit 0 — a vacuous green.
 
 Audit verdict: GO
 
-### Audit addendum — Part F (2026-08-29, same day, pre-approval)
+### Audit addendum — Part F added then WITHDRAWN (2026-08-29, pre-approval)
 
-Part F added on the operator's word after the Step 5 hand-back shipped a bare path. Lens 1: all six
-target files exist (`grep -ln` output in Part F); change set re-parsed clean (23 entries, 0
-incomplete). Lens 2: command-file edits touch text only — no rename, so the four platform caches
-resync on the next lobby sync with no orphan risk (SCC-66 row cleared); twin rule engaged (each
-smh/cicd pair diffed at dev time); SOP same-commit already planned. Lens 3: narrative — if only the
-smh side were fixed, the cicd twins keep printing bare paths and the scar returns on the next
-project story; the twin diff is the guard. Verdict unchanged: GO.
+Part F (template link edits) was added on an operator report and withdrawn on the operator's
+correction the same session: the obligation is already always-on law (`constitution.md:46`), and
+per-command template text would be re-read context for a rule agents already carry. Change set
+restored to the A–E shape. Verdict unchanged: GO.
