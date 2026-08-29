@@ -15,5 +15,31 @@
   "workbench.editor.alwaysShowEditorActions": false,
   "workbench.editor.autoLockGroups": {
     "mainThreadWebview-markdown.preview": true
-  }
+  },
+  // Zoo Code (Roo Code's community continuation) — workspace-scoped so the allowlists travel
+  // via git to BOTH machines (SCC-346). Namespace is zoo-code.*, NOT the retired roo-cline.*.
+  // Zoo checks deniedCommands FIRST, so the destructive set below wins over any allow prefix.
+  // Same stable command families as .claude/settings.json permissions.allow — both interpreter
+  // spellings (python3 Mac / python PC), no machine-absolute paths.
+  "zoo-code.useAgentRules": true,
+  "zoo-code.allowedCommands": [
+    "git status", "git diff", "git log", "git show", "git fetch", "git rev-parse",
+    "git merge-base", "git merge-tree", "git worktree list", "git branch --list",
+    "git ls-files", "git check-ignore", "git stash list", "git add", "git commit",
+    "git -C",
+    "python3 .agents/scripts/", "python .agents/scripts/",
+    "python3 -m py_compile", "python -m py_compile",
+    "acli jira workitem view", "acli jira workitem search",
+    "ls", "cat", "head", "tail", "sed -n", "grep", "rg", "find", "wc", "diff",
+    "cp", "mkdir", "echo", "printf", "sort", "uniq", "awk", "cut", "tr",
+    "basename", "dirname", "readlink", "file", "stat", "du", "cmp",
+    "command -v", "which"
+  ],
+  "zoo-code.deniedCommands": [
+    "rm -rf", "rm -r", "sudo",
+    "git push --force", "git push -f", "git push origin main",
+    "git reset --hard", "git clean", "git checkout main", "git branch -D",
+    "Remove-Item -Recurse", "del /s", "rmdir /s",
+    "dd if=", "mkfs", "chmod -R 777"
+  ]
 }

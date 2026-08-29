@@ -1,6 +1,8 @@
 {
     "recommendations": [
         "anthropic.claude-code",
-        "es6kr.claude-sessions"
+        "es6kr.claude-sessions",
+        "ZooCodeOrganization.zoo-code",
+        "google.google-antigravity"
     ]
 }
