@@ -30,6 +30,11 @@
    `.roo/commands/*.md` launchers for eligible smh-/cicd- commands and `.roomodes` with the six BMAD
    personas, manifest-tracked; persona commands' `platforms:` frontmatter includes `zoo`. Check:
    grep on the script; generated files exist after a sync run; manifest rows present.
+6. **Floor rules are ALWAYS-ON on every platform** (Part F revised): CLAUDE.md + GEMINI.md import
+   the three FLOOR rules via `@path` (auto-resolved at session start — no judgment step);
+   `opencode.json` `instructions` carries all three; sync generates `.roo/rules/` copies for Zoo's
+   native injection and a `~/.codex/AGENTS.md` machine cache for Codex's global merge. Check:
+   greps on the four tracked files; generated files exist after a sync run.
 
 ## Part sections
 
@@ -117,12 +122,49 @@ platform, SCC-66):
 - Assertion (RED first): grep `$AllPlatforms` for `'zoo'`; after a lobby sync run, `.roo/commands/`
   holds launchers for every zoo-eligible command, `.roomodes` parses with 6 modes, manifest rows exist.
 
-### Part F — WITHDRAWN (2026-08-29, operator's correction, same session)
+### Part F (original) — WITHDRAWN (2026-08-29, operator's correction, same session)
 
 Proposed as template edits requiring links in hand-backs; withdrawn on the operator's ruling: the
 obligation already exists in `constitution.md:46` (always-on law), and adding per-command template
 text is context an agent re-reads every session for a rule it already has. The incident was an
-agent skipping the AGENTS.md front-door read, not missing law. No files change under this part.
+agent skipping the AGENTS.md front-door read, not missing law. No files change under that part.
+
+### Part F (revised) — Always-on FLOOR rules on every platform (SCC-346)
+
+**Operator directive (2026-08-29, verbatim): "can we fix that ? we need this to work and the rules
+that are global so always be read. even if we consolidate them all into one file and have it read at
+the start of every chat" + "is there a way we can make it so that opencode and codex do ride for
+almost free with they sync ? also we are going to have the gemini extention, this also needs to have
+rules."**
+
+The gap: AGENTS.md §3 names three FLOOR rules (`operator-profile.md`, `constitution.md`,
+`karpathy-guidelines.md`, ~17.7 KB total) but only Antigravity *mechanically* delivered them —
+its engine judges rule descriptions per request. Claude Code relies on the agent following the
+CLAUDE.md → AGENTS.md pointer chain, which is exactly what failed. Fix: make delivery mechanical
+per platform, with the law staying in `.agents/rules/` (single source, no duplicated prose):
+
+1. **Claude Code** — `CLAUDE.md` gains three `@.agents/rules/<rule>.md` import lines. Claude Code
+   resolves `@path` imports at session start; the floor arrives before the first token of work.
+2. **Gemini (google.google-antigravity ext + Gemini CLI)** — `GEMINI.md` gains the same three
+   imports (same `@path` memport syntax).
+3. **opencode** — `opencode.json` `instructions` already carries constitution + karpathy; add
+   `operator-profile.md` (by-reference, no content copy).
+4. **Zoo Code** — native `.roo/rules/` injection is always-on by design; the Part E sync lane
+   generates `.roo/rules/` copies of the three floor rules (generated header, manifest-tracked)
+   alongside `zoo-code.useAgentRules` reading AGENTS.md.
+5. **Codex** — a small sync stage writes `~/.codex/AGENTS.md` (machine cache, NOT tracked) with the
+   three floor rules inside BEGIN/END GENERATED markers; Codex merges it globally with each repo's
+   AGENTS.md. Content outside the markers is preserved.
+
+Copies under 4–5 are **generated caches** (like `.claude/rules/` and the Antigravity mirror), not
+law — regenerated every sync, never hand-edited. **Skeleton mirror DEFERRED:**
+`Projects/sudo-project-skeleton` is a separate git repo (`ticket per repo`,
+`living-template-sync`) — proposed at close-out alongside the AGY ticket.
+
+- **SOP currency:** front doors + sync are usage surfaces — SOP page + changelog in the same commit.
+- Assertion (RED first): extend the Part A test file — CLAUDE.md and GEMINI.md each contain the
+  three `@` imports; opencode.json instructions contains all three rules; sync-agents.ps1 names
+  `.roo/rules` and `.codex` targets.
 
 ## Declared Change Set
 
@@ -143,6 +185,10 @@ agent skipping the AGENTS.md front-door read, not missing law. No files change u
 - NEW `.roo/commands/` — zoo launcher files (generated, manifest-tracked) → 5
 - NEW `.roo/rules-analyst/` — per-mode rules, one dir per persona slug (generated) → 5
 - EDIT `.agents/commands/analyst.md` — platforms: + zoo; same edit across the measured 20-file opencode-only set named in Part E → 5
+- EDIT `CLAUDE.md` — three `@.agents/rules/` floor imports → 6
+- EDIT `GEMINI.md` — the same three floor imports → 6
+- EDIT `opencode.json` — instructions + operator-profile.md → 6
+- NEW `.roo/rules/` — generated floor-rule copies for Zoo injection (generated, manifest-tracked) → 5, 6
 
 No deployable paths (`backend/ frontend/ firebase/ functions/ mobile/ .github/`) — Task lane confirmed.
 
@@ -175,8 +221,10 @@ minting is the operator's placement call.
 
 ## Build order
 
-C → A → B → D → E. C and E share the SOP page (sequenced, C first); E is the largest and lands last
-so sync-generation runs against the finished rule set; A/B/D are file-disjoint from everything else.
+C → A → B → D → E → F. C and E share the SOP page (sequenced, C first); E is the largest of the
+build parts and runs sync-generation against the finished rule set; F lands last so its sync stages
+(`.roo/rules/`, `~/.codex/AGENTS.md`) generate from the final rule text and its assertions extend
+the Part A test file after A/B exist. A/B/D are file-disjoint from everything else.
 `/smh-label-tasks SCC-346` output supersedes this if it disagrees.
 
 ## Self-Audit (2026-08-29)
@@ -232,3 +280,18 @@ Part F (template link edits) was added on an operator report and withdrawn on th
 correction the same session: the obligation is already always-on law (`constitution.md:46`), and
 per-command template text would be re-read context for a rule agents already carry. Change set
 restored to the A–E shape. Verdict unchanged: GO.
+
+### Audit addendum 2 — Part F REVISED in on the operator's directive (2026-08-29, pre-approval)
+
+A different Part F, on the operator's explicit ask (always-on floor rules, opencode/Codex riding
+the sync "almost for free", Gemini extension rules): four tracked one-file edits (CLAUDE.md,
+GEMINI.md, opencode.json + the sync script already in the set) plus two **generated caches**
+(`.roo/rules/`, `~/.codex/AGENTS.md`). No prose duplication — law stays in `.agents/rules/`;
+copies carry generated headers and regenerate every sync. Checked: `@path` import is supported
+front-door syntax for both Claude Code and Gemini; floor payload measured 17.7 KB; skeleton mirror
+deferred (separate repo, named blocker, close-out proposal). Verdict unchanged: GO.
+
+**Batch approval (2026-08-29):** "then lets keep pushing and finish this whole ticket" — the
+operator's exact words at the Step 5 stop, after Part D landed on their earlier "lets do part d
+first so its all here then we can move on to the rest". Covers this plan as amended this turn
+(Parts A, B, C, E and revised F) for `/smh-plan-task SCC-346` Step 5: SCC-346, rider SCC-349.
