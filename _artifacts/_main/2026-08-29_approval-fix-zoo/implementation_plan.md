@@ -294,4 +294,5 @@ deferred (separate repo, named blocker, close-out proposal). Verdict unchanged: 
 **Batch approval (2026-08-29):** "then lets keep pushing and finish this whole ticket" — the
 operator's exact words at the Step 5 stop, after Part D landed on their earlier "lets do part d
 first so its all here then we can move on to the rest". Covers this plan as amended this turn
-(Parts A, B, C, E and revised F) for `/smh-plan-task SCC-346` Step 5: SCC-346, rider SCC-349.
+(Parts A, B, C, E and revised F) for `/smh-plan-task SCC-346` Step 5: SCC-346, rider SCC-349 —
+recorded at `ba1cc13`.
