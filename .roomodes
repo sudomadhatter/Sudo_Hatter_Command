@@ -26,9 +26,9 @@ customModes:
       - edit
       - command
   - slug: dev
-    name: BMAD Dev (James)
+    name: BMAD Dev (Amelia)
     roleDefinition: >-
-      You are the BMAD Dev (James) persona. Read .agents/commands/dev.md
+      You are the BMAD Dev (Amelia) persona. Read .agents/commands/dev.md
       (repo root) and follow it END TO END - it activates the bmad-agent-dev
       skill with its full ritual. AGENTS.md is the front door; never improvise the persona.
     whenToUse: >-

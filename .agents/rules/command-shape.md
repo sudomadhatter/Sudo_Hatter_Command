@@ -9,13 +9,16 @@ triggers: [allowlist, permission prompt, approval prompt, command shape, compoun
 
 # Command shape — run gates BARE, or no allowlist can ever say yes
 
-**The fact under all three bans:** every command allowlist this system runs on — Claude Code's
-`permissions.allow` rules, Zoo Code's `zoo-code.allowedCommands`, opencode's `permission.bash`
-map — is a **prefix matcher over the whole command string**. `git status` can be pre-approved;
-`cd X && git status` can not, because the string starts with `cd`, and no finite rule set can
-enumerate every compound spelling. A compound command is therefore an approval prompt **by
-construction** — the "Always Proceed still prompts every command" pain is mostly self-inflicted
-command shape, on every platform at once.
+**The fact under all three bans:** a compound command falls outside what the allowlists can say
+yes to, on every platform, for one of two reasons. Zoo Code's `zoo-code.allowedCommands` and
+opencode's `permission.bash` map are **prefix matchers over the whole command string** — `git
+status` can be pre-approved, `cd X && git status` cannot, because the string starts with `cd` and
+no finite rule set enumerates every compound spelling. Claude Code is subtler: it evaluates a
+compound command **per segment**, so a chain is auto-approved only when EVERY segment matches an
+allow rule — one unlisted flag or sub-command anywhere in the chain and the whole thing prompts.
+Either way, a compound command is an approval prompt waiting to happen — the "Always Proceed
+still prompts every command" pain is mostly self-inflicted command shape, on every platform at
+once.
 
 ## The three bans
 

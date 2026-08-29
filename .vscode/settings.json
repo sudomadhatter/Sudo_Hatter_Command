@@ -18,15 +18,17 @@
   },
   // Zoo Code (Roo Code's community continuation) — workspace-scoped so the allowlists travel
   // via git to BOTH machines (SCC-346). Namespace is zoo-code.*, NOT the retired roo-cline.*.
-  // Zoo checks deniedCommands FIRST, so the destructive set below wins over any allow prefix.
-  // Same stable command families as .claude/settings.json permissions.allow — both interpreter
-  // spellings (python3 Mac / python PC), no machine-absolute paths.
+  // Both lists are PREFIX matchers over the whole command string, and a deny only wins when its
+  // prefix actually matches — so no allow entry may be a prefix of a denied family's escape
+  // spelling. That is why there is NO bare "git -C" here: `git -C . push --force` starts with
+  // "git -C" and with no deny entry, so the one allow row would have bypassed the whole
+  // destructive set (found at review, SCC-346). Same stable command families as
+  // .claude/settings.json permissions.allow — both interpreter spellings, no machine paths.
   "zoo-code.useAgentRules": true,
   "zoo-code.allowedCommands": [
     "git status", "git diff", "git log", "git show", "git fetch", "git rev-parse",
     "git merge-base", "git merge-tree", "git worktree list", "git branch --list",
     "git ls-files", "git check-ignore", "git stash list", "git add", "git commit",
-    "git -C",
     "python3 .agents/scripts/", "python .agents/scripts/",
     "python3 -m py_compile", "python -m py_compile",
     "acli jira workitem view", "acli jira workitem search",
@@ -39,6 +41,7 @@
     "rm -rf", "rm -r", "sudo",
     "git push --force", "git push -f", "git push origin main",
     "git reset --hard", "git clean", "git checkout main", "git branch -D",
+    "git add -A", "git add .", "git add -u",
     "Remove-Item -Recurse", "del /s", "rmdir /s",
     "dd if=", "mkfs", "chmod -R 777"
   ]

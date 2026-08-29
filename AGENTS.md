@@ -166,12 +166,13 @@ files, per §3); full model →
   landing; invoking it IS the sign-off). OWNER-ONLY: **`main`** — only via `/cicd-push-e2e` (epic merge,
   full gate) or Mr. Hatter's direct ask. Full branch model + enforcement → `.agents/rules/git-policy.md`
   (web/mobile → `mobile-mode.md`).
-- **COMMAND-SHAPE GATE — run gates BARE.** Every platform's command allowlist is a prefix matcher,
-  so a compound command is an approval prompt by construction. No `cd X && …` chains (use `git -C`
-  / absolute paths), no `; echo "EXIT=$?"` tails (the tail eats the real exit code), no piping a
-  gate (`| tee` / `| head` / `| grep` hides its status — redirect to a file instead). Read-only
-  chains pass on Claude via the SCC-287 hook; everywhere else, bare is the only shape that works.
-  Full mechanics → `.agents/rules/command-shape.md`.
+- **COMMAND-SHAPE GATE — run gates BARE.** A compound command falls outside what any allowlist can
+  pre-approve (Zoo/opencode match the whole string by prefix; Claude approves a chain only when
+  EVERY segment is allowed), so it is an approval prompt waiting to happen. No `cd X && …` chains
+  (use `git -C` / absolute paths), no `; echo "EXIT=$?"` tails (the tail eats the real exit code),
+  no piping a gate (`| tee` / `| head` / `| grep` hides its status — redirect to a file instead).
+  Read-only chains pass on Claude via the SCC-287 hook; everywhere else, bare is the only shape
+  that works. Full mechanics → `.agents/rules/command-shape.md`.
 - Full hard stops + "ask first" list → `.agents/rules/constitution.md`.
 
 ## 7. PERSISTENCE  (you own this — not a vendor)

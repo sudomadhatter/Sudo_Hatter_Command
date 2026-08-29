@@ -32,6 +32,7 @@ of one house sentence is how the check and the file drift apart.
 """
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -78,7 +79,7 @@ def tracked_adapters(root: Path) -> tuple[list[Path], list[tuple[Path, str]]]:
 # adapters only (SCC-346 Part F): a nested adapter also importing the floor would double-load it,
 # and an import of anything OUTSIDE .agents/rules/ is exactly the model-specific-law smell this
 # test exists to catch.
-FLOOR_IMPORT = __import__("re").compile(r"^@\.agents/rules/[A-Za-z0-9_\-]+\.md$")
+FLOOR_IMPORT = re.compile(r"^@\.agents/rules/[A-Za-z0-9_\-]+\.md$")
 
 
 def adapter_violations(text: str, allow_floor_imports: bool = False) -> list[str]:
