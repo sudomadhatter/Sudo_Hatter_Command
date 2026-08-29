@@ -30,11 +30,12 @@
    `.roo/commands/*.md` launchers for eligible smh-/cicd- commands and `.roomodes` with the six BMAD
    personas, manifest-tracked; persona commands' `platforms:` frontmatter includes `zoo`. Check:
    grep on the script; generated files exist after a sync run; manifest rows present.
-6. **Hand-back templates demand LINKS, not paths** (added 2026-08-29, operator's word this session):
-   every command report/hand-back section that names an implementation plan or a review walkthrough
-   renders it as a clickable Markdown link (relative repo link, plus the GitHub `blob/` URL where a
-   pushed branch exists) — the shape `constitution.md:46` already mandates. Check: grep the report
-   sections; no bare `plan @ <path>`-style rows survive.
+6. **Hand-back templates demand LOCAL LINKS, not paths** (added 2026-08-29, operator's word this
+   session): every command report/hand-back section that names an implementation plan or a review
+   walkthrough renders it as a clickable **local** Markdown link (relative repo path) — the shape
+   `constitution.md:46` already mandates. No GitHub `blob/` URL in chat hand-backs (operator ruling,
+   same session); blob links remain only where Jira needs them (`jira.md` §Files — a ticket cannot
+   open a local path). Check: grep the report sections; no bare `plan @ <path>`-style rows survive.
 
 ## Part sections
 
@@ -125,7 +126,8 @@ that the report templates contradict the constitution, so any agent copying the 
 violation. Fix the templates: in the report/hand-back sections of the measured six —
 `smh-plan-task.md`, `smh-quick-dev.md`, `smh-code-review.md`, `smh-close-task-merge-tree.md`,
 `cicd-code-review.md`, `cicd-dev-story-tests.md` — every implementation-plan and review-walkthrough
-mention becomes a Markdown link (relative repo link + GitHub `blob/` URL once pushed). Twin-drift
+mention becomes a **local** Markdown link (relative repo path; NO GitHub `blob/` URL in chat —
+operator ruling this session; blob links live only in Jira `## Files` rows). Twin-drift
 rule: diff each smh-/cicd- twin pair after editing (`sudo-commands-have-ap-twins-that-drift`).
 Re-grep at dev time for any report section the six-file measurement missed.
 
