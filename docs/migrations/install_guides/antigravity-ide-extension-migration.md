@@ -219,6 +219,30 @@ No output after the heading means all portable IDs were installed.
 
 Also inspect the IDE's Extensions panel. Some extensions require a fresh login, a workspace reload, or an external dependency before they become functional.
 
+## Part 6 — Sync on Windows PC (Install Missing & Prune Removed)
+
+When switching back to the Windows PC, pull the latest changes and run this PowerShell snippet to align the PC's IDE with the updated manifest:
+
+```powershell
+$ManifestPath = "docs\migrations\antigravity_extensions\antigravity-extension-ids.txt"
+$Manifest = Get-Content $ManifestPath | Where-Object { $_.Trim() -ne '' }
+$Installed = & agy-ide --list-extensions
+
+# 1. Install extensions present in manifest but missing on PC
+$Missing = $Manifest | Where-Object { $_ -notin $Installed }
+foreach ($ext in $Missing) {
+    Write-Host "Installing missing extension: $ext"
+    & agy-ide --install-extension $ext
+}
+
+# 2. Prune extensions installed on PC that were removed from the manifest
+$Obsolete = $Installed | Where-Object { $_ -notin $Manifest }
+foreach ($ext in $Obsolete) {
+    Write-Host "Uninstalling obsolete extension: $ext"
+    & agy-ide --uninstall-extension $ext
+}
+```
+
 ## Expected exceptions
 
 An extension can remain missing for legitimate reasons:
