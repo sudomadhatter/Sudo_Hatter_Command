@@ -1,5 +1,7 @@
 # Claude Code Permissions & Sandbox in Git Worktrees
 
+> **Renamed + relocated (operator, 2026-08-30, landed with SCC-351)** — formerly *claude-permission-sandboxed* under *install_guides/*. This page is the CLAUDE-side deep dive. The cross-agent front door — which agent decides from which store, and how to grow each allow list — is [terminal-global-permission.md](terminal-global-permission.md); the Zoo-side deep dive is [zoo-code-permissions-guide.md](zoo-code-permissions-guide.md).
+
 Reference guide for configuring Claude Code permissions, OS sandboxing, PreToolUse escape guards, and git worktree asset linking on Mac and PC.
 
 ## Overview

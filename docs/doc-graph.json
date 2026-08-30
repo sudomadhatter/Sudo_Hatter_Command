@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 422,
+    "files": 423,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 777,
+    "edges": 782,
     "external": 40,
     "ambiguous": 176,
     "dangling": 301,
@@ -733,7 +733,7 @@
     },
     {
       "path": ".agents/rules/command-shape.md",
-      "in": 8,
+      "in": 9,
       "out": 3
     },
     {
@@ -2052,9 +2052,9 @@
       "out": 0
     },
     {
-      "path": "docs/migrations/install_guides/claude-permission-sandboxed.md",
-      "in": 0,
-      "out": 0
+      "path": "docs/migrations/claude-terminal-permission.md",
+      "in": 1,
+      "out": 2
     },
     {
       "path": "docs/migrations/install_guides/github-ci-gates-setup.md",
@@ -2107,8 +2107,13 @@
       "out": 0
     },
     {
+      "path": "docs/migrations/terminal-global-permission.md",
+      "in": 1,
+      "out": 3
+    },
+    {
       "path": "docs/migrations/zoo-code-permissions-guide.md",
-      "in": 5,
+      "in": 7,
       "out": 1
     },
     {
@@ -5741,6 +5746,16 @@
       "kind": "link"
     },
     {
+      "from": "docs/migrations/claude-terminal-permission.md",
+      "to": "docs/migrations/terminal-global-permission.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/claude-terminal-permission.md",
+      "to": "docs/migrations/zoo-code-permissions-guide.md",
+      "kind": "link"
+    },
+    {
       "from": "docs/migrations/install_guides/github-ci-gates-setup.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
@@ -5853,6 +5868,21 @@
     {
       "from": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/terminal-global-permission.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/migrations/terminal-global-permission.md",
+      "to": "docs/migrations/claude-terminal-permission.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/terminal-global-permission.md",
+      "to": "docs/migrations/zoo-code-permissions-guide.md",
       "kind": "link"
     },
     {

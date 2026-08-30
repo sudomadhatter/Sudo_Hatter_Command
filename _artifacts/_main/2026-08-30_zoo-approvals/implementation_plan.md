@@ -140,6 +140,9 @@ consequential set is larger than the plan's first cut and every path is now decl
 - EDIT `docs/doc-graph.json` — map cache follows the new files → F
 - EDIT `docs/doc-graph.md` — map cache follows the new files → F
 - NEW `docs/migrations/zoo-code-permissions-guide.md` — the permanent reference → A
+- NEW `docs/migrations/terminal-global-permission.md` — cross-agent front door (operator ask, close-out) → A
+- NEW `docs/migrations/claude-terminal-permission.md` — operator's rename of the Claude deep dive, landed → A
+- DELETE `docs/migrations/install_guides/claude-permission-sandboxed.md` — renamed to the above → A
 - EDIT `docs/repo-map.md` — map cache follows the new files → F
 
 ## Acceptance (the checkable list)
