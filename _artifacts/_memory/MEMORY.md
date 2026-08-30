@@ -86,6 +86,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 
 ## Toolkit & sync
 - [⭐ Zoo Code replaces Roo; VS Code replaces Antigravity](zoo-code-replaces-roo-code.md) — .roo/* paths kept; zoo-code.* settings namespace; NOT in sync-agents yet (SCC-349).
+- [Zoo team: Wonderland roster](zoo-team-wonderland-roster.md) — March Hare = lead/orchestrator; emoji + name + ALL-CAPS role; 5 seats (Queen of Hearts = TESTER & QA merged, debug slug, full pen), ask stays stock; SCC-350.
 - **Where law lives** — [center owns workflow law](thin-projects-center-owns-workflow-law.md) (thin projects; read .agents/INDEX.md) · [repo-local enforcement never centralizes](repo-local-enforcement-never-centralizes.md) (hooks and configs stay in gated repo) · [`platforms: []` = NOWHERE](platforms-empty-list-means-nowhere.md) (omit key = all four).
 - **The non-Claude platforms** — [Codex is the 4th](codex-is-fourth-platform.md) (reads AGENTS.md + skills natively) · [Antigravity uses workflows](antigravity-uses-workflows-not-commands.md) (thin launcher workflows solve 12k limit).
 - **Sync scope since 08-07** — [covers .agents not docs](toolkit-sync-covers-agents-not-docs.md) (lobby + caches only) · [maintained-projects is a LINT worklist](maintained-projects-allowlist.md) (sync no longer reads it).
