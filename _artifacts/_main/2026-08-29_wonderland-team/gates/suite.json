@@ -3,7 +3,7 @@
   "story": "scc-350",
   "result": "pass",
   "exit_code": 0,
-  "sha": "9590e5e0821ce37c993c4addf3578dfcb8fd1714",
+  "sha": "fe4679d25304351be251ac5a14b98fade3469b5d",
   "dirty_tree": false,
   "dirty_paths": [],
   "totals": null,
@@ -12,7 +12,7 @@
     ".agents/scripts/tests/run_all.py"
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/wonderland-team",
-  "duration_s": 80.2,
-  "recorded_at": "2026-08-30T02:09:59+00:00",
-  "output_tail": " satisfies the whole team law (slugs \u00b7 names \u00b7 groups)\n[PASS] B3 every mode is generated FROM its master frontmatter (one source, current)\n[PASS] B4 the QA master states the no-edit refusal in prose too\n[PASS] B5 seat rules are GENERATED, CURRENT, and retired persona dirs are pruned: retired-still-present=[] bad=[]\n[PASS] B6 the team rule reaches every Zoo seat, CURRENT with its master\n[PASS] B7 tracked .vscode/settings.json ships git.detectWorktrees=true (PC parity)\n[PASS] C0 the mirrored regexes can actually REJECT (unquoted / unbracketed mutants)\n[PASS] C1 the ps1 $seats table carries exactly the law's six slugs: table=[('orchestrator', 'smh-team-march-hare.md'), ('architect', 'smh-team-white-rabbit.md'), ('code', 'smh-team-carpenter.md'), ('designer', 'smh-team-caterpillar.md'), ('debug', 'smh-team-cheshire-cat.md'), ('ask', 'smh-team-queen-of-hearts.md')]\n[PASS] C2 every seat master parses under the ps1's OWN stricter regexes, within its 12-line read window\n[PASS] C3 .roomodes carries one mode per table row (a skipped seat resurrects a stock Zoo mode): modes=6 table=6\n[PASS] C4 each mode's roleDefinition names the SAME master as the ps1 table row\n[PASS] C5 the ps1 zoo floor-copy list carries zoo-team.md (its ONLY publisher \u2014 the tracked copy stays byte-equal for a while after a silent drop): 'operator-profile.md', 'constitution.md', 'karpathy-guidelines.md', 'zoo-team.md'\n-- 25/25 passed --\n\n============================================================\n64/64 files passed\n"
+  "duration_s": 85.8,
+  "recorded_at": "2026-08-30T04:35:51+00:00",
+  "output_tail": "esent=[] bad=[]\n[PASS] B6 the team rule reaches every Zoo seat, CURRENT with its master\n[PASS] B7 tracked .vscode/settings.json ships git.detectWorktrees=true (PC parity)\n[PASS] C0 the mirrored regexes can actually REJECT (unquoted / unbracketed mutants)\n[PASS] C1 the ps1 $seats table carries exactly the law's five slugs: table=[('orchestrator', 'smh-team-march-hare.md'), ('architect', 'smh-team-white-rabbit.md'), ('code', 'smh-team-carpenter.md'), ('designer', 'smh-team-caterpillar.md'), ('debug', 'smh-team-queen-of-hearts.md')]\n[PASS] C2 every seat master parses under the ps1's OWN stricter regexes, within its 12-line read window\n[PASS] C3 .roomodes carries one mode per table row (a skipped seat resurrects a stock Zoo mode): modes=5 table=5\n[PASS] C4 each mode's roleDefinition names the SAME master as the ps1 table row\n[PASS] C5 the ps1 zoo floor-copy list carries zoo-team.md (its ONLY publisher \u2014 the tracked copy stays byte-equal for a while after a silent drop): 'operator-profile.md', 'constitution.md', 'karpathy-guidelines.md', 'zoo-team.md'\n[PASS] C6 the mirrored frontmatter regexes appear VERBATIM in the ps1 source: a mirror pattern no longer appears in sync-agents.ps1 \u2014 the copies have drifted from the originals\n[PASS] C7 the seat loop emits the FULL description (no Get-AgDescription cut): full-desc emission line missing, or the Antigravity cut is back in the seat loop\n-- 29/29 passed --\n\n============================================================\n64/64 files passed\n"
 }

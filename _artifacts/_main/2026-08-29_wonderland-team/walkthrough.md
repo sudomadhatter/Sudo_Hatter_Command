@@ -209,3 +209,92 @@ py_compile clean on the three touched test files; comment contract satisfied (ea
 1. Nothing this diff references moved on `main`: 0 files landed on origin/main since the merge-base; every path the diff names re-resolved at review time.
 2. True overlap: empty; `merge-tree` clean (lane is a fast-forward candidate).
 3. Sibling lanes: none live (`git worktree list` = main + this lane); no landing-order dependency.
+
+## Code Review (2026-08-29 — second pass: the quality-merge amendment)
+
+Verdict: PASS @ fe4679d2
+Suite evidence measured at the same sha: `fe4679d2` (receipt `gates/suite.json` re-stamped PASS, clean tree; the @ 9590e5e receipt was VOIDED by the amendment's code changes per certification-at-shipping-sha and is superseded, not deleted — its output_tail describing the six-seat table is the historical record of the first pass).
+
+lens_isolation: worktree — one detached copy at 6950d2c7 under the session scratchpad shared by the four tree-reading lenses (all read-only Explore agents, no Write/Edit tools); the Blind Hunter got the diff blob only, no tree. Builder tree showed zero lens-authored changes after the wave; the lens worktree was pruned after triage.
+
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok — 18-file scope inside the 20-file cap, all read in full
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok — ran the suite live in the frozen tree (23/23 pre-fix tally pasted in its report) and simulated 5 declared mutants: 3 killed by named case, 1 survivor, 1 split — both non-kills fixed below (B2b, C7)
+lenses_counted:  5/5
+lenses_na:       none
+
+Verify wave: folded into the lenses this pass — the test-adequacy lens executed the suite and its mutants in the frozen tree, the edge lens re-ran the ps1 regexes and NAME_RE over the live strings, and the literal lens hexdumped all seven name occurrences; the assessor cross-checked every fixed finding against a green named case before this verdict. No claim below rests on a lens's say-so alone.
+
+Scope: the amendment delta `c2b13d5..fe4679d2` reviewed against the FULL branch diff `origin/main...HEAD` (78 files at review start), review_level standard (rule + gate + generator surfaces in the radius). The first pass's PASS @ 9590e5e covers the unamended remainder and stands as history.
+Method: 5-lens fan-out → assessor triage per code-standards §6.5 → all surviving patches applied in this lane before this verdict.
+
+findings:        0 decision · 21 patch · 0 defer   (6 dismissed with recorded reasons; 42 raw instances → 27 unique claims)
+dispositions:    per-lens: blind-hunter=11/0/0 · edge-case-hunter=7/3/0 · literal-correctness=7/0/0 · acceptance-auditor=4/0/0 · test-adequacy-auditor=7/3/0 (a multi-lens finding counts once per contributing lens)
+drift:           undeclared=0 after the amendment ledger fix (Q4/Q21) — the plan's Declared Change Set now carries every amendment path incl. the hook-staged doc-graph pair; unimplemented=0 (3 phantom NEW bullets for born-and-retired paths removed); incomplete=0
+
+### Findings table (unique claims)
+
+| # | anchor | severity (verified) | failure scenario | disposition |
+|---|---|---|---|---|
+| Q1 | gates/suite.json + walkthrough verdict | HIGH (all 5 lenses) | the only receipt on file certified the VOIDED six-seat sha — close-out would clear on code that no longer exists | applied — suite 64/64 re-run bare at `fe4679d2`, receipt re-stamped (pass, clean), this verdict line is the new machine-read record |
+| Q2 | test_zoo_team charter name | HIGH 0.95 (adequacy F1) | a consistent revert of the merged seat to "— QA" survived every check — the ticket's whole point un-nameable silently | applied — `QUEEN_NAME` law literal + B2b pins the live .roomodes name AND its presence in the team rule master |
+| Q3 | mode_problems group ceiling | MED 0.9 (edge F2) | with the scoped pen gone, any master could self-grant `mcp`/`browser` and stay green — `mcp` is the TEAM LEAD's delegation privilege | applied — `ALLOWED_GROUPS`/`MCP_SLUGS` ceiling + two REJECT fixtures |
+| Q4 | plan Declared Change Set | MED (blind #4, literal L3) | 3 phantom NEW bullets for paths the final diff never contains; the amendment's own edits undeclared — drift reconciliation reads a fiction ledger | applied — phantoms removed, 24 amendment bullets added |
+| Q5 | plan Acceptance rows 1–3 | HIGH (blind #3) | rows demanded six modes / an edit-stripped ask seat — the correct tree scores FAIL on its own contract | applied — rows rewritten to the amended law, marked amendment 3 |
+| Q6 | walkthrough body | MED (blind #2, literal L6) | the shipped record asserted the retired design as delivered (title, roster, checklist, Your Actions) | applied — body updated to five seats + an explicit amendment narrative; first-pass sections kept as marked history |
+| Q7 | tickets/SCC-350.md outline | MED (acceptance, blind #9, literal L5) | acceptance boxes pinned the deleted design (Cheshire on debug, Queen on ask, edit-strip) — unsatisfiable forever | applied — boxes updated, amendment note in the Why |
+| Q8 | _artifacts/_main/INDEX.md row | MED (acceptance, blind #7, literal L4) | the durable ledger row described six seats, the dead Cat, the dead edit-strip and a stale check count | applied — row rewritten |
+| Q9 | SOP upkeep line (§sync-agents) | MED (acceptance, blind #6) | second SOP location still said "six Wonderland team seats" — the operator's manual stated both numbers | applied — five |
+| Q10 | allowlist docstring | MED (blind #5, edge F6) | same-file six-vs-five contradiction 20 lines above `SEATS` | applied |
+| Q11 | changelog rows 145/146 | MED (literal L1, blind #10, edge F7) | two contradictory same-day "what shipped" rows for one ticket, both unlanded — the first naming a seat that does not exist | applied — folded into one accurate row (both rows were this lane's, so no history rewritten) |
+| Q12 | B5 retired-dir denylist | MED (edge F3, adequacy F6) | an enumerated list is blind to any stray GENERATED rules-* dir it did not predict | applied — complement-of-LAW_SLUGS scan, marker-guarded like the generator's own prune |
+| Q13 | B3 `if desc and` skip | MED (adequacy F3) | a master with no description emits a BLANK whenToUse — the delegation signal — with B3 green | applied — missing description is now a named defect |
+| Q14 | C-block mirror currency | MED (adequacy F7) | nothing proved the mirrored regexes still equal the ps1's literals — a tightened reader would skip seats the mirror passes | applied — C6 asserts both patterns verbatim in the ps1 source |
+| Q15 | full-desc emission unpinned at source | MED (adequacy F5, mutant e) | a generator-only regression to the 135-char cut ships green until the next sync | applied — C7 pins `+ $desc)` and bans Get-AgDescription inside the seat loop window |
+| Q16 | ps1 reader takes LAST match in 12 lines | LOW→fixed (edge F8) | body prose matching `^mode-name:` overrides the real frontmatter silently | applied — reader stops at the closing `---` |
+| Q17 | YAML backslash branch unmutated | LOW (blind #11, adequacy F10) | `or "\\" in name` deletable with the file green — the emoji-branch defect class recurring | applied — backslash fixture added |
+| Q18 | Queen verdict literal | MED (literal L2) | seat brain taught a binary verdict — `PASS\|FAIL` where the doors emit `PASS\|CONCERNS\|FAIL\|WAIVED @ <HEAD-sha>` | applied |
+| Q19 | bare testarch door names | LOW (literal L7) | bare `testarch-*` reads as skill names (the skills are `bmad-testarch-*`) — ambiguous both directions | applied — slash-led like every other door in the master |
+| Q20 | Queen red phase cicd-only | MED (edge F5) | picked in the command centre, her only red-phase doors presume a BMAD story lane | applied — smh-lane route stated (red phase rides /smh-quick-dev's tests-first step) |
+| Q21 | amendment ledger under-stated radius | MED (literal L3) | the "What changes" list omitted the three artifacts that then shipped stale | applied — ledger completed (see Q4) |
+| D1 | sync warns, exit 0 on skipped seat | dismissed (edge F4) | designed shape: the first pass deliberately chose the loud warning + measured counts, with the armed suite as the hard gate; a throwing generator would break -WhatIf and partial syncs |
+| D2 | zoo launcher description 135-cut | dismissed (edge F9) | menu blurb under the shared launcher contract, predating this lane; delegation reads whenToUse, which ships full — raised once with the remedy named (lift the cut for zoo launchers in a sync-agents lane) |
+| D3 | role-class widening unmutated | dismissed (edge F10) | `[A-Z][A-Z &]*` predates the amendment (TEAM LEAD-era); no live shape it wrongly admits — coverage-for-symmetry class |
+| D4 | B-block builders lack negative fixtures | dismissed (adequacy F2) | pre-existing suite architecture (B3/B5 shipped this shape in the first pass and its review weighed it); C0 remains the model for new checks |
+| D5 | B4 pins vocabulary not content | dismissed (adequacy F4) | speculative — no concrete input gutting the master while preserving the four door names + the refusal phrase |
+| D6 | dead parse fallback + unused role group | dismissed (adequacy F9) | pre-existing lines untouched by the amendment; noted for a future test-hygiene lane |
+
+### Acceptance matrix (plan rows as amended)
+
+| Acceptance row | Proving assertion |
+|---|---|
+| 1 — five modes on the closed slug set (ask deliberately unclaimed), name law | B2 + E2 (`--case "A ·"` 13/13 proves the detectors fire) |
+| 2 — full pens under the chartered ceiling; mcp = TEAM LEAD only; charter-name pin | B2 (ceiling law) + B2b + the UNCHARTERED and mcp fixtures |
+| 3 — five masters, platforms [zoo], Queen carries BOTH halves | B3 (`== ['zoo']`) + B4 + workflow_lint 0/0 |
+| 4 — team rule current, stray GENERATED persona dirs impossible | B5 (complement scan) + B6 + C5 |
+| 5 — tracked detectWorktrees | B7 (value=True) |
+| 6 — armed suite green at tip; SOP same commit | run_all 64/64 @ fe4679d2 (receipt PASS, clean); sop gate green on `83a3220b` (SOP+changelog staged) and `fe4679d2` |
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| Enforcement suite | `64/64 files passed`, exit 0, receipt `gates/suite.json` PASS @ fe4679d2, DIRTY=no |
+| Toolkit lint | `0 error(s), 0 warning(s), 8 info` (infos = pre-existing testarch BOMs), exit 0 |
+| Assertion evidence | `test_zoo_team --case "A ·"` 13/13 · `--case "C ·"` 8/8 (named blocks, exit 0) |
+| SOP currency | SOP + changelog staged with the usage-surface commits (`83a3220b`, `fe4679d2`); `[sop-ok]` only on the two artifact/deletion-staging commits |
+| Link + anchor | `check_links.py --base origin/main` → clean, exit 0 (retired-path mentions de-ticked — they never existed on main) |
+| Door parity | suite E8/E9 green over the 50-launcher zoo set (one launcher retired with its master) |
+
+### Clean-Code Gate
+
+py_compile clean on the touched test files; comment contract satisfied — every new guard states its incident (the ceiling, the charter pin, the complement scan, the closing-`---` reader each carry their review-finding why; the C7 window comment explains the launcher-half exemption); no banned pattern in the diff; drift/bloat imported from the fan-out above rather than re-hunted (source `review`).
+
+### Step 0.7 — re-derivation (amendment pass)
+
+1. Nothing this diff references moved on `main`: 0 files landed on origin/main since the merge-base; every path re-resolved at review time.
+2. True overlap: empty; `merge-tree` clean (fast-forward candidate).
+3. Sibling lanes: none live (`git worktree list` = main + this lane); no landing-order dependency.

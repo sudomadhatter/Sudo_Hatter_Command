@@ -184,9 +184,9 @@ ASCII in emitted literals), a mechanism refinement serving the same one-source i
 - EDIT `_artifacts/_main/INDEX.md` → Amendment 3
 - EDIT `_artifacts/_main/2026-08-29_wonderland-team/tickets/SCC-350.md` → Amendment 3
 - EDIT `_artifacts/_main/2026-08-29_wonderland-team/walkthrough.md` → Amendment 3
-- DELETE `.agents/commands/smh-team-cheshire-cat.md` → Amendment 3
-- DELETE `.roo/commands/smh-team-cheshire-cat.md` → Amendment 3
-- DELETE `.roo/rules-ask/01-persona.md` → Amendment 3
+- DELETE .agents/commands/smh-team-cheshire-cat.md → Amendment 3 (born and retired in this lane — path gone, so no tick: the link gate reads ticked paths)
+- DELETE .roo/commands/smh-team-cheshire-cat.md → Amendment 3 (same)
+- DELETE .roo/rules-ask/01-persona.md → Amendment 3 (same)
 
 Out of scope: the BMAD persona command masters (`analyst.md` …) stay untouched — they remain the
 cicd workers; `.roo/commands/` launchers unchanged; no AGY/AVCH surface; no deployable paths.
@@ -279,8 +279,9 @@ command-defined-approval shape); the agent's proposal it answers was posted in-c
   (`mode-groups: [read, edit, command]`): her doors are the red phase (write-story-tests, BDD,
   testarch) AND the review/audit doors, and review findings are fixed in the same lane —
   a handless judge contradicted the house "finding without a fix is a bill" law.
-- DELETE `.agents/commands/smh-team-cheshire-cat.md` (its red-phase content merges into the Queen's
-  master). REWRITE `.agents/commands/smh-team-queen-of-hearts.md` (mode-slug: debug, merged brain).
+- DELETE the Cheshire Cat master, .agents/commands/smh-team-cheshire-cat.md (its red-phase content
+  merges into the Queen's). REWRITE `.agents/commands/smh-team-queen-of-hearts.md` (mode-slug:
+  debug, merged brain).
 - EDIT `sync-agents.ps1` §3: `$seats` drops the `ask` row; `debug` row points at the Queen's
   master; the `edit-artifacts` scoped-pen emission branch is REMOVED (dead with no declarer).
   The existing prune paths retire `.roo/rules-ask/` mechanically.
