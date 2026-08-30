@@ -98,3 +98,44 @@ subshell laundering, env-prefix assignments, prefix blindness — with the real 
 1. Quit VS Code fully.
 2. `python3 .agents/scripts/zoo_permissions_apply.py --apply` (PC: `python`).
 3. Reopen; the closing `--status` must read "in sync with tracked file".
+
+## Code Review (2026-08-30)
+
+**Scope:** the full lane diff `origin/main...HEAD` (81 files: lists, apply script, 12-test gate,
+law rewrite, 229-spelling door rewrite + mirrors, SOP, memory). **Method:** every list decision
+proven against Zoo's REAL extracted matcher before landing (68-row battery, 25-step ceremony,
+residual + legit-read pins, 551-command measurement); mechanical rewrite hunks hand-checked;
+mirrors verified by the suite's own currency checks; declared-set drift audited file by file.
+
+**Findings — all fixed in-lane before this verdict:**
+1. **Mechanical rewrite falsified a historical quote** (`smh-close-task-merge-tree.md` §SCC-184:
+   the measured-DENIED form *was* `git -C … merge`; the sed changed the quote and made it claim
+   today's approved shape was denied) → quote restored verbatim with a present-day note.
+2. **A subdirectory door escaped both the rewrite and the gate** (`adviser-board/SPAWNS.md`;
+   flat `glob` vs `rglob`) → line rewritten, the doors scan made recursive so the class is pinned.
+3. **Deny-vs-ceremony collisions** caught by hand-checking hunks against the lists: close doors
+   park the checkout on `main` (deny removed per the operator's min-deny ruling — the damage,
+   pushing main, is fenced by the GitHub ruleset + hooks), prune steps print QUOTED branch names
+   (quote character defeats prefix — quoted re-allows added), epic close deletes `epic/*` with
+   `-D` (lowercase-equivalent re-allow added). Each now a ceremony fixture.
+4. **Count drift** (228/29 → 229/30 after finding 2) synced across INDEX, changelog, walkthrough.
+5. **The branch pre-dated PR #105** and would have re-added `.DS_Store` and reverted the memory
+   reconcile → `origin/main` absorbed; one MEMORY.md conflict resolved keeping both rows.
+
+**Deviations from the approved plan, disclosed:**
+- Acceptance row 3's `--apply` → `--status` in-sync proof is a **post-merge operator step** (the
+  script correctly refuses while VS Code runs, and this session runs inside VS Code). Verified
+  instead: live `--status` found the store and reported the exact 49/19-vs-tracked drift; the
+  refuse guard and both-list writes are source-pinned by the gate.
+- `test_settings_allowlist.py` (B1 family sentinels, new B2c `git -C`-denied pin) and
+  `test_stale_base_refs.py` (one pinned row follows the door's new spelling) edited — not in the
+  declared set; consequential to the law change, each a suite-conformance edit.
+- `docs/doc-graph.*` + `docs/repo-map.md` regenerated map cache (follows the new files).
+- Mirrors (`.opencode/commands` ×26, `.agents/workflows` ×3, `.roo/rules/zoo-team.md`) regenerated
+  by hand byte-matching the generator (in-session sync is sandbox-blocked, SCC-300); equivalence
+  proven by the suite's own currency checks (CS 231/231, zoo_team B6).
+
+**Gates at this sha:** suite 65/65 (receipt [gates/suite.json](gates/suite.json)),
+`workflow_lint --toolkit-only` 0/0, `check_links` clean, doors `git -C`-free (recursive scan).
+
+Verdict: PASS @ 64619de4
