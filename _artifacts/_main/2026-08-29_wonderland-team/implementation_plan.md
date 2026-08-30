@@ -219,4 +219,4 @@ Audit verdict: GO
 
 **Batch approval (2026-08-29):** "approved" — the operator's exact word, this turn, at the
 `/smh-plan-task` Step 5 stop; covers this plan (SCC-350, consolidated lane, no subtasks) as
-amended through `7d27c04`.
+amended through `7d27c04` — recorded at `98e069a`.
