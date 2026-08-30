@@ -86,8 +86,9 @@ it reaches the PC and survives VS Code profile switches.
 
 ## Part E — Tests, RED first · SOP same commit
 
-`NEW .agents/scripts/tests/test_zoo_team.py` (registered in `run_all.py` the way the SCC-346 suites
-are) — written and seen RED before Parts A–C land:
+`NEW .agents/scripts/tests/test_zoo_team.py` (auto-discovered — `run_all.py` globs `test_*.py`,
+its own docstring line 11 says "a new one joins the suite with no wiring", so it is NOT edited) —
+written and seen RED before Parts A–C land:
 
 1. roster↔surface currency: the seat table parsed from `sync-agents.ps1` matches `.roomodes`
    (slugs, names, groups) — drift fails.
@@ -99,6 +100,12 @@ are) — written and seen RED before Parts A–C land:
 5. retired persona dirs absent; six seat dirs present with GENERATED marker.
 6. `.vscode/settings.json` carries `git.detectWorktrees: true`.
 7. `zoo-team.md` floor-copy currency (E5 shape) — stale copy fails.
+
+**Amendment (2026-08-29, pre-build):** `EDIT .agents/scripts/tests/test_settings_allowlist.py` —
+its E2/E4/E10 checks hardcode the six BMAD personas as the `.roomodes` lineup and go RED when the
+roster lands; they are rewritten to assert the SEATS (slug set, seat rule dirs, mode→master + name
+agreement). E3/E5/E6/E7/E8/E9 stand unchanged: the BMAD persona masters keep their `.roo/commands/`
+launchers — only the mode picker changes hands.
 
 `EDIT docs/_scc_sops_prds/workflows_testing_SOP.md` (+ one changelog line): the Zoo mode picker is
 the team — what each seat is for, in operator language — staged in the same commit as the usage
@@ -128,7 +135,7 @@ live in extension state, not in git; same panel as the SCC-346 toggles).
 - NEW `.agents/rules/zoo-team.md` → Part C
 - NEW `.agents/scripts/tests/test_zoo_team.py` → Part E
 - EDIT `.agents/scripts/sync-agents.ps1` → Part B
-- EDIT `.agents/scripts/tests/run_all.py` → Part E
+- EDIT `.agents/scripts/tests/test_settings_allowlist.py` → Part E
 - EDIT `.vscode/settings.json` → Part D
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` → Part E
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` → Part E
