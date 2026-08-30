@@ -239,3 +239,32 @@ amended through `7d27c04` — recorded at `98e069a`.
 
 **Batch approval — amendment (2026-08-29):** "Approved" — the operator's exact word, this turn,
 re-covering the plan as amended through `f989f32`.
+
+## Amendment 3 — the merged quality seat (2026-08-29, post-PASS follow-on on the same lane)
+
+**The operator's direction, verbatim, at `c2b13d5`:** *"the tester and the QA need to really be
+one I think"* · *"Other way around though I want to call this agent the Queen of hearts still"* ·
+*"exatly, the self audit and the code review are the QA and the testing"*. That IS the approval
+for this amendment (a product decision in the operator's own words, per the plan-first gate's
+command-defined-approval shape); the agent's proposal it answers was posted in-chat the same turn.
+
+**What changes (supersedes Part A's six-seat roster and the QA edit-strip/scoped-pen design):**
+
+- The TESTER and QA seats become ONE seat: **♥️👑 Queen of Hearts — TESTER & QA**, on the `debug`
+  slug (suppresses Zoo's stock Debug — a law-free coding mode — while the harmless stock Ask
+  returns to the picker; the `ask` slug is deliberately unclaimed). Full pen
+  (`mode-groups: [read, edit, command]`): her doors are the red phase (write-story-tests, BDD,
+  testarch) AND the review/audit doors, and review findings are fixed in the same lane —
+  a handless judge contradicted the house "finding without a fix is a bill" law.
+- DELETE `.agents/commands/smh-team-cheshire-cat.md` (its red-phase content merges into the Queen's
+  master). REWRITE `.agents/commands/smh-team-queen-of-hearts.md` (mode-slug: debug, merged brain).
+- EDIT `sync-agents.ps1` §3: `$seats` drops the `ask` row; `debug` row points at the Queen's
+  master; the `edit-artifacts` scoped-pen emission branch is REMOVED (dead with no declarer).
+  The existing prune paths retire `.roo/rules-ask/` mechanically.
+- EDIT `.agents/rules/zoo-team.md` (5-row roster, hand-off order, stock-Ask note), the two INDEX
+  rows, the three sibling masters that name the Cheshire Cat, the SOP team paragraph + changelog.
+- EDIT tests: `test_zoo_team.py` (LAW_SLUGS→5, QA_PEN/edit-artifacts law removed with its
+  fixtures, merged-seat fixtures added), `test_settings_allowlist.py` (SEATS→5),
+  `test_twin_parity.py` (Cheshire NOT_PAIRED record removed, Queen's reworded).
+- Re-sync, full suite, new review pass + `Verdict @ <new sha>` appended to the walkthrough (the
+  PASS @ 9590e5e is voided by these code changes per certification-at-shipping-sha).

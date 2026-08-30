@@ -1,19 +1,22 @@
 """The Wonderland team contract — the Zoo mode picker IS the operator's org chart (SCC-350).
 
-Six seats override Zoo Code's five built-in mode slugs plus one new one. The law this file pins,
-each piece an operator ruling from the SCC-350 planning session:
+Five seats override four of Zoo Code's built-in mode slugs plus one new one. The law this file
+pins, each piece an operator ruling from the SCC-350 planning session:
 
-  * THE SLUG SET IS CLOSED. Exactly {orchestrator, architect, code, ask, debug, designer} — the
-    five built-ins (a same-slug custom mode replaces a built-in wholesale, verified against the
-    Zoo v3.80.1 bundle) plus `designer`. A missing slug resurrects a stock Zoo persona in the
-    picker; an extra one is a seat nobody chartered.
+  * THE SLUG SET IS CLOSED. Exactly {orchestrator, architect, code, debug, designer} — four
+    built-ins (a same-slug custom mode replaces a built-in wholesale, verified against the
+    Zoo v3.80.1 bundle) plus `designer`. The `ask` slug is DELIBERATELY unclaimed — stock Zoo
+    Ask stays for plain Q&A (operator amendment 3) — while claiming `debug` suppresses the
+    stock, law-free Debug mode. A missing slug resurrects a stock Zoo persona in the picker;
+    an extra one is a seat nobody chartered.
   * THE NAME LAW. Emoji first, character name in regular case, then an em-dash and the ROLE in
     ALL CAPS: `🫖🐰 March Hare — TEAM LEAD`. The operator reads the role from the picker; a
     lowercase role or a bare name is a regression of his correction ("Use regular March Hare for
     the name then TEAM LEAD for the title in caps").
-  * THE QA EDIT-STRIP. The `ask` seat (Queen of Hearts — QA) judges and never edits: its groups
-    exclude `edit` MECHANICALLY. This is the one refusal enforced by the platform rather than by
-    prose, so it is the one this file must prove can actually fail.
+  * THE MERGED QUALITY SEAT. The operator's ruling (2026-08-29): "the tester and the QA need to
+    really be one" and she is still the Queen of Hearts — one seat, `debug`, full pen, both the
+    red phase and the review doors. Every seat is a working seat; a seat without `edit` is a
+    regression to the retired scoped-pen design.
   * ONE SOURCE. Each mode's name/slug/groups live in its master's frontmatter
     (`.agents/commands/smh-team-*.md`); `sync-agents.ps1` reads them (the ps1 stays pure ASCII — no
     emoji survive Windows PowerShell 5.1's no-BOM codepage mangling); `.roomodes` is generated.
@@ -34,32 +37,20 @@ from _harness import SCRIPTS, Cases
 
 ROOT = SCRIPTS.parents[1]
 
-LAW_SLUGS = {"orchestrator", "architect", "code", "ask", "debug", "designer"}
-NO_EDIT_SLUGS = {"ask"}          # the QA seat judges; the platform SCOPES its pen (see QA_PEN)
+LAW_SLUGS = {"orchestrator", "architect", "code", "debug", "designer"}
 BASE_GROUPS = {"read", "command"}          # every seat carries these
-# The QA seat's pen is RESTRICTED, not absent (SCC-350 review): her own doors must append the
-# verdict/self-audit into artifacts markdown, so she carries a fileRegex-scoped edit group that
-# reaches ONLY the review record. A bare `edit` on her is a breach; a missing scoped pen breaks
-# her own doors. Everyone else needs the bare pen.
-QA_PEN = r"edit@^_artifacts/.*\.md$"
 
 # name = emoji cluster · space · Regular-case character name · space-emdash-space · ALL-CAPS role
 NAME_RE = re.compile(r"^(?P<emoji>\S+) (?P<name>[A-Z][A-Za-z]*(?: [A-Za-z]+)*) — (?P<role>[A-Z][A-Z &]*)$")
 
 
 def parse_roomodes(text: str) -> list[dict]:
-    """Parse the GENERATED .roomodes shape (never a general YAML parser — stdlib only).
-
-    A RESTRICTED group — Zoo's `[edit, {fileRegex}]` tuple, emitted as a nested block list —
-    parses to the token `edit@<regex>`, so the law can tell a scoped pen from a bare one.
-    """
+    """Parse the GENERATED .roomodes shape (never a general YAML parser — stdlib only)."""
     modes: list[dict] = []
     for chunk in re.split(r"(?m)^  - slug: ", text)[1:]:
         slug = chunk.split("\n", 1)[0].strip()
         name_m = re.search(r'(?m)^    name: "(.*)"$', chunk) or re.search(r"(?m)^    name: (.+)$", chunk)
         groups = set(re.findall(r"(?m)^      - ([a-z]+)$", chunk))
-        for gm in re.finditer(r"(?m)^      - - (\w+)\n        - fileRegex: (\S+)", chunk):
-            groups.add(f"{gm.group(1)}@{gm.group(2)}")
         role_m = re.search(r"(?ms)^    roleDefinition: >-\n(.*?)(?=^    \w|\Z)", chunk)
         modes.append({
             "slug": slug,
@@ -99,13 +90,9 @@ def mode_problems(text: str) -> list[str]:
         missing = BASE_GROUPS - m["groups"]
         if missing:
             problems.append(f"{m['slug']}: groups missing {sorted(missing)}")
-        if m["slug"] in NO_EDIT_SLUGS:
-            if "edit" in m["groups"]:
-                problems.append(f"{m['slug']}: QA seat carries a BARE `edit` — the scoped pen is the law")
-            if QA_PEN not in m["groups"]:
-                problems.append(f"{m['slug']}: QA seat lost her scoped pen — her own doors "
-                                "write the review record")
-        elif "edit" not in m["groups"]:
+        if "edit" not in m["groups"]:
+            # Every seat is a working seat since the quality merge (amendment 3) — a stripped
+            # pen is a regression to the retired edit-strip/scoped-pen design.
             problems.append(f"{m['slug']}: working seat has no `edit` group")
     return problems
 
@@ -121,11 +108,7 @@ def fixture(names_groups) -> str:
                   "    roleDefinition: >-", f"      Read .agents/commands/smh-team-x.md ({slug}).",
                   "    groups:"]
         for g in groups:
-            if "@" in g:
-                tool, rx = g.split("@", 1)
-                lines += [f"      - - {tool}", f"        - fileRegex: {rx}"]
-            else:
-                lines.append(f"      - {g}")
+            lines.append(f"      - {g}")
     return "\n".join(lines) + "\n"
 
 
@@ -133,8 +116,7 @@ GOOD = {
     "orchestrator": ("🫖🐰 March Hare — TEAM LEAD", ["read", "edit", "command", "mcp"]),
     "architect":    ("⏰🐇 White Rabbit — PM", ["read", "edit", "command"]),
     "code":         ("🔨🪚 Carpenter — ENGINEER", ["read", "edit", "command"]),
-    "ask":          ("♥️👑 Queen of Hearts — QA", ["read", QA_PEN, "command"]),
-    "debug":        ("😼 Cheshire Cat — TESTER", ["read", "edit", "command"]),
+    "debug":        ("♥️👑 Queen of Hearts — TESTER & QA", ["read", "edit", "command"]),
     "designer":     ("🦋 Caterpillar — DESIGNER", ["read", "edit", "command"]),
 }
 
@@ -155,18 +137,12 @@ def frontmatter(path: Path) -> dict[str, str]:
 
 
 def main() -> int:
-    c = Cases("the Wonderland team — six seats over Zoo's slugs (SCC-350)")
+    c = Cases("the Wonderland team — five seats over Zoo's slugs (SCC-350)")
 
     if c.block("A · the validator fires on every shape the law forbids"):
-        c.check("the six-seat fixture is clean", mode_problems(fixture(GOOD)) == [],
+        c.check("the five-seat fixture is clean", mode_problems(fixture(GOOD)) == [],
                 " | ".join(mode_problems(fixture(GOOD))))
-        bad = dict(GOOD); bad["ask"] = ("♥️👑 Queen of Hearts — QA", ["read", "edit", "command"])
-        c.check("QA seat carrying a BARE `edit` is caught (the scoped pen can actually fail)",
-                any("BARE" in p for p in mode_problems(fixture(bad))))
-        bad = dict(GOOD); bad["ask"] = ("♥️👑 Queen of Hearts — QA", ["read", "command"])
-        c.check("QA seat with NO scoped pen is caught (her own doors write the record)",
-                any("lost her scoped pen" in p for p in mode_problems(fixture(bad))))
-        bad = dict(GOOD); bad["debug"] = ('😼 Cheshire "Cat" — TESTER', ["read", "edit", "command"])
+        bad = dict(GOOD); bad["debug"] = ('♥️👑 Queen "of" Hearts — TESTER & QA', ["read", "edit", "command"])
         c.check("a YAML-breaking character in a name is caught (stdlib bars a real YAML parse)",
                 any("YAML-breaking" in p for p in mode_problems(fixture(bad))))
         bad = dict(GOOD); bad["orchestrator"] = ("🫖🐰 March Hare — team lead", ["read", "edit", "command"])
@@ -182,12 +158,12 @@ def main() -> int:
         c.check("an ASCII word prefix (no emoji) is caught by the emoji branch itself",
                 any("no emoji prefix" in p for p in mode_problems(fixture(bad))))
         bad = dict(GOOD); bad["architect"] = ("⏰🐇 White Rabbit — PM", ["read", "command"])
-        c.check("a WORKING seat silently stripped of `edit` is caught (the inverse of the QA strip)",
+        c.check("a seat silently stripped of `edit` is caught (regression to the retired edit-strip)",
                 any("working seat has no" in p for p in mode_problems(fixture(bad))))
         dup = [(s, n, g) for s, (n, g) in GOOD.items()] + [("code", "🔨 Ship Wright — ENGINEER", ["read", "edit", "command"])]
         c.check("a DUPLICATE slug is caught (a set-compare alone cannot see it)",
                 any("duplicate slug" in p for p in mode_problems(fixture(dup))))
-        bad = dict(GOOD); bad["debug"] = ("😼 CHESHIRE CAT — TESTER", ["read", "edit", "command"])
+        bad = dict(GOOD); bad["debug"] = ("♥️👑 QUEEN OF HEARTS — TESTER & QA", ["read", "edit", "command"])
         c.check("an ALL-CAPS character name (the pre-correction shape) is caught",
                 any("regular case" in p or "name law" in p for p in mode_problems(fixture(bad))))
         bad = {k: v for k, v in GOOD.items() if k != "designer"}
@@ -223,9 +199,6 @@ def main() -> int:
             if fm.get("mode-name", "").strip('"') != m["name"]:
                 bad_master.append(f"{slug}: generated name {m['name']!r} != master mode-name")
             declared = {g.strip() for g in fm.get("mode-groups", "").strip("[]").split(",") if g.strip()}
-            # the master's `edit-artifacts` token IS the generated scoped pen — one vocabulary
-            # on the authoring side, the expanded [edit, {fileRegex}] tuple on the wire.
-            declared = {QA_PEN if g == "edit-artifacts" else g for g in declared}
             if declared != m["groups"]:
                 bad_master.append(f"{slug}: generated groups {sorted(m['groups'])} != master {sorted(declared)}")
             plats = [x.strip() for x in fm.get("platforms", "").strip("[]").split(",") if x.strip()]
@@ -244,14 +217,19 @@ def main() -> int:
         c.check("B3 every mode is generated FROM its master frontmatter (one source, current)",
                 not bad_master, " | ".join(bad_master))
 
+        # The merged quality seat (amendment 3): one master carries BOTH ends — the red phase
+        # and the review doors — plus the refusal that makes owning both safe (never weaken an
+        # assertion to reach green). Losing any half un-merges the seat silently.
         qa = ROOT / ".agents" / "commands" / "smh-team-queen-of-hearts.md"
         qa_text = qa.read_text(encoding="utf-8") if qa.is_file() else ""
-        c.check("B4 the QA master states the no-edit refusal in prose too",
-                bool(re.search(r"(?i)never (edits?|writes?|touch)", qa_text)),
-                "" if re.search(r"(?i)never (edits?|writes?|touch)", qa_text)
-                else "smh-team-queen-of-hearts.md missing the refusal (or the file)")
+        qa_missing = [w for w in ("cicd-write-story-tests", "smh-code-review", "smh-self-audit",
+                                  "weakening the assertion")
+                      if w not in qa_text]
+        c.check("B4 the TESTER & QA master carries both halves (red-phase + review doors + the "
+                "never-weaken refusal)", not qa_missing,
+                f"missing from smh-team-queen-of-hearts.md: {qa_missing}")
 
-        retired = [d for d in ("analyst", "dev", "pm", "tech-writer", "ux-designer")
+        retired = [d for d in ("analyst", "dev", "pm", "tech-writer", "ux-designer", "ask")
                    if (ROOT / ".roo" / f"rules-{d}").is_dir()]
         # Currency, not existence (review finding: a stale rules-architect naming the RETIRED
         # BMAD master passed when this row read only is_file()). Each seat rule must be
@@ -322,8 +300,8 @@ def main() -> int:
         code = "\n".join(l for l in ps1.splitlines() if not l.lstrip().startswith("#"))
         table = re.findall(r"@\{\s*Slug\s*=\s*'([a-z-]+)';\s*Master\s*=\s*'(smh-team-[a-z-]+\.md)'",
                            code)
-        c.check("C1 the ps1 $seats table carries exactly the law's six slugs",
-                {s for s, _ in table} == LAW_SLUGS and len(table) == 6,
+        c.check("C1 the ps1 $seats table carries exactly the law's five slugs",
+                {s for s, _ in table} == LAW_SLUGS and len(table) == 5,
                 f"table={table}")
         bad_fm: list[str] = []
         for s, master_name in sorted(table):

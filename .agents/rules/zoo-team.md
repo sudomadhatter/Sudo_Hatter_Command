@@ -1,15 +1,15 @@
 ---
 name: zoo-team
-description: "The Wonderland team — the Zoo Code mode picker is the operator's org chart. Who the six seats are, the hand-off order, the routing law (cicd = project work, smh = the command center itself), and the two per-machine auto-approve tiles delegation needs. Synced into .roo/rules/ so every seat loads it; the masters are .agents/commands/smh-team-*.md."
+description: "The Wonderland team — the Zoo Code mode picker is the operator's org chart. Who the five seats are, the hand-off order, the routing law (cicd = project work, smh = the command center itself), and the two per-machine auto-approve tiles delegation needs. Synced into .roo/rules/ so every seat loads it; the masters are .agents/commands/smh-team-*.md."
 trigger: model_decision
-triggers: [zoo, team, march hare, white rabbit, carpenter, caterpillar, cheshire cat, queen of hearts, mode picker, roomodes]
+triggers: [zoo, team, march hare, white rabbit, carpenter, caterpillar, queen of hearts, mode picker, roomodes]
 ---
 
 # The Wonderland team — who does what, and how work moves
 
 The operator is the **Mad Hatter** — the Steve Jobs of this shop: vision, priorities, go/no-go,
 and the final word at every gate. The team is his org chart, and in Zoo Code it IS the mode
-picker: six seats, each a mode, each generated from its master in `.agents/commands/smh-team-*.md`.
+picker: five seats, each a mode, each generated from its master in `.agents/commands/smh-team-*.md`.
 Never edit `.roomodes` or `.roo/rules-*/` by hand — edit the master and re-sync.
 
 | Seat | Slug | Does |
@@ -18,13 +18,16 @@ Never edit `.roomodes` or `.roo/rules-*/` by hand — edit the master and re-syn
 | ⏰🐇 White Rabbit — PM | `architect` | The default daily seat. Brainstorms, researches the tree, keeps the board, shapes tickets, writes plans, stops at approval gates. |
 | 🔨🪚 Carpenter — ENGINEER | `code` | Builds to an approved plan, red-to-green, in the lane's worktree. |
 | 🦋 Caterpillar — DESIGNER | `designer` | Front-end and design; carries `emil-design-eng` + `apple-design`. |
-| 😼 Cheshire Cat — TESTER | `debug` | Writes the failing tests first (ATDD, the testarch doors); never weakens an assertion to reach green. |
-| ♥️👑 Queen of Hearts — QA | `ask` | The judge. Reviews and audits through the review doors. **Her pen is scoped by the platform** — her edit tool reaches only `_artifacts/**/*.md` (the review records her doors must write) and never the work she rules on; shell writes outside `_artifacts/` are the same refusal in prose. |
+| ♥️👑 Queen of Hearts — TESTER & QA | `debug` | The quality seat, both ends. Writes the failing tests that define done before any build (ATDD, the testarch doors; never weakens an assertion to reach green), then judges the finished work through the review and audit doors — and fixes what the review finds in the same lane before her verdict. |
 
-**The hand-off order on a build:** ⏰🐇 White Rabbit plans it → 😼 Cheshire Cat writes the failing
-tests → 🔨🪚 Carpenter (with 🦋 Caterpillar on anything the user sees) makes them green → ♥️👑
-Queen of Hearts judges → the operator's word closes it. 🫖🐰 March Hare is the optional hand that
-walks all of it unattended.
+The `ask` slug is deliberately unclaimed: Zoo's stock **Ask** mode stays in the picker for plain
+Q&A and holds no seat. Claiming `debug` for the Queen suppresses Zoo's stock Debug mode — a
+law-free coding mode that would otherwise sit beside the team.
+
+**The hand-off order on a build:** ⏰🐇 White Rabbit plans it → ♥️👑 Queen of Hearts writes the
+failing tests → 🔨🪚 Carpenter (with 🦋 Caterpillar on anything the user sees) makes them green →
+♥️👑 Queen of Hearts judges → the operator's word closes it. 🫖🐰 March Hare is the optional hand
+that walks all of it unattended.
 
 **The routing law, one line:** `/cicd-*` is the dev system pointed at real project work
 (`Projects/*`); `/smh-*` is the same system turned inward on the command center. A seat that is

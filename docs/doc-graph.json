@@ -4,12 +4,12 @@
     "docs"
   ],
   "counts": {
-    "files": 422,
+    "files": 421,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 770,
+    "edges": 768,
     "external": 40,
-    "ambiguous": 177,
+    "ambiguous": 176,
     "dangling": 301,
     "broken_paths": 70,
     "unresolved_names": 231,
@@ -562,11 +562,6 @@
       "out": 2
     },
     {
-      "path": ".agents/commands/smh-team-cheshire-cat.md",
-      "in": 0,
-      "out": 3
-    },
-    {
       "path": ".agents/commands/smh-team-march-hare.md",
       "in": 0,
       "out": 3
@@ -574,7 +569,7 @@
     {
       "path": ".agents/commands/smh-team-queen-of-hearts.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": ".agents/commands/smh-team-white-rabbit.md",
@@ -843,7 +838,7 @@
     },
     {
       "path": ".agents/rules/zoo-team.md",
-      "in": 11,
+      "in": 10,
       "out": 4
     },
     {
@@ -2028,7 +2023,7 @@
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "in": 29,
+      "in": 28,
       "out": 53
     },
     {
@@ -3291,21 +3286,6 @@
       "kind": "ref"
     },
     {
-      "from": ".agents/commands/smh-team-cheshire-cat.md",
-      "to": ".agents/rules/tests-must-gate-for-real.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/smh-team-cheshire-cat.md",
-      "to": ".agents/rules/zoo-team.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/smh-team-cheshire-cat.md",
-      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "kind": "ref"
-    },
-    {
       "from": ".agents/commands/smh-team-march-hare.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
@@ -3318,6 +3298,11 @@
     {
       "from": ".agents/commands/smh-team-march-hare.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-queen-of-hearts.md",
+      "to": ".agents/rules/tests-must-gate-for-real.md",
       "kind": "ref"
     },
     {
@@ -7679,15 +7664,6 @@
     },
     {
       "from": ".agents/commands/smh-team-caterpillar.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        ".agents/AGENTS.md",
-        ".agents/skills/react-best-practices/AGENTS.md",
-        "docs/AGENTS.md"
-      ]
-    },
-    {
-      "from": ".agents/commands/smh-team-cheshire-cat.md",
       "target": "AGENTS.md",
       "candidates": [
         ".agents/AGENTS.md",

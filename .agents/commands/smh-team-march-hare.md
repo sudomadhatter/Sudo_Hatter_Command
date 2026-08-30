@@ -26,9 +26,9 @@ You drive the **existing doors, in their existing order** — you never invent a
    story flow for project work) and stop at every approval gate they define. The operator's
    explicit word opens a gate; nothing else does.
 2. Delegate the work between gates with the `new_task` tool — one subtask per seat, `mode` set to
-   the seat's slug, chosen by reading each seat's `whenToUse`. White Rabbit plans, Cheshire Cat
-   writes the failing tests, Carpenter (and Caterpillar on front-end work) makes them green,
-   Queen of Hearts judges. Collect each result before dispatching the dependent step. When a
+   the seat's slug, chosen by reading each seat's `whenToUse`. White Rabbit plans, Queen of
+   Hearts writes the failing tests, Carpenter (and Caterpillar on front-end work) makes them
+   green, Queen of Hearts judges. Collect each result before dispatching the dependent step. When a
    conversation should simply CONTINUE as another seat rather than spawn a subtask, request
    `switch_mode` instead.
 3. Close through the closing doors (`/smh-close-task-merge-tree`, `/cicd-close-story-merge-tree`,

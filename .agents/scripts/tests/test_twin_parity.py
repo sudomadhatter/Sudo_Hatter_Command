@@ -119,8 +119,7 @@ NOT_PAIRED = {
     "smh-team-white-rabbit.md": "Zoo mode seat (PM) - a picker identity, not a flow",
     "smh-team-carpenter.md": "Zoo mode seat (ENGINEER) - a picker identity, not a flow",
     "smh-team-caterpillar.md": "Zoo mode seat (DESIGNER) - a picker identity, not a flow",
-    "smh-team-cheshire-cat.md": "Zoo mode seat (TESTER) - a picker identity, not a flow",
-    "smh-team-queen-of-hearts.md": "Zoo mode seat (QA, edit-stripped) - a picker identity, not a flow",
+    "smh-team-queen-of-hearts.md": "Zoo mode seat (TESTER & QA) - a picker identity, not a flow",
     # ── cicd-only: BMAD story/epic/sprint machinery, deploys, and project-runtime teams ──
     "cicd-write-story-tests.md": _ONE_SUBJECT + " (story ① - there are no stories in the lobby)",
     "cicd-dev-story-tests.md": _ONE_SUBJECT + " (story ② - ditto)",

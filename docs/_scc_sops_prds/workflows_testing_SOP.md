@@ -1589,16 +1589,18 @@ that themselves, so each rule states when it applies:
   `~/.codex/AGENTS.md` (a machine cache, markers preserved) for Codex's global merge. The law
   still lives only in `.agents/rules/` — everything else is a generated pointer or cache,
   refreshed by `/smh-sync-agents`.
-- **The Zoo Code mode picker is your team.** Six seats, each one a mode: 🫖🐰 March Hare — TEAM
+- **The Zoo Code mode picker is your team.** Five seats, each one a mode: 🫖🐰 March Hare — TEAM
   LEAD (your opt-in autopilot: hand it a whole ticket, it delegates to the other seats and parks
   at merge-ready for your click), ⏰🐇 White Rabbit — PM (your default daily seat: brainstorm,
-  research, tickets, plans), 🔨🪚 Carpenter — ENGINEER, 🦋 Caterpillar — DESIGNER, 😼 Cheshire
-  Cat — TESTER (writes the failing tests first), and ♥️👑 Queen of Hearts — QA (reviews and
-  audits; her editing hand only reaches the review records under `_artifacts/`, never your code).
-  They replace Zoo's five stock modes outright — same
-  slots, your names. Each seat's brain is a command you can also summon directly in Zoo —
+  research, tickets, plans), 🔨🪚 Carpenter — ENGINEER, 🦋 Caterpillar — DESIGNER, and ♥️👑 Queen
+  of Hearts — TESTER & QA (the quality seat at both ends: she writes the failing tests before a
+  build, then judges the finished work through the review and audit doors — the self-audit and
+  the code review ARE the QA and the testing — and fixes what the review finds in the same lane).
+  They replace four of Zoo's stock modes outright — same slots, your names; Zoo's stock Ask mode
+  stays in the picker for plain Q&A and holds no seat. Each seat's brain is a command you can
+  also summon directly in Zoo —
   `/smh-team-march-hare`, `/smh-team-white-rabbit`, `/smh-team-carpenter`, `/smh-team-caterpillar`,
-  `/smh-team-cheshire-cat`, `/smh-team-queen-of-hearts` — with the roster and hand-off order in
+  `/smh-team-queen-of-hearts` — with the roster and hand-off order in
   `.agents/rules/zoo-team.md`; `.roomodes` is generated — edit the master, run `/smh-sync-agents`.
   For the March Hare to delegate without prompting you each time, tick **Mode switching** and
   **Subtasks** in Zoo's Auto-Approve panel once per machine. The four protocol rules are
