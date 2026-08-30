@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-351-zoo-approvals",
+  "errors": 1,
+  "exit": 2,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-351",
+  "verdict": "BLOCKED - resolve the errors above",
+  "verdict_sha": "64619de4aef01c25283bd205f91da436b8420db2",
+  "warnings": 1,
+  "when": "2026-08-30T10:37:41-07:00"
+}
