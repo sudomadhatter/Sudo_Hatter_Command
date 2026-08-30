@@ -152,3 +152,85 @@ Verdict: PASS @ 64619de4
 - [x] The merge itself — lands via this branch's PR
 - [ ] Mac: quit VS Code fully, run `python3 .agents/scripts/zoo_permissions_apply.py --apply`, reopen — closing `--status` must read "in sync with tracked file"
 - [ ] PC (on pickup): the same apply with `python .agents/scripts/zoo_permissions_apply.py --apply`
+
+## Code Review (2026-08-30, second pass — engine run at close-out)
+
+Verdict: PASS @ 9105020f
+Suite evidence measured @ 9105020f (run_all.py 65/65 through gate_receipt.py, clean tree; the lens
+fan-out ran against 64deae0c, fixes applied and re-gated at 43855a71 → docs additions re-gated at
+9105020f — all shas stated per the concurrency rule).
+
+**Why a second section exists:** the first review above was run INLINE in the builder's own context
+while this runtime had a subagent tool — the exact SCC-203 state the roster law refuses — and the
+close-out preflight blocked on its missing roster. No truthful roster could make that stamp legal,
+so the real engine ran: 5-lens fan-out, each lens in a clean context and its own detached tree at
+64deae0c (all four repo-lens trees verified 0-dirty after — no lens wrote).
+
+review-runtime: fan-out
+lens_isolation: worktree
+lenses_run:
+- literal-correctness · ok
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+- edge-case-hunter · recovered-inline — fan-out task froze when the machine SLEPT mid-run (40 min,
+  no output) and was killed by the operator's interrupt; rerun inline by the assessor over the
+  new/unreviewed hunks, probes executed against the real matcher mirror
+lenses_counted:  4/4
+lenses_na:
+- blind-hunter · n/a — context contaminated (its fan-out task froze in the same sleep and was
+  killed; the only remaining runtime was the builder's own context holding the plan, walkthrough
+  and fixes — dropped per SCC-203, never faked, never counted)
+
+dispositions:    per-lens: literal-correctness=11/0/1 · acceptance-auditor=9/0/2 · test-adequacy-auditor=7/0/2 · edge-case-hunter=1/0/0 (a multi-lens finding counts once per contributing lens)
+findings:        0 decision · 28 patch · 0 defer   (0 noise-dismissed · 5 relevance kills)
+drift:           undeclared=0 · unimplemented=0 · incomplete=0 — after the amendment ledger rewrite (the plan's block regenerated from the real landed diff, 80 bullets; `_artifacts/` carved out by the grammar)
+severity_floor:  none — every critical/important patched in-lane before this verdict; no dead lens (edge recovered-inline; blind dropped-by-rule is n/a, not dead)
+notes:           two fan-out tasks froze when the Mac slept and were killed — edge took the inline ladder, blind was dropped; the step-2 verify wave ran as direct reproduction by the assessor (operator cost directive mid-review — no verifier/compound subagents spawned): every disposed finding above was re-proven by executing it (pytest + bare runs, matcher-mirror probes, sqlite behavioral tests), not by reading it.
+
+**Scope:** the full lane diff at 64deae0c (85 files) + the fixes it forced. **Method:** three
+fan-out lenses hunted clean; the assessor reproduced every load-bearing claim by execution before
+patching (the two criticals were reproduced in one command each).
+
+### Findings — all fixed in-lane before this verdict (patch bucket, 28)
+
+| # | src | sev | Finding | Disposition |
+|---|---|---|---|---|
+| 1 | test-adequacy+acceptance | critical | `test_zoo_permissions.py` ran ZERO tests under `run_all.py` (pytest-style, no `__main__`) — the shipped 65/65 receipt counted a silent green | applied @ 43855a71: `__main__` harness (15 tests fire bare, tally printed); reproduced both ways first |
+| 2 | test-adequacy+acceptance | critical | run properly the gate was RED at the reviewed sha — the doors scan tripped on the close door's restored SCC-184 historical quote | applied @ 43855a71: scan is occurrence-level and blockquote-aware (`>` lines are teaching, never executable), covers `.agents/skills` too |
+| 3 | test-adequacy | important | silent-green class unguarded suite-wide | applied @ 43855a71: `run_one` fails any exit-0 test file with no output (placed at the real-child boundary so `run_pool` stubs stay pure — first cut broke `test_suite_runner` RUNALL control, caught by the suite) |
+| 4 | acceptance+edge | important | verified deny escapes: `git clean -xf`/`--force` auto-approved, bare `git update-ref` rewrites refs, `git remote rename` reroutes | applied @ 43855a71: 4 deny rows + env twins (deny 97→103), battery 68→76 rows, all re-proven denied |
+| 5 | test-adequacy+acceptance | important | apply script's one load-bearing promise had only source-greps, incl. a literally vacuous `… or True` | applied @ 43855a71: behavioral sqlite tests — lists-only write, secret:// + toggles byte-identical, backup once; refusal probe (vscode_running forced True → rc 2, db bytes untouched) |
+| 6 | literal-correctness | critical ×5 | the `git -C`→`cd &&` rewrite changed cwd SEMANTICS: lobby scripts unreachable after same-fence cds (quick-dev link-assets, code-review risk_seam), prune's preservation chain self-defeating + PS 5.1 parse error + cwd leak, clean-code audit measuring the wrong tree | applied @ 43855a71: lobby pin (`L=$(pwd)` / re-typed `L=`), absolute tree fills, Push-Location PS form, prune chain absolutized, clean-code fence bare-by-design with comment |
+| 7 | literal-correctness | important ×2 | consecutive `cd <relative> && …` breaks from line 2 (PROJECT_ROOT bound RELATIVE by contract); cross-fence cwd leaks reach `python3 .agents/scripts/…` in 6 more doors | applied @ 43855a71: `smh-target-resolution.md` §BIND binds PROJECT_ROOT ABSOLUTE; `command-shape.md` §Absolute fills + lobby pin; label-tasks/boot/create-epic/write/dev-story doors re-pinned |
+| 8 | literal-correctness | sugg/nit ×4 | close door's cd-inside-`if` leak; merge-epic/resume prose corruption ("… && git" stray); `cd ""` claim misattributed to git's `-C` doc; comment inventing `git -F` | applied @ 43855a71: `CHANGED=$(…)` subshell precompute; prose repaired; attributions corrected (substance was true, verified in bash+zsh) |
+| 9 | edge (inline) | suggestion | `OUT=$(mktemp)`/`MSG=$(mktemp)` still ASK — an assignment scores as its `$()` body and `mktemp` had no allow | applied @ 43855a71: `mktemp` allow row (allow 109→110), ceremony fixtures pin both spellings |
+| 10 | test-adequacy | suggestion | third verdict tier unpinned — nothing asserted `ask_user` | applied @ 43855a71: 7-row ASK battery (curl-pipe-sh, npx, brew, osascript, bare rm, node, make) |
+| 11 | acceptance | nitpick ×3 | count drift (70/20 prose vs 68/25 real; changelog 230 vs 229), ceremony fixture naming a non-existent runner path, guide link letter-misses | applied @ 43855a71: floors pinned ≥76, prose numberless, changelog corrected, fixture path fixed, apply-script + settings links added |
+| 12 | operator | — | the cross-agent doc asked for pre-compact was never written as its own page; the operator's rename of the Claude deep dive was sitting uncommitted | applied @ 1b6b52f5/9105020f: `terminal-global-permission.md` front door written; rename landed as `claude-terminal-permission.md` with freshness note |
+
+**Relevance kills (true, not worth implementing — one line each):** smh review doors running the
+lane's own tool copies (correct for lane review — the lane IS the subject); `--status` drift on this
+Mac (the per-machine apply is the designed post-merge step, `## Your Actions`); the checkout-main
+deny stays removed (operator's min-deny ruling, quoted in guide §6); Zoo-version pin on the mirror
+oracle (upgrade is a deliberate operator step; guide documents the premise); guide-currency being
+one-directional (deliberate — Entries cells must be real, prose stays free).
+
+### Acceptance matrix (re-audited at 9105020f)
+
+1. Gate green both ways — **run bare: `-- 15/15 passed --` exit 0; pytest: 15 passed** (was: 0 tests bare / 1 red pytest). 2. `git -C` zero executable occurrences — occurrence-level scan green over commands+rules+skills; teaching lines blockquoted or in the three law files. 3. Apply evidence — behavioral refusal probe SHIPPED (was promised, missing); `--status`-in-sync stays the documented post-merge step per machine. 4. Suite green at tip — 65/65 @ 9105020f through the receipt writer, clean tree; SOP + changelog rode the usage commits. 5. Guide readable, links clickable — apply-script + settings links added; `check_links`: 3 unresolved, all pre-existing runtime/project-relative teaching paths in doors touched elsewhere (the autopilot sessions file under the pipeline dir; the project-relative active-context path, twice) — not introduced by this diff.
+
+### Step 0.7 — re-derivation (at the fan-out sha)
+
+1. Nothing this diff references moved on `main` — zero commits landed since the absorb (base = origin/main tip 070b6501).
+2. True overlap: empty; `merge-tree --write-tree` conflict-free (tree 8b29d4cc).
+3. Live sibling lanes: none (only this lane's worktree + the main checkout) — no landing-order dependency.
+
+### Clean-Code Gate
+
+`py_compile` clean on all three touched Python files (run_all.py, test_zoo_permissions.py,
+zoo_permissions_apply.py — pasted in-session). Comment contract: new comments state constraints
+(why the guard sits in `run_one`, why the fence is bare, why fills are absolute), none narrate
+edits. Machine floor imported from this section's own receipts: suite 65/65 @ 9105020f ·
+`workflow_lint --toolkit-only` 0 errors / 0 warnings · `check_maps --depth3-only --strict` exit 0 ·
+`check_links` 3 pre-existing unresolved as dispositioned above · SOP currency enforced by the armed
+hook on every commit here (one refusal seen and satisfied — the SOP row updated, staged, committed).

@@ -74,7 +74,7 @@ acli jira workitem create --project SCC --type Task --summary "…" --descriptio
 cd "$REPO" && git fetch origin                                                    # ⛔ base = origin/main
 cd "$REPO" && git worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
 cd "<the new tree>" && git branch --unset-upstream                                # origin/main start-point sets upstream to MAIN
-python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>       # PC: `python`
+cd <the lobby's absolute path — the arg resolves from the LOBBY> && python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>       # PC: `python`
 BRANCH=$(cd "<the new tree>" && git rev-parse --abbrev-ref HEAD) && echo "Lane: $BRANCH"
 python3 .agents/scripts/jira_feed.py start --key <KEY> --apply
 ```
