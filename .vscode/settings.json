@@ -57,14 +57,16 @@
     "env -u GITHUB_TOKEN git push origin --delete epic/",
     "env -u GITHUB_TOKEN git push origin --delete \"chore/",
     "env -u GITHUB_TOKEN git push origin --delete \"claude/",
-    "env -u GITHUB_TOKEN git push origin --delete \"epic/"
+    "env -u GITHUB_TOKEN git push origin --delete \"epic/",
+    "git push origin HEAD:epic/", "env -u GITHUB_TOKEN git push origin HEAD:epic/"
   ],
   "zoo-code.deniedCommands": [
     "rm -rf", "rm -r", "sudo", "chmod -R 777", "chown -R", "dd if=", "mkfs", "del /s", "rmdir /s",
     "Remove-Item -Recurse", "git push --force", "git push -f", "git push --force-with-lease",
     "git push --mirror", "git push --all", "git push origin main", "git push -u origin main",
     "git push --set-upstream origin main", "git push origin main:", "git push origin HEAD:",
-    "git push origin +", "git push origin :", "git push --delete", "git push origin --delete",
+    "git push origin +", "git push origin :", "git push origin \"main", "git push --delete",
+    "git push origin --delete",
     "git reset --hard", "git clean -f", "git clean -d", "git clean -x", "git clean --force",
     "git branch -D", "git branch -M",
     "git rebase", "git filter-branch", "git reflog expire", "git reflog delete",
@@ -80,6 +82,7 @@
     "env -u GITHUB_TOKEN git push --set-upstream origin main",
     "env -u GITHUB_TOKEN git push origin main:", "env -u GITHUB_TOKEN git push origin HEAD:",
     "env -u GITHUB_TOKEN git push origin +", "env -u GITHUB_TOKEN git push origin :",
+    "env -u GITHUB_TOKEN git push origin \"main",
     "env -u GITHUB_TOKEN git push --delete", "env -u GITHUB_TOKEN git push origin --delete",
     "env -u GITHUB_TOKEN git reset --hard", "env -u GITHUB_TOKEN git clean -f",
     "env -u GITHUB_TOKEN git clean -d", "env -u GITHUB_TOKEN git clean -x",

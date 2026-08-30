@@ -114,8 +114,10 @@ Check out or reset the persistent branch `chore/<KEY>-standing-push` based on th
 ```bash
 cd "$REPO" && git fetch origin main
 # If switching branches with uncommitted work, stash first or checkout:
-cd "$REPO" && git checkout "chore/${KEY}-standing-push" 2>/dev/null && cd "$REPO" && git pull origin main || \
-cd "$REPO" && git checkout -B "chore/${KEY}-standing-push" origin/main
+# Braces are LOAD-BEARING: without them `a && b || c && d` runs the reset arm on the SUCCESS
+# path too (left-assoc), and --force-with-lease then ships the loss to the open PR (SCC-351
+# review, blind lens — reproduced). Zoo prompts once on the brace piece; correctness wins here.
+cd "$REPO" && { git checkout "chore/${KEY}-standing-push" 2>/dev/null && git pull origin main; } || { cd "$REPO" && git checkout -B "chore/${KEY}-standing-push" origin/main; }
 ```
 
 ---

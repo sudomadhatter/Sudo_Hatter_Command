@@ -103,7 +103,7 @@ cd "$REPO" && git worktree list                                   # reuse this t
 cd "$REPO" && git fetch origin                                    # ⛔ the base is origin/main, never a bare `main`
 cd "$REPO" && git worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
 cd "<the new tree>" && git branch --unset-upstream                # a start-point of origin/main sets upstream to MAIN
-python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
+cd <the lobby's absolute path — the arg resolves from the LOBBY> && python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
 BRANCH=$(cd "<the new tree>" && git rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
 ```

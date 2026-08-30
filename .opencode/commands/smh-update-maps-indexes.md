@@ -488,8 +488,8 @@ edits, say so and proceed (a regen that produces no diff needs no approval).
   git add docs/repo-map.md _artifacts/INDEX.md _artifacts/INDEX-archive.md _artifacts/_main/INDEX.md _my_resources/open_tasks/todo_list.md docs/.maps-state.json && \
     git commit -m "docs: refresh repo-map + INDEX + open-tasks + depth-3 INDEXes after <change>"
   # a touched project (separate repo)
-  cd Projects/AGY_AVIATIONCHAT && git add docs/repo-map.md _my_resources/open_tasks/todo_list.md docs/.maps-state.json _artifacts/epic_*/INDEX.md _artifacts/_main/INDEX.md _artifacts/tea/INDEX.md && \
-    cd Projects/AGY_AVIATIONCHAT && git commit -m "docs: refresh maps + open-tasks + depth-3 INDEXes"
+  cd Projects/AGY_AVIATIONCHAT && git add docs/repo-map.md _my_resources/open_tasks/todo_list.md docs/.maps-state.json _artifacts/epic_*/INDEX.md _artifacts/_main/INDEX.md _artifacts/tea/INDEX.md \
+    && git commit -m "docs: refresh maps + open-tasks + depth-3 INDEXes"   # ONE cd — a second relative cd resolves from INSIDE the project and dies (SCC-351 review)
   ```
 - **Re-anchor *after* he commits** (so the next run's git-diff starts clean). One command re-anchors every
   workspace it covered (each gets its own `.maps-state.json` at its own docs dir):

@@ -109,6 +109,11 @@ def _longest(piece: str, entries: list[str]) -> str | None:
 
 
 def decide(cmd: str, allow: list[str] = ALLOW, deny: list[str] = DENY) -> str:
+    # Redirections are masked BEFORE the piece split, like the real matcher (guide §4)
+    # — splitting first cut `2>&1` into `2>` + `1` and turned an allowed capture
+    # (`> log 2>&1`, the shape command-shape.md itself recommends) into an ask
+    # (SCC-351 review, blind lens).
+    cmd = re.sub(r"\d*>&\d*", " ", cmd)
     verdicts = []
     for raw in pieces(cmd):
         p = re.sub(r"\d*>&\d*", "", raw, count=1).strip()
@@ -148,6 +153,7 @@ BATTERY = [
     "git remote rename origin evil", "env -u GITHUB_TOKEN git clean -xf",
     "env -u GITHUB_TOKEN git update-ref refs/heads/main HEAD~5",
     "env -u GITHUB_TOKEN git remote rename origin evil",
+    'git push origin "main"', 'env -u GITHUB_TOKEN git push origin "main"',   # quoted-target bypass pinned
     "git branch -D main", "git branch -D feature-x", "git branch -M main",
     "git rebase -i HEAD~3", "git filter-branch --force --all",
     "git reflog expire --expire=now --all", "git reflog delete HEAD@{0}",
@@ -195,6 +201,9 @@ CEREMONY = [
     "git push origin --delete epic/SCC-100-slug",
     "MSG=$(mktemp)",   # an assignment scores as its $() body (guide §4)
     'OUT=$(mktemp)',
+    "python3 .agents/scripts/tests/run_all.py > /tmp/suite.log 2>&1",   # redirs masked pre-split
+    'cd "$TREE" && git push origin HEAD:epic/SCC-123-slug',
+    'cd "$TREE" && env -u GITHUB_TOKEN git push origin HEAD:epic/SCC-123-slug',
 ]
 
 LEGIT_READS = ["git clean -n", "git config --get core.hooksPath", "git config --list"]
