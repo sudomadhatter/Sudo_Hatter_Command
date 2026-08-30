@@ -446,9 +446,9 @@ finding). If the check is red, **STOP** — never disable the ruleset to get pas
 > green, suite 32/32 — could not reach `main` in a full session. No gate stopped it. The *landing*
 > did: each of those strings was judged separately by the agent's permission layer, several were
 > denied, and the state was left stranded halfway. Measured, same op and same target:
-> `git merge X --no-ff` **allowed**, `cd <path> && git merge X --no-ff` **denied** — and `-C` is what
-> `.agents/rules/git-policy.md` §*"Pin the merge TARGET"* *mandates*. Obeying the safety law guaranteed
-> the permission miss. `gh pr create` has none of that: it is one command, it needs no checkout on
+> `git merge X --no-ff` **allowed**, `git -C <path> merge X --no-ff` **denied** — and the `-C` form is
+> what `.agents/rules/git-policy.md` §*"Pin the merge TARGET"* mandated at the time (the pin idiom is
+> `cd <path> && git …` since SCC-351). Obeying the safety law guaranteed the permission miss. `gh pr create` has none of that: it is one command, it needs no checkout on
 > `main`, it writes nothing on this machine, and it is what actually landed PR #5, #6 and #8.
 
 ### Resuming after the operator's click

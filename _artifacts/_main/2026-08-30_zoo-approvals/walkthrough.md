@@ -57,8 +57,8 @@ safe-revert idiom rewritten to the same pin; INDEX row updated;
 procedure (mirror regenerated).
 
 **Part F — the door rewrite.** `git -C <path> <verb>` → `cd <path> && git <verb>` (and the
-`env -u GITHUB_TOKEN` form): **228 spellings across 29 files**, mechanical regex + hand-check of
-every hunk. The hand-check caught what the regex could not: two deny-vs-ceremony collisions
+`env -u GITHUB_TOKEN` form): **229 spellings across 30 files** (228 by mechanical regex, 1 in a subdirectory door
+caught by making the gate's scan recursive), hand-check of every hunk. The hand-check caught what the regex could not: two deny-vs-ceremony collisions
 (checkout-main parking, quoted prune spellings → Part B changes above), one malformed heading, and
 25 opencode mirrors + 3 Antigravity full mirrors + the `.roo` team-rule copy regenerated to match.
 
