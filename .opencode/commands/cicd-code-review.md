@@ -1,6 +1,6 @@
 ---
 description: Review + gate a story — re-derives the blast radius against the current EPIC branch (Step 0.7, because sibling stories land while you build), then an adversarial code review, an acceptance audit against the story's checkable list, the test gate (suite + TEA trace + nfr + test-review) and the clean-code gate (code-standards conformance), producing a PASS/CONCERNS/FAIL/WAIVED verdict. Step ③ of the sudo dev flow.
-platforms: [opencode, antigravity]
+platforms: [opencode, antigravity, zoo]
 ---
 
 # /cicd-code-review — Review + Test Gate + Clean-Code Gate (③)

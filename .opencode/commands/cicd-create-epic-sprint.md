@@ -1,6 +1,6 @@
 ---
 description: Epic kickoff — write the epic + its stories, generate the sprint board, then interactively risk-score every story P0–P3 (test levels). Phase A of the sudo flow, before the per-story dev loop.
-platforms: [opencode, antigravity]
+platforms: [opencode, antigravity, zoo]
 ---
 
 # /cicd-create-epic-sprint — Epic Kickoff: Stories + Sprint + Risk-Score (Phase A)
