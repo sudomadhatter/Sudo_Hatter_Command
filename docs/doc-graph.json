@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 421,
+    "files": 422,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 768,
+    "edges": 769,
     "external": 40,
     "ambiguous": 176,
     "dangling": 301,
@@ -733,7 +733,7 @@
     },
     {
       "path": ".agents/rules/command-shape.md",
-      "in": 3,
+      "in": 4,
       "out": 0
     },
     {
@@ -2105,6 +2105,11 @@
       "path": "docs/migrations/install_guides/vscode-ide-extension-migration.md",
       "in": 2,
       "out": 0
+    },
+    {
+      "path": "docs/migrations/zoo-code-permissions-guide.md",
+      "in": 0,
+      "out": 1
     },
     {
       "path": "docs/repo-map.md",
@@ -5809,6 +5814,11 @@
       "from": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "kind": "link"
+    },
+    {
+      "from": "docs/migrations/zoo-code-permissions-guide.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
     },
     {
       "from": "docs/repo-map.md",

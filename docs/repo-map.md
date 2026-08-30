@@ -120,7 +120,7 @@ Sudo_Hatter_Command/
           [11 files: .mdx11 | e.g. claude-permission-sandboxed.md]
       scripts/
           [11 files: .ps1x5, .pyx3, .shx2, .patchx1 | e.g. Arm-HooksInclude.ps1]
-        [1 files: .mdx1 | e.g. INDEX.md]
+        [2 files: .mdx2 | e.g. INDEX.md]
       [10 files: .mdx9, .jsonx1 | e.g. AGENTS.md]
   scratch/
       [1 files: .pyx1 | e.g. find_brainstorm.py]
