@@ -4,6 +4,10 @@
   // only finds repos at the workspace root and misses Projects/<name>/.
   "git.repositoryScanMaxDepth": 2,
   "git.detectSubmodules": true,
+  // Show existing worktrees (the agent lanes under .claude/worktrees/) as repositories in
+  // Source Control — native in VS Code 1.103+, off by default. Tracked so the PC and any
+  // VS Code profile inherit it (SCC-350).
+  "git.detectWorktrees": true,
   "workbench.editor.centeredLayoutFixedWidth": true,
   "workbench.editor.closeOnFileDelete": true,
   "workbench.editor.enablePreviewFromQuickOpen": true,

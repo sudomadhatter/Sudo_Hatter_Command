@@ -1584,10 +1584,23 @@ that themselves, so each rule states when it applies:
   used to depend on the agent following the CLAUDE.md → AGENTS.md pointer chain — which is exactly
   what failed in the VS Code transition. Now: `CLAUDE.md` and `GEMINI.md` carry three `@` import
   lines that Claude Code and Gemini resolve at session start; `opencode.json` names all three in
-  its `instructions`; Zoo Code injects the generated copies in `.roo/rules/` into every prompt;
-  and the sync writes them into `~/.codex/AGENTS.md` (a machine cache, markers preserved) for
-  Codex's global merge. The law still lives only in `.agents/rules/` — everything else is a
-  generated pointer or cache, refreshed by `/smh-sync-agents`. The four protocol rules are
+  its `instructions`; Zoo Code injects the generated copies in `.roo/rules/` into every prompt
+  (the team rule `zoo-team.md` rides the same folder); and the sync writes them into
+  `~/.codex/AGENTS.md` (a machine cache, markers preserved) for Codex's global merge. The law
+  still lives only in `.agents/rules/` — everything else is a generated pointer or cache,
+  refreshed by `/smh-sync-agents`.
+- **The Zoo Code mode picker is your team.** Six seats, each one a mode: 🫖🐰 March Hare — TEAM
+  LEAD (your opt-in autopilot: hand it a whole ticket, it delegates to the other seats and parks
+  at merge-ready for your click), ⏰🐇 White Rabbit — PM (your default daily seat: brainstorm,
+  research, tickets, plans), 🔨🪚 Carpenter — ENGINEER, 🦋 Caterpillar — DESIGNER, 😼 Cheshire
+  Cat — TESTER (writes the failing tests first), and ♥️👑 Queen of Hearts — QA (reviews and
+  audits; her mode cannot edit files at all). They replace Zoo's five stock modes outright — same
+  slots, your names. Each seat's brain is a command you can also summon directly in Zoo —
+  `/smh-team-march-hare`, `/smh-team-white-rabbit`, `/smh-team-carpenter`, `/smh-team-caterpillar`,
+  `/smh-team-cheshire-cat`, `/smh-team-queen-of-hearts` — with the roster and hand-off order in
+  `.agents/rules/zoo-team.md`; `.roomodes` is generated — edit the master, run `/smh-sync-agents`.
+  For the March Hare to delegate without prompting you each time, tick **Mode switching** and
+  **Subtasks** in Zoo's Auto-Approve panel once per machine. The four protocol rules are
   unchanged: their gates remain written into the front door as well, so nothing depends on a file
   being loaded at the right moment.
 - **A rule about the commands themselves** — `command-shape.md` — exists because every tool's
@@ -4032,9 +4045,9 @@ flowchart TD
 *Publishes the toolkit to all five platforms — one door each — from the lobby's masters: generates
 the Claude/Codex launcher skill per command (a hand-authored skill always wins), mirrors opencode and
 Antigravity (thin launchers over ~11.5 KB), generates the Zoo Code doors (`.roo/commands/` launchers,
-`.roomodes` with the six BMAD personas, floor-rule copies in `.roo/rules/` — all tracked in git, so
-they travel to both machines), retires what the manifest says it wrote and the master
-no longer owns, and purges the two retired doors. Explained in
+`.roomodes` with the six Wonderland team seats, floor + team rule copies in `.roo/rules/` — all
+tracked in git, so they travel to both machines), retires what the manifest says it wrote and the
+master no longer owns, and purges the two retired doors. Explained in
 [§19](#19-where-the-depth-lives). Called by: you, after any command change; the door-parity test
 tells you when it is owed.*
 

@@ -4,15 +4,15 @@
     "docs"
   ],
   "counts": {
-    "files": 415,
+    "files": 422,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 746,
+    "edges": 769,
     "external": 40,
-    "ambiguous": 170,
-    "dangling": 300,
+    "ambiguous": 177,
+    "dangling": 301,
     "broken_paths": 70,
-    "unresolved_names": 230,
+    "unresolved_names": 231,
     "unresolvable": 6
   },
   "nodes": [
@@ -39,7 +39,7 @@
     {
       "path": ".agents/commands/INDEX.md",
       "in": 9,
-      "out": 5
+      "out": 6
     },
     {
       "path": ".agents/commands/adviser-board/CARD.md",
@@ -552,6 +552,36 @@
       "out": 3
     },
     {
+      "path": ".agents/commands/smh-team-carpenter.md",
+      "in": 0,
+      "out": 3
+    },
+    {
+      "path": ".agents/commands/smh-team-caterpillar.md",
+      "in": 0,
+      "out": 2
+    },
+    {
+      "path": ".agents/commands/smh-team-cheshire-cat.md",
+      "in": 0,
+      "out": 3
+    },
+    {
+      "path": ".agents/commands/smh-team-march-hare.md",
+      "in": 0,
+      "out": 2
+    },
+    {
+      "path": ".agents/commands/smh-team-queen-of-hearts.md",
+      "in": 0,
+      "out": 2
+    },
+    {
+      "path": ".agents/commands/smh-team-white-rabbit.md",
+      "in": 0,
+      "out": 3
+    },
+    {
       "path": ".agents/commands/smh-update-maps-indexes.md",
       "in": 2,
       "out": 11
@@ -689,7 +719,7 @@
     {
       "path": ".agents/rules/INDEX.md",
       "in": 8,
-      "out": 27
+      "out": 28
     },
     {
       "path": ".agents/rules/artifacts-always-first.md",
@@ -718,7 +748,7 @@
     },
     {
       "path": ".agents/rules/constitution.md",
-      "in": 24,
+      "in": 25,
       "out": 1
     },
     {
@@ -733,12 +763,12 @@
     },
     {
       "path": ".agents/rules/jira.md",
-      "in": 42,
+      "in": 43,
       "out": 3
     },
     {
       "path": ".agents/rules/karpathy-guidelines.md",
-      "in": 5,
+      "in": 7,
       "out": 1
     },
     {
@@ -763,7 +793,7 @@
     },
     {
       "path": ".agents/rules/operator-profile.md",
-      "in": 7,
+      "in": 8,
       "out": 0
     },
     {
@@ -798,7 +828,7 @@
     },
     {
       "path": ".agents/rules/tests-must-gate-for-real.md",
-      "in": 12,
+      "in": 13,
       "out": 0
     },
     {
@@ -810,6 +840,11 @@
       "path": ".agents/rules/worktree-per-story.md",
       "in": 36,
       "out": 2
+    },
+    {
+      "path": ".agents/rules/zoo-team.md",
+      "in": 11,
+      "out": 4
     },
     {
       "path": ".agents/scripts/INDEX.md",
@@ -1993,13 +2028,13 @@
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "in": 22,
-      "out": 51
+      "in": 29,
+      "out": 53
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 11
+      "out": 12
     },
     {
       "path": "docs/code-review-graph.md",
@@ -2198,6 +2233,11 @@
     {
       "from": ".agents/INDEX.md",
       "to": ".agents/workflows/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/INDEX.md",
+      "to": ".agents/rules/zoo-team.md",
       "kind": "ref"
     },
     {
@@ -3226,6 +3266,81 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/commands/smh-team-carpenter.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-carpenter.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-carpenter.md",
+      "to": ".agents/rules/karpathy-guidelines.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-caterpillar.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-caterpillar.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-cheshire-cat.md",
+      "to": ".agents/rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-cheshire-cat.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-cheshire-cat.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-march-hare.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-march-hare.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-queen-of-hearts.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-queen-of-hearts.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-white-rabbit.md",
+      "to": ".agents/rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-white-rabbit.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-white-rabbit.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/commands/smh-update-maps-indexes.md",
       "to": ".agents/commands/INDEX.md",
       "kind": "ref"
@@ -3601,6 +3716,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/rules/INDEX.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/rules/artifacts-always-first.md",
       "to": ".agents/rules/INDEX.md",
       "kind": "ref"
@@ -3798,6 +3918,26 @@
     {
       "from": ".agents/rules/worktree-per-story.md",
       "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": ".agents/rules/karpathy-guidelines.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": ".agents/rules/operator-profile.md",
       "kind": "ref"
     },
     {
@@ -5372,6 +5512,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": "docs/_scc_sops_prds/INDEX.md",
       "kind": "link"
     },
@@ -5489,6 +5634,11 @@
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
     },
     {
       "from": "docs/code-review-graph.md",
@@ -6227,6 +6377,10 @@
     {
       "from": ".agents/commands/smh-quick-fix.md",
       "target": "/walkthrough.md"
+    },
+    {
+      "from": ".agents/commands/smh-team-carpenter.md",
+      "target": "implementation_plan.md"
     },
     {
       "from": ".agents/commands/smh-update-maps-indexes.md",
@@ -7510,6 +7664,60 @@
       ]
     },
     {
+      "from": ".agents/commands/smh-team-carpenter.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-caterpillar.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-cheshire-cat.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-march-hare.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-queen-of-hearts.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-white-rabbit.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
       "from": ".agents/commands/smh-update-maps-indexes.md",
       "target": ".agents/scripts/README.md",
       "candidates": [
@@ -8237,6 +8445,15 @@
       "candidates": [
         ".agents/commands/smh-plan-task.md",
         ".agents/workflows/smh-plan-task.md"
+      ]
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {
