@@ -56,7 +56,7 @@ EPIC branch. Echo the case (`Worktree: reused <path>` / `none yet — opens at f
 1. **Reusing a tree cut earlier? Absorb the EPIC branch FIRST, before the first edit.** A tree cut at ①
    and picked up days later is branched from an epic branch its sibling lanes have since moved:
    ```bash
-   cd <tree> && git fetch origin && cd <tree> && git merge --no-edit origin/epic/<JIRA-KEY>-<slug>
+   cd "$PROJECT_ROOT"/.claude/worktrees/<story-slug> && git fetch origin && git merge --no-edit origin/epic/<JIRA-KEY>-<slug>
    ```
    Conflicts here are cheap and yours; the same conflicts at ③'s absorb are on the epic branch's
    doorstep. A conflict → resolve it in the tree and note it in the plan; never `--hard`, never force
@@ -67,15 +67,15 @@ EPIC branch. Echo the case (`Worktree: reused <path>` / `none yet — opens at f
    in the shared checkout certifies the wrong tree. Idempotent: a resumed lane re-runs it safely; the
    prune's `--unlink` (`/cicd-prune-worktree`) is its pair.
    ```bash
-   python3 .agents/scripts/link-worktree-assets.py "$PROJECT_ROOT"/.claude/worktrees/<story-slug>   # PC: `python`
+   cd <the lobby's absolute path — the script is the LOBBY's> && python3 .agents/scripts/link-worktree-assets.py "$PROJECT_ROOT"/.claude/worktrees/<story-slug>   # PC: `python`
    ```
    On the none-yet path, run it the moment `bmad-dev-story` opens the tree.
 3. **Read the sibling lanes NOW, not at review time.** Other `claude/*` trees on this epic carry
    uncommitted work `grep` cannot see:
    ```bash
    cd "$PROJECT_ROOT" && git worktree list
-   cd <each-other-tree> && git diff --name-only origin/epic/<JIRA-KEY>-<slug>...HEAD
-   cd <each-other-tree> && git status --short
+   cd "$PROJECT_ROOT"/.claude/worktrees/<other-slug> && git diff --name-only origin/epic/<JIRA-KEY>-<slug>...HEAD
+   cd "$PROJECT_ROOT"/.claude/worktrees/<other-slug> && git status --short
    ```
    Any file in both their set and your intended set is a **landing-order dependency**: say which lane
    should land first and what happens to your work if it does not, and carry it into the plan (Step 1's

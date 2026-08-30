@@ -14,7 +14,7 @@ tuned to the same level. SCC-351.
 
 Zoo only auto-runs a terminal command when every piece of it starts with an entry on the ALLOW
 list, and refuses it when any piece starts with an entry on the DENY list. Everything else asks
-you. The pain had three causes: **(1)** the lists you edit in `.vscode/settings.json` are not the
+you. The pain had three causes: **(1)** the lists you edit in [`.vscode/settings.json`](../../.vscode/settings.json) are not the
 lists Zoo decides with (they only seed it once — §3); **(2)** Zoo's matcher is a plain
 starts-with test, so the house's own `git -C <path>` habit could never match a `git status`
 allow (§4); **(3)** a handful of safe families (`cd`, `git push`, `gh pr`, `acli`, heredoc
@@ -114,7 +114,7 @@ Two Zoo features to leave alone, and why:
 ## 6. The canonical lists — and the reasoning per family
 
 The source of truth is [`.vscode/settings.json`](../../.vscode/settings.json) (`zoo-code.*` keys),
-tracked in git: **109 allow / 97 deny** entries. The design rule, in the operator's words
+tracked in git: **110 allow / 103 deny** entries. The design rule, in the operator's words
 (2026-08-30): *denies are the absolute minimum — only things that would really cause damage.* And
 one mechanic makes that minimum load-bearing: under a broad allow, an un-denied spelling does not
 ask — it **auto-runs**. So the allows are broad working families, and every deny row names real
@@ -145,13 +145,13 @@ enforced by the test — because the broad env-twin allow would otherwise bypass
 |---|---|---|
 | Filesystem | `rm -rf`, `rm -r`, `sudo`, `chmod -R 777`, `chown -R`, `dd if=`, `mkfs`, `del /s`, `rmdir /s`, `Remove-Item -Recurse` | Irreversible. Bare `rm <file>` stays unlisted → asks. |
 | Outward git | `git push --force`, `git push -f`, `git push --force-with-lease`, `git push --mirror`, `git push --all`, `git push origin main`, `git push -u origin main`, `git push --set-upstream origin main`, `git push origin main:`, `git push origin HEAD:`, `git push origin +`, `git push origin :`, `git push --delete`, `git push origin --delete` | `main` is never an agent's; history rewrites never auto-run. Lane/epic deletes re-allowed above. (The GitHub `main-write-gate` ruleset is the primary lock on `main`; these rows are the local echo.) |
-| Work destruction | `git reset --hard`, `git clean -f`, `git clean -d`, `git branch -D`, `git branch -M`, `git rebase`, `git filter-branch`, `git reflog expire`, `git reflog delete`, `git update-ref -d`, `git gc --prune`, `git stash drop`, `git stash clear`, `git restore .`, `git checkout -- `, `git checkout .` | Each destroys committed or uncommitted work, or the recovery data for it. `-f`/`-d` leave the dry-run `git clean -n` approvable. `git checkout main` is deliberately NOT denied — parking a checkout on main is a real ceremony step, and the damage (pushing main) is fenced elsewhere. |
-| Reroute/disarm | `git remote remove`, `git remote rm`, `git remote set-url`, `git config` | A remote edit reroutes pushes silently; a config write can disarm the hooks (`core.hooksPath`). Config READS are re-allowed above. |
+| Work destruction | `git reset --hard`, `git clean -f`, `git clean -d`, `git clean -x`, `git clean --force`, `git branch -D`, `git branch -M`, `git rebase`, `git filter-branch`, `git reflog expire`, `git reflog delete`, `git update-ref`, `git gc --prune`, `git stash drop`, `git stash clear`, `git restore .`, `git checkout -- `, `git checkout .` | Each destroys committed or uncommitted work, or the recovery data for it. `-f`/`-d`/`-x`/`--force` leave the dry-run `git clean -n` approvable (the `-x`/`--force` escape spellings were verified auto-approving in the close-out review and denied). `update-ref` is denied whole: any spelling rewrites or deletes a ref. `git checkout main` is deliberately NOT denied — parking a checkout on main is a real ceremony step, and the damage (pushing main) is fenced elsewhere. |
+| Reroute/disarm | `git remote remove`, `git remote rm`, `git remote rename`, `git remote set-url`, `git config` | A remote edit reroutes pushes silently; a config write can disarm the hooks (`core.hooksPath`). Config READS are re-allowed above. |
 | Sweeps | `git add -A`, `git add .`, `git add -u`, `git add --all` | The git-policy ban — a sweep carries other sessions' work. |
 | Launder shapes | `git -C`, `git --git-dir` | Under the broad `git ` allow these would bypass every verb deny (§4). Auto-denied: the agent gets an immediate refusal and rewrites to `cd … && git …`. (Lowercasing means `git -c` — config override — is denied by the same row.) |
 | Outward tools | `gh pr merge`, `gh repo delete`, `gh release delete`, `acli jira workitem delete` | Merges are the operator's click; deletions are operator words. |
 
-## 7. Applying the lists per machine — `zoo_permissions_apply.py`
+## 7. Applying the lists per machine — [`zoo_permissions_apply.py`](../../.agents/scripts/zoo_permissions_apply.py)
 
 `python3 .agents/scripts/zoo_permissions_apply.py --status` (PC: `python`) shows, for every
 `state.vscdb` that carries the Zoo key: counts, master-toggle values, and drift vs the tracked
@@ -192,6 +192,8 @@ Legit-read pins: `git clean -n`, `git config --get`, `git config --list` all aut
 remaining asks are one-off diagnostics plus the handful of door blocks still written as multi-line
 `if`/loops (banned §8 shapes for seats; they prompt when copied verbatim) — which is the design:
 rare things prompt, the pipeline runs.
+
+Close-out review additions (same day, after the measurement): the battery grew to 76 rows, `mktemp` joined the allows (an assignment scores as its `$()` body, so `MSG=$(mktemp)` was asking), and the deny list to 103 with the verified escape spellings (`git clean -x`/`--force`, bare `git update-ref`, `git remote rename` + env twins) — deny-side only, so the approve rates above are unchanged; an ASK battery now pins the third tier (unknown tools keep asking).
 
 ## 10. Incident notes worth keeping
 

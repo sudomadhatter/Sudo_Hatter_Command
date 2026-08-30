@@ -69,15 +69,16 @@ one. The base is a **remote-tracking ref after a fetch, never a bare local `main
 local ref is a cache a sibling lane has already moved past:
 
 ```bash
+L=$(pwd)                                                     # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
 cd "$PROJECT_ROOT" && git worktree list                      # reuse this fix's tree if it exists
 cd "$PROJECT_ROOT" && git fetch origin                       # ⛔ the base is origin/…, never a bare local ref
 # story lane — off the story's EPIC branch:
 cd "$PROJECT_ROOT" && git worktree add .claude/worktrees/<slug> -b claude/<KEY>-<slug> origin/epic/<KEY>-<epic-slug>
 # ad-hoc lane — no epic applies (a truly ad-hoc fix outside any sprint): git-policy.md's chore lane, off main:
 cd "$PROJECT_ROOT" && git worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
-cd "<the new tree>" && git branch --unset-upstream           # an origin/… start-point sets upstream to the BASE branch
-python3 .agents/scripts/link-worktree-assets.py "$PROJECT_ROOT"/.claude/worktrees/<slug>   # PC: `python`  ⛔ BIND it — the arg is read from YOUR cwd (the lobby), not from PROJECT_ROOT
-BRANCH=$(cd "<the new tree>" && git rev-parse --abbrev-ref HEAD)
+cd "$PROJECT_ROOT"/.claude/worktrees/<slug> && git branch --unset-upstream   # an origin/… start-point sets upstream to the BASE branch
+cd "$L" && python3 .agents/scripts/link-worktree-assets.py "$PROJECT_ROOT"/.claude/worktrees/<slug>   # PC: `python`  ⛔ the script lives in the LOBBY — the cd "$L" is what finds it after the cds above
+BRANCH=$(cd "$PROJECT_ROOT"/.claude/worktrees/<slug> && git rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
 ```
 
@@ -130,8 +131,8 @@ work is invisible to `grep`:
 
 ```bash
 cd "$PROJECT_ROOT" && git worktree list
-cd <each-other-tree> && git diff --name-only <that lane's base>...HEAD   # origin/epic/<…> for a story tree, origin/main for a chore tree
-cd <each-other-tree> && git status --short
+cd "$PROJECT_ROOT"/.claude/worktrees/<other-slug> && git diff --name-only <that lane's base>...HEAD   # origin/epic/<…> for a story tree, origin/main for a chore tree
+cd "$PROJECT_ROOT"/.claude/worktrees/<other-slug> && git status --short
 ```
 
 Any file in both their set and your intended set is a **landing-order dependency**. Say which lane
@@ -246,7 +247,7 @@ Runs **after** the work. **Pin the diff first, from command output** — `step-o
 
 ```bash
 WORKTREE=<the tree Step 0.5 opened, or "$PROJECT_ROOT" when this lane reuses the checkout>
-# ⛔ BIND IT. `cd ""` && git does NOT error - it silently resolves against the cwd, and cwd
+# ⛔ BIND IT. `cd ""` exits 0 without erroring (bash and zsh both), so the && chain runs against the cwd, and cwd
 # resets to the shared main checkout between tool calls, so an unbound WORKTREE pins the
 # diff of a tree that is not this lane's and reports normally (`worktree-per-story`
 # §"cwd is not intent").

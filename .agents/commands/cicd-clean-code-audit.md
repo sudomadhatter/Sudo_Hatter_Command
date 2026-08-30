@@ -52,7 +52,11 @@ on a `claude/*` story branch the base is its EPIC branch (exactly one live `epic
 case); otherwise fall back to `main`:
 
 ```bash
-cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin   # a bare ref is this checkout's LAST PULL
+# bare on purpose — this WHOLE fence runs inside the tree the prose above bound (the story
+# worktree when one matched); a `cd` here would move the audit off that tree, and every diff
+# below would measure the shared checkout instead (SCC-351 review). Fetch works from any
+# tree of the repo — refs are shared.
+env -u GITHUB_TOKEN git fetch origin
 # origin/ FIRST: a local epic head is only as fresh as the last pull, and a story lane's real
 # base is what the epic branch looks like NOW - sibling stories land there while you audit.
 BASE=$(git for-each-ref --format='%(refname:short)' \

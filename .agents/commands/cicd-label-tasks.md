@@ -220,7 +220,7 @@ Leave the key out for any child you did not assess and its label survives untouc
 ## Step 3 — The set math (mechanical)
 
 ```bash
-python3 .agents/scripts/label_tasks.py resolve \
+cd <the lobby's absolute path — the script is the LOBBY's; Step 2's cds moved the shell> && python3 .agents/scripts/label_tasks.py resolve \
         --plan /tmp/lt-plan.json --touchsets /tmp/lt-touch.json --out /tmp/lt-verdicts.json
 ```
 
@@ -247,7 +247,7 @@ Print the table the script renders, unedited — the schedule line first, then o
 ## Step 5 — Stamp the board
 
 ```bash
-python3 .agents/scripts/label_tasks.py stamp \
+cd <the lobby's absolute path> && python3 .agents/scripts/label_tasks.py stamp \
         --plan /tmp/lt-plan.json --verdicts /tmp/lt-verdicts.json --apply
 ```
 
@@ -265,7 +265,7 @@ stamp: `verified <date> against N children: <keys>`.
 ## Re-checking later — is yesterday's answer still good?
 
 ```bash
-python3 .agents/scripts/label_tasks.py check --parent <PARENT-KEY>
+cd <the lobby's absolute path> && python3 .agents/scripts/label_tasks.py check --parent <PARENT-KEY>
 ```
 
 `[FRESH]` (exit 0) or `[STALE]` (exit 1) with the children added or removed since. **A stamped set

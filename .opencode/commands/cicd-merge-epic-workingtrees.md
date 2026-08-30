@@ -155,8 +155,8 @@ landing runs long enough to be compacted.
 
 ## Step 4 — Fix, close, land — sequentially, verified INSIDE each worktree
 For each eligible lane, in the Step 3 order — `TREE=<that lane's worktree path>`, copied from Step 1's
-`git worktree list` output, and **`cd "$TREE"` && git on EVERY git call in this step; never a bare `git`
-after a `cd`** (`git-policy.md` §"Pin the merge TARGET"). The cwd resets to the shared checkout between
+`git worktree list` output, and **pin EVERY git call in this step as `cd "$TREE" && git …` in ONE
+compound line; never a bare `git` that trusts an earlier line's `cd`** (`git-policy.md` §"Pin the merge TARGET"). The cwd resets to the shared checkout between
 tool calls, and that checkout stands on `main`: a bare merge here merges the epic branch into `main`,
 and the bare push in 4.4 lands `main`'s tip on the shared epic branch every sibling then absorbs —
 reporting success both times. That is the 2026-08-11 shape that put a merge commit on a sibling's
@@ -318,7 +318,8 @@ the old "N stories behind" fast-forward died with `main_debug` on 2026-08-07.)*
 
 ## Step 6 — Prune EVERY tree and branch (AUTOMATIC — only after Step 5 is green)
 
-⛔ **Every per-lane command here takes an explicit `--repo`/`--branch` (or `cd <tree>`).** && git This command
+⛔ **Every per-lane command here takes an explicit `--repo`/`--branch` (or a same-line
+`cd <tree> && git …` pin).** This command
 is the one that runs with the MOST sibling trees open at once, so a default resolved from `cwd` is most
 likely to land on the wrong lane — and it prunes, which is not what you want aimed at a guess
 (`worktree-per-story.md` → *"`cwd` is not intent"*). Confirm each invocation echoed the slug you meant
@@ -334,14 +335,15 @@ Every ✓ below comes from a command you ran HERE, not from intent. `<project>` 
 checkout; it holds no local `epic/*` branch by contract, so compare against the REMOTE ref:
 
 ```bash
-cd <project> && git fetch origin
-cd <project> && git log --oneline -1 origin/epic/<JIRA-KEY>-<slug>          # the LAST lane's merge sha, by name
-cd <project> && git merge-base --is-ancestor <each lane's 4.4 SHA> origin/epic/<JIRA-KEY>-<slug> && echo landed
+P=$(cd <project> && pwd)   # absolutize ONCE — consecutive RELATIVE cds break from inside the first (command-shape.md §Absolute fills)
+cd "$P" && git fetch origin
+cd "$P" && git log --oneline -1 origin/epic/<JIRA-KEY>-<slug>          # the LAST lane's merge sha, by name
+cd "$P" && git merge-base --is-ancestor <each lane's 4.4 SHA> origin/epic/<JIRA-KEY>-<slug> && echo landed
 # ⛔ the SHA recorded at 4.4, never `claude/<KEY>-<slug>` — Step 6 deleted that name; a dead ref
 # short-circuits the `&&`, prints nothing, and reads exactly like a lane that failed to land
-cd <project> && git status --short                                          # empty — nothing rode into the shared checkout
-cd <project> && git worktree list                                           # only expected trees; a HUSK here blocks the next `worktree add`
-cd <project> && git branch -a --list 'claude/*'                             # only deliberately-retained lanes (`claude/incident-*` excluded)
+cd "$P" && git status --short                                          # empty — nothing rode into the shared checkout
+cd "$P" && git worktree list                                           # only expected trees; a HUSK here blocks the next `worktree add`
+cd "$P" && git branch -a --list 'claude/*'                             # only deliberately-retained lanes (`claude/incident-*` excluded)
 ```
 
 Per story: landed SHA range · pre- and post-absorb verdict · `→ done` flip · Jira: Dev Record filed,

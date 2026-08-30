@@ -7,7 +7,7 @@
     "files": 422,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 774,
+    "edges": 777,
     "external": 40,
     "ambiguous": 176,
     "dangling": 301,
@@ -384,7 +384,7 @@
     {
       "path": ".agents/commands/cicd-merge-epic-workingtrees.md",
       "in": 3,
-      "out": 7
+      "out": 8
     },
     {
       "path": ".agents/commands/cicd-mobile-error-team.md",
@@ -419,7 +419,7 @@
     {
       "path": ".agents/commands/cicd-quick-dev.md",
       "in": 2,
-      "out": 17
+      "out": 18
     },
     {
       "path": ".agents/commands/cicd-resume.md",
@@ -733,8 +733,8 @@
     },
     {
       "path": ".agents/rules/command-shape.md",
-      "in": 6,
-      "out": 2
+      "in": 8,
+      "out": 3
     },
     {
       "path": ".agents/rules/completion-not-illusion.md",
@@ -813,7 +813,7 @@
     },
     {
       "path": ".agents/rules/smh-target-resolution.md",
-      "in": 44,
+      "in": 45,
       "out": 3
     },
     {
@@ -2611,6 +2611,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/commands/cicd-merge-epic-workingtrees.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/commands/cicd-mobile-error-team.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
@@ -2763,6 +2768,11 @@
     {
       "from": ".agents/commands/cicd-quick-dev.md",
       "to": ".agents/commands/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-quick-dev.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -3754,6 +3764,11 @@
       "from": ".agents/rules/command-shape.md",
       "to": "docs/migrations/zoo-code-permissions-guide.md",
       "kind": "link"
+    },
+    {
+      "from": ".agents/rules/command-shape.md",
+      "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
     },
     {
       "from": ".agents/rules/constitution.md",

@@ -75,8 +75,8 @@ cd "$WORKTREE" && git status --short                                  # anything
 Echo the file count. **An empty set is a STOP, not a pass** — Step 3.5 restates it at the gate, but by
 then the engine, the acceptance audit and the whole test gate have already run on nothing.
 
-⛔ **`cd ""` && git does NOT error** — git documents it as "leave the current working directory
-unchanged" — so an unassigned `$WORKTREE` silently measures whatever tree the shell is standing in:
+⛔ **`cd ""` does NOT error** — the shell builtin exits 0 with an empty argument (bash and zsh
+both, verified) — so an unassigned `$WORKTREE` silently measures whatever tree the shell is standing in:
 the shared checkout Step 0.5 just told you is empty or stale, and the redirects in Step 0.7 still
 create their two `/tmp` files, so the overlap reads clean (`preflight-resolves-repo-from-cwd`).
 ⛔ The ref is `origin/$EPIC`, never the trunk (SCC-165 — Step 0.7 says why).
@@ -107,7 +107,8 @@ cd "$PROJECT_ROOT" && git branch -a --list '*epic/*'        # normally exactly o
 # not error — it silently reads whatever tree the shell is standing in.
 WORKTREE=<the same path Step 0.6 echoed>
 EPIC=<the same epic/JIRA-KEY-slug Step 0.6 echoed>
-test -n "$WORKTREE" && test -n "$EPIC" || { echo 'UNBOUND — STOP'; exit 1; }
+L=<the LOBBY's absolute path — where the session started; the helper scripts live there>
+test -n "$WORKTREE" && test -n "$EPIC" && test -n "$L" || { echo 'UNBOUND — STOP'; exit 1; }
 BASE=$(cd "$WORKTREE" && git merge-base HEAD "origin/$EPIC")
 cd "$WORKTREE" && git diff --name-only "$BASE".."origin/$EPIC" | sort > /tmp/theirs.txt  # landed while you built
 cd "$WORKTREE" && git diff --name-only "origin/$EPIC"...HEAD | sort > /tmp/mine.txt      # what you changed
@@ -115,7 +116,7 @@ test -s /tmp/mine.txt || { echo 'EMPTY DIFF — STOP (Step 0.6 said so)'; exit 1
 grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                               # the TRUE overlap
 cd "$WORKTREE" && git merge-tree --write-tree --messages HEAD "origin/$EPIC" | head -40  # conflicts, before they are real
 cd "$PROJECT_ROOT" && git worktree list                                                  # sibling story lanes still live
-python3 .agents/scripts/risk_seam.py classify --repo "$WORKTREE" $(cat /tmp/mine.txt) # risk tiers from the PROJECT graph
+cd "$L" && python3 .agents/scripts/risk_seam.py classify --repo "$WORKTREE" $(cat /tmp/mine.txt) # risk tiers from the PROJECT graph — the script is the LOBBY's, and the cds above moved the shell (SCC-351 review)
 ```
 
 **Read the tier map beside the overlap list.** `risk_seam.py` *(PC: `python`)* asks the local code
@@ -304,7 +305,8 @@ file edited that satisfies an acceptance row but was never declared is invisible
 reconciliation above. Diff the block against the real diff:
 
 ```bash
-python3 .agents/scripts/declared_change_set.py diff <the plan> \
+L=<the LOBBY's absolute path — re-typed; earlier fences have cd'd the shell into the project>
+cd "$L" && python3 .agents/scripts/declared_change_set.py diff <the plan> \
         --changed $(cd "$PROJECT_ROOT" && git diff --name-only --no-renames <the same base this review resolved>)   # PC: `python`
 ```
 

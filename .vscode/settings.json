@@ -31,8 +31,8 @@
   // UN-denied spelling auto-RUN, so the deny list is the whole fence: minimum rows, each one
   // naming real damage, none colliding with legitimate agent work. Env twins for git/gh denies
   // are required (env -u GITHUB_TOKEN git … would bypass them otherwise) and are checked by
-  // .agents/scripts/tests/test_zoo_permissions.py, which re-fires a 70-row destructive battery
-  // and the 20-step ceremony set against these exact lists on every suite run.
+  // .agents/scripts/tests/test_zoo_permissions.py, which re-fires the destructive battery
+  // and the ceremony set against these exact lists on every suite run.
   "zoo-code.useAgentRules": true,
   "zoo-code.allowedCommands": [
     "cd ", "git ", "env -u GITHUB_TOKEN git ", "gh pr ", "gh run ", "env -u GITHUB_TOKEN gh pr ",
@@ -40,7 +40,7 @@
     "pwsh -NoProfile -File .agents/scripts/", "acli jira workitem ", "ls", "pwd", "true", "date",
     "head", "sort", "uniq", "wc", "cat", "echo", "tail ", "sed ", "grep ", "rg ", "diff ", "cp ",
     "mkdir ", "printf ", "awk ", "cut ", "tr ", "basename ", "dirname ", "readlink ", "file ",
-    "stat ", "du ", "cmp ", "command -v ", "which ", "jq ", "touch ", "REPO=", "BRANCH=",
+    "stat ", "du ", "cmp ", "command -v ", "which ", "jq ", "touch ", "mktemp", "REPO=", "BRANCH=",
     "EXPECTED_KEY=", "BASE=", "BEHIND=", "HEAD_SHA=", "PATHS=", "VENV=", "KEY=", "MAIN=", "WT=",
     "W=", "SCR=", "EXT=", "DB=", "OUT=", "MSG=", "URL=", "CODE=", "SCRATCH=", "E=", "T=", "D=",
     "F=", "R=", "S=", "P=", "N=", "L=", "B=", "A=", "G=", "M=", "V=", "X=", "git add .agents/",
@@ -65,10 +65,12 @@
     "git push --mirror", "git push --all", "git push origin main", "git push -u origin main",
     "git push --set-upstream origin main", "git push origin main:", "git push origin HEAD:",
     "git push origin +", "git push origin :", "git push --delete", "git push origin --delete",
-    "git reset --hard", "git clean -f", "git clean -d", "git branch -D", "git branch -M",
+    "git reset --hard", "git clean -f", "git clean -d", "git clean -x", "git clean --force",
+    "git branch -D", "git branch -M",
     "git rebase", "git filter-branch", "git reflog expire", "git reflog delete",
-    "git update-ref -d", "git gc --prune", "git stash drop", "git stash clear",
-    "git remote remove", "git remote rm", "git remote set-url", "git restore .",
+    "git update-ref", "git gc --prune", "git stash drop", "git stash clear",
+    "git remote remove", "git remote rm", "git remote rename", "git remote set-url",
+    "git restore .",
     "git checkout -- ", "git checkout .", "git config", "git add -A", "git add .", "git add -u",
     "git add --all", "git -C", "git --git-dir", "gh pr merge", "gh repo delete",
     "gh release delete", "acli jira workitem delete", "env -u GITHUB_TOKEN git push --force",
@@ -80,13 +82,15 @@
     "env -u GITHUB_TOKEN git push origin +", "env -u GITHUB_TOKEN git push origin :",
     "env -u GITHUB_TOKEN git push --delete", "env -u GITHUB_TOKEN git push origin --delete",
     "env -u GITHUB_TOKEN git reset --hard", "env -u GITHUB_TOKEN git clean -f",
-    "env -u GITHUB_TOKEN git clean -d", "env -u GITHUB_TOKEN git branch -D",
+    "env -u GITHUB_TOKEN git clean -d", "env -u GITHUB_TOKEN git clean -x",
+    "env -u GITHUB_TOKEN git clean --force", "env -u GITHUB_TOKEN git branch -D",
     "env -u GITHUB_TOKEN git branch -M", "env -u GITHUB_TOKEN git rebase",
     "env -u GITHUB_TOKEN git filter-branch", "env -u GITHUB_TOKEN git reflog expire",
-    "env -u GITHUB_TOKEN git reflog delete", "env -u GITHUB_TOKEN git update-ref -d",
+    "env -u GITHUB_TOKEN git reflog delete", "env -u GITHUB_TOKEN git update-ref",
     "env -u GITHUB_TOKEN git gc --prune", "env -u GITHUB_TOKEN git stash drop",
     "env -u GITHUB_TOKEN git stash clear", "env -u GITHUB_TOKEN git remote remove",
-    "env -u GITHUB_TOKEN git remote rm", "env -u GITHUB_TOKEN git remote set-url",
+    "env -u GITHUB_TOKEN git remote rm", "env -u GITHUB_TOKEN git remote rename",
+    "env -u GITHUB_TOKEN git remote set-url",
     "env -u GITHUB_TOKEN git restore .", "env -u GITHUB_TOKEN git checkout -- ",
     "env -u GITHUB_TOKEN git checkout .", "env -u GITHUB_TOKEN git config",
     "env -u GITHUB_TOKEN git add -A", "env -u GITHUB_TOKEN git add .",

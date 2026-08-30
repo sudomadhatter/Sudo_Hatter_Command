@@ -152,13 +152,15 @@ contract removes ceremony, never judgment.
 leads the subject, `-F` never `-m` — backticks in `-m "…"` EXECUTE):
 
 ```bash
-python3 .agents/scripts/jira_feed.py outline --epic <N> --project <PROJECT> --out epic-outline.txt   # PC: `python`
+L=<the LOBBY's absolute path — re-type it; earlier fences have cd'd the shell into the project>
+OUT=$(mktemp)
+cd "$L" && python3 .agents/scripts/jira_feed.py outline --epic <N> --project <PROJECT> --out "$OUT"   # PC: `python` — the script is the LOBBY's (SCC-351 review)
 # ⛔ REPLACES the description — read the ticket back FIRST, and only overwrite what 1a's mint wrote
 acli jira workitem view <JIRA-KEY> --fields description
-acli jira workitem edit --key <JIRA-KEY> --yes --description-file epic-outline.txt
+acli jira workitem edit --key <JIRA-KEY> --yes --description-file "$OUT"
 acli jira workitem view <JIRA-KEY> --fields description    # prove the outline is what is on the ticket now
-rm epic-outline.txt
-MSG=$(mktemp)   # ⛔ OUTSIDE both trees: `cd <dir> && git -F <relative>` resolves under <dir>, not your cwd — and a message file inside the repo dirties the `status` the Done block requires to be empty
+rm "$OUT"
+MSG=$(mktemp)   # ⛔ OUTSIDE both trees: after `cd <dir>`, `git commit -F <relative>` resolves <relative> under <dir>, not your old cwd — and a message file inside the repo dirties the `status` the Done block requires to be empty
 printf '%s\n' "<JIRA-KEY> docs(epic): Epic <N> — <title>: epic + stories" > "$MSG"
 cd "$PROJECT_ROOT" && git add _bmad-output/planning-artifacts/epics.md
 cd "$PROJECT_ROOT" && git diff --cached --stat                       # ONLY epics.md; anything else → unstage it

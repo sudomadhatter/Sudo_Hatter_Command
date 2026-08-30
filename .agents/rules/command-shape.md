@@ -33,6 +33,22 @@ when the extracted matcher proved piece-splitting; the doors were rewritten in S
    LAST command's status — the pipe hides the gate's own exit code (and `head` can kill the gate
    mid-run with SIGPIPE). Run gates bare; to capture, redirect (`> file 2>&1`) and read the file.
 
+### Absolute fills, and the lobby pin (close-out review, SCC-351)
+
+Two consequences of `cd <path> && …` that `git -C` never had, both measured in this lane's review:
+
+- **Fills are ABSOLUTE.** A `cd` moves the shell, so the SECOND `cd <same-relative-path> && …`
+  line in a fence runs from inside the first and dies. `PROJECT_ROOT` now binds absolute
+  (`smh-target-resolution.md` §BIND), tree fills are `"$PROJECT_ROOT"/.claude/worktrees/<slug>`,
+  and any other repeated fill is resolved once — `P=$(cd <fill> && pwd)` — then pinned as
+  `cd "$P" && …` per line.
+- **A lobby-relative script call after ANY `cd` needs the lobby pinned first.** The helper
+  scripts live in the LOBBY's `.agents/scripts/`; once a fence (or an earlier fence — cwd
+  persists between tool calls) has `cd`'d into a project or a worktree, a bare
+  `python3 .agents/scripts/<tool>.py` resolves against a tree that does not carry the script.
+  Capture `L=$(pwd)` at the top of the fence, before any `cd`, and pin the call:
+  `cd "$L" && python3 .agents/scripts/<tool>.py …`. (`L=` is on the Zoo allow list.)
+
 ## §Zoo — extra shape rules for Zoo Code seats (mirrored from the guide §8)
 
 - **One logical line per command.** No backslash continuations — the continuation lines become

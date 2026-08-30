@@ -90,6 +90,15 @@ def run_one(name: str) -> tuple[str, int, str]:
     finally:
         with _RUNNING_LOCK:
             _RUNNING.discard(p)
+    if p.returncode == 0 and not ((out or "").strip() or (err or "").strip()):
+        # ⛔ A green with ZERO output is a file that ran nothing - pytest-style functions with
+        # no __main__ block exit 0 silently under this bare runner, and the receipt then counts
+        # a gate that never fired (SCC-351 close-out: test_zoo_permissions.py scored green in a
+        # 65/65 receipt having executed no test). Every legitimate file prints its tally or its
+        # cases; a silent green is a defect. Guarded HERE, at the real child boundary, so
+        # run_pool's stubbed runners (test_suite_runner controls) stay pure.
+        return name, 1, (f"{name}: exit 0 with NO OUTPUT - this file executed nothing "
+                         f"(missing __main__ harness?)\n")
     return name, p.returncode, (out or "") + (err or "")
 
 

@@ -316,7 +316,11 @@ fi
 # The events dir is conditional too: it is tracked in this repo, but on first adoption of this
 # door (or a lightweight lane that recorded none) it does not exist, and `git add` 128s on a
 # pathspec that matches nothing - staging NOTHING, so the flight event is lost with it.
-if [ ${#PATHS[@]} -gt 0 ] && cd "<worktree>" && git status --porcelain -- "${PATHS[@]}" | grep -q .; then
+CHANGED=""
+if [ ${#PATHS[@]} -gt 0 ]; then
+  CHANGED=$(cd "<worktree>" && git status --porcelain -- "${PATHS[@]}")   # subshell — the door's cwd stays the shared checkout (SCC-351 review)
+fi
+if [ -n "$CHANGED" ]; then
   cd "<worktree>" && git add -- "${PATHS[@]}"
   cd "<worktree>" && git commit -F <msg>   # "<KEY> chore(recorder): flight event @ <sha7> [sop-ok]"
   cd "<worktree>" && git push

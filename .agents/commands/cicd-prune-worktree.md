@@ -119,7 +119,10 @@ if (Test-Path $root) {
     # directory looked known, and the sweep printed NOTHING while a real husk sat on disk.
     $isKnown = @($known | Where-Object { $_ -ieq $d.FullName.TrimEnd('\') }).Count -gt 0
     $hasGit  = Test-Path (Join-Path $d.FullName '.git')
-    $dirty   = if ($hasGit) { @(cd $d.FullName && git status --short).Count } else { 'n/a' }
+    # Push/Pop, not `cd … && …`: `&&` parses only on PowerShell 7+ (5.1 aborts the whole
+    # block), and a bare cd inside the expression leaks the process cwd into the LAST
+    # scanned tree — manufacturing Step 3's 'being used by another process' failure (SCC-351 review).
+    $dirty   = if ($hasGit) { Push-Location $d.FullName; $n = @(git status --short).Count; Pop-Location; $n } else { 'n/a' }
     $state   = if (-not $hasGit) { 'HUSK' } elseif ($isKnown) { 'LIVE' } else { 'LOST' }
     Write-Output "$state  $($d.Name)  (registered=$isKnown, .git=$hasGit, uncommitted=$dirty)"
   }
@@ -198,16 +201,16 @@ committed. Those are different questions and historically only one of them was b
 For **every** worktree Step 1.6 marked for removal:
 
 ```bash
-cd .claude/worktrees/<slug> && git status --short      # ANY output = unsaved work
+cd "$PROJECT_ROOT"/.claude/worktrees/<slug> && git status --short      # ANY output = unsaved work — absolute fill, or the SECOND tree's check silently skips (SCC-351 review)
 ```
 
 - **Empty** → nothing at risk, proceed.
 - **Any output** → **do NOT remove yet.** Commit it to its own branch and push, so the work becomes
   reproducible instead of unique to that disk:
   ```bash
-  cd .claude/worktrees/<slug> && git add <explicit paths>     # never `git add -A`
-  cd .claude/worktrees/<slug> && git commit -m "wip(<story>): preserve uncommitted work before worktree prune"
-  cd .claude/worktrees/<slug> && git push -u origin claude/<JIRA-KEY>-<slug>
+  cd "$PROJECT_ROOT"/.claude/worktrees/<slug> && git add <explicit paths>     # never `git add -A`
+  cd "$PROJECT_ROOT"/.claude/worktrees/<slug> && git commit -m "wip(<story>): preserve uncommitted work before worktree prune"
+  cd "$PROJECT_ROOT"/.claude/worktrees/<slug> && git push -u origin claude/<JIRA-KEY>-<slug>
   ```
   Then say plainly in the report that you committed someone else's in-flight work, what it was, and that
   the story's status is **unchanged** — a preservation commit is not progress and must never be reported as
