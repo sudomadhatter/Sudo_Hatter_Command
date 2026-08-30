@@ -155,10 +155,10 @@ Verdict: PASS @ 64619de4
 
 ## Code Review (2026-08-30, second pass — engine run at close-out)
 
-Verdict: PASS @ 9105020f
-Suite evidence measured @ 9105020f (run_all.py 65/65 through gate_receipt.py, clean tree; the lens
-fan-out ran against 64deae0c, fixes applied and re-gated at 43855a71 → docs additions re-gated at
-9105020f — all shas stated per the concurrency rule).
+Verdict: PASS @ 9684ab62
+Suite evidence measured @ 9684ab62 (run_all.py 65/65 through gate_receipt.py, clean tree; the lens
+fan-out ran against 64deae0c, fixes applied and re-gated at 43855a71 → docs at 9105020f → the blind lens's fixes at
+0a6b1203/9684ab62 — all shas stated per the concurrency rule).
 
 **Why a second section exists:** the first review above was run INLINE in the builder's own context
 while this runtime had a subagent tool — the exact SCC-203 state the roster law refuses — and the
@@ -169,23 +169,21 @@ so the real engine ran: 5-lens fan-out, each lens in a clean context and its own
 review-runtime: fan-out
 lens_isolation: worktree
 lenses_run:
+- blind-hunter · ok — first launch froze when the machine slept and was killed; relaunched in a
+  fresh clean context (diff-only, no tree) once the machine woke, full report returned
 - literal-correctness · ok
 - acceptance-auditor · ok
 - test-adequacy-auditor · ok
-- edge-case-hunter · recovered-inline — fan-out task froze when the machine SLEPT mid-run (40 min,
-  no output) and was killed by the operator's interrupt; rerun inline by the assessor over the
-  new/unreviewed hunks, probes executed against the real matcher mirror
-lenses_counted:  4/4
-lenses_na:
-- blind-hunter · n/a — context contaminated (its fan-out task froze in the same sleep and was
-  killed; the only remaining runtime was the builder's own context holding the plan, walkthrough
-  and fixes — dropped per SCC-203, never faked, never counted)
+- edge-case-hunter · recovered-inline — fan-out task froze in the same sleep and was killed; rerun
+  inline by the assessor over the new/unreviewed hunks, probes executed against the real matcher
+lenses_counted:  5/5
+lenses_na:       none
 
-dispositions:    per-lens: literal-correctness=11/0/1 · acceptance-auditor=9/0/2 · test-adequacy-auditor=7/0/2 · edge-case-hunter=1/0/0 (a multi-lens finding counts once per contributing lens)
-findings:        0 decision · 28 patch · 0 defer   (0 noise-dismissed · 5 relevance kills)
+dispositions:    per-lens: blind-hunter=13/0/0 · literal-correctness=11/0/1 · acceptance-auditor=9/0/2 · test-adequacy-auditor=7/0/2 · edge-case-hunter=1/0/0 (a multi-lens finding counts once per contributing lens)
+findings:        0 decision · 35 patch · 0 defer   (0 noise-dismissed · 5 relevance kills; 6 of blind's 13 independently corroborated already-patched findings)
 drift:           undeclared=0 · unimplemented=0 · incomplete=0 — after the amendment ledger rewrite (the plan's block regenerated from the real landed diff, 80 bullets; `_artifacts/` carved out by the grammar)
 severity_floor:  none — every critical/important patched in-lane before this verdict; no dead lens (edge recovered-inline; blind dropped-by-rule is n/a, not dead)
-notes:           two fan-out tasks froze when the Mac slept and were killed — edge took the inline ladder, blind was dropped; the step-2 verify wave ran as direct reproduction by the assessor (operator cost directive mid-review — no verifier/compound subagents spawned): every disposed finding above was re-proven by executing it (pytest + bare runs, matcher-mirror probes, sqlite behavioral tests), not by reading it.
+notes:           two fan-out tasks froze when the Mac slept and were killed — edge took the inline ladder; blind was relaunched clean post-wake (the roster gate refused the drop while a clean context was available, and it was right: the rerun found real defects); the step-2 verify wave ran as direct reproduction by the assessor (operator cost directive mid-review — no verifier/compound subagents spawned): every disposed finding above was re-proven by executing it (pytest + bare runs, matcher-mirror probes, sqlite behavioral tests), not by reading it.
 
 **Scope:** the full lane diff at 64deae0c (85 files) + the fixes it forced. **Method:** three
 fan-out lenses hunted clean; the assessor reproduced every load-bearing claim by execution before
@@ -206,7 +204,11 @@ patching (the two criticals were reproduced in one command each).
 | 9 | edge (inline) | suggestion | `OUT=$(mktemp)`/`MSG=$(mktemp)` still ASK — an assignment scores as its `$()` body and `mktemp` had no allow | applied @ 43855a71: `mktemp` allow row (allow 109→110), ceremony fixtures pin both spellings |
 | 10 | test-adequacy | suggestion | third verdict tier unpinned — nothing asserted `ask_user` | applied @ 43855a71: 7-row ASK battery (curl-pipe-sh, npx, brew, osascript, bare rm, node, make) |
 | 11 | acceptance | nitpick ×3 | count drift (70/20 prose vs 68/25 real; changelog 230 vs 229), ceremony fixture naming a non-existent runner path, guide link letter-misses | applied @ 43855a71: floors pinned ≥76, prose numberless, changelog corrected, fixture path fixed, apply-script + settings links added |
-| 12 | operator | — | the cross-agent doc asked for pre-compact was never written as its own page; the operator's rename of the Claude deep dive was sitting uncommitted | applied @ 1b6b52f5/9105020f: `terminal-global-permission.md` front door written; rename landed as `claude-terminal-permission.md` with freshness note |
+| 12 | blind | critical | standing-push door: `a && b || c && d` left-assoc ran the `checkout -B` RESET on the SUCCESS path — `--force-with-lease` would ship the loss to the open PR (reproduced) | applied @ 0a6b1203: braces restore the grouping; Zoo's one-time brace prompt documented in-line |
+| 13 | blind | important | deny `git push origin HEAD:` refused every story-landing/kickoff push (`HEAD:epic/…`) — the SCC-184 stranding shape, unfixable by prompt (deny = refusal) | applied @ 0a6b1203: `git push origin HEAD:epic/` re-allow + env twin (longest-prefix wins), ceremony fixtures pin both |
+| 14 | blind | important | the mirror split `2>&1` before stripping it — the shape-law's own recommended capture (`> log 2>&1`) scored ask; quoted-target `git push origin "main"` auto-ran | applied @ 0a6b1203: redirs masked pre-split like the real matcher; quoted-main denies + battery rows |
+| 15 | blind | imp/sugg | leftover relative-resolution stragglers in smh doors (link-assets arg, update-maps double-cd); dead locals in the mirror | applied @ 0a6b1203: lobby-resolved arg lines, single-cd chain |
+| 16 | operator | — | the cross-agent doc asked for pre-compact was never written as its own page; the operator's rename of the Claude deep dive was sitting uncommitted | applied @ 1b6b52f5/9105020f: `terminal-global-permission.md` front door written; rename landed as `claude-terminal-permission.md` with freshness note |
 
 **Relevance kills (true, not worth implementing — one line each):** smh review doors running the
 lane's own tool copies (correct for lane review — the lane IS the subject); `--status` drift on this
