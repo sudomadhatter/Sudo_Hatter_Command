@@ -23,7 +23,7 @@ When Claude Code executes inside a Git worktree (`.claude/worktrees/*`), it look
    - `permissions.allow: [...]` (Approved command patterns)
 
 > [!IMPORTANT]
-> Both the lobby (`Sudo_Hatter_Command/.claude/settings.local.json`) and individual project repositories (e.g. `Projects/AGY_AVIATIONCHAT/.claude/settings.local.json`) must carry local settings with `sandbox.enabled: true` and `autoAllowBashIfSandboxed: true`. If disabled locally, local settings override the global config and disable sandbox auto-approval.
+> Both the lobby and each project repository (e.g. AGY_AVIATIONCHAT) must carry a machine-local *settings.local.json* under its own `.claude/` with `sandbox.enabled: true` and `autoAllowBashIfSandboxed: true`. If disabled locally, local settings override the global config and disable sandbox auto-approval.
 
 ### 2. Worktree Asset Linking
 
