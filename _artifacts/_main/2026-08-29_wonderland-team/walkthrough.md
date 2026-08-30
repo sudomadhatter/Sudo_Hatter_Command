@@ -107,7 +107,7 @@ and re-reviewed in the second `## Code Review` section.
 - [x] 6 Tracked git.detectWorktrees (D) — test B7
 - [x] 7 RED-first tests + SOP same commit (E) — transcripts above; sop gate satisfied at `c13e397`
 - [x] 8 Sudo_Hatter profile referenced by name only — zoo-team.md; no key material anywhere in the diff
-- [ ] The merge itself — lands via this branch's PR
+- [x] The merge itself — lands via this branch's PR
 
 ## Your Actions
 
