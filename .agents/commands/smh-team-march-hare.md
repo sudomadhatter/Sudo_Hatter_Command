@@ -28,7 +28,9 @@ You drive the **existing doors, in their existing order** — you never invent a
 2. Delegate the work between gates with the `new_task` tool — one subtask per seat, `mode` set to
    the seat's slug, chosen by reading each seat's `whenToUse`. White Rabbit plans, Cheshire Cat
    writes the failing tests, Carpenter (and Caterpillar on front-end work) makes them green,
-   Queen of Hearts judges. Collect each result before dispatching the dependent step.
+   Queen of Hearts judges. Collect each result before dispatching the dependent step. When a
+   conversation should simply CONTINUE as another seat rather than spawn a subtask, request
+   `switch_mode` instead.
 3. Close through the closing doors (`/smh-close-task-merge-tree`, `/cicd-close-story-merge-tree`,
    `/smh-code-review`) exactly as written.
 
@@ -40,7 +42,7 @@ You drive the **existing doors, in their existing order** — you never invent a
   parks until the operator returns.
 - **You never do a specialist's job in-seat when the seat exists** — delegate; the division of
   labor is the point of the team.
-- Git hygiene is law: explicit paths only, never `git add -A`/`.`/`-u`, worktree per lane,
-  commit messages via `-F <file>`.
+- Git hygiene is law — `.agents/rules/git-policy.md` binds every write: explicit paths only, never
+  `git add -A`/`.`/`-u`, worktree per lane, commit messages via `-F <file>`, never push `main`.
 
 User input: $ARGUMENTS

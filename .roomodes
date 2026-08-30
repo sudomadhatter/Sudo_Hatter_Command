@@ -9,7 +9,7 @@ customModes:
       doors and its refusals. The team law is in .roo/rules/zoo-team.md;
       AGENTS.md is the front door. Never improvise the seat.
     whenToUse: >-
-      March Hare — TEAM LEAD. The operator's orchestrator and autopilot. Pick this seat to run a whole ticket unattended - it plans...
+      March Hare — TEAM LEAD. The operator's orchestrator and autopilot. Pick this seat to run a whole ticket unattended - it plans, delegates to the other seats, and parks at merge-ready. Only the operator lands a merge.
     groups:
       - read
       - edit
@@ -23,7 +23,7 @@ customModes:
       doors and its refusals. The team law is in .roo/rules/zoo-team.md;
       AGENTS.md is the front door. Never improvise the seat.
     whenToUse: >-
-      White Rabbit — PM. The operator's default daily seat. Pick it to brainstorm, research the repo, shape tickets, and plan work - it...
+      White Rabbit — PM. The operator's default daily seat. Pick it to brainstorm, research the repo, shape tickets, and plan work - it keeps the clock, the board, and the queue, and hands builds to the specialist seats.
     groups:
       - read
       - edit
@@ -36,7 +36,7 @@ customModes:
       doors and its refusals. The team law is in .roo/rules/zoo-team.md;
       AGENTS.md is the front door. Never improvise the seat.
     whenToUse: >-
-      Carpenter — ENGINEER. The full-stack builder. Pick this seat to implement an approved plan - it works red-to-green in the lane's...
+      Carpenter — ENGINEER. The full-stack builder. Pick this seat to implement an approved plan - it works red-to-green in the lane's worktree, commits with the ticket key, and hands the diff to QA.
     groups:
       - read
       - edit
@@ -49,7 +49,7 @@ customModes:
       doors and its refusals. The team law is in .roo/rules/zoo-team.md;
       AGENTS.md is the front door. Never improvise the seat.
     whenToUse: >-
-      Caterpillar — DESIGNER. The front-end and design seat. Pick it for UI work, design systems, and anything the user will see - it...
+      Caterpillar — DESIGNER. The front-end and design seat. Pick it for UI work, design systems, and anything the user will see - it carries the design skills and builds interfaces worth shipping.
     groups:
       - read
       - edit
@@ -62,7 +62,7 @@ customModes:
       doors and its refusals. The team law is in .roo/rules/zoo-team.md;
       AGENTS.md is the front door. Never improvise the seat.
     whenToUse: >-
-      Cheshire Cat — TESTER. The red-first test writer. Pick this seat before any build - it writes the failing tests that define done...
+      Cheshire Cat — TESTER. The red-first test writer. Pick this seat before any build - it writes the failing tests that define done, designs the test strategy, and proves every trap can actually fire.
     groups:
       - read
       - edit
@@ -75,7 +75,10 @@ customModes:
       doors and its refusals. The team law is in .roo/rules/zoo-team.md;
       AGENTS.md is the front door. Never improvise the seat.
     whenToUse: >-
-      Queen of Hearts — QA. The edit-stripped judge. Pick this seat to review a diff, audit a plan, or rule on quality - it runs the...
+      Queen of Hearts — QA. The edit-stripped judge. Pick this seat to review a diff, audit a plan, or rule on quality - it runs the review and audit doors and hands down verdicts; its pen only reaches the review record, never the code.
     groups:
       - read
+      - - edit
+        - fileRegex: ^_artifacts/.*\.md$
+          description: review records only - never the work under judgment
       - command

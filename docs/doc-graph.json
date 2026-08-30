@@ -7,7 +7,7 @@
     "files": 422,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 769,
+    "edges": 770,
     "external": 40,
     "ambiguous": 177,
     "dangling": 301,
@@ -569,7 +569,7 @@
     {
       "path": ".agents/commands/smh-team-march-hare.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": ".agents/commands/smh-team-queen-of-hearts.md",
@@ -758,7 +758,7 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 61,
+      "in": 62,
       "out": 3
     },
     {
@@ -3303,6 +3303,11 @@
     {
       "from": ".agents/commands/smh-team-cheshire-cat.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-march-hare.md",
+      "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
     {

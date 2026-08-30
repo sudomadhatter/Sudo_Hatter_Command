@@ -35,25 +35,36 @@ from _harness import SCRIPTS, Cases
 ROOT = SCRIPTS.parents[1]
 
 LAW_SLUGS = {"orchestrator", "architect", "code", "ask", "debug", "designer"}
-NO_EDIT_SLUGS = {"ask"}                    # the QA seat judges; the platform strips its pen
+NO_EDIT_SLUGS = {"ask"}          # the QA seat judges; the platform SCOPES its pen (see QA_PEN)
 BASE_GROUPS = {"read", "command"}          # every seat carries these
+# The QA seat's pen is RESTRICTED, not absent (SCC-350 review): her own doors must append the
+# verdict/self-audit into artifacts markdown, so she carries a fileRegex-scoped edit group that
+# reaches ONLY the review record. A bare `edit` on her is a breach; a missing scoped pen breaks
+# her own doors. Everyone else needs the bare pen.
+QA_PEN = r"edit@^_artifacts/.*\.md$"
 
 # name = emoji cluster · space · Regular-case character name · space-emdash-space · ALL-CAPS role
 NAME_RE = re.compile(r"^(?P<emoji>\S+) (?P<name>[A-Z][A-Za-z]*(?: [A-Za-z]+)*) — (?P<role>[A-Z][A-Z &]*)$")
 
 
 def parse_roomodes(text: str) -> list[dict]:
-    """Parse the GENERATED .roomodes shape (never a general YAML parser — stdlib only)."""
+    """Parse the GENERATED .roomodes shape (never a general YAML parser — stdlib only).
+
+    A RESTRICTED group — Zoo's `[edit, {fileRegex}]` tuple, emitted as a nested block list —
+    parses to the token `edit@<regex>`, so the law can tell a scoped pen from a bare one.
+    """
     modes: list[dict] = []
     for chunk in re.split(r"(?m)^  - slug: ", text)[1:]:
         slug = chunk.split("\n", 1)[0].strip()
         name_m = re.search(r'(?m)^    name: "(.*)"$', chunk) or re.search(r"(?m)^    name: (.+)$", chunk)
-        groups = re.findall(r"(?m)^      - (\S+)$", chunk)
+        groups = set(re.findall(r"(?m)^      - ([a-z]+)$", chunk))
+        for gm in re.finditer(r"(?m)^      - - (\w+)\n        - fileRegex: (\S+)", chunk):
+            groups.add(f"{gm.group(1)}@{gm.group(2)}")
         role_m = re.search(r"(?ms)^    roleDefinition: >-\n(.*?)(?=^    \w|\Z)", chunk)
         modes.append({
             "slug": slug,
             "name": name_m.group(1).strip() if name_m else "",
-            "groups": set(groups),
+            "groups": groups,
             "roledef": role_m.group(1) if role_m else chunk,
         })
     return modes
@@ -63,7 +74,13 @@ def mode_problems(text: str) -> list[str]:
     """Every way a .roomodes can break the team law, named so the failure reads itself."""
     problems: list[str] = []
     modes = parse_roomodes(text)
-    slugs = {m["slug"] for m in modes}
+    slug_list = [m["slug"] for m in modes]
+    dups = sorted({s for s in slug_list if slug_list.count(s) > 1})
+    if dups:
+        # A set-compare alone cannot see this (review finding: a duplicated slug collapsed
+        # silently); Zoo resolves one of the two at random and the picker lies.
+        problems.append(f"duplicate slug(s): {dups}")
+    slugs = set(slug_list)
     if slugs != LAW_SLUGS:
         problems.append(f"slug set {sorted(slugs)} != law {sorted(LAW_SLUGS)}")
     for m in modes:
@@ -75,22 +92,40 @@ def mode_problems(text: str) -> list[str]:
                 problems.append(f"{m['slug']}: name has no emoji prefix")
             if not re.search(r"[a-z]", nm.group("name")):
                 problems.append(f"{m['slug']}: character name {nm.group('name')!r} is not regular case")
+        if '"' in m["name"] or "\\" in m["name"]:
+            # stdlib bars a real YAML parse; these are the two characters that break the
+            # generated double-quoted scalar for the consumer while regex parsing stays green.
+            problems.append(f"{m['slug']}: name carries a YAML-breaking character")
         missing = BASE_GROUPS - m["groups"]
         if missing:
             problems.append(f"{m['slug']}: groups missing {sorted(missing)}")
-        if m["slug"] in NO_EDIT_SLUGS and "edit" in m["groups"]:
-            problems.append(f"{m['slug']}: QA seat carries `edit` — the strip is the refusal")
-        if m["slug"] not in NO_EDIT_SLUGS and "edit" not in m["groups"]:
+        if m["slug"] in NO_EDIT_SLUGS:
+            if "edit" in m["groups"]:
+                problems.append(f"{m['slug']}: QA seat carries a BARE `edit` — the scoped pen is the law")
+            if QA_PEN not in m["groups"]:
+                problems.append(f"{m['slug']}: QA seat lost her scoped pen — her own doors "
+                                "write the review record")
+        elif "edit" not in m["groups"]:
             problems.append(f"{m['slug']}: working seat has no `edit` group")
     return problems
 
 
-def fixture(names_groups: dict[str, tuple[str, list[str]]]) -> str:
+def fixture(names_groups) -> str:
+    """Accepts a dict OR a list of (slug, name, groups) tuples — the list form is what lets a
+    fixture carry a DUPLICATE slug, which a dict cannot represent."""
+    entries = (names_groups.items() if isinstance(names_groups, dict)
+               else [(s, (n, g)) for s, n, g in names_groups])
     lines = ["# GENERATED fixture", "customModes:"]
-    for slug, (name, groups) in names_groups.items():
+    for slug, (name, groups) in entries:
         lines += [f"  - slug: {slug}", f'    name: "{name}"',
                   "    roleDefinition: >-", f"      Read .agents/commands/smh-team-x.md ({slug}).",
-                  "    groups:"] + [f"      - {g}" for g in groups]
+                  "    groups:"]
+        for g in groups:
+            if "@" in g:
+                tool, rx = g.split("@", 1)
+                lines += [f"      - - {tool}", f"        - fileRegex: {rx}"]
+            else:
+                lines.append(f"      - {g}")
     return "\n".join(lines) + "\n"
 
 
@@ -98,14 +133,17 @@ GOOD = {
     "orchestrator": ("🫖🐰 March Hare — TEAM LEAD", ["read", "edit", "command", "mcp"]),
     "architect":    ("⏰🐇 White Rabbit — PM", ["read", "edit", "command"]),
     "code":         ("🔨🪚 Carpenter — ENGINEER", ["read", "edit", "command"]),
-    "ask":          ("♥️👑 Queen of Hearts — QA", ["read", "command"]),
+    "ask":          ("♥️👑 Queen of Hearts — QA", ["read", QA_PEN, "command"]),
     "debug":        ("😼 Cheshire Cat — TESTER", ["read", "edit", "command"]),
     "designer":     ("🦋 Caterpillar — DESIGNER", ["read", "edit", "command"]),
 }
 
 
 def frontmatter(path: Path) -> dict[str, str]:
-    raw = path.read_text(encoding="utf-8")
+    # utf-8-sig, deliberately: a PS 5.1 `>` redirect writes a BOM, and a BOM under plain utf-8
+    # makes `^---` unmatchable — frontmatter "vanishes" and every downstream message points at
+    # the generator instead of the byte (wf_common.py documents the same trap).
+    raw = path.read_text(encoding="utf-8-sig")
     m = re.match(r"(?s)^---\r?\n(.*?)\r?\n---", raw)
     out: dict[str, str] = {}
     if m:
@@ -123,12 +161,32 @@ def main() -> int:
         c.check("the six-seat fixture is clean", mode_problems(fixture(GOOD)) == [],
                 " | ".join(mode_problems(fixture(GOOD))))
         bad = dict(GOOD); bad["ask"] = ("♥️👑 Queen of Hearts — QA", ["read", "edit", "command"])
-        c.check("QA seat carrying `edit` is caught (the strip can actually fail)",
-                any("QA seat carries" in p for p in mode_problems(fixture(bad))))
+        c.check("QA seat carrying a BARE `edit` is caught (the scoped pen can actually fail)",
+                any("BARE" in p for p in mode_problems(fixture(bad))))
+        bad = dict(GOOD); bad["ask"] = ("♥️👑 Queen of Hearts — QA", ["read", "command"])
+        c.check("QA seat with NO scoped pen is caught (her own doors write the record)",
+                any("lost her scoped pen" in p for p in mode_problems(fixture(bad))))
+        bad = dict(GOOD); bad["debug"] = ('😼 Cheshire "Cat" — TESTER', ["read", "edit", "command"])
+        c.check("a YAML-breaking character in a name is caught (stdlib bars a real YAML parse)",
+                any("YAML-breaking" in p for p in mode_problems(fixture(bad))))
         bad = dict(GOOD); bad["orchestrator"] = ("🫖🐰 March Hare — team lead", ["read", "edit", "command"])
-        c.check("a lowercase role is caught", mode_problems(fixture(bad)) != [])
+        c.check("a lowercase role is caught",
+                any("name law" in p or "not regular case" in p for p in mode_problems(fixture(bad))))
         bad = dict(GOOD); bad["code"] = ("Carpenter — ENGINEER", ["read", "edit", "command"])
-        c.check("a missing emoji prefix is caught", mode_problems(fixture(bad)) != [])
+        c.check("a bare name with no leading token is caught",
+                any("name law" in p for p in mode_problems(fixture(bad))))
+        # The emoji BRANCH needs a name that survives NAME_RE — a word-shaped ASCII prefix.
+        # (Review finding: the fixture above dies at the regex, so the ord()>0x2000 branch was
+        # deletable with the file staying green.)
+        bad = dict(GOOD); bad["code"] = ("Mr Carpenter — ENGINEER", ["read", "edit", "command"])
+        c.check("an ASCII word prefix (no emoji) is caught by the emoji branch itself",
+                any("no emoji prefix" in p for p in mode_problems(fixture(bad))))
+        bad = dict(GOOD); bad["architect"] = ("⏰🐇 White Rabbit — PM", ["read", "command"])
+        c.check("a WORKING seat silently stripped of `edit` is caught (the inverse of the QA strip)",
+                any("working seat has no" in p for p in mode_problems(fixture(bad))))
+        dup = [(s, n, g) for s, (n, g) in GOOD.items()] + [("code", "🔨 Ship Wright — ENGINEER", ["read", "edit", "command"])]
+        c.check("a DUPLICATE slug is caught (a set-compare alone cannot see it)",
+                any("duplicate slug" in p for p in mode_problems(fixture(dup))))
         bad = dict(GOOD); bad["debug"] = ("😼 CHESHIRE CAT — TESTER", ["read", "edit", "command"])
         c.check("an ALL-CAPS character name (the pre-correction shape) is caught",
                 any("regular case" in p or "name law" in p for p in mode_problems(fixture(bad))))
@@ -142,7 +200,7 @@ def main() -> int:
 
     if c.block("B · the live tree"):
         roomodes = ROOT / ".roomodes"
-        text = roomodes.read_text(encoding="utf-8") if roomodes.is_file() else ""
+        text = roomodes.read_text(encoding="utf-8-sig") if roomodes.is_file() else ""
         c.check("B1 .roomodes exists", bool(text))
         probs = mode_problems(text)
         c.check("B2 the live .roomodes satisfies the whole team law (slugs · names · groups)",
@@ -165,11 +223,24 @@ def main() -> int:
             if fm.get("mode-name", "").strip('"') != m["name"]:
                 bad_master.append(f"{slug}: generated name {m['name']!r} != master mode-name")
             declared = {g.strip() for g in fm.get("mode-groups", "").strip("[]").split(",") if g.strip()}
+            # the master's `edit-artifacts` token IS the generated scoped pen — one vocabulary
+            # on the authoring side, the expanded [edit, {fileRegex}] tuple on the wire.
+            declared = {QA_PEN if g == "edit-artifacts" else g for g in declared}
             if declared != m["groups"]:
                 bad_master.append(f"{slug}: generated groups {sorted(m['groups'])} != master {sorted(declared)}")
-            plats = fm.get("platforms", "")
-            if "zoo" not in plats:
-                bad_master.append(f"{slug}: master platforms {plats!r} lacks zoo")
+            plats = [x.strip() for x in fm.get("platforms", "").strip("[]").split(",") if x.strip()]
+            if plats != ["zoo"]:
+                bad_master.append(f"{slug}: master platforms {plats!r} != ['zoo']")
+            # whenToUse ships the FULL description - the 135-char Antigravity cut amputated the
+            # delegation signal (review finding); this row is what keeps it amputation-free.
+            wtu_m = re.search(r"(?ms)^    whenToUse: >-\n(.*?)(?=^    \S|\Z)",
+                              text.split(f"- slug: {slug}\n", 1)[1].split("\n  - slug: ")[0]
+                              if f"- slug: {slug}\n" in text else "")
+            wtu_text = " ".join(l.strip() for l in wtu_m.group(1).splitlines()).strip() if wtu_m else ""
+            desc = fm.get("description", "").strip().strip('"').strip("'")
+            if desc and wtu_text != desc:
+                bad_master.append(f"{slug}: whenToUse != master description "
+                                  f"(truncated or stale: {wtu_text[-30:]!r})")
         c.check("B3 every mode is generated FROM its master frontmatter (one source, current)",
                 not bad_master, " | ".join(bad_master))
 
@@ -177,38 +248,108 @@ def main() -> int:
         qa_text = qa.read_text(encoding="utf-8") if qa.is_file() else ""
         c.check("B4 the QA master states the no-edit refusal in prose too",
                 bool(re.search(r"(?i)never (edits?|writes?|touch)", qa_text)),
-                "team-queen-of-hearts.md missing the refusal (or the file)")
+                "" if re.search(r"(?i)never (edits?|writes?|touch)", qa_text)
+                else "smh-team-queen-of-hearts.md missing the refusal (or the file)")
 
         retired = [d for d in ("analyst", "dev", "pm", "tech-writer", "ux-designer")
                    if (ROOT / ".roo" / f"rules-{d}").is_dir()]
-        no_dir = [s for s in sorted(LAW_SLUGS)
-                  if not (ROOT / ".roo" / f"rules-{s}" / "01-persona.md").is_file()]
-        c.check("B5 seat rule dirs exist; retired persona dirs are pruned",
-                not retired and not no_dir, f"retired-still-present={retired} missing={no_dir}")
+        # Currency, not existence (review finding: a stale rules-architect naming the RETIRED
+        # BMAD master passed when this row read only is_file()). Each seat rule must be
+        # GENERATED-marked and name the same master and mode-name its .roomodes entry does.
+        bad_rule: list[str] = []
+        for s in sorted(LAW_SLUGS):
+            pf = ROOT / ".roo" / f"rules-{s}" / "01-persona.md"
+            if not pf.is_file():
+                bad_rule.append(f"{s}: 01-persona.md missing")
+                continue
+            body = pf.read_text(encoding="utf-8-sig")
+            m = modes.get(s, {})
+            tgt = re.search(r"\.agents/commands/(smh-team-[a-z-]+\.md)", m.get("roledef", ""))
+            if "GENERATED by sync-agents" not in body:
+                bad_rule.append(f"{s}: no GENERATED marker (hand-authored shadow?)")
+            elif tgt and tgt.group(1) not in body:
+                bad_rule.append(f"{s}: names a different master than .roomodes ({tgt.group(1)} absent)")
+            elif m.get("name") and m["name"] not in body:
+                bad_rule.append(f"{s}: seat rule does not carry the mode name {m['name']!r}")
+        c.check("B5 seat rules are GENERATED, CURRENT, and retired persona dirs are pruned",
+                not retired and not bad_rule,
+                f"retired-still-present={retired} bad={bad_rule}")
 
         team_rule = ROOT / ".roo" / "rules" / "zoo-team.md"
         master_rule = ROOT / ".agents" / "rules" / "zoo-team.md"
         ok_cur = False
         detail = "copy or master absent"
         if team_rule.is_file() and master_rule.is_file():
-            raw = master_rule.read_text(encoding="utf-8")
+            raw = master_rule.read_text(encoding="utf-8-sig")
             m2 = re.match(r"(?s)^---.*?\r?\n---\r?\n", raw)
             body = raw[m2.end():].lstrip("\r\n") if m2 else raw
-            copy = team_rule.read_text(encoding="utf-8").split("\n", 1)
+            copy = team_rule.read_text(encoding="utf-8-sig").split("\n", 1)
             ok_cur = len(copy) == 2 and copy[1] == body
             detail = "copy differs from master — run /smh-sync-agents" if not ok_cur else ""
         c.check("B6 the team rule reaches every Zoo seat, CURRENT with its master", ok_cur, detail)
 
         vs = ROOT / ".vscode" / "settings.json"
-        vs_text = vs.read_text(encoding="utf-8") if vs.is_file() else ""
+        vs_text = vs.read_text(encoding="utf-8-sig") if vs.is_file() else ""
         stripped = re.sub(r"(?m)^\s*//.*$", "", vs_text)
+        parse_err = ""
         try:
             vs_json = json.loads(stripped)
-        except ValueError:
+        except ValueError as e:
             vs_json = {}
+            parse_err = f" (settings.json did not parse after comment-strip: {e})"
         c.check("B7 tracked .vscode/settings.json ships git.detectWorktrees=true (PC parity)",
                 vs_json.get("git.detectWorktrees") is True,
-                f"value={vs_json.get('git.detectWorktrees')!r}")
+                "" if vs_json.get("git.detectWorktrees") is True
+                else f"value={vs_json.get('git.detectWorktrees')!r}{parse_err}")
+
+    if c.block("C · the GENERATOR source agrees with what it generated (currency, not faith)"):
+        # Recomputed here, never borrowed from block B: a `--case "C ·"` filtered run must not
+        # NameError on block-B locals (the harness filter runs blocks independently).
+        roomodes = ROOT / ".roomodes"
+        text = roomodes.read_text(encoding="utf-8-sig") if roomodes.is_file() else ""
+        modes = {m["slug"]: m for m in parse_roomodes(text)}
+        # These two regexes MIRROR sync-agents.ps1's seat-frontmatter readers ON PURPOSE - the
+        # ps1 demands the quotes and the brackets, while frontmatter() above forgives their
+        # absence. A master authored unquoted keeps every B check green while the NEXT sync
+        # silently skips the seat and a stock Zoo mode returns to the picker (review finding).
+        ps1_name_re = re.compile(r'^mode-name:\s*"(.+)"\s*$')
+        ps1_groups_re = re.compile(r"^mode-groups:\s*\[(.+)\]\s*$")
+        c.check("C0 the mirrored regexes can actually REJECT (unquoted / unbracketed mutants)",
+                not ps1_name_re.match("mode-name: Bare March Hare — TEAM LEAD")
+                and not ps1_groups_re.match("mode-groups: read, command")
+                and bool(ps1_name_re.match('mode-name: "🫖🐰 March Hare — TEAM LEAD"')))
+        ps1 = (ROOT / ".agents" / "scripts" / "sync-agents.ps1").read_text(encoding="utf-8-sig")
+        code = "\n".join(l for l in ps1.splitlines() if not l.lstrip().startswith("#"))
+        table = re.findall(r"@\{\s*Slug\s*=\s*'([a-z-]+)';\s*Master\s*=\s*'(smh-team-[a-z-]+\.md)'",
+                           code)
+        c.check("C1 the ps1 $seats table carries exactly the law's six slugs",
+                {s for s, _ in table} == LAW_SLUGS and len(table) == 6,
+                f"table={table}")
+        bad_fm: list[str] = []
+        for s, master_name in sorted(table):
+            mp = ROOT / ".agents" / "commands" / master_name
+            if not mp.is_file():
+                bad_fm.append(f"{s}: {master_name} missing")
+                continue
+            head = mp.read_text(encoding="utf-8-sig").splitlines()[:12]
+            if not any(ps1_name_re.match(l) for l in head):
+                bad_fm.append(f"{s}: no ps1-parseable mode-name in the first 12 lines")
+            if not any(ps1_groups_re.match(l) for l in head):
+                bad_fm.append(f"{s}: no ps1-parseable mode-groups in the first 12 lines")
+        c.check("C2 every seat master parses under the ps1's OWN stricter regexes, within its "
+                "12-line read window", not bad_fm, " | ".join(bad_fm))
+        c.check("C3 .roomodes carries one mode per table row (a skipped seat resurrects a stock "
+                "Zoo mode)", len(parse_roomodes(text)) == len(table),
+                f"modes={len(parse_roomodes(text))} table={len(table)}")
+        pair_bad = [f"{s}: table says {mn}, .roomodes says otherwise" for s, mn in table
+                    if s in modes and mn not in modes[s].get("roledef", "")]
+        c.check("C4 each mode's roleDefinition names the SAME master as the ps1 table row",
+                not pair_bad, " | ".join(pair_bad))
+        floor_m = re.search(r"\$floor\s*=\s*@\(([^)]*)\)", code)
+        c.check("C5 the ps1 zoo floor-copy list carries zoo-team.md (its ONLY publisher — the "
+                "tracked copy stays byte-equal for a while after a silent drop)",
+                bool(floor_m) and "zoo-team.md" in floor_m.group(1),
+                floor_m.group(1) if floor_m else "no $floor assignment found")
 
     return c.finish()
 

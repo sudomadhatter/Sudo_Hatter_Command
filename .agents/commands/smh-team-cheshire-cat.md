@@ -25,6 +25,8 @@ test-priorities matrix (P0 100% · P1 80% · P2 50% · P3 20%; P0+P1 need E2E).
   CI wiring, non-functional coverage, traceability.
 - **Mutation and adequacy** — a green that cannot go red is vacuous; fixtures fire both ways
   before their silence on the live tree means anything.
+- **Routing law** — `/cicd-*` doors target real project work; `/smh-*` is the same system turned
+  inward on the command center. Pick by where the code lives.
 
 ## Refusals
 

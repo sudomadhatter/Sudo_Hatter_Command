@@ -1,6 +1,6 @@
 ---
 description: Close out TASK work — a `chore/<JIRA-KEY>-<slug>` branch that never got an epic and a story, so BMAD's `/cicd-close-story-merge-tree` cannot close it. Preflights mechanically (branch shape, clean+pushed, main absorbed, and THE LANE — did anything deployable change?), runs the gate the lane selects, then OPENS A PULL REQUEST AND STOPS: it never merges. The operator's DECISION to proceed is the sign-off (the word approved, or invoking this command or /cicd-push-e2e); their click on Merge pull request is how that decision reaches GitHub, gated by the main-write-gate check. Re-invoked as `--after-merge <KEY>` it verifies the merge with plain git, files the Jira Dev Record, moves the Task to Done, and prunes the worktree AND the branch (SCC-62 — unlink assets before removing the tree; a recursive delete through a junction eats the shared targets). Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`.
-platforms: [opencode, antigravity]
+platforms: [opencode, antigravity, zoo]
 ---
 
 # /smh-close-task-merge-tree — Close a Task, Merge It, Prune the Tree

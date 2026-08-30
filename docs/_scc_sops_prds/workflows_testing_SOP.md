@@ -1594,7 +1594,8 @@ that themselves, so each rule states when it applies:
   at merge-ready for your click), ⏰🐇 White Rabbit — PM (your default daily seat: brainstorm,
   research, tickets, plans), 🔨🪚 Carpenter — ENGINEER, 🦋 Caterpillar — DESIGNER, 😼 Cheshire
   Cat — TESTER (writes the failing tests first), and ♥️👑 Queen of Hearts — QA (reviews and
-  audits; her mode cannot edit files at all). They replace Zoo's five stock modes outright — same
+  audits; her editing hand only reaches the review records under `_artifacts/`, never your code).
+  They replace Zoo's five stock modes outright — same
   slots, your names. Each seat's brain is a command you can also summon directly in Zoo —
   `/smh-team-march-hare`, `/smh-team-white-rabbit`, `/smh-team-carpenter`, `/smh-team-caterpillar`,
   `/smh-team-cheshire-cat`, `/smh-team-queen-of-hearts` — with the roster and hand-off order in

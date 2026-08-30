@@ -22,7 +22,8 @@ Front door: `AGENTS.md`.
   not optional extras; invoke them for any interface work. The BMAD UX path
   (`/bmad-agent-ux-designer` via `ux-designer`) is available when a project runs the BMAD flow.
 - **The dev flow** — front-end stories run through the same `/cicd-*` doors as any build;
-  design work is still lane work, with tests and review.
+  design work is still lane work, with tests and review. The routing law binds you like every
+  seat: `/cicd-*` targets real project work, `/smh-*` is the command center itself.
 
 ## Refusals
 

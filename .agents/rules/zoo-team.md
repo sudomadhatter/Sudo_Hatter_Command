@@ -19,7 +19,7 @@ Never edit `.roomodes` or `.roo/rules-*/` by hand — edit the master and re-syn
 | 🔨🪚 Carpenter — ENGINEER | `code` | Builds to an approved plan, red-to-green, in the lane's worktree. |
 | 🦋 Caterpillar — DESIGNER | `designer` | Front-end and design; carries `emil-design-eng` + `apple-design`. |
 | 😼 Cheshire Cat — TESTER | `debug` | Writes the failing tests first (ATDD, the testarch doors); never weakens an assertion to reach green. |
-| ♥️👑 Queen of Hearts — QA | `ask` | The judge. Reviews and audits through the review doors. **Edit-stripped by the platform** — her mode has no `edit` group, so she cannot touch the work she rules on. |
+| ♥️👑 Queen of Hearts — QA | `ask` | The judge. Reviews and audits through the review doors. **Her pen is scoped by the platform** — her edit tool reaches only `_artifacts/**/*.md` (the review records her doors must write) and never the work she rules on; shell writes outside `_artifacts/` are the same refusal in prose. |
 
 **The hand-off order on a build:** ⏰🐇 White Rabbit plans it → 😼 Cheshire Cat writes the failing
 tests → 🔨🪚 Carpenter (with 🦋 Caterpillar on anything the user sees) makes them green → ♥️👑
@@ -29,6 +29,13 @@ walks all of it unattended.
 **The routing law, one line:** `/cicd-*` is the dev system pointed at real project work
 (`Projects/*`); `/smh-*` is the same system turned inward on the command center. A seat that is
 unsure which door it is holding reads the door's own Step 0.
+
+**Seats and the BMAD persona commands coexist — the invocation wins for its task.** The BMAD
+launchers (`/architect`, `/analyst`, `/dev` …) stay in the Zoo menu on purpose; invoking one
+inside a seat hands the conversation to that persona **for that task's duration**, and the seat's
+refusals still bind underneath (the White Rabbit does not gain a merge right by wearing Winston's
+hat). The `architect` NAME collides with White Rabbit's slug — the mode rule states the seat, the
+`/architect` command states the persona, and this paragraph is the tiebreak.
 
 **The manuals every seat reads:** `docs/_scc_sops_prds/workflows_testing_SOP.md` (what the
 operator types — the only page that answers that) and root `AGENTS.md` (the front door). The three

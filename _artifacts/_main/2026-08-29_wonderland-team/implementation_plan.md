@@ -66,7 +66,7 @@ automatically. The `.roomodes` header comment updates to name SCC-350.
 
 One shared rule: the roster map (who the seats are, who hands to whom — PM plans → TESTER writes
 red → ENGINEER/DESIGNER build → QA judges → MARCH HARE optionally drives it all), the routing law,
-the manual pointers ([workflows_testing_SOP.md](../../docs/_scc_sops_prds/workflows_testing_SOP.md)
+the manual pointers ([workflows_testing_SOP.md](../../../docs/_scc_sops_prds/workflows_testing_SOP.md)
 + `AGENTS.md`), and the **Sudo_Hatter** Zoo configuration profile referenced **by name only** (the
 profile export carries API keys; it never enters git). Sync-ZooSurfaces adds it to the `.roo/rules/`
 copy list (fourth copy, Zoo-wide — every mode loads that folder), frontmatter-stripped like the
@@ -123,6 +123,13 @@ Operator's visual proof (Your Actions): reload VS Code, open the Zoo mode picker
 tiles in Zoo's Auto-Approve panel (per machine — `alwaysAllowModeSwitch` / `alwaysAllowSubtasks`
 live in extension state, not in git; same panel as the SCC-346 toggles).
 
+**Amendment (2026-08-29, build time, recorded at review):** the six seat masters are
+`smh-team-*.md`, not `team-*.md` — `workflow_lint.py`'s CLOSED naming law (lines 288–317) rejects
+any command outside the `cicd-`/`smh-`/`sentry-`/vendor families, so the rename was forced with
+zero design freedom; all paths below updated. Part B's `$seats` table shipped as `Slug · Master`
+only — name/groups/whenToUse moved INTO each master's frontmatter (one source; the ps1 stays
+ASCII in emitted literals), a mechanism refinement serving the same one-source intent.
+
 ## Declared Change Set
 
 - NEW `.agents/commands/smh-team-march-hare.md` → Part A
@@ -166,9 +173,11 @@ cicd workers; `.roo/commands/` launchers unchanged; no AGY/AVCH surface; no depl
 ## Acceptance (the checkable list)
 
 1. `.roomodes` holds exactly six modes on `{orchestrator, architect, code, ask, debug, designer}`,
-   each name ALL-CAPS + emoji + role — `python3 -c` yaml check.
+   each name emoji + regular-case character name + em-dash + ALL-CAPS role (per the operator's
+   correction — this row updated to match Part B at review) — `python3 -c` yaml check.
 2. `ask` (QUEEN OF HEARTS — QA) carries no `edit` group — same check.
-3. Six seat masters exist, `platforms: []`, doors + refusals named — inspection + test 4.
+3. Six seat masters exist, `platforms: [zoo]` (per the self-audit's HIGH fix — this row updated
+   to match Part A at review), doors + refusals named — inspection + test 4.
 4. `.roo/rules/zoo-team.md` current against its master; retired persona dirs pruned — tests 5/7.
 5. Tracked `.vscode/settings.json` sets `git.detectWorktrees: true` — test 6.
 6. Armed suite green at tip with the new checks; SOP row + changelog in the same commit as the

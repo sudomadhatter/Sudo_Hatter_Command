@@ -1,6 +1,6 @@
 ---
 description: Close out ONE story — THE DOOR. Preflight, run the sprint-memory save, commit the close-out edits, LAND the story on its EPIC branch, and only THEN file the Dev Record and move the Jira ticket, then prune the worktree. Invoking it IS Daniel's sign-off for THIS story's landing, and that sign-off is spent by it. Run LAST when closing a story.
-platforms: [opencode, antigravity]
+platforms: [opencode, antigravity, zoo]
 ---
 
 # /cicd-close-story-merge-tree — Story Close-Out (the door)
