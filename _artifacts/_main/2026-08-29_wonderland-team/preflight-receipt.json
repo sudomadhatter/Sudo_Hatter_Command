@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-350-wonderland-team",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-350",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "fe4679d25304351be251ac5a14b98fade3469b5d",
+  "warnings": 1,
+  "when": "2026-08-29T21:32:40-07:00"
+}

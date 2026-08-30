@@ -4,15 +4,15 @@
     "docs"
   ],
   "counts": {
-    "files": 414,
+    "files": 421,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 743,
+    "edges": 768,
     "external": 40,
-    "ambiguous": 167,
-    "dangling": 300,
+    "ambiguous": 176,
+    "dangling": 301,
     "broken_paths": 70,
-    "unresolved_names": 230,
+    "unresolved_names": 231,
     "unresolvable": 6
   },
   "nodes": [
@@ -39,7 +39,7 @@
     {
       "path": ".agents/commands/INDEX.md",
       "in": 9,
-      "out": 5
+      "out": 6
     },
     {
       "path": ".agents/commands/adviser-board/CARD.md",
@@ -552,6 +552,31 @@
       "out": 3
     },
     {
+      "path": ".agents/commands/smh-team-carpenter.md",
+      "in": 0,
+      "out": 3
+    },
+    {
+      "path": ".agents/commands/smh-team-caterpillar.md",
+      "in": 0,
+      "out": 2
+    },
+    {
+      "path": ".agents/commands/smh-team-march-hare.md",
+      "in": 0,
+      "out": 3
+    },
+    {
+      "path": ".agents/commands/smh-team-queen-of-hearts.md",
+      "in": 0,
+      "out": 3
+    },
+    {
+      "path": ".agents/commands/smh-team-white-rabbit.md",
+      "in": 0,
+      "out": 3
+    },
+    {
       "path": ".agents/commands/smh-update-maps-indexes.md",
       "in": 2,
       "out": 11
@@ -689,7 +714,7 @@
     {
       "path": ".agents/rules/INDEX.md",
       "in": 8,
-      "out": 26
+      "out": 28
     },
     {
       "path": ".agents/rules/artifacts-always-first.md",
@@ -707,13 +732,18 @@
       "out": 1
     },
     {
+      "path": ".agents/rules/command-shape.md",
+      "in": 3,
+      "out": 0
+    },
+    {
       "path": ".agents/rules/completion-not-illusion.md",
       "in": 7,
       "out": 0
     },
     {
       "path": ".agents/rules/constitution.md",
-      "in": 24,
+      "in": 25,
       "out": 1
     },
     {
@@ -723,17 +753,17 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 61,
+      "in": 62,
       "out": 3
     },
     {
       "path": ".agents/rules/jira.md",
-      "in": 42,
+      "in": 43,
       "out": 3
     },
     {
       "path": ".agents/rules/karpathy-guidelines.md",
-      "in": 5,
+      "in": 7,
       "out": 1
     },
     {
@@ -758,7 +788,7 @@
     },
     {
       "path": ".agents/rules/operator-profile.md",
-      "in": 7,
+      "in": 8,
       "out": 0
     },
     {
@@ -793,7 +823,7 @@
     },
     {
       "path": ".agents/rules/tests-must-gate-for-real.md",
-      "in": 12,
+      "in": 13,
       "out": 0
     },
     {
@@ -805,6 +835,11 @@
       "path": ".agents/rules/worktree-per-story.md",
       "in": 36,
       "out": 2
+    },
+    {
+      "path": ".agents/rules/zoo-team.md",
+      "in": 10,
+      "out": 4
     },
     {
       "path": ".agents/scripts/INDEX.md",
@@ -1988,13 +2023,13 @@
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "in": 22,
-      "out": 50
+      "in": 28,
+      "out": 53
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 10
+      "out": 12
     },
     {
       "path": "docs/code-review-graph.md",
@@ -2013,11 +2048,6 @@
     },
     {
       "path": "docs/migrations/antigravity_extensions/gemini-extensions-sync-guide.md",
-      "in": 2,
-      "out": 0
-    },
-    {
-      "path": "docs/migrations/install_guides/antigravity-ide-extension-migration.md",
       "in": 2,
       "out": 0
     },
@@ -2070,6 +2100,11 @@
       "path": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
       "in": 4,
       "out": 1
+    },
+    {
+      "path": "docs/migrations/install_guides/vscode-ide-extension-migration.md",
+      "in": 2,
+      "out": 0
     },
     {
       "path": "docs/repo-map.md",
@@ -2193,6 +2228,11 @@
     {
       "from": ".agents/INDEX.md",
       "to": ".agents/workflows/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/INDEX.md",
+      "to": ".agents/rules/zoo-team.md",
       "kind": "ref"
     },
     {
@@ -3221,6 +3261,76 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/commands/smh-team-carpenter.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-carpenter.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-carpenter.md",
+      "to": ".agents/rules/karpathy-guidelines.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-caterpillar.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-caterpillar.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-march-hare.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-march-hare.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-march-hare.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-queen-of-hearts.md",
+      "to": ".agents/rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-queen-of-hearts.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-queen-of-hearts.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-white-rabbit.md",
+      "to": ".agents/rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-white-rabbit.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-white-rabbit.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/commands/smh-update-maps-indexes.md",
       "to": ".agents/commands/INDEX.md",
       "kind": "ref"
@@ -3487,6 +3597,11 @@
     },
     {
       "from": ".agents/rules/INDEX.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/INDEX.md",
       "to": ".agents/rules/completion-not-illusion.md",
       "kind": "ref"
     },
@@ -3588,6 +3703,11 @@
     {
       "from": ".agents/rules/INDEX.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/INDEX.md",
+      "to": ".agents/rules/zoo-team.md",
       "kind": "ref"
     },
     {
@@ -3788,6 +3908,26 @@
     {
       "from": ".agents/rules/worktree-per-story.md",
       "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": ".agents/rules/karpathy-guidelines.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": ".agents/rules/operator-profile.md",
       "kind": "ref"
     },
     {
@@ -5362,6 +5502,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": "docs/_scc_sops_prds/INDEX.md",
       "kind": "link"
     },
@@ -5373,6 +5518,11 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/rules/code-standards.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -5437,6 +5587,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": "docs/code-review-graph.md",
       "kind": "ref"
     },
@@ -5471,13 +5626,13 @@
       "kind": "link"
     },
     {
-      "from": "docs/code-review-graph.md",
-      "to": "docs/AGENTS.md",
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/zoo-team.md",
       "kind": "ref"
     },
     {
-      "from": "docs/migrations/INDEX.md",
-      "to": "docs/migrations/install_guides/antigravity-ide-extension-migration.md",
+      "from": "docs/code-review-graph.md",
+      "to": "docs/AGENTS.md",
       "kind": "ref"
     },
     {
@@ -5533,6 +5688,11 @@
     {
       "from": "docs/migrations/INDEX.md",
       "to": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/INDEX.md",
+      "to": "docs/migrations/install_guides/vscode-ide-extension-migration.md",
       "kind": "link"
     },
     {
@@ -6207,6 +6367,10 @@
     {
       "from": ".agents/commands/smh-quick-fix.md",
       "target": "/walkthrough.md"
+    },
+    {
+      "from": ".agents/commands/smh-team-carpenter.md",
+      "target": "implementation_plan.md"
     },
     {
       "from": ".agents/commands/smh-update-maps-indexes.md",
@@ -7490,6 +7654,51 @@
       ]
     },
     {
+      "from": ".agents/commands/smh-team-carpenter.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-caterpillar.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-march-hare.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-queen-of-hearts.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-white-rabbit.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
       "from": ".agents/commands/smh-update-maps-indexes.md",
       "target": ".agents/scripts/README.md",
       "candidates": [
@@ -8217,6 +8426,15 @@
       "candidates": [
         ".agents/commands/smh-plan-task.md",
         ".agents/workflows/smh-plan-task.md"
+      ]
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {
@@ -10021,6 +10239,15 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "target": "/.codex/AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "AGENTS.md",
       "candidates": [
         ".agents/AGENTS.md",
@@ -10093,6 +10320,24 @@
       "candidates": [
         ".agents/commands/smh-adviser-board.md",
         ".agents/workflows/smh-adviser-board.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "/.codex/AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {

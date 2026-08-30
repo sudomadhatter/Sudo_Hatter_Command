@@ -112,6 +112,14 @@ _ONE_SUBJECT = "single-subject: the other family has no equivalent and should no
 NOT_PAIRED = {
     "smh-quick-fix.md": "a THIRD lane, below both quick-devs - it ejects INTO smh-quick-dev; "
                         "the cicd side has no such lane and that gap is recorded, not faked",
+    # ── smh-only: the Wonderland team seats (SCC-350) — Zoo Code MODE brains, not workflows.
+    # Each is the identity/doors/refusals of one mode in the picker; the cicd side has no mode
+    # surface at all, so there is nothing to hold in parity. They route INTO the cicd doors.
+    "smh-team-march-hare.md": "Zoo mode seat (TEAM LEAD / orchestrator) - a picker identity, not a flow",
+    "smh-team-white-rabbit.md": "Zoo mode seat (PM) - a picker identity, not a flow",
+    "smh-team-carpenter.md": "Zoo mode seat (ENGINEER) - a picker identity, not a flow",
+    "smh-team-caterpillar.md": "Zoo mode seat (DESIGNER) - a picker identity, not a flow",
+    "smh-team-queen-of-hearts.md": "Zoo mode seat (TESTER & QA) - a picker identity, not a flow",
     # ── cicd-only: BMAD story/epic/sprint machinery, deploys, and project-runtime teams ──
     "cicd-write-story-tests.md": _ONE_SUBJECT + " (story ① - there are no stories in the lobby)",
     "cicd-dev-story-tests.md": _ONE_SUBJECT + " (story ② - ditto)",

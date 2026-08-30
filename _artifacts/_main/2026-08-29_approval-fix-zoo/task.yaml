@@ -1,0 +1,6 @@
+task_key: SCC-346
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-346-approval-fix-zoo
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: [SCC-349]

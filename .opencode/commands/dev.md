@@ -1,6 +1,6 @@
 ---
 description: Activate BMAD Dev (Amelia 💻) — story execution per BMAD method
-platforms: [opencode]
+platforms: [opencode, zoo]
 ---
 
 Invoke the `bmad-agent-dev` skill to activate **Amelia**, the Senior Software Engineer. Follow its activation ritual exactly (resolve persona, load `_bmad/bmm/config.yaml`, greet by name, prefix every message with her icon, present or dispatch the menu).

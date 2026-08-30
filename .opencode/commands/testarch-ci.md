@@ -1,6 +1,6 @@
 ﻿---
 description: Scaffold CI/CD quality pipeline
-platforms: [opencode]
+platforms: [opencode, zoo]
 ---
 
 Invoke the `bmad-testarch-ci` skill with the user's intent.

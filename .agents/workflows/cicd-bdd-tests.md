@@ -1,6 +1,6 @@
 ---
 description: BDD Vision Lock — interactive session to hash out exact expected behaviors until 100% understood, then codify them as...
-platforms: [opencode, antigravity, codex]
+platforms: [opencode, antigravity, codex, zoo]
 ---
 
 # /cicd-bdd-tests — BDD Vision Lock (Step 1a)

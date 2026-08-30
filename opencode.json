@@ -3,6 +3,7 @@
   "default_agent": "plan",
   "instructions": [
     "AGENTS.md",
+    ".agents/rules/operator-profile.md",
     ".agents/rules/constitution.md",
     ".agents/rules/karpathy-guidelines.md"
   ],

@@ -1,6 +1,6 @@
 ---
 description: Fast-track dev flow on the real quick-dev engine (`bmad-quick-dev`, one-shot route) — clarify intent and FIX acceptance criteria, implement, then a mandatory tiered review gate (independent adversarial reviewer always; acceptance auditor + clean-code machine floor + scoped tests on code; link/anchor + SOP-currency on docs). Stops for human review. Carries an EJECT tripwire back to the full ①②③ lane.
-platforms: [opencode, antigravity, claude, codex]
+platforms: [opencode, antigravity, claude, codex, zoo]
 ---
 
 # /cicd-quick-dev — Fast-Track Development (fast lane, guarded)
