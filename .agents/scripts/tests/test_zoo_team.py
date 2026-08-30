@@ -39,6 +39,14 @@ ROOT = SCRIPTS.parents[1]
 
 LAW_SLUGS = {"orchestrator", "architect", "code", "debug", "designer"}
 BASE_GROUPS = {"read", "command"}          # every seat carries these
+# The group CEILING (review finding, amendment 3): removing the scoped-pen law left group sets
+# floor-checked only, so any master could self-grant `mcp`/`browser` and every check stayed
+# green. `mcp` is March Hare's delegation privilege (zoo-team.md); nothing else is chartered.
+ALLOWED_GROUPS = {"read", "edit", "command", "mcp"}
+MCP_SLUGS = {"orchestrator"}
+# The merged quality seat's charter name — pinned as a LAW literal (review finding: with the
+# fixture the only carrier, a consistent revert to "— QA" survived every check in the tree).
+QUEEN_NAME = "♥️👑 Queen of Hearts — TESTER & QA"
 
 # name = emoji cluster · space · Regular-case character name · space-emdash-space · ALL-CAPS role
 NAME_RE = re.compile(r"^(?P<emoji>\S+) (?P<name>[A-Z][A-Za-z]*(?: [A-Za-z]+)*) — (?P<role>[A-Z][A-Z &]*)$")
@@ -94,6 +102,12 @@ def mode_problems(text: str) -> list[str]:
             # Every seat is a working seat since the quality merge (amendment 3) — a stripped
             # pen is a regression to the retired edit-strip/scoped-pen design.
             problems.append(f"{m['slug']}: working seat has no `edit` group")
+        stray = m["groups"] - ALLOWED_GROUPS
+        if stray:
+            problems.append(f"{m['slug']}: unchartered group(s) {sorted(stray)}")
+        if "mcp" in m["groups"] and m["slug"] not in MCP_SLUGS:
+            problems.append(f"{m['slug']}: `mcp` is the TEAM LEAD's delegation privilege, "
+                            "not this seat's")
     return problems
 
 
@@ -116,7 +130,7 @@ GOOD = {
     "orchestrator": ("🫖🐰 March Hare — TEAM LEAD", ["read", "edit", "command", "mcp"]),
     "architect":    ("⏰🐇 White Rabbit — PM", ["read", "edit", "command"]),
     "code":         ("🔨🪚 Carpenter — ENGINEER", ["read", "edit", "command"]),
-    "debug":        ("♥️👑 Queen of Hearts — TESTER & QA", ["read", "edit", "command"]),
+    "debug":        (QUEEN_NAME, ["read", "edit", "command"]),
     "designer":     ("🦋 Caterpillar — DESIGNER", ["read", "edit", "command"]),
 }
 
@@ -145,6 +159,17 @@ def main() -> int:
         bad = dict(GOOD); bad["debug"] = ('♥️👑 Queen "of" Hearts — TESTER & QA', ["read", "edit", "command"])
         c.check("a YAML-breaking character in a name is caught (stdlib bars a real YAML parse)",
                 any("YAML-breaking" in p for p in mode_problems(fixture(bad))))
+        bad = dict(GOOD); bad["debug"] = ("♥️👑 Queen\\ of Hearts — TESTER & QA", ["read", "edit", "command"])
+        c.check("the BACKSLASH half of the YAML-breaking check fires too (its branch was "
+                "deletable with the file green)",
+                any("YAML-breaking" in p for p in mode_problems(fixture(bad))))
+        bad = dict(GOOD); bad["designer"] = ("🦋 Caterpillar — DESIGNER", ["read", "edit", "command", "browser"])
+        c.check("an UNCHARTERED group self-granted by a master is caught (the ceiling the "
+                "scoped-pen removal left open)",
+                any("unchartered" in p for p in mode_problems(fixture(bad))))
+        bad = dict(GOOD); bad["code"] = ("🔨🪚 Carpenter — ENGINEER", ["read", "edit", "command", "mcp"])
+        c.check("`mcp` on a seat other than the TEAM LEAD is caught",
+                any("delegation privilege" in p for p in mode_problems(fixture(bad))))
         bad = dict(GOOD); bad["orchestrator"] = ("🫖🐰 March Hare — team lead", ["read", "edit", "command"])
         c.check("a lowercase role is caught",
                 any("name law" in p or "not regular case" in p for p in mode_problems(fixture(bad))))
@@ -181,6 +206,13 @@ def main() -> int:
         probs = mode_problems(text)
         c.check("B2 the live .roomodes satisfies the whole team law (slugs · names · groups)",
                 probs == [], " | ".join(probs))
+        # The merge itself, pinned in the LIVE tree (review finding: the fixture was the only
+        # carrier of the merged name, so a consistent revert to "— QA" passed everything).
+        live_debug = next((m["name"] for m in parse_roomodes(text) if m["slug"] == "debug"), "")
+        rule_text = (ROOT / ".agents" / "rules" / "zoo-team.md").read_text(encoding="utf-8-sig")
+        c.check("B2b the merged quality seat keeps its charter name in .roomodes AND the team rule",
+                live_debug == QUEEN_NAME and QUEEN_NAME in rule_text,
+                f"roomodes={live_debug!r} rule-carries={QUEEN_NAME in rule_text}")
 
         modes = {m["slug"]: m for m in parse_roomodes(text)}
         bad_master: list[str] = []
@@ -211,7 +243,12 @@ def main() -> int:
                               if f"- slug: {slug}\n" in text else "")
             wtu_text = " ".join(l.strip() for l in wtu_m.group(1).splitlines()).strip() if wtu_m else ""
             desc = fm.get("description", "").strip().strip('"').strip("'")
-            if desc and wtu_text != desc:
+            if not desc:
+                # An absent description silently emits a BLANK whenToUse — the delegation
+                # signal March Hare picks seats by (review finding: the old `if desc and`
+                # guard skipped this row exactly when it mattered most).
+                bad_master.append(f"{slug}: master has no description — whenToUse would be blank")
+            elif wtu_text != desc:
                 bad_master.append(f"{slug}: whenToUse != master description "
                                   f"(truncated or stale: {wtu_text[-30:]!r})")
         c.check("B3 every mode is generated FROM its master frontmatter (one source, current)",
@@ -229,8 +266,16 @@ def main() -> int:
                 "never-weaken refusal)", not qa_missing,
                 f"missing from smh-team-queen-of-hearts.md: {qa_missing}")
 
-        retired = [d for d in ("analyst", "dev", "pm", "tech-writer", "ux-designer", "ask")
-                   if (ROOT / ".roo" / f"rules-{d}").is_dir()]
+        # The COMPLEMENT of the law, never an enumerated denylist (review finding: a fixed
+        # list is blind to any stray dir it did not predict — the generator's own prune
+        # contract is "every GENERATED rules-<slug> dir outside $seats dies").
+        retired = []
+        for d in sorted((ROOT / ".roo").glob("rules-*")):
+            if not d.is_dir() or d.name[6:] in LAW_SLUGS:
+                continue
+            pf = d / "01-persona.md"
+            if pf.is_file() and "GENERATED by sync-agents" in pf.read_text(encoding="utf-8-sig"):
+                retired.append(d.name)
         # Currency, not existence (review finding: a stale rules-architect naming the RETIRED
         # BMAD master passed when this row read only is_file()). Each seat rule must be
         # GENERATED-marked and name the same master and mode-name its .roomodes entry does.
@@ -328,6 +373,22 @@ def main() -> int:
                 "tracked copy stays byte-equal for a while after a silent drop)",
                 bool(floor_m) and "zoo-team.md" in floor_m.group(1),
                 floor_m.group(1) if floor_m else "no $floor assignment found")
+        # C6 — the mirrors are the ORIGINALS (review finding: C0 proves the copies can reject,
+        # nothing proved the copies still equal the ps1's literals; a tightened reader would
+        # skip seats the mirror still passes).
+        c.check("C6 the mirrored frontmatter regexes appear VERBATIM in the ps1 source",
+                ps1_name_re.pattern in ps1 and ps1_groups_re.pattern in ps1,
+                "a mirror pattern no longer appears in sync-agents.ps1 — the copies have "
+                "drifted from the originals")
+        # C7 — the FULL-description whenToUse emission is pinned at the generator SOURCE
+        # (review finding: B3 only sees an amputation after a re-sync; a generator-only
+        # regression to Get-AgDescription shipped green). Window: the seat loop proper — from
+        # the $seats table to the seat-rule write — NOT the function head, whose launcher half
+        # legitimately applies the Antigravity menu cut.
+        seat_loop = code[code.find("$seats = @("):code.find("$modeDir")]
+        c.check("C7 the seat loop emits the FULL description (no Get-AgDescription cut)",
+                "+ $desc)" in seat_loop and "Get-AgDescription" not in seat_loop,
+                "full-desc emission line missing, or the Antigravity cut is back in the seat loop")
 
     return c.finish()
 

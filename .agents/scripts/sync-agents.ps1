@@ -864,8 +864,11 @@ function Sync-ZooSurfaces {
       Write-Warning ("sync-agents: seat master MISSING: '{0}' - seat '{1}' skipped" -f $p.Master, $p.Slug)
       continue
     }
-    $desc = ''; $modeName = ''; $modeGroups = @()
+    $desc = ''; $modeName = ''; $modeGroups = @(); $fmDashes = 0
     foreach ($line in (Get-Content $src -TotalCount 12 -Encoding UTF8)) {
+      # Stop at the CLOSING --- (review finding): without it the reader took the LAST match in
+      # the 12-line window, so body prose documenting frontmatter could override the real keys.
+      if ($line.Trim() -eq '---') { $fmDashes += 1; if ($fmDashes -ge 2) { break }; continue }
       if ($line -match '^description:\s*(.+)$') { $desc = $Matches[1].Trim().Trim('"').Trim("'") }
       elseif ($line -match '^mode-name:\s*"(.+)"\s*$') { $modeName = $Matches[1] }
       elseif ($line -match '^mode-groups:\s*\[(.+)\]\s*$') {

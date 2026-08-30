@@ -1,16 +1,29 @@
-# Walkthrough — SCC-350 · The Wonderland team: six Zoo Code seats over the built-in slugs
+# Walkthrough — SCC-350 · The Wonderland team: five Zoo Code seats over the built-in slugs
 
 **Lane:** `chore/SCC-350-wonderland-team` (consolidated, no subtasks) · **Ticket:** [SCC-350](https://sudo-command.atlassian.net/browse/SCC-350) (parent SCC-33) · **Close door:** `/smh-close-task-merge-tree`
 
 ## What shipped
 
-The Zoo Code mode picker is now the operator's org chart. Six seats replace Zoo's five hard-coded
-built-in modes (a same-slug custom mode replaces a built-in wholesale — verified against the
-v3.80.1 compiled bundle before the plan was written) plus one new `designer` slug:
+The Zoo Code mode picker is now the operator's org chart. Five seats replace four of Zoo's
+hard-coded built-in modes (a same-slug custom mode replaces a built-in wholesale — verified
+against the v3.80.1 compiled bundle before the plan was written) plus one new `designer` slug;
+the `ask` slug is deliberately unclaimed, so stock Zoo Ask stays in the picker for plain Q&A:
 
 🫖🐰 March Hare — TEAM LEAD (`orchestrator`) · ⏰🐇 White Rabbit — PM (`architect`) · 🔨🪚
-Carpenter — ENGINEER (`code`) · 🦋 Caterpillar — DESIGNER (`designer`) · 😼 Cheshire Cat — TESTER
-(`debug`) · ♥️👑 Queen of Hearts — QA (`ask`, **her pen platform-scoped to `_artifacts/**/*.md`** — the review records her doors must write, never the work she judges).
+Carpenter — ENGINEER (`code`) · 🦋 Caterpillar — DESIGNER (`designer`) · ♥️👑 Queen of Hearts —
+TESTER & QA (`debug`, the quality seat at both ends: she writes the failing tests before a build,
+judges the finished work through the review and audit doors, and fixes what the review finds in
+the same lane — full pen, chartered group ceiling).
+
+**Amendment 3 — the quality merge (operator, same day, post-first-PASS):** *"the tester and the QA
+need to really be one"*, still named the Queen of Hearts — *"the self audit and the code review
+are the QA and the testing."* The build initially shipped SIX seats (a separate 😼 Cheshire Cat —
+TESTER on `debug`, the Queen edit-scoped on `ask`); the merge retired the Cat into the Queen,
+moved her to `debug` (suppressing Zoo's law-free stock Debug), removed the scoped-pen machinery
+end to end, and replaced it with a group CEILING (`mcp` is the TEAM LEAD's alone; nothing
+unchartered) plus a live charter-name pin. Everything below the Evidence line that speaks of six
+seats or the scoped pen is the accurate history of the first pass, superseded by this amendment
+and re-reviewed in the second `## Code Review` section.
 
 - **Part A — seat masters** (`.agents/commands/smh-team-*.md`, 6 files): identity, doors, refusals,
   routing law per seat. Frontmatter carries `mode-name` / `mode-slug` / `mode-groups` — the ONE
@@ -86,11 +99,11 @@ Carpenter — ENGINEER (`code`) · 🦋 Caterpillar — DESIGNER (`designer`) ·
 
 ## Task Checklist
 
-- [x] 1 Master roster: six seat masters with identity/doors/refusals (A) — test B3/B4
-- [x] 2 Generator emits the roster over the five built-in slugs + designer (B) — test B2/E2
+- [x] 1 Master roster: five seat masters with identity/doors/refusals (A, amendment 3) — test B3/B4
+- [x] 2 Generator emits the roster over four built-in slugs + designer; ask stays stock (B) — test B2/E2
 - [x] 3 Team rule synced to .roo/rules/ (C) — test B6
-- [x] 4 QA edit-stripped mechanically; March Hare delegation protocol (A/B) — test B2 + fixture A2
-- [x] 5 Seat skill bundles (Caterpillar: emil-design-eng + apple-design; Cheshire Cat: TEA doors) — masters name them
+- [x] 4 Full-pen seats under a chartered group ceiling; charter-name pin; March Hare delegation protocol (A/B, amendment 3) — tests B2/B2b + ceiling fixtures
+- [x] 5 Seat skill bundles (Caterpillar: emil-design-eng + apple-design; Queen of Hearts: TEA/testarch + review doors) — masters name them
 - [x] 6 Tracked git.detectWorktrees (D) — test B7
 - [x] 7 RED-first tests + SOP same commit (E) — transcripts above; sop gate satisfied at `c13e397`
 - [x] 8 Sudo_Hatter profile referenced by name only — zoo-team.md; no key material anywhere in the diff
@@ -99,7 +112,7 @@ Carpenter — ENGINEER (`code`) · 🦋 Caterpillar — DESIGNER (`designer`) ·
 ## Your Actions
 
 - [ ] **See your team:** reload VS Code (or restart Zoo Code) in this workspace after the merge —
-  the mode picker shows the six seats in place of Zoo's five stock modes.
+  the mode picker shows your five seats plus Zoo's stock Ask (kept on purpose for plain Q&A).
 - [ ] **Arm the March Hare (per machine):** tick **Mode switching** and **Subtasks** in Zoo's
   Auto-Approve panel so `new_task` delegation runs unattended.
 - [ ] **Pin the Sudo_Hatter profile (per machine):** in Zoo's settings, set the Sudo_Hatter

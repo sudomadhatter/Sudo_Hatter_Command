@@ -136,7 +136,6 @@ ASCII in emitted literals), a mechanism refinement serving the same one-source i
 - NEW `.agents/commands/smh-team-white-rabbit.md` → Part A
 - NEW `.agents/commands/smh-team-carpenter.md` → Part A
 - NEW `.agents/commands/smh-team-caterpillar.md` → Part A
-- NEW `.agents/commands/smh-team-cheshire-cat.md` → Part A
 - NEW `.agents/commands/smh-team-queen-of-hearts.md` → Part A
 - EDIT `.agents/commands/INDEX.md` → Part A
 - NEW `.agents/rules/zoo-team.md` → Part C
@@ -150,7 +149,6 @@ ASCII in emitted literals), a mechanism refinement serving the same one-source i
 - EDIT `.roo/rules-architect/01-persona.md` → Part F
 - NEW `.roo/rules-orchestrator/01-persona.md` → Part F
 - NEW `.roo/rules-code/01-persona.md` → Part F
-- NEW `.roo/rules-ask/01-persona.md` → Part F
 - NEW `.roo/rules-debug/01-persona.md` → Part F
 - NEW `.roo/rules-designer/01-persona.md` → Part F
 - DELETE `.roo/rules-analyst/01-persona.md` → Part F
@@ -163,21 +161,46 @@ ASCII in emitted literals), a mechanism refinement serving the same one-source i
 - NEW `.roo/commands/smh-team-white-rabbit.md` → Part F
 - NEW `.roo/commands/smh-team-carpenter.md` → Part F
 - NEW `.roo/commands/smh-team-caterpillar.md` → Part F
-- NEW `.roo/commands/smh-team-cheshire-cat.md` → Part F
 - NEW `.roo/commands/smh-team-queen-of-hearts.md` → Part F
 - EDIT `.agents/.sync-manifest.json` → Part F
+- EDIT `.agents/commands/smh-team-queen-of-hearts.md` → Amendment 3
+- EDIT `.agents/commands/smh-team-march-hare.md` → Amendment 3
+- EDIT `.agents/commands/smh-team-carpenter.md` → Amendment 3
+- EDIT `.agents/commands/smh-team-white-rabbit.md` → Amendment 3
+- EDIT `.agents/rules/zoo-team.md` → Amendment 3
+- EDIT `.agents/rules/INDEX.md` → Amendment 3
+- EDIT `.agents/scripts/sync-agents.ps1` → Amendment 3
+- EDIT `.agents/scripts/tests/test_zoo_team.py` → Amendment 3
+- EDIT `.agents/scripts/tests/test_settings_allowlist.py` → Amendment 3
+- EDIT `.agents/scripts/tests/test_twin_parity.py` → Amendment 3
+- EDIT `.roomodes` → Amendment 3
+- EDIT `.roo/rules/zoo-team.md` → Amendment 3
+- EDIT `.roo/rules-debug/01-persona.md` → Amendment 3
+- EDIT `.roo/commands/smh-team-queen-of-hearts.md` → Amendment 3
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` → Amendment 3
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` → Amendment 3
+- EDIT `docs/doc-graph.json` → Amendment 3
+- EDIT `docs/doc-graph.md` → Amendment 3
+- EDIT `_artifacts/_main/INDEX.md` → Amendment 3
+- EDIT `_artifacts/_main/2026-08-29_wonderland-team/tickets/SCC-350.md` → Amendment 3
+- EDIT `_artifacts/_main/2026-08-29_wonderland-team/walkthrough.md` → Amendment 3
+- DELETE `.agents/commands/smh-team-cheshire-cat.md` → Amendment 3
+- DELETE `.roo/commands/smh-team-cheshire-cat.md` → Amendment 3
+- DELETE `.roo/rules-ask/01-persona.md` → Amendment 3
 
 Out of scope: the BMAD persona command masters (`analyst.md` …) stay untouched — they remain the
 cicd workers; `.roo/commands/` launchers unchanged; no AGY/AVCH surface; no deployable paths.
 
 ## Acceptance (the checkable list)
 
-1. `.roomodes` holds exactly six modes on `{orchestrator, architect, code, ask, debug, designer}`,
-   each name emoji + regular-case character name + em-dash + ALL-CAPS role (per the operator's
-   correction — this row updated to match Part B at review) — `python3 -c` yaml check.
-2. `ask` (QUEEN OF HEARTS — QA) carries no `edit` group — same check.
-3. Six seat masters exist, `platforms: [zoo]` (per the self-audit's HIGH fix — this row updated
-   to match Part A at review), doors + refusals named — inspection + test 4.
+1. `.roomodes` holds exactly five modes on `{orchestrator, architect, code, debug, designer}`
+   (amendment 3: the `ask` slug is deliberately unclaimed — stock Zoo Ask returns), each name
+   emoji + regular-case character name + em-dash + ALL-CAPS role — test B2.
+2. Every seat carries the full `[read, edit, command]` pen and nothing unchartered; `mcp` only
+   on the TEAM LEAD; the merged seat's charter name is pinned in the live tree (amendment 3
+   replaced the retired ask edit-strip/scoped-pen design) — tests B2/B2b + the ceiling fixtures.
+3. Five seat masters exist, `platforms: [zoo]`, doors + refusals named — with the Queen's
+   master carrying BOTH halves (red phase + review doors + the never-weaken refusal) — test B4.
 4. `.roo/rules/zoo-team.md` current against its master; retired persona dirs pruned — tests 5/7.
 5. Tracked `.vscode/settings.json` sets `git.detectWorktrees: true` — test 6.
 6. Armed suite green at tip with the new checks; SOP row + changelog in the same commit as the

@@ -22,13 +22,15 @@ test-priorities matrix (P0 100% · P1 80% · P2 50% · P3 20%; P0+P1 need E2E).
 ## Your doors
 
 - **The red phase** — `/cicd-write-story-tests` (ATDD: failing tests before any code) and
-  `/cicd-bdd-tests` for behavior specs.
-- **The testarch family** — `testarch-test-design`, `testarch-atdd`, `testarch-automate`,
-  `testarch-ci`, `testarch-nfr`, `testarch-trace`, `testarch-test-review`: strategy, automation,
-  CI wiring, non-functional coverage, traceability.
+  `/cicd-bdd-tests` for behavior specs, on project stories. On a command-center lane the red
+  phase rides `/smh-quick-dev`'s tests-first build step — there is no separate smh test door.
+- **The testarch family** — `/testarch-test-design`, `/testarch-atdd`, `/testarch-automate`,
+  `/testarch-ci`, `/testarch-nfr`, `/testarch-trace`, `/testarch-test-review`: strategy,
+  automation, CI wiring, non-functional coverage, traceability.
 - **Review** — `/smh-code-review` for command-center lanes, `/cicd-code-review` for project
   stories: the multi-lens engine, dispositions (REAL · changes BEHAVIOUR · in THIS diff), drift
-  reconciliation, and a `Verdict: PASS|FAIL @ <sha>` line persisted into the walkthrough.
+  reconciliation, and a `Verdict: PASS|CONCERNS|FAIL|WAIVED @ <HEAD-sha>` line persisted into
+  the walkthrough.
 - **Audit** — `/smh-self-audit` on plans (three anchored lenses; no anchor, no finding), and the
   gate scripts (`run_all.py`, receipts) read bare, never piped.
 - **Mutation and adequacy** — a green that cannot go red is vacuous; fixtures fire both ways

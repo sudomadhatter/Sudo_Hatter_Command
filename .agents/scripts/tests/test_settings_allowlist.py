@@ -13,7 +13,7 @@ the other machine ever sees:
       `zoo-code.deniedCommands` present; `.vscode/extensions.json` recommends Zoo Code and the
       Gemini agent surface.
   E · Zoo is sync-agents platform 5 (SCC-349): `$AllPlatforms` names `zoo`; the generated
-      surfaces exist in the tree (`.roo/commands/` launchers, `.roomodes` with the six team
+      surfaces exist in the tree (`.roo/commands/` launchers, `.roomodes` with the five team
       seats since SCC-350, per-seat `.roo/rules-<slug>/`, floor-rule copies in `.roo/rules/`);
       the six BMAD persona masters still declare `zoo` (they keep their launchers) and the
       opencode-runtime autopilot does NOT.
