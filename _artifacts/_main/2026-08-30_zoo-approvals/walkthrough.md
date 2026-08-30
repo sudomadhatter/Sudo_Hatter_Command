@@ -139,3 +139,16 @@ mirrors verified by the suite's own currency checks; declared-set drift audited 
 `workflow_lint --toolkit-only` 0/0, `check_links` clean, doors `git -C`-free (recursive scan).
 
 Verdict: PASS @ 64619de4
+
+## Follow-on
+
+- **SCC-352** minted 2026-08-30 (operator ask, this session), Task under SCC-33: `/smh-llm-approvals`
+  door that grows every platform's allow lists from real session asks (Zoo, Claude, opencode, Codex —
+  propose-and-pick, never auto-add), plus Zoo Code notifications on Mac + PC + ntfy phone push,
+  parity with Claude's. Outline: [tickets/SCC-352.md](tickets/SCC-352.md).
+
+## Your Actions
+
+- [x] The merge itself — lands via this branch's PR
+- [ ] Mac: quit VS Code fully, run `python3 .agents/scripts/zoo_permissions_apply.py --apply`, reopen — closing `--status` must read "in sync with tracked file"
+- [ ] PC (on pickup): the same apply with `python .agents/scripts/zoo_permissions_apply.py --apply`
