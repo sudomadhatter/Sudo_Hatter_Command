@@ -144,9 +144,9 @@ green, suite 32/32 — could not reach `main` in a full session. The block was n
 ~15 hand-typed `git`/`gh` strings in the shared checkout, each judged separately by the agent's
 permission layer, several denied, state stranded mid-ceremony. Measured, controlled pair, same op
 and same target: `git merge X --no-ff` **allowed**, `git -C <path> merge X --no-ff` **denied** — and
-the `-C` form is the one
-[the merge-target rule](#-pin-the-merge-target-not-just-the-source---c-on-every-call-and-assert-before-you-merge)
-below *mandates*. **Obeying the safety law guaranteed the permission miss.** No gate could fix a
+the `-C` form was the one
+[the merge-target rule](#-pin-the-merge-target-not-just-the-source--pin-every-call-and-assert-before-you-merge)
+below mandated at the time (the pin idiom is now `cd "$REPO" && git …`, which both permission layers match per piece — SCC-351). **Obeying the safety law guaranteed the permission miss.** No gate could fix a
 failure of shape, and adding a second road would have made the system bigger. So the local ceremony
 was **deleted from the smh doors** instead.
 
@@ -341,7 +341,7 @@ checkout boring: it is always exactly production.
 - **If a push is rejected** (remote moved under you), **STOP and report.** Do not force-push, and do
   not blind-rebase while other uncommitted work sits in the tree.
 
-### ⛔ Pin the merge TARGET, not just the source — `-C` on every call, and assert before you merge
+### ⛔ Pin the merge TARGET, not just the source — pin every call, and assert before you merge
 
 Every guard above protects the branch you are merging **from**. Nothing protects the branch you are
 merging **onto**, and on 2026-08-11 that gap put a production merge commit on a sibling lane's
@@ -350,12 +350,13 @@ in a later one, by which point the working directory had reset to the shared che
 standing on `chore/SCC-89-…`. It reported success. The output, the changed-file list and the commit
 message (`-> main`, because that is what was typed) were all indistinguishable from a correct merge.
 
-- **A `cd` is not a lock.** Pass `-C "$REPO"` on every `git` invocation rather than relying on where
-  a previous step left you.
+- **A `cd` in an EARLIER call is not a lock.** The pin lives in the SAME compound line —
+  `cd "$REPO" && git <verb> …` — never a bare `git` that trusts where a previous step left you.
+  (The old `git -C` spelling is auto-denied by Zoo Code and banned in doors — `command-shape.md`.)
 - **Assert the target immediately before merging**, and let it stop you:
 
   ```bash
-  test "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON main — STOP"; exit 1; }
+  test "$(cd "$REPO" && git rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON main — STOP"; exit 1; }
   ```
 
 - **On the two `main` lanes this assertion is already mechanical (SCC-77).**
@@ -408,15 +409,15 @@ whether a sibling lane's landed work survives your merge. The two forms are not 
 - **The safe form, and it is the only one worth memorising:**
 
   ```bash
-  git -C "$REPO" fetch origin
-  git -C "$REPO" checkout origin/main -- <paths>
+  cd "$REPO" && git fetch origin
+  cd "$REPO" && git checkout origin/main -- <paths>
   ```
 
 - **`main` is not a synonym for `origin/main`.** A local `main` in a worktree is a *cached* pointer.
   It is stale from the moment a sibling pushes, and it is stale exactly when this matters.
 - **Re-assert immediately before the close-out, not once at the start.** `main` moves while you
   build. If the revert is meant to be a no-op, prove it is still one:
-  `git -C "$REPO" diff origin/main -- <paths>` must be empty.
+  `cd "$REPO" && git diff origin/main -- <paths>` must be empty.
 - **Why it is invisible:** git has no way to tell a deliberate revert from a stale read. Both are a
   legal write of older content. There is no conflict to raise, so nothing goes red — the only thing
   standing between you and it is which ref you typed.

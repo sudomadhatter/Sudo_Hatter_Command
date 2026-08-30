@@ -54,3 +54,11 @@ never pasted, and deleted after any import.
 `switch_mode` request run unattended only when the **Mode switching** and **Subtasks** tiles are
 enabled in Zoo's Auto-Approve panel. Those live in extension state, not in git — they are part of
 each machine's one-time setup.
+
+**Terminal command shape (every seat):** compose commands to `command-shape.md` — pin trees with
+`cd <abs> && git <verb>` in ONE line (the `git -C` spelling is auto-denied), one logical line per
+command, no loops, no `$( … && … )` compounds, gates bare. The canonical allow/deny lists live in
+`.vscode/settings.json` and are explained family-by-family in
+`docs/migrations/zoo-code-permissions-guide.md`; after any list edit, the operator re-applies them
+per machine with `python3 .agents/scripts/zoo_permissions_apply.py --apply` (VS Code closed) —
+editing the settings file alone changes the display, not the behavior.

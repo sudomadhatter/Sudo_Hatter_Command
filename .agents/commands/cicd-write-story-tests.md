@@ -28,8 +28,8 @@ STOP and say so, never fall back to the lobby.
    `.claude/worktrees/<story-slug>` on `claude/<JIRA-KEY>-<story-slug>` **off the epic ref by name** —
    slug `story-<id-dashed>-<short-name>`, e.g. `story-21-3-student-archive`:
 ```bash
-git -C "$PROJECT_ROOT" fetch origin epic/<JIRA-KEY>-<slug>
-git -C "$PROJECT_ROOT" worktree add --no-track .claude/worktrees/<story-slug> \
+cd "$PROJECT_ROOT" && git fetch origin epic/<JIRA-KEY>-<slug>
+cd "$PROJECT_ROOT" && git worktree add --no-track .claude/worktrees/<story-slug> \
     -b claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>
 ```
 

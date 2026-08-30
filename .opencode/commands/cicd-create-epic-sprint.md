@@ -86,22 +86,22 @@ branch exists because the cut succeeded and the push did not, and `checkout -b` 
 `fatal: a branch named 'epic/…' already exists`. The key is the only stable half of the name:
 
 ```bash
-git -C "$PROJECT_ROOT" fetch origin
-git -C "$PROJECT_ROOT" ls-remote --heads origin 'epic/<JIRA-KEY>-*'   # ⛔ by KEY — a reuse-path slug will not match
-git -C "$PROJECT_ROOT" branch --list 'epic/<JIRA-KEY>-*'              # and locally: a cut whose push failed
+cd "$PROJECT_ROOT" && git fetch origin
+cd "$PROJECT_ROOT" && git ls-remote --heads origin 'epic/<JIRA-KEY>-*'   # ⛔ by KEY — a reuse-path slug will not match
+cd "$PROJECT_ROOT" && git branch --list 'epic/<JIRA-KEY>-*'              # and locally: a cut whose push failed
 ```
 
 Then take exactly one arm, and say in one line which and why:
-- **a remote branch for this key exists** → `git -C "$PROJECT_ROOT" checkout <that exact branch name>`
-  then `git -C "$PROJECT_ROOT" pull --ff-only`. Adopt its slug for every later `push origin
+- **a remote branch for this key exists** → `cd "$PROJECT_ROOT" && git checkout <that exact branch name>`
+  then `cd "$PROJECT_ROOT" && git pull --ff-only`. Adopt its slug for every later `push origin
   HEAD:epic/…` in this run — never a second cut, never your own slug over theirs.
-- **only a local branch exists** → `git -C "$PROJECT_ROOT" checkout epic/<JIRA-KEY>-<slug>` and push
+- **only a local branch exists** → `cd "$PROJECT_ROOT" && git checkout epic/<JIRA-KEY>-<slug>` and push
   it; the cut already happened and the push is what is owed.
 - **neither** → cut it:
 
 ```bash
-git -C "$PROJECT_ROOT" checkout -b epic/<JIRA-KEY>-epic-<N>-<slug> origin/main
-git -C "$PROJECT_ROOT" push -u origin epic/<JIRA-KEY>-epic-<N>-<slug>
+cd "$PROJECT_ROOT" && git checkout -b epic/<JIRA-KEY>-epic-<N>-<slug> origin/main
+cd "$PROJECT_ROOT" && git push -u origin epic/<JIRA-KEY>-epic-<N>-<slug>
 ```
 
 ⛔ **BOTH numbers, and in this order** (`git-policy` § Branch model). `<JIRA-KEY>` is the epic's
@@ -115,7 +115,7 @@ moving the number ahead of the prefix silently sends all of them to `origin/main
 the armed guard classify the branch `unknown`.
 
 ```bash
-BRANCH=$(git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD); echo "Epic branch: $BRANCH"
+BRANCH=$(cd "$PROJECT_ROOT" && git rev-parse --abbrev-ref HEAD); echo "Epic branch: $BRANCH"
 ```
 
 The echoed line must read `Epic branch: epic/<JIRA-KEY>-epic-<N>-<slug>` — anything else → STOP. Story worktrees
@@ -158,12 +158,12 @@ acli jira workitem view <JIRA-KEY> --fields description
 acli jira workitem edit --key <JIRA-KEY> --yes --description-file epic-outline.txt
 acli jira workitem view <JIRA-KEY> --fields description    # prove the outline is what is on the ticket now
 rm epic-outline.txt
-MSG=$(mktemp)   # ⛔ OUTSIDE both trees: `git -C <dir> -F <relative>` resolves under <dir>, not your cwd — and a message file inside the repo dirties the `status` the Done block requires to be empty
+MSG=$(mktemp)   # ⛔ OUTSIDE both trees: `cd <dir> && git -F <relative>` resolves under <dir>, not your cwd — and a message file inside the repo dirties the `status` the Done block requires to be empty
 printf '%s\n' "<JIRA-KEY> docs(epic): Epic <N> — <title>: epic + stories" > "$MSG"
-git -C "$PROJECT_ROOT" add _bmad-output/planning-artifacts/epics.md
-git -C "$PROJECT_ROOT" diff --cached --stat                       # ONLY epics.md; anything else → unstage it
-git -C "$PROJECT_ROOT" commit -F "$MSG"
-git -C "$PROJECT_ROOT" push origin HEAD:epic/<JIRA-KEY>-<slug>
+cd "$PROJECT_ROOT" && git add _bmad-output/planning-artifacts/epics.md
+cd "$PROJECT_ROOT" && git diff --cached --stat                       # ONLY epics.md; anything else → unstage it
+cd "$PROJECT_ROOT" && git commit -F "$MSG"
+cd "$PROJECT_ROOT" && git push origin HEAD:epic/<JIRA-KEY>-<slug>
 rm "$MSG"
 ```
 
@@ -195,10 +195,10 @@ then:
 ```bash
 MSG=$(mktemp)   # outside both trees — see Step 2
 printf '%s\n' "<JIRA-KEY> chore(board): Epic <N> rows on sprint-status.yaml (backlog)" > "$MSG"
-git -C "$PROJECT_ROOT" add _bmad-output/implementation-artifacts/sprint-status.yaml
-git -C "$PROJECT_ROOT" diff --cached --stat                       # ONLY the board
-git -C "$PROJECT_ROOT" commit -F "$MSG"
-git -C "$PROJECT_ROOT" push origin HEAD:epic/<JIRA-KEY>-<slug>
+cd "$PROJECT_ROOT" && git add _bmad-output/implementation-artifacts/sprint-status.yaml
+cd "$PROJECT_ROOT" && git diff --cached --stat                       # ONLY the board
+cd "$PROJECT_ROOT" && git commit -F "$MSG"
+cd "$PROJECT_ROOT" && git push origin HEAD:epic/<JIRA-KEY>-<slug>
 rm "$MSG"
 ```
 
@@ -227,12 +227,12 @@ This is the final step and a **hard stop** — you WORK WITH Daniel to label eve
    ```bash
    MSG=$(mktemp)   # outside both trees — see Step 2
    printf '%s\n' "<JIRA-KEY> docs(tea): Epic <N> risk-scored - P-levels on test design, epics and board" > "$MSG"
-   git -C "$PROJECT_ROOT" add _bmad-output/test-artifacts/test-design-epic-<N>.md \
+   cd "$PROJECT_ROOT" && git add _bmad-output/test-artifacts/test-design-epic-<N>.md \
                              _bmad-output/planning-artifacts/epics.md \
                              _bmad-output/implementation-artifacts/sprint-status.yaml
-   git -C "$PROJECT_ROOT" diff --cached --stat                    # ONLY those three
-   git -C "$PROJECT_ROOT" commit -F "$MSG"
-   git -C "$PROJECT_ROOT" push origin HEAD:epic/<JIRA-KEY>-<slug>
+   cd "$PROJECT_ROOT" && git diff --cached --stat                    # ONLY those three
+   cd "$PROJECT_ROOT" && git commit -F "$MSG"
+   cd "$PROJECT_ROOT" && git push origin HEAD:epic/<JIRA-KEY>-<slug>
    rm "$MSG"
    ```
 
@@ -246,8 +246,8 @@ Before the report, prove the kickoff is on origin (`git-policy.md` — `0 0` + c
 finished; an unverified "pushed" is how this hides):
 
 ```bash
-git -C "$PROJECT_ROOT" status --short                                              # must carry NO kickoff file
-git -C "$PROJECT_ROOT" rev-list --left-right --count epic/<JIRA-KEY>-<slug>...origin/epic/<JIRA-KEY>-<slug>   # must be "0 0"
+cd "$PROJECT_ROOT" && git status --short                                              # must carry NO kickoff file
+cd "$PROJECT_ROOT" && git rev-list --left-right --count epic/<JIRA-KEY>-<slug>...origin/epic/<JIRA-KEY>-<slug>   # must be "0 0"
 ```
 
 ⚠ **Read `status --short` for THIS command's files, not for emptiness.** The shared checkout is the
@@ -263,8 +263,8 @@ checkout *"holds no local `epic/*` branch"*, while its Step 4 hazard analysis as
 stands on `main`"*. Every bare-`git` scar that step guards against is armed by leaving it here:
 
 ```bash
-git -C "$PROJECT_ROOT" checkout main && git -C "$PROJECT_ROOT" branch -D epic/<JIRA-KEY>-<slug>
-git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD                                 # must read `main`
+cd "$PROJECT_ROOT" && git checkout main && cd "$PROJECT_ROOT" && git branch -D epic/<JIRA-KEY>-<slug>
+cd "$PROJECT_ROOT" && git rev-parse --abbrev-ref HEAD                                 # must read `main`
 ```
 
 Deleting the local branch is safe and deliberate: `0 0` above proved every commit is on origin, and

@@ -20,33 +20,79 @@
   "workbench.editor.autoLockGroups": {
     "mainThreadWebview-markdown.preview": true
   },
-  // Zoo Code (Roo Code's community continuation) — workspace-scoped so the allowlists travel
-  // via git to BOTH machines (SCC-346). Namespace is zoo-code.*, NOT the retired roo-cline.*.
-  // Both lists are PREFIX matchers over the whole command string, and a deny only wins when its
-  // prefix actually matches — so no allow entry may be a prefix of a denied family's escape
-  // spelling. That is why there is NO bare "git -C" here: `git -C . push --force` starts with
-  // "git -C" and with no deny entry, so the one allow row would have bypassed the whole
-  // destructive set (found at review, SCC-346). Same stable command families as
-  // .claude/settings.json permissions.allow — both interpreter spellings, no machine paths.
+  // Zoo Code (Roo Code's community continuation) — workspace-scoped so the lists travel via
+  // git to BOTH machines. ⚠️ This file is the SOURCE OF TRUTH but NOT the decision store: Zoo
+  // decides from VS Code globalState (state.vscdb), which this file seeds exactly ONCE on a
+  // fresh machine and never again — after ANY edit here, run
+  //   python3 .agents/scripts/zoo_permissions_apply.py --apply   (VS Code closed)
+  // per machine. Design, matcher semantics, and the reasoning per family:
+  // docs/migrations/zoo-code-permissions-guide.md (SCC-351). The matcher is lowercase
+  // starts-with per piece, longest prefix wins allow-vs-deny — broad allows make every
+  // UN-denied spelling auto-RUN, so the deny list is the whole fence: minimum rows, each one
+  // naming real damage, none colliding with legitimate agent work. Env twins for git/gh denies
+  // are required (env -u GITHUB_TOKEN git … would bypass them otherwise) and are checked by
+  // .agents/scripts/tests/test_zoo_permissions.py, which re-fires a 70-row destructive battery
+  // and the 20-step ceremony set against these exact lists on every suite run.
   "zoo-code.useAgentRules": true,
   "zoo-code.allowedCommands": [
-    "git status", "git diff", "git log", "git show", "git fetch", "git rev-parse",
-    "git merge-base", "git merge-tree", "git worktree list", "git branch --list",
-    "git ls-files", "git check-ignore", "git stash list", "git add", "git commit",
-    "python3 .agents/scripts/", "python .agents/scripts/",
-    "python3 -m py_compile", "python -m py_compile",
-    "acli jira workitem view", "acli jira workitem search",
-    "ls", "cat", "head", "tail", "sed -n", "grep", "rg", "find", "wc", "diff",
-    "cp", "mkdir", "echo", "printf", "sort", "uniq", "awk", "cut", "tr",
-    "basename", "dirname", "readlink", "file", "stat", "du", "cmp",
-    "command -v", "which"
+    "cd ", "git ", "env -u GITHUB_TOKEN git ", "gh pr ", "gh run ", "env -u GITHUB_TOKEN gh pr ",
+    "env -u GITHUB_TOKEN gh run ", "python3 ", "python ",
+    "pwsh -NoProfile -File .agents/scripts/", "acli jira workitem ", "ls", "pwd", "true", "date",
+    "head", "sort", "uniq", "wc", "cat", "echo", "tail ", "sed ", "grep ", "rg ", "diff ", "cp ",
+    "mkdir ", "printf ", "awk ", "cut ", "tr ", "basename ", "dirname ", "readlink ", "file ",
+    "stat ", "du ", "cmp ", "command -v ", "which ", "jq ", "touch ", "REPO=", "BRANCH=",
+    "EXPECTED_KEY=", "BASE=", "BEHIND=", "HEAD_SHA=", "PATHS=", "VENV=", "KEY=", "MAIN=", "WT=",
+    "W=", "SCR=", "EXT=", "DB=", "OUT=", "MSG=", "URL=", "CODE=", "SCRATCH=", "E=", "T=", "D=",
+    "F=", "R=", "S=", "P=", "N=", "L=", "B=", "A=", "G=", "M=", "V=", "X=", "git add .agents/",
+    "git add .claude/", "git add .vscode/", "git add .roo/", "git add .roomodes",
+    "git add .githooks/", "git add .opencode/", "git add .github/", "git add .gemini/",
+    "git add .agent/", "git config --get ", "git config --list", "git config -l",
+    "git branch -d chore/", "git branch -d claude/", "git branch -d epic/",
+    "git branch -d \"chore/", "git branch -d \"claude/", "git branch -d \"epic/",
+    "git push origin --delete chore/", "git push origin --delete claude/",
+    "git push origin --delete epic/", "git push origin --delete \"chore/",
+    "git push origin --delete \"claude/", "git push origin --delete \"epic/",
+    "env -u GITHUB_TOKEN git push origin --delete chore/",
+    "env -u GITHUB_TOKEN git push origin --delete claude/",
+    "env -u GITHUB_TOKEN git push origin --delete epic/",
+    "env -u GITHUB_TOKEN git push origin --delete \"chore/",
+    "env -u GITHUB_TOKEN git push origin --delete \"claude/",
+    "env -u GITHUB_TOKEN git push origin --delete \"epic/"
   ],
   "zoo-code.deniedCommands": [
-    "rm -rf", "rm -r", "sudo",
-    "git push --force", "git push -f", "git push origin main",
-    "git reset --hard", "git clean", "git checkout main", "git branch -D",
-    "git add -A", "git add .", "git add -u",
-    "Remove-Item -Recurse", "del /s", "rmdir /s",
-    "dd if=", "mkfs", "chmod -R 777"
+    "rm -rf", "rm -r", "sudo", "chmod -R 777", "chown -R", "dd if=", "mkfs", "del /s", "rmdir /s",
+    "Remove-Item -Recurse", "git push --force", "git push -f", "git push --force-with-lease",
+    "git push --mirror", "git push --all", "git push origin main", "git push -u origin main",
+    "git push --set-upstream origin main", "git push origin main:", "git push origin HEAD:",
+    "git push origin +", "git push origin :", "git push --delete", "git push origin --delete",
+    "git reset --hard", "git clean -f", "git clean -d", "git branch -D", "git branch -M",
+    "git rebase", "git filter-branch", "git reflog expire", "git reflog delete",
+    "git update-ref -d", "git gc --prune", "git stash drop", "git stash clear",
+    "git remote remove", "git remote rm", "git remote set-url", "git restore .",
+    "git checkout -- ", "git checkout .", "git config", "git add -A", "git add .", "git add -u",
+    "git add --all", "git -C", "git --git-dir", "gh pr merge", "gh repo delete",
+    "gh release delete", "acli jira workitem delete", "env -u GITHUB_TOKEN git push --force",
+    "env -u GITHUB_TOKEN git push -f", "env -u GITHUB_TOKEN git push --force-with-lease",
+    "env -u GITHUB_TOKEN git push --mirror", "env -u GITHUB_TOKEN git push --all",
+    "env -u GITHUB_TOKEN git push origin main", "env -u GITHUB_TOKEN git push -u origin main",
+    "env -u GITHUB_TOKEN git push --set-upstream origin main",
+    "env -u GITHUB_TOKEN git push origin main:", "env -u GITHUB_TOKEN git push origin HEAD:",
+    "env -u GITHUB_TOKEN git push origin +", "env -u GITHUB_TOKEN git push origin :",
+    "env -u GITHUB_TOKEN git push --delete", "env -u GITHUB_TOKEN git push origin --delete",
+    "env -u GITHUB_TOKEN git reset --hard", "env -u GITHUB_TOKEN git clean -f",
+    "env -u GITHUB_TOKEN git clean -d", "env -u GITHUB_TOKEN git branch -D",
+    "env -u GITHUB_TOKEN git branch -M", "env -u GITHUB_TOKEN git rebase",
+    "env -u GITHUB_TOKEN git filter-branch", "env -u GITHUB_TOKEN git reflog expire",
+    "env -u GITHUB_TOKEN git reflog delete", "env -u GITHUB_TOKEN git update-ref -d",
+    "env -u GITHUB_TOKEN git gc --prune", "env -u GITHUB_TOKEN git stash drop",
+    "env -u GITHUB_TOKEN git stash clear", "env -u GITHUB_TOKEN git remote remove",
+    "env -u GITHUB_TOKEN git remote rm", "env -u GITHUB_TOKEN git remote set-url",
+    "env -u GITHUB_TOKEN git restore .", "env -u GITHUB_TOKEN git checkout -- ",
+    "env -u GITHUB_TOKEN git checkout .", "env -u GITHUB_TOKEN git config",
+    "env -u GITHUB_TOKEN git add -A", "env -u GITHUB_TOKEN git add .",
+    "env -u GITHUB_TOKEN git add -u", "env -u GITHUB_TOKEN git add --all",
+    "env -u GITHUB_TOKEN git -C", "env -u GITHUB_TOKEN git --git-dir",
+    "env -u GITHUB_TOKEN gh pr merge", "env -u GITHUB_TOKEN gh repo delete",
+    "env -u GITHUB_TOKEN gh release delete"
   ]
 }

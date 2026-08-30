@@ -19,8 +19,8 @@ lists Zoo decides with (they only seed it once — §3); **(2)** Zoo's matcher i
 starts-with test, so the house's own `git -C <path>` habit could never match a `git status`
 allow (§4); **(3)** a handful of safe families (`cd`, `git push`, `gh pr`, `acli`, heredoc
 python) were simply missing. The fix is one tracked list (§6), one apply script (§7), and a
-command-shape law for the seats (§8). Measured on a real session: **34% auto-approved before,
-~87% after** (§9).
+command-shape law for the seats (§8). Measured on a real session: **34.1% auto-approved before,
+88.2% after** (§9).
 
 ---
 
@@ -92,6 +92,9 @@ elsewhere:
 - **Subshell laundering** (§4): a compound inside `$( )` is scored as one piece.
 - **Prefix blindness to late flags/paths:** `git worktree remove x --force`,
   `pwsh -NoProfile -File .agents/scripts/../../evil.ps1` — a prefix can't see past its own length.
+- **Env-prefix assignments:** `MSG=hi rm -rf /` is ONE piece whose head matches the `MSG=` allow —
+  the assignment allows exist for the doors' standalone `VAR=…` lines and cannot tell the two
+  shapes apart. The shape law (§8) bans the env-prefix spelling; the test pins the behavior.
 
 What actually guards the things that matter: the GitHub **`main-write-gate`** ruleset (merges to
 `main` happen only through a green PR — no local terminal can do it), the **armed git hooks**
@@ -111,43 +114,49 @@ Two Zoo features to leave alone, and why:
 ## 6. The canonical lists — and the reasoning per family
 
 The source of truth is [`.vscode/settings.json`](../../.vscode/settings.json) (`zoo-code.*` keys),
-tracked in git. The design: **broad allow on the working families + enumerated denies on the
-irreversible/outward spellings + longer re-allows for the lane-scoped exceptions.** A test
-([test_zoo_permissions.py](../../.agents/scripts/tests/test_zoo_permissions.py)) re-runs the
-destructive battery and the ceremony set against these lists on every suite run, so a bad edit
-goes red before it ships.
+tracked in git: **109 allow / 97 deny** entries. The design rule, in the operator's words
+(2026-08-30): *denies are the absolute minimum — only things that would really cause damage.* And
+one mechanic makes that minimum load-bearing: under a broad allow, an un-denied spelling does not
+ask — it **auto-runs**. So the allows are broad working families, and every deny row names real
+damage and never collides with a legitimate ceremony step (both properties enforced by
+[test_zoo_permissions.py](../../.agents/scripts/tests/test_zoo_permissions.py): a 68-row
+destructive battery must all deny, the 25-step ceremony set must all approve, on every suite run).
 
 **ALLOW families**
 
 | Family | Entries | Why |
 |---|---|---|
 | Navigation | `cd ` | The pin that replaces `git -C` — every door command is `cd <abs> && …`, self-contained per call. |
-| Git, broad | `git `, `env -u GITHUB_TOKEN git ` | Every read/write verb the flows use (status, diff, log, fetch, add <paths>, commit, push, worktree, stash list…). The dangerous spellings are DENIED below and win by length where they overlap. |
-| Interpreters | `python3 `, `python ` | The toolkit (`.agents/scripts/*`, tests, heredoc one-offs). Both spellings per the two-machines law. |
+| Git, broad | `git `, `env -u GITHUB_TOKEN git ` | Every read/write verb the flows use. The damage spellings are DENIED below and win or lose by prefix length exactly where intended. |
+| GitHub CLI | `gh pr `, `gh run `, `env -u GITHUB_TOKEN gh pr `, `env -u GITHUB_TOKEN gh run ` | Open PRs, watch checks. `gh pr merge` denied — merges are the operator's click. `gh api` not allowed (arbitrary REST incl. merges). |
+| Interpreters | `python3 `, `python ` | The toolkit and heredoc one-offs. Both spellings per the two-machines law. |
 | PowerShell, scoped | `pwsh -NoProfile -File .agents/scripts/` | The sync generator. `-Command` is deliberately NOT allowed. |
 | Jira | `acli jira workitem ` | Board reads/writes inside ceremonies (`delete` denied). |
-| GitHub CLI | `gh pr `, `gh run ` | Open PRs, watch checks. `gh pr merge` denied — merges are the operator's click. `gh api` not allowed (arbitrary REST incl. merges). |
-| Read-only + fs helpers | `ls cat head tail sed grep rg find wc diff cp mkdir echo printf sort uniq awk cut tr basename dirname readlink file stat du cmp command -v which jq touch date pwd true` | Claude-parity read/copy set. |
-| Door variables | `REPO= BRANCH= EXPECTED_KEY= BASE= BEHIND= HEAD_SHA= PATHS= VENV= KEY= MAIN= WT= W= SCR= EXT= DB= OUT= MSG= URL= CODE= T= D= F= R= S= P= N= L= B= A= G= M= V= X=` | The assignments the doors print. An assignment is its own piece — it cannot launder (§4). |
-| Dot-dir adds | `git add .agents/` `.claude/` `.vscode/` `.roo/` `.roomodes` `.githooks/` `.opencode/` `.github/` `.gemini/` `.agent/` | One character longer than the `git add .` deny, so explicit dot-path staging works while the bare sweep stays dead. |
-| Lane-scoped re-allows | `git branch -d chore/`, `git branch -d claude/`, `git push origin --delete chore/`, `git push origin --delete claude/` (+ `env -u GITHUB_TOKEN` twins) | The close-out ceremony's own prune steps — longer than their denies, so they win only for lane branches; `main`/`epic/*` stay denied. |
+| Read-only + fs helpers | bare `ls`/`pwd`/`true`/`date`/`head`/`sort`/`uniq`/`wc`/`cat`/`echo` (pipe tails run bare), the rest spaced: `tail `, `sed `, `grep `, `rg `, `diff `, `cp `, `mkdir `, `printf `, `awk `, `cut `, `tr `, `basename `, `dirname `, `readlink `, `file `, `stat `, `du `, `cmp `, `command -v `, `which `, `jq `, `touch ` | Claude-parity read/copy set. Trailing spaces where a bare entry would swallow a different binary (`tr` → `trap`, `tail` → `tailscale`). `find` is deliberately absent (`-delete`/`-exec rm` ride behind the prefix) — it asks. |
+| Door variables | `REPO=`, `BRANCH=`, `EXPECTED_KEY=`, `BASE=`, `BEHIND=`, `HEAD_SHA=`, `PATHS=`, `VENV=`, `KEY=`, `MAIN=`, `WT=`, `W=`, `SCR=`, `SCRATCH=`, `EXT=`, `DB=`, `OUT=`, `MSG=`, `URL=`, `CODE=`, `E=`, `T=`, `D=`, `F=`, `R=`, `S=`, `P=`, `N=`, `L=`, `B=`, `A=`, `G=`, `M=`, `V=`, `X=` | The standalone assignments the doors print (their own pieces). Env-prefix laundering via these is the §5 residual; the shape law bans that spelling. |
+| Dot-dir adds | `git add .agents/`, `git add .claude/`, `git add .vscode/`, `git add .roo/`, `git add .roomodes`, `git add .githooks/`, `git add .opencode/`, `git add .github/`, `git add .gemini/`, `git add .agent/` | One character longer than the `git add .` deny, so explicit dot-path staging works while the bare sweep stays dead. |
+| Config reads | `git config --get `, `git config --list`, `git config -l` | Longer than the `git config` deny — reads work, writes refuse (a config write can disarm the hooks, §below). |
+| Lane/epic prune re-allows | `git branch -d chore/`, `git branch -d claude/`, `git branch -d epic/` (+ quoted twins `git branch -d "chore/`, `git branch -d "claude/`, `git branch -d "epic/`), `git push origin --delete chore/`, `git push origin --delete claude/`, `git push origin --delete epic/` (+ quoted twins `git push origin --delete "chore/`, `git push origin --delete "claude/`, `git push origin --delete "epic/`, and env -u GITHUB_TOKEN twins of all six push forms) | The close ceremonies' own prune steps — longer than their denies, so they win ONLY for lane/epic branches, in both the quoted and unquoted spellings the doors print; `main` stays denied. Lowercasing makes `-D epic/…` ≡ `-d epic/…`: the epic-close door's forced delete rides the same re-allow by design. |
 
-**DENY families**
+**DENY families** (every `git `/`gh ` deny also exists as an `env -u GITHUB_TOKEN ` twin — generated,
+enforced by the test — because the broad env-twin allow would otherwise bypass it)
 
 | Family | Entries | Why |
 |---|---|---|
 | Filesystem | `rm -rf`, `rm -r`, `sudo`, `chmod -R 777`, `chown -R`, `dd if=`, `mkfs`, `del /s`, `rmdir /s`, `Remove-Item -Recurse` | Irreversible. Bare `rm <file>` stays unlisted → asks. |
-| Outward git | `git push --force`, `-f`, `--force-with-lease`, `--mirror`, `--all`, `git push origin main`, `-u origin main`, `origin main:`, `origin HEAD:`, `origin +`, `--delete`, `origin --delete` | `main` is never an agent's; history rewrites never auto-run. Lane-scoped deletes re-allowed above. |
-| History/board destruction | `git reset --hard`, `git clean`, `git checkout main`, `git switch main`, `git branch -D`, `git branch -M`, `git rebase`, `git filter-branch`, `git reflog expire/delete`, `git update-ref -d`, `git gc --prune=now`, `git stash drop/clear`, `git remote remove/rm/set-url` | Each can destroy work or reroute pushes silently. |
+| Outward git | `git push --force`, `git push -f`, `git push --force-with-lease`, `git push --mirror`, `git push --all`, `git push origin main`, `git push -u origin main`, `git push --set-upstream origin main`, `git push origin main:`, `git push origin HEAD:`, `git push origin +`, `git push origin :`, `git push --delete`, `git push origin --delete` | `main` is never an agent's; history rewrites never auto-run. Lane/epic deletes re-allowed above. (The GitHub `main-write-gate` ruleset is the primary lock on `main`; these rows are the local echo.) |
+| Work destruction | `git reset --hard`, `git clean -f`, `git clean -d`, `git branch -D`, `git branch -M`, `git rebase`, `git filter-branch`, `git reflog expire`, `git reflog delete`, `git update-ref -d`, `git gc --prune`, `git stash drop`, `git stash clear`, `git restore .`, `git checkout -- `, `git checkout .` | Each destroys committed or uncommitted work, or the recovery data for it. `-f`/`-d` leave the dry-run `git clean -n` approvable. `git checkout main` is deliberately NOT denied — parking a checkout on main is a real ceremony step, and the damage (pushing main) is fenced elsewhere. |
+| Reroute/disarm | `git remote remove`, `git remote rm`, `git remote set-url`, `git config` | A remote edit reroutes pushes silently; a config write can disarm the hooks (`core.hooksPath`). Config READS are re-allowed above. |
 | Sweeps | `git add -A`, `git add .`, `git add -u`, `git add --all` | The git-policy ban — a sweep carries other sessions' work. |
-| Launder shapes | `git -C`, `git --git-dir` (+ `env -u GITHUB_TOKEN` twins) | Under a broad `git ` allow these would bypass every verb deny (§4). Auto-denied: the agent gets an immediate refusal and rewrites to `cd … && git …`. |
+| Launder shapes | `git -C`, `git --git-dir` | Under the broad `git ` allow these would bypass every verb deny (§4). Auto-denied: the agent gets an immediate refusal and rewrites to `cd … && git …`. (Lowercasing means `git -c` — config override — is denied by the same row.) |
 | Outward tools | `gh pr merge`, `gh repo delete`, `gh release delete`, `acli jira workitem delete` | Merges are the operator's click; deletions are operator words. |
 
 ## 7. Applying the lists per machine — `zoo_permissions_apply.py`
 
 `python3 .agents/scripts/zoo_permissions_apply.py --status` (PC: `python`) shows, for every
 `state.vscdb` that carries the Zoo key: counts, master-toggle values, and drift vs the tracked
-file. `--apply` writes the tracked lists into the decision store. It **refuses while VS Code is
+file. `--apply` writes the tracked lists into the decision store (leaving a one-time
+`state.vscdb.scc-backup` beside each db). It **refuses while VS Code is
 running** (VS Code flushes its own state on exit and would overwrite). Procedure, any time the
 lists change:
 
@@ -172,13 +181,17 @@ New machine setup = clone, toggles on in Zoo's Auto-Approve panel (master + Read
 
 | Configuration | Auto-approved |
 |---|---|
-| The 49/19 lists as set up by hand in the UI (before) | **34%** |
-| Canonical lists, commands as historically written | **73%** |
-| Canonical lists + doors rewritten to the §8 shape | **~87%** |
+| The 49/19 lists as set up by hand in the UI (before) | **34.1%** |
+| Canonical lists, commands as historically written | **74.4%** |
+| Canonical lists + doors rewritten to the §8 shape | **88.2%** |
 
-Destructive battery: **46 commands, 0 auto-approved** (45 denied, 1 ask). Ceremony set: **20/20
-auto-approved** (preflight, gates, receipt, flight event, PR create/checks, transition, prune).
-Residual asks are one-off diagnostics — which is the design: rare things prompt, the pipeline runs.
+Destructive battery: **68 commands, 0 auto-approved, 68 auto-denied.** Ceremony set: **25/25
+auto-approved** (preflight, gates, receipt, flight event, PR create/checks, transition, prunes in
+quoted AND unquoted spellings, epic-close branch delete, parking the checkout back on main).
+Legit-read pins: `git clean -n`, `git config --get`, `git config --list` all auto-approve. The
+remaining asks are one-off diagnostics plus the handful of door blocks still written as multi-line
+`if`/loops (banned §8 shapes for seats; they prompt when copied verbatim) — which is the design:
+rare things prompt, the pipeline runs.
 
 ## 10. Incident notes worth keeping
 

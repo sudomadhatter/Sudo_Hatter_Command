@@ -154,7 +154,7 @@ rather than in the working tree, which is the normal state for anything still in
 reads the miss as "no source" downgrades a grounded child:
 
 ```bash
-git -C "$REPO" show "<ref>:<path>"     # ref present  → read it from the branch
+cd "$REPO" && git show "<ref>:<path>"     # ref present  → read it from the branch
 cat "<path>"                            # ref null     → it is in the checkout
 ```
  This is the step no parser wins: across 139 AGY story

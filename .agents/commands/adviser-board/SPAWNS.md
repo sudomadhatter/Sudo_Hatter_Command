@@ -57,7 +57,7 @@ Work INSIDE that root — never search from the repository above it.
 Establish:
   - The real surface: top-level directories, entry points, what the thing is built in.
   - The test surface: what tests exist, when they last changed, what is obviously untested.
-  - Recent motion: `git -C {abs_path} log --oneline -30` — what has actually been worked on lately.
+  - Recent motion: `cd {abs_path} && git log --oneline -30` — what has actually been worked on lately.
   - Open work: if `acli` is available, the project's open tickets. If it is not, say so and move on.
   - What is half-built: anything that looks started and abandoned, stubbed, or TODO-laden.
 

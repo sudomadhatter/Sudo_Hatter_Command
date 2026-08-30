@@ -7,7 +7,7 @@
     "files": 422,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 769,
+    "edges": 774,
     "external": 40,
     "ambiguous": 176,
     "dangling": 301,
@@ -733,8 +733,8 @@
     },
     {
       "path": ".agents/rules/command-shape.md",
-      "in": 4,
-      "out": 0
+      "in": 6,
+      "out": 2
     },
     {
       "path": ".agents/rules/completion-not-illusion.md",
@@ -754,7 +754,7 @@
     {
       "path": ".agents/rules/git-policy.md",
       "in": 62,
-      "out": 3
+      "out": 4
     },
     {
       "path": ".agents/rules/jira.md",
@@ -839,7 +839,7 @@
     {
       "path": ".agents/rules/zoo-team.md",
       "in": 10,
-      "out": 4
+      "out": 6
     },
     {
       "path": ".agents/scripts/INDEX.md",
@@ -2024,7 +2024,7 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 28,
-      "out": 53
+      "out": 55
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
@@ -2108,7 +2108,7 @@
     },
     {
       "path": "docs/migrations/zoo-code-permissions-guide.md",
-      "in": 0,
+      "in": 5,
       "out": 1
     },
     {
@@ -3751,6 +3751,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/rules/command-shape.md",
+      "to": "docs/migrations/zoo-code-permissions-guide.md",
+      "kind": "link"
+    },
+    {
       "from": ".agents/rules/constitution.md",
       "to": ".agents/rules/karpathy-guidelines.md",
       "kind": "ref"
@@ -3758,6 +3763,11 @@
     {
       "from": ".agents/rules/git-policy.md",
       "to": ".agents/rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/git-policy.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -3917,12 +3927,22 @@
     },
     {
       "from": ".agents/rules/zoo-team.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
       "to": ".agents/rules/constitution.md",
       "kind": "ref"
     },
     {
       "from": ".agents/rules/zoo-team.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": "docs/migrations/zoo-code-permissions-guide.md",
       "kind": "ref"
     },
     {
@@ -5463,6 +5483,11 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": "docs/migrations/zoo-code-permissions-guide.md",
       "kind": "link"
     },
     {

@@ -82,4 +82,6 @@ documented once so it never costs another investigation ticket.
 5. Guide readable end-to-end with every path a clickable link.
 
 ## Batch approval
-(pending — the operator's word "approved" lands here with sha)
+**APPROVED** — operator, 2026-08-30, verbatim: "merged lets fix this termianl command requrest
+problem now once and for all" (given against the plan as committed at `e157afc9`; PR #105 merged
+first, main at `070b6501`). Covers Parts B–H as declared.

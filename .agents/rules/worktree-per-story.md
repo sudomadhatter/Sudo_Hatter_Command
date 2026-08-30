@@ -81,7 +81,7 @@ you are deliberately stacking on another story's branch. `git worktree add` take
 OPERAND and needs neither trip:
 
 ```
-git -C <repo> worktree add --no-track .claude/worktrees/<slug> -b claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>
+cd <repo> && git worktree add --no-track .claude/worktrees/<slug> -b claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>
 ```
 
 ⛔ **`--no-track` belongs to the operand form, and dropping it re-points the lane at the epic.**
@@ -189,7 +189,7 @@ exception:
   guess. The guess is precisely what breaks under parallel lanes. (`task_preflight.py` goes further
   since SCC-64: `--expect-key` is **required**, and a branch whose key does not match blocks
   mechanically — the discipline here still covers every other script.)
-- **Derive any `Repo | Branch` line you print from command output** — `git -C "$REPO" rev-parse
+- **Derive any `Repo | Branch` line you print from command output** — `cd "$REPO" && git rev-parse
   --abbrev-ref HEAD` — never from memory. An echo written from belief can only confirm the belief; it
   cannot catch a wrong one, which is the only thing it is there for.
 - **Check the script's echoed target before reading its verdict.** Name the Jira key you intend to act on

@@ -40,9 +40,9 @@ path missing under `PROJECT_ROOT` → STOP, never fall back to the lobby.
 Then say what you resolved **in the words git gave you**, not in the words you expected:
 
 ```bash
-PROJECT_ROOT=$(git -C "<the target you bound>" rev-parse --show-toplevel)
-BRANCH=$(git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD)
-HEAD_SHA=$(git -C "$PROJECT_ROOT" rev-parse HEAD)
+PROJECT_ROOT=$(cd "<the target you bound>" && git rev-parse --show-toplevel)
+BRANCH=$(cd "$PROJECT_ROOT" && git rev-parse --abbrev-ref HEAD)
+HEAD_SHA=$(cd "$PROJECT_ROOT" && git rev-parse HEAD)
 echo "Reviewing: $(basename "$PROJECT_ROOT") | $BRANCH @ ${HEAD_SHA:0:8}"
 ```
 
@@ -65,17 +65,17 @@ Bind the two strings every step below reads — from command output, before anyt
 
 ```bash
 WORKTREE=<the story tree Step 0.5 resolved, or "$PROJECT_ROOT" when none exists>
-EPIC=<epic/JIRA-KEY-slug>      # from `git -C "$PROJECT_ROOT" branch -a --list '*epic/*'`, or the story's epic in the plan
-env -u GITHUB_TOKEN git -C "$WORKTREE" fetch origin "$EPIC"        # a bare `$EPIC` is this checkout's LAST PULL
-git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD          # the story's committed work
-git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD | wc -l  # echo this count
-git -C "$WORKTREE" status --short                                  # anything uncommitted (report it; it is not reviewed)
+EPIC=<epic/JIRA-KEY-slug>      # from `cd "$PROJECT_ROOT" && git branch -a --list '*epic/*'`, or the story's epic in the plan
+cd "$WORKTREE" && env -u GITHUB_TOKEN git fetch origin "$EPIC"        # a bare `$EPIC` is this checkout's LAST PULL
+cd "$WORKTREE" && git diff --name-only "origin/$EPIC"...HEAD          # the story's committed work
+cd "$WORKTREE" && git diff --name-only "origin/$EPIC"...HEAD | wc -l  # echo this count
+cd "$WORKTREE" && git status --short                                  # anything uncommitted (report it; it is not reviewed)
 ```
 
 Echo the file count. **An empty set is a STOP, not a pass** — Step 3.5 restates it at the gate, but by
 then the engine, the acceptance audit and the whole test gate have already run on nothing.
 
-⛔ **`git -C ""` does NOT error** — git documents it as "leave the current working directory
+⛔ **`cd ""` && git does NOT error** — git documents it as "leave the current working directory
 unchanged" — so an unassigned `$WORKTREE` silently measures whatever tree the shell is standing in:
 the shared checkout Step 0.5 just told you is empty or stale, and the redirects in Step 0.7 still
 create their two `/tmp` files, so the overlap reads clean (`preflight-resolves-repo-from-cwd`).
@@ -100,21 +100,21 @@ epic-mate that *did* move the file lands anyway. That substitution is the stale-
 swept out of this command family — do not re-plant it here.
 
 ```bash
-env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin
-git -C "$PROJECT_ROOT" branch -a --list '*epic/*'        # normally exactly one live epic branch
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin
+cd "$PROJECT_ROOT" && git branch -a --list '*epic/*'        # normally exactly one live epic branch
 # ⛔ RE-BIND $WORKTREE and $EPIC here, to the SAME strings Step 0.6 echoed. Each ```bash block is
-# its own shell: a variable set in Step 0.6 is GONE by the time this one runs, and `git -C ""` does
+# its own shell: a variable set in Step 0.6 is GONE by the time this one runs, and `cd ""` && git does
 # not error — it silently reads whatever tree the shell is standing in.
 WORKTREE=<the same path Step 0.6 echoed>
 EPIC=<the same epic/JIRA-KEY-slug Step 0.6 echoed>
 test -n "$WORKTREE" && test -n "$EPIC" || { echo 'UNBOUND — STOP'; exit 1; }
-BASE=$(git -C "$WORKTREE" merge-base HEAD "origin/$EPIC")
-git -C "$WORKTREE" diff --name-only "$BASE".."origin/$EPIC" | sort > /tmp/theirs.txt  # landed while you built
-git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD | sort > /tmp/mine.txt      # what you changed
+BASE=$(cd "$WORKTREE" && git merge-base HEAD "origin/$EPIC")
+cd "$WORKTREE" && git diff --name-only "$BASE".."origin/$EPIC" | sort > /tmp/theirs.txt  # landed while you built
+cd "$WORKTREE" && git diff --name-only "origin/$EPIC"...HEAD | sort > /tmp/mine.txt      # what you changed
 test -s /tmp/mine.txt || { echo 'EMPTY DIFF — STOP (Step 0.6 said so)'; exit 1; }     # empty file = clean sweep
 grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                               # the TRUE overlap
-git -C "$WORKTREE" merge-tree --write-tree --messages HEAD "origin/$EPIC" | head -40  # conflicts, before they are real
-git -C "$PROJECT_ROOT" worktree list                                                  # sibling story lanes still live
+cd "$WORKTREE" && git merge-tree --write-tree --messages HEAD "origin/$EPIC" | head -40  # conflicts, before they are real
+cd "$PROJECT_ROOT" && git worktree list                                                  # sibling story lanes still live
 python3 .agents/scripts/risk_seam.py classify --repo "$WORKTREE" $(cat /tmp/mine.txt) # risk tiers from the PROJECT graph
 ```
 
@@ -305,7 +305,7 @@ reconciliation above. Diff the block against the real diff:
 
 ```bash
 python3 .agents/scripts/declared_change_set.py diff <the plan> \
-        --changed $(git -C "$PROJECT_ROOT" diff --name-only --no-renames <the same base this review resolved>)   # PC: `python`
+        --changed $(cd "$PROJECT_ROOT" && git diff --name-only --no-renames <the same base this review resolved>)   # PC: `python`
 ```
 
 (`--no-renames` matters: with rename detection on, a renamed file surfaces only under its NEW

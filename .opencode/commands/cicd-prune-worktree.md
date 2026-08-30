@@ -119,7 +119,7 @@ if (Test-Path $root) {
     # directory looked known, and the sweep printed NOTHING while a real husk sat on disk.
     $isKnown = @($known | Where-Object { $_ -ieq $d.FullName.TrimEnd('\') }).Count -gt 0
     $hasGit  = Test-Path (Join-Path $d.FullName '.git')
-    $dirty   = if ($hasGit) { @(git -C $d.FullName status --short).Count } else { 'n/a' }
+    $dirty   = if ($hasGit) { @(cd $d.FullName && git status --short).Count } else { 'n/a' }
     $state   = if (-not $hasGit) { 'HUSK' } elseif ($isKnown) { 'LIVE' } else { 'LOST' }
     Write-Output "$state  $($d.Name)  (registered=$isKnown, .git=$hasGit, uncommitted=$dirty)"
   }
@@ -198,16 +198,16 @@ committed. Those are different questions and historically only one of them was b
 For **every** worktree Step 1.6 marked for removal:
 
 ```bash
-git -C .claude/worktrees/<slug> status --short      # ANY output = unsaved work
+cd .claude/worktrees/<slug> && git status --short      # ANY output = unsaved work
 ```
 
 - **Empty** → nothing at risk, proceed.
 - **Any output** → **do NOT remove yet.** Commit it to its own branch and push, so the work becomes
   reproducible instead of unique to that disk:
   ```bash
-  git -C .claude/worktrees/<slug> add <explicit paths>     # never `git add -A`
-  git -C .claude/worktrees/<slug> commit -m "wip(<story>): preserve uncommitted work before worktree prune"
-  git -C .claude/worktrees/<slug> push -u origin claude/<JIRA-KEY>-<slug>
+  cd .claude/worktrees/<slug> && git add <explicit paths>     # never `git add -A`
+  cd .claude/worktrees/<slug> && git commit -m "wip(<story>): preserve uncommitted work before worktree prune"
+  cd .claude/worktrees/<slug> && git push -u origin claude/<JIRA-KEY>-<slug>
   ```
   Then say plainly in the report that you committed someone else's in-flight work, what it was, and that
   the story's status is **unchanged** — a preservation commit is not progress and must never be reported as

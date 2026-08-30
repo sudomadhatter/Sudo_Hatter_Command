@@ -137,11 +137,11 @@ develope the whole ticket including subtasks"*).
 **Cutting a CONSOLIDATED lane** — the whole Step 3 loop collapses to one tree:
 
 ```bash
-git -C "$REPO" fetch origin                                   # ⛔ the base is origin/main, never a bare `main`
-git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<PARENT-KEY>-<slug> origin/main
-git -C "<the new tree>" branch --unset-upstream               # a start-point of origin/main sets upstream to MAIN
+cd "$REPO" && git fetch origin                                   # ⛔ the base is origin/main, never a bare `main`
+cd "$REPO" && git worktree add .claude/worktrees/<slug> -b chore/<PARENT-KEY>-<slug> origin/main
+cd "<the new tree>" && git branch --unset-upstream               # a start-point of origin/main sets upstream to MAIN
 python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
-BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
+BRANCH=$(cd "<the new tree>" && git rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
 ```
 
@@ -180,11 +180,11 @@ plan/audit/cut/push loop below collapses into part sections of that lane's singl
 **For each subtask, in dependency order.** Everything here happens **inside that lane's own tree**.
 
 ```bash
-git -C "$REPO" fetch origin                                   # ⛔ the base is origin/main, never a bare `main`
-git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<SUBKEY>-<slug> origin/main
-git -C "<the new tree>" branch --unset-upstream               # a start-point of origin/main sets upstream to MAIN
+cd "$REPO" && git fetch origin                                   # ⛔ the base is origin/main, never a bare `main`
+cd "$REPO" && git worktree add .claude/worktrees/<slug> -b chore/<SUBKEY>-<slug> origin/main
+cd "<the new tree>" && git branch --unset-upstream               # a start-point of origin/main sets upstream to MAIN
 python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
-BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
+BRANCH=$(cd "<the new tree>" && git rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
 ```
 
@@ -223,10 +223,10 @@ Then, in that tree:
    hand-back and carry on.
 4. **Commit and push the lane** (explicit paths; the key leads the subject):
    ```bash
-   git -C "<tree>" add _artifacts/_main/<date>_<slug>/implementation_plan.md \
+   cd "<tree>" && git add _artifacts/_main/<date>_<slug>/implementation_plan.md \
                        _artifacts/_main/<date>_<slug>/task.yaml
-   git -C "<tree>" commit -F <message-file>     # ⛔ backticks in -m "…" EXECUTE
-   git -C "<tree>" push -u origin chore/<SUBKEY>-<slug>
+   cd "<tree>" && git commit -F <message-file>     # ⛔ backticks in -m "…" EXECUTE
+   cd "<tree>" && git push -u origin chore/<SUBKEY>-<slug>
    ```
    **Unpushed is stranded** — branches travel between machines, worktrees do not.
 5. **Update the subtask ticket** so the board points at the plan — this is Step 3.5 above, run

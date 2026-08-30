@@ -52,7 +52,7 @@ on a `claude/*` story branch the base is its EPIC branch (exactly one live `epic
 case); otherwise fall back to `main`:
 
 ```bash
-env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin   # a bare ref is this checkout's LAST PULL
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin   # a bare ref is this checkout's LAST PULL
 # origin/ FIRST: a local epic head is only as fresh as the last pull, and a story lane's real
 # base is what the epic branch looks like NOW - sibling stories land there while you audit.
 BASE=$(git for-each-ref --format='%(refname:short)' \

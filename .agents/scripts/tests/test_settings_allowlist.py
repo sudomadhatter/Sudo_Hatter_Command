@@ -75,8 +75,8 @@ if c.block("B · Zoo Code allowlist + extension recommendations travel"):
     vs = _jsonc(ROOT / ".vscode" / "settings.json")
     allowed = vs.get("zoo-code.allowedCommands")
     denied = vs.get("zoo-code.deniedCommands")
-    c.check("B1 zoo-code.allowedCommands is non-empty and carries the read-only sentinels",
-            isinstance(allowed, list) and {"git status", "ls"} <= set(allowed or []))
+    c.check("B1 zoo-code.allowedCommands is non-empty and carries the family sentinels",
+            isinstance(allowed, list) and {"git ", "cd ", "ls"} <= set(allowed or []))
     c.check("B2 the deny list pins the destructive sentinels (identity, not count)",
             isinstance(denied, list)
             and {"git push origin main", "rm -rf", "git reset --hard"} <= set(denied or []))
@@ -86,6 +86,10 @@ if c.block("B · Zoo Code allowlist + extension recommendations travel"):
     # destructive set (found at review, SCC-346).
     c.check("B2b no bare `git -C` allow prefix (it would bypass every git deny)",
             "git -C" not in (allowed or []))
+    # SCC-351 hardened this from absence to an active fence: under the broad "git " allow,
+    # an UN-denied `git -C` would auto-run and launder past every verb deny.
+    c.check("B2c `git -C` and `git --git-dir` are DENIED outright",
+            {"git -C", "git --git-dir"} <= set(denied or []))
     ext = _jsonc(ROOT / ".vscode" / "extensions.json")
     recs = ext.get("recommendations", [])
     c.check("B3 Zoo Code is a workspace recommendation",
