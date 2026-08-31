@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-354-approvals-door",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-354",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": null,
+  "warnings": 1,
+  "when": null
+}

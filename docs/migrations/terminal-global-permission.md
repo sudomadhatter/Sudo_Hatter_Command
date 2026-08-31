@@ -11,8 +11,8 @@ un-denied spelling does not ask, it RUNS.
 |---|---|---|---|
 | **Claude Code** | `.claude/settings.json` (tracked `permissions.allow` rules) + `.claude/settings.local.json` (machine-local, gitignored, linked into worktrees) + `~/.claude/settings.json` | per-rule `Bash(prefix:*)` patterns, judged per command segment | add the rule to the right tier (tracked for the team, local for the machine); live immediately. Deep dive: [claude-terminal-permission.md](claude-terminal-permission.md) |
 | **Zoo Code** (VS Code) | VS Code globalState `state.vscdb` — the tracked [`.vscode/settings.json`](../../.vscode/settings.json) `zoo-code.*` lists SEED it exactly once and never again | lowercase starts-with per command PIECE, longest prefix wins allow-vs-deny, tie → deny | edit the tracked lists → `python3 .agents/scripts/tests/test_zoo_permissions.py` must stay green → quit VS Code → `python3 .agents/scripts/zoo_permissions_apply.py --apply` (PC: `python`) → reopen. Deep dive: [zoo-code-permissions-guide.md](zoo-code-permissions-guide.md), SOP §13 row |
-| **opencode** | its own config under `.opencode/` | WHOLE-string prefix (no per-piece split) — compounds rarely match | accept prompts, or add whole-string prefixes; exact store + shape to be pinned in the SCC-352 lane |
-| **Codex** | `~/.codex/` config (`approval_policy` / sandbox), per machine | policy-level, not per-command lists | set the policy per machine; per-command growth to be pinned in the SCC-352 lane |
+| **opencode** | its own config under `.opencode/` | WHOLE-string prefix (no per-piece split) — compounds rarely match | accept prompts, or add whole-string prefixes by hand. **Outside `/smh-llm-approvals`** (SCC-354): a whole-string prefix unblocks exactly one invocation, so a list grown that way carries one row per command and stops being readable. |
+| **Codex** | `~/.codex/` config (`approval_policy` / sandbox), per machine | policy-level, not per-command lists | set the policy per machine. **Outside `/smh-llm-approvals`** (SCC-354): there is no per-command list to grow — the policy is the whole decision. |
 | **Gemini / Antigravity** | retired — VS Code + Zoo replaced Antigravity (SCC-349); Gemini CLI keeps its own `~/.gemini` config | — | — |
 
 **Command shape matters as much as the lists.** The house pin idiom is `cd <abs> && git <verb>` in
@@ -20,7 +20,7 @@ ONE compound line — `git -C` is auto-denied as a launder shape, fills are abso
 script called after any `cd` needs the lobby pinned first. The law: `.agents/rules/command-shape.md`
 (§The law, §Absolute fills, §Zoo).
 
-**Growing the lists without re-reading sessions by eye** is SCC-352: the `/smh-llm-approvals` door
-reads recent agent threads, replays every command that stopped for approval through the real
-matcher, and PROPOSES the minimal new allow rows per platform — the operator picks; nothing is ever
-auto-added.
+**Growing the lists without re-reading sessions by eye** is `/smh-llm-approvals` (SCC-352): it
+audits recent Claude and Zoo chats for every command that stopped for approval, shows the operator
+the list, and adds the ones he names to both allow lists. It proposes nothing and never edits a
+deny list.

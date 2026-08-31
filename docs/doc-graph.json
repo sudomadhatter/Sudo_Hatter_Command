@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 423,
+    "files": 426,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 782,
+    "edges": 790,
     "external": 40,
     "ambiguous": 176,
     "dangling": 301,
@@ -497,6 +497,11 @@
       "out": 5
     },
     {
+      "path": ".agents/commands/smh-llm-approvals.md",
+      "in": 2,
+      "out": 3
+    },
+    {
       "path": ".agents/commands/smh-memory-audit.md",
       "in": 2,
       "out": 3
@@ -733,7 +738,7 @@
     },
     {
       "path": ".agents/rules/command-shape.md",
-      "in": 9,
+      "in": 11,
       "out": 3
     },
     {
@@ -743,7 +748,7 @@
     },
     {
       "path": ".agents/rules/constitution.md",
-      "in": 25,
+      "in": 27,
       "out": 1
     },
     {
@@ -753,7 +758,7 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 62,
+      "in": 64,
       "out": 4
     },
     {
@@ -1607,6 +1612,11 @@
       "out": 1
     },
     {
+      "path": ".agents/skills/smh-llm-approvals/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": ".agents/skills/smh-memory-audit/SKILL.md",
       "in": 0,
       "out": 1
@@ -1882,6 +1892,11 @@
       "out": 1
     },
     {
+      "path": ".agents/workflows/smh-llm-approvals.md",
+      "in": 0,
+      "out": 3
+    },
+    {
       "path": ".agents/workflows/smh-memory-audit.md",
       "in": 0,
       "out": 1
@@ -2114,7 +2129,7 @@
     {
       "path": "docs/migrations/zoo-code-permissions-guide.md",
       "in": 7,
-      "out": 1
+      "out": 2
     },
     {
       "path": "docs/repo-map.md",
@@ -3043,6 +3058,21 @@
     {
       "from": ".agents/commands/smh-label-tasks.md",
       "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-llm-approvals.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-llm-approvals.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-llm-approvals.md",
+      "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
     {
@@ -4576,6 +4606,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/skills/smh-llm-approvals/SKILL.md",
+      "to": ".agents/commands/smh-llm-approvals.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/skills/smh-memory-audit/SKILL.md",
       "to": ".agents/commands/smh-memory-audit.md",
       "kind": "ref"
@@ -4898,6 +4933,21 @@
     {
       "from": ".agents/workflows/smh-label-tasks.md",
       "to": ".agents/commands/smh-label-tasks.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/workflows/smh-llm-approvals.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/workflows/smh-llm-approvals.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/workflows/smh-llm-approvals.md",
+      "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
     {
@@ -5883,6 +5933,11 @@
     {
       "from": "docs/migrations/terminal-global-permission.md",
       "to": "docs/migrations/zoo-code-permissions-guide.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/zoo-code-permissions-guide.md",
+      "to": ".agents/commands/smh-llm-approvals.md",
       "kind": "link"
     },
     {
@@ -7712,6 +7767,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8107,6 +8163,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8584,6 +8641,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8663,6 +8721,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8742,6 +8801,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8821,6 +8881,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8900,6 +8961,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8979,6 +9041,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9058,6 +9121,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9137,6 +9201,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9216,6 +9281,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9295,6 +9361,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9374,6 +9441,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9453,6 +9521,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9532,6 +9601,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9611,6 +9681,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9690,6 +9761,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9838,6 +9910,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -10027,6 +10100,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -10235,6 +10309,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -10650,6 +10725,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -10755,6 +10831,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",

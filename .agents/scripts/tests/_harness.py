@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parents[1]
@@ -470,4 +471,20 @@ class TempDir:
         def force(func, path, _info):  # read-only files (and .git objects) on Windows
             Path(path).chmod(0o700)
             func(path)
-        shutil.rmtree(self.path, onerror=force)
+        # ⛔ RETRY, don't just force — `force` cannot help here and the difference is the bug.
+        # `shutil.rmtree` walks with open directory fds, so a `git` subprocess that has already
+        # returned but not fully torn down can still land a file in `.git/objects` between the
+        # walk and the `rmdir`. That surfaces as `OSError: [Errno 39] Directory not empty` from
+        # the cleanup — chmod does not make a non-empty directory removable, so `force`
+        # re-raises and a test that PASSED reports as a failed file. Measured on the Linux CI
+        # runner (`test_git_hooks.py`, which builds a throwaway remote), never on the Mac; the
+        # same run had passed minutes earlier on identical code, which is what identifies it as
+        # a race rather than a regression (SCC-354).
+        for attempt in range(4):
+            try:
+                shutil.rmtree(self.path, onerror=force)
+                return
+            except OSError:
+                if attempt == 3:
+                    raise
+                time.sleep(0.2 * (attempt + 1))
