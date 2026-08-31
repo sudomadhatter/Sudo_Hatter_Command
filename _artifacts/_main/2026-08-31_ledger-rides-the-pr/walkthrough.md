@@ -165,7 +165,7 @@ dispositions: per-lens: blind-hunter=8/2/0 · edge-case-hunter=8/0/0 · literal-
 severity_floor: none
 notes: every finding fixed in-lane before the verdict — no defer, no residue ticket. The sweep was rebuilt from 8 existence mutants to 15 narrowings/paraphrases/inversions; 15/15 killed.
 
-**Verdict: PASS @ 5592311d**
+Verdict: PASS @ 5592311d
 
 ⛔ **The review found the first guard substantially vacuous, and it PROVED it rather than asserting
 it.** Three lenses independently reproduced the same class of hole, and the test-adequacy lens
