@@ -93,6 +93,11 @@ def build_plist(repo: Path, home: Path, platform: str = "darwin",
             # [[zshrc-is-invisible-to-automation]]
             "NTFY_TOPIC": topic or os.environ.get("NTFY_TOPIC") or DEFAULT_TOPIC,
             "PATH": _MAC_PATH,
+            # ⛔ Without this the log below is EMPTY. Python block-buffers stdout whenever it is
+            # not a TTY, and a poll loop never writes enough to flush — so the agent runs, launchctl
+            # lists it, and the one file you would look at to confirm it is working says nothing.
+            # Measured on the first live install, not read off the code.
+            "PYTHONUNBUFFERED": "1",
         },
         # A background process with no log is indistinguishable from one that never started.
         "StandardOutPath": str(logs / "zoo-notify.log"),
@@ -106,6 +111,7 @@ def build_cmd(repo: Path, topic: str | None = None) -> str:
         "@echo off",
         "rem Zoo Code notifier (SCC-355) - installed by zoo_notify_install.py --apply",
         f"set NTFY_TOPIC={topic or os.environ.get('NTFY_TOPIC') or DEFAULT_TOPIC}",
+        "set PYTHONUNBUFFERED=1",
         f'start "" /min pythonw "{Path(repo).resolve().joinpath(*SCRIPT_PARTS)}" --watch',
         "",
     ]

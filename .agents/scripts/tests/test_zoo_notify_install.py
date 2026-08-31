@@ -126,6 +126,25 @@ def test_mac_plist_path_reaches_homebrew_because_terminal_notifier_lives_there()
         assert "/usr/local/bin" in path.split(":"), path
 
 
+def test_mac_plist_forces_unbuffered_output_or_the_log_stays_empty():
+    """⛔ Found by installing it for real, not by reading the code. The agent came up, launchctl
+    listed it, `ps` showed it watching — and `~/Library/Logs/zoo-notify.log` was EMPTY, because
+    Python block-buffers stdout whenever it is not a TTY and a poll loop never produces enough
+    output to flush. An empty log is precisely the state the log exists to rule out: 'started but
+    doing nothing' and 'never started' look identical again, which is where this whole session
+    began. PYTHONUNBUFFERED, not `-u`, so ProgramArguments[1] stays the script path."""
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        p = m.build_plist(repo=ROOT, home=_home(Path(d)), platform="darwin")
+        assert p["EnvironmentVariables"].get("PYTHONUNBUFFERED") == "1", p["EnvironmentVariables"]
+
+
+def test_windows_command_is_unbuffered_too():
+    m = _mod()
+    body = m.build_cmd(repo=ROOT)
+    assert "PYTHONUNBUFFERED=1" in body, body
+
+
 def test_mac_plist_writes_logs_so_a_silent_watcher_can_be_diagnosed():
     """A background process with no log is indistinguishable from one that never started —
     which is the position this session opened in."""
