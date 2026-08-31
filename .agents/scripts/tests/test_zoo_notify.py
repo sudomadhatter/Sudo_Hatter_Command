@@ -254,10 +254,15 @@ def test_dry_run_opens_nothing_and_raises_nothing():
 
 
 def test_a_banner_that_exits_non_zero_is_not_reported_as_sent():
-    """`check=False` plus an unconditional 'sent' is the false green B4 must be able to see."""
+    """`check=False` plus an unconditional 'sent' is the false green B4 must be able to see.
+
+    ⛔ `banner_cmd` is pinned rather than left to `sys.platform`: on Linux it correctly returns
+    None, so `send()` never runs a banner and this asserts nothing. CI runs Linux — a THIRD machine
+    beside the Mac and the PC, and the one that gates `main`."""
     m = _mod()
     class _Proc:
         returncode = 1
+    m.banner_cmd = lambda payload, platform=None: ["fake-notifier"]
     m.subprocess = type("S", (), {"run": staticmethod(lambda *a, **k: _Proc()),
                                   "SubprocessError": Exception})()
     m.urllib = type("U", (), {"request": type("R", (), {
@@ -265,6 +270,23 @@ def test_a_banner_that_exits_non_zero_is_not_reported_as_sent():
         "urlopen": staticmethod(lambda *a, **k: type("C", (), {"close": lambda s: None})())})()})()
     out = m.send({"title": "T", "message": "M", "ntfy_url": "https://ntfy.sh/x"})
     assert out["banner"].startswith("failed:"), out
+
+
+def test_no_banner_channel_reports_skipped_not_sent_and_not_failed():
+    """The Linux branch, which is CI's — and CI is the machine that gates `main`. With no channel,
+    `send()` must say `skipped`: `sent` would be a false green, `failed:` a false alarm that makes
+    --self-test exit 1 on a machine where nothing is wrong."""
+    m = _mod()
+    def _boom(*a, **k):
+        raise AssertionError("there is no banner channel here; nothing should be run")
+    m.subprocess = type("S", (), {"run": staticmethod(_boom), "SubprocessError": Exception})()
+    m.urllib = type("U", (), {"request": type("R", (), {
+        "Request": staticmethod(lambda *a, **k: None),
+        "urlopen": staticmethod(lambda *a, **k: type("C", (), {"close": lambda s: None})())})()})()
+    m.banner_cmd = lambda payload, platform=None: None
+    out = m.send({"title": "T", "message": "M", "ntfy_url": "https://ntfy.sh/x"})
+    assert out["banner"] == "skipped", out
+    assert out["push"] == "sent", out
 
 
 # --- read_thread() / newest_thread(): the store is rewritten under us ---------------------
@@ -458,6 +480,7 @@ def test_self_test_reports_exit_1_when_a_channel_did_not_fire():
     m = _mod()
     class _Proc:
         returncode = 1
+    m.banner_cmd = lambda payload, platform=None: ["fake-notifier"]   # Linux has no channel
     m.subprocess = type("S", (), {"run": staticmethod(lambda *a, **k: _Proc()),
                                   "SubprocessError": Exception})()
     m.urllib = type("U", (), {"request": type("R", (), {

@@ -203,6 +203,14 @@
       "mutated": "    if False:\n        return self_test(args.dry_run)",
       "case": "test_self_test_needs_no_thread_store",
       "unfiltered": true
+    },
+    {
+      "id": "M26 send() runs a banner on a platform that has no channel",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "    cmd = banner_cmd(payload)\n    if cmd:",
+      "mutated": "    cmd = banner_cmd(payload)\n    if True:",
+      "case": "test_no_banner_channel_reports_skipped_not_sent_and_not_failed",
+      "unfiltered": true
     }
   ]
 }
