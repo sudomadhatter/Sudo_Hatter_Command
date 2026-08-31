@@ -30,12 +30,25 @@ command.** It carries a `tool_use_id`, and the command lives in an earlier `tool
 its id, and pair each refusal back to the command it refused. Grepping for the rejection text
 alone finds every denial and can name none of them.
 
-**Zoo Code** — `<store>/tasks/*/ui_messages.json`, newest ~20 by modified time. The store is:
+**Zoo Code** — `<root>/*/ui_messages.json`, newest ~20 by modified time.
 
-| Machine | Path |
-| --- | --- |
-| Mac | `~/Library/Application Support/Code/User/globalStorage/zoocodeorganization.zoo-code/tasks` |
-| PC | `%APPDATA%\Code\User\globalStorage\zoocodeorganization.zoo-code\tasks` |
+⛔ **Do not hardcode the store path, and do not write `%APPDATA%` into one — that is a cmd.exe
+variable, not a path, and it expands to nothing in a glob or in Python.** Ask the resolver this
+repo already ships and tests, which handles Mac and PC, **every named VS Code profile**, and the
+`zoo-code.customStoragePath` setting — three cases a single hardcoded path silently misses:
+
+```python
+import importlib.util
+spec = importlib.util.spec_from_file_location("z", ".agents/scripts/zoo_notify.py")
+z = importlib.util.module_from_spec(spec); spec.loader.exec_module(z)
+roots = z.store_roots()          # a LIST — the default profile plus each named profile
+```
+
+For reference, what it returns: on the Mac
+`~/Library/Application Support/Code/User/globalStorage/zoocodeorganization.zoo-code/tasks`, and on
+the PC the same tail under `C:/Users/<you>/AppData/Roaming/Code/User/`. Those are what the function
+computes, not a substitute for calling it — a machine with a named profile or a custom store path
+has roots this sentence does not name.
 
 Each file is a JSON array of messages. A command that stopped for the operator is one where
 `type` is `ask`, `ask` is `command`, `partial` is not `true`, and **`autoApprovalDecision` is
