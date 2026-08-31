@@ -3022,7 +3022,8 @@ def main() -> int:
                 return False
             f = fenced(r)
             return ("git add" not in f and "git commit" not in f
-                    and "_artifacts/INDEX.md" not in r and "active-context" not in r)
+                    and "_artifacts/INDEX.md" not in r and "active-context" not in r
+                    and "home-base INDEX" not in r)
 
         def no_new_tail_step(door_text: str) -> bool:
             """C2 — the post-merge step headings are exactly these five. Without it a new
@@ -3164,6 +3165,12 @@ def main() -> int:
                 not region_writes_nothing(
                     "## Step 4.5\n\n## Step 6.5\n\nAdd the row to `_artifacts/INDEX.md`.\n"),
                 "scoping this to Step 6 was the hole: the same defect one section over stayed green")
+        c.check("CS-21 CONTROL the LOBBY hand-append reinstated fails C1",
+                not region_writes_nothing(
+                    "## Step 4.5\n\n## Step 6 —\n\nAdd the home-base INDEX row if run from the "
+                    "lobby.\n"),
+                "the lobby ledger is reconciled in batch and a project ship is not a lobby row — "
+                "AC-6, whose guard the review rebuild would otherwise have dropped")
         c.check("CS-21 CONTROL a brand-new tail step fails C2",
                 not no_new_tail_step(
                     "## Step 4.5\n\n## Step 5\n\n## Step 5.5\n\n## Step 6\n\n## Step 6.5\n\n"

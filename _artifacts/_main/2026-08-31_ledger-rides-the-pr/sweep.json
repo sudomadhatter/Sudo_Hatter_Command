@@ -115,6 +115,14 @@
    "mutated": "The ledger row follows the merge, then live verify",
    "case": "CS-21 H commands/INDEX.md teaches the NEW order, positively",
    "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N15 the LOBBY hand-append creeps back into the post-merge region (AC-6)",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "## Step 6.5 — Move the epic's Jira ticket",
+   "mutated": "## Step 6.5 — Move the epic's Jira ticket\n\nAdd the home-base INDEX row too if run from the lobby.",
+   "case": "CS-21 C1 the WHOLE post-merge region writes nothing",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
   }
  ]
 }

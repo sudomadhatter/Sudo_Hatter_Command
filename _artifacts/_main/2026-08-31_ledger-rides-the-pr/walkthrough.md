@@ -24,7 +24,7 @@ the third door.
 
 | | Item |
 |---|---|
-| ✅ | `CS-21` in `test_command_surfaces.py` — eight checks (A, B, C1, C2, D, E, F1, F2, G, H) plus four controls, written RED first |
+| ✅ | `CS-21` in `test_command_surfaces.py` — **13 checks plus 15 controls**, written RED first, then rebuilt after the review found nine of them vacuous |
 | ✅ | `cicd-push-e2e.md` — new **Step 3.5**, the bookkeeping committed on the epic branch before `gh pr create` |
 | ✅ | `cicd-push-e2e.md` — Step 4's gated-tip sentence qualified for the one artifacts-only commit |
 | ✅ | `cicd-push-e2e.md` — Step 3's `(Step 6)` cross-reference repointed to `(Step 3.5)` *(audit finding F2)* |
@@ -34,21 +34,35 @@ the third door.
 | ✅ | `commands/INDEX.md` — the routing index no longer describes a post-merge ledger *(audit finding F1)* |
 | ✅ | `workflows_testing_SOP.md` — currency row, the command-atlas diagram (new `S35` node), and a §7 paragraph |
 | ✅ | `workflows_testing_SOP_changelog.md` — one row, dated, ticket-keyed |
-| ⚠ | `.opencode/commands/cicd-push-e2e.md` re-mirrored **in-lane, by byte copy, not by running the sync** — see `## Evidence`, "the correction the gate made" |
+| ⚠ | `.opencode/commands/cicd-push-e2e.md` re-mirrored **in-lane, by byte copy, not by running the sync** — see `## Evidence
 
-## Evidence
+⭐ **The check IDs below are the SHIPPED ones.** The first draft's `D`/`F1`/`F2` were retired by the
+review rebuild; the RED transcript further down is preserved verbatim with its original names, which
+is why the two sets differ. Nothing was renamed to look tidier.
 
-| AC | Assertion | Result |
+| AC | Assertion, as shipped | Result |
 |---|---|---|
-| AC-1 | `CS-21 A` + `CS-21 B` — Step 3.5 writes both halves, and its offset precedes `gh pr create` | RED → GREEN |
-| AC-2 | `CS-21 C1` + `CS-21 C2` — the `--after-merge` half instructs no `git commit`; Step 6 owns neither write | C1 standing green, C2 RED → GREEN |
-| AC-3 | `CS-21 D` — Step 3.5's commit fence carries `<JIRA-KEY>` | RED → GREEN |
-| AC-4 | `CS-21 E` — Step 6's ban names SCC-175 and SCC-358 | RED → GREEN |
-| AC-5 | `CS-21 F1` + `CS-21 F2` — neither the door nor the SOP sends the reconcile to a ledger row | RED → GREEN |
-| AC-6 | `CS-21 G` — Step 6 does not hand-append to the home-base INDEX | RED → GREEN |
-| — | `CS-21 H` — the routing index does not describe a post-merge ledger *(added by the self-audit, F1)* | RED → GREEN |
+| AC-1 | `A` (Step 3.5 INSTRUCTS both writes, prose-scoped, negation rejected) · `A3` (and pushes them) · `B` (two-sided order: Step 3 → Step 3.5 → `gh pr create`) | RED → GREEN |
+| AC-2 | `C1` (the WHOLE post-merge region writes nothing) · `C2` (no new tail step may be appended) | RED → GREEN |
+| AC-3 | `A1` (the key is on the `git commit` LINE) · `A2` (explicit paths, never `git add -A`) | RED → GREEN |
+| AC-4 | `E` (Step 6 states the ban, with its scars in the SAME paragraph) · `F` (Step 6 instruments whether Step 3.5 ran) | RED → GREEN |
+| AC-5 | `G` (Step 5.5 records every outcome to the ticket) · `I` (the SOP's Epic currency row is ticket-only) | RED → GREEN |
+| AC-6 | `C1` (the region ban covers `home-base INDEX`) | RED → GREEN |
+| — | `H` — the routing index teaches the new order, positively *(added by the self-audit as F1, rebuilt as a positive by the review)* | RED → GREEN |
 
-**The RED, at `13ffe716` — nine real failures, four controls green, C1 the predicted standing guard:**
+⚠ **AC-5's literal as PLANNED was unshippable, and this is recorded rather than quietly swapped.**
+The plan said grep `"and the ledger row"` in *both* files. The door never contained that string (its
+text was `"in the Step 6 ledger row and in…"`), so the planned assertion would have passed against
+the unedited door — a vacuous RED. The shipped checks use a different construction, and after the
+review they are positive claims rather than bans on a retired sentence.
+
+⚠ **AC-6 nearly lost its guard in the rebuild.** The retired `G` banned `"home-base INDEX"` inside
+Step 6; the new region check bans the two write PATHS, which that phrase does not contain. Caught
+while reconciling this table against the shipped block, and closed by adding the phrase to `C1` with
+its own control and mutant (`N15`).
+
+**The RED, at `13ffe716` — nine real failures, four controls green, C1 the predicted standing guard.**
+Check names here are the first draft's:
 
 ```
 $ python3 .agents/scripts/tests/test_command_surfaces.py --case "CS-21"
@@ -73,37 +87,17 @@ $ python3 .agents/scripts/tests/test_command_surfaces.py --case "CS-21"
 Step 3.5 section at all"* and `C2` quotes the live Step 6 heading — neither is a setup failure
 wearing a red's clothes (`red-test-can-die-before-its-assertion`).
 
-**The GREEN, at `9b19b47d`:**
+**The GREEN, after the review rebuild:**
 
 ```
 $ python3 .agents/scripts/tests/test_command_surfaces.py --case "CS-21"
--- 14/14 passed --
+-- 28/28 passed --
 ```
 
-**The mutation sweep — 8/8 killed, each by its DECLARED case:**
-
-```
-$ python3 .agents/scripts/mutation_sweep.py --table _artifacts/_main/2026-08-31_ledger-rides-the-pr/sweep.json
--- sweep: 8 mutant(s) over 3 file(s) @ 9b19b47d --
-KILLED    M1 the ledger write creeps back into Step 6 (the exact regression)   -> CS-21 C2
-KILLED    M2 the lobby hand-append creeps back into Step 6                     -> CS-21 G
-KILLED    M3 Step 5.5 records to the ledger row again                          -> CS-21 F1
-KILLED    M4 the SOP's currency table says the ledger row again                -> CS-21 F2
-KILLED    M5 the routing index describes a post-merge ledger again             -> CS-21 H
-KILLED    M6 ORDER ONLY - Step 3.5 survives intact but the PR is named before it -> CS-21 B
-KILLED    M7 the bookkeeping commit loses its JIRA key                         -> CS-21 D
-KILLED    M8 a commit is instructed AFTER the merge again (the standing guard) -> CS-21 C1
--- restore verified: bytes match, nothing was committed, and `git diff --quiet 9b19b47d` is clean --
--- full file, unfiltered: python3 .agents/scripts/tests/test_command_surfaces.py -> exit 0 --
-        | -- 260/260 passed --
--- sweep clean: 8/8 killed by their declared case --
-```
-
-⭐ **Every mutant is drawn from the shipped text, not from the cases** — each one re-plants the
-retired instruction on the real surface (`M1` and `M2` put the two Step 6 writes back; `M5` restores
-the routing index's stale tail). `M6` is the one that earns its keep: it leaves Step 3.5 completely
-intact and only names the PR earlier, so a presence-only guard would sail past it. That is the
-`source-grep-guards-cannot-see-order` failure mode, planted deliberately and killed.
+⛔ **The first draft's sweep (8 mutants, 8/8 killed) is NOT reproduced here, because the review
+proved it certified nothing.** All eight were existence mutants aimed at the very literals the checks
+grepped; the rebuilt 15-mutant sweep in `## Code Review` is the one that means something. The retired
+table is in this lane's git history at `9b19b47d` and is left there rather than dressed up.
 
 ### ⚠ The correction the gate made, recorded because the plan got it wrong
 
@@ -130,8 +124,154 @@ $ python3 .agents/scripts/tests/run_all.py     (before the fixes)
 
 Both reds were this lane's own and both were legitimate: `test_command_surfaces.py` was the opencode
 mirror above, and `test_check_maps.py` F2 was this session folder missing its ledger row in
-`_artifacts/_main/INDEX.md` — which is a pleasing way for the ledger ticket to be caught. Both fixed;
-the receipt below is the run of the code that actually lands.
+`_artifacts/_main/INDEX.md` — which is a pleasing way for the ledger ticket to be caught. Both fixed.
+
+The green run of the code that actually lands is stamped through the receipt writer, and the receipt
+rides this branch at [gates/suite.json](gates/suite.json):
+
+```
+$ python3 .agents/scripts/gate_receipt.py run --task SCC-358 --gate suite \
+      --root _artifacts/_main/2026-08-31_ledger-rides-the-pr --cwd <worktree> \
+      -- python3 .agents/scripts/tests/run_all.py
+[PASS] suite exit=0 85.7s @ cbae5cc2
+        receipt: gates/suite.json
+```
+
+⚠ **That receipt predates the review fixes.** It is kept because it is what the pre-review code
+measured; the post-review run is stamped below, in `## Code Review`, at the sha that actually ships.
+
+Standing gates, all bare, all exit 0: `workflow_lint --toolkit-only` (0 errors, 0 warnings) ·
+`check_maps --depth3-only --strict` · `check_links --base origin/main` (clean).
+
+## Code Review (2026-08-31)
+
+review-runtime: fan-out
+lens_isolation: worktree — each repo-reading lens got its own `git worktree add --detach` copy of the lobby at `294c78aa`, cut by hand and VERIFIED before launch; the Blind Hunter got no tree, by design
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted: 5/5
+lenses_na: none
+findings: 0 decision · 37 patch · 0 defer   (2 noise-dismissed · 0 relevance kills)
+dispositions: per-lens: blind-hunter=8/2/0 · edge-case-hunter=8/0/0 · literal-correctness-hunter=7/0/0 · acceptance-auditor=7/0/0 · test-adequacy-auditor=7/0/0
+severity_floor: none
+notes: every finding fixed in-lane before the verdict — no defer, no residue ticket. The sweep was rebuilt from 8 existence mutants to 15 narrowings/paraphrases/inversions; 15/15 killed.
+
+**Verdict: PASS @ ae215934**
+
+⛔ **The review found the first guard substantially vacuous, and it PROVED it rather than asserting
+it.** Three lenses independently reproduced the same class of hole, and the test-adequacy lens
+returned nine surviving mutants, each re-run against the full unfiltered file. The worst restored
+**this lane's own defect** — the ledger write back in Step 6, reworded — with all 67 suite files
+green. Others put the write in Step 6.5 or in a brand-new `## Step 7`; inverted Step 3.5 while
+keeping every literal the checks grep; deleted the JIRA key from the commit fence while the prose
+kept it; and deleted the ⛔ ban outright while both ticket numbers survived in the paragraph below.
+
+**The root cause was one mistake made ten times: the checks pinned retired SENTENCES.** That is the
+`prose-pinning-guards-are-vacuous` failure this lane's own plan cites, walked into anyway. Two
+structural errors kept it invisible. The four controls **retyped** each predicate instead of calling
+it, so they proved "an expression of this shape can be false" and never "the shipped check can fail"
+— measured: weakening the live `ipr > i35` to `ipr >= 0` left all four controls green. And the sweep
+was 8 existence mutants with **zero narrowings**, aimed at the very literals the checks read, so it
+certified that the checks agreed with themselves at two points and nothing about their edges.
+
+**The rebuild changes their shape, not their count.** Every predicate is now a named function that
+the live check *and* its control both call, so weakening a predicate turns its own control red — the
+pattern the door-parity block one screen up already had right. Negatives became positives or
+structure wherever a paraphrase could dodge them: `C1` reads the whole post-merge region instead of
+one section, `C2` pins the step-heading set so no new tail step can appear, `A` reads prose with
+fences stripped *and rejects negation*, `A1` wants the key on the commit line, `E` wants the ban's
+imperative in the same paragraph as its scars, and `H`/`I` assert what those files must SAY rather
+than banning one sentence they must not. 13 checks, 15 controls, 28/28.
+
+### The door moved too, because the new guard refused it
+
+Three of these came from lenses RUNNING the door rather than reading it:
+
+- **Step 3.5 now PUSHES what it commits.** The Edge Case Hunter built a fixture repo, made only the
+  bookkeeping commit, and ran the door's own Step 1.5: `VERDICT: BLOCKED — merging an unpushed branch
+  puts commits on production that exist on one disk` (exit 2). A session ending between Step 3.5 and
+  Step 4 was unresumable, halted by a hazard the step had created. The sibling door this law was
+  ported from pushes inside the same block; **the port had dropped it.**
+- **Step 3.5 is idempotent, and writes in the PENDING tense.** Re-entry before the merge is ordinary
+  — a red check, requested changes, a closed PR — and two number-free rows are indistinguishable. And
+  a row saying the epic *shipped*, written five steps before anything deploys, becomes a false record
+  on `main` the moment a deploy is rolled back, which Step 6 then forbids correcting.
+- **Step 5.5's third branch gained its verbatim line.** Step 6.5's comment carries the PRD line
+  unconditionally, so the one branch that defined none left an agent holding a mandatory slot with
+  nothing to fill it — which it fills by inventing one.
+- **Step 6 instruments whether Step 3.5 ran at all**, and names the remedy lane, instead of leaving
+  it to an agent's notice in a door that instruments everything else.
+
+### Two findings where the assessment DISAGREED with the label
+
+**The Blind Hunter's `important` "the unkeyed absorb merge refuses every epic PR" — dismissed on
+evidence.** It had no repo access, said so, and capped its own confidence honestly. I read the gate
+the door actually runs under: `check_commit_keys` lists commits with `git rev-list --no-merges`, with
+a comment saying merge commits are skipped because git writes their message. **The refusal cannot
+happen.** What survived is smaller and real: my own sentence said the gate reads "every commit", and
+the true word is *non-merge* — a reader would have re-derived it wrongly. The Literal-Correctness
+Hunter opened the same file independently and reached the same conclusion.
+
+**The Blind Hunter's `nitpick` "Step 4 names two locations where there is one" — dismissed as
+factually wrong.** Its premise is that active-context lives under `_artifacts/`. True in the lobby,
+false in a project: AviationChat's sits at `_bmad-output/active-context/active-context.md`. The
+second clause is load-bearing precisely because this door runs in projects.
+
+### One contradiction the review surfaced that nothing else would have
+
+Step 4's `ⓘ` — untouched by this lane — still said AviationChat's `main` carried **no branch
+protection and no ruleset at all**, measured 2026-08-31. Step 3.5, added the same day, says the
+ruleset refuses the post-merge push. Same file, same repo, same date, opposite facts. Both were true
+in sequence: the 404 was measured that morning, and AVCH-111 armed the ruleset that afternoon. The
+note now says so, so a reader can tell which is current.
+
+### The rebuilt sweep
+
+```
+$ python3 .agents/scripts/mutation_sweep.py --table _artifacts/_main/2026-08-31_ledger-rides-the-pr/sweep.json
+-- sweep: 15 mutant(s) over 3 file(s) @ <the shipping sha> --
+KILLED  N1  the active-context INSTRUCTION is deleted; only the `git add` mention survives
+KILLED  N2  Step 3.5 is INVERTED — every literal kept, the instruction reversed
+KILLED  N3  the key is dropped from the FENCE only, surviving in the prose below
+KILLED  N4  the explicit paths become a sweeping `git add -A`
+KILLED  N5  the push is dropped — the shape ship_preflight BLOCKS on a resumed run
+KILLED  N6  ORDER — the gate no longer precedes the bookkeeping
+KILLED  N7  the retired write is reinstated in Step 6.5, one section over from Step 6
+KILLED  N8  the AVCH-111 defect restored as a brand-new tail step
+KILLED  N9  the ban is DELETED; both ticket numbers survive in the paragraph below
+KILLED  N10 the ban is INVERTED while keeping its scars
+KILLED  N11 Step 6's instrument is removed — a skipped Step 3.5 becomes unnoticeable
+KILLED  N12 the reconcile is recorded to the ledger row again, REWORDED
+KILLED  N13 the SOP currency row reinstates the ledger with a CHANGED CONNECTIVE
+KILLED  N14 the routing index is REWORDED back to the retired order
+KILLED  N15 the LOBBY hand-append creeps back into the post-merge region (AC-6)
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet ae215934` is clean --
+-- full file, unfiltered: python3 .agents/scripts/tests/test_command_surfaces.py -> exit 0 --
+        | -- 273/273 passed --
+-- sweep clean: 15/15 killed by their declared case --
+```
+
+⭐ **Two mutants did not die on the first run, and the difference between them is the lesson.** `N2`
+was a **real survivor** — check `A` read presence, so an inverted instruction keeping every literal
+passed the guard written to catch exactly that; `A` now rejects negation on the naming line. `N6` was
+a **defective mutant, not a weak check** — it inserted a marker *before* Step 3.5, so the real Step 3
+still preceded the bookkeeping and the order genuinely held; re-aimed at the gate's heading, it dies.
+A survivor and a bad mutant read identically in a transcript, which is why both are named here.
+
+### The lens-isolation trap this review nearly walked into
+
+Three of the four directories the fan-out wanted were **stale copies from the AVCH-111 review** —
+same `lens-*` names, sha `449fa4f4`, no `.agents/commands/` in them at all, because they were
+AviationChat worktrees. The SCC-313 probe caught it: `git rev-parse --show-toplevel` named the right
+directory while `git rev-parse HEAD` named the wrong sha. Unchecked, three of five lenses would have
+reviewed **a different repository** while the roster recorded `lens_isolation: worktree`. Fresh trees
+were cut under unique names and each verified to be at `294c78aa` *and* to contain the change before
+any lens launched.
+
 
 ## Your Actions
 
