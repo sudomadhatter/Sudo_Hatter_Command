@@ -864,14 +864,26 @@ story file's `Status:` — only a human close-out writes `done`.
   which lines to substitute.
 
 **And the sign-off does not contradict itself.** Invoking it IS your sign-off, and your
-**invocation this turn** is the evidence the mint records — it never demands separate verbatim
-merge words on top of the invocation the three-form ruling already names.
+**invocation this turn** is the authority the PR carries — it never demands separate verbatim merge
+words on top of the invocation the three-form ruling already names.
 
-**Invoking it IS your per-merge sign-off for the one epic it ships.** That sign-off is also
-mechanical: the command mints a **single-use approval token** immediately before the final
-push, and `.githooks/pre-push` refuses any push landing on `main` without one. The token is spent on
-the way through, so one invocation ships exactly one epic. See the ⛔ block on the one-invocation
-rule later in this section for what the gate checks and how to get past it when you need to.
+**It gates here and merges nowhere.** Step 4 pushes the tip that just went green and opens a pull
+request into `main` with the gate's numbers in the body — the suite total, the build, `E2E GATE:
+GREEN n/n` and the report path — then hands you the link and stops. **Your click on *Merge pull
+request* is how your sign-off reaches GitHub.** Re-invoke it as `--after-merge <KEY>` and it proves
+the merge landed with plain git (`git merge-base --is-ancestor`, no `gh` needed, so this half works
+on any machine), watches the deploy, verifies live, prunes the epic branch and moves the epic
+ticket. If the ancestor check fails it STOPS: nothing moves on a PR nobody merged.
+
+**Why the road changed (SCC-347).** It used to merge `--no-ff` on your machine, mint a single-use
+token and push `main`. Two things were wrong with that. The ceremony was about a dozen hand-typed
+git commands in a shared checkout — the exact shape that stranded a docs-only Task halfway through
+a session on the Task door (SCC-183), which is why that door was rebuilt as a PR. And the token it
+minted guarded a road nobody was using: measured 2026-08-31, `Projects/AGY_AVIATIONCHAT` `main`
+carried **no branch protection and no ruleset at all**, so a merge made through the GitHub UI —
+what a web or mobile session does — was guarded by nothing, while the local hook guarded a push
+that had stopped happening. The click is now where the authorisation is, and giving a project the
+server-side check on its PRs is that project's own ticket (AVCH-111 for AviationChat).
 
 **⛔ One refusal you may actually meet, and it is not about your sign-off.** If you are
 standing in a worktree that was cut *before* these gate scripts existed, the push hook has nothing
@@ -1253,7 +1265,7 @@ once made an agent write *"Click Merge"* into your task list as though you owed 
 | Where | How it lands | Your sign-off |
 | --- | --- | --- |
 | **This repo** (lobby) | the agent opens a PR and stops | **your click** on *Merge pull request* |
-| **Project repos** (AviationChat, etc.) | `/cicd-push-e2e`, unchanged — they publish no `main-write-gate` | the token, carrying your words |
+| **Project repos** (AviationChat, etc.) | `/cicd-push-e2e` opens the PR and stops, then `--after-merge` finishes | **your click** on *Merge pull request* |
 
 **⛔ No agent merges to `main` here — there is no "small enough to self-merge" class.** An earlier
 cut proposed one and it was cut, because it needed a per-machine permission edit, it changed the
@@ -1337,10 +1349,12 @@ don't.
 > message is how you prove it.
 >
 > **The hold is mechanical (SCC-77).** `.githooks/pre-push` refuses any push landing
-> on `main` without a **single-use approval token**, and spends it on the way through. The two door
-> commands — `/cicd-push-e2e` and `/smh-close-task-merge-tree` — mint it at their sign-off step,
-> immediately before the push. One invocation, one merge, enforced by the machine rather than by
-> reading.
+> on `main` without a **single-use approval token**, and spends it on the way through.
+>
+> ⭐ **Since SCC-347 no door mints one, because no door pushes `main`** — both roads end at a pull
+> request you merge. The token is now a **backstop**: it refuses any direct push to `main` from a
+> machine here, which is exactly the act neither door performs any more. It still guards the case
+> that matters — someone, or some agent, reaching for `git push origin main` by hand.
 >
 > **What it checks**, in order — every refusal names its own reason:
 >
@@ -1402,9 +1416,10 @@ don't.
 > throwaway `gate/main-<sha>` branch, waits, then mints the token and pushes. Nothing new to type.
 > If the check is red, **stop**; do not disable the ruleset to get past it.
 >
-> ⚠ **This covers THIS repo only.** `/cicd-push-e2e` ships project epics (AviationChat, etc.) and
-> those repos publish no such check — adding it to one is that project's own ticket. It deliberately
-> does **not** wait, or it would hang forever on a check that never runs.
+> ⚠ **This covers THIS repo only — the CHECK, not the road.** `/cicd-push-e2e` ships project epics
+> (AviationChat, etc.) through a pull request too, but those repos publish no such check, so it
+> deliberately does **not** wait — a wait there would hang forever on a check that never runs.
+> Adding the check to a project is that project's own ticket (AVCH-111 for AviationChat).
 >
 > **If CI is down and `main` must move** — the server-side twin of deleting `MAIN-PUSH-ENFORCE`:
 >
@@ -2379,7 +2394,7 @@ flowchart LR
 | `merge-target-guard.sh` | **A merge landing on a branch you did not mean.** Every other check on this page guards the branch you merge *from*; this is the only one that guards the branch you merge *into*. It refuses a merge whose target is not a legal destination for its source under the branch model — a `chore/*` lane landing on **another** `chore/*` lane is the SCC-97 signature and is named as such in the refusal, which also prints the target, the source, the rule and `git merge --abort`. — *and the history behind it, below.* |
 | `jira_feed.py` | **A Jira ticket that is only a title.** ① mints the ticket with an outline rendered *from the story file*, and the close-out files a **Dev Record**: the decisions, the pitfalls, and what is still owed. Both write paths **read the ticket back** and fail if what they claimed to write is not there. **Exactly one Dev Record per ticket.** It also picks the ticket **type** for you ([§12](#12-the-board--what-runs-next)). Its `start` verb moves a ticket to `In Progress` and is **idempotent**, which is what lets three different seams call it without any of them double-moving a card. ⛔ **Two ways it could report success over a ticket that held nothing are closed.** (1) *Themed acceptance criteria render in full.* A section ends at a heading of its **own level**, not at the first line that starts with a `#` — so stories that group their ACs under `### Theme …` sub-headings no longer come back as **"(none found in the story file)"**, which is the same sentence a story with genuinely no ACs gets. **The sub-heading itself renders, as a `[label]` row above the bullets it introduces** — a child can be `### Out of scope` just as easily as `### Theme A`, and dropping the heading turned "the mobile app" into a criterion the story is measured against. (2) *A hand-written description is not an outline.* When `mint` reuses an existing ticket it tests for the render trailer, not the **length** of what is already there — so a ticket somebody typed two sentences into gets its outline instead of being left alone and reported as *"carries its outline (213 chars)"*, and **your note is kept underneath under `PREVIOUS NOTE`**. Stale and overwritten were never the only two options. If the field comes back without the trailer, `mint` exits 2 and tells you to read the ticket — and re-running from there is safe: the preserved note is the note **a human typed**, so a retry replaces the `PREVIOUS NOTE` block rather than wrapping the whole field in a fresh one. `check` reads the same trailer for the same reason, so the line it prints at close-out says whether the ticket carries a **rendered outline** rather than whether the field is longer than 40 characters. `outline` also accepts `--jira-project` now, purely so a working `mint` line can be pasted back to it without `unrecognized arguments`. |
 | `post-commit-jira-start.sh` | **A ticket that never shows as in flight.** Your first commit on a `chore/ · claude/ · epic/` branch moves that ticket to `In Progress` — see [§12](#12-the-board--what-runs-next). It reads the key from the **branch name** and never invents one; `main` and unkeyed branches are silent. It costs **one exchange per branch** on the normal path (a marker short-circuits the rest before any network call), it **can never block or fail a commit**, and an offline commit simply retries on the next one. A ticket that is not startable yet (`Blocking`, `In Review`, `Deferred`) deliberately writes no marker, so that branch re-reads once per commit until it is — the price of never silencing a ticket that might still start. |
-| `ship_preflight.py` | **Production shipping something that was never gated.** `/cicd-push-e2e` is the only command that writes production `main` — and uncommitted work in the epic checkout would mean Step 3 gates a *tree* while Step 4 merges the *branch*. It answers four questions the door would otherwise take on trust — the branch SHAPE (`epic/*`, or a `chore/*` the lane check admits), the pinned `--expect-key` against the key the branch carries, a **clean** checkout that is `0 0` with its remote, and **the LANE**: a `chore/*` belongs here only when its diff reaches `backend/ frontend/ firebase/ functions/ mobile/ .github/`, which it derives by importing `task_preflight.PRODUCT_DIRS` rather than re-typing it, so the two doors cannot drift about what "deployable" means. Reads and prints; the merge, the mint and the push stay in the command where a human is watching. Exit 0/1/2, and the staleness of an unfetched comparison rides the VERDICT line itself — SCC-193's lesson, one door over, where a stale note sat under a verdict reading *clear*. |
+| `ship_preflight.py` | **Production shipping something that was never gated.** `/cicd-push-e2e` is the only command that writes production `main` — and uncommitted work in the epic checkout would mean Step 3 gates a *tree* while Step 4 merges the *branch*. It answers four questions the door would otherwise take on trust — the branch SHAPE (`epic/*`, or a `chore/*` the lane check admits), the pinned `--expect-key` against the key the branch carries, a **clean** checkout that is `0 0` with its remote, and **the LANE**: a `chore/*` belongs here only when its diff reaches `backend/ frontend/ firebase/ functions/ mobile/ .github/`, which it derives by importing `task_preflight.PRODUCT_DIRS` rather than re-typing it, so the two doors cannot drift about what "deployable" means. Reads and prints; the push of the gated tip and the PR stay in the command where a human is watching. Exit 0/1/2, and the staleness of an unfetched comparison rides the VERDICT line itself — SCC-193's lesson, one door over, where a stale note sat under a verdict reading *clear*. |
 
 > **All three close-out doors answer "which tree gets gated?" the SAME way, and they derive it instead of trusting you (SCC-211).** Every one of them asks whether the working tree is clean, because a dirty tree means the gate measures content the merge does not carry — *what ships was never gated*. The shared body, **`wf_common.trees_to_measure`**, asks `git worktree list` which tree actually holds the branch — a required flag would be the weaker answer (it can still be aimed at the wrong tree, and it would break every caller that has none), so the tree is derived and `--worktree` survives as an *additional* tree rather than the only one. A dirty lane stops the close-out from wherever you run it, and the refusal **names the tree** so you know where to go. |
 | `task_preflight.py` | **A change to the product sneaking onto `main` labelled a "task".** It derives the lane from the repo rather than asking: does this repo **have** anything that deploys, and did **this diff** touch it? Touch one and it **stops dead and sends the work to `/cicd-push-e2e`. There is no override flag, on purpose.** It also checks the branch shape, the `--expect-key` match, the `task.yaml` manifest (a receipt already recorded blob-for-blob on `origin/main` is a **landed** lane's and no longer blocks follow-on lanes of the same ticket — SCC-113; an unlanded or edited-since-landing receipt still blocks hard), that the tree is clean and pushed, and that `origin/main` was absorbed. — *and the history behind it, below.* |
@@ -3099,7 +3114,7 @@ speak; "refuses" means it will not proceed at all and names the fix.*
 | `/cicd-update-sprint-memory` | Step 6 for learnings, only if none were auto-routed | a `FAIL` verdict blocks the flip; run standalone, a preflight exit 2 |
 | `/cicd-merge-epic-workingtrees` | Step 1 to confirm the set; Step 5 learnings if none routed | a `FAIL` lane (skipped, the rest proceed); a red combined gate |
 | `/cicd-prune-worktree` | never | branch not merged; story not finished (Step 1.7); a LOST tree |
-| `/cicd-push-e2e` | Step 4 to summarize before the push | any gate red, `/cicd-e2e` included; stories still open |
+| `/cicd-push-e2e` | Step 4 — it opens the PR and **STOPS** for your click; `--after-merge` resumes | any gate red, `/cicd-e2e` included; stories still open; `--after-merge` on a PR that is not merged |
 | `/smh-close-task-merge-tree` | never — typing it *is* the sign-off | preflight exit 2; wrong `--expect-key`; a deployable path; the GitHub check red; an open child that is not a rider |
 | `/smh-merge-multiple-workingtrees` | **before every merge**, once per lane | a stale lane (filtered); a conflict outside the overlap map; a red combined gate |
 | `/cicd-park` · `/cicd-resume` | park: never; resume: never | park: a committable worktree; resume: a diverged `main` |
@@ -3809,10 +3824,11 @@ flowchart TD
 #### /cicd-push-e2e
 
 *The one shipping command: pin the ticket, pre-flight it mechanically (`ship_preflight.py` — exit 2 stops the command), absorb `origin/main`
-into the epic branch, run the full gate on it, merge to `main` with `--no-ff`, mint the single-use
-approval token with your words — your invocation this turn IS those words — push, watch the deploy,
-verify live, prune the epic branch, close the epic ticket. Explained in
-[§7](#7-landing-and-shipping--the-close-out-family). Calls: `/cicd-e2e`, `mint-push-token.sh`,
+into the epic branch, run the full gate on it, push the gated tip, **open the PR and STOP** for your
+click — your invocation this turn is the authority it carries. Re-invoked as `--after-merge <KEY>`
+it proves the merge with plain git, watches the deploy, verifies live, prunes the epic branch and
+closes the epic ticket. Explained in
+[§7](#7-landing-and-shipping--the-close-out-family). Calls: `/cicd-e2e`, `gh pr create`,
 `jira_feed.py`.*
 
 ```mermaid
@@ -3835,8 +3851,10 @@ flowchart TD
     G4 --> V
     LIGHT --> V
     V -- "RED" --> STOP["REFUSES — nothing ships\nsummarize failures, suggest the lane"]
-    V -- "GREEN" --> S4["Step 4 — merge to main --no-ff\nSTOP: summarize commits + files for you\nthen mint the token with your words — LAST — and push"]
-    S4 --> S5["Step 5 — watch every workflow run to success\nverify LIVE: /health · the prod URL · the release track"]
+    V -- "GREEN" --> S4["Step 4 — push the GATED TIP, open the PR\ngate numbers + e2e report in the body\n🛑 STOP — hand back the link"]
+    S4 --> CLICK{"you click Merge pull request"}
+    CLICK --> S45["Step 4.5 — --after-merge KEY\nmerge-base --is-ancestor — NOT merged? STOP\nPR number off the merge subject"]
+    S45 --> S5["Step 5 — watch every workflow run to success\nverify LIVE: /health · the prod URL · the release track"]
     S5 --> S6["Step 6 — prune the epic branch\nledger row · active-context · 0 0 clean"]
     S6 --> S65["Step 6.5 — evidence commented\nepic ticket → Done"]
 ```
@@ -3844,11 +3862,12 @@ flowchart TD
 #### /smh-close-task-merge-tree
 
 *The Task lane's close-out and its merge sign-off: pin the key, preflight mechanically, run the gate
-the preflight selected, record the flight event, wait for GitHub's `main-write-gate` on the exact
-merge commit, mint the token with your words, push `main`, file the Dev Record, move the ticket
-(riders first, then the Task — or HELD by open user tasks), prune. Explained in
+the preflight selected, record the flight event, **open the PR and STOP** for your click — GitHub's
+`main-write-gate` must be green before the button unlocks — then, re-invoked as `--after-merge`,
+verify the merge with plain git, file the Dev Record, move the ticket (riders first, then the Task —
+or HELD by open user tasks), prune. Explained in
 [§7](#7-landing-and-shipping--the-close-out-family). Calls: `task_preflight.py`, `flight_recorder.py`,
-`mint-push-token.sh`, `jira_feed.py devrecord / finish`.*
+`gh pr create`, `jira_feed.py devrecord / finish`.*
 
 ```mermaid
 flowchart TD
@@ -3863,11 +3882,11 @@ flowchart TD
     S2 -- "no" --> G["run_all.py · workflow_lint --toolkit-only\ncheck_maps --depth3-only --strict\nlink + anchor · SOP currency — PASTE the output"]
     G0 --> S25["Step 2.5 — flight_recorder.py record\npre-merge, artifacts-only commit, keyed on the verdict sha"]
     G --> S25
-    S25 --> S3["Step 3 — merge to main --no-ff\nassert HEAD is main first · -C REPO on every call"]
-    S3 --> CI["push the merge commit to gate/main-sha\nWAIT for the main-write-gate check"]
+    S25 --> S3["Step 3 — reconcile ## Your Actions, then\ngh pr create --base main · 🛑 STOP — hand back the link"]
+    S3 --> CI["GitHub runs main-write-gate on the PR"]
     CI --> CIQ{"check result?"}
     CIQ -- "red" --> CISTOP["⛔ STOP — never --no-verify\nnever disable the ruleset"]
-    CIQ -- "green" --> MINT["mint the token NOW, with your verbatim words\n30-min TTL — commit nothing after it\npush main · delete the gate ref"]
+    CIQ -- "green" --> MINT["you click Merge pull request\nthen --after-merge KEY:\nmerge-base --is-ancestor proves it landed"]
     MINT --> S4["Step 4 — AFTER the merge, never before\ntick the merge row · riders → Done FIRST · one Dev Record\njira_feed.py finish → Done, or HELD on open user tasks"]
     S4 --> S5["Step 5 — UNLINK → remove tree → delete branch\nin that order · a claude/* tree is not yours to prune"]
     S5 --> S6["Step 6 — verify, THEN report"]
@@ -3877,10 +3896,11 @@ flowchart TD
 
 *Land a SET of finished Task lanes on `main`, one merge at a time, in an order derived from
 measurement: inventory, preflight, staleness, the overlap map (lanes that change commit or push
-machinery go LAST), then per lane — absorb, re-gate, **STOP for your sign-off**, merge, record,
-prune — and a combined gate on `main` that is the only run to see the whole set. Explained in
+machinery go LAST), then per lane — absorb, re-gate, **its own PR and its own STOP**, your click,
+`--after-merge`, record, prune — and a combined gate on `main` that is the only run to see the
+whole set. N lanes are N links and N clicks. Explained in
 [§7](#7-landing-and-shipping--the-close-out-family). Calls: `task_preflight.py`,
-`flight_recorder.py`, `mint-push-token.sh`, `jira_feed.py`.*
+`flight_recorder.py`, `gh pr create`, `jira_feed.py`.*
 
 ```mermaid
 flowchart TD
@@ -3892,7 +3912,7 @@ flowchart TD
     L --> A["4a — absorb origin/main into the lane's tree\nconflict outside the map → STOP and re-derive"]
     A --> B["4b — re-gate bare: run_all · lint · its own tests\nrecord the flight event\na change during absorb voids the verdict → re-measure"]
     B --> C["4c — 🛑 STOP — your sign-off for THIS lane\nkey · tip · verdict · gate output"]
-    C --> D["4d — merge --no-ff · HEAD is main, said out loud\nmain-write-gate wait · token with your words · push"]
+    C --> D["4d — gh pr create for THIS lane · 🛑 STOP\nmain-write-gate green → you click Merge\n--after-merge proves it landed"]
     D --> E["4e — Dev Record → finish\nDone, or HELD on open user tasks — never a bare transition"]
     E --> F["4f — prune: unlink → tree → branch\nnever a claude/* tree"]
     F --> MORE{"more lanes?"}

@@ -414,7 +414,7 @@
     {
       "path": ".agents/commands/cicd-push-e2e.md",
       "in": 3,
-      "out": 4
+      "out": 3
     },
     {
       "path": ".agents/commands/cicd-quick-dev.md",
@@ -758,7 +758,7 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 64,
+      "in": 63,
       "out": 4
     },
     {

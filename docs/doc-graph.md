@@ -47,7 +47,7 @@ _Human summary -- tables capped at 60 rows; the complete lists are in `doc-graph
 ## Hubs (most-referenced docs, top 15)
 | In | Out | Doc |
 |---:|---:|---|
-| 64 | 4 | `.agents/rules/git-policy.md` |
+| 63 | 4 | `.agents/rules/git-policy.md` |
 | 45 | 3 | `.agents/rules/smh-target-resolution.md` |
 | 43 | 3 | `.agents/rules/jira.md` |
 | 36 | 2 | `.agents/rules/worktree-per-story.md` |

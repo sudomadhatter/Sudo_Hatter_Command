@@ -86,9 +86,11 @@ trigger: model_decision
   `.agents/rules/jira.md` — the `acli` cheat-sheet, flag traps, and the ticket↔file join. The board
   is reachable from any shell-capable agent; no MCP or per-platform config exists or is needed.
 - **The epic reaches `main` exactly one way: `/cicd-push-e2e`** — the full gate (backend suite +
-  frontend build + `/cicd-e2e` GREEN) plus Mr. Hatter's explicit sign-off, then the merge. An agent
-  never merges to `main` on its own initiative. The epic branch is deleted after it merges:
-  branches are short-lived by design; nothing accumulates.
+  frontend build + `/cicd-e2e` GREEN) plus Mr. Hatter's explicit sign-off, then **a pull request he
+  merges**. The command opens the PR and stops; it never merges, and an agent never merges to
+  `main` on its own initiative. Re-invoked as `--after-merge <KEY>` it verifies the landing with
+  plain git and finishes the ceremony. The epic branch is deleted then: branches are short-lived by
+  design; nothing accumulates.
 
 ## The write gate — keyed on WHERE a write lands, not on the act
 
@@ -97,7 +99,7 @@ trigger: model_decision
 | Your own `claude/*` story branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
 | The epic branch (`epic/*`) — a story landing | **Mr. Hatter's sign-off** — his in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (which IS the sign-off) |
 | A `chore/*` branch (commits and pushes) | **FREE** — the merge back to `main` is what's gated |
-| `main` | **In this repo: a pull request the operator merges.** In project repos: `/cicd-push-e2e` — the epic, or a `chore/*` whose diff **reaches a deployable path** (`ship_preflight.py` derives which; a project `chore/*` touching nothing deployable takes the PR door instead). See below. Never on an agent's own initiative. |
+| `main` | **A pull request the operator merges — in every repo (SCC-347).** In this repo the door is `/smh-close-task-merge-tree`; in project repos it is `/cicd-push-e2e`, shipping the epic, or a `chore/*` whose diff **reaches a deployable path** (`ship_preflight.py` derives which; a project `chore/*` touching nothing deployable takes the Task door instead). See below. Never on an agent's own initiative. |
 
 Approval for an epic-branch landing is **per-action and never carries forward**. One "approved"
 lands one story; the next needs its own.
@@ -108,14 +110,18 @@ lands one story; the next needs its own.
 
 | Step | Who | What |
 |---|---|---|
-| open the PR | the agent, inside `/smh-close-task-merge-tree` or `/smh-merge-multiple-workingtrees` | `gh pr create --base main --head <branch> --fill` — or, with no `gh`, print the `compare/main...<branch>` URL. Then **STOP** |
+| open the PR | the agent, inside `/smh-close-task-merge-tree` or `/smh-merge-multiple-workingtrees` here, or `/cicd-push-e2e` in a project | `gh pr create --base main --head <branch>` — or, with no `gh`, print the `compare/main...<branch>` URL. Then **STOP** |
 | the gate | GitHub | **`main-write-gate`** must be green: the full enforcement suite plus a check that the source is `epic/*` or `chore/*` with a real ticket key |
 | the merge | GitHub, on the operator's decision | the operator clicks *Merge pull request*. **Their decision to proceed is the sign-off**; the click is how it reaches GitHub, never work they owe |
 | after | the agent, on re-invocation | `--after-merge <KEY>` — verify with `git merge-base --is-ancestor`, then Dev Record, ticket, prune |
 
-Project repos (AviationChat, etc.) publish no `main-write-gate`, so their epics still ship through
-`/cicd-push-e2e` with the single-use token (SCC-37/SCC-77). Porting the PR door to them is each
-project's own ticket, in its own tracker.
+⭐ **Since SCC-347 project repos take this road too.** `/cicd-push-e2e` gates the epic locally,
+pushes the gated tip, opens the PR and stops; the operator's click merges it. What a project repo
+may still lack is the **server-side** half — `main-write-gate` is published only once that project
+files its own ticket in its own tracker (AVCH-111 for AviationChat), so the door deliberately does
+**not** wait for a check that may never appear. Until a project has it, its PR is guarded by the
+local gate this door ran plus the operator's reading of it — which is strictly more than the merge
+had before, when the GitHub-side road was measured to have no protection and no ruleset at all.
 
 ⛔ **Why no token on this road, and why that is not a bypass.** The token proves *the operator said
 yes* before **a machine here** pushes to `main`; it lives in `.git/` and is spent by
@@ -243,9 +249,11 @@ share — so the gate is `sh`, with no interpreter probe and no Python anywhere 
    pushes `main` (checks attach to a commit, so the green travels with it). **Mint after the wait,
    never before** — the token's TTL is 30 minutes and a slow run would eat it.
 
-   ⚠ **Scope: this repo only, today.** `/cicd-push-e2e` ships `epic/*` branches in *project* repos,
-   which publish no such check — a wait there would poll forever. Giving a project the server-side
-   half is its own ticket in its own tracker. Break-glass if CI is down and `main` must move:
+   ⚠ **Scope: the CHECK is this repo only, today — the PR road is everywhere (SCC-347).**
+   `/cicd-push-e2e` ships `epic/*` branches in *project* repos through a pull request as well, but
+   those repos publish no such check, so it does not wait for one — a wait there would poll
+   forever. Giving a project the server-side half is its own ticket in its own tracker.
+   Break-glass if CI is down and `main` must move:
    `gh api -X PUT repos/{owner}/{repo}/rulesets/{id} -f enforcement=disabled` — the server-side twin
    of deleting `MAIN-PUSH-ENFORCE`.
 
@@ -255,7 +263,8 @@ converts a silent violation into a deliberate, traceable one, and it closes the 
 rule keeps losing to — a close-out command whose body stays in context and still reads exactly as
 valid on task six as on task one. Merges via `gh pr merge` or the GitHub web UI never reach a local
 hook at all — the gap tracked under epic SCC-75, closed **for this repo** by SCC-118's layer 3
-above, and still open for every project repo until each files its own.
+above. SCC-347 narrowed what remains open elsewhere: every repo now lands through a PR the
+operator merges, so what a project still owes is the server-side CHECK on that PR, not a road.
 
 ## A commit is not done until it is pushed
 
