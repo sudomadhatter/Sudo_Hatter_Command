@@ -331,7 +331,7 @@ flowchart TD
     end
 
     VERDICT -->|"RED"| STOP["STOP. Nothing merges."]
-    VERDICT -->|"GREEN"| MERGE["git merge --no-ff into main\n→ CI/CD deploys"]
+    VERDICT -->|"GREEN"| MERGE["open a PR against main\nyou click Merge → CI/CD deploys"]
     MERGE --> DONE["Jira: every story In Review → Done\n+ gate evidence as a comment"]
     MERGE --> DEL["epic branch deleted"]
 
@@ -371,7 +371,7 @@ flowchart TD
         PRE["task_preflight.py\nbranch name · clean tree · base absorbed\n· walkthrough exists · WHICH LANE?"] --> LANE{"does the diff touch\nbackend/ frontend/ firebase/\nfunctions/ mobile/ .github/ ?"}
         LANE -->|"yes — LANE: HANDOFF"| HAND["STOP.\nThis is a product change.\nHand it to /cicd-push-e2e"]
         LANE -->|"no — LANE: LOCAL"| GATE["run the repo's gate\nrun_all.py + workflow_lint.py"]
-        GATE --> MERGE["merge --no-ff to main"]
+        GATE --> MERGE["open a PR against main\nyou click Merge"]
         MERGE --> REC["jira_feed.py devrecord --closing\nONE Dev Record + clears any Bug flag"]
         REC --> DONE2["ticket -> Done"]
         DONE2 --> PRUNE["delete the branch, local and remote\nverify 0 0 and a clean tree"]

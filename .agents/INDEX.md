@@ -12,7 +12,7 @@ the "what's in here" map. Edit at master, then `/smh-sync-agents`.
 | `reference/` | long-form reference docs deliberately OFF every command surface (e.g. the autopilot relay reference — a Claude/opencode-only pipeline Gemini can't run) | `reference/INDEX.md` |
 | `bmad/` | the BMAD method install — **owned, regenerated on update, never hand-edit** | — |
 | `scripts/` | maintenance — `check_maps.py`, `generate_repo_map.py`, `record_map_changes.py`, `generate_doc_graph.py`, `check-repo-map-drift.ps1`, `sync-agents.ps1`, `new-project.ps1` | — |
-| `templates/` | `project-template/` — the scaffold `/smh-new-project` clones | — |
+| `templates/` | `project_overview_guide.md` — the skeleton a project copies to its `docs/`, kept current story-by-story (SCC-357). *(The `project-template/` scaffold this row used to name was retired 2026-08-07 with the thin-project conversion — `docs/workspace-standard.md` records that; the row outlived it.)* | — |
 | `hooks/` | `require-push-approval.py` — the git write-approval gate (synced into every `.claude/hooks/`) | — |
 | `opencode-agents/` | opencode agent definitions | — |
 

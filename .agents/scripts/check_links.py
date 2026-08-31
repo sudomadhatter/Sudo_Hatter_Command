@@ -84,6 +84,17 @@ FENCE = re.compile(r"^\s*(```|~~~)")
 PROJECT_ROOTS = ("backend/", "frontend/", "firebase/", "functions/", "mobile/",
                  "_bmad-output/", "_bmad/", "docs/stories/", "quick_fixes/")
 
+# Convention 6, second form (SCC-357). Some project-tree paths sit under a directory the LOBBY
+# also has, so no prefix can carve them out: `docs/` is real here, and `docs/stories/` above only
+# works because the whole subtree is the project's. `docs/project_overview_guide.md` is a page a
+# PROJECT copies from `.agents/templates/`; the lobby's equivalent is the operator SOP and it will
+# never hold this file. Every command, rule and standard that governs the guide has to name it —
+# that is what those documents are for — so the alternative is 12 findings that are correct by
+# construction and can never be fixed, which is the thirty-false-hits failure (SCC-285) reappearing
+# on purpose. Exact filenames only, never prefixes: a prefix here would silence real rot under a
+# directory the lobby owns.
+PROJECT_FILES = ("docs/project_overview_guide.md",)
+
 # Convention 7. A NARRATIVE LEDGER records what a session did, including deleting things. A row
 # naming a file that a later lane removed is HISTORY, not a broken link — the same carve-out
 # `check_maps.py` makes with its own `NARRATIVE_LEDGERS`. Kept in step with that file deliberately:
@@ -254,7 +265,7 @@ def scan(worktree: Path, resolver: Resolver, files: list[str]):
         for n, tok, anc in candidates(p.read_text(encoding="utf-8", errors="replace")):
             if URL.match(tok) or PLACEHOLDER.search(tok) or CAPS_VAR_DIR.search(tok):
                 continue
-            if tok.startswith(PROJECT_ROOTS):       # convention 6
+            if tok.startswith(PROJECT_ROOTS) or tok in PROJECT_FILES:   # convention 6
                 continue
             if ledger:
                 continue

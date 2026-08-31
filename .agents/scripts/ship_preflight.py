@@ -20,7 +20,7 @@ Four questions, each with an exact answer the door used to take on trust:
   4. LANE    — a `chore/*` lane belongs here only when its diff reaches deployable code.
 
 It READS and PRINTS. It never merges, checks out, fetches anything but refs, or writes a file.
-The merge, the mint and the push stay in the command, where a human is watching the output.
+The push of the gated tip and the PR stay in the command, where a human is watching the output.
 
     ship_preflight.py --repo PATH --branch B --expect-key KEY [--no-fetch] [--json]
 
