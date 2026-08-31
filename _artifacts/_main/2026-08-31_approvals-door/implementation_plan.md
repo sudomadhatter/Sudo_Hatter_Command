@@ -1,5 +1,14 @@
 # SCC-354 — the `/smh-llm-approvals` door (Part A) — **Zoo only**
 
+> ⛔ **SUPERSEDED IN PART — read [walkthrough.md](walkthrough.md) § *What got cut* first.**
+> This plan designed a **proposer**: a Python script that computed the minimal allow-list row for
+> each blocked command, behind a token-boundary breadth floor. That half was built, reviewed, found
+> to beat the deny fence in four separate ways, and **deleted** on the operator's ruling
+> (2026-08-31). What ships is one command file: the agent reads the chats, shows the operator the
+> commands that stopped for him, and edits both allow lists on his word. Acceptance rows A3 (row
+> breadth) and the proposer half of A4 no longer describe anything that exists. The plan is kept
+> verbatim below as the record of what was designed and audited, not as a description of the code.
+
 **Lane:** `chore/SCC-354-approvals-door`, cut from `origin/main` at `8af1f134`
 **Parent:** SCC-352 (stays open until this lands) · **Sibling:** SCC-355, Part B, landed in PR #107
 
