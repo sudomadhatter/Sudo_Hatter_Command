@@ -161,7 +161,7 @@
       "file": ".agents/scripts/zoo_notify.py",
       "original": "        roots = store_roots(custom=read_custom_store(user_dir()))",
       "mutated": "        roots = store_roots()",
-      "case": "test_custom_storage_path_is_actually_read_from_settings",
+      "case": "test_main_actually_honours_custom_storage_path_end_to_end",
       "unfiltered": true
     },
     {

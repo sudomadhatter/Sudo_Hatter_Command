@@ -320,6 +320,7 @@ def test_watch_primes_silently_then_pages_each_distinct_ask():
         m.send = lambda payload, dry_run=False: (
             sent.append(payload) or {"banner": "x", "push": "x"})
         after_priming: list[int] = []
+        unchanged: list[int] = []
         state = {"n": 0}
 
         def _sleep(_seconds):
@@ -331,6 +332,12 @@ def test_watch_primes_silently_then_pages_each_distinct_ask():
                 f.write_text(json.dumps(msgs), encoding="utf-8")
                 os.utime(f, (2_000_000, 2_000_000))
             elif state["n"] == 2:
+                # Zoo rewrites ui_messages.json on every token, so the mtime moves constantly
+                # while the tail ask sits unchanged. That must NOT re-page him every 5 seconds —
+                # it is the whole reason the guard is a transition test and not `if event`.
+                os.utime(f, (2_500_000, 2_500_000))
+            elif state["n"] == 3:
+                unchanged.append(len(sent))   # measured AFTER the rewritten-but-unchanged sweep
                 msgs = json.loads(f.read_text(encoding="utf-8"))
                 msgs[-1]["isAnswered"] = True            # he answered #1 ...
                 msgs.append({"ts": msgs[-1]["ts"] + 5, "type": "ask", "ask": "command",
@@ -347,6 +354,7 @@ def test_watch_primes_silently_then_pages_each_distinct_ask():
         except _Stop:
             pass
         assert after_priming == [0], "the first sweep must page nobody — it primes"
+        assert unchanged == [1], "a rewritten file in the SAME state is not news; it must not re-page"
         assert len(sent) == 2, f"both distinct asks must page; got {len(sent)}"
         assert "rm -rf build" in sent[-1]["message"], sent[-1]
 
@@ -421,6 +429,27 @@ def test_missing_store_exits_2_not_0():
         [sys.executable, str(NOTIFY), "--once", "--store", "/nonexistent-zoo-store", "--dry-run"],
         capture_output=True, text=True, timeout=30)
     assert proc.returncode == 2, (proc.returncode, proc.stdout, proc.stderr)
+
+
+def test_main_actually_honours_custom_storage_path_end_to_end():
+    """⛔ The WIRING, run for real — not the helper. The first cut pinned `store_root(custom=…)`
+    while `main()` called `store_root()` with no arguments, so the documented setting was dead and
+    the test read as coverage. This drives the CLI with a fake HOME and no --store: it can only
+    find the thread if main() read settings.json for itself."""
+    with tempfile.TemporaryDirectory() as d:
+        home = Path(d)
+        user = home / "Library" / "Application Support" / "Code" / "User"
+        user.mkdir(parents=True)
+        elsewhere = home / "elsewhere"
+        _store(elsewhere / "tasks", _load("zoo_ui_messages_ask.json"))
+        (user / "settings.json").write_text(
+            json.dumps({"zoo-code.customStoragePath": str(elsewhere)}), encoding="utf-8")
+        env = dict(os.environ, HOME=str(home))
+        env.pop("NTFY_TOPIC", None)
+        proc = subprocess.run([sys.executable, str(NOTIFY), "--once", "--dry-run"],
+                              capture_output=True, text=True, timeout=30, env=env)
+        assert proc.returncode == 0, (proc.returncode, proc.stdout, proc.stderr)
+        assert "waiting on approval" in proc.stdout, proc.stdout
 
 
 def test_dry_run_is_a_modifier_not_a_mode():
