@@ -1,0 +1,42 @@
+{
+  "v": 1,
+  "task": "SCC-358",
+  "sha": "5592311d3d0e06d277bef01b02c78c30dba2a9ba",
+  "tip": "1ff1cce2afc23229d5e5677228483df4aef46847",
+  "trigger": "close-out",
+  "when": "2026-08-31T19:41:37-04:00",
+  "changes": [
+    ".agents/commands/INDEX.md",
+    ".agents/commands/cicd-push-e2e.md",
+    ".agents/scripts/tests/test_command_surfaces.py",
+    ".opencode/commands/cicd-push-e2e.md",
+    "_artifacts/_main/2026-08-31_ledger-rides-the-pr/gates/suite.json",
+    "_artifacts/_main/2026-08-31_ledger-rides-the-pr/implementation_plan.md",
+    "_artifacts/_main/2026-08-31_ledger-rides-the-pr/sweep.json",
+    "_artifacts/_main/2026-08-31_ledger-rides-the-pr/task.yaml",
+    "_artifacts/_main/2026-08-31_ledger-rides-the-pr/tickets/SCC-358.md",
+    "_artifacts/_main/2026-08-31_ledger-rides-the-pr/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-31_ledger-rides-the-pr/walkthrough.md",
+    "verdict": "PASS @ 5592311",
+    "gates": {
+      "suite": "pass@5592311"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
