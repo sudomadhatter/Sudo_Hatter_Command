@@ -4057,8 +4057,16 @@ platform; you pick the rows and apply them with `zoo_permissions_apply.py --appl
 row ends on a whole word, never mid-word: the shortest prefix that unblocks
 `npx create-next-app my-app` is the single letter `n`, which also silently approves `npm publish`
 and `nc -l 4444`. A run that finds nothing still prints the store root it read, so "nothing was
-blocked" cannot be mistaken for "pointed at the wrong store". Called by: you, when Zoo asks about
-a command you would rather it just ran.*
+blocked" cannot be mistaken for "pointed at the wrong store".
+
+The same run also reads your recent Claude sessions and prints a **paste-ready hand-off block**
+for an agent that can edit `.claude/settings.json` — Claude Code cannot edit its own settings, so
+the block is the deliverable. It names ONE store, the settings file of the repo you ran the door
+in, as an absolute path: this workspace holds several and they all differ. A refusal that carried
+three commands gets three rules, not one, and a leading `VAR=value` is skipped — it is shell
+setup, and a rule naming it matches one string nobody will type again.
+
+Called by: you, when Zoo asks about a command you would rather it just ran.*
 
 #### /smh-sync-agents
 

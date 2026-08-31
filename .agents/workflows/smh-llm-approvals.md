@@ -66,6 +66,25 @@ must read *in sync with tracked file*. Full background:
 
 ---
 
+## And for Claude — a hand-off, not a writer
+
+The same run also reads your recent Claude sessions and prints a **paste-ready block** for an
+agent that can edit `.claude/settings.json`. Claude Code cannot edit its own settings, so the
+block is the deliverable: hand it to another agent and it does the edit.
+
+It names **one** store — the `.claude/settings.json` of the repo you ran the door in, as an
+absolute path. This workspace holds several of those files and they all differ, so "add it to
+`.claude/settings.json`" names nothing anyone can act on.
+
+Two things worth knowing about how the rules are derived, both found by running this against real
+sessions rather than by reading the code. A refusal often carries several commands (a `cd`, then
+a `git`, then a `python3`), so every one of them gets a rule — one rule for the first would have
+you approving the same block again tomorrow for the second. And a leading `VAR=value` is shell
+setup, not a command: naming it produces a rule that matches exactly one string nobody will type
+again.
+
+---
+
 ## What this door does NOT do
 
 - It does not touch the **deny** list. Allows may be broad; denies are the fence.

@@ -251,6 +251,130 @@ def test_the_report_shows_each_row_with_the_commands_it_covers():
     assert "create-next-app my-app" in out, "the row must show what it unblocks"
 
 
+# --- Claude: a hand-off block, never a write --------------------------------------------------
+
+CLAUDE_SESSION = FIXTURES / "claude_session_sample.jsonl"
+
+
+def test_claude_reader_pairs_the_denial_back_to_its_command():
+    """A6 — the denial record does NOT carry the command.
+
+    Claude writes the rejection as a `tool_result` holding only a `tool_use_id`; the command
+    lives in the earlier assistant `tool_use` with that id. A reader that scans for the
+    rejection text alone finds the denials and cannot say what was denied — which is the whole
+    job. So the pairing is the assertion, not the grep.
+    """
+    m = _mod()
+    got = m.claude_blocked_commands(CLAUDE_SESSION.read_text(encoding="utf-8").splitlines())
+    assert got == ["npx create-next-app my-app", "pnpm install --frozen-lockfile"], got
+    assert "git status --short" not in got, "an allowed command was never blocked"
+
+
+def test_claude_reader_ignores_a_denied_non_bash_tool():
+    """The fixture also denies a `Write`. There is no Bash rule that would have allowed it, and
+    proposing one would be a rule that matches nothing — noise the operator has to rule out."""
+    m = _mod()
+    got = m.claude_blocked_commands(CLAUDE_SESSION.read_text(encoding="utf-8").splitlines())
+    assert not any("redacted.md" in c for c in got), got
+
+
+def test_handoff_block_names_one_resolved_store_and_real_rules():
+    """A6 — one store, resolved from where you stand, and rules in this house's own shape.
+
+    Claude Code cannot edit its own settings, so this block is what gets pasted to an agent that
+    can. It has to name an ABSOLUTE path: "add it to .claude/settings.json" is ambiguous across
+    six of them in this workspace, and the one that matters is the repo you were standing in.
+    """
+    m = _mod()
+    repo = Path("/Users/x/Some_Repo")
+    block = m.claude_handoff(repo, ["npx create-next-app my-app", "pnpm install --frozen-lockfile"])
+    assert str(repo / ".claude" / "settings.json") in block, block
+    assert "Bash(npx *)" in block and "Bash(pnpm *)" in block, block
+    assert "permissions" in block and "allow" in block
+
+
+def test_handoff_writes_nothing_to_the_store_it_names():
+    """A6 — asserted as bytes. The block is text to paste, not an edit."""
+    import tempfile
+    m = _mod()
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / ".claude").mkdir()
+        store = repo / ".claude" / "settings.json"
+        store.write_text('{"permissions": {"allow": []}}', encoding="utf-8")
+        before = store.read_bytes()
+        m.claude_handoff(repo, ["npx create-next-app my-app"])
+        assert store.read_bytes() == before, "claude_handoff() touched the store it names"
+
+
+def test_handoff_says_so_when_there_is_nothing_to_hand_off():
+    """Same law as the Zoo half: zero results are a sentence, not an empty screen."""
+    m = _mod()
+    block = m.claude_handoff(Path("/Users/x/Some_Repo"), [])
+    assert block.strip(), "an empty string is indistinguishable from a crash"
+    assert "Bash(" not in block, "no commands means no rules"
+
+
+def test_repo_root_walks_up_to_the_git_dir():
+    """A6 — "the repo you are standing in" has to be resolved, not assumed to be cwd.
+
+    The door is run from anywhere inside a tree, and the store it must name lives at the top.
+    A worktree's `.git` is a FILE, not a directory, so the check is existence — testing for a
+    directory silently walks past every worktree in this repo and names the lobby instead.
+    """
+    import tempfile
+    m = _mod()
+    with tempfile.TemporaryDirectory() as tmp:
+        top = Path(tmp) / "repo"
+        deep = top / "a" / "b"
+        deep.mkdir(parents=True)
+        (top / ".git").write_text("gitdir: elsewhere", encoding="utf-8")   # worktree shape
+        assert m.repo_root(deep) == top.resolve()   # /var -> /private/var on the Mac
+
+
+def test_handoff_rule_is_the_command_word_not_the_first_token():
+    """⛔ Found by running the door against real sessions, not by reading it.
+
+    A real refused command was `W=/Users/.../tree; cd "$W" && python3 ...`. Splitting on
+    whitespace and taking [0] proposed `Bash(W=/Users/.../tree; *)` — a rule that matches
+    exactly one command that will never be typed again, offered to the operator as though it
+    were useful. Multi-line commands were worse: the whole block became one "token".
+
+    So the rule comes from the command WORD of each shell piece, using the same splitter the
+    matcher uses, and a leading VAR=value assignment is stepped over rather than named.
+    """
+    m = _mod()
+    block = m.claude_handoff(
+        Path("/Users/x/Some_Repo"),
+        ['W=/tmp/tree; cd "$W" && python3 .agents/scripts/tests/run_all.py'])
+    assert "Bash(W=" not in block, "an assignment is not a command word"
+    assert "Bash(cd *)" in block or "Bash(python3 *)" in block, block
+
+
+def test_handoff_covers_every_piece_of_a_multiline_command():
+    """One refusal can carry several commands, and a rule for only the first leaves the operator
+    approving the same block again tomorrow for the second."""
+    m = _mod()
+    block = m.claude_handoff(Path("/Users/x/Some_Repo"),
+                             ["git fetch origin main\ngit log --oneline -1"])
+    assert "Bash(git *)" in block, block
+
+
+def test_a_redirection_is_not_a_command_word():
+    """⛔ Also found by running the door, not by reading it.
+
+    `acli jira workitem view SCC-352 2>&1 | head -100` proposed `Bash(1 *)`. The matcher's
+    splitter breaks on `&`, so `2>&1` becomes a piece whose first token is the bare digit `1`
+    — and `decide()` never sees that because it masks redirections BEFORE it splits. Reusing
+    the splitter without reusing the mask reproduced the exact bug the mask exists to prevent,
+    one layer up.
+    """
+    m = _mod()
+    words = m.command_words("acli jira workitem view SCC-352 2>&1 | head -100")
+    assert "1" not in words, words
+    assert "acli" in words and "head" in words, words
+
+
 if __name__ == "__main__":
     # run_all.py executes test files bare — without this block the whole gate is a silent no-op.
     import traceback
