@@ -875,6 +875,13 @@ the merge landed with plain git (`git merge-base --is-ancestor`, no `gh` needed,
 on any machine), watches the deploy, verifies live, prunes the epic branch and moves the epic
 ticket. If the ancestor check fails it STOPS: nothing moves on a PR nobody merged.
 
+⚠️ **One repo setting this road depends on, and the door now checks it for you.** The resume half
+proves the merge with `git merge-base --is-ancestor`, so the epic's tip has to still BE an ancestor
+of `main` afterwards — which a **squash** or **rebase** merge rewrites. Step 4 reads the repo's merge
+settings before it hands you the link and says so; if squash or rebase is enabled, use *Create a
+merge commit*. Otherwise a ship that actually worked reads back as *"NOT merged yet"*: deploy live,
+ticket open, branch unpruned.
+
 **Why the road changed (SCC-347).** It used to merge `--no-ff` on your machine, mint a single-use
 token and push `main`. Two things were wrong with that. The ceremony was about a dozen hand-typed
 git commands in a shared checkout — the exact shape that stranded a docs-only Task halfway through

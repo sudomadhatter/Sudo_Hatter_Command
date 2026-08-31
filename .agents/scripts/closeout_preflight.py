@@ -383,17 +383,57 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> None:
 # folder's prefix, never an mtime a checkout rewrites nor a `git log` a rebase rewrites.
 OVERVIEW_REL = "docs/project_overview_guide.md"
 OVERVIEW_CUTOFF = "2026-08-31"
-# The two states the save may CLAIM. Anything else is prose: "updated", "reviewed" and
+# The three states the save may CLAIM. Anything else is prose: "updated", "reviewed" and
 # "looked at" are all things an agent writes having done nothing, and accepting them would
 # make the check satisfiable by wording (test OV6 is that control).
+#
+# ⛔ `edited` IS one of the three, and leaving it out was a REACHABLE BLOCKING DEFECT (OV7).
+# The branch-diff fast path below answers "did the guide move on this lane?" with
+# `<base>...HEAD`, which is `merge_base(base, HEAD)..HEAD` — and once the lane LANDS, its
+# branch is an ancestor of the base by definition, so that diff collapses to empty. The prune
+# and set-landing doors re-run this script in exactly that state. Without `edited` accepted
+# here, a story that moved the guide and correctly wrote no `unchanged` line is refused at the
+# prune, and the only remedy the error names is to write `unchanged` into the walkthrough of a
+# story that changed it. The diff is the fast path; the LINE is what survives the landing.
 _OVERVIEW_LINE_RE = re.compile(
-    r"^[>\-*#\s]*\**\s*project\s+overview\s+guide\s*:\**\s*(unchanged|absent)\b",
+    r"^[>\-*#\s]*\**\s*project\s+overview\s+guide\s*:\**\s*(edited|unchanged|absent)\b",
     re.I | re.M)
 
+# The STORY's own date, for the cutoff. ⛔ NOT `roster.lane_date` alone: that reads the artifact
+# folder's `YYYY-MM-DD` prefix, and on a project the dated folder is the EPIC's
+# (`_artifacts/<date>_epic_<n>/story-<id>/`), created at kickoff. Its stories close over the
+# following weeks, so keying the exemption to it makes this check inert for every story of every
+# epic opened before the law — the exact population it exists to start covering (OV9). The
+# review header is per-story and equally stable (not an mtime, not a `git log`), so it is
+# preferred and the folder date is the fallback for a walkthrough that carries no dated header.
+_REVIEW_DATE_RE = re.compile(r"^#{1,6}\s*Code\s+Review\s*\((\d{4}-\d{2}-\d{2})\)", re.I | re.M)
 
-def check_overview(project: Path, key: str, rep: wf.Report) -> None:
+
+def overview_date(path: Path, text: str) -> str | None:
+    """The date the cutoff is measured against: the walkthrough's own `## Code Review (<date>)`
+    header, else the artifact folder's prefix. `None` when neither exists — and `None` ENFORCES,
+    never exempts, because an undated lane is not evidence of an old one."""
+    m = _REVIEW_DATE_RE.search(text)
+    return m.group(1) if m else roster.lane_date(path)
+
+
+def check_overview(project: Path, key: str, rep: wf.Report,
+                   branch: str | None = None) -> None:
+    """⛔ `branch` IS THE OPERAND, AND PASSING `HEAD` INSTEAD WAS THE DEFECT.
+
+    `--project` is the SHARED CHECKOUT. The lane lives in a separate worktree, and
+    `/cicd-prune-worktree` calls this script with `--branch` and no `--worktree` at all — the
+    very shape the SCC-211 comment in `main()` describes, where the project root stands on the
+    integration branch and is spotless. Diffing `<base>...HEAD` there measures the checkout,
+    which fails BOTH ways: a lane that edited the guide is refused for not having edited it
+    (the error's own remedy being the thing it already did), and a guide edit some OTHER lane
+    left on the checkout satisfies this one. Every other landing-sensitive check in this file
+    derives the lane rather than trusting cwd — `check_landed` from branch names,
+    `check_sync` through `wf.trees_to_measure`. This one now does too.
+    """
     guide = project / OVERVIEW_REL
-    if not guide.is_file():
+    have_guide = guide.is_file()
+    if not have_guide:
         rep.warn("overview", f"no {OVERVIEW_REL} in this project - the save records it "
                              f"`absent`; writing the first edition is that project's own "
                              f"ticket, and nothing here blocks until it exists")
@@ -401,9 +441,17 @@ def check_overview(project: Path, key: str, rep: wf.Report) -> None:
 
     # Edited on this lane? Then it was kept current and there is nothing to account for.
     base = integration_branch(project)
-    diff = wf.git(["diff", "--name-only", f"{base}...HEAD", "--", OVERVIEW_REL], project)
-    if diff.returncode == 0 and any(ln.strip() for ln in diff.stdout.splitlines()):
-        rep.info("overview", f"{OVERVIEW_REL} edited on this lane (vs {base})")
+    lane = branch or "HEAD"
+    diff = wf.git(["diff", "--name-only", f"{base}...{lane}", "--", OVERVIEW_REL], project)
+    if diff.returncode != 0:
+        # ⛔ Say so rather than reading a failed command as "not edited". `integration_branch`
+        # returns the literal "main" on its zero-or-several-epics path without checking the ref
+        # exists, so a repo whose trunk is named otherwise exits 128 here — and a silent
+        # non-zero would fall through to an ERROR whose named remedy is the wrong one.
+        rep.warn("overview", f"could not diff {base}...{lane} for {OVERVIEW_REL} - "
+                             f"{(diff.stderr or '').strip()[:120]}")
+    elif any(ln.strip() for ln in diff.stdout.splitlines()):
+        rep.info("overview", f"{OVERVIEW_REL} edited on {lane} (vs {base})")
         return
 
     hits = story_walkthroughs(project, key)
@@ -411,20 +459,50 @@ def check_overview(project: Path, key: str, rep: wf.Report) -> None:
         # `check_artifacts` already errors on this and it is the same root cause; a second
         # error for one missing file reads as two problems.
         return
-    for path in hits:
-        rel = path.relative_to(project)
-        if _OVERVIEW_LINE_RE.search(wf.read_text(path)):
-            rep.info("overview", f"{rel}: guide unchanged, and the walkthrough says why")
-            return
-    date = roster.lane_date(hits[0])
-    if date is not None and date < OVERVIEW_CUTOFF:
-        rep.info("overview", f"lane dated {date} predates the guide law "
+    # ⛔ FENCE-STRIPPED, like every other stamp reader in this house (SCC-154). Step 3.5 teaches
+    # this line inside a ```fence```, so raw text lets an agent satisfy the gate by pasting the
+    # INSTRUCTION into the walkthrough — the same defect OV6 closes, reachable by copy-paste.
+    texts = [(p, wf.strip_fenced(wf.read_text(p))) for p in hits]
+    for path, text in texts:
+        m = _OVERVIEW_LINE_RE.search(text)
+        if not m:
+            continue
+        state = m.group(1).lower()
+        # ⛔ `absent` is only meaningful where the guide IS absent — and that branch returned
+        # long before this line. Credited here it lets a lane that saved before the project's
+        # first guide landed ship afterwards without ever opening it: the walkthrough asserts
+        # the negation of a fact this function has already measured.
+        if state == "absent":
+            rep.warn("overview", f"{path.relative_to(project)}: the walkthrough says the guide "
+                                 f"is `absent`, but {OVERVIEW_REL} exists - the lane predates "
+                                 f"the guide landing; re-state it as `edited` or `unchanged`")
+            continue
+        rep.info("overview", f"{path.relative_to(project)}: the walkthrough records the "
+                             f"guide as {state}")
+        return
+    # ⛔ MAX, NOT `hits[0]`. `Path.glob` yields filesystem order, so a story with two artifact
+    # folders had its cutoff decided by a coin flip — reproduced by the review, with the
+    # pre-cutoff folder waiving a post-cutoff obligation. The NEWEST lane is the honest answer
+    # to "is this work post-law".
+    dated = sorted(d for d in (overview_date(p, x) for p, x in texts) if d)
+    if not dated:
+        # ⛔ UNDATABLE MEANS EXEMPT, and this is measured, not cautious: 70 of 70 story lanes in
+        # Projects/AGY_AVIATIONCHAT sit in an UNDATED epic folder, and 21 of those carry no dated
+        # review header either. Erroring here would block the prune of finished work with no
+        # reachable remedy — the exact outcome the cutoff exists to prevent. It exempts history
+        # without exempting the future: a new lane IS datable, because the review step writes the
+        # dated header this reader prefers.
+        rep.info("overview", "lane carries no date (no dated review header, no dated artifact "
+                             "folder) - cannot be shown to post-date the guide law; exempt")
+        return
+    if dated[-1] < OVERVIEW_CUTOFF:
+        rep.info("overview", f"lane dated {dated[-1]} predates the guide law "
                              f"({OVERVIEW_CUTOFF}) - exempt")
         return
-    rep.err("overview", f"{OVERVIEW_REL} is unchanged on this lane and no walkthrough "
-                        f"accounts for it - `/cicd-update-sprint-memory` Step 3.5 never ran. "
-                        f"Either edit the guide, or write `Project overview guide: unchanged "
-                        f"- <reason>` into the walkthrough")
+    rep.err("overview", f"{OVERVIEW_REL} did not move on this lane and no walkthrough accounts "
+                        f"for it - `/cicd-update-sprint-memory` Step 3.5 never ran. Write one "
+                        f"line into the walkthrough saying which it was: `Project overview "
+                        f"guide: edited|unchanged|absent - <reason>`")
 
 
 _FILELIST_RE = re.compile(r"^\s*(?:#{1,6}\s*|\**)File List\**\s*:?\s*$",
@@ -589,7 +667,7 @@ def main() -> int:
     check_worktrees(project, rep)
     check_surfaces(project, key, rep)
     check_artifacts(project, key, rep)
-    check_overview(project, key, rep)
+    check_overview(project, key, rep, args.branch)
     check_file_list(project, key, rep)
     check_budget(project, rep)
     check_gates(project, args.story,

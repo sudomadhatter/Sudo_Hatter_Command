@@ -71,8 +71,8 @@ Extract the epic's Jira key from the branch name — it drives Step 6.5. A branc
 pre-Jira epic: rename it first (see the branch model above), and never invent a key.
 
 A chore lane that legitimately stays here **substitutes `chore/<JIRA-KEY>-<slug>` for
-`epic/<JIRA-KEY>-<slug>`** in Step 2's checkout, Step 4's merge message and mint `--branch`, and both
-Step 6 prune lines; Step 6.5 moves the chore ticket and the child-story sanity check does not apply.
+`epic/<JIRA-KEY>-<slug>`** in Step 2's checkout, Step 4's push and the PR's `--head`, Step 4.5's
+ancestor check, and both Step 6 prune lines; Step 6.5 moves the chore ticket and the child-story sanity check does not apply.
 
 Sanity: every story on the board for this epic should be `done`. If stories are still open, STOP and
 name them — `/cicd-merge-epic-workingtrees` or the story close-outs come first.
@@ -184,21 +184,55 @@ merged, re-invoke it to run everything below and nothing above:
 /cicd-push-e2e --after-merge <JIRA-KEY>
 ```
 
+**Run Step 0 to bind `PROJECT_ROOT`, then everything below and nothing else.** Step 0 is the only
+place that binding happens and every command in this half is `cd "$PROJECT_ROOT" && …`; skipped, an
+unbound variable makes `cd "" && git …` a silent no-op in the lobby and the whole resume half runs
+against the wrong repo.
+
+⛔ **THE KEY DOES NOT CARRY THE SLUG, AND EVERY COMMAND BELOW NEEDS THE FULL REF.** You were
+re-invoked with a bare `<JIRA-KEY>` — often days later, plausibly on the other machine, with none of
+Step 1 in context. Resolve the branch from the key rather than guessing at it: a wrong slug makes
+the ancestor check below fail on a ref that does not exist, and its `|| STOP` reports a real, merged
+landing as *"NOT merged yet"*.
+
+```bash
+BRANCH=$(cd "$PROJECT_ROOT" && git branch -a --list "*epic/<JIRA-KEY>-*" \
+         | head -1 | sed 's|^[* ]*||; s|^remotes/[^/]*/||')
+echo "Resuming: $BRANCH"          # empty -> the branch is already pruned; STOP and ask
+```
+
+⛔ **FETCH BOTH REPOS FIRST — `origin/main` is a LOCAL ref in each, and the merge you are resuming
+from happened on a remote.** Until they are updated, each still names the pre-merge tip:
+
+```bash
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin main   # the project — for the merge proof
+env -u GITHUB_TOKEN git fetch origin main                         # the LOBBY — for the check below
+```
+
 ⛔ **AND CHECK THAT THE DOOR YOU ARE READING IS THE CURRENT ONE.** This resume half runs after a
 merge that may have changed this very file:
 
 ```bash
-BEHIND=$(cd "$PROJECT_ROOT" && git rev-list --count HEAD..origin/main)
+BEHIND=$(git rev-list --count HEAD..origin/main)                  # the LOBBY, deliberately
 ```
 
 If `BEHIND` is not `0`, the text you are following may be the pre-merge copy — read the current one
 (`git show origin/main:.agents/commands/cicd-push-e2e.md`) and follow that.
 
+⛔ **That check reads the LOBBY, not `PROJECT_ROOT`, and the distinction is the whole point.** This
+door FILE lives in the command centre; a thin project has no `.agents/commands/` at all (its
+`.agents/INDEX.md` lists that directory among the ones deleted at conversion). Pointed at the
+project, the check measures a repo whose ahead/behind says nothing about this file, and its own
+remedy — `git show origin/main:.agents/commands/…` — fails there with *path does not exist*. The
+sibling this was modelled on gets it right for free, because on the Task door `$REPO` **is** the
+lobby. ⓘ And it is worth nothing without the fetch above it, which is where it sat until this
+review: unfetched, `HEAD..origin/main` is empty for exactly the epic that just changed this file, so
+the guard reported `0` and the agent followed the copy it was warning about.
+
 Verify the merge with **plain git** — no `gh` required, so this half works on any machine:
 
 ```bash
-cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin main
-cd "$PROJECT_ROOT" && git merge-base --is-ancestor epic/<JIRA-KEY>-<slug> origin/main \
+cd "$PROJECT_ROOT" && git merge-base --is-ancestor "$BRANCH" origin/main \
   || { echo "NOT merged yet — STOP"; exit 1; }
 cd "$PROJECT_ROOT" && git log -1 --format=%s origin/main        # -> "Merge pull request #N from ..."
 cd "$PROJECT_ROOT" && git checkout main
@@ -210,9 +244,23 @@ Both go in Step 6.5's record.
 
 ⛔ If the ancestor check fails, **STOP** — nothing below runs, no ticket moves, no branch is pruned.
 A close-out that reports `Done` on an unmerged PR is the same lie as one that reports it on a failed
-merge. It is also why this door needs squash and rebase merges **disabled** on the repo: either
-rewrites the commit, so the branch tip would not be an ancestor of `main` and a real landing would
-read as a failure.
+merge.
+
+⛔ **It is also why this door needs squash and rebase merges DISABLED on the repo — and why you
+verify that at Step 4, before you hand over the link, rather than discovering it here.** Either
+setting rewrites the commit, so the branch tip is not an ancestor of `main`, and a landing that
+actually succeeded reads back as *"NOT merged yet"*: the deploy is live, the ticket stays open, the
+branch stays unpruned, and the ceremony stalls on a ship that worked. The same measurement that
+motivated this whole road — a project `main` with no protection and no ruleset — says these
+settings are unmanaged too, so do not assume them:
+
+```bash
+cd "$PROJECT_ROOT" && gh api repos/{owner}/{repo} \
+  --jq '{squash: .allow_squash_merge, rebase: .allow_rebase_merge, merge: .allow_merge_commit}'
+```
+
+`squash` or `rebase` true → say so when you hand over the link, and tell the operator to use
+*Create a merge commit*. `merge` false is a **STOP**: the button this door depends on is disabled.
 
 ## Step 5 — Watch the deploy + verify live
 The merge just fired the deploy workflows:
@@ -241,8 +289,13 @@ the stories kept it current, which is why this step costs minutes instead of a r
 cd "$PROJECT_ROOT" && git diff <merge-sha>^1..<merge-sha> -- docs/project_overview_guide.md
 ```
 
-- **Empty delta** → the epic shipped as specified. Record it, in the Step 6 ledger row and in the
-  Step 6.5 ticket comment, exactly: `PRD: unchanged - epic shipped as specified (guide delta empty)`.
+- ⛔ **No guide in this project yet** → there was nothing to index the PRD with, and saying the epic
+  shipped as specified would certify a comparison that structurally could not happen. Record
+  `PRD: not reconciled - <project> has no overview guide yet` and move on. (Live state for
+  AviationChat until its own guide ticket lands, so this is the common branch today, not an edge.)
+- **Empty delta, guide present** → the epic shipped as specified. Record it, in the Step 6 ledger row
+  and in the Step 6.5 ticket comment, exactly:
+  `PRD: unchanged - epic shipped as specified (guide delta empty)`.
 - **Non-empty** → open **only** the PRD sections this epic's requirements map to
   — the epics ledger in the project's BMAD planning artifacts carries the story-to-requirement
   join, so let it name the sections; never open the whole PRD.
@@ -270,7 +323,7 @@ The epic shipped; its branch is done:
 ```bash
 cd "$PROJECT_ROOT" && git branch -d epic/<JIRA-KEY>-<slug>
 cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git push origin --delete epic/<JIRA-KEY>-<slug>
-git rev-list --left-right --count main...origin/main    # must be 0 0
+cd "$PROJECT_ROOT" && git rev-list --left-right --count main...origin/main    # must be 0 0
 ```
 1. **Ledger**: add a row to `PROJECT_ROOT/_artifacts/INDEX.md` (and the home-base INDEX if run from
    the lobby) — what shipped, the PR number, the merge SHA, gate evidence link (the `/cicd-e2e` report).

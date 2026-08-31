@@ -239,14 +239,31 @@ def lane_repo(root: Path) -> Path:
 # already `Done`. Dated exemption, same mechanism as `walkthrough_roster.CUTOFF`, and the
 # lane's date comes from `roster.lane_date` rather than a second parser.
 def ov_repo(root: Path, date: str = "2026-09-02", guide: bool = True,
-            line: str | None = None, edit_guide: bool = False) -> Path:
-    """`lane_repo`, plus a guide and a dated artifact folder, posed for one OV case."""
+            line: str | None = None, edit_guide: bool = False,
+            land: bool = False, review_date: str | None = None,
+            park_on_main: bool = False, undated: bool = False) -> Path:
+    """`lane_repo`, plus a guide and a dated artifact folder, posed for one OV case.
+
+    `land` merges the story branch into the base BEFORE the check runs — the state
+    `/cicd-prune-worktree` and `/cicd-merge-epic-workingtrees` re-run this script in, which the
+    first cut of the OV block never posed. `review_date` writes a `## Code Review (<date>)`
+    header whose date deliberately disagrees with the artifact folder's.
+
+    `park_on_main` leaves the CHECKOUT on `main` with the work on the branch — the topology every
+    door actually mandates (`--project` is the shared checkout, the lane is elsewhere), and the one
+    the first cut of these cases never posed. `undated` strips the date from the artifact folder,
+    which is the shape 70 of 70 real project story lanes use.
+    """
     repo = lane_repo(root)
+    folder = "epic_30" if undated else f"{date}_epic_30"
     art = repo / "_artifacts/2026-08-01_epic_30"
-    art.rename(repo / f"_artifacts/{date}_epic_30")
-    art = repo / f"_artifacts/{date}_epic_30/story-30-1-fresh"
+    art.rename(repo / f"_artifacts/{folder}")
+    art = repo / f"_artifacts/{folder}/story-30-1-fresh"
+    wt = art / "walkthrough.md"
+    if review_date:
+        wt.write_text(wt.read_text(encoding="utf-8").replace(
+            "## Code Review", f"## Code Review ({review_date})"), encoding="utf-8")
     if line:
-        wt = art / "walkthrough.md"
         wt.write_text(wt.read_text(encoding="utf-8") + f"\n## Evidence\n\n{line}\n",
                       encoding="utf-8")
     if guide:
@@ -264,6 +281,15 @@ def ov_repo(root: Path, date: str = "2026-09-02", guide: bool = True,
             encoding="utf-8")
         git(repo, "add", "-A")
         git(repo, "commit", "-qm", "SCC-30 docs(guide): the new hop")
+    if land:
+        # The lane lands on its base, then the check is re-run from the (still-live) worktree —
+        # exactly what the prune door does. `main` is `integration_branch`'s answer here.
+        git(repo, "checkout", "-q", "main")
+        git(repo, "merge", "-q", "--no-ff", "-m", "land the story", "claude/SCC-30-fresh")
+        git(repo, "push", "-q", "origin", "main")
+        git(repo, "checkout", "-q", "claude/SCC-30-fresh")
+    if park_on_main:
+        git(repo, "checkout", "-q", "main")
     return repo
 
 
@@ -302,8 +328,9 @@ def main() -> int:
                     bool(ov(out, "INFO")) and not ov(out, "ERROR"),
                     out.strip()[-400:])
 
-        # OV3 · unchanged, and the walkthrough accounts for it. The em-dash spelling is the
-        # one the command writes; the regex must not depend on it.
+        # OV3 · unchanged, and the walkthrough accounts for it. The command writes an ASCII
+        # hyphen, which is the spelling this fixture uses; the regex ends at the state word and
+        # must not depend on whatever follows it (OV3b pins the em dash for the same reason).
         with TempDir() as tmp:
             rc, out = ov_run(ov_repo(
                 tmp, line="Project overview guide: unchanged - no flow, part or contract moved."))
@@ -322,6 +349,92 @@ def main() -> int:
             rc, out = ov_run(ov_repo(tmp, date="2026-07-15"))
             c.check("OV5 a lane dated before the cutoff is EXEMPT, not blocked",
                     not ov(out, "ERROR") and bool(ov(out, "INFO")), out.strip()[-400:])
+
+        # ⛔ OV7 · THE POST-LANDING REGRESSION, and it is the case the first cut could not see.
+        # `A...B` is `merge_base(A,B)..B`. Once the story lands, its branch IS an ancestor of the
+        # base — which is what landing MEANS and what the prune door requires before it will run —
+        # so `base...HEAD` collapses to EMPTY and the "edited on this lane" fast path silently
+        # stops answering. A story that edited the guide and correctly wrote no `unchanged` line
+        # then fails here, at `/cicd-prune-worktree`, having done exactly the right thing. The
+        # remedy the error names would be to write `unchanged` into the walkthrough of a story
+        # that changed it — a lie — so the accounting line has to cover the edited case too.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(
+                tmp, edit_guide=True, land=True,
+                line="Project overview guide: edited - the grader flow gained its own hop."))
+            c.check("OV7 a LANDED lane whose walkthrough records the edit -> INFO, not blocked",
+                    not ov(out, "ERROR") and bool(ov(out, "INFO")), out.strip()[-400:])
+
+        # ⛔ OV8 · the same landed lane with NO accounting line is the state that must still
+        # error — otherwise the OV7 fix would have bought the check's silence rather than its
+        # correctness.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, edit_guide=True, land=True))
+            c.check("OV8 CONTROL a landed lane with no accounting line still ERRORs",
+                    bool(ov(out, "ERROR")), out.strip()[-400:])
+
+        # ⛔ OV9 · the cutoff must read the STORY's date, not its EPIC folder's. An epic folder is
+        # created at kickoff and its stories close over the following weeks, so keying the
+        # exemption to the folder makes the check inert for every story of every epic opened
+        # before the law — which is precisely the population it was written to start covering.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, date="2026-07-15", review_date="2026-09-10"))
+            c.check("OV9 an epic folder predating the cutoff does NOT exempt a story reviewed after it",
+                    bool(ov(out, "ERROR")), out.strip()[-400:])
+
+        # OV3b · the em-dash spelling an operator or another command might write.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(
+                tmp, line="Project overview guide: unchanged — nothing this story touched is on it."))
+            c.check("OV3b the state word governs, not the dash that follows it",
+                    bool(ov(out, "INFO")) and not ov(out, "ERROR"), out.strip()[-400:])
+
+        # ⛔ OV10 · THE TOPOLOGY EVERY DOOR MANDATES, which the cases above did not pose.
+        # `--project` is the SHARED CHECKOUT and the lane lives elsewhere: `/cicd-prune-worktree`
+        # passes `--project <PROJECT> --branch <name>` and that checkout is parked on `main`. A
+        # diff taken against ITS HEAD is `main...main` — empty, always — so "edited on this lane"
+        # is unreachable in the only topology that ships, and a story that moved the guide is
+        # refused for not having moved it. The BRANCH is the operand, never HEAD.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, edit_guide=True, park_on_main=True))
+            c.check("OV10 the lane's BRANCH is the operand, not the checkout's HEAD",
+                    not ov(out, "ERROR") and bool(ov(out, "INFO")), out.strip()[-400:])
+
+        # ⛔ OV11 · THE REAL CORPUS SHAPE. Measured on Projects/AGY_AVIATIONCHAT: 70 of 70 story
+        # walkthroughs sit in an UNDATED epic folder (`_artifacts/epic_16/story-16-1-.../`), and
+        # 21 of those carry no dated review header either. Undatable must mean EXEMPT: we cannot
+        # show the lane is post-law, and this script gates the PRUNE of finished work, so the
+        # honest direction is not to block. It exempts history without exempting the future — a
+        # new lane is datable, because the review step writes the dated header.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, undated=True))
+            c.check("OV11 an UNDATABLE lane is exempt, not blocked",
+                    not ov(out, "ERROR") and bool(ov(out, "INFO")), out.strip()[-400:])
+
+        # ⛔ OV12 · THE FENCED-EXAMPLE BYPASS — the SCC-154 class, one script over. Step 3.5
+        # teaches the accounting line inside a ```fence```. Read from raw text, pasting the
+        # INSTRUCTION into the walkthrough satisfies the gate while doing nothing: the same defect
+        # OV6 closes, reachable by copy-paste instead of by wording.
+        with TempDir() as tmp:
+            repo = ov_repo(tmp)
+            wt = next((repo / "_artifacts").glob("*/story-30-1-fresh/walkthrough.md"))
+            wt.write_text(wt.read_text(encoding="utf-8")
+                          + "\n## Evidence\n\nThe save teaches it like this:\n\n"
+                            "```\nProject overview guide: unchanged - <why>\n```\n\n"
+                            "We did neither.\n", encoding="utf-8")
+            git(repo, "add", "-A"); git(repo, "commit", "-qm", "SCC-30 docs: quote the template")
+            rc, out = ov_run(repo)
+            c.check("OV12 CONTROL a line only inside a code FENCE does NOT satisfy the check",
+                    bool(ov(out, "ERROR")), out.strip()[-400:])
+
+        # ⛔ OV13 · `absent` is only meaningful where the guide IS absent. Accepted on the
+        # guide-present path it lets a lane that saved before the project's first guide landed
+        # ship afterwards without ever opening it.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(
+                tmp, line="Project overview guide: absent - this project has no guide yet"))
+            c.check("OV13 CONTROL `absent` does NOT account for a guide that EXISTS",
+                    bool(ov(out, "ERROR")), out.strip()[-400:])
 
         # OV6 · ⛔ CONTROL. The line has to CLAIM one of the two states the check accepts.
         # "updated" is a word an agent would happily write while having done nothing, and

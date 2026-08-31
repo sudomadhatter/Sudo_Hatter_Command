@@ -7,7 +7,7 @@
     "files": 427,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 802,
+    "edges": 803,
     "external": 40,
     "ambiguous": 176,
     "dangling": 301,
@@ -33,7 +33,7 @@
     },
     {
       "path": ".agents/INDEX.md",
-      "in": 9,
+      "in": 10,
       "out": 9
     },
     {
@@ -414,7 +414,7 @@
     {
       "path": ".agents/commands/cicd-push-e2e.md",
       "in": 3,
-      "out": 4
+      "out": 5
     },
     {
       "path": ".agents/commands/cicd-quick-dev.md",
@@ -2738,6 +2738,11 @@
     {
       "from": ".agents/commands/cicd-prune-worktree.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-push-e2e.md",
+      "to": ".agents/INDEX.md",
       "kind": "ref"
     },
     {

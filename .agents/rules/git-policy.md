@@ -110,7 +110,7 @@ lands one story; the next needs its own.
 
 | Step | Who | What |
 |---|---|---|
-| open the PR | the agent, inside `/smh-close-task-merge-tree` or `/smh-merge-multiple-workingtrees` here, or `/cicd-push-e2e` in a project | `gh pr create --base main --head <branch>` — or, with no `gh`, print the `compare/main...<branch>` URL. Then **STOP** |
+| open the PR | the agent, inside `/smh-close-task-merge-tree` or `/smh-merge-multiple-workingtrees` here, or `/cicd-push-e2e` in a project | `gh pr create --base main --head <branch> --fill` (the project door passes `--title` + `--body-file` instead, to carry its gate evidence) — or, with no `gh`, print the `compare/main...<branch>` URL. Then **STOP**. ⛔ Never a bare `gh pr create`: with neither `--fill` nor a title it prompts, and an agent shell has no TTY to answer |
 | the gate | GitHub | **`main-write-gate`** must be green: the full enforcement suite plus a check that the source is `epic/*` or `chore/*` with a real ticket key |
 | the merge | GitHub, on the operator's decision | the operator clicks *Merge pull request*. **Their decision to proceed is the sign-off**; the click is how it reaches GitHub, never work they owe |
 | after | the agent, on re-invocation | `--after-merge <KEY>` — verify with `git merge-base --is-ancestor`, then Dev Record, ticket, prune |
