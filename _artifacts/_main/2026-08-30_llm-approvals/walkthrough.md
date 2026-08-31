@@ -20,107 +20,35 @@ yet built) · SCC-355 (Part B, built here) · **HEAD at write time:** `94de53b6`
       - Consequential, not declared: `_artifacts/_main/INDEX.md` needed the session-folder row —
         `test_check_maps.py` F2 failed the suite until it was added. Reported here rather than
         smuggled, because the plan's declared set is what the review's drift check reads.
-- [ ] **B4 — the live proof.** The operator's; see `## Your Actions`.
-- [ ] **Part A (SCC-354)** — planned, audited, not started.
+- [ ] **B4 — the live proof.** The operator's; see `## Your Actions
 
-## Evidence
+Landed and needing nothing from you: `zoo_notify.py` and its 38-case suite, the 25/25 mutant sweep,
+the SOP row, the changelog row, both INDEX rows, and `zoo-code-permissions-guide.md` §6.1/§11.1.
+Part A (SCC-354) is planned and audited but not started, by the build order you approved.
 
-**B1/B2 — the classifier and the notifier** → `.agents/scripts/tests/test_zoo_notify.py`, 13 cases.
-
-RED, written before the module existed:
-
-```
-FileNotFoundError: [Errno 2] No such file or directory:
-  '.../.agents/scripts/zoo_notify.py'
--- 0/13 passed --  FAILED: test_answered_ask_is_not_pending, test_ask_and_turn_end_are_distinguishable,
-test_auto_approved_ask_never_fires, test_completed_turn_classifies_as_turn_end,
-test_compose_is_pure_and_touches_no_network, test_custom_storage_path_setting_wins,
-test_empty_thread_is_silent, test_notifier_script_exists,
-test_ntfy_topic_defaults_to_the_existing_topic, test_ntfy_topic_env_override_wins,
-test_partial_ask_never_fires, test_pending_ask_classifies_as_ask,
-test_store_root_resolves_on_mac_and_on_windows
-```
-
-The red is the RIGHT red: it dies on the import of a module that does not exist, not in a fixture.
-
-GREEN, after `zoo_notify.py`:
-
-```
--- 13/13 passed --
-```
-
-**Non-vacuity** → `sweep.json`, 9 mutants drawn FROM the code, run as one sweep.
-
-First sweep, which is why the sweep exists — it found three defects a green 13/13 could not show:
-
-```
--- SWEEP FAILED --
-  * M1 stop honouring Zoo's own verdict: SURVIVED - the named case still passed with the mutant in place
-  * M6 the PC resolves to the Mac's store path: SURVIVED - the named case still passed with the mutant in place
-  * M2,M3,M4,M5,M7,M8,M9: SWEEP ERROR - exit 1 with no `FAILED:` line
-```
-
-- **M1 survived** because `test_auto_approved_ask_never_fires` also set `isAnswered=True`, so the
-  isAnswered guard caught the case first and the guard under test was never exercised.
-- **M6 survived** because the test passed a DIFFERENT `home` to each call, so the two paths differed
-  for that reason alone and a mutant collapsing win32 onto the Mac branch still passed.
-- **The seven "SWEEP ERROR"s** were an attribution mismatch: `mutation_sweep.py` reads a kill off a
-  line STARTING with `FAILED:` (its L186), and the house `__main__` harness appends FAILED to the
-  tally line instead. Now emitted on its own line.
-
-Second sweep, after those three fixes:
-
-```
--- restore verified: bytes match, nothing was committed, and `git diff --quiet c5d0a4b5` is clean --
--- full file, unfiltered: python3 .agents/scripts/tests/test_zoo_notify.py -> exit 0 --
-        | -- 13/13 passed --
--- sweep clean: 9/9 killed by their declared case --
-```
-
-**The full gate** → receipt at [gates/suite.json](gates/suite.json).
-
-First stamp was RED and that is the mechanism working — `65/66 files passed  FAILED: test_check_maps.py`,
-which was the missing `_artifacts/_main/INDEX.md` row. After adding it:
-
-```
-[PASS] suite exit=0 82.7s @ 021144c6   (66/66 files; receipt sha matches)
-```
-
-Other floor gates, run bare (a pipe would have read `tail`'s exit code, not the gate's — the house
-scar `piping-a-gate-hides-its-exit-code`, which this lane walked into once and corrected):
-
-```
-check_links.py --base origin/main   -> exit 0, clean
-workflow_lint.py --toolkit-only     -> 0 error(s), 0 warning(s), 8 info
-py_compile zoo_notify.py + test     -> OK
-```
-
-`check_links` first exited 1 with 13 unresolved paths — every one a Part A file the plan declares
-but has not built. There is no house convention for that state, so the plan now writes those ten
-paths bare rather than backticked: the linter's own convention 5 says a non-backticked token is not
-a claim, and `declared_change_set.py` still parses the block at 29 entries / 0 incomplete / 17 NEW.
-Recorded as a formatting-only amendment inside the plan.
-
-## Your Actions
-
-Landed and needing nothing from you: `zoo_notify.py` and its 13-case suite, the 9/9 mutant sweep,
-the SOP row, the changelog row, and both INDEX rows. Part A (SCC-354) is planned and audited but not
-started, by the build order you approved.
-
-- [ ] **Prove the notifier live on the Mac.** Run `python3 .agents/scripts/zoo_notify.py --watch`,
-      then in Zoo trigger one command that stops for approval and let one turn finish. Confirm you
-      get a banner AND a phone push for each. ⚠️ If the phone push lands but no banner appears, that
-      is the Focus-mode failure, not a broken notifier — terminal-notifier must be in System Settings
-      → Focus → Work → Allowed Notifications, and suppressed banners still show in Notification
-      Center history.
-- [ ] **Prove it on the PC.** (The review found the PC branch raised no toast at all and still reported `banner=sent`; it builds and Shows a real one now, and a failure exits non-zero. This row is now a check that CAN fail.)
-- [ ] **PC, continued —** Same, with `python` instead of `python3`. The PC has never had
-      `notify.sh` either, so this is the first notification either tool has sent from that machine.
+- [x] **The merge itself — lands via this branch's PR**
+- [x] **Prove the notifier live on the Mac.** Done and measured 2026-08-31:
+      `python3 .agents/scripts/zoo_notify.py --self-test` → `banner=sent push=sent`, exit 0. A real
+      terminal-notifier banner and a real ntfy push to `mac-sudo-command` both fired.
+      ⚠️ If a future run reports `banner=sent` and you see nothing, that is the Focus-mode failure,
+      not a broken notifier — terminal-notifier must be in System Settings → Focus → Work → Allowed
+      Notifications, and suppressed banners still appear in Notification Center history.
+- [ ] **Prove it on the PC — one command, five seconds:**
+      `python .agents\scripts\zoo_notify.py --self-test`
+      Exit 0 **with a toast on screen** is the pass; exit 1 names the channel that failed.
+      This is the only row here that is genuinely yours, and only because a Windows toast that
+      displays nothing is indistinguishable from a quiet one to any check running off-machine.
+      What was verified from the Mac before shipping: the emitted PowerShell parses clean under
+      pwsh 7.7 (0 syntax errors), and every WinRT call matches Microsoft's own
+      `ToastNotificationManager` example — `GetTemplateContent`, the `CreateToastNotifier(String)`
+      overload, `GetElementsByTagName`/`AppendChild`/`CreateTextNode`, and `ToastText02`, which the
+      enum documentation defines as exactly the two text nodes the code writes.
+      The script travels with the merge; the PC needs nothing installed.
 
 ## Code Review (2026-08-31)
 
-Verdict: PASS @ 021144c6
-Suite evidence measured at: 021144c6 (receipt `gates/suite.json`, result `pass`, exit 0, 66/66, clean tree)
+Verdict: PASS @ 3e6afd4d
+Suite evidence measured at: 3e6afd4d (receipt `gates/suite.json`, result `pass`, exit 0, 66/66, clean tree)
 
 review-runtime: fan-out
 lens_isolation: worktree
@@ -144,6 +72,18 @@ artifacts — the lane's plan and walkthrough were withheld from it so its blind
 than declared. 47 raw findings, 26 unique claims after grouping. The verify wave was launched and
 then **stopped by the operator mid-run**; every finding acted on below was instead confirmed by the
 assessor directly against the source, and two were confirmed by `grep` on the tree.
+
+**Closing finding 5 properly — the operator's push, and it was right.** The first fix made the PC
+branch *correct*; it left proving it as an open row waiting on a real Zoo ask, which is not a check
+anybody runs. Two things were then done from the Mac that did not need a PC: the emitted PowerShell
+was parsed under pwsh 7.7 (0 syntax errors, 111 tokens), and every WinRT call was checked against
+Microsoft's own `ToastNotificationManager` reference rather than from memory — `GetTemplateContent`,
+the `CreateToastNotifier(String)` overload, the `GetElementsByTagName`/`AppendChild`/`CreateTextNode`
+sequence, and `ToastText02`, documented as exactly the two text nodes the code writes. The docs also
+confirm *why* the PowerShell AppUserModelID is required: a desktop toast needs a Start-menu shortcut
+carrying one. `--self-test` was then added so each machine is proven by one command that exits
+non-zero when a channel fails. The Mac is now proven live (`banner=sent push=sent`, exit 0); the PC
+row is one command instead of a wait.
 
 **The one line that matters (SCC-205 §6.5).** 47 findings came back; 21 were assessed real and are
 fixed in this lane; the rest were dismissed as duplicates of a fixed claim or as noise. Two
@@ -184,9 +124,9 @@ measured 30% of the file.
 
 | Gate | Result |
 |---|---|
-| Enforcement suite | `[PASS] suite exit=0 82.7s @ 021144c6` — **66/66 files passed**, receipt `result: pass`, clean tree |
-| Mutation sweep | **22/22 killed by their declared case**; restore verified, full unfiltered run exit 0 |
-| Assertion evidence | `test_zoo_notify.py` → `-- 35/35 passed --`, exit 0 (was 13) |
+| Enforcement suite | `[PASS] suite exit=0 82.9s @ 3e6afd4d` — **66/66 files passed**, receipt `result: pass`, clean tree |
+| Mutation sweep | **25/25 killed by their declared case**; restore verified, full unfiltered run exit 0 |
+| Assertion evidence | `test_zoo_notify.py` → `-- 38/38 passed --`, exit 0 (was 13) |
 | Toolkit lint | `0 error(s), 0 warning(s), 8 info` |
 | Link + anchor | `check_links.py --base origin/main` → exit 0, clean, 12 files |
 | SOP currency | exit 0 — the SOP-touching commit carries no `[sop-ok]` escape |
