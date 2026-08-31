@@ -135,11 +135,21 @@ def test_partial_ask_still_pages_because_zoo_never_clears_it():
 
 
 def test_partial_say_still_never_fires():
-    """The half of the old guard that was RIGHT, kept: narration still streaming is not news."""
+    """The half of the old guard that was RIGHT, kept: a SAY still streaming is not news.
+
+    ⛔ This case used to tail on `say: "reasoning"` and it was VACUOUS — the mutation sweep proved
+    it by deleting the guard entirely and watching the case pass anyway. `reasoning` is not
+    `completion_result`, so `classify` returned None down the fall-through path whether the guard
+    existed or not. The ONLY tail where this guard decides anything is a `completion_result` that
+    is still streaming; without it, a half-written turn-end pages the operator early and then the
+    finished one pages him again.
+    """
     m = _mod()
     msgs = _load("zoo_ui_messages_ask.json")
-    msgs[-1] = {"ts": 9, "type": "say", "say": "reasoning", "partial": True, "text": "thinking"}
+    msgs[-1] = {"ts": 9, "type": "say", "say": "completion_result", "partial": True, "text": "..."}
     assert m.classify(msgs) is None
+    msgs[-1]["partial"] = False              # positive control: finished, so it DOES page
+    assert m.classify(msgs) == "turn_end"
 
 
 def test_a_finalised_ask_pages_exactly_as_a_partial_one_does():
@@ -506,6 +516,12 @@ def test_priming_pages_a_FRESH_pending_ask_but_never_the_stale_backlog():
         assert len(sent) == 1, f"exactly the fresh pending ask pages; got {len(sent)}: {sent}"
         assert sent[0]["event"] == "ask", sent[0]
         assert sent[0]["title"] == "Zoo Code - needs you", sent[0]
+        # ⛔ WHICH thread paged, not just how many. Counting alone is vacuous: the mutation sweep
+        # inverted the comparison to `>=`, which pages the STALE thread and silences the fresh one
+        # — still exactly one page, still an ask, still the same title. Only naming the thread
+        # tells the two apart, and telling them apart is the entire point of the window.
+        assert "fresh" in sent[0]["message"], f"the STALE thread paged instead: {sent[0]}"
+        assert "stale" not in sent[0]["message"], sent[0]
 
 
 def test_priming_freshness_window_is_configurable_and_zero_means_silent():
