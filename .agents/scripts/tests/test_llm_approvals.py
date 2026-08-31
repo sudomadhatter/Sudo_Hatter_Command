@@ -271,11 +271,22 @@ def test_claude_reader_pairs_the_denial_back_to_its_command():
 
 
 def test_claude_reader_ignores_a_denied_non_bash_tool():
-    """The fixture also denies a `Write`. There is no Bash rule that would have allowed it, and
-    proposing one would be a rule that matches nothing — noise the operator has to rule out."""
+    """⛔ Re-aimed after the mutation sweep, and the re-aim is the point.
+
+    This case first denied a `Write`, and the sweep proved it vacuous: dropping the
+    `name == "Bash"` guard changed nothing, because a `Write` has no `command` field and the
+    presence check already dropped it. The guard was never exercised.
+
+    An MCP tool CAN carry a `command` input, and a refusal of one is not a Bash refusal — a
+    `Bash(docker *)` rule would not have allowed it, so proposing one tells the operator he has
+    fixed something he has not. That record is what isolates the guard, so the fixture carries it
+    now and the `Write` stays as the no-command arm.
+    """
     m = _mod()
     got = m.claude_blocked_commands(CLAUDE_SESSION.read_text(encoding="utf-8").splitlines())
     assert not any("redacted.md" in c for c in got), got
+    assert "docker system prune -af" not in got, (
+        "an MCP tool's refusal is not a Bash refusal, and no Bash rule would have allowed it")
 
 
 def test_handoff_block_names_one_resolved_store_and_real_rules():
