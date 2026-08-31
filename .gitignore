@@ -75,3 +75,7 @@
 
 # macOS Finder droppings — machine noise, never content
 **/.DS_Store
+
+# Firebase CLI debug log — machine-local noise from a `firebase` invocation in the repo
+# root. Regenerated on every run, carries the signed-in account, never content. (SCC-352)
+firebase-debug.log

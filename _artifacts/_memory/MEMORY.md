@@ -123,3 +123,5 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - **How the flows stop** — [model-switch stops](dev-flow-model-switch-stops.md) (continue = audit, changed = audit and stop) · [dev-story gate conditional](dev-story-gate-is-conditional.md) (stops only on real questions).
 - **Writing directives** — [no personal name](no-personal-name-in-directives.md) (generic referents in .agents/).
 - [Plan reviews ride md-feedback memos](plan-reviews-ride-md-feedback-memos.md) — list_annotations first; edit directly and respond in-thread.
+- [Budget is a live constraint — announce spend](budget-is-a-live-constraint-announce-spend.md) — say what spawns BEFORE it spawns; after a budget complaint, nothing spawns without his word; sleeping Mac ≠ working agent.
+- [⛔ `worktree remove --force` eats UNTRACKED memories](worktree-remove-force-eats-untracked-memories.md) — write session memories on the lane and commit before the prune; re-create and verify if written post-merge.
