@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 426,
+    "files": 427,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 790,
+    "edges": 803,
     "external": 40,
     "ambiguous": 176,
     "dangling": 301,
@@ -34,7 +34,7 @@
     {
       "path": ".agents/INDEX.md",
       "in": 9,
-      "out": 7
+      "out": 9
     },
     {
       "path": ".agents/commands/INDEX.md",
@@ -339,7 +339,7 @@
     {
       "path": ".agents/commands/cicd-close-story-merge-tree.md",
       "in": 2,
-      "out": 9
+      "out": 10
     },
     {
       "path": ".agents/commands/cicd-code-review-AP.md",
@@ -414,7 +414,7 @@
     {
       "path": ".agents/commands/cicd-push-e2e.md",
       "in": 3,
-      "out": 3
+      "out": 4
     },
     {
       "path": ".agents/commands/cicd-quick-dev.md",
@@ -439,7 +439,7 @@
     {
       "path": ".agents/commands/cicd-update-sprint-memory.md",
       "in": 2,
-      "out": 4
+      "out": 7
     },
     {
       "path": ".agents/commands/cicd-write-story-tests.md",
@@ -748,7 +748,7 @@
     },
     {
       "path": ".agents/rules/constitution.md",
-      "in": 27,
+      "in": 28,
       "out": 1
     },
     {
@@ -783,7 +783,7 @@
     },
     {
       "path": ".agents/rules/mermaid-diagram-preferences.md",
-      "in": 1,
+      "in": 3,
       "out": 0
     },
     {
@@ -823,7 +823,7 @@
     },
     {
       "path": ".agents/rules/sop-currency.md",
-      "in": 11,
+      "in": 12,
       "out": 8
     },
     {
@@ -1752,6 +1752,11 @@
       "out": 0
     },
     {
+      "path": ".agents/templates/project_overview_guide.md",
+      "in": 10,
+      "out": 4
+    },
+    {
       "path": ".agents/workflows/INDEX.md",
       "in": 3,
       "out": 11
@@ -2039,12 +2044,12 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 28,
-      "out": 55
+      "out": 56
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 12
+      "out": 14
     },
     {
       "path": "docs/code-review-graph.md",
@@ -2133,7 +2138,7 @@
     },
     {
       "path": "docs/repo-map.md",
-      "in": 10,
+      "in": 12,
       "out": 9
     },
     {
@@ -2143,8 +2148,8 @@
     },
     {
       "path": "docs/workspace-standard.md",
-      "in": 12,
-      "out": 23
+      "in": 13,
+      "out": 26
     },
     {
       "path": ".agents/bmad",
@@ -2238,6 +2243,16 @@
     {
       "from": ".agents/INDEX.md",
       "to": ".agents/commands/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/INDEX.md",
+      "to": "docs/workspace-standard.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/INDEX.md",
+      "to": ".agents/templates/project_overview_guide.md",
       "kind": "ref"
     },
     {
@@ -2448,6 +2463,11 @@
     {
       "from": ".agents/commands/cicd-close-story-merge-tree.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-close-story-merge-tree.md",
+      "to": ".agents/templates/project_overview_guide.md",
       "kind": "ref"
     },
     {
@@ -2736,6 +2756,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/commands/cicd-push-e2e.md",
+      "to": ".agents/templates/project_overview_guide.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/commands/cicd-quick-dev.md",
       "to": ".agents/rules/000-PLAN-FIRST-GATE.md",
       "kind": "ref"
@@ -2867,12 +2892,27 @@
     },
     {
       "from": ".agents/commands/cicd-update-sprint-memory.md",
+      "to": ".agents/rules/mermaid-diagram-preferences.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-update-sprint-memory.md",
       "to": ".agents/rules/smh-target-resolution.md",
       "kind": "ref"
     },
     {
       "from": ".agents/commands/cicd-update-sprint-memory.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-update-sprint-memory.md",
+      "to": ".agents/templates/project_overview_guide.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-update-sprint-memory.md",
+      "to": ".agents/rules/sop-currency.md",
       "kind": "ref"
     },
     {
@@ -4696,6 +4736,21 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/templates/project_overview_guide.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/templates/project_overview_guide.md",
+      "to": ".agents/rules/mermaid-diagram-preferences.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/templates/project_overview_guide.md",
+      "to": "docs/repo-map.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/workflows/INDEX.md",
       "to": "docs/_scc_sops_prds/INDEX.md",
       "kind": "link"
@@ -5627,6 +5682,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/templates/project_overview_guide.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
       "kind": "link"
     },
@@ -5679,6 +5739,11 @@
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": ".agents/rules/sop-currency.md",
       "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/templates/project_overview_guide.md",
+      "kind": "ref"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
@@ -6019,6 +6084,11 @@
       "from": "docs/system-builder.md",
       "to": "docs/workspace-standard.md",
       "kind": "ref"
+    },
+    {
+      "from": "docs/workspace-standard.md",
+      "to": ".agents/templates/project_overview_guide.md",
+      "kind": "link"
     },
     {
       "from": "docs/workspace-standard.md",

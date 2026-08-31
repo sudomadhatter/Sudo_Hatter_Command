@@ -901,6 +901,32 @@ Or push `main` from the main checkout, which always carries the scripts.
 
 `/cicd-e2e` also runs solo any time you want end-to-end confidence without shipping.
 
+### Keeping the documents honest — three altitudes, one mechanism
+
+Every level of this system has a document that goes stale silently, and each is kept current by the
+same trick: **the edit has to happen in the same act as the change**, while the context that makes
+it correct still exists. What differs is the unit.
+
+| Altitude | The document | Kept current by | If nothing changed |
+| --- | --- | --- | --- |
+| **Commit** (this repo only) | the page you are reading | an armed `commit-msg` gate — change a usage surface without staging this page and the commit is rejected | `[sop-ok]` in the message, logged forever |
+| **Story** (a project) | `docs/project_overview_guide.md` — what was BUILT, for a human | `/cicd-update-sprint-memory` **Step 3.5**, at the save | `Project overview guide: unchanged - <reason>` in the walkthrough |
+| **Epic** (a project) | the PRD, and the architecture folder | `/cicd-push-e2e` **Step 5.5**, at the ship, via `/bmad-correct-course` | `PRD: unchanged - epic shipped as specified` on the ticket and the ledger row |
+
+**Why a project does not get a commit gate.** The gate on this page works because its usage surface
+is five narrow paths, so a fire means something. A project's surface is `backend/` and `frontend/` —
+nearly every commit — so the same gate would fire constantly, `[sop-ok]` would become reflex, and a
+gate you opt out of by reflex is checking nothing. The story is a project's real unit of change, so
+that is where its check sits; `closeout_preflight.py`'s `overview` row reads it, and a project with
+no guide yet is **warned, never blocked** (writing the first edition is that project's own ticket).
+
+**Why the PRD is reconciled and never rewritten.** The PRD says what was **wanted**; the overview
+guide says what was **built**. Regenerating the first from the second would turn a requirements
+document into a second, more expensive copy of the guide — a 100 KB read at every ship that changes
+no decision. So the ship-time step opens only the PRD sections this epic's requirements map to,
+indexed by the guide's delta across the epic, and a genuine divergence becomes its own
+`chore/<KEY>-<slug>-prd-reconcile` lane rather than an edit made on `main` during a deploy.
+
 ### `/smh-close-task-merge-tree` — the Task lane's close-out
 
 **The half BMAD has no answer for.** A Task has no epic, no story file and often no sprint board at

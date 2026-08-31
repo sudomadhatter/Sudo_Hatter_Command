@@ -224,6 +224,47 @@ confirm the serving revision via the RELEASE track (other fields lie about what'
 deploy is an incident: fix forward on a `chore/*` branch or roll back the revision — decide with the
 operator, immediately.
 
+## Step 5.5 — Reconcile the PRD against what actually shipped (SCC-357)
+
+**This is the only moment the comparison is possible.** Until now the epic was a plan; now it is a
+merge. The PRD says what was **wanted**; `docs/project_overview_guide.md` — kept current story by
+story at `/cicd-update-sprint-memory` Step 3.5 — says what was **built**. ⛔ **The PRD is never
+rewritten from the guide** (operator ruling, 2026-08-31): that would turn a requirements document
+into a second, more expensive copy of the guide. What happens here is a **reconcile**, and it has
+exactly two legal outcomes.
+
+**The guide's delta across this epic is the index into the PRD** — it is small precisely because
+the stories kept it current, which is why this step costs minutes instead of a re-read of a
+100 KB PRD:
+
+```bash
+cd "$PROJECT_ROOT" && git diff <merge-sha>^1..<merge-sha> -- docs/project_overview_guide.md
+```
+
+- **Empty delta** → the epic shipped as specified. Record it, in the Step 6 ledger row and in the
+  Step 6.5 ticket comment, exactly: `PRD: unchanged - epic shipped as specified (guide delta empty)`.
+- **Non-empty** → open **only** the PRD sections this epic's requirements map to
+  — the epics ledger in the project's BMAD planning artifacts carries the story-to-requirement
+  join, so let it name the sections; never open the whole PRD.
+  Compare each against the guide's delta.
+  - **No divergence** — the guide gained detail the PRD never claimed either way → record the same
+    `PRD: unchanged` line, naming what you compared.
+  - **A real divergence** — the PRD states X and the system does Y → that is a **requirements
+    change**, and requirements changes are work. Open `chore/<PROJECT-KEY>-<slug>-prd-reconcile`
+    and run **`/bmad-correct-course`** on it: it produces the sprint-change-proposal and edits the
+    PRD and, where the invariant moved, the architecture folder. That lane lands through this same
+    PR door.
+
+⛔ **Never edit the PRD in place on `main`.** You are standing on `main` at this point in the
+ceremony, and a requirements edit is not a side effect of a deploy — it is reviewable work that
+takes its own lane, its own gate and its own pull request, like everything else here.
+
+ⓘ **Why the epic and not the story.** A story is too small to tell a requirements change from an
+implementation detail — mid-epic discovery already has a door (`/bmad-correct-course`, run the
+moment a story finds the requirement wrong). The epic is the unit that was *specified*, so it is
+the unit that can be *checked against its specification*. And it is bounded: one reconcile per
+ship, indexed by a diff the stories already paid for.
+
 ## Step 6 — Prune the epic branch + update the ledger
 The epic shipped; its branch is done:
 ```bash

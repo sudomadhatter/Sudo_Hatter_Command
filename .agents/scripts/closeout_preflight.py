@@ -295,13 +295,23 @@ def legacy_verdict(project: Path, key: str) -> Path | None:
     return None
 
 
+def story_walkthroughs(project: Path, key: str) -> list[Path]:
+    """Every walkthrough belonging to this story.
+
+    ⛔ ONE finder, shared by `check_artifacts` and `check_overview` (SCC-357). Two copies of
+    a `slug_matches` glob is two chances to disagree about WHICH walkthrough is the story's,
+    and the second reader would be the one nobody tested against `21-8`/`21-8b`.
+    """
+    slug = wf.norm_id(key)
+    # slug_matches, not startswith: `21-8` must not adopt `21-8b`'s walkthrough.
+    return [p for p in project.glob("_artifacts/**/walkthrough.md")
+            if wf.slug_matches(slug, wf.norm_id(p.parent.name).removeprefix("story-"))]
+
+
 def check_artifacts(project: Path, key: str, rep: wf.Report) -> None:
     """The two-doc close puts the flip gate in the walkthrough's `Verdict:` line
     (memory: story-artifacts-two-doc-close). Absent section = the step never ran."""
-    slug = wf.norm_id(key)
-    # slug_matches, not startswith: `21-8` must not adopt `21-8b`'s walkthrough.
-    hits = [p for p in project.glob("_artifacts/**/walkthrough.md")
-            if wf.slug_matches(slug, wf.norm_id(p.parent.name).removeprefix("story-"))]
+    hits = story_walkthroughs(project, key)
     if not hits:
         legacy = legacy_verdict(project, key)
         if legacy:
@@ -354,6 +364,67 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> None:
             elif changed:
                 rep.err("artifacts", f"{rel}: {len(changed)} code file(s) changed since the "
                                      f"reviewed SHA - the verdict is STALE, re-gate")
+
+
+# ── 4b. Is the project's overview guide current? (SCC-357) ─────────────────────────
+#
+# `docs/project_overview_guide.md` is the page that says what was BUILT and how a request
+# flows through it — for a human. It is not the PRD: the PRD says what was WANTED, and it is
+# never rewritten from this page. The guide goes stale story by story, so it is kept current
+# story by story, at the save, while the context that makes the edit correct still exists.
+#
+# ⛔ THE DATED CUTOFF IS LOAD-BEARING, NOT A COURTESY. This script is ALSO run by
+# `/cicd-prune-worktree` and `/cicd-merge-epic-workingtrees`. Without the cutoff, the day a
+# project gains a guide every story saved before the law existed starts failing here — and
+# those stories are `Done`, their worktrees are what the operator is trying to prune, and the
+# only "remedy" the error could name is re-running a save on closed work. A gate whose refusal
+# has no reachable fix is a gate that gets disarmed. Same mechanism as
+# `walkthrough_roster.CUTOFF`, and the lane's date comes from `roster.lane_date` — the artifact
+# folder's prefix, never an mtime a checkout rewrites nor a `git log` a rebase rewrites.
+OVERVIEW_REL = "docs/project_overview_guide.md"
+OVERVIEW_CUTOFF = "2026-08-31"
+# The two states the save may CLAIM. Anything else is prose: "updated", "reviewed" and
+# "looked at" are all things an agent writes having done nothing, and accepting them would
+# make the check satisfiable by wording (test OV6 is that control).
+_OVERVIEW_LINE_RE = re.compile(
+    r"^[>\-*#\s]*\**\s*project\s+overview\s+guide\s*:\**\s*(unchanged|absent)\b",
+    re.I | re.M)
+
+
+def check_overview(project: Path, key: str, rep: wf.Report) -> None:
+    guide = project / OVERVIEW_REL
+    if not guide.is_file():
+        rep.warn("overview", f"no {OVERVIEW_REL} in this project - the save records it "
+                             f"`absent`; writing the first edition is that project's own "
+                             f"ticket, and nothing here blocks until it exists")
+        return
+
+    # Edited on this lane? Then it was kept current and there is nothing to account for.
+    base = integration_branch(project)
+    diff = wf.git(["diff", "--name-only", f"{base}...HEAD", "--", OVERVIEW_REL], project)
+    if diff.returncode == 0 and any(ln.strip() for ln in diff.stdout.splitlines()):
+        rep.info("overview", f"{OVERVIEW_REL} edited on this lane (vs {base})")
+        return
+
+    hits = story_walkthroughs(project, key)
+    if not hits:
+        # `check_artifacts` already errors on this and it is the same root cause; a second
+        # error for one missing file reads as two problems.
+        return
+    for path in hits:
+        rel = path.relative_to(project)
+        if _OVERVIEW_LINE_RE.search(wf.read_text(path)):
+            rep.info("overview", f"{rel}: guide unchanged, and the walkthrough says why")
+            return
+    date = roster.lane_date(hits[0])
+    if date is not None and date < OVERVIEW_CUTOFF:
+        rep.info("overview", f"lane dated {date} predates the guide law "
+                             f"({OVERVIEW_CUTOFF}) - exempt")
+        return
+    rep.err("overview", f"{OVERVIEW_REL} is unchanged on this lane and no walkthrough "
+                        f"accounts for it - `/cicd-update-sprint-memory` Step 3.5 never ran. "
+                        f"Either edit the guide, or write `Project overview guide: unchanged "
+                        f"- <reason>` into the walkthrough")
 
 
 _FILELIST_RE = re.compile(r"^\s*(?:#{1,6}\s*|\**)File List\**\s*:?\s*$",
@@ -518,6 +589,7 @@ def main() -> int:
     check_worktrees(project, rep)
     check_surfaces(project, key, rep)
     check_artifacts(project, key, rep)
+    check_overview(project, key, rep)
     check_file_list(project, key, rep)
     check_budget(project, rep)
     check_gates(project, args.story,

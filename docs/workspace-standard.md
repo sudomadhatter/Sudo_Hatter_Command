@@ -142,6 +142,13 @@ Coverage is linted by `check_maps.py` check 8 (non-fatal hint until every worksp
 
 ### Supporting files every workspace carries
 - **`docs/repo-map.md`** — the navigation index (Part 3).
+- **`docs/project_overview_guide.md`** (dev workspaces) — **what was BUILT and how a request flows
+  through it, for a human.** Distinct from the PRD, which says what was WANTED and is never
+  rewritten from this page. Skeleton: [`.agents/templates/project_overview_guide.md`](../.agents/templates/project_overview_guide.md);
+  `flowchart` diagrams only. Kept current story-by-story by `/cicd-update-sprint-memory` Step 3.5
+  (edit it, or the walkthrough says why not — `closeout_preflight.py`'s `overview` check reads one
+  or the other), and it is the index the epic-level PRD reconcile opens at
+  `/cicd-push-e2e --after-merge`. A project that has none yet is warned, never blocked.
 - **`active-context.md`** (home-base/exception bucket or project-local, per Part 2) — continuity (numbered: `1 PRIME`, `5 PICK UP`, `6 HAND OFF`).
 - **`_my_resources/open_tasks/todo_list.md`** — Daniel's personal notes (+ any plan/PRP `.md` notes alongside). ⛔ **Not an agent source for "what's next" or "pick up"** (retired 2026-08-09 — the queue is the live Jira board, root `AGENTS.md` §7). Agents never edit it, **with one mechanical exception:** `/smh-update-maps-indexes` refreshes the **`## Open Work` file-list** to mirror the task files beside it (Daniel's `## Todo list` prose and the task files stay his).
 - **`.agents/`** — at the home base: the MASTER toolkit (rules, commands, skills, workflows, scripts,
@@ -181,6 +188,7 @@ the toolkit:
 | ☐ | `AGENTS.md` numbered, with Map/Mission/Support + a real routing table + up-route |
 | ☐ | `.agents/`: master at the lobby · **tier-2 law only** in a thin project (`rules/` + `skills/` + `INDEX.md`; no vendor, no `opencode.json`) — `project-law.md` |
 | ☐ | `docs/repo-map.md` present and current (Part 3) |
+| ☐ | dev workspace: `docs/project_overview_guide.md` present (from the centre template) — until it exists the close-out preflight WARNs and the save records it `absent` |
 | ☐ | the workspace's `active-context.md` exists in its owning home-base, exception, or project-local store |
 | ☐ | "what's next" and "pick up" both read the **live Jira board** (`In Progress` → `To Do Next` → `To Do`); nothing routes to `todo_list.md` |
 | ☐ | registered as a row in the root `router.md` |
@@ -202,6 +210,7 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 | Brain | `AGENTS.md` | `AGENTS.md` | numbered §1–§9 |
 | Toolkit | `.agents/` (**MASTER** here) | `.agents/` = **tier-2 law only**: `rules/` + `skills/` + `INDEX.md` (thin model 2026-08-07; legacy full-vendor pending conversion) | one source of authorship; two-tier contract → `project-law.md` |
 | Navigation index | `docs/repo-map.md` | `docs/repo-map.md` | plain `docs/` everywhere — one form, no underscore |
+| System overview | — (the lobby's equivalent is the operator SOP) | `docs/project_overview_guide.md` | what was BUILT, for a human; template at the centre, currency enforced at the story close-out |
 | Structure standard | `docs/workspace-standard.md` | — (thin: read the canonical copy at the center) | canonical at the home base; per-project vendored copies retire at conversion |
 | Maintenance scripts | `.agents/scripts/{check_maps,generate_repo_map}.py` | — (thin: center-run with `--root Projects/<name>`) | legacy full-vendor projects still hold synced copies until converted |
 | Drift baseline | `docs/.maps-state.json` | `docs/.maps-state.json` | sits beside the repo-map |

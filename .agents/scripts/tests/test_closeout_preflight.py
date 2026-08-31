@@ -223,8 +223,115 @@ def lane_repo(root: Path) -> Path:
     return repo
 
 
+
+# ── OV · SCC-357 · the project overview guide, checked at the STORY close-out ────────
+#
+# The lobby keeps its SOP honest with a commit-msg gate. A project cannot use that shape:
+# its usage surface is `backend/` + `frontend/`, which every commit touches, so the gate
+# would fire on every commit and `[sop-ok]` would become reflex — and a gate opted out of
+# by reflex checks nothing (`sop-currency.md` says so itself). The unit of change in a
+# project is the STORY, so the check lives here.
+#
+# ⛔ THE CUTOFF IS THE WHOLE REASON THIS CAN BE AN ERROR AT ALL. This script is also run by
+# `/cicd-prune-worktree` and `/cicd-merge-epic-workingtrees`, so an unconditional error
+# would block the PRUNE of every story saved before the guide law existed, the moment a
+# project gains a guide — a red whose only remedy is to re-run a save on a story that is
+# already `Done`. Dated exemption, same mechanism as `walkthrough_roster.CUTOFF`, and the
+# lane's date comes from `roster.lane_date` rather than a second parser.
+def ov_repo(root: Path, date: str = "2026-09-02", guide: bool = True,
+            line: str | None = None, edit_guide: bool = False) -> Path:
+    """`lane_repo`, plus a guide and a dated artifact folder, posed for one OV case."""
+    repo = lane_repo(root)
+    art = repo / "_artifacts/2026-08-01_epic_30"
+    art.rename(repo / f"_artifacts/{date}_epic_30")
+    art = repo / f"_artifacts/{date}_epic_30/story-30-1-fresh"
+    if line:
+        wt = art / "walkthrough.md"
+        wt.write_text(wt.read_text(encoding="utf-8") + f"\n## Evidence\n\n{line}\n",
+                      encoding="utf-8")
+    if guide:
+        (repo / "docs").mkdir(exist_ok=True)
+        (repo / "docs/project_overview_guide.md").write_text(
+            "# Overview\n\n```mermaid\nflowchart TD\n  A --> B\n```\n", encoding="utf-8")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-qm", "pose")
+    git(repo, "push", "-q", "origin", "main")
+    # The lane itself: a story branch off main, so `<base>...HEAD` is a real comparison.
+    git(repo, "checkout", "-q", "-b", "claude/SCC-30-fresh")
+    if edit_guide:
+        (repo / "docs/project_overview_guide.md").write_text(
+            "# Overview\n\n```mermaid\nflowchart TD\n  A --> B --> C\n```\n",
+            encoding="utf-8")
+        git(repo, "add", "-A")
+        git(repo, "commit", "-qm", "SCC-30 docs(guide): the new hop")
+    return repo
+
+
+def ov(out: str, sev: str) -> list[str]:
+    """Rows of the `overview` SECTION at one severity.
+
+    ⛔ Deliberately NOT `findings(out, sev, "overview")`: that helper filters on the MESSAGE,
+    so it would pass or fail on whether the word happens to appear in the prose, and a later
+    reword of a message would turn a behavioural check red for no behavioural reason. The
+    section is the machine-readable half of the row — assert on that.
+    """
+    return [msg for s, section, msg in _FINDING_RE.findall(out)
+            if s == sev and section == "overview"]
+
+
+def ov_run(repo: Path) -> tuple[int, str]:
+    return run_cp(repo, "--story", "30-1", "--expect-key", "SCC-30",
+                  "--branch", "claude/SCC-30-fresh", "--no-fetch")
+
+
 def main() -> int:
     c = Cases("closeout_preflight")
+    if c.block("OV · SCC-357 · the project overview guide is edited, or the walkthrough says why"):
+        # OV1 · a project with no guide yet must not be blocked — AVCH-112 writes the first
+        # edition, and every close-out between now and then still has to work.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, guide=False))
+            c.check("OV1 no guide in the project -> WARN, never an error",
+                    bool(ov(out, "WARN")) and not ov(out, "ERROR"),
+                    out.strip()[-400:])
+
+        # OV2 · the guide moved on this lane. Nothing else is asked for.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, edit_guide=True))
+            c.check("OV2 guide edited on the lane -> INFO",
+                    bool(ov(out, "INFO")) and not ov(out, "ERROR"),
+                    out.strip()[-400:])
+
+        # OV3 · unchanged, and the walkthrough accounts for it. The em-dash spelling is the
+        # one the command writes; the regex must not depend on it.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(
+                tmp, line="Project overview guide: unchanged - no flow, part or contract moved."))
+            c.check("OV3 guide unchanged + the walkthrough says why -> INFO",
+                    bool(ov(out, "INFO")) and not ov(out, "ERROR"), out.strip()[-400:])
+
+        # OV4 · THE RED THIS EXISTS FOR: unchanged, unaccounted for, and the lane is dated
+        # after the law. Step 3.5 of the save never ran.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp))
+            c.check("OV4 guide unchanged and unaccounted for -> ERROR",
+                    bool(ov(out, "ERROR")), out.strip()[-400:])
+
+        # OV5 · the same unaccounted lane, dated BEFORE the law. Exempt, and it says so.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, date="2026-07-15"))
+            c.check("OV5 a lane dated before the cutoff is EXEMPT, not blocked",
+                    not ov(out, "ERROR") and bool(ov(out, "INFO")), out.strip()[-400:])
+
+        # OV6 · ⛔ CONTROL. The line has to CLAIM one of the two states the check accepts.
+        # "updated" is a word an agent would happily write while having done nothing, and
+        # accepting it would make the whole check satisfiable by prose.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(
+                tmp, line="Project overview guide: updated where it mattered."))
+            c.check("OV6 CONTROL a line that claims neither `unchanged` nor `absent` does NOT satisfy",
+                    bool(ov(out, "ERROR")), out.strip()[-400:])
+
 
     # ── VR · LEGACY COVERAGE · the reader itself, read with no fixture at all ───────────
     if c.block("VR · legacy · the verdict reader's regex, and the slug predicates beside it"):

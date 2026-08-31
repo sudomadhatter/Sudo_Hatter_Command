@@ -2753,6 +2753,65 @@ def main() -> int:
                     f"- run /smh-sync-agents on this machine")
 
 
+    if c.block("CS-19 · SCC-357 · the epic ships, so the PRD gets RECONCILED against what shipped"):
+        # The story-level currency check lives in `closeout_preflight` (block OV there). This is
+        # the EPIC-level half, and it lives in the shipping door because the epic ship is the only
+        # moment what-was-built is finally comparable to what-was-specified.
+        #
+        # ⛔ WHY IT IS A RECONCILE AND NOT AN UPDATE. The PRD says what was WANTED; the overview
+        # guide says what was BUILT. Rewriting the first from the second turns a requirements
+        # document into a second, more expensive copy of the guide — 110 KB of AGY's PRD read and
+        # edited at every ship, changing no decision. So the step opens only the PRD sections this
+        # epic's FRs map to, and its two legal outcomes are a sprint-change-proposal through
+        # `/bmad-correct-course` or the recorded line `PRD: unchanged`.
+        # ⛔ RESOLVED FROM `ROOT`, NOT FROM `CMDS`. `CMDS` is assigned inside a SIBLING block,
+        # so under `--case CS-19` it is unbound and this block dies with an UnboundLocalError —
+        # a crash that exits non-zero and is therefore indistinguishable from a red, which a
+        # mutation sweep would score as a KILL for every mutant aimed here. Same lesson the
+        # CONTROLS block in test_door_preflight_order.py records, hit again while writing this.
+        door = read(ROOT / ".agents/commands/cicd-push-e2e.md")
+
+        def after(hay: str, first: str, second: str) -> bool:
+            """`first` appears, and `second` appears after it."""
+            i = hay.find(first)
+            j = hay.find(second)
+            return i >= 0 and j > i
+
+        c.check("CS-19 A the door carries the epic-level PRD reconcile",
+                "PRD: unchanged" in door and "/bmad-correct-course" in door,
+                "the reconcile names both outcomes, or it is an instruction with one branch")
+
+        # ⭐ POSITION IS THE CLAIM, not presence. Before the ancestor proof it would reconcile
+        # against a merge that has not happened; after the ticket goes Done it is paperwork on a
+        # closed epic that nobody returns to. It has to sit between them.
+        c.check("CS-19 B ORDER --is-ancestor -> the reconcile",
+                after(door, "merge-base --is-ancestor", "PRD: unchanged"),
+                "reconciling before the merge is proved reconciles against a merge that may "
+                "not have happened")
+        c.check("CS-19 C ORDER the reconcile -> the epic ticket transition",
+                after(door, "PRD: unchanged", 'transition --key'),
+                "after the ticket is Done the reconcile is paperwork on closed work")
+
+        # ⛔ AND IT MUST NOT EDIT THE PRD IN PLACE ON `main`. The whole point of routing through
+        # correct-course is that a requirements change is itself reviewable work on a branch.
+        c.check("CS-19 D the reconcile routes an edit through a branch, never a write on main",
+                "prd-reconcile" in door,
+                "a PRD edit is work: it takes its own lane and its own PR like anything else")
+
+        # CONTROLS — each ordering claim above, fired at a fixture built to fail it.
+        GOOD = "x merge-base --is-ancestor y\nz PRD: unchanged w\nq transition --key r\n"
+        BAD_EARLY = "z PRD: unchanged w\nx merge-base --is-ancestor y\nq transition --key r\n"
+        BAD_LATE = "x merge-base --is-ancestor y\nq transition --key r\nz PRD: unchanged w\n"
+        c.check("CS-19 CONTROL the reference order passes B and C",
+                after(GOOD, "merge-base --is-ancestor", "PRD: unchanged")
+                and after(GOOD, "PRD: unchanged", "transition --key"))
+        c.check("CS-19 CONTROL a reconcile placed BEFORE the ancestor proof is caught",
+                not after(BAD_EARLY, "merge-base --is-ancestor", "PRD: unchanged"),
+                "presence is unchanged - only order moved")
+        c.check("CS-19 CONTROL a reconcile placed AFTER the transition is caught",
+                not after(BAD_LATE, "PRD: unchanged", "transition --key"),
+                "presence is unchanged - only order moved")
+
     return c.finish()
 
 
