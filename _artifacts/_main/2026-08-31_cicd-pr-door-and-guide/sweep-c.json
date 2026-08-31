@@ -1,0 +1,16 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_command_surfaces.py"
+ ],
+ "mutants": [
+  {
+   "id": "M13 the PRD reconcile is mentioned BEFORE the merge is proved",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "The body carries four lines and nothing else: the backend suite total, the frontend build result,",
+   "mutated": "Record `PRD: unchanged` here if you like. The body carries four lines and nothing else: the backend suite total, the frontend build result,",
+   "case": "CS-19 B ORDER --is-ancestor -> the reconcile",
+   "block": "CS-19"
+  }
+ ]
+}

@@ -83,7 +83,28 @@ Two things the operator found in the smh (lobby) side that the cicd (project) si
 - EDIT `.agents/scripts/tests/test_closeout_preflight.py` — block OV → B5
 - EDIT `.agents/scripts/tests/test_command_surfaces.py` — after-merge reconcile wiring block → B6
 - EDIT `.agents/scripts/tests/test_stale_base_refs.py` — only if the `0 0` line moves out of a fence (expected: unchanged) → A1
-- NEW `_artifacts/_main/2026-08-31_cicd-pr-door-and-guide/{implementation_plan.md,task.yaml,tickets/SCC-356.md,tickets/SCC-357.md,walkthrough.md}` — planning surfaces
+- NEW `_artifacts/_main/2026-08-31_cicd-pr-door-and-guide/{implementation_plan.md,task.yaml,tickets/SCC-356.md,tickets/SCC-357.md,walkthrough.md,sweep.json,sweep-b.json,sweep-c.json}` — planning surfaces + the three sweep tables
+- EDIT `_artifacts/_main/INDEX.md` — the lane's ledger row → A6 (added when `check_maps` F2 refused the receipt run; a real red, not a hypothetical)
+
+### Amendment ledger (reconciled against the real diff before the review)
+
+Four paths landed that the first cut did not declare, each with why:
+
+- EDIT `.agents/skills/cicd-push-e2e/SKILL.md` and EDIT `.roo/commands/cicd-push-e2e.md` — the
+  generator emits **five** mirror surfaces for a command whose description changed, not the three
+  the plan listed (`.agents/skills/` is the launcher master and `.roo/` is Zoo, platform 5 since
+  SCC-349). Nothing was hand-edited; both are `sync-agents.ps1` output.
+- EDIT `.agents/INDEX.md` — audit finding F2, already written into B1: the `templates/` row named a
+  scaffold retired 2026-08-07, and B1 creates that directory.
+- EDIT `.agents/commands/INDEX.md` — audit finding F3, already written into A5.
+- EDIT `docs/doc-graph.json` · `docs/doc-graph.md` — regenerated and staged by the `pre-commit`
+  hook itself on every doc-touching commit. Machine-owned; never hand-edited.
+
+⚠️ **One acceptance row was worded wrong and is corrected here, not quietly met.** Row 5 said the
+template must contain no `sequenceDiagram`. It contains exactly one — inside the HTML comment that
+**forbids** it, which is the `[[comment-literal]]` inversion this house has a memory about. The real
+property is *no `sequenceDiagram` inside a mermaid fence*, and that is what was checked: 4 fences,
+all `flowchart`.
 
 ## Port checklist (MANDATORY RULE 5)
 

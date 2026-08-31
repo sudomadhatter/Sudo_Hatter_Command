@@ -1,0 +1,48 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_closeout_preflight.py"
+ ],
+ "mutants": [
+  {
+   "id": "M8 the cutoff comparison is inverted (new lanes exempt, old ones blocked)",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "    if date is not None and date < OVERVIEW_CUTOFF:",
+   "mutated": "    if date is not None and date > OVERVIEW_CUTOFF:",
+   "case": "OV5 a lane dated before the cutoff is EXEMPT, not blocked",
+   "block": "OV \u00b7 SCC-357"
+  },
+  {
+   "id": "M9 the unaccounted-for guide is downgraded to a warning",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "    rep.err(\"overview\", f\"{OVERVIEW_REL} is unchanged on this lane and no walkthrough \"",
+   "mutated": "    rep.warn(\"overview\", f\"{OVERVIEW_REL} is unchanged on this lane and no walkthrough \"",
+   "case": "OV4 guide unchanged and unaccounted for -> ERROR",
+   "block": "OV \u00b7 SCC-357"
+  },
+  {
+   "id": "M10 the line regex accepts ANY word, so prose satisfies the check",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "    r\"^[>\\-*#\\s]*\\**\\s*project\\s+overview\\s+guide\\s*:\\**\\s*(unchanged|absent)\\b\",",
+   "mutated": "    r\"^[>\\-*#\\s]*\\**\\s*project\\s+overview\\s+guide\\s*:\\**\\s*(\\w+)\\b\",",
+   "case": "OV6 CONTROL a line that claims neither `unchanged` nor `absent` does NOT satisfy",
+   "block": "OV \u00b7 SCC-357"
+  },
+  {
+   "id": "M11 a project with no guide is BLOCKED instead of warned",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "        rep.warn(\"overview\", f\"no {OVERVIEW_REL} in this project - the save records it \"",
+   "mutated": "        rep.err(\"overview\", f\"no {OVERVIEW_REL} in this project - the save records it \"",
+   "case": "OV1 no guide in the project -> WARN, never an error",
+   "block": "OV \u00b7 SCC-357"
+  },
+  {
+   "id": "M12 the branch diff never counts, so an edited guide still demands a line",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "    if diff.returncode == 0 and any(ln.strip() for ln in diff.stdout.splitlines()):",
+   "mutated": "    if False:",
+   "case": "OV2 guide edited on the lane -> INFO",
+   "block": "OV \u00b7 SCC-357"
+  }
+ ]
+}
