@@ -39,8 +39,8 @@
   {
    "id": "N5 the push is dropped — the shape ship_preflight BLOCKS on a resumed run",
    "file": ".agents/commands/cicd-push-e2e.md",
-   "original": "\ncd \"$PROJECT_ROOT\" && env -u GITHUB_TOKEN git push origin epic/<JIRA-KEY>-<slug>",
-   "mutated": "",
+   "original": "cd \"$PROJECT_ROOT\" && git commit -F <message-file>    # subject: \"<JIRA-KEY> chore(ship): ...\"\ncd \"$PROJECT_ROOT\" && env -u GITHUB_TOKEN git push origin epic/<JIRA-KEY>-<slug>",
+   "mutated": "cd \"$PROJECT_ROOT\" && git commit -F <message-file>    # subject: \"<JIRA-KEY> chore(ship): ...\"",
    "case": "CS-21 A3 ...and PUSHES it in the same step",
    "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
   },
