@@ -396,6 +396,23 @@ def test_store_root_resolves_on_mac_and_on_windows():
     assert mac.parts[-2:] == (m.EXTENSION_DIR, "tasks"), mac
 
 
+def test_store_root_resolves_on_ci_linux():
+    """[[two-machines-mac-and-pc]] is really THREE — CI Linux is the machine that gates main.
+
+    `user_dir` branched win32 / everything-else, so Linux fell through to the Mac's
+    `~/Library/Application Support` and the watcher polled a directory that cannot exist. The
+    sibling `zoo_permissions_apply.py` already spells the right answer for this platform, so
+    this was a divergence between two scripts reading the same store, not an open question.
+    """
+    m = _mod()
+    home = Path("/home/x")
+    lin = m.store_root(platform="linux", home=home, appdata=None)
+    assert ".config" in lin.parts, lin
+    assert "Library" not in lin.parts, "CI Linux must not resolve to the Mac's path"
+    assert lin.parts[-2:] == (m.EXTENSION_DIR, "tasks"), lin
+    assert lin != m.store_root(platform="darwin", home=home, appdata=None)
+
+
 def test_custom_storage_path_setting_wins():
     """zoo-code.customStoragePath is a real Zoo setting; ignoring it watches the wrong dir."""
     m = _mod()

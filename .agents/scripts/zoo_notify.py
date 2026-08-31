@@ -56,6 +56,12 @@ def user_dir(platform: str | None = None, home: Path | None = None,
     if platform == "win32":
         base = Path(appdata) if appdata is not None else Path(
             os.environ.get("APPDATA", home / "AppData" / "Roaming"))
+    elif platform.startswith("linux"):
+        # The THIRD machine. CI Linux is what gates main, and without this branch it fell
+        # through to the Mac's path and polled a directory that cannot exist there. The
+        # sibling zoo_permissions_apply.py already spells this, so the two scripts read the
+        # same store two different ways. [[two-machines-mac-and-pc]]
+        return home / ".config" / "Code" / "User"
     else:
         base = home / "Library" / "Application Support"
     return base / "Code" / "User"
