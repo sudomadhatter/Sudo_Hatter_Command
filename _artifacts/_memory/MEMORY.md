@@ -50,7 +50,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [⛔ Backticks in `-m "…"` EXECUTE](commit-message-backticks-execute.md) — message quoting git commands runs them; use -F <file>.
 - [⭐ Git branch model + the main gate](git-branch-model-standard.md) — prefix names work; main reached only via /cicd-push-e2e or /smh-close-task-merge-tree with single-use token.
 - [⛔ Bash cwd resets to the MAIN checkout](bash-cwd-resets-to-main-checkout.md) — cd outside workspace resets cwd to main; relative paths read wrong tree.
-- [⛔ Nothing guards the merge TARGET](nothing-guards-the-merge-target.md) — gates check merge source not target; use -C on every git call.
+- [⛔ Nothing guards the merge TARGET](nothing-guards-the-merge-target.md) — gates check merge source not target; pin cd <abs> && git in ONE line (SCC-351).
 - [⛔ A revert reads from a REF](revert-target-must-be-a-ref.md) — checkout origin/main -- <p> is safe; checkout <sha> can delete sibling fixes.
 - [⛔ One invocation = ONE merge](one-shot-permission-persists-in-context.md) — command stays in context; merge-ready -> STOP and hand back.
 - [⭐⛔ The LANDING is the block, not the gates](landing-ceremony-is-the-block-not-the-gates.md) — permission layer blocks bare shared merges; PR door works via /smh-close-task-merge-tree.
@@ -87,6 +87,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 ## Toolkit & sync
 - [⭐ Zoo Code replaces Roo; VS Code replaces Antigravity](zoo-code-replaces-roo-code.md) — .roo/* paths kept; zoo-code.* settings namespace; NOT in sync-agents yet (SCC-349).
 - [Zoo team: Wonderland roster](zoo-team-wonderland-roster.md) — March Hare = lead/orchestrator; emoji + name + ALL-CAPS role; 5 seats (Queen of Hearts = TESTER & QA merged, debug slug, full pen), ask stays stock; SCC-350.
+- [⛔ Zoo approvals live in globalState, not settings.json](zoo-approvals-decision-store.md) — file seeds ONCE, denies never; edit lists -> run zoo_permissions_apply.py --apply per machine (VS Code closed); git -C auto-denied, pin with cd && git.
 - **Where law lives** — [center owns workflow law](thin-projects-center-owns-workflow-law.md) (thin projects; read .agents/INDEX.md) · [repo-local enforcement never centralizes](repo-local-enforcement-never-centralizes.md) (hooks and configs stay in gated repo) · [`platforms: []` = NOWHERE](platforms-empty-list-means-nowhere.md) (omit key = all four).
 - **The non-Claude platforms** — [Codex is the 4th](codex-is-fourth-platform.md) (reads AGENTS.md + skills natively) · [Antigravity uses workflows](antigravity-uses-workflows-not-commands.md) (thin launcher workflows solve 12k limit).
 - **Sync scope since 08-07** — [covers .agents not docs](toolkit-sync-covers-agents-not-docs.md) (lobby + caches only) · [maintained-projects is a LINT worklist](maintained-projects-allowlist.md) (sync no longer reads it).

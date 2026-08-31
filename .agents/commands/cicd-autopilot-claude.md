@@ -51,7 +51,7 @@ The engine opens the story's own git worktree before Stage 1 — `.claude/worktr
 ("NEVER branch a story worktree from `main`"). It takes that base from `PROJECT_ROOT`'s **current
 branch**, exactly as a human's flow leaves it.
 
-So before launching: run `git -C <PROJECT_ROOT> rev-parse --abbrev-ref HEAD`.
+So before launching: run `cd <PROJECT_ROOT> && git rev-parse --abbrev-ref HEAD`.
 - An `epic/*` branch → good, that is the base.
 - Anything else → either check the epic branch out there first, or pass `-EpicBranch epic/<KEY>-<slug>`.
   The script refuses to start otherwise rather than guess — a story cut from `main` cannot be landed.

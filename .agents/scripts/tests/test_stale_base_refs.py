@@ -69,7 +69,7 @@ ALLOWED: dict[tuple[str, str], str] = {
     # The "no rows left ruling nothing" check is what noticed — an exemption that outlives the
     # line it excused is a hole waiting for a future line to fall into.
     ("smh-merge-multiple-workingtrees.md",
-     'git -C "$REPO" rev-list --left-right --count main...origin/main    # 0 0'): _SYNC,
+     'cd "$REPO" && git rev-list --left-right --count main...origin/main    # 0 0'): _SYNC,
 }
 
 

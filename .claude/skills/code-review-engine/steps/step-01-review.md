@@ -50,9 +50,9 @@ providing none of it. For a submodule project, cut each repo-reading lens a real
 PROJECT at the SHA under review, before launch (about a second for four lenses, measured):
 
 ```bash
-git -C Projects/<p> worktree add --detach <scratchpad>/lens-<name> <story-sha>
-# symlink the venv in so the lens can read installed libraries:
-ln -s "$(pwd)/Projects/<p>/backend/.venv" <scratchpad>/lens-<name>/backend/.venv
+cd Projects/<p> && git worktree add --detach <scratchpad>/lens-<name> <story-sha>
+# symlink the venv in so the lens can read installed libraries (cwd is now the project):
+ln -s "$(pwd)/backend/.venv" <scratchpad>/lens-<name>/backend/.venv
 ```
 
 and hand each lens ITS path as `REPO`. Verify, never assume — the probe that measured this is the

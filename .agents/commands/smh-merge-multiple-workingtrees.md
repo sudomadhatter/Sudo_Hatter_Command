@@ -39,14 +39,14 @@ never the authorisation.
 ```bash
 REPO=$(git rev-parse --show-toplevel)
 echo "Landing repo: $(basename "$REPO")"
-git -C "$REPO" worktree list
-git -C "$REPO" branch --list 'chore/*' --format='%(refname:short) %(objectname:short)'
+cd "$REPO" && git worktree list
+cd "$REPO" && git branch --list 'chore/*' --format='%(refname:short) %(objectname:short)'
 ```
 
 Trees and branches **disagree after prunes** — inventory BOTH. A branch with no tree is still
 landable; a tree on an already-merged branch is a leftover to report, not to land.
 
-### ⛔ Use `git -C "$REPO"` on EVERY git call in this command. Never a bare `git` after a `cd`.
+### ⛔ Every git call in this command pins its tree itself: `cd "$REPO" && git …` in ONE compound line. Never a bare `git` that trusts an earlier call's `cd`.
 
 **This is the one that actually bit, and it bit the merge itself.** On 2026-08-11 this procedure ran
 `cd <worktree> && git checkout main`, then — in a later call — a bare `git merge <lane>`. The working
@@ -65,7 +65,7 @@ So, mechanically:
   name. If it is not `main`, STOP.
 - Recovery, if it happens anyway: the merge commit is usually *correct in every way except which
   pointer moved* — check `git log -1 --format='%p'`, and if its first parent is `main`'s tip, you
-  can `git -C <tree-holding-main> merge --ff-only <that-sha>` to put it where it belonged. Verify
+  can `cd <tree-holding-main> && git merge --ff-only <that-sha>` to put it where it belonged. Verify
   the tree carries nothing from the wrong branch first: `git diff --name-only <main-tip> <sha>`.
 
 Then pin, **before any tool has answered anything**, the Jira keys you intend to land. A lane whose
@@ -77,19 +77,19 @@ Fetch first — every count in this table is against `origin/main`, and a bare `
 this checkout last pulled:
 
 ```bash
-env -u GITHUB_TOKEN git -C "$REPO" fetch origin main
+cd "$REPO" && env -u GITHUB_TOKEN git fetch origin main
 ```
 
 Per `chore/*` lane, from ITS tree (or a `--detach` throwaway if the branch has none):
 
 | Column | Source — command output, never memory |
 |---|---|
-| branch · tip | `git -C <tree> rev-parse --abbrev-ref HEAD` · `rev-parse --short HEAD` |
-| **commits ahead** | `git -C "$REPO" rev-list --count origin/main..<branch>` — **see below** |
+| branch · tip | `cd <tree> && git rev-parse --abbrev-ref HEAD` · `rev-parse --short HEAD` |
+| **commits ahead** | `cd "$REPO" && git rev-list --count origin/main..<branch>` — **see below** |
 | key | the segment after `chore/` — must match a Step 0 key |
 | `task.yaml` | the lane's `_artifacts/_main/<date>_<slug>/task.yaml` |
 | **verdict** | the LAST `Verdict:` line in that folder's `walkthrough.md` |
-| dirty · untracked | `git -C <tree> status --porcelain` — **both halves matter, see Step 3** |
+| dirty · untracked | `cd <tree> && git status --porcelain` — **both halves matter, see Step 3** |
 
 **⚠ "Ready" does not mean committed.** A lane reported finished can have **zero commits**, its work
 sitting uncommitted in a shared checkout. That happened on 2026-08-11 to a lane whose team had
@@ -145,8 +145,8 @@ The rest of the set continues without it.
 ## Step 2.5 — Staleness against **current** `main`
 
 ```bash
-git -C "$REPO" rev-list --count "chore/<KEY>-<slug>..origin/main"     # commits behind
-git -C "$REPO" diff --name-only origin/main..."chore/<KEY>-<slug>"    # then re-resolve every path it REFERENCES
+cd "$REPO" && git rev-list --count "chore/<KEY>-<slug>..origin/main"     # commits behind
+cd "$REPO" && git diff --name-only origin/main..."chore/<KEY>-<slug>"    # then re-resolve every path it REFERENCES
 ```
 
 Behind `main` **and** referencing a path that no longer exists there = **not eligible until it
@@ -170,7 +170,7 @@ shared file. **Four classes, and only the first is mechanical:**
 **⚠ `git diff` cannot see untracked files, so this map UNDERCOUNTS.** On 2026-08-11 one lane was
 absent from the ledger-collision list until it committed an untracked artifact folder — at which
 point it became the **fifth** lane on a file four lanes were already fighting over. Run
-`git -C <tree> status --porcelain` per lane and fold anything untracked into the map **as if it were
+`cd <tree> && git status --porcelain` per lane and fold anything untracked into the map **as if it were
 already committed**, because at merge time it will be.
 
 **The ledger tie-break, stated once so it is reproducible.** Same-day rows do not order themselves.
@@ -199,7 +199,7 @@ lane only.
 
 ## Step 4 — The landing loop (per lane, in the derived order)
 
-**4a — absorb.** `env -u GITHUB_TOKEN git -C <tree> merge origin/main --no-edit`. `main` moves after
+**4a — absorb.** `cd <tree> && env -u GITHUB_TOKEN git merge origin/main --no-edit`. `main` moves after
 every landing, so **every lane re-absorbs at its turn**. Conflicts are resolved HERE, never on
 `main`, using the Step 3 table. A conflict **outside** the map is a finding: stop and re-derive.
 
@@ -281,8 +281,8 @@ The re-gate just proved the post-absorb tree; now, in THIS lane's tree, before i
 ```bash
 python3 "<tree>/.agents/scripts/flight_recorder.py" record --task <KEY> \
         --root <this lane's task-artifacts folder> --repo "<tree>" --apply      # PC: `python`
-if git -C "<tree>" status --porcelain _artifacts/_main/workflow-events/ | grep -q .; then
-  git -C "<tree>" add _artifacts/_main/workflow-events/ && git -C "<tree>" commit -F <msg> && git -C "<tree>" push
+if cd "<tree>" && git status --porcelain _artifacts/_main/workflow-events/ | grep -q .; then
+  cd "<tree>" && git add _artifacts/_main/workflow-events/ && cd "<tree>" && git commit -F <msg> && cd "<tree>" && git push
 fi
 ```
 
@@ -343,7 +343,7 @@ gh pr create --base main --head "chore/<KEY>-<slug>" --fill
 
 No `gh`? The lane is pushed, so print the compare URL instead —
 `https://github.com/<owner>/<repo>/compare/main...chore/<KEY>-<slug>?expand=1` — with `<owner>/<repo>`
-read from `git -C "$REPO" remote get-url origin`, never from memory.
+read from `cd "$REPO" && git remote get-url origin`, never from memory.
 
 ⛔ **Pass `--head` explicitly. Never let it infer the branch.** With N lanes live, the branch `gh`
 would infer is whichever one the current directory happens to sit on, and that is the wrong lane N−1
@@ -394,9 +394,9 @@ exit is flipping the box to `- [x]` and re-running `finish`.
 
 ```bash
 python3 .agents/scripts/link-worktree-assets.py --unlink .claude/worktrees/<slug>
-git -C "$REPO" worktree remove .claude/worktrees/<slug>
-git -C "$REPO" branch -d "chore/<KEY>-<slug>"        # -d never -D; a refusal means the merge did not land
-env -u GITHUB_TOKEN git -C "$REPO" push origin --delete "chore/<KEY>-<slug>"
+cd "$REPO" && git worktree remove .claude/worktrees/<slug>
+cd "$REPO" && git branch -d "chore/<KEY>-<slug>"        # -d never -D; a refusal means the merge did not land
+cd "$REPO" && env -u GITHUB_TOKEN git push origin --delete "chore/<KEY>-<slug>"
 ```
 
 ⛔ A recursive delete through a junction eats the shared `.venv`/`node_modules` **targets** — unlink
@@ -407,7 +407,7 @@ Then return to 4a with the NEXT lane, against the `main` that now exists.
 ## Step 5 — The combined gate on `main` (after the LAST landing) — ⭐ do not skip this
 
 ```bash
-git -C "$REPO" checkout main
+cd "$REPO" && git checkout main
 python3 .agents/scripts/tests/run_all.py                    # bare
 python3 .agents/scripts/workflow_lint.py --toolkit-only     # bare
 python3 .agents/scripts/check_maps.py                       # bare — and only meaningful HERE
@@ -432,10 +432,10 @@ rewritten history, and never merged-and-hoped.
 ## Step 6 — Verify, THEN report
 
 ```bash
-git -C "$REPO" rev-list --left-right --count main...origin/main    # 0 0
-git -C "$REPO" status --short                                      # empty
-git -C "$REPO" worktree list                                       # only expected trees
-git -C "$REPO" branch --list 'chore/*'                             # only deliberately-retained lanes
+cd "$REPO" && git rev-list --left-right --count main...origin/main    # 0 0
+cd "$REPO" && git status --short                                      # empty
+cd "$REPO" && git worktree list                                       # only expected trees
+cd "$REPO" && git branch --list 'chore/*'                             # only deliberately-retained lanes
 ```
 
 Print per lane: `✅ <KEY> landed @ <merge-sha>` or `⏸ <KEY> held — <reason>`, then the combined gate

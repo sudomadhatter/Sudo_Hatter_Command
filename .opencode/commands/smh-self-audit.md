@@ -50,7 +50,7 @@ a legitimate subject here.
 
 ```bash
 REPO=$(cd "<the path you resolved>" && git rev-parse --show-toplevel)
-BRANCH=$(git -C "$REPO" rev-parse --abbrev-ref HEAD)
+BRANCH=$(cd "$REPO" && git rev-parse --abbrev-ref HEAD)
 echo "Repo: $(basename "$REPO") | Branch: $BRANCH"
 ```
 
@@ -172,7 +172,7 @@ rows the Declared Change Set makes relevant, clear the rest in one line each:
 change to both. **Sibling worktrees:** `env -u GITHUB_TOKEN git fetch origin main` first — a bare `origin/main`
 is this checkout's LAST PULL, and an unfetched base inflates every sibling's apparent change
 set. Then `git worktree list`, then per tree
-`git -C <tree> diff --name-only origin/main...HEAD` + `status --short` — any file in both their
+`cd <tree> && git diff --name-only origin/main...HEAD` + `status --short` — any file in both their
 set and this plan's declared set is a **landing-order dependency**: name which lane lands first
 and what happens if it does not.
 

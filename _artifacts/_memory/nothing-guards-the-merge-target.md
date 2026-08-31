@@ -1,6 +1,6 @@
 ---
 name: nothing-guards-the-merge-target
-description: "Every git guard protects the branch you merge FROM; nothing checks the branch you merge ONTO. A bare `git merge` after a `cd` landed a production merge commit on a sibling lane's branch and reported success — pass -C on every call and assert rev-parse before merging."
+description: "Every git guard protects the branch you merge FROM; nothing checks the branch you merge ONTO. A bare `git merge` after a `cd` landed a production merge commit on a sibling lane's branch and reported success — pin every call with cd <abs> && git in ONE line and assert rev-parse before merging (the -C spelling is auto-denied by Zoo since SCC-351)."
 metadata:
   node_type: memory
   type: feedback
@@ -24,10 +24,12 @@ is a completely legal operation. There is no gate, hook, or preflight anywhere i
 validates the target — so the only thing standing between you and it is whether you looked.
 
 **How to apply:**
-- Pass **`-C "$REPO"`** (or `-C "$TREE"`) on **every** `git` invocation. Never rely on where a
-  previous step left the shell.
+- Pin **every** `git` invocation in the SAME compound line — `cd "$REPO" && git <verb> …` — never a
+  bare `git` that trusts an earlier call's `cd`. (Until SCC-351 this bullet said `git -C "$REPO"`;
+  Zoo Code auto-denies that spelling because its per-piece prefix matcher can't see verbs through
+  `-C`, so the doors and this idiom moved to `cd … && git …`, which both permission layers match.)
 - **Assert the target immediately before merging**, so it stops you instead of informing you:
-  `test "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON main — STOP"; exit 1; }`
+  `test "$(cd "$REPO" && git rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON main — STOP"; exit 1; }`
 - **Recovery — never reset, never force.** The merge commit is usually correct in every way except
   which pointer moved. Verify its tree is clean of the wrong branch
   (`git diff --name-only <main-tip> <sha>`), confirm its first parent is `main`'s tip

@@ -66,10 +66,10 @@ writes rides `claude/<JIRA-KEY>-<story-slug>` and lands on the epic branch. The 
 on `main`, which only moves when the whole epic ships — so its copy is behind by **every story that
 has landed since**. Read both:
 ```bash
-git -C "$PROJECT_ROOT" fetch origin --quiet
+cd "$PROJECT_ROOT" && git fetch origin --quiet
 # origin/ FIRST: a local epic head is only as fresh as the last pull
-git -C "$PROJECT_ROOT" for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'   # ⛔ QUOTE the refspec — zsh globs it against the filesystem and exits 1 with no output
-git -C "$PROJECT_ROOT" show origin/epic/<JIRA-KEY>-<slug>:_bmad-output/implementation-artifacts/sprint-status.yaml
+cd "$PROJECT_ROOT" && git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'   # ⛔ QUOTE the refspec — zsh globs it against the filesystem and exits 1 with no output
+cd "$PROJECT_ROOT" && git show origin/epic/<JIRA-KEY>-<slug>:_bmad-output/implementation-artifacts/sprint-status.yaml
 ```
 No epic branch — a project between epics — → the checkout copy **is** the authority; say so in one
 line and move on, never error out. When the two **disagree**, **report both** ("the epic branch has
@@ -139,7 +139,8 @@ Read-only — cross-check against live files; never edit anything.
 - **Flight-recorder proposals (SCC-133)** — the lobby's SessionStart hook already printed any
   `FLIGHT-RECORDER PROPOSAL` lines (recurrences across closed Task lanes at the action-required
   rung). Read them as *evidence for the operator*, never as work: nothing there is owed, minted or
-  queued (SCC-160). Standing in the lobby, `python3 .agents/scripts/flight_recorder.py surface`
+  queued (SCC-160). From the lobby — pin it, earlier fences moved the shell (SCC-351 review):
+  `cd <the lobby's absolute path> && python3 .agents/scripts/flight_recorder.py surface`
   reprints them; `candidates` shows the whole ladder.
 
 ## Step 4 — Ready

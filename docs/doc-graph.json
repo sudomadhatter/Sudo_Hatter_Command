@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 421,
+    "files": 423,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 768,
+    "edges": 782,
     "external": 40,
     "ambiguous": 176,
     "dangling": 301,
@@ -384,7 +384,7 @@
     {
       "path": ".agents/commands/cicd-merge-epic-workingtrees.md",
       "in": 3,
-      "out": 7
+      "out": 8
     },
     {
       "path": ".agents/commands/cicd-mobile-error-team.md",
@@ -419,7 +419,7 @@
     {
       "path": ".agents/commands/cicd-quick-dev.md",
       "in": 2,
-      "out": 17
+      "out": 18
     },
     {
       "path": ".agents/commands/cicd-resume.md",
@@ -733,8 +733,8 @@
     },
     {
       "path": ".agents/rules/command-shape.md",
-      "in": 3,
-      "out": 0
+      "in": 9,
+      "out": 3
     },
     {
       "path": ".agents/rules/completion-not-illusion.md",
@@ -754,7 +754,7 @@
     {
       "path": ".agents/rules/git-policy.md",
       "in": 62,
-      "out": 3
+      "out": 4
     },
     {
       "path": ".agents/rules/jira.md",
@@ -813,7 +813,7 @@
     },
     {
       "path": ".agents/rules/smh-target-resolution.md",
-      "in": 44,
+      "in": 45,
       "out": 3
     },
     {
@@ -839,7 +839,7 @@
     {
       "path": ".agents/rules/zoo-team.md",
       "in": 10,
-      "out": 4
+      "out": 6
     },
     {
       "path": ".agents/scripts/INDEX.md",
@@ -2024,7 +2024,7 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 28,
-      "out": 53
+      "out": 55
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
@@ -2052,9 +2052,9 @@
       "out": 0
     },
     {
-      "path": "docs/migrations/install_guides/claude-permission-sandboxed.md",
-      "in": 0,
-      "out": 0
+      "path": "docs/migrations/claude-terminal-permission.md",
+      "in": 1,
+      "out": 2
     },
     {
       "path": "docs/migrations/install_guides/github-ci-gates-setup.md",
@@ -2105,6 +2105,16 @@
       "path": "docs/migrations/install_guides/vscode-ide-extension-migration.md",
       "in": 2,
       "out": 0
+    },
+    {
+      "path": "docs/migrations/terminal-global-permission.md",
+      "in": 1,
+      "out": 3
+    },
+    {
+      "path": "docs/migrations/zoo-code-permissions-guide.md",
+      "in": 7,
+      "out": 1
     },
     {
       "path": "docs/repo-map.md",
@@ -2606,6 +2616,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/commands/cicd-merge-epic-workingtrees.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/commands/cicd-mobile-error-team.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
@@ -2758,6 +2773,11 @@
     {
       "from": ".agents/commands/cicd-quick-dev.md",
       "to": ".agents/commands/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-quick-dev.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -3746,6 +3766,16 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/rules/command-shape.md",
+      "to": "docs/migrations/zoo-code-permissions-guide.md",
+      "kind": "link"
+    },
+    {
+      "from": ".agents/rules/command-shape.md",
+      "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/rules/constitution.md",
       "to": ".agents/rules/karpathy-guidelines.md",
       "kind": "ref"
@@ -3753,6 +3783,11 @@
     {
       "from": ".agents/rules/git-policy.md",
       "to": ".agents/rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/git-policy.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -3912,12 +3947,22 @@
     },
     {
       "from": ".agents/rules/zoo-team.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
       "to": ".agents/rules/constitution.md",
       "kind": "ref"
     },
     {
       "from": ".agents/rules/zoo-team.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": "docs/migrations/zoo-code-permissions-guide.md",
       "kind": "ref"
     },
     {
@@ -5462,6 +5507,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": "docs/migrations/zoo-code-permissions-guide.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/INDEX.md",
       "kind": "ref"
     },
@@ -5696,6 +5746,16 @@
       "kind": "link"
     },
     {
+      "from": "docs/migrations/claude-terminal-permission.md",
+      "to": "docs/migrations/terminal-global-permission.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/claude-terminal-permission.md",
+      "to": "docs/migrations/zoo-code-permissions-guide.md",
+      "kind": "link"
+    },
+    {
       "from": "docs/migrations/install_guides/github-ci-gates-setup.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
@@ -5809,6 +5869,26 @@
       "from": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "kind": "link"
+    },
+    {
+      "from": "docs/migrations/terminal-global-permission.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/migrations/terminal-global-permission.md",
+      "to": "docs/migrations/claude-terminal-permission.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/terminal-global-permission.md",
+      "to": "docs/migrations/zoo-code-permissions-guide.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/zoo-code-permissions-guide.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
     },
     {
       "from": "docs/repo-map.md",

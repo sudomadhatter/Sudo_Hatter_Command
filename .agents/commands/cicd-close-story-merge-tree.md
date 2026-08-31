@@ -48,7 +48,7 @@ these two strings, and Step 0.6 checks the preflight resolved the same ones:
 STORY=<id>            # the story you are closing
 KEY=<JIRA-KEY>        # its ticket, from the story frontmatter's `jira_key:`
 EPIC=<epic-branch>    # `epic/<EPIC-KEY>-<slug>`, from `git branch --list 'epic/*'` — see below
-BRANCH=$(git -C "<the story worktree>" rev-parse --abbrev-ref HEAD)   # from command output, never memory
+BRANCH=$(cd "<the story worktree>" && git rev-parse --abbrev-ref HEAD)   # from command output, never memory
 echo "Closing: $STORY | $KEY | $EPIC | $BRANCH"
 ```
 
@@ -199,7 +199,7 @@ already landed on the epic. The net below is real; it is just an expensive one t
 **Then the branch precondition, BEFORE the commit — because a commit is the thing you cannot take back.**
 
 ```bash
-git -C "<the story worktree>" rev-parse --abbrev-ref HEAD    # must be claude/<KEY>-<slug>
+cd "<the story worktree>" && git rev-parse --abbrev-ref HEAD    # must be claude/<KEY>-<slug>
 ```
 
 HEAD must be a **`claude/*`** branch inside the story worktree — **and never `claude/incident-*`**, which
@@ -236,7 +236,7 @@ and follow IT end to end: it runs this command's close-out per story itself (fix
 
 **Precondition — re-read HEAD.** Step 2 checked it before committing anything, which is where the guard has
 to live; re-read it here because the push is the irreversible half and a step boundary is not a lock:
-`git -C "<the story worktree>" rev-parse --abbrev-ref HEAD` must still be the `claude/*` branch Step 0 echoed.
+`cd "<the story worktree>" && git rev-parse --abbrev-ref HEAD` must still be the `claude/*` branch Step 0 echoed.
 Anything else → **STOP**, per Step 2's rules.
 
 Then execute `git-policy.md` → **"The landing"**, inside the worktree: merge
@@ -269,9 +269,9 @@ parked, its branch is already on origin and Step 5 deletes it there.
   commit, so without this the walkthrough that actually lands carries neither, and the tree is left dirty:
 
   ```bash
-  git -C "<the story worktree>" add <the story walkthrough>
-  git -C "<the story worktree>" commit -m "<KEY> docs(walkthrough): record the landing"
-  git -C "<the story worktree>" push origin HEAD:epic/<EPIC-KEY>-<slug>
+  cd "<the story worktree>" && git add <the story walkthrough>
+  cd "<the story worktree>" && git commit -m "<KEY> docs(walkthrough): record the landing"
+  cd "<the story worktree>" && git push origin HEAD:epic/<EPIC-KEY>-<slug>
   ```
 
   **A dirty tree here is not cosmetic — it reverses two of this command's own rules.** Step 5's

@@ -53,17 +53,17 @@ the changed files commonly exist **only there**:
 ```bash
 git worktree list                                    # find the tree for THIS task
 REPO=$(cd "<the tree you resolved>" && git rev-parse --show-toplevel)
-BRANCH=$(git -C "$REPO" rev-parse --abbrev-ref HEAD)
+BRANCH=$(cd "$REPO" && git rev-parse --abbrev-ref HEAD)
 echo "Auditing: $(basename "$REPO") | Branch: $BRANCH"
 ```
 
 Establish the changed-file set — the audit's entire universe. A Task branch forks from `origin/main`:
 
 ```bash
-env -u GITHUB_TOKEN git -C "$REPO" fetch origin main # a bare `main` is this checkout's LAST PULL
-git -C "$REPO" diff --name-only origin/main...HEAD   # committed on this branch
-git -C "$REPO" diff --name-only                      # plus uncommitted
-git -C "$REPO" diff --name-only --cached             # plus staged
+cd "$REPO" && env -u GITHUB_TOKEN git fetch origin main # a bare `main` is this checkout's LAST PULL
+cd "$REPO" && git diff --name-only origin/main...HEAD   # committed on this branch
+cd "$REPO" && git diff --name-only                      # plus uncommitted
+cd "$REPO" && git diff --name-only --cached             # plus staged
 ```
 
 If `$ARGUMENTS` names an explicit base ref, use it instead. **Echo the file count.**

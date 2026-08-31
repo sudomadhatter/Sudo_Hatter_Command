@@ -71,7 +71,7 @@ The run also prints the **candidate worklist** — `CLOSED`/`RETIRED`/`FIXED` in
 The gate sees the store. You can see the repo. Add what it cannot:
 
 ```bash
-git -C . log --format='%ad %h' --date=short -1 -- _artifacts/_memory/<file>.md   # per file, last touch
+cd . && git log --format='%ad %h' --date=short -1 -- _artifacts/_memory/<file>.md   # per file, last touch
 ```
 
 - **Stale** — no touch in ~6 months **and** its subject has not changed either.
@@ -166,11 +166,11 @@ commit.
 mv _artifacts/_memory/<file>.md Projects/<name>/_artifacts/_memory/<file>.md
 
 # 2. the LOBBY half — drop its index line, keep the `## Project stores` signpost accurate
-git -C . add _artifacts/_memory/MEMORY.md
-git -C . rm --cached _artifacts/_memory/<file>.md    # tracked here until the move is staged
+cd . && git add _artifacts/_memory/MEMORY.md
+cd . && git rm --cached _artifacts/_memory/<file>.md    # tracked here until the move is staged
 
 # 3. the PROJECT half — its own repo, its own key (AVCH-…, never SCC-…)
-git -C Projects/<name> add _artifacts/_memory/<file>.md _artifacts/_memory/MEMORY.md
+cd Projects/<name> && git add _artifacts/_memory/<file>.md _artifacts/_memory/MEMORY.md
 ```
 
 **Then, in the project's index:** add the memory's one-line pointer **and** make sure the mirror line

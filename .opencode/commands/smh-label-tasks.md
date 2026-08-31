@@ -107,7 +107,7 @@ and assessing them as one flat set answers a question nobody asked. **Done child
 automatically.
 
 Then, per child, the **grounding ladder** — first available wins. Fetch before rung 1:
-`env -u GITHUB_TOKEN git -C "$REPO" fetch origin main` — a bare `main` is this checkout's last pull,
+`cd "$REPO" && env -u GITHUB_TOKEN git fetch origin main` — a bare `main` is this checkout's last pull,
 and grounding a label on a stale diff reads a lane as touching files it does not.
 
 | Authority | Source | Why it outranks the next |
@@ -143,7 +143,7 @@ flight. Opening `<path>` there is an ENOENT on the rung the packet just called a
 an agent that reads the miss as "no source" downgrades a grounded child:
 
 ```bash
-git -C "$REPO" show "<ref>:<path>"     # ref present  → read it from the branch
+cd "$REPO" && git show "<ref>:<path>"     # ref present  → read it from the branch
 cat "<path>"                            # ref null     → it is in the checkout
 ```
 

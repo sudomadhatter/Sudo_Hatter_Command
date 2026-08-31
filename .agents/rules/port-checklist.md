@@ -50,7 +50,7 @@ relative answer safe.
 
 ```bash
 grep -n 'git-common-dir\|--git-path' -A 6 <script>      # any `case … /*)` below it is the defect
-git -C <repo> rev-parse --git-common-dir                # main checkout, worktree, submodule: 3 answers
+cd <repo> && git rev-parse --git-common-dir                # main checkout, worktree, submodule: 3 answers
 ```
 
 ### 2. Operator-facing text goes through `printf`, never `echo`
@@ -93,7 +93,7 @@ fresh checkout of the target has no gates at all until it is armed on that machi
 
 ```bash
 command -v python3 python                               # on each machine
-git -C <target-repo> config --get core.hooksPath        # empty = every gate is OFF here
+cd <target-repo> && git config --get core.hooksPath        # empty = every gate is OFF here
 ```
 
 ### 6. Hooks stay repo-local, and the port needs the target's OWN key

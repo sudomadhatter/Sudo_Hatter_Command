@@ -28,8 +28,8 @@ STOP and say so, never fall back to the lobby.
    `.claude/worktrees/<story-slug>` on `claude/<JIRA-KEY>-<story-slug>` **off the epic ref by name** —
    slug `story-<id-dashed>-<short-name>`, e.g. `story-21-3-student-archive`:
 ```bash
-git -C "$PROJECT_ROOT" fetch origin epic/<JIRA-KEY>-<slug>
-git -C "$PROJECT_ROOT" worktree add --no-track .claude/worktrees/<story-slug> \
+cd "$PROJECT_ROOT" && git fetch origin epic/<JIRA-KEY>-<slug>
+cd "$PROJECT_ROOT" && git worktree add --no-track .claude/worktrees/<story-slug> \
     -b claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>
 ```
 
@@ -50,7 +50,9 @@ git -C "$PROJECT_ROOT" worktree add --no-track .claude/worktrees/<story-slug> \
    moment the tree is open. A shared checkout left parked on an epic branch is what
    `.agents/rules/worktree-per-story.md` ("it stands on `main`") exists to prevent: every later
    `git status`, `worktree add` and boot then reads a tree the operator believes is `main`.
-3. **Either way, link the gitignored assets** — `python3 .agents/scripts/link-worktree-assets.py
+3. **Either way, link the gitignored assets — from the LOBBY, whose `.agents/scripts/` carries
+   the script** (earlier fences may have cd'd the shell into the project — SCC-351 review):
+   `cd <the lobby's absolute path> && python3 .agents/scripts/link-worktree-assets.py
    "$PROJECT_ROOT"/.claude/worktrees/<story-slug>` (PC: `python`). A tree has no `.env`,
    `backend/.venv`, `auth_keys/` or `node_modules` of its own and the runners resolve them relative to
    CWD, so Step 3's reds cannot even be run red without it. Idempotent on a re-entered tree;

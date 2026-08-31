@@ -112,10 +112,12 @@ echo "Using Standing Ticket: $KEY"
 Check out or reset the persistent branch `chore/<KEY>-standing-push` based on the project's latest `origin/main`:
 
 ```bash
-git -C "$REPO" fetch origin main
+cd "$REPO" && git fetch origin main
 # If switching branches with uncommitted work, stash first or checkout:
-git -C "$REPO" checkout "chore/${KEY}-standing-push" 2>/dev/null && git -C "$REPO" pull origin main || \
-git -C "$REPO" checkout -B "chore/${KEY}-standing-push" origin/main
+# Braces are LOAD-BEARING: without them `a && b || c && d` runs the reset arm on the SUCCESS
+# path too (left-assoc), and --force-with-lease then ships the loss to the open PR (SCC-351
+# review, blind lens — reproduced). Zoo prompts once on the brace piece; correctness wins here.
+cd "$REPO" && { git checkout "chore/${KEY}-standing-push" 2>/dev/null && git pull origin main; } || { cd "$REPO" && git checkout -B "chore/${KEY}-standing-push" origin/main; }
 ```
 
 ---
@@ -125,8 +127,8 @@ git -C "$REPO" checkout -B "chore/${KEY}-standing-push" origin/main
 ⛔ **Never use wildcard staging (`git add .`, `git add -A`, `git add -u`).**
 
 ```bash
-git -C "$REPO" add <explicit/path/1> <explicit/path/2>
-git -C "$REPO" diff --cached --stat
+cd "$REPO" && git add <explicit/path/1> <explicit/path/2>
+cd "$REPO" && git diff --cached --stat
 ```
 
 ---
@@ -136,7 +138,7 @@ git -C "$REPO" diff --cached --stat
 Commit the staged changes with the project's standing key `<KEY>` and `[sop-ok]`:
 
 ```bash
-git -C "$REPO" commit -m "${KEY} <summary of changes> [sop-ok]"
+cd "$REPO" && git commit -m "${KEY} <summary of changes> [sop-ok]"
 ```
 
 ---
@@ -146,7 +148,7 @@ git -C "$REPO" commit -m "${KEY} <summary of changes> [sop-ok]"
 Push to `origin/chore/<KEY>-standing-push`:
 
 ```bash
-env -u GITHUB_TOKEN git -C "$REPO" push origin "chore/${KEY}-standing-push" --force-with-lease
+cd "$REPO" && env -u GITHUB_TOKEN git push origin "chore/${KEY}-standing-push" --force-with-lease
 ```
 
 ---
@@ -156,7 +158,7 @@ env -u GITHUB_TOKEN git -C "$REPO" push origin "chore/${KEY}-standing-push" --fo
 Open the Pull Request targeting `main`:
 
 ```bash
-gh pr create --repo "$(git -C "$REPO" remote get-url origin)" --base main --head "chore/${KEY}-standing-push" \
+gh pr create --repo "$(cd "$REPO" && git remote get-url origin)" --base main --head "chore/${KEY}-standing-push" \
   --title "${KEY} <summary of changes>" --body "${KEY}: Routine non-critical project update."
 ```
 
@@ -167,7 +169,7 @@ gh pr create --repo "$(git -C "$REPO" remote get-url origin)" --base main --head
 Check GitHub Actions CI status for the PR:
 
 ```bash
-gh pr checks <PR-number> --repo "$(git -C "$REPO" remote get-url origin)"
+gh pr checks <PR-number> --repo "$(cd "$REPO" && git remote get-url origin)"
 ```
 
 Wait until `main-write-gate` reports `pass` (🟢).
@@ -189,7 +191,7 @@ Print the PR link and status back to the operator:
 Immediately switch the child project's checkout back to `main` so the workspace is not left on the standing branch:
 
 ```bash
-git -C "$REPO" checkout main
+cd "$REPO" && git checkout main
 ```
 
 ---
@@ -199,7 +201,7 @@ git -C "$REPO" checkout main
 Once the operator merges the PR on GitHub, pull the merge commit into local `main`:
 
 ```bash
-git -C "$REPO" pull origin main
+cd "$REPO" && git pull origin main
 ```
 
 Optional additional input (target project, summary, or file paths): $ARGUMENTS
