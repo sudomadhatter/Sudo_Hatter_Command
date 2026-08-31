@@ -271,6 +271,32 @@ def project_name(thread: Path | None = None) -> str:
     return Path.cwd().name
 
 
+def self_test(dry_run: bool = False) -> int:
+    """Fire one sample notification NOW and report honestly. Exit 1 if a channel did not fire.
+
+    Proving this live used to mean waiting for a real Zoo ask, which is not a check anybody runs.
+    This is the same `send()` the watcher calls, so a green self-test on a machine is real evidence
+    that machine's channels work — and on the PC it is the only way to find out that a toast never
+    displays, because a banner that silently shows nothing is indistinguishable from a quiet one.
+    """
+    payload = compose("ask", "self-test", "zoo_notify.py --self-test")
+    outcome = send(payload, dry_run=dry_run)
+    print(f"zoo-notify: self-test -> banner={outcome['banner']} push={outcome['push']}")
+    print(f"  {payload['title']} | {payload['message']}")
+    if dry_run:
+        return 0
+    failed = sorted(k for k, v in outcome.items() if str(v).startswith("failed:"))
+    if failed:
+        print(f"zoo-notify: {' and '.join(failed)} did not fire")
+        return 1
+    if banner_cmd(payload) is None:
+        print("zoo-notify: no banner channel on this platform - the push is the only signal")
+    else:
+        print("zoo-notify: both channels reported OK. If NO banner appeared on screen, the "
+              "channel is broken even though this exited 0 - on a Mac check Focus mode first.")
+    return 0
+
+
 def once(root: Path, dry_run: bool = False) -> int:
     path = newest_thread(root)
     if path is None:
@@ -345,10 +371,14 @@ def main() -> int:
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument("--once", action="store_true", help="classify the newest thread and notify")
     mode.add_argument("--watch", action="store_true", help="poll the store and notify on changes")
+    mode.add_argument("--self-test", action="store_true",
+                      help="fire one sample notification now and report; exit 1 if a channel failed")
     ap.add_argument("--interval", type=_interval, default=5, help="seconds between polls (--watch)")
     ap.add_argument("--dry-run", action="store_true", help="compose only; no banner, no push")
     ap.add_argument("--store", type=Path, default=None, help="override the thread store root")
     args = ap.parse_args()
+    if args.self_test:                       # proves the CHANNELS; needs no thread store at all
+        return self_test(args.dry_run)
     if args.store:
         roots = [Path(args.store)]
     else:

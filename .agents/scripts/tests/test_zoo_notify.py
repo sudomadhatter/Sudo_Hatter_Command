@@ -452,6 +452,40 @@ def test_main_actually_honours_custom_storage_path_end_to_end():
         assert "waiting on approval" in proc.stdout, proc.stdout
 
 
+def test_self_test_reports_exit_1_when_a_channel_did_not_fire():
+    """The PC's whole problem was a banner that showed nothing and reported success. --self-test
+    is the five-second proof, so it must FAIL when a channel fails, not just print prettily."""
+    m = _mod()
+    class _Proc:
+        returncode = 1
+    m.subprocess = type("S", (), {"run": staticmethod(lambda *a, **k: _Proc()),
+                                  "SubprocessError": Exception})()
+    m.urllib = type("U", (), {"request": type("R", (), {
+        "Request": staticmethod(lambda *a, **k: None),
+        "urlopen": staticmethod(lambda *a, **k: type("C", (), {"close": lambda s: None})())})()})()
+    assert m.self_test(dry_run=False) == 1
+
+
+def test_self_test_dry_run_exits_0_and_opens_nothing():
+    m = _mod()
+    def _boom(*a, **k):
+        raise AssertionError("--self-test --dry-run must not fire either channel")
+    m.subprocess = type("S", (), {"run": staticmethod(_boom), "SubprocessError": Exception})()
+    m.urllib = type("U", (), {"request": type("R", (), {
+        "Request": staticmethod(_boom), "urlopen": staticmethod(_boom)})()})()
+    assert m.self_test(dry_run=True) == 0
+
+
+def test_self_test_needs_no_thread_store():
+    """It proves the CHANNELS. Requiring a store would make it unusable on a fresh machine —
+    exactly the machine you most want to prove."""
+    proc = subprocess.run([sys.executable, str(NOTIFY), "--self-test", "--dry-run"],
+                          capture_output=True, text=True, timeout=30,
+                          env=dict(os.environ, HOME="/nonexistent-home"))
+    assert proc.returncode == 0, (proc.returncode, proc.stdout, proc.stderr)
+    assert "self-test" in proc.stdout, proc.stdout
+
+
 def test_dry_run_is_a_modifier_not_a_mode():
     """The INDEX row once listed it beside --once/--watch; argparse rejects it alone."""
     proc = subprocess.run([sys.executable, str(NOTIFY), "--dry-run"],

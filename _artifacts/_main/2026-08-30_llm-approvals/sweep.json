@@ -179,6 +179,30 @@
       "mutated": "    if False:\n        base = Path(appdata) if appdata is not None else Path(",
       "case": "test_store_root_resolves_on_mac_and_on_windows",
       "unfiltered": true
+    },
+    {
+      "id": "M23 --self-test stops reporting a dead channel as a failure",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "    failed = sorted(k for k, v in outcome.items() if str(v).startswith(\"failed:\"))",
+      "mutated": "    failed = []",
+      "case": "test_self_test_reports_exit_1_when_a_channel_did_not_fire",
+      "unfiltered": true
+    },
+    {
+      "id": "M24 --self-test ignores --dry-run and fires for real",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "    if dry_run:\n        return 0\n    failed = sorted(",
+      "mutated": "    if False:\n        return 0\n    failed = sorted(",
+      "case": "test_self_test_dry_run_exits_0_and_opens_nothing",
+      "unfiltered": true
+    },
+    {
+      "id": "M25 --self-test demands a thread store it does not need",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "    if args.self_test:                       # proves the CHANNELS; needs no thread store at all\n        return self_test(args.dry_run)",
+      "mutated": "    if False:\n        return self_test(args.dry_run)",
+      "case": "test_self_test_needs_no_thread_store",
+      "unfiltered": true
     }
   ]
 }
