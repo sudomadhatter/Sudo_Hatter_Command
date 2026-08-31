@@ -1,0 +1,72 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_zoo_notify.py"
+ ],
+ "mutants": [
+  {
+   "id": "M1 reinstate the bug: partial guard back above the ask branch",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "    kind = last.get(\"type\")\n    if kind == \"ask\":\n        if last.get(\"ask\") == \"completion_result\":",
+   "mutated": "    kind = last.get(\"type\")\n    if last.get(\"partial\") is True:\n        return None\n    if kind == \"ask\":\n        if last.get(\"ask\") == \"completion_result\":",
+   "case": "test_partial_ask_still_pages_because_zoo_never_clears_it",
+   "unfiltered": true
+  },
+  {
+   "id": "M2 invert the answered guard",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "if last.get(\"isAnswered\") is True:",
+   "mutated": "if last.get(\"isAnswered\") is not True:",
+   "case": "test_answered_ask_is_not_pending",
+   "unfiltered": true
+  },
+  {
+   "id": "M3 invert Zoo's own-decision guard",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "if last.get(\"autoApprovalDecision\") is not None:",
+   "mutated": "if last.get(\"autoApprovalDecision\") is None:",
+   "case": "test_auto_approved_ask_never_fires",
+   "unfiltered": true
+  },
+  {
+   "id": "M4 completion_result becomes a decision",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "if last.get(\"ask\") == \"completion_result\":\n            return \"turn_end\"",
+   "mutated": "if last.get(\"ask\") == \"completion_result\":\n            return \"ask\"",
+   "case": "test_completion_result_is_the_only_ask_that_is_not_a_decision",
+   "unfiltered": true
+  },
+  {
+   "id": "M5 drop the say-streaming guard entirely",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "    if last.get(\"partial\") is True:          # a SAY still streaming is not a decision point\n        return None\n",
+   "mutated": "",
+   "case": "test_partial_say_still_never_fires",
+   "unfiltered": true
+  },
+  {
+   "id": "M6 invert the priming freshness comparison",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "and started - mtime <= fresh):",
+   "mutated": "and started - mtime >= fresh):",
+   "case": "test_priming_pages_a_FRESH_pending_ask_but_never_the_stale_backlog",
+   "unfiltered": true
+  },
+  {
+   "id": "M7 WIDTH: priming exception stops being ask-only",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "if priming and not (fresh and event == \"ask\"",
+   "mutated": "if priming and not (fresh and event",
+   "case": "test_priming_pages_a_FRESH_pending_ask_but_never_the_stale_backlog",
+   "unfiltered": true
+  },
+  {
+   "id": "M8 WIDTH: the freshness window defaults to zero",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "fresh: int = 300",
+   "mutated": "fresh: int = 0",
+   "case": "test_priming_pages_a_FRESH_pending_ask_but_never_the_stale_backlog",
+   "unfiltered": true
+  }
+ ]
+}
