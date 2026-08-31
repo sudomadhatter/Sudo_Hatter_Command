@@ -113,16 +113,53 @@ below runs on the post-merge tree — that is the point.
 
 **Full gate (any epic merge):**
 4. Run **`/cicd-e2e`** — it must finish **green**. Its report is the promotion evidence; link it in the
-   ledger row (Step 6).
+   ledger row (Step 3.5).
 
 Any failure → **STOP**. Summarize the failures, file/link the evidence, and suggest the lane
 (`/cicd-quick-dev` or the ①②③ story loop). Do not proceed.
 
+## Step 3.5 — Record the landing on the lane, BEFORE the PR
+
+⛔ **The bookkeeping rides the PR. It is written HERE, on the epic branch, never after the merge.**
+`main` is reached through a pull request with a green `main-write-gate`, so a bookkeeping commit made
+afterwards is a **direct push that the ruleset refuses by design** — measured at the AVCH-111
+close-out on 2026-08-31, where the ledger commit needed its own operator approval and a hand-built
+`--no-ff` merge just to land. Written here it lands with the merge, for free. This is the same law
+`/smh-close-task-merge-tree` Step 2.5 and `/cicd-close-story-merge-tree` Step 2 already carry.
+
+1. **Ledger**: add a row to `PROJECT_ROOT/_artifacts/INDEX.md` — what shipped, and the gate evidence
+   link (the `/cicd-e2e` report from Step 3). **Copy the columns already in use; never add or reorder
+   them.**
+
+   ⭐ **Number-free on purpose.** The PR number does not exist yet — it is assigned when Step 4 opens
+   the PR, which is *after* this commit is pushed — and the merge SHA does not exist until the
+   operator clicks. Neither ledger carries a column for either. **Both go on the ticket at Step 6.5**
+   (`Merged to main via PR #<N> at <merge-sha>`), where both are known. Do not "fix" this by moving
+   the row back after the merge; that is the refusal above.
+
+2. **Active context**: record the deployment in the project's `active-context.md`.
+
+3. **Commit both on the epic branch, with EXPLICIT paths and the key leading the subject:**
+
+```bash
+cd "$PROJECT_ROOT" && git add _artifacts/INDEX.md <the active-context path>
+cd "$PROJECT_ROOT" && git commit -F <message-file>    # subject: "<JIRA-KEY> chore(ship): ..."
+```
+
+⛔ **`<JIRA-KEY>` in the subject is not style — it is what keeps the PR landable.**
+`main_write_gate.py --mode pr` validates the key on **every** commit in the range, reading the whole
+message, so one unkeyed bookkeeping commit refuses the entire pull request — the epic included.
+⛔ **`git commit -F <file>`, never `-m "…"`:** backticks inside a `-m` string are executed by the
+shell before git ever sees them.
+
 ## Step 4 — Push the gated tip, open the PR, and STOP
 <!-- JIRA-HOOK: the epic's Jira tickets transition to Done at Step 6.5, after the merge is verified. -->
 
-**The tip you push is the tree Step 3 just gated** — Step 2 absorbed `origin/main` into it, so the
-commit going to the remote is exactly what went green. Push it, then open the pull request against
+**The tip you push is the tree Step 3 gated, plus Step 3.5's artifacts-only commit** — Step 2
+absorbed `origin/main` into it, so the code going to the remote is exactly what went green, and
+the one commit added since changes only markdown under `_artifacts/` and the active-context. That
+is the same carve-out `/smh-close-task-merge-tree` Step 2.5 makes, for the same reason: an
+artifacts-only commit cannot alter what the gate tested. Push it, then open the pull request against
 `main`:
 
 ```bash
@@ -291,11 +328,17 @@ cd "$PROJECT_ROOT" && git diff <merge-sha>^1..<merge-sha> -- docs/project_overvi
 
 - ⛔ **No guide in this project yet** → there was nothing to index the PRD with, and saying the epic
   shipped as specified would certify a comparison that structurally could not happen. Record
-  `PRD: not reconciled - <project> has no overview guide yet` and move on. (Live state for
+  `PRD: not reconciled - <project> has no overview guide yet` in the Step 6.5 ticket comment and
+  move on. (Live state for
   AviationChat until its own guide ticket lands, so this is the common branch today, not an edge.)
-- **Empty delta, guide present** → the epic shipped as specified. Record it, in the Step 6 ledger row
-  and in the Step 6.5 ticket comment, exactly:
-  `PRD: unchanged - epic shipped as specified (guide delta empty)`.
+- **Empty delta, guide present** → the epic shipped as specified. Record it in the Step 6.5 ticket
+  comment, exactly: `PRD: unchanged - epic shipped as specified (guide delta empty)`.
+
+  > ⓘ **Why the ticket and not the ledger row (SCC-358).** The ledger row is written at Step 3.5,
+  > before the PR opens. This reconcile diffs `<merge-sha>^1..<merge-sha>`, so it cannot exist until
+  > the merge does — it is the one thing in this ceremony that genuinely cannot ride the PR. The
+  > ticket comment is therefore its only durable home, and it is where the PR number and merge SHA
+  > already land.
 - **Non-empty** → open **only** the PRD sections this epic's requirements map to
   — the epics ledger in the project's BMAD planning artifacts carries the story-to-requirement
   join, so let it name the sections; never open the whole PRD.
@@ -318,24 +361,35 @@ moment a story finds the requirement wrong). The epic is the unit that was *spec
 the unit that can be *checked against its specification*. And it is bounded: one reconcile per
 ship, indexed by a diff the stories already paid for.
 
-## Step 6 — Prune the epic branch + update the ledger
+## Step 6 — Prune the epic branch, and commit NOTHING
 The epic shipped; its branch is done:
 ```bash
 cd "$PROJECT_ROOT" && git branch -d epic/<JIRA-KEY>-<slug>
 cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git push origin --delete epic/<JIRA-KEY>-<slug>
 cd "$PROJECT_ROOT" && git rev-list --left-right --count main...origin/main    # must be 0 0
 ```
-1. **Ledger**: add a row to `PROJECT_ROOT/_artifacts/INDEX.md` (and the home-base INDEX if run from
-   the lobby) — what shipped, the PR number, the merge SHA, gate evidence link (the `/cicd-e2e` report).
-2. **Active context**: record the deployment in the project's `active-context.md`.
-3. Finish standing on `main`, clean, `0 0` — state it per repo touched.
+Finish standing on `main`, clean, `0 0` — state it per repo touched.
+
+⛔ **DO NOT COMMIT ANYTHING HERE.** You are standing on `main`, and every write this step used to
+make now happens at **Step 3.5**, on the epic branch, before the PR opens. A commit made here is a
+direct push into a branch guarded by a required check, and the gate refuses it.
+
+**This step used to say the opposite, and that instruction is the whole of SCC-175 and SCC-358.**
+SCC-175 was the same bug on the Task door: it produced a non-merge commit on `main`, the write gate
+correctly refused it, and the refusal banner's `reset --hard` remedy then destroyed three other
+sessions' uncommitted work (SCC-180). SCC-358 is this door being the last one to learn it — found
+when an epic's bookkeeping was stranded behind an armed ruleset and needed a separate operator
+approval plus a hand-built `--no-ff` merge to land.
+
+If you reach this step and find something genuinely unrecorded, it does **not** get a commit on
+`main`: it goes on a `chore/*` branch through this same PR door, like every other change.
 
 ## Step 6.5 — Move the epic's Jira ticket
 Skip if Step 1 found no key (pre-Jira epic, or a repo with no `.agents/jira.conf`). Otherwise the
 merge IS the epic shipping, and the operator's invocation of this command IS the sign-off — record it:
 ```bash
 acli jira workitem comment create --key <JIRA-KEY> \
-  --body "Merged to main via PR #<N> at <merge-sha>. Gate: pytest + build + /cicd-e2e green (<evidence-link>). Deploy verified live."
+  --body "Merged to main via PR #<N> at <merge-sha>. Gate: pytest + build + /cicd-e2e green (<evidence-link>). Deploy verified live. <the Step 5.5 PRD line, verbatim>"
 acli jira workitem transition --key <JIRA-KEY> --status "Done" --yes
 ```
 (`comment create` needs `--key`; `transition` too — `view` is the only one that takes the key

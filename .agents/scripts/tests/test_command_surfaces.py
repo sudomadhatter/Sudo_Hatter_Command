@@ -2890,6 +2890,139 @@ def main() -> int:
                 "edited" not in step(TWO_STATES, "## Step 3.5"),
                 "this is the exact regression the post-landing re-run turns into a refusal")
 
+    if c.block("CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half "
+               "writes NOTHING"):
+        # ⛔ WHY THIS BLOCK EXISTS. `/cicd-push-e2e` wrote its ledger row and active-context in
+        # Step 6 — after the merge, standing on `main`, as a NEW direct push. Both repos now
+        # publish an ACTIVE server-side ruleset (lobby SCC-118 id 20756052; AviationChat AVCH-111
+        # id 21963341), so a PR with a green `main-write-gate` is the only road to `main` and that
+        # push is refused BY DESIGN. Measured at the AVCH-111 close-out, 2026-08-31: ledger commit
+        # 6f374867 was refused and needed its own operator approval plus a hand-built `--no-ff`
+        # merge to land.
+        #
+        # ⭐ THE LAW IS NOT NEW — THIS WAS THE LAST DOOR WITHOUT IT. `/smh-close-task-merge-tree`
+        # commits its flight event pre-merge (Step 2.5) and carries ⛔ "do NOT commit anything
+        # after the merge", an instruction that "used to say the opposite, and that instruction
+        # was the whole of SCC-175" — whose refusal banner's `reset --hard` remedy then destroyed
+        # three other sessions' uncommitted work (SCC-180). `/cicd-close-story-merge-tree` rides
+        # its board writes on the story branch. This block pins the same law onto the third door.
+        #
+        # ⛔ RESOLVED FROM `ROOT`, NOT FROM `CMDS` — the lesson CS-19 records one block up. `CMDS`
+        # is assigned inside a SIBLING block, so under `--case CS-21` it would be unbound and this
+        # block would die with an UnboundLocalError: a non-zero exit indistinguishable from a red,
+        # which a mutation sweep scores as a KILL for every mutant aimed here.
+        door = read(ROOT / ".agents/commands/cicd-push-e2e.md")
+        sop = read(ROOT / "docs/_scc_sops_prds/workflows_testing_SOP.md")
+        index = read(ROOT / ".agents/commands/INDEX.md")
+
+        def step(hay: str, heading: str) -> str:
+            """The one `##` section starting at `heading`, or "" when it is absent."""
+            i = hay.find(heading)
+            if i < 0:
+                return ""
+            j = hay.find("\n## ", i + len(heading))
+            return hay[i:] if j < 0 else hay[i:j]
+
+        s35 = step(door, "## Step 3.5")
+        s6 = step(door, "## Step 6 —")
+
+        # ── A · the bookkeeping EXISTS, and it is both halves ────────────────────────────────
+        # Scoped to the step, not to the file: a mention of either needle anywhere else — the
+        # Step 6 ⛔, a `ⓘ` aside explaining why the step moved — would keep a file-wide check
+        # green over a door that carries no Step 3.5 at all.
+        c.check("CS-21 A Step 3.5 writes BOTH the ledger row and active-context",
+                bool(s35) and "_artifacts/INDEX.md" in s35 and "active-context" in s35,
+                "the pre-PR bookkeeping step is missing a half: "
+                + (s35.strip()[:160] or "<no Step 3.5 section at all>"))
+
+        # ── B · POSITION IS THE CLAIM. Presence proves nothing here: a Step 3.5 that sits below
+        # `gh pr create` produces exactly the commit the ruleset refuses, which is the whole
+        # defect. A source-grep guard that cannot see a MOVE passes over the moved guard
+        # (`source-grep-guards-cannot-see-order`), so the offsets are compared directly.
+        i35, ipr = door.find("## Step 3.5"), door.find("gh pr create")
+        c.check("CS-21 B ORDER Step 3.5 -> gh pr create",
+                i35 >= 0 and ipr > i35,
+                "the bookkeeping must be committed BEFORE the PR opens, or it rides nothing and "
+                "the armed ruleset refuses it as a direct push to main")
+
+        # ── C1 · a STANDING guard, green before this lane and kept so on purpose. The post-merge
+        # half must instruct no commit at all. It was already true when SCC-358 landed; what it
+        # buys is that the next edit cannot quietly reintroduce one.
+        after_merge = door[door.find("## Step 4.5"):] if "## Step 4.5" in door else ""
+        c.check("CS-21 C1 the --after-merge half instructs no `git commit`",
+                bool(after_merge) and "git commit" not in after_merge,
+                "a commit instructed after the merge is a direct push to main the gate refuses "
+                "— SCC-175, and the reset --hard remedy that followed it, SCC-180")
+
+        # ── C2 · and Step 6 specifically must no longer own the two writes.
+        c.check("CS-21 C2 Step 6 owns NEITHER the ledger row nor active-context",
+                bool(s6) and "_artifacts/INDEX.md" not in s6 and "active-context" not in s6,
+                "Step 6 still writes bookkeeping after the merge: "
+                + (s6.strip()[:160] or "<no Step 6 section at all>"))
+
+        # ── D · the commit must be KEYED or the whole PR is refused. `main_write_gate.py --mode
+        # pr` validates the JIRA key on EVERY commit in the range, reading `%B`; one unkeyed
+        # bookkeeping commit refuses the entire pull request, including the epic it is shipping.
+        c.check("CS-21 D Step 3.5 commits with the JIRA key in the subject",
+                "git commit" in s35 and "<JIRA-KEY>" in s35,
+                "an unkeyed bookkeeping commit refuses the whole PR at main_write_gate --mode pr")
+
+        # ── E · the ban, and its receipts. A bare "don't" is an instruction an agent argues past;
+        # the ticket numbers are what make it a measured cost rather than a preference.
+        c.check("CS-21 E Step 6 carries the post-merge commit ban, with its scars named",
+                "SCC-175" in s6 and "SCC-358" in s6,
+                "the ban has to name what it cost, or it reads as style and gets edited away")
+
+        # ── F · the SAME claim, in the two places it is duplicated. Step 5.5's PRD reconcile
+        # cannot ride the PR — it diffs <merge-sha>^1..<merge-sha>, so it needs a merge that does
+        # not exist yet — which makes the ticket comment its only durable home.
+        c.check("CS-21 F1 the door's reconcile no longer records to the ledger row",
+                "Step 6 ledger row" not in door,
+                "Step 5.5 still sends its outcome to a post-merge ledger write")
+        c.check("CS-21 F2 ...and neither does the SOP's currency table",
+                "and the ledger row" not in sop,
+                "workflows_testing_SOP.md states the same sentence one altitude up; the SOP-"
+                "currency gate exists so both move together")
+
+        # ── G · the LOBBY row, which was wrong twice over: it hand-appends a row the lobby
+        # ledger's own header forbids ("reconciled in batch ... don't hand-append a row every
+        # session"), and it files a PROJECT epic's row in the lobby's ledger.
+        c.check("CS-21 G Step 6 no longer hand-appends to the home-base INDEX",
+                bool(s6) and "home-base INDEX" not in s6,
+                "the lobby ledger is reconciled in batch, and a project ship is not a lobby row")
+
+        # ── H · the routing index is the copy with the most readers. An agent deciding how to
+        # ship reads `commands/INDEX.md` INSTEAD of opening the 350-line door, so a stale tail
+        # there teaches the retired order to the next agent — who writes the row post-merge, is
+        # refused, and reaches for the reset --hard remedy of SCC-180.
+        c.check("CS-21 H commands/INDEX.md does not describe a post-merge ledger",
+                "live verify + ledger" not in index,
+                "the routing index still lists the ledger after the merge, which is the copy a "
+                "router actually reads")
+
+        # ── CONTROLS — every predicate above, fired at a surface built to fail it. Without these
+        # a guard that reads nothing looks identical to one that reads a correct door.
+        NO_35 = "## Step 3\n\ngate it\n\n## Step 4\n\nopen the PR\n"
+        c.check("CS-21 CONTROL a door with no Step 3.5 fails A",
+                not step(NO_35, "## Step 3.5"),
+                "the section reader must return empty, or A passes on any file")
+        LATE_35 = ("## Step 4\n\ngh pr create --base main\n\n## Step 3.5\n\n"
+                   "write `_artifacts/INDEX.md` and active-context\n")
+        j35, jpr = LATE_35.find("## Step 3.5"), LATE_35.find("gh pr create")
+        c.check("CS-21 CONTROL bookkeeping placed AFTER the PR fails B",
+                not (j35 >= 0 and jpr > j35),
+                "B must be an ORDER claim; a presence-only check passes the exact defect")
+        UNKEYED = ("## Step 3.5\n\nwrite the row, then `git commit -F msg.txt`\n\n## Step 4\n")
+        u35 = step(UNKEYED, "## Step 3.5")
+        c.check("CS-21 CONTROL a commit with no <JIRA-KEY> fails D",
+                not ("git commit" in u35 and "<JIRA-KEY>" in u35),
+                "an unkeyed commit is the one that refuses the whole PR, so D must see the key")
+        BARE_BAN = "## Step 6 — Prune\n\nDo not commit anything after the merge.\n"
+        b6 = step(BARE_BAN, "## Step 6 —")
+        c.check("CS-21 CONTROL a ban with no scars named fails E",
+                not ("SCC-175" in b6 and "SCC-358" in b6),
+                "E's whole point is that the ban carries its measured cost")
+
     return c.finish()
 
 
