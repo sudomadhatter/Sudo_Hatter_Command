@@ -168,6 +168,12 @@ notes: every finding fixed in-lane before the verdict — no defer, no residue t
 
 Verdict: PASS @ 5592311d
 
+### Step 0.7 — the blast radius, re-derived against current `main`
+
+1. **What moved: nothing.** `origin/main` has not advanced since this lane was cut — `git diff 344eed57..origin/main` returned **0 files**, so no sibling landing moved anything this diff references. Every repo path and anchor in the diff was independently re-resolved by `check_links.py --base origin/main`, exit 0, `clean`.
+2. **What it changes here: nothing, and the merge is conflict-free.** The true overlap between this lane's 15 files and what landed while it was built is **empty**, and `git merge-tree --write-tree --messages HEAD origin/main` returned a clean tree object (`64c02581`) with no conflict messages. No landing-order dependency exists to name.
+3. **What was re-measured:** `git worktree list` showed exactly two trees (the main checkout at `344eed57` and this lane), so **zero sibling lanes** were live; `risk_seam.py classify --repo <lane>` returned `{"status": "unclassified", "root": ".../ledger-rides-the-pr"}` — permanently and correctly, per SCC-289, because the command centre carries no code graph — so every judgement in this review came from reading the diff. `review_level: standard` was derived from that radius: a door/contract surface is in it and the diff is 15 files, so both `quick` conditions fail.
+
 ⛔ **The review found the first guard substantially vacuous, and it PROVED it rather than asserting
 it.** Three lenses independently reproduced the same class of hole, and the test-adequacy lens
 returned nine surviving mutants, each re-run against the full unfiltered file. The worst restored
