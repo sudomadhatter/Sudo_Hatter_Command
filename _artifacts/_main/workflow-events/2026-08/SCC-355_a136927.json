@@ -1,0 +1,48 @@
+{
+  "v": 1,
+  "task": "SCC-355",
+  "sha": "a136927ea23bd6484118d887b73a1febe0235279",
+  "tip": "37c091db5aec29e90cda28eca11c76532af44a66",
+  "trigger": "close-out",
+  "when": "2026-08-31T13:00:15-04:00",
+  "changes": [
+    ".agents/commands/smh-llm-approvals.md",
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/tests/fixtures/zoo_ui_messages_ask.json",
+    ".agents/scripts/tests/fixtures/zoo_ui_messages_turnend.json",
+    ".agents/scripts/tests/test_zoo_notify.py",
+    ".agents/scripts/tests/test_zoo_notify_install.py",
+    ".agents/scripts/zoo_notify.py",
+    ".agents/scripts/zoo_notify_install.py",
+    ".agents/workflows/smh-llm-approvals.md",
+    ".opencode/commands/smh-llm-approvals.md",
+    "_artifacts/_main/2026-08-31_zoo-notify-fix/diagnosis.md",
+    "_artifacts/_main/2026-08-31_zoo-notify-fix/gates/suite.json",
+    "_artifacts/_main/2026-08-31_zoo-notify-fix/implementation_plan.md",
+    "_artifacts/_main/2026-08-31_zoo-notify-fix/sweep-install.json",
+    "_artifacts/_main/2026-08-31_zoo-notify-fix/sweep.json",
+    "_artifacts/_main/2026-08-31_zoo-notify-fix/task.yaml",
+    "_artifacts/_main/2026-08-31_zoo-notify-fix/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/migrations/zoo-code-permissions-guide.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-31_zoo-notify-fix/walkthrough.md",
+    "verdict": "CONCERNS @ a136927",
+    "gates": {
+      "suite": "pass@a136927"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "CONCERNS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
