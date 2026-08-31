@@ -112,12 +112,21 @@ def store_roots(platform: str | None = None, home: Path | None = None,
 
 
 def classify(messages: list[dict]) -> str | None:
-    """Does this thread's tail deserve to interrupt the operator? 'ask' | 'turn_end' | None."""
+    """Does this thread's tail deserve to interrupt the operator? 'ask' | 'turn_end' | None.
+
+    ⛔ `partial` is consulted for a `say` and NEVER for an `ask`, and that asymmetry is the whole
+    SCC-355 fix. The first cut returned None for any tail flagged `partial: True` on the reasoning
+    that a stream in flight is not a decision point — true of narration, false of an ask. Zoo
+    clears the flag when its OWN matcher auto-approves and leaves it standing when the operator
+    must answer, so the guard threw away precisely the asks it existed to catch: measured on the
+    live store, 13 of the 16 `tool` asks that wanted the operator (81%), `tool` being the
+    `newTask` subagent launch. Ten asks on disk carry `partial=True` AND `isAnswered=True` —
+    Zoo stamped the answer on top and never cleared it, which is the proof it is a resting state
+    and not a transient one.
+    """
     if not messages:
         return None
     last = messages[-1]
-    if last.get("partial") is True:          # a stream in flight is not a decision point
-        return None
     kind = last.get("type")
     if kind == "ask":
         if last.get("ask") == "completion_result":
@@ -127,6 +136,8 @@ def classify(messages: list[dict]) -> str | None:
         if last.get("autoApprovalDecision") is not None:
             return None                      # Zoo already decided; the operator was not needed
         return "ask"                         # deny-list: every OTHER ask wants him. Fail open.
+    if last.get("partial") is True:          # a SAY still streaming is not a decision point
+        return None
     if kind == "say" and last.get("say") == "completion_result":
         return "turn_end"
     return None
@@ -314,7 +325,7 @@ def once(root: Path, dry_run: bool = False) -> int:
     return 0
 
 
-def watch(roots: list[Path], interval: int, dry_run: bool = False) -> int:
+def watch(roots: list[Path], interval: int, dry_run: bool = False, fresh: int = 300) -> int:
     """Poll every store and notify on a genuine transition.
 
     ⛔ The FIRST sweep primes and sends nothing. Zoo keeps one directory per task forever, and a
@@ -322,9 +333,18 @@ def watch(roots: list[Path], interval: int, dry_run: bool = False) -> int:
     a watcher starting with an empty `seen` treats the entire backlog as fresh news and pages the
     operator once per historical thread, every restart. That is the failure the module docstring
     opens by naming, arriving through the other door.
+
+    ⭐ ONE exception, and it is narrow (SCC-355). Once this runs as a launchd agent it restarts at
+    every login and after every crash, and asks measurably sit open for 17+ minutes — so
+    "restarted while Zoo is blocked waiting" is the routine case, not the exotic one, and a
+    totally silent prime loses exactly the page that mattered. During priming an **unanswered
+    ask** whose thread was written within `fresh` seconds still pages. Stale asks stay silent, and
+    a turn-end never takes the exception at any age: it is not blocking anyone. `fresh=0` restores
+    the always-silent prime.
     """
     print(f"zoo-notify: watching {len(roots)} store(s) every {interval}s (ctrl-c to stop)")
     seen: dict[str, tuple[float, tuple]] = {}
+    started = time.time()
     priming = True
     try:
         while True:
@@ -341,7 +361,9 @@ def watch(roots: list[Path], interval: int, dry_run: bool = False) -> int:
                     event = classify(messages)       # and hand back [], which then indexes [-1]
                     signature = thread_signature(messages, event)
                     seen[str(path)] = (mtime, signature)
-                    if priming:
+                    # priming is silent EXCEPT for an ask Zoo is blocked on right now
+                    if priming and not (fresh and event == "ask"
+                                        and started - mtime <= fresh):
                         continue
                     # only a TRANSITION notifies - a rewritten file in the same state is not news
                     if event and (not prev or prev[1] != signature):
@@ -374,6 +396,12 @@ def main() -> int:
     mode.add_argument("--self-test", action="store_true",
                       help="fire one sample notification now and report; exit 1 if a channel failed")
     ap.add_argument("--interval", type=_interval, default=5, help="seconds between polls (--watch)")
+    # ⛔ Wired to the CLI deliberately: this module already shipped one parameter no entry point
+    # could reach (`store_root(custom=…)`), and a documented setting nothing can pass is a claim,
+    # not a feature. `--prime-window 0` restores the always-silent prime.
+    ap.add_argument("--prime-window", type=int, default=300, metavar="SECONDS",
+                    help="on startup, still page for an unanswered ask newer than this "
+                         "(default 300; 0 = prime in total silence)")
     ap.add_argument("--dry-run", action="store_true", help="compose only; no banner, no push")
     ap.add_argument("--store", type=Path, default=None, help="override the thread store root")
     args = ap.parse_args()
@@ -389,7 +417,7 @@ def main() -> int:
               f"- is Zoo Code installed for this user?")
         return 2
     if args.watch:
-        return watch(live, args.interval, args.dry_run)
+        return watch(live, args.interval, args.dry_run, fresh=max(0, args.prime_window))
     return once(live[0], args.dry_run)
 
 

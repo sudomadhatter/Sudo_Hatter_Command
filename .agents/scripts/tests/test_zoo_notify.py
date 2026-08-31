@@ -116,12 +116,92 @@ def test_answered_ask_is_not_pending():
     assert m.classify(msgs) is None
 
 
-def test_partial_ask_never_fires():
-    """A streaming partial is not a decision point; firing on it double-pages every ask."""
+def test_partial_ask_still_pages_because_zoo_never_clears_it():
+    """⛔ SCC-355 regression. This test replaces `test_partial_ask_never_fires`, which pinned the
+    BUG as intended behaviour and is why 38 green tests never caught it.
+
+    The shipped guard returned None for any tail flagged `partial: True`, reasoning that a stream
+    in flight is not a decision point. That is true of a `say` and FALSE of an `ask`: Zoo clears
+    `partial` when ITS OWN matcher auto-approves, and leaves it standing when the operator must
+    answer. Measured on the live store at fix time: 10 asks carry `partial=True` AND
+    `isAnswered=True` — Zoo stamped the answer on top and never cleared the flag — and 13 of the
+    16 `tool` asks that wanted the operator were flagged partial, i.e. 81% of them were dropped.
+    `tool` is the `newTask` subagent launch, which is exactly the sits-blocked-and-nobody-knows
+    case this module exists to end."""
     m = _mod()
     msgs = _load("zoo_ui_messages_ask.json")
-    msgs[-1]["partial"] = True
+    assert msgs[-1].get("partial") is True, "fixture drifted: the captured tail must be partial"
+    assert m.classify(msgs) == "ask"
+
+
+def test_partial_say_still_never_fires():
+    """The half of the old guard that was RIGHT, kept: narration still streaming is not news."""
+    m = _mod()
+    msgs = _load("zoo_ui_messages_ask.json")
+    msgs[-1] = {"ts": 9, "type": "say", "say": "reasoning", "partial": True, "text": "thinking"}
     assert m.classify(msgs) is None
+
+
+def test_a_finalised_ask_pages_exactly_as_a_partial_one_does():
+    """Both spellings are the same decision, so the verdict must not depend on the flag."""
+    m = _mod()
+    msgs = _load("zoo_ui_messages_ask.json")
+    msgs[-1]["partial"] = False
+    assert m.classify(msgs) == "ask"
+    del msgs[-1]["partial"]
+    assert m.classify(msgs) == "ask"
+
+
+def test_finalising_a_partial_ask_in_place_does_not_double_page():
+    """Why dropping the guard needs no new dedupe: `thread_signature` keys on the tail's own ts
+    and the message count, and finalising an ask rewrites it in place — both are unchanged."""
+    m = _mod()
+    partial = _load("zoo_ui_messages_ask.json")
+    final = _load("zoo_ui_messages_ask.json")
+    final[-1]["partial"] = False
+    assert m.classify(partial) == m.classify(final) == "ask"
+    assert m.thread_signature(partial, "ask") == m.thread_signature(final, "ask")
+
+
+def test_no_door_tells_an_agent_to_skip_a_partial_ask():
+    """⛔ SCC-355 REACH check. `reproduce-before-you-fix` asks what else shares the mechanism, then
+    says go look — and looking found `/smh-llm-approvals` carrying the identical filter in prose:
+    "`type` is `ask`, `ask` is `command`, `partial` is not `true`". That door exists to show the
+    operator which commands stopped and waited for him; measured on the live store it listed 23
+    and silently dropped 4. Fixing `classify()` alone would have left him reading an
+    under-reporting list and concluding the notification fix had failed.
+
+    ⛔ This asserts on the REQUIREMENT SENTENCE, not on a repo-wide grep for the word. The fix adds
+    a warning paragraph that quotes the old filter, so a naive `grep -c partial` matches the very
+    text proving it was fixed and can never go red. [[comment-literals-invert-source-grep-tests]]
+    """
+    doors = [ROOT / ".agents" / "commands" / "smh-llm-approvals.md",
+             ROOT / ".opencode" / "commands" / "smh-llm-approvals.md",
+             ROOT / ".agents" / "workflows" / "smh-llm-approvals.md"]
+    for door in doors:
+        assert door.is_file(), f"{door} is missing — the door lost a platform mirror"
+        sentence = [ln for ln in door.read_text(encoding="utf-8").splitlines()
+                    if "`ask` is `command`" in ln]
+        assert sentence, f"{door.name}: the Zoo requirement sentence is gone — did it get reworded?"
+        for line in sentence:
+            assert "partial" not in line, f"{door.name} still filters stopped commands on partial: {line}"
+            assert "autoApprovalDecision" in "".join(sentence), \
+                f"{door.name}: the real signal must still be named"
+
+
+def test_fixtures_are_real_captures_not_hand_written_stubs():
+    """⛔ SCC-355's miss, pinned. Both fixtures shipped as 4-5 message stubs with `partial: False`
+    tails while real threads run 76-413 messages and flag their operator-facing asks partial. A
+    battery whose fixtures cannot express the bug cannot catch it, however many tests it holds."""
+    ask = _load("zoo_ui_messages_ask.json")
+    turnend = _load("zoo_ui_messages_turnend.json")
+    assert len(ask) > 50, f"ask fixture is a stub again: {len(ask)} messages"
+    assert len(turnend) > 50, f"turn-end fixture is a stub again: {len(turnend)} messages"
+    assert ask[-1].get("partial") is True, "the ask fixture must carry the shape Zoo really writes"
+    assert any(m.get("autoApprovalDecision") == "approve" for m in ask), \
+        "a real thread contains auto-approved asks; a fixture without them cannot test the filter"
+    body = (FIXTURES / "zoo_ui_messages_ask.json").read_text(encoding="utf-8")
+    assert "/Users/" not in body and "C:\\" not in body, "capture leaked a real path — redact it"
 
 
 def test_empty_thread_is_silent():
@@ -338,6 +418,11 @@ def test_watch_primes_silently_then_pages_each_distinct_ask():
     with tempfile.TemporaryDirectory() as d:
         root = Path(d)
         f = _store(root, _load("zoo_ui_messages_ask.json"))
+        # ⭐ Stamp it OLD. This test's subject is the historical BACKLOG, and a backlog thread is
+        # stale by definition — leaving it at "now" made it accidentally fresh, which the
+        # freshness exception below correctly pages for. Making the mtime match the intent is
+        # what lets both behaviours be pinned at once instead of trading one for the other.
+        os.utime(f, (1_000_000, 1_000_000))
         sent: list[dict] = []
         m.send = lambda payload, dry_run=False: (
             sent.append(payload) or {"banner": "x", "push": "x"})
@@ -370,7 +455,8 @@ def test_watch_primes_silently_then_pages_each_distinct_ask():
             else:
                 raise _Stop()
 
-        m.time = type("T", (), {"sleep": staticmethod(_sleep)})()
+        m.time = type("T", (), {"sleep": staticmethod(_sleep),
+                                "time": staticmethod(lambda: 3_000_000.0)})()
         try:
             m.watch([root], 1, dry_run=False)
         except _Stop:
@@ -379,6 +465,70 @@ def test_watch_primes_silently_then_pages_each_distinct_ask():
         assert unchanged == [1], "a rewritten file in the SAME state is not news; it must not re-page"
         assert len(sent) == 2, f"both distinct asks must page; got {len(sent)}"
         assert "rm -rf build" in sent[-1]["message"], sent[-1]
+
+
+def test_priming_pages_a_FRESH_pending_ask_but_never_the_stale_backlog():
+    """⛔ SCC-355: the reboot case, which `KeepAlive` turns from exotic into routine.
+
+    Priming exists so a restart does not page once per historical thread — Zoo keeps every task
+    directory forever and a finished thread's tail stays an ask on disk. But once the watcher is
+    a launchd agent it restarts at every login and after every crash, and asks measurably sit
+    open for 17+ minutes (SCC-355 diagnosis). So "restarted while Zoo is blocked waiting" is the
+    normal case, and a silent prime loses exactly the page that mattered.
+
+    The exception is narrow on purpose: during priming, an UNANSWERED ASK whose thread was
+    written inside the freshness window pages; everything else — stale asks, and turn-ends at any
+    age — stays silent. A turn-end is not blocking anyone, so it never earns the exception."""
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        fresh = _store(root, _load("zoo_ui_messages_ask.json"), task="fresh")
+        stale = _store(root, _load("zoo_ui_messages_ask.json"), task="stale")
+        done = _store(root, _load("zoo_ui_messages_turnend.json"), task="done")
+        now = 3_000_000.0
+        os.utime(fresh, (now - 10, now - 10))       # Zoo is waiting on him RIGHT NOW
+        os.utime(stale, (now - 9_999, now - 9_999))  # answered days ago; tail never rewritten
+        os.utime(done, (now - 10, now - 10))         # fresh, but finished — not blocking
+
+        sent: list[dict] = []
+        m.send = lambda payload, dry_run=False: (
+            sent.append(payload) or {"banner": "x", "push": "x"})
+
+        def _sleep(_seconds):
+            raise _Stop()
+        m.time = type("T", (), {"sleep": staticmethod(_sleep),
+                                "time": staticmethod(lambda: now)})()
+        try:
+            m.watch([root], 1, dry_run=False)
+        except _Stop:
+            pass
+
+        assert len(sent) == 1, f"exactly the fresh pending ask pages; got {len(sent)}: {sent}"
+        assert sent[0]["event"] == "ask", sent[0]
+        assert sent[0]["title"] == "Zoo Code - needs you", sent[0]
+
+
+def test_priming_freshness_window_is_configurable_and_zero_means_silent():
+    """A zero window restores the old always-silent prime — the escape hatch if it ever nags."""
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        f = _store(root, _load("zoo_ui_messages_ask.json"), task="fresh")
+        now = 3_000_000.0
+        os.utime(f, (now - 10, now - 10))
+        sent: list[dict] = []
+        m.send = lambda payload, dry_run=False: (
+            sent.append(payload) or {"banner": "x", "push": "x"})
+
+        def _sleep(_seconds):
+            raise _Stop()
+        m.time = type("T", (), {"sleep": staticmethod(_sleep),
+                                "time": staticmethod(lambda: now)})()
+        try:
+            m.watch([root], 1, dry_run=False, fresh=0)
+        except _Stop:
+            pass
+        assert sent == [], "fresh=0 must prime in total silence"
 
 
 # --- store_root(): BOTH machines, profiles, and the configurable path ---------------------
