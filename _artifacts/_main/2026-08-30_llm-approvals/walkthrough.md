@@ -11,7 +11,7 @@ yet built) · SCC-355 (Part B, built here) · **HEAD at write time:** `94de53b6`
       blocker: Zoo v3.80.1's manifest contributes 19 settings keys and 20 commands and not one is a
       notification, a sound, or an event hook. The plan had already grounded the fallback, so the
       trigger became the thread store instead of a hook.
-- [x] **B1 — the notifier.** `.agents/scripts/zoo_notify.py` — classify / compose / store_root /
+- [x] **B1 — the notifier.** `.agents/scripts/zoo_notify.py` — classify / compose / store_roots /
       send, plus `--once`, `--watch`, `--dry-run`.
 - [x] **B2 — the trigger.** The watcher over `ui_messages.json`, notifying only on a state
       TRANSITION so a rewritten file in the same state is not news.
@@ -83,7 +83,7 @@ First stamp was RED and that is the mechanism working — `65/66 files passed  F
 which was the missing `_artifacts/_main/INDEX.md` row. After adding it:
 
 ```
-[PASS] suite exit=0 82.7s @ 94de53b6
+[PASS] suite exit=0 82.7s @ 021144c6   (66/66 files; receipt sha matches)
 ```
 
 Other floor gates, run bare (a pipe would have read `tail`'s exit code, not the gate's — the house
@@ -113,5 +113,110 @@ started, by the build order you approved.
       is the Focus-mode failure, not a broken notifier — terminal-notifier must be in System Settings
       → Focus → Work → Allowed Notifications, and suppressed banners still show in Notification
       Center history.
-- [ ] **Prove it on the PC.** Same, with `python` instead of `python3`. The PC has never had
+- [ ] **Prove it on the PC.** (The review found the PC branch raised no toast at all and still reported `banner=sent`; it builds and Shows a real one now, and a failure exits non-zero. This row is now a check that CAN fail.)
+- [ ] **PC, continued —** Same, with `python` instead of `python3`. The PC has never had
       `notify.sh` either, so this is the first notification either tool has sent from that machine.
+
+## Code Review (2026-08-31)
+
+Verdict: PASS @ 021144c6
+Suite evidence measured at: 021144c6 (receipt `gates/suite.json`, result `pass`, exit 0, 66/66, clean tree)
+
+review-runtime: fan-out
+lens_isolation: worktree
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted:  5/5
+lenses_na:       none
+dispositions:    per-lens: blind=6/2/0 · edge=6/1/0 · literal=8/2/0 · acceptance=8/2/0 · test-adequacy=10/2/0
+drift:           undeclared=0 · unimplemented=16 · incomplete=0 — all 16 remaining are Part A / SCC-354 paths, declared once for the consolidated lane and deliberately unbuilt; `zoo-code-permissions-guide.md` was in this list at review time and is now implemented (finding 20)
+
+**Scope.** `origin/main...HEAD`, 20 files at review time, of which 8 are code/doc and 12 are lane
+artifacts. Built half only: Part B / SCC-355. Part A / SCC-354 is planned and unbuilt by design.
+
+**Method.** Five lenses, each in its own disposable worktree cut from the repo under review at the
+review sha, launched in parallel. The Blind Hunter got the code diff alone with no tree and no
+artifacts — the lane's plan and walkthrough were withheld from it so its blindness was real rather
+than declared. 47 raw findings, 26 unique claims after grouping. The verify wave was launched and
+then **stopped by the operator mid-run**; every finding acted on below was instead confirmed by the
+assessor directly against the source, and two were confirmed by `grep` on the tree.
+
+**The one line that matters (SCC-205 §6.5).** 47 findings came back; 21 were assessed real and are
+fixed in this lane; the rest were dismissed as duplicates of a fixed claim or as noise. Two
+assessments disagreed with the lens's own label, both upward: `DECISION_ASKS` was filed
+`suggestion` by the Acceptance Auditor and is a real silent-miss of the one ask the feature exists
+for, and the mutant-clustering finding was filed `important` but is the reason a 9/9 green sweep
+measured 30% of the file.
+
+### Findings
+
+| # | file:line | sev | failure scenario | disposition |
+|---|---|---|---|---|
+| 1 | `zoo_notify.py:175` watch() | critical | Cold `seen{}` treats every historical thread as fresh news; a finished thread's tail stays `ask/completion_result` forever, so every restart pages once per task dir. Reproduced at 30 sends on one poll. | applied @ c7ea0157 — first sweep primes silently |
+| 2 | `zoo_notify.py:188` watch() | important | Thread read twice; the second read loses the race, `read_thread` returns `[]`, `messages[-1]` raises `IndexError` past the only handler, and the watcher dies silently. | applied @ c7ea0157 — read once |
+| 3 | `zoo_notify.py:191` watch() | important | De-dupe keyed on the event word, so a second ask arriving in the same poll window reads as "not news". Reproduced: `rm -rf build` never paged. | applied @ c7ea0157 — `thread_signature` keys on the tail `ts` |
+| 4 | `zoo_notify.py:31` classify() | important | Allow-list built from two threads drops `auto_approval_max_req_reached` — the ask Zoo raises *because* the operator must intervene. Six real ask types reproduced as silent misses. | applied @ c7ea0157 — deny-list; fails open |
+| 5 | `zoo_notify.py:101` banner_cmd() | important | Windows branch loaded the WinRT type, discarded it, and `Write-Output`-ed into a captured pipe. No toast ever shown; `send()` reported `banner=sent`. A check that cannot fail. | applied @ c7ea0157 — constructs and Shows a toast; `='Stop'` |
+| 6 | `zoo_notify.py:119` send() | important | `check=False` plus an unconditional `"sent"` reported success for a notifier that ran and failed — on both machines. | applied @ c7ea0157 — reads `returncode` |
+| 7 | `zoo_notify.py:154` _project_name() | important | `Path.cwd().name` on a single global daemon stamps every project's banner with the launch directory. | applied @ c7ea0157 — reads the task's own `history_item.json` workspace |
+| 8 | `zoo_notify.py:212` main() | important | `zoo-code.customStoragePath` documented as honoured; `main()` called `store_root()` with no args, so the parameter was unreachable and the setting dead. | applied @ c7ea0157 — `read_custom_store` wired; pinned end-to-end |
+| 9 | `zoo_notify.py:56` store_root() | important | Only the default profile resolved, while the sibling `zoo_permissions_apply.py` already enumerates `profiles/*/globalStorage/`. `profiles/builtin/` exists on this Mac. | applied @ c7ea0157 — `store_roots()` enumerates profiles |
+| 10 | `test_zoo_notify.py:157,166` | important | Two assertions compared `str()` paths with `/`, which are False under `WindowsPath` — the suite was authored to go RED on the PC. | applied @ c7ea0157 — compares `Path.parts` |
+| 11 | `sweep.json` | important | All 9 mutants drawn from the four functions the tests already covered; 11 fresh mutants against the other 70% all survived. Measured coverage 37/125 statements. | applied @ c7ea0157 — 22 mutants drawn from the code |
+| 12 | `zoo_notify.py:119` send() | critical | Deleting the `if dry_run` guard left the suite green — the one safety property in the CLI contract was unpinned. | applied @ c7ea0157 — M10 now kills it |
+| 13 | `zoo_notify.py:77` classify() | important | The `say`/`completion_result` branch never executed under test; no fixture reached it. | applied @ c7ea0157 — pinned, M5 kills it |
+| 14 | `zoo_notify.py:142,147` | suggestion | `read_thread`'s corrupt-JSON guard and `newest_thread`'s ordering both unpinned; stripping either left the suite green. | applied @ c7ea0157 — both pinned |
+| 15 | `zoo_notify.py:213` main() | suggestion | Exit code 2 — the only signal separating "not installed" from "nothing needed" — untested. | applied @ c7ea0157 — subprocess test |
+| 16 | `zoo_notify.py:89` compose() | suggestion | First-line and 120-char truncation untested; a 4KB diff would become the whole push. | applied @ c7ea0157 — pinned |
+| 17 | `zoo_notify.py:208` --interval | nitpick | `0` spun a core, `-1` crashed `time.sleep`. | applied @ c7ea0157 — bounded at 1s |
+| 18 | `zoo_notify.py:142` newest_thread() | nitpick | A task dir deleted between the glob and the stat raised out of `once()`. | applied @ c7ea0157 — guarded |
+| 19 | `sweep.json` | suggestion | The table declared `case` labels the runner cannot select on — this file has no `_harness`, so `--case` was swallowed and `NO_MATCH` (exit 3) could never fire. | applied @ c7ea0157 — `"unfiltered": true` on every mutant |
+| 20 | `docs/migrations/zoo-code-permissions-guide.md` | important | §6/§11 declared in the change set and required by acceptance A5/B3; never written. `grep -i 'notif\|ntfy\|banner'` returned 0 hits while the walkthrough ticked B3 after re-wording it. | applied @ c7ea0157 — §6.1 and §11.1 written; grep now 11 |
+| 21 | `walkthrough.md:86` | suggestion | Quoted `82.7s @ 94de53b6` while the receipt it links recorded `df8f1c9d` / `82.6`. Evidence transcription, not a false green — the suite was independently re-run green. | applied @ this commit |
+| — | INDEX / SOP / changelog | suggestion | `--dry-run` listed as a mode argparse rejects; SOP claimed it fires "only when `autoApprovalDecision` is null" while turn-end never reads it; changelog claimed "pins all of it (13 cases)". | applied @ c7ea0157 |
+| — | 26 further findings | — | Duplicates of a claim already fixed above, reached independently by a second or third lens. | dismissed — counted as corroboration, not as separate work |
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| Enforcement suite | `[PASS] suite exit=0 82.7s @ 021144c6` — **66/66 files passed**, receipt `result: pass`, clean tree |
+| Mutation sweep | **22/22 killed by their declared case**; restore verified, full unfiltered run exit 0 |
+| Assertion evidence | `test_zoo_notify.py` → `-- 35/35 passed --`, exit 0 (was 13) |
+| Toolkit lint | `0 error(s), 0 warning(s), 8 info` |
+| Link + anchor | `check_links.py --base origin/main` → exit 0, clean, 12 files |
+| SOP currency | exit 0 — the SOP-touching commit carries no `[sop-ok]` escape |
+| Door parity | n/a — no command added, renamed or deleted |
+| Declared change set | `present: true`, undeclared 0, incomplete 0, unimplemented 16 (all Part A) |
+
+### Clean-Code Gate
+
+Diff-scoped, on the two changed Python files. `py_compile` OK. No line over 120 chars. No
+`TODO`/`FIXME`. No bare `except:` — the one `except Exception` carries `# noqa: BLE001` and records
+the failure into `result["push"]` rather than swallowing it. No commented-out code. No new
+single-caller abstraction: `user_dir()`, `store_roots()`, `read_custom_store()` and
+`thread_signature()` each have a caller in the module and a test. No hardcoded interpreter or
+`C:/` path. Comment contract met — every non-obvious block carries the why, and the four ⛔ blocks
+record the defect each guard exists to prevent.
+
+**Clean-code result: PASS.**
+
+### Step 0.7 — re-derivation
+
+1. **Nothing this diff references moved.** `origin/main` is `632f7583`, identical to the merge-base,
+   so zero files landed on `main` between the plan and this review. Every repo path and anchor the
+   diff names re-resolves — `check_links.py --base origin/main` exit 0, clean.
+2. **True overlap is empty and the merge is clean.** `git diff --name-only BASE..origin/main` → 0
+   files, so the intersection with this lane's 20 is nil. `git merge-tree --write-tree --messages
+   HEAD origin/main` wrote tree `c4c56cd2` with no conflict messages. No absorb was needed and none
+   was performed; the verdict sha is therefore the sha the gates ran on.
+3. **No sibling lane is live.** `git worktree list` shows exactly two trees — the lobby on `main` at
+   `632f7583` and this lane. There is no landing-order dependency to name.
+
+`review_level: standard`, derived from that radius rather than chosen: answer 1 came back
+contained, but the radius carries gate and contract surfaces (`.agents/scripts/`, the enforcement
+suite, the SOP) and the diff changed more than three source files.
