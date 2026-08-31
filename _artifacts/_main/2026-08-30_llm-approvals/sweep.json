@@ -1,0 +1,71 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_zoo_notify.py"
+ ],
+ "mutants": [
+  {
+   "id": "M1 stop honouring Zoo's own verdict (auto-approved asks would page him)",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "        if last.get(\"autoApprovalDecision\") is not None:",
+   "mutated": "        if False:",
+   "case": "test_auto_approved_ask_never_fires"
+  },
+  {
+   "id": "M2 fire on a streaming partial (double-pages every ask)",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "    if last.get(\"partial\") is True:",
+   "mutated": "    if False:",
+   "case": "test_partial_ask_never_fires"
+  },
+  {
+   "id": "M3 ignore isAnswered (re-pages asks he already answered)",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "        if last.get(\"isAnswered\") is True:",
+   "mutated": "        if False:",
+   "case": "test_answered_ask_is_not_pending"
+  },
+  {
+   "id": "M4 a pending ask stops classifying as one",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "            return \"ask\"",
+   "mutated": "            return None",
+   "case": "test_pending_ask_classifies_as_ask"
+  },
+  {
+   "id": "M5 a finished turn stops classifying as one",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "        if last.get(\"ask\") == \"completion_result\":\n            return \"turn_end\"",
+   "mutated": "        if last.get(\"ask\") == \"completion_result\":\n            return None",
+   "case": "test_completed_turn_classifies_as_turn_end"
+  },
+  {
+   "id": "M6 the PC resolves to the Mac's store path",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "        base = Path(appdata) if appdata is not None else Path(\n            os.environ.get(\"APPDATA\", home / \"AppData\" / \"Roaming\"))",
+   "mutated": "        base = home / \"Library\" / \"Application Support\"",
+   "case": "test_store_root_resolves_on_mac_and_on_windows"
+  },
+  {
+   "id": "M7 customStoragePath ignored (watches an empty dir forever)",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "    if custom is not None:",
+   "mutated": "    if False:",
+   "case": "test_custom_storage_path_setting_wins"
+  },
+  {
+   "id": "M8 NTFY_TOPIC override ignored (public topic can never be rotated)",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "    return \"https://ntfy.sh/\" + (os.environ.get(\"NTFY_TOPIC\") or DEFAULT_TOPIC)",
+   "mutated": "    return \"https://ntfy.sh/\" + DEFAULT_TOPIC",
+   "case": "test_ntfy_topic_env_override_wins"
+  },
+  {
+   "id": "M9 'needs you' and 'finished' become indistinguishable",
+   "file": ".agents/scripts/zoo_notify.py",
+   "original": "        title = \"Zoo Code - turn complete\"\n        body = f\"{project}: finished\" + (f\" - {first}\" if first else \"\")",
+   "mutated": "        title = \"Zoo Code - needs you\"\n        body = f\"{project}: waiting on approval\" + (f\" - {first}\" if first else \"\")",
+   "case": "test_ask_and_turn_end_are_distinguishable"
+  }
+ ]
+}
