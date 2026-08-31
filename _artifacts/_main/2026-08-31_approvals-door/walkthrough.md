@@ -1,232 +1,84 @@
-# SCC-354 — `/smh-llm-approvals`, the approvals door (Part A of SCC-352)
+# SCC-354 — `/smh-llm-approvals`, the approvals audit door (Part A of SCC-352)
 
 review-runtime: fan-out
 
 **Lane:** `chore/SCC-354-approvals-door`, cut from `origin/main` at `8af1f134`
 **Plan:** [implementation_plan.md](implementation_plan.md) — two self-audit passes, verdict **GO**
-**Approved:** the operator's literal `approved`, 2026-08-31, after the pass-2 audit
+**Approved:** the operator's literal `approved`, 2026-08-31
+**Scope cut:** the operator's ruling, 2026-08-31, after the review — see *What got cut* below
 
 ## What this is, in one paragraph
 
-Zoo Code stops and asks before running a terminal command it does not recognise, and until now the
-only way to stop it asking was for a human to read the transcript by eye and work out which prefix
-would have covered the command. This door does that reading. It scans Zoo's own thread store, keeps
-the asks Zoo genuinely stopped on, replays each through the same matcher the 78-row destructive
-battery pins, and prints the shortest allow row that would have let it through. It writes nothing —
-the operator picks the rows, and the existing apply script writes them.
+The operator types `/smh-llm-approvals`. The agent reads his recent Claude Code sessions and Zoo
+Code threads, finds every terminal command that stopped and waited for his approval, and shows them
+in chat as one list. He names the ones he wants allowed. The agent adds those rows to
+`.claude/settings.json` and `.vscode/settings.json` and runs the Zoo apply so Zoo actually sees
+them. He never opens a terminal, never edits a settings file, and is asked exactly one question.
 
-It is Zoo-only on purpose. Claude Code puts a *don't ask again* button in its own approval prompt,
-so its allow list grows as the operator works; Zoo has no such button, and its decisions live in a
-VS Code `globalState` database the tracked settings file seeds exactly once, with denies never
-seeding at all. Zoo is the platform that cannot help itself. Claude still gets read — it gets a
-paste-ready hand-off block naming one resolved `.claude/settings.json`, because Claude Code cannot
-edit its own settings and an agent that can needs to be told which file.
+## What got cut, and why — the lane's actual lesson
+
+This first shipped as a 368-line Python script the operator ran in a terminal, whose job was to
+**compute** the minimal allow-list row for each blocked command: a token-boundary breadth floor, a
+replay through the real Zoo matcher, a merge into one row per family, and a paste-ready hand-off
+block for Claude. 2,274 lines across 29 files, with a 406-line test file and a 13-mutant sweep.
+
+Five review lenses and one live run against the operator's real lists found the same disease from
+four directions:
+
+| What it did | Reproduced |
+| --- | --- |
+| Proposed rows that beat the deny fence | `sudo rm -f /etc/x` → row `sudo rm` → `sudo rm -rf /` becomes `auto_approve`. Longest-prefix-wins means a row built from the whole command outranks the short deny row that caught it. |
+| Lost the fence entirely on a fresh machine | Denies never seed into `globalState`, so `live_lists()` returned `deny=[]` and the door proposed bare `rm` and `sudo`. |
+| Widened a careful list | Emitted `Bash(git *)` into a `.claude/settings.json` whose 41 git rules are subcommand-scoped on purpose and which omits `git reset`, `git clean` and `git push --force`. |
+| Dropped the house's own idiom | `cd <abs> && <tool>` got no proposal at all and vanished silently, because candidate rows were prefixes of the whole string while the matcher evaluates per piece. |
+
+Two more defects were found only by RUNNING it, not reading it: a rule built from a shell variable
+assignment (`Bash(W=/Users/…; *)`), and `Bash(1 *)` from the `1` in `2>&1`. And a lens proved
+`test_the_door_writes_nothing` vacuous by making `render()` write to the real tracked settings file
+while the suite still printed 22/22.
+
+**Every one of those lived in the computing, and the operator never asked for the computing.** His
+words: *"all i asked for is a / command that gives me the terminal commands I had to approve."*
+
+So the proposer, its test file, the extracted matcher, the JSONL fixture and the mutation sweep were
+deleted, and `zoo_notify.py` / `test_zoo_permissions.py` / `test_zoo_notify.py` / `scripts/INDEX.md`
+were restored to `origin/main`. What ships is **one command file** the agent follows, plus the five
+generated launchers that put it in each platform's menu.
+
+The guard that replaced the breadth floor is a sentence, not an algorithm: **a row is only ever as
+wide as the command it came from.** `git fetch origin main` earns `Bash(git fetch *)`, never
+`Bash(git *)`. The operator reads real commands and picks; nothing computes breadth on his behalf.
 
 ## Task Checklist
 
-- [x] **Step 1 (A1) — the matcher became ONE module.** `decide` / `pieces` / `_longest` /
-      `_mask_quotes` / `load_lists`, `SETTINGS`, and the `ALLOW, DENY = load_lists()` binding moved
-      to `.agents/scripts/zoo_matcher.py`.
-    - `ROOT` could not be moved. The test still needs it at four other sites, so a literal move
-      kills all 78 battery rows at import, before a case runs. It is duplicated: `parents[3]` in
-      the test, `parents[2]` in the mirror.
-    - The binding itself is not a name. Moving only the declared functions still raises
-      `NameError: name 'ALLOW' is not defined` at import — the failure the finding existed to
-      prevent, restated one line short.
-- [x] **Step 2 (A2) — the Zoo reader**, plus the CI Linux store root `zoo_notify.py` was missing.
-    - `autoApprovalDecision is None` is Zoo's own record that it asked. An ask it auto-approved
-      already runs; one it denied was refused by the fence on purpose.
-- [x] **Step 3 (A3) — the proposer and the breadth floor.**
-    - The floor is the finding that would have shipped a hole. See Evidence below.
-- [x] **Step 4 (A4) — the door, its five generated launchers, and the report.**
-    - The launchers are generated by `sync-agents.ps1`, not hand-written. `-NoGlobals` emitted all
-      five and rewrote the manifest; `-GlobalsOnly` mirrored the Antigravity machine cache.
-- [x] **Step 5 (A6) — the Claude hand-off block.**
-    - Two defects found by RUNNING it against real sessions rather than reading it. See Evidence.
-- [x] **Step 6 (A5) — SOP, changelog, guide §6 and §11, both INDEX files, and the recorded
-      reason for leaving opencode and Codex out.**
+- [x] **The door** — [.agents/commands/smh-llm-approvals.md](../../../.agents/commands/smh-llm-approvals.md),
+      four steps: read both stores, show the list, stop for his word, write both files and apply.
+- [x] **Five launchers regenerated** by `sync-agents.ps1 -NoGlobals` from the new body — never
+      hand-written. `.claude/skills/`, `.agents/skills/`, `.opencode/commands/`, `.roo/commands/`,
+      `.agents/workflows/`.
+- [x] **The proposer deleted** — `llm_approvals.py`, `zoo_matcher.py`, `test_llm_approvals.py`,
+      `claude_session_sample.jsonl`, `sweep.json`.
+- [x] **Four files restored to `origin/main`** — `zoo_notify.py`, `test_zoo_permissions.py`,
+      `test_zoo_notify.py`, `.agents/scripts/INDEX.md`.
+- [x] **Docs rewritten to match** — SOP start-here row, SOP `#### /smh-llm-approvals` section, SOP
+      family table, changelog, both migration guides, `commands/INDEX.md`, `_main/INDEX.md`.
+- [x] **`test_twin_parity.py` NOT_PAIRED row** kept — the command still exists and is still
+      per-machine, so it still has no `cicd-*` twin.
 
-### One deviation from the plan, stated plainly
+## What is verified, and what is not
 
-Pass-2 finding **F16** ruled that steps 1 through 5 each commit their code *plus their own SOP
-line*. Steps 1, 2 and 3 took `[sop-ok]` instead, and the reason is the SOP rule's own habit 2:
-those three commits change nothing an operator types — an internal extraction, a reader with no
-CLI yet, and a proposer with no CLI yet — and writing manual prose about an internal Python module
-is the accretion that rule exists to prevent. `[sop-ok]` is the designed, permanently logged exit
-for exactly that case. The door's commit (step 4) and the Claude block's commit (step 5) both
-carry real SOP edits and no opt-out, which is what A5 actually asserts.
+The reading half was proved live before the cut, and the shapes it reads are unchanged — the
+command file carries the same two record shapes the script parsed. Run against the operator's real
+machine it found 11 refused Claude commands by pairing each `tool_result` refusal back to its
+`tool_use` by id, and found the Zoo store root correctly (`…/zoocodeorganization.zoo-code/tasks`,
+genuinely empty on this Mac — Zoo has no thread history here).
 
-## Evidence
-
-### A1 — the matcher mirror is ONE module, and no verdict moved
-
-*RED* — a new case importing the module that does not exist yet:
-
-```
-ModuleNotFoundError: No module named 'zoo_matcher'
--- 15/16 passed --  FAILED: test_matcher_is_one_module
-```
-
-*GREEN* — and the whole pre-existing battery passes unchanged, which is the real assertion:
-
-```
--- 16/16 passed --
-grep -c "def decide" .agents/scripts/tests/test_zoo_permissions.py  ->  0
-```
-
-### A2 — the reader extracts only what actually stopped
-
-*RED*:
-
-```
-FileNotFoundError: .../.agents/scripts/llm_approvals.py
--- 0/2 passed --
-FAILED: test_reader_extracts_only_the_blocked_command, test_reader_survives_a_mid_write_thread
-```
-
-*GREEN* — `-- 2/2 passed --`, run bare, `EXIT=0`.
-
-The fixture carries two `ask`/`command` messages: `ls -la` which Zoo auto-approved, and
-`acli jira workitem view SCC-352` which it asked about. `ls -la` being **absent** is the half that
-carries the meaning — a reader that returns both passes any assertion about "it found the
-commands" while proposing an allow row for a command that already runs.
-
-The CI Linux branch, same step:
-
-```
-RED:   -- 39/40 passed --  FAILED: test_store_root_resolves_on_ci_linux
-GREEN: -- 40/40 passed --
-```
-
-### A3 — the breadth floor, measured against the live lists
-
-*RED* — `-- 2/6 passed --`, `AttributeError: module 'llm_approvals' has no attribute 'propose'`.
-
-The finding, executed rather than argued:
-
-```
-'npx create-next-app my-app'  -> row 'npx'          (floored)
-
-unfloored shortest char prefix: 'n'
-  battery rows leaked: 0
-  it auto-approves: ['npm publish', 'node evil.js', 'nc -l 4444',
-                     'netsh advfirewall set allprofiles state off']
-```
-
-Zero battery leakage is why the two obvious assertions both pass. The battery is a fence around
-what this house already knew to fear; it is not a definition of safe. *GREEN* — `-- 7/7 passed --`.
-
-### A4 — the door prints, writes nothing, and says what it scanned
-
-*RED* — the surface gate seeing three missing launchers, and the parity gate seeing an unpaired
-door:
-
-```
--- 228/231 passed --
-FAILED: every claude/codex-eligible command has its skill door,
-        every opencode-eligible command has its mirror,
-        every antigravity-eligible command has its workflow mirror
-
--- 66/67 passed --  FAILED: A1 every cicd-*/smh-* command is pinned or recorded as unpaired
-```
-
-*GREEN* — `-- 231/231 passed --`, `-- 67/67 passed --`, and `workflow_lint --toolkit-only` at
-`0 error(s), 0 warning(s)`.
-
-The door run live against the real store, which is the zero-result legibility assertion:
-
-```
-smh-llm-approvals - Zoo Code approval rows
-
-Scanned:
-  /Users/sudohatter/Library/Application Support/Code/User/globalStorage/zoocodeorganization.zoo-code/tasks
-  threads read: 1
-  commands that stopped for approval: 0
-
-Nothing to propose: no command stopped for approval in the threads above.
-If that is a surprise, check the root printed above is the store Zoo is using.
-```
-
-### A6 — the Claude hand-off block, and two defects only a live run could find
-
-*RED* — `-- 13/18 passed --` (`no attribute 'claude_handoff'`), then `-- 18/19 --` (`repo_root`).
-
-Then the door was run against real sessions, and it printed this:
-
-```
-    "Bash(acli *)",
-    "Bash(1 *)",
-    "Bash(W=/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/zoo-approvals; *)",
-```
-
-Two separate bugs, neither visible from reading the code.
-
-`Bash(W=…; *)` came from `cmd.split()[0]` on a refusal that began with a shell variable
-assignment — a rule matching exactly one string nobody will type again, offered as if it were
-useful. The same split collapsed multi-line refusals into one "token", so one rule covered the
-first command and the operator would re-approve the same block tomorrow for the second. Fixed by
-taking the command word of every shell piece, using `zoo_matcher.pieces()` — the same splitter the
-matcher itself uses.
-
-`Bash(1 *)` was caused by that fix. `pieces()` splits on `&`, so `2>&1` becomes a piece whose first
-token is the bare digit `1`. `decide()` never sees this because it masks redirections **before**
-it splits — so reusing the splitter without reusing the mask reproduced the exact bug the mask
-exists to prevent, one layer up. Fixed with the same masking line `decide()` uses.
-
-```
-RED:   -- 20/21 passed --  FAILED: test_handoff_rule_is_the_command_word_not_the_first_token
-RED:   -- 21/22 passed --  AssertionError: ['acli', '1', 'head']
-GREEN: -- 22/22 passed --
-```
-
-The live block now reads `acli`, `head`, `cd`, `env`, `tail`, `git`, `python3`, `echo` — no
-assignment, no bare digit.
-
-### A5 — docs
-
-```
-grep -c "to be pinned" docs/migrations/terminal-global-permission.md   2 -> 0
-workflow_lint.py --toolkit-only  ->  0 error(s), 0 warning(s), 8 info
-test_check_maps.py               ->  35/35 passed
-```
-
-### Mutation sweep — 13 declared before the sweep, drawn from the code
-
-| # | Mutant | File | Case that must kill it | Outcome |
-|---|---|---|---|---|
-| M1 | reader stops distinguishing an auto-approved ask from a blocked one | `llm_approvals.py` | `test_reader_extracts_only_the_blocked_command` | KILLED |
-| M2 | **width** — the filter narrows to not-approved, so a DENIED ask is proposed | `llm_approvals.py` | `test_reader_skips_an_ask_zoo_denied` | KILLED |
-| M3 | a stream in flight is read as a finished command | `llm_approvals.py` | `test_reader_survives_a_mid_write_thread` | KILLED |
-| M4 | **the hole** — the floor drops from token boundaries to character prefixes | `llm_approvals.py` | `test_breadth_floor_refuses_a_bare_letter` | KILLED |
-| M5 | CI Linux falls back through to the Mac store root | `zoo_notify.py` | `test_store_root_resolves_on_ci_linux` | KILLED |
-| M6 | the Claude reader stops pairing the denial back to its `tool_use` | `llm_approvals.py` | `test_claude_reader_pairs_the_denial_back_to_its_command` | KILLED |
-| M7 | **width** — a denied non-Bash tool starts producing a rule | `llm_approvals.py` | `test_claude_reader_ignores_a_denied_non_bash_tool` | SURVIVED → **defective, re-aimed** → KILLED |
-| M8 | the rule falls back to the first whitespace token | `llm_approvals.py` | `test_handoff_rule_is_the_command_word_not_the_first_token` | KILLED |
-| M9 | redirections stop being masked before the split | `llm_approvals.py` | `test_a_redirection_is_not_a_command_word` | KILLED |
-| M10 | the hand-off names a relative store, not the resolved absolute one | `llm_approvals.py` | `test_handoff_block_names_one_resolved_store_and_real_rules` | KILLED |
-| M11 | `repo_root` requires a `.git` **directory**, so every worktree names the lobby | `llm_approvals.py` | `test_repo_root_walks_up_to_the_git_dir` | KILLED |
-| M12 | the zero-result report stops naming the root it scanned | `llm_approvals.py` | `test_zero_results_still_name_the_root_and_the_counts` | KILLED |
-| M13 | `group` stops skipping a command the live lists already allow | `llm_approvals.py` | `test_group_skips_a_command_the_live_lists_already_allow` | KILLED |
-
-**M7 was defective, not a coverage gap, and re-aiming it is the interesting part.** It drops the
-`name == "Bash"` guard from the Claude reader, and the fixture's only non-Bash denial was a
-`Write` — which has no `command` field, so the presence check already dropped it and the guard was
-never exercised either way. An MCP tool *can* carry a `command` input, and a refusal of one is not
-a Bash refusal: no `Bash(docker *)` rule would have allowed it, so proposing one tells the operator
-he has fixed something he has not. The fixture carries that record now.
-
-```
--- sweep clean: 13/13 killed by their declared case --
--- restore verified: bytes match, nothing was committed, and `git diff --quiet fa5b9eb7` is clean --
--- full file, unfiltered: test_llm_approvals.py -> exit 0 -- 22/22 passed --
--- full file, unfiltered: test_zoo_notify.py   -> exit 0 -- 40/40 passed --
-```
+**Not verified:** the door has not been run end-to-end as a command since the rewrite, because
+running it means editing the operator's live settings files, which needs his word per Step 2. That
+is the next thing to do and it is his call to trigger.
 
 ## Your Actions
 
-Nothing is owed before the close-out. Recorded here because it is a decision, not a task:
-
-- The three `[sop-ok]` commits are described under "One deviation from the plan" above. If you
-  want manual prose for the internal module after all, say so and it goes in the same lane.
-- Carried from the Part B lane and still open on the **PC**, not this lane's work:
-  `python .agents\scripts\zoo_notify.py --self-test` holds SCC-355 at `Review Required`.
+- [ ] **DECISION — run `/smh-llm-approvals` once, live.** It will list what you had to approve and
+      stop for your word before editing anything. That run is the acceptance test.
+- [ ] The merge itself — lands via this branch's PR.

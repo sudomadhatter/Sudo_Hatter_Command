@@ -1,95 +1,126 @@
 ---
-description: Read the agent's own chat threads, find the terminal commands that stopped for approval, and print the allow rows that would have...
+description: Audit recent agent chats for the terminal commands that stopped and waited for the operator's approval, show them as one list, and...
 platforms: [opencode, antigravity, claude, codex, zoo]
 ---
 
-# /smh-llm-approvals — grow the allow list from what actually got blocked
+# /smh-llm-approvals — audit what you approved, then update both lists
 
-**The problem, in one sentence:** Zoo Code stops and asks before running a terminal command it
-does not recognise, and the only way to stop it asking is for somebody to read the thread by eye,
-work out which prefix would have covered the command, and add that prefix by hand.
+> **Rules in force:** `.agents/rules/constitution.md` §Ask First (the operator's word gates every
+> write) · `.agents/rules/command-shape.md` (`cd <abs> && …` in ONE line; `git -C` is auto-denied)
+> · `.agents/rules/git-policy.md` — **this command runs no git of its own.** It is named because
+> the git verbs below appear as *allow-list rules*, and that policy is why a rule covering
+> `git reset`, `git clean` or `git push --force` must never be created by widening one that isn't.
 
-**Why Zoo and not everyone.** Claude Code puts a *don't ask again* button in its own approval
-prompt, so its allow list grows as you work. Zoo has no such button. Its decisions live in VS
-Code's `globalState` database, the tracked settings file seeds that store **once** on a fresh
-machine, and denies never seed at all — so the list only ever grows when a human sits down and
-grows it. Zoo is the platform that cannot help itself, and it is the one this door serves.
-
-⛔ **This door PRINTS. It writes no list, on any platform.** Not the tracked settings file, not
-the memento, not `.claude/settings.json`. You pick the rows; a door that edits an approval list
-is a door that can approve things on its own behalf.
+**The operator runs nothing.** He types this command and, later, names the commands he wants
+allowed. Every file read, every edit, and the apply are the agent's. A step that ends with
+*"now run this in your terminal"* is this command failing.
 
 ---
 
-## Step 1 — run the reader
+## Step 1 — Read the chats
 
-```bash
-python3 .agents/scripts/llm_approvals.py            # PC: python
+Two agents, two stores, two shapes. Read both. Neither needs a script — they are files.
+
+**Claude Code** — `~/.claude/projects/*/*.jsonl`, newest ~20 by modified time.
+
+Each line is a JSON record. A refusal is a `tool_result` block with `"is_error": true` whose
+content contains `doesn't want to proceed with this tool use`. ⛔ **That block does not carry the
+command.** It carries a `tool_use_id`, and the command lives in an earlier `tool_use` block with
+`"name": "Bash"` and that same `id`. So walk the file forward, remember each Bash `tool_use` by
+its id, and pair each refusal back to the command it refused. Grepping for the rejection text
+alone finds every denial and can name none of them.
+
+**Zoo Code** — `<store>/tasks/*/ui_messages.json`, newest ~20 by modified time. The store is:
+
+| Machine | Path |
+| --- | --- |
+| Mac | `~/Library/Application Support/Code/User/globalStorage/zoocodeorganization.zoo-code/tasks` |
+| PC | `%APPDATA%\Code\User\globalStorage\zoocodeorganization.zoo-code\tasks` |
+
+Each file is a JSON array of messages. A command that stopped for the operator is one where
+`type` is `ask`, `ask` is `command`, `partial` is not `true`, and **`autoApprovalDecision` is
+`null`**. That last field is Zoo's own record of what it did: `"approve"` means its matcher let
+the command through and nobody was blocked, `"deny"` means the fence refused it **on purpose**,
+and `null` means it had no opinion and had to stop and ask. Only `null` is what this audit is
+about. The command text is the message's `text`.
+
+If a store folder is missing or empty, say so by name. An empty Zoo store is the normal state on
+a machine where Zoo has not been used — it is not an error, and it must not read like one.
+
+## Step 2 — Show the operator the list
+
+One list, de-duplicated, newest first, in chat. Nothing else — no proposed rows, no
+recommendations, no allow-list arithmetic. He reads the commands and decides.
+
+```text
+Commands that stopped for approval - 12 Claude sessions, 3 Zoo threads
+
+Claude Code
+  npx create-next-app my-app
+  pnpm install --frozen-lockfile
+  acli jira workitem view SCC-352
+
+Zoo Code
+  cd /Users/sudohatter/repo && git fetch origin main
 ```
 
-`--limit N` reads the newest N threads (default 20).
+Indent **every** line of a multi-line command, so the operator can see where one ends and the
+next begins. Then ask one question: **which of these do you want allowed?**
 
-It prints the store root it scanned, how many threads it read, how many commands stopped for
-approval, and then one proposed row per family with the commands that row would unblock.
+⛔ **Stop here.** His answer is the gate. Nothing below runs without it, and "looks good" is not
+it — he must name the commands or say "all of them".
 
-**A zero-result run still prints all of that**, deliberately. "Nothing was blocked" and "the door
-is pointed at the wrong store" are the same empty screen otherwise, and the root it names is what
-tells the two apart — a worktree and the lobby genuinely resolve different counts.
+## Step 3 — Write what he picked
 
-## Step 2 — read the rows, and know what you are widening
+Two files, two formats, both edited by the agent.
 
-Each row is the **shortest prefix that ends on a whole word** and would have let its command
-through. Shortest is not the same as safest, and the floor is the reason:
+**Claude Code** → the repo's `.claude/settings.json`, `permissions.allow`. Rule shape is
+`Bash(<prefix> *)`.
 
-> Measured against the live lists, the shortest *character* prefix that unblocks
-> `npx create-next-app my-app` is the single letter `n`. It trips none of the 78 destructive
-> commands this repo tests against — and it silently auto-approves `npm publish`, `node evil.js`,
-> `nc -l 4444` and `netsh advfirewall set allprofiles state off`. So a row never stops inside a
-> word it did not finish, and `npx` is what you are offered.
+⛔ **Match the narrowness already in the file.** That list scopes git to the subcommand —
+`Bash(git status:*)`, `Bash(git push origin chore/:*)` — and omits `git reset`, `git clean` and
+`git push --force` deliberately. A rule is only ever as wide as the command it came from:
+`git fetch origin main` earns `Bash(git fetch *)`, never `Bash(git *)`. Widening one word past
+the command is how a careful list becomes a blank cheque, and `permissions.deny` is empty, so
+nothing downstream catches it.
 
-Three kinds of command never reach the list at all: one the lists already allow (the row that
-fixed it landed since), one the deny list refuses (this door grows the allow list; the deny list
-is the fence), and a duplicate of a row already shown.
+**Zoo Code** → the repo's `.vscode/settings.json`, `zoo-code.allowedCommands`. Plain string
+prefixes, no wrapper. Same narrowness rule. ⛔ **Never touch `zoo-code.deniedCommands`** — the
+deny list is the fence, and this command grows allows only.
 
-## Step 3 — apply the ones you want
+⛔ **If the operator picked a command Zoo's deny list refuses, do not add it. Say which row
+refused it and stop.** He asked to be un-blocked, not to have his own fence removed; if he wants
+the deny row gone, that is his edit to ask for by name.
 
-Add the rows you picked to `zoo-code.allowedCommands` in `.vscode/settings.json`, then:
+Then make Zoo actually see it. Zoo does not read `.vscode/settings.json` when it decides — it
+reads VS Code's `globalState` SQLite database, which that file seeds exactly once on a fresh
+machine and never again ([[zoo-approvals-decision-store]], SCC-351). So:
 
 ```bash
-python3 .agents/scripts/zoo_permissions_apply.py --apply     # PC: python
+cd <repo-abs> && python3 .agents/scripts/zoo_permissions_apply.py --status   # PC: python
 ```
 
-**Quit VS Code fully first.** It flushes its own `globalState` on exit and would overwrite the
-write — the apply script refuses to run while VS Code is up, and says so. The closing `--status`
-must read *in sync with tracked file*. Full background:
-[zoo-code-permissions-guide.md](../../docs/migrations/zoo-code-permissions-guide.md).
+`--status` is read-only and safe with VS Code open — run it first and report what it says. The
+write needs VS Code fully closed, because SQLite will not take a second writer:
 
----
+```bash
+osascript -e 'quit app "Visual Studio Code"'                                  # Mac
+cd <repo-abs> && python3 .agents/scripts/zoo_permissions_apply.py --apply
+```
 
-## And for Claude — a hand-off, not a writer
+Ask before quitting his editor — that is his window, with his unsaved work in it. If he says no,
+leave the tracked file edited and tell him the Zoo rows are staged but not live until the apply
+runs. **Claude's rows are live the moment the file is saved and need none of this.**
 
-The same run also reads your recent Claude sessions and prints a **paste-ready block** for an
-agent that can edit `.claude/settings.json`. Claude Code cannot edit its own settings, so the
-block is the deliverable: hand it to another agent and it does the edit.
+## Step 4 — Report what changed
 
-It names **one** store — the `.claude/settings.json` of the repo you ran the door in, as an
-absolute path. This workspace holds several of those files and they all differ, so "add it to
-`.claude/settings.json`" names nothing anyone can act on.
+Name each row added and which file it went into, confirm the apply result, and say plainly what
+is live now versus staged. Then stop.
 
-Two things worth knowing about how the rules are derived, both found by running this against real
-sessions rather than by reading the code. A refusal often carries several commands (a `cd`, then
-a `git`, then a `python3`), so every one of them gets a rule — one rule for the first would have
-you approving the same block again tomorrow for the second. And a leading `VAR=value` is shell
-setup, not a command: naming it produces a rule that matches exactly one string nobody will type
-again.
+## What this command does NOT do
 
----
-
-## What this door does NOT do
-
-- It does not touch the **deny** list. Allows may be broad; denies are the fence.
-- It does not apply anything. Step 3 is yours, and `zoo_permissions_apply.py` is a separate
-  command with its own refusals.
-- It does not run per project. The store is per machine, so the rows are too.
-
-Optional additional input: $ARGUMENTS
+- It does not propose rows, rank them, or compute a "minimal prefix". The operator reads real
+  commands and picks. Machine-chosen breadth was built once and cut (SCC-354): every defect it
+  produced lived in the choosing, and the operator never asked for it.
+- It does not touch either deny list.
+- It does not make the operator run anything.

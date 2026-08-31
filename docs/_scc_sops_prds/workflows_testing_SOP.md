@@ -91,7 +91,7 @@ the twin is an AVCH ticket of its own, not something a lobby lane may do.
 | **plan** a big Task — subtasks, lanes, the parallel table | `/smh-plan-task <TASK-KEY>`, then `/smh-label-tasks <TASK-KEY>` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
 | **build** a Task — a command, a rule, a gate, the docs | `/smh-quick-dev <KEY>` → `/smh-code-review` → `/smh-close-task-merge-tree` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
 | **just get one specific thing done** — write me a guide, fix a reference, tidy a branch mess | `/smh-quick-fix "<the ask>"` — **no plan, no `approved`, no review**; it does not stop to ask whether to start ([§9a](#the-lightweight-lane--smh-quick-fix)) |
-| **Zoo keeps asking to approve terminal commands** | `/smh-llm-approvals` — reads your Zoo threads, prints the allow rows that would have let the blocked commands through. It writes nothing; you pick ([§13](#what-does-not-travel-between-the-machines)) |
+| **tired of approving the same terminal commands** | `/smh-llm-approvals` — lists what you had to approve, then adds the ones you name to Claude's and Zoo's allow lists for you ([§13](#what-does-not-travel-between-the-machines)) |
 | **push routine docs/notes to PR** — the standing ticket `SCC-186` | `/smh-non-crit-pr-push` — **qualifies `LIGHT`, stages, commits `SCC-186`, pushes, opens PR** ([§9a](#the-lightweight-lane--smh-quick-fix)) |
 | land **several** finished Tasks at once | `/smh-merge-multiple-workingtrees` — one sign-off per lane ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | see what a command will do before typing it | [Part VI — the command atlas](#18-every-command-one-diagram) |
@@ -4049,24 +4049,23 @@ flowchart TD
 
 #### /smh-llm-approvals
 
-*Reads the agent's own chat threads, finds the terminal commands that stopped for approval, and
-prints the shortest allow row that would have let each one through. It is for **Zoo Code**: Claude
-puts a "don't ask again" button in its own prompt, so its list grows as you work, and Zoo has no
-such button — its list only grows when somebody grows it by hand. It **writes nothing**, on any
-platform; you pick the rows and apply them with `zoo_permissions_apply.py --apply`. Every proposed
-row ends on a whole word, never mid-word: the shortest prefix that unblocks
-`npx create-next-app my-app` is the single letter `n`, which also silently approves `npm publish`
-and `nc -l 4444`. A run that finds nothing still prints the store root it read, so "nothing was
-blocked" cannot be mistaken for "pointed at the wrong store".
+*Answers "what did I keep having to approve?" and then fixes it. It reads your recent Claude Code
+sessions and your Zoo Code threads, finds every terminal command that stopped and waited for you,
+and shows them in chat as one list. You say which ones you want allowed — in words, in the
+conversation. The agent then adds them to `.claude/settings.json` and `.vscode/settings.json` and
+runs the Zoo apply so Zoo actually sees them.*
 
-The same run also reads your recent Claude sessions and prints a **paste-ready hand-off block**
-for an agent that can edit `.claude/settings.json` — Claude Code cannot edit its own settings, so
-the block is the deliverable. It names ONE store, the settings file of the repo you ran the door
-in, as an absolute path: this workspace holds several and they all differ. A refusal that carried
-three commands gets three rules, not one, and a leading `VAR=value` is skipped — it is shell
-setup, and a rule naming it matches one string nobody will type again.
+*You never open a terminal and you never edit a settings file. The one thing it asks before doing
+is quitting VS Code, which the Zoo apply needs because its decision store is a SQLite database VS
+Code holds open — say no and your Zoo rows stay staged until you run the apply later. Claude's
+rows are live the moment the file is saved.*
 
-Called by: you, when Zoo asks about a command you would rather it just ran.*
+*Two things it will not do. It never widens a rule past the command it came from — `git fetch
+origin main` earns `Bash(git fetch *)`, never `Bash(git *)`, because the tracked list scopes every
+git rule to its subcommand on purpose. And it never touches either deny list: you asked to be
+un-blocked, not to have your own fence removed.*
+
+*Called by: you, when an agent keeps stopping on commands you would rather it just ran.*
 
 #### /smh-sync-agents
 
@@ -4195,7 +4194,7 @@ flowchart TD
 | `/smh-non-crit-pr-push` | **The standing push lane** ([§9a](#the-standing-push-lane--smh-non-crit-pr-push-scc-186)). Routine non-critical command center changes (docs, memory, notes, quick references). Operates on standing ticket `SCC-186` + standing branch `chore/SCC-186-standing-push` directly to PR with `main-write-gate` check. |
 | `/smh-self-audit` | Pressure-tests the plan before anyone writes anything, pointed at the blast radius toolkit work actually has. Also **reads the other live lanes** and tells you which should land first. Ends in `GO` or `NO-GO`. Has a **retroactive mode** for when the work already exists and no plan was written — it audits the ticket's ACCEPTANCE block instead and stamps the result `retroactive`, so the record never reads as though a gate ran in time when it did not. |
 | `/smh-code-review` | The Task lane's verdict. Re-checks `main` (Step 0.7), hunts the diff cold, audits against the acceptance list, runs the command-centre gate, folds in the clean-code gate, and writes the one `Verdict:` line `/smh-close-task-merge-tree` reads before it will merge. |
-| `/smh-llm-approvals` | Reads your Zoo threads and prints the allow rows that would have stopped it asking. Zoo has no "don't ask again" button, so its list only grows by hand; this is the reading. Writes nothing — you pick the rows, then `zoo_permissions_apply.py --apply`. |
+| `/smh-llm-approvals` | Lists the terminal commands you had to approve, across recent Claude sessions and Zoo threads. You name the ones to allow; the agent edits both settings files and runs the Zoo apply. Never widens a rule past its command, never touches a deny list. |
 | `/smh-clean-code-audit` | The command centre's machine floor — the enforcement suite, toolkit lint, SOP currency, py_compile, links, door parity. |
 
 **Machine handoff** — [§13](#13-switching-machines)

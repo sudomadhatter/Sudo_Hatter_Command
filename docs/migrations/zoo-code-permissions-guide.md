@@ -124,13 +124,13 @@ destructive battery must all deny, the 25-step ceremony set must all approve, on
 
 **Growing the allow list from what actually got blocked.** `/smh-llm-approvals` reads Zoo's own
 thread store, keeps the asks Zoo genuinely stopped on (`autoApprovalDecision` null — see §4), and
-prints the shortest row that would have let each one through. It **writes nothing**: you pick the
-rows, add them here, and §7 applies them. Every proposed row ends on a whole word — the shortest
-*character* prefix that unblocks `npx create-next-app my-app` is the single letter `n`, which
-trips none of the destructive battery below and silently auto-approves `npm publish`,
-`node evil.js`, `nc -l 4444` and `netsh advfirewall set allprofiles state off`. That is the
-mechanic at the top of this section stated as a proposal bug: under a broad allow, an un-denied
-spelling auto-runs, so a row's *breadth* is the decision, not its length.
+shows the operator that list in chat. He names which he wants allowed; the agent adds those rows
+here and runs §7's apply. **A row is only ever as wide as the command it came from** — the operator
+reads real commands and picks, and nothing computes a "shortest prefix" on his behalf. That
+restraint is this section's opening mechanic applied to list growth: under a broad allow an
+un-denied spelling does not ask, it RUNS, so `n` would unblock `npx create-next-app` and silently
+approve `npm publish`, `node evil.js` and `nc -l 4444` alongside it. Breadth is the decision, and
+the decision is the operator's.
 
 **ALLOW families**
 
@@ -233,21 +233,23 @@ Close-out review additions (same day, after the measurement): the battery grew t
 |---|---|---|---|
 | **Claude Code** | [.claude/settings.json](../../.claude/settings.json) (tracked) + `.claude/settings.local.json` (per machine) | Pattern rules: `Bash(git -C * status:*)` mid-wildcards, compound commands checked per segment | Already at target level. Deny-less; unmatched → ask; hard stops live in hooks + rules. |
 | **Zoo Code** | this guide | lowercase starts-with prefix, per piece | The subject of this page. |
-| **opencode** | its own config under `.opencode/` | WHOLE-string prefix, no per-piece split | **Deliberately outside `/smh-llm-approvals`** (SCC-354): a whole-string matcher has no useful prefix to propose, so a row would unblock exactly one invocation and the list would grow one unreadable row per command. |
-| **Codex** | `~/.codex/` config (`approval_policy` / sandbox), per machine | policy-level, not per-command lists | **Deliberately outside `/smh-llm-approvals`** (SCC-354): there is no per-command list to grow, so there is nothing to propose. |
+| **opencode** | its own config under `.opencode/` | WHOLE-string prefix, no per-piece split | **Outside `/smh-llm-approvals`** (SCC-354): a whole-string prefix unblocks exactly one invocation, so a list grown this way carries one row per command and stops being readable. Add rows by hand when a command is worth it. |
+| **Codex** | `~/.codex/` config (`approval_policy` / sandbox), per machine | policy-level, not per-command lists | **Outside `/smh-llm-approvals`** (SCC-354): there is no per-command list to grow — the policy is the whole decision. |
 | **Antigravity** | its own per-machine allowlist config (AGY carries 49 local allow rules) | its own | Promoting AGY's rules into tracked settings is the standing AVCH-ticket decision (SCC-346 hand-back). Same principle applies: find the decision store, track the source, script the apply. |
 
-### 11.0 Growing a list — and why only Zoo gets a door
+### 11.0 Growing a list — the audit door
 
-Claude Code puts a *don't ask again* button in its own approval prompt, so its allow list grows
-while the operator works. Zoo has no such affordance, and §3's seeding trap means the tracked file
-cannot fill the gap either. That asymmetry is the whole reason
-[`/smh-llm-approvals`](../../.agents/commands/smh-llm-approvals.md) exists and why it is Zoo-first:
-Zoo is the surface that cannot help itself.
+[`/smh-llm-approvals`](../../.agents/commands/smh-llm-approvals.md) covers both surfaces that keep
+per-command lists. It reads the operator's recent Claude sessions and Zoo threads, shows him every
+terminal command that stopped and waited for him, and — once he names the ones he wants allowed —
+edits `.claude/settings.json` and this guide's `.vscode/settings.json` and runs §7's apply.
 
-Claude still gets read — the door prints a **paste-ready hand-off block** naming one resolved
-`.claude/settings.json` and the `Bash(...)` rules to add, because Claude Code cannot edit its own
-settings. It hands the block to the operator; another agent does the edit.
+Zoo is the surface that needs it most. Claude Code puts a *don't ask again* button in its own
+approval prompt, so its list grows while the operator works; Zoo has no such affordance, and §3's
+seeding trap means the tracked file cannot fill the gap either. Claude still gets read, because
+Claude Code cannot edit its own settings — the agent running the command does that edit.
+
+The door proposes nothing and touches no deny list. The operator reads real commands and picks.
 
 ### 11.1 Notifications — the third surface, and the one Zoo does not have
 
