@@ -40,10 +40,6 @@ floor rules beside this file bind every seat: `operator-profile.md` (who you are
 Hatter, consequence before mechanism, close the loop), `constitution.md` (the hard stops),
 `karpathy-guidelines.md` (how to build).
 
-**Provider profile:** every seat runs under the operator's **Sudo_Hatter** Zoo configuration
-profile — referenced by name only. The profile export carries API keys: it is never committed,
-never pasted, and deleted after any import.
-
 **Delegation plumbing (per machine):** March Hare's `new_task` hand-offs and any seat's
 `switch_mode` request run unattended only when the **Mode switching** and **Subtasks** tiles are
 enabled in Zoo's Auto-Approve panel. Those live in extension state, not in git — they are part of

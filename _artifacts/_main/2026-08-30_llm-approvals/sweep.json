@@ -1,0 +1,216 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_zoo_notify.py"
+  ],
+  "mutants": [
+    {
+      "id": "M1 stop honouring Zoo's own verdict (auto-approved asks would page him)",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "        if last.get(\"autoApprovalDecision\") is not None:",
+      "mutated": "        if False:",
+      "case": "test_auto_approved_ask_never_fires",
+      "unfiltered": true
+    },
+    {
+      "id": "M2 fire on a streaming partial (double-pages every ask)",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "    if last.get(\"partial\") is True:",
+      "mutated": "    if False:",
+      "case": "test_partial_ask_never_fires",
+      "unfiltered": true
+    },
+    {
+      "id": "M3 ignore isAnswered (re-pages asks he already answered)",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "        if last.get(\"isAnswered\") is True:",
+      "mutated": "        if False:",
+      "case": "test_answered_ask_is_not_pending",
+      "unfiltered": true
+    },
+    {
+      "id": "M4 the deny-list becomes an allow-list again (drops auto_approval_max_req_reached)",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "        return \"ask\"                         # deny-list: every OTHER ask wants him. Fail open.",
+      "mutated": "        return \"ask\" if last.get(\"ask\") in MEASURED_ASKS else None",
+      "case": "test_ask_outside_the_measured_sample_still_pages",
+      "unfiltered": true
+    },
+    {
+      "id": "M5 the say/completion_result tail stops classifying as a turn end",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "    if kind == \"say\" and last.get(\"say\") == \"completion_result\":",
+      "mutated": "    if False:",
+      "case": "test_say_completion_result_tail_also_classifies_as_turn_end",
+      "unfiltered": true
+    },
+    {
+      "id": "M6 a finished turn stops classifying as one",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "        if last.get(\"ask\") == \"completion_result\":\n            return \"turn_end\"",
+      "mutated": "        if last.get(\"ask\") == \"completion_result\":\n            return None",
+      "case": "test_completed_turn_classifies_as_turn_end",
+      "unfiltered": true
+    },
+    {
+      "id": "M7 the signature collapses to the event word (drops a second consecutive ask)",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "    return (event, len(messages), messages[-1].get(\"ts\"))",
+      "mutated": "    return (event,)",
+      "case": "test_signature_distinguishes_two_asks_in_the_same_state",
+      "unfiltered": true
+    },
+    {
+      "id": "M8 watch() stops priming (pages the whole historical backlog on every restart)",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "                    if priming:\n                        continue",
+      "mutated": "                    if False:\n                        continue",
+      "case": "test_watch_primes_silently_then_pages_each_distinct_ask",
+      "unfiltered": true
+    },
+    {
+      "id": "M9 watch() notifies on every poll instead of on a transition",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "                    if event and (not prev or prev[1] != signature):",
+      "mutated": "                    if event:",
+      "case": "test_watch_primes_silently_then_pages_each_distinct_ask",
+      "unfiltered": true
+    },
+    {
+      "id": "M10 --dry-run stops being honoured (fires a real banner and a real push)",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "    if dry_run:\n        return result",
+      "mutated": "    if False:\n        return result",
+      "case": "test_dry_run_opens_nothing_and_raises_nothing",
+      "unfiltered": true
+    },
+    {
+      "id": "M11 a failed banner is reported as sent again (the false green B4 must see)",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "            result[\"banner\"] = \"sent\" if proc.returncode == 0 else f\"failed: exit {proc.returncode}\"",
+      "mutated": "            result[\"banner\"] = \"sent\"",
+      "case": "test_a_banner_that_exits_non_zero_is_not_reported_as_sent",
+      "unfiltered": true
+    },
+    {
+      "id": "M12 the Windows toast goes back to printing into a captured pipe",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "            f\"[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('{_PS_APP_ID}')\"\n            \".Show([Windows.UI.Notifications.ToastNotification]::new($t))\"",
+      "mutated": "            f\"Write-Output {title}\"",
+      "case": "test_banner_cmd_windows_actually_shows_a_toast",
+      "unfiltered": true
+    },
+    {
+      "id": "M13 the Mac loses terminal-notifier",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "        return [\"terminal-notifier\", \"-title\", payload[\"title\"], \"-message\", payload[\"message\"]]",
+      "mutated": "        return None",
+      "case": "test_banner_cmd_mac_uses_terminal_notifier",
+      "unfiltered": true
+    },
+    {
+      "id": "M14 read_thread stops absorbing a half-written file (crashes the watcher)",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "        return []                            # is the normal case, not the exotic one",
+      "mutated": "        raise",
+      "case": "test_read_thread_survives_a_half_written_file",
+      "unfiltered": true
+    },
+    {
+      "id": "M15 newest_thread reads the OLDEST thread forever",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "    files = sorted(root.glob(\"*/ui_messages.json\"), key=mtime, reverse=True)",
+      "mutated": "    files = sorted(root.glob(\"*/ui_messages.json\"), key=mtime)",
+      "case": "test_newest_thread_picks_the_most_recently_touched",
+      "unfiltered": true
+    },
+    {
+      "id": "M16 the banner names the watcher's cwd again instead of the task's project",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "                return Path(workspace).name",
+      "mutated": "                return Path.cwd().name",
+      "case": "test_project_name_comes_from_the_threads_own_history_item",
+      "unfiltered": true
+    },
+    {
+      "id": "M17 compose stops truncating (a 4KB diff becomes the whole push)",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "        first = first[:117] + \"...\"",
+      "mutated": "        first = first",
+      "case": "test_compose_takes_the_first_line_only_and_truncates_at_120",
+      "unfiltered": true
+    },
+    {
+      "id": "M18 main() reports a missing store as success",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "        return 2",
+      "mutated": "        return 0",
+      "case": "test_missing_store_exits_2_not_0",
+      "unfiltered": true
+    },
+    {
+      "id": "M19 --interval loses its lower bound (0 spins a core, -1 crashes sleep)",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "        raise argparse.ArgumentTypeError(\"--interval must be at least 1 second\")",
+      "mutated": "        pass",
+      "case": "test_interval_below_one_is_rejected_at_the_boundary",
+      "unfiltered": true
+    },
+    {
+      "id": "M20 customStoragePath goes back to being unreachable from the CLI",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "        roots = store_roots(custom=read_custom_store(user_dir()))",
+      "mutated": "        roots = store_roots()",
+      "case": "test_main_actually_honours_custom_storage_path_end_to_end",
+      "unfiltered": true
+    },
+    {
+      "id": "M21 named VS Code profiles stop being enumerated",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "        roots += sorted(profiles.glob(f\"*/globalStorage/{EXTENSION_DIR}/tasks\"))",
+      "mutated": "        pass",
+      "case": "test_store_roots_enumerates_named_profiles",
+      "unfiltered": true
+    },
+    {
+      "id": "M22 the PC falls through to the Mac's Application Support path",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "    if platform == \"win32\":\n        base = Path(appdata) if appdata is not None else Path(",
+      "mutated": "    if False:\n        base = Path(appdata) if appdata is not None else Path(",
+      "case": "test_store_root_resolves_on_mac_and_on_windows",
+      "unfiltered": true
+    },
+    {
+      "id": "M23 --self-test stops reporting a dead channel as a failure",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "    failed = sorted(k for k, v in outcome.items() if str(v).startswith(\"failed:\"))",
+      "mutated": "    failed = []",
+      "case": "test_self_test_reports_exit_1_when_a_channel_did_not_fire",
+      "unfiltered": true
+    },
+    {
+      "id": "M24 --self-test ignores --dry-run and fires for real",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "    if dry_run:\n        return 0\n    failed = sorted(",
+      "mutated": "    if False:\n        return 0\n    failed = sorted(",
+      "case": "test_self_test_dry_run_opens_nothing_and_claims_nothing",
+      "unfiltered": true
+    },
+    {
+      "id": "M25 --self-test demands a thread store it does not need",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "    if args.self_test:                       # proves the CHANNELS; needs no thread store at all\n        return self_test(args.dry_run)",
+      "mutated": "    if False:\n        return self_test(args.dry_run)",
+      "case": "test_self_test_needs_no_thread_store",
+      "unfiltered": true
+    },
+    {
+      "id": "M26 send() runs a banner on a platform that has no channel",
+      "file": ".agents/scripts/zoo_notify.py",
+      "original": "    cmd = banner_cmd(payload)\n    if cmd:",
+      "mutated": "    cmd = banner_cmd(payload)\n    if True:",
+      "case": "test_no_banner_channel_reports_skipped_not_sent_and_not_failed",
+      "unfiltered": true
+    }
+  ]
+}

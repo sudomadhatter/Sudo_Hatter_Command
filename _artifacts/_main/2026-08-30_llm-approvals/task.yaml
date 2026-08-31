@@ -1,0 +1,6 @@
+task_key: SCC-352
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-352-llm-approvals
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: [SCC-354, SCC-355]

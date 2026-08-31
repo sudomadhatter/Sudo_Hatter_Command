@@ -1,0 +1,6 @@
+[
+  {"ts": 1788150380000, "type": "say", "say": "api_req_started", "text": "{\"request\":\"redacted\"}"},
+  {"ts": 1788150383000, "type": "ask", "ask": "tool", "text": "readFile", "isAnswered": true, "partial": false, "autoApprovalDecision": "approve"},
+  {"ts": 1788150385000, "type": "say", "say": "completion_result", "text": "redacted summary"},
+  {"ts": 1788150386264, "type": "ask", "ask": "completion_result", "text": "", "isAnswered": true, "partial": false, "autoApprovalDecision": null}
+]

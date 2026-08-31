@@ -1,0 +1,7 @@
+[
+  {"ts": 1788067330000, "type": "say", "say": "api_req_started", "text": "{\"request\":\"redacted\"}"},
+  {"ts": 1788067331000, "type": "say", "say": "reasoning", "text": "redacted"},
+  {"ts": 1788067332000, "type": "ask", "ask": "command", "text": "ls -la", "isAnswered": true, "partial": false, "autoApprovalDecision": "approve"},
+  {"ts": 1788067333000, "type": "say", "say": "command_output", "text": "redacted"},
+  {"ts": 1788067339023, "type": "ask", "ask": "command", "text": "acli jira workitem view SCC-352", "partial": false, "autoApprovalDecision": null}
+]

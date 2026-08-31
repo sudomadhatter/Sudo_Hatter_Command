@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-352-llm-approvals",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-352",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "3e6afd4d4dc28f6f75b96ec8d445ad679fd0cc74",
+  "warnings": 3,
+  "when": "2026-08-31T00:31:40-05:00"
+}

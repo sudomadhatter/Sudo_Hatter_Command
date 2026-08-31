@@ -151,6 +151,19 @@ enforced by the test — because the broad env-twin allow would otherwise bypass
 | Launder shapes | `git -C`, `git --git-dir` | Under the broad `git ` allow these would bypass every verb deny (§4). Auto-denied: the agent gets an immediate refusal and rewrites to `cd … && git …`. (Lowercasing means `git -c` — config override — is denied by the same row.) |
 | Outward tools | `gh pr merge`, `gh repo delete`, `gh release delete`, `acli jira workitem delete` | Merges are the operator's click; deletions are operator words. |
 
+### 6.1 What the manifest does NOT contribute — the notification probe (SCC-355)
+
+The same `package.json` read that produced the lists above answers a second question, so it is
+recorded beside them rather than in a session artefact that nobody re-reads.
+
+**Measured on v3.80.1:** the extension contributes **19 settings keys** and **20 commands**, and
+**not one of them is a notification, a sound, or an event hook.** There is no `onDidX` contribution,
+no notification setting, and nothing an external script can subscribe to.
+
+That is a negative result, and it is load-bearing: it is why Zoo notification parity is a *watcher*
+over the thread store rather than a hook, and why no amount of settings tuning will ever produce a
+ping. Anyone who goes looking for the hook should find this paragraph before they spend the hour.
+
 ## 7. Applying the lists per machine — [`zoo_permissions_apply.py`](../../.agents/scripts/zoo_permissions_apply.py)
 
 `python3 .agents/scripts/zoo_permissions_apply.py --status` (PC: `python`) shows, for every
@@ -211,6 +224,35 @@ Close-out review additions (same day, after the measurement): the battery grew t
 | **Claude Code** | [.claude/settings.json](../../.claude/settings.json) (tracked) + `.claude/settings.local.json` (per machine) | Pattern rules: `Bash(git -C * status:*)` mid-wildcards, compound commands checked per segment | Already at target level. Deny-less; unmatched → ask; hard stops live in hooks + rules. |
 | **Zoo Code** | this guide | lowercase starts-with prefix, per piece | The subject of this page. |
 | **Antigravity** | its own per-machine allowlist config (AGY carries 49 local allow rules) | its own | Promoting AGY's rules into tracked settings is the standing AVCH-ticket decision (SCC-346 hand-back). Same principle applies: find the decision store, track the source, script the apply. |
+
+### 11.1 Notifications — the third surface, and the one Zoo does not have
+
+Approvals are only half of "does the operator know". The other half is whether anything *tells* him
+when a turn stops. Claude has had banners plus phone pushes since 2026-08-14; Zoo ran silent until
+SCC-355, for the reason §6.1 measures — there is no hook to hang one on.
+
+| Surface | How the operator is notified | Wiring |
+|---|---|---|
+| **Claude Code** | Notification + Stop hooks → `~/.claude/notify.sh` | `~/.claude/settings.json`, per machine |
+| **Zoo Code** | [`zoo_notify.py`](../../.agents/scripts/zoo_notify.py) polls the thread store Zoo already writes | `--watch`, started once per machine; no hook exists |
+
+**What it fires on, exactly.** Two events: an **approval-ask** and a **turn end**.
+
+- An ask pages him only when Zoo's own `autoApprovalDecision` is **null** — the matcher had no
+  opinion, so it asked. An ask Zoo auto-approved never interrupted anyone (34 of 53 on the two
+  threads measured) and must not raise a banner.
+- A **turn end** pages him unconditionally. It is a turn finishing, not a decision, so the
+  `autoApprovalDecision` filter does not apply to it and never did — the first cut of the SOP row
+  said "only when `autoApprovalDecision` is null" without that carve-out, which was wrong as
+  written.
+- Every **other** ask type pages him. The filter is a **deny-list**, not an allow-list, and that is
+  deliberate: `auto_approval_max_req_reached` is the ask Zoo raises *because* auto-approval hit its
+  cap and he must step in, and an allow-list built from a two-thread sample dropped it silently.
+  A notifier fails **open** — a spurious banner costs a glance, a missed one costs the feature.
+
+**The store it watches** is the same `globalStorage` tree §2 maps, plus every named profile, and it
+honours `zoo-code.customStoragePath` when that setting is set — read from user settings and from
+each profile's settings, the same two places §7's apply script looks.
 
 **Update procedure for this page:** change the lists → update §6's tables in the same commit →
 run the suite (the fixtures pin §6 against the tracked file) → apply per machine (§7). The
