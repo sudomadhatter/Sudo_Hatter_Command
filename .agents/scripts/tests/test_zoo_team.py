@@ -129,7 +129,7 @@ def fixture(names_groups) -> str:
 GOOD = {
     "orchestrator": ("🫖🐰 March Hare — TEAM LEAD", ["read", "edit", "command", "mcp"]),
     "architect":    ("⏰🐇 White Rabbit — PM", ["read", "edit", "command"]),
-    "code":         ("🔨🪚 Carpenter — ENGINEER", ["read", "edit", "command"]),
+    "code":         ("😼🔨 Cheshire Cat — ENGINEER", ["read", "edit", "command"]),
     "debug":        (QUEEN_NAME, ["read", "edit", "command"]),
     "designer":     ("🦋 Caterpillar — DESIGNER", ["read", "edit", "command"]),
 }
@@ -167,19 +167,21 @@ def main() -> int:
         c.check("an UNCHARTERED group self-granted by a master is caught (the ceiling the "
                 "scoped-pen removal left open)",
                 any("unchartered" in p for p in mode_problems(fixture(bad))))
-        bad = dict(GOOD); bad["code"] = ("🔨🪚 Carpenter — ENGINEER", ["read", "edit", "command", "mcp"])
+        bad = dict(GOOD); bad["code"] = ("😼🔨 Cheshire Cat — ENGINEER", ["read", "edit", "command", "mcp"])
         c.check("`mcp` on a seat other than the TEAM LEAD is caught",
                 any("delegation privilege" in p for p in mode_problems(fixture(bad))))
         bad = dict(GOOD); bad["orchestrator"] = ("🫖🐰 March Hare — team lead", ["read", "edit", "command"])
         c.check("a lowercase role is caught",
                 any("name law" in p or "not regular case" in p for p in mode_problems(fixture(bad))))
-        bad = dict(GOOD); bad["code"] = ("Carpenter — ENGINEER", ["read", "edit", "command"])
+        # SCC-360: the seat name is two words now, which NAME_RE parses as token+name — a
+        # single bare word is what actually exercises the name-law branch.
+        bad = dict(GOOD); bad["code"] = ("Cheshire — ENGINEER", ["read", "edit", "command"])
         c.check("a bare name with no leading token is caught",
                 any("name law" in p for p in mode_problems(fixture(bad))))
         # The emoji BRANCH needs a name that survives NAME_RE — a word-shaped ASCII prefix.
         # (Review finding: the fixture above dies at the regex, so the ord()>0x2000 branch was
         # deletable with the file staying green.)
-        bad = dict(GOOD); bad["code"] = ("Mr Carpenter — ENGINEER", ["read", "edit", "command"])
+        bad = dict(GOOD); bad["code"] = ("Mr Cheshire Cat — ENGINEER", ["read", "edit", "command"])
         c.check("an ASCII word prefix (no emoji) is caught by the emoji branch itself",
                 any("no emoji prefix" in p for p in mode_problems(fixture(bad))))
         bad = dict(GOOD); bad["architect"] = ("⏰🐇 White Rabbit — PM", ["read", "command"])

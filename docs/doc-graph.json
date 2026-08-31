@@ -557,14 +557,14 @@
       "out": 3
     },
     {
-      "path": ".agents/commands/smh-team-carpenter.md",
-      "in": 0,
-      "out": 3
-    },
-    {
       "path": ".agents/commands/smh-team-caterpillar.md",
       "in": 0,
       "out": 2
+    },
+    {
+      "path": ".agents/commands/smh-team-cheshire-cat.md",
+      "in": 0,
+      "out": 3
     },
     {
       "path": ".agents/commands/smh-team-march-hare.md",
@@ -3356,28 +3356,28 @@
       "kind": "ref"
     },
     {
-      "from": ".agents/commands/smh-team-carpenter.md",
+      "from": ".agents/commands/smh-team-caterpillar.md",
       "to": ".agents/rules/zoo-team.md",
       "kind": "ref"
     },
     {
-      "from": ".agents/commands/smh-team-carpenter.md",
+      "from": ".agents/commands/smh-team-caterpillar.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "kind": "ref"
     },
     {
-      "from": ".agents/commands/smh-team-carpenter.md",
+      "from": ".agents/commands/smh-team-cheshire-cat.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-cheshire-cat.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-cheshire-cat.md",
       "to": ".agents/rules/karpathy-guidelines.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/smh-team-caterpillar.md",
-      "to": ".agents/rules/zoo-team.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/smh-team-caterpillar.md",
-      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "kind": "ref"
     },
     {
@@ -6574,7 +6574,7 @@
       "target": "/walkthrough.md"
     },
     {
-      "from": ".agents/commands/smh-team-carpenter.md",
+      "from": ".agents/commands/smh-team-cheshire-cat.md",
       "target": "implementation_plan.md"
     },
     {
@@ -7860,7 +7860,7 @@
       ]
     },
     {
-      "from": ".agents/commands/smh-team-carpenter.md",
+      "from": ".agents/commands/smh-team-caterpillar.md",
       "target": "AGENTS.md",
       "candidates": [
         ".agents/AGENTS.md",
@@ -7869,7 +7869,7 @@
       ]
     },
     {
-      "from": ".agents/commands/smh-team-caterpillar.md",
+      "from": ".agents/commands/smh-team-cheshire-cat.md",
       "target": "AGENTS.md",
       "candidates": [
         ".agents/AGENTS.md",

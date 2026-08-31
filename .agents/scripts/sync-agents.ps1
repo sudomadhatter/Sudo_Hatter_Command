@@ -849,7 +849,7 @@ function Sync-ZooSurfaces {
   $seats = @(
     @{ Slug = 'orchestrator'; Master = 'smh-team-march-hare.md' },
     @{ Slug = 'architect';    Master = 'smh-team-white-rabbit.md' },
-    @{ Slug = 'code';         Master = 'smh-team-carpenter.md' },
+    @{ Slug = 'code';         Master = 'smh-team-cheshire-cat.md' },
     @{ Slug = 'designer';     Master = 'smh-team-caterpillar.md' },
     @{ Slug = 'debug';        Master = 'smh-team-queen-of-hearts.md' }
   )

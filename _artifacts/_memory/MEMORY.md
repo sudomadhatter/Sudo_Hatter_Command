@@ -115,6 +115,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [⭐⛔ Close the loop; don't hand back decisions](close-the-loop-dont-hand-back-decisions.md) — no new-concern tails, no menus; pick the default, say it, keep going (SCC-201).
 - [⛔ A script plus an instruction is NOT delivery](a-script-plus-an-instruction-is-not-delivery.md) — needs a live process? ship the installer, prove it with launchctl + its log (SCC-355).
 - [Machine-read walkthrough lines must be UNFENCED](walkthrough-machine-read-lines-must-be-unfenced.md) — a fenced roster or Verdict stamp reads as absent; preflight blames task.yaml instead.
+- [⛔ Quick-level roster is REFUSED under fan-out](quick-level-roster-refused-under-fanout.md) — walkthrough_roster --gate rejects the n/a lenses the SCC-232 quick level mandates; run --gate at review time; neutralize superseded Verdict stamps.
 - [Own it plainly](own-it-plainly-dont-make-excuses.md) — own issues in one line, then act.
 - [Writes for a big-picture operator](writes-for-big-picture-operator.md) — consequence before mechanism; explain terms clearly.
 - [Daniel sells Hormozi-style](daniel-sells-hormozi-style.md) — direct, prove-it, value-first copy.

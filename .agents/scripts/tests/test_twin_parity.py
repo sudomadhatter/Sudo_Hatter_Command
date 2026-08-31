@@ -122,7 +122,7 @@ NOT_PAIRED = {
     "smh-llm-approvals.md": _ONE_SUBJECT + " (a per-MACHINE IDE approval store, not project work)",
     "smh-team-march-hare.md": "Zoo mode seat (TEAM LEAD / orchestrator) - a picker identity, not a flow",
     "smh-team-white-rabbit.md": "Zoo mode seat (PM) - a picker identity, not a flow",
-    "smh-team-carpenter.md": "Zoo mode seat (ENGINEER) - a picker identity, not a flow",
+    "smh-team-cheshire-cat.md": "Zoo mode seat (ENGINEER) - a picker identity, not a flow",
     "smh-team-caterpillar.md": "Zoo mode seat (DESIGNER) - a picker identity, not a flow",
     "smh-team-queen-of-hearts.md": "Zoo mode seat (TESTER & QA) - a picker identity, not a flow",
     # ── cicd-only: BMAD story/epic/sprint machinery, deploys, and project-runtime teams ──

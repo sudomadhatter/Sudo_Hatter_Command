@@ -232,8 +232,8 @@ _Usually generated-artifact filenames a workflow mentions (e.g. `walkthrough.md`
 | `.agents/commands/smh-quick-dev.md` | `AGENTS.md` | `.agents/AGENTS.md`, `.agents/skills/react-best-practices/AGENTS.md`, `docs/AGENTS.md` |
 | `.agents/commands/smh-self-audit.md` | `AGENTS.md` | `.agents/AGENTS.md`, `.agents/skills/react-best-practices/AGENTS.md`, `docs/AGENTS.md` |
 | `.agents/commands/smh-sync-agents.md` | `AGENTS.md` | `.agents/AGENTS.md`, `.agents/skills/react-best-practices/AGENTS.md`, `docs/AGENTS.md` |
-| `.agents/commands/smh-team-carpenter.md` | `AGENTS.md` | `.agents/AGENTS.md`, `.agents/skills/react-best-practices/AGENTS.md`, `docs/AGENTS.md` |
 | `.agents/commands/smh-team-caterpillar.md` | `AGENTS.md` | `.agents/AGENTS.md`, `.agents/skills/react-best-practices/AGENTS.md`, `docs/AGENTS.md` |
+| `.agents/commands/smh-team-cheshire-cat.md` | `AGENTS.md` | `.agents/AGENTS.md`, `.agents/skills/react-best-practices/AGENTS.md`, `docs/AGENTS.md` |
 | `.agents/commands/smh-team-march-hare.md` | `AGENTS.md` | `.agents/AGENTS.md`, `.agents/skills/react-best-practices/AGENTS.md`, `docs/AGENTS.md` |
 | `.agents/commands/smh-team-queen-of-hearts.md` | `AGENTS.md` | `.agents/AGENTS.md`, `.agents/skills/react-best-practices/AGENTS.md`, `docs/AGENTS.md` |
 | `.agents/commands/smh-team-white-rabbit.md` | `AGENTS.md` | `.agents/AGENTS.md`, `.agents/skills/react-best-practices/AGENTS.md`, `docs/AGENTS.md` |

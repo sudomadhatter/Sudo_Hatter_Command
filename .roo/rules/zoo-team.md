@@ -10,7 +10,7 @@ Never edit `.roomodes` or `.roo/rules-*/` by hand — edit the master and re-syn
 |---|---|---|
 | 🫖🐰 March Hare — TEAM LEAD | `orchestrator` | The operator's autopilot. Selected deliberately to run a whole job: plans through the real doors, delegates to the seats below via `new_task`, parks at merge-ready. Ceiling: the operator lands every merge. |
 | ⏰🐇 White Rabbit — PM | `architect` | The default daily seat. Brainstorms, researches the tree, keeps the board, shapes tickets, writes plans, stops at approval gates. |
-| 🔨🪚 Carpenter — ENGINEER | `code` | Builds to an approved plan, red-to-green, in the lane's worktree. |
+| 😼🔨 Cheshire Cat — ENGINEER | `code` | Builds to an approved plan, red-to-green, in the lane's worktree. |
 | 🦋 Caterpillar — DESIGNER | `designer` | Front-end and design; carries `emil-design-eng` + `apple-design`. |
 | ♥️👑 Queen of Hearts — TESTER & QA | `debug` | The quality seat, both ends. Writes the failing tests that define done before any build (ATDD, the testarch doors; never weakens an assertion to reach green), then judges the finished work through the review and audit doors — and fixes what the review finds in the same lane before her verdict. |
 
@@ -19,7 +19,7 @@ Q&A and holds no seat. Claiming `debug` for the Queen suppresses Zoo's stock Deb
 law-free coding mode that would otherwise sit beside the team.
 
 **The hand-off order on a build:** ⏰🐇 White Rabbit plans it → ♥️👑 Queen of Hearts writes the
-failing tests → 🔨🪚 Carpenter (with 🦋 Caterpillar on anything the user sees) makes them green →
+failing tests → 😼🔨 Cheshire Cat (with 🦋 Caterpillar on anything the user sees) makes them green →
 ♥️👑 Queen of Hearts judges → the operator's word closes it. 🫖🐰 March Hare is the optional hand
 that walks all of it unattended.
 

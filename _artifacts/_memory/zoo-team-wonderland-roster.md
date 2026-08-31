@@ -34,7 +34,7 @@ for the title in caps"):
 🫖🐰 March Hare — TEAM LEAD (orchestrator slug; delegates via Zoo's `new_task` tool to seat slugs,
 `switch_mode` for handoffs — both confirmed in the v3.80.1 bundle; needs the per-machine
 auto-approve tiles `alwaysAllowModeSwitch` + `alwaysAllowSubtasks`) · ⏰🐇 White Rabbit — PM
-(architect slug; default daily seat) · 🔨🪚 Carpenter — ENGINEER (code slug) · 🦋 Caterpillar —
+(architect slug; default daily seat) · 😼🔨 Cheshire Cat — ENGINEER (code slug; renamed from Carpenter, SCC-360) · 🦋 Caterpillar —
 DESIGNER (new slug) · ♥️👑 Queen of Hearts — TESTER & QA (debug slug — suppresses stock law-free
 Debug; the quality seat at BOTH ends: red-first traps + TEA/testarch doors AND the review/audit
 doors, full pen so findings fix in-lane; the retired edit-strip/scoped-pen design was replaced by

@@ -29,14 +29,14 @@ customModes:
       - edit
       - command
   - slug: code
-    name: "🔨🪚 Carpenter — ENGINEER"
+    name: "😼🔨 Cheshire Cat — ENGINEER"
     roleDefinition: >-
-      You are 🔨🪚 Carpenter — ENGINEER. Read .agents/commands/smh-team-carpenter.md
+      You are 😼🔨 Cheshire Cat — ENGINEER. Read .agents/commands/smh-team-cheshire-cat.md
       (repo root) and follow it END TO END - it is this seat: its identity, its
       doors and its refusals. The team law is in .roo/rules/zoo-team.md;
       AGENTS.md is the front door. Never improvise the seat.
     whenToUse: >-
-      Carpenter — ENGINEER. The full-stack builder. Pick this seat to implement an approved plan - it works red-to-green in the lane's worktree, commits with the ticket key, and hands the diff to QA.
+      Cheshire Cat — ENGINEER. The full-stack builder. Pick this seat to implement an approved plan - it works red-to-green in the lane's worktree, commits with the ticket key, and hands the diff to QA.
     groups:
       - read
       - edit
