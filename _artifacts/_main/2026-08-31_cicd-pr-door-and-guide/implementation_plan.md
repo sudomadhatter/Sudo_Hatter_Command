@@ -103,8 +103,11 @@ Four paths landed that the first cut did not declare, each with why:
 ⚠️ **One acceptance row was worded wrong and is corrected here, not quietly met.** Row 5 said the
 template must contain no `sequenceDiagram`. It contains exactly one — inside the HTML comment that
 **forbids** it, which is the `[[comment-literal]]` inversion this house has a memory about. The real
-property is *no `sequenceDiagram` inside a mermaid fence*, and that is what was checked: 4 fences,
-all `flowchart`.
+property is *no `sequenceDiagram` inside a mermaid fence*, and that is what was checked: **one**
+mermaid fence, and it is a `flowchart TD`. (The amendment first said "4 fences" — a count written
+from the plan's own §2 sentence, *"one per major entry point"*, rather than from the file. A
+correction that carries an unmeasured number is the defect it is correcting, one layer up:
+`grep -c '```mermaid'` returns `1`.)
 
 ## Port checklist (MANDATORY RULE 5)
 
@@ -129,10 +132,10 @@ A1 → A2 → A3 → A4 → A5 → A6 (suite green, launchers) → B1 → B2 →
 
 1. `grep -c "mint-push-token.sh\|git push origin main" <fences of cicd-push-e2e.md>` = 0; `gh pr create --base main` present; `--after-merge` section present with `merge-base --is-ancestor`. `test_door_preflight_order.py` green with the flipped guard.
 2. `--after-merge` carries Step 5.5 with `PRD: unchanged` and `/bmad-correct-course` between the ancestor fence and the ticket transition; the new `test_command_surfaces.py` block green, its reordered mutant red.
-3. `cicd-update-sprint-memory.md` has Step 3.5 with the literal `Project overview guide: unchanged —`; CS-13 E still clean.
+3. `cicd-update-sprint-memory.md` has Step 3.5 teaching all three states — `Project overview guide: edited|unchanged|absent - <reason>` — with an **ASCII hyphen**, which is what `_OVERVIEW_LINE_RE` was written against and what the command emits. (The row first pinned an em dash; the regex ends at the state word and is indifferent to the dash, so the literal in this row was never the property under test. `test_closeout_preflight.py` OV3b pins both spellings.) CS-13 E still clean; `test_command_surfaces.py` block CS-20 pins the ALLOW half.
 4. `closeout_preflight.py --story X` on a temp repo: absent→WARN, edited→INFO, line→INFO, neither→ERROR (block OV, 6+ checks green).
 5. `.agents/templates/project_overview_guide.md` exists, contains no `sequenceDiagram`, ≥1 `flowchart`; `workspace-standard.md` names it three times.
-6. `python3 .agents/scripts/tests/run_all.py` green; `sop_currency` passes on every commit without `[sop-ok]`; door-parity green after sync; SOP changelog carries two rows.
+6. `python3 .agents/scripts/tests/run_all.py` green; **every commit touching a usage surface stages the SOP**; door-parity green after sync; SOP changelog carries two rows. (The row first read *"without `[sop-ok]`"*, absolutely, and the lane used it twice — correctly. `sop-currency.md` names `_artifacts/` history and the gate's own tests as NOT usage changes, so an artifacts-only or test-only commit has no SOP edit to stage and the logged opt-out is the designed answer, not a bypass. An acceptance row that forbids the documented escape makes the honest commit look like a violation, which is how an opt-out stops being read at all.)
 
 ## Batch approval
 

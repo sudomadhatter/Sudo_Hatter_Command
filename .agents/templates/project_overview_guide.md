@@ -18,9 +18,12 @@
 
   HOW IT STAYS CURRENT: `/cicd-update-sprint-memory` Step 3.5 runs at every story save. Either
   the story changed a flow, a part, a contract or where something lives — then this page moves
-  on the story branch — or the walkthrough carries
-  `Project overview guide: unchanged - <reason>`. `closeout_preflight.py`'s `overview` check
-  reads one or the other; neither is an ERROR that blocks the close-out.
+  on the story branch — or it did not. EITHER WAY the walkthrough carries one line naming which
+  it was: `Project overview guide: edited|unchanged|absent - <reason>`.
+  `closeout_preflight.py`'s `overview` check is satisfied by the guide moving on the lane OR by
+  that line; it ERRORS when NEITHER is there, and that error blocks the close-out. The line is
+  written even when the page moved, because the check runs again AFTER the lane lands — when the
+  diff that proved the edit is empty and the sentence is the only surviving evidence.
 
   DIAGRAMS: `flowchart TD` or `flowchart LR` ONLY. ⛔ Never `sequenceDiagram` — the operator has
   ruled it unreadable (`.agents/rules/mermaid-diagram-preferences.md`). A multi-actor hand-off is
@@ -60,7 +63,7 @@ flowchart TD
 
 | Part | Owns | Talks to | Lives at |
 | --- | --- | --- | --- |
-| | | | [`path/`](path/) |
+| | | | [`path/to/it`](path/to/it) |
 
 ## 4. Where things live
 
@@ -77,9 +80,15 @@ flowchart TD
 
 ## 5. What changed, per epic
 
-<!-- One row per SHIPPED epic, newest first, written at `/cicd-push-e2e --after-merge`. This is
-     the column the PRD reconcile reads: the diff of this section across an epic is the index
-     into which PRD sections to open. Say what changed in the SYSTEM, not which tickets closed. -->
+<!-- One row per epic, newest first. The row is WRITTEN AND EXTENDED AT THE STORY SAVE
+     (`/cicd-update-sprint-memory` Step 3.5) — every story that moves this page adds to its
+     epic's row, so the row is complete by the time the epic ships. `/cicd-push-e2e --after-merge`
+     READS it; it does not author it, and a row that appears for the first time at ship time was
+     reconstructed from memory at the one moment the context is gone.
+
+     This is the column the PRD reconcile reads: the diff of this section across an epic is the
+     index into which PRD sections to open. Say what changed in the SYSTEM, not which tickets
+     closed. Fill `Shipped` at `--after-merge`, when the merge sha exists. -->
 
 | Epic | What changed in the system | Shipped |
 | --- | --- | --- |

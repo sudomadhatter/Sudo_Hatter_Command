@@ -372,6 +372,30 @@ def main() -> int:
                     "the resume half must PROVE the merge landed before it moves the ticket; "
                     "`gh` is not required for that half, so it works on any machine")
 
+            # ⛔ THE ABSENCES ABOVE REMOVE THE CEREMONY'S ACCESSORIES, NOT ITS ROAD. A door that
+            # does `git checkout main && git merge --no-ff epic/<KEY>-<slug>` right before the tip
+            # push, and opens the PR anyway, trips NOT ONE of them: it mints nothing (the token is
+            # what a `main` PUSH wants, and this variant lets the PR carry the merge), it never
+            # writes `git push origin main`, and it publishes no gate ref. That mutant SURVIVED
+            # this file at 53/53 until this row — the guard certified an absence set while the
+            # thing the absences exist to forbid walked through the middle of it.
+            #
+            # The needle is the merge SOURCE, and it has to be: `git merge origin/main` at Step 2
+            # is the ABSORB, it is required, and a blanket "no `git merge`" would refuse the
+            # correct door. `git checkout main` is required too — the resume half stands on `main`
+            # after the click. So what is forbidden is naming the epic as a merge source.
+            c.check("/cicd-push-e2e does NOT merge the epic LOCALLY",
+                    idx(proj, "git merge epic/") < 0 and idx(proj, "git merge --no-ff") < 0,
+                    "the absorb (`git merge origin/main`) is the only merge on this road; an "
+                    "`epic/ -> main` merge here is the retired ceremony wearing the PR's clothes")
+            # ⛔ AND THE PAIR AGAIN, one level down. `--after-merge` is asserted above only by its
+            # ancestor check — a resume half that proves the merge and then stops leaves a shipped
+            # epic's branch on `origin` forever, and every check in this guard stays green.
+            c.check("/cicd-push-e2e PRUNES the epic branch after the merge lands",
+                    idx(proj, "git push origin --delete epic/") >= 0,
+                    "the resume half owns the cleanup; the door that opened the branch is the "
+                    "one that closes it")
+
     if c.block("CONTROLS · the fence/comment readers and the ordering mutants"):
         # ⛔ COMPUTED HERE, NOT IN THE BLOCK ABOVE. `prose`/`ok` used to be assigned at the tail
         # of the LIVE block and read here, which is fine unfiltered and an UnboundLocalError
@@ -713,6 +737,26 @@ def main() -> int:
                              "git merge origin/main")[0],
                 "presence is unchanged and every needle is still there - only ORDER moved, "
                 "which is exactly the mutation a `contains` check cannot see")
+
+        # ⛔ P2's TAIL NEEDS ITS OWN MUTANT. `RELOCATED` above fires at the HEAD of the sequence
+        # (the SCC-211 defect) and would still pass if the new tail were unordered — so until
+        # this fixture the two steps SCC-347 added to P2 were carried by the head's control.
+        # The failure it isolates is real and immediate: `gh pr create --head <branch>` against a
+        # branch that was never pushed is an error, so a door in this order has written a ceremony
+        # that cannot run on the first try.
+        PR_FIRST = ("# /d\n\n```bash\nEXPECTED_KEY=SCC-00\n"
+                    "python3 .agents/scripts/ship_preflight.py --expect-key \"$EXPECTED_KEY\"\n"
+                    "git merge origin/main\ngh pr create --base main\n"
+                    "git push origin epic/KEY-slug\n```\n")
+        pr_first = code_lines(PR_FIRST)
+        c.check("CONTROL: every P2 step is PRESENT in the tail mutant (so only order is isolated)",
+                all(idx(pr_first, n) >= 0 for n in ("ship_preflight.py", "git merge origin/main",
+                                                    "git push origin epic/", DEFAULT_LANDER)))
+        c.check("CONTROL: a door that opens the PR BEFORE pushing the tip is caught",
+                not order_ok(pr_first, "ship_preflight.py", "git merge origin/main",
+                             "git push origin epic/", DEFAULT_LANDER)[0],
+                "the head is in perfect order here - only the two steps SCC-347 added moved, "
+                "which is the half `RELOCATED` cannot see")
 
         PROSE = ("# /d\n\nRun `ship_preflight.py` first, then absorb main.\n\n"
                  "```bash\ngit merge origin/main\nmint-push-token.sh\n"

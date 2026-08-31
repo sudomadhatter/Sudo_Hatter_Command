@@ -484,7 +484,7 @@ version can't:
 | **Preflight** — branch name, clean tree, `origin/main` absorbed, walkthrough exists, no stray worktree | conflicts surfacing on `main` instead of on your branch |
 | **Derives the lane from the diff** | see below — this is the one that matters |
 | Runs the repo's gate and pastes the real output | reporting a gate from intent |
-| Merges `--no-ff`, files **one** Dev Record, moves the ticket to `Done`, clears any `Bug` flag | the Dev Record entirely, and the flag |
+| Opens the PR, then after your click files **one** Dev Record, moves the ticket to `Done`, clears any `Bug` flag | the Dev Record entirely, and the flag |
 | Prunes the branch local *and* remote, verifies `0 0` and a clean tree | the remote branch, usually |
 
 **The lane check is why this exists.** Skipping the end-to-end suite is the only thing that makes a Task
@@ -540,9 +540,9 @@ flowchart TD
     H --> I["10 · run the gate for THIS repo"]
     I -->|"red"| J["STOP — fix, commit again"]
     J --> I
-    I -->|"green"| K["11 · merge --no-ff to main, push,\ndelete the branch, verify 0 0"]
+    I -->|"green"| K["11 · open a PR, click Merge,\ndelete the branch, verify 0 0"]
     K --> L["12 · drag the card to Done"]
-    K -.->|"or skip 10-12 entirely"| CMD["/smh-close-task-merge-tree\ndoes the gate, the merge, the Dev Record,\nthe transition and the prune"]
+    K -.->|"or skip 10-12 entirely"| CMD["/smh-close-task-merge-tree\ndoes the gate, the PR, the Dev Record,\nthe transition and the prune"]
 
     classDef mine fill:#e3f2fd,stroke:#1565c0,color:#000
     classDef good fill:#d4f7d4,stroke:#2e7d32,color:#000

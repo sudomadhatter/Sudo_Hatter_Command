@@ -319,9 +319,11 @@ flowchart LR
   per-action commit. Enforced by the PreToolUse hook.
 - **Branch model:** `main` is the ONLY long-lived branch (live production — a push deploys). Each epic
   gets a short-lived `epic/<key>-<slug>` branch off `main`; story worktrees branch from and land on it;
-  the epic merges to `main` only via `/cicd-push-e2e` (full gate + `/cicd-e2e` green + Daniel's
-  sign-off, `--no-ff`, epic branch deleted after). Ad-hoc work: short-lived `chore/*` off `main`,
-  merged same-session with sign-off. Canon: `.agents/rules/git-policy.md`.
+  the epic reaches `main` only via `/cicd-push-e2e` (full gate + `/cicd-e2e` green + the operator's
+  sign-off), which **opens a pull request and stops** — the operator clicks *Merge pull request*, and
+  the door's `--after-merge` half then deletes the epic branch. Ad-hoc work: short-lived `chore/*` off
+  `main`, landed the same way through `/smh-close-task-merge-tree`. No door merges `main` from a
+  machine here. Canon: `.agents/rules/git-policy.md`.
 - **Web/mobile** (`CLAUDE_CODE_REMOTE=true`): the agent owns git delivery instead → `mobile-mode.md`.
 - Each project is its **own repo** — one commit per touched repo, never cross-commit.
 

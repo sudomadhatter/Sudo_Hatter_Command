@@ -448,9 +448,15 @@ def check_overview(project: Path, key: str, rep: wf.Report,
         # returns the literal "main" on its zero-or-several-epics path without checking the ref
         # exists, so a repo whose trunk is named otherwise exits 128 here — and a silent
         # non-zero would fall through to an ERROR whose named remedy is the wrong one.
+        # ⛔ AND IT RETURNS. Warning and then falling through was the first cut, and it is the
+        # same defect one step softer: the ERROR below names ONE remedy — write the accounting
+        # line, `Step 3.5 never ran` — and that sentence is a guess when the comparison never
+        # ran at all. The lane may well have edited the guide. A check that cannot measure says
+        # so and stands down; it does not convert its own blindness into the operator's homework.
         rep.warn("overview", f"could not diff {base}...{lane} for {OVERVIEW_REL} - "
                              f"{(diff.stderr or '').strip()[:120]}")
-    elif any(ln.strip() for ln in diff.stdout.splitlines()):
+        return
+    if any(ln.strip() for ln in diff.stdout.splitlines()):
         rep.info("overview", f"{OVERVIEW_REL} edited on {lane} (vs {base})")
         return
 

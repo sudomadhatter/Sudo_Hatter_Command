@@ -917,7 +917,7 @@ it correct still exists. What differs is the unit.
 | Altitude | The document | Kept current by | If nothing changed |
 | --- | --- | --- | --- |
 | **Commit** (this repo only) | the page you are reading | an armed `commit-msg` gate — change a usage surface without staging this page and the commit is rejected | `[sop-ok]` in the message, logged forever |
-| **Story** (a project) | the project overview guide, in that project's `docs/` — what was BUILT, for a human | `/cicd-update-sprint-memory` **Step 3.5**, at the save | `Project overview guide: unchanged - <reason>` in the walkthrough |
+| **Story** (a project) | the project overview guide, in that project's `docs/` — what was BUILT, for a human | `/cicd-update-sprint-memory` **Step 3.5**, at the save | one line in the walkthrough naming which happened: `Project overview guide: edited\|unchanged\|absent - <reason>` |
 | **Epic** (a project) | the PRD, and the architecture folder | `/cicd-push-e2e` **Step 5.5**, at the ship, via `/bmad-correct-course` | `PRD: unchanged - epic shipped as specified` on the ticket and the ledger row |
 
 **Why a project does not get a commit gate.** The gate on this page works because its usage surface
@@ -4227,7 +4227,7 @@ flowchart TD
 | `/cicd-prune-worktree` | The janitor. Confirms the branch really merged, then removes the workspace and deletes the branch. It moves no code; both close-outs call it automatically. |
 | `/cicd-e2e` | Runs the real end-to-end suite — a complete stand-in for the live app, with test users. Green means safe to ship. |
 | `/cicd-push-e2e` | The one shipping command — the only road an epic takes to `main`. **Refuses to run** until the end-to-end suite is green. After the merge it comments the evidence on the epic's Jira ticket and moves it to **Done**. |
-| `/smh-close-task-merge-tree` | **The Task lane's close-out.** Gate, merge to `main` with `--no-ff`, one Dev Record, ticket → Done, prune. **Typing it IS your merge sign-off.** Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`, with no override flag. It also refuses on a **secondary repo's** state — unreachable, dirty, unpushed, wrong ticket project, or a rotted memory store — and warns when the other half has not landed yet ([§7](#7-landing-and-shipping--the-close-out-family)). |
+| `/smh-close-task-merge-tree` | **The Task lane's close-out.** Gate, then open a pull request against `main` and STOP; after your click, one Dev Record, ticket → Done, prune. **Typing it IS your merge sign-off.** Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`, with no override flag. It also refuses on a **secondary repo's** state — unreachable, dirty, unpushed, wrong ticket project, or a rotted memory store — and warns when the other half has not landed yet ([§7](#7-landing-and-shipping--the-close-out-family)). |
 
 **The fast lane** — [§8](#8-the-fast-lane--cicd-quick-dev)
 

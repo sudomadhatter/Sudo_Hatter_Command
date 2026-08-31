@@ -241,7 +241,8 @@ def lane_repo(root: Path) -> Path:
 def ov_repo(root: Path, date: str = "2026-09-02", guide: bool = True,
             line: str | None = None, edit_guide: bool = False,
             land: bool = False, review_date: str | None = None,
-            park_on_main: bool = False, undated: bool = False) -> Path:
+            park_on_main: bool = False, undated: bool = False,
+            no_walkthrough: bool = False, no_base: bool = False) -> Path:
     """`lane_repo`, plus a guide and a dated artifact folder, posed for one OV case.
 
     `land` merges the story branch into the base BEFORE the check runs — the state
@@ -253,6 +254,11 @@ def ov_repo(root: Path, date: str = "2026-09-02", guide: bool = True,
     door actually mandates (`--project` is the shared checkout, the lane is elsewhere), and the one
     the first cut of these cases never posed. `undated` strips the date from the artifact folder,
     which is the shape 70 of 70 real project story lanes use.
+
+    `no_walkthrough` removes the story's walkthrough entirely — the branch this check deliberately
+    stays SILENT on, because `check_artifacts` already errors there. `no_base` renames the trunk so
+    `integration_branch`'s literal "main" resolves to nothing, which is the exact repo shape the
+    warn-on-diff-failure path was written for and the only way to reach it from the CLI.
     """
     repo = lane_repo(root)
     folder = "epic_30" if undated else f"{date}_epic_30"
@@ -266,6 +272,8 @@ def ov_repo(root: Path, date: str = "2026-09-02", guide: bool = True,
     if line:
         wt.write_text(wt.read_text(encoding="utf-8") + f"\n## Evidence\n\n{line}\n",
                       encoding="utf-8")
+    if no_walkthrough:
+        wt.unlink()
     if guide:
         (repo / "docs").mkdir(exist_ok=True)
         (repo / "docs/project_overview_guide.md").write_text(
@@ -290,6 +298,12 @@ def ov_repo(root: Path, date: str = "2026-09-02", guide: bool = True,
         git(repo, "checkout", "-q", "claude/SCC-30-fresh")
     if park_on_main:
         git(repo, "checkout", "-q", "main")
+    if no_base:
+        # The trunk is named something else. `integration_branch` returns the literal "main"
+        # on its zero-or-several-epics path WITHOUT checking the ref exists, so the diff below
+        # it exits 128 — and `origin/main` does not rescue it, because `main` resolves through
+        # refs/heads and refs/remotes/main, never refs/remotes/origin/main.
+        git(repo, "branch", "-m", "main", "trunk")
     return repo
 
 
@@ -444,6 +458,38 @@ def main() -> int:
                 tmp, line="Project overview guide: updated where it mattered."))
             c.check("OV6 CONTROL a line that claims neither `unchanged` nor `absent` does NOT satisfy",
                     bool(ov(out, "ERROR")), out.strip()[-400:])
+
+        # ⛔ OV14 · THE DECORATION IS LOAD-BEARING, and nothing above proved it. Every case so
+        # far writes the line bare, so the `^[>\-*#\s]*\**` head of the regex was carried by no
+        # assertion at all — deleting it left the block at 14/14 while refusing every walkthrough
+        # that writes the line the way this house actually writes lines: as a bullet, bolded,
+        # under a quote. That is not a hypothetical spelling; it is the one Step 3.5 produces.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(
+                tmp, line="> - **Project overview guide:** unchanged - no flow or contract moved."))
+            c.check("OV14 a bulleted, bolded, quoted accounting line still satisfies the check",
+                    bool(ov(out, "INFO")) and not ov(out, "ERROR"), out.strip()[-400:])
+
+        # ⛔ OV15 · THE SILENT BRANCH. With no walkthrough at all this check RETURNS — on purpose,
+        # because `check_artifacts` already errors on exactly that file and two errors for one
+        # missing artifact read as two problems. Silence-by-design is invisible to a sweep: a
+        # mutant turning that `return` into an `err` (or deleting the guard so the empty list
+        # falls through to the cutoff arm) survived every case above, and it would hand the
+        # operator a second red whose remedy is the first red's.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, no_walkthrough=True))
+            c.check("OV15 no walkthrough at all -> the overview check says NOTHING",
+                    not ov(out, "ERROR") and not ov(out, "INFO"), out.strip()[-400:])
+
+        # ⛔ OV16 · A FAILED DIFF IS NOT AN UNEDITED GUIDE. `integration_branch` returns the
+        # literal "main" on its zero-or-several-epics path without checking the ref exists, so a
+        # repo whose trunk is named otherwise exits 128 here. Read as "not edited", that lands the
+        # lane in the ERROR arm, whose remedy — write the accounting line — is the wrong one for a
+        # repo where the comparison never ran. The WARN is the whole fix, and it was unpinned.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, edit_guide=True, no_base=True))
+            c.check("OV16 a diff that FAILS warns, and never errors as though nothing was edited",
+                    bool(ov(out, "WARN")) and not ov(out, "ERROR"), out.strip()[-400:])
 
 
     # ── VR · LEGACY COVERAGE · the reader itself, read with no fixture at all ───────────
