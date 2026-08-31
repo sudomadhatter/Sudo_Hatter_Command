@@ -276,7 +276,7 @@ that workspace.
 | 2 | repo-map drift check | `check-repo-map-drift.ps1` — nags on top-level folders on disk but missing from the map |
 | 3 | depth-3 nag | Runs `check_maps.py --depth3-only` — surfaces drift without blocking |
 | 4 | maps-journal nag | Runs `record_map_changes.py --nag` — pre-scoped drift worklist since the last anchor |
-| PT | git push approval | PreToolUse on Bash: `.claude/hooks/require-push-approval.py` guards agent `git commit`/`push` |
+| PT | git push approval | PreToolUse on Bash: `.agents/hooks/require-push-approval.py` (invoked through `.agents/hooks/run-hook.sh`, which is what `.claude/settings.json` names) guards agent `git commit`/`push` |
 
 > **Platform note:** hooks fire only on Claude Code. opencode and Antigravity/Gemini get the full
 > linter when `/smh-update-maps-indexes` runs.
