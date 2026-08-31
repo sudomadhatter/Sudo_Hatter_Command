@@ -115,7 +115,9 @@ A1 → A2 → A3 → A4 → A5 → A6 (suite green, launchers) → B1 → B2 →
 
 ## Batch approval
 
-*(written by `/smh-plan-task` Step 5 from the operator's verbatim words — never by the agent)*
+**Batch approval (2026-08-31):** "approved" — the operator's verbatim word this turn, given at the `/smh-plan-task SCC-347` Step 5 stop. Covers the plans that stop listed, and only those: **SCC-356** (Part A) and **SCC-357** (Part B), this plan as it stood at `5738d7d2` (`Audit verdict: GO` recorded at that commit) — recorded at `<pending>`.
+
+Planning scope only, per `000-PLAN-FIRST-GATE` § "One approval MAY cover several plans" clause 4: it is not merge approval and not a ticket transition. Edit either part's plan after this line and that part's gate re-arms at `/smh-quick-dev` Step 1.5.
 
 ## Self-Audit (2026-08-31)
 
