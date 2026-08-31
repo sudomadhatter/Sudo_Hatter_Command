@@ -290,11 +290,14 @@ any lens launched.
 Everything in this lane's scope landed and is proven above. Two things are genuinely yours.
 
 - [x] The merge itself — lands via this branch's PR
-- [ ] Run `/smh-sync-agents` **after this lands, from `main`**, so the machine-global command caches
-      (`~/.config/opencode/commands`, `~/.gemini/antigravity/global_workflows`) pick up the reworked
-      door. It is deliberately not run from this lane: the sync writes machine-global caches, and
-      doing that from an unmerged branch publishes unlanded work into every other project's menu.
-      This is also the standing item you flagged this session.
+**`/smh-sync-agents` runs after this lands, from `main`, and it is the AGENT's step — not yours.**
+It is deliberately not run from this lane: the sync writes machine-global caches
+(`~/.config/opencode/commands`, `~/.gemini/antigravity/global_workflows`), so running it from an
+unmerged branch would publish unlanded work into every other project's menu. It is recorded here as
+prose rather than a checkbox because it is mechanical and decision-free — a row that hands the
+operator work only an agent should do is the shape `jira_feed.py` refuses and the constitution calls
+a bug in the flow. The operator flagged the same item independently this session; that is a reminder
+he asked for, not a task he owes.
 
 **Raised once, with its remedy, and already filed — not left as a bill.**
 [SCC-359](https://sudo-command.atlassian.net/browse/SCC-359) (Subtask of the rolling ticket SCC-318):
