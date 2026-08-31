@@ -254,14 +254,17 @@ Everything below is done and landed except two things only you can do.
 
 - [x] The merge itself — lands via this branch's PR
 
-- [ ] **Look at the Mac and tell me the banner appeared.** The self-test reported `banner=sent` and
+- [x] **Look at the Mac and tell me the banner appeared.** The self-test reported `banner=sent` and
       exited 0, and your phone got the push — but a Work Focus swallows the on-screen banner while
       everything still reports success, so this is the one claim I cannot verify from here. If no
-      banner appeared, check Focus first, then System Settings → Notifications → terminal-notifier.
-- [ ] **Install it on the PC**, next time you are on that machine:
-      `python .agents\scripts\zoo_notify_install.py --apply` — then `python .agents\scripts\zoo_notify.py --self-test`
-      to prove both channels there. The Windows branch is unit-tested but has never been run on real
-      hardware, and I will not claim otherwise.
+      banner appeared, check Focus first, then System Settings → Notifications → terminal-notifier. -- verified 2026-08-31 (operator): Operator, 2026-08-31: "I can confirm it for the mac" - the banner renders on screen; the ntfy push was already verified end to end
+- [ ] **Install it on the PC** — the three commands, in order, from the MAIN checkout (never a worktree,
+      and `python`, never `python3`):
+      `python .agents\scripts\zoo_notify_install.py --apply` · `python .agents\scripts\zoo_notify.py --self-test`
+      (must print `banner=sent push=sent` and exit 0) · `python .agents\scripts\zoo_notify_install.py`
+      (must read `installed [ok]`). Full handoff — what it writes, the four things that can go wrong,
+      and the one known gap — is the **PC HANDOFF** comment on SCC-355. The Windows branch is
+      unit-tested but has never executed on Windows, and I will not claim otherwise.
 
 ---
 
