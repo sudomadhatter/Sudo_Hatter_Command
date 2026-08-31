@@ -1,12 +1,8 @@
 # SCC-355 — Zoo notifications actually reach the operator (walkthrough)
 
-```
-review-runtime: inline (blocked: the operator's standing budget constraint — "You maxed out my
-subscription weekly limit with this one fix, stay in task and fix this"; this lane was accepted on
-the stated basis "I'm running this entirely inline. No subagents, no fan-out, nothing spawns.")
-```
+review-runtime: inline (blocked: the operator's standing budget constraint, verbatim: "You maxed out my subscription weekly limit with this one fix, stay in task and fix this" — this lane was accepted on the stated basis "I'm running this entirely inline. No subagents, no fan-out, nothing spawns.")
 
-**Lane:** `chore/SCC-355-zoo-notify-fix` · cut from `origin/main` @ `8a1b3cbf` · HEAD `25e6a2ff`
+**Lane:** `chore/SCC-355-zoo-notify-fix` · cut from `origin/main` @ `8a1b3cbf` · `origin/main` absorbed at `8ed61678` · HEAD `a136927e`
 **Plan:** [implementation_plan.md](implementation_plan.md) (with the Self-Audit, verdict GO)
 **Diagnosis it acts on:** [diagnosis.md](diagnosis.md)
 
@@ -264,3 +260,129 @@ Everything below is done and landed except two things only you can do.
       `python .agents\scripts\zoo_notify_install.py --apply` — then `python .agents\scripts\zoo_notify.py --self-test`
       to prove both channels there. The Windows branch is unit-tested but has never been run on real
       hardware, and I will not claim otherwise.
+
+---
+
+## Code Review (2026-08-31)
+
+review-runtime: inline (blocked: the operator's standing budget constraint, verbatim: "You maxed out my subscription weekly limit with this one fix, stay in task and fix this" — this lane was accepted on the stated basis "I'm running this entirely inline. No subagents, no fan-out, nothing spawns.")
+
+lens_isolation: none (single context)
+
+lenses_run:
+- edge-case · recovered-inline
+- literal-correctness · recovered-inline
+- acceptance · recovered-inline
+- test-adequacy · recovered-inline
+
+lenses_na: blind · n/a - context contaminated (this context wrote the plan, the code and the walkthrough, so a blind hunt cannot be faked)
+
+The Blind Hunter is **dropped, not claimed**. Its entire value is a context that has not read the
+builder's reasoning, and this context wrote it — under `inline` the engine drops it rather than
+faking it, because a roster may not claim a review was more independent than it was.
+
+dispositions: 5 findings surfaced, 4 assessed real and fixed in-thread, 1 dismissed under the three-question test, 0 left as future work
+
+drift: 0 undeclared / 0 unimplemented / 0 incomplete
+
+⛔ **This is a less independent review than a fan-out, and the roster says so rather than hiding
+it.** The Blind Hunter's whole value is a context that has not read the builder's reasoning, and
+this context wrote it. What partially replaces it here is that the **mutation sweeps are not
+subject to that bias** — a mutant either dies or it does not — and they found two defects this
+context had already convinced itself were fine.
+
+### Step 0.7 — blast radius, re-derived against current `main`
+
+1. **Did anything this diff references move?** No. `origin/main` advanced by 44 files (SCC-347's
+   `cicd` PR door landed mid-lane). Every path, script and rule this diff names re-resolved;
+   `check_links.py --base origin/main` is **clean**.
+2. **True overlap and merge result.** Exactly the three ledgers the pre-work audit predicted:
+   `_artifacts/_main/INDEX.md`, `workflows_testing_SOP.md`, `workflows_testing_SOP_changelog.md`.
+   `merge-tree` predicted one conflict, in `INDEX.md`. **`main` was absorbed at `8ed61678` before
+   the verdict**, resolved by keeping BOTH rows — it is an append-shaped ledger, not a rewrite —
+   and every changelog row present on `main` was verified still present afterwards, by exact-line
+   match, because a silently dropped ledger row was the audit's own pre-mortem narrative for F2.
+3. **Live sibling lanes.** None remaining; `chore/SCC-347-*` landed. No landing-order dependency
+   is left open.
+
+`review_level`: **standard** — derived, not chosen: the radius touches a script others import, a
+door surface and the SOP, and the diff carries more than three source files.
+
+`risk_seam.py classify --repo <this tree>` → `unclassified`, the permanent and correct answer in
+the command centre (SCC-289: a code graph parses code, this repo is markdown). Run for the shape;
+every judgement below comes from reading the diff.
+
+### Findings
+
+| # | Finding | Anchor | Disposition |
+|---|---|---|---|
+| 1 | An unused parameter — `startup_path(home, platform)` never reads `platform` | `.agents/scripts/zoo_notify_install.py:68` | **FIXED** — `code-standards` §2 names unused params outright, and this is fresh code, not inherited debt |
+| 2 | A conditional expression used as a statement for its side effect (`… .mkdir(…) if platform == "darwin" else None`) | `.agents/scripts/zoo_notify_install.py:202` | **FIXED** — rewritten as a real `if` |
+| 3 | An `ask` whose `ask` is `completion_result` and which is still `partial` classifies `turn_end`, so a turn-end could page while the message is still streaming | `.agents/scripts/zoo_notify.py::classify` | **DISMISSED** — assessed REAL? **no**. Zero occurrences of `ask=completion_result` in the entire live store (7 threads, 1,455 messages); and were it to occur, `thread_signature` keys on the tail's own `ts`, which an in-place finalisation does not change, so it pages once rather than twice. Erring early on a turn-end is also the direction this module fails by doctrine |
+
+**Findings raised in-thread and fixed before this gate** (they are recorded here because they are
+the substance of the review, not because they are open): the installer would have baked a
+**worktree path** into a login agent that outlives the lane close-out prunes → guard added and
+pinned; the agent's **log was empty** on the first live install because Python buffers a non-TTY →
+`PYTHONUNBUFFERED` in both platform branches; and the first mutation sweep failed, exposing **two
+of this session's own new assertions passing for the wrong reason** → both re-aimed, with a
+positive control added to one.
+
+**Disposition tail (§6.5):** 5 findings surfaced, 4 assessed real and fixed in-thread, 1 dismissed
+under the three-question test. No finding leaves this lane as future work; `deferred-work.md` is
+untouched.
+
+### Acceptance audit
+
+| # | Statement | Where the diff satisfies it | The assertion that proves it |
+|---|---|---|---|
+| A1 | an operator-facing `partial` ask pages | `zoo_notify.py::classify` | `test_partial_ask_still_pages_because_zoo_never_clears_it` — RED against shipped, GREEN after; mutant M1 killed |
+| A2 | no verdict that was already right changed | same | the unmodified battery + `test_a_finalised_ask_pages_exactly_as_a_partial_one_does`; mutants M2–M5 killed |
+| A3 | fixtures are real captures | both fixture files | `test_fixtures_are_real_captures_not_hand_written_stubs` (>50 msgs, `partial: True` tail, auto-approved asks present, no leaked path) |
+| A4 | the watcher starts itself and is restarted | `zoo_notify_install.py` | `launchctl list` → `26163 0 com.sudohatter.zoo-notify`; mutants M9, M10 killed |
+| A5 | a launchd watcher resolves the right topic | `build_plist` | `test_mac_plist_carries_the_ntfy_topic_…`; M11 (PATH width) killed |
+| A6 | a pending ask at startup still pages | `zoo_notify.py::watch` | two priming cases; mutants M6, M7, M8 killed |
+| A7 | the PC has a shipped artifact and a documented step | `build_cmd`, guide §11.1 | `test_windows_command_starts_minimised_with_pythonw_…`; M15, M16 killed. **Never executed on Windows — operator checkbox** |
+| A8 | the docs say install, not run | SOP, guide, both INDEXes, changelog | `check_links` clean; `sop_currency` accepted the feature commit with the SOP staged |
+| A9 | no door tells an agent to skip a `partial` ask | the brain + both mirrors | `test_no_door_tells_an_agent_to_skip_a_partial_ask`, proven to gate by reverting the doors (45/46 → 46/46) |
+
+**Drift, both directions.** Nothing in the diff is outside the list. The declared change set
+reconciles exactly:
+
+```
+{"present": true, "incomplete": [], "undeclared": [], "unimplemented": []}
+```
+
+### The command-centre gate
+
+| Check | Result |
+|---|---|
+| enforcement suite (`run_all.py`, through the receipt writer) | **PASS** exit=0, 88.7 s @ `a136927e`, `dirty_tree: false` |
+| `check_links.py --base origin/main` | clean |
+| `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, 8 info (pre-existing BOMs) |
+| `hooks_armed.py` | ARMED — `core.hooksPath=.githooks` |
+| `declared_change_set.py diff` | 0 undeclared / 0 unimplemented / 0 incomplete |
+| door parity (brain vs 2 generated mirrors) | opencode byte-identical; workflow differs only in its truncated `description:` |
+| mutation sweeps | 16/16 killed by their declared case; restores byte-verified |
+| `py_compile` on both new/changed scripts | clean |
+
+### Clean-code gate (`/smh-clean-code-audit`, judgment half)
+
+Comment contract: every non-obvious block carries its *why* and its ticket. No commented-out code,
+no unowned TODO, no bare `except:` (the one broad catch is in `send()` and re-reports the failure
+rather than swallowing it, which is its documented job — a push failure must not kill the banner).
+No new abstraction with a single caller: `zoo_notify_install.py` is an entry point in the same
+shape as its sibling `zoo_permissions_apply.py`. Both machines respected — no bare `python`, no
+`C:/` literal, no `;` separator, and every path assertion compares `Path` parts rather than strings.
+
+```
+Verdict: CONCERNS @ a136927e
+```
+
+**Why CONCERNS and not PASS.** Every gate above is green and every finding is fixed. The cap is
+for two claims that assert **machine state this Mac cannot reach**, following the SCC-332
+precedent: the Windows Startup branch has never executed on Windows, and the Mac banner's
+appearance **on screen** is unconfirmed — `--self-test` reported `banner=sent` and exited 0, and
+the ntfy push was verified end to end (server read-back plus the operator's own confirmation), but
+a Focus mode swallows the banner while everything still reports success. Both are already
+`## Your Actions` rows. Neither blocks the merge; both are honestly open.
