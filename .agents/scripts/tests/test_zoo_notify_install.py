@@ -339,6 +339,9 @@ if __name__ == "__main__":
         except BaseException:
             _failed.append(_name)
             traceback.print_exc()
-    print(f"-- {len(_fns) - len(_failed)}/{len(_fns)} passed --"
-          + (f"  FAILED: {', '.join(_failed)}" if _failed else ""))
+    print(f"-- {len(_fns) - len(_failed)}/{len(_fns)} passed --")
+    if _failed:
+        # mutation_sweep.py attributes a kill by a line STARTING with "FAILED:" (its L186), so
+        # this must be its own line - on the tally line it reads as an unattributable sweep error
+        print("FAILED: " + ", ".join(_failed))
     sys.exit(1 if _failed else 0)
