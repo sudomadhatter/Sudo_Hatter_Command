@@ -1,0 +1,48 @@
+{
+  "v": 1,
+  "task": "SCC-352",
+  "sha": "3e6afd4d4dc28f6f75b96ec8d445ad679fd0cc74",
+  "tip": "7690aa311a0c42f4a89c686fa8926c41dacf3f75",
+  "trigger": "close-out",
+  "when": "2026-08-31T00:31:40-05:00",
+  "changes": [
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/tests/fixtures/zoo_ui_messages_ask.json",
+    ".agents/scripts/tests/fixtures/zoo_ui_messages_turnend.json",
+    ".agents/scripts/tests/test_zoo_notify.py",
+    ".agents/scripts/zoo_notify.py",
+    ".gitignore",
+    "_artifacts/_main/2026-08-30_llm-approvals/gates/suite.json",
+    "_artifacts/_main/2026-08-30_llm-approvals/implementation_plan.md",
+    "_artifacts/_main/2026-08-30_llm-approvals/sweep.json",
+    "_artifacts/_main/2026-08-30_llm-approvals/task.yaml",
+    "_artifacts/_main/2026-08-30_llm-approvals/tickets/SCC-354.md",
+    "_artifacts/_main/2026-08-30_llm-approvals/tickets/SCC-355.md",
+    "_artifacts/_main/2026-08-30_llm-approvals/walkthrough.md",
+    "_artifacts/_main/2026-08-30_zoo-approvals/tickets/SCC-351.md",
+    "_artifacts/_main/INDEX.md",
+    "_artifacts/_memory/MEMORY.md",
+    "_artifacts/_memory/budget-is-a-live-constraint-announce-spend.md",
+    "_artifacts/_memory/worktree-remove-force-eats-untracked-memories.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/migrations/zoo-code-permissions-guide.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-30_llm-approvals/walkthrough.md",
+    "verdict": "PASS @ 3e6afd4",
+    "gates": {
+      "suite": "pass@d988d78"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
