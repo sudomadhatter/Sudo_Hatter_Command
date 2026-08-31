@@ -300,3 +300,7 @@ None. `git worktree list` shows only `main` and this lane; no other branch is in
 these paths.
 
 Audit verdict: GO
+
+**Batch approval (2026-08-30):** "approved" — the operator's exact word, this turn, at the
+`/smh-quick-dev` Step 1.5 gate; covers the plans listed in `/smh-plan-task SCC-352` Step 5:
+**SCC-354** and **SCC-355**, this plan as it stood at `cc0fa92a`.
