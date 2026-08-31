@@ -174,6 +174,83 @@ def test_floor_holds_at_every_token_boundary():
         assert row in boundaries, f"{row!r} is not a token-boundary prefix of {cmd!r}"
 
 
+def test_group_skips_a_command_the_live_lists_already_allow():
+    """A command blocked LAST week may be allowed today. Proposing a row for it is noise —
+    and noise in a pick-list is how the operator stops reading the pick-list."""
+    m = _mod()
+    import zoo_matcher
+    rows = m.group(["git status", "npx create-next-app my-app"],
+                   zoo_matcher.ALLOW, zoo_matcher.DENY)
+    assert [r for r, _ in rows] == ["npx"], rows
+
+
+def test_group_merges_commands_that_share_one_row():
+    """One row per family, with every command it covers — not one row per command."""
+    m = _mod()
+    import zoo_matcher
+    rows = m.group(["npx create-next-app a", "npx shadcn add button"],
+                   zoo_matcher.ALLOW, zoo_matcher.DENY)
+    assert len(rows) == 1, rows
+    row, covers = rows[0]
+    assert row == "npx" and len(covers) == 2, rows
+
+
+def test_group_drops_what_the_fence_denies():
+    """⛔ The door grows the ALLOW list. A denied command has no row, and inventing one would be
+    the door quietly dismantling the fence one proposal at a time."""
+    m = _mod()
+    import zoo_matcher
+    assert m.group(["git push --force"], zoo_matcher.ALLOW, zoo_matcher.DENY) == []
+
+
+# --- the door: it PRINTS, and it says what it scanned ---------------------------------------
+
+def test_zero_results_still_name_the_root_and_the_counts():
+    """A4 — ⛔ "nothing found" and "broken" must not read identically.
+
+    Measured on the sibling: from the lobby the Claude-store count is 6 and from a worktree the
+    identical command returns 1, because Projects/* are gitlink stubs. A door that prints
+    nothing when it finds nothing turns every environment fact into a suspected bug, and the
+    operator has no way to tell which. zoo_notify.py already prints its root and its thread
+    count for this reason.
+    """
+    m = _mod()
+    root = Path("/somewhere/globalStorage/zoo/tasks")
+    out = m.render([root], threads=0, blocked=[], proposals=[])
+    assert str(root) in out, "the door must name the root it scanned"
+    assert "0" in out, "the door must print its counts even when they are zero"
+    assert "nothing" in out.lower() or "no " in out.lower(), (
+        "zero results need a sentence, not an empty section")
+
+
+def test_the_door_writes_nothing():
+    """A4 — the door PROPOSES. Applying is the operator's, and it is a different command.
+
+    Asserted as bytes, not as an absence of code: a door that edits an approval list is a door
+    that can approve things on its own behalf.
+    """
+    import tempfile
+    m = _mod()
+    with tempfile.TemporaryDirectory() as tmp:
+        store = Path(tmp) / "settings.json"
+        store.write_text('{"zoo-code.allowedCommands": []}', encoding="utf-8")
+        before = store.read_bytes()
+        m.render([Path(tmp)], threads=1, blocked=["npx create-next-app my-app"],
+                 proposals=[("npx", ["npx create-next-app my-app"])])
+        assert store.read_bytes() == before, "render() touched a store"
+
+
+def test_the_report_shows_each_row_with_the_commands_it_covers():
+    """The operator picks rows, so a row he cannot trace back to a command is unpickable."""
+    m = _mod()
+    out = m.render([Path("/x/tasks")], threads=2,
+                   blocked=["npx create-next-app my-app", "docker compose up -d"],
+                   proposals=[("npx", ["npx create-next-app my-app"]),
+                              ("docker", ["docker compose up -d"])])
+    assert "npx" in out and "docker" in out
+    assert "create-next-app my-app" in out, "the row must show what it unblocks"
+
+
 if __name__ == "__main__":
     # run_all.py executes test files bare — without this block the whole gate is a silent no-op.
     import traceback

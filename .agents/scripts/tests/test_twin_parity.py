@@ -115,6 +115,11 @@ NOT_PAIRED = {
     # ── smh-only: the Wonderland team seats (SCC-350) — Zoo Code MODE brains, not workflows.
     # Each is the identity/doors/refusals of one mode in the picker; the cicd side has no mode
     # surface at all, so there is nothing to hold in parity. They route INTO the cicd doors.
+    # smh-only and permanently so: the subject is the OPERATOR'S MACHINE, not a project. Zoo's
+    # approval lists live in one VS Code globalState per machine, so there is nothing per-project
+    # for a cicd-* twin to act on — a project-scoped copy would read the same store and propose
+    # the same rows, twice.
+    "smh-llm-approvals.md": _ONE_SUBJECT + " (a per-MACHINE IDE approval store, not project work)",
     "smh-team-march-hare.md": "Zoo mode seat (TEAM LEAD / orchestrator) - a picker identity, not a flow",
     "smh-team-white-rabbit.md": "Zoo mode seat (PM) - a picker identity, not a flow",
     "smh-team-carpenter.md": "Zoo mode seat (ENGINEER) - a picker identity, not a flow",

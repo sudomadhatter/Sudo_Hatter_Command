@@ -107,3 +107,118 @@ def propose(cmd: str, allow: list[str], deny: list[str]) -> str | None:
         if decide(cmd, allow + [row], deny) == "auto_approve":
             return row
     return None
+
+
+def render(roots: list[Path], threads: int, blocked: list[str],
+           proposals: list[tuple[str, list[str]]]) -> str:
+    """The whole output of the door, as a string. It builds text; it opens nothing.
+
+    ⛔ ASCII only. This output is exactly the kind that gets redirected into a file and read on
+    the other machine, and a decorative glyph is what took 22 files red on the PC when cp1252
+    met it. [[mac-authored-code-hides-windows-bugs]]
+
+    ⛔ The counts print even when they are all zero. "Nothing stopped for approval" and "the
+    door is broken" are the same empty screen otherwise, and the operator cannot tell which
+    from where he sits — the store root is a genuine environment fact (a worktree resolves a
+    different count than the lobby), not a bug, and only the printed root makes it legible.
+    """
+    out = ["smh-llm-approvals - Zoo Code approval rows", ""]
+    out.append("Scanned:")
+    for root in roots:
+        out.append(f"  {root}")
+    out.append(f"  threads read: {threads}")
+    out.append(f"  commands that stopped for approval: {len(blocked)}")
+    out.append("")
+    if not proposals:
+        out.append("Nothing to propose: no command stopped for approval in the threads above.")
+        out.append("If that is a surprise, check the root printed above is the store Zoo is using.")
+        return "\n".join(out)
+    out.append("Proposed allow rows - NOTHING IS WRITTEN, you pick:")
+    out.append("")
+    for row, covers in proposals:
+        out.append(f'  "{row}"')
+        for cmd in covers:
+            out.append(f"      unblocks: {cmd}")
+        out.append("")
+    out.append("To apply: add the rows you want to .vscode/settings.json "
+               "zoo-code.allowedCommands, quit VS Code fully, then run")
+    out.append("  python3 .agents/scripts/zoo_permissions_apply.py --apply   (PC: python)")
+    return "\n".join(out)
+
+
+def group(blocked: list[str], allow: list[str],
+          deny: list[str]) -> list[tuple[str, list[str]]]:
+    """One proposed row per family, carrying every blocked command it would unblock.
+
+    Three things drop out here rather than reaching the operator's pick-list:
+
+      * a command the lists ALREADY auto-approve — it was blocked when Zoo asked, but the row
+        that fixed it has since landed. Proposing it again is noise, and a pick-list nobody
+        trusts is a pick-list nobody reads.
+      * a command the fence DENIES — this door grows the allow list; the deny list is the fence
+        and is not what it grows. Inventing a row for a denied command is the door taking the
+        fence apart one proposal at a time.
+      * a duplicate row — one row per family, with its commands listed under it, so the operator
+        picks families rather than re-reading the same prefix five times.
+    """
+    matcher = _matcher()
+    rows: dict[str, list[str]] = {}
+    for cmd in blocked:
+        if matcher.decide(cmd, allow, deny) == "auto_approve":
+            continue
+        row = propose(cmd, allow, deny)
+        if row is None:
+            continue
+        rows.setdefault(row, []).append(cmd)
+    return list(rows.items())
+
+
+def live_lists() -> tuple[list[str], list[str]]:
+    """The lists Zoo is ACTUALLY enforcing — the VS Code memento, not the tracked file.
+
+    ⭐ This is the whole reason the door reads the store instead of `.vscode/settings.json`:
+    that file seeds `globalState` once on a fresh machine and denies never seed at all, so the
+    tracked file is a statement of intent and the memento is the enforced truth. Proposing rows
+    against intent would tell the operator a command is covered when Zoo is still asking for it.
+    [[zoo-approvals-decision-store]]
+
+    Falls back to the tracked lists when no store can be read (a fresh clone, CI, a machine with
+    no VS Code) — with the caller printing which was used, because "your lists are empty" and
+    "I could not find your lists" are different problems.
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "zoo_permissions_apply", SCRIPTS / "zoo_permissions_apply.py")
+    apply_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(apply_mod)
+    for db in apply_mod.candidate_dbs():
+        memento = apply_mod.load_memento(db)
+        if memento:
+            return memento.get("allowedCommands", []), memento.get("deniedCommands", [])
+    return apply_mod.tracked_lists()
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="Read Zoo threads, print the allow rows that would unblock them. "
+                    "Writes nothing.")
+    ap.add_argument("--limit", type=int, default=20,
+                    help="how many of the newest threads to read (default 20)")
+    args = ap.parse_args(argv)
+
+    notify = _notify()
+    roots = notify.store_roots()
+    threads = zoo_threads(roots)[:args.limit]
+    blocked: list[str] = []
+    for thread in threads:
+        for cmd in blocked_commands(notify.read_thread(thread)):
+            if cmd not in blocked:
+                blocked.append(cmd)
+    allow, deny = live_lists()
+    print(render(roots, len(threads), blocked, group(blocked, allow, deny)))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
