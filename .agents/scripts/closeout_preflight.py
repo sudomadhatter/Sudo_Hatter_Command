@@ -318,7 +318,7 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> None:
             rep.info("artifacts", f"no walkthrough.md; verdict is in the pre-08-02 standalone "
                                   f"file {legacy.relative_to(project)}")
             return
-        rep.err("artifacts", f"no walkthrough.md found for '{slug}' - "
+        rep.err("artifacts", f"no walkthrough.md found for '{wf.norm_id(key)}' - "
                              f"code review never recorded a verdict")
         return
     for path in hits:
