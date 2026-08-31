@@ -70,12 +70,108 @@ def test_reader_extracts_only_the_blocked_command():
     assert "ls -la" not in got, "an auto-approved ask never blocked anyone and needs no row"
 
 
+def test_reader_skips_an_ask_zoo_denied():
+    """WIDTH — the boundary, not just the existence of a filter.
+
+    Zoo records three verdicts, and only `null` means it asked. A reader that filters on
+    "not approved" instead of "no decision" proposes an allow row for a command the fence
+    REFUSED — the door growing the fence backwards, one row at a time. The fixture carries
+    approve and null, so the deny arm needs its own case or nothing pins it.
+    """
+    m = _mod()
+    denied = [{"type": "ask", "ask": "command", "partial": False,
+               "text": "git push --force", "autoApprovalDecision": "deny"}]
+    assert m.blocked_commands(denied) == []
+
+
 def test_reader_survives_a_mid_write_thread():
     """Zoo rewrites `ui_messages.json` constantly; a partial read is the normal case."""
     m = _mod()
     assert m.blocked_commands([]) == []
     assert m.blocked_commands([{"type": "ask", "ask": "command", "partial": True,
                                 "text": "git status", "autoApprovalDecision": None}]) == []
+
+
+# --- the proposer, and the floor that makes it safe ------------------------------------------
+
+def _battery():
+    """The 78-row destructive battery, imported from the file that owns it.
+
+    Not copied. That battery IS the fence, and a second copy of a fence is a fence that can
+    disagree with itself — the same reason the matcher itself became one module in step 1.
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "test_zoo_permissions", Path(__file__).resolve().parent / "test_zoo_permissions.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+BLOCKED = [
+    "npx create-next-app my-app",
+    "docker compose up -d",
+    "pnpm install --frozen-lockfile",
+]
+
+
+def test_every_proposed_row_allows_its_own_command():
+    """A3(a) — the row has to actually do the job it was proposed for."""
+    m = _mod()
+    import zoo_matcher
+    for cmd in BLOCKED:
+        row = m.propose(cmd, zoo_matcher.ALLOW, zoo_matcher.DENY)
+        assert row, f"no row proposed for {cmd!r}"
+        assert zoo_matcher.decide(cmd, zoo_matcher.ALLOW + [row], zoo_matcher.DENY) == "auto_approve", (
+            f"{row!r} does not auto-approve {cmd!r}")
+
+
+def test_no_proposed_row_unlocks_the_deny_battery():
+    """A3(b) — allows may be broad, denies are the fence (standing ruling, SCC-351)."""
+    m = _mod()
+    import zoo_matcher
+    battery = _battery().BATTERY
+    for cmd in BLOCKED:
+        row = m.propose(cmd, zoo_matcher.ALLOW, zoo_matcher.DENY)
+        leaked = [b for b in battery
+                  if zoo_matcher.decide(b, zoo_matcher.ALLOW + [row], zoo_matcher.DENY) != "auto_deny"]
+        assert not leaked, f"row {row!r} unlocks {len(leaked)} destructive rows: {leaked[:3]}"
+
+
+def test_breadth_floor_refuses_a_bare_letter():
+    """A3(c) — ⛔ THE assertion, and the one the first cut of this plan did not have.
+
+    Measured against the live lists: the shortest prefix flipping `npx create-next-app my-app`
+    to auto_approve is the single character `n`. It leaks ZERO of the 78 battery rows, so (a)
+    and (b) above BOTH pass while that row silently auto-approves `npm publish`, `node evil.js`,
+    `nc -l 4444` and `netsh advfirewall set allprofiles state off` — none of which is in the
+    battery, and none of which anyone asked for. Shortest is not safest.
+
+    The floor: a row is at least the command's full first token, and never stops inside a token
+    it does not complete.
+    """
+    m = _mod()
+    import zoo_matcher
+    cmd = "npx create-next-app my-app"
+    row = m.propose(cmd, zoo_matcher.ALLOW, zoo_matcher.DENY)
+    assert row != "n", "the bare letter is the hole this floor exists to close"
+    assert row.split()[0] == cmd.split()[0], (
+        f"{row!r} stops inside the first token of {cmd!r}")
+    for hostile in ("npm publish", "node evil.js", "nc -l 4444",
+                    "netsh advfirewall set allprofiles state off"):
+        assert zoo_matcher.decide(hostile, zoo_matcher.ALLOW + [row], zoo_matcher.DENY) != "auto_approve", (
+            f"row {row!r} silently auto-approves {hostile!r}")
+
+
+def test_floor_holds_at_every_token_boundary():
+    """WIDTH, not only existence: every row must end on a boundary, not just the first one."""
+    m = _mod()
+    import zoo_matcher
+    for cmd in BLOCKED:
+        row = m.propose(cmd, zoo_matcher.ALLOW, zoo_matcher.DENY)
+        tokens = cmd.split()
+        boundaries = {" ".join(tokens[:k]) for k in range(1, len(tokens) + 1)}
+        assert row in boundaries, f"{row!r} is not a token-boundary prefix of {cmd!r}"
 
 
 if __name__ == "__main__":

@@ -71,3 +71,39 @@ def zoo_threads(roots: list[Path] | None = None) -> list[Path]:
             found += sorted(root.glob("*/ui_messages.json"),
                             key=lambda p: p.stat().st_mtime, reverse=True)
     return found
+
+
+def _matcher():
+    """The matcher mirror — ONE module, the same one the 78-row battery pins (SCC-354 A1)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("zoo_matcher", SCRIPTS / "zoo_matcher.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def propose(cmd: str, allow: list[str], deny: list[str]) -> str | None:
+    """The shortest allow row that would have let `cmd` through — subject to the breadth floor.
+
+    ⛔ The floor is not a nicety, and the shortest prefix on its own is a hole. Measured against
+    the live lists: the shortest prefix that flips `npx create-next-app my-app` to auto_approve
+    is the single character `n`, and it leaks NONE of the 78 destructive battery rows — so a
+    proposer checked only for "does it work" and "does it leak the battery" emits it, and that
+    row then auto-approves `npm publish`, `node evil.js`, `nc -l 4444` and
+    `netsh advfirewall set allprofiles state off`. The battery is a fence around what this house
+    already knew to fear; it is not a definition of safe.
+
+    So candidates are TOKEN BOUNDARIES only — `npx`, then `npx create-next-app`, and so on. A row
+    never stops inside a token it does not complete, which is what makes "shortest" mean
+    "narrowest family" instead of "fewest characters".
+
+    Returns None when no boundary flips it: the command is denied by the fence, and growing the
+    allow list is the wrong answer to that. The fence is not what this door grows.
+    """
+    decide = _matcher().decide
+    tokens = cmd.split()
+    for k in range(1, len(tokens) + 1):
+        row = " ".join(tokens[:k])
+        if decide(cmd, allow + [row], deny) == "auto_approve":
+            return row
+    return None

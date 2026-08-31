@@ -1,0 +1,40 @@
+{
+  "test": ["python3", ".agents/scripts/tests/test_llm_approvals.py"],
+  "mutants": [
+    {"id": "M1 the reader stops distinguishing an auto-approved ask from a blocked one",
+     "file": ".agents/scripts/llm_approvals.py",
+     "original": "if msg.get(\"partial\") is True or msg.get(\"autoApprovalDecision\") is not None:",
+     "mutated": "if msg.get(\"partial\") is True:",
+     "case": "test_reader_extracts_only_the_blocked_command",
+     "unfiltered": true},
+
+    {"id": "M2 WIDTH - the decision filter narrows from no-decision to not-approved, so a DENIED ask is proposed",
+     "file": ".agents/scripts/llm_approvals.py",
+     "original": "msg.get(\"autoApprovalDecision\") is not None:",
+     "mutated": "msg.get(\"autoApprovalDecision\") == \"approve\":",
+     "case": "test_reader_skips_an_ask_zoo_denied",
+     "unfiltered": true},
+
+    {"id": "M3 a stream in flight is read as a finished command",
+     "file": ".agents/scripts/llm_approvals.py",
+     "original": "if msg.get(\"partial\") is True or",
+     "mutated": "if False or",
+     "case": "test_reader_survives_a_mid_write_thread",
+     "unfiltered": true},
+
+    {"id": "M4 THE HOLE - the breadth floor drops from token boundaries to character prefixes",
+     "file": ".agents/scripts/llm_approvals.py",
+     "original": "row = \" \".join(tokens[:k])",
+     "mutated": "row = cmd[:k]",
+     "case": "test_breadth_floor_refuses_a_bare_letter",
+     "unfiltered": true},
+
+    {"id": "M5 CI Linux falls back through to the Mac store root",
+     "file": ".agents/scripts/zoo_notify.py",
+     "original": "return home / \".config\" / \"Code\" / \"User\"",
+     "mutated": "return home / \"Library\" / \"Application Support\" / \"Code\" / \"User\"",
+     "case": "test_store_root_resolves_on_ci_linux",
+     "test": ["python3", ".agents/scripts/tests/test_zoo_notify.py"],
+     "unfiltered": true}
+  ]
+}
