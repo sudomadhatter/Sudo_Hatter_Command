@@ -2753,6 +2753,143 @@ def main() -> int:
                     f"- run /smh-sync-agents on this machine")
 
 
+    if c.block("CS-19 · SCC-357 · the epic ships, so the PRD gets RECONCILED against what shipped"):
+        # The story-level currency check lives in `closeout_preflight` (block OV there). This is
+        # the EPIC-level half, and it lives in the shipping door because the epic ship is the only
+        # moment what-was-built is finally comparable to what-was-specified.
+        #
+        # ⛔ WHY IT IS A RECONCILE AND NOT AN UPDATE. The PRD says what was WANTED; the overview
+        # guide says what was BUILT. Rewriting the first from the second turns a requirements
+        # document into a second, more expensive copy of the guide — 110 KB of AGY's PRD read and
+        # edited at every ship, changing no decision. So the step opens only the PRD sections this
+        # epic's FRs map to, and its two legal outcomes are a sprint-change-proposal through
+        # `/bmad-correct-course` or the recorded line `PRD: unchanged`.
+        # ⛔ RESOLVED FROM `ROOT`, NOT FROM `CMDS`. `CMDS` is assigned inside a SIBLING block,
+        # so under `--case CS-19` it is unbound and this block dies with an UnboundLocalError —
+        # a crash that exits non-zero and is therefore indistinguishable from a red, which a
+        # mutation sweep would score as a KILL for every mutant aimed here. Same lesson the
+        # CONTROLS block in test_door_preflight_order.py records, hit again while writing this.
+        door = read(ROOT / ".agents/commands/cicd-push-e2e.md")
+
+        def after(hay: str, first: str, second: str) -> bool:
+            """`first` appears, and `second` appears after it."""
+            i = hay.find(first)
+            j = hay.find(second)
+            return i >= 0 and j > i
+
+        # ⛔ SCOPED TO THE STEP, NOT TO THE FILE. A and D read the whole door, so a mention of
+        # either needle ANYWHERE — the header blurb, a `ⓘ` aside, a note explaining why the step
+        # was removed — keeps them green over a door that no longer carries the step. The
+        # ordering checks (B, C) are position claims and legitimately read the file end to end;
+        # the PRESENCE claims are about Step 5.5 and must read Step 5.5.
+        def step(hay: str, heading: str) -> str:
+            i = hay.find(heading)
+            if i < 0:
+                return ""
+            j = hay.find("\n## ", i + len(heading))
+            return hay[i:] if j < 0 else hay[i:j]
+
+        step55 = step(door, "## Step 5.5")
+        c.check("CS-19 A the door carries the epic-level PRD reconcile, IN Step 5.5",
+                "PRD: unchanged" in step55 and "/bmad-correct-course" in step55,
+                "the reconcile names both outcomes, or it is an instruction with one branch: "
+                + (step55.strip()[:160] or "<no Step 5.5 section at all>"))
+
+        # ⭐ POSITION IS THE CLAIM, not presence. Before the ancestor proof it would reconcile
+        # against a merge that has not happened; after the ticket goes Done it is paperwork on a
+        # closed epic that nobody returns to. It has to sit between them.
+        c.check("CS-19 B ORDER --is-ancestor -> the reconcile",
+                after(door, "merge-base --is-ancestor", "PRD: unchanged"),
+                "reconciling before the merge is proved reconciles against a merge that may "
+                "not have happened")
+        c.check("CS-19 C ORDER the reconcile -> the epic ticket transition",
+                after(door, "PRD: unchanged", 'transition --key'),
+                "after the ticket is Done the reconcile is paperwork on closed work")
+
+        # ⛔ AND IT MUST NOT EDIT THE PRD IN PLACE ON `main`. The whole point of routing through
+        # correct-course is that a requirements change is itself reviewable work on a branch.
+        c.check("CS-19 D the reconcile routes an edit through a branch, never a write on main",
+                "prd-reconcile" in step55,
+                "a PRD edit is work: it takes its own lane and its own PR like anything else")
+
+        # CONTROLS — each ordering claim above, fired at a fixture built to fail it.
+        GOOD = "x merge-base --is-ancestor y\nz PRD: unchanged w\nq transition --key r\n"
+        BAD_EARLY = "z PRD: unchanged w\nx merge-base --is-ancestor y\nq transition --key r\n"
+        BAD_LATE = "x merge-base --is-ancestor y\nq transition --key r\nz PRD: unchanged w\n"
+        c.check("CS-19 CONTROL the reference order passes B and C",
+                after(GOOD, "merge-base --is-ancestor", "PRD: unchanged")
+                and after(GOOD, "PRD: unchanged", "transition --key"))
+        c.check("CS-19 CONTROL a reconcile placed BEFORE the ancestor proof is caught",
+                not after(BAD_EARLY, "merge-base --is-ancestor", "PRD: unchanged"),
+                "presence is unchanged - only order moved")
+        c.check("CS-19 CONTROL a reconcile placed AFTER the transition is caught",
+                not after(BAD_LATE, "PRD: unchanged", "transition --key"),
+                "presence is unchanged - only order moved")
+        # ⛔ And the control for the SCOPING itself: a door that talks about the reconcile
+        # outside the step passes a whole-file `in`, and must not pass A.
+        ELSEWHERE = ("## Step 5\n\nWe used to record `PRD: unchanged` and run "
+                     "`/bmad-correct-course` here; that step was removed.\n\n"
+                     "## Step 5.5\n\nNothing to do.\n\n## Step 6\n")
+        c.check("CS-19 CONTROL a door that only MENTIONS the reconcile elsewhere fails A",
+                ("PRD: unchanged" in ELSEWHERE)
+                and not ("PRD: unchanged" in step(ELSEWHERE, "## Step 5.5")),
+                "the needle is present file-wide and absent from the step - which is exactly "
+                "the state the unscoped check called green")
+
+
+    if c.block("CS-20 · SCC-357 · the guide's ALLOW half — the save writes it, the door commits it"):
+        # ⛔ CS-19 and `closeout_preflight`'s OV block are both REFUSAL halves: they prove the
+        # system says NO when the accounting is missing. Nothing proved the system says YES —
+        # that the instruction producing the accepted line exists at all, and that the file it
+        # tells a story to edit is one the landing door actually stages. A refusal half with no
+        # allow half is a gate around an empty room: delete Step 3.5 outright and every OV case
+        # stays green, because each poses its own walkthrough by hand.
+        save = read(ROOT / ".agents/commands/cicd-update-sprint-memory.md")
+
+        def step(hay: str, heading: str) -> str:
+            i = hay.find(heading)
+            if i < 0:
+                return ""
+            j = hay.find("\n## ", i + len(heading))
+            return hay[i:] if j < 0 else hay[i:j]
+
+        s35 = step(save, "## Step 3.5")
+        c.check("CS-20 A the story save carries the guide-currency step",
+                bool(s35) and "project_overview_guide.md" in s35,
+                "no Step 3.5 naming the guide - the check downstream would refuse every story "
+                "for failing to do a thing nothing tells it to do")
+
+        # ⛔ ALL THREE STATES, and `edited` is the one that looks redundant. While the lane is
+        # live the diff proves the edit and the line is unnecessary; the preflight is re-run
+        # AFTER the landing, when that diff is empty and the line is the only surviving evidence.
+        # A save that teaches only `unchanged`/`absent` sends the story that did the most work
+        # into the prune door's refusal.
+        for state in ("edited", "unchanged", "absent"):
+            c.check(f"CS-20 B ...and teaches the `{state}` state",
+                    state in s35,
+                    "closeout_preflight.py accepts exactly these three; a state the save never "
+                    "teaches is a state no walkthrough will ever carry")
+
+        # ⛔ TA11 · AND THE DOOR HAS TO STAGE IT. The story close-out commits by EXPLICIT PATH
+        # (never `git add -A`, per git-policy), so a file the save edits and the path list omits
+        # is edited, left unstaged, and destroyed with the worktree at the prune - after the
+        # close-out reported the guide current.
+        door = read(ROOT / ".agents/commands/cicd-close-story-merge-tree.md")
+        c.check("CS-20 C the story door's explicit-path commit list names the guide",
+                "docs/project_overview_guide.md" in door,
+                "an explicit-path commit that omits the guide loses the edit at the prune")
+
+        # CONTROLS — the predicates above, fired at surfaces built to fail them.
+        NO_STEP = "## Step 3\n\nsave things\n\n## Step 4\n\nmore\n"
+        c.check("CS-20 CONTROL a save with no Step 3.5 fails A",
+                not step(NO_STEP, "## Step 3.5"),
+                "the section reader must return empty, or A passes on any file")
+        TWO_STATES = ("## Step 3.5\n\nEdit `docs/project_overview_guide.md`, or write "
+                      "`unchanged`/`absent`.\n\n## Step 4\n")
+        c.check("CS-20 CONTROL a save teaching only two states fails B",
+                "edited" not in step(TWO_STATES, "## Step 3.5"),
+                "this is the exact regression the post-landing re-run turns into a refusal")
+
     return c.finish()
 
 

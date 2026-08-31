@@ -1,0 +1,71 @@
+{
+  "v": 1,
+  "task": "SCC-347",
+  "sha": "9d23c6a5178b106b6534ea8dbc49c81fe321d3d5",
+  "tip": "d1ab5a68b7701cd4845e6c7331495101a3c44b2d",
+  "trigger": "close-out",
+  "when": "2026-08-31T12:23:59-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/INDEX.md",
+    ".agents/commands/INDEX.md",
+    ".agents/commands/cicd-close-story-merge-tree.md",
+    ".agents/commands/cicd-push-e2e.md",
+    ".agents/commands/cicd-update-sprint-memory.md",
+    ".agents/rules/git-policy.md",
+    ".agents/scripts/check_links.py",
+    ".agents/scripts/closeout_preflight.py",
+    ".agents/scripts/ship_preflight.py",
+    ".agents/scripts/tests/test_check_links.py",
+    ".agents/scripts/tests/test_closeout_preflight.py",
+    ".agents/scripts/tests/test_command_surfaces.py",
+    ".agents/scripts/tests/test_door_preflight_order.py",
+    ".agents/scripts/tests/test_stale_base_refs.py",
+    ".agents/skills/cicd-push-e2e/SKILL.md",
+    ".agents/templates/project_overview_guide.md",
+    ".agents/workflows/cicd-push-e2e.md",
+    ".claude/skills/cicd-push-e2e/SKILL.md",
+    ".opencode/commands/cicd-close-story-merge-tree.md",
+    ".opencode/commands/cicd-push-e2e.md",
+    ".opencode/commands/cicd-update-sprint-memory.md",
+    ".roo/commands/cicd-push-e2e.md",
+    "_artifacts/_main/2026-08-31_cicd-pr-door-and-guide/gates/suite.json",
+    "_artifacts/_main/2026-08-31_cicd-pr-door-and-guide/implementation_plan.md",
+    "_artifacts/_main/2026-08-31_cicd-pr-door-and-guide/sweep-b.json",
+    "_artifacts/_main/2026-08-31_cicd-pr-door-and-guide/sweep-c.json",
+    "_artifacts/_main/2026-08-31_cicd-pr-door-and-guide/sweep.json",
+    "_artifacts/_main/2026-08-31_cicd-pr-door-and-guide/task.yaml",
+    "_artifacts/_main/2026-08-31_cicd-pr-door-and-guide/tickets/SCC-356.md",
+    "_artifacts/_main/2026-08-31_cicd-pr-door-and-guide/tickets/SCC-357.md",
+    "_artifacts/_main/2026-08-31_cicd-pr-door-and-guide/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
+    "docs/_scc_sops_prds/git_walkthrough_settings.md",
+    "docs/_scc_sops_prds/jira_integration_guide.md",
+    "docs/_scc_sops_prds/jira_manual.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md",
+    "docs/workspace-standard.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-31_cicd-pr-door-and-guide/walkthrough.md",
+    "verdict": "PASS @ 9d23c6a",
+    "gates": {
+      "suite": "pass@f5b3af7"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/git-policy.md"
+  ]
+}

@@ -214,8 +214,14 @@ sentence forbids (*"never rescue it by committing in the shared checkout"*). The
 either: a bare `main` carries no key segment, so `--expect-key` WARNs rather than errors, and exit 1 does not
 block. Order is the guard.
 
-Then commit — **EXPLICIT PATHS ONLY** (board, story file, active-context, artifacts). `git diff --cached --stat`
+Then commit — **EXPLICIT PATHS ONLY** (board, story file, active-context, artifacts, **and
+`docs/project_overview_guide.md` when Step 3.5 of the save edited it**). `git diff --cached --stat`
 must show ONLY this story's files; `git add -A` / `.` / `-u` are banned, and the worktree does not repeal that.
+
+⛔ **A guide edit left out of this commit is the failure mode the check cannot see.** Step 3.5
+writes it into the worktree; the `overview` row of the preflight compares the BRANCH against its
+epic base. An unstaged edit satisfies neither — the branch does not carry it and the walkthrough
+does not account for it — so the close-out refuses on work that was actually done.
 
 ## Step 3 — Land the story on the EPIC branch (the one sanctioned push)
 <!-- JIRA-HOOK: ticket-moved check runs here BEFORE the landing push — the story's Jira ticket must be in the required status or the landing stops. Separate story; not built yet. -->
