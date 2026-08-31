@@ -163,6 +163,7 @@ lenses_na: none
 findings: 0 decision · 37 patch · 0 defer   (2 noise-dismissed · 0 relevance kills)
 dispositions: per-lens: blind-hunter=8/2/0 · edge-case-hunter=8/0/0 · literal-correctness-hunter=7/0/0 · acceptance-auditor=7/0/0 · test-adequacy-auditor=7/0/0
 severity_floor: none
+drift: undeclared=4 · unimplemented=0 · incomplete=0 - the Acceptance Auditor reconciled the diff against the plan's `## Declared Change Set` and found four files the list did not name: `.opencode/commands/cicd-push-e2e.md` (the S8 correction — the mirror is a full byte copy, not a thin launcher), `_artifacts/_main/INDEX.md` (this session's ledger row, which `test_check_maps` F2 demanded), and `docs/doc-graph.json` + `docs/doc-graph.md` (regenerated and staged by the armed pre-commit hook, never hand-edited). All four are now declared in the plan; nothing declared went unimplemented and `declared_change_set.py parse` reports `incomplete: []`.
 notes: every finding fixed in-lane before the verdict — no defer, no residue ticket. The sweep was rebuilt from 8 existence mutants to 15 narrowings/paraphrases/inversions; 15/15 killed.
 
 Verdict: PASS @ 5592311d

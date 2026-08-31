@@ -171,7 +171,8 @@ after all, that is the one condition that re-arms it.
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — one row → the SOP-currency gate (S7)
 - EDIT `.opencode/commands/cicd-push-e2e.md` — the full-body mirror, re-synced by byte copy → S8 (⚠ **undeclared in the first draft**; the plan wrongly concluded the sync was a no-op, and the door-parity check caught it. Recorded here because the review's drift check reconciles the diff against this list, and an honest list is the point)
 - EDIT `_artifacts/_main/INDEX.md` — this session's ledger row → the standing `check_maps` F2 obligation (⚠ undeclared in the first draft; caught by the suite)
-- EDIT `docs/doc-graph.json` · `docs/doc-graph.md` — regenerated and staged by the armed `pre-commit` hook, never hand-edited (⚠ undeclared in the first draft)
+- EDIT `docs/doc-graph.json` — regenerated and staged by the armed `pre-commit` hook, never hand-edited → the standing map-currency gate (⚠ undeclared in the first draft)
+- EDIT `docs/doc-graph.md` — regenerated with it, same hook, same run → the standing map-currency gate (⚠ undeclared in the first draft)
 - EDIT `.agents/commands/cicd-push-e2e.md` — Step 6.5's comment gains the Step 5.5 PRD slot → AC-5 (S4; the edit S4 needs to be coherent, undeclared in the first draft)
 
 ## What this lane does NOT do
