@@ -71,7 +71,10 @@ def test_auto_approved_ask_never_fires():
     m = _mod()
     msgs = _load("zoo_ui_messages_ask.json")
     msgs[-1]["autoApprovalDecision"] = "approve"
-    msgs[-1]["isAnswered"] = True
+    # deliberately NOT setting isAnswered: the mutation sweep proved that setting it made the
+    # isAnswered guard catch this case first, leaving the autoApprovalDecision guard untested
+    assert m.classify(msgs) is None
+    msgs[-1]["autoApprovalDecision"] = "deny"
     assert m.classify(msgs) is None
 
 
@@ -144,11 +147,13 @@ def test_ask_and_turn_end_are_distinguishable():
 def test_store_root_resolves_on_mac_and_on_windows():
     """[[two-machines-mac-and-pc]] — a hardcoded Application Support path is a PC no-op."""
     m = _mod()
-    mac = m.store_root(platform="darwin", home=Path("/Users/x"), appdata=None)
-    win = m.store_root(platform="win32", home=Path("C:/Users/x"),
-                       appdata=Path("C:/Users/x/AppData/Roaming"))
+    home = Path("/Users/x")          # SAME home both times, or the paths differ for that reason
+    mac = m.store_root(platform="darwin", home=home, appdata=None)
+    win = m.store_root(platform="win32", home=home, appdata=home / "AppData" / "Roaming")
     assert "Application Support" in str(mac), mac
-    assert str(win) != str(mac), "the PC must not resolve to the Mac's path"
+    assert "AppData" in str(win), win
+    assert "Application Support" not in str(win), "the PC must not resolve to the Mac's path"
+    assert str(win) != str(mac), (win, mac)
     assert str(mac).endswith("zoocodeorganization.zoo-code/tasks"), mac
 
 
@@ -172,6 +177,9 @@ if __name__ == "__main__":
         except BaseException:
             _failed.append(_name)
             traceback.print_exc()
-    print(f"-- {len(_fns) - len(_failed)}/{len(_fns)} passed --"
-          + (f"  FAILED: {', '.join(_failed)}" if _failed else ""))
+    print(f"-- {len(_fns) - len(_failed)}/{len(_fns)} passed --")
+    if _failed:
+        # mutation_sweep.py attributes a kill by a line STARTING with "FAILED:" (its L186), so
+        # this must be its own line - on the tally line it reads as an unattributable sweep error
+        print("FAILED: " + ", ".join(_failed))
     sys.exit(1 if _failed else 0)
