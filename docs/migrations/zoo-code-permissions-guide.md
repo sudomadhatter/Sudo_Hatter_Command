@@ -122,6 +122,16 @@ damage and never collides with a legitimate ceremony step (both properties enfor
 [test_zoo_permissions.py](../../.agents/scripts/tests/test_zoo_permissions.py): a 68-row
 destructive battery must all deny, the 25-step ceremony set must all approve, on every suite run).
 
+**Growing the allow list from what actually got blocked.** `/smh-llm-approvals` reads Zoo's own
+thread store, keeps the asks Zoo genuinely stopped on (`autoApprovalDecision` null — see §4), and
+prints the shortest row that would have let each one through. It **writes nothing**: you pick the
+rows, add them here, and §7 applies them. Every proposed row ends on a whole word — the shortest
+*character* prefix that unblocks `npx create-next-app my-app` is the single letter `n`, which
+trips none of the destructive battery below and silently auto-approves `npm publish`,
+`node evil.js`, `nc -l 4444` and `netsh advfirewall set allprofiles state off`. That is the
+mechanic at the top of this section stated as a proposal bug: under a broad allow, an un-denied
+spelling auto-runs, so a row's *breadth* is the decision, not its length.
+
 **ALLOW families**
 
 | Family | Entries | Why |
@@ -223,7 +233,21 @@ Close-out review additions (same day, after the measurement): the battery grew t
 |---|---|---|---|
 | **Claude Code** | [.claude/settings.json](../../.claude/settings.json) (tracked) + `.claude/settings.local.json` (per machine) | Pattern rules: `Bash(git -C * status:*)` mid-wildcards, compound commands checked per segment | Already at target level. Deny-less; unmatched → ask; hard stops live in hooks + rules. |
 | **Zoo Code** | this guide | lowercase starts-with prefix, per piece | The subject of this page. |
+| **opencode** | its own config under `.opencode/` | WHOLE-string prefix, no per-piece split | **Deliberately outside `/smh-llm-approvals`** (SCC-354): a whole-string matcher has no useful prefix to propose, so a row would unblock exactly one invocation and the list would grow one unreadable row per command. |
+| **Codex** | `~/.codex/` config (`approval_policy` / sandbox), per machine | policy-level, not per-command lists | **Deliberately outside `/smh-llm-approvals`** (SCC-354): there is no per-command list to grow, so there is nothing to propose. |
 | **Antigravity** | its own per-machine allowlist config (AGY carries 49 local allow rules) | its own | Promoting AGY's rules into tracked settings is the standing AVCH-ticket decision (SCC-346 hand-back). Same principle applies: find the decision store, track the source, script the apply. |
+
+### 11.0 Growing a list — and why only Zoo gets a door
+
+Claude Code puts a *don't ask again* button in its own approval prompt, so its allow list grows
+while the operator works. Zoo has no such affordance, and §3's seeding trap means the tracked file
+cannot fill the gap either. That asymmetry is the whole reason
+[`/smh-llm-approvals`](../../.agents/commands/smh-llm-approvals.md) exists and why it is Zoo-first:
+Zoo is the surface that cannot help itself.
+
+Claude still gets read — the door prints a **paste-ready hand-off block** naming one resolved
+`.claude/settings.json` and the `Bash(...)` rules to add, because Claude Code cannot edit its own
+settings. It hands the block to the operator; another agent does the edit.
 
 ### 11.1 Notifications — the third surface, and the one Zoo does not have
 
