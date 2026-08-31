@@ -262,7 +262,7 @@ def test_windows_writes_a_startup_command_not_a_plist():
         home = Path(d)
         rc = m.apply(repo=_repo(Path(d)), home=home, platform="win32", load=False)
         assert rc == 0
-        target = m.startup_path(home, platform="win32")
+        target = m.startup_path(home)
         assert target.is_file(), target
         assert target.suffix == ".cmd", target
         assert "Startup" in target.parts, target.parts

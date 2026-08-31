@@ -65,7 +65,7 @@ def plist_path(home: Path) -> Path:
     return Path(home) / "Library" / "LaunchAgents" / f"{LABEL}.plist"
 
 
-def startup_path(home: Path, platform: str = "win32") -> Path:
+def startup_path(home: Path) -> Path:
     return (Path(home) / "AppData" / "Roaming" / "Microsoft" / "Windows"
             / "Start Menu" / "Programs" / "Startup" / "zoo-notify.cmd")
 
@@ -74,7 +74,7 @@ def target_path(home: Path, platform: str) -> Path | None:
     if platform == "darwin":
         return plist_path(home)
     if platform == "win32":
-        return startup_path(home, platform)
+        return startup_path(home)
     return None
 
 
@@ -199,7 +199,8 @@ def apply(repo: Path, home: Path | None = None, platform: str | None = None,
         return 0
 
     target.parent.mkdir(parents=True, exist_ok=True)
-    (home / "Library" / "Logs").mkdir(parents=True, exist_ok=True) if platform == "darwin" else None
+    if platform == "darwin":
+        (home / "Library" / "Logs").mkdir(parents=True, exist_ok=True)
     target.write_bytes(payload)
 
     # ⛔ House law: on a write, verify the FILE - never `$?`.
