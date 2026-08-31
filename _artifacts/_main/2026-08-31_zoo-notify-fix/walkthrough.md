@@ -375,9 +375,7 @@ No new abstraction with a single caller: `zoo_notify_install.py` is an entry poi
 shape as its sibling `zoo_permissions_apply.py`. Both machines respected — no bare `python`, no
 `C:/` literal, no `;` separator, and every path assertion compares `Path` parts rather than strings.
 
-```
 Verdict: CONCERNS @ a136927e
-```
 
 **Why CONCERNS and not PASS.** Every gate above is green and every finding is fixed. The cap is
 for two claims that assert **machine state this Mac cannot reach**, following the SCC-332
