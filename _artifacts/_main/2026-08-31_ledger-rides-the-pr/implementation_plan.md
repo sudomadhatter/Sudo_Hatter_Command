@@ -293,3 +293,12 @@ warns about, arriving through a dangling cross-reference rather than a weak guar
 **No sibling landing-order dependency** — measured, not assumed: two worktrees, both at `344eed57`.
 
 Audit verdict: GO
+
+## Approval
+
+**Approval (2026-08-31):** "Approved" — the operator's verbatim word this turn, given at the
+`/smh-plan-task SCC-358` Step 5 stop. Covers this plan and only this plan (one lane, no subtasks),
+as it stood at `9415f732` (`Audit verdict: GO` recorded at that commit) — recorded at `<pending>`.
+
+Planning scope only, per `000-PLAN-FIRST-GATE`: it is not merge approval and not a ticket
+transition. Edit this plan after this line and the gate re-arms at `/smh-quick-dev` Step 1.5.
