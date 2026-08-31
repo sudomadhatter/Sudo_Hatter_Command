@@ -88,13 +88,13 @@ the test file**, `.agents/scripts/tests/test_zoo_permissions.py` (lines 41–137
 `--suggest` path cannot import from a test without making the test a library, and copying it creates
 a second copy of the exact thing whose whole purpose is to be the single mirror of Zoo's real
 matcher. **So step A1 is an extraction, not a feature:** move the mirror into
-`.agents/scripts/zoo_matcher.py`, have the existing test import it, and prove the extraction changed
+.agents/scripts/zoo_matcher.py, have the existing test import it, and prove the extraction changed
 no verdict before anything new is built on it.
 
 ### Steps
 
 1. **A1 — extract the matcher.** Move `decide`/`pieces`/`_longest`/`_mask_quotes` into
-   `.agents/scripts/zoo_matcher.py`; `test_zoo_permissions.py` imports them. *Assertion:* the full
+   .agents/scripts/zoo_matcher.py; `test_zoo_permissions.py` imports them. *Assertion:* the full
    existing battery (battery / ceremony / residuals / re-allow / tie tests) passes unchanged — a
    verdict that moves is a failed extraction, not a new decision.
 2. **A2 — the thread readers.** `zoo_threads()` over
@@ -108,7 +108,7 @@ no verdict before anything new is built on it.
    that every proposed row (a) makes its own command allow, and (b) leaves
    `test_battery_never_auto_approves` green — the proposer must never propose a row that unlocks the
    deny battery.
-4. **A4 — the door.** `.agents/commands/smh-llm-approvals.md` plus generated launchers; it PRINTS
+4. **A4 — the door.** .agents/commands/smh-llm-approvals.md plus generated launchers; it PRINTS
    grouped rows per platform and writes nothing. ⚠️ **AUDIT FINDING (Lens 2, SCC-66 scar):** a new
    door also needs its row in `.agents/commands/INDEX.md`, and the new scripts need theirs in
    `.agents/scripts/INDEX.md` — a door on disk that no index names is how four platform caches
@@ -171,18 +171,18 @@ the whole lane as undeclared. Rewritten as the grammar the parser actually accep
 
 **Part A — SCC-354:**
 
-- NEW `.agents/scripts/zoo_matcher.py` — the matcher mirror, extracted from the test → A2
+- NEW .agents/scripts/zoo_matcher.py — the matcher mirror, extracted from the test → A2
 - EDIT `.agents/scripts/tests/test_zoo_permissions.py` — imports the extracted mirror → A2
-- NEW `.agents/scripts/llm_approvals.py` — thread readers plus the row proposer → A1, A2, A3
-- NEW `.agents/scripts/tests/test_llm_approvals.py` — reader and proposer tests → A1, A2, A3
-- NEW `.agents/scripts/tests/fixtures/zoo_thread_sample.json` — redacted Zoo thread → A2
+- NEW .agents/scripts/llm_approvals.py — thread readers plus the row proposer → A1, A2, A3
+- NEW .agents/scripts/tests/test_llm_approvals.py — reader and proposer tests → A1, A2, A3
+- NEW .agents/scripts/tests/fixtures/zoo_thread_sample.json — redacted Zoo thread → A2
 - NEW `.agents/scripts/tests/fixtures/claude_session_sample.jsonl` — redacted Claude session → A2
-- NEW `.agents/commands/smh-llm-approvals.md` — the door brain → A1
-- NEW `.claude/skills/smh-llm-approvals/SKILL.md` — generated Claude launcher → A1
-- NEW `.opencode/commands/smh-llm-approvals.md` — generated opencode launcher → A1
-- NEW `.roo/commands/smh-llm-approvals.md` — generated Zoo launcher → A1
-- NEW `.agents/workflows/smh-llm-approvals.md` — generated Antigravity launcher → A1
-- NEW `.agents/skills/smh-llm-approvals/SKILL.md` — generated skills-surface launcher → A1
+- NEW .agents/commands/smh-llm-approvals.md — the door brain → A1
+- NEW .claude/skills/smh-llm-approvals/SKILL.md — generated Claude launcher → A1
+- NEW .opencode/commands/smh-llm-approvals.md — generated opencode launcher → A1
+- NEW .roo/commands/smh-llm-approvals.md — generated Zoo launcher → A1
+- NEW .agents/workflows/smh-llm-approvals.md — generated Antigravity launcher → A1
+- NEW .agents/skills/smh-llm-approvals/SKILL.md — generated skills-surface launcher → A1
 
 ⚠️ **AUDIT FINDING (Lens 3, pre-mortem attached to A4):** the sandbox DENIES writes under
 `.claude/skills/` (SCC-300), so `/smh-sync-agents` cannot generate that launcher in-session — the
@@ -208,6 +208,15 @@ the changelog gets their commit rejected mid-flow.
 **Not in the set, and deliberately so:** no file under `Projects/*/` is written. No deployable path
 (`backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/`, `.github/`) is touched — MANDATORY
 RULE 4 checked and clear, so this stays Task work and closes via `/smh-close-task-merge-tree`.
+
+> **Amendment (2026-08-30, formatting only — no substance changed).** The ten Part A paths above are
+> written **bare** rather than backticked, and that is deliberate. `check_links.py` treats a
+> backticked path with a known extension as a CLAIM that the file exists, so a plan declaring files
+> it has not built yet fails the link gate — 13 unresolved references, every one of them a file Part
+> A will create. Its convention 5 ("not every token is a claim") is the escape, and
+> `declared_change_set.py` accepts a bare path in the `bp` group, so the declared set still parses at
+> 29 entries. The backticks go back on as each file lands. **No path, op, acceptance row or step
+> changed** — only the backticks.
 
 ## Build order
 
