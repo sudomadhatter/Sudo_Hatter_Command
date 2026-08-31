@@ -193,7 +193,7 @@
       "file": ".agents/scripts/zoo_notify.py",
       "original": "    if dry_run:\n        return 0\n    failed = sorted(",
       "mutated": "    if False:\n        return 0\n    failed = sorted(",
-      "case": "test_self_test_dry_run_exits_0_and_opens_nothing",
+      "case": "test_self_test_dry_run_opens_nothing_and_claims_nothing",
       "unfiltered": true
     },
     {

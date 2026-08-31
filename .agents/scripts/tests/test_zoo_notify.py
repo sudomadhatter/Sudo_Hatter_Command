@@ -466,14 +466,23 @@ def test_self_test_reports_exit_1_when_a_channel_did_not_fire():
     assert m.self_test(dry_run=False) == 1
 
 
-def test_self_test_dry_run_exits_0_and_opens_nothing():
+def test_self_test_dry_run_opens_nothing_and_claims_nothing():
+    """Exit 0 is not the whole contract. A dry run sends nothing, so it must not go on to report
+    'both channels reported OK' — that turns the proof command into a source of false evidence."""
+    import contextlib, io
     m = _mod()
     def _boom(*a, **k):
         raise AssertionError("--self-test --dry-run must not fire either channel")
     m.subprocess = type("S", (), {"run": staticmethod(_boom), "SubprocessError": Exception})()
     m.urllib = type("U", (), {"request": type("R", (), {
         "Request": staticmethod(_boom), "urlopen": staticmethod(_boom)})()})()
-    assert m.self_test(dry_run=True) == 0
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        rc = m.self_test(dry_run=True)
+    out = buf.getvalue()
+    assert rc == 0, rc
+    assert "banner=skipped" in out and "push=skipped" in out, out
+    assert "reported OK" not in out, "a dry run must not claim the channels work: " + out
 
 
 def test_self_test_needs_no_thread_store():
