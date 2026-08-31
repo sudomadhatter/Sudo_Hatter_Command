@@ -883,8 +883,14 @@ check means a PR is the only road in, so a bookkeeping commit made after the mer
 the gate refuses. It was found the hard way, on an epic whose ledger commit needed its own operator
 approval and a hand-built `--no-ff` merge just to land. The row goes in **number-free** — the PR
 number does not exist until Step 4 opens the PR, and the merge SHA not until you click — and both
-land on the ticket at Step 6.5 instead, where they are known. **Step 6 now commits nothing at all**,
-which is the same ban the Task door has carried since SCC-175.
+land on the ticket at Step 6.5 instead, where they are known. It also goes in the **pending** tense:
+at Step 3.5 nothing has shipped yet, so the row records what was *gated* and what is *awaiting your
+merge*, and the deploy outcome joins the PR number on the ticket at Step 6.5. A row written in the
+past tense would be a false record on `main` the moment a deploy went red — and Step 6 could not
+correct it, because **Step 6 now commits nothing at all**, the same ban the Task door has carried
+since SCC-175. Step 3.5 pushes what it commits, in the same step: an unpushed bookkeeping commit is
+the one state `ship_preflight.py` blocks outright, so leaving the push to Step 4 would strand any
+run interrupted between them.
 
 ⚠️ **One repo setting this road depends on, and the door now checks it for you.** The resume half
 proves the merge with `git merge-base --is-ancestor`, so the epic's tip has to still BE an ancestor
