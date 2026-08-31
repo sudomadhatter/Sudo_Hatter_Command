@@ -13,10 +13,19 @@ opinion, so it ASKED). Across the two real threads measured at plan time that sp
 — so a notifier that fired on every ask would page the operator 34 times for the 14 that wanted
 him, and he would mute it inside a day.
 
+⛔ That filter is a DENY-list, deliberately, and the review is why. The first cut carried an
+allow-list of the four ask names read off those two threads. Zoo raises more than four:
+`auto_approval_max_req_reached` is the ask it emits precisely BECAUSE auto-approval hit its cap and
+the operator must intervene, and an allow-list drawn from a thin sample dropped it silently — the
+exact "Zoo sits blocked and nobody knows" state this script exists to end. A notifier fails OPEN: a
+spurious banner costs a glance, a missed one costs the whole feature. `completion_result` is the
+only ask that is not a decision, and it is handled above the guards as a turn ending.
+
 Stdlib only; runs as `python3` (Mac) / `python` (PC). CLI:
     zoo_notify.py --once            classify the newest thread and notify if it earns one
     zoo_notify.py --watch [--interval N]   poll the store and notify on transitions
-    zoo_notify.py --dry-run ...     compose and print; open no network, raise no banner
+    `--dry-run` is a MODIFIER on either mode, never a mode of its own: compose and print,
+    open no network, raise no banner.
 """
 from __future__ import annotations
 
@@ -31,21 +40,17 @@ from pathlib import Path
 
 DEFAULT_TOPIC = "mac-sudo-command"
 EXTENSION_DIR = "zoocodeorganization.zoo-code"
+SETTING_CUSTOM_STORE = "zoo-code.customStoragePath"
 
-# Asks that represent a decision the operator has to make. `completion_result` is deliberately
-# absent — it is a turn ending, not a question, and it is handled before this set is consulted.
-DECISION_ASKS = {"command", "tool", "followup", "resume_completed_task"}
+# The ask vocabulary measured off two real threads (154 messages). Kept as a RECORD of what was
+# observed, never as a filter — see the deny-list note in the module docstring. `classify` does not
+# read this set, and must not: the store's real vocabulary is larger than any sample of it.
+MEASURED_ASKS = {"command", "tool", "followup", "completion_result", "resume_completed_task"}
 
 
-def store_root(platform: str | None = None, home: Path | None = None,
-               appdata: Path | None = None, custom: Path | None = None) -> Path:
-    """Where Zoo keeps its per-task threads. BOTH machines, and the configurable override.
-
-    `zoo-code.customStoragePath` is a real Zoo setting — a watcher that ignores it happily polls an
-    empty directory forever and reports success. [[two-machines-mac-and-pc]]
-    """
-    if custom is not None:
-        return Path(custom) / "tasks"
+def user_dir(platform: str | None = None, home: Path | None = None,
+             appdata: Path | None = None) -> Path:
+    """VS Code's `User` directory on this machine. [[two-machines-mac-and-pc]]"""
     platform = platform if platform is not None else sys.platform
     home = Path(home) if home is not None else Path.home()
     if platform == "win32":
@@ -53,7 +58,57 @@ def store_root(platform: str | None = None, home: Path | None = None,
             os.environ.get("APPDATA", home / "AppData" / "Roaming"))
     else:
         base = home / "Library" / "Application Support"
-    return base / "Code" / "User" / "globalStorage" / EXTENSION_DIR / "tasks"
+    return base / "Code" / "User"
+
+
+def store_root(platform: str | None = None, home: Path | None = None,
+               appdata: Path | None = None, custom: Path | None = None) -> Path:
+    """Where Zoo keeps its per-task threads, in the DEFAULT profile.
+
+    `zoo-code.customStoragePath` is a real Zoo setting — a watcher that ignores it happily polls an
+    empty directory forever and reports success, so `read_custom_store` below wires it to the CLI.
+    """
+    if custom is not None:
+        return Path(custom) / "tasks"
+    return user_dir(platform, home, appdata) / "globalStorage" / EXTENSION_DIR / "tasks"
+
+
+def read_custom_store(user: Path) -> Path | None:
+    """`zoo-code.customStoragePath` out of user settings, or any named profile's settings.
+
+    A parameter no entry point can reach is a claim, not a feature: `store_root(custom=…)` existed
+    from the first cut and nothing ever passed it, so the documented setting was silently ignored.
+    """
+    candidates = [user / "settings.json"]
+    profiles = user / "profiles"
+    if profiles.is_dir():
+        candidates += sorted(profiles.glob("*/settings.json"))
+    for path in candidates:
+        try:
+            value = json.loads(path.read_text(encoding="utf-8")).get(SETTING_CUSTOM_STORE)
+        except (OSError, ValueError, AttributeError):
+            continue
+        if value:
+            return Path(value)
+    return None
+
+
+def store_roots(platform: str | None = None, home: Path | None = None,
+                appdata: Path | None = None, custom: Path | None = None) -> list[Path]:
+    """Every thread store on this machine — the default profile AND each named profile.
+
+    Its sibling `zoo_permissions_apply.py` already enumerates `profiles/*/globalStorage/` for this
+    same extension, so a named profile is a live case in this system, not a hypothetical: resolving
+    only the default one reports "is Zoo Code installed?" at a machine where it plainly is.
+    """
+    if custom is not None:
+        return [Path(custom) / "tasks"]
+    user = user_dir(platform, home, appdata)
+    roots = [user / "globalStorage" / EXTENSION_DIR / "tasks"]
+    profiles = user / "profiles"
+    if profiles.is_dir():
+        roots += sorted(profiles.glob(f"*/globalStorage/{EXTENSION_DIR}/tasks"))
+    return roots
 
 
 def classify(messages: list[dict]) -> str | None:
@@ -71,12 +126,23 @@ def classify(messages: list[dict]) -> str | None:
             return None
         if last.get("autoApprovalDecision") is not None:
             return None                      # Zoo already decided; the operator was not needed
-        if last.get("ask") in DECISION_ASKS:
-            return "ask"
-        return None
+        return "ask"                         # deny-list: every OTHER ask wants him. Fail open.
     if kind == "say" and last.get("say") == "completion_result":
         return "turn_end"
     return None
+
+
+def thread_signature(messages: list[dict], event: str | None) -> tuple:
+    """What makes THIS notification distinct from the last one on the same thread.
+
+    ⛔ Keying on the event word alone loses a second ask: the operator answers #1, Zoo raises #2,
+    and if both land inside one poll interval the state never left "ask", so the transition test
+    says "not news" and the second decision is dropped in silence. The tail's own `ts` is what
+    actually distinguishes them.
+    """
+    if not messages:
+        return (event, 0, None)
+    return (event, len(messages), messages[-1].get("ts"))
 
 
 def ntfy_url() -> str:
@@ -98,20 +164,45 @@ def compose(event: str, project: str, text: str) -> dict:
     return {"title": title, "message": body, "ntfy_url": ntfy_url(), "event": event}
 
 
+# PowerShell's own AppUserModelID. A toast raised with an unregistered AppId is silently dropped on
+# some Windows builds, and this is the documented id for notifying from PowerShell itself.
+_PS_APP_ID = r"{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe"
+
+
 def banner_cmd(payload: dict, platform: str | None = None) -> list[str] | None:
     """The desktop banner argv for this machine, or None where we have no banner channel.
 
     Mac uses terminal-notifier, the same binary Claude's notify.sh uses — and the same Focus-mode
     caveat applies: a Work Focus swallows the banner while everything still exits 0, so a silent
     Mac is not proof the notifier failed. [[claude-notifications-mac-and-phone]]
+
+    ⛔ The PC branch CONSTRUCTS AND SHOWS a toast. The first cut loaded the WinRT type, threw it
+    away through `Out-Null`, and then `Write-Output`-ed the text into a pipe `send()` captures —
+    so nothing ever appeared on screen while the run reported `banner=sent`. That is a check that
+    cannot fail, authored on a Mac, exactly the shape [[mac-authored-code-hides-windows-bugs]]
+    warns about. `$ErrorActionPreference='Stop'` makes a failure a non-zero exit, which `send()`
+    now reads instead of assuming success.
     """
     platform = platform if platform is not None else sys.platform
     if platform == "darwin":
         return ["terminal-notifier", "-title", payload["title"], "-message", payload["message"]]
     if platform == "win32":
-        ps = (f"[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications,"
-              f" ContentType = WindowsRuntime] | Out-Null; "
-              f"Write-Output {json.dumps(payload['title'] + ': ' + payload['message'])}")
+        title = json.dumps(payload["title"])
+        message = json.dumps(payload["message"])
+        ps = (
+            "$ErrorActionPreference='Stop'; "
+            "[Windows.UI.Notifications.ToastNotificationManager,Windows.UI.Notifications,"
+            "ContentType=WindowsRuntime]|Out-Null; "
+            "[Windows.UI.Notifications.ToastNotification,Windows.UI.Notifications,"
+            "ContentType=WindowsRuntime]|Out-Null; "
+            "$t=[Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent("
+            "[Windows.UI.Notifications.ToastTemplateType]::ToastText02); "
+            "$n=$t.GetElementsByTagName('text'); "
+            f"$n.Item(0).AppendChild($t.CreateTextNode({title}))|Out-Null; "
+            f"$n.Item(1).AppendChild($t.CreateTextNode({message}))|Out-Null; "
+            f"[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('{_PS_APP_ID}')"
+            ".Show([Windows.UI.Notifications.ToastNotification]::new($t))"
+        )
         return ["powershell", "-NoProfile", "-Command", ps]
     return None
 
@@ -124,8 +215,11 @@ def send(payload: dict, dry_run: bool = False) -> dict:
     cmd = banner_cmd(payload)
     if cmd:
         try:
-            subprocess.run(cmd, check=False, capture_output=True, timeout=10)
-            result["banner"] = "sent"
+            proc = subprocess.run(cmd, check=False, capture_output=True, timeout=10)
+            # ⛔ Read the exit code. `check=False` plus an unconditional "sent" reported success
+            # for a notifier that ran and failed — the false green the plan's own Risk section
+            # says B4 must be able to tell apart from "never fired".
+            result["banner"] = "sent" if proc.returncode == 0 else f"failed: exit {proc.returncode}"
         except (OSError, subprocess.SubprocessError) as exc:
             result["banner"] = f"failed: {exc}"
     try:
@@ -140,18 +234,40 @@ def send(payload: dict, dry_run: bool = False) -> dict:
 
 
 def newest_thread(root: Path) -> Path | None:
-    files = sorted(root.glob("*/ui_messages.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    def mtime(path: Path) -> float:
+        try:
+            return path.stat().st_mtime
+        except OSError:                      # a task dir deleted between the glob and the stat
+            return -1.0
+    files = sorted(root.glob("*/ui_messages.json"), key=mtime, reverse=True)
     return files[0] if files else None
 
 
 def read_thread(path: Path) -> list[dict]:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return []
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):            # Zoo rewrites this file constantly; a mid-write read
+        return []                            # is the normal case, not the exotic one
+    return data if isinstance(data, list) else []
 
 
-def _project_name() -> str:
+def project_name(thread: Path | None = None) -> str:
+    """The project the TASK belongs to — read from its own `history_item.json`.
+
+    ⛔ Not `Path.cwd().name`. One `--watch` daemon polls the whole store, so a cwd-derived name
+    stamps every project's banner with whatever directory the watcher happened to start in. This
+    is the half of Claude-parity a copied idiom loses: `notify.sh` is a per-session hook that runs
+    INSIDE the session's cwd, so the field is true there and false here.
+    """
+    if thread is not None:
+        try:
+            workspace = json.loads(
+                (thread.parent / "history_item.json").read_text(encoding="utf-8")).get("workspace")
+            if workspace:
+                return Path(workspace).name
+        except (OSError, ValueError, AttributeError):
+            pass
+        return thread.parent.name            # the task id: opaque, but never the WRONG project
     return Path.cwd().name
 
 
@@ -165,39 +281,63 @@ def once(root: Path, dry_run: bool = False) -> int:
     if event is None:
         print(f"zoo-notify: {path.parent.name} needs nothing")
         return 0
-    payload = compose(event, _project_name(), messages[-1].get("text", ""))
+    payload = compose(event, project_name(path), messages[-1].get("text", ""))
     outcome = send(payload, dry_run=dry_run)
     print(f"zoo-notify: {event} -> banner={outcome['banner']} push={outcome['push']}")
     print(f"  {payload['title']} | {payload['message']}")
     return 0
 
 
-def watch(root: Path, interval: int, dry_run: bool = False) -> int:
-    print(f"zoo-notify: watching {root} every {interval}s (ctrl-c to stop)")
-    seen: dict[str, tuple[float, str | None]] = {}
+def watch(roots: list[Path], interval: int, dry_run: bool = False) -> int:
+    """Poll every store and notify on a genuine transition.
+
+    ⛔ The FIRST sweep primes and sends nothing. Zoo keeps one directory per task forever, and a
+    finished thread's tail stays `ask/completion_result` on disk — which classifies `turn_end`. So
+    a watcher starting with an empty `seen` treats the entire backlog as fresh news and pages the
+    operator once per historical thread, every restart. That is the failure the module docstring
+    opens by naming, arriving through the other door.
+    """
+    print(f"zoo-notify: watching {len(roots)} store(s) every {interval}s (ctrl-c to stop)")
+    seen: dict[str, tuple[float, tuple]] = {}
+    priming = True
     try:
         while True:
-            for path in root.glob("*/ui_messages.json"):
-                try:
-                    mtime = path.stat().st_mtime
-                except OSError:
-                    continue
-                prev = seen.get(str(path))
-                if prev and prev[0] == mtime:
-                    continue
-                event = classify(read_thread(path))
-                seen[str(path)] = (mtime, event)
-                # only a TRANSITION notifies - a rewritten file in the same state is not news
-                if event and (not prev or prev[1] != event):
-                    messages = read_thread(path)
-                    payload = compose(event, _project_name(), messages[-1].get("text", ""))
-                    outcome = send(payload, dry_run=dry_run)
-                    print(f"zoo-notify: {path.parent.name} {event} -> "
-                          f"banner={outcome['banner']} push={outcome['push']}")
+            for root in roots:
+                for path in root.glob("*/ui_messages.json"):
+                    try:
+                        mtime = path.stat().st_mtime
+                    except OSError:
+                        continue
+                    prev = seen.get(str(path))
+                    if prev and prev[0] == mtime:
+                        continue
+                    messages = read_thread(path)     # read ONCE - a second read can lose the race
+                    event = classify(messages)       # and hand back [], which then indexes [-1]
+                    signature = thread_signature(messages, event)
+                    seen[str(path)] = (mtime, signature)
+                    if priming:
+                        continue
+                    # only a TRANSITION notifies - a rewritten file in the same state is not news
+                    if event and (not prev or prev[1] != signature):
+                        payload = compose(event, project_name(path),
+                                          messages[-1].get("text", ""))
+                        outcome = send(payload, dry_run=dry_run)
+                        print(f"zoo-notify: {path.parent.name} {event} -> "
+                              f"banner={outcome['banner']} push={outcome['push']}")
+            if priming:
+                print(f"zoo-notify: primed on {len(seen)} existing thread(s) - watching for new")
+                priming = False
             time.sleep(interval)
     except KeyboardInterrupt:
         print("\nzoo-notify: stopped")
         return 0
+
+
+def _interval(raw: str) -> int:
+    value = int(raw)
+    if value < 1:
+        raise argparse.ArgumentTypeError("--interval must be at least 1 second")
+    return value
 
 
 def main() -> int:
@@ -205,15 +345,22 @@ def main() -> int:
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument("--once", action="store_true", help="classify the newest thread and notify")
     mode.add_argument("--watch", action="store_true", help="poll the store and notify on changes")
-    ap.add_argument("--interval", type=int, default=5, help="seconds between polls (--watch)")
+    ap.add_argument("--interval", type=_interval, default=5, help="seconds between polls (--watch)")
     ap.add_argument("--dry-run", action="store_true", help="compose only; no banner, no push")
     ap.add_argument("--store", type=Path, default=None, help="override the thread store root")
     args = ap.parse_args()
-    root = Path(args.store) if args.store else store_root()
-    if not root.is_dir():
-        print(f"zoo-notify: no store at {root} - is Zoo Code installed for this user?")
+    if args.store:
+        roots = [Path(args.store)]
+    else:
+        roots = store_roots(custom=read_custom_store(user_dir()))
+    live = [r for r in roots if r.is_dir()]
+    if not live:
+        print(f"zoo-notify: no store at {', '.join(str(r) for r in roots)} "
+              f"- is Zoo Code installed for this user?")
         return 2
-    return watch(root, args.interval, args.dry_run) if args.watch else once(root, args.dry_run)
+    if args.watch:
+        return watch(live, args.interval, args.dry_run)
+    return once(live[0], args.dry_run)
 
 
 if __name__ == "__main__":

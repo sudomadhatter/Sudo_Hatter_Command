@@ -19,15 +19,27 @@ an ask it auto-approved never interrupted anyone and must NOT raise a banner. A 
 on every ask would page the operator 34 times for the 14 that actually needed him — which is the
 failure this whole subtask exists to prevent, so it is pinned as a test, not a comment.
 
+⛔ That vocabulary is a SAMPLE, and the tests below pin the module for failing OPEN against it. The
+first cut filtered asks through an allow-list built from these five names; Zoo emits more, and the
+one it emits when auto-approval hits its cap — the moment the operator is most needed — was not in
+it. `test_ask_outside_the_measured_sample_still_pages` is the assertion that keeps it open.
+
 run_all.py executes this file bare (python3 <file>, no pytest), so the __main__ harness at the
 bottom is what makes it COUNT — without it the suite scores this file green having run nothing
 (the house scar: suite-red-file-may-have-run-nothing, green edition).
+
+⛔ Every path assertion compares `Path` PARTS, never `str(...)`. Two cases here once asserted
+`endswith("…zoo-code/tasks")` and `startswith("/tmp/elsewhere")`, which are False the moment
+`Path` is a `WindowsPath` — so the suite this repo runs on BOTH machines was authored to go red on
+one of them. [[mac-authored-code-hides-windows-bugs]]
 """
 from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -48,6 +60,17 @@ def _mod():
     return mod
 
 
+class _Stop(Exception):
+    """Breaks watch()'s `while True` from inside its own sleep."""
+
+
+def _store(tmp: Path, messages: list[dict], task: str = "01a05116") -> Path:
+    d = tmp / task
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "ui_messages.json").write_text(json.dumps(messages), encoding="utf-8")
+    return d / "ui_messages.json"
+
+
 # --- the module has to exist at all -------------------------------------------------------
 
 def test_notifier_script_exists():
@@ -64,6 +87,14 @@ def test_pending_ask_classifies_as_ask():
 def test_completed_turn_classifies_as_turn_end():
     m = _mod()
     assert m.classify(_load("zoo_ui_messages_turnend.json")) == "turn_end"
+
+
+def test_say_completion_result_tail_also_classifies_as_turn_end():
+    """The `say` branch, which no fixture reached: the turnend fixture tails on an ASK."""
+    m = _mod()
+    msgs = _load("zoo_ui_messages_turnend.json")
+    msgs[-1] = {"ts": 9, "type": "say", "say": "completion_result", "text": "done"}
+    assert m.classify(msgs) == "turn_end"
 
 
 def test_auto_approved_ask_never_fires():
@@ -98,6 +129,36 @@ def test_empty_thread_is_silent():
     assert m.classify([]) is None
 
 
+def test_ask_outside_the_measured_sample_still_pages():
+    """⛔ The deny-list, pinned. `auto_approval_max_req_reached` is raised BECAUSE auto-approval
+    hit its cap and the operator must step in — an allow-list drawn from two threads dropped it
+    silently, which is the exact blocked-and-nobody-knows state this script exists to end."""
+    m = _mod()
+    for ask in ("auto_approval_max_req_reached", "api_req_failed", "mistake_limit_reached",
+                "use_mcp_server", "browser_action_launch"):
+        msgs = _load("zoo_ui_messages_ask.json")
+        msgs[-1]["ask"] = ask
+        assert m.classify(msgs) == "ask", f"{ask} must page the operator, not vanish"
+
+
+def test_completion_result_is_the_only_ask_that_is_not_a_decision():
+    m = _mod()
+    msgs = _load("zoo_ui_messages_ask.json")
+    msgs[-1]["ask"] = "completion_result"
+    assert m.classify(msgs) == "turn_end"
+
+
+# --- thread_signature(): two consecutive asks are two notifications -----------------------
+
+def test_signature_distinguishes_two_asks_in_the_same_state():
+    """Keyed on the event word alone, ask #2 reads as 'not news' and is dropped in silence."""
+    m = _mod()
+    a = _load("zoo_ui_messages_ask.json")
+    b = a + [{"ts": a[-1]["ts"] + 1, "type": "ask", "ask": "command",
+              "partial": False, "autoApprovalDecision": None, "text": "rm -rf build"}]
+    assert m.thread_signature(a, "ask") != m.thread_signature(b, "ask")
+
+
 # --- compose(): pure, and provably makes no network call ----------------------------------
 
 def test_compose_is_pure_and_touches_no_network():
@@ -116,6 +177,15 @@ def test_compose_is_pure_and_touches_no_network():
     assert out["title"], "banner needs a title"
     assert "Sudo_Hatter_Command" in out["message"], "banner names the project, like Claude's does"
     assert out["ntfy_url"].startswith("https://ntfy.sh/"), out["ntfy_url"]
+
+
+def test_compose_takes_the_first_line_only_and_truncates_at_120():
+    """An ask whose text is a 4KB diff must not become the whole banner and the whole push."""
+    m = _mod()
+    assert "line2" not in m.compose("ask", "p", "line1\nline2")["message"]
+    long = m.compose("ask", "p", "x" * 300)["message"]
+    assert long.endswith("..."), long
+    assert len(long) < 160, len(long)
 
 
 def test_ntfy_topic_defaults_to_the_existing_topic():
@@ -142,7 +212,146 @@ def test_ask_and_turn_end_are_distinguishable():
         "the operator must be able to tell 'needs you' from 'finished' without opening the window"
 
 
-# --- store_root(): BOTH machines, and the configurable path -------------------------------
+# --- banner_cmd(): BOTH machines actually raise something ---------------------------------
+
+def test_banner_cmd_mac_uses_terminal_notifier():
+    m = _mod()
+    cmd = m.banner_cmd({"title": "T", "message": "M"}, platform="darwin")
+    assert cmd[0] == "terminal-notifier" and "T" in cmd and "M" in cmd, cmd
+
+
+def test_banner_cmd_windows_actually_shows_a_toast():
+    """⛔ The first cut loaded the WinRT type, discarded it, and Write-Output-ed into a captured
+    pipe — nothing appeared on screen while the run reported banner=sent."""
+    m = _mod()
+    cmd = m.banner_cmd({"title": "T", "message": "M"}, platform="win32")
+    assert cmd[0] == "powershell", cmd
+    body = cmd[-1]
+    assert "CreateToastNotifier" in body and ".Show(" in body, body
+    assert "ToastNotification]::new" in body, body
+    assert "Write-Output" not in body, "printing to a captured pipe is not a notification"
+    assert "$ErrorActionPreference='Stop'" in body, "a failed toast must exit non-zero"
+
+
+def test_banner_cmd_returns_none_where_there_is_no_channel():
+    m = _mod()
+    assert m.banner_cmd({"title": "T", "message": "M"}, platform="linux") is None
+
+
+# --- send(): the dry-run promise, and an honest banner result -----------------------------
+
+def test_dry_run_opens_nothing_and_raises_nothing():
+    """The one safety property in the CLI contract. Deleting its guard once left the suite green."""
+    m = _mod()
+    def _boom(*a, **k):
+        raise AssertionError("--dry-run must not run a subprocess or open the network")
+    m.subprocess = type("S", (), {"run": staticmethod(_boom),
+                                  "SubprocessError": Exception})()
+    m.urllib = type("U", (), {"request": type("R", (), {
+        "Request": staticmethod(_boom), "urlopen": staticmethod(_boom)})()})()
+    assert m.send({"title": "T", "message": "M", "ntfy_url": "https://ntfy.sh/x"},
+                  dry_run=True) == {"banner": "skipped", "push": "skipped"}
+
+
+def test_a_banner_that_exits_non_zero_is_not_reported_as_sent():
+    """`check=False` plus an unconditional 'sent' is the false green B4 must be able to see."""
+    m = _mod()
+    class _Proc:
+        returncode = 1
+    m.subprocess = type("S", (), {"run": staticmethod(lambda *a, **k: _Proc()),
+                                  "SubprocessError": Exception})()
+    m.urllib = type("U", (), {"request": type("R", (), {
+        "Request": staticmethod(lambda *a, **k: None),
+        "urlopen": staticmethod(lambda *a, **k: type("C", (), {"close": lambda s: None})())})()})()
+    out = m.send({"title": "T", "message": "M", "ntfy_url": "https://ntfy.sh/x"})
+    assert out["banner"].startswith("failed:"), out
+
+
+# --- read_thread() / newest_thread(): the store is rewritten under us ---------------------
+
+def test_read_thread_survives_a_half_written_file():
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "ui_messages.json"
+        p.write_text("[{", encoding="utf-8")
+        assert m.read_thread(p) == []
+
+
+def test_newest_thread_picks_the_most_recently_touched():
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        old = _store(root, [], task="old")
+        new = _store(root, [], task="new")
+        os.utime(old, (1_000_000, 1_000_000))
+        os.utime(new, (2_000_000, 2_000_000))
+        assert m.newest_thread(root) == new
+
+
+# --- project_name(): the TASK's project, never the watcher's cwd --------------------------
+
+def test_project_name_comes_from_the_threads_own_history_item():
+    """One --watch daemon polls every project, so a cwd-derived name is wrong for all but one."""
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        thread = _store(Path(d), [])
+        (thread.parent / "history_item.json").write_text(
+            json.dumps({"workspace": "/Users/x/Projects/AGY_AVIATIONCHAT"}), encoding="utf-8")
+        assert m.project_name(thread) == "AGY_AVIATIONCHAT"
+
+
+def test_project_name_falls_back_to_the_task_id_not_the_cwd():
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        thread = _store(Path(d), [], task="01a05116")
+        assert m.project_name(thread) == "01a05116"
+
+
+# --- watch(): priming, and one notification per DISTINCT ask ------------------------------
+
+def test_watch_primes_silently_then_pages_each_distinct_ask():
+    """⛔ Two defects in one loop: a cold `seen` pages the whole historical backlog on the first
+    sweep, and a state-word key drops a second ask that arrives in the same state."""
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        f = _store(root, _load("zoo_ui_messages_ask.json"))
+        sent: list[dict] = []
+        m.send = lambda payload, dry_run=False: (
+            sent.append(payload) or {"banner": "x", "push": "x"})
+        after_priming: list[int] = []
+        state = {"n": 0}
+
+        def _sleep(_seconds):
+            state["n"] += 1
+            if state["n"] == 1:
+                after_priming.append(len(sent))          # the whole backlog, silently primed
+                msgs = json.loads(f.read_text(encoding="utf-8"))
+                msgs[-1]["ts"] += 1                      # ask #1 becomes news
+                f.write_text(json.dumps(msgs), encoding="utf-8")
+                os.utime(f, (2_000_000, 2_000_000))
+            elif state["n"] == 2:
+                msgs = json.loads(f.read_text(encoding="utf-8"))
+                msgs[-1]["isAnswered"] = True            # he answered #1 ...
+                msgs.append({"ts": msgs[-1]["ts"] + 5, "type": "ask", "ask": "command",
+                             "partial": False, "autoApprovalDecision": None,
+                             "text": "rm -rf build"})   # ... and Zoo raised #2, same poll window
+                f.write_text(json.dumps(msgs), encoding="utf-8")
+                os.utime(f, (3_000_000, 3_000_000))
+            else:
+                raise _Stop()
+
+        m.time = type("T", (), {"sleep": staticmethod(_sleep)})()
+        try:
+            m.watch([root], 1, dry_run=False)
+        except _Stop:
+            pass
+        assert after_priming == [0], "the first sweep must page nobody — it primes"
+        assert len(sent) == 2, f"both distinct asks must page; got {len(sent)}"
+        assert "rm -rf build" in sent[-1]["message"], sent[-1]
+
+
+# --- store_root(): BOTH machines, profiles, and the configurable path ---------------------
 
 def test_store_root_resolves_on_mac_and_on_windows():
     """[[two-machines-mac-and-pc]] — a hardcoded Application Support path is a PC no-op."""
@@ -150,11 +359,11 @@ def test_store_root_resolves_on_mac_and_on_windows():
     home = Path("/Users/x")          # SAME home both times, or the paths differ for that reason
     mac = m.store_root(platform="darwin", home=home, appdata=None)
     win = m.store_root(platform="win32", home=home, appdata=home / "AppData" / "Roaming")
-    assert "Application Support" in str(mac), mac
-    assert "AppData" in str(win), win
-    assert "Application Support" not in str(win), "the PC must not resolve to the Mac's path"
-    assert str(win) != str(mac), (win, mac)
-    assert str(mac).endswith("zoocodeorganization.zoo-code/tasks"), mac
+    assert "Application Support" in mac.parts, mac
+    assert "AppData" in win.parts, win
+    assert "Application Support" not in win.parts, "the PC must not resolve to the Mac's path"
+    assert win != mac, (win, mac)
+    assert mac.parts[-2:] == (m.EXTENSION_DIR, "tasks"), mac
 
 
 def test_custom_storage_path_setting_wins():
@@ -162,7 +371,71 @@ def test_custom_storage_path_setting_wins():
     m = _mod()
     got = m.store_root(platform="darwin", home=Path("/Users/x"), appdata=None,
                        custom=Path("/tmp/elsewhere"))
-    assert str(got).startswith("/tmp/elsewhere"), got
+    assert got == Path("/tmp/elsewhere") / "tasks", got
+
+
+def test_custom_storage_path_is_actually_read_from_settings():
+    """⛔ The parameter existed from the first cut and NOTHING passed it — a documented setting
+    that no entry point could reach. This is the wiring, not the parameter."""
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        user = Path(d)
+        (user / "settings.json").write_text(
+            json.dumps({m.SETTING_CUSTOM_STORE: "/tmp/elsewhere"}), encoding="utf-8")
+        assert m.read_custom_store(user) == Path("/tmp/elsewhere")
+
+
+def test_custom_storage_path_is_read_from_a_named_profile_too():
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        user = Path(d)
+        (user / "settings.json").write_text("{}", encoding="utf-8")
+        prof = user / "profiles" / "abc123"
+        prof.mkdir(parents=True)
+        (prof / "settings.json").write_text(
+            json.dumps({m.SETTING_CUSTOM_STORE: "/tmp/profiled"}), encoding="utf-8")
+        assert m.read_custom_store(user) == Path("/tmp/profiled")
+
+
+def test_store_roots_enumerates_named_profiles():
+    """`zoo_permissions_apply.py` already globs profiles/*/globalStorage for this same extension,
+    so a named profile is a live case here — resolving only the default one reports 'is Zoo Code
+    installed?' on a machine where it plainly is."""
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        home = Path(d)
+        user = home / "Library" / "Application Support" / "Code" / "User"
+        (user / "globalStorage" / m.EXTENSION_DIR / "tasks").mkdir(parents=True)
+        (user / "profiles" / "builtin" / "globalStorage" / m.EXTENSION_DIR / "tasks").mkdir(
+            parents=True)
+        roots = m.store_roots(platform="darwin", home=home, appdata=None)
+        assert len(roots) == 2, roots
+        assert any("profiles" in r.parts for r in roots), roots
+
+
+# --- main(): the CLI contract, run for real -----------------------------------------------
+
+def test_missing_store_exits_2_not_0():
+    """The only signal separating 'Zoo is not installed' from 'nothing needed notifying'."""
+    proc = subprocess.run(
+        [sys.executable, str(NOTIFY), "--once", "--store", "/nonexistent-zoo-store", "--dry-run"],
+        capture_output=True, text=True, timeout=30)
+    assert proc.returncode == 2, (proc.returncode, proc.stdout, proc.stderr)
+
+
+def test_dry_run_is_a_modifier_not_a_mode():
+    """The INDEX row once listed it beside --once/--watch; argparse rejects it alone."""
+    proc = subprocess.run([sys.executable, str(NOTIFY), "--dry-run"],
+                          capture_output=True, text=True, timeout=30)
+    assert proc.returncode == 2 and "--once" in proc.stderr, proc.stderr
+
+
+def test_interval_below_one_is_rejected_at_the_boundary():
+    """--interval 0 spun the poll loop at 100% of a core; --interval -1 crashed time.sleep."""
+    for bad in ("0", "-1"):
+        proc = subprocess.run([sys.executable, str(NOTIFY), "--watch", "--interval", bad],
+                              capture_output=True, text=True, timeout=30)
+        assert proc.returncode == 2, (bad, proc.returncode, proc.stderr)
 
 
 if __name__ == "__main__":
