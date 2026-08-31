@@ -137,8 +137,13 @@ $ python3 .agents/scripts/gate_receipt.py run --task SCC-358 --gate suite \
         receipt: gates/suite.json
 ```
 
-⚠ **That receipt predates the review fixes.** It is kept because it is what the pre-review code
-measured; the post-review run is stamped below, in `## Code Review`, at the sha that actually ships.
+⚠ **That receipt predates the review fixes and was RE-STAMPED after them.** The receipt that ships
+is the second run, on the code that actually lands:
+
+```
+[PASS] suite exit=0 85.1s @ 5592311d
+        receipt: gates/suite.json
+```
 
 Standing gates, all bare, all exit 0: `workflow_lint --toolkit-only` (0 errors, 0 warnings) ·
 `check_maps --depth3-only --strict` · `check_links --base origin/main` (clean).
@@ -160,7 +165,7 @@ dispositions: per-lens: blind-hunter=8/2/0 · edge-case-hunter=8/0/0 · literal-
 severity_floor: none
 notes: every finding fixed in-lane before the verdict — no defer, no residue ticket. The sweep was rebuilt from 8 existence mutants to 15 narrowings/paraphrases/inversions; 15/15 killed.
 
-**Verdict: PASS @ ae215934**
+**Verdict: PASS @ 5592311d**
 
 ⛔ **The review found the first guard substantially vacuous, and it PROVED it rather than asserting
 it.** Three lenses independently reproduced the same class of hole, and the test-adequacy lens
@@ -233,7 +238,7 @@ note now says so, so a reader can tell which is current.
 
 ```
 $ python3 .agents/scripts/mutation_sweep.py --table _artifacts/_main/2026-08-31_ledger-rides-the-pr/sweep.json
--- sweep: 15 mutant(s) over 3 file(s) @ <the shipping sha> --
+-- sweep: 15 mutant(s) over 3 file(s) @ 5592311d --
 KILLED  N1  the active-context INSTRUCTION is deleted; only the `git add` mention survives
 KILLED  N2  Step 3.5 is INVERTED — every literal kept, the instruction reversed
 KILLED  N3  the key is dropped from the FENCE only, surviving in the prose below
@@ -249,9 +254,9 @@ KILLED  N12 the reconcile is recorded to the ledger row again, REWORDED
 KILLED  N13 the SOP currency row reinstates the ledger with a CHANGED CONNECTIVE
 KILLED  N14 the routing index is REWORDED back to the retired order
 KILLED  N15 the LOBBY hand-append creeps back into the post-merge region (AC-6)
--- restore verified: bytes match, nothing was committed, and `git diff --quiet ae215934` is clean --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet 5592311d` is clean --
 -- full file, unfiltered: python3 .agents/scripts/tests/test_command_surfaces.py -> exit 0 --
-        | -- 273/273 passed --
+        | -- 274/274 passed --
 -- sweep clean: 15/15 killed by their declared case --
 ```
 
