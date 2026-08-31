@@ -45,10 +45,10 @@
    "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
   },
   {
-   "id": "N6 ORDER — Step 3.5 is hoisted ABOVE the gate (the side a one-sided check misses)",
+   "id": "N6 ORDER — the gate no longer precedes the bookkeeping (the side a one-sided check misses)",
    "file": ".agents/commands/cicd-push-e2e.md",
-   "original": "## Step 3.5 — Record the landing on the lane, BEFORE the PR",
-   "mutated": "## Step 3 — hoisted marker\n\n## Step 3.5 — Record the landing on the lane, BEFORE the PR",
+   "original": "## Step 3 — Run the gate (on the epic branch)",
+   "mutated": "## Step 3.6 — Run the gate (on the epic branch)",
    "case": "CS-21 B ORDER Step 3 -> Step 3.5 -> gh pr create",
    "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
   },

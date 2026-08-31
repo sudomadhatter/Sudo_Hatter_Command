@@ -2957,13 +2957,26 @@ def main() -> int:
 
         # ── the predicates. Each is called TWICE: once on the live door, once by its control. ──
 
+        NEGATION = re.compile(r"\bdo NOT\b|\bdon't\b|\bnever\b|\bafter the merge\b", re.I)
+
         def instructs_both_writes(s35: str) -> bool:
-            """A0 — Step 3.5's PROSE names both halves. Read unfenced on purpose: `active-context`
-            also occurs inside the `git add` line, so a whole-section grep stays green when the
-            active-context INSTRUCTION is deleted outright (measured — the guard then reports a
-            door that writes both halves while it writes one)."""
+            """A0 — Step 3.5's PROSE names both halves, and names them as INSTRUCTIONS.
+
+            Two measured failures shape this. (1) Read unfenced, because `active-context` also
+            occurs inside the `git add` line: a whole-section grep stayed green when the
+            active-context instruction was deleted outright, reporting a door that writes both
+            halves while it writes one. (2) Reject NEGATION on the naming line, because a
+            presence-grep cannot see an inverted instruction — `do NOT touch active-context.md
+            here; that happens after the merge` keeps every literal and reverses the meaning,
+            which is the SCC-358 defect wearing the guard's own vocabulary."""
+            if not s35:
+                return False
             p = unfenced(s35)
-            return bool(s35) and "_artifacts/INDEX.md" in p and "active-context" in p
+            for needle in ("_artifacts/INDEX.md", "active-context"):
+                named = [ln for ln in p.splitlines() if needle in ln]
+                if not named or all(NEGATION.search(ln) for ln in named):
+                    return False
+            return True
 
         def commit_is_keyed(s35: str) -> bool:
             """A1 — the key is on the `git commit` LINE, not merely somewhere in the section.
@@ -3123,6 +3136,11 @@ def main() -> int:
                     "```bash\ngit add _artifacts/INDEX.md <the active-context path>\n```\n"),
                 "the surviving `git add` mention must not satisfy A, or deleting the instruction "
                 "leaves the guard green")
+        c.check("CS-21 CONTROL an INVERTED Step 3.5 fails A, every literal intact",
+                not instructs_both_writes(
+                    "## Step 3.5\n\n1. Ledger: do NOT write `_artifacts/INDEX.md` here.\n"
+                    "2. Active context: `active-context.md` is written after the merge.\n"),
+                "a presence-grep that cannot see negation passes the defect wearing its own words")
         c.check("CS-21 CONTROL a commit whose FENCE lost the key fails A1",
                 not commit_is_keyed(
                     "## Step 3.5\n\n```bash\ngit commit -F msg.txt   # subject: \"chore(ship)\"\n```\n"
