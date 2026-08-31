@@ -252,6 +252,8 @@ keeping, and it is why A3 is now a machine-checked acceptance row rather than a 
 
 Everything below is done and landed except two things only you can do.
 
+- [x] The merge itself — lands via this branch's PR
+
 - [ ] **Look at the Mac and tell me the banner appeared.** The self-test reported `banner=sent` and
       exited 0, and your phone got the push — but a Work Focus swallows the on-screen banner while
       everything still reports success, so this is the one claim I cannot verify from here. If no
