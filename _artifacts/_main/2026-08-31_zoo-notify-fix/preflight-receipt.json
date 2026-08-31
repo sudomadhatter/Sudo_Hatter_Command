@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-355-zoo-notify-fix",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-355",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "a136927ea23bd6484118d887b73a1febe0235279",
+  "warnings": 1,
+  "when": "2026-08-31T13:00:15-04:00"
+}

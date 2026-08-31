@@ -1,0 +1,72 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_zoo_notify_install.py"
+ ],
+ "mutants": [
+  {
+   "id": "M9 the agent stops starting at login",
+   "file": ".agents/scripts/zoo_notify_install.py",
+   "original": "\"RunAtLoad\": True,",
+   "mutated": "\"RunAtLoad\": False,",
+   "case": "test_mac_plist_runs_at_load_and_keeps_alive",
+   "unfiltered": true
+  },
+  {
+   "id": "M10 one crash becomes permanent silence",
+   "file": ".agents/scripts/zoo_notify_install.py",
+   "original": "\"KeepAlive\": True,",
+   "mutated": "\"KeepAlive\": False,",
+   "case": "test_mac_plist_runs_at_load_and_keeps_alive",
+   "unfiltered": true
+  },
+  {
+   "id": "M11 WIDTH: PATH loses Homebrew, so the banner half dies",
+   "file": ".agents/scripts/zoo_notify_install.py",
+   "original": "/opt/homebrew/bin:/usr/local/bin",
+   "mutated": "/usr/local/bin",
+   "case": "test_mac_plist_path_reaches_homebrew_because_terminal_notifier_lives_there",
+   "unfiltered": true
+  },
+  {
+   "id": "M12 the log goes back to being empty",
+   "file": ".agents/scripts/zoo_notify_install.py",
+   "original": "            \"PYTHONUNBUFFERED\": \"1\",\n",
+   "mutated": "",
+   "case": "test_mac_plist_forces_unbuffered_output_or_the_log_stays_empty",
+   "unfiltered": true
+  },
+  {
+   "id": "M13 the worktree guard stops guarding",
+   "file": ".agents/scripts/zoo_notify_install.py",
+   "original": "if \"worktrees\" in repo.parts:",
+   "mutated": "if False and \"worktrees\" in repo.parts:",
+   "case": "test_apply_refuses_a_git_worktree_path_because_the_lane_gets_pruned",
+   "unfiltered": true
+  },
+  {
+   "id": "M14 status stops checking the path exists, only that it was recorded",
+   "file": ".agents/scripts/zoo_notify_install.py",
+   "original": "\"script_exists\": bool(script and script.exists()),",
+   "mutated": "\"script_exists\": bool(script),",
+   "case": "test_status_catches_a_plist_whose_script_path_no_longer_exists",
+   "unfiltered": true
+  },
+  {
+   "id": "M15 the PC gets a console window that kills the watcher when closed",
+   "file": ".agents/scripts/zoo_notify_install.py",
+   "original": "start \"\" /min pythonw",
+   "mutated": "start \"\" /min python",
+   "case": "test_windows_command_starts_minimised_with_pythonw_and_sets_the_topic",
+   "unfiltered": true
+  },
+  {
+   "id": "M16 WIDTH: the .cmd loses CRLF",
+   "file": ".agents/scripts/zoo_notify_install.py",
+   "original": "return \"\\r\\n\".join(lines)",
+   "mutated": "return \"\\n\".join(lines)",
+   "case": "test_windows_command_starts_minimised_with_pythonw_and_sets_the_topic",
+   "unfiltered": true
+  }
+ ]
+}

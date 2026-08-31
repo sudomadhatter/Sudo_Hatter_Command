@@ -260,7 +260,7 @@ SCC-355, for the reason §6.1 measures — there is no hook to hang one on.
 | Surface | How the operator is notified | Wiring |
 |---|---|---|
 | **Claude Code** | Notification + Stop hooks → `~/.claude/notify.sh` | `~/.claude/settings.json`, per machine |
-| **Zoo Code** | [`zoo_notify.py`](../../.agents/scripts/zoo_notify.py) polls the thread store Zoo already writes | `--watch`, started once per machine; no hook exists |
+| **Zoo Code** | [`zoo_notify.py`](../../.agents/scripts/zoo_notify.py) polls the thread store Zoo already writes | installed as a background service by [`zoo_notify_install.py --apply`](../../.agents/scripts/zoo_notify_install.py), once per machine; no hook exists |
 
 **What it fires on, exactly.** Two events: an **approval-ask** and a **turn end**.
 
@@ -271,6 +271,12 @@ SCC-355, for the reason §6.1 measures — there is no hook to hang one on.
   `autoApprovalDecision` filter does not apply to it and never did — the first cut of the SOP row
   said "only when `autoApprovalDecision` is null" without that carve-out, which was wrong as
   written.
+- ⛔ **`partial` is consulted for a `say` and NEVER for an `ask`.** It looks like a streaming
+  artefact and it is not: Zoo clears that flag when its own matcher auto-approves and leaves it
+  standing when the operator has to answer, so an ask flagged `partial` is the operator-facing ask
+  itself. Ten asks in the live store carry `partial` **and** `isAnswered` together — Zoo stamped the
+  answer on top and never cleared the flag. Filtering on it discards 81% of the `tool` asks that
+  want him, `tool` being the subagent launch where Zoo sits blocked longest.
 - Every **other** ask type pages him. The filter is a **deny-list**, not an allow-list, and that is
   deliberate: `auto_approval_max_req_reached` is the ask Zoo raises *because* auto-approval hit its
   cap and he must step in, and an allow-list built from a two-thread sample dropped it silently.
@@ -279,6 +285,34 @@ SCC-355, for the reason §6.1 measures — there is no hook to hang one on.
 **The store it watches** is the same `globalStorage` tree §2 maps, plus every named profile, and it
 honours `zoo-code.customStoragePath` when that setting is set — read from user settings and from
 each profile's settings, the same two places §7's apply script looks.
+
+### 11.1 Installing it, per machine
+
+The watcher is a foreground poll loop, so something has to run it. That something is a service, not
+an instruction — an install step a human must remember is not a delivery mechanism, and the first
+cut of this feature was silent on the Mac from the day it landed precisely because nobody ran it.
+
+```bash
+python3 .agents/scripts/zoo_notify_install.py --apply     # PC: python
+python3 .agents/scripts/zoo_notify_install.py             # status, read-only, the default
+python3 .agents/scripts/zoo_notify.py --self-test         # prove both channels in five seconds
+```
+
+`--apply` registers a launchd agent on the Mac (`RunAtLoad` + `KeepAlive`, so it starts at login and
+restarts if it dies) and a `pythonw` `.cmd` in the Startup folder on the PC. Two things it carries
+that a naive copy would lose: `NTFY_TOPIC`, because launchd sources no shell profile and the topic
+lives in `~/.zshrc`; and a `PATH` reaching `/opt/homebrew/bin`, because launchd's default `PATH`
+cannot see `terminal-notifier` — without it the banner half dies while the push half keeps working,
+which is harder to diagnose than total silence. Logs land in `~/Library/Logs/zoo-notify.log`.
+
+⭐ **`--status` checks more than "loaded".** The job embeds this repo's absolute path, so moving or
+renaming the repo leaves an agent that `launchctl list` still shows and that does nothing. Status
+reads the recorded path back and checks it on disk; `--apply` again is the fix.
+
+⭐ **A restart while Zoo is already waiting still pages you.** The first sweep is otherwise silent —
+Zoo keeps every task directory forever and a finished thread's tail stays an ask on disk, so a cold
+start would page once per historical thread. The exception is narrow: an unanswered ask whose thread
+was written in the last five minutes. `--prime-window 0` restores total silence.
 
 **Update procedure for this page:** change the lists → update §6's tables in the same commit →
 run the suite (the fixtures pin §6 against the tracked file) → apply per machine (§7). The

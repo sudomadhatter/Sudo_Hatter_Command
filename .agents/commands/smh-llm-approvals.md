@@ -51,11 +51,18 @@ computes, not a substitute for calling it — a machine with a named profile or 
 has roots this sentence does not name.
 
 Each file is a JSON array of messages. A command that stopped for the operator is one where
-`type` is `ask`, `ask` is `command`, `partial` is not `true`, and **`autoApprovalDecision` is
+`type` is `ask`, `ask` is `command`, and **`autoApprovalDecision` is
 `null`**. That last field is Zoo's own record of what it did: `"approve"` means its matcher let
 the command through and nobody was blocked, `"deny"` means the fence refused it **on purpose**,
 and `null` means it had no opinion and had to stop and ask. Only `null` is what this audit is
 about. The command text is the message's `text`.
+
+⛔ **Do NOT filter on `partial`, however much it looks like a streaming artefact.** This door used
+to require `partial` is not `true` and it silently under-reported: measured against the live store,
+it listed 23 stopped commands and dropped 4. Zoo clears that flag when its OWN matcher
+auto-approves and leaves it standing when the operator has to answer, so filtering on it discards
+the very asks this door exists to surface — and the operator, reading a list that is missing his
+own commands, has no way to tell. Same mechanism, same fix as `zoo_notify.classify()` (SCC-355).
 
 If a store folder is missing or empty, say so by name. An empty Zoo store is the normal state on
 a machine where Zoo has not been used — it is not an error, and it must not read like one.
