@@ -7,7 +7,7 @@
     "files": 427,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 803,
+    "edges": 802,
     "external": 40,
     "ambiguous": 176,
     "dangling": 301,
@@ -1753,7 +1753,7 @@
     },
     {
       "path": ".agents/templates/project_overview_guide.md",
-      "in": 10,
+      "in": 8,
       "out": 4
     },
     {
@@ -2044,12 +2044,12 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 28,
-      "out": 56
+      "out": 55
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 14
+      "out": 13
     },
     {
       "path": "docs/code-review-graph.md",
@@ -5678,11 +5678,6 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/rules/command-shape.md",
-      "kind": "ref"
-    },
-    {
-      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "to": ".agents/templates/project_overview_guide.md",
       "kind": "ref"
     },
     {

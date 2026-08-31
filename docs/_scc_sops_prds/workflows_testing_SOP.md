@@ -910,7 +910,7 @@ it correct still exists. What differs is the unit.
 | Altitude | The document | Kept current by | If nothing changed |
 | --- | --- | --- | --- |
 | **Commit** (this repo only) | the page you are reading | an armed `commit-msg` gate — change a usage surface without staging this page and the commit is rejected | `[sop-ok]` in the message, logged forever |
-| **Story** (a project) | `docs/project_overview_guide.md` — what was BUILT, for a human | `/cicd-update-sprint-memory` **Step 3.5**, at the save | `Project overview guide: unchanged - <reason>` in the walkthrough |
+| **Story** (a project) | the project overview guide, in that project's `docs/` — what was BUILT, for a human | `/cicd-update-sprint-memory` **Step 3.5**, at the save | `Project overview guide: unchanged - <reason>` in the walkthrough |
 | **Epic** (a project) | the PRD, and the architecture folder | `/cicd-push-e2e` **Step 5.5**, at the ship, via `/bmad-correct-course` | `PRD: unchanged - epic shipped as specified` on the ticket and the ledger row |
 
 **Why a project does not get a commit gate.** The gate on this page works because its usage surface
