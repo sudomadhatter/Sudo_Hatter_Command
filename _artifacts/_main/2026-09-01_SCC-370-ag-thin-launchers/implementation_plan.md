@@ -179,7 +179,7 @@ That lane is committed at `640be170` and shares **four** files with this one: `A
 caches. All four are additive-edit collisions, not rewrites.
 
 ⚠ **The real collision is its GATE, not its files** (memory `lane-collision-is-gates-not-files`). SCC-369
-adds `.agents/hooks/shape-guard.py` and `.agents/rules/command-shape.md` — a **new commit gate**. If it lands
+adds a shape-guard hook and a command-shape rule (neither exists on this branch) — a **new commit gate**. If it lands
 first, that gate runs against **my** blobs, including the rewritten stub text and the edited command file.
 
 **Recommendation: SCC-369 lands first** (it is further along and already committed). This lane then absorbs

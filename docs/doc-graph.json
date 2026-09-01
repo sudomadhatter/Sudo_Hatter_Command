@@ -10,8 +10,8 @@
     "edges": 785,
     "external": 38,
     "ambiguous": 173,
-    "dangling": 286,
-    "broken_paths": 62,
+    "dangling": 285,
+    "broken_paths": 61,
     "unresolved_names": 224,
     "unresolvable": 6
   },
@@ -7148,10 +7148,6 @@
     {
       "from": "docs/repo-map.md",
       "target": "todo_list.md"
-    },
-    {
-      "from": "docs/workspace-standard.md",
-      "target": "../../router.md"
     },
     {
       "from": "docs/workspace-standard.md",

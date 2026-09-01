@@ -55,7 +55,7 @@ actually implemented?" without re-deriving it.
 | **R7** gates before routing and before risky action | root `AGENTS.md` §6 GATES (routing · project-law · search · risk · worktree · git-write) → `.agents/rules/constitution.md` | Part 1 item 8 |
 | **R8** portability: `CLAUDE.md` a pure redirect, nothing model-specific in shared files, ≥2 agents verified | root `AGENTS.md` §8; one command set reaches four platforms via `/smh-sync-agents`; canary runs per tool. ✅ **Exception CLOSED 2026-08-22 (SCC-279)** — root `GEMINI.md` had grown three "GEMINI SPECIFIC HARD RULES"; operator ruling was **FOLD**, and the file is now the house adapter. Nothing was lost: all three were already law every platform loads — explicit staging is `git-policy.md`, worktree-before-edit is `worktree-per-story.md`, and sync scope is `project-law.md` (“`/smh-sync-agents` targets the command center and the machine-global caches only”), which `sync-agents.ps1` enforces by exiting 1 on the retired `-Maintained` flag that rule actually told Gemini to run. Now **checked, not asserted**: `.agents/scripts/tests/test_entry_adapters.py` | Part 1 Layer 1 · Part 2 Command sync |
 | `_experiment/` — the routing smoke test | `_routing-canary/` (renamed: permanent regression check, not a demo) | Part 2 Routing canary |
-| `_system/AGENTS.md` — the system-builder agent | `docs/system-builder.md` (`_system/` dissolved 2026-07-25; `router.md` row "Maintaining THIS home-base system") · `/smh-new-project` adds a workspace by cloning the skeleton | Part 2 Router drift |
+| the deleted _system/AGENTS.md — the system-builder agent | `docs/system-builder.md` (`_system/` dissolved 2026-07-25; `router.md` row "Maintaining THIS home-base system") · `/smh-new-project` adds a workspace by cloning the skeleton | Part 2 Router drift |
 | Validation loop (canary · cold-route · persistence · token-frugality · negative/route-up) | all five named in Part 2 "Routing canary — the regression cadence" | Part 2 |
 | Anti-patterns (mega `AGENTS.md`; framework/DB; agent-per-task; detail in the lobby; model-specific shared files; skipping pickup/handoff; scaling before routing works) | guarded by: ALWAYS-LOAD tiers (§Layer 1 item 4) · the folder-file tier model · "lobby = categories only" in `router.md` · the canary triggers · the anti-fork rule (Part 2 Rules) | throughout |
 
@@ -83,7 +83,7 @@ A compliant workspace has these, and nothing it doesn't need.
 - **`AGENTS.md`** — the brain. Numbered sections so agents skip-to-N:
   1. **ROOT LAW / prime mission** — one line: what this workspace exists to do.
   2. **START HERE** — you're in this workspace; don't read the tree; routing question → the routing table /
-     `../../router.md`; risky action → GATES.
+     the home base's `router.md` (two levels up from inside a project); risky action → GATES.
   3. **MAP / MISSION / SUPPORT** — the three answers every task needs (where am I + where can I go / what is the
      work / what tools+context).
   4. **ALWAYS-LOAD** — three tiers, only the first always-on. **Floor:** `.agents/rules/operator-profile.md`,
@@ -105,7 +105,7 @@ A compliant workspace has these, and nothing it doesn't need.
 ### Layer 2 — the routing table (the single most important thing)
 A plain-English table in `AGENTS.md`: **task → read these / skip these / skills**. It is what makes
 least-context loading real. Always include the up-route: *"if what you need isn't here, GO BACK to
-`../../router.md`."* Routers route up as well as down — an agent can never dead-end.
+the home base's `router.md`."* Routers route up as well as down — an agent can never dead-end.
 
 ### Layer 3 — skills (referenced, never preloaded)
 Skills live in the vendored `.agents/skills/<name>/SKILL.md` and are pulled **only** by the workspace rows
@@ -173,7 +173,7 @@ the toolkit:
 - **`_bmad-output/sudo-tests.yaml`** — present = the `/cicd-code-review` TEA gate is **ARMED**
   (absent = auto-WAIVED, and a workspace that starts WAIVED tends to stay WAIVED). Ships armed in the
   template with ratchet-from-zero floors; `l1_coverage_min` and CI's `--cov-fail-under` only ever go UP.
-- **`.github/workflows/pr-check.yml`** — CI gates PRs to **`main` AND `epic/**`** (the 2026-07 audit's
+- **A project's `pr-check.yml` workflow** — CI gates PRs to **`main` AND `epic/**`** (the 2026-07 audit's
   P0-1 lesson: an ungated integration branch is where regressions hide — under the epic-branch model
   that means story landings get CI too, not just the epic's merge to `main`).
 - **BDD layer (TDAD Layer 1)** — Gherkin contracts at `backend/tests/features/<domain>/*.feature`,

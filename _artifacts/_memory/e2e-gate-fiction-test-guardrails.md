@@ -7,9 +7,9 @@ metadata:
   originSessionId: 6aaaddfd-6d07-4c62-9a38-782516e2742f
 ---
 
-**2026-07-13.** AGY's `frontend-e2e` PR gate (`.github/workflows/pr-check.yml`) had failed every run
+**2026-07-13.** AGY's `frontend-e2e` PR gate (that repo's `pr-check.yml` workflow) had failed every run
 yet showed workflow "success" because `continue-on-error: true` (report-only). Three independent holes:
-(1) `e2e/hanger-talk.spec.ts` asserted 4 UI strings that appear **0× in source**, on an auth-gated page
+(1) AGY's `hanger-talk.spec.ts` asserted 4 UI strings that appear **0× in source**, on an auth-gated page
 it called "public" — **fiction, never passed**; (2) CI ran bare `npx playwright test` = the plain
 `playwright.config.ts` which `testIgnore`s `journeys/**`, so the REAL TEA-16 emulator harness never ran
 on CI (it was **6/6 green locally** the whole time — `npm run test:e2e`); (3) report-only left open

@@ -1,0 +1,8 @@
+task_key: SCC-370
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-370-ag-thin-launchers
+close_command: smh-close-task-merge-tree
+secondary_repos: []        # single-repo task. sync-agents.ps1 exists in three other repos and ALL
+                           # THREE already differ (82,223 master vs 65,196 / 24,223 / 22,551) — no
+                           # copy receives this change, so it is not a port. See the plan's Port
+                           # section, which answers all six port-checklist checks with output.
