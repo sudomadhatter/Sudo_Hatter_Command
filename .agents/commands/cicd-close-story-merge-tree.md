@@ -83,8 +83,16 @@ answer by hand — and each of those has been silently wrong at least once:
 ```bash
 python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> \
        --expect-key <JIRA-KEY> --branch <name> --worktree <path> \
-       [--require-gates suite,ruff,pyrefly]
+       --require-gates suite                                        # PC: `python`
 ```
+
+⛔ **`--require-gates` is not optional either, and it names the gate this system actually STAMPS.**
+Without it on the CALL, `check_gates` used to return at its first line and file no row at all. It now
+also demands `suite` on its own whenever the walkthrough records `PASS`/`CONCERNS` on a story still at
+`ready-for-dev`/`in-progress`/`review` — a verdict is the review's claim and the receipt is the evidence,
+and AVCH-106 closed on a claim no suite ever backed. **Name only gates this lane really stamped:** the
+review step writes `suite` and nothing else, so demanding `ruff` or `pyrefly` blocks every close-out on
+receipts no step in this system has ever written.
 
 ⛔ **`--expect-key`, `--branch` and `--worktree` are NOT optional, and the brackets used to say otherwise.**
 This command runs when worktrees are open by definition, and that is exactly when `cwd` stops matching intent —

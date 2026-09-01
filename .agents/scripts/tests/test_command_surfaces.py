@@ -2367,6 +2367,53 @@ def main() -> int:
                 f"the resolved call was {call!r} — without the flag ON THE CALL, `check_gates` "
                 "returns immediately and files no row at all; prose naming the flag is not the flag")
 
+        # ⛔ CS-14 C2 · SCC-365 · C ABOVE IS VACUOUS AGAINST THE SOLO DOOR, and measuring it
+        # is the only way that shows. `cicd-close-story-merge-tree.md` shipped the flag in
+        # BRACKETS — the file's own convention for "optional" — and run through the very same
+        # `joined_invocation`, `"--require-gates" in call` is **True today** over
+        # `'[--require-gates suite,ruff,pyrefly]'`. A pin that is already green cannot notice
+        # the flag being optional, which is the M20 shape the comment above C warns about, one
+        # level up.
+        #
+        # The second half is the one nobody would have written from the ticket. The review step
+        # stamps exactly one gate — `cicd-code-review.md`'s `gate_receipt.py run … --gate suite`
+        # — and nothing in this system has ever written a `ruff` or `pyrefly` receipt (9 of the
+        # 10 live AGY receipt dirs hold `suite.json` alone). So the moment a missing receipt
+        # becomes an ERROR, a door demanding all three hard-blocks EVERY close-out on evidence
+        # nobody produces. Demanding what nobody stamps is how a gate gets deleted rather than
+        # obeyed, so both doors demand what is actually stamped.
+        close_call = joined_invocation(body("cicd-close-story-merge-tree.md").splitlines(),
+                                       "closeout_preflight.py")
+        both_calls = {"cicd-merge-epic-workingtrees.md": call,
+                      "cicd-close-story-merge-tree.md": close_call}
+        c.check("CS-14 C2 BOTH doors require the gate the system actually stamps, and neither "
+                "shows the flag as optional",
+                all(cl and "[--require-gates" not in cl and "--require-gates" in cl
+                    and "ruff" not in cl and "pyrefly" not in cl
+                    for cl in both_calls.values()),
+                " | ".join(f"{n}: {cl!r}" for n, cl in both_calls.items())
+                + " — brackets say optional, and `ruff`/`pyrefly` receipts are never written "
+                  "by any step in this system, so demanding them blocks every close-out")
+
+        # ⛔ CS-14 C3 · SCC-365 · THE FIX ABOVE IS OVERRULED BY PROSE WITHOUT THIS ROW. The
+        # step that decides the `done` flip carried its own copy of the same expired 2026-08-02
+        # ruling (`gate_receipt.py check … --advisory`, with a ⏳ note to remove it "after the
+        # first full sprint") and, five lines under it, `Fail-open: a gate-read error never
+        # blocks close-out`. So the preflight's new error printed at Step 0.6 and was overruled
+        # at Step 4, the story flipped to `done`, and the flip then made the story permanently
+        # exempt — disarming the check for every later re-run. A prose deletion nothing pins is
+        # a prose deletion that comes back.
+        save_door = body("cicd-update-sprint-memory.md")
+        c.check("CS-14 C3 the flip step neither runs the receipt check in advisory mode nor "
+                "declares a gate-read error non-blocking",
+                "--advisory" not in save_door and "Fail-open" not in save_door
+                and "ruling 2026-08-02" not in save_door,
+                "found: "
+                + ", ".join(s for s in ("--advisory", "Fail-open", "ruling 2026-08-02")
+                            if s in save_door)
+                + " — the flip is the last gate, and a fail-open there makes every check "
+                  "upstream of it advisory too")
+
         # 4. THE MESSAGE FILE THAT MUST LIVE OUTSIDE BOTH TREES. `printf … > f` writes to the
         #    shell's cwd; `git -C <dir> commit -F f` reads it under <dir>. Every kickoff commit
         #    block died `fatal: could not read log file`, exit 128 — and the push on the next
