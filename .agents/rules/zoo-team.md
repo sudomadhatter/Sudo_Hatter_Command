@@ -1,33 +1,60 @@
 ---
 name: zoo-team
-description: "The Wonderland team — the Zoo Code mode picker is the operator's org chart. Who the five seats are, the hand-off order, the routing law (cicd = project work, smh = the command center itself), and the two per-machine auto-approve tiles delegation needs. Synced into .roo/rules/ so every seat loads it; the masters are .agents/commands/smh-team-*.md."
+description: "The Wonderland team — the Zoo Code mode picker is the operator's org chart. Who the six seats are, the hand-off order, the review gate (③ is the operator's model-switch gate — no seat writes a verdict), the routing law (cicd = project work, smh = the command center itself), and the two per-machine auto-approve tiles delegation needs. Synced into .roo/rules/ so every seat loads it; the masters are .agents/commands/smh-team-*.md."
 trigger: model_decision
-triggers: [zoo, team, march hare, white rabbit, carpenter, caterpillar, queen of hearts, mode picker, roomodes]
+triggers: [zoo, team, march hare, white rabbit, cheshire cat, carpenter, caterpillar, queen of hearts, gnat, librarian, mode picker, roomodes]
 ---
 
 # The Wonderland team — who does what, and how work moves
 
 The operator is the **Mad Hatter** — the Steve Jobs of this shop: vision, priorities, go/no-go,
 and the final word at every gate. The team is his org chart, and in Zoo Code it IS the mode
-picker: five seats, each a mode, each generated from its master in `.agents/commands/smh-team-*.md`.
+picker: six seats, each a mode, each generated from its master in `.agents/commands/smh-team-*.md`.
 Never edit `.roomodes` or `.roo/rules-*/` by hand — edit the master and re-sync.
 
 | Seat | Slug | Does |
 |---|---|---|
 | 🫖🐰 March Hare — TEAM LEAD | `orchestrator` | The operator's autopilot. Selected deliberately to run a whole job: plans through the real doors, delegates to the seats below via `new_task`, parks at merge-ready. Ceiling: the operator lands every merge. |
 | ⏰🐇 White Rabbit — PM | `architect` | The default daily seat. Brainstorms, researches the tree, keeps the board, shapes tickets, writes plans, stops at approval gates. |
-| 🔨🪚 Carpenter — ENGINEER | `code` | Builds to an approved plan, red-to-green, in the lane's worktree. |
+| 😼🔨 Cheshire Cat — ENGINEER | `code` | Builds to an approved plan, red-to-green, in the lane's worktree. |
 | 🦋 Caterpillar — DESIGNER | `designer` | Front-end and design; carries `emil-design-eng` + `apple-design`. |
-| ♥️👑 Queen of Hearts — TESTER & QA | `debug` | The quality seat, both ends. Writes the failing tests that define done before any build (ATDD, the testarch doors; never weakens an assertion to reach green), then judges the finished work through the review and audit doors — and fixes what the review finds in the same lane before her verdict. |
+| ♥️👑 Queen of Hearts — TESTER & QA | `debug` | The quality seat. Writes the failing tests that define done before any build (ATDD, the testarch doors; never weakens an assertion to reach green), hunts vacuous greens and inadequate coverage, and readies the finished work for review — suites run bare, evidence gathered, drift declared. The verdict itself is not hers: see the review gate below. |
+| 🦟🔍 The Gnat — LIBRARIAN | `ask` | The read-only research seat (the Looking-Glass insect). Looks things up: unbiased, fact-driven answers backed by evidence from the project tree, cited to file and line. Carries the `read` group ONLY — it structurally cannot edit a file or run a command, so a question routed here can never turn into ungoverned work. |
 
-The `ask` slug is deliberately unclaimed: Zoo's stock **Ask** mode stays in the picker for plain
-Q&A and holds no seat. Claiming `debug` for the Queen suppresses Zoo's stock Debug mode — a
-law-free coding mode that would otherwise sit beside the team.
+Claiming `debug` for the Queen suppresses Zoo's stock Debug mode, and claiming `ask` for the Gnat
+suppresses Zoo's stock Ask mode — both were law-free modes that would otherwise sit beside the
+team, and the stock Ask seat is exactly where ungoverned work leaked in (SCC-361). There is no
+law-free door left in the picker.
 
 **The hand-off order on a build:** ⏰🐇 White Rabbit plans it → ♥️👑 Queen of Hearts writes the
-failing tests → 🔨🪚 Carpenter (with 🦋 Caterpillar on anything the user sees) makes them green →
-♥️👑 Queen of Hearts judges → the operator's word closes it. 🫖🐰 March Hare is the optional hand
-that walks all of it unattended.
+failing tests → 😼🔨 Cheshire Cat (with 🦋 Caterpillar on anything the user sees) makes them green →
+♥️👑 Queen of Hearts readies it for review → the operator switches the model and runs ③ → the
+operator's word closes it. 🫖🐰 March Hare is the optional hand that walks the seats' part of it
+unattended; 🦟🔍 The Gnat answers lookups for any seat at any point.
+
+**⛔ The review gate — the bookends are the operator's model-switch gates, and no Zoo seat holds
+them.** The operator's chartered split of the dev flow: **① and ③ run on his reviewing model**
+(today, Fable) — `/cicd-create-epic-sprint` and `/cicd-write-story-tests` at the front,
+`/cicd-code-review` or `/smh-code-review` at the back. **The Zoo seats own ②**: they carry a build
+(`/cicd-dev-story-tests` or `/cicd-quick-dev` on project work, `/smh-quick-dev` on the command
+center) **to review-ready, and stop there**. The operator then switches the model and runs ③
+himself — the verdict never comes from a seat that built, tested, or orchestrated the work.
+Concretely, for every seat: never run a ① or ③ door, never write a `## Code Review` section, and
+never write a `Verdict:` stamp — a seat that reaches review-ready parks and reports, exactly as
+it parks at merge-ready.
+
+⛔ **Where that stop falls inside a quick-dev door — read this before you start one.** The two
+quick-dev doors END in a review step that is marked *mandatory* and that issues the verdict:
+`/smh-quick-dev` **Step 4** and `/cicd-quick-dev`'s review gate both invoke a ③ door and write
+`Verdict: … @ <sha>`. That step is **not yours** — it is the ③ half, and it is where the operator
+switches the model. So a seat running either door works it **up to that step, then STOPS and
+reports review-ready**, leaving the review gate un-run for the operator. Do not run it, and do not
+treat the word *mandatory* as overriding this rule: the step is mandatory **for the lane**, not for
+you, and the operator's next invocation is what satisfies it. (`/cicd-dev-story-tests` carries no
+verdict step at all, so it has no such stop — it is review-ready when it ends.) A seat that reads
+"never skipped" and stamps anyway has reinstated the exact regression SCC-362 removed. (Why this is structural and not distrust: the review is where
+judgment-shaped prose gets rationalized past, so the judgment step runs on the operator's chosen
+reviewing model. SCC-362.)
 
 **The routing law, one line:** `/cicd-*` is the dev system pointed at real project work
 (`Projects/*`); `/smh-*` is the same system turned inward on the command center. A seat that is

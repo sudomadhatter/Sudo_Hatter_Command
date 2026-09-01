@@ -48,9 +48,10 @@ def git(*args: str, cwd: Path) -> str:
 
 
 def seed(d: Path, *, hooks=("commit-msg", "pre-commit", "post-commit", "pre-push"),
-         flags=("JIRA-ENFORCE", "SOP-ENFORCE", "MAIN-PUSH-ENFORCE", "MERGE-TARGET-ENFORCE"),
+         flags=("JIRA-ENFORCE", "SOP-ENFORCE", "MAIN-PUSH-ENFORCE", "MERGE-TARGET-ENFORCE",
+                "VERDICT-ENFORCE"),
          scripts=("commit-msg-jira.sh", "sop-currency.sh", "pre-push-main-approval.sh",
-                  "pre-commit-encoding.sh", "merge-target-guard.sh",
+                  "pre-commit-encoding.sh", "merge-target-guard.sh", "verdict-receipt.sh",
                   # SCC-290: two more flagless delegates. Like pre-commit-encoding.sh they are
                   # armed unconditionally and have no *-ENFORCE row, so layer 2's "every tracked
                   # *.sh is executable" sweep is the ONLY thing that covers them.
@@ -364,7 +365,12 @@ def main() -> int:
     # shipped with an ARM_FLAGS row and nothing in this family — the five vacuous-ARMED shapes —
     # ever exercised it, because `seed()`'s defaults did not carry it and `scan()` skips a flag
     # that is neither tracked nor shipped. The row existed; the accounting did not.
-    for flag in ("JIRA-ENFORCE", "SOP-ENFORCE", "MAIN-PUSH-ENFORCE", "MERGE-TARGET-ENFORCE"):
+    # ⛔ VERDICT-ENFORCE (SCC-363) joins the loop IN THE SAME COMMIT as its ARM_FLAGS row, for
+    # exactly the reason the paragraph above records: a row whose accounting nobody exercises is
+    # the gap, not the row. `seed()`'s defaults carry it too — `scan()` skips a flag that is
+    # neither tracked nor shipped, so the loop alone would prove nothing.
+    for flag in ("JIRA-ENFORCE", "SOP-ENFORCE", "MAIN-PUSH-ENFORCE", "MERGE-TARGET-ENFORCE",
+                 "VERDICT-ENFORCE"):
         with TempDir() as d:
             seed(d)
             (d / ".agents/scripts/git-hooks" / flag).unlink()   # tracked, gone from disk

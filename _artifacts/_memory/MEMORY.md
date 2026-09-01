@@ -87,7 +87,8 @@ this section is the signpost. Working in one? Read its store too; it is not load
 
 ## Toolkit & sync
 - [⭐ Zoo Code replaces Roo; VS Code replaces Antigravity](zoo-code-replaces-roo-code.md) — .roo/* paths kept; zoo-code.* settings namespace; NOT in sync-agents yet (SCC-349).
-- [Zoo team: Wonderland roster](zoo-team-wonderland-roster.md) — March Hare = lead/orchestrator; emoji + name + ALL-CAPS role; 5 seats (Queen of Hearts = TESTER & QA merged, debug slug, full pen), ask stays stock; SCC-350.
+- [Zoo team: Wonderland roster](zoo-team-wonderland-roster.md) — March Hare = lead/orchestrator; emoji + name + ALL-CAPS role; 6 seats (Queen of Hearts = TESTER & QA, debug; The Gnat = LIBRARIAN, ask, read-only); review is the operator's model-switch gate — no seat writes a Verdict; SCC-350/360.
+- [⭐⛔ Cheap models rationalize past PROSE](cheap-models-rationalize-past-prose.md) — every Zoo violation lived where a rule asked for judgment; fix with mechanism (mode groups, commit gates), never wording.
 - [⛔ Zoo approvals live in globalState, not settings.json](zoo-approvals-decision-store.md) — file seeds ONCE, denies never; edit lists -> run zoo_permissions_apply.py --apply per machine (VS Code closed); git -C auto-denied, pin with cd && git.
 - **Where law lives** — [center owns workflow law](thin-projects-center-owns-workflow-law.md) (thin projects; read .agents/INDEX.md) · [repo-local enforcement never centralizes](repo-local-enforcement-never-centralizes.md) (hooks and configs stay in gated repo) · [`platforms: []` = NOWHERE](platforms-empty-list-means-nowhere.md) (omit key = all four).
 - **The non-Claude platforms** — [Codex is the 4th](codex-is-fourth-platform.md) (reads AGENTS.md + skills natively) · [Antigravity uses workflows](antigravity-uses-workflows-not-commands.md) (thin launcher workflows solve 12k limit).
@@ -116,6 +117,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [⭐⛔ Close the loop; don't hand back decisions](close-the-loop-dont-hand-back-decisions.md) — no new-concern tails, no menus; pick the default, say it, keep going (SCC-201).
 - [⛔ A script plus an instruction is NOT delivery](a-script-plus-an-instruction-is-not-delivery.md) — needs a live process? ship the installer, prove it with launchctl + its log (SCC-355).
 - [Machine-read walkthrough lines must be UNFENCED](walkthrough-machine-read-lines-must-be-unfenced.md) — a fenced roster or Verdict stamp reads as absent; preflight blames task.yaml instead.
+- [⛔ Quick-level roster is REFUSED under fan-out](quick-level-roster-refused-under-fanout.md) — walkthrough_roster --gate rejects the n/a lenses the SCC-232 quick level mandates; run --gate at review time; neutralize superseded Verdict stamps.
 - [Own it plainly](own-it-plainly-dont-make-excuses.md) — own issues in one line, then act.
 - [Writes for a big-picture operator](writes-for-big-picture-operator.md) — consequence before mechanism; explain terms clearly.
 - [Daniel sells Hormozi-style](daniel-sells-hormozi-style.md) — direct, prove-it, value-first copy.

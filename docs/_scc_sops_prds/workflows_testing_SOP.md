@@ -1655,18 +1655,23 @@ that themselves, so each rule states when it applies:
   `~/.codex/AGENTS.md` (a machine cache, markers preserved) for Codex's global merge. The law
   still lives only in `.agents/rules/` — everything else is a generated pointer or cache,
   refreshed by `/smh-sync-agents`.
-- **The Zoo Code mode picker is your team.** Five seats, each one a mode: 🫖🐰 March Hare — TEAM
+- **The Zoo Code mode picker is your team.** Six seats, each one a mode: 🫖🐰 March Hare — TEAM
   LEAD (your opt-in autopilot: hand it a whole ticket, it delegates to the other seats and parks
   at merge-ready for your click), ⏰🐇 White Rabbit — PM (your default daily seat: brainstorm,
-  research, tickets, plans), 🔨🪚 Carpenter — ENGINEER, 🦋 Caterpillar — DESIGNER, and ♥️👑 Queen
-  of Hearts — TESTER & QA (the quality seat at both ends: she writes the failing tests before a
-  build, then judges the finished work through the review and audit doors — the self-audit and
-  the code review ARE the QA and the testing — and fixes what the review finds in the same lane).
-  They replace four of Zoo's stock modes outright — same slots, your names; Zoo's stock Ask mode
-  stays in the picker for plain Q&A and holds no seat. Each seat's brain is a command you can
-  also summon directly in Zoo —
-  `/smh-team-march-hare`, `/smh-team-white-rabbit`, `/smh-team-carpenter`, `/smh-team-caterpillar`,
-  `/smh-team-queen-of-hearts` — with the roster and hand-off order in
+  research, tickets, plans), 😼🔨 Cheshire Cat — ENGINEER, 🦋 Caterpillar — DESIGNER, ♥️👑 Queen
+  of Hearts — TESTER & QA (she writes the failing tests before a build, hunts vacuous greens,
+  and readies finished work for review — suites run, receipts written, drift declared), and
+  🦟🔍 The Gnat — LIBRARIAN (the read-only research seat: unbiased lookups answered with facts
+  from the project, cited to file and line; it carries no edit or terminal access at all, so a
+  question here can never turn into ungoverned work). They replace five of Zoo's stock modes
+  outright — same slots, your names; no stock mode is left in the picker. **The review is your
+  model-switch gate:** the seats carry a build to review-ready and stop; you switch the model to
+  your reviewing one and run `/cicd-code-review` or `/smh-code-review` yourself — no seat ever
+  writes a `Verdict:` stamp (the same split as ①: `/cicd-create-epic-sprint` and
+  `/cicd-write-story-tests` also run on your reviewing model). Each seat's brain is a command you
+  can also summon directly in Zoo —
+  `/smh-team-march-hare`, `/smh-team-white-rabbit`, `/smh-team-cheshire-cat`, `/smh-team-caterpillar`,
+  `/smh-team-queen-of-hearts`, `/smh-team-gnat` — with the roster and hand-off order in
   `.agents/rules/zoo-team.md`; `.roomodes` is generated — edit the master, run `/smh-sync-agents`.
   For the March Hare to delegate without prompting you each time, tick **Mode switching** and
   **Subtasks** in Zoo's Auto-Approve panel once per machine. The four protocol rules are
@@ -2394,6 +2399,7 @@ flowchart LR
         JH["commit-msg: commit-msg-jira.sh — ARMED\nno ticket key, no commit"]
         SC["commit-msg: sop_currency.py — ARMED\na usage change must move this page"]
         MT["commit-msg: merge-target-guard.sh — ARMED\na merge onto the WRONG branch"]
+        VR["commit-msg: verdict_receipt.py — ARMED\na Verdict stamp with no suite receipt"]
         PJ["post-commit: post-commit-jira-start.sh\nfirst keyed commit → In Progress"]
         BS["pre-push: pre-push-merge-backstop.sh\na lane carrying another lane's unlanded work"]
         PA["pre-push: pre-push-main-approval.sh — ARMED\nno single-use token, no push to main"]
@@ -2419,6 +2425,8 @@ flowchart LR
     G --> JH
     G --> SC
     G --> MT
+    G --> VR
+    GR -.->|"the receipt a stamp stands on"| VR
     G --> PJ
     P --> BS
     P --> PA
@@ -2441,6 +2449,7 @@ flowchart LR
 | `tests/test_twin_parity.py` | **The `/cicd-*` and `/smh-*` families drifting apart in silence** — the failure that produced SCC-205, where 172 confirmed findings sat in the tree with the lint at exit 0 because *nothing in the repo compared the two families*. A command fences a region of SHARED law with `<!-- twin-law: <id> -->` … `<!-- /twin-law -->`, and this asserts **symmetry** (a law marked in one twin has a counterpart in the other — the layer that catches one-sided law, which byte-identity cannot see) **and identity** (where both mark it, the regions match after whitespace normalisation). ⛔ Deliberately NARROW: never widened to whole files, which would force subject-specific law to match and break both commands. The escape hatch is auditable — `<!-- twin-divergence: <id> — <reason> -->` is honoured, counted and printed. **The guard is SYMMETRIC on purpose**: the law was ahead on the smh side in 2026 only because that is where the operator was working, and the direction is inverting toward cicd. **Fifteen laws are fenced across FIVE of the seven pairs today; SCC-212 added six of them and promoted the last two pairs:** `disposition` + `memory-sweep` (clean-code) · `roster`, `review-level`, `declared-drift`, `record-lines` + `rederive-record` (code-review) · the four `audit-*` (self-audit) · `review-runtime-probe` (quick-dev) · `merge-empty-set-stop`, `merge-machinery-last` + `merge-cross-repo-order` (multi-lane). The fenced SET is itself declared in the test, so a pair joining or leaving it is a decision in a diff, never drift. |
 | `commit-msg-jira.sh` | **A commit with no ticket.** Each repo declares its Jira project in `.agents/jira.conf`; a commit whose message carries no valid key for *that* repo — or the wrong project's key — is refused outright. A rejected commit is a no-op: your staged files are untouched, nothing to undo. Merges, reverts, and rebases are exempt (the branch name carries the key for them). ⛔ **That exemption was blind inside a worktree until SCC-144** — it probed for a MERGE_HEAD file under a hardcoded .git *directory*, and inside a worktree .git is a **file** pointing elsewhere — so that probe was always false there, and every lane in this system is a worktree. It asks git where its git dir actually is. |
 | `sop_currency.py` | **This page falling behind the system it describes.** Change a `/` command, a rule, a safety-net script, a commit gate, or the root `AGENTS.md`, and the commit is refused unless this file is staged with it. Say `[sop-ok]` in the message when a change genuinely alters no usage — that stays in the git log as the record of the call. It checks only that the two moved together; no program can judge whether the *edit* was right, and the point is to make you look while you still have the context. ⛔ **It shares the merge carve-out above, and shared the same worktree blindness until SCC-144** — which bit harder here: a merge cannot sanely be asked to stage the SOP doc, so an absorb-`main` merge inside a lane was being refused on a condition no author could satisfy, while the identical merge in the shared checkout sailed through. |
+| `verdict_receipt.py` | **A review verdict that no suite ever backed.** A commit whose staged diff ADDS a `Verdict: PASS` or `Verdict: CONCERNS` line to any `walkthrough.md` is refused unless a usable `suite` receipt sits in that lane's `gates/` directory — the receipt `gate_receipt.py` writes from a real exit code — it has no `--result` flag, so the ordinary way to satisfy this gate is to run the suite. It is a tripwire against the forgery actually observed (a stamp with no receipt at all), not a signature: anything that can write files in the lane can author a receipt, and the preflights remain the tree-identity check. It fires at the moment the stamp is written, which is the only moment the author still has the context; the preflights catch the same thing turns later, at close-out. **`FAIL` and `WAIVED` are deliberately ungated** — recording a failure must never require a green suite, and a waiver exists precisely when the gates are not green. Say `[verdict-ok]` in the message to stamp without a receipt; that stays in the git log as the record of the call. Disarm to warn-only by deleting `.agents/scripts/git-hooks/VERDICT-ENFORCE`. Staleness is not judged here (a receipt written at commit time necessarily records the parent SHA over a dirty tree) — tree-identity stays with the preflights, and this gate is the tripwire for the forgery actually observed: a stamp with **no** receipt, or one whose recorded result is not a pass. |
 | `merge-target-guard.sh` | **A merge landing on a branch you did not mean.** Every other check on this page guards the branch you merge *from*; this is the only one that guards the branch you merge *into*. It refuses a merge whose target is not a legal destination for its source under the branch model — a `chore/*` lane landing on **another** `chore/*` lane is the SCC-97 signature and is named as such in the refusal, which also prints the target, the source, the rule and `git merge --abort`. — *and the history behind it, below.* |
 | `jira_feed.py` | **A Jira ticket that is only a title.** ① mints the ticket with an outline rendered *from the story file*, and the close-out files a **Dev Record**: the decisions, the pitfalls, and what is still owed. Both write paths **read the ticket back** and fail if what they claimed to write is not there. **Exactly one Dev Record per ticket.** It also picks the ticket **type** for you ([§12](#12-the-board--what-runs-next)). Its `start` verb moves a ticket to `In Progress` and is **idempotent**, which is what lets three different seams call it without any of them double-moving a card. ⛔ **Two ways it could report success over a ticket that held nothing are closed.** (1) *Themed acceptance criteria render in full.* A section ends at a heading of its **own level**, not at the first line that starts with a `#` — so stories that group their ACs under `### Theme …` sub-headings no longer come back as **"(none found in the story file)"**, which is the same sentence a story with genuinely no ACs gets. **The sub-heading itself renders, as a `[label]` row above the bullets it introduces** — a child can be `### Out of scope` just as easily as `### Theme A`, and dropping the heading turned "the mobile app" into a criterion the story is measured against. (2) *A hand-written description is not an outline.* When `mint` reuses an existing ticket it tests for the render trailer, not the **length** of what is already there — so a ticket somebody typed two sentences into gets its outline instead of being left alone and reported as *"carries its outline (213 chars)"*, and **your note is kept underneath under `PREVIOUS NOTE`**. Stale and overwritten were never the only two options. If the field comes back without the trailer, `mint` exits 2 and tells you to read the ticket — and re-running from there is safe: the preserved note is the note **a human typed**, so a retry replaces the `PREVIOUS NOTE` block rather than wrapping the whole field in a fresh one. `check` reads the same trailer for the same reason, so the line it prints at close-out says whether the ticket carries a **rendered outline** rather than whether the field is longer than 40 characters. `outline` also accepts `--jira-project` now, purely so a working `mint` line can be pasted back to it without `unrecognized arguments`. |
 | `post-commit-jira-start.sh` | **A ticket that never shows as in flight.** Your first commit on a `chore/ · claude/ · epic/` branch moves that ticket to `In Progress` — see [§12](#12-the-board--what-runs-next). It reads the key from the **branch name** and never invents one; `main` and unkeyed branches are silent. It costs **one exchange per branch** on the normal path (a marker short-circuits the rest before any network call), it **can never block or fail a commit**, and an offline commit simply retries on the next one. A ticket that is not startable yet (`Blocking`, `In Review`, `Deferred`) deliberately writes no marker, so that branch re-reads once per commit until it is — the price of never silencing a ticket that might still start. |
@@ -4143,7 +4152,7 @@ un-blocked, not to have your own fence removed.*
 *Publishes the toolkit to all five platforms — one door each — from the lobby's masters: generates
 the Claude/Codex launcher skill per command (a hand-authored skill always wins), mirrors opencode and
 Antigravity (thin launchers over ~11.5 KB), generates the Zoo Code doors (`.roo/commands/` launchers,
-`.roomodes` with the five Wonderland team seats, floor + team rule copies in `.roo/rules/` — all
+`.roomodes` with the six Wonderland team seats, floor + team rule copies in `.roo/rules/` — all
 tracked in git, so they travel to both machines), retires what the manifest says it wrote and the
 master no longer owns, and purges the two retired doors. Explained in
 [§19](#19-where-the-depth-lives). Called by: you, after any command change; the door-parity test

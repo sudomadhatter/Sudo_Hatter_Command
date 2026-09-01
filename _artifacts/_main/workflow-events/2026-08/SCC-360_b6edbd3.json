@@ -1,0 +1,75 @@
+{
+  "v": 1,
+  "task": "SCC-360",
+  "sha": "b6edbd367baf1a5c1861fdfd759dcfdf5e9ebe5f",
+  "tip": "3ba843e5edf0328a96ba101d80c0e23406373d3d",
+  "trigger": "close-out",
+  "when": "2026-08-31T23:01:10-04:00",
+  "changes": [
+    ".agents/commands/INDEX.md",
+    ".agents/commands/smh-team-caterpillar.md",
+    ".agents/commands/smh-team-cheshire-cat.md",
+    ".agents/commands/smh-team-gnat.md",
+    ".agents/commands/smh-team-march-hare.md",
+    ".agents/commands/smh-team-queen-of-hearts.md",
+    ".agents/commands/smh-team-white-rabbit.md",
+    ".agents/rules/INDEX.md",
+    ".agents/rules/zoo-team.md",
+    ".agents/scripts/git-hooks/VERDICT-ENFORCE",
+    ".agents/scripts/git-hooks/verdict-receipt.sh",
+    ".agents/scripts/hooks_armed.py",
+    ".agents/scripts/sync-agents.ps1",
+    ".agents/scripts/tests/test_hooks_armed.py",
+    ".agents/scripts/tests/test_settings_allowlist.py",
+    ".agents/scripts/tests/test_twin_parity.py",
+    ".agents/scripts/tests/test_verdict_receipt.py",
+    ".agents/scripts/tests/test_zoo_team.py",
+    ".agents/scripts/verdict_receipt.py",
+    ".githooks/commit-msg",
+    ".roo/commands/smh-team-cheshire-cat.md",
+    ".roo/commands/smh-team-gnat.md",
+    ".roo/commands/smh-team-queen-of-hearts.md",
+    ".roo/rules-ask/01-persona.md",
+    ".roo/rules-code/01-persona.md",
+    ".roo/rules/zoo-team.md",
+    ".roomodes",
+    "_artifacts/_main/2026-08-31_scc-360-zoo-fix/gates/suite.json",
+    "_artifacts/_main/2026-08-31_scc-360-zoo-fix/implementation_plan.md",
+    "_artifacts/_main/2026-08-31_scc-360-zoo-fix/preflight-receipt.json",
+    "_artifacts/_main/2026-08-31_scc-360-zoo-fix/task.yaml",
+    "_artifacts/_main/2026-08-31_scc-360-zoo-fix/tickets/SCC-360.md",
+    "_artifacts/_main/2026-08-31_scc-360-zoo-fix/tickets/SCC-361.md",
+    "_artifacts/_main/2026-08-31_scc-360-zoo-fix/tickets/SCC-362.md",
+    "_artifacts/_main/2026-08-31_scc-360-zoo-fix/tickets/SCC-363.md",
+    "_artifacts/_main/2026-08-31_scc-360-zoo-fix/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "_artifacts/_memory/MEMORY.md",
+    "_artifacts/_memory/cheap-models-rationalize-past-prose.md",
+    "_artifacts/_memory/quick-level-roster-refused-under-fanout.md",
+    "_artifacts/_memory/zoo-team-wonderland-roster.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-31_scc-360-zoo-fix/walkthrough.md",
+    "verdict": "PASS @ b6edbd3",
+    "gates": {
+      "suite": "pass@b6edbd3"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/INDEX.md",
+    "rule-edited:.agents/rules/zoo-team.md"
+  ]
+}
