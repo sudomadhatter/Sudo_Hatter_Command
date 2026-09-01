@@ -143,11 +143,25 @@ is both larger in force and actually derivable from the instrument that ships he
 
 ## Your Actions
 
-| # | What | Why it is yours and not mine |
-|---|---|---|
-| 1 | **Quit VS Code fully (Cmd+Q, not just close the window)**, then in **Terminal.app** — not VS Code's integrated terminal — paste: `python3 .agents/scripts/zoo_permissions_apply.py --apply && python3 .agents/scripts/zoo_permissions_apply.py --status` | The apply writes into VS Code's globalState SQLite, and VS Code flushes its own in-memory copy on exit — so a write made while it runs is silently undone. `zoo_permissions_apply.py` refuses while it detects VS Code running, by design. This agent session lives *inside* VS Code, so it cannot be the thing that waits for VS Code to be gone. |
-| 2 | Read the closing `--status`: both lists must say **in sync with tracked file** | That line IS acceptance row G. Before the apply it reads `allowedCommands: 255 (DRIFT: 7 tracked entries missing from store, 142 store-only entries)` — 142 and 7 rather than 143 and 8 because one of the eight promotions (`ln -s `) already existed in the store. |
-| 3 | Merge the pull request when `/smh-close-task-merge-tree` hands you the link | `main` is never an agent's. |
+⛔ **Checkbox rows, not a table.** `jira_feed.py reconcile-actions` and `finish` read `- [ ]`
+lines; the table this section used to be was invisible to both, so `finish` would have closed the
+ticket `Done` while row G below was provably still open. Found by this lane's own close-out.
+
+- [ ] **Quit VS Code fully (Cmd+Q, not just close the window), then run the Zoo permissions apply in
+      Terminal.app — not VS Code's integrated terminal — and read its closing `--status`.**
+      Run it from the main checkout after the merge:
+      `cd /Users/sudohatter/Sudo_Hatter_Command && python3 .agents/scripts/zoo_permissions_apply.py --apply && python3 .agents/scripts/zoo_permissions_apply.py --status`
+      Both lists must close reading **in sync with tracked file** — that line IS acceptance row G.
+      Measured at close-out and still open: `allowedCommands: 255 (DRIFT: 7 tracked entries missing
+      from store, 142 store-only entries)`. It reads 142 and 7 rather than 143 and 8 because one of
+      the eight promotions (`ln -s `) already existed in the store.
+      **Why it is yours and not mine:** the apply writes into VS Code's globalState SQLite, and VS
+      Code flushes its own in-memory copy on exit — so a write made while it runs is silently
+      undone. `zoo_permissions_apply.py` refuses while it detects VS Code running, by design. This
+      agent session lives *inside* VS Code, so it cannot be the thing that waits for VS Code to be
+      gone.
+
+- [x] The merge itself — lands via this branch's PR
 
 ## Out of scope, named not dropped
 
@@ -261,3 +275,29 @@ new abstraction has a single caller — `quoted_spans()` has two (rule 2's posit
 tests.
 
 **Changes applied: sixteen, all listed above.** The implementation was not correct as-is.
+
+## Close-out (2026-09-01)
+
+The close-out's own gates caught four things the review had not, and all four are fixed on this
+branch before the PR.
+
+**Three in the migration guide.** This lane's `git -C` rewrite of a PowerShell verification block
+was itself broken: a bare `cd A` followed by a bare `cd B` resolves B *relative to* A, so the second
+repo check ran in the wrong place and left the shell parked inside a project. `Push-Location` /
+`Pop-Location` is the native PowerShell idiom that pins the target and comes back, so it satisfies
+`command-shape.md` rule 1 without inventing a chain that cannot run. Two pre-existing unresolved
+path claims came into scope with the file and were fixed with it — AGY's quick-fix walkthrough was
+written bare so it resolved to nothing from the lobby root, and the phantom-agent aside spelled out
+a file whose whole point is that it must **not** exist.
+
+**One in this walkthrough.** `## Your Actions` was a Markdown table. `reconcile-actions` and
+`finish` both read `- [ ]` rows, so both reported *nothing is owed* while acceptance row G was
+measurably still open — `finish` would have written `Done` over it. It is checkbox rows now, and
+`reconcile-actions` exits 3 on the one that is genuinely outstanding.
+
+**Landing gate, re-run at the landing sha** because the doc fix moved code outside `_artifacts/`
+and correctly revoked the suite SKIP: `run_all.py` **70/70 files passed, exit 0** ·
+`workflow_lint.py --toolkit-only` **0 errors, 0 warnings, 8 info** · `check_maps.py --depth3-only
+--strict` **silent, exit 0** · `check_links.py --base origin/main` **14 files, 247 path claims,
+clean** · SOP currency enforced per commit by the armed `commit-msg` hook, with no `--no-verify`
+and no `[sop-ok]` on any code commit in the lane.
