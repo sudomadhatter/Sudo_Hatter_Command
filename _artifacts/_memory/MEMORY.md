@@ -57,6 +57,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [⭐ Main merge needs the operator's VERBATIM words](main-merge-needs-operator-verbatim-approval.md) — minter requires verbatim approval quote; stage, CI green, then park.
 - [Hook `ask` = DENY in auto mode](hook-ask-becomes-autodeny-in-auto-mode.md) — gates main only; reads pass, mutations die in non-interactive shells.
 - [Pruned worktree blocks re-add](pruned-worktree-leaves-a-blocking-shell.md) — empty dir shell blocks worktree add; delete before re-adding.
+- [⛔ Lens worktrees collide ACROSS reviews](lens-worktrees-collide-across-reviews.md) — stale lens-* trees are a different repo at a different sha; key the name, run the SCC-313 probe.
 - [⛔ Pruning a story worktree can ORPHAN ①](story-worktree-prune-can-orphan-step1.md) — ①'s commit survives only as dangling; git fsck + cherry-pick, never re-run ① blind.
 - [Worktrees skip gitignored assets](worktrees-do-not-inherit-gitignored-assets.md) — link auth_keys, .env, and node_modules into new worktree.
 - [GitHub 408 on satellite wifi](github-408-on-satellite-uplink.md) — push times out mid-upload; chunk via scratch refs or wait for stable link.
