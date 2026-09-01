@@ -153,6 +153,8 @@ branch's history as evidence that the old equality check could never hold for a 
 
 ## Your Actions
 
+- [x] **The merge itself** — lands via this branch's PR.
+
 - [ ] **Verify the SCC-335 fix on the Windows PC.** Full copy-paste steps are in
       [SCC-335](https://sudo-command.atlassian.net/browse/SCC-335)'s description under
       **PC VERIFICATION** - three read-only commands, nothing is written to the board.
@@ -164,10 +166,9 @@ branch's history as evidence that the old equality check could never hold for a 
       correct UTF-8 and can make mojibake look clean
       (memory `powershell-console-fakes-mojibake`), so an eyeball pass proves nothing.
 
-review-runtime: fan-out
-
 ## Code Review (2026-09-01)
 
+review-runtime: fan-out
 Verdict: PASS @ e0d73919
 Suite evidence measured at: e0d73919 (clean tree, 71/71, exit 0) — the same sha the lenses reviewed at 86f29f1c plus the review's own fixes; re-run and re-stamped after the last code change.
 
@@ -253,16 +254,3 @@ Writing the replacement for finding 5, I shipped `grep -qv` as the verdict. **Th
 ### Clean-Code Gate
 
 Machine floor imported from the gates above rather than re-run (SCC-146). `py_compile` clean on all 20 changed `.py` files. Comment contract: the three new `⛔`/`⭐` blocks each name the ticket, the measurement and the failure they prevent. Convention: bullets not tables in the declared set, checkbox rows in `## Your Actions`, unfenced roster lines. Diff-scoped — legacy debt in untouched files noted, not gated on. **No findings beyond those in the table above.**
-
-## Your Actions
-
-- [ ] **Verify the SCC-335 fix on the Windows PC.** Full copy-paste steps are in
-      [SCC-335](https://sudo-command.atlassian.net/browse/SCC-335)'s description under
-      **PC VERIFICATION** - three read-only commands, nothing is written to the board.
-      Step 1 prints the machine's Python encoding, step 2 is the negative control on the old
-      line and must print `U+26D4 0 U+2B50 0`, step 3 runs the shipped seam and must print
-      `U+26D4 1 U+2B50 1 U+FFFD 0`. Paste the three output lines back; that closes SCC-335
-      acceptance A on the machine that produced the corruption.
-      Check the **counts**, never the rendered characters - the PowerShell console mis-renders
-      correct UTF-8 and can make mojibake look clean
-      (memory `powershell-console-fakes-mojibake`), so an eyeball pass proves nothing.
