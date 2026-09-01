@@ -105,7 +105,12 @@ A compliant workspace has these, and nothing it doesn't need.
 ### Layer 2 — the routing table (the single most important thing)
 A plain-English table in `AGENTS.md`: **task → read these / skip these / skills**. It is what makes
 least-context loading real. Always include the up-route: *"if what you need isn't here, GO BACK to
-the home base's `router.md`."* Routers route up as well as down — an agent can never dead-end.
+the home base's `router.md`"* — **written in the project's own file as the relative path, which from
+a project root is two levels up.** Routers route up as well as down — an agent can never dead-end.
+(The relative form is described rather than written out because this page lives in the home base, not
+in a project: spelled literally it is a path that does not resolve from here, and both `check_links`
+and the doc-graph gate correctly read it as broken. Layer 1 above uses the same wording for the same
+reason.)
 
 ### Layer 3 — skills (referenced, never preloaded)
 Skills live in the vendored `.agents/skills/<name>/SKILL.md` and are pulled **only** by the workspace rows
@@ -299,9 +304,13 @@ The **single canonical invocable set is `.agents/commands/`**. It mirrors to eve
   A command that fails visibly beats one that runs on 27% of its steps. Full bodies reach every other
   platform directly from `commands/`.
   *(SCC-370 widened this from "a big command" to "any command": 14 doors used to ship verbatim and so
-  ran from a project's global menu. Twelve of the fourteen are lobby commands by design — every `cicd-*`
-  is a command-center→project door and every `smh-*` acts on the centre itself. `sentry-security-team-avch`
-  is the one genuinely project-scoped member; if it ever bites, run it from the lobby.)*
+  ran from a project's global menu. **Thirteen of the fourteen** are lobby commands by design — 7 `cicd-*`
+  command-center→project doors, and 6 `smh-*` that act on the centre itself. **Two** members are worth
+  naming rather than one. `sentry-security-team-avch` is genuinely project-scoped. And `smh-review` is
+  the one whose loss is a real trade rather than a formality: its old door was 326 bytes that invoked
+  the `md-feedback` MCP server and named no repo file at all, so it ran anywhere and could never have
+  been truncated — the justification above does not cover it. Both now stop in a thin project and say
+  so; run either from the lobby.)*
 
 ### Git — one policy
 **Agents commit and push their own work** — explicit paths (never `git add -A`), the repo's Jira key leading

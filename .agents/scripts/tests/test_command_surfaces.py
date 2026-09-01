@@ -269,6 +269,17 @@ def is_launcher_for(body: str, brain: str, cmd_name: str, budgeted: bool = False
     # launcher skills (`New-LauncherSkillStub`) carry the brain's FULL description and must keep
     # doing so - applying the cut to them turned 39 correct doors red in one edit.
     want = fm_field(brain, "description") or ""
+    # ⛔ STRIP THE QUOTES BEFORE THE BUDGET CUT, AND ONLY ON THE BUDGETED SURFACE - the twin of
+    # the emitter's own `$desc.Trim().Trim('"').Trim("'")`, at the same point in the pipeline.
+    # A QUOTED master description would otherwise keep its opening " and lose its closing one to
+    # the 132-char cut, and the door would ship unparseable YAML (it did: cicd-push-e2e.md).
+    #
+    # ⛔ IT BELONGS HERE, NOT INSIDE `ag_description`. That function is pinned against the REAL
+    # PowerShell by U7, which runs `Get-AgDescription` under pwsh over the live descriptions -
+    # quoted ones included. Stripping inside the twin would red U7 against an unchanged engine
+    # and read as a generator defect. Mirror the engine's placement, not just its effect.
+    if budgeted:
+        want = want.strip().strip('"').strip("'")
     return fm_field(body, "description") == (ag_description(want) if budgeted else want)
 
 
@@ -2791,13 +2802,44 @@ def main() -> int:
             # that DIFFERS from its door is a stale machine, a hand-edit, or a cache fed from the
             # wrong source - the SCC-332 defect itself, which the old size test could not see and
             # this one cannot miss. Strictly stronger, and it needs no number.
+            # ⛔ BYTES, NOT read(). `read()` is `read_text(encoding="utf-8-sig")`, which applies
+            # universal newlines AND eats a BOM - so a door that gained CRLF or a BOM compared
+            # EQUAL while the bytes differed. Those are the exact two differences the emitter's
+            # own comment calls fatal ("frontmatter '---' must stay byte 0"), on a repo synced
+            # from a Mac AND a PC. A check whose title says "byte mirror" must compare bytes.
+            #
+            # ⛔ AND IT IS A MAIN-CHECKOUT CLAIM (SCC-370 review, edge-case lens). `WFDIR` is
+            # per-checkout; `CACHE` is ONE directory per machine. Asserting equality between them
+            # is only satisfiable in whichever checkout last ran the sync, so unconditionally it
+            # fails every OTHER tree on the machine - measured live: this lane green, the main
+            # checkout 39 of 39 desynced, for a diff main does not contain. That is the
+            # `lane-collision-is-gates-not-files` shape: a lane's gate going red for another
+            # lane's write. The cache is authoritative for the MAIN checkout, so that is where
+            # the claim binds; in a worktree the divergence is expected and is reported, not failed.
+            _is_main = wf.tree_tag(ROOT)[2]
             desynced = sorted(n for n, body in cached.items()
-                              if (WFDIR / n).is_file() and body != read(WFDIR / n))
-            c.check("CS-18 L the Antigravity global cache is a byte mirror of workflows/",
-                    not desynced,
-                    f"{len(desynced)} of {len(cached)} cached files differ from their door: "
-                    f"{desynced[:8]} - run /smh-sync-agents on this machine. A cached body that "
-                    f"is not its door is what the agent actually reads, and nothing else sees it")
+                              if (WFDIR / n).is_file()
+                              and (CACHE / n).read_bytes() != (WFDIR / n).read_bytes())
+            # A cached file with NO door is invisible to the comparison above (the `.is_file()`
+            # guard), and M2 below only looks for missing twins, never extras. That is how a
+            # RETIRED command keeps serving its old body from the menu on a machine that has not
+            # re-synced - SCC-367 retired one this month. Nothing else reports it, so L does.
+            orphans = sorted(n for n in cached if not (WFDIR / n).is_file())
+            if not _is_main:
+                c.check("CS-18 L SKIPPED in a worktree: the cache belongs to the main checkout",
+                        True,
+                        f"{len(desynced)} of {len(cached)} cached files differ from this lane's "
+                        f"doors and {len(orphans)} have no door here - EXPECTED in a worktree, "
+                        f"because the machine cache is written by whichever checkout synced last. "
+                        f"This is a SKIP, not a pass about the cache; the claim binds in main.")
+            else:
+                c.check("CS-18 L the Antigravity global cache is a byte mirror of workflows/",
+                        not desynced and not orphans,
+                        f"{len(desynced)} of {len(cached)} cached files differ from their door: "
+                        f"{desynced[:8]}; {len(orphans)} cached files have no door at all: "
+                        f"{orphans[:8]} - run `/smh-sync-agents` FROM THE MAIN CHECKOUT (running "
+                        f"it from a lane republishes that lane's doors and moves the problem). A "
+                        f"cached body that is not its door is what the agent actually reads.")
             eligible = {n for n in sizes if ag_eligible(WFDIR / n)}
             c.check("CS-18 M the eligible-door set is non-empty",
                     bool(eligible), "an empty set would make the twin check below vacuous")
@@ -2808,15 +2850,20 @@ def main() -> int:
                     f"- run /smh-sync-agents on this machine")
 
         # -- N/O/P . SCC-370 . the cap is STRUCTURALLY unreachable, not measured against ------
-        # A/B and L above ask "is any door over the cap?". That question only exists because the
-        # generator USED to decide per command: over ~11.5 KB it emitted a thin launcher, under it
-        # a verbatim copy. 13 of 39 doors still shipped verbatim, so the 12,000-char cap stayed an
-        # operative rule an agent had to hold in its head - restated in every generated door, in
-        # eight script comments, eight doc sites and five memory files.
+        # This surface USED to be guarded by asking "is any door over the cap?" - a question that
+        # only existed because the generator decided per command: over ~11.5 KB it emitted a thin
+        # launcher, under it a verbatim copy. 14 of 40 doors still shipped verbatim, so the
+        # 12,000-char cap stayed an operative rule an agent had to hold in its head - restated in
+        # every generated door, in eight script comments, eight doc sites and five memory files.
+        #
+        # ⛔ NO CHECK ABOVE ASKS THAT QUESTION ANY MORE, and this comment used to say it did. B was
+        # deleted in the same commit that wrote this paragraph, L was rewritten into a cache-mirror
+        # assertion, and A only asserts the door set is non-empty. The sentence describing them as
+        # cap checks survived its own edit (SCC-370 review, literal-correctness lens).
         #
         # SCC-370 deleted the branch. Every Antigravity door is now a launcher of a few hundred
         # bytes, so no door CAN be near the cap and nobody has to reason about size. N pins the
-        # engine, O pins the doors it produced, P pins the prose.
+        # engine's TEXT, N2 pins the engine's SHAPE, O pins the doors it produced, P pins the prose.
 
         # The detector both N and P use. Every spelling the repo actually wrote the rule in.
         CAP_RE = re.compile(r"\b1[12],?[05]00\b|\b12\s*k\b|\b11\.5\s*kb\b", re.I)
@@ -2843,6 +2890,165 @@ def main() -> int:
                 f"{('the cap number ' + str(_cap_hits) + ' ') if _cap_hits else ''}"
                 f"{'Set-AgDescriptionLine ' if 'Set-AgDescriptionLine' in sync else ''}"
                 f"- a size branch means some doors ship verbatim and the cap is operative again")
+
+        # N2 . THE SHAPE, not the number. ⛔ N ALONE DOES NOT GUARD THE INVARIANT IT IS NAMED FOR,
+        # and this was proven by mutation, not argued (SCC-370 review, test-adequacy lens): a fully
+        # restored verbatim arm written
+        #     if ((Get-Item $f.FullName).Length -le 9999) { Copy-Item ...; continue }
+        # passes N, because CAP_RE looks for 11,500/12,000/12k and 9999 is none of them. The suite
+        # stayed 297/297 and run_all stayed 68/68 with the branch back in the engine.
+        #
+        # ⭐ THE LESSON, because it is the third time this repo has paid for it: a grep is a NUMBER
+        # detector and "no size branch" is a STRUCTURAL claim. `comment-literals-invert-source-grep
+        # -tests` and `source-grep-guards-cannot-see-order` are both already recorded here, and the
+        # comment above N reasons carefully about hardening the grep (CAP_RE over the bare literal)
+        # without noticing that no grep can see control flow. Widening a detector does not change
+        # its kind. So N2 asserts the SHAPE of the one function that emits: the mirror reads a
+        # description and writes a stub, and it has no business measuring a file or copying one.
+        _mir = "function Sync-AntigravityWorkflowMirror"
+        _fn = sync[sync.index(_mir):] if _mir in sync else ""
+        _nxt = _fn.find("\nfunction ", len(_mir))
+        _fn = _fn[:_nxt] if _nxt > 0 else _fn
+
+        def _size_branch(src):
+            """The two ways the arm can come back: measure a file, or byte-copy it to the door.
+
+            Word-boundary `-le` etc on purpose - a bare substring match reads the `-le` inside
+            'BOM-less' and the check fails on its own comment, which is the comment-literal
+            inversion one line up. Run over COMMENT-STRIPPED source for the same reason.
+            """
+            return bool(re.search(r"\bCopy-Item\b", src)
+                        or re.search(r"\.Length\b", src)
+                        or re.search(r"\s-(?:le|lt|ge|gt)\s", src))
+
+        c.check("CS-18 N2 CONTROL: the shape detector fires on a restored verbatim arm",
+                _size_branch("if ((Get-Item $f.FullName).Length -le 9999) { Copy-Item -Path $x "
+                             "-Destination $d -Force; continue }")
+                and _size_branch("Copy-Item -Path $f.FullName -Destination $dest -Force")
+                and not _size_branch("$desc = $desc.Trim().Trim('\"'); $stub = @('---') -join \"`n\""),
+                "a shape detector that cannot see the mutant it exists for is the defect it "
+                "replaces; one that fires on the honest emit blocks every sync")
+        _n2_why = ("Sync-AntigravityWorkflowMirror not found in the engine" if not _fn
+                   else "the mirror measures a file size or byte-copies a command body - the "
+                        "size branch is back and some doors will ship verbatim")
+        c.check("CS-18 N2 the mirror emits ONE shape - it never measures a door or copies one",
+                bool(_fn) and not _size_branch(_fn), _n2_why)
+
+        # -- Q . RUN THE GENERATOR. Everything above reads a file as TEXT --------------------
+        # ⛔ THE SYSTEMIC GAP THIS CLOSES (SCC-370 review, compound synthesis). Every other guard
+        # over this generator reads an artifact that CORRELATES with the invariant: N reads the
+        # engine's source, O and CS-03 read the committed doors, L reads the machine cache, P
+        # reads prose. None of them RUNS the emitter. That is not five independent slips - it is
+        # one forced substitution, because the engine is PowerShell and this suite is Python, so
+        # at every site the only observable was a proxy. The measured cost: breaking the stub's
+        # pointer literal ("read" -> "open") left the whole suite green at 297/297 and 68/68,
+        # because O and CS-03 cannot see a generator change until a sync has already rewritten
+        # all 38 doors and someone has committed them.
+        #
+        # ⭐ The capability was already here. U7 (~line 1500) extracts a function out of the .ps1
+        # by string index and runs it under pwsh against real fixtures. Q is that same pattern
+        # applied to the emitter itself, and it is what makes the round trip a CHECK rather than
+        # a belief: emit into a temp master, compare to what is committed, byte for byte.
+        #
+        # It also kills the one mutant with no checkout-independent killer. M6 (a door hand-edited
+        # so that it stays a VALID launcher) was detectable only via the machine cache, which L
+        # now correctly refuses to assert outside the main checkout - so without Q, M6 would have
+        # become undetectable in exactly the tree where doors are edited.
+        import shutil as _shutil
+        _pwsh = _shutil.which("pwsh")
+        if not _pwsh:
+            c.check("CS-18 Q SKIPPED: no pwsh - the generator is unverified on this machine",
+                    True, "install PowerShell 7 to round-trip the real emitter against the doors")
+        else:
+            _need = ("function Get-AgDescription", "function Get-CommandPlatforms",
+                     "function Sync-AntigravityWorkflowMirror")
+            _have = all(n in sync_raw for n in _need)
+            c.check("CS-18 Q0 CONTROL: all three generator functions were located to extract",
+                    _have,
+                    f"missing from sync-agents.ps1: {[n for n in _need if n not in sync_raw]} - "
+                    f"an extraction that silently found nothing would run an empty script and "
+                    f"emit zero doors, which the comparison below would read as agreement")
+            if _have:
+                def _grab(name):
+                    a = sync_raw.index(name)
+                    b = sync_raw.find("\nfunction ", a + len(name))
+                    return sync_raw[a:b] if b > 0 else sync_raw[a:]
+                with TempDir() as _t:
+                    _m = _t / ".agents"
+                    (_m / "commands").mkdir(parents=True)
+                    for _src in sorted((ROOT / ".agents/commands").glob("*.md")):
+                        _shutil.copy2(_src, _m / "commands" / _src.name)
+                    (_m / "workflows").mkdir()
+                    # ⛔ $AllPlatforms IS A SCRIPT-LEVEL VARIABLE AND MUST BE CARRIED IN. It is
+                    # what `Get-CommandPlatforms` returns for a command with no `platforms:` key
+                    # ("omit the key = every platform"), and 13 live commands rely on that default.
+                    # Extracting the three functions alone left it $null, `$null -contains
+                    # 'antigravity'` is false, and the harness emitted 25 doors instead of 38 -
+                    # then compared those 25 and reported agreement. Caught while writing this
+                    # check, which is precisely the vacuity Q1/Q4 exist to make impossible.
+                    _apl = re.search(r"^\$AllPlatforms\s*=.*$", sync_raw, re.M)
+                    _ps = _t / "emit.ps1"
+                    _ps.write_text(
+                        (_apl.group(0) if _apl else "") + "\n"
+                        + "\n".join(_grab(n) for n in _need)
+                        + "\nSync-AntigravityWorkflowMirror -MasterDir '"
+                        + str(_m).replace("'", "''") + "' | Out-Null\n",
+                        encoding="utf-8")
+                    _r = subprocess.run([_pwsh, "-NoProfile", "-File", str(_ps)],
+                                        capture_output=True, text=True)
+                    _emitted = {p.name: p.read_bytes()
+                                for p in sorted((_m / "workflows").glob("*.md"))}
+
+                c.check("CS-18 Q1 the extracted generator actually ran and emitted doors",
+                        _r.returncode == 0 and len(_emitted) >= 20,
+                        f"pwsh rc={_r.returncode} emitted={len(_emitted)} "
+                        f"{_r.stderr.strip()[:300]} - zero doors would make Q vacuous")
+
+                # THE ROUND TRIP. A committed door that is not what the generator produces TODAY
+                # is drift: a hand-edit, a stale sync, or an engine change nobody re-ran.
+                # ⛔ BOTH DIRECTIONS. Comparing only the files the harness emitted is how a
+                # harness that emits a SUBSET reports agreement - measured, see the $AllPlatforms
+                # note above. `_unemitted` is the direction that catches it.
+                _hand = wf_hand_owned(sync_raw)
+                _committed = {p.name for p in WFDIR.glob("*.md")} - _hand
+                _drift = sorted(n for n, b in _emitted.items()
+                                if (WFDIR / n).is_file() and (WFDIR / n).read_bytes() != b)
+                _uncommitted = sorted(n for n in _emitted if not (WFDIR / n).is_file())
+                _unemitted = sorted(_committed - set(_emitted))
+                c.check("CS-18 Q4 CONTROL: the emit covered every committed door, not a subset",
+                        not _unemitted,
+                        f"{len(_unemitted)} committed doors the harness never emitted: "
+                        f"{_unemitted[:8]} - a subset emit makes the byte comparison below a "
+                        f"statement about the files it happened to produce, not about the surface")
+                c.check("CS-18 Q every committed door is byte-identical to what the generator emits",
+                        not _drift and not _uncommitted,
+                        f"{len(_drift)} doors differ from a fresh emit: {_drift[:8]}; "
+                        f"{len(_uncommitted)} would be created: {_uncommitted[:8]} "
+                        f"- run /smh-sync-agents and commit the result")
+
+                # THE FRONTMATTER. ⛔ A door's `description:` is what Antigravity builds its slash
+                # menu from, and an UNBALANCED QUOTE there is unparseable YAML - the door can drop
+                # out of the menu entirely. Get-AgDescription cuts at 132 chars and is quote-blind,
+                # so a quoted master description loses its closing quote. Checked on the EMITTED
+                # bytes, not the committed ones, so the engine is what answers for it.
+                def _desc_line(b):
+                    for ln in b.decode("utf-8").split("\n")[:6]:
+                        if ln.startswith("description:"):
+                            return ln[len("description:"):].strip()
+                    return None
+                _unbalanced = sorted(
+                    n for n, b in _emitted.items()
+                    if (_d := _desc_line(b)) and _d[0] in "\"'" and not _d.endswith(_d[0]))
+                c.check("CS-18 Q2 no emitted door has an unbalanced quote in its description",
+                        not _unbalanced,
+                        f"{_unbalanced[:8]} carry an opening quote with no closing one - the "
+                        f"frontmatter is invalid YAML and Antigravity may drop the door from its "
+                        f"menu. The fix is the quote strip the Zoo emitter already carries")
+                _nobom = sorted(n for n, b in _emitted.items() if not b.startswith(b"---"))
+                c.check("CS-18 Q3 every emitted door starts at byte 0 with '---' (no BOM)",
+                        not _nobom,
+                        f"{_nobom[:8]} do not begin with the frontmatter fence - the emitter's "
+                        f"own comment requires byte 0 for the workflow parser")
 
         # O . the doors themselves. STRICTLY STRONGER than B: B asks whether a door is under the
         # cap, which a 40 KB-command's verbatim mirror could never be but an 8 KB one always was.
@@ -2875,13 +3081,35 @@ def main() -> int:
                 _why = ("carries the GENERATED marker but is not a current launcher"
                         if GEN in _body else "verbatim mirror - no GENERATED marker")
                 not_launcher.append(f"{_f.name} [{_why}]")
+        # ⛔ THE REMEDY LINE SENDS THE READER TO THE CAUSE, NOT TO THE SYNC (SCC-370 review).
+        # It used to read "run /smh-sync-agents; a verbatim door puts the 12,000-char cap back in
+        # play" - which is the diagnostic the comment above this block says was removed for
+        # "sending the next reader to re-run the sync instead of to the actual cause". Re-syncing
+        # is right for a STALE door and wrong for a broken emitter, and since SCC-370 the emitter
+        # is the likelier of the two. CS-18 Q tells them apart: it round-trips the real generator.
         c.check("CS-18 O every Antigravity door is a CURRENT generated thin launcher",
                 not not_launcher,
                 f"{len(not_launcher)} of {len(sizes)} doors are not: {not_launcher[:8]} "
-                f"- run /smh-sync-agents; a verbatim door puts the 12,000-char cap back in play")
+                f"- read CS-18 Q first: if Q is GREEN the doors are merely stale and "
+                f"`/smh-sync-agents` fixes it; if Q is RED the generator itself is wrong and "
+                f"re-syncing will republish the defect")
         c.check("CS-18 O2 ...and the sweep read a real number of doors",
                 len(sizes) - len(hand & set(sizes)) >= 30,
                 f"{len(sizes)} doors, {len(hand & set(sizes))} hand-owned - too few to mean anything")
+        # O3 . the residue of the DELETED CS-18 B, scoped to exactly what O cannot speak for.
+        # ⛔ B was deleted as worthless and that was RIGHT for generated doors - it was green for
+        # the whole life of the defect (the largest door before this lane was 10,352 bytes, never
+        # near 12,000), and O is strictly stronger for anything the generator writes. But the
+        # hand-owned doors are exempt from O (`if _f.name in hand: continue`) AND from the CS-03
+        # door-parity sweep, so deleting B left `smh-adviser-board.md` - hand-authored, published
+        # to the machine cache, the one door here a human edits directly - with no size assertion
+        # at all. Antigravity's truncation is still silent, so this is the one file on this
+        # surface that can still grow into it unobserved.
+        _hand_over = sorted(n for n in (hand & set(sizes)) if sizes[n] > 12000)
+        c.check("CS-18 O3 the hand-owned doors O cannot check are still under the cap",
+                not _hand_over,
+                f"{_hand_over} exceed 12,000 chars - a hand-authored door is not regenerated, so "
+                f"nothing else measures it and Antigravity truncates it silently")
 
         # P . the PROSE. The operator's actual complaint is not that the cap is enforced wrongly,
         # it is that the NUMBER is restated everywhere and every session re-derives a rule that no
@@ -2905,7 +3133,28 @@ def main() -> int:
                              cwd=ROOT, capture_output=True, text=True)
         c.check("CS-18 P1 the tracked-file listing succeeded",
                 _ls.returncode == 0, f"git ls-files rc={_ls.returncode} {_ls.stderr.strip()[:160]}")
+        # ⛔ THE RECORDING STEP IS A NAMED FUNCTION SO IT CAN BE CONTROLLED (SCC-370 review).
+        # P1/P2/P3 all guard the sweep's INPUTS - that the listing worked, that it read enough
+        # files, that the allow-listed site still states the rule. None of them proves the sweep
+        # still RECORDS what it finds, and that gap was measured: wrapping the append in
+        # `if False and ...` left the suite at 297/297. A detector that stopped recording reads
+        # exactly like a clean tree - which is verbatim the failure `U6d · THE TEETH CONTROL`
+        # was written for, ~1,600 lines above. Same shape, same remedy: route the real sweep and
+        # the control through ONE function, so a gutted recorder fails the control too.
         _scanned, _sites = 0, []
+
+        def _record(rel, text, sink):
+            if CAP_RE.search(text):
+                sink.append(rel)
+
+        _teeth = []
+        _record("CONTROL/states-the-rule.md", "truncated over the 12,000-char cap", _teeth)
+        _record("CONTROL/silent.md", "launchers keep every door small", _teeth)
+        c.check("CS-18 P0 TEETH CONTROL: the recorder still records a known offender",
+                _teeth == ["CONTROL/states-the-rule.md"],
+                f"the sweep's recording step returned {_teeth} for one offender and one clean "
+                f"file - if it records nothing, P below passes on a repo that states the rule "
+                f"in every file")
         for _rel in (r for r in _ls.stdout.split("\0") if r.endswith(".md")):
             if _rel in P_ALLOW or "/bmad-" in _rel or "changelog" in _rel.lower():
                 continue
@@ -2913,8 +3162,7 @@ def main() -> int:
             if not _p.is_file():
                 continue
             _scanned += 1
-            if CAP_RE.search(read(_p)):
-                _sites.append(_rel)
+            _record(_rel, read(_p), _sites)
         c.check("CS-18 P the cap number survives ONLY at its one operative site",
                 not _sites,
                 f"{len(_sites)} of {_scanned} swept files still state the size rule as law: "

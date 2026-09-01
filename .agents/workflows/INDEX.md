@@ -12,10 +12,12 @@ from there by `/smh-sync-agents`. There is no size rule to reason about — a la
 so a command can grow to any length and its door never changes shape (SCC-370). This same folder is the
 source for the machine-global cache
 `~/.gemini/antigravity/global_workflows` (SCC-332). **This router is not itself a door** — it carries
-`platforms: []` for the same reason `commands/INDEX.md` does. The table below annotates the few entries
-worth reading as process maps; several of them are generated mirrors and say so. Exactly ONE file here is
-hand-authored and never regenerated: `smh-adviser-board.md`, prune-protected in the sync's `$excluded`
-list. `commands/` holds the authored bodies and `rules/` the always-on guardrails.
+`platforms: []` for the same reason `commands/INDEX.md` does. **Nothing in this folder is worth reading
+as a process map any more** — every generated entry is thirteen lines that point elsewhere, so the table
+below is a map of WHICH DOOR EXISTS and what its command does, never a place to read the steps. Follow
+the row to `.agents/commands/<name>.md` for those. Exactly ONE file here is hand-authored and never
+regenerated: `smh-adviser-board.md`, prune-protected in the sync's `$excluded` list. `commands/` holds
+the authored bodies and `rules/` the always-on guardrails.
 
 | Workflow | What it documents | Reach for it when… |
 |---|---|---|

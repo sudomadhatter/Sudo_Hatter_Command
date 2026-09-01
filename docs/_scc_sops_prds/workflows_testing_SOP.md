@@ -4168,9 +4168,12 @@ hold: **the two machine-global caches read from DIFFERENT sources.**
 Antigravity **truncates** an over-long workflow instead of rejecting it, while
 `~/.config/opencode/commands` comes from `.agents/commands/` (full bodies — opencode has no cap).
 
-⛔ **A worktree sync does NOT write the machine-global caches.** Run this **from the lobby checkout**
-after retiring or renaming a command, or the retired door lingers in the Antigravity and opencode
-menus with nothing in the repo able to see it.
+⛔ **A worktree sync DOES write the machine-global caches — run it from the main checkout.** The
+script resolves its own home from where it sits, so a lane worktree counts as the lobby and a bare
+run republishes **that lane's doors** into your live Antigravity and opencode menus, unmerged work
+included. Add **`-NoGlobals`** to make a lane sync local-only. Run the plain sync from the main
+checkout after retiring or renaming a command, or the retired door lingers in both menus with
+nothing in the repo able to see it.
 
 ```mermaid
 flowchart TD
@@ -4412,12 +4415,15 @@ flowchart TD
 >
 > ⛔ **A CODE FIX DOES NOT MOVE A MACHINE CACHE, and the review of this very lane caught the author
 > claiming it had.** The cache lives in `$HOME`, so git cannot carry it: a pull gets the fixed script and
-> the fixed doors, and the cache changes only when `/smh-sync-agents` runs **on that machine**. Worse, the
-> globals block is gated on `$IsLobby -or $GlobalsOnly` and **`$IsLobby` is FALSE in a worktree** — so the
-> lane's own sync wrote its four local twins and left the cache untouched, while every source-side check
-> stayed green. `CS-18 L`/`M2` now read the real directory and go RED until the machine is synced. That
-> red is the feature: it is the only thing in the repo that can tell you this machine is still serving
-> truncated commands.
+> the fixed doors, and the cache changes only when `/smh-sync-agents` runs **on that machine**. The
+> globals block is gated on `$IsLobby -or $GlobalsOnly`, and **`$IsLobby` is TRUE in a worktree** — the
+> script derives its own home from where it sits, so a lane compares equal to itself. A bare lane sync
+> therefore publishes **that lane's** doors to the machine, unmerged work included; `-NoGlobals` is what
+> makes a lane sync local-only. `CS-18 L`/`M2` read the real directory and go RED until the machine is
+> synced — and `L` binds only in the **main checkout**, because the cache is one directory per machine
+> while `.agents/workflows/` is per checkout, so asserting them equal everywhere fails every tree except
+> whichever one synced last. That red is the feature: it is the only thing in the repo that can tell you
+> this machine is serving something other than what `main` says.
 >
 > **The doc came first, and the code followed it.** `docs/workspace-standard.md` stated the inverse rule —
 > that `.agents/workflows/` were reference process-docs "NOT pushed to any command cache" — and warned that

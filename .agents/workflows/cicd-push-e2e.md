@@ -1,5 +1,5 @@
 ---
-description: "The ONE shipping command — gate a finished epic branch (epic/<JIRA-KEY>-<slug>) and OPEN A PULL REQUEST into main, refusing until...
+description: The ONE shipping command — gate a finished epic branch (epic/<JIRA-KEY>-<slug>) and OPEN A PULL REQUEST into main, refusing until...
 platforms: [opencode, antigravity]
 ---
 

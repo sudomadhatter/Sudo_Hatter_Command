@@ -518,8 +518,15 @@ function Sync-CommandDir {
 # why 14 of 40 doors still shipped verbatim three months later -- and why the cap stayed an OPERATIVE rule
 # every session had to re-derive, restated across 39 door files, 8 comments here, 8 doc sites and 5 memory
 # entries. Deleting the condition makes the cap structurally unreachable: a launcher is a few hundred bytes,
-# so no door can approach it and nobody has to reason about size. test_command_surfaces.py CS-18 N and the
-# door-parity SCC-370 control both go red if the branch comes back.
+# so no door can approach it and nobody has to reason about size.
+#
+# ⛔ THE GUARD IS test_command_surfaces.py CS-18 N2, AND ONLY N2. This comment used to name "CS-18 N and
+# the door-parity SCC-370 control", and the SCC-370 review proved BOTH claims false by mutation: N greps
+# for the cap NUMBER, so a branch written `-le 9999` restores the verbatim arm with the suite at 297/297;
+# and the door-parity control is a synthetic unit test over door_verdict that never reads this file at
+# all. N2 asserts the SHAPE of Sync-AntigravityWorkflowMirror -- no file measured, no body copied -- which
+# is the invariant this barrier is actually about. Keep N (it owns the number) and keep the control (it
+# owns the verdict function); just do not mistake either for a guard on the branch.
 # ── SCC-195 · THE ANTIGRAVITY DESCRIPTION BUDGET ───────────────────────────────────────────────
 # Antigravity builds its slash-command menu from the `description:` frontmatter of every
 # .agents/workflows/*.md. This repo's descriptions run 400-950+ chars (they are written for an agent
@@ -584,6 +591,29 @@ function Sync-AntigravityWorkflowMirror {
       $desc = ''
       foreach ($line in (Get-Content $f.FullName -TotalCount 30 -Encoding UTF8)) {
         if ($line -match '^description:\s*(.+)$') { $desc = $Matches[1]; break }
+      }
+      # ⛔ THE TWO GUARDS BELOW ARE THE SAME TWO THE SIBLING EMITTERS ALREADY CARRY, AND THIS BLOCK
+      # SHIPPED WITHOUT EITHER (SCC-370 review). Both are one line, and both were already written
+      # somewhere else in this file - which is exactly why their absence here read as fine.
+      #
+      # 1. QUOTE STRIP, ported from Sync-ZooSurfaces (~line 775, landed as SCC-346). Get-AgDescription
+      #    is quote-blind: it cuts at 132 chars, so a QUOTED master description keeps its opening "
+      #    and loses its closing one, and the door's frontmatter is unparseable YAML. Found live on
+      #    cicd-push-e2e.md - the one door to main - which was already broken this way BEFORE this
+      #    lane (its brain is 29,844 bytes, so it was over the old cap and already a launcher).
+      #    Deleting the size branch did not cause that break; it widened the path that produces it
+      #    from over-cap commands to all of them, which is what makes carrying the strip mandatory.
+      # 2. EMPTY FALLBACK, ported from New-LauncherSkillStub (~line 640). No live command lacks a
+      #    description today - all 72 carry one on frontmatter line 1 - so this is latent, not a
+      #    live bug. It is here because the read that feeds it now runs for every door.
+      #
+      # ⛔ The strip belongs HERE, in the caller, NOT inside Get-AgDescription: U7 runs that function
+      # under pwsh against AG_LIVE_DESCS, which holds real quoted descriptions, so stripping inside
+      # it reds U7 against an untouched Python twin. Same placement as Zoo, for the same reason.
+      $desc = $desc.Trim().Trim('"').Trim("'")
+      if (-not $desc) {
+        $desc = ('Launcher for /' + $f.BaseName + ' - reads .agents/commands/' +
+                 $f.Name + ' and follows it end to end.')
       }
       # Stub literals are ASCII-only on purpose: PS 5.1 parses a BOM-less .ps1 as ANSI, which would
       # mangle any non-ASCII literal here into mojibake in every generated file.
