@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-369-shape-nag",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-369",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "e1cfe613da3d5a2dcbb2306b3037a9c61f82651c",
+  "warnings": 1,
+  "when": "2026-09-01T11:55:32-04:00"
+}

@@ -7,13 +7,13 @@
     "files": 425,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 785,
+    "edges": 788,
     "external": 38,
     "ambiguous": 173,
-    "dangling": 285,
-    "broken_paths": 61,
+    "dangling": 284,
+    "broken_paths": 60,
     "unresolved_names": 224,
-    "unresolvable": 6
+    "unresolvable": 7
   },
   "nodes": [
     {
@@ -644,7 +644,7 @@
     {
       "path": ".agents/hooks/INDEX.md",
       "in": 0,
-      "out": 1
+      "out": 2
     },
     {
       "path": ".agents/opencode-agents/INDEX.md",
@@ -738,8 +738,8 @@
     },
     {
       "path": ".agents/rules/command-shape.md",
-      "in": 10,
-      "out": 3
+      "in": 13,
+      "out": 4
     },
     {
       "path": ".agents/rules/completion-not-illusion.md",
@@ -843,13 +843,13 @@
     },
     {
       "path": ".agents/rules/zoo-team.md",
-      "in": 17,
+      "in": 18,
       "out": 6
     },
     {
       "path": ".agents/scripts/INDEX.md",
       "in": 3,
-      "out": 5
+      "out": 6
     },
     {
       "path": ".agents/scripts/tests/fixtures/avch58_your_actions.md",
@@ -2034,7 +2034,7 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 28,
-      "out": 55
+      "out": 56
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
@@ -3477,6 +3477,11 @@
     },
     {
       "from": ".agents/hooks/INDEX.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/hooks/INDEX.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
@@ -3861,6 +3866,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/rules/command-shape.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/rules/constitution.md",
       "to": ".agents/rules/karpathy-guidelines.md",
       "kind": "ref"
@@ -4068,6 +4078,11 @@
     {
       "from": ".agents/scripts/INDEX.md",
       "to": ".agents/rules/sop-currency.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/scripts/INDEX.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -5462,6 +5477,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/rules/jira.md",
       "kind": "link"
     },
@@ -5578,11 +5598,6 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/rules/code-standards.md",
-      "kind": "ref"
-    },
-    {
-      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -7118,10 +7133,6 @@
       "target": "git-hooks-board-stale-install.md"
     },
     {
-      "from": "docs/migrations/install_guides/new_machine-migration-guide.md",
-      "target": "_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md"
-    },
-    {
       "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",
       "target": "/.agents/commands/autopilot_glm.md"
     },
@@ -8231,6 +8242,15 @@
     },
     {
       "from": ".agents/rules/code-standards.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/rules/command-shape.md",
       "target": "AGENTS.md",
       "candidates": [
         ".agents/AGENTS.md",
@@ -10331,23 +10351,6 @@
     },
     {
       "from": "docs/migrations/install_guides/new_machine-migration-guide.md",
-      "target": ".opencode/agent/INDEX.md",
-      "candidates": [
-        ".agents/INDEX.md",
-        ".agents/bmad",
-        ".agents/commands/INDEX.md",
-        ".agents/hooks/INDEX.md",
-        ".agents/opencode-agents/INDEX.md",
-        ".agents/rules/INDEX.md",
-        ".agents/scripts/INDEX.md",
-        ".agents/skills/INDEX.md",
-        ".agents/workflows/INDEX.md",
-        "docs/_scc_sops_prds/INDEX.md",
-        "docs/migrations/INDEX.md"
-      ]
-    },
-    {
-      "from": "docs/migrations/install_guides/new_machine-migration-guide.md",
       "target": "INDEX.md",
       "candidates": [
         ".agents/INDEX.md",
@@ -10721,6 +10724,10 @@
     {
       "from": "docs/_scc_sops_prds/tea_testing_guide.md",
       "target": "Projects/AGY_AVIATIONCHAT/.agents/rules/testing-standards.md"
+    },
+    {
+      "from": "docs/migrations/install_guides/new_machine-migration-guide.md",
+      "target": "Projects/AGY_AVIATIONCHAT/_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md"
     },
     {
       "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",

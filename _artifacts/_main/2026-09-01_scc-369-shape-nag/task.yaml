@@ -1,0 +1,5 @@
+task_key: SCC-369
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-369-shape-nag
+close_command: smh-close-task-merge-tree
+secondary_repos: []

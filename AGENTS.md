@@ -166,13 +166,15 @@ files, per §3); full model →
   landing; invoking it IS the sign-off). OWNER-ONLY: **`main`** — only via `/cicd-push-e2e` (epic merge,
   full gate) or Mr. Hatter's direct ask. Full branch model + enforcement → `.agents/rules/git-policy.md`
   (web/mobile → `mobile-mode.md`).
-- **COMMAND-SHAPE GATE — run gates BARE.** A compound command falls outside what any allowlist can
-  pre-approve (Zoo/opencode match the whole string by prefix; Claude approves a chain only when
-  EVERY segment is allowed), so it is an approval prompt waiting to happen. No `cd X && …` chains
-  (use `git -C` / absolute paths), no `; echo "EXIT=$?"` tails (the tail eats the real exit code),
-  no piping a gate (`| tee` / `| head` / `| grep` hides its status — redirect to a file instead).
-  Read-only chains pass on Claude via the SCC-287 hook; everywhere else, bare is the only shape
-  that works. Full mechanics → `.agents/rules/command-shape.md`.
+- **COMMAND-SHAPE GATE — pin the tree, run gates BARE.** Both permission layers judge a compound
+  command **per piece** (verified by executing Zoo's own extracted matcher), so a chain is
+  pre-approved only when EVERY piece is — one unallowed piece sends the whole call to the operator.
+  **Pin with `cd <abs path> && …` in ONE line, never the `-C` spelling** (no verb rule can see
+  through it, and Zoo denies it outright because under a broad `git ` allow it rides past every
+  verb deny). No `; echo "EXIT=$?"` tails (the tail becomes the shell's status, so a dead gate can
+  exit 0 behind it), and never pipe a gate (`| tee` / `| head` / `| grep` reports the LAST
+  command's status and can SIGPIPE the gate mid-run — redirect to a file and read it). Read-only
+  chains pass on Claude via the SCC-287 hook. Full mechanics → `.agents/rules/command-shape.md`.
 - Full hard stops + "ask first" list → `.agents/rules/constitution.md`.
 
 ## 7. PERSISTENCE  (you own this — not a vendor)

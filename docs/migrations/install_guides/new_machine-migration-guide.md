@@ -168,10 +168,10 @@ missing directories, and `git clone` refuses to clone into a non-empty folder.
 
 ```powershell
 # a) Every restored file must be IGNORED by its own repo — none may show as untracked.
-git -C . status --short                                   # lobby: no .env, no _secrets/ anywhere
+git status --short                                                   # lobby: no .env, no _secrets/ anywhere
 git check-ignore -v docs/migrations/auth_keys/_secrets/master.env   # must print a .gitignore rule
-git -C Projects/AGY_AVIATIONCHAT status --short           # no .env*, no auth_keys/
-git -C Projects/BRKN_Tattoos status --short               # no .env.local
+Push-Location Projects/AGY_AVIATIONCHAT; git status --short; Pop-Location   # no .env*, no auth_keys/
+Push-Location Projects/BRKN_Tattoos;     git status --short; Pop-Location   # no .env.local
 
 # b) Spot-check that keys actually landed (names, never print values):
 Select-String -Path .env -Pattern '^[A-Z_]+=' | Measure-Object            # expect ~35+ lines
@@ -346,7 +346,7 @@ through each as needed:
   > minutes of `node down` churn with no error message that names the cause**.
   > This cost two debugging sessions (2026-08-01/03); the fix and the full
   > mechanism are quick fix 1.1 in AGY's
-  > `_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md`. The
+  > `Projects/AGY_AVIATIONCHAT/_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md`. The
   > guard `test_scan_never_walks_a_colocated_virtualenv` now fails loudly and
   > names the directory instead, but only if you run the suite.
 
@@ -428,7 +428,7 @@ through each as needed:
   > Health-check the whole surface without starting a session — `opencode debug config` must show the
   > `instructions` list, `skills.paths`, and all 12 agents.
   >
-  > ⛔ **`.opencode/agent/INDEX.md` used to load as a PHANTOM AGENT** (fixed 2026-08-07). opencode
+  > ⛔ **An `INDEX.md` inside `.opencode/agent/` used to load as a PHANTOM AGENT** (fixed 2026-08-07). opencode
   > registers every `.md` in that directory as an agent definition, so the folder's own map file became
   > a selectable agent named `INDEX` (mode `all`) whose entire prompt is a list of its sibling files. It
   > was present in six projects. The command surface never had this bug because
