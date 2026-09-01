@@ -16,8 +16,8 @@
       "file": ".agents/hooks/shape-guard.py",
       "original": "    clean = strip_quoted(heredocs_gone)",
       "mutated": "    clean = heredocs_gone",
-      "case": "test_grep_for_the_string_is_silent",
-      "why": "The first scanner counted `grep -rn \"git -C\"` as a git -C invocation."
+      "case": "test_quoted_prose_mentioning_the_spelling_is_silent",
+      "why": "RE-AIMED after sweep 1. It first named test_grep_for_the_string_is_silent, which does NOT pin the strip: in `grep -rn \"git -C\"` the character before `git` is a quote, already rejected by rule 1's leading class, so the mutant survived as DEFECTIVE rather than as a coverage gap. The new case puts the mention after a SPACE inside quotes, where only the strip can keep it quiet."
     },
     {
       "id": "M3 drop the heredoc strip — a payload becomes commands",
@@ -49,7 +49,7 @@
       "original": "        if event.get(\"tool_name\") != \"Bash\":",
       "mutated": "        if False:",
       "case": "test_non_bash_tool_is_silent",
-      "why": "Noise trains the agent to ignore the nag, which defeats the whole mechanism."
+      "why": "Noise trains the agent to ignore the nag, which defeats the whole mechanism. RE-AIMED after sweep 1 — the fixture, not the mutant: the payload carried `file_path` only, so with the tool filter deleted the EMPTY-COMMAND guard still caught it and the mutant survived as DEFECTIVE. The fixture now carries a `command` key, which is the only shape that isolates the tool filter."
     },
     {
       "id": "M7 stop failing open on unparseable stdin",

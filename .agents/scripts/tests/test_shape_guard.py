@@ -102,6 +102,21 @@ def test_grep_for_the_string_is_silent():
     assert not nag_text(parsed), f"a grep for the literal was nagged: {parsed!r}"
 
 
+def test_quoted_prose_mentioning_the_spelling_is_silent():
+    """The case that actually pins `strip_quoted`.
+
+    The mutation sweep proved `test_grep_for_the_string_is_silent` does NOT pin it: in
+    `grep -rn "git -C" …` the character before `git` is a quote, which the rule-1 leading class
+    `[;&|(\\s]` already rejects — so deleting the quote strip left that case green and the mutant
+    survived as DEFECTIVE rather than as a coverage gap. Here the mention sits after a SPACE
+    inside the quotes, so only the strip can keep it quiet.
+    """
+    rc, parsed = run_hook('echo "reminder: never use git -C in a door"')
+    assert rc == 0
+    assert not nag_text(parsed), (
+        f"prose inside quotes was read as a command — strip_quoted is not holding: {parsed!r}")
+
+
 def test_heredoc_body_is_silent():
     """A heredoc body is DATA, not commands. The first scanner counted it as commands."""
     rc, parsed = run_hook("cat > note.txt <<'EOF'\ngit -C x status\ngit add -A\nEOF")
@@ -110,8 +125,15 @@ def test_heredoc_body_is_silent():
 
 
 def test_non_bash_tool_is_silent():
+    """⛔ The payload MUST carry a `command` key, or this pins nothing.
+
+    The sweep proved it: with `file_path` only, deleting the `tool_name != "Bash"` guard left
+    this green anyway, because the empty-command guard caught it — a DEFECTIVE mutant, not a
+    coverage gap. A non-Bash tool whose input happens to have a `command` field is the only
+    shape that isolates the tool filter.
+    """
     payload = json.dumps({"hook_event_name": "PostToolUse", "tool_name": "Read",
-                          "tool_input": {"file_path": "/x"}})
+                          "tool_input": {"command": "git -C /repo status"}})
     rc, parsed = run_hook(None, raw=payload)
     assert rc == 0 and not nag_text(parsed), f"a non-Bash tool was nagged: {parsed!r}"
 
@@ -189,6 +211,10 @@ if __name__ == "__main__":
         except BaseException:
             _failed.append(_name)
             traceback.print_exc()
-    print(f"-- {len(_fns) - len(_failed)}/{len(_fns)} passed --"
-          + (f"  FAILED: {', '.join(_failed)}" if _failed else ""))
+    print(f"-- {len(_fns) - len(_failed)}/{len(_fns)} passed --")
+    # ⛔ `FAILED:` must START the line. mutation_sweep.judge() attributes a kill with
+    # `ln.startswith("FAILED:")`, so the house inline form (`-- 10/12 passed --  FAILED: x`)
+    # reads as "exit 1 with no FAILED: line" and every real kill comes back unattributable.
+    if _failed:
+        print(f"FAILED: {', '.join(_failed)}")
     sys.exit(1 if _failed else 0)
