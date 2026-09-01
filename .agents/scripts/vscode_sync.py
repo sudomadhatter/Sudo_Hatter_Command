@@ -72,7 +72,7 @@ def find_code_binary() -> str | None:
 
 def get_installed_extensions(code_bin: str) -> list[str]:
     try:
-        res = subprocess.run([code_bin, "--list-extensions"], capture_output=True, text=True, check=True)
+        res = subprocess.run([code_bin, "--list-extensions"], capture_output=True, encoding="utf-8", text=True, check=True)
         lines = [line.strip().lower() for line in res.stdout.splitlines() if line.strip()]
         return sorted(list(set(lines)))
     except Exception as e:
@@ -175,7 +175,7 @@ def cmd_import(bundle_dir: Path, user_dir: Path, code_bin: str | None, dry_run: 
             for ext in missing:
                 print(f"  - {ext}")
                 if not dry_run:
-                    res = subprocess.run([code_bin, "--install-extension", ext], capture_output=True, text=True)
+                    res = subprocess.run([code_bin, "--install-extension", ext], capture_output=True, encoding="utf-8", text=True)
                     if res.returncode == 0:
                         print(f"    ✓ Installed {ext}")
                     else:

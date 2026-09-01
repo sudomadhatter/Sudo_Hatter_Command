@@ -4579,38 +4579,119 @@ As **an admin**, I want **archive**, so that **nothing is lost.**
                     "restore the ticket" not in out.lower(), ascii(out)[:600])
 
             # E · THE SOURCE CONTRACT (acceptance D). Behaviour cases cover the ONE seam they
-            # drive; this covers every seam, including ones added tomorrow. `task_preflight.py`
-            # is exempt by design - it holds no subprocess of its own and reaches the board
-            # through `jira_feed.acli_json` (its own comment: "ONE acli resolution path in
-            # this repo, not two"), so it is asserted to STAY that way rather than scanned.
+            # drive - and only in `jira_feed.py`; this is the only guard over the other
+            # scripts, so its blind spots ARE the coverage. `task_preflight.py` is swept like
+            # the rest: it holds no subprocess of its own today and reaches the board through
+            # `jira_feed.acli_json`, and the sweep is what keeps that true.
             #
             # ⛔ AN AST WALK, NOT A GREP. A comment mentioning `text=True` inverts a grep
             # (comment-literals-invert-source-grep-tests), and a grep cannot see which
             # keywords sit on the SAME call.
+            #
+            # ⛔ THREE BLIND SPOTS, ALL FOUND IN REVIEW AND ALL DEMONSTRATED WITH A LIVE
+            # MUTANT (SCC-318 cycle 9). The first shape shipped and would have missed:
+            #   1. `universal_newlines=True` - an EXACT alias for `text=True`, same locale
+            #      decode, same corruption. Reverting a seam to that spelling passed 14/14.
+            #   2. `from subprocess import run` then a bare `run(..., text=True)` - invisible,
+            #      because the matcher required `subprocess.<attr>`.
+            #   3. a HARDCODED four-name file list - a brand-new script with a raw seam was
+            #      not swept at all. It globs now, so tomorrow's file is covered on arrival.
             import ast as _ast
-            offenders = []
-            for name in ("jira_feed.py", "label_tasks.py", "jira_ticket.py",
-                         "task_preflight.py"):
-                src = (SCRIPTS / name).read_text(encoding="utf-8")
-                for node in _ast.walk(_ast.parse(src)):
+            DECODES = {"text", "universal_newlines"}
+            SPAWNS = ("run", "Popen", "check_output", "check_call", "call")
+            offenders, walked = [], []
+            for path in sorted(SCRIPTS.glob("*.py")):
+                src = path.read_text(encoding="utf-8")
+                tree = _ast.parse(src)
+                # names bound by `from subprocess import run as _run` - blind spot 2
+                bare = {a.asname or a.name
+                        for n in _ast.walk(tree) if isinstance(n, _ast.ImportFrom)
+                        and n.module == "subprocess"
+                        for a in n.names if a.name in SPAWNS}
+                for node in _ast.walk(tree):
                     if not isinstance(node, _ast.Call):
                         continue
                     fn = node.func
                     dotted = (isinstance(fn, _ast.Attribute)
                               and isinstance(fn.value, _ast.Name)
                               and fn.value.id == "subprocess"
-                              and fn.attr in ("run", "Popen", "check_output"))
-                    if not dotted:
+                              and fn.attr in SPAWNS)
+                    plain = isinstance(fn, _ast.Name) and fn.id in bare
+                    if not (dotted or plain):
                         continue
+                    walked.append(f"{path.name}:{node.lineno}")
                     kw = {k.arg for k in node.keywords}
-                    if "text" in kw and "encoding" not in kw:
-                        offenders.append(f"{name}:{node.lineno}")
-            c.check("SCC-335 E1 no acli-facing script decodes with text=True and no encoding=",
+                    if (DECODES & kw) and "encoding" not in kw:
+                        offenders.append(f"{path.name}:{node.lineno}")
+            c.check("SCC-335 E1 no script decodes captured output with the machine locale",
                     not offenders, f"unpinned seams: {offenders}")
-            c.check("SCC-335 E2 ...and the scan is not vacuous - it found real calls to judge",
-                    any("subprocess.run" in (SCRIPTS / n).read_text(encoding="utf-8")
-                        for n in ("jira_feed.py", "label_tasks.py", "jira_ticket.py")),
-                    "the AST walk saw no subprocess calls at all")
+            # ⛔ E2 COUNTS WHAT THE WALK REACHED, never what the SOURCE TEXT contains.
+            # It read `"subprocess.run" in src` until this review: a text probe that stays
+            # green while the walk above finds nothing - the comment block above contains the
+            # literal, so it could not even fail on a file with no calls in it. Three lenses
+            # broke the matcher and watched E1 pass vacuously with E2 still green. An
+            # anti-vacuity control that does not measure the walk is the vacuum it exists to
+            # detect (comment-literals-invert-source-grep-tests, applied to itself).
+            c.check("SCC-335 E2 ...and the scan is not vacuous - the WALK reached real calls",
+                    len(walked) >= 6,
+                    f"the AST walk reached {len(walked)} spawn call(s): {walked}")
+            c.check("SCC-335 E3 ...and it reached the acli-facing scripts SPECIFICALLY",
+                    {w.split(":")[0] for w in walked} >=
+                    {"jira_feed.py", "label_tasks.py", "jira_ticket.py"},
+                    f"files the walk judged: {sorted({w.split(':')[0] for w in walked})}")
+
+            # F · STUB FIDELITY - the case that stops this whole block going vacuous.
+            #
+            # ⛔ EVERY BEHAVIOURAL ROW ABOVE (A1-A6, B1, C1, D1-D4) IS LOAD-BEARING ON A STUB
+            # PROPERTY NOTHING ASSERTED. Measured in review: regress `emit()` to
+            # `print(json.dumps(obj))` - the `ensure_ascii=True` scar this file's own docstring
+            # narrates - AND drop `encoding="utf-8"` from `jira_feed.acli()`, i.e. the bug
+            # fully present, and all eleven rows go GREEN. Only E1 stayed red. A stub more
+            # generous than the tool it stands in for cannot fail on the bug it exists to
+            # catch, so the stub's wire format is asserted here, in BYTES, against what the
+            # live board was measured to emit (raw UTF-8, zero `\uXXXX` escapes in 7,753 bytes).
+            set_state(state335, description=INDEX335, lossy_drop=None)
+            raw = subprocess.run(
+                [str(acli335), "jira", "workitem", "view", "TEST-1", "--json"],
+                capture_output=True,               # BYTES on purpose - no decode at all
+                env={**os.environ, "STUB_STATE": str(state335)}).stdout
+            c.check("SCC-335 F1 the stub puts RAW UTF-8 on the wire, like real acli",
+                    STOP.encode("utf-8") in raw and STAR.encode("utf-8") in raw,
+                    f"stub stdout has no raw UTF-8 for U+26D4/U+2B50: {raw[:200]!r}")
+            c.check("SCC-335 F2 ...and NOT ascii escapes, which no mis-decode can corrupt",
+                    rb"\u26d4" not in raw and rb"\u2b50" not in raw,
+                    f"stub emitted ensure_ascii escapes - every behavioural row above is "
+                    f"vacuous: {raw[:200]!r}")
+
+            # G · `diagnose_lost` DIRECTLY. The rows above only ever reach it through
+            # `index-row`, and only in the all-changed direction. Its three buckets and its
+            # documented 8-character floor are the logic acceptance C rests on, so they are
+            # asserted at the unit, where each input can be stated exactly.
+            import jira_feed as jf_mod  # noqa: E402 - the tests run scripts/ on sys.path
+
+            def cp1252(s):
+                return s.encode("utf-8").decode("cp1252", errors="replace")
+
+            short = [STOP + " blocked", STAR + " done"]          # skeletons: 7 and 4
+            ch, un = jf_mod.diagnose_lost(short, [cp1252(x) for x in short])
+            c.check("SCC-335 G1 a SHORT mangled line is UNDIAGNOSED, never confirmed deleted",
+                    not ch and len(un) == 2, f"changed={ch} undiagnosed={un}")
+
+            plain = ["  Part C  SCC-403  plain ASCII, the control"]
+            ch, un = jf_mod.diagnose_lost(plain, ["something else entirely"])
+            c.check("SCC-335 G2 ...but a pure-ASCII line that vanished is STILL a deletion",
+                    not ch and not un, f"changed={ch} undiagnosed={un}")
+
+            long_ = ["  " + STOP + " Part A  SCC-401  a no-entry sign leads this row"]
+            ch, un = jf_mod.diagnose_lost(long_, [cp1252(long_[0])])
+            c.check("SCC-335 G3 ...and a LONG mangled line is still diagnosed CHANGED",
+                    len(ch) == 1 and not un and "U+26D4" in ch[0][2], f"changed={ch}")
+
+            twin_a = STOP + " SCC-401  see the plan above and act on it"
+            twin_b = STAR + " SCC-401  see the plan above and act on it"
+            ch, un = jf_mod.diagnose_lost([twin_a, twin_b], [cp1252(twin_a)])
+            c.check("SCC-335 G4 one read-back line cannot absorb TWO lost lines",
+                    len(ch) == 1 and len(un) == 1, f"changed={ch} undiagnosed={un}")
 
 
     return c.finish()

@@ -121,7 +121,7 @@ def _run(args: list[str]):
     their gates run, and it takes the close-out down with it.
     """
     try:
-        return subprocess.run(args, capture_output=True, text=True, errors="replace")
+        return subprocess.run(args, capture_output=True, encoding="utf-8", text=True, errors="replace")
     except OSError:
         return None
 

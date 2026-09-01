@@ -161,7 +161,7 @@ def status(home: Path, platform: str | None = None) -> dict:
 
 def _launchctl(args: list[str]) -> tuple[int, str]:
     try:
-        proc = subprocess.run(["launchctl", *args], capture_output=True, text=True, timeout=30)
+        proc = subprocess.run(["launchctl", *args], capture_output=True, encoding="utf-8", text=True, timeout=30)
         return proc.returncode, (proc.stderr or proc.stdout or "").strip()
     except (OSError, subprocess.SubprocessError) as exc:
         return 1, str(exc)

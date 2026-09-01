@@ -221,20 +221,20 @@ def write_description(key, adf, acli=None, timeout=90):
     tmp = Path(tempfile.gettempdir()) / f"jira-ticket-{os.getpid()}.json"
     tmp.write_text(json.dumps(adf), encoding="utf-8")
     try:
-    # ⛔ `encoding="utf-8"` IS LOAD-BEARING, AND ITS ABSENCE CORRUPTED LIVE BOARD DATA (SCC-335).
-    # `text=True` with no `encoding=` decodes with `locale.getencoding()`. `acli` is a Go binary
-    # and Go always writes UTF-8, so on any box whose locale is not UTF-8 - the Windows PC, or
-    # anything under `LC_ALL=C` - every description read here comes back mojibake. Because
-    # `edit --description` REPLACES the whole field, a read-modify-write then writes the mojibake
-    # back: that is how SCC-318's own description was mangled on 2026-08-27, and `U+2B50` was
-    # LOST outright (UTF-8 `E2 AD 90`; cp1252 has no mapping for `0x90`, so `errors="replace"`
-    # ate the byte and the original is unrecoverable from the written text).
-    #
-    # ⭐ PINNING ONLY THIS SIDE IS CORRECT HERE, and that is not the general rule. `_harness.py`
-    # pins BOTH ends for PYTHON children, because a child left on the locale writes cp1252 and a
-    # parent hard-coded to UTF-8 then mis-decodes in the opposite direction. `acli` has no such
-    # failure mode - its runtime has no locale-dependent output path - so the parent is the whole
-    # fix. Do not "correct" this back by adding an env pin acli would ignore.
+        # ⛔ `encoding="utf-8"` IS LOAD-BEARING, AND ITS ABSENCE CORRUPTED LIVE BOARD DATA (SCC-335).
+        # `text=True` with no `encoding=` decodes with `locale.getencoding()`. `acli` is a Go binary
+        # and Go always writes UTF-8, so on any box whose locale is not UTF-8 - the Windows PC, or
+        # anything under `LC_ALL=C` - every description read here comes back mojibake. Because
+        # `edit --description` REPLACES the whole field, a read-modify-write then writes the mojibake
+        # back: that is how SCC-318's own description was mangled on 2026-08-27, and `U+2B50` was
+        # LOST outright (UTF-8 `E2 AD 90`; cp1252 has no mapping for `0x90`, so `errors="replace"`
+        # ate the byte and the original is unrecoverable from the written text).
+        #
+        # ⭐ PINNING ONLY THIS SIDE IS CORRECT HERE, and that is not the general rule. `_harness.py`
+        # pins BOTH ends for PYTHON children, because a child left on the locale writes cp1252 and a
+        # parent hard-coded to UTF-8 then mis-decodes in the opposite direction. `acli` has no such
+        # failure mode - its runtime has no locale-dependent output path - so the parent is the whole
+        # fix. Do not "correct" this back by adding an env pin acli would ignore.
         r = subprocess.run([binary, "jira", "workitem", "edit", "--key", key,
                             "--description-file", str(tmp), "--yes"],
                            capture_output=True, text=True, errors="replace",
@@ -258,7 +258,11 @@ def _keychain_token():
     if sys.platform == "darwin" and shutil.which("security"):
         r = subprocess.run(["security", "find-generic-password", "-s", KEYCHAIN_ITEM, "-w"],
                            capture_output=True, text=True, encoding="utf-8",
-                           errors="replace")   # SCC-335: never decode with the locale
+                           # SCC-335 family, DIFFERENT reason: `security` is not acli, so the
+                           # "Go always writes UTF-8" argument above does not carry. The pin is
+                           # here because the payload is an ASCII API token - decoding it with
+                           # a locale can only ever go wrong, never right.
+                           errors="replace")
         if r.returncode == 0 and r.stdout.strip():
             return r.stdout.strip()
     ps = shutil.which("pwsh") or shutil.which("powershell")
@@ -267,7 +271,11 @@ def _keychain_token():
             [ps, "-NoProfile", "-Command",
              f"(Get-Secret -Name {KEYCHAIN_ITEM} -AsPlainText -ErrorAction SilentlyContinue)"],
             capture_output=True, text=True, encoding="utf-8",
-            errors="replace")   # SCC-335: never decode with the locale
+            # SCC-335 family, DIFFERENT reason: Windows PowerShell 5.1 writes stdout in the
+            # console output encoding, typically an OEM code page - NOT UTF-8. Pinning is
+            # still right because the payload is an ASCII API token, but do not read the acli
+            # rationale above as covering this seam; it does not.
+            errors="replace")
         if r.returncode == 0 and r.stdout.strip():
             return r.stdout.strip()
     return None

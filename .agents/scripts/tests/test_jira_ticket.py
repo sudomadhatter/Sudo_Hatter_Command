@@ -222,15 +222,38 @@ def main() -> int:
             c.check("JT-C ⛔ it passes --description-file, never --description",
                     "--description-file" in argv and "--description" not in argv, str(argv))
             c.check("JT-C the ticket key is on the call", "SCC-291" in argv, str(argv))
+            # ⛔ THE HALF THE CLOSE-OUT DOOR NOW DEPENDS ON. SCC-364 re-sequenced
+            # `/smh-close-task-merge-tree` so Step 4 runs `describe` AFTER the merge, on the
+            # strength of one prose claim: it "renders an outline and writes nothing to disk".
+            # Nothing asserted that. If it ever grew a file write, the door would be writing
+            # into a merged tree it is about to prune - the exact SCC-364 defect, restored,
+            # with CS-23's position assertions still green. Found in review, SCC-318 cycle 9.
+            c.check("JT-C ⭐ `describe` writes NOTHING to disk - the door's post-merge claim",
+                    f.read_text(encoding="utf-8") == HOUSE_OUTLINE,
+                    "describe modified the outline file; the close-out runs it AFTER the "
+                    "merge, where a tree write cannot land and Step 5 prunes the tree")
 
     # ── D · done ticks the checklist and REWRITES THE TREE, which stays the source ────────────
     if c.block("JT-D · SCC-291 · `done` ticks Plan items and appends Done, in the FILE"):
         with TempDir() as d:
             f = d / "t.md"
             f.write_text(HOUSE_OUTLINE, encoding="utf-8")
+            # ⛔ AND THE OTHER HALF: `--local` must not touch the BOARD. The door runs this
+            # PRE-PR now, before the merge, and the board is written later from the landed
+            # file. A board write here would put the ticked outline on the ticket whether or
+            # not the file ever lands - which is how the two can disagree. The stub records
+            # every acli argv it is handed, so "no board call" is checkable rather than
+            # assumed: this block used to set no ACLI_BIN at all.
+            log_d = d / "argv-done.json"
+            env_d = dict(os.environ, ACLI_BIN=str(acli_stub(d, log_d)))
             r = run("done", "--key", "SCC-291", "--outline", str(f), "--tick", "1,3",
-                    "--done-line", "Shipped the shape.", "--local")
+                    "--done-line", "Shipped the shape.", "--local", env=env_d)
             c.check("JT-D exit 0", r.returncode == 0, f"rc={r.returncode} {r.stderr[:300]}")
+            board_call = (log_d.read_text(encoding="utf-8")[:300]
+                          if log_d.exists() else "")
+            c.check("JT-D ⭐ `--local` made NO acli call - the tree only, as the door claims",
+                    not log_d.exists(),
+                    f"--local reached the board: {board_call}")
             body = f.read_text(encoding="utf-8")
             c.check("JT-D items 1 and 3 are ticked, item 2 is not",
                     body.count("- [x]") == 2 and "- [ ] Attach the plan" in body, body)

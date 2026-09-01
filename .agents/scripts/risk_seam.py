@@ -92,7 +92,7 @@ def _rooted(result: dict, top: "Path | None") -> dict:
 def _git(root: Path, *args: str) -> str | None:
     try:
         r = subprocess.run(["git", *args], cwd=str(root), capture_output=True,
-                           text=True, timeout=30)
+                           encoding="utf-8", text=True, timeout=30)
     except (OSError, subprocess.SubprocessError):
         return None
     return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else None
@@ -240,7 +240,7 @@ def _detect_changes(root: Path, exe: str) -> dict | None:
     if base:
         cmd += ["--base", base]
     try:
-        r = subprocess.run(cmd, cwd=str(root), capture_output=True, text=True,
+        r = subprocess.run(cmd, cwd=str(root), capture_output=True, encoding="utf-8", text=True,
                            timeout=TIMEOUT_S)
     except (OSError, subprocess.SubprocessError):
         return None

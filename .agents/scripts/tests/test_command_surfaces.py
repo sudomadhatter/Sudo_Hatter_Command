@@ -2537,12 +2537,22 @@ def main() -> int:
                 f"{[ln for ln in plan_code.splitlines() if re.search(chr(45) * 2 + 'description' + chr(92) + 's', ln)]}")
         c.check("CS-16 C the planning door ATTACHES the plan rather than pasting it",
                 "jira_ticket.py attach" in plan, "smh-plan-task.md never attaches the plan")
+        # ⛔ D AND E READ THE FENCES TOO, for the reason B already gives — and it stopped being
+        # theoretical in SCC-318 cycle 9. That lane added an explanatory paragraph to Step 4
+        # containing the literal `jira_ticket.py done`, which made these two rows satisfiable
+        # by PROSE: a lens deleted the door's entire Step 3 invocation fence — the only place
+        # the tool is actually called — and CS-16 stayed 7/7 green. The diff's own commentary
+        # inverted the guard (comment-literals-invert-source-grep-tests).
+        close_code = fences(close)
         c.check("CS-16 D the close-out door ticks the checklist and appends Done",
-                "jira_ticket.py done" in close and "--tick" in close,
-                "a ticket whose Plan boxes are all unticked reads as work that never happened")
+                "jira_ticket.py done" in close_code and "--tick" in close_code,
+                f"a ticket whose Plan boxes are all unticked reads as work that never "
+                f"happened - and PROSE does not count: fenced bytes={len(close_code)}")
         c.check("CS-16 E and it rewrites the Files link to blob/main/ before the branch is pruned",
-                "blob/main/" in close,
+                "blob/main/" in close_code,
                 "the planning-time link points at a branch --after-merge has already deleted")
+        c.check("CS-16 E0 anti-vacuity: the close-out door really does carry fences",
+                len(close_code) > 500, f"fenced bytes in the close door: {len(close_code)}")
         # Neither door may treat a missing API token as a failure: attach is the ONLY verb that
         # needs one, and the shape has to land on a machine that has not done the setup yet.
         for name, body in (("smh-plan-task.md", plan), ("smh-close-task-merge-tree.md", close)):
@@ -3945,6 +3955,32 @@ def main() -> int:
                 "touches no file",
                 bool(describe_at) and max(describe_at) > pr_at,
                 f"describe at {describe_at}, gh pr create at {pr_at}")
+        # ══ F · A WRITE IS NOT A LANDING — the row the first version of this block lacked ══
+        #
+        # ⛔ POSITION IS NOT LANDING, AND THAT GAP SHIPPED. Rows A-D pin that `done --local`
+        # sits before `gh pr create`, which a write that is never committed satisfies
+        # perfectly. Two review lenses reproduced the consequence end to end in a throwaway
+        # repo (SCC-318 cycle 9): `done --local` dirties the worktree, no instruction between
+        # it and the PR staged the file, and the paragraph right before `gh pr create` tells
+        # the agent the branch is "already clean and pushed". So `main` kept the UNTICKED
+        # outline - the SCC-364 defect relocated, not closed - while Step 4's `describe` read
+        # the ticked WORKTREE copy and wrote it to the board, inverting the very invariant
+        # this door's prose defends. Step 5's `git worktree remove` then exits 128 on the
+        # dirty tree, after the merge, where this door bans commits.
+        #
+        # ⭐ SO THE ORDER THAT MATTERS IS THREE-PART: tick, COMMIT, then the PR.
+        commit_between = [m.start() for m in re.finditer(r"git commit\b", code)
+                          if done_local and min(done_local) < m.start() < pr_at]
+        c.check("CS-23 F a `git commit` lands the tick BEFORE the PR - a write is not a landing",
+                bool(commit_between),
+                f"no `git commit` between the tick at {done_local} and `gh pr create` at "
+                f"{pr_at}: the outline is written into the worktree and never committed, so "
+                f"the PR does not carry it and Step 5's worktree remove fails on the dirt")
+        c.check("CS-23 G ...and the tick's own path is what gets staged",
+                any("tickets/" in code[m - 200:m + 200] for m in commit_between),
+                f"a commit sits between the tick and the PR but nothing near it names "
+                f"`tickets/` - git-policy bans `git add -A`, so an unnamed path is not staged")
+
         # E · the PROSE that made the sequence look correct. Step 4 may no longer claim the
         # tree is the source at the moment it cannot be.
         step4 = md_section(close, r"##\s+Step 4\b")
@@ -3988,6 +4024,10 @@ def main() -> int:
 
         step15 = md_section(quick, r"##\s+Step 1\.5\b")
         step5 = md_section(plan, r"##\s+Step 5\b")
+        # ⛔ SCOPE THE LAW TO ITS CLAUSE. `law` was the whole rule file, so `len(law) > 400`
+        # was a file-is-non-empty check and row C stayed green if the exemption drifted into
+        # an unrelated section. Found in review, SCC-318 cycle 9.
+        law = md_section(law, r"###\s+One approval MAY cover several plans")
         c.check("CS-24 A0 anti-vacuity: all three regions were actually located",
                 len(step15) > 400 and len(step5) > 400 and len(law) > 400,
                 f"step15={len(step15)} step5={len(step5)} law={len(law)}")
@@ -4013,6 +4053,38 @@ def main() -> int:
                 not writer_mandates_stamp or MARK in law,
                 f"`{MARK}` not found in 000-PLAN-FIRST-GATE.md - the rule the two doors cite "
                 f"still states the check the doors no longer run")
+
+        # ══ E · THE FENCE, NOT THE PROSE — the row that actually pins the defect ══
+        #
+        # ⛔ EVERY ROW ABOVE READS PROSE, AND THE DEFECT LIVES IN THE FENCE. Three review
+        # lenses proved it the same way, independently (SCC-318 cycle 9): leave the phrase
+        # `stamp-only successor` in place, restore the original unpassable
+        # `[ "$LAST" = "<recorded>" ] || exit 1` INSIDE Step 1.5's code fence, and CS-24 goes
+        # 8/8 green on the literal SCC-359 defect. The block's own comment argues the rows are
+        # an implication rather than three presence greps - true, and it does guard the WRITER
+        # side. It says nothing about the reader's actual check, which is where the bug was.
+        #
+        # ⭐ SO THIS ROW READS THE FENCED CODE, the way CS-23 does for the close-out door.
+        fences15 = "\n".join(re.findall(r"^>?\s*```[a-z]*\n(.*?)^>?\s*```",
+                                        step15, re.S | re.M))
+        c.check("CS-24 E0 anti-vacuity: Step 1.5 actually carries a code fence",
+                len(fences15.strip()) > 40, f"fenced bytes in Step 1.5: {len(fences15)}")
+        c.check("CS-24 E the READER's fence DIFFS against the recorded sha",
+                not writer_mandates_stamp or re.search(r"git diff\s+.*REC", fences15),
+                "Step 1.5's fenced code never diffs the plan against the recorded sha - "
+                "whatever the prose around it says, the check it runs is not the one "
+                "SCC-359 fixed")
+        c.check("CS-24 F ...and it reaches a VERDICT mechanically, not by reading the hunk",
+                not writer_mandates_stamp
+                or re.search(r"grep\s+-vc|--exit-code|--quiet", fences15),
+                "Step 1.5's fence prints a diff and leaves an agent to judge it. A prose "
+                "judgment is the shape cheap-models-rationalize-past-prose names; the fence "
+                "must compute the answer")
+        c.check("CS-24 G ...and it does NOT use `grep -qv`, whose exit code is INVERTED here",
+                "grep -qv" not in fences15 and "grep -q -v" not in fences15,
+                "the Mac's grep is ugrep: `-q` with `-v` returns 1 when lines ARE selected "
+                "and 0 on empty input, so this gate would pass the illegal case and stop the "
+                "legal one (measured 2026-09-01)")
 
         # D · THE TOOTH THAT MUST SURVIVE. This ticket loosens a condition, and the way to
         # get that wrong is to loosen the OTHER half with it: a missing sha is still a

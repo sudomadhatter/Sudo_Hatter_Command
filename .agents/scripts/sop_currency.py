@@ -116,7 +116,7 @@ def staged_paths(repo: Path) -> list[str]:
     """Paths staged for commit. A failure here yields [] — never a false block."""
     try:
         r = subprocess.run(["git", "diff", "--cached", "--name-only"],
-                           cwd=repo, capture_output=True, text=True, errors="replace")
+                           cwd=repo, capture_output=True, encoding="utf-8", text=True, errors="replace")
     except OSError:
         return []
     if r.returncode != 0:

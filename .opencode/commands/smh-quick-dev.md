@@ -214,11 +214,30 @@ done — verify the box's four conditions and go straight to Step 2.**
 >    With a sha, run:
 >
 >    ```bash
->    LAST=$(git log -1 --format=%h -- <the plan>)
->    [ "$LAST" = "<the recorded sha>" ] && echo UNTOUCHED && exit 0
->    # otherwise the ONE legal difference — the stamp-only successor:
->    git diff <the recorded sha>..$LAST -- <the plan>
+>    PLAN=<the plan>; REC=<the recorded sha>
+>    LAST=$(git log -1 --format=%H -- "$PLAN")
+>    # ⛔ THE VERDICT IS THIS COMMAND'S EXIT CODE, never your reading of the hunk.
+>    # An empty diff is UNTOUCHED. A stamp-only successor touches `— recorded at` and
+>    # nothing else. Any other changed line is a real edit after approval: STOP.
+>    # count the changed lines that are NOT the approval line; zero means intact
+>    BAD=$(git diff "$REC".."$LAST" -- "$PLAN" | grep -E '^[+-][^+-]' | grep -vc 'recorded at')
+>    [ "$BAD" -eq 0 ] && echo APPROVAL-INTACT \
+>                     || echo "PLAN CHANGED AFTER APPROVAL ($BAD line(s)) - the gate re-arms, STOP"
 >    ```
+>
+>    ⛔ **Count the lines; never `grep -qv`.** Measured on the Mac while writing this box: the
+>    `grep` on `PATH` there is **ugrep**, not BSD or GNU grep, and its `-q` with `-v` returns
+>    **1 when lines are selected and 0 on empty input** — exactly inverted. The `-qv` form
+>    passed the illegal case and stopped the legal one, in the gate meant to catch exactly that
+>    class of mistake. A count has one meaning on every grep, on both machines.
+>
+>    ⛔ **Read the verdict off the command, not off the diff.** The first shape of this box
+>    printed a `git diff` and left an agent to judge "does this touch only the `— recorded at`
+>    line?" — replacing a boolean with a prose judgment, in a repo whose own law says a
+>    judgement-shaped rule is the thing that gets rationalized past
+>    (`cheap-models-rationalize-past-prose`). Three review lenses independently built a stamp
+>    commit that *also* carried a body edit and watched it read as legal. `%H` not `%h`:
+>    abbreviated shas of different lengths compare unequal for the same commit.
 >
 >    ⭐ **`$LAST` will normally NOT equal the recorded sha, and that is not drift (SCC-359).**
 >    `/smh-plan-task` Step 5 requires the line to carry the sha of the commit that recorded it,

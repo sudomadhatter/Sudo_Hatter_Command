@@ -91,6 +91,12 @@ is only an approval at all when all four hold:
    **nothing else**, it passes. Anything else means **that lane's gate re-arms** and it stops for
    its own approval. Bare equality was the original wording and it could never hold for a
    conforming lane — measured on SCC-347, SCC-358 and SCC-318.
+   ⛔ **And that comparison is a COUNT, not a reading of the hunk.** `/smh-quick-dev` Step 1.5
+   carries the command; it counts the changed lines that are not the approval line and passes on
+   zero. Printing a diff and asking an agent "does this touch only that line?" replaces a boolean
+   with a prose judgment, which is the shape `cheap-models-rationalize-past-prose` says gets
+   rationalized past — three review lenses built a stamp commit carrying a body edit and watched
+   the prose version bless it (SCC-318 cycle 9).
    ⛔ **No sha on the line = no approval.** The clause originally said "unchanged since the commit
    that recorded it" while nothing anywhere recorded which commit that was — so the check had one
    operand and an agent wanting to proceed would supply the other. A missing operand is a re-armed

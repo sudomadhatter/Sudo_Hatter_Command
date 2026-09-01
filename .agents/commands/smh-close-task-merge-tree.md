@@ -420,6 +420,23 @@ https://github.com/sudomadhatter/<repo>/blob/main/_artifacts/_main/<folder>/impl
 lane's branch, and `--after-merge` runs after that branch is pruned — a dead link on a closed ticket.
 `main` is where the file is about to be, so the forward-looking link is the correct one to commit.
 
+⛔ **COMMIT AND PUSH THAT FILE NOW — the write above is worthless until you do (SCC-318 review).**
+`done --local` edits the outline **in the working tree**. Nothing below commits it: the
+`reconcile-law` commit two paragraphs up ran *before* this write and names the walkthrough, and the
+`gh pr create` line asserts the branch is "already clean and pushed", which stopped being true the
+moment `done --local` returned. Left uncommitted this reproduces the SCC-364 defect one step over —
+`main` keeps the unticked outline forever — and it is worse than the original two ways: Step 4's
+`describe` reads the **worktree** copy, so the board renders ticked while `main` reads unticked, and
+Step 5's `git worktree remove` exits 128 on the dirty tree (`--force` there eats the junctioned
+`.venv` / `node_modules`, SCC-62). Measured end to end in a throwaway repo during this lane's review.
+
+```bash
+git add _artifacts/_main/<folder>/tickets/            # explicit path; never -A/./-u (git-policy)
+git commit -m "<JIRA-KEY> docs(outline): tick the ticket outline before the PR"
+git push
+git status --porcelain | grep . && { echo "tree still dirty - the PR would not carry it"; exit 1; }
+```
+
 ```bash
 grep -q "The merge itself" <walkthrough> && grep -q "^## Your Actions" <walkthrough> \
   || { echo "walkthrough incomplete — fix it BEFORE the PR"; exit 1; }

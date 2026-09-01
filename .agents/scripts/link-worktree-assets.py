@@ -75,7 +75,7 @@ EXCLUDE_END = "# END link-worktree-assets"
 def common_exclude_path(worktree: Path) -> Path | None:
     rp = subprocess.run(
         ["git", "-C", str(worktree), "rev-parse", "--path-format=absolute", "--git-common-dir"],
-        capture_output=True, text=True,
+        capture_output=True, encoding="utf-8", text=True,
     )
     if rp.returncode != 0 or not rp.stdout.strip():
         return None
@@ -122,7 +122,7 @@ def other_linked_worktrees(worktree: Path) -> list[str]:
     """Linked worktrees of this repo OTHER than `worktree` (the main checkout not counted)."""
     rp = subprocess.run(
         ["git", "-C", str(worktree), "worktree", "list", "--porcelain"],
-        capture_output=True, text=True,
+        capture_output=True, encoding="utf-8", text=True,
     )
     if rp.returncode != 0:
         return []
@@ -181,7 +181,7 @@ def repo_root(start: Path) -> Path:
     # a gitdir `git worktree prune` has already removed reaches exactly this line.
     rp = subprocess.run(
         ["git", "-C", str(start), "rev-parse", "--path-format=absolute", "--git-common-dir"],
-        capture_output=True, text=True,
+        capture_output=True, encoding="utf-8", text=True,
     )
     if rp.returncode != 0 or not rp.stdout.strip():
         why = (rp.stderr or "").strip().splitlines()
@@ -192,14 +192,14 @@ def repo_root(start: Path) -> Path:
 
     cw = subprocess.run(
         ["git", "-C", str(common), "config", "--get", "core.worktree"],
-        capture_output=True, text=True,
+        capture_output=True, encoding="utf-8", text=True,
     )
     declared = cw.stdout.strip() if cw.returncode == 0 else ""
     candidate = Path(os.path.realpath(common / declared)) if declared else common.parent
 
     probe = subprocess.run(
         ["git", "-C", str(candidate), "rev-parse", "--path-format=absolute", "--show-toplevel"],
-        capture_output=True, text=True,
+        capture_output=True, encoding="utf-8", text=True,
     )
     top = probe.stdout.strip()
     if probe.returncode != 0 or not top:
@@ -449,7 +449,7 @@ def main() -> int:
         # linking nothing and reporting a clean run.
         probe = subprocess.run(
             ["git", "-C", str(repo), "rev-parse", "--path-format=absolute", "--show-toplevel"],
-            capture_output=True, text=True)
+            capture_output=True, encoding="utf-8", text=True)
         top = probe.stdout.strip()
         if probe.returncode != 0 or not top:
             print(f"⚠ --repo {repo} is not a git working tree; linking from it anyway "

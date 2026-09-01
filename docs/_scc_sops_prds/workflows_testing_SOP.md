@@ -280,6 +280,13 @@ gate only means something if it's one specific word.
 > nothing else passes; anything else re-arms that lane's gate.** ⛔ **The tooth is unchanged** — a
 > line with no sha is still no approval, and the lane still stops. **Nothing changes for you**: you
 > type `approved` exactly as before.
+>
+> ⭐ **And that fall-through is a command now, not a judgment call.** The first version printed the
+> diff and left the agent to decide whether it touched only the approval line — which is the exact
+> shape that gets talked past. Three review lenses independently built a stamp commit that *also*
+> carried a body edit and watched the prose version bless it. Step 1.5 now **counts** the changed
+> lines that are not the approval line and passes only on zero, so the answer is the command's, not
+> the reader's.
 
 > ⓘ **One scripted stop uses a different word, and you should know that before it surprises you.**
 > ②'s Step 2 posts the plan link and waits — but the reply it is written to accept is `continue`
