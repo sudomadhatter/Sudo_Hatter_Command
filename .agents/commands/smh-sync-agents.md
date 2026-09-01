@@ -54,7 +54,9 @@ invocable surfaces (`.agents/{commands,workflows}`, `.claude/commands`, `.openco
   moved ahead and this copy hasn't synced yet. Either way, a sync resolves it.
 - `?` — **orphan**: present here, but master has no such command. Could be a project-authored command or a
   stale ghost — nothing can tell those apart automatically, which is what the keep-list is for.
-- `own` — an orphan claimed by `.agents/project-own.txt`, kept forever.
+- `own` — an orphan claimed by the `project-own.txt` keep-list in `.agents/`, kept forever.
+  (Written that way, not as one path: the file is created ON DEMAND by `-Reconcile` below, so its
+  absence is the normal state and a resolvable path claim here reads as a dead link forever.)
 
 `-Reconcile` resolves the `?`s, and **never guesses**. With no `project-own.txt` it *stages* one
 listing every orphan and deletes nothing. You review it and **delete a line to mark that file as a ghost**; the

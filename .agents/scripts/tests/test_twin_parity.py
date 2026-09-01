@@ -323,8 +323,11 @@ def main() -> int:
         # SUBTRACTS this dict from the derived set, so a stale key can only ever suppress, and
         # suppressing nothing looks exactly like suppressing correctly. Found retiring
         # /smh-slash-command-updating (SCC-367), whose row sat here explaining why a deleted
-        # file had no twin. Measured clean at 35 keys when the guard was added, so it is
-        # asserting a real invariant rather than grandfathering existing drift.
+        # file had no twin. ⛔ Read the two counts in ORDER, because a reviewer read them
+        # backwards: on `origin/main` the dict held 35 keys and ALL 35 resolved — the row was
+        # not yet a fossil, because the master still existed. Deleting it made 34 keys with one
+        # fossil, which is what turned this check red. So it was green-then-red-then-green on a
+        # real state change, never grandfathering drift that was already there.
         orphaned = sorted(k for k in NOT_PAIRED if not (CMDS / k).is_file())
         c.check("A0c every NOT_PAIRED row names a command that still exists",
                 not orphaned,

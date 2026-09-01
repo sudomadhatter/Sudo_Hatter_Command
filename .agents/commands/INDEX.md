@@ -34,7 +34,8 @@ frontmatter to limit where it syncs. **Absent = universal** (all four). Tagged t
 **Robot-lane rule (2026-07-14):** `*_AP` commands vendor ONLY into project tool dirs (where the autopilot
 engines read them) — the sync skips them for the lobby menus and the global caches.
 **Antigravity actually honors that reach as of 2026-08-09 (SCC-56).** The `.agents/workflows/` mirror used
-to filter by FILENAME first (`sudo-*`, `1_*`, `smh-new-project`) and only then read
+to filter by FILENAME first — the four names were `sudo-*`, `1_*`, `smh-new-project` and
+`smh-slash-command-updating` (retired by SCC-367) — and only then read
 `platforms:` — so four commands that claim Antigravity never reached it: `smh-close-task-merge-tree`,
 `smh-sync-agents`, `smh-review`, and `cicd-clean-code-audit`, which names `antigravity` outright.
 `platforms:` is now the only gate. `.agents/workflows/` is **generated** — edit the command, never a copy.
@@ -68,8 +69,8 @@ to filter by FILENAME first (`sudo-*`, `1_*`, `smh-new-project`) and only then r
 now declares its family in its name: **`cicd-*`** = the BMAD-paired story/epic dev loop and its
 logistics · **`smh-*`** = workflows run ON the command centre and everyday operator tasks ·
 **`sentry-*`** = the Sentry incident system. Hyphens only (`autopilot_claude` → `cicd-autopilot-claude`,
-`slash_command_updating` → `smh-slash-command-updating`, since retired into `/smh-sync-agents`
-by SCC-367); an autopilot twin's `_AP` suffix became
+`slash_command_updating` → `smh-slash-command-updating`, retired by SCC-367 into
+`/smh-sync-agents`); an autopilot twin's `_AP` suffix became
 `-AP`. Vendor BMAD bridges (`dev`, `pm`, `qa`, `testarch-*`, …) keep their upstream names and take no
 prefix; so do knowledge skills. **Any surviving `/sudo-` reference is therefore stale by definition** —
 that is the point of retiring the prefix outright rather than aliasing it. `/webm-alpha-video` was

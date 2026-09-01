@@ -4158,6 +4158,19 @@ master no longer owns, and purges the two retired doors. Explained in
 [§19](#19-where-the-depth-lives). Called by: you, after any command change; the door-parity test
 tells you when it is owed.*
 
+**⭐ It also owns the globals-only pass (SCC-367).** `/smh-slash-command-updating` was a thin alias
+that ran exactly `-GlobalsOnly` and nothing else, and its own closing note told you to prefer this
+command — which does that pass **and** the local doors. It is retired; the flag is the only way to
+run the pass now, and the command's own `-GlobalsOnly` section carries the law the alias used to
+hold: **the two machine-global caches read from DIFFERENT sources.**
+`~/.gemini/antigravity/global_workflows` comes from `.agents/workflows/` (thin launchers) because
+Antigravity **truncates** any workflow over 12,000 chars instead of rejecting it, while
+`~/.config/opencode/commands` comes from `.agents/commands/` (full bodies — opencode has no cap).
+
+⛔ **A worktree sync does NOT write the machine-global caches.** Run this **from the lobby checkout**
+after retiring or renaming a command, or the retired door lingers in the Antigravity and opencode
+menus with nothing in the repo able to see it.
+
 ```mermaid
 flowchart TD
     G{"did the / menu change?\nadded · renamed · retired"} -- "yes" --> SOP["update this page in the same commit\nor the SOP gate rejects it"]

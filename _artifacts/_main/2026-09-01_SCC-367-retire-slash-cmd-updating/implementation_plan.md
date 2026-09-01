@@ -23,23 +23,24 @@ into `/smh-sync-agents` rather than dying with the alias.
 
 | # | Statement | How it is checked |
 |---|---|---|
-| **A** | The name `smh-slash-command-updating` appears on **zero live surfaces** — the six door files are gone, and no live command / rule / INDEX / SOP doc names it | new `CS-19` assertion in `test_command_surfaces.py` over a `RETIRED_COMMANDS` set |
+| **A** | The name `smh-slash-command-updating` appears on **zero live surfaces** — the six door files are gone, and no live command / rule / INDEX / SOP doc names it | new `CS-22` assertion in `test_command_surfaces.py` over a `RETIRED` registry (name -> retiring ticket) |
 | **B** | `/smh-sync-agents` carries a `-GlobalsOnly` section stating **both** per-cache sources and the 12,000-char Antigravity truncation reason | same assertion pins both source paths + the cap number in `smh-sync-agents.md` |
 | **C** | `NOT_PAIRED` in `test_twin_parity.py` holds no key whose command master is gone | new assertion: every `NOT_PAIRED` key resolves to a file in `.agents/commands/` |
 | **D** | The enforcement suite passes, CS-18 included (its SCC-332 ordering checks named the retired command) | `python3 .agents/scripts/tests/run_all.py` exits 0 |
 | **E** | The SOP §3 menu no longer lists the retired command, staged in the same commit | `sop_currency.py` exits 0 at commit; grep of §3 returns nothing |
+| **F** | The lane's artifact set is complete — plan, ticket outline, closing walkthrough — per `artifacts-always-first` | the three files exist in `_artifacts/_main/2026-09-01_SCC-367-retire-slash-cmd-updating/`; `walkthrough_roster.py` parses the walkthrough at close-out |
 
 ## Steps
 
-1. **Assertions first (RED).** Add `CS-19` to `test_command_surfaces.py` (row A + B). ⚠️ **AUDIT
-   FINDING — CS-19 scans all six door surfaces plus the live doc set, never the master alone**, and
-   keys on the current `smh-slash-command-updating` spelling only (the two `slash_command_updating`
-   history passages must survive). A master-only scan goes green while generated mirrors stay dirty and the
-   `NOT_PAIRED`-keys-exist check to `test_twin_parity.py` (row C). CS-19 is **red on arrival** —
-   the master and all seven references still exist. The `NOT_PAIRED` check is **green on arrival**
-   (measured: 35 keys, 0 missing) and turns red the instant step 2 lands, which is what proves it
-   has teeth.
-2. **Delete the six doors.** The master plus its five generated launchers. Steps 3–7 turn CS-19 green.
+1. **Assertions first (RED).** Add `CS-22` to `test_command_surfaces.py` (rows A + B), then the
+   `NOT_PAIRED`-keys-exist check `A0c` to `test_twin_parity.py` (row C).
+   ⚠️ **AUDIT FINDING — CS-22 scans all six door surfaces plus the live doc set, never the master
+   alone**, and keys on the current `smh-slash-command-updating` spelling only (the
+   `slash_command_updating` history passages must survive). A master-only scan goes green while the
+   generated mirrors stay dirty. CS-22 is **red on arrival** — the master and every reference still
+   exist. `A0c` is **green on arrival** (measured: 35 keys, 0 missing) and turns red the instant
+   step 2 lands, which is what proves it has teeth.
+2. **Delete the six doors.** The master plus its five generated launchers. Steps 3–7 turn CS-22 green.
 3. **Port the law into `/smh-sync-agents`** — a `-GlobalsOnly` section carrying the per-cache
    sources and the SCC-332 truncation reason (row B).
 4. **Clean the engine + registries** — `sync-agents.ps1:60`, `test_twin_parity.py` NOT_PAIRED row,
@@ -60,7 +61,7 @@ into `/smh-sync-agents` rather than dying with the alias.
 - DELETE `.roo/commands/smh-slash-command-updating.md` — generated Zoo Code door → A
 - EDIT `.agents/commands/smh-sync-agents.md` — receives the `-GlobalsOnly` section and the SCC-332 law → B
 - EDIT `.agents/scripts/sync-agents.ps1` — the line-60 comment stops naming a command that is gone → A
-- EDIT `.agents/scripts/tests/test_command_surfaces.py` — new CS-19; stale comment and RULE_SITES entry removed → A
+- EDIT `.agents/scripts/tests/test_command_surfaces.py` — new CS-22; stale comment and RULE_SITES entry removed → A
 - EDIT `.agents/scripts/tests/test_twin_parity.py` — NOT_PAIRED row removed; keys-exist assertion added → C
 - EDIT `.agents/commands/INDEX.md` — three references to the retired command removed → A
 - EDIT `.agents/workflows/INDEX.md` — the alias's router row removed → A
@@ -82,7 +83,7 @@ into `/smh-sync-agents` rather than dying with the alias.
 - **Eight pre-existing dangling `/cicd-*` and `/smh-*` doc references** turned up while probing for a
   blanket guard (mostly `_AP`-suffix and example-text artifacts). A general dangling-reference guard
   would drag that cleanup into this lane and manufacture findings with no anchor in this diff, so
-  CS-19 is scoped to an explicit `RETIRED_COMMANDS` set instead.
+  CS-22 is scoped to an explicit `RETIRED` registry (name -> retiring ticket) instead.
 
 ---
 
@@ -166,11 +167,11 @@ The lane ships, and the operator's next Antigravity session still shows the ghos
 it is already written down in this repo: `test_command_surfaces.py` CS-18 L/M says *"`$IsLobby` is
 false in a worktree — so this lane's own sync wrote 4 local twins and left the cache in its
 23-over-cap defect state while every source-side check stayed green."* The identical shape applies
-here. A CS-19 that scans only `.agents/commands/` goes green the moment the master is deleted,
+here. A CS-22 that scans only `.agents/commands/` goes green the moment the master is deleted,
 while two generated mirrors on disk still name the retired command and the machine caches are
 untouched.
 
-**Fix, baked into step 1:** CS-19 scans **all six door surfaces plus the live doc set**, never the
+**Fix, baked into step 1:** CS-22 scans **all six door surfaces plus the live doc set**, never the
 master alone — so the assertion cannot go green until every surface is actually clean.
 
 ### Observations (uncounted, no severity)
@@ -178,7 +179,7 @@ master alone — so the assertion cannot go green until every surface is actuall
 - `.agents/scripts/sync-agents.ps1:496` and `.agents/commands/INDEX.md:71` name the **old
   snake_case** `slash_command_updating` inside passages documenting *retired* behaviour — the SCC-56
   name filter that was removed, and the SCC-63 rename. **Leave them.** Scrubbing them erases the
-  record of why the filter and the rename happened, and CS-19 must therefore key on the current
+  record of why the filter and the rename happened, and CS-22 must therefore key on the current
   `smh-slash-command-updating` spelling, not a loose `slash.command.updating` match.
 - `_artifacts/` carries roughly thirty historical references. Read-only history, out of scope by
   convention.
