@@ -3232,7 +3232,7 @@ it, and where the longer explanation lives.*
 | **Task lane** | [`/smh-quick-fix`](#smh-quick-fix) · [`/smh-quick-dev`](#smh-quick-dev) · [`/smh-self-audit`](#smh-self-audit) · [`/smh-code-review`](#smh-code-review) |
 | **Landing & shipping** | [`/cicd-close-story-merge-tree`](#cicd-close-story-merge-tree) · [`/cicd-update-sprint-memory`](#cicd-update-sprint-memory) · [`/cicd-merge-epic-workingtrees`](#cicd-merge-epic-workingtrees) · [`/cicd-prune-worktree`](#cicd-prune-worktree) · [`/cicd-e2e`](#cicd-e2e) · [`/cicd-push-e2e`](#cicd-push-e2e) · [`/smh-close-task-merge-tree`](#smh-close-task-merge-tree) · [`/smh-merge-multiple-workingtrees`](#smh-merge-multiple-workingtrees) |
 | **Operations** | [`/cicd-park` + `/cicd-resume`](#cicd-park-and-cicd-resume) · [`/cicd-prune-context`](#cicd-prune-context) · [`/cicd-autopilot-claude` (and its lanes)](#cicd-autopilot-claude-and-its-lanes) · [`/cicd-live-testing-team`](#cicd-live-testing-team) · [`/cicd-mobile-error-team`](#cicd-mobile-error-team) |
-| **Toolkit upkeep** | [`/smh-sync-agents`](#smh-sync-agents) · [`/smh-memory-audit`](#smh-memory-audit) · [`/smh-update-maps-indexes`](#smh-update-maps-indexes) |
+| **Toolkit upkeep** | [`/smh-sync-agents`](#smh-sync-agents) · [`/smh-sync-vscode`](#smh-sync-vscode) · [`/smh-memory-audit`](#smh-memory-audit) · [`/smh-update-maps-indexes`](#smh-update-maps-indexes) |
 
 ### Session and planning
 
@@ -4219,6 +4219,20 @@ flowchart TD
     CACHE --> M["manifest retirement — deletes only what IT wrote\nmissing or corrupt manifest → purges nothing"]
     M --> R["report per-surface counts\nrestart opencode · start a NEW Codex chat\nrun it once per machine"]
     ST["-Status: read-only diff\n-WhatIf: preview, touches nothing\n-Reconcile: two runs — stage a keep-list, then purge"] -.-> L
+```
+
+#### /smh-sync-vscode
+
+*Synchronizes VS Code configurations (installed extensions, User `settings.json`, and `keybindings.json`) across macOS and Windows PC. Runs `vscode_sync.py export` on the source machine to update `docs/migrations/vscode_sync/`, and `vscode_sync.py import` on the destination machine to install missing extensions and apply settings with automatic `cmd` ↔ `ctrl` modifier translation. Reminds you to transfer private Zoo Code provider profiles via Zoo Code's 1-click Export/Import button.*
+
+```mermaid
+flowchart TD
+    S0["Invoke /smh-sync-vscode [export | import | status]"] --> M{"Mode?"}
+    M -- "export" --> E1["Dump extensions to extensions.txt\nCopy settings.json & keybindings.json\nRemind about Zoo Code 1-click private export"]
+    M -- "import" --> I1["Backup existing User config (.bak)\nRun code --install-extension for missing IDs\nApply settings & translate keybindings (cmd ↔ ctrl)"]
+    M -- "status" --> D1["Compare local VS Code vs. repo bundle\nReport extension and config drift"]
+    E1 --> P["Commit and push bundle to git"]
+    I1 --> R["Reload VS Code to apply changes"]
 ```
 
 #### /smh-memory-audit

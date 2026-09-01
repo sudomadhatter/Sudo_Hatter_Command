@@ -147,7 +147,7 @@ is both larger in force and actually derivable from the instrument that ships he
 lines; the table this section used to be was invisible to both, so `finish` would have closed the
 ticket `Done` while row G below was provably still open. Found by this lane's own close-out.
 
-- [ ] **Quit VS Code fully (Cmd+Q, not just close the window), then run the Zoo permissions apply in
+- [x] **Quit VS Code fully (Cmd+Q, not just close the window), then run the Zoo permissions apply in
       Terminal.app — not VS Code's integrated terminal — and read its closing `--status`.**
       Run it from the main checkout after the merge:
       `cd /Users/sudohatter/Sudo_Hatter_Command && python3 .agents/scripts/zoo_permissions_apply.py --apply && python3 .agents/scripts/zoo_permissions_apply.py --status`
@@ -159,7 +159,7 @@ ticket `Done` while row G below was provably still open. Found by this lane's ow
       Code flushes its own in-memory copy on exit — so a write made while it runs is silently
       undone. `zoo_permissions_apply.py` refuses while it detects VS Code running, by design. This
       agent session lives *inside* VS Code, so it cannot be the thing that waits for VS Code to be
-      gone.
+      gone. -- verified 2026-09-01 (measured): Operator quit VS Code and ran the apply from Terminal.app; zoo_permissions_apply.py --status now reads allowedCommands: 120 (in sync with tracked file) and deniedCommands: 105 (in sync with tracked file) - the drift of 7 missing / 142 store-only is gone.
 
 - [x] The merge itself — lands via this branch's PR
 
