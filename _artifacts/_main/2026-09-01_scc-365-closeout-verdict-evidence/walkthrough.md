@@ -75,14 +75,16 @@ merge door already passes mandatorily.
 | **F** | Both doors carry `--require-gates suite` unbracketed and neither demands `ruff`/`pyrefly`; the flip step carries no `--advisory` and no fail-open | `CS-14 C2`, `CS-14 C3` | ✅ |
 | **G** | Long board key resolves the same receipt as the short id, and with both on disk the story's own key wins | `EV7`, `EV8` | ✅ |
 
-**Declared change set reconciliation:** 13 declared, all landed. Three files edited beyond the
-declared set, each named here: `_artifacts/_main/INDEX.md` (the row this lane owes —
-`test_check_maps.py` F2 caught its absence in the first receipt-stamped suite run),
-`docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` (required by `sop-currency.md` habit 4 in
-the same commit as the SOP edit), and `_artifacts/_memory/workflow-enforcement-scripts.md` (declared
-in plan step 9, written through the sanctioned Claude harness flow and carried onto the lane by
-`AGENTS.md` §7's four-step procedure — the shared checkout was restored and SCC-358's two in-flight
-memory files were left untouched).
+**Declared change set reconciliation** — `declared_change_set.py diff` returns
+`undeclared=1 · unimplemented=0 · incomplete=0`. All 13 declared entries landed. The one undeclared
+file is `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md`, required by `sop-currency.md`
+habit 4 in the same commit as the SOP edit — the plan named the SOP row and not its changelog line.
+Two further files moved under the `_artifacts/` carve-out and are named here rather than left
+silent: `_artifacts/_main/INDEX.md` (the row this lane owes — `test_check_maps.py` F2 caught its
+absence in the first receipt-stamped suite run) and
+`_artifacts/_memory/workflow-enforcement-scripts.md` (declared in plan step 9, written through the
+sanctioned Claude harness flow and carried onto the lane by `AGENTS.md` §7's four-step procedure —
+the shared checkout was restored and SCC-358's two in-flight memory files were left untouched).
 
 ## RED first
 
@@ -197,6 +199,22 @@ lenses_run:
 - acceptance-auditor · recovered-inline
 - parity-blast · recovered-inline
 - pre-mortem · recovered-inline
+
+### Step 0.7 — blast radius re-derived against current `main`
+
+1. **What moved:** SCC-366 landed while this was built — `.claude/settings.json`, its own
+   artifacts folder, and `_artifacts/_main/INDEX.md`. Nothing this diff *references* moved, was
+   renamed, or was deleted; every repo path and `#L` anchor the diff names still resolves.
+2. **What it changes here:** the only overlap is `_artifacts/_main/INDEX.md`, a planning surface.
+   `git merge-tree` predicted the conflict before it was real, `origin/main` was absorbed on this
+   branch (never on `main`), and it was resolved by keeping both lanes' rows.
+3. **What was re-measured:** the full enforcement suite after the absorb — 68/68 files, exit 0 —
+   plus `risk_seam.py classify` → `unclassified`, the permanent correct answer for the command
+   centre (SCC-289, no code graph here). No landing-order dependency:
+   `chore/SCC-358-memory-and-sync` is the only other live tree and touches no file in this set.
+
+dispositions: per-lens: blind-hunter=1/0/0 · acceptance-auditor=1/0/0 · parity-blast=1/0/0 · pre-mortem=0/0/0
+drift: undeclared=1 · unimplemented=0 · incomplete=0
 
 **Level:** quick — the re-derived radius came back contained: the only overlap with what landed on
 `main` while this was built is `_artifacts/_main/INDEX.md`, a planning surface, resolved by keeping
