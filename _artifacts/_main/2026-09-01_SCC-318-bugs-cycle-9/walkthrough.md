@@ -118,7 +118,7 @@ assertion that proves it. Pitfalls sit under the task that produced them.
 
 ## Evidence
 
-**Measured at `86f29f1c` — the sha the lenses reviewed and the sha on the gate receipt. Same value; the review and the evidence describe the same code.**
+**Measured at `e0d73919` — the sha the lenses reviewed and the sha on the gate receipt. Same value; the review and the evidence describe the same code.**
 
 | # | Acceptance item | The assertion that proves it | Result |
 |---|---|---|---|
@@ -140,7 +140,7 @@ assertion that proves it. Pitfalls sit under the task that produced them.
 ```
 python3 .agents/scripts/tests/run_all.py
 71/71 files passed
-[PASS] suite exit=0 94.5s @ 86f29f1c   (receipt: gates/suite.json)
+[PASS] suite exit=0 85.5s @ e0d73919   (receipt: gates/suite.json)
 
 python3 .agents/scripts/tests/test_jira_feed.py --case "SCC-335"      -- 14/14 passed --
 python3 .agents/scripts/tests/test_command_surfaces.py --case "CS-23" --  7/7  passed --
@@ -168,8 +168,8 @@ review-runtime: fan-out
 
 ## Code Review (2026-09-01)
 
-Verdict: PASS @ 63a40b90
-Suite evidence measured at: 63a40b90 — the same sha the lenses reviewed at 86f29f1c plus the review's own fixes; re-run and re-stamped after the last code change.
+Verdict: PASS @ e0d73919
+Suite evidence measured at: e0d73919 (clean tree, 71/71, exit 0) — the same sha the lenses reviewed at 86f29f1c plus the review's own fixes; re-run and re-stamped after the last code change.
 
 lenses_run:
 - blind-hunter · ok
