@@ -40,7 +40,16 @@
     "pwsh -NoProfile -File .agents/scripts/", "acli jira workitem ", "ls", "pwd", "true", "date",
     "head", "sort", "uniq", "wc", "cat", "echo", "tail ", "sed ", "grep ", "rg ", "diff ", "cp ",
     "mkdir ", "printf ", "awk ", "cut ", "tr ", "basename ", "dirname ", "readlink ", "file ",
-    "stat ", "du ", "cmp ", "command -v ", "which ", "jq ", "touch ", "mktemp", "REPO=", "BRANCH=",
+    "stat ", "du ", "cmp ", "command -v ", "which ", "jq ", "touch ", "mktemp",
+    // SCC-369 — promoted from the decision store's 143 store-only entries, which were otherwise
+    // wiped as debris (shell fragments, dead one-off literals, and the bare `rm`/`git`/`env`/`acli`
+    // widenings that outranked the deny list). These eight are the only ones that were real,
+    // recurring and NOT already covered by a prefix above. `find ` was deliberately NOT promoted:
+    // `find -delete` and `find -exec rm` are destructive and no deny row sees them.
+    "npx vitest ", "npm run ", "test -", "sleep ", "ps aux", "ln -s ",
+    // The two-machine twin — venv scripts live in bin/ on the Mac and Scripts/ on the PC.
+    "backend/.venv/bin/", "backend/.venv/Scripts/",
+    "REPO=", "BRANCH=",
     "EXPECTED_KEY=", "BASE=", "BEHIND=", "HEAD_SHA=", "PATHS=", "VENV=", "KEY=", "MAIN=", "WT=",
     "W=", "SCR=", "EXT=", "DB=", "OUT=", "MSG=", "URL=", "CODE=", "SCRATCH=", "E=", "T=", "D=",
     "F=", "R=", "S=", "P=", "N=", "L=", "B=", "A=", "G=", "M=", "V=", "X=", "git add .agents/",
