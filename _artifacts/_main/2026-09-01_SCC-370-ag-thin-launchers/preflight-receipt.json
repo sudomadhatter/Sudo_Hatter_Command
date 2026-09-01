@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-370-ag-thin-launchers",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-370",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "8c8232eb45869d003a21265859e1083a0c2921c3",
+  "warnings": 1,
+  "when": "2026-09-01T13:14:00-04:00"
+}

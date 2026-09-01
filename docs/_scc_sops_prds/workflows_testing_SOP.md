@@ -4152,7 +4152,7 @@ un-blocked, not to have your own fence removed.*
 
 *Publishes the toolkit to all five platforms — one door each — from the lobby's masters: generates
 the Claude/Codex launcher skill per command (a hand-authored skill always wins), mirrors opencode and
-Antigravity (thin launchers over ~11.5 KB), generates the Zoo Code doors (`.roo/commands/` launchers,
+Antigravity (a thin launcher for every command), generates the Zoo Code doors (`.roo/commands/` launchers,
 `.roomodes` with the six Wonderland team seats, floor + team rule copies in `.roo/rules/` — all
 tracked in git, so they travel to both machines), retires what the manifest says it wrote and the
 master no longer owns, and purges the two retired doors. Explained in
@@ -4165,12 +4165,15 @@ command — which does that pass **and** the local doors. It is retired; the fla
 run the pass now, and the command's own `-GlobalsOnly` section carries the law the alias used to
 hold: **the two machine-global caches read from DIFFERENT sources.**
 `~/.gemini/antigravity/global_workflows` comes from `.agents/workflows/` (thin launchers) because
-Antigravity **truncates** any workflow over 12,000 chars instead of rejecting it, while
+Antigravity **truncates** an over-long workflow instead of rejecting it, while
 `~/.config/opencode/commands` comes from `.agents/commands/` (full bodies — opencode has no cap).
 
-⛔ **A worktree sync does NOT write the machine-global caches.** Run this **from the lobby checkout**
-after retiring or renaming a command, or the retired door lingers in the Antigravity and opencode
-menus with nothing in the repo able to see it.
+⛔ **A worktree sync DOES write the machine-global caches — run it from the main checkout.** The
+script resolves its own home from where it sits, so a lane worktree counts as the lobby and a bare
+run republishes **that lane's doors** into your live Antigravity and opencode menus, unmerged work
+included. Add **`-NoGlobals`** to make a lane sync local-only. Run the plain sync from the main
+checkout after retiring or renaming a command, or the retired door lingers in both menus with
+nothing in the repo able to see it.
 
 ```mermaid
 flowchart TD
@@ -4324,7 +4327,7 @@ flowchart TD
 
 | Command | What it does for you |
 | --- | --- |
-| `/smh-update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. It **does not touch the memory store** — that is `/smh-memory-audit`'s job. ⚠ **If you ran it in Antigravity before 2026-08-12, re-check what it edited** — its door was then a full body that Antigravity truncated at 12,000 chars, so a run could reconcile partially, with no approval gate and no findings report. It is a normal thin launcher. |
+| `/smh-update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. It **does not touch the memory store** — that is `/smh-memory-audit`'s job. ⚠ **If you ran it in Antigravity before 2026-08-12, re-check what it edited** — its door was then a full body that Antigravity truncated, so a run could reconcile partially, with no approval gate and no findings report. It is a normal thin launcher. |
 | `/smh-memory-audit` | Cleans up the shared memory store (`_artifacts/_memory/`) — the one document every model on every machine loads *before* doing any work, which is why letting it fill costs you on every session everywhere. It checks each memory's claim against the live repo, then shows you *retire · merge · compress · relocate* with the bytes each frees, and waits. **Nothing is deleted without your yes on that specific item**; git is the undo either way. See the box below. |
 | `/smh-sync-agents` | Publishes the toolkit to all five platforms (Claude, Codex, opencode, Antigravity, Zoo Code) — one door each. **It SHORTENS the description it writes into `.agents/workflows/`:** Antigravity builds its slash-command menu from those descriptions, and full-length ones blow the menu's context budget (workflows get dropped from the agent's list outright) — so the generator cuts each one to **135 characters** on a word boundary. ⛔ **Do not shorten them by hand in `.agents/workflows/`** — those files are generated, so the next sync overwrites you, *and* the door-parity check demands the mirror match its brain, so a hand-edit turns `main-write-gate` red (`chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable). The COMMANDS keep their full descriptions; only the menu has a budget. The one hand-owned door, `smh-adviser-board.md`, is shortened in place because it sits in the same menu. It reaches **the lobby and this machine's caches only**; projects read from the center, so there is nothing to push. It *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and purges the two retired doors. Hand-written skills are never overwritten. What a command *declares* decides where it publishes — nothing is inferred from its filename. Hooks are executed directly from `.agents/hooks/` via `run-hook.sh` (the duplicate `.claude/hooks/` mirror is retired under SCC-300), and in-session sandboxed runs catch `.claude/skills` write restrictions gracefully. |
 | `/smh-review` | Reviews the working diff outside the story loop — the quick read when there's no story to hang ③ on. |
@@ -4388,17 +4391,23 @@ flowchart TD
 > opencode for the same reason. And each machine has its own caches, so a sync on the Mac does not
 > reach the PC — run it once on each.
 >
-> ### ⛔ Antigravity has a size cap, and going over it does NOT fail loudly (SCC-135)
+> ### ✅ Antigravity's size cap is retired as a thing you think about (SCC-135 → SCC-370)
 >
-> Antigravity reads its `/` menu from `.agents/workflows/`, and a workflow file over **12,000
-> characters** is **truncated at the cap — not rejected**. That distinction is the whole hazard: a
-> rejected file is an obvious failure, a truncated one *runs* and looks like it worked, because the
-> agent gets a clean-looking opening and no indication anything is missing.
+> **Every Antigravity door is a thin launcher.** `/smh-sync-agents` publishes each command to
+> `.agents/workflows/` as a stub that says "read the real command and follow it end to end" — a few
+> hundred bytes, whatever the command's size. Commands can be any length. **Never trim one to fit
+> anything**, and never hand-edit a door.
 >
-> **You never have to think about this.** `/smh-sync-agents` measures every command and, over ~11.5 KB,
-> publishes a **thin launcher** to Antigravity instead of a copy — a stub that just says "read the real
-> command and follow it end to end." The command itself can be any size. **Never trim a command to fit
-> the cap**; the sync handles it.
+> **Why the surface exists**, once, as history: Antigravity **truncates** an over-long workflow rather
+> than rejecting it. That distinction is the hazard — a rejected file is an obvious failure, a truncated
+> one *runs* and looks like it worked, because the agent gets a clean-looking opening and no indication
+> anything is missing.
+>
+> **Why you are reading this in the past tense (2026-09-01).** The 2026-07-25 fix made the launcher
+> conditional on size, so the cap stayed a live rule: 14 of 40 doors still shipped as full command
+> bodies, and `/smh-sync-agents`'s own door sat 1,648 characters under the limit — fine that day,
+> truncated the week its command grew. SCC-370 deleted the condition. There is no size to be on the
+> wrong side of now, which is why this box no longer names a number.
 >
 > **What it looked like when one command escaped that rule.** `/smh-update-maps-indexes` was the only
 > command whose body lived in `workflows/` rather than `commands/`, which exempted it from the launcher
@@ -4420,12 +4429,15 @@ flowchart TD
 >
 > ⛔ **A CODE FIX DOES NOT MOVE A MACHINE CACHE, and the review of this very lane caught the author
 > claiming it had.** The cache lives in `$HOME`, so git cannot carry it: a pull gets the fixed script and
-> the fixed doors, and the cache changes only when `/smh-sync-agents` runs **on that machine**. Worse, the
-> globals block is gated on `$IsLobby -or $GlobalsOnly` and **`$IsLobby` is FALSE in a worktree** — so the
-> lane's own sync wrote its four local twins and left the cache untouched, while every source-side check
-> stayed green. `CS-18 L`/`M2` now read the real directory and go RED until the machine is synced. That
-> red is the feature: it is the only thing in the repo that can tell you this machine is still serving
-> truncated commands.
+> the fixed doors, and the cache changes only when `/smh-sync-agents` runs **on that machine**. The
+> globals block is gated on `$IsLobby -or $GlobalsOnly`, and **`$IsLobby` is TRUE in a worktree** — the
+> script derives its own home from where it sits, so a lane compares equal to itself. A bare lane sync
+> therefore publishes **that lane's** doors to the machine, unmerged work included; `-NoGlobals` is what
+> makes a lane sync local-only. `CS-18 L`/`M2` read the real directory and go RED until the machine is
+> synced — and `L` binds only in the **main checkout**, because the cache is one directory per machine
+> while `.agents/workflows/` is per checkout, so asserting them equal everywhere fails every tree except
+> whichever one synced last. That red is the feature: it is the only thing in the repo that can tell you
+> this machine is serving something other than what `main` says.
 >
 > **The doc came first, and the code followed it.** `docs/workspace-standard.md` stated the inverse rule —
 > that `.agents/workflows/` were reference process-docs "NOT pushed to any command cache" — and warned that

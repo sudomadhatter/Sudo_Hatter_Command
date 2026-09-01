@@ -7,9 +7,14 @@ platforms: [antigravity]
 
 Thin launcher. The full board — the third-side discipline, filter charters, 43-mind roster, operator
 doctrine, statement contract and spawn templates — lives in **`.agents/commands/smh-adviser-board.md`**
-and the folder beside it, `.agents/commands/adviser-board/`. It exceeds Antigravity's 12k workflow
-limit, so this wrapper stays slim on purpose. Do NOT inline the body here; on any edit, update the
+and the folder beside it, `.agents/commands/adviser-board/`. Every Antigravity door is a thin launcher,
+so this wrapper stays slim like all the others. Do NOT inline the body here; on any edit, update the
 command file (single source of truth) instead.
+
+⛔ **This one door is HAND-AUTHORED, not generated** — it is in the sync's `$excluded` list, so a sync
+neither rewrites nor prunes it. The reason is the INLINE-mode paragraph below, which the generator cannot
+produce: a generated stub would silently drop it and the board would run its parallel protocol with every
+spawn missing.
 
 **Execute now:**
 

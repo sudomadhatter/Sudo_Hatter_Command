@@ -55,7 +55,7 @@ actually implemented?" without re-deriving it.
 | **R7** gates before routing and before risky action | root `AGENTS.md` §6 GATES (routing · project-law · search · risk · worktree · git-write) → `.agents/rules/constitution.md` | Part 1 item 8 |
 | **R8** portability: `CLAUDE.md` a pure redirect, nothing model-specific in shared files, ≥2 agents verified | root `AGENTS.md` §8; one command set reaches four platforms via `/smh-sync-agents`; canary runs per tool. ✅ **Exception CLOSED 2026-08-22 (SCC-279)** — root `GEMINI.md` had grown three "GEMINI SPECIFIC HARD RULES"; operator ruling was **FOLD**, and the file is now the house adapter. Nothing was lost: all three were already law every platform loads — explicit staging is `git-policy.md`, worktree-before-edit is `worktree-per-story.md`, and sync scope is `project-law.md` (“`/smh-sync-agents` targets the command center and the machine-global caches only”), which `sync-agents.ps1` enforces by exiting 1 on the retired `-Maintained` flag that rule actually told Gemini to run. Now **checked, not asserted**: `.agents/scripts/tests/test_entry_adapters.py` | Part 1 Layer 1 · Part 2 Command sync |
 | `_experiment/` — the routing smoke test | `_routing-canary/` (renamed: permanent regression check, not a demo) | Part 2 Routing canary |
-| `_system/AGENTS.md` — the system-builder agent | `docs/system-builder.md` (`_system/` dissolved 2026-07-25; `router.md` row "Maintaining THIS home-base system") · `/smh-new-project` adds a workspace by cloning the skeleton | Part 2 Router drift |
+| the deleted _system/AGENTS.md — the system-builder agent | `docs/system-builder.md` (`_system/` dissolved 2026-07-25; `router.md` row "Maintaining THIS home-base system") · `/smh-new-project` adds a workspace by cloning the skeleton | Part 2 Router drift |
 | Validation loop (canary · cold-route · persistence · token-frugality · negative/route-up) | all five named in Part 2 "Routing canary — the regression cadence" | Part 2 |
 | Anti-patterns (mega `AGENTS.md`; framework/DB; agent-per-task; detail in the lobby; model-specific shared files; skipping pickup/handoff; scaling before routing works) | guarded by: ALWAYS-LOAD tiers (§Layer 1 item 4) · the folder-file tier model · "lobby = categories only" in `router.md` · the canary triggers · the anti-fork rule (Part 2 Rules) | throughout |
 
@@ -83,7 +83,7 @@ A compliant workspace has these, and nothing it doesn't need.
 - **`AGENTS.md`** — the brain. Numbered sections so agents skip-to-N:
   1. **ROOT LAW / prime mission** — one line: what this workspace exists to do.
   2. **START HERE** — you're in this workspace; don't read the tree; routing question → the routing table /
-     `../../router.md`; risky action → GATES.
+     the home base's `router.md` (two levels up from inside a project); risky action → GATES.
   3. **MAP / MISSION / SUPPORT** — the three answers every task needs (where am I + where can I go / what is the
      work / what tools+context).
   4. **ALWAYS-LOAD** — three tiers, only the first always-on. **Floor:** `.agents/rules/operator-profile.md`,
@@ -105,7 +105,12 @@ A compliant workspace has these, and nothing it doesn't need.
 ### Layer 2 — the routing table (the single most important thing)
 A plain-English table in `AGENTS.md`: **task → read these / skip these / skills**. It is what makes
 least-context loading real. Always include the up-route: *"if what you need isn't here, GO BACK to
-`../../router.md`."* Routers route up as well as down — an agent can never dead-end.
+the home base's `router.md`"* — **written in the project's own file as the relative path, which from
+a project root is two levels up.** Routers route up as well as down — an agent can never dead-end.
+(The relative form is described rather than written out because this page lives in the home base, not
+in a project: spelled literally it is a path that does not resolve from here, and both `check_links`
+and the doc-graph gate correctly read it as broken. Layer 1 above uses the same wording for the same
+reason.)
 
 ### Layer 3 — skills (referenced, never preloaded)
 Skills live in the vendored `.agents/skills/<name>/SKILL.md` and are pulled **only** by the workspace rows
@@ -173,7 +178,7 @@ the toolkit:
 - **`_bmad-output/sudo-tests.yaml`** — present = the `/cicd-code-review` TEA gate is **ARMED**
   (absent = auto-WAIVED, and a workspace that starts WAIVED tends to stay WAIVED). Ships armed in the
   template with ratchet-from-zero floors; `l1_coverage_min` and CI's `--cov-fail-under` only ever go UP.
-- **`.github/workflows/pr-check.yml`** — CI gates PRs to **`main` AND `epic/**`** (the 2026-07 audit's
+- **A project's `pr-check.yml` workflow** — CI gates PRs to **`main` AND `epic/**`** (the 2026-07 audit's
   P0-1 lesson: an ungated integration branch is where regressions hide — under the epic-branch model
   that means story landings get CI too, not just the epic's merge to `main`).
 - **BDD layer (TDAD Layer 1)** — Gherkin contracts at `backend/tests/features/<domain>/*.feature`,
@@ -272,10 +277,12 @@ The **single canonical invocable set is `.agents/commands/`**. It mirrors to eve
   caches are machine-local (like the opencode/AG caches), so re-run the sync per machine.
 - **`commands/` vs `workflows/`.** `.agents/commands/` is where a command is **authored** — full body, any
   length. `.agents/workflows/` is a **generated publishing surface for Antigravity only**: `/smh-sync-agents`
-  writes one file there per antigravity-eligible command, and any command over ~11.5 KB becomes a **thin
-  launcher** that points the agent back at `.agents/commands/<name>.md` instead of a doomed verbatim copy.
-  *(Antigravity — and only Antigravity — truncates a workflow at 12,000 chars rather than rejecting it, so a
-  raw 30 KB body runs on partial steps and looks fine. The launcher is the workaround. See SCC-135.)*
+  writes one file there per antigravity-eligible command, and **every one of them is a thin launcher** that
+  points the agent back at `.agents/commands/<name>.md`. There is no size rule.
+  *(Why the surface exists at all: Antigravity — and only Antigravity — **truncates** an over-long workflow
+  rather than rejecting it, so a raw 30 KB body runs on partial steps and looks fine. See SCC-135. Until
+  SCC-370 the generator decided per command by size, which left 14 of 40 doors shipping verbatim and kept
+  the cap a live number everyone had to remember. One shape, unconditionally, is what retires the number.)*
   **Both Antigravity surfaces are fed from `workflows/`** — the per-project door and the machine-global cache.
   Every other platform reads `commands/` directly and has no size limit. **Corrected 2026-08-27 (SCC-332):**
   this bullet previously said `workflows/` were reference docs never pushed to a cache, and the global-cache
@@ -291,11 +298,19 @@ The **single canonical invocable set is `.agents/commands/`**. It mirrors to eve
   `.agents/workflows/`, and outside one it reads the machine-global `~/.gemini/antigravity/global_workflows`.
   Both are generated from the same canonical `commands/` set and both honour the launcher rule.
   ⚠ **A launcher only resolves where `.agents/commands/` exists — the lobby.** Under the thin model a
-  project carries no tier-1 copy, so a big command invoked from the global menu inside a project STOPS
+  project carries no tier-1 copy, so **any** command invoked from the global menu inside a project STOPS
   and says so, rather than running. That is a deliberate trade and the right direction: before SCC-332
-  that same entry delivered the first 12,000 characters of the body and the agent improvised the rest.
+  that same entry delivered a truncated prefix of the body and the agent improvised the rest.
   A command that fails visibly beats one that runs on 27% of its steps. Full bodies reach every other
   platform directly from `commands/`.
+  *(SCC-370 widened this from "a big command" to "any command": 14 doors used to ship verbatim and so
+  ran from a project's global menu. **Thirteen of the fourteen** are lobby commands by design — 7 `cicd-*`
+  command-center→project doors, and 6 `smh-*` that act on the centre itself. **Two** members are worth
+  naming rather than one. `sentry-security-team-avch` is genuinely project-scoped. And `smh-review` is
+  the one whose loss is a real trade rather than a formality: its old door was 326 bytes that invoked
+  the `md-feedback` MCP server and named no repo file at all, so it ran anywhere and could never have
+  been truncated — the justification above does not cover it. Both now stop in a thin project and say
+  so; run either from the lobby.)*
 
 ### Git — one policy
 **Agents commit and push their own work** — explicit paths (never `git add -A`), the repo's Jira key leading

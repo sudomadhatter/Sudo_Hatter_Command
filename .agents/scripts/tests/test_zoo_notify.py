@@ -185,9 +185,18 @@ def test_no_door_tells_an_agent_to_skip_a_partial_ask():
     a warning paragraph that quotes the old filter, so a naive `grep -c partial` matches the very
     text proving it was fixed and can never go red. [[comment-literals-invert-source-grep-tests]]
     """
+    # ⛔ THE ANTIGRAVITY DOOR IS NOT IN THIS LIST, and that is deliberate (SCC-370). It used to be,
+    # and it passed only because this command was 7,998 bytes and so shipped as a verbatim mirror.
+    # Every `.agents/workflows/` door is a thin launcher now, carrying no sentences of its own — so
+    # asserting a requirement sentence there asserts the wrong surface. It is checked below for the
+    # only thing a launcher can be wrong about: pointing somewhere else.
     doors = [ROOT / ".agents" / "commands" / "smh-llm-approvals.md",
-             ROOT / ".opencode" / "commands" / "smh-llm-approvals.md",
-             ROOT / ".agents" / "workflows" / "smh-llm-approvals.md"]
+             ROOT / ".opencode" / "commands" / "smh-llm-approvals.md"]
+    ag = ROOT / ".agents" / "workflows" / "smh-llm-approvals.md"
+    assert ag.is_file(), f"{ag} is missing — the door lost its Antigravity mirror"
+    _ag = ag.read_text(encoding="utf-8")
+    assert "`.agents/commands/smh-llm-approvals.md`" in _ag and "END TO END" in _ag, \
+        f"{ag.name}: the Antigravity door no longer sends the agent to this command's body"
     for door in doors:
         assert door.is_file(), f"{door} is missing — the door lost a platform mirror"
         sentence = [ln for ln in door.read_text(encoding="utf-8").splitlines()

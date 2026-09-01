@@ -7,9 +7,9 @@ metadata:
   originSessionId: 6aaaddfd-6d07-4c62-9a38-782516e2742f
 ---
 
-**2026-07-13.** AGY's `frontend-e2e` PR gate (`.github/workflows/pr-check.yml`) had failed every run
+**2026-07-13.** AGY's `frontend-e2e` PR gate (that repo's `pr-check.yml` workflow) had failed every run
 yet showed workflow "success" because `continue-on-error: true` (report-only). Three independent holes:
-(1) `e2e/hanger-talk.spec.ts` asserted 4 UI strings that appear **0× in source**, on an auth-gated page
+(1) AGY's `hanger-talk.spec.ts` asserted 4 UI strings that appear **0× in source**, on an auth-gated page
 it called "public" — **fiction, never passed**; (2) CI ran bare `npx playwright test` = the plain
 `playwright.config.ts` which `testIgnore`s `journeys/**`, so the REAL TEA-16 emulator harness never ran
 on CI (it was **6/6 green locally** the whole time — `npm run test:e2e`); (3) report-only left open
@@ -35,7 +35,7 @@ opencode/antigravity global caches + the antigravity workflow mirror; the rule f
 Fresh `.agents/rules/` (+ INDEX row). Codex reaches the 3 dev-flow commands via repo `.agents/skills`
 launchers → commands (they're `platforms:[opencode,antigravity]`, so absent from `~/.codex/prompts` BY
 DESIGN — a codex prompt would double the skill menu entry); codex reads the rule via native AGENTS.md.
-Trimmed my ② `sudo-dev-story-tests` addition to keep the file <12000 B (Antigravity workflow limit).
+Trimmed my ② `sudo-dev-story-tests` addition to fit the then-current Antigravity size limit. **That limit is gone (SCC-370)** — every door is a thin launcher now, so never trim a command to fit a surface.
 
 **Still owed (git — Daniel's call per git-policy):** commit the master `.agents/` guard changes + the
 vendored copies on the live epic branch (else a `chore/*` branch off `main` — the old `main_debug`
