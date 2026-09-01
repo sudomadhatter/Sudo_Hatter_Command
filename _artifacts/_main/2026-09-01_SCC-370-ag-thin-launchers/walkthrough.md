@@ -114,34 +114,150 @@ A launcher only resolves where `.agents/commands/` exists — the lobby. Seven o
 **STOP** rather than run when invoked from Antigravity's *global* menu inside a thin project.
 
 Accepted, for three reasons in order of weight. It is the same trade already in force for the other
-24 commands, so this makes one rule out of two. Twelve of the fourteen are lobby commands by design —
+24 commands, so this makes one rule out of two. Thirteen of the fourteen are lobby commands by design —
 every `cicd-*` is a command-center→project door and every `smh-*` acts on the centre itself. And the
 standard already argues this direction in its own words: *"A command that fails visibly beats one that
-runs on 27% of its steps."* `sentry-security-team-avch` is the single genuinely project-scoped member;
-if it ever bites, the fix is to run it from the lobby, not to restore the branch.
+runs on 27% of its steps."* `sentry-security-team-avch` is genuinely project-scoped, and `smh-review` is the second member
+worth naming: its old door was 326 bytes invoking the `md-feedback` MCP server, naming no repo file,
+so it could never have been truncated and the justification above does not cover it. Run either from
+the lobby; neither is a reason to restore the branch.
 `docs/workspace-standard.md` was updated in the same commit so the written rule matches the built one.
 
 ## Evidence
 
-full suite: 68/68 files, exit 0
-test_command_surfaces.py: 297/297, exit 0
-mutation sweep: 6/6 killed by their declared case, restore verified clean at 7363926b
-workflow_lint.py --toolkit-only: exit 0
-check_maps.py --depth3-only --strict: exit 0
-check_links.py: exit 0
-doors regenerated: 38 launchers + 1 hand-owned + INDEX.md = 40 files in .agents/workflows/
-machine-global caches refreshed: 39 antigravity, 59 opencode
+Measured on the tree that will land, after absorbing `origin/main` twice (SCC-369, then the August
+artifact reorg). Every number below is from a run at `8c8232eb`.
 
-Mutants, drawn from the code and declared before mutating: **M1** restore the size branch (killed by
-`CS-18 N`) · **M5** branch stays gone but the stub text puts the cap sentence back into all 39 doors
-(killed by `CS-18 N`) · **M2** restore `door_verdict`'s unconditional byte-identity arm (killed by the
-SCC-370 control) · **M3** one door loses the `GENERATED` marker (killed by `CS-18 O`) · **M4** the size
-rule returns to a live doc (killed by `CS-18 P`) · **M6** a door hand-edited while staying a *valid*
-launcher, so only the cache twin can see it (killed by `CS-18 L`).
+full suite: 70/70 files, exit 0
+test_command_surfaces.py: 307/307, exit 0
+mutation sweep: 11/11 killed by their declared case, restore verified byte-clean
+workflow_lint.py --toolkit-only: 0 errors, 0 warnings, 8 info
+check_links.py --base origin/main: clean, exit 0
+check_maps.py --depth3-only --strict: exit 0
+gates/suite.json: result pass, exit_code 0, dirty_tree false, sha 8c8232eb, 85.8s
+doors regenerated: 38 launchers + 1 hand-owned + INDEX.md = 40 files in .agents/workflows/
+every door's frontmatter parses as YAML: 40 scanned, 0 broken
+
+The mutation table grew from 6 to 11, and two of the original six were re-aimed because the review
+proved their kills were mis-attributed. **M1** restored the size branch at `-le 9999`, a threshold
+`CAP_RE` cannot see, killed by the new `CS-18 N2`; **M1b** is the same branch at `11500`, killed by
+`CS-18 N` — declared separately because they die to different guards, and keeping only one left half
+the pair uncertified. **M6** was re-aimed off `CS-18 L` onto `CS-18 Q`, because `L` lives inside a
+cache-absent SKIP and now binds only in the main checkout, so M6 had no killer on CI, on the PC, or
+in any worktree. New: **M7** removes the emitter's quote strip (killed by `CS-18 Q2`), **M9** breaks
+the stub's pointer literal (killed by `CS-18 Q`), **M8** guts the `CS-18 P` recorder (killed by the
+new `CS-18 P0` teeth control), **M10** points a door at another command's brain (killed by `A1b`).
+Unchanged and still killed by their original cases: **M5**, **M2**, **M3**, **M4**.
+
+## Code Review (2026-09-01)
+
+Verdict: CONCERNS @ 8c8232eb45869d003a21265859e1083a0c2921c3
+Suite evidence measured at: 8c8232eb45869d003a21265859e1083a0c2921c3 (same sha; gates/suite.json result pass, exit 0, clean tree)
+
+review-runtime: fan-out
+lens_isolation:  worktree — each repo-reading lens got its own `git worktree add --detach` copy of THIS repo at 7aa8ea7a, verified by `git rev-parse --show-toplevel` and by the presence of the file under review; the Blind Hunter got no tree at all. The Agent tool's own `isolation: "worktree"` flag was NOT used, because it clones the session repo at its own sha rather than the lane under review (SCC-313).
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok — truncated pass, 20 of 69 files, withheld paths named to the lens; it earned one top-up and declared it
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted:  5/5
+lenses_na:       none
+findings:        0 decision · 23 patch · 0 defer   (0 noise-dismissed · 0 relevance kills)
+dispositions:    per-lens: blind=6/0/0 · edge=4/0/0 · literal=3/0/0 · acceptance=9/0/0 · test-adequacy=7/0/0 · compound=5/0/0
+drift:           undeclared=0 · unimplemented=0 · incomplete=0 — the declared set was AMENDED in this review (it reported 41/3/0 before): the doors are now enumerated because `declared_change_set.py` has no directory handling, the two test files and the seventh memory file were added, and the two launcher-skill rows were removed as impossible to fulfil.
+severity_floor:  CONCERNS
+
+**Scope.** The `origin/main...HEAD` diff at `7aa8ea7a`, 69 files, re-taken after Step 0.7. Verified again after two further absorbs of `origin/main`.
+
+**Method.** Five lenses in parallel, each in its own isolated worktree at the review sha, followed by a verification wave (Evidence Verifier + Compound Synthesis) over 23 grouped claims. 29 raw lens findings plus 5 compound. **The verifier confirmed 23 of 23 as stated**, with two factual corrections to supporting detail. Nothing was fabricated and nothing was dismissed — every finding was real, every one was in this lane's own subject, and every one is fixed here.
+
+### The one finding worth reading on its own
+
+Five lenses found five guards each asserting something *adjacent to* its invariant, and compound synthesis proved it was one property rather than five slips: **every guard this lane put over the generator reads a file as text, because the engine is PowerShell and the suite is Python, so nothing ever ran the emitter.** Measured cost: a restored size branch written `-le 9999` passed the full suite at 297/297, and breaking the stub's pointer literal left 68/68 green. The fix was not five more text checks — it was `CS-18 Q`, which extracts the real generator, runs it under `pwsh` into a temp master, and compares byte for byte. The capability already existed twelve hundred lines above in `U7` and was never reached for.
+
+### Findings
+
+| # | file:line | severity | failure scenario | disposition |
+|---|---|---|---|---|
+| 1 | `.agents/scripts/sync-agents.ps1:613` | important | A quoted master description keeps its opening `"` and loses its closing one to the 132-char cut. `.agents/workflows/cicd-push-e2e.md` — the one door to `main` — was unparseable YAML; PyYAML raised `ScannerError`, and Antigravity builds its menu from that frontmatter. The fix already existed 170 lines below in the Zoo emitter, its comment naming this exact door. **Pre-existing, not introduced** — that brain was already over the old cap, so the door was already a launcher; the lane widened the path from over-cap commands to all of them. | applied @ 461332ae |
+| 2 | `.agents/scripts/tests/test_command_surfaces.py:2840` | important | `CS-18 N` greps for the cap NUMBER while the barrier comment above the emitter claimed it guards the size BRANCH. A behaviourally complete verbatim arm at `-le 9999` restored the defect with the suite at 297/297. | applied @ 461332ae — new `CS-18 N2` asserts the mirror's SHAPE (no `.Length`, no `Copy-Item`), with a two-sided control |
+| 3 | `.agents/scripts/tests/test_command_surfaces.py:2796` | important | `CS-18 L` asserted a machine-global directory equals a per-checkout one, so it could only be green in whichever tree synced last. Measured live: this lane green, the main checkout **39 of 39 desynced**, for a diff `main` does not contain — a lane's gate red for another lane's write. | applied @ 461332ae — binds only in the main checkout, SKIPs with a stated reason elsewhere |
+| 4 | `.agents/scripts/tests/test_command_surfaces.py:2796` | suggestion | The same check claimed "byte mirror" while comparing `read_text(encoding="utf-8-sig")` — universal newlines plus BOM-stripping, so CRLF and BOM differences (the two the emitter's own comment calls fatal, on a two-machine repo) compared equal. | applied @ 461332ae — compares `read_bytes()` |
+| 5 | `.agents/scripts/tests/test_command_surfaces.py:2796` | suggestion | The `.is_file()` guard made a cached file with no door invisible, and `M2` only looks for missing twins. A retired command keeps serving its old body from the menu; SCC-367 retired one this month. | applied @ 461332ae — orphans reported |
+| 6 | `.agents/scripts/tests/test_command_surfaces.py:3147` | important | `CS-18 P`'s P1/P2/P3 all guard the sweep's INPUTS; none proved it still records. Gutting the recorder left 297/297 green. | applied @ 461332ae — `CS-18 P0` teeth control, routed through the same function as the real sweep |
+| 7 | `.agents/scripts/sync-agents.ps1:631` | suggestion | The generator's stub literal is executed by no test. Changing `read` to `open` in the pointer left 297/297 and 68/68 green; the first red would arrive only after a sync had rewritten all 38 doors. | applied @ 461332ae — `CS-18 Q` round-trips the real generator |
+| 8 | `.agents/scripts/tests/test_live_testing_browser_instrument.py:66` | important | The comment claimed the Antigravity door "is asserted below" and no assertion existed. `WORKFLOW` was bound and never read, so deleting the door left the file 26/26 green. Its sibling `test_zoo_notify.py` did add the check; the two halves of one edit diverged. Found independently by four lenses. | applied @ 461332ae — `A1b`, plus `A1`'s label corrected from "Antigravity mirror" to "opencode mirror" |
+| 9 | `docs/_scc_sops_prds/workflows_testing_SOP.md:4171, 4419` | important | The operator-facing manual still stated *"a worktree sync does NOT write the machine-global caches"* and *"`$IsLobby` is FALSE in a worktree"* — the exact claim this lane proved false and corrected only in a test comment. Following it publishes an unmerged lane's doors to the live menus. | applied @ 461332ae — both sites corrected, `-NoGlobals` named |
+| 10 | `_artifacts/.../implementation_plan.md` (Declared Change Set) | important | The `.agents/workflows/` directory bullet matched nothing (`declared_change_set.py` has no prefix handling), producing 39 spurious `undeclared` rows that buried the two real ones — `test_live_testing_browser_instrument.py` and `test_zoo_notify.py`, neither ever declared. | applied @ 461332ae — enumerated; reconciliation now 0/0/0 |
+| 11 | `_artifacts/_memory/e2e-gate-fiction-test-guardrails.md` | nitpick | A seventh memory file shipped where the plan named six. The edit was REQUIRED (it is a genuine `CS-18 P` RED site against `origin/main`), so the code is right and the plan's enumeration was stale. No sibling lane's memory was swept in. | applied @ 461332ae |
+| 12 | `_artifacts/.../implementation_plan.md` | nitpick | Two launcher-skill rows declared an EDIT that can never appear in a diff — the stub embeds only the brain's `description:`, which did not change. | applied @ 461332ae — rows removed with the reason |
+| 13 | `docs/workspace-standard.md:302` + 3 more sites | suggestion | "Twelve of the fourteen are lobby commands" is off by one — the split is 7 `cicd-*` + 6 `smh-*` + `sentry`, so thirteen. The plan's "twelve of the thirteen" was right at 13 doors and the build corrected 13→14 everywhere but "twelve". | applied @ 461332ae |
+| 14 | `docs/workspace-standard.md:302` | suggestion | `smh-review` is misclassified by the ledger's own criterion. **Contested between two lenses; ruled by the verifier:** the Blind Hunter is right on the facts (its old door was 326 bytes invoking an MCP server, naming no repo file, so it ran anywhere and could never have been truncated — the stated justification does not cover it), Edge Case is right that the thin-project STOP is designed and accepted. Both hold; the ledger names one exception where there are two. | applied @ 461332ae — named beside `sentry` |
+| 15 | `.agents/workflows/INDEX.md:14` | suggestion | The rewritten intro says every entry is a thin launcher; three lines later unchanged text still called the table "entries worth reading as process maps". Two converted rows (`smh-new-project`, `sentry-security-team-avch`) were annotated as if they still carried bodies. | applied @ 461332ae |
+| 16 | `_artifacts/.../sweep.json` M1 | suggestion | M1's kill was MIS-ATTRIBUTED: its mutation text contains `11500`, which `CAP_RE` matches, so `CS-18 N` died on the number and never on the branch. The sweep reported coverage the guard did not have. | applied @ 461332ae — re-aimed to `9999`/`CS-18 N2`, with `M1b` keeping the number half |
+| 17 | `_artifacts/.../sweep.json` M6 | suggestion | M6's only killer was `CS-18 L`, which sits inside a cache-absent SKIP — so on CI, on the PC, and now in any worktree it had no killer and would return a survivor rather than a result. | applied @ 461332ae — re-aimed to `CS-18 Q` |
+| 18 | `.agents/scripts/sync-agents.ps1:595` | suggestion | No empty-description fallback, which its sibling `New-LauncherSkillStub` has twelve lines away. Latent, not live — all 72 commands carry `description:` on frontmatter line 1. | applied @ 461332ae |
+| 19 | `.agents/scripts/tests/test_command_surfaces.py:2811` | suggestion | The block header said *"A/B and L above ask 'is any door over the cap?'"* — but this same commit deleted B, rewrote L, and A only asserts non-emptiness. It also carried "13 of 39" where the same file says "14 of 40" twice. | applied @ 461332ae |
+| 20 | `docs/workspace-standard.md:107` | suggestion | Layer 2 tells authors to reproduce the up-route verbatim, and the literal `../../router.md` had been replaced by prose to satisfy `check_links`, leaving an instruction with no path in it. | applied @ 461332ae — describes the relative form, matching Layer 1; a fenced literal was tried and correctly rejected by the doc-graph gate |
+| 21 | `.agents/scripts/tests/test_command_surfaces.py` (deleted `CS-18 B`) | suggestion | Deleting B was right for generated doors (it was green through the defect's whole life — largest door was 10,352 bytes) but it left `smh-adviser-board.md` with no size assertion at all: hand-authored, published to the machine cache, exempt from both `CS-18 O` and `CS-03`. | applied @ 461332ae — `CS-18 O3`, scoped to exactly what O cannot speak for |
+| 22 | `.agents/commands/.../tickets/SCC-370.md` acceptance E | suggestion | Acceptance E promised a "repo-wide sweep"; `CS-18 P` sweeps 662 of 2,998 tracked `.md`. The narrowing is documented in the test's own scope block and a full-tree verification sweep found no live site missed, so the gap was between the ticket's wording and the code. | applied @ 8c8232eb — acceptance text now describes what shipped |
+| 23 | `.agents/scripts/tests/test_command_surfaces.py` (`CS-18 O` message) | nitpick | O's remedy line said *"run /smh-sync-agents"* — the diagnostic the comment above it says was removed for sending readers to re-run the sync instead of to the cause. Since SCC-370 a broken emitter is the likelier cause, and re-syncing republishes it. | applied @ 461332ae — routes the reader to `CS-18 Q` first |
+
+**Found while fixing, and worth the record:** writing `CS-18 Q` caught its own vacuity. Extracting the three generator functions left `$AllPlatforms` unset, so 13 commands returned no platforms, the harness emitted 25 doors instead of 38, compared those 25, and reported agreement. `CS-18 Q4` is the control that makes that impossible.
+
+### Gates
+
+full suite — `python3 .agents/scripts/tests/run_all.py` → **70/70 files passed**, exit 0
+toolkit lint — `python3 .agents/scripts/workflow_lint.py --toolkit-only` → **0 error(s), 0 warning(s), 8 info**, exit 0
+link + anchor — `python3 .agents/scripts/check_links.py --base origin/main` → **clean**, exit 0
+maps — `python3 .agents/scripts/check_maps.py --depth3-only --strict` → exit 0
+SOP currency — the SOP and its changelog are staged in the same commit as the `.ps1`/`.py` usage surfaces
+door parity — no command added, renamed or deleted; `CS-18 O`/`CS-03` green over all 40 doors
+assertion evidence — `CS-18 N2`, `CS-18 Q`/`Q2`/`Q3`/`Q4`, `CS-18 P0`, `CS-18 O3` and `A1b` all seen RED before green; **mutation sweep 11/11 killed by their declared case**, restore verified byte-clean against the pre-sweep sha
+receipt — `gates/suite.json`: result `pass`, exit_code 0, dirty_tree false, sha `8c8232eb`, 85.8s
+
+### Acceptance matrix
+
+| Item | Where the diff satisfies it | The assertion that proves it |
+|---|---|---|
+| A — no size conditional | `sync-agents.ps1` unconditional emit | `CS-18 N` (no cap number) **and `CS-18 N2` (no size branch)** — N alone did not prove this |
+| B — every door a current launcher | 38 regenerated launchers | `CS-18 O` (0 of 40 not launchers) + **`CS-18 Q`** (byte-identical to a fresh emit) |
+| C — verbatim mirror illegal on workflows | `door_verdict` surface-gated | the SCC-370 control, killed by `M2` |
+| D — dead code removed both sides | `Set-AgDescriptionLine`, `with_ag_description` gone | `CS-18 N`; `Get-AgDescription` still live and pinned by `U7` |
+| E — the number at ONE operative site | brain + its opencode mirror allow-listed | `CS-18 P` (0 of 662), `P3` (the site still states it), **`P0` (the sweep still records)** |
+| F — memory states the unconditional invariant | 7 memory files | `CS-18 P` finds 0 sites under `_artifacts/_memory/` |
+| G — full floor green + sync lands | all four gates exit 0 at `8c8232eb` | the receipt, stamped on a clean tree |
+
+**Beyond the acceptance list:** the review's own fixes (findings 1–23). All are inside this lane's subject — the emitter it rewrote and the guards it wrote — so none is scope creep and none was deferred.
+
+### Step 0.7 — re-derivation
+
+1. **Did anything this diff REFERENCES move, get renamed, or get deleted on `main`?** Re-derived three times, because `main` moved twice mid-review. First pass: nothing had landed since the branch was cut. Then SCC-369 landed (30 files), then the August artifact reorg landed, relocating **689 files** into `_artifacts/_main/2026/08/`. Checked mechanically: of the 69 files in this diff, exactly **three** references to a relocated path exist, and all three are inside `docs/doc-graph.json` — a generated cache, rebuilt as part of the absorb. **No hand-authored file in this lane points at a moved path**, and `check_links.py --base origin/main` is clean against the new `main`. Zero deletions landed.
+2. **True overlap, and does the merge conflict?** Absorb 1 (SCC-369): 6 files overlapped, 3 conflicted — `_artifacts/_main/INDEX.md` and both `doc-graph` artifacts. Absorb 2 (artifact reorg): 2 conflicted, both `doc-graph`. **Every conflict was a generated file and every one was resolved by regenerating**, never hand-merged — the INDEX kept both session rows. Post-merge `git merge-tree` against `origin/main` is clean.
+3. **Which sibling lanes are still live, and does one need to land first?** None remain. `chore/SCC-369-shape-nag` was the only live sibling and it **landed first**, which is the order the plan wanted; `chore/SCC-186-standing-push` and the reorg lane also landed. **The plan was wrong about why the order mattered:** it recorded SCC-369 as adding a new commit gate this lane would have to clear. It does not — `shape-guard.py` is a Claude PostToolUse hook that nags on Bash command shape, nothing landed under `.githooks/`, and no file in this diff could have been rejected by it. The real ordering consequence was only which lane regenerates the shared generated files.
+
+### Clean-Code Gate
+
+Diff-scoped, against `docs/_scc_sops_prds/workflows_testing_SOP.md` and `.agents/rules/code-standards.md`. Machine floor imported from the Gates block above rather than re-run (SCC-146); no re-implementation, no new single-caller abstraction, no bare `except`, no commented-out code, no unowned TODO. Every new check carries its `⛔`/`⭐` provenance comment naming the ticket and the measured failure it closes, which is the comment contract's *why* requirement. One pre-existing `unused-variable` hint at `test_command_surfaces.py:140` is untouched legacy in a file this lane edited elsewhere — noted, not gated on, per the diff-scope rule.
+
+**Changes applied:** 23 findings, all fixed in this lane before this verdict. Zero deferred, zero dismissed, zero tickets minted.
+
+**Why CONCERNS and not PASS.** Every gate is green and every finding is closed, but the engine's severity floor is CONCERNS and a caller may not report below its floor. That is the right answer here on its merits too: this lane shipped a door with invalid frontmatter and two guards that could not fail for the invariant they were named for, and one of them was the guard the source file pointed at as the reason the defect could not return. The fixes are proven by mutants that die to the right case, but the review found real defects and the record should say so.
 
 ## Your Actions
 
-- [ ] **Restart Antigravity** to pick up the refreshed global menu. The caches on this Mac are already
-      written; a running IDE reads its command list at startup.
-- [ ] **Run `/smh-sync-agents` on the PC** after this lands. Machine-global caches are per-machine and
-      never travel with a clone.
+- [ ] **Decide what the machine-global Antigravity cache should hold right now.** This lane's sync
+      published *its own* doors to `~/.gemini/antigravity/global_workflows`, so your live menu is
+      currently serving unmerged work — 39 of 39 files differ from what `main` has. Two options, and
+      the second is what I'd pick: leave it (the doors are correct and this lands soon), or run
+      `/smh-sync-agents` **from the main checkout** to put the menu back to what has actually landed
+      until this merges. `CS-18 L` now binds only in the main checkout, so until one of those
+      happens a suite run there reports the divergence.
+- [ ] **Run `/smh-sync-agents` on the PC** after this lands. Machine-global caches are per-machine
+      and never travel with a clone.
+
+**Not yours — mine, and already done:** the review's 23 findings are all fixed in this lane, the
+declared change set reconciles 0/0/0, and the mutation table is re-aimed and re-run at 11/11. The
+merge itself lands via this branch's PR.
