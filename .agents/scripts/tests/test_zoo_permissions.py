@@ -519,6 +519,49 @@ def test_apply_refuses_while_vscode_runs():
         assert db.read_bytes() == original, "refusal must leave the store untouched"
 
 
+_ASCII_SCANNED = ("zoo_permissions_apply.py", "zoo_notify.py", "zoo_notify_install.py")
+
+
+def _nonascii_print_sites(text: str) -> list[tuple[int, str]]:
+    """Lines that PRINT a character Windows' cp1252 stdout cannot encode.
+
+    Only `print(`/stderr lines — a non-ASCII comment or docstring is read, never encoded, so
+    scanning the whole file would flag the very comments that explain this rule."""
+    out = []
+    for i, line in enumerate(text.splitlines(), 1):
+        if "print(" in line or "stderr" in line:
+            bad = sorted({c for c in line if ord(c) > 127})
+            if bad:
+                out.append((i, "".join("U+%04X" % ord(c) for c in bad)))
+    return out
+
+
+def test_operator_facing_prints_are_ascii_only():
+    """SCC-338, measured on the Windows PC 2026-09-01: `zoo_permissions_apply.py --apply` wrote the
+    lists, committed, and THEN raised UnicodeEncodeError printing its success line, because that
+    line carried U+2192 and the PC's stdout is cp1252. The operator sees a traceback after a write
+    that actually succeeded, so the only safe reading is "it failed" - which is why SCC-351's PC
+    row sat open. The Mac cannot see this: its stdout is UTF-8. Same family as SCC-335, which
+    fixed the READ half of the same pair."""
+    offenders = {}
+    for name in _ASCII_SCANNED:
+        script = ROOT / ".agents" / "scripts" / name
+        sites = _nonascii_print_sites(script.read_text(encoding="utf-8"))
+        if sites:
+            offenders[name] = sites
+    assert not offenders, (
+        "these printed lines crash on a cp1252 console - use ASCII in operator-facing output: "
+        + "; ".join(f"{n} {s}" for n, s in offenders.items()))
+
+
+def test_nonascii_print_scan_rejects_and_allows():
+    """CONTROL - a scan that cannot fail certifies nothing (tests-must-gate-for-real Rule 5)."""
+    dirty = 'print("applied → ok")\n# a comment with → is fine, it is never encoded\n'
+    clean = 'print("applied -> ok")\n# a comment with → is fine, it is never encoded\n'
+    assert _nonascii_print_sites(dirty) == [(1, "U+2192")], "scan missed a real offender"
+    assert _nonascii_print_sites(clean) == [], "scan flagged a comment it must ignore"
+
+
 if __name__ == "__main__":
     # run_all.py executes test files bare — without this block the whole gate is a silent no-op
     # (the vacuous green the close-out review caught). Mirrors the house per-file tally shape.

@@ -79,6 +79,23 @@ is the next thing to do and it is his call to trigger.
 
 ## Your Actions
 
-- [ ] **DECISION — run `/smh-llm-approvals` once, live.** It will list what you had to approve and
-      stop for your word before editing anything. That run is the acceptance test.
-- [ ] The merge itself — lands via this branch's PR.
+- [x] **DECISION — run `/smh-llm-approvals` once, live. DONE 2026-09-01** — the acceptance test
+      passed. Operator, verbatim: **"This check off the last of my task the / command works"**.
+      The run read 18 Claude sessions and 5 Zoo threads, listed what had been approved, and stopped
+      for his word before touching a file, exactly as designed. He answered "all of them", then
+      narrowed it mid-run — verbatim: "only for claude though I a fixed zoo" — so Zoo's lists were
+      left untouched and five rows were added to `.claude/settings.json` at `af84a549`. Three
+      commands were deliberately NOT added despite "all of them", each named in the commit body:
+      `git restore .` (discards the working tree), `git -C <path> merge` (the first mutation through
+      `-C`, which is what `nothing-guards-the-merge-target` exists to stop), and `python - <<'PY'`
+      (arbitrary code from a heredoc — no prefix narrower than "run any python").
+- [x] The merge itself — lands via this branch's PR.
+
+**What the live run exposed about the door itself, and its fix.** Step 1's Claude scan pairs only
+the operator-refusal phrase (`doesn't want to proceed with this tool use`) and therefore misses
+auto-mode classifier denials entirely — **9 refusals versus 35 classifier denials in the same 20
+sessions**, worth 8 additional unique commands. Three of the five rows actually added came from that
+missed set, so the gap is not cosmetic: the door under-reports its own subject by roughly four to
+one. The fix is one more phrase in the Step 1 pairing. The scan was widened by hand for this run and
+the gap recorded in the sweep's walkthrough
+([SCC-338](../../../2026-09-01_SCC-338-pc-pickup/walkthrough.md)).

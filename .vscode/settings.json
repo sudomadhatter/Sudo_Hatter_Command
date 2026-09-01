@@ -47,6 +47,18 @@
     // recurring and NOT already covered by a prefix above. `find ` was deliberately NOT promoted:
     // `find -delete` and `find -exec rm` are destructive and no deny row sees them.
     "npx vitest ", "npm run ", "test -", "sleep ", "ps aux", "ln -s ",
+    // SCC-338 — the PC half of the same exercise. Every read-only verb above is POSIX-shaped
+    // (ls, cat, grep, head), so on Windows the agent's equivalents had NO row and each one
+    // stopped for approval; all eight below were learned into that machine's decision store
+    // instead, where no test can see them and the next `--apply` wipes them. Promoted here so
+    // the fence reads the same on both machines. All eight only READ — a pipe into a
+    // destructive verb splits into its own piece and is judged separately, so
+    // `Get-ChildItem | Remove-Item` still lands on the deny row. Deliberately NOT promoted
+    // from that store: bare `del` (measured auto-approving `del AGENTS.md`, outranking the
+    // delete denies) and bare `git`/`git add`/`git commit`/`git push`, which are widenings
+    // already covered by the scoped rows above.
+    "Get-ChildItem", "Select-Object", "Select-String", "Test-Path", "Write-Output",
+    "findstr", "dir", "more",
     // The two-machine twin — venv scripts live in bin/ on the Mac and Scripts/ on the PC.
     "backend/.venv/bin/", "backend/.venv/Scripts/",
     "REPO=", "BRANCH=",

@@ -303,7 +303,15 @@ def test_the_registered_command_actually_produces_a_nag():
     payload = json.dumps({"hook_event_name": "PostToolUse", "tool_name": "Bash",
                           "tool_input": {"command": "git -C /some/repo status"}})
     env = {**os.environ, "CLAUDE_PROJECT_DIR": str(ROOT)}
-    p = subprocess.run(cmd, shell=True, input=payload, text=True, capture_output=True,
+    # ⛔ `sh -c`, never `shell=True`. The registered string is POSIX — it expands
+    # `$CLAUDE_PROJECT_DIR` — and `shell=True` on Windows runs **cmd.exe**, which does not expand
+    # `$VAR` at all. cmd.exe therefore handed `sh` the literal path `$CLAUDE_PROJECT_DIR/.agents/…`
+    # and the case died with rc=127 "No such file or directory", on a machine where the hook
+    # itself works fine — it is a POSIX shell that Claude Code actually runs these with. So the
+    # test was emulating the wrong shell, and this file's one end-to-end case was red on the PC
+    # for a reason that had nothing to do with the wiring it exists to prove.
+    # [[mac-authored-code-hides-windows-bugs]] (SCC-338)
+    p = subprocess.run(["sh", "-c", cmd], input=payload, text=True, capture_output=True,
                        cwd=str(ROOT), env=env, timeout=30)
     assert p.returncode == 0, f"the registered command failed: rc={p.returncode} {p.stderr!r}"
     assert RULE_PATH in p.stdout, (

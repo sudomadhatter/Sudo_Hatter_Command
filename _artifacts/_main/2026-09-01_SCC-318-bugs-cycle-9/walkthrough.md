@@ -155,7 +155,24 @@ branch's history as evidence that the old equality check could never hold for a 
 
 - [x] **The merge itself** — lands via this branch's PR.
 
-- [ ] **Verify the SCC-335 fix on the Windows PC.** Full copy-paste steps are in
+- [x] **Verify the SCC-335 fix on the Windows PC — DONE 2026-09-01**, in the SCC-338 pickup sweep
+      ([walkthrough](../2026-09-01_SCC-338-pc-pickup/walkthrough.md)). All three commands ran on the
+      PC, and the three output lines are below verbatim:
+
+      STEP 1  cp1252
+      STEP 2  U+26D4 0 U+2B50 0 U+FFFD 1
+      STEP 3  U+26D4 1 U+2B50 1 U+FFFD 0
+
+      Read in order: step 1 confirms this machine's Python really does default to **cp1252**, so it
+      IS the box that produced the original corruption and the test is not vacuous. Step 2 is the
+      negative control on the exact old line — the two real codepoints are **gone** and a U+FFFD
+      replacement character stands where one of them was, which is the bug reproducing live rather
+      than being argued about. Step 3 runs the same read through the shipped `jira_feed.acli()`
+      seam and both codepoints come back **intact with zero replacements**. That closes acceptance
+      A on the machine that caused it. Counts only, never rendered characters, per the warning
+      below.
+
+      Original instructions, kept as the record: full copy-paste steps are in
       [SCC-335](https://sudo-command.atlassian.net/browse/SCC-335)'s description under
       **PC VERIFICATION** - three read-only commands, nothing is written to the board.
       Step 1 prints the machine's Python encoding, step 2 is the negative control on the old

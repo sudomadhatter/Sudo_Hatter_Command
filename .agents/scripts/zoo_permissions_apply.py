@@ -89,10 +89,10 @@ def report(db: Path, memento: dict, allow: list[str], deny: list[str]) -> None:
     for key in ("autoApprovalEnabled", "alwaysAllowExecute", "destructiveCommandGuardEnabled"):
         print(f"  {key}: {memento.get(key)}")
     if memento.get("destructiveCommandGuardEnabled"):
-        print("  ⚠️ destructiveCommandGuardEnabled=True BYPASSES the lists (external dcg binary) — "
-              "turn it OFF in Zoo settings; see the guide §5.")
+        print("  WARNING: destructiveCommandGuardEnabled=True BYPASSES the lists (external dcg "
+              "binary) - turn it OFF in Zoo settings; see the guide section 5.")
     if not (memento.get("autoApprovalEnabled") and memento.get("alwaysAllowExecute")):
-        print("  ⚠️ master toggles off — no list is consulted until autoApprovalEnabled AND "
+        print("  WARNING: master toggles off - no list is consulted until autoApprovalEnabled AND "
               "alwaysAllowExecute are on (Zoo Auto-Approve panel).")
 
 
@@ -109,7 +109,13 @@ def apply(db: Path, memento: dict, allow: list[str], deny: list[str]) -> None:
         con.commit()
     finally:
         con.close()
-    print(f"  applied → {len(allow)} allow / {len(deny)} deny  (backup: {backup.name})")
+    # ⛔ ASCII ONLY, and this line is WHY (SCC-338, measured on the Windows PC 2026-09-01).
+    # It used to carry U+2192. Windows' default stdout encoding is cp1252, which cannot encode it,
+    # so `print` raised UnicodeEncodeError HERE — after con.commit() above. The lists were written
+    # and the operator saw a traceback, so the only sane reading was "it failed": the PC row on
+    # SCC-351 sat open for days over a decorative arrow. Same defect family as SCC-335, which fixed
+    # the READ side of this pair; keep every operator-facing string in this file 7-bit.
+    print(f"  applied -> {len(allow)} allow / {len(deny)} deny  (backup: {backup.name})")
 
 
 def main() -> int:
@@ -125,11 +131,11 @@ def main() -> int:
     stores = [(db, load_memento(db)) for db in candidate_dbs()]
     stores = [(db, m) for db, m in stores if m is not None]
     if not stores:
-        print("no state.vscdb carries the Zoo key — is Zoo Code installed and activated once?")
+        print("no state.vscdb carries the Zoo key - is Zoo Code installed and activated once?")
         return 1
 
     if args.apply and vscode_running():
-        print("REFUSED: VS Code is running — it flushes its own globalState on exit and would "
+        print("REFUSED: VS Code is running - it flushes its own globalState on exit and would "
               "overwrite this write. Quit VS Code fully (Cmd+Q / close all windows), rerun, reopen.")
         return 2
 
