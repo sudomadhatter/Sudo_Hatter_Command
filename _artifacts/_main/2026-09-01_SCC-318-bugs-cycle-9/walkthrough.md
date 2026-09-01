@@ -39,7 +39,33 @@ Fixed with no new code, because `jira_ticket.py` already had both halves: Step 3
 ticked outline rides the PR; Step 4 calls `describe`, which renders the landed outline to the board
 and touches no file.
 
-### SCC-359 — the approval-sha check that can never pass ⏳ in progress
+### SCC-359 — the approval-sha check that can never pass ✅
+
+`/smh-quick-dev` Step 1.5 condition 3 demanded `git log -1 --format=%h -- <plan>` **equal** the sha
+on the `— recorded at <sha>` line. `/smh-plan-task` Step 5 requires that line to carry the sha of
+the commit that recorded it — unknowable until that commit exists — so the planner writes
+`<pending>`, commits, and stamps the sha in a **second** commit. The plan's last touch is therefore
+always the stamp, never the recorded sha, and the condition could never pass for a lane that
+followed the convention. An agent reading Step 1.5 literally stops a lane the operator has already
+approved.
+
+Fixed on the **reader**, because the other remedy is circular: any scheme that records a sha *into*
+the plan file changes the plan file, so "last touch equals recorded" cannot hold whichever sha is
+chosen. Step 1.5 now falls through to `git diff <recorded>..<last touch> -- <plan>` and passes a
+**stamp-only successor** — a diff touching the `— recorded at` line and nothing else. The no-sha
+tooth is untouched: a missing operand is still a re-armed gate.
+
+Applied to all three places the contract lives, so writer, reader and law cannot drift apart:
+`smh-plan-task.md` Step 5 (what the second commit may contain), `smh-quick-dev.md` Step 1.5 (what
+it will accept), `000-PLAN-FIRST-GATE.md` §3 (the law both cite).
+
+**Twin check, answered so nobody repeats the search:** `/cicd-quick-dev` carries **no** approval-sha
+box. Grepped `.agents/commands/` for `recorded at`, `git log -1 --format=%h` and "unchanged since" —
+the contract appears in exactly three files, all named above. There is no twin to port to.
+
+**A third measurement, produced by this lane itself.** SCC-359 cited SCC-347 and SCC-358. Recording
+this lane's own approval reproduced it a third time: `fbd4ac20` recorded, `6126fe6d` stamped, and
+the entire delta is one line — `<pending>` → the sha. It is in this branch's history as evidence.
 
 ## Constraints and decisions, recorded as they were met
 

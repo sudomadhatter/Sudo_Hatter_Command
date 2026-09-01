@@ -81,9 +81,16 @@ is only an approval at all when all four hold:
    never in a batch.
 3. It covers **those plans as they stood**, and that is **mechanically checkable** because the
    approval line ends `— recorded at <sha>`. `/smh-quick-dev` Step 1.5 compares
-   `git log -1 --format=%h -- <the plan>` against that sha; equal means untouched, anything else
-   means **that lane's gate re-arms** and it stops for its own approval. A batch cannot approve
-   text the operator never saw.
+   `git log -1 --format=%h -- <the plan>` against that sha; equal means untouched. A batch cannot
+   approve text the operator never saw.
+   ⭐ **The one legal inequality is the `stamp-only successor` (SCC-359).** Recording the sha of
+   the commit that records the approval is self-referential, so the planner writes `<pending>`,
+   commits, and stamps the sha in a second commit — which means the plan's last touch is *always*
+   the stamp, never the recorded sha. So the reader falls through to
+   `git diff <recorded>..<last touch> -- <the plan>`: if that touches the `— recorded at` line and
+   **nothing else**, it passes. Anything else means **that lane's gate re-arms** and it stops for
+   its own approval. Bare equality was the original wording and it could never hold for a
+   conforming lane — measured on SCC-347, SCC-358 and SCC-318.
    ⛔ **No sha on the line = no approval.** The clause originally said "unchanged since the commit
    that recorded it" while nothing anywhere recorded which commit that was — so the check had one
    operand and an agent wanting to proceed would supply the other. A missing operand is a re-armed

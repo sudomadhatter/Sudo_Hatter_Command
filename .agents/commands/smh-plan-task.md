@@ -278,7 +278,18 @@ were missing (SCC-155 review #17/#18):
 - **The sha, or the downstream check has nothing to compare against.** `/smh-quick-dev` Step 1.5
   says the plan must be unchanged *since the commit that recorded the approval* — with only a date
   and a quote on the page, an agent has one computed value and no second operand, and an agent that
-  wants to proceed will call it unchanged. Write the sha and the comparison becomes real.
+  wants to proceed will call it unchanged. Write the sha and the comparison becomes real. **No sha
+  on the line is no approval**: the reader re-arms its gate and the lane stops, so an unstamped
+  `<pending>` strands the batch exactly as an unpushed plan does.
+- ⭐ **It takes TWO commits, and the second one is the `stamp-only successor` (SCC-359).** The sha
+  you must write is the sha of the commit that records the approval, which cannot be known until
+  that commit exists. So: write the line with `<pending>`, commit, then replace `<pending>` with the
+  resulting sha and commit **that**. ⛔ **The second commit must change the approval line and
+  nothing else** — that is precisely what `/smh-quick-dev` Step 1.5 allows through, by diffing the
+  recorded sha against the plan's last touch. Fold any other edit into it and you have changed the
+  plan after approval, which re-arms that lane's gate and stops it. (Before this was written down,
+  Step 1.5 demanded bare equality with the recorded sha and the stamp commit made that impossible
+  for every conforming lane — measured on SCC-347, SCC-358 and SCC-318.)
 - **Each lane's own tree.** The plans were committed back in Step 3 in **N different worktrees**,
   on N different branches. There is no single tree where "commit that with the plans" means
   anything; naming the wrong one silently drops the approval from every other lane.

@@ -269,6 +269,18 @@ gate only means something if it's one specific word.
 > actually bypassed: the agent wrote the word, you clicked it, and it read its own word back as your
 > consent.
 
+> ⓘ **A batch approval is pinned to a sha, and it takes the planner two commits to write (SCC-359).**
+> When `/smh-plan-task` records your words it also stamps the commit they landed in, as
+> `— recorded at <sha>`, so a later lane can prove the plan is the one you actually read. That sha
+> cannot be known until the commit exists, so the planner writes `<pending>`, commits, then stamps
+> the real sha in a **second** commit — which means the plan's last touch is always that stamp, not
+> the recorded sha. `/smh-quick-dev` used to demand the two be *equal*, a condition no conforming
+> lane could ever satisfy, and it stopped lanes you had already approved (seen on SCC-347, SCC-358
+> and SCC-318). It now falls through to the diff: **a commit that changes the approval line and
+> nothing else passes; anything else re-arms that lane's gate.** ⛔ **The tooth is unchanged** — a
+> line with no sha is still no approval, and the lane still stops. **Nothing changes for you**: you
+> type `approved` exactly as before.
+
 > ⓘ **One scripted stop uses a different word, and you should know that before it surprises you.**
 > ②'s Step 2 posts the plan link and waits — but the reply it is written to accept is `continue`
 > (or `changed`, or a pasted audit path), and it treats that as the go once you have read the plan.

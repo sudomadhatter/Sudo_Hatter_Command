@@ -3955,6 +3955,74 @@ def main() -> int:
                 len(step4) > 200, f"md_section returned {len(step4)} chars for Step 4")
 
 
+    if c.block("CS-24 · SCC-359 · the approval-sha WRITER and READER agree about the stamp "
+               "commit"):
+        # ⛔ THE DEFECT: A GATE CONDITION THAT CAN NEVER PASS. `/smh-quick-dev` Step 1.5
+        # condition 3 says the plan must be unchanged since the approval, checked as
+        # `git log -1 --format=%h -- <plan>` MUST EQUAL the sha on the `— recorded at <sha>`
+        # line. But `/smh-plan-task` Step 5 requires that line to carry the sha of the commit
+        # that RECORDED it - which is not knowable until that commit exists. So the planner
+        # writes `<pending>`, commits, and stamps the real sha in a SECOND commit. The plan's
+        # last-touch sha is therefore ALWAYS the stamp commit and never the recorded one.
+        #
+        # Measured three times, and every time the entire delta between the two shas is one
+        # line, `<pending>` -> the sha: SCC-347 (acb02585 -> cf198990), SCC-358 (4fdedf2f ->
+        # 13ffe716), and SCC-318's own lane (fbd4ac20 -> 6126fe6d). The condition's INTENT
+        # holds while its literal check fails, so an agent reading Step 1.5 literally stops a
+        # lane the operator already approved.
+        #
+        # ⭐ WHY THE FIX IS ON THE READER. The other remedy - stop requiring a self-referential
+        # sha - is circular: any scheme that records a sha INTO the plan file changes the plan
+        # file, so "last touch equals recorded" cannot hold whichever sha is chosen.
+        #
+        # ⭐ WHY THIS IS AN IMPLICATION AND NOT THREE PRESENCE GREPS. Asserting that three
+        # files contain a phrase I am about to add to them is the vacuous shape
+        # `prose-pinning-guards-are-vacuous` names. What has to hold is a RELATIONSHIP: as
+        # long as the writer mandates a stamp commit, the reader and the law must both admit
+        # it. Delete the mandate and these rows go quiet on their own; keep it and no amount
+        # of rewording gets past them.
+        cmds = ROOT / ".agents" / "commands"
+        quick = (cmds / "smh-quick-dev.md").read_text(encoding="utf-8")
+        plan = (cmds / "smh-plan-task.md").read_text(encoding="utf-8")
+        law = (ROOT / ".agents" / "rules" / "000-PLAN-FIRST-GATE.md").read_text(encoding="utf-8")
+
+        step15 = md_section(quick, r"##\s+Step 1\.5\b")
+        step5 = md_section(plan, r"##\s+Step 5\b")
+        c.check("CS-24 A0 anti-vacuity: all three regions were actually located",
+                len(step15) > 400 and len(step5) > 400 and len(law) > 400,
+                f"step15={len(step15)} step5={len(step5)} law={len(law)}")
+
+        MARK = "stamp-only successor"
+        # The writer's mandate, in its own words: the sha of the commit that recorded it.
+        writer_mandates_stamp = bool(re.search(
+            r"record the resulting sha|sha of the commit that recorded", step5, re.I))
+        c.check("CS-24 A0b anti-vacuity: the writer really does still mandate the stamp",
+                writer_mandates_stamp,
+                "Step 5 no longer mandates a self-referential sha - if that was deliberate, "
+                "these rows are moot and should be deleted, not reworded")
+
+        c.check("CS-24 A the READER admits the stamp commit it is handed",
+                not writer_mandates_stamp or MARK in step15,
+                f"Step 1.5 demands equality with no exemption, while Step 5 guarantees "
+                f"inequality. `{MARK}` not found in Step 1.5.")
+        c.check("CS-24 B the WRITER says what that second commit may contain",
+                not writer_mandates_stamp or MARK in step5,
+                f"`{MARK}` not found in Step 5 - the planner is told to make a commit the "
+                f"reader is never told how to judge")
+        c.check("CS-24 C the LAW carries the same exemption, so all three agree",
+                not writer_mandates_stamp or MARK in law,
+                f"`{MARK}` not found in 000-PLAN-FIRST-GATE.md - the rule the two doors cite "
+                f"still states the check the doors no longer run")
+
+        # D · THE TOOTH THAT MUST SURVIVE. This ticket loosens a condition, and the way to
+        # get that wrong is to loosen the OTHER half with it: a missing sha is still a
+        # re-armed gate, never a pass (SCC-155). All three say so today; all three must keep
+        # saying so after.
+        for label, body in (("Step 1.5", step15), ("Step 5", step5), ("the law", law)):
+            c.check(f"CS-24 D {label} still refuses a plan with NO sha on the line",
+                    bool(re.search(r"no sha|missing operand", body, re.I)),
+                    f"{label} lost the no-sha tooth while the equality clause was relaxed")
+
     return c.finish()
 
 
