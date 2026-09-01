@@ -63,6 +63,7 @@ into `/smh-sync-agents` rather than dying with the alias.
 - EDIT `.agents/scripts/sync-agents.ps1` — the line-60 comment stops naming a command that is gone → A
 - EDIT `.agents/scripts/tests/test_command_surfaces.py` — new CS-22; stale comment and RULE_SITES entry removed → A
 - EDIT `.agents/scripts/tests/test_twin_parity.py` — NOT_PAIRED row removed; keys-exist assertion added → C
+- EDIT `.agents/scripts/tests/test_sops_prds_folder.py` — added during REVIEW: the SOP edit tripped its T4 (`every command reference resolves`), so the retired name joins `DISCUSSED_AS_RETIRED` with its reason → E
 - EDIT `.agents/commands/INDEX.md` — three references to the retired command removed → A
 - EDIT `.agents/workflows/INDEX.md` — the alias's router row removed → A
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — §3 menu row removed → E

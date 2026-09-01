@@ -95,6 +95,20 @@ lenses_run:
 lenses_counted: 5/5
 lenses_na: none
 
+### Step 0.7 — blast radius re-derived against CURRENT `main`
+
+- **What moved:** `origin/main` advanced `1adaffae → 645ea5e7` while this lane was built — three
+  files, all `_artifacts/_memory/*` (`MEMORY.md`, `cheap-models-rationalize-past-prose.md`,
+  `nag-the-agent-dont-rewrite-the-rule.md`), landed by the SCC-186 standing-push lane.
+- **What it changes here: nothing.** The true overlap with this lane's 25 files is **empty**
+  (`grep -Fxf` returned no rows), this diff neither reads nor names any memory file, and
+  `git merge-tree --write-tree` produced a clean tree with no conflict messages. `git worktree list`
+  shows no sibling lane live, so there is no landing-order dependency to order.
+- **What was re-measured after absorbing it:** `main` was merged in at `b7878074` and the **whole**
+  floor re-run on the merged tree, not the pre-merge one — suite 68/68 exit 0, `check_links` clean,
+  `workflow_lint` 0/0, `sop_currency` 0, plus `CS-22` and `A0c` re-run by name. The receipt behind
+  the verdict is stamped at `60ac25af`, later than the absorb, on a clean tree.
+
 ### The tail, in one line (operator ruling 2026-08-17)
 
 **37 raw findings came back across five lenses. They dedupe to 23 distinct anchors: 18 were assessed
@@ -102,6 +116,8 @@ real and fixed in this lane, 1 became a required close-out step, 1 was a misread
 1 is raised as its own ticket, and 2 were dismissed** — one measured false, one provably wrong.
 (An earlier draft of this line said "31 / 14"; that was an eyeball count made before the last two
 lenses landed, and it undercounted. The numbers here are counted from the five reports.)
+
+drift: undeclared=0 · unimplemented=0 · incomplete=0 — reconciled, not clean on the first pass: `test_sops_prds_folder.py` arrived UNDECLARED during review (the SOP edit tripped its T4, so the retired name needed a `DISCUSSED_AS_RETIRED` entry) and was added to the Declared Change Set rather than left to surface at the gate. Three artifact paths — `task.yaml`, `gates/suite.json`, `preflight-receipt.json` — are close-out products the ceremony writes after the plan, and the parser exempts them.
 
 dispositions: per-lens: blind-hunter=5/3/0 · edge-case-hunter=6/0/0 · literal-correctness=8/0/0 · acceptance-auditor=5/1/0 · test-adequacy=8/1/0
 
