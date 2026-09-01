@@ -14,6 +14,12 @@ The entries below were harvested from the SOP's own body during the 2026-08-21 d
 of `—` means the page recorded the ticket but not the day; the ticket's session folder under
 `_artifacts/_main/` or the Jira board has the full record.
 
+## 2026-09
+
+| Date | Ticket | What changed for the operator |
+| --- | --- | --- |
+| 2026-09-01 | SCC-369 | The command-shape guidance is now the same everywhere. `AGENTS.md` §6 and five places in this SOP still told agents to use the `-C` spelling — the pre-SCC-351 advice — while the rule they point at forbids it and Zoo denies it outright, so an agent obeying the front door manufactured its own approval prompts. Every one now says: pin the tree with `cd <abs> && …` in one line, no `; echo "EXIT=$?"` tails, never pipe a gate. The root entry files are covered by the suite from now on, so the two cannot drift apart again. |
+
 ## 2026-08
 
 | Date | Ticket | What changed for the operator |

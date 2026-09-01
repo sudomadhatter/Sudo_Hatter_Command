@@ -321,24 +321,70 @@ def test_apply_script_pins():
     assert "UPDATE ItemTable" in src and "scc-backup" in src
 
 
-def test_doors_carry_no_git_dash_c():
-    # Occurrence-level: blockquoted lines (>) are teaching/history, never executable — the
-    # close-out door's restored SCC-184 quote lives in one (review 2nd pass). File-level
-    # exemptions stay for the three law files whose PROSE teaches the banned spelling.
+def _git_dash_c_offenders(files):
+    """Occurrence-level scan, shared by the door sweep and the root-entry sweep.
+
+    Blockquoted lines (>) are teaching/history, never executable — the close-out door's
+    restored SCC-184 quote lives in one (review 2nd pass). File-level exemptions stay for
+    the law files whose PROSE teaches the banned spelling.
+    """
     teaching_ok = {"command-shape.md", "git-policy.md", "zoo-team.md"}
     offenders = []
+    for f in files:
+        if f.name in teaching_ok:
+            continue
+        for n, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+            if line.lstrip().startswith(">"):
+                continue
+            if re.search(r"git -C\b", line):
+                # A fixture path lives outside ROOT, and `relative_to` RAISES there rather
+                # than returning anything — which made the reject-half control die in setup
+                # and read as a genuine red. Report the path as given when it is not under ROOT.
+                try:
+                    where = f.relative_to(ROOT)
+                except ValueError:
+                    where = f
+                offenders.append(f"{where}:{n}")
+    return offenders
+
+
+def test_doors_carry_no_git_dash_c():
     dirs = (ROOT / ".agents" / "commands", ROOT / ".agents" / "rules",
             ROOT / ".agents" / "skills")
-    for d in dirs:
-        for f in d.rglob("*.md"):
-            if f.name in teaching_ok:
-                continue
-            for n, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
-                if line.lstrip().startswith(">"):
-                    continue
-                if re.search(r"git -C\b", line):
-                    offenders.append(f"{f.relative_to(ROOT)}:{n}")
+    files = [f for d in dirs for f in d.rglob("*.md")]
+    offenders = _git_dash_c_offenders(files)
     assert not offenders, f"doors still spell git -C (Zoo auto-denies it): {offenders}"
+
+
+# SCC-369: the sweep above reaches `.agents/{commands,rules,skills}` ONLY, and the root entry
+# files are not under any of them. That is exactly how `AGENTS.md` §6 kept telling every agent
+# to "use `git -C`" — the pre-SCC-351 text — for two days after SCC-351 inverted the law and
+# rewrote 229 spellings across 30 files. The front door is the one file every platform loads
+# first, so a contradiction there manufactures the prompts the rule exists to prevent.
+ROOT_ENTRY_FILES = ("AGENTS.md", "CLAUDE.md", "GEMINI.md")
+
+
+def test_root_entry_files_carry_no_git_dash_c():
+    files = [ROOT / name for name in ROOT_ENTRY_FILES if (ROOT / name).exists()]
+    assert files, f"none of {ROOT_ENTRY_FILES} exist at {ROOT} — the scan would pass vacuously"
+    offenders = _git_dash_c_offenders(files)
+    assert not offenders, (
+        f"a root entry file still spells git -C: {offenders}. Every platform loads these "
+        f"first, so this contradicts .agents/rules/command-shape.md law 1 at the front door.")
+
+
+def test_root_entry_scan_rejects_and_allows():
+    """Both halves — a gate that only ever passes is not a gate (tests-must-gate-for-real §5)."""
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td)
+        bad = d / "AGENTS.md"
+        bad.write_text("- pin the tree with `git -C <path> status`\n", encoding="utf-8")
+        assert _git_dash_c_offenders([bad]), "REJECT half dead: a live git -C line scored clean"
+        good = d / "CLAUDE.md"
+        good.write_text("> historical: the old spelling was `git -C <path> status`\n",
+                        encoding="utf-8")
+        assert not _git_dash_c_offenders([good]), (
+            "ALLOW half dead: a blockquoted teaching line was swept up as an offender")
 
 
 def _load_apply_module():
