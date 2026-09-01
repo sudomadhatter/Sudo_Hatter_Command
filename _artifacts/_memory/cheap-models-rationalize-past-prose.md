@@ -31,6 +31,11 @@ find the mechanism. Three shapes that worked (SCC-360):
 3. **Refuse at the moment of the claim, not at close-out.** `verdict_receipt.py` rejects a commit
    adding a `Verdict: PASS` line without a real suite receipt — the same argument as
    [[sop-doc-currency-gate]]: gate the author while they still have the context.
+4. **Nag at the moment of the mistake** — for the case where the capability is legitimate and
+   refusing would cost more than the violation, so shapes 1–3 do not apply. A `PostToolUse` hook
+   returns the correction and cites the rule file; the command still runs
+   ([[nag-the-agent-dont-rewrite-the-rule]], where the operator ruled that a nag beats restating
+   the rule in another place).
 
 The generalization: **a law that needs judgment to obey needs a machine to enforce.** Prose is for
 explaining *why* the machine says no. See also [[review-status-means-needs-operator]] and
