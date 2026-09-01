@@ -9,11 +9,11 @@
     "pack_docs": 2,
     "edges": 808,
     "external": 40,
-    "ambiguous": 179,
-    "dangling": 301,
-    "broken_paths": 70,
+    "ambiguous": 178,
+    "dangling": 300,
+    "broken_paths": 69,
     "unresolved_names": 231,
-    "unresolvable": 6
+    "unresolvable": 7
   },
   "nodes": [
     {
@@ -7293,10 +7293,6 @@
       "target": "git-hooks-board-stale-install.md"
     },
     {
-      "from": "docs/migrations/install_guides/new_machine-migration-guide.md",
-      "target": "_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md"
-    },
-    {
       "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",
       "target": "/.agents/commands/autopilot_glm.md"
     },
@@ -10640,23 +10636,6 @@
     },
     {
       "from": "docs/migrations/install_guides/new_machine-migration-guide.md",
-      "target": ".opencode/agent/INDEX.md",
-      "candidates": [
-        ".agents/INDEX.md",
-        ".agents/bmad",
-        ".agents/commands/INDEX.md",
-        ".agents/hooks/INDEX.md",
-        ".agents/opencode-agents/INDEX.md",
-        ".agents/rules/INDEX.md",
-        ".agents/scripts/INDEX.md",
-        ".agents/skills/INDEX.md",
-        ".agents/workflows/INDEX.md",
-        "docs/_scc_sops_prds/INDEX.md",
-        "docs/migrations/INDEX.md"
-      ]
-    },
-    {
-      "from": "docs/migrations/install_guides/new_machine-migration-guide.md",
       "target": "INDEX.md",
       "candidates": [
         ".agents/INDEX.md",
@@ -11030,6 +11009,10 @@
     {
       "from": "docs/_scc_sops_prds/tea_testing_guide.md",
       "target": "Projects/AGY_AVIATIONCHAT/.agents/rules/testing-standards.md"
+    },
+    {
+      "from": "docs/migrations/install_guides/new_machine-migration-guide.md",
+      "target": "Projects/AGY_AVIATIONCHAT/_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md"
     },
     {
       "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",
