@@ -168,6 +168,17 @@ Both machine-global caches still hold the retired command, and each holds a **pr
 
 They live outside the repo, so no repo-scoped assertion can see or purge them and no worktree sync writes them. **After this lands, run `/smh-sync-agents` from the lobby checkout** — its mirror-exact purge clears both.
 
+### Fixed at the close-out gate, not deferred
+
+`check_maps.py --depth3-only --strict` — one of the three gates the preflight selected — went red on
+a **missing `_artifacts/_main/workflow-events/INDEX.md`**. Not this lane's doing: `2026-09/` opened
+when SCC-365's close-out landed on `main` earlier the same day, tipping that bucket to two
+date-prefixed folders and firing the depth-3 INDEX requirement. It had been reported at every session
+start since, and it blocked the next close-out to run — which was this one. Written here rather than
+deferred, because a missing index is not something a later lane inherits more cheaply. The file
+documents what the bucket actually is (one JSON per ceremony event, not one folder per session) and
+says explicitly that month buckets are the unit, so nobody later builds a 41-row table.
+
 ### Raised once, with the remedy, and deliberately NOT built here
 
 - **Make the Antigravity launcher universal.** The 11,500-byte threshold leaves 15 of 39 doors as full bodies still living under the cap, which is why this keeps resurfacing. Dropping the threshold to 0 **deletes** the `else` branch (~14 lines) and makes the cap structurally unreachable rather than measured-safe. Its own ticket.
