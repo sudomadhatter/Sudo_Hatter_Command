@@ -200,7 +200,7 @@ capture. `work-consolidation.md` rule 3 — one block, read together.
 ## Approval
 
 Audit verdict: GO
-Approved (2026-09-01): "approved" — the operator, in reply to the plan + audit hand-back naming SCC-318 and its three riders SCC-335, SCC-359, SCC-364. — recorded at <pending>
+Approved (2026-09-01): "approved" — the operator, in reply to the plan + audit hand-back naming SCC-318 and its three riders SCC-335, SCC-359, SCC-364. — recorded at fbd4ac20
 
 ---
 
