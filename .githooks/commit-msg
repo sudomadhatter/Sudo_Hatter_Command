@@ -5,6 +5,7 @@
 #   2. jira          every commit carries this repo's work-item key (commit-msg-jira.sh)
 #   3. maps          no NEW broken doc ref; every door named in the SOP (commit-msg-maps.sh)
 #   4. sop           usage changes move the SOP quick-reference     (sop-currency.sh)
+#   5. verdict       a staged Verdict stamp needs a suite receipt   (verdict-receipt.sh, SCC-363)
 #
 # ⭐ GATE 1 IS THE ONLY ONE HERE THAT EXISTS *FOR* MERGES (SCC-144). Gates 2, 3 and 4 all carve
 # merges OUT — git writes those messages, so blocking them blocks the tool. Gate 1 runs on nothing
@@ -57,5 +58,10 @@ else
 fi
 
 SOP="$ROOT/.agents/scripts/git-hooks/sop-currency.sh"
-[ -x "$SOP" ] || exit 0
-exec "$SOP" "$@"
+if [ -x "$SOP" ]; then
+  "$SOP" "$@" || exit $?
+fi
+
+VERDICT="$ROOT/.agents/scripts/git-hooks/verdict-receipt.sh"
+[ -x "$VERDICT" ] || exit 0
+exec "$VERDICT" "$@"

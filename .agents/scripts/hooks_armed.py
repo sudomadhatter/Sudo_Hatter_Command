@@ -108,6 +108,7 @@ ARM_FLAGS = {
     "SOP-ENFORCE":         ("sop-currency.sh", "commit-msg"),
     "MAIN-PUSH-ENFORCE":   ("pre-push-main-approval.sh", "pre-push"),
     "MERGE-TARGET-ENFORCE": ("merge-target-guard.sh", "commit-msg"),
+    "VERDICT-ENFORCE":     ("verdict-receipt.sh", "commit-msg"),
 }
 
 
