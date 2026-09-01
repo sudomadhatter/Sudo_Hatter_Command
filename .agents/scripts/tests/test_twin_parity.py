@@ -166,7 +166,6 @@ NOT_PAIRED = {
     "smh-update-maps-indexes.md": _ONE_SUBJECT + " (repo maps + INDEX reconciliation)",
     "smh-memory-audit.md": _ONE_SUBJECT + " (audits the shared memory store)",
     "smh-new-project.md": _ONE_SUBJECT + " (scaffolds a new project)",
-    "smh-slash-command-updating.md": _ONE_SUBJECT + " (authoring the command surface itself)",
     "smh-adviser-board.md": _ONE_SUBJECT + " (multi-voice advisory board)",
     "smh-review.md": _ONE_SUBJECT + " (ad-hoc read-only review)",
 }
@@ -319,6 +318,18 @@ def main() -> int:
         both = sorted({n for pair in PAIRS for n in pair} & set(NOT_PAIRED))
         c.check("A0b no command is BOTH pinned and recorded unpaired (a contradiction)",
                 not both, f"in PAIRS and NOT_PAIRED at once: {both}")
+        # A0c . NOT_PAIRED is a DECISION REGISTRY, and a decision about a command that no
+        # longer exists is not a decision — it is a fossil. Nothing caught this before: A1
+        # SUBTRACTS this dict from the derived set, so a stale key can only ever suppress, and
+        # suppressing nothing looks exactly like suppressing correctly. Found retiring
+        # /smh-slash-command-updating (SCC-367), whose row sat here explaining why a deleted
+        # file had no twin. Measured clean at 35 keys when the guard was added, so it is
+        # asserting a real invariant rather than grandfathering existing drift.
+        orphaned = sorted(k for k in NOT_PAIRED if not (CMDS / k).is_file())
+        c.check("A0c every NOT_PAIRED row names a command that still exists",
+                not orphaned,
+                f"{orphaned} recorded as unpaired but absent from .agents/commands/ - "
+                f"a retired command's row is deleted with it, not left behind")
         unpinned = unpinned_in(CMDS)
         c.check("A1 every cicd-*/smh-* command is pinned or recorded as unpaired",
                 not unpinned,

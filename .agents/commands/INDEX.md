@@ -34,7 +34,7 @@ frontmatter to limit where it syncs. **Absent = universal** (all four). Tagged t
 **Robot-lane rule (2026-07-14):** `*_AP` commands vendor ONLY into project tool dirs (where the autopilot
 engines read them) — the sync skips them for the lobby menus and the global caches.
 **Antigravity actually honors that reach as of 2026-08-09 (SCC-56).** The `.agents/workflows/` mirror used
-to filter by FILENAME first (`sudo-*`, `1_*`, `smh-new-project`, `smh-slash-command-updating`) and only then read
+to filter by FILENAME first (`sudo-*`, `1_*`, `smh-new-project`) and only then read
 `platforms:` — so four commands that claim Antigravity never reached it: `smh-close-task-merge-tree`,
 `smh-sync-agents`, `smh-review`, and `cicd-clean-code-audit`, which names `antigravity` outright.
 `platforms:` is now the only gate. `.agents/workflows/` is **generated** — edit the command, never a copy.
@@ -62,13 +62,14 @@ to filter by FILENAME first (`sudo-*`, `1_*`, `smh-new-project`, `smh-slash-comm
 | **Adviser board** (ideation) | `smh-adviser-board` | the operator's **third-side thinking board** — 43 historical minds seated one per filter, up to 5 filters sized to the topic's distinct failure surfaces. Recon + orchestrator research ground it in a named project (the orchestrator does all the searching; the minds reason); a Round-0 cast menu shows the top-3 mind picks per seated filter, the operator picks one mind per filter, and **parallel opinion waves** run one spawn per filter per wave — all Agent calls in a single message, every statement verbatim in rich text. Attack, balcony and settle are chair-invocable deepening moves (`settle it` / `balcony` / `X vs Y`), never a forced ladder. Closes with a self-contained brief in `_artifacts/board_sessions/`. Roster, charters, doctrine, statement and spawn contracts live in `.agents/commands/adviser-board/`; persona cards are lazily loaded per seated mind. |
 | **Security / error team** | `cicd-mobile-error-team` · `sentry-security-team-avch` | **`cicd-mobile-error-team` is the LIVE responder** — the command an incident page tells you to run (`/cicd-mobile-error-team AVIATIONCHAT-42`). It picks up where the machine lane stops: re-verifies the auto-triage report, weighs rollback vs fix-forward with time-to-recovery for both, writes a minimal fix + regression test on `claude/incident-<id>`, gates it on real CI via a draft PR to `main` (the documented hotfix carve-out), and stops twice for Daniel. Never merges on its own initiative. Claude-only (mobile-first). `sentry-security-team-avch` is the separate quarterly **DRILL** harness for the same runbook — not the live lane, not in the Claude menu. |
 | **Machine upkeep** (lobby) | `smh-llm-approvals` | audits recent Claude and Zoo chats for the terminal commands that stopped and waited for the operator, shows them as one list, and — on his word — adds the ones he picks to both allow lists and runs the Zoo apply. The operator types the command and names the commands; every read, edit and apply is the agent's. It proposes nothing and never touches a deny list. |
-| **System builder** (lobby) | `smh-new-project` · `smh-sync-agents` · `smh-slash-command-updating` | scaffold a workspace, push the master toolkit into a target, or refresh global command caches. |
+| **System builder** (lobby) | `smh-new-project` · `smh-sync-agents` | scaffold a workspace, or publish the master toolkit to every local door and machine-global cache. `/smh-sync-agents` also owns the globals-only pass (its `-GlobalsOnly` section). |
 
 **⭐ Renamed — the whole surface (2026-08-09, SCC-63): the `sudo-` prefix is RETIRED.** Every command
 now declares its family in its name: **`cicd-*`** = the BMAD-paired story/epic dev loop and its
 logistics · **`smh-*`** = workflows run ON the command centre and everyday operator tasks ·
 **`sentry-*`** = the Sentry incident system. Hyphens only (`autopilot_claude` → `cicd-autopilot-claude`,
-`slash_command_updating` → `smh-slash-command-updating`); an autopilot twin's `_AP` suffix became
+`slash_command_updating` → `smh-slash-command-updating`, since retired into `/smh-sync-agents`
+by SCC-367); an autopilot twin's `_AP` suffix became
 `-AP`. Vendor BMAD bridges (`dev`, `pm`, `qa`, `testarch-*`, …) keep their upstream names and take no
 prefix; so do knowledge skills. **Any surviving `/sudo-` reference is therefore stale by definition** —
 that is the point of retiring the prefix outright rather than aliasing it. `/webm-alpha-video` was
