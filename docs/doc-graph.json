@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 428,
+    "files": 425,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 810,
+    "edges": 808,
     "external": 40,
     "ambiguous": 179,
     "dangling": 301,
@@ -545,11 +545,6 @@
       "path": ".agents/commands/smh-self-audit.md",
       "in": 2,
       "out": 7
-    },
-    {
-      "path": ".agents/commands/smh-slash-command-updating.md",
-      "in": 1,
-      "out": 0
     },
     {
       "path": ".agents/commands/smh-sync-agents.md",
@@ -1667,11 +1662,6 @@
       "out": 1
     },
     {
-      "path": ".agents/skills/smh-slash-command-updating/SKILL.md",
-      "in": 0,
-      "out": 1
-    },
-    {
       "path": ".agents/skills/smh-sync-agents/SKILL.md",
       "in": 0,
       "out": 1
@@ -1764,7 +1754,7 @@
     {
       "path": ".agents/workflows/INDEX.md",
       "in": 3,
-      "out": 11
+      "out": 10
     },
     {
       "path": ".agents/workflows/cicd-bdd-tests.md",
@@ -1950,11 +1940,6 @@
       "path": ".agents/workflows/smh-self-audit.md",
       "in": 0,
       "out": 1
-    },
-    {
-      "path": ".agents/workflows/smh-slash-command-updating.md",
-      "in": 1,
-      "out": 0
     },
     {
       "path": ".agents/workflows/smh-sync-agents.md",
@@ -4741,11 +4726,6 @@
       "kind": "ref"
     },
     {
-      "from": ".agents/skills/smh-slash-command-updating/SKILL.md",
-      "to": ".agents/commands/smh-slash-command-updating.md",
-      "kind": "ref"
-    },
-    {
       "from": ".agents/skills/smh-sync-agents/SKILL.md",
       "to": ".agents/commands/smh-sync-agents.md",
       "kind": "ref"
@@ -4838,11 +4818,6 @@
     {
       "from": ".agents/workflows/INDEX.md",
       "to": ".agents/workflows/smh-new-project.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/INDEX.md",
-      "to": ".agents/workflows/smh-slash-command-updating.md",
       "kind": "ref"
     },
     {
@@ -7904,7 +7879,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -8309,7 +8283,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -8796,7 +8769,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -8876,7 +8848,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -8956,7 +8927,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -9036,7 +9006,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -9116,7 +9085,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -9196,7 +9164,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -9276,7 +9243,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -9356,7 +9322,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -9436,7 +9401,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -9516,7 +9480,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -9596,7 +9559,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -9676,7 +9638,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -9756,7 +9717,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -9836,7 +9796,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -9916,7 +9875,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -10065,7 +10023,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -10255,7 +10212,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -10464,7 +10420,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -10880,7 +10835,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
@@ -10986,7 +10940,6 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",

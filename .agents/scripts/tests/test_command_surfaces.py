@@ -2725,7 +2725,7 @@ def main() -> int:
                 "the loop passes a single shared source variable to both caches")
 
         # I . the doors must be regenerated BEFORE the globals block, or a -GlobalsOnly run
-        # (/smh-slash-command-updating) mirrors a stale door set on the very pass meant to refresh
+        # mirrors a stale door set on the very pass meant to refresh
         # it. Anchored to a CODE line: a `#` naming the call must not stand in for the call.
         gen = re.search(r"^\s*\$\w+\s*=\s*Sync-AntigravityWorkflowMirror\b", sync, re.M)
         glb = re.search(r"^\s*\$caches\s*=\s*@\(", sync, re.M)
@@ -2744,11 +2744,20 @@ def main() -> int:
         # "they are NOT pushed to", so re-wording to "are never published to any command cache"
         # restored the defect green. Scoped to the LIVE rule sites; history may quote it freely.
         RULE_SITES = ("docs/workspace-standard.md", ".agents/commands/INDEX.md",
-                      ".agents/workflows/INDEX.md", ".agents/commands/smh-sync-agents.md",
-                      ".agents/commands/smh-slash-command-updating.md")
+                      ".agents/workflows/INDEX.md", ".agents/commands/smh-sync-agents.md")
         INVERTED = re.compile(
             r"workflows/?[^.\n]{0,140}?(?:are|is)\s+(?:\*\*)?(?:NOT|not|never)(?:\*\*)?\s+"
             r"(?:pushed|published|copied|mirrored|synced|sent)[^.\n]{0,80}?cache", re.I)
+        # ANTI-FOSSIL, and it is the same class this lane guarded on the sibling registry.
+        # The scan below is `is_file() and ...`, so a member pointing at a DELETED file drops out
+        # silently and shrinks J's coverage with no signal — reproduced: restoring the retired
+        # door's path to this tuple left J green. `test_twin_parity` guards its two registries
+        # exactly this way (`A0` over PAIRS, `A0c` over NOT_PAIRED); this was the third one.
+        fossils = [rel for rel in RULE_SITES if not (ROOT / rel).is_file()]
+        c.check("CS-18 J0 every RULE_SITES entry still exists (anti-fossil)",
+                not fossils,
+                f"{fossils} named here but absent from disk - a member pointing at nothing "
+                f"contributes no coverage and cannot fail, so J silently checks fewer sites")
         offenders = [rel for rel in RULE_SITES
                      if (ROOT / rel).is_file() and INVERTED.search(read(ROOT / rel))]
         c.check("CS-18 J no live rule doc claims workflows/ reach no command cache",
@@ -3247,6 +3256,264 @@ def main() -> int:
                     "| **Epic** (a project) | the PRD | `/cicd-push-e2e` | `PRD: unchanged` on the "
                     "ticket and in the ledger row |"),
                 "the row-scoped word check must survive a changed connective")
+
+    # ══ CS-22 · SCC-367 · a RETIRED command leaves no door and no live reference ════════════
+    # /smh-slash-command-updating was a self-described thin alias for `sync-agents.ps1
+    # -GlobalsOnly` whose own closing bullet told the operator to prefer /smh-sync-agents. It is
+    # retired. Retiring a command in this repo means SIX files (the master plus five generated
+    # doors) and a scatter of live references — and the sync manifest can only purge the two
+    # surfaces it recorded, so the rest is hand work that nothing was checking.
+    #
+    # ⛔ THE TRAP THIS BLOCK EXISTS FOR — and the reason first written here was WRONG, so it is
+    # restated from the engine's own source rather than from the neighbouring commentary (which
+    # carries the same error at line 2771). It is NOT that `$IsLobby` is false in a worktree:
+    # `$HomeRoot` derives from `$PSScriptRoot` and `$Target` defaults to it (sync-agents.ps1:82-113),
+    # so a worktree compares against ITSELF and `$IsLobby` is TRUE — measured, this lane's own sync
+    # printed `lobby=True`, and the only path to false exits 1 four lines later.
+    # The real reason is simpler and bigger: `.opencode/commands` and `.roo/commands` hold FULL
+    # BODIES, and `.agents/workflows` holds one for any command under the launcher threshold. A
+    # retired command can therefore be named in the PROSE of a DIFFERENT command's mirror —
+    # measured: `.opencode/commands/smh-sync-agents.md:85` did exactly that. A check scanning only
+    # `.agents/commands/` passes the instant the master is deleted while those mirrors still name it.
+    # So this scans EVERY door surface AND the live doc set — never the master alone.
+    #
+    # ⛔ What is genuinely OUT OF REACH from here: the MACHINE-GLOBAL caches (`~/.gemini/...`,
+    # `~/.config/opencode/...`). They live outside the repo, so no repo-scoped assertion can see or
+    # purge them; clearing them is a close-out step (`/smh-sync-agents` from the lobby checkout),
+    # not something this block can cover. Do not add a check that pretends otherwise.
+    #
+    # ⛔ The needle is the CURRENT spelling only. `sync-agents.ps1` and `commands/INDEX.md`
+    # deliberately keep the OLD snake_case `slash_command_updating` inside passages documenting
+    # retired behaviour (the SCC-56 name filter; the SCC-63 rename). Those are history and must
+    # survive — a loose `slash.command.updating` match would demand their deletion and erase the
+    # record of why the filter and the rename happened.
+    if c.block("CS-22 · SCC-367 · retired commands leave no door and no live reference"):
+        # ⛔ name -> THE TICKET THAT RETIRED IT, never a bare tuple plus one shared scalar.
+        # A second retirement under a different key cannot be expressed by a scalar, and its
+        # history lines would then be excused only if they happened to contain the ambient word
+        # "retired" — which is exactly the hole B's hatch is keyed away from below.
+        RETIRED = {"smh-slash-command-updating": "SCC-367"}
+
+        def names_it_unexcused(line: str, name: str, ticket: str) -> bool:
+            """The ONE predicate B and its controls both call (never a re-typed copy).
+
+            ⛔ The hatch keys on the TICKET KEY, not on the word "retired". "retired" is
+            ambient prose in this repo — `smh-sync-agents.md` ends its switches paragraph with
+            "both are retired and fail loudly", and the SOP's own live routing row for
+            /smh-sync-agents says it "purges the two retired doors". Either line names a LIVE
+            command and contains the word, so a word-keyed hatch would excuse a live menu row
+            the moment that command was itself retired — the exact false negative this block
+            exists to prevent. A ticket key is never ambient: it is written deliberately, by
+            someone recording why the name is still here.
+            """
+            # ⛔ A MARKDOWN TABLE ROW IS NEVER EXCUSED, whatever it carries. The hatch is
+            # line-scoped and a table row is one line of several cells, so any cell mentioning
+            # the ticket would launder the whole row — measured: appending
+            # `| **System builder** | \`/smh-...\` | reinstated per SCC-367 follow-up |` to
+            # commands/INDEX.md kept B green. Every live menu, routing and INDEX row in this repo
+            # is a `|`-delimited row; every history ledger that legitimately names a retired
+            # command is prose. That is the discriminator, and it is structural, not a wordlist.
+            if line.lstrip().startswith("|"):
+                return name in line
+            return name in line and ticket not in line
+
+        # A . the six door surfaces. Named individually rather than globbed: the point is that
+        # retiring a command is a SIX-file job, and a glob that silently matched five would be
+        # the same defect this block was written to catch.
+        for name in RETIRED:
+            doors = [
+                ROOT / ".agents/commands" / f"{name}.md",
+                ROOT / ".agents/workflows" / f"{name}.md",
+                ROOT / ".agents/skills" / name / "SKILL.md",
+                ROOT / ".claude/skills" / name / "SKILL.md",
+                ROOT / ".opencode/commands" / f"{name}.md",
+                ROOT / ".roo/commands" / f"{name}.md",
+            ]
+            # ⛔ The skill DIRECTORIES too, not only their SKILL.md — measured: re-creating
+            # `.agents/skills/<name>/` holding a single `notes.txt` left both A and B green
+            # (the dir name is never inspected, and `.txt` is outside B's suffix filter).
+            doors += [ROOT / ".agents/skills" / name, ROOT / ".claude/skills" / name]
+            alive = [str(d.relative_to(ROOT)) for d in doors if d.exists()]
+            c.check(f"CS-22 A no door survives for the retired /{name}",
+                    not alive,
+                    f"{len(alive)} door(s) still on disk: {alive}")
+
+        # B . the LIVE reference set. `_artifacts/` is read-only history and quotes retired
+        # commands freely; `docs/doc-graph.json` is regenerated, and is checked in C instead so
+        # a stale graph reports as itself rather than as a stray doc reference.
+        # ⛔ Every door surface is in here, not just `.agents` — `.opencode/commands` and
+        # `.roo/commands` hold FULL BODIES, so a mirror of a DIFFERENT command can name the
+        # retired one in its prose (measured: `.opencode/commands/smh-sync-agents.md:85` did).
+        # ⛔ And THIS FILE is excluded by identity: it is the registry that names retired
+        # commands, so scanning itself makes the check unsatisfiable — it went red on its own
+        # `RETIRED` tuple the first time it ran.
+        # ⛔ `.claude` WHOLE, not `.claude/skills`: `.claude/rules/` is a live generated rule mirror
+        # beside it, and a reference planted there kept the entire suite green (measured, 68/68).
+        # `_bmad` holds the guard tomls that inject the kill-chain into every dev-story run.
+        LIVE_DIRS = (".agents", "docs", ".opencode", ".roo", ".claude", "_bmad")
+        # ⛔ AND THE REPO ROOT. Every entry above is a directory, so nothing at the top level was
+        # walked — and `AGENTS.md` is this repo's single source of truth, with `CLAUDE.md` and
+        # `README.md` beside it. The lane that added this block checked them BY HAND and recorded
+        # "AGENTS.md: clean"; a hand-check is not repeatable, which is the whole reason the block
+        # exists. Root files are globbed (not rglob'd) so this stays the root, not a second sweep.
+        LIVE_ROOT_GLOB = "*.md"
+        SELF = Path(__file__).resolve()
+        # `doc-graph.md` joins its `.json` sibling: same generator, same "do NOT hand-edit" banner,
+        # same failure mode — a regeneration lag reports under B as a LIVE doc reference whose
+        # remedy ("delete the line") is wrong. C is where a stale graph reports as itself.
+        SKIP = ("/_artifacts/", "/node_modules/", "/doc-graph.json", "/doc-graph.md")
+        for name, ticket in RETIRED.items():
+            offenders = []
+            scanned = 0
+            for d in LIVE_DIRS:
+                base = ROOT / d
+                if not base.is_dir():
+                    continue
+                for f in base.rglob("*"):
+                    if not f.is_file() or f.suffix not in (".md", ".py", ".ps1", ".sh", ".json"):
+                        continue
+                    s = f.as_posix()
+                    if any(k in s for k in SKIP) or f.resolve() == SELF:
+                        continue
+                    # `read()` (utf-8-sig, errors="replace"), never a strict read_text: a strict
+                    # decode raises on an undecodable file and the `except` counted it CLEAN, in a
+                    # block whose contract is exhaustive scanning. Every other read in this file
+                    # goes through `read()` for exactly that reason.
+                    try:
+                        body = read(f)
+                    except OSError:
+                        continue
+                    scanned += 1
+                    # ⛔ A LINE-level check with ONE narrow escape hatch: a line may name a
+                    # retired command if that same line also marks it as retired (the word
+                    # `retired`, or the ticket that retired it). Rename ledgers and "this used
+                    # to be filtered by name" passages are real history and deleting them
+                    # erases WHY the surface looks the way it does. The hatch cannot hide a
+                    # live door: a menu row, a launcher or an INDEX routing row does not call
+                    # itself retired, and if someone writes that on a live row they have
+                    # described the command as gone while shipping it, which is a worse bug
+                    # this check would then correctly be blind to. Line-scoped, never
+                    # file-scoped: one retired mention must not license the whole file.
+                    if any(names_it_unexcused(ln, name, ticket)
+                           for ln in body.splitlines()):
+                        offenders.append(str(f.relative_to(ROOT)))
+            for f in sorted(ROOT.glob(LIVE_ROOT_GLOB)):
+                if not f.is_file():
+                    continue
+                try:
+                    rbody = read(f)
+                except OSError:
+                    continue
+                scanned += 1
+                if any(names_it_unexcused(ln, name, ticket)
+                       for ln in rbody.splitlines()):
+                    offenders.append(str(f.relative_to(ROOT)))
+            # ANTI-VACUITY. Each dir is skipped silently when absent, so a checkout shape or a
+            # future LIVE_DIRS typo makes B pass having read ZERO bytes — indistinguishable from
+            # a clean tree, which is the vacuous green this suite polices everywhere else.
+            c.check(f"CS-22 B0 the live-surface scan actually read files (anti-vacuity)",
+                    scanned > 200, f"only {scanned} file(s) scanned across {list(LIVE_DIRS)}")
+            c.check(f"CS-22 B no LIVE file names the retired /{name}",
+                    not offenders,
+                    f"{len(offenders)} live file(s) still name it: {sorted(offenders)}")
+
+        # C . the generated doc graph. Regenerated, not hand-edited — so a hit here means the
+        # lane deleted the doors and never re-ran the generator, which is exactly the
+        # "green source, stale artifact" split the header warns about.
+        graph = ROOT / "docs/doc-graph.json"
+        # ANTI-VACUITY FIRST: `graph.is_file() and ...` is False when the file is ABSENT, so C
+        # passed with the graph moved out of the tree (measured). Absence is its own failure.
+        c.check("CS-22 C0 the generated doc graph exists at all (anti-vacuity)",
+                graph.is_file(),
+                "docs/doc-graph.json is missing - C below cannot mean anything without it")
+        for name in RETIRED:
+            stale = graph.is_file() and name in read(graph)
+            c.check(f"CS-22 C the doc graph carries no node for the retired /{name}",
+                    not stale,
+                    "docs/doc-graph.json still names it - regenerate it in the lane that "
+                    "retires the command, or the map ships pointing at deleted files")
+
+        # D+E . THE LAW MUST SURVIVE ITS CARRIER. The retired alias was the only place that
+        # explained WHY the two machine-global caches read from different sources (SCC-332):
+        # Antigravity truncates a workflow over 12,000 chars instead of rejecting it, so it must
+        # receive the thin launchers from .agents/workflows/ while opencode takes full bodies
+        # from .agents/commands/. Delete the carrier without porting the law and the next person
+        # to touch the cache re-introduces SCC-332. Pinned to the RECEIVING door.
+        sync_cmd = read(ROOT / ".agents/commands/smh-sync-agents.md")
+        # ⛔ Pinned to the ENGINE's real switch, not just to a substring of the doc. A bare
+        # `"-GlobalsOnly" in sync_cmd` stays green after the switch is renamed in the ps1,
+        # leaving the door documenting a flag that no longer exists.
+        c.check("CS-22 D /smh-sync-agents documents the -GlobalsOnly pass the ENGINE implements",
+                "-GlobalsOnly" in sync_cmd
+                and re.search(r"\[switch\]\s*\$GlobalsOnly", sync_ps1) is not None,
+                "the retired alias was the only door naming the globals-only pass; the flag it "
+                "delegated to is now the ONLY way to run it and must be documented here")
+        def law_stated(body: str) -> bool:
+            """The ONE predicate E and its controls both call.
+
+            ⛔ E used to inline this expression while its controls called a separate copy with
+            the same three needles. Deleting `and "12,000" in ...` from the live expression —
+            the exact 'simplify' edit the control's message says it exists to catch — left both
+            controls green, because they never touched the live one. A control that re-types its
+            subject tests the copy, not the code.
+            """
+            return (".agents/workflows/" in body
+                    and ".agents/commands/" in body
+                    and "12,000" in body)
+
+        law = law_stated(sync_cmd)
+        c.check("CS-22 E ...and carries the SCC-332 law: both sources AND the cap",
+                law,
+                "smh-sync-agents.md must state BOTH per-cache sources and the 12,000-char "
+                "Antigravity truncation that forces them apart - a source list with no reason "
+                "is a rule the next edit will 'simplify' back into the defect")
+
+        # CONTROLS — and every one of them calls the PRODUCTION predicate, never a re-typed
+        # copy of it. A control that re-implements its subject tests the copy: it stays green
+        # while the live expression is weakened, which is the precise opposite of its job.
+        c.check("CS-22 CONTROL E fails when the cap is dropped but both sources remain",
+                not law_stated(sync_cmd.replace("12,000", "some")),
+                "E passes on a source list with the REASON removed - the exact state SCC-332 "
+                "shipped in, and the state a well-meaning 'simplify' edit produces")
+        c.check("CS-22 CONTROL E fails when a source is dropped but the cap remains",
+                not law_stated(sync_cmd.replace(".agents/workflows/", "the door surface")),
+                "E passes while the cache's actual source is unnamed")
+        # ⛔ D's first control was `"-GlobalsOnly" not in sync_cmd.replace("-GlobalsOnly", "")`,
+        # which is TRUE for every possible input by the semantics of str.replace - it
+        # discriminated nothing and could never have failed. D's real subject is the document,
+        # so the honest control is the document with the flag removed.
+        c.check("CS-22 CONTROL D fails when the -GlobalsOnly pass goes undocumented",
+                "-GlobalsOnly" not in sync_cmd.replace("-GlobalsOnly", "--x--"),
+                "the D needle does not discriminate: a body with every mention rewritten still "
+                "reads as documenting the flag")
+        # The hatch, exercised through the SAME function B calls. Live rows must NOT be excused;
+        # a line carrying the retiring ticket key MUST be.
+        for _n, _tk in RETIRED.items():
+            live_row = f"| **System builder** | `{_n}` | refresh the caches. |"
+            ambient  = f"`{_n}` is gone now that the two retired doors are purged."
+            ledger   = f"`slash_command_updating` -> `{_n}`, since retired by {_tk}"
+            c.check("CS-22 CONTROL the hatch does NOT excuse a live menu row",
+                    names_it_unexcused(live_row, _n, _tk),
+                    "a live row slips through the hatch")
+            c.check("CS-22 CONTROL ...nor a line merely containing the word 'retired'",
+                    names_it_unexcused(ambient, _n, _tk),
+                    "the hatch keys on ambient prose - `retired` appears in LIVE routing rows "
+                    "in this repo, so a word-keyed hatch excuses a live door")
+            c.check("CS-22 CONTROL ...but a ledger carrying the retiring ticket IS excused",
+                    not names_it_unexcused(ledger, _n, _tk),
+                    "the hatch fails to admit the history it exists for")
+            # ⛔ THE ONE A WORD-KEYED *OR* TICKET-KEYED HATCH BOTH MISS. A reviewer reproduced
+            # both live: a table row whose OTHER cell carries the excusing token launders the
+            # whole row, because the hatch is line-scoped and a row is one line.
+            laundered_word   = f"| **System builder** | `{_n}` | replaces the retired manual step |"
+            laundered_ticket = f"| **System builder** | `{_n}` | reinstated per {_tk} follow-up |"
+            c.check("CS-22 CONTROL a routing row is NEVER laundered by a stray 'retired' cell",
+                    names_it_unexcused(laundered_word, _n, _tk),
+                    "a live menu row is excused because another cell says 'retired'")
+            c.check("CS-22 CONTROL ...nor by a stray ticket-key cell",
+                    names_it_unexcused(laundered_ticket, _n, _tk),
+                    "a live menu row is excused because another cell cites the retiring ticket - "
+                    "the hatch must refuse every `|`-delimited row on structure alone")
 
     return c.finish()
 
