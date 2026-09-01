@@ -124,7 +124,17 @@
       "Bash(env -u GITHUB_TOKEN git push origin chore/:*)",
       "Bash(env -u GITHUB_TOKEN git push -u origin chore/:*)",
       "Bash(sleep:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(pwd)",
+      "Bash(python3 --version)",
+      "Bash(time python3 .agents/scripts/:*)",
+      "Bash(git branch -f chore/*)",
+      "Bash(git ls-remote:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npx vitest run:*)",
+      "Bash(backend/.venv/bin/:*)",
+      "Bash(ln -sf:*)",
+      "Bash(git -C * branch --show-current:*)"
     ],
     "additionalDirectories": [
       "/tmp",
