@@ -90,29 +90,54 @@ tracked. The reset also closes the `rm -f` hole with no deny-list change at all.
 
 ## Evidence
 
-Whole gate, run bare, after absorbing `origin/main`:
+Whole gate, run bare, after the review fixes:
 
 python3 .agents/scripts/tests/run_all.py — EXIT_CODE_WAS=0 — 70/70 files passed
 
-Controls:
+python3 .agents/scripts/workflow_lint.py --toolkit-only — 0 error(s), 0 warning(s), 8 info
 
-python3 .agents/scripts/shape_scan.py --self-test — NEGATIVE CONTROLS: PASS (all six score zero) · POSITIVE CONTROLS: PASS (all five fire with the right rule)
+python3 .agents/scripts/check_links.py --base origin/main — 13 markdown file(s), 234 path claim(s) checked — clean
 
-Live measurement, 2026-09-01, rules 3 / 2 / 1:
+Per-file, after the review:
 
-- **Claude Code** — 9.44 % piped gate · 9.35 % exit-echo tail · 5.71 % `git -C`, over 8,234 commands in 25 sessions. Recorded baseline was 9.49 / 9.36 / 5.79 over 8,122; the window grows every session, so this is the same population re-counted, not a change in behaviour.
-- **Zoo Code** — 19.03 / 4.45 / 3.64 % over 247 commands in 19 threads, reproduced exactly to two decimals when taken. ⛔ **It is no longer re-derivable from the live store:** Zoo's task directory came back **empty** after the VS Code restart on 2026-09-01, and no `ui_messages.json` survives anywhere under `globalStorage`. The scan reports *"no commands found — nothing to measure"* rather than a fabricated 0 %, which is the correct behaviour and is why the figure above is quoted from its recorded capture rather than re-run. Nothing in this lane touched Zoo's task store.
+python3 .agents/scripts/tests/test_shape_guard.py — 17/17 passed (was 13/13)
+
+python3 .agents/scripts/tests/test_shape_scan.py — 11/11 passed (was 8/8)
+
+python3 .agents/scripts/tests/test_zoo_permissions.py — 20/20 passed (was 17/17)
+
+python3 .agents/scripts/tests/test_rule_frontmatter.py — 18/18 passed (was 17/17)
+
+python3 .agents/scripts/shape_scan.py --self-test — NEGATIVE CONTROLS: PASS (all nine score zero) · POSITIVE CONTROLS: PASS (all five fire with the right rule)
+
+⛔ **The published baseline changed, because the review proved the detector wrong in BOTH
+directions.** The figures below are the corrected measurement and are what every document in this
+lane now carries. The originals are recorded here rather than quietly replaced, because the
+correction is the most important thing this review produced:
+
+| rule | shipped | corrected | why it moved |
+|---|---|---|---|
+| 3 · piped gate | 9.49 % | **6.88 %** | `GATE` matched a gate's FILENAME anywhere in a pipe piece, so `sed … test_x.py \| head` — reading a file — counted as running one. Three lenses measured the same class independently, at 15.4 / 15.9 / 21.8 % of rule-3 hits. Now matched in COMMAND POSITION. |
+| 2 · exit-echo tail | 9.36 % | **11.92 %** | the regex required `;` or `&&` before the `echo`, so every multi-line call whose second LINE was the echo scored zero — 225 of them, under-reported. A newline is a separator too. |
+| 1 · `git -C` | 5.79 % | **5.65 %** | quote handling was two regex passes, so an apostrophe inside a double-quoted string paired with a later one and swallowed real violations. One left-to-right pass now. |
+
+Corrected totals over the same window: **1,946 of 8,355 Bash calls — 23.3% of every call — break
+this one rule**, across 25 sessions. The old headline (*"98.9% of every detectable violation"*) is
+gone: it was a share of a denominator nothing in this lane measured, and 23.3% of every Bash call
+is both larger in force and actually derivable from the instrument that ships here.
+
+- **Zoo Code** — 19.03 / 4.45 / 3.64 % over 247 commands in 19 threads, reproduced exactly to two decimals when taken. ⛔ **No longer re-derivable:** Zoo's task directory came back **empty** after the VS Code restart on 2026-09-01, and no `ui_messages.json` survives anywhere under `globalStorage`. The scan reports *"no commands found — nothing to measure"* rather than a fabricated 0 %, which is correct, and is now asserted by `test_ingest_actually_reads_a_fixture_store` so an empty read can never again be mistaken for compliance. Nothing in this lane touched Zoo's task store.
 
 ## Acceptance
 
 | | Statement | Result |
 |---|---|---|
-| A | `AGENTS.md` §6 states the per-piece law and the `cd <abs> &&` pin; no `git -C` outside a blockquote in any root entry file | **MET** — `test_zoo_permissions.py` + its `CLAUDE.md` mutant |
-| B | A piped gate, an exit-echo tail and a `git -C` each produce exactly one nag naming their rule | **MET** — `test_shape_guard.py` |
-| C | A clean command, a `grep` for the string, and a heredoc body produce no nag | **MET** — the negative battery, six controls |
-| D | The hook returns `allow` on every path, and a mutant returning `ask` fails the suite | **MET** — `test_shape_guard.py` |
-| E | `shape_scan.py` reproduces the baselines | **MET** — Zoo exact to 2 dp at capture; Claude within 0.2 pp on a grown window. See the ⛔ note above: the Zoo store has since been emptied, so this row is proved by its capture, not by a re-run |
-| F | `command-shape.md` carries §Nag and `rules/INDEX.md` its row | **MET** — `test_rule_frontmatter.py`, 10/17 red → 17/17 green |
+| A | `AGENTS.md` §6 states the per-piece law and the `cd <abs> &&` pin; no `git -C` outside a blockquote in any root entry file | **MET, both halves** — the negative half by `test_root_entry_files_carry_no_git_dash_c` + its `CLAUDE.md` mutant; the affirmative half was UNGUARDED at review time (deleting the whole §6 bullet left the gate 70/70) and is now `test_root_entry_files_STATE_the_law_they_were_corrected_to_carry` |
+| B | A piped gate, an exit-echo tail and a `git -C` each produce exactly one nag naming their rule | **MET** — `test_shape_guard.py`, now also across all nine gate spellings and with a remedy assertion on every rule, not only rule 1 |
+| C | A clean command, a `grep` for the string, and a heredoc body produce no nag | **MET, and widened** — the battery grew from six controls to nine: reading a test file through a pipe and searching for the exit-tail literal were the two false positives it was missing |
+| D | The hook returns `allow` on every path, and a mutant returning `ask` fails the suite | **MET, and strengthened** — `test_never_blocks` now also rejects `continue`/`stopReason` (the hardest stop lever, which it missed) and whitelists the emitted key set, so the next blocking key added to the contract fails without anyone remembering to name it |
+| E | `shape_scan.py` reproduces the baselines | **MET on the CORRECTED figures** — 6.88 / 11.92 / 5.65 %, which every document in the lane now carries. Row E previously named a third triple that nothing reproduced; see the table above. The Zoo half is proved by its capture, not a re-run, because the store has since been emptied |
+| F | `command-shape.md` carries §Nag and `rules/INDEX.md` its row | **MET** — `test_rule_frontmatter.py` 18/18; the six §Nag checks now read the §Nag SECTION rather than the whole file, so gutting the section fails them |
 | G | `zoo_permissions_apply.py --status` reads *in sync* on both lists | **PENDING the operator's hands** — see Your Actions |
 | H | Whole gate green | **MET** — 70/70, exit 0 |
 
@@ -121,7 +146,7 @@ Live measurement, 2026-09-01, rules 3 / 2 / 1:
 | # | What | Why it is yours and not mine |
 |---|---|---|
 | 1 | **Quit VS Code fully (Cmd+Q, not just close the window)**, then in **Terminal.app** — not VS Code's integrated terminal — paste: `python3 .agents/scripts/zoo_permissions_apply.py --apply && python3 .agents/scripts/zoo_permissions_apply.py --status` | The apply writes into VS Code's globalState SQLite, and VS Code flushes its own in-memory copy on exit — so a write made while it runs is silently undone. `zoo_permissions_apply.py` refuses while it detects VS Code running, by design. This agent session lives *inside* VS Code, so it cannot be the thing that waits for VS Code to be gone. |
-| 2 | Read the closing `--status`: both lists must say **in sync with tracked file** | That line IS acceptance row G. Before the apply it reads `allowedCommands: 255 (DRIFT: 7 tracked entries missing, 142 store-only)`. |
+| 2 | Read the closing `--status`: both lists must say **in sync with tracked file** | That line IS acceptance row G. Before the apply it reads `allowedCommands: 255 (DRIFT: 7 tracked entries missing from store, 142 store-only entries)` — 142 and 7 rather than 143 and 8 because one of the eight promotions (`ln -s `) already existed in the store. |
 | 3 | Merge the pull request when `/smh-close-task-merge-tree` hands you the link | `main` is never an agent's. |
 
 ## Out of scope, named not dropped

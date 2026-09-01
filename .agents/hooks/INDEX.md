@@ -50,10 +50,9 @@ command must run outside it.
 
 | File | Event | What it does |
 | --- | --- | --- |
-| `shape-guard.py` | `PostToolUse` | Points the agent back at `.agents/rules/command-shape.md` when a Bash call breaks it — a piped gate (rule 3), a `; echo "EXIT=$?"` tail (rule 2), or the `git -C` spelling (rule 1). It **cites the rule and names the remedy**; it does not restate the law. |
 
 **Why this one is `PostToolUse` and every other hook here is not.** The law it enforces was already
-on every platform and was violated in **1,933 of 7,858 Bash calls across 25 sessions — 98.9% of
+on every platform and was violated in **1,946 of 8,355 Bash calls across 25 sessions — 23.3% of
 every detectable violation**. Distribution was never the gap, so the answer is not a sixth copy of
 the rule; it is a message at the moment of the mistake (SCC-369, the operator's ruling). Running
 after the call means it **cannot block, slow, or wedge a headless session** — the strongest safety
@@ -80,5 +79,6 @@ reaches the model verbatim, while `systemMessage`, hook stderr, and a `PreToolUs
 - `require-push-approval.py`
 - `rule-trigger.py`
 - `run-hook.sh`
-- `shape-guard.py`
 - `session-start-context.sh`
+- `shape-guard.py`
+| `shape-guard.py` | `PostToolUse` | Points the agent back at `.agents/rules/command-shape.md` when a Bash call breaks it — a piped gate (rule 3), a `; echo "EXIT=$?"` tail (rule 2), or the `git -C` spelling (rule 1). It **cites the rule and names the remedy**; it does not restate the law. |

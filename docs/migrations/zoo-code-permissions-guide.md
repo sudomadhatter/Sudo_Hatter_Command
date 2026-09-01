@@ -136,6 +136,10 @@ tokens that outrank the fence**: `rm`, `git`, `env`, `acli`. The deny list stops
 `rm -r`, so bare `rm` in the allow list meant **`rm -f somefile` and `rm *.md` auto-ran with no
 prompt**, and bare `env` walked around every `env -u GITHUB_TOKEN git …` deny row.
 
+**The operator made the call, on the measurement.** Offered the choice between wiping only the four dangerous rows and a full reset, he first chose the narrow option; the cost of keeping the other 139 was then measured — `zoo_permissions_apply.py` has no surgical remove, so keeping them meant committing debris like `do`, `done` and `giast` into `.vscode/settings.json` as repo policy — and on that evidence he chose **"Full wipe — all 143"**. The agent measured; the operator named the disposition.
+
+⚠️ **After the eight promotions the numbers move once, and this is why they differ.** One of the eight (`ln -s `) already existed in the store, so `--status` now reads **142 store-only and 7 tracked rows missing from the store**, not 143 and 8. Both describe the same reconciliation before the apply; after it, both lists read *in sync with tracked file*.
+
 **The reconciliation was measured, not judged.** Of the 143, **101 were already covered** by a
 tracked prefix; only 42 would newly prompt after a reset, and every one was debris, a typo, a dead
 literal, or a **bare token whose useful form is already tracked with a trailing space** — the store
@@ -147,7 +151,7 @@ promoted — `find -delete` and `find -exec rm` are destructive and no deny row 
 
 ⭐ **The wipe closed the `rm -f` hole by itself, with no deny-list change**, because the tracked file
 carries no `rm` row at all. And it is the only direction that keeps the two machines equal: those
-139 rows lived in one Mac's SQLite file and had never existed on the PC, which was already running
+143 rows lived in one Mac's SQLite file and had never existed on the PC, which was already running
 on the tracked list alone. Reset with `zoo_permissions_apply.py --apply` (VS Code fully quit); its
 closing `--status` must read *in sync with tracked file* on **both** lists.
 

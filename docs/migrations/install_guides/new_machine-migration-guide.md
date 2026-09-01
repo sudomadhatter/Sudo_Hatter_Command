@@ -168,10 +168,10 @@ missing directories, and `git clone` refuses to clone into a non-empty folder.
 
 ```powershell
 # a) Every restored file must be IGNORED by its own repo — none may show as untracked.
-git -C . status --short                                   # lobby: no .env, no _secrets/ anywhere
+cd . && git status --short                                   # lobby: no .env, no _secrets/ anywhere
 git check-ignore -v docs/migrations/auth_keys/_secrets/master.env   # must print a .gitignore rule
-git -C Projects/AGY_AVIATIONCHAT status --short           # no .env*, no auth_keys/
-git -C Projects/BRKN_Tattoos status --short               # no .env.local
+cd Projects/AGY_AVIATIONCHAT && git status --short           # no .env*, no auth_keys/
+cd Projects/BRKN_Tattoos && git status --short               # no .env.local
 
 # b) Spot-check that keys actually landed (names, never print values):
 Select-String -Path .env -Pattern '^[A-Z_]+=' | Measure-Object            # expect ~35+ lines

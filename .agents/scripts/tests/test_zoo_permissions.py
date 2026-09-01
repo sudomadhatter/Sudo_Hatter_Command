@@ -373,6 +373,74 @@ def test_root_entry_files_carry_no_git_dash_c():
         f"first, so this contradicts .agents/rules/command-shape.md law 1 at the front door.")
 
 
+def test_root_entry_files_STATE_the_law_they_were_corrected_to_carry():
+    """⛔ The AFFIRMATIVE half. Deleting the whole §6 bullet left the gate 70/70 green.
+
+    The check above only proves the front door does not say the WRONG thing. It cannot notice the
+    door falling silent — and silence is how the law gets lost, since nothing else in the suite
+    reads a root entry file for command-shape content (SCC-369 review, reproduced by deleting the
+    bullet outright). A negative-only guard is half a gate.
+    """
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    for phrase, why in (
+        ("cd <abs path> &&", "the mandated spelling; without it §6 names no remedy"),
+        ("COMMAND-SHAPE", "the gate's own heading — the anchor every door cites"),
+        ("per piece", "the reason the spelling matters: layers judge a compound PER PIECE"),
+    ):
+        assert phrase.lower() in agents.lower(), (
+            f"AGENTS.md §6 no longer states {phrase!r} ({why}) — the front door lost the law")
+
+
+# ⛔ `.agents/hooks/` is swept too, and it is not a formality: `guard-cwd-escape.py` printed
+# "Better: do not cd at all. Use `git -C /abs/path ...`" as a live remedy TO THE MODEL, so an
+# agent obeying that PreToolUse guard was immediately nagged by `shape-guard.py` for rule 1 —
+# two hooks in one settings file steering opposite ways (SCC-369 review).
+#
+# ⛔ The predicate is RECOMMENDATION, not mention. A hook that names the spelling to ban it
+# (`shape-guard.py`'s nag text), to describe what it does not flag, or to quote a permission
+# rule (`Bash(git -C * status:*)`) is doing its job. Only "use it" is the defect — so the ban is
+# written as the shape an instruction takes, and both halves are proved below.
+RECOMMENDS_DASH_C = re.compile(r"(?:\buse\b|\bbetter\b|\bprefer\b|\binstead\b)[^\n]{0,40}"
+                               r"`?git\s+-C", re.I)
+
+
+def _dash_c_recommendations(files):
+    out = []
+    for f in files:
+        for i, line in enumerate(Path(f).read_text(encoding="utf-8").splitlines(), 1):
+            s = line.strip()
+            if RECOMMENDS_DASH_C.search(s) and "Not `git -C" not in s:
+                out.append(f"{Path(f).name}:{i}: {s[:90]}")
+    return out
+
+
+def test_hooks_never_recommend_the_denied_spelling():
+    hooks = sorted((ROOT / ".agents" / "hooks").glob("*.py"))
+    assert hooks, "no hooks found — the scan would pass vacuously"
+    offenders = _dash_c_recommendations(hooks)
+    assert not offenders, (
+        f"a hook RECOMMENDS the spelling shape-guard.py nags for: {offenders}. "
+        f"An agent obeying one hook is nagged by the other.")
+
+
+def test_hook_recommendation_scan_rejects_and_allows():
+    """Both halves — a gate that only ever passes is not a gate."""
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td)
+        bad = d / "bad.py"
+        bad.write_text('    "  2. Better: do not cd at all. Use `git -C /abs/path ...`"\n',
+                       encoding="utf-8")
+        assert _dash_c_recommendations([bad]), (
+            "REJECT half dead: the exact line that caused the contradiction scored clean")
+        good = d / "good.py"
+        good.write_text(
+            '    f"rule 1 — you used the `git -C <path>` spelling. Zoo denies it outright."\n'
+            "# `Bash(git -C * status:*)` also carries a wildcard.\n",
+            encoding="utf-8")
+        assert not _dash_c_recommendations([good]), (
+            "ALLOW half dead: a hook NAMING the spelling to ban it was swept up as an offender")
+
+
 def test_root_entry_scan_rejects_and_allows():
     """Both halves — a gate that only ever passes is not a gate (tests-must-gate-for-real §5)."""
     with tempfile.TemporaryDirectory() as td:

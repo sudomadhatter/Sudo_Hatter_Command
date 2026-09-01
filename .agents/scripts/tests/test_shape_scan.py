@@ -17,7 +17,9 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import subprocess
+import tempfile
 import sys
 from pathlib import Path
 
@@ -68,14 +70,45 @@ def test_positive_battery_fires_with_the_right_rule():
 
 
 def test_detector_is_the_hooks_own():
-    """⭐ One detector, two callers. A private copy in the scanner drifts from the nag."""
-    src = SCAN.read_text(encoding="utf-8")
-    assert "shape-guard.py" in src, (
-        "shape_scan.py must load the detector from .agents/hooks/shape-guard.py, "
-        "not re-implement it — a second copy drifts from what the nag actually catches")
-    for leaked in ("def strip_heredocs", "def strip_quoted", "GATE = re.compile"):
-        assert leaked not in src, (
-            f"shape_scan.py re-implements {leaked!r}; import it from the hook instead")
+    """⭐ One detector, two callers — asserted by IDENTITY, never by grepping the source.
+
+    ⛔ This check used to be a source-grep, and it could not fail. `"shape-guard.py" in src` is
+    satisfied by the file's own DOCSTRING (the house scar `comment-literals-invert-source-grep-tests`),
+    and the three "leaked" names are dodged by renaming them. Reproduced by mutation in review: a
+    full private re-implementation of all three rules, then DIVERGED from the hook, left the file
+    8/8 green while the scan and the nag disagreed on `pytest | tail` (SCC-369 review).
+
+    So ask the object, not the text: the module the scanner actually loaded must BE the hook file.
+    """
+    scan = _load(SCAN, "shape_scan")
+    loaded = getattr(scan, "_HOOK", None)
+    assert loaded is not None, "shape_scan.py exposes no _HOOK — it is not loading the nag's detector"
+    assert Path(loaded.__file__).resolve() == HOOK.resolve(), (
+        f"the scanner's detector is {loaded.__file__}, not the nag's {HOOK} — "
+        f"a second copy drifts from what the nag actually catches")
+
+
+def test_scan_and_hook_agree_on_every_gate_spelling():
+    """⛔ The differential the identity check cannot make on its own.
+
+    A fresh fork agrees on the eleven controls by construction; drift is what comes LATER, outside
+    them. So walk every spelling the rule-3 regex claims to know and require the two callers to
+    return the SAME rule numbers — that is what a private copy cannot survive.
+    """
+    scan = _load(SCAN, "shape_scan")
+    hook = _load(HOOK, "shape_guard")
+    spellings = ["python3 .agents/scripts/tests/run_all.py", "python3 -m pytest", "npx vitest run",
+                 "ruff check .", "pyrefly check", "npx tsc --noEmit", "npm run test",
+                 "npm run lint", "python3 .agents/scripts/tests/test_shape_scan.py"]
+    RULE_RE = re.compile(r"\brule (\d)\b")
+    disagree = []
+    for gate in spellings:
+        cmd = f"{gate} | head -20"
+        theirs = {int(m.group(1)) for line in hook.violations(cmd)
+                  for m in [RULE_RE.search(line)] if m}
+        if scan.classify(cmd) != theirs or theirs != {3}:
+            disagree.append((cmd, sorted(scan.classify(cmd)), sorted(theirs)))
+    assert not disagree, f"scan and hook disagree (cmd, scan, hook): {disagree}"
 
 
 def test_classify_agrees_with_the_hook_on_every_control():
@@ -122,6 +155,53 @@ def test_scan_reads_both_stores():
     assert "def scan_claude" in src and "def scan_zoo" in src, (
         "shape_scan.py must measure BOTH stores; Zoo has no hook surface, so measurement "
         "is the only instrument it gets")
+
+
+def test_ingest_actually_reads_a_fixture_store():
+    """⛔ THE ONE THAT WAS MISSING. A dead parser scores 0.00% and reads as perfect compliance.
+
+    Reproduced in review three ways — renaming the `Bash` tool filter, breaking the Zoo message
+    filter, and pointing HOME at an empty directory — each left the suite 8/8 green while the
+    scan reported zero commands. `test_json_report_is_well_formed` runs live and pins no numbers
+    (correct — they rot daily), but it never asserted `commands > 0`, so an empty result satisfied
+    it. This asserts the arithmetic against a fixture whose answers are known (SCC-369 review).
+    """
+    scan = _load(SCAN, "shape_scan")
+    known = ["git -C /repo status",                      # rule 1
+             'python3 x.py; echo "EXIT=$?"',             # rule 2
+             "cd /repo && git status --porcelain"]       # clean
+    with tempfile.TemporaryDirectory() as td:
+        proj = Path(td) / "claude" / "a-project"
+        proj.mkdir(parents=True)
+        (proj / "t.jsonl").write_text("\n".join(
+            json.dumps({"message": {"content": [
+                {"type": "tool_use", "name": "Bash", "input": {"command": c}}]}})
+            for c in known), encoding="utf-8")
+
+        rep = scan.scan_claude(sessions=5, root=str(Path(td) / "claude"))
+        assert rep["commands"] == 3, f"the Claude ingest read {rep['commands']} of 3: {rep}"
+        assert rep["hits"]["1"] == 1 and rep["hits"]["2"] == 1 and rep["hits"]["3"] == 0, rep
+        assert rep["rates"]["1"] == 33.33, f"the arithmetic is wrong: {rep['rates']}"
+
+        zroot = Path(td) / "zoo"
+        (zroot / "thread-1").mkdir(parents=True)
+        (zroot / "thread-1" / "ui_messages.json").write_text(
+            json.dumps([{"say": "command", "text": c} for c in known]), encoding="utf-8")
+        zrep = scan.scan_zoo(roots=[zroot])
+        assert zrep["commands"] == 3, f"the Zoo ingest read {zrep['commands']} of 3: {zrep}"
+        assert zrep["hits"]["1"] == 1 and zrep["hits"]["2"] == 1, zrep
+
+
+def test_sessions_below_one_is_refused():
+    """⛔ `paths[:-1]` is a SLICE, not a count — it WIDENED the window from 1 to 110 sessions."""
+    scan = _load(SCAN, "shape_scan")
+    for bad in (0, -1):
+        try:
+            scan.scan_claude(sessions=bad)
+        except ValueError:
+            continue
+        raise AssertionError(f"--sessions {bad} was accepted; a negative slice silently widens "
+                             f"the window and corrupts the denominator of a published figure")
 
 
 def test_script_is_indexed():

@@ -18,7 +18,7 @@ effective by arithmetic. `--self-test` runs six negative and five positive contr
 must score exactly zero or this script has no business reporting a number.
 
 Read-only: opens Claude's `~/.claude/projects/*/*.jsonl` transcripts and Zoo's `ui_messages.json`
-thread store, writes nothing anywhere.
+thread store, writes nothing tracked (module loading still caches bytecode under __pycache__/, which is gitignored).
 
 Usage (Mac: python3 · PC: python):
     python3 .agents/scripts/shape_scan.py --self-test         # the control batteries, no data
@@ -71,6 +71,11 @@ NEGATIVE_CONTROLS = [
     ("git commit -F msg.txt", "the correct -F shape"),
     ("python3 x.py > out.txt 2>&1", "a REDIRECT is the remedy, not the fault"),
     ("cd /repo && git status --porcelain", "the shape the rule mandates"),
+    ("grep -rn run_all.py .agents/ | head -20", "searching FOR a gate name is not RUNNING one"),
+    ("sed -n '1,80p' .agents/scripts/tests/test_shape_guard.py | head -40",
+     "reading a test file is not piping a gate"),
+    ("""grep -rn '; echo "EXIT=$?"' .agents/rules/""",
+     "a SEARCH for the tail literal is not a USE of it"),
 ]
 
 POSITIVE_CONTROLS = [
@@ -114,9 +119,22 @@ def _tally(commands) -> dict:
     }
 
 
-def _claude_commands(sessions: int):
-    paths = sorted(glob.glob(os.path.expanduser("~/.claude/projects/*/*.jsonl")),
-                   key=os.path.getmtime, reverse=True)[:sessions]
+def _claude_commands(sessions: int, root: str | None = None):
+    """Every `Bash` tool_use command across the N newest transcripts.
+
+    ⛔ `sessions` must be >= 1. `paths[:-1]` is a SLICE, not a count — it returns all but the
+    newest transcript, so `--sessions -1` silently WIDENED the window from 1 session to 110 and
+    41,853 commands, and the denominator of a figure published as standing law was wrong by 40x
+    with no error (SCC-369 review). Rejected at the boundary rather than trusted at the flag.
+
+    `root` exists so the ingest can be tested against a fixture. Without a seam, a parser that
+    reads nothing scores 0.00% and is indistinguishable from perfect compliance.
+    """
+    if sessions < 1:
+        raise ValueError(f"--sessions must be >= 1, got {sessions}")
+    pattern = os.path.join(root, "*", "*.jsonl") if root else \
+        os.path.expanduser("~/.claude/projects/*/*.jsonl")
+    paths = sorted(glob.glob(pattern), key=os.path.getmtime, reverse=True)[:sessions]
     for p in paths:
         try:
             with open(p, encoding="utf-8") as fh:
@@ -142,21 +160,27 @@ def _claude_commands(sessions: int):
     globals()["_LAST_CLAUDE_SESSIONS"] = len(paths)
 
 
-def scan_claude(sessions: int = 25) -> dict:
+def scan_claude(sessions: int = 25, root: str | None = None) -> dict:
     """Claude Code's own transcripts: every `Bash` tool_use across the N newest sessions."""
-    rep = _tally(_claude_commands(sessions))
+    rep = _tally(_claude_commands(sessions, root))
     rep["platform"] = "claude"
     rep["sources"] = globals().get("_LAST_CLAUDE_SESSIONS", 0)
     return rep
 
 
-def _zoo_commands():
+def _zoo_commands(roots=None):
+    if roots is not None:
+        return _zoo_from(list(roots))
     try:
         z = _load(ROOT / ".agents" / "scripts" / "zoo_notify.py", "zoo_notify")
         roots = z.store_roots()
     except Exception:
         globals()["_LAST_ZOO_THREADS"] = 0
-        return
+        return iter(())
+    return _zoo_from(roots)
+
+
+def _zoo_from(roots):
     files = []
     for r in roots:
         files.extend(glob.glob(os.path.join(str(r), "*", "ui_messages.json")))
@@ -178,9 +202,9 @@ def _zoo_commands():
                     yield txt
 
 
-def scan_zoo() -> dict:
+def scan_zoo(roots=None) -> dict:
     """Zoo Code's thread store: every terminal command a seat asked for or announced."""
-    rep = _tally(_zoo_commands())
+    rep = _tally(_zoo_commands(roots))
     rep["platform"] = "zoo"
     rep["sources"] = globals().get("_LAST_ZOO_THREADS", 0)
     return rep

@@ -3,8 +3,8 @@
 
 ⛔ THE MEASURED PROBLEM. `command-shape.md` was already standing law on EVERY platform — summarized
 in `AGENTS.md` §6, restated in `zoo-team.md` for every Zoo seat, keyworded into `rule-trigger.py`,
-and it fires as a `UserPromptSubmit` injection. It was still violated in **1,933 of 7,858 Bash calls
-across 25 sessions — 98.9% of every detectable violation in the transcripts.** Of 1,247 `git -C`
+and it fires as a `UserPromptSubmit` injection. It was still violated in **1,946 of 8,355 Bash calls
+across 25 sessions — 23.3% of every Bash call made in the transcripts.** Of 1,247 `git -C`
 invocations, 521 named a verb the allow list cannot pre-approve: every one an approval stop that
 would have been silent in the `cd <abs> && git <verb>` shape the rule already mandates.
 
@@ -30,8 +30,7 @@ guard. See `.agents/rules/command-shape.md` §Nag.
 ⛔ FAILS OPEN, always. Unparseable stdin, a missing key, any exception at all → say nothing, exit 0.
 Same discipline as `guard-cwd-escape.py`: a guard that cannot judge has learned nothing.
 
-Canonical source: `.agents/hooks/`. Mirrored to `.claude/hooks/` by `/smh-sync-agents` — never
-hand-edit the copy.
+Canonical source: `.agents/hooks/`. Deployed to `.claude/hooks/` — never hand-edit the copy.
 """
 from __future__ import annotations
 
@@ -63,9 +62,68 @@ def strip_heredocs(text: str) -> str:
     return "\n".join(out)
 
 
+def quoted_spans(text: str) -> list[tuple[int, int]]:
+    """(start, end) of every quoted run. A `;` inside one is TEXT, not a separator.
+
+    ⛔ Rule 2 cannot use `strip_quoted` — `$?` lives inside the quotes it would delete — so it
+    needs the positions instead, to ask whether the SEPARATOR it matched was real shell syntax or
+    a character inside somebody's argument (SCC-369 review: `grep -rn '; echo "EXIT=$?"' …` and
+    `git commit -m "fix; echo $? was wrong"` both nagged, and rule 1 already had the control that
+    rule 2 lacked).
+    """
+    spans: list[tuple[int, int]] = []
+    i, n = 0, len(text)
+    while i < n:
+        if text[i] in "\"'":
+            close = text.find(text[i], i + 1)
+            if close == -1:
+                break
+            spans.append((i, close))
+            i = close + 1
+        else:
+            i += 1
+    return spans
+
+
 def strip_quoted(text: str) -> str:
-    """A quoted string is an ARGUMENT: `grep "git -C"` is a search, never a use."""
-    return re.sub(r'"[^"]*"', '""', re.sub(r"'[^']*'", "''", text))
+    """A quoted string is an ARGUMENT: `grep "git -C"` is a search, never a use.
+
+    ⛔ ONE left-to-right pass, never two regex passes. Stripping `'…'` before `"…"` let an
+    APOSTROPHE inside a double-quoted string pair with a later apostrophe and swallow everything
+    between them: `echo "it's here" && git -C /repo status && echo "that's all"` went silent on a
+    genuine rule-1 violation, and the scan under-counted it. Measured at 2 hidden violations in
+    the live corpus (SCC-369 review). Blanks the contents in place so offsets stay usable.
+    """
+    out = list(text)
+    for start, end in quoted_spans(text):
+        for i in range(start + 1, end):
+            out[i] = " "
+    return "".join(out)
+
+
+_ENV_ASSIGN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+# Words that DEFER to a later word for the real command: interpreters, runners, wrappers.
+_DEFERS = re.compile(r"^(env|time|nohup|exec|command|sudo|xargs|npx|npm|pnpm|yarn|uv|poetry|"
+                     r"pipenv|cargo|python3?|py|sh|bash|zsh|node|run)$")
+
+
+def command_prefix(piece: str) -> str:
+    """The head of a pipe piece — the command being RUN, not its arguments.
+
+    ⛔ `sed -n '1,80p' tests/test_x.py` is a READER whose argument happens to be a gate's filename;
+    `python3 tests/test_x.py` runs it. The first cut of this file matched the gate pattern anywhere
+    in the piece and could not tell them apart, so reading a test file was nagged as piping a gate
+    — measured at 170 of 779 rule-3 hits, 21.8%, which also inflated the published baseline the
+    whole ruling rests on (SCC-369 review, two lenses independently).
+    """
+    words = [w for w in piece.split() if not _ENV_ASSIGN.match(w)]
+    head: list[str] = []
+    for w in words:
+        head.append(w)
+        if w.startswith("-") or _DEFERS.match(w.rsplit("/", 1)[-1]):
+            continue          # a flag or a wrapper: the real command is still ahead
+        break
+    return " ".join(head)
 
 
 def violations(command: str) -> list[str]:
@@ -76,17 +134,24 @@ def violations(command: str) -> list[str]:
 
     # Rule 1 — the `-C` spelling. Checked on quote-stripped text so a search for the literal
     # is not mistaken for a use of it.
-    if re.search(r"(^|[;&|(\s])git -C\s", clean):
+    if re.search(r"(^|[;&|(\s])git\s+-C\s", clean):
         found.append(
-            f"{RULE} rule 1 — you used the `git -C <path>` spelling. No verb rule can match "
-            f"through `-C`, and Zoo denies it outright, so the call stops and waits. "
+            f"{RULE} rule 1 — you used the `git -C <path>` spelling. Zoo denies it outright, and "
+            f"on Claude Code only the handful of verbs with an explicit `git -C * <verb>` allow "
+            f"rule get through — any other verb stops and waits for a human. "
             f"Write `cd <abs path> && git <verb> …` in ONE line instead; `git commit`, `git add`, "
             f"`git fetch`, `git push`, `git checkout` and `git worktree` are all already allowed "
-            f"in that shape.")
+            f"in that shape, on both platforms.")
 
     # Rule 2 — the exit-echo tail. Checked WITHOUT quote-stripping: `$?` lives inside the quotes
     # (`echo "EXIT=$?"`), so stripping them deletes the very thing being detected.
-    if re.search(r"(;|&&)\s*echo\s+[^|;&]*\$\?", heredocs_gone):
+    spans = quoted_spans(heredocs_gone)
+    # ⛔ A NEWLINE is a command separator too. Requiring `;` or `&&` missed every multi-line call
+    # whose second line IS the echo — 225 of them in the live corpus, under-reporting rule 2 by
+    # ~2.7 points against the figure this lane published as law (SCC-369 review).
+    tail = re.compile(r"(;|&&|\n)[ \t]*echo\s+[^|;&\n]*\$\?")
+    if any(not any(s <= m.start() <= e for s, e in spans)
+           for m in tail.finditer(heredocs_gone)):
         found.append(
             f"{RULE} rule 2 — drop the `; echo \"EXIT=$?\"` tail. The tail becomes the shell's "
             f"reported status, so a DEAD GATE can exit 0 behind it. The harness already shows you "
@@ -96,7 +161,7 @@ def violations(command: str) -> list[str]:
     # long `&&` chain is not evidence about the gate.
     for segment in re.split(r"&&|\|\||;|\n", clean):
         parts = segment.split("|")
-        if len(parts) > 1 and any(GATE.search(p) for p in parts[:-1]):
+        if len(parts) > 1 and any(GATE.search(command_prefix(p)) for p in parts[:-1]):
             found.append(
                 f"{RULE} rule 3 — you piped a gate. A pipe reports the LAST command's status, not "
                 f"the gate's, and `head` can SIGPIPE it mid-run. Redirect instead: "

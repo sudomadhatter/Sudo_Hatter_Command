@@ -90,7 +90,7 @@ effective than making more rules for the same thing in more places."* And the re
 **This rule is the case that proved it.** It already reached every platform — summarized in
 `AGENTS.md` §6, restated in `zoo-team.md` for every Zoo seat, keyworded into
 [`rule-trigger.py`](../hooks/rule-trigger.py), and firing as a `UserPromptSubmit` injection — and was
-still broken in **1,933 of 7,858 Bash calls across 25 sessions: 98.9% of every detectable violation
+still broken in **1,946 of 8,355 Bash calls across 25 sessions: 23.3% of every Bash call made
 in the transcripts.** Of 1,247 `git -C` invocations, 521 named a verb no allow rule can pre-approve,
 so each was an approval stop that would have been silent in the shape rule 1 already mandates.
 Distribution was never the gap. Compliance was, and a sixth copy would have changed nothing.
@@ -120,9 +120,9 @@ nothing to rationalize past.
 sound or event hook, which is the same fact that forces `zoo_notify.py` to poll the thread store.
 What Zoo gets instead is **measurement**: [`shape_scan.py`](../scripts/shape_scan.py) reads both
 stores with this hook's own detector, so *"are the Zoo seats doing better"* is answerable with a
-number rather than an impression. Baseline at 2026-09-01, as rules 3 / 2 / 1 — **Claude 9.49 / 9.36 /
-5.79 %** over 8,122 commands, **Zoo 19.03 / 4.45 / 3.64 %** over 247.
+number rather than an impression. Baseline at 2026-09-01, as rules 3 / 2 / 1 — **Claude 6.88 / 11.92 /
+5.65 %** over 8,355 commands, **Zoo 19.03 / 4.45 / 3.64 %** over 247.
 
 **Before adding a nag for any other rule, measure it first.** The scope here is three rules because
-those three were 98.9% of the violations. A nag that fires on rare or debatable shapes becomes noise,
+those three cover every violation the scanner detects. A nag that fires on rare or debatable shapes becomes noise,
 and noise trains the agent to ignore every nag — including the ones that matter.

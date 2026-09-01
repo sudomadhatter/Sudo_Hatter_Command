@@ -19,7 +19,12 @@ The remedy is verified, not assumed:
 
 A subshell runs the work in a child whose cwd change dies with it. So this hook is narrow on
 purpose: it flags a `cd` only when it is a real command, at paren depth 0, leaving the workspace.
-`git -C`, absolute paths, the subshell form, and any `cd` that stays inside all pass untouched.
+Absolute paths, the subshell form, and any `cd` that stays inside all pass untouched — and so
+does `git -C`, which this hook does not flag but `shape-guard.py` nags for a different reason
+(no verb rule can match through `-C`). ⛔ This hook must never RECOMMEND that spelling: for a
+while it did, in remedy 2 of the text below, so an agent obeying this guard was immediately nagged
+by the other one. Two hooks in one settings file steering opposite ways is worse than either
+being wrong alone (SCC-369 review).
 
 ⛔ FAILS OPEN, always. Unparseable stdin, an unresolvable workspace root, a variable it cannot
 expand, any exception at all -> allow. A guard that cannot judge has learned nothing, and one
@@ -267,8 +272,11 @@ REASON = (
     "Two remedies, both verified:\n"
     "  1. Run it in a subshell — the cd dies with the child and cwd is untouched:\n"
     "       ( cd {arg} && <your command> )\n"
-    "  2. Better: do not cd at all. Use `git -C /abs/path ...` and absolute paths for every "
-    "read and write.\n\n"
+    "  2. Or do not cd at all — use ABSOLUTE paths for every read and write.\n\n"
+    "     \u26d4 Not `git -C <path> ...`. No verb rule in either permission layer can match "
+    "through `-C`, and Zoo denies the spelling outright, so the call stops and waits for a human. "
+    "Write `cd <abs path> && git <verb> ...` on ONE line instead (see command-shape.md rule 1); "
+    "the pair is two matchable pieces and stays silent.\n\n"
     "If you genuinely mean to move this shell out of the workspace, approve this call."
 )
 
