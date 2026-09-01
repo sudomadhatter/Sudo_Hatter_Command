@@ -248,16 +248,21 @@ Diff-scoped, against `docs/_scc_sops_prds/workflows_testing_SOP.md` and `.agents
 
 ## Your Actions
 
-- [ ] **Decide what the machine-global Antigravity cache should hold right now.** This lane's sync
-      published *its own* doors to `~/.gemini/antigravity/global_workflows`, so your live menu is
-      currently serving unmerged work — 39 of 39 files differ from what `main` has. Two options, and
-      the second is what I'd pick: leave it (the doors are correct and this lands soon), or run
-      `/smh-sync-agents` **from the main checkout** to put the menu back to what has actually landed
-      until this merges. `CS-18 L` now binds only in the main checkout, so until one of those
-      happens a suite run there reports the divergence.
-- [ ] **Run `/smh-sync-agents` on the PC** after this lands. Machine-global caches are per-machine
-      and never travel with a clone.
+- [x] ~~Decide what the machine-global Antigravity cache should hold.~~ **Moot — Antigravity is
+      retired** (VS Code since 2026-08-29, `zoo-code-replaces-roo-code`). `/Applications` carries
+      only VS Code, so `~/.gemini/antigravity/global_workflows` is residue from an uninstalled app
+      and nothing reads it. No decision was owed.
+- [ ] **Optional, one command:** `rm -rf ~/.gemini/antigravity/global_workflows`. `CS-18 L`/`M2`
+      already SKIP when that directory is absent, so deleting the residue stops them asserting that
+      a dead cache mirrors the doors. Left to you only because it is a delete outside the repo.
+- [ ] **Run `/smh-sync-agents` on the PC** after this lands — for the surfaces that are live
+      (opencode's command cache, the Codex prompts), not for Antigravity.
 
 **Not yours — mine, and already done:** the review's 23 findings are all fixed in this lane, the
 declared change set reconciles 0/0/0, and the mutation table is re-aimed and re-run at 11/11. The
 merge itself lands via this branch's PR.
+
+⭐ **One line for the record, not a new ticket:** `.agents/workflows/` is now a generated surface with
+no consumer. Retiring it belongs with SCC-349 (adding `zoo` as platform 5, under SCC-346), which is
+already the open lane for sync-agents' platform list. This lane made that retirement a delete — all
+38 doors are pointers now, where 14 used to hold the only copy of their body on that surface.
