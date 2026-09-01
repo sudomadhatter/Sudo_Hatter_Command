@@ -98,6 +98,7 @@ def sections(rep: wf.Report, section: str) -> list[tuple[str, str]]:
 # to keep "the flag does not exist yet" from being scored as "the check fired and blocked".
 
 CP_SCRIPT = Path(cp.__file__).resolve()
+GR_SCRIPT = CP_SCRIPT.parent / "gate_receipt.py"
 
 _FINDING_RE = re.compile(r"^\[(ERROR|WARN|INFO)\s*\]\s*([\w-]+):\s*(.*)$", re.MULTILINE)
 
@@ -151,7 +152,8 @@ def verdict_line(out: str) -> str:
     return hits[-1] if hits else ""
 
 
-def lane_repo(root: Path) -> Path:
+def lane_repo(root: Path, status: str = "review", verdict: str | None = "PASS",
+              gates_id: str | None = "30-1") -> Path:
     """A close-out lane with NOTHING wrong with it - the only fixture whose verdict line
     is readable evidence.
 
@@ -165,27 +167,44 @@ def lane_repo(root: Path) -> Path:
     It also carries a REAL `origin` - a local bare repo - because the target state fetches
     by DEFAULT, and a fetch with no remote fails, which would make every default run look
     stale for a reason that is the fixture's fault rather than the script's.
+
+    ⭐ SCC-365 · IT ALSO CARRIES ITS `suite` RECEIPT, and it has to. A lane at `review`
+    claiming `Verdict: PASS` now owes the evidence, so without one this fixture stops being
+    "nothing wrong with it" and every row above it reads `BLOCKED` instead of the freshness
+    it exists to measure. The three knobs are for the EV block, which turns each of them in
+    turn; every default reproduces the fixture the rows above were written against, so a
+    caller that names none of them gets exactly the tree it always got.
+
+    ⛔ THE RECEIPT IS GITIGNORED, AND THAT IS THE ONLY WAY IT CAN READ CURRENT. A receipt
+    records the commit it ran on; committing the receipt moves HEAD past that commit, and
+    `gr.check_receipt` then compares TREES and correctly reports STALE. So a fixture that
+    commits its receipt cannot show a clean one - and staleness policy is a different
+    question from "was there any evidence at all", which is what these rows measure. The
+    ignore keeps `check_sync` clean at the same time, so the receipt is not read as lane dirt.
     """
     repo = root / "lane"
     (repo / BOARD_REL.parent).mkdir(parents=True)
-    (repo / BOARD_REL).write_text("development_status:\n  30-1-fresh: review\n",
+    (repo / BOARD_REL).write_text(f"development_status:\n  30-1-fresh: {status}\n",
                                   encoding="utf-8")
     ctx = repo / "_bmad-output/active-context"
     ctx.mkdir(parents=True)
     (ctx / "active-context.md").write_text("# active context\n", encoding="utf-8")
+    (repo / ".gitignore").write_text(f"{wf.GATES_REL}/\n", encoding="utf-8")
 
     stories = repo / "_bmad/bmm/stories"
     stories.mkdir(parents=True)
     (stories / "story-30.1-fresh.md").write_text(
-        "# Story\nStatus: review\n\n### File List\n- backend/real.py\n", encoding="utf-8")
+        f"# Story\nStatus: {status}\n\n### File List\n- backend/real.py\n", encoding="utf-8")
 
     # The artifact folder's date is pre-CUTOFF ON PURPOSE: walkthrough_roster.judge treats
     # a legacy lane as a note rather than a block, so the roster rules cannot inject the
     # error that would take over the verdict line these cases have to read.
     art = repo / "_artifacts/2026-08-01_epic_30/story-30-1-fresh"
     art.mkdir(parents=True)
-    (art / "walkthrough.md").write_text("## Code Review\n\n**Verdict: PASS**\n",
-                                        encoding="utf-8")
+    (art / "walkthrough.md").write_text(
+        "## Code Review\n\n" + (f"**Verdict: {verdict}**\n" if verdict
+                                else "The review ran; nothing to report.\n"),
+        encoding="utf-8")
 
     # A TRACKED memory store. Untracked, git would collapse the whole directory into one
     # `?? _artifacts/_memory/` row and CP-MEM would be measuring git's output folding
@@ -207,6 +226,19 @@ def lane_repo(root: Path) -> Path:
     git(repo, "branch", "claude/SCC-11-mine")
     git(repo, "branch", "claude/SCC-22-sibling")
     git(repo, "branch", "claude/xdist-tail-hang")
+
+    if gates_id:
+        # STAMPED BY THE REAL WRITER, never hand-rolled JSON: `receipt_defect` and
+        # `check_receipt` read six fields between them, and a fixture inventing that shape
+        # is a fixture that can pass while the real format has moved on without it.
+        stamped = subprocess.run(
+            [sys.executable, str(GR_SCRIPT), "run", "--story", gates_id, "--gate", "suite",
+             "--project", str(repo), "--cwd", str(repo),
+             "--", sys.executable, "-c", "print('suite ok')"],
+            cwd=str(repo), capture_output=True, text=True)
+        assert stamped.returncode == 0, (
+            f"lane_repo: gate_receipt run failed: {stamped.stdout}{stamped.stderr}")
+
     # CHECKED, not fired and forgotten. A silent failure in any of these three leaves the
     # lane with NO upstream, and `check_sync` then degrades to "no upstream to compare
     # against" - still exit 1, still zero ERRORs, so FR0 keeps passing while the fixture has
@@ -222,6 +254,39 @@ def lane_repo(root: Path) -> Path:
     assert pushed.returncode == 0, f"lane_repo: push -u origin main failed: {pushed.stderr}"
     return repo
 
+
+# ── EV · SCC-365 · the fixture for "a verdict must show the suite that backed it" ────
+#
+# AVCH-106 closed carrying `Verdict: PASS` in its walkthrough while the standing suite was
+# RED, and this script printed `VERDICT: clear to close out` over it. Three independent gaps
+# let that through: the verdict was never compared to any evidence, the receipt check was OFF
+# unless a caller remembered `--require-gates`, and a receipt that was never written only
+# WARNed - a ruling dated 2026-08-02 that kept the gate "advisory for one sprint" and was
+# never revisited.
+#
+# ⛔ THE SCOPE LIMITER IS THE BOARD STATUS, NOT A DATE, and that is a deliberate departure
+# from `OVERVIEW_CUTOFF` and `walkthrough_roster.CUTOFF` twelve lines apart in the same file.
+# Both read a `YYYY-MM-DD` prefix off the artifact folder via `roster.lane_date`, and STORY
+# lanes do not carry one (`_artifacts/epic_23/story-23-9-<slug>/`), so a dated exemption here
+# is inert: it exempts everything or blocks everything. Status answers the question a cutoff
+# is really asking - *is the remedy reachable?* A flip-eligible story is being closed right
+# now and one `gate_receipt.py run` away from evidence. `done`, `descoped`, `deferred*`,
+# `optional` and `backlog` have no live lane to run it in, and `/cicd-prune-worktree` runs
+# this same script on `done` stories - so an unconditional demand would refuse every already
+# closed story with a remedy nobody can perform, which is the disarming this file warns about
+# twice.
+
+
+def rows(out: str, section: str, sev: str | None = None) -> list[str]:
+    """The `[SEV  ] <section>: msg` rows of ONE section - `findings()` drops the section.
+
+    Every EV row below is about the `gates` class specifically, and two of the fixtures carry
+    an unrelated ERROR on purpose (a `Verdict: FAIL` blocks the flip in `artifacts`, which is
+    correct and is not this ticket's demand firing). Greping every ERROR row would score that
+    as a pass.
+    """
+    return [msg for s, sec, msg in _FINDING_RE.findall(out)
+            if sec == section and (sev is None or s == sev)]
 
 
 # ── OV · SCC-357 · the project overview guide, checked at the STORY close-out ────────
@@ -978,6 +1043,131 @@ def main() -> int:
             c.check("SCC-211 an explicitly named tree is still measured",
                     any("some-other-tree" in d for d in findings(out, "ERROR", "uncommitted")),
                     out.strip()[-400:])
+
+    # ══ EV · SCC-365 · A VERDICT IS A CLAIM; THE RECEIPT IS THE EVIDENCE ══════════════════
+    #
+    # The asymmetry these rows close: a receipt that EXISTS and records fail/stale already
+    # errors (`gr.check_receipt`). Only a receipt that was never written slipped through - the
+    # gate was strict about evidence it could see and silent about evidence that was absent,
+    # which is backwards. The demand is DERIVED FROM THE CLAIM rather than hardcoded: a
+    # `PASS`/`CONCERNS` asserts a gate was green, so `suite` becomes required; `FAIL`, `WAIVED`
+    # and a walkthrough with no verdict demand nothing new - the same vocabulary
+    # `verdict_receipt.py` (SCC-363) gates at commit time.
+    if c.block("EV · SCC-365 · a `Verdict: PASS` must show the suite that backed it"):
+        # ── EV2 · row B · THE POSITIVE CONTROL, AND EV1'S PRECONDITION ────────────────────
+        #
+        # ⛔ A GATE THAT CANNOT BE SATISFIED IS A GATE THAT GETS DELETED, so the satisfiable
+        # half is asserted FIRST and everything below inherits it: if this row fails, EV1's
+        # `rc == 2` is measuring the fixture rather than the demand.
+        #
+        with TempDir() as tmp:
+            repo = lane_repo(tmp)          # the default lane: review + PASS + its receipt
+            rc_ok, out_ok = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                   "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            c.check("EV2 row B · a flip-eligible PASS WITH a usable `suite` receipt files no "
+                    "`gates` ERROR and the verdict line reads clear - the demand is "
+                    "satisfiable, which is what earns it the right to block",
+                    not rows(out_ok, "gates", "ERROR")
+                    and any("pass @" in m for m in rows(out_ok, "gates"))
+                    and "clear to close out" in verdict_line(out_ok).lower(),
+                    f"rc={rc_ok} gates={rows(out_ok, 'gates')} "
+                    f"verdict={verdict_line(out_ok)!r}")
+
+        # ── EV1 · row A · THE HOLE ITSELF ────────────────────────────────────────────────
+        # `--require-gates` is NOT passed. Two of the four doors omit it today, and the one
+        # this ticket hardens showed it in brackets, so "the caller forgot" is the shipping
+        # path, not the edge case.
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, gates_id=None)
+            rc_a, out_a = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                 "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            c.check("EV1 row A · a flip-eligible `Verdict: PASS` with NO receipt BLOCKS with "
+                    "`--require-gates` omitted entirely",
+                    rc_a == 2 and any("suite" in m for m in rows(out_a, "gates", "ERROR")),
+                    f"rc={rc_a} gates={rows(out_a, 'gates')} "
+                    f"verdict={verdict_line(out_a)!r}")
+
+            # ⛔ EV6 · row B · THE VERDICT LINE, NOT THE EXIT CODE. `rc == 2` is reachable from
+            # any error in any section, and the line an agent actually acts on is computed
+            # separately (`if e: BLOCKED`). The AVCH-106 shape is exactly this fixture: board
+            # in `review`, a walkthrough asserting its own PASS, no receipt anywhere, and a
+            # door that did not name the flag.
+            c.check("EV6 row B · the AVCH-106 replay: the VERDICT LINE itself refuses, where "
+                    "today it reads `clear to close out` over a suite that never ran",
+                    "clear to close out" not in verdict_line(out_a).lower(),
+                    verdict_line(out_a) or "(no VERDICT line printed)")
+
+        # ── EV5 · row E · THE EXPIRED RULING, AND THE REMEDY THAT MUST SURVIVE IT ─────────
+        # ⛔ SEVERITY **AND** MESSAGE, because promoting the row without keeping its remedy is
+        # how a blocking gate gets routed around: `gr.load_receipt`'s own string is
+        # "NO RECEIPT - the gate has no evidence it ran", which names neither a directory nor
+        # a command. With the id-resolution bug live (EV7) a reader could not tell "never
+        # written" from "looked in the wrong place".
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, gates_id=None)
+            rc_e, out_e = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                 "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11",
+                                 "--require-gates", "suite")
+            errs_e = rows(out_e, "gates", "ERROR")
+            c.check("EV5 row E · an EXPLICITLY required gate with no receipt is an ERROR that "
+                    "names the directory searched AND the command that fills it - the "
+                    "2026-08-02 `advisory for one sprint` ruling is retired",
+                    rc_e == 2 and bool(errs_e)
+                    and any(f"{wf.GATES_REL}/30-1" in m for m in errs_e)
+                    and any("gate_receipt.py run" in m for m in errs_e),
+                    f"rc={rc_e} gates={rows(out_e, 'gates')}")
+
+        # ── EV3 · row C · THE STATES WITH NO REACHABLE REMEDY ────────────────────────────
+        # CONTROLS, green today and green after: `/cicd-prune-worktree` runs this script on
+        # `done` stories with no `--require-gates`, and the live AVCH board carries 13
+        # `deferred`/`deferred-v3` rows whose lanes are pruned. Refusing those would name a
+        # remedy nobody can perform.
+        for st in ("done", "deferred"):
+            with TempDir() as tmp:
+                repo = lane_repo(tmp, status=st, gates_id=None)
+                rc_c, out_c = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                     "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+                c.check(f"EV3 row C CONTROL · a `{st}` story with a PASS and no receipt gains "
+                        "NO `gates` error - closed and parked history stays prunable",
+                        not rows(out_c, "gates", "ERROR"),
+                        f"rc={rc_c} gates={rows(out_c, 'gates')}")
+
+        # ── EV4 · row D · THE VERDICTS THAT CLAIM NOTHING ────────────────────────────────
+        # CONTROLS. `FAIL` already blocks in `artifacts` and that error is not this demand;
+        # `WAIVED` is a recorded decision not to gate; a walkthrough with no `Verdict:` line
+        # has its own `artifacts` error. Parity with `verdict_receipt.py`, which gates exactly
+        # `PASS|CONCERNS` and deliberately leaves the other two alone.
+        for v, label in ((None, "no `Verdict:` line at all"), ("FAIL", "FAIL"),
+                         ("WAIVED", "WAIVED")):
+            with TempDir() as tmp:
+                repo = lane_repo(tmp, verdict=v, gates_id=None)
+                rc_d, out_d = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                     "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+                c.check(f"EV4 row D CONTROL · {label} acquires no receipt demand",
+                        not rows(out_d, "gates", "ERROR"),
+                        f"rc={rc_d} gates={rows(out_d, 'gates')} "
+                        f"artifacts={rows(out_d, 'artifacts', 'ERROR')}")
+
+        # ── EV7 · row G · THE SAME STORY MUST NOT BLOCK BY SPELLING ──────────────────────
+        # ⛔ REPRODUCED LIVE ON AviationChat BEFORE IT WAS WRITTEN: `main()` hands `check_gates`
+        # the RAW `--story` while every other check gets the resolved board `key`, and
+        # `gr.receipt_dir` keys off that raw string. `--story 23-9` found the receipt and
+        # reported STALE; `--story 23-9-flight-status-drawer-polish-active-curriculum` reported
+        # "no receipt" - same tree, same story, same walkthrough resolved correctly both times.
+        # Today that is a harmless WARN. The rows above turn it into a blocking FALSE refusal,
+        # and the long form is reachable: `/cicd-prune-worktree` Step 0.2 resolves a long slug
+        # before Step 0.3 asks for "the id". The lane's own change creates the hazard, so the
+        # lane closes it.
+        with TempDir() as tmp:
+            repo = lane_repo(tmp)
+            tail = ("--project", str(repo), "--branch", "claude/SCC-11-mine",
+                    "--expect-key", "SCC-11", "--require-gates", "suite")
+            _, out_short = run_cp(repo, "--story", "30-1", *tail)
+            _, out_long = run_cp(repo, "--story", "30-1-fresh", *tail)
+            c.check("EV7 row G · the LONG board key resolves the SAME receipt as the short id",
+                    rows(out_long, "gates") == rows(out_short, "gates")
+                    and not rows(out_long, "gates", "ERROR"),
+                    f"short={rows(out_short, 'gates')} long={rows(out_long, 'gates')}")
 
     return c.finish()
 
