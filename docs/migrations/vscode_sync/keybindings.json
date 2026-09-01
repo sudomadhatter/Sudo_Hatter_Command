@@ -1,0 +1,37 @@
+// VS Code keybindings — ported from Antigravity IDE (SCC-346 transition, 2026-08-29).
+[
+    // Re-show ALL repos in Source Control.
+    // VS Code ties "which repos are shown" to list selection: single-clicking one repo row
+    // sets the visible set to just that repo, and the set survives restarts. There is no
+    // "show all" command, but flipping the selection mode single -> multiple runs the
+    // "select every repository" branch. This binding does both flips in one key.
+    {
+        "key": "cmd+alt+r",
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                "workbench.scm.action.repositories.setSelectionMode.single",
+                "workbench.scm.action.repositories.setSelectionMode.multiple"
+            ]
+        }
+    },
+    // Zoo Code in an editor tab (was roo-cline.openInNewTab in Antigravity).
+    {
+        "key": "shift+cmd+z",
+        "command": "zoo-code.openInNewTab"
+    },
+    {
+        "key": "shift+backspace shift+backspace",
+        "command": "claude-vscode.primaryEditor.open"
+    },
+    {
+        "key": "shift+cmd+c",
+        "command": "claude-vscode.editor.open",
+        "when": "!config.claudeCode.useTerminal"
+    },
+    {
+        "key": "shift+cmd+escape",
+        "command": "-claude-vscode.editor.open",
+        "when": "!config.claudeCode.useTerminal"
+    }
+]
