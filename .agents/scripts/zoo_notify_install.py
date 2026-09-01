@@ -211,7 +211,7 @@ def apply(repo: Path, home: Path | None = None, platform: str | None = None,
     print(f"zoo-notify-install: wrote {target}")
     print(f"  runs: {report.get('script')}")
     if not report["script_exists"]:
-        print(f"  ⚠ that path does not exist on disk - {report['note']}")
+        print(f"  WARNING: that path does not exist on disk - {report['note']}")
         return 1
 
     if load and platform == "darwin":
@@ -219,7 +219,7 @@ def apply(repo: Path, home: Path | None = None, platform: str | None = None,
         rc, err = _launchctl(["bootstrap", f"gui/{os.getuid()}", str(target)])
         if rc != 0:
             rc, err = _launchctl(["load", "-w", str(target)])          # legacy fallback
-        print("  launchctl: started" if rc == 0 else f"  ⚠ launchctl refused it: {err}")
+        print("  launchctl: started" if rc == 0 else f"  WARNING: launchctl refused it: {err}")
         return 0 if rc == 0 else 1
     if load and platform == "win32":
         print("  it starts at your next login - or double-click the .cmd to start it now")
@@ -252,7 +252,7 @@ def _print_status(report: dict) -> int:
     print(f"zoo-notify-install: installed [{mark}]  {report['target']}")
     print(f"  runs: {report.get('script')}")
     if report.get("note"):
-        print(f"  ⚠ {report['note']}")
+        print(f"  WARNING: {report['note']}")
     return 0 if report["script_exists"] else 1
 
 

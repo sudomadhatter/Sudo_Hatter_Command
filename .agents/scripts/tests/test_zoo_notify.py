@@ -635,13 +635,22 @@ def test_main_actually_honours_custom_storage_path_end_to_end():
     find the thread if main() read settings.json for itself."""
     with tempfile.TemporaryDirectory() as d:
         home = Path(d)
-        user = home / "Library" / "Application Support" / "Code" / "User"
+        # ⛔ Ask the module where it looks; never hardcode one platform's path. This case built
+        # the MAC dir (`Library/Application Support/Code/User`) and isolated the child with
+        # `HOME=` alone. On Windows neither holds: `Path.home()` reads USERPROFILE, not HOME, and
+        # the Windows branch of `user_dir` reads APPDATA — so the fake home was ignored, the child
+        # read the operator's REAL Zoo store, found a real already-answered thread, and printed
+        # "needs nothing". A test that silently escapes its sandbox and reads live user data is
+        # worse than a red one; it was red only by luck. Now the sandbox is airtight on both
+        # machines. [[mac-authored-code-hides-windows-bugs]] (SCC-338)
+        appdata = home / "AppData" / "Roaming"
+        user = _mod().user_dir(home=home, appdata=appdata)
         user.mkdir(parents=True)
         elsewhere = home / "elsewhere"
         _store(elsewhere / "tasks", _load("zoo_ui_messages_ask.json"))
         (user / "settings.json").write_text(
             json.dumps({"zoo-code.customStoragePath": str(elsewhere)}), encoding="utf-8")
-        env = dict(os.environ, HOME=str(home))
+        env = dict(os.environ, HOME=str(home), USERPROFILE=str(home), APPDATA=str(appdata))
         env.pop("NTFY_TOPIC", None)
         proc = subprocess.run([sys.executable, str(NOTIFY), "--once", "--dry-run"],
                               capture_output=True, text=True, timeout=30, env=env)

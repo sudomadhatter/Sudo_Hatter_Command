@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -291,6 +292,39 @@ def test_registered_through_run_hook_never_a_bare_interpreter():
             assert (ROOT / rel).exists(), f"the registration points at a missing file: {rel}"
 
 
+def _posix_shell() -> str:
+    """The shell that actually runs a registered hook command - probed, never named.
+
+    ⛔ `subprocess.run(cmd, shell=True)` is NOT that shell on Windows: there it is
+    `cmd.exe /c`, which cannot expand `$CLAUDE_PROJECT_DIR`. `sh` was handed the literal string
+    `$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh` as a FILENAME and exited 127, so this file
+    reported the wiring dead on the PC while the nag was demonstrably firing in live sessions
+    there. A false red costs what a false green costs: it sends the next reader after a bug that
+    is not there. Same "probe, never name one platform's binary" discipline run-hook.sh enforces.
+
+    ⛔ And it cannot just probe PATH. Claude Code ships its own POSIX shell and never
+    consults the user's PATH; on the PC `sh` is absent from PATH under PowerShell, which is how
+    the suite gets run there. So the fallback DERIVES the shell from wherever `git` itself
+    resolved to - Git for Windows always carries `sh.exe` beside it - rather than naming an
+    install directory. Naming one was the first cut of this fallback and it missed immediately:
+    this PC keeps Git at `C:/Git`, not `C:/Program Files/Git`. An install path is a guess about
+    a machine; `git`'s own location is a fact reported by it.
+    """
+    found = shutil.which("sh")
+    if found:
+        return found
+    git = shutil.which("git")
+    if git:
+        base = Path(git).resolve().parent.parent      # .../cmd/git.exe -> the Git root
+        for rel in ("usr/bin/sh.exe", "bin/sh.exe"):
+            candidate = base / rel
+            if candidate.exists():
+                return str(candidate)
+    raise AssertionError(
+        "no POSIX shell found on this machine, so the registered hook command could not be "
+        "exercised at all - run-hook.sh is sh-launched, so this is a real gap, not a skip")
+
+
 def test_the_registered_command_actually_produces_a_nag():
     """⛔ End-to-end through the REGISTERED string — the only check that proves the wiring runs.
 
@@ -302,9 +336,16 @@ def test_the_registered_command_actually_produces_a_nag():
                if "shape-guard" in h.get("command", ""))
     payload = json.dumps({"hook_event_name": "PostToolUse", "tool_name": "Bash",
                           "tool_input": {"command": "git -C /some/repo status"}})
-    env = {**os.environ, "CLAUDE_PROJECT_DIR": str(ROOT)}
-    p = subprocess.run(cmd, shell=True, input=payload, text=True, capture_output=True,
-                       cwd=str(ROOT), env=env, timeout=30)
+    shell = _posix_shell()
+    # ⛔ The registered string's FIRST word is itself `sh`, so the CHILD has to resolve `sh`
+    # too. Claude Code's hook shell carries it on PATH; a suite launched from PowerShell does not,
+    # and the inner `sh` died 127 while the outer one ran perfectly - the same false red one layer
+    # down. Putting the resolved shell's own directory in front of PATH reproduces the environment
+    # Claude Code actually provides instead of asserting against one it never uses.
+    env = {**os.environ, "CLAUDE_PROJECT_DIR": str(ROOT),
+           "PATH": os.path.dirname(shell) + os.pathsep + os.environ.get("PATH", "")}
+    p = subprocess.run([shell, "-c", cmd], input=payload, text=True,
+                       capture_output=True, cwd=str(ROOT), env=env, timeout=30)
     assert p.returncode == 0, f"the registered command failed: rc={p.returncode} {p.stderr!r}"
     assert RULE_PATH in p.stdout, (
         f"the REGISTERED command produced no nag — the wiring is dead: "

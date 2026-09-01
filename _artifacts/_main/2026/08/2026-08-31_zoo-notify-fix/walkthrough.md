@@ -258,7 +258,16 @@ Everything below is done and landed except two things only you can do.
       exited 0, and your phone got the push — but a Work Focus swallows the on-screen banner while
       everything still reports success, so this is the one claim I cannot verify from here. If no
       banner appeared, check Focus first, then System Settings → Notifications → terminal-notifier. -- verified 2026-08-31 (operator): Operator, 2026-08-31: "I can confirm it for the mac" - the banner renders on screen; the ntfy push was already verified end to end
-- [ ] **Install it on the PC** — the three commands, in order, from the MAIN checkout (never a worktree,
+- [x] **Install it on the PC — DONE 2026-09-01**, in the SCC-338 pickup sweep
+      ([walkthrough](../../../2026-09-01_SCC-338-pc-pickup/walkthrough.md)). All three commands ran.
+      The self-test fired a real Windows toast and the operator confirmed it on screen, verbatim:
+      **"that worked"**. `zoo_notify_install.py` now reads **`installed [ok]`** with the Startup
+      entry written to
+      `AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\zoo-notify.cmd`, pointed at the
+      MAIN checkout's script — so it survives a reboot, not just a session.
+      **The caveat below was honest and is now retired by measurement:** the Windows branch had
+      indeed never executed on Windows, and it worked unmodified on its first run.
+      The three commands, in order, from the MAIN checkout (never a worktree,
       and `python`, never `python3`):
       `python .agents\scripts\zoo_notify_install.py --apply` · `python .agents\scripts\zoo_notify.py --self-test`
       (must print `banner=sent push=sent` and exit 0) · `python .agents\scripts\zoo_notify_install.py`
