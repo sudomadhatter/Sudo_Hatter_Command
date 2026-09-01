@@ -153,3 +153,111 @@ is both larger in force and actually derivable from the instrument that ships he
 
 - **A nag for `git add -A` and `worktree remove --force`.** Destructive — a `PostToolUse` nag speaks after the damage. At 4 and 18 hits in 7,858 calls they are a risk problem, not a time problem, and they belong in a `PreToolUse` guard.
 - **Any nag for Zoo seats.** Zoo has no hook surface. Measurement and a correct fence are what it can have.
+
+---
+
+review-runtime: fan-out
+lens_isolation:  worktree
+
+## Code Review (2026-09-01)
+
+Verdict: PASS @ e1cfe613
+Suite evidence measured at e1cfe613 — `run_all.py` 70/70, exit 0, on a clean tree.
+
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok — truncated by the 20-file cap: 13 of 24 files handed over, the 11 withheld named in its report; it declared the truncation on its first line and did not spend its top-up
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted:  5/5
+lenses_na:       none
+
+dispositions:    per-lens: blind-hunter=3/2/0 · edge-case-hunter=2/0/2 · literal-correctness-hunter=3/3/1 · acceptance-auditor=8/1/2 · test-adequacy-auditor=8/2/0 (a multi-lens finding counts once per contributing lens)
+drift:           undeclared=0 · unimplemented=0 · incomplete=0 — reconciled with `--no-renames` against `origin/main...HEAD`; two review-fix files (`guard-cwd-escape.py`, `new_machine-migration-guide.md`) were added to the Declared Change Set when the review created the need for them
+
+**Scope.** The `origin/main...HEAD` diff, 24 files, re-taken after Step 0.7 absorbed `origin/main`.
+**Method.** Five lenses in parallel, each in its own clean context; the four repo-reading lenses in
+their own disposable worktrees cut at `01636abb` and probed to confirm each named itself. The Blind
+Hunter got the diff and no tree. The builder's tree was fingerprinted before the fan-out and was
+byte-identical after it — no lens wrote to the subject.
+
+### Step 0.7 — re-derivation
+
+1. **Nothing this diff references moved, was renamed, or was deleted on `main`.** `origin/main` is
+   a full ancestor of `HEAD` after the absorb; zero files landed between the merge base and
+   `origin/main`. The three surviving mentions of `/smh-slash-command-updating` (which SCC-367
+   deleted) are all narrative — SCC-367's own ledger row, its own SOP paragraph, and a plan line
+   describing its change — none instructs an agent to open the deleted file. `check_links.py
+   --base origin/main` is clean across 234 path claims.
+2. **True overlap is empty and the merge does not conflict.** `git merge-tree --write-tree HEAD
+   origin/main` produced tree `365699d6` with no conflict messages. The earlier absorb had three
+   conflicts — the artifact ledger (both rows kept) and the two generated `doc-graph` files
+   (regenerated, never hand-merged).
+3. **One sibling lane is live and it does not block this one.** `chore/SCC-370-ag-thin-launchers`
+   sits at `e54e0c37`, level with `main`, carrying no commits of its own, so there is no landing
+   order to respect in either direction.
+
+### Findings
+
+Twenty-nine findings came back across five lenses. **Sixteen were assessed real and fixed in this
+lane; thirteen were dismissed** under `code-standards` §6.5 — the assessor decides, not the label.
+Two dismissals disagreed with their lens's severity and are named below, per the calibration rule.
+
+| # | file:line | severity | failure scenario | disposition |
+|---|---|---|---|---|
+| 1 | `.agents/hooks/shape-guard.py:46` | important ×3 lenses | `GATE` matched a gate's filename anywhere in a pipe piece, so `sed -n '1,80p' tests/test_x.py \| head` was nagged for "piping a gate". Measured at 15.4 / 15.9 / 21.8 % of rule-3 hits by three lenses independently; it also inflated the published rule-3 rate from 6.88 % to 9.49 % | applied @ e1cfe613 — `command_prefix()` matches in command position; killed by mutant M3 |
+| 2 | `.agents/scripts/tests/test_shape_scan.py:70` | critical | `test_detector_is_the_hooks_own` was a source-grep satisfied by the file's own docstring. A full private detector copy, then diverged from the hook, left the file 8/8 green | applied @ e1cfe613 — asserts module identity + a differential over nine gate spellings; the same mutant now kills 7 tests |
+| 3 | `.agents/hooks/guard-cwd-escape.py:270` | important ×2 lenses | its remedy 2 told the model *"Use `git -C /abs/path ...`"*, so an agent obeying the PreToolUse guard was immediately nagged by the new PostToolUse one | applied @ e1cfe613 — remedy rewritten; `test_hooks_never_recommend_the_denied_spelling` sweeps `.agents/hooks/`, narrowed to recommendation with both halves proved |
+| 4 | `.agents/scripts/shape_scan.py:98-186` | important | the entire ingest was untested: renaming the `Bash` filter, breaking the Zoo filter, or an empty `HOME` each reported 0.00 % and stayed green — indistinguishable from perfect compliance | applied @ e1cfe613 — fixture seams + known-answer assertions; killed by M8 and M9 |
+| 5 | `.agents/hooks/shape-guard.py:89` | important | rule 2 required `;`/`&&` before the echo, so 225 multi-line calls whose second LINE was the echo scored zero — under-reporting rule 2 by 2.6 points | applied @ e1cfe613 — a newline is a separator too |
+| 6 | `.agents/scripts/tests/test_shape_guard.py:154` | important | `test_never_blocks` missed `continue: false`, which halts the session outright and outranks `decision` | applied @ e1cfe613 — whitelists the emitted key set; killed by M2 |
+| 7 | `.agents/scripts/tests/test_shape_guard.py:179` | important | the registration test pinned strings: a matcher of `Write`, or a one-character path typo, each left it 13/13 green with the hook a permanent no-op | applied @ e1cfe613 — asserts the matcher, resolves the path, and RUNS the registered command; killed by M5 and M6 |
+| 8 | `.agents/scripts/tests/test_shape_guard.py:67` | important | `assert "command-shape" in text` was matched by the hook's own preamble, so `RULE` could point at a file that does not exist | applied @ e1cfe613 — pins the path and asserts it exists; killed by M1 |
+| 9 | `AGENTS.md` §6 | important | acceptance row A's affirmative half was unguarded — deleting the entire §6 bullet left the gate 70/70 green | applied @ e1cfe613 — `test_root_entry_files_STATE_the_law_they_were_corrected_to_carry` |
+| 10 | `.agents/hooks/shape-guard.py:139` | important | the rule-1 nag claimed the call *"stops and waits"* — false on 404 of 470 firings, because thirteen `git -C * <verb>` allow rules exist. A false fact is the one thing an agent can rationalize past | applied @ e1cfe613 — the text now says what is true on each platform |
+| 11 | `.agents/hooks/shape-guard.py:66` | suggestion | `strip_quoted` ran two regex passes, so an apostrophe inside a double-quoted string paired with a later one and swallowed a real `git -C` between them — 2 hidden in the live corpus | applied @ e1cfe613 — one left-to-right pass, shared with the rule-2 span check |
+| 12 | `.agents/scripts/shape_scan.py:213` | suggestion | `--sessions -1` is a SLICE, not a count: it silently widened the window from 1 session to 110 and 41,853 commands | applied @ e1cfe613 — refused at the boundary; killed by M10 |
+| 13 | `.agents/scripts/tests/test_shape_guard.py:62` | suggestion | only one of the nine gate spellings was exercised — the coverage hole the diverged-copy mutant rode through | applied @ e1cfe613 — one case per spelling |
+| 14 | `.agents/scripts/tests/test_shape_guard.py:71` | suggestion | rules 2 and 3 asserted the citation but not the REMEDY; truncating rule 3's remedy left it 13/13 green | applied @ e1cfe613 — a nag that names a fault without its fix is the shape the house bans |
+| 15 | `.agents/scripts/tests/test_rule_frontmatter.py:163` | nitpick ×2 lenses | the six §Nag checks read the whole rule file, so *"§Nag names `shape-guard.py`"* really asserted *"the file mentions it somewhere"*; and line 183's `or` branch was unreachable (`"may never block"` contains `"never block"`) | applied @ e1cfe613 — scoped to the §Nag section, dead branch removed |
+| 16 | plan row E · `command-shape.md` · SOP · walkthrough · `_artifacts/_main/INDEX.md` | suggestion ×3 lenses | four different Claude baselines shipped in one diff, and row E's own triple appeared in no assertion. Findings 1, 5 and 11 then made all of them wrong | applied @ e1cfe613 — re-measured and corrected in every document; the before/after table is in `## Evidence` |
+| — | `.agents/hooks/INDEX.md:83` | nitpick ×3 lenses | the new row was inserted one slot out of alphabetical order in a block labelled auto-generated | applied @ e1cfe613 — dismissed on the first two reports as self-healing; three independent lenses is signal, and the move is one line |
+| — | `docs/migrations/install_guides/new_machine-migration-guide.md:171-174` | suggestion | three RUNNABLE `git -C … status --short` lines survived in a bash fence while the changelog claimed the guidance was now the same everywhere | applied @ e1cfe613 |
+| — | `docs/migrations/zoo-code-permissions-guide.md` | nitpick ×2 lenses | three counts for one set — 143 store-only, 142, and "those 139 rows" | applied @ e1cfe613 — reconciled, and the 142/7 arithmetic after the eight promotions is now explained rather than left to look like a fourth number |
+| — | thirteen further findings | — | dismissed under `code-standards` §6.5: pre-existing debt outside this diff, findings the lens itself scored below its own reachability bar, and taste | dismissed |
+
+**Calibration — the two assessments that disagreed with their label.** The Test-Adequacy Auditor
+labelled the vacuous `test_detector_is_the_hooks_own` **critical** and it was right to: a private
+copy of the detector defeats the one structural property this lane sells, and its mutant proved it.
+In the other direction, the Acceptance Auditor's recommendation to **drop thirteen
+`Bash(git -C * <verb>)` allow rules** from `.claude/settings.json` was assessed real in its premise
+and wrong in its remedy — dropping them would make 404 previously-silent calls stop and wait for a
+human, which adds the friction this lane exists to remove. The honest fix was the nag's sentence,
+not the operator's permission surface, and that is what shipped.
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| Enforcement suite | `python3 .agents/scripts/tests/run_all.py` — **70/70 files passed, exit 0** |
+| Toolkit lint | `workflow_lint.py --toolkit-only` — **0 error(s), 0 warning(s), 8 info** (pre-existing BOM notes on vendor `testarch-*` files) |
+| Assertion evidence | `test_shape_guard.py` 17/17 · `test_shape_scan.py` 11/11 · `test_zoo_permissions.py` 20/20 · `test_rule_frontmatter.py` 18/18 — and **ten mutants run, ten killed**, each attributable to the right named test |
+| SOP currency | `sop_currency.py --paths <24 changed> --message "…"` — silent, exit 0 |
+| Link + anchor | `check_links.py --base origin/main` — 13 files, 234 path claims, **clean** |
+| Door parity | **n/a** — no command was added, renamed or deleted |
+| Declared set | `undeclared=0 · unimplemented=0 · incomplete=0` |
+
+### Clean-Code Gate
+
+Machine floor imported from the Gates table above rather than re-run (`/smh-clean-code-audit`
+nested, SCC-146). `py_compile` clean on all four changed Python files. Comment contract (§2A): every
+new block carries its *why* and its SCC-369 provenance, and each review fix names the mutation that
+proved it — the anchors are traps, not narration. Convention table (§2C): stdlib only, no new
+dependency, `sys.executable` carried into every subprocess so neither machine's interpreter is
+named, no hardcoded paths. Drift and bloat findings imported from Step 1 rather than re-hunted; no
+new abstraction has a single caller — `quoted_spans()` has two (rule 2's position test and
+`strip_quoted`), and `command_prefix()` is called from the rule-3 loop and asserted directly by
+tests.
+
+**Changes applied: sixteen, all listed above.** The implementation was not correct as-is.
