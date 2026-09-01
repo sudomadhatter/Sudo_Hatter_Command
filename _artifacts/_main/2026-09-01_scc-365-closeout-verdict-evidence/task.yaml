@@ -1,17 +1,5 @@
-key: SCC-365
-type: Task
-title: "Close-out accepts a `Verdict: PASS` that no suite ever backed — three gaps in closeout_preflight"
-lane: chore/SCC-365-closeout-verdict-evidence
-worktree: .claude/worktrees/scc365-closeout-verdict
-base: main
-artifacts: _artifacts/_main/2026-09-01_scc-365-closeout-verdict-evidence/
-subtasks: []
-gates:
-  suite: gates/suite.json
-evidence:
-  run_all: 68/68 files, exit 0
-  test_closeout_preflight: 80/80
-  test_command_surfaces: 276/276
-  workflow_lint_toolkit: 0 errors, 0 warnings
-  mutation_sweep: 9/9 killed by declared case
-verdict: PASS
+task_key: SCC-365
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-365-closeout-verdict-evidence
+close_command: smh-close-task-merge-tree
+secondary_repos: []

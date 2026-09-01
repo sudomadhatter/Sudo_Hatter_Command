@@ -182,7 +182,9 @@ ruling outlived its own sprint in the first place.
 
 ## Your Actions
 
-- [ ] **Land it** — invoke `/smh-close-task-merge-tree` when you want it on `main`.
+- [x] The merge itself — lands via this branch's PR.
+
+Nothing else is owed.
 
 ---
 
