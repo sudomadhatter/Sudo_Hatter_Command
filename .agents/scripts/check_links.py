@@ -130,7 +130,7 @@ def _strip_dot_slash(p: str) -> str:
 
 
 def run(args: list[str], cwd: Path) -> str:
-    r = subprocess.run(args, cwd=str(cwd), capture_output=True, text=True)
+    r = subprocess.run(args, cwd=str(cwd), capture_output=True, encoding="utf-8", text=True)
     if r.returncode != 0:
         raise RuntimeError(f"{' '.join(args)} -> {r.returncode}: {r.stderr.strip()[:200]}")
     return r.stdout

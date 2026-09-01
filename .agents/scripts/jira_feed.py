@@ -124,9 +124,23 @@ ACLI_UNREACHABLE = 124   # conventional "timed out"; also covers a binary that i
 
 
 def acli(binary: str, args: list[str], timeout: int = 90) -> subprocess.CompletedProcess:
+    # ⛔ `encoding="utf-8"` IS LOAD-BEARING, AND ITS ABSENCE CORRUPTED LIVE BOARD DATA (SCC-335).
+    # `text=True` with no `encoding=` decodes with `locale.getencoding()`. `acli` is a Go binary
+    # and Go always writes UTF-8, so on any box whose locale is not UTF-8 - the Windows PC, or
+    # anything under `LC_ALL=C` - every description read here comes back mojibake. Because
+    # `edit --description` REPLACES the whole field, a read-modify-write then writes the mojibake
+    # back: that is how SCC-318's own description was mangled on 2026-08-27, and `U+2B50` was
+    # LOST outright (UTF-8 `E2 AD 90`; cp1252 has no mapping for `0x90`, so `errors="replace"`
+    # ate the byte and the original is unrecoverable from the written text).
+    #
+    # ⭐ PINNING ONLY THIS SIDE IS CORRECT HERE, and that is not the general rule. `_harness.py`
+    # pins BOTH ends for PYTHON children, because a child left on the locale writes cp1252 and a
+    # parent hard-coded to UTF-8 then mis-decodes in the opposite direction. `acli` has no such
+    # failure mode - its runtime has no locale-dependent output path - so the parent is the whole
+    # fix. Do not "correct" this back by adding an env pin acli would ignore.
     try:
         return subprocess.run([binary, *args], capture_output=True, text=True,
-                              errors="replace", timeout=timeout)
+                              errors="replace", encoding="utf-8", timeout=timeout)
     except (subprocess.TimeoutExpired, OSError) as e:
         # A hung uplink and a missing/unresolvable binary both used to escape as an UNCAUGHT
         # traceback - process exit 1, which is not one of the documented codes. The hook
@@ -3131,6 +3145,79 @@ def index_append(before: str, row: str) -> str:
     return "\n".join(out).rstrip("\n") + "\n"
 
 
+def _ascii_skeleton(line: str) -> str:
+    """The line with every non-ASCII character removed - the part mojibake cannot touch."""
+    return "".join(ch for ch in line if ord(ch) < 128).strip()
+
+
+def diagnose_lost(lost: list[str], now_lines: list[str]) -> list[tuple[str, str, str]]:
+    """Split "the line is GONE" from "the line is THERE with mangled characters" (SCC-335).
+
+    ⛔ WHY THIS EXISTS, AND WHY THE OLD MESSAGE MADE THE DAMAGE PERMANENT. The read-back
+    guard below watches for a line that WAS there and is not in the read-back. A cp1252
+    round-trip satisfies that test perfectly - `⛔ Part A ...` and `â›” Part A ...` are two
+    different strings - so a corrupted field was reported as `MISSING 2 line(s)` and the
+    operator was told to "restore the ticket from the text above". Both halves of that are
+    wrong for this failure: nothing was deleted, and the text above is the MANGLED copy, so
+    following the instruction writes the corruption in permanently. Measured on SCC-318,
+    2026-08-27; the guard fired and still cost the ticket.
+
+    ⭐ THE TELL IS THE ASCII SKELETON. Mojibake only ever rewrites the non-ASCII characters,
+    so a mangled line keeps its ASCII spine (`Part A  SCC-401  a no-entry sign leads...`)
+    while a deleted line has no counterpart carrying that spine at all. Skeletons shorter
+    than 8 characters are not matched: a line that is mostly symbols has no spine to match
+    on, and a loose match there would call a real deletion a formatting difference - which
+    is the one direction this must never get wrong.
+
+    ⛔ AND THAT FLOOR NEEDED A THIRD BUCKET, WHICH IT DID NOT HAVE (found in review, SCC-318
+    cycle 9, by three independent lenses). Declining to judge a line is NOT the same as
+    judging it deleted, but the caller used to compute `gone = lost - changed`, so every
+    line this function skipped was promoted to "confirmed deletion" and handed the strongest
+    remedy in the file - the retired "restore from the text above" advice, pointed at the
+    damaged copy. `⛔ blocked` has a 7-character skeleton; `⭐ SCC-402` has 7. Those are the
+    house's own row shapes, so the acceptance-C failure was reachable on the first real
+    short row. The floor stays exactly where it was - lowering it is the direction that must
+    never be wrong - and the lines it declines now come back separately as UNDIAGNOSED.
+
+    ⭐ A LINE WITH NO NON-ASCII CANNOT BE MOJIBAKE. That is what separates undiagnosed from
+    genuinely gone: mis-decoding only ever rewrites bytes >= 0x80, so a pure-ASCII line that
+    vanished really did vanish, and it keeps the deletion message unchanged.
+
+    ⭐ A CANDIDATE IS CONSUMED ONCE. Without that, two lost lines sharing one ASCII skeleton
+    both match the same surviving read-back line and both read as CHANGED - so a genuine
+    deletion beside a mangled twin reports "nothing was deleted".
+
+    Returns (changed, undiagnosed):
+      changed     - (original, what_came_back, codepoints) per line judged mangled
+      undiagnosed - lines that carried non-ASCII and could not be matched: neither confirmed
+                    mangled nor safely called deleted
+    """
+    changed, undiagnosed = [], []
+    pool = list(now_lines)
+    for ln in lost:
+        skel = _ascii_skeleton(ln)
+        had_non_ascii = any(ord(c) > 127 for c in ln)
+        hit = None
+        if len(skel) >= 8:
+            for cand in pool:
+                if cand.strip() == ln.strip() or _ascii_skeleton(cand) != skel:
+                    continue
+                was = sorted({c for c in ln if ord(c) > 127})
+                now_ = sorted({c for c in cand if ord(c) > 127})
+                if not was and not now_:
+                    continue
+                pts = (", ".join(f"U+{ord(c):04X}" for c in was) or "(none)") + \
+                      " -> " + (", ".join(f"U+{ord(c):04X}" for c in now_) or "(none)")
+                hit = (cand, (ln.strip(), cand.strip(), pts))
+                break
+        if hit is not None:
+            pool.remove(hit[0])
+            changed.append(hit[1])
+        elif had_non_ascii:
+            undiagnosed.append(ln)
+    return changed, undiagnosed
+
+
 def cmd_index_row(args) -> int:
     """Append ONE row to a parent ticket's index description, and PROVE it survived (SCC-170).
 
@@ -3219,12 +3306,58 @@ def cmd_index_row(args) -> int:
             and ln.strip() not in seen_now]
     dropped = [ln for ln in keep if ln.strip() and ln.strip() not in intended]
     if lost:
-        say(f"jira-feed: ⛔ {args.key}'s description was REPLACED and the read back is "
-            f"MISSING {len(lost)} line(s) that were there before:\n"
-            + "\n".join(f"    {ln.strip()[:120]}" for ln in lost[:10])
-            + f"\n  `edit --description` replaces the whole field. Restore the ticket from "
-              f"the text above before doing anything else - this is data loss, not a "
-              f"formatting difference.")
+        # ⭐ DIAGNOSE BEFORE REPORTING (SCC-335). "Missing" and "mangled" need OPPOSITE next
+        # moves, and the old message gave the deletion advice for both - which, on a mojibake
+        # read-back, tells the operator to restore from the corrupted copy.
+        changed, undiagnosed = diagnose_lost(lost, now.splitlines())
+        changed_src = {c[0] for c in changed}
+        undiag_src = {ln.strip() for ln in undiagnosed}
+        gone = [ln for ln in lost if ln.strip() not in changed_src
+                and ln.strip() not in undiag_src]
+        if changed:
+            # ⛔ `was:` / `back:` go through `ascii()`, NOT raw. `say()` routes everything
+            # through `ascii_out`, which folds every non-ASCII character to `?` for console
+            # safety - so a message whose entire subject is WHICH characters changed used to
+            # print `??" Part A` against `???????? Part A` and the operator could compare
+            # nothing. `ascii()` escapes them to `\uXXXX` in the string itself, which survives
+            # the fold intact. Found in review, SCC-318 cycle 9.
+            say(f"jira-feed: ⛔ {args.key} - {len(changed)} line(s) came back with CHANGED "
+                f"CHARACTERS. This is an ENCODING fault, not a deletion: the text is still "
+                f"there and its non-ASCII characters were rewritten.\n"
+                + "\n".join(f"    was:  {ascii(a)[1:-1][:120]}\n"
+                             f"    back: {ascii(b)[1:-1][:120]}\n    codepoints: {c}"
+                             for a, b, c in changed[:5])
+                + f"\n  ⛔ Do NOT re-run and do NOT hand-edit from the text above - the read "
+                  f"back is the DAMAGED copy, so both of those make it permanent. Fetch the "
+                  f"field as JSON with an explicit UTF-8 decode and repair from a known-good "
+                  f"source, then write it back with `--description-file`.\n"
+                  f"  If you are on Windows, this is SCC-335: an acli call decoded with the "
+                  f"locale (cp1252) instead of UTF-8. Note that `U+2B50` is LOSSY that way "
+                  f"and cannot be recovered from the mangled text at all.")
+        if undiagnosed:
+            # ⭐ THE THIRD BUCKET. These carried non-ASCII and could not be matched to a
+            # surviving line - almost always because their ASCII spine is too short to
+            # match on safely. They are NOT confirmed deletions, so they must never get the
+            # restore instruction: on a mojibake read-back that is the move that writes the
+            # corruption in permanently, which is the whole reason SCC-335 exists.
+            say(f"jira-feed: ⛔ {args.key} - {len(undiagnosed)} line(s) carried non-ASCII and "
+                f"came back UNMATCHED. Could be an encoding fault or a real deletion; this "
+                f"guard will not guess, because the two need opposite next moves:\n"
+                + "\n".join(f"    {ascii(ln.strip())[1:-1][:120]}" for ln in undiagnosed[:10])
+                + f"\n  ⛔ Do NOT restore from the text above until you know which it is. "
+                  f"Fetch the field as JSON with an explicit UTF-8 decode and compare "
+                  f"codepoints against a known-good copy first.")
+        if gone:
+            # These carried NO non-ASCII at all, so mis-decoding cannot explain them: a
+            # pure-ASCII line that vanished really did vanish. Deletion advice is correct here
+            # and only here.
+            say(f"jira-feed: ⛔ {args.key}'s description was REPLACED and the read back is "
+                f"MISSING {len(gone)} line(s) that were there before:\n"
+                + "\n".join(f"    {ln.strip()[:120]}" for ln in gone[:10])
+                + f"\n  `edit --description` replaces the whole field. These lines are pure "
+                  f"ASCII, so this is not an encoding fault. Restore the ticket from "
+                  f"the text above before doing anything else - this is data loss, not a "
+                  f"formatting difference.")
         return 2
     if row.strip() not in {x.strip() for x in now.splitlines()}:
         say(f"jira-feed: {args.key} accepted the edit but the new row is not in the read "

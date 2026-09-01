@@ -144,7 +144,7 @@ def tracked_receipt(repo: Path, rel: str) -> str | None:
     """
     try:
         r = subprocess.run(["git", "show", f":{rel}"], cwd=repo,
-                           capture_output=True, text=True)
+                           capture_output=True, encoding="utf-8", text=True)
     except OSError:
         return None
     return r.stdout if r.returncode == 0 else None
@@ -197,7 +197,7 @@ def main() -> int:
         diff = subprocess.run(
             ["git", *DIFF_PINS, "diff", "--cached", "--no-ext-diff", "--no-color",
              "--no-renames", "--unified=0"],
-            cwd=repo, capture_output=True, text=True, check=True).stdout
+            cwd=repo, capture_output=True, encoding="utf-8", text=True, check=True).stdout
     except (subprocess.CalledProcessError, OSError) as exc:
         print(f"  ! verdict-receipt: could not read the staged diff ({exc}) - "
               "check skipped, commit allowed.")

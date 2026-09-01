@@ -243,7 +243,7 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
     started = time.time()
     try:
         proc = subprocess.run(command, cwd=str(work), capture_output=True,
-                              text=True, errors="replace", shell=False)
+                              encoding="utf-8", text=True, errors="replace", shell=False)
         exit_code, output = proc.returncode, (proc.stdout or "") + (proc.stderr or "")
     except FileNotFoundError as exc:            # the executable itself is absent
         exit_code, output = 127, f"command not found: {exc}"

@@ -269,6 +269,25 @@ gate only means something if it's one specific word.
 > actually bypassed: the agent wrote the word, you clicked it, and it read its own word back as your
 > consent.
 
+> ⓘ **A batch approval is pinned to a sha, and it takes the planner two commits to write (SCC-359).**
+> When `/smh-plan-task` records your words it also stamps the commit they landed in, as
+> `— recorded at <sha>`, so a later lane can prove the plan is the one you actually read. That sha
+> cannot be known until the commit exists, so the planner writes `<pending>`, commits, then stamps
+> the real sha in a **second** commit — which means the plan's last touch is always that stamp, not
+> the recorded sha. `/smh-quick-dev` used to demand the two be *equal*, a condition no conforming
+> lane could ever satisfy, and it stopped lanes you had already approved (seen on SCC-347, SCC-358
+> and SCC-318). It now falls through to the diff: **a commit that changes the approval line and
+> nothing else passes; anything else re-arms that lane's gate.** ⛔ **The tooth is unchanged** — a
+> line with no sha is still no approval, and the lane still stops. **Nothing changes for you**: you
+> type `approved` exactly as before.
+>
+> ⭐ **And that fall-through is a command now, not a judgment call.** The first version printed the
+> diff and left the agent to decide whether it touched only the approval line — which is the exact
+> shape that gets talked past. Three review lenses independently built a stamp commit that *also*
+> carried a body edit and watched the prose version bless it. Step 1.5 now **counts** the changed
+> lines that are not the approval line and passes only on zero, so the answer is the command's, not
+> the reader's.
+
 > ⓘ **One scripted stop uses a different word, and you should know that before it surprises you.**
 > ②'s Step 2 posts the plan link and waits — but the reply it is written to accept is `continue`
 > (or `changed`, or a pasted audit path), and it treats that as the go once you have read the plan.
@@ -975,6 +994,16 @@ The close-out runs the preflight, the lane's gate and the flight event, and then
 > be *recorded* rather than assumed. Since that check runs after the merge, a missing section would
 > otherwise force a commit onto `main` after the fact — which a different gate then refuses. Both
 > requirements were found the hard way, one of them by SCC-183 landing through its own door.
+>
+> ⭐ **Since SCC-364 the ticket's own outline is ticked in that same pre-PR window** — the
+> `## Plan` checkboxes and the `## Done` lines, written with `jira_ticket.py done --local` (the
+> tree only). That tick used to happen *after* the merge, where the file it rewrites is in a
+> worktree the gate forbids committing to and the next step deletes — so the edit could never
+> land, and `main` kept an all-unticked Plan forever, reading as work that never happened. It
+> exited 0 either way, because the board half succeeded. Step 4 now only *renders* the landed
+> file to the board (`jira_ticket.py describe`), which writes no file at all. **Nothing changes
+> for you** — same one link, same one click; the difference is that the ticket you open
+> afterwards shows its boxes ticked.
 
 **You will never be handed a list of git commands to type.** If a close-out ever stops and asks you
 to merge by hand, that is the bug, not the procedure. And it never merges for you — there is no lane
@@ -1160,6 +1189,16 @@ on a closed ticket is exactly what §4 forbids.** So: reconcile → `check-actio
 `finish`. `test_command_surfaces.py` **CS-17 G** asserts that order by file offset in all four
 doors, because CS-17's other six rows are all satisfied by a block sitting anywhere in the file
 (`source-grep-guards-cannot-see-order`).
+
+⛔ **The same lesson, a second time, on a different write (SCC-364).** `jira_ticket.py done` does
+two things — it rewrites the ticket outline **in the tree**, then it writes the board — and
+`/smh-close-task-merge-tree` used to call it at Step 4, after the merge. Identical failure to the
+one above and identical cause: a *file* write scheduled into the window where this door forbids
+commits and Step 5 prunes the tree. The tick moved to Step 3 as `done --local`, so it rides the PR;
+Step 4 renders the landed outline with `describe`, which touches no file. **The generalisation
+worth carrying:** in every close-out, ask of each write *"does this touch the working tree?"* — if
+yes it belongs before the PR, and only board writes may sit after the merge. `CS-23` asserts that
+order by file offset, the same way `CS-17 G` does for the reconcile.
 
 ⓘ **A wrapped row keeps its shape.** `## Your Actions` rows routinely run to two or three lines, and
 SCC-206 taught the reader to fold those continuations in. The tick flips the box on the row's **first**

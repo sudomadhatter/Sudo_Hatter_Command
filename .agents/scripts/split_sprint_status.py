@@ -74,7 +74,7 @@ def write_lf(path: Path, text: str) -> None:
 def commit_date(repo: Path, sha: str) -> str:
     """ISO date of a commit — the honest `last_updated` for a board migrated at that sha."""
     p = subprocess.run(["git", "-C", str(repo), "show", "-s", "--format=%cs", sha],
-                       capture_output=True, text=True)
+                       capture_output=True, encoding="utf-8", text=True)
     return p.stdout.strip() if p.returncode == 0 and p.stdout.strip() else "unknown"
 
 
@@ -414,7 +414,7 @@ def resolve(project_arg: str | None) -> Path:
 
 def head_sha(project: Path) -> str:
     p = subprocess.run(["git", "-C", str(project), "rev-parse", "HEAD"],
-                       capture_output=True, text=True)
+                       capture_output=True, encoding="utf-8", text=True)
     if p.returncode != 0:
         wf.die("git rev-parse HEAD failed")
     return p.stdout.strip()
@@ -422,7 +422,7 @@ def head_sha(project: Path) -> str:
 
 def board_clean(project: Path) -> bool:
     p = subprocess.run(["git", "-C", str(project), "status", "--porcelain", "--",
-                        wf.BOARD_REL], capture_output=True, text=True)
+                        wf.BOARD_REL], capture_output=True, encoding="utf-8", text=True)
     return p.returncode == 0 and not p.stdout.strip()
 
 

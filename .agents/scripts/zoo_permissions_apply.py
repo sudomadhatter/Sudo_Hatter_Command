@@ -67,9 +67,9 @@ def vscode_running() -> bool:
     """Refuse-while-running guard: VS Code flushes globalState on exit and would overwrite us."""
     if sys.platform.startswith("win"):
         out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq Code.exe"],
-                             capture_output=True, text=True).stdout
+                             capture_output=True, encoding="utf-8", text=True).stdout
         return "Code.exe" in out
-    out = subprocess.run(["pgrep", "-f", "Visual Studio Code"], capture_output=True, text=True)
+    out = subprocess.run(["pgrep", "-f", "Visual Studio Code"], capture_output=True, encoding="utf-8", text=True)
     return out.returncode == 0
 
 

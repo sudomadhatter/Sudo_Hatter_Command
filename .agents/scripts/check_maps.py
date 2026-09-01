@@ -136,7 +136,7 @@ ADAPTER_PHRASE = "Read `AGENTS.md` in this same folder"
 
 def sh(args, cwd):
     try:
-        out = subprocess.run(args, cwd=cwd, capture_output=True, text=True, check=False)
+        out = subprocess.run(args, cwd=cwd, capture_output=True, encoding="utf-8", text=True, check=False)
         return out.stdout.strip(), out.returncode
     except FileNotFoundError:
         return "", 127

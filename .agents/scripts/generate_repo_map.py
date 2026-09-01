@@ -166,7 +166,7 @@ def repo_label(root):
     """
     try:
         r = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
-                           cwd=str(root), capture_output=True, text=True, timeout=15)
+                           cwd=str(root), capture_output=True, encoding="utf-8", text=True, timeout=15)
         if r.returncode == 0 and r.stdout.strip():
             common = Path(r.stdout.strip())
             if common.name == ".git":

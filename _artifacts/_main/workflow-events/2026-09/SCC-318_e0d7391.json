@@ -1,0 +1,69 @@
+{
+  "v": 1,
+  "task": "SCC-318",
+  "sha": "e0d739199ea6e9589d8bff994a00f10393c8ae83",
+  "tip": "fc56f10251276367a4bf6f2bae325a64211f5446",
+  "trigger": "close-out",
+  "when": "2026-09-01T15:58:55-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/smh-close-task-merge-tree.md",
+    ".agents/commands/smh-plan-task.md",
+    ".agents/commands/smh-quick-dev.md",
+    ".agents/rules/000-PLAN-FIRST-GATE.md",
+    ".agents/scripts/check_links.py",
+    ".agents/scripts/check_maps.py",
+    ".agents/scripts/gate_receipt.py",
+    ".agents/scripts/generate_repo_map.py",
+    ".agents/scripts/hooks_armed.py",
+    ".agents/scripts/jira_feed.py",
+    ".agents/scripts/jira_ticket.py",
+    ".agents/scripts/label_tasks.py",
+    ".agents/scripts/link-worktree-assets.py",
+    ".agents/scripts/memory_store_check.py",
+    ".agents/scripts/record_map_changes.py",
+    ".agents/scripts/refresh_maps.py",
+    ".agents/scripts/risk_seam.py",
+    ".agents/scripts/sop_currency.py",
+    ".agents/scripts/split_sprint_status.py",
+    ".agents/scripts/tests/test_command_surfaces.py",
+    ".agents/scripts/tests/test_jira_feed.py",
+    ".agents/scripts/tests/test_jira_ticket.py",
+    ".agents/scripts/verdict_receipt.py",
+    ".agents/scripts/vscode_sync.py",
+    ".agents/scripts/zoo_notify_install.py",
+    ".agents/scripts/zoo_permissions_apply.py",
+    ".opencode/commands/smh-close-task-merge-tree.md",
+    ".opencode/commands/smh-plan-task.md",
+    ".opencode/commands/smh-quick-dev.md",
+    "_artifacts/_main/2026-09-01_SCC-318-bugs-cycle-9/gates/suite.json",
+    "_artifacts/_main/2026-09-01_SCC-318-bugs-cycle-9/implementation_plan.md",
+    "_artifacts/_main/2026-09-01_SCC-318-bugs-cycle-9/task.yaml",
+    "_artifacts/_main/2026-09-01_SCC-318-bugs-cycle-9/tickets/SCC-318.md",
+    "_artifacts/_main/2026-09-01_SCC-318-bugs-cycle-9/tickets/SCC-335.md",
+    "_artifacts/_main/2026-09-01_SCC-318-bugs-cycle-9/tickets/SCC-359.md",
+    "_artifacts/_main/2026-09-01_SCC-318-bugs-cycle-9/tickets/SCC-364.md",
+    "_artifacts/_main/2026-09-01_SCC-318-bugs-cycle-9/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-01_SCC-318-bugs-cycle-9/walkthrough.md",
+    "verdict": "PASS @ e0d7391",
+    "gates": {
+      "suite": "pass@e0d7391"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/000-PLAN-FIRST-GATE.md"
+  ]
+}

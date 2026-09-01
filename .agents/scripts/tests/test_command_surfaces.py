@@ -2537,12 +2537,22 @@ def main() -> int:
                 f"{[ln for ln in plan_code.splitlines() if re.search(chr(45) * 2 + 'description' + chr(92) + 's', ln)]}")
         c.check("CS-16 C the planning door ATTACHES the plan rather than pasting it",
                 "jira_ticket.py attach" in plan, "smh-plan-task.md never attaches the plan")
+        # ⛔ D AND E READ THE FENCES TOO, for the reason B already gives — and it stopped being
+        # theoretical in SCC-318 cycle 9. That lane added an explanatory paragraph to Step 4
+        # containing the literal `jira_ticket.py done`, which made these two rows satisfiable
+        # by PROSE: a lens deleted the door's entire Step 3 invocation fence — the only place
+        # the tool is actually called — and CS-16 stayed 7/7 green. The diff's own commentary
+        # inverted the guard (comment-literals-invert-source-grep-tests).
+        close_code = fences(close)
         c.check("CS-16 D the close-out door ticks the checklist and appends Done",
-                "jira_ticket.py done" in close and "--tick" in close,
-                "a ticket whose Plan boxes are all unticked reads as work that never happened")
+                "jira_ticket.py done" in close_code and "--tick" in close_code,
+                f"a ticket whose Plan boxes are all unticked reads as work that never "
+                f"happened - and PROSE does not count: fenced bytes={len(close_code)}")
         c.check("CS-16 E and it rewrites the Files link to blob/main/ before the branch is pruned",
-                "blob/main/" in close,
+                "blob/main/" in close_code,
                 "the planning-time link points at a branch --after-merge has already deleted")
+        c.check("CS-16 E0 anti-vacuity: the close-out door really does carry fences",
+                len(close_code) > 500, f"fenced bytes in the close door: {len(close_code)}")
         # Neither door may treat a missing API token as a failure: attach is the ONLY verb that
         # needs one, and the shape has to land on a machine that has not done the setup yet.
         for name, body in (("smh-plan-task.md", plan), ("smh-close-task-merge-tree.md", close)):
@@ -3880,6 +3890,210 @@ def main() -> int:
                     names_it_unexcused(laundered_ticket, _n, _tk),
                     "a live menu row is excused because another cell cites the retiring ticket - "
                     "the hatch must refuse every `|`-delimited row on structure alone")
+
+    if c.block("CS-23 · SCC-364 · the close-out ticks the outline PRE-PR and only RENDERS "
+               "post-merge"):
+        # ⛔ THE DEFECT, MEASURED CLOSING SCC-358 THROUGH THE REAL DOOR. Step 4 ran
+        # `jira_ticket.py done`, and `cmd_done` (jira_ticket.py) does TWO things: it rewrites
+        # the outline file in the tree, then it writes the board. At Step 4 the file write is
+        # unreachable - the lane is merged, this door's own SCC-175 rule bans post-merge
+        # commits, and Step 5 prunes the tree. So `main` kept the unticked outline forever
+        # while the step's prose claimed "the tree stays the source, so the board and the
+        # branch cannot disagree". The prose was describing an invariant the sequence broke.
+        #
+        # ⭐ THE FIX NEEDS NO NEW CODE, and that is why the assertions below are about ORDER
+        # rather than about a new flag: `jira_ticket.py` already has both halves. `done
+        # --local` rewrites the file and does NOT touch the board; `describe` renders an
+        # outline to the board and does NOT touch the file. Tick pre-PR so the edit rides the
+        # PR like every other write in the lane, then render post-merge.
+        #
+        # ⛔ POSITION-AWARE, AND OVER FENCES ONLY - two separate reasons, both scars.
+        # `source-grep-guards-cannot-see-order`: a guard that only asks "does the door mention
+        # `--local`?" passes with the call still sitting in Step 4, which is the whole bug.
+        # And CS-16's own comment: the prose here QUOTES the commands it is discussing, so a
+        # scan over the whole body matches the discussion instead of the invocation.
+        close = (ROOT / ".agents" / "commands" / "smh-close-task-merge-tree.md").read_text(
+            encoding="utf-8")
+
+        def fenced_only(body: str) -> str:
+            """The body with every non-fenced character blanked, OFFSETS PRESERVED.
+
+            Blanking rather than joining is what lets `.find()` below compare real file
+            positions: a `"\n".join(...)` of the fences renumbers everything and the order
+            assertions would then be about the order of the extracts, not of the document.
+            """
+            out = list(" " * len(body))
+            for m in re.finditer(r"^```[a-z]*\n(.*?)^```", body, re.S | re.M):
+                for i in range(m.start(1), m.end(1)):
+                    out[i] = body[i]
+            return "".join(out)
+
+        code = fenced_only(close)
+        pr_at = code.find("gh pr create")
+        # A0 · ANTI-VACUITY FIRST. Every row below is a comparison against `pr_at`, and if the
+        # projection found nothing then every position is -1 and the whole block passes on an
+        # empty string. This is the row that fails if the fence regex ever stops matching.
+        c.check("CS-23 A0 the fenced projection actually found the PR call",
+                pr_at > 0, f"gh pr create at {pr_at} in the fenced projection")
+
+        done_local = [m.start() for m in re.finditer(r"jira_ticket\.py done\b", code)
+                      if "--local" in code[m.start():m.start() + 400]]
+        done_any = [m.start() for m in re.finditer(r"jira_ticket\.py done\b", code)]
+        describe_at = [m.start() for m in re.finditer(r"jira_ticket\.py describe\b", code)]
+
+        c.check("CS-23 A the door ticks the outline with `done --local`",
+                bool(done_local), f"`jira_ticket.py done` fenced calls at {done_any}, "
+                                  f"none of them carrying --local")
+        c.check("CS-23 B ...and it does so BEFORE the PR is opened",
+                bool(done_local) and min(done_local) < pr_at,
+                f"done --local at {done_local}, gh pr create at {pr_at}")
+        c.check("CS-23 C no `jira_ticket.py done` runs AFTER the PR - a post-merge tree "
+                "rewrite can never land",
+                not [d for d in done_any if d > pr_at],
+                f"post-PR `done` calls at {[d for d in done_any if d > pr_at]}")
+        c.check("CS-23 D the board is re-rendered post-merge with `describe`, which "
+                "touches no file",
+                bool(describe_at) and max(describe_at) > pr_at,
+                f"describe at {describe_at}, gh pr create at {pr_at}")
+        # ══ F · A WRITE IS NOT A LANDING — the row the first version of this block lacked ══
+        #
+        # ⛔ POSITION IS NOT LANDING, AND THAT GAP SHIPPED. Rows A-D pin that `done --local`
+        # sits before `gh pr create`, which a write that is never committed satisfies
+        # perfectly. Two review lenses reproduced the consequence end to end in a throwaway
+        # repo (SCC-318 cycle 9): `done --local` dirties the worktree, no instruction between
+        # it and the PR staged the file, and the paragraph right before `gh pr create` tells
+        # the agent the branch is "already clean and pushed". So `main` kept the UNTICKED
+        # outline - the SCC-364 defect relocated, not closed - while Step 4's `describe` read
+        # the ticked WORKTREE copy and wrote it to the board, inverting the very invariant
+        # this door's prose defends. Step 5's `git worktree remove` then exits 128 on the
+        # dirty tree, after the merge, where this door bans commits.
+        #
+        # ⭐ SO THE ORDER THAT MATTERS IS THREE-PART: tick, COMMIT, then the PR.
+        commit_between = [m.start() for m in re.finditer(r"git commit\b", code)
+                          if done_local and min(done_local) < m.start() < pr_at]
+        c.check("CS-23 F a `git commit` lands the tick BEFORE the PR - a write is not a landing",
+                bool(commit_between),
+                f"no `git commit` between the tick at {done_local} and `gh pr create` at "
+                f"{pr_at}: the outline is written into the worktree and never committed, so "
+                f"the PR does not carry it and Step 5's worktree remove fails on the dirt")
+        c.check("CS-23 G ...and the tick's own path is what gets staged",
+                any("tickets/" in code[m - 200:m + 200] for m in commit_between),
+                f"a commit sits between the tick and the PR but nothing near it names "
+                f"`tickets/` - git-policy bans `git add -A`, so an unnamed path is not staged")
+
+        # E · the PROSE that made the sequence look correct. Step 4 may no longer claim the
+        # tree is the source at the moment it cannot be.
+        step4 = md_section(close, r"##\s+Step 4\b")
+        c.check("CS-23 E Step 4 no longer claims 'the tree stays the source'",
+                "tree stays the source" not in step4,
+                step4[:400] if "tree stays the source" in step4 else "")
+        c.check("CS-23 E2 ...and the anti-vacuity control: Step 4 was actually located",
+                len(step4) > 200, f"md_section returned {len(step4)} chars for Step 4")
+
+
+    if c.block("CS-24 · SCC-359 · the approval-sha WRITER and READER agree about the stamp "
+               "commit"):
+        # ⛔ THE DEFECT: A GATE CONDITION THAT CAN NEVER PASS. `/smh-quick-dev` Step 1.5
+        # condition 3 says the plan must be unchanged since the approval, checked as
+        # `git log -1 --format=%h -- <plan>` MUST EQUAL the sha on the `— recorded at <sha>`
+        # line. But `/smh-plan-task` Step 5 requires that line to carry the sha of the commit
+        # that RECORDED it - which is not knowable until that commit exists. So the planner
+        # writes `<pending>`, commits, and stamps the real sha in a SECOND commit. The plan's
+        # last-touch sha is therefore ALWAYS the stamp commit and never the recorded one.
+        #
+        # Measured three times, and every time the entire delta between the two shas is one
+        # line, `<pending>` -> the sha: SCC-347 (acb02585 -> cf198990), SCC-358 (4fdedf2f ->
+        # 13ffe716), and SCC-318's own lane (fbd4ac20 -> 6126fe6d). The condition's INTENT
+        # holds while its literal check fails, so an agent reading Step 1.5 literally stops a
+        # lane the operator already approved.
+        #
+        # ⭐ WHY THE FIX IS ON THE READER. The other remedy - stop requiring a self-referential
+        # sha - is circular: any scheme that records a sha INTO the plan file changes the plan
+        # file, so "last touch equals recorded" cannot hold whichever sha is chosen.
+        #
+        # ⭐ WHY THIS IS AN IMPLICATION AND NOT THREE PRESENCE GREPS. Asserting that three
+        # files contain a phrase I am about to add to them is the vacuous shape
+        # `prose-pinning-guards-are-vacuous` names. What has to hold is a RELATIONSHIP: as
+        # long as the writer mandates a stamp commit, the reader and the law must both admit
+        # it. Delete the mandate and these rows go quiet on their own; keep it and no amount
+        # of rewording gets past them.
+        cmds = ROOT / ".agents" / "commands"
+        quick = (cmds / "smh-quick-dev.md").read_text(encoding="utf-8")
+        plan = (cmds / "smh-plan-task.md").read_text(encoding="utf-8")
+        law = (ROOT / ".agents" / "rules" / "000-PLAN-FIRST-GATE.md").read_text(encoding="utf-8")
+
+        step15 = md_section(quick, r"##\s+Step 1\.5\b")
+        step5 = md_section(plan, r"##\s+Step 5\b")
+        # ⛔ SCOPE THE LAW TO ITS CLAUSE. `law` was the whole rule file, so `len(law) > 400`
+        # was a file-is-non-empty check and row C stayed green if the exemption drifted into
+        # an unrelated section. Found in review, SCC-318 cycle 9.
+        law = md_section(law, r"###\s+One approval MAY cover several plans")
+        c.check("CS-24 A0 anti-vacuity: all three regions were actually located",
+                len(step15) > 400 and len(step5) > 400 and len(law) > 400,
+                f"step15={len(step15)} step5={len(step5)} law={len(law)}")
+
+        MARK = "stamp-only successor"
+        # The writer's mandate, in its own words: the sha of the commit that recorded it.
+        writer_mandates_stamp = bool(re.search(
+            r"record the resulting sha|sha of the commit that recorded", step5, re.I))
+        c.check("CS-24 A0b anti-vacuity: the writer really does still mandate the stamp",
+                writer_mandates_stamp,
+                "Step 5 no longer mandates a self-referential sha - if that was deliberate, "
+                "these rows are moot and should be deleted, not reworded")
+
+        c.check("CS-24 A the READER admits the stamp commit it is handed",
+                not writer_mandates_stamp or MARK in step15,
+                f"Step 1.5 demands equality with no exemption, while Step 5 guarantees "
+                f"inequality. `{MARK}` not found in Step 1.5.")
+        c.check("CS-24 B the WRITER says what that second commit may contain",
+                not writer_mandates_stamp or MARK in step5,
+                f"`{MARK}` not found in Step 5 - the planner is told to make a commit the "
+                f"reader is never told how to judge")
+        c.check("CS-24 C the LAW carries the same exemption, so all three agree",
+                not writer_mandates_stamp or MARK in law,
+                f"`{MARK}` not found in 000-PLAN-FIRST-GATE.md - the rule the two doors cite "
+                f"still states the check the doors no longer run")
+
+        # ══ E · THE FENCE, NOT THE PROSE — the row that actually pins the defect ══
+        #
+        # ⛔ EVERY ROW ABOVE READS PROSE, AND THE DEFECT LIVES IN THE FENCE. Three review
+        # lenses proved it the same way, independently (SCC-318 cycle 9): leave the phrase
+        # `stamp-only successor` in place, restore the original unpassable
+        # `[ "$LAST" = "<recorded>" ] || exit 1` INSIDE Step 1.5's code fence, and CS-24 goes
+        # 8/8 green on the literal SCC-359 defect. The block's own comment argues the rows are
+        # an implication rather than three presence greps - true, and it does guard the WRITER
+        # side. It says nothing about the reader's actual check, which is where the bug was.
+        #
+        # ⭐ SO THIS ROW READS THE FENCED CODE, the way CS-23 does for the close-out door.
+        fences15 = "\n".join(re.findall(r"^>?\s*```[a-z]*\n(.*?)^>?\s*```",
+                                        step15, re.S | re.M))
+        c.check("CS-24 E0 anti-vacuity: Step 1.5 actually carries a code fence",
+                len(fences15.strip()) > 40, f"fenced bytes in Step 1.5: {len(fences15)}")
+        c.check("CS-24 E the READER's fence DIFFS against the recorded sha",
+                not writer_mandates_stamp or re.search(r"git diff\s+.*REC", fences15),
+                "Step 1.5's fenced code never diffs the plan against the recorded sha - "
+                "whatever the prose around it says, the check it runs is not the one "
+                "SCC-359 fixed")
+        c.check("CS-24 F ...and it reaches a VERDICT mechanically, not by reading the hunk",
+                not writer_mandates_stamp
+                or re.search(r"grep\s+-vc|--exit-code|--quiet", fences15),
+                "Step 1.5's fence prints a diff and leaves an agent to judge it. A prose "
+                "judgment is the shape cheap-models-rationalize-past-prose names; the fence "
+                "must compute the answer")
+        c.check("CS-24 G ...and it does NOT use `grep -qv`, whose exit code is INVERTED here",
+                "grep -qv" not in fences15 and "grep -q -v" not in fences15,
+                "the Mac's grep is ugrep: `-q` with `-v` returns 1 when lines ARE selected "
+                "and 0 on empty input, so this gate would pass the illegal case and stop the "
+                "legal one (measured 2026-09-01)")
+
+        # D · THE TOOTH THAT MUST SURVIVE. This ticket loosens a condition, and the way to
+        # get that wrong is to loosen the OTHER half with it: a missing sha is still a
+        # re-armed gate, never a pass (SCC-155). All three say so today; all three must keep
+        # saying so after.
+        for label, body in (("Step 1.5", step15), ("Step 5", step5), ("the law", law)):
+            c.check(f"CS-24 D {label} still refuses a plan with NO sha on the line",
+                    bool(re.search(r"no sha|missing operand", body, re.I)),
+                    f"{label} lost the no-sha tooth while the equality clause was relaxed")
 
     return c.finish()
 

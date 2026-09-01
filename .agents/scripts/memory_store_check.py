@@ -77,7 +77,7 @@ def _git_dir(store: Path) -> Path | None:
     across worktrees: each tree legitimately holds a different branch's store)."""
     rp = subprocess.run(
         ["git", "-C", str(store), "rev-parse", "--path-format=absolute", "--absolute-git-dir"],
-        capture_output=True, text=True,
+        capture_output=True, encoding="utf-8", text=True,
     )
     if rp.returncode != 0 or not rp.stdout.strip():
         return None
@@ -145,7 +145,7 @@ def main() -> int:
             return 2
     else:
         rp = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--show-toplevel"],
-                            capture_output=True, text=True)
+                            capture_output=True, encoding="utf-8", text=True)
         if rp.returncode != 0 or not rp.stdout.strip():
             print("memory-store-check: not inside a git repo and no --store given", file=sys.stderr)
             return 2
