@@ -97,7 +97,13 @@ lenses_na: none
 
 ### The tail, in one line (operator ruling 2026-08-17)
 
-**31 findings came back across five lenses; 14 were assessed real and fixed in this lane; the rest were dismissed** — duplicates of the same anchor across lenses, one provably wrong, and several nitpicks that changed no behaviour.
+**37 raw findings came back across five lenses. They dedupe to 23 distinct anchors: 18 were assessed
+real and fixed in this lane, 1 became a required close-out step, 1 was a misreading worth clarifying,
+1 is raised as its own ticket, and 2 were dismissed** — one measured false, one provably wrong.
+(An earlier draft of this line said "31 / 14"; that was an eyeball count made before the last two
+lenses landed, and it undercounted. The numbers here are counted from the five reports.)
+
+dispositions: per-lens: blind-hunter=5/3/0 · edge-case-hunter=6/0/0 · literal-correctness=8/0/0 · acceptance-auditor=5/1/0 · test-adequacy=8/1/0
 
 **The retirement itself drew no findings from any lens.** The Acceptance Auditor diffed the deleted master against the ported `-GlobalsOnly` section clause by clause and reported all eleven substantive elements surviving, the port *richer* than the original; `declared_change_set.py diff` returned zero drift across every path. Every real finding was in the **guard I wrote**, not in the work it guards.
 
@@ -176,3 +182,25 @@ They live outside the repo, so no repo-scoped assertion can see or purge them an
 `--result` flag: the outcome comes from a real exit code or it does not exist.
 
 Verdict: PASS @ 60ac25af
+
+## Your Actions
+
+⛔ **One item, and it is the only thing this lane could not do for itself.**
+
+- [ ] **Run `/smh-sync-agents` from the lobby checkout** (not a worktree) once this lands. Both
+      machine-global caches still hold `smh-slash-command-updating.md`, and each holds a **pre-port**
+      copy of `/smh-sync-agents`. They live outside the repo, so no repo-scoped assertion can see or
+      purge them and no worktree sync writes them. The sync's mirror-exact purge clears both.
+      Verify with: `ls ~/.gemini/antigravity/global_workflows/smh-slash-command-updating.md
+      ~/.config/opencode/commands/smh-slash-command-updating.md` → both absent.
+
+**Not actions — DECISIONS, held open deliberately, nothing minted without the operator's word:**
+
+- **Make the Antigravity launcher universal.** The 11,500-byte threshold leaves **15 of 39** doors as
+  full bodies still living under the 12,000-char cap, which is why this topic has now cost thinking
+  time in three tickets. Dropping the threshold to 0 **deletes** the mirror function's `else` branch
+  (~14 lines) and makes the cap structurally unreachable rather than measured-safe. One number, and
+  `CS-18 B` retires with it.
+- **A conflict-marker guard.** `_artifacts/_main/INDEX.md:8` carried `||||||| 85cf2499` on
+  `origin/main`; this lane removed it, but nothing stops the next one. Remedy: a suite row rejecting
+  any tracked line matching `^(<{7}|\|{7}|>{7})\s` outside the two docs that teach the markers.

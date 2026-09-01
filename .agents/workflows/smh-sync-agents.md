@@ -126,6 +126,10 @@ command is never pushed to the gemini/opencode caches.
 - Prefer plain `/smh-sync-agents` (no args) when you also want the lobby's local `.claude/` / `.opencode/`
   dirs refreshed in the same pass — it does the locals **and** these globals.
 
+## After any sync — drift, counts and restarts
+
+*(Command-wide, not scoped to `-GlobalsOnly` above.)*
+
 Check lobby drift with `& ".agents/scripts/sync-agents.ps1" -Status`. Do not use `-Maintained` or a project
 `-Target`; both are retired and fail loudly.
 

@@ -1,0 +1,6 @@
+task_key: SCC-367
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-367-retire-slash-cmd-updating
+close_command: smh-close-task-merge-tree
+secondary_repos: []        # single-repo task — Projects/sudo-command-center is a SEPARATE repo
+                           # with unrelated history and needs its own key (see the plan's port section)
