@@ -93,9 +93,15 @@ the entire delta is one line — `<pending>` → the sha. It is in this branch's
 
 ## Your Actions
 
-- [ ] **Verify the SCC-335 fix on the Windows PC.** This is the machine that produced the original
-      corruption. Run `python .agents\scripts\jira_feed.py index-row --key SCC-373 --line "  test row" --apply`
-      and confirm the description still carries `⛔` and `⭐` afterwards, then remove the test row.
-      The Mac cases prove the decode; only the PC proves it against the real cp1252 console.
+- [ ] **Verify the SCC-335 fix on the Windows PC.** Full copy-paste steps are in
+      [SCC-335](https://sudomadhatter.atlassian.net/browse/SCC-335)'s description under
+      **PC VERIFICATION** - three read-only commands, nothing is written to the board.
+      Step 1 prints the machine's Python encoding, step 2 is the negative control on the old
+      line and must print `U+26D4 0 U+2B50 0`, step 3 runs the shipped seam and must print
+      `U+26D4 1 U+2B50 1 U+FFFD 0`. Paste the three output lines back; that closes SCC-335
+      acceptance A on the machine that produced the corruption.
+      Check the **counts**, never the rendered characters - the PowerShell console mis-renders
+      correct UTF-8 and can make mojibake look clean
+      (memory `powershell-console-fakes-mojibake`), so an eyeball pass proves nothing.
 
 ## Code Review (pending)
