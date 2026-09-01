@@ -21,8 +21,8 @@ them by purpose. `.agents/commands/` is the canonical workflow body even when a 
 thin native skill launcher. `/smh-sync-agents` publishes it to Claude through launcher skills in `.claude/skills/`,
 opencode (`.opencode/commands/` + global `~/.config/opencode/commands`, both full bodies), and
 Antigravity/Gemini via the generated `.agents/workflows/` door — which is ALSO the source for its global
-cache `~/.gemini/antigravity/global_workflows` (SCC-332), so both Gemini surfaces carry thin launchers for
-any command over ~11.5 KB rather than a body Antigravity would truncate at 12,000 chars. Codex discovers
+cache `~/.gemini/antigravity/global_workflows` (SCC-332), so both Gemini surfaces carry a thin launcher for
+**every** command, whatever its size (SCC-370). Codex discovers
 `.agents/skills/` natively; its deprecated custom-prompt fallback is namespaced `/prompts:<name>`, never
 the top-level `/<name>` used by the other command menus.
 
@@ -30,7 +30,7 @@ the top-level `/<name>` used by the other command menus.
 frontmatter to limit where it syncs. **Absent = universal** (all four). Tagged today: `cicd-autopilot-claude`,
 `cicd-mobile-error-team` → `[claude]`; `cicd-autopilot-opencode` → `[opencode]`; the `_AP` trio → `[claude, opencode]`;
 `sentry-security-team-avch` → `[opencode, antigravity, codex]` (deliberately NOT in the Claude menu);
-`smh-adviser-board` → `[claude, opencode, codex]` (19.8k body exceeds Antigravity's 12k workflow limit — AG gets the hand-authored thin launcher `.agents/workflows/smh-adviser-board.md`, prune-protected in the sync's `$excluded` list and, since SCC-332, carried into the global cache with every other door).
+`smh-adviser-board` → `[claude, opencode, codex]` (AG gets the **hand-authored** thin launcher `.agents/workflows/smh-adviser-board.md` instead of a generated one, because it carries Antigravity-only INLINE-mode instructions the generator cannot produce — prune-protected in the sync's `$excluded` list and, since SCC-332, carried into the global cache with every other door).
 **Robot-lane rule (2026-07-14):** `*_AP` commands vendor ONLY into project tool dirs (where the autopilot
 engines read them) — the sync skips them for the lobby menus and the global caches.
 **Antigravity actually honors that reach as of 2026-08-09 (SCC-56).** The `.agents/workflows/` mirror used

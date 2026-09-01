@@ -7,9 +7,10 @@
 .DESCRIPTION
   Single source of authorship = <home>\.agents. The canonical AUTHORING set is .agents\commands\ and it reaches
   ALL FOUR platforms (Claude, opencode, Antigravity/Gemini, Codex) — but Antigravity is reached INDIRECTLY,
-  through the generated .agents\workflows\ door, because it truncates a workflow over 12,000 chars instead of
-  rejecting it. Both Antigravity surfaces (the repo door and the machine-global cache) mirror workflows\,
-  never commands\ (SCC-332). The other three read commands\ verbatim at any size. This copies commands / skills / hooks /
+  through the generated .agents\workflows\ door, and EVERY door there is a thin launcher pointing back at
+  .agents\commands\<name>.md, whatever the command's size (SCC-370). Both Antigravity surfaces (the repo door
+  and the machine-global cache) mirror workflows\, never commands\ (SCC-332). The other three read
+  commands\ verbatim. This copies commands / skills / hooks /
   opencode-agents into the target's .claude and .opencode dirs (Claude /commands + skills + hooks resolve there)
   and, for a LOBBY sync, also refreshes the machine-global caches so opencode, Antigravity, and Codex see the
   same set Claude does.
@@ -502,16 +503,30 @@ function Sync-CommandDir {
 # `platforms: [opencode]` (so Get-CommandPlatforms excludes them unaided) and no 1_*.md command has existed
 # for some time. It blocked nothing it was written to block. Now: absent/empty `platforms:` == universal ==
 # mirrored; `platforms: []` == nowhere; -AP stays claude-only by name convention.
-# BIG COMMANDS (2026-07-25): a command over ~11.5 KB gets a GENERATED THIN LAUNCHER instead of a verbatim
-# copy -- Antigravity does not honour a workflow over its 12,000-char cap, and hand-trimmed twins drifted and
-# needed byte-golf on every edit. The launcher points the agent at .agents/commands/<name>.md (the single
-# source of truth), so the command can grow freely and no workflow can ever hit the cap again. Same pattern
-# as the hand-authored smh-adviser-board launcher, now automatic.
-# WHAT OVER-CAP ACTUALLY DOES (measured, SCC-135 -- this was previously written here as "silently drops"):
-# Antigravity TRUNCATES at 12,000 chars, it does not reject the file. smh-update-maps-indexes shipped a
-# 39,594-char body and the agent received the header, the target list, Step 0 and half of Step 0.5 -- cut
-# mid-sentence -- then improvised the remaining 70%, including past the Step 4 approval gate it never saw.
-# That is the important distinction: a dropped workflow fails visibly, a truncated one runs and looks fine.
+# EVERY ANTIGRAVITY DOOR IS A THIN LAUNCHER (SCC-370, 2026-09-01). Sync-AntigravityWorkflowMirror below emits
+# a generated launcher for every eligible command, UNCONDITIONALLY. It points the agent at
+# .agents/commands/<name>.md -- the single source of truth -- so a command can grow to any size and its door
+# never changes shape. Same pattern as the hand-authored smh-adviser-board launcher, now automatic.
+#
+# WHY, ONCE, AS HISTORY. Antigravity TRUNCATES a workflow over its cap rather than rejecting it (measured,
+# SCC-135), and that is the important distinction: a dropped workflow fails visibly, a truncated one runs and
+# looks fine. smh-update-maps-indexes shipped a 39,594-char body; the agent received the header, the target
+# list, Step 0 and half of Step 0.5 -- cut mid-sentence -- then improvised the remaining 70%, including past
+# the Step 4 approval gate it never saw.
+#
+# ⛔ DO NOT RESTORE THE SIZE BRANCH. The 2026-07-25 fix made the launcher conditional on ~11.5 KB, which is
+# why 14 of 40 doors still shipped verbatim three months later -- and why the cap stayed an OPERATIVE rule
+# every session had to re-derive, restated across 39 door files, 8 comments here, 8 doc sites and 5 memory
+# entries. Deleting the condition makes the cap structurally unreachable: a launcher is a few hundred bytes,
+# so no door can approach it and nobody has to reason about size.
+#
+# ⛔ THE GUARD IS test_command_surfaces.py CS-18 N2, AND ONLY N2. This comment used to name "CS-18 N and
+# the door-parity SCC-370 control", and the SCC-370 review proved BOTH claims false by mutation: N greps
+# for the cap NUMBER, so a branch written `-le 9999` restores the verbatim arm with the suite at 297/297;
+# and the door-parity control is a synthetic unit test over door_verdict that never reads this file at
+# all. N2 asserts the SHAPE of Sync-AntigravityWorkflowMirror -- no file measured, no body copied -- which
+# is the invariant this barrier is actually about. Keep N (it owns the number) and keep the control (it
+# owns the verdict function); just do not mistake either for a guard on the branch.
 # ── SCC-195 · THE ANTIGRAVITY DESCRIPTION BUDGET ───────────────────────────────────────────────
 # Antigravity builds its slash-command menu from the `description:` frontmatter of every
 # .agents/workflows/*.md. This repo's descriptions run 400-950+ chars (they are written for an agent
@@ -538,22 +553,10 @@ function Get-AgDescription {
   return $cut.TrimEnd(' ', ',', ';', ':', '-') + '...'
 }
 
-# The brain with ONLY its description line replaced by the budgeted one, byte-for-byte otherwise.
-# Every command file under .agents/commands is LF and BOM-less except the eight testarch-* bridges,
-# which declare `platforms: [opencode]` and so never reach this surface (verified 2026-08-17).
-function Set-AgDescriptionLine {
-  param([string]$Raw)
-  # (\r?) is captured and PUT BACK. `.` matches CR in .NET, `$` in multiline matches before the
-  # LF, so on a CRLF brain the CR landed inside group 1, TrimEnd() ate it, and the rewritten
-  # line shipped LF-only among CRLF siblings -- a mixed-ending file from a pure text edit.
-  # No brain is CRLF today (all LF, BOM-less); this is the writer not being the thing that
-  # introduces one. The Python twin in test_command_surfaces.py does the same.
-  $m = [regex]::Match($Raw, '(?m)^description:[ \t]*(.*?)(\r?)$')
-  if (-not $m.Success) { return $Raw }
-  $short = Get-AgDescription $m.Groups[1].Value.TrimEnd()
-  if ($short -eq $m.Groups[1].Value) { return $Raw }
-  return $Raw.Remove($m.Index, $m.Length).Insert($m.Index, ('description: ' + $short + $m.Groups[2].Value))
-}
+# Set-AgDescriptionLine lived here until SCC-370. It rewrote a VERBATIM mirror's description line in place,
+# and its only caller was the under-the-cap arm of Sync-AntigravityWorkflowMirror. With every door now a
+# generated launcher there is no verbatim mirror left on this surface to rewrite: Get-AgDescription is called
+# on the raw description when the stub is BUILT, which is the whole of the SCC-195 budget's job here.
 
 function Sync-AntigravityWorkflowMirror {
   param([string]$MasterDir, [switch]$WhatIf)
@@ -563,13 +566,17 @@ function Sync-AntigravityWorkflowMirror {
   $mirrored = @()
 
   # HAND-OWNED files in workflows/: never written by this mirror, never pruned by it. Each has a reason.
-  #   smh-adviser-board.md   - hand-authored thin launcher (the command is 19.8k, over AG's 12k cap).
+  #   smh-adviser-board.md   - hand-authored, NOT generated: it carries Antigravity-only content the
+  #                            generator cannot produce (the INLINE-mode instruction -- AG workflows cannot
+  #                            spawn subagents, so the board must run SPAWNS.md 6 inline). A generated stub
+  #                            would silently drop that and the board would run its parallel protocol with
+  #                            every spawn missing.
   #   INDEX.md               - the workflows router. It has NO frontmatter and NO source in commands/, and
   #                            survived only because it failed the old name filter. With that filter gone
   #                            the prune below would DELETE it on the next sync. Load-bearing guard.
   # smh-update-maps-indexes.md was here until SCC-135. It was the ONLY command whose body lived in
   # workflows/ while commands/ held a wrapper, and this exclusion is what exempted it from the launcher
-  # rule below -- so its 39.6k body shipped to Antigravity and was TRUNCATED at 12,000 chars, losing 70%
+  # rule below -- so its 39.6k body shipped to Antigravity verbatim and was TRUNCATED, losing 70%
   # of the steps including the Step 4 approval gate. Un-inverted: the body is now the command, and this
   # function generates its launcher like every other big command. Do not re-add it.
   $excluded = @('smh-adviser-board.md', 'INDEX.md')
@@ -580,52 +587,57 @@ function Sync-AntigravityWorkflowMirror {
   foreach ($f in $files) {
     if (($f.Name -notmatch '-AP\.md$') -and ((Get-CommandPlatforms $f.FullName) -contains 'antigravity')) {
       $dest = Join-Path $wfDir $f.Name
-      if ((Get-Item $f.FullName).Length -gt 11500) {
-        # Over (or near) the 12k cap: emit a generated launcher, never a doomed verbatim copy.
-        $desc = ''
-        foreach ($line in (Get-Content $f.FullName -TotalCount 30 -Encoding UTF8)) {
-          if ($line -match '^description:\s*(.+)$') { $desc = $Matches[1]; break }
-        }
-        # Stub literals are ASCII-only on purpose: PS 5.1 parses a BOM-less .ps1 as ANSI, which would
-        # mangle any non-ASCII literal here into mojibake in every generated file.
-        $stub = @(
-          '---',
-          ('description: ' + (Get-AgDescription $desc)),
-          'platforms: [opencode, antigravity]',
-          '---',
-          '',
-          ('# /' + $f.BaseName + ' - launcher (GENERATED by sync-agents; do not edit)'),
-          '',
-          '**THIN LAUNCHER - carries NO steps of its own.** Generated because the command body exceeds',
-          "Antigravity's 12,000-char workflow cap. A verbatim mirror would be TRUNCATED at the cap, not",
-          'rejected, so the agent would run on partial steps and look like it worked. Regenerated every sync.',
-          '',
-          ('**Execute now:** read `' + '.agents/commands/' + $f.Name + '` (relative to the repo root of the'),
-          'workspace you are in) and follow it **END TO END**, passing any arguments through verbatim. If that',
-          'file does not exist in this workspace, STOP and tell the operator - never improvise the flow from memory.',
-          ''
-        ) -join "`n"
-        if (-not $WhatIf) {
-          # Explicit UTF-8 WITHOUT BOM - frontmatter '---' must stay byte 0 for the workflow parser
-          [IO.File]::WriteAllText($dest, $stub, (New-Object Text.UTF8Encoding($false)))
-        } else {
-          Write-Host ("WHATIF: would emit LAUNCHER for '{0}' (command over 11.5 KB) -> workflows/" -f $f.Name)
-        }
+      # ONE SHAPE, NO CONDITION. Read the brain's description off the top of the file and emit the launcher.
+      $desc = ''
+      foreach ($line in (Get-Content $f.FullName -TotalCount 30 -Encoding UTF8)) {
+        if ($line -match '^description:\s*(.+)$') { $desc = $Matches[1]; break }
+      }
+      # ⛔ THE TWO GUARDS BELOW ARE THE SAME TWO THE SIBLING EMITTERS ALREADY CARRY, AND THIS BLOCK
+      # SHIPPED WITHOUT EITHER (SCC-370 review). Both are one line, and both were already written
+      # somewhere else in this file - which is exactly why their absence here read as fine.
+      #
+      # 1. QUOTE STRIP, ported from Sync-ZooSurfaces (~line 775, landed as SCC-346). Get-AgDescription
+      #    is quote-blind: it cuts at 132 chars, so a QUOTED master description keeps its opening "
+      #    and loses its closing one, and the door's frontmatter is unparseable YAML. Found live on
+      #    cicd-push-e2e.md - the one door to main - which was already broken this way BEFORE this
+      #    lane (its brain is 29,844 bytes, so it was over the old cap and already a launcher).
+      #    Deleting the size branch did not cause that break; it widened the path that produces it
+      #    from over-cap commands to all of them, which is what makes carrying the strip mandatory.
+      # 2. EMPTY FALLBACK, ported from New-LauncherSkillStub (~line 640). No live command lacks a
+      #    description today - all 72 carry one on frontmatter line 1 - so this is latent, not a
+      #    live bug. It is here because the read that feeds it now runs for every door.
+      #
+      # ⛔ The strip belongs HERE, in the caller, NOT inside Get-AgDescription: U7 runs that function
+      # under pwsh against AG_LIVE_DESCS, which holds real quoted descriptions, so stripping inside
+      # it reds U7 against an untouched Python twin. Same placement as Zoo, for the same reason.
+      $desc = $desc.Trim().Trim('"').Trim("'")
+      if (-not $desc) {
+        $desc = ('Launcher for /' + $f.BaseName + ' - reads .agents/commands/' +
+                 $f.Name + ' and follows it end to end.')
+      }
+      # Stub literals are ASCII-only on purpose: PS 5.1 parses a BOM-less .ps1 as ANSI, which would
+      # mangle any non-ASCII literal here into mojibake in every generated file.
+      $stub = @(
+        '---',
+        ('description: ' + (Get-AgDescription $desc)),
+        'platforms: [opencode, antigravity]',
+        '---',
+        '',
+        ('# /' + $f.BaseName + ' - launcher (GENERATED by sync-agents; do not edit)'),
+        '',
+        '**THIN LAUNCHER - carries NO steps of its own.** Every Antigravity door is a launcher; the single',
+        'source of truth is the command body. Regenerated every sync - edit the command, not this file.',
+        '',
+        ('**Execute now:** read `' + '.agents/commands/' + $f.Name + '` (relative to the repo root of the'),
+        'workspace you are in) and follow it **END TO END**, passing any arguments through verbatim. If that',
+        'file does not exist in this workspace, STOP and tell the operator - never improvise the flow from memory.',
+        ''
+      ) -join "`n"
+      if (-not $WhatIf) {
+        # Explicit UTF-8 WITHOUT BOM - frontmatter '---' must stay byte 0 for the workflow parser
+        [IO.File]::WriteAllText($dest, $stub, (New-Object Text.UTF8Encoding($false)))
       } else {
-        # Under the size cap: a verbatim mirror, EXCEPT that the description is cut to the menu
-        # budget (SCC-195). Untouched when it already fits, so most files still copy byte-for-byte.
-        $raw = [IO.File]::ReadAllText($f.FullName)
-        $out = Set-AgDescriptionLine $raw
-        if (-not $WhatIf) {
-          if ($out -eq $raw) {
-            Copy-Item -Path $f.FullName -Destination $dest -Force
-          } else {
-            [IO.File]::WriteAllText($dest, $out, (New-Object Text.UTF8Encoding($false)))
-          }
-        } else {
-          Write-Host ("WHATIF: would mirror '{0}' -> workflows/' for antigravity{1}" -f `
-                      $f.FullName, $(if ($out -ne $raw) { ' (description cut to the menu budget)' } else { '' }))
-        }
+        Write-Host ("WHATIF: would emit LAUNCHER for '{0}' -> workflows/" -f $f.Name)
       }
       $mirrored += $f.Name
     }
@@ -1226,9 +1238,10 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
   # under -WhatIf, so a dry run enumerates the doors the LAST REAL SYNC wrote. A brand-new command
   # prints "would emit LAUNCHER" above and then does not appear in this cache's preview. The opencode
   # cache still previews from commands/ and is always current. Dry-run counts here are a floor.
-  # Antigravity TRUNCATES at 12,000 chars instead of rejecting (SCC-135), so a verbatim 30 KB command
-  # runs on partial steps and looks fine. It must be fed the already-generated thin-launcher surface in
-  # .agents\workflows - the same doors the per-project sync writes - never the raw command bodies.
+  # Antigravity must be fed the already-generated thin-launcher surface in .agents\workflows - the same doors
+  # Sync-AntigravityWorkflowMirror writes above - never the raw command bodies. Why, in one line: it TRUNCATES
+  # an over-cap workflow instead of rejecting it (SCC-135), so a verbatim body runs on partial steps and looks
+  # fine. Every door is a launcher now (SCC-370), which is what makes that unreachable rather than watched.
   $GlobalCmdSrc = Join-Path $Master "commands"
   $GlobalWfSrc  = Join-Path $Master "workflows"
   $caches = @(

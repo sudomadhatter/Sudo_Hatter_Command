@@ -107,10 +107,16 @@ one-time Codex prompts retirement purge), leaving the lobby's local `.claude/` /
 
 - `~/.gemini/antigravity/global_workflows` ← **`.agents/workflows/`**, the generated thin-launcher door.
   Antigravity calls its invocable units "workflows" and **truncates any one over 12,000 chars instead of
-  rejecting it** — measured: a 39,594-char body arrived cut off mid-Step-0.5, with no error anywhere. So a
-  big command must reach this cache as the generated launcher that points back at
+  rejecting it** — measured: a 39,594-char body arrived cut off mid-Step-0.5, with no error anywhere. So
+  **every** command reaches this cache as a generated launcher that points back at
   `.agents/commands/<name>.md`. **Sourcing this cache from `commands/` bypasses that and ships truncated
   bodies to the operator's menu** — that IS the SCC-332 defect, and it shipped once.
+
+  ⭐ **This paragraph is the ONLY place in the system that still writes the number down** (SCC-370). It is
+  kept here as the *reason* the launcher surface exists, not as a rule anyone measures against: the
+  generator has no size branch, so a door is a few hundred bytes and the cap is unreachable by
+  construction. `test_command_surfaces.py` CS-18 P sweeps every other law, doc, door and memory file to
+  keep it that way, and CS-18 P3 fails if this paragraph ever loses the fact.
 - `~/.config/opencode/commands` ← **`.agents/commands/`**, the full bodies. opencode has no size cap.
 
 The globals pass regenerates `.agents/workflows/` **first**, so the cache always mirrors a fresh door set;
