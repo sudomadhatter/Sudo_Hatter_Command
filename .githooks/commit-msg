@@ -7,7 +7,7 @@
 #   4. sop           usage changes move the SOP quick-reference     (sop-currency.sh)
 #   5. verdict       a staged Verdict stamp needs a suite receipt   (verdict-receipt.sh, SCC-363)
 #
-# ⭐ GATE 1 IS THE ONLY ONE HERE THAT EXISTS *FOR* MERGES (SCC-144). Gates 2, 3 and 4 all carve
+# ⭐ GATE 1 IS THE ONLY ONE HERE THAT EXISTS *FOR* MERGES (SCC-144). Gates 2-5 all carve
 # merges OUT — git writes those messages, so blocking them blocks the tool. Gate 1 runs on nothing
 # else.
 #
@@ -63,5 +63,10 @@ if [ -x "$SOP" ]; then
 fi
 
 VERDICT="$ROOT/.agents/scripts/git-hooks/verdict-receipt.sh"
-[ -x "$VERDICT" ] || exit 0
+if [ ! -x "$VERDICT" ]; then
+  echo "  ⚠ verdict-receipt gate not present in this worktree ($VERDICT) — a Verdict stamp"
+  echo "    with no suite receipt would pass unchecked. Merge/rebase onto a commit that"
+  echo "    carries .agents/scripts/git-hooks/ to re-arm it."
+  exit 0
+fi
 exec "$VERDICT" "$@"

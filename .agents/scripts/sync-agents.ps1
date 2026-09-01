@@ -837,10 +837,11 @@ function Sync-ZooSurfaces {
     }
   }
 
-  # 3) .roomodes - the Wonderland team (SCC-350): five seats OVERRIDE four of Zoo's built-in mode
-  # slugs (a same-slug custom mode replaces the built-in wholesale - verified v3.80.1) plus the
-  # new 'designer' slug. The 'ask' slug is DELIBERATELY unclaimed - stock Zoo Ask stays in the
-  # picker for plain Q&A - while claiming 'debug' suppresses the stock (law-free) Debug mode.
+  # 3) .roomodes - the Wonderland team (SCC-350, SCC-361): SIX seats OVERRIDE five of Zoo's
+  # built-in mode slugs (a same-slug custom mode replaces the built-in wholesale - verified
+  # v3.80.1) plus the new 'designer' slug. The 'ask' slug is CLAIMED by The Gnat (LIBRARIAN,
+  # groups [read] only) - the stock law-free Ask mode is gone from the picker, the same reason
+  # claiming 'debug' suppresses the stock (law-free) Debug mode. No stock Zoo persona remains.
   # Names, groups and whenToUse live in each seat MASTER's frontmatter (smh-team-*.md, UTF-8
   # markdown read with -Encoding UTF8) - because no non-ASCII may live in any EMITTED string
   # literal in this file: Windows PowerShell 5.1 reads no-BOM UTF-8 source as ANSI, so an emoji

@@ -41,7 +41,12 @@ for the title in caps"):
 auto-approve tiles `alwaysAllowModeSwitch` + `alwaysAllowSubtasks`) · ⏰🐇 White Rabbit — PM
 (architect slug; default daily seat) · 😼🔨 Cheshire Cat — ENGINEER (code slug; renamed from Carpenter, SCC-360) · 🦋 Caterpillar —
 DESIGNER (new slug) · ♥️👑 Queen of Hearts — TESTER & QA (debug slug — suppresses stock law-free
-Debug; the quality seat at BOTH ends: red-first traps + TEA/testarch doors AND the review/audit
-doors, full pen so findings fix in-lane; the retired edit-strip/scoped-pen design was replaced by
-a group CEILING — mcp is the TEAM LEAD's alone — plus a live charter-name pin, test B2b).
-Ticket: SCC-350, lane chore/SCC-350-wonderland-team.
+Debug; the quality seat: red-first traps + TEA/testarch doors, then readies the work for review —
+the review/audit doors LEFT the seat at SCC-362 and no seat writes a Verdict stamp; full pen so
+findings fix in-lane; the retired edit-strip/scoped-pen design was replaced by
+a group CEILING — mcp is the TEAM LEAD's alone — plus a live charter-name pin, test B2b)
+· 🦟🔍 The Gnat — LIBRARIAN (ask slug, SCC-361; groups EXACTLY [read] — unbiased lookups
+cited to project evidence, and it cannot edit or run commands because the extension
+enforces mode groups. It claims the last stock slug, so NO law-free Zoo persona is left
+in the picker).
+Ticket: SCC-350, lane chore/SCC-350-wonderland-team; SCC-360/361/362 lane chore/SCC-360-cheshire-cat-rename.

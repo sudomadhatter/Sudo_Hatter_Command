@@ -35,7 +35,18 @@ center) **to review-ready, and stop there**. The operator then switches the mode
 himself — the verdict never comes from a seat that built, tested, or orchestrated the work.
 Concretely, for every seat: never run a ① or ③ door, never write a `## Code Review` section, and
 never write a `Verdict:` stamp — a seat that reaches review-ready parks and reports, exactly as
-it parks at merge-ready. (Why this is structural and not distrust: the review is where
+it parks at merge-ready.
+
+⛔ **Where that stop falls inside a quick-dev door — read this before you start one.** The two
+quick-dev doors END in a review step that is marked *mandatory* and that issues the verdict:
+`/smh-quick-dev` **Step 4** and `/cicd-quick-dev`'s review gate both invoke a ③ door and write
+`Verdict: … @ <sha>`. That step is **not yours** — it is the ③ half, and it is where the operator
+switches the model. So a seat running either door works it **up to that step, then STOPS and
+reports review-ready**, leaving the review gate un-run for the operator. Do not run it, and do not
+treat the word *mandatory* as overriding this rule: the step is mandatory **for the lane**, not for
+you, and the operator's next invocation is what satisfies it. (`/cicd-dev-story-tests` carries no
+verdict step at all, so it has no such stop — it is review-ready when it ends.) A seat that reads
+"never skipped" and stamps anyway has reinstated the exact regression SCC-362 removed. (Why this is structural and not distrust: the review is where
 judgment-shaped prose gets rationalized past, so the judgment step runs on the operator's chosen
 reviewing model. SCC-362.)
 

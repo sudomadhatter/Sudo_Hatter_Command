@@ -28,7 +28,8 @@ You drive the **existing doors, in their existing order** — you never invent a
 2. Delegate the work between gates with the `new_task` tool — one subtask per seat, `mode` set to
    the seat's slug, chosen by reading each seat's `whenToUse`. White Rabbit plans, Queen of
    Hearts writes the failing tests, Cheshire Cat (and Caterpillar on front-end work) makes them
-   green, Queen of Hearts judges. Collect each result before dispatching the dependent step. When a
+   green, Queen of Hearts readies it for review — and there the team STOPS: ③ is the operator's
+   model-switch gate and you never dispatch it to a seat. Collect each result before dispatching the dependent step. When a
    conversation should simply CONTINUE as another seat rather than spawn a subtask, request
    `switch_mode` instead.
 3. Park at **review-ready**: the review doors (`/cicd-code-review`, `/smh-code-review`) are the

@@ -18,9 +18,10 @@ pins, each piece an operator ruling (SCC-350 planning session; SCC-360/SCC-361 Z
     lowercase role or a bare name is a regression of his correction ("Use regular March Hare for
     the name then TEAM LEAD for the title in caps").
   * THE MERGED QUALITY SEAT. The operator's ruling (2026-08-29): "the tester and the QA need to
-    really be one" and she is still the Queen of Hearts — one seat, `debug`, full pen, both the
-    red phase and the review doors. Every seat is a working seat; a seat without `edit` is a
-    regression to the retired scoped-pen design.
+    really be one" and she is still the Queen of Hearts — one seat, `debug`, full pen, carrying
+    the red phase and readying the work for review. ⛔ The review doors LEFT the seat (SCC-362):
+    ③ is the operator's model-switch gate, and no seat writes a `Verdict:` stamp. Every seat is
+    a working seat; a seat without `edit` is a regression to the retired scoped-pen design.
   * ONE SOURCE. Each mode's name/slug/groups live in its master's frontmatter
     (`.agents/commands/smh-team-*.md`); `sync-agents.ps1` reads them (the ps1 stays pure ASCII — no
     emoji survive Windows PowerShell 5.1's no-BOM codepage mangling); `.roomodes` is generated.
@@ -294,17 +295,58 @@ def main() -> int:
 
         # SCC-362 — the review gate binds EVERY seat: each master carries the no-verdict
         # refusal, and the team rule carries the model-switch-gate law that explains it.
-        no_verdict_missing = []
+        #
+        # ⛔ PIN THE NEGATION, NOT THE TOKEN (review finding, reproduced). This used to ask only
+        # whether the literal `` `Verdict:` `` appeared anywhere in the master — a substring
+        # sweep that CANNOT SEE POLARITY. Rewriting the refusal into its exact opposite —
+        # "You MAY run a ③ door, and you MAY write a `## Code Review` section with a
+        # `Verdict:` stamp" — left this file at 32/32 and the whole suite at 68/68, handing a
+        # seat written permission to self-certify. That is the shape `prose-pinning-guards-are-
+        # vacuous` names, in the very lane whose thesis is "fix with mechanism, never wording".
+        # So: the sentence carrying `Verdict:` must NEGATE, and no master may carry a modal
+        # granting it.
+        GRANT_RE = re.compile(r"(?i)\b(?:may|can|should|must|will)\b[^.\n]{0,120}"
+                              r"(?:`Verdict:`|write[^.\n]{0,40}`?## Code Review)")
+        verdict_bad: list[str] = []
         for mp in sorted((ROOT / ".agents" / "commands").glob("smh-team-*.md")):
             body = mp.read_text(encoding="utf-8")
-            if "`Verdict:`" not in body:
-                no_verdict_missing.append(mp.name)
+            # The bullet that mentions the stamp, joined across its wrapped continuation lines.
+            bullets, cur = [], ""
+            for ln in body.splitlines():
+                if ln.lstrip().startswith(("- ", "* ")):
+                    if cur:
+                        bullets.append(cur)
+                    cur = ln.strip()
+                elif cur and ln.startswith("  "):
+                    cur += " " + ln.strip()
+                elif cur:
+                    bullets.append(cur); cur = ""
+            if cur:
+                bullets.append(cur)
+            owning = [b for b in bullets if "`Verdict:`" in b]
+            if not owning:
+                verdict_bad.append(f"{mp.name}: no bullet mentions the `Verdict:` stamp")
+                continue
+            if not any(re.search(r"(?i)\bnever\b", b) for b in owning):
+                verdict_bad.append(
+                    f"{mp.name}: the `Verdict:` bullet does not NEGATE (no 'never') — "
+                    f"{owning[0][:90]!r}")
+            granted = GRANT_RE.search(body)
+            if granted:
+                verdict_bad.append(
+                    f"{mp.name}: a modal GRANTS the stamp — {granted.group(0)[:80]!r}")
         rule_txt = (ROOT / ".agents" / "rules" / "zoo-team.md").read_text(encoding="utf-8-sig")
-        c.check("B4b every seat master refuses the `Verdict:` stamp, and the team rule carries "
-                "the model-switch review gate (SCC-362)",
-                not no_verdict_missing and "model-switch gate" in rule_txt,
-                f"masters missing the refusal: {no_verdict_missing}; "
-                f"rule-carries-gate={'model-switch gate' in rule_txt}")
+        c.check("B4b every seat master REFUSES the `Verdict:` stamp in the negative, grants it "
+                "nowhere, and the team rule carries the model-switch gate (SCC-362)",
+                not verdict_bad and "model-switch gate" in rule_txt,
+                f"{verdict_bad}; rule-carries-gate={'model-switch gate' in rule_txt}")
+        # The guard must be able to FAIL — a polarity check that has never flagged an inversion
+        # is the same vacuous shape it was written to replace.
+        c.check("B4c CONTROL: the polarity guard actually fires on an inverted refusal",
+                bool(GRANT_RE.search("- **You MAY run a ③ door, and you MAY write a "
+                                     "`## Code Review` section with a `Verdict:` stamp**"))
+                and not GRANT_RE.search("- **You never run a ① or ③ door, and you never write a "
+                                        "`## Code Review` section or a `Verdict:` stamp.**"))
 
         # The COMPLEMENT of the law, never an enumerated denylist (review finding: a fixed
         # list is blind to any stray dir it did not predict — the generator's own prune

@@ -41,9 +41,15 @@ if [ -f "$GITDIR/MERGE_HEAD" ] || [ -d "$GITDIR/rebase-merge" ] || [ -d "$GITDIR
   exit 0
 fi
 
+# ⛔ 'Merge '* IS DELIBERATELY ABSENT from this list (review finding, reproduced). Every real
+# merge sets MERGE_HEAD and is already carved out by the STATE check above, so a subject-text
+# case adds no merge coverage at all - it only adds an escape anyone can type:
+# `git commit -m "Merge the review sections"` on a staged, receiptless PASS committed clean
+# with no hook output. The state check is the merge carve-out; this list is only for the
+# messages git writes on rebase/fixup paths that leave no state directory.
 SUBJECT=$(grep -v '^#' "$MSG_FILE" | sed -e 's/[[:space:]]*$//' -e '/^$/d')
 case "$SUBJECT" in
-  'Revert "'*|'Merge '*|'fixup! '*|'squash! '*) exit 0 ;;
+  'Revert "'*|'fixup! '*|'squash! '*) exit 0 ;;
 esac
 
 exec "$PY" .agents/scripts/verdict_receipt.py --repo . --message-file "$MSG_FILE"
