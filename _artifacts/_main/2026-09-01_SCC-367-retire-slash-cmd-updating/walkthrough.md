@@ -171,5 +171,8 @@ They live outside the repo, so no repo-scoped assertion can see or purge them an
   comment above rather than on the line. Resolved by putting the marker on the entry line, which is
   what a line-scoped hatch is for. Both green together.
 
-_(Verdict stamped in the following commit, once the suite receipt exists on a clean tree —
-the SCC-363 gate refuses a stamp that has no receipt behind it, and it was right to.)_
+**Receipt:** `gates/suite.json` — `result: pass`, `exit_code: 0`, `dirty_tree: false`,
+**68/68 files** in 103.2 s at `60ac25af`. Stamped by `gate_receipt.py`, which has no
+`--result` flag: the outcome comes from a real exit code or it does not exist.
+
+Verdict: PASS @ 60ac25af
