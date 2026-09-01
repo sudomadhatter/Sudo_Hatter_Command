@@ -21,7 +21,7 @@ import json
 import plistlib
 import sys
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[3]
 INSTALL = ROOT / ".agents" / "scripts" / "zoo_notify_install.py"
@@ -98,7 +98,14 @@ def test_mac_plist_never_points_at_a_virtualenv_interpreter():
     m = _mod()
     with tempfile.TemporaryDirectory() as d:
         p = m.build_plist(repo=ROOT, home=_home(Path(d)), platform="darwin")
-        interp = Path(p["ProgramArguments"][0])
+        # ⛔ PurePosixPath, not Path — this is a DARWIN artifact (`platform="darwin"` above), so
+        # its interpreter is a POSIX path whatever machine runs the suite. On Windows,
+        # `Path("/usr/bin/python3")` is a WindowsPath whose `.is_absolute()` is **False** (no
+        # drive letter) and whose parts start `('\\', 'usr', …)`, so this case went red on the PC
+        # while the Mac plist it checks was perfectly correct. That is the exact scar this file's
+        # own header names — assert on POSIX semantics for a POSIX artifact.
+        # [[mac-authored-code-hides-windows-bugs]] (SCC-338)
+        interp = PurePosixPath(p["ProgramArguments"][0])
         assert ".venv" not in interp.parts, interp
         assert "venv" not in interp.parts, interp
         assert interp.is_absolute(), interp
