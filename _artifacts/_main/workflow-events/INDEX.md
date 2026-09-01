@@ -11,7 +11,7 @@
 
 | Bucket | What it holds | Events |
 | --- | --- | --- |
-| `2026-09/` | September ceremonies. Opened by SCC-365's close-out on 2026-09-01. | 1 |
+| `2026-09/` | September ceremonies. Opened by SCC-365's close-out on 2026-09-01. | 3 |
 | `2026-08/` | August ceremonies — the month the flight recorder went live, alongside the armed `main` write gate (SCC-118) and the ledger-rides-the-PR change (SCC-358). | 40 |
 
 **Why this file exists (SCC-367).** `check_maps.py --depth3-only --strict` requires an `INDEX.md` in

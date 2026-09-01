@@ -1,0 +1,56 @@
+{
+  "v": 1,
+  "task": "SCC-369",
+  "sha": "e1cfe613da3d5a2dcbb2306b3037a9c61f82651c",
+  "tip": "63ab90aa0305556da23a7853e338b3d07720c92f",
+  "trigger": "close-out",
+  "when": "2026-09-01T11:55:32-04:00",
+  "changes": [
+    ".agents/hooks/INDEX.md",
+    ".agents/hooks/guard-cwd-escape.py",
+    ".agents/hooks/shape-guard.py",
+    ".agents/rules/INDEX.md",
+    ".agents/rules/command-shape.md",
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/shape_scan.py",
+    ".agents/scripts/tests/test_rule_frontmatter.py",
+    ".agents/scripts/tests/test_shape_guard.py",
+    ".agents/scripts/tests/test_shape_scan.py",
+    ".agents/scripts/tests/test_zoo_permissions.py",
+    ".claude/settings.json",
+    ".vscode/settings.json",
+    "AGENTS.md",
+    "_artifacts/_main/2026-09-01_scc-369-shape-nag/implementation_plan.md",
+    "_artifacts/_main/2026-09-01_scc-369-shape-nag/sweep.json",
+    "_artifacts/_main/2026-09-01_scc-369-shape-nag/task.yaml",
+    "_artifacts/_main/2026-09-01_scc-369-shape-nag/tickets/SCC-369.md",
+    "_artifacts/_main/2026-09-01_scc-369-shape-nag/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md",
+    "docs/migrations/install_guides/new_machine-migration-guide.md",
+    "docs/migrations/zoo-code-permissions-guide.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-01_scc-369-shape-nag/walkthrough.md",
+    "verdict": "PASS @ e1cfe61",
+    "gates": {
+      "suite": "pass@21cf1ae"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/INDEX.md",
+    "rule-edited:.agents/rules/command-shape.md"
+  ]
+}

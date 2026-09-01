@@ -114,13 +114,46 @@ Two Zoo features to leave alone, and why:
 ## 6. The canonical lists — and the reasoning per family
 
 The source of truth is [`.vscode/settings.json`](../../.vscode/settings.json) (`zoo-code.*` keys),
-tracked in git: **112 allow / 105 deny** entries. The design rule, in the operator's words
+tracked in git: **120 allow / 105 deny** entries. The design rule, in the operator's words
 (2026-08-30): *denies are the absolute minimum — only things that would really cause damage.* And
 one mechanic makes that minimum load-bearing: under a broad allow, an un-denied spelling does not
 ask — it **auto-runs**. So the allows are broad working families, and every deny row names real
 damage and never collides with a legitimate ceremony step (both properties enforced by
 [test_zoo_permissions.py](../../.agents/scripts/tests/test_zoo_permissions.py): a 68-row
 destructive battery must all deny, the 25-step ceremony set must all approve, on every suite run).
+
+### ⛔ The store also has to be SHRUNK, and 2026-09-01 is why (SCC-369)
+
+Growth is only half of it. Zoo's "always allow" click does not store the command you approved — it
+stores the **fragments** its own splitter produced. By 2026-09-01 the Mac's store held **255 allow
+entries against the tracked 112**, and reading all 143 store-only rows found three piles and no
+policy in any of them. **Shell wreckage:** `do`, `done`, `}`, `for d in`, `{ echo`, `exit 1` — a
+`for` loop somebody approved, shredded into tokens, plus `giast` and `giast status --short`, a typo
+of `git status` permanently blessed. **Dead one-off literals:** rows naming
+`story-24-6-chuck-rebuild`, `/tmp/avch101-pyrefly.txt` and `acli jira workitem view SCC-366`, from
+work that closed weeks earlier and can never match again. And the pile that mattered — **bare
+tokens that outrank the fence**: `rm`, `git`, `env`, `acli`. The deny list stops `rm -rf` and
+`rm -r`, so bare `rm` in the allow list meant **`rm -f somefile` and `rm *.md` auto-ran with no
+prompt**, and bare `env` walked around every `env -u GITHUB_TOKEN git …` deny row.
+
+**The operator made the call, on the measurement.** Offered the choice between wiping only the four dangerous rows and a full reset, he first chose the narrow option; the cost of keeping the other 139 was then measured — `zoo_permissions_apply.py` has no surgical remove, so keeping them meant committing debris like `do`, `done` and `giast` into `.vscode/settings.json` as repo policy — and on that evidence he chose **"Full wipe — all 143"**. The agent measured; the operator named the disposition.
+
+⚠️ **After the eight promotions the numbers move once, and this is why they differ.** One of the eight (`ln -s `) already existed in the store, so `--status` now reads **142 store-only and 7 tracked rows missing from the store**, not 143 and 8. Both describe the same reconciliation before the apply; after it, both lists read *in sync with tracked file*.
+
+**The reconciliation was measured, not judged.** Of the 143, **101 were already covered** by a
+tracked prefix; only 42 would newly prompt after a reset, and every one was debris, a typo, a dead
+literal, or a **bare token whose useful form is already tracked with a trailing space** — the store
+had `git`, the tracked file has `git `, and a real command (`git status`) starts with `git ` and
+stays approved. Exactly eight rows were real, recurring and uncovered, and those were promoted into
+the tracked file: `npx vitest `, `npm run `, `test -`, `sleep `, `ps aux`, `ln -s `, and the
+two-machine venv twin `backend/.venv/bin/` + `backend/.venv/Scripts/`. `find ` was deliberately NOT
+promoted — `find -delete` and `find -exec rm` are destructive and no deny row sees them.
+
+⭐ **The wipe closed the `rm -f` hole by itself, with no deny-list change**, because the tracked file
+carries no `rm` row at all. And it is the only direction that keeps the two machines equal: those
+143 rows lived in one Mac's SQLite file and had never existed on the PC, which was already running
+on the tracked list alone. Reset with `zoo_permissions_apply.py --apply` (VS Code fully quit); its
+closing `--status` must read *in sync with tracked file* on **both** lists.
 
 **Growing the allow list from what actually got blocked.** `/smh-llm-approvals` reads Zoo's own
 thread store, keeps the asks Zoo genuinely stopped on (`autoApprovalDecision` null — see §4), and
