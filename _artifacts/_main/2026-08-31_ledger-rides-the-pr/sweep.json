@@ -1,0 +1,128 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_command_surfaces.py"
+ ],
+ "mutants": [
+  {
+   "id": "N1 the active-context INSTRUCTION is deleted; only the `git add` mention survives",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "2. **Active context**: record in the project's `active-context.md` that this epic is gated and\n   awaiting the merge — again pending, not past tense.\n\n",
+   "mutated": "",
+   "case": "CS-21 A Step 3.5 INSTRUCTS both the ledger row and active-context",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N2 Step 3.5 is INVERTED — every literal kept, the instruction reversed",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "2. **Active context**: record in the project's `active-context.md` that this epic is gated and\n   awaiting the merge — again pending, not past tense.\n\n",
+   "mutated": "2. **Active context**: do NOT touch `active-context.md` here; that happens after the merge.\n\n",
+   "case": "CS-21 A Step 3.5 INSTRUCTS both the ledger row and active-context",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N3 the key is dropped from the FENCE only, surviving in the prose below",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "cd \"$PROJECT_ROOT\" && git commit -F <message-file>    # subject: \"<JIRA-KEY> chore(ship): ...\"",
+   "mutated": "cd \"$PROJECT_ROOT\" && git commit -F <message-file>    # subject: \"chore(ship): ...\"",
+   "case": "CS-21 A1 ...and its commit carries <JIRA-KEY> ON THE COMMIT LINE",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N4 the explicit paths become a sweeping `git add -A`",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "cd \"$PROJECT_ROOT\" && git add _artifacts/INDEX.md <the active-context path>",
+   "mutated": "cd \"$PROJECT_ROOT\" && git add -A",
+   "case": "CS-21 A2 ...with EXPLICIT paths, never `git add -A`",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N5 the push is dropped — the shape ship_preflight BLOCKS on a resumed run",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "cd \"$PROJECT_ROOT\" && git commit -F <message-file>    # subject: \"<JIRA-KEY> chore(ship): ...\"\ncd \"$PROJECT_ROOT\" && env -u GITHUB_TOKEN git push origin epic/<JIRA-KEY>-<slug>",
+   "mutated": "cd \"$PROJECT_ROOT\" && git commit -F <message-file>    # subject: \"<JIRA-KEY> chore(ship): ...\"",
+   "case": "CS-21 A3 ...and PUSHES it in the same step",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N6 ORDER — the gate no longer precedes the bookkeeping (the side a one-sided check misses)",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "## Step 3 — Run the gate (on the epic branch)",
+   "mutated": "## Step 3.6 — Run the gate (on the epic branch)",
+   "case": "CS-21 B ORDER Step 3 -> Step 3.5 -> gh pr create",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N7 the retired write is reinstated in Step 6.5, one section over from Step 6",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "## Step 6.5 — Move the epic's Jira ticket",
+   "mutated": "## Step 6.5 — Move the epic's Jira ticket\n\nFirst add the shipped row to `_artifacts/INDEX.md` and record the deploy.",
+   "case": "CS-21 C1 the WHOLE post-merge region writes nothing",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N8 the AVCH-111 defect restored as a brand-new tail step",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "## Step 6.5 — Move the epic's Jira ticket",
+   "mutated": "## Step 6.5 — Move the epic's Jira ticket\n\n## Step 7 — Ledger + context (after the merge)\n\nWrite the row.",
+   "case": "CS-21 C2 ...and no new step may be appended after the merge",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N9 the ⛔ ban is DELETED; both ticket numbers survive in the paragraph below",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "⛔ **DO NOT COMMIT ANYTHING HERE — never run `git commit` while standing on `main`. This step used\nto say the opposite, and that instruction is the whole of SCC-175 and SCC-358.**",
+   "mutated": "The branch is pruned.",
+   "case": "CS-21 E Step 6 states the ban, with its scars in the SAME paragraph",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N10 the ban is INVERTED while keeping its scars",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "⛔ **DO NOT COMMIT ANYTHING HERE — never run `git commit` while standing on `main`. This step used\nto say the opposite, and that instruction is the whole of SCC-175 and SCC-358.**",
+   "mutated": "Commit the bookkeeping here on `main`. SCC-175 and SCC-358 refer.",
+   "case": "CS-21 E Step 6 states the ban, with its scars in the SAME paragraph",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N11 Step 6's instrument is removed — a skipped Step 3.5 becomes unnoticeable",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "cd \"$PROJECT_ROOT\" && git log origin/main -1 --format=%h --grep=\"<JIRA-KEY>\" -- _artifacts/",
+   "mutated": "cd \"$PROJECT_ROOT\" && git status --short",
+   "case": "CS-21 F Step 6 INSTRUMENTS whether Step 3.5 ran, and names the remedy lane",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N12 the reconcile is recorded to the ledger row again, REWORDED",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "**Empty delta, guide present** → the epic shipped as specified. Record it in the Step 6.5 ticket",
+   "mutated": "**Empty delta, guide present** → the epic shipped as specified. Record it in the ledger row",
+   "case": "CS-21 G Step 5.5 records every reconcile outcome to the TICKET",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N13 the SOP currency row reinstates the ledger with a CHANGED CONNECTIVE",
+   "file": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+   "original": "epic shipped as specified` on the ticket |",
+   "mutated": "epic shipped as specified` on the ticket, plus the ledger row |",
+   "case": "CS-21 I the SOP's Epic currency row is ticket-only",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N14 the routing index is REWORDED back to the retired order",
+   "file": ".agents/commands/INDEX.md",
+   "original": "The ledger row and active-context are committed **on the epic branch before the PR opens** (Step 3.5)",
+   "mutated": "The ledger row follows the merge, then live verify",
+   "case": "CS-21 H commands/INDEX.md teaches the NEW order, positively",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  },
+  {
+   "id": "N15 the LOBBY hand-append creeps back into the post-merge region (AC-6)",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "## Step 6.5 — Move the epic's Jira ticket",
+   "mutated": "## Step 6.5 — Move the epic's Jira ticket\n\nAdd the home-base INDEX row too if run from the lobby.",
+   "case": "CS-21 C1 the WHOLE post-merge region writes nothing",
+   "block": "CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half writes NOTHING"
+  }
+ ]
+}

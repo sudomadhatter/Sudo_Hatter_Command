@@ -875,6 +875,23 @@ the merge landed with plain git (`git merge-base --is-ancestor`, no `gh` needed,
 on any machine), watches the deploy, verifies live, prunes the epic branch and moves the epic
 ticket. If the ancestor check fails it STOPS: nothing moves on a PR nobody merged.
 
+**And the paperwork rides the pull request, because it has to (SCC-358).** The ledger row and the
+active-context entry are written and committed at **Step 3.5**, on the epic branch, before the PR is
+opened — so they land with the merge. They used to be written afterwards, standing on `main`, and
+that stopped being possible the day the server-side rulesets went active on both repos: a required
+check means a PR is the only road in, so a bookkeeping commit made after the merge is a direct push
+the gate refuses. It was found the hard way, on an epic whose ledger commit needed its own operator
+approval and a hand-built `--no-ff` merge just to land. The row goes in **number-free** — the PR
+number does not exist until Step 4 opens the PR, and the merge SHA not until you click — and both
+land on the ticket at Step 6.5 instead, where they are known. It also goes in the **pending** tense:
+at Step 3.5 nothing has shipped yet, so the row records what was *gated* and what is *awaiting your
+merge*, and the deploy outcome joins the PR number on the ticket at Step 6.5. A row written in the
+past tense would be a false record on `main` the moment a deploy went red — and Step 6 could not
+correct it, because **Step 6 now commits nothing at all**, the same ban the Task door has carried
+since SCC-175. Step 3.5 pushes what it commits, in the same step: an unpushed bookkeeping commit is
+the one state `ship_preflight.py` blocks outright, so leaving the push to Step 4 would strand any
+run interrupted between them.
+
 ⚠️ **One repo setting this road depends on, and the door now checks it for you.** The resume half
 proves the merge with `git merge-base --is-ancestor`, so the epic's tip has to still BE an ancestor
 of `main` afterwards — which a **squash** or **rebase** merge rewrites. Step 4 reads the repo's merge
@@ -918,7 +935,7 @@ it correct still exists. What differs is the unit.
 | --- | --- | --- | --- |
 | **Commit** (this repo only) | the page you are reading | an armed `commit-msg` gate — change a usage surface without staging this page and the commit is rejected | `[sop-ok]` in the message, logged forever |
 | **Story** (a project) | the project overview guide, in that project's `docs/` — what was BUILT, for a human | `/cicd-update-sprint-memory` **Step 3.5**, at the save | one line in the walkthrough naming which happened: `Project overview guide: edited\|unchanged\|absent - <reason>` |
-| **Epic** (a project) | the PRD, and the architecture folder | `/cicd-push-e2e` **Step 5.5**, at the ship, via `/bmad-correct-course` | `PRD: unchanged - epic shipped as specified` on the ticket and the ledger row |
+| **Epic** (a project) | the PRD, and the architecture folder | `/cicd-push-e2e` **Step 5.5**, at the ship, via `/bmad-correct-course` | `PRD: unchanged - epic shipped as specified` on the ticket |
 
 **Why a project does not get a commit gate.** The gate on this page works because its usage surface
 is five narrow paths, so a fire means something. A project's surface is `backend/` and `frontend/` —
@@ -3893,11 +3910,12 @@ flowchart TD
     G4 --> V
     LIGHT --> V
     V -- "RED" --> STOP["REFUSES — nothing ships\nsummarize failures, suggest the lane"]
-    V -- "GREEN" --> S4["Step 4 — push the GATED TIP, open the PR\ngate numbers + e2e report in the body\n🛑 STOP — hand back the link"]
+    V -- "GREEN" --> S35["Step 3.5 — the ledger row + active-context\nCOMMITTED ON THE EPIC BRANCH, before the PR\nnumber-free: the PR # and merge sha go on the ticket"]
+    S35 --> S4["Step 4 — push the GATED TIP, open the PR\ngate numbers + e2e report in the body\n🛑 STOP — hand back the link"]
     S4 --> CLICK{"you click Merge pull request"}
     CLICK --> S45["Step 4.5 — --after-merge KEY\nmerge-base --is-ancestor — NOT merged? STOP\nPR number off the merge subject"]
     S45 --> S5["Step 5 — watch every workflow run to success\nverify LIVE: /health · the prod URL · the release track"]
-    S5 --> S6["Step 6 — prune the epic branch\nledger row · active-context · 0 0 clean"]
+    S5 --> S6["Step 6 — prune the epic branch\n0 0 clean · ⛔ COMMIT NOTHING\nthe gate refuses a post-merge push"]
     S6 --> S65["Step 6.5 — evidence commented\nepic ticket → Done"]
 ```
 
