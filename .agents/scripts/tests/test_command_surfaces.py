@@ -2395,6 +2395,25 @@ def main() -> int:
                 + " — brackets say optional, and `ruff`/`pyrefly` receipts are never written "
                   "by any step in this system, so demanding them blocks every close-out")
 
+        # ⛔ CS-14 C3 · SCC-365 · THE FIX ABOVE IS OVERRULED BY PROSE WITHOUT THIS ROW. The
+        # step that decides the `done` flip carried its own copy of the same expired 2026-08-02
+        # ruling (`gate_receipt.py check … --advisory`, with a ⏳ note to remove it "after the
+        # first full sprint") and, five lines under it, `Fail-open: a gate-read error never
+        # blocks close-out`. So the preflight's new error printed at Step 0.6 and was overruled
+        # at Step 4, the story flipped to `done`, and the flip then made the story permanently
+        # exempt — disarming the check for every later re-run. A prose deletion nothing pins is
+        # a prose deletion that comes back.
+        save_door = body("cicd-update-sprint-memory.md")
+        c.check("CS-14 C3 the flip step neither runs the receipt check in advisory mode nor "
+                "declares a gate-read error non-blocking",
+                "--advisory" not in save_door and "Fail-open" not in save_door
+                and "ruling 2026-08-02" not in save_door,
+                "found: "
+                + ", ".join(s for s in ("--advisory", "Fail-open", "ruling 2026-08-02")
+                            if s in save_door)
+                + " — the flip is the last gate, and a fail-open there makes every check "
+                  "upstream of it advisory too")
+
         # 4. THE MESSAGE FILE THAT MUST LIVE OUTSIDE BOTH TREES. `printf … > f` writes to the
         #    shell's cwd; `git -C <dir> commit -F f` reads it under <dir>. Every kickoff commit
         #    block died `fatal: could not read log file`, exit 128 — and the push on the next

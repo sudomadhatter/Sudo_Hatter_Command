@@ -1109,10 +1109,14 @@ def main() -> int:
                                  "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11",
                                  "--require-gates", "suite")
             errs_e = rows(out_e, "gates", "ERROR")
-            c.check("EV5 row E · an EXPLICITLY required gate with no receipt is an ERROR that "
+            # ⛔ EXACTLY ONE ROW. `check_gates` loops `for gate in require` with no dedupe, so a
+            # derived demand that prepends `suite` unconditionally emits the identical error
+            # TWICE at the two doors that name the gate themselves - and every other assertion
+            # here is satisfied by a duplicate. This is the row that pins the guard.
+            c.check("EV5 row E · an EXPLICITLY required gate with no receipt is ONE ERROR that "
                     "names the directory searched AND the command that fills it - the "
                     "2026-08-02 `advisory for one sprint` ruling is retired",
-                    rc_e == 2 and bool(errs_e)
+                    rc_e == 2 and len(errs_e) == 1
                     and any(f"{wf.GATES_REL}/30-1" in m for m in errs_e)
                     and any("gate_receipt.py run" in m for m in errs_e),
                     f"rc={rc_e} gates={rows(out_e, 'gates')}")
@@ -1168,6 +1172,27 @@ def main() -> int:
                     rows(out_long, "gates") == rows(out_short, "gates")
                     and not rows(out_long, "gates", "ERROR"),
                     f"short={rows(out_short, 'gates')} long={rows(out_long, 'gates')}")
+
+        # ── EV8 · row G · WHICH directory wins when BOTH spellings exist on disk ─────────
+        # ⛔ `receipt_dir_for` alone makes EV7 green from either spelling, so it does NOT pin
+        # the second half of the fix - that `main` hands `check_gates` the RESOLVED key like
+        # every other check. This is the shape where the two answers differ: the literal is
+        # tried first, so a run keyed on the raw `--story 30-1` resolves the STRAY short-id
+        # directory (empty), while one keyed on the board's own `30-1-fresh` resolves the
+        # story's own. Both directories existing is not invented: the live AGY tree names its
+        # receipt dirs by short id while its board keys are long, so a lane stamped under both
+        # spellings is one `gate_receipt.py run --story <the other spelling>` away.
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, gates_id="30-1-fresh")
+            (repo / wf.GATES_REL / "30-1").mkdir(parents=True)      # the stray, and it is EMPTY
+            rc_h, out_h = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                 "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11",
+                                 "--require-gates", "suite")
+            c.check("EV8 row G · with BOTH spellings on disk the STORY'S OWN board key wins, "
+                    "not the id the caller happened to type",
+                    not rows(out_h, "gates", "ERROR")
+                    and any("pass @" in m for m in rows(out_h, "gates")),
+                    f"rc={rc_h} gates={rows(out_h, 'gates')}")
 
     return c.finish()
 
