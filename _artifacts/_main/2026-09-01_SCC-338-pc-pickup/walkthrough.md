@@ -94,12 +94,38 @@ the main checkout, and the remedy was the one command in this ticket's own runbo
 from the main checkout, which had last been run before `main` moved. Re-run; `test_command_surfaces`
 is now **323/323** and the cache is a byte mirror of its doors.
 
-Three files remain red **under PowerShell only** and are a separate class from anything here — POSIX
-`uid` semantics on Windows (`test_allow_scratchpad`), a folder scan walking into a vendored
-`third_party` tree (`test_sops_prds_folder`), and one more binary-resolution failure of exactly the
-kind fixed in `test_shape_guard` (`test_verdict_receipt`). All three are green under Git Bash. The
-lesson this lane keeps re-teaching, now stated once: **on Windows the shell is part of the
-environment under test**, so a green is only a green for the shell it ran in.
+**A second correction, because the first one was also wrong.** I wrote that three files were red
+"under PowerShell only" and green under Git Bash. That was measured in the *worktree*, not in Git
+Bash, and two of the three are checkout-dependent rather than shell-dependent. The real matrix,
+measured on merged `main`:
+
+| | Git Bash | PowerShell |
+|---|---|---|
+| worktree | 71/71 | not run |
+| main checkout | **69/71** | **68/71** |
+
+Which makes the honest reading: the worktree's 71/71 was never evidence about the main checkout at
+all, for the same reason `CS-18 L` skipped there. Three files, diagnosed properly this time:
+
+`test_sops_prds_folder` — **not** "a scan walking into a vendored tree". It is a **Windows
+long-path crash**: `FileNotFoundError [WinError 3]` on
+`Projects/AGY_AVIATIONCHAT/.claude/worktrees/24-10-docs-current/backend/.venv/…/torch-2.13.0.dist-info/licenses/third_party/kineto/libkineto/third_party/dynolog/third_party/prometheus-cpp/3rdparty/civetweb/examples/rest`
+— comfortably past Windows' 260-character `MAX_PATH`. It fails in **both shells** in the main
+checkout and passes in a worktree only because `Projects/` is not checked out there. This is a dead
+gate on this machine, not a cosmetic red. Remedy: guard the directory walk against `OSError` and
+prune `.venv` / `node_modules` before descending, or enable Windows long paths.
+
+`test_allow_scratchpad` — one case of 187, and genuinely POSIX-only: it asserts a uid is read from
+the process, and Windows has no `os.getuid`. Fails in **both shells**. Remedy: skip the case off
+POSIX, the way the rest of the suite handles platform-specific law.
+
+`test_verdict_receipt` — the only true PowerShell-only failure, and the same binary-resolution
+family fixed in `test_shape_guard`. Remedy: the same probe.
+
+The lesson this lane keeps re-teaching, now stated once and correctly: **on Windows, both the shell
+AND the checkout are part of the environment under test.** A green is only a green for the shell it
+ran in and the tree it ran in — and this walkthrough got that wrong twice before getting it right,
+which is itself the evidence for how easy it is to get wrong.
 
 ## The evidence, per ticket, measured on the PC 2026-09-01
 
