@@ -57,6 +57,25 @@ judged** a lane with a non-ASCII path; `mutation_sweep` left **live mutants** on
 is verbatim the SCC-144 incident it exists to prevent. A suite nobody runs on a machine is not
 protecting that machine.
 
+**⛔ A SUITE GREEN IS SCOPED TO THE SHELL *AND* THE CHECKOUT IT RAN IN (SCC-338, 2026-09-01).**
+The same tree, same commit, four different answers: worktree+Git Bash **71/71**, main+Git Bash
+**69/71**, main+PowerShell **68/71**. Three separate causes, and I reported the wrong one twice
+before getting it right.
+- **Shell:** `subprocess.run(cmd, shell=True)` on Windows is **cmd.exe**, which never expands
+  `$VAR`; and `sh` is on PATH under Git Bash but **NOT under PowerShell**, so `["sh","-c",cmd]`
+  dies `FileNotFoundError [WinError 2]` in the shell the operator actually uses. **Probe** for a
+  POSIX shell, and derive the fallback from `shutil.which("git")` — Git for Windows ships `sh.exe`
+  beside it. Never name an install dir (this PC keeps Git at `C:/Git`, not `C:/Program Files/Git`).
+  The registered hook string's own first word is `sh`, so the CHILD must resolve it too: prepend the
+  resolved shell's dir to the child's PATH.
+- **Checkout:** a worktree has no `Projects/` (gitignored), so scans that crash in the main checkout
+  pass there. A **Windows long-path** `FileNotFoundError [WinError 3]` past `MAX_PATH` — a torch
+  `dist-info/licenses` tree inside a project worktree's `.venv` — kills a whole gate in main and is
+  invisible from a lane.
+- **A test that says it SKIPPED is not a pass.** `CS-18 L` prints *"This is a SKIP, not a pass about
+  the cache; the claim binds in main"* — and I closed SCC-338 on a 29/29 that contained it. Read the
+  per-case text, never the tally. [[suite-red-file-may-have-run-nothing]]
+
 **How to apply:** **fork BEHAVIOUR, converge DATA.** Fork where the platforms genuinely differ (uid
 roots, `PATHEXT`, drive letters, junction-vs-symlink, `:` in a filename) — two arms, both asserting
 something real, neither a skip. Converge where the divergence was accidental (line endings, stdin
