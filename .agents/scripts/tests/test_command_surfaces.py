@@ -3881,6 +3881,80 @@ def main() -> int:
                     "a live menu row is excused because another cell cites the retiring ticket - "
                     "the hatch must refuse every `|`-delimited row on structure alone")
 
+    if c.block("CS-23 · SCC-364 · the close-out ticks the outline PRE-PR and only RENDERS "
+               "post-merge"):
+        # ⛔ THE DEFECT, MEASURED CLOSING SCC-358 THROUGH THE REAL DOOR. Step 4 ran
+        # `jira_ticket.py done`, and `cmd_done` (jira_ticket.py) does TWO things: it rewrites
+        # the outline file in the tree, then it writes the board. At Step 4 the file write is
+        # unreachable - the lane is merged, this door's own SCC-175 rule bans post-merge
+        # commits, and Step 5 prunes the tree. So `main` kept the unticked outline forever
+        # while the step's prose claimed "the tree stays the source, so the board and the
+        # branch cannot disagree". The prose was describing an invariant the sequence broke.
+        #
+        # ⭐ THE FIX NEEDS NO NEW CODE, and that is why the assertions below are about ORDER
+        # rather than about a new flag: `jira_ticket.py` already has both halves. `done
+        # --local` rewrites the file and does NOT touch the board; `describe` renders an
+        # outline to the board and does NOT touch the file. Tick pre-PR so the edit rides the
+        # PR like every other write in the lane, then render post-merge.
+        #
+        # ⛔ POSITION-AWARE, AND OVER FENCES ONLY - two separate reasons, both scars.
+        # `source-grep-guards-cannot-see-order`: a guard that only asks "does the door mention
+        # `--local`?" passes with the call still sitting in Step 4, which is the whole bug.
+        # And CS-16's own comment: the prose here QUOTES the commands it is discussing, so a
+        # scan over the whole body matches the discussion instead of the invocation.
+        close = (ROOT / ".agents" / "commands" / "smh-close-task-merge-tree.md").read_text(
+            encoding="utf-8")
+
+        def fenced_only(body: str) -> str:
+            """The body with every non-fenced character blanked, OFFSETS PRESERVED.
+
+            Blanking rather than joining is what lets `.find()` below compare real file
+            positions: a `"\n".join(...)` of the fences renumbers everything and the order
+            assertions would then be about the order of the extracts, not of the document.
+            """
+            out = list(" " * len(body))
+            for m in re.finditer(r"^```[a-z]*\n(.*?)^```", body, re.S | re.M):
+                for i in range(m.start(1), m.end(1)):
+                    out[i] = body[i]
+            return "".join(out)
+
+        code = fenced_only(close)
+        pr_at = code.find("gh pr create")
+        # A0 · ANTI-VACUITY FIRST. Every row below is a comparison against `pr_at`, and if the
+        # projection found nothing then every position is -1 and the whole block passes on an
+        # empty string. This is the row that fails if the fence regex ever stops matching.
+        c.check("CS-23 A0 the fenced projection actually found the PR call",
+                pr_at > 0, f"gh pr create at {pr_at} in the fenced projection")
+
+        done_local = [m.start() for m in re.finditer(r"jira_ticket\.py done\b", code)
+                      if "--local" in code[m.start():m.start() + 400]]
+        done_any = [m.start() for m in re.finditer(r"jira_ticket\.py done\b", code)]
+        describe_at = [m.start() for m in re.finditer(r"jira_ticket\.py describe\b", code)]
+
+        c.check("CS-23 A the door ticks the outline with `done --local`",
+                bool(done_local), f"`jira_ticket.py done` fenced calls at {done_any}, "
+                                  f"none of them carrying --local")
+        c.check("CS-23 B ...and it does so BEFORE the PR is opened",
+                bool(done_local) and min(done_local) < pr_at,
+                f"done --local at {done_local}, gh pr create at {pr_at}")
+        c.check("CS-23 C no `jira_ticket.py done` runs AFTER the PR - a post-merge tree "
+                "rewrite can never land",
+                not [d for d in done_any if d > pr_at],
+                f"post-PR `done` calls at {[d for d in done_any if d > pr_at]}")
+        c.check("CS-23 D the board is re-rendered post-merge with `describe`, which "
+                "touches no file",
+                bool(describe_at) and max(describe_at) > pr_at,
+                f"describe at {describe_at}, gh pr create at {pr_at}")
+        # E · the PROSE that made the sequence look correct. Step 4 may no longer claim the
+        # tree is the source at the moment it cannot be.
+        step4 = md_section(close, r"##\s+Step 4\b")
+        c.check("CS-23 E Step 4 no longer claims 'the tree stays the source'",
+                "tree stays the source" not in step4,
+                step4[:400] if "tree stays the source" in step4 else "")
+        c.check("CS-23 E2 ...and the anti-vacuity control: Step 4 was actually located",
+                len(step4) > 200, f"md_section returned {len(step4)} chars for Step 4")
+
+
     return c.finish()
 
 

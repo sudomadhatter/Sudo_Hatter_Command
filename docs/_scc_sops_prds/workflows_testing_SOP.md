@@ -975,6 +975,16 @@ The close-out runs the preflight, the lane's gate and the flight event, and then
 > be *recorded* rather than assumed. Since that check runs after the merge, a missing section would
 > otherwise force a commit onto `main` after the fact — which a different gate then refuses. Both
 > requirements were found the hard way, one of them by SCC-183 landing through its own door.
+>
+> ⭐ **Since SCC-364 the ticket's own outline is ticked in that same pre-PR window** — the
+> `## Plan` checkboxes and the `## Done` lines, written with `jira_ticket.py done --local` (the
+> tree only). That tick used to happen *after* the merge, where the file it rewrites is in a
+> worktree the gate forbids committing to and the next step deletes — so the edit could never
+> land, and `main` kept an all-unticked Plan forever, reading as work that never happened. It
+> exited 0 either way, because the board half succeeded. Step 4 now only *renders* the landed
+> file to the board (`jira_ticket.py describe`), which writes no file at all. **Nothing changes
+> for you** — same one link, same one click; the difference is that the ticket you open
+> afterwards shows its boxes ticked.
 
 **You will never be handed a list of git commands to type.** If a close-out ever stops and asks you
 to merge by hand, that is the bug, not the procedure. And it never merges for you — there is no lane
@@ -1160,6 +1170,16 @@ on a closed ticket is exactly what §4 forbids.** So: reconcile → `check-actio
 `finish`. `test_command_surfaces.py` **CS-17 G** asserts that order by file offset in all four
 doors, because CS-17's other six rows are all satisfied by a block sitting anywhere in the file
 (`source-grep-guards-cannot-see-order`).
+
+⛔ **The same lesson, a second time, on a different write (SCC-364).** `jira_ticket.py done` does
+two things — it rewrites the ticket outline **in the tree**, then it writes the board — and
+`/smh-close-task-merge-tree` used to call it at Step 4, after the merge. Identical failure to the
+one above and identical cause: a *file* write scheduled into the window where this door forbids
+commits and Step 5 prunes the tree. The tick moved to Step 3 as `done --local`, so it rides the PR;
+Step 4 renders the landed outline with `describe`, which touches no file. **The generalisation
+worth carrying:** in every close-out, ask of each write *"does this touch the working tree?"* — if
+yes it belongs before the PR, and only board writes may sit after the merge. `CS-23` asserts that
+order by file offset, the same way `CS-17 G` does for the reconcile.
 
 ⓘ **A wrapped row keeps its shape.** `## Your Actions` rows routinely run to two or three lines, and
 SCC-206 taught the reader to fold those continuations in. The tick flips the box on the row's **first**

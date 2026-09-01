@@ -169,10 +169,15 @@ Rewritten as bullets and re-parsed.
 - EDIT `.agents/scripts/label_tasks.py` — same seam, same pin → B2
 - EDIT `.agents/scripts/jira_ticket.py` — four subprocess sites pinned → B3
 - EDIT `.agents/scripts/tests/test_jira_feed.py` — the round-trip, guard-message and byte-identity cases → B1, B2, B4, B5
-- NEW `.agents/scripts/tests/fixtures/acli_utf8_stub.py` — stub acli emitting U+26D4 and U+2B50 as UTF-8 bytes → B1, B2
 - EDIT `.agents/scripts/tests/test_command_surfaces.py` — the close-out order case, the writer/reader agreement case → C1, D3, D4
 
 ### Amendment (during build, Part B)
+
+**No new fixture file.** The plan declared `NEW tests/fixtures/acli_utf8_stub.py`; it was not
+needed and is withdrawn. `test_jira_feed.py` already builds a real executable acli stub in
+`build()`, and the actual defect was that THAT stub emitted `json.dumps` with the default
+`ensure_ascii=True` — pure-ASCII escapes on the wire, where real acli emits raw UTF-8 bytes.
+A second stub would have left the existing one lying, so the fix went into the one that ships.
 
 B3's cross-script seam guard landed in `test_jira_feed.py`, not `test_command_surfaces.py`:
 `jira_feed.py` owns the canonical `acli()` and `task_preflight.py` imports it, so the seam
