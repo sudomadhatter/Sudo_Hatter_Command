@@ -75,6 +75,7 @@ it can never block, slow, or wedge a headless session. Measured cost ~36 ms agai
 - EDIT `.agents/rules/command-shape.md` — add §Nag, the operator's ruling as law → F
 - EDIT `.agents/rules/INDEX.md` — the §Nag row → F
 - EDIT `.vscode/settings.json` — reconcile the 143 store-only allow entries → G
+- EDIT `docs/migrations/zoo-code-permissions-guide.md` — the guide's own count line is asserted against the tracked lists by `test_guide_currency`, so promoting eight rows makes this edit mandatory, not optional; it also records WHY the store was reset rather than merged → G
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — required by `sop-currency` for the `AGENTS.md` and rule edits → H
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — the one-line change record → H
 - EDIT `_artifacts/_main/INDEX.md` — this lane's row → H
