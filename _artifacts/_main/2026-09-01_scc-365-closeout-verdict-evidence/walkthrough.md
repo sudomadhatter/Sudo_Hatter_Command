@@ -215,4 +215,4 @@ on `23-9`, `23-13` and `19-1`. That is pre-existing, unchanged by this lane, and
 the merge door today. Remedy: exempt `_artifacts/` from the tree comparison, the way `task_preflight`
 already does. It belongs on the open rolling ticket, not here.
 
-**Verdict: PASS @ 0c5a344e**
+Verdict: PASS @ 0c5a344e
