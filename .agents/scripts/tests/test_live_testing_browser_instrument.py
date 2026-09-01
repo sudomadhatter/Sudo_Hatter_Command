@@ -55,11 +55,19 @@ from _harness import Cases
 
 ROOT = Path(__file__).resolve().parents[3]
 COMMAND = ROOT / ".agents/commands/cicd-live-testing-team.md"
-# The Antigravity door. `/smh-sync-agents` mirrors this command WHOLE (it is under the
-# launcher-stub size cap), so this is a second LIVE copy of the instruction, not a stub that
-# follows the master by reference. Checked for the same properties as the master.
+# ⛔ CORRECTED BY SCC-370, and the correction is the point of that ticket. This constant used to be
+# `.agents/workflows/cicd-live-testing-team.md` with the comment "mirrors this command WHOLE (it is
+# under the launcher-stub size cap), so this is a second LIVE copy of the instruction". That was
+# true only because this command happened to be 6,909 bytes. Every Antigravity door is a thin
+# launcher now, and even before SCC-370 this check would have gone red the day the command crossed
+# 11.5 KB - with nothing connecting the failure to the edit that caused it.
+#
+# The surface that carries a SECOND live copy of the body is opencode's mirror (`Copy-Item -Force`,
+# no launcher form, no size rule). That is what belongs in BODIES. The Antigravity door is asserted
+# below for what a launcher can honestly carry: that it exists and points at this command.
+OPENCODE = ROOT / ".opencode/commands/cicd-live-testing-team.md"
 WORKFLOW = ROOT / ".agents/workflows/cicd-live-testing-team.md"
-BODIES = (COMMAND, WORKFLOW)
+BODIES = (COMMAND, OPENCODE)
 SKILLS = ROOT / ".agents/skills"
 
 # The slug this command is required to route to. Named here rather than derived, because the

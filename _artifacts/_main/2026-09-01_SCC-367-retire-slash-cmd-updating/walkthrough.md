@@ -214,7 +214,7 @@ Verdict: PASS @ 60ac25af
 
 ⛔ **One item, and it is the only thing this lane could not do for itself.**
 
-- [ ] **Run `/smh-sync-agents` from the lobby checkout** (not a worktree) once this lands. Both
+- [x] **DONE 2026-09-01 — ran `/smh-sync-agents` from the lobby at `e54e0c37`.** Verified by the check this line named: both cache files are absent, and each cache's `smh-sync-agents` now carries the ported `-GlobalsOnly` law (opencode global: 6 hits; antigravity global: the 12,000 cap present). The only surviving mention in either cache is the history blockquote at line 93, which carries `SCC-367` on its own line exactly as `CS-22 B`'s hatch requires. Original instruction: **run `/smh-sync-agents` from the lobby checkout** (not a worktree) once this lands. Both
       machine-global caches still hold `smh-slash-command-updating.md`, and each holds a **pre-port**
       copy of `/smh-sync-agents`. They live outside the repo, so no repo-scoped assertion can see or
       purge them and no worktree sync writes them. The sync's mirror-exact purge clears both.

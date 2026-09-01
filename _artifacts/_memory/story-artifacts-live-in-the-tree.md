@@ -32,6 +32,6 @@ waste, and six rounds of "here's more proof you're wrong" reads as a fight, not 
   ("no ③ verdict in the tree — running ③ now") and proceed. Never cite a sibling story as evidence;
   naming an unrequested story is what makes later pronouns ambiguous.
 - Mid-run interjection whose referent is unclear: restate the bound target and ask ONE question — don't
-  silently abort a correctly-started step. (Kept out of the command files by design — they're near the
-  Gemini 12k cap; this memory is the carrier.)
+  silently abort a correctly-started step. (Kept out of the command files as a judgement about what belongs
+  in a memory versus a door — NOT for size: since SCC-370 no command has a size ceiling on any surface.)
 - Related: [[own-it-plainly-dont-make-excuses]] — when this pattern fires, one line of ownership, then act.

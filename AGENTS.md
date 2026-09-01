@@ -263,7 +263,8 @@ natively — it needs no adapter file. One command set (`.agents/commands/`) rea
 via `/smh-sync-agents`, with **one door per platform per command (SCC-66)**: Claude and Codex invoke the
 **launcher skill** (generated per claude/codex-eligible command; the skill's whole body is "read the command
 file, follow it end to end", so the command stays the single brain); opencode invokes its command mirror;
-Antigravity its workflow mirror (12k-cap thin launchers included). `platforms:` frontmatter limits reach;
+Antigravity its workflow mirror — and **every** Antigravity door is a thin launcher, whatever the command's
+size (SCC-370). `platforms:` frontmatter limits reach;
 default = everywhere. The retired doors — `.claude/commands/` and Codex custom prompts (`~/.codex/prompts`,
 `/prompts:<name>`) — double-doored commands beside their skills and are purged by the sync. BMAD's skills —
 which install to `.claude/skills`, outside Codex's search path — are mirrored to `~/.codex/skills` so BMAD is

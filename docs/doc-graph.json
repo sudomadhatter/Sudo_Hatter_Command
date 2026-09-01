@@ -7,12 +7,12 @@
     "files": 425,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 805,
-    "external": 40,
-    "ambiguous": 178,
-    "dangling": 301,
-    "broken_paths": 70,
-    "unresolved_names": 231,
+    "edges": 785,
+    "external": 38,
+    "ambiguous": 173,
+    "dangling": 286,
+    "broken_paths": 62,
+    "unresolved_names": 224,
     "unresolvable": 6
   },
   "nodes": [
@@ -33,7 +33,7 @@
     },
     {
       "path": ".agents/INDEX.md",
-      "in": 10,
+      "in": 9,
       "out": 9
     },
     {
@@ -323,7 +323,7 @@
     },
     {
       "path": ".agents/commands/cicd-bdd-tests.md",
-      "in": 2,
+      "in": 3,
       "out": 1
     },
     {
@@ -368,7 +368,7 @@
     },
     {
       "path": ".agents/commands/cicd-e2e.md",
-      "in": 1,
+      "in": 2,
       "out": 1
     },
     {
@@ -378,7 +378,7 @@
     },
     {
       "path": ".agents/commands/cicd-live-testing-team.md",
-      "in": 1,
+      "in": 2,
       "out": 2
     },
     {
@@ -393,17 +393,17 @@
     },
     {
       "path": ".agents/commands/cicd-non-crit-pr-push.md",
-      "in": 1,
+      "in": 2,
       "out": 6
     },
     {
       "path": ".agents/commands/cicd-park.md",
-      "in": 1,
+      "in": 2,
       "out": 5
     },
     {
       "path": ".agents/commands/cicd-prune-context.md",
-      "in": 1,
+      "in": 2,
       "out": 1
     },
     {
@@ -423,7 +423,7 @@
     },
     {
       "path": ".agents/commands/cicd-resume.md",
-      "in": 1,
+      "in": 2,
       "out": 3
     },
     {
@@ -463,7 +463,7 @@
     },
     {
       "path": ".agents/commands/sentry-security-team-avch.md",
-      "in": 1,
+      "in": 2,
       "out": 1
     },
     {
@@ -498,7 +498,7 @@
     },
     {
       "path": ".agents/commands/smh-llm-approvals.md",
-      "in": 2,
+      "in": 3,
       "out": 3
     },
     {
@@ -513,12 +513,12 @@
     },
     {
       "path": ".agents/commands/smh-new-project.md",
-      "in": 1,
+      "in": 2,
       "out": 2
     },
     {
       "path": ".agents/commands/smh-non-crit-pr-push.md",
-      "in": 1,
+      "in": 2,
       "out": 3
     },
     {
@@ -533,12 +533,12 @@
     },
     {
       "path": ".agents/commands/smh-quick-fix.md",
-      "in": 1,
+      "in": 2,
       "out": 6
     },
     {
       "path": ".agents/commands/smh-review.md",
-      "in": 1,
+      "in": 2,
       "out": 0
     },
     {
@@ -548,7 +548,7 @@
     },
     {
       "path": ".agents/commands/smh-sync-agents.md",
-      "in": 1,
+      "in": 2,
       "out": 3
     },
     {
@@ -713,7 +713,7 @@
     },
     {
       "path": ".agents/rules/000-PLAN-FIRST-GATE.md",
-      "in": 20,
+      "in": 17,
       "out": 2
     },
     {
@@ -723,7 +723,7 @@
     },
     {
       "path": ".agents/rules/artifacts-always-first.md",
-      "in": 33,
+      "in": 32,
       "out": 5
     },
     {
@@ -738,7 +738,7 @@
     },
     {
       "path": ".agents/rules/command-shape.md",
-      "in": 11,
+      "in": 10,
       "out": 3
     },
     {
@@ -748,7 +748,7 @@
     },
     {
       "path": ".agents/rules/constitution.md",
-      "in": 29,
+      "in": 28,
       "out": 1
     },
     {
@@ -758,12 +758,12 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 63,
+      "in": 56,
       "out": 4
     },
     {
       "path": ".agents/rules/jira.md",
-      "in": 43,
+      "in": 39,
       "out": 3
     },
     {
@@ -808,7 +808,7 @@
     },
     {
       "path": ".agents/rules/project-law.md",
-      "in": 16,
+      "in": 15,
       "out": 4
     },
     {
@@ -818,12 +818,12 @@
     },
     {
       "path": ".agents/rules/smh-target-resolution.md",
-      "in": 45,
+      "in": 37,
       "out": 3
     },
     {
       "path": ".agents/rules/sop-currency.md",
-      "in": 12,
+      "in": 11,
       "out": 8
     },
     {
@@ -833,12 +833,12 @@
     },
     {
       "path": ".agents/rules/work-consolidation.md",
-      "in": 16,
+      "in": 15,
       "out": 2
     },
     {
       "path": ".agents/rules/worktree-per-story.md",
-      "in": 36,
+      "in": 31,
       "out": 2
     },
     {
@@ -848,7 +848,7 @@
     },
     {
       "path": ".agents/scripts/INDEX.md",
-      "in": 4,
+      "in": 3,
       "out": 5
     },
     {
@@ -1753,7 +1753,7 @@
     },
     {
       "path": ".agents/workflows/INDEX.md",
-      "in": 3,
+      "in": 2,
       "out": 10
     },
     {
@@ -1804,7 +1804,7 @@
     {
       "path": ".agents/workflows/cicd-live-testing-team.md",
       "in": 0,
-      "out": 2
+      "out": 1
     },
     {
       "path": ".agents/workflows/cicd-merge-epic-workingtrees.md",
@@ -1814,12 +1814,12 @@
     {
       "path": ".agents/workflows/cicd-non-crit-pr-push.md",
       "in": 0,
-      "out": 6
+      "out": 1
     },
     {
       "path": ".agents/workflows/cicd-park.md",
       "in": 0,
-      "out": 5
+      "out": 1
     },
     {
       "path": ".agents/workflows/cicd-prune-context.md",
@@ -1844,7 +1844,7 @@
     {
       "path": ".agents/workflows/cicd-resume.md",
       "in": 0,
-      "out": 3
+      "out": 1
     },
     {
       "path": ".agents/workflows/cicd-self-audit.md",
@@ -1894,7 +1894,7 @@
     {
       "path": ".agents/workflows/smh-llm-approvals.md",
       "in": 0,
-      "out": 3
+      "out": 1
     },
     {
       "path": ".agents/workflows/smh-memory-audit.md",
@@ -1909,12 +1909,12 @@
     {
       "path": ".agents/workflows/smh-new-project.md",
       "in": 1,
-      "out": 2
+      "out": 1
     },
     {
       "path": ".agents/workflows/smh-non-crit-pr-push.md",
       "in": 0,
-      "out": 3
+      "out": 1
     },
     {
       "path": ".agents/workflows/smh-plan-task.md",
@@ -1929,12 +1929,12 @@
     {
       "path": ".agents/workflows/smh-quick-fix.md",
       "in": 0,
-      "out": 6
+      "out": 1
     },
     {
       "path": ".agents/workflows/smh-review.md",
       "in": 0,
-      "out": 0
+      "out": 1
     },
     {
       "path": ".agents/workflows/smh-self-audit.md",
@@ -1944,7 +1944,7 @@
     {
       "path": ".agents/workflows/smh-sync-agents.md",
       "in": 0,
-      "out": 3
+      "out": 1
     },
     {
       "path": ".agents/workflows/smh-update-maps-indexes.md",
@@ -2033,7 +2033,7 @@
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "in": 29,
+      "in": 28,
       "out": 55
     },
     {
@@ -4812,7 +4812,7 @@
     },
     {
       "from": ".agents/workflows/cicd-bdd-tests.md",
-      "to": ".agents/rules/smh-target-resolution.md",
+      "to": ".agents/commands/cicd-bdd-tests.md",
       "kind": "ref"
     },
     {
@@ -4847,7 +4847,7 @@
     },
     {
       "from": ".agents/workflows/cicd-e2e.md",
-      "to": ".agents/rules/smh-target-resolution.md",
+      "to": ".agents/commands/cicd-e2e.md",
       "kind": "ref"
     },
     {
@@ -4857,12 +4857,7 @@
     },
     {
       "from": ".agents/workflows/cicd-live-testing-team.md",
-      "to": ".agents/rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-live-testing-team.md",
-      "to": ".agents/rules/smh-target-resolution.md",
+      "to": ".agents/commands/cicd-live-testing-team.md",
       "kind": "ref"
     },
     {
@@ -4872,52 +4867,17 @@
     },
     {
       "from": ".agents/workflows/cicd-non-crit-pr-push.md",
-      "to": ".agents/rules/000-PLAN-FIRST-GATE.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-non-crit-pr-push.md",
-      "to": ".agents/rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-non-crit-pr-push.md",
-      "to": ".agents/rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-non-crit-pr-push.md",
-      "to": ".agents/rules/smh-target-resolution.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-non-crit-pr-push.md",
-      "to": ".agents/scripts/INDEX.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-non-crit-pr-push.md",
-      "to": ".agents/workflows/INDEX.md",
+      "to": ".agents/commands/cicd-non-crit-pr-push.md",
       "kind": "ref"
     },
     {
       "from": ".agents/workflows/cicd-park.md",
-      "to": ".agents/rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-park.md",
-      "to": ".agents/rules/smh-target-resolution.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-park.md",
-      "to": ".agents/rules/worktree-per-story.md",
+      "to": ".agents/commands/cicd-park.md",
       "kind": "ref"
     },
     {
       "from": ".agents/workflows/cicd-prune-context.md",
-      "to": ".agents/rules/smh-target-resolution.md",
+      "to": ".agents/commands/cicd-prune-context.md",
       "kind": "ref"
     },
     {
@@ -4937,12 +4897,7 @@
     },
     {
       "from": ".agents/workflows/cicd-resume.md",
-      "to": ".agents/rules/smh-target-resolution.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-resume.md",
-      "to": ".agents/rules/worktree-per-story.md",
+      "to": ".agents/commands/cicd-resume.md",
       "kind": "ref"
     },
     {
@@ -4962,7 +4917,7 @@
     },
     {
       "from": ".agents/workflows/sentry-security-team-avch.md",
-      "to": ".agents/rules/smh-target-resolution.md",
+      "to": ".agents/commands/sentry-security-team-avch.md",
       "kind": "ref"
     },
     {
@@ -4997,17 +4952,7 @@
     },
     {
       "from": ".agents/workflows/smh-llm-approvals.md",
-      "to": ".agents/rules/command-shape.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-llm-approvals.md",
-      "to": ".agents/rules/constitution.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-llm-approvals.md",
-      "to": ".agents/rules/git-policy.md",
+      "to": ".agents/commands/smh-llm-approvals.md",
       "kind": "ref"
     },
     {
@@ -5022,27 +4967,12 @@
     },
     {
       "from": ".agents/workflows/smh-new-project.md",
-      "to": ".agents/INDEX.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-new-project.md",
-      "to": ".agents/rules/project-law.md",
+      "to": ".agents/commands/smh-new-project.md",
       "kind": "ref"
     },
     {
       "from": ".agents/workflows/smh-non-crit-pr-push.md",
-      "to": ".agents/rules/000-PLAN-FIRST-GATE.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-non-crit-pr-push.md",
-      "to": ".agents/rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-non-crit-pr-push.md",
-      "to": ".agents/rules/jira.md",
+      "to": ".agents/commands/smh-non-crit-pr-push.md",
       "kind": "ref"
     },
     {
@@ -5057,32 +4987,12 @@
     },
     {
       "from": ".agents/workflows/smh-quick-fix.md",
-      "to": ".agents/rules/000-PLAN-FIRST-GATE.md",
+      "to": ".agents/commands/smh-quick-fix.md",
       "kind": "ref"
     },
     {
-      "from": ".agents/workflows/smh-quick-fix.md",
-      "to": ".agents/rules/artifacts-always-first.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-quick-fix.md",
-      "to": ".agents/rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-quick-fix.md",
-      "to": ".agents/rules/worktree-per-story.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-quick-fix.md",
-      "to": ".agents/rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-quick-fix.md",
-      "to": ".agents/rules/work-consolidation.md",
+      "from": ".agents/workflows/smh-review.md",
+      "to": ".agents/commands/smh-review.md",
       "kind": "ref"
     },
     {
@@ -5092,17 +5002,7 @@
     },
     {
       "from": ".agents/workflows/smh-sync-agents.md",
-      "to": ".agents/rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-sync-agents.md",
-      "to": ".agents/rules/sop-currency.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-sync-agents.md",
-      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/commands/smh-sync-agents.md",
       "kind": "ref"
     },
     {
@@ -6938,66 +6838,6 @@
       "target": "todo_list.md"
     },
     {
-      "from": ".agents/workflows/cicd-live-testing-team.md",
-      "target": "PROJECT_ROOT/_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-non-crit-pr-push.md",
-      "target": "docs/notes.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-park.md",
-      "target": "_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-prune-context.md",
-      "target": "/walkthrough.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-prune-context.md",
-      "target": "_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-prune-context.md",
-      "target": "active-context.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-prune-context.md",
-      "target": "known-pitfalls.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-prune-context.md",
-      "target": "project-context.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-resume.md",
-      "target": "_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-resume.md",
-      "target": "walkthrough.md"
-    },
-    {
-      "from": ".agents/workflows/sentry-security-team-avch.md",
-      "target": ".github/claude/incident-triage.md"
-    },
-    {
-      "from": ".agents/workflows/sentry-security-team-avch.md",
-      "target": "/incident-report.md"
-    },
-    {
-      "from": ".agents/workflows/sentry-security-team-avch.md",
-      "target": "PROJECT_ROOT/.github/claude/incident-triage.md"
-    },
-    {
-      "from": ".agents/workflows/smh-new-project.md",
-      "target": "_bmad-output/project-context.md"
-    },
-    {
-      "from": ".agents/workflows/smh-quick-fix.md",
-      "target": "/walkthrough.md"
-    },
-    {
       "from": "docs/_scc_sops_prds/INDEX.md",
       "target": "complete-system-overview.md"
     },
@@ -7450,14 +7290,6 @@
     {
       "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
       "target": "_artifacts/_main/2026-08-20_scc-225-review-surface/lc-cost-measurement.md"
-    },
-    {
-      "from": ".agents/workflows/smh-new-project.md",
-      "target": "_my_resources/open_tasks/todo_list.md"
-    },
-    {
-      "from": ".agents/workflows/smh-new-project.md",
-      "target": "router.md"
     },
     {
       "from": "docs/AGENTS.md",
@@ -10084,119 +9916,6 @@
       "candidates": [
         ".agents/commands/cicd-self-audit.md",
         ".agents/workflows/cicd-self-audit.md"
-      ]
-    },
-    {
-      "from": ".agents/workflows/smh-new-project.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        ".agents/AGENTS.md",
-        ".agents/skills/react-best-practices/AGENTS.md",
-        "docs/AGENTS.md"
-      ]
-    },
-    {
-      "from": ".agents/workflows/smh-new-project.md",
-      "target": "CLAUDE.md",
-      "candidates": [
-        ".agents/CLAUDE.md",
-        "docs/CLAUDE.md"
-      ]
-    },
-    {
-      "from": ".agents/workflows/smh-new-project.md",
-      "target": "GEMINI.md",
-      "candidates": [
-        ".agents/GEMINI.md",
-        "docs/GEMINI.md"
-      ]
-    },
-    {
-      "from": ".agents/workflows/smh-sync-agents.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        ".agents/AGENTS.md",
-        ".agents/skills/react-best-practices/AGENTS.md",
-        "docs/AGENTS.md"
-      ]
-    },
-    {
-      "from": ".agents/workflows/smh-sync-agents.md",
-      "target": "SKILL.md",
-      "candidates": [
-        ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
-        ".agents/skills/backend-dev-guidelines/SKILL.md",
-        ".agents/skills/cicd-bdd-tests/SKILL.md",
-        ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
-        ".agents/skills/cicd-clean-code-audit/SKILL.md",
-        ".agents/skills/cicd-close-story-merge-tree/SKILL.md",
-        ".agents/skills/cicd-code-review/SKILL.md",
-        ".agents/skills/cicd-create-epic-sprint/SKILL.md",
-        ".agents/skills/cicd-deploy-backend/SKILL.md",
-        ".agents/skills/cicd-dev-story-tests/SKILL.md",
-        ".agents/skills/cicd-e2e/SKILL.md",
-        ".agents/skills/cicd-label-tasks/SKILL.md",
-        ".agents/skills/cicd-live-testing-team/SKILL.md",
-        ".agents/skills/cicd-merge-epic-workingtrees/SKILL.md",
-        ".agents/skills/cicd-non-crit-pr-push/SKILL.md",
-        ".agents/skills/cicd-park/SKILL.md",
-        ".agents/skills/cicd-prune-context/SKILL.md",
-        ".agents/skills/cicd-prune-worktree/SKILL.md",
-        ".agents/skills/cicd-push-e2e/SKILL.md",
-        ".agents/skills/cicd-quick-dev/SKILL.md",
-        ".agents/skills/cicd-resume/SKILL.md",
-        ".agents/skills/cicd-self-audit/SKILL.md",
-        ".agents/skills/cicd-update-sprint-memory/SKILL.md",
-        ".agents/skills/cicd-write-story-tests/SKILL.md",
-        ".agents/skills/code-review-engine/SKILL.md",
-        ".agents/skills/code-review-graph/SKILL.md",
-        ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
-        ".agents/skills/firebase-ai-logic-basics/SKILL.md",
-        ".agents/skills/firebase-app-hosting-basics/SKILL.md",
-        ".agents/skills/firebase-auth-basics/SKILL.md",
-        ".agents/skills/firebase-basics/SKILL.md",
-        ".agents/skills/firebase-data-connect-basics/SKILL.md",
-        ".agents/skills/firebase-firestore-basics/SKILL.md",
-        ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
-        ".agents/skills/keyway-secrets/SKILL.md",
-        ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
-        ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
-        ".agents/skills/python-patterns/SKILL.md",
-        ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
-        ".agents/skills/sentry-security-team-avch/SKILL.md",
-        ".agents/skills/smh-adviser-board/SKILL.md",
-        ".agents/skills/smh-clean-code-audit/SKILL.md",
-        ".agents/skills/smh-close-task-merge-tree/SKILL.md",
-        ".agents/skills/smh-code-review/SKILL.md",
-        ".agents/skills/smh-label-tasks/SKILL.md",
-        ".agents/skills/smh-llm-approvals/SKILL.md",
-        ".agents/skills/smh-memory-audit/SKILL.md",
-        ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
-        ".agents/skills/smh-new-project/SKILL.md",
-        ".agents/skills/smh-non-crit-pr-push/SKILL.md",
-        ".agents/skills/smh-plan-task/SKILL.md",
-        ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
-        ".agents/skills/smh-review/SKILL.md",
-        ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-sync-agents/SKILL.md",
-        ".agents/skills/smh-update-maps-indexes/SKILL.md",
-        ".agents/skills/systematic-debugging/SKILL.md",
-        ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
-        ".agents/skills/ui-ux-pro-max/SKILL.md",
-        ".agents/skills/v3-prompt-architecture/SKILL.md",
-        ".agents/skills/webm-alpha-video/SKILL.md",
-        ".agents/skills/workspace-structure/SKILL.md",
-        ".agents/skills/write-swift/SKILL.md"
       ]
     },
     {

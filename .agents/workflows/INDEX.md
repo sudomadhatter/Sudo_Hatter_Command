@@ -6,10 +6,11 @@ platforms: []
 # Workflows INDEX — when to use which
 
 Router for `.agents/workflows/`. This folder is **Antigravity's command menu** — it is how Gemini surfaces
-`/slash`, since it calls its invocable units "workflows". Most entries are **generated** from
-`.agents/commands/` by `/smh-sync-agents`, and anything over ~11.5 KB is generated as a **thin launcher**
-that sends the agent to `.agents/commands/<name>.md`, because Antigravity truncates a workflow at 12,000
-chars instead of rejecting it. This same folder is the source for the machine-global cache
+`/slash`, since it calls its invocable units "workflows". Every entry is a **thin launcher** that sends the
+agent to `.agents/commands/<name>.md`, which is where the body actually lives; all but one are **generated**
+from there by `/smh-sync-agents`. There is no size rule to reason about — a launcher is a few hundred bytes,
+so a command can grow to any length and its door never changes shape (SCC-370). This same folder is the
+source for the machine-global cache
 `~/.gemini/antigravity/global_workflows` (SCC-332). **This router is not itself a door** — it carries
 `platforms: []` for the same reason `commands/INDEX.md` does. The table below annotates the few entries
 worth reading as process maps; several of them are generated mirrors and say so. Exactly ONE file here is

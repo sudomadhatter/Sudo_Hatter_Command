@@ -35,7 +35,7 @@ opencode/antigravity global caches + the antigravity workflow mirror; the rule f
 Fresh `.agents/rules/` (+ INDEX row). Codex reaches the 3 dev-flow commands via repo `.agents/skills`
 launchers → commands (they're `platforms:[opencode,antigravity]`, so absent from `~/.codex/prompts` BY
 DESIGN — a codex prompt would double the skill menu entry); codex reads the rule via native AGENTS.md.
-Trimmed my ② `sudo-dev-story-tests` addition to keep the file <12000 B (Antigravity workflow limit).
+Trimmed my ② `sudo-dev-story-tests` addition to fit the then-current Antigravity size limit. **That limit is gone (SCC-370)** — every door is a thin launcher now, so never trim a command to fit a surface.
 
 **Still owed (git — Daniel's call per git-policy):** commit the master `.agents/` guard changes + the
 vendored copies on the live epic branch (else a `chore/*` branch off `main` — the old `main_debug`

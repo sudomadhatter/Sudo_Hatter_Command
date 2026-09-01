@@ -272,10 +272,12 @@ The **single canonical invocable set is `.agents/commands/`**. It mirrors to eve
   caches are machine-local (like the opencode/AG caches), so re-run the sync per machine.
 - **`commands/` vs `workflows/`.** `.agents/commands/` is where a command is **authored** — full body, any
   length. `.agents/workflows/` is a **generated publishing surface for Antigravity only**: `/smh-sync-agents`
-  writes one file there per antigravity-eligible command, and any command over ~11.5 KB becomes a **thin
-  launcher** that points the agent back at `.agents/commands/<name>.md` instead of a doomed verbatim copy.
-  *(Antigravity — and only Antigravity — truncates a workflow at 12,000 chars rather than rejecting it, so a
-  raw 30 KB body runs on partial steps and looks fine. The launcher is the workaround. See SCC-135.)*
+  writes one file there per antigravity-eligible command, and **every one of them is a thin launcher** that
+  points the agent back at `.agents/commands/<name>.md`. There is no size rule.
+  *(Why the surface exists at all: Antigravity — and only Antigravity — **truncates** an over-long workflow
+  rather than rejecting it, so a raw 30 KB body runs on partial steps and looks fine. See SCC-135. Until
+  SCC-370 the generator decided per command by size, which left 14 of 40 doors shipping verbatim and kept
+  the cap a live number everyone had to remember. One shape, unconditionally, is what retires the number.)*
   **Both Antigravity surfaces are fed from `workflows/`** — the per-project door and the machine-global cache.
   Every other platform reads `commands/` directly and has no size limit. **Corrected 2026-08-27 (SCC-332):**
   this bullet previously said `workflows/` were reference docs never pushed to a cache, and the global-cache
@@ -291,11 +293,15 @@ The **single canonical invocable set is `.agents/commands/`**. It mirrors to eve
   `.agents/workflows/`, and outside one it reads the machine-global `~/.gemini/antigravity/global_workflows`.
   Both are generated from the same canonical `commands/` set and both honour the launcher rule.
   ⚠ **A launcher only resolves where `.agents/commands/` exists — the lobby.** Under the thin model a
-  project carries no tier-1 copy, so a big command invoked from the global menu inside a project STOPS
+  project carries no tier-1 copy, so **any** command invoked from the global menu inside a project STOPS
   and says so, rather than running. That is a deliberate trade and the right direction: before SCC-332
-  that same entry delivered the first 12,000 characters of the body and the agent improvised the rest.
+  that same entry delivered a truncated prefix of the body and the agent improvised the rest.
   A command that fails visibly beats one that runs on 27% of its steps. Full bodies reach every other
   platform directly from `commands/`.
+  *(SCC-370 widened this from "a big command" to "any command": 14 doors used to ship verbatim and so
+  ran from a project's global menu. Twelve of the fourteen are lobby commands by design — every `cicd-*`
+  is a command-center→project door and every `smh-*` acts on the centre itself. `sentry-security-team-avch`
+  is the one genuinely project-scoped member; if it ever bites, run it from the lobby.)*
 
 ### Git — one policy
 **Agents commit and push their own work** — explicit paths (never `git add -A`), the repo's Jira key leading
