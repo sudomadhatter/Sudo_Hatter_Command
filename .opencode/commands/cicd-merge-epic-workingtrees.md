@@ -70,14 +70,16 @@ Inside each worktree, `TREE` pinned from Step 1's `git worktree list` output:
   ```bash
   python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> \
          --expect-key <JIRA-KEY> --branch claude/<JIRA-KEY>-<slug> --worktree "$TREE" \
-         --require-gates suite,ruff,pyrefly
+         --require-gates suite
   ```
 
   ⛔ **`--require-gates` is what makes the `gates` class exist.** Without it `check_gates` returns at
   its first line and emits **no row at all** — so a stale or missing receipt produces silence, and the
   `gates` error named as blocking below can never fire. The solo door passes the flag; this one must
-  too, or its strictest-sounding row is structurally inert. Name the gates this project actually
-  stamps.
+  too, or its strictest-sounding row is structurally inert. **Name only the gates this project really
+  stamps** — the review step writes `suite` and nothing else, so a door demanding `ruff` or `pyrefly`
+  hard-blocks every lane on receipts nothing in this system has ever written, which is how a gate gets
+  deleted rather than obeyed.
 
   `--expect-key` is required — the resolved branch must carry the key you named, because with N trees
   open `cwd` is not intent — and `--branch`/`--worktree` are not optional here either. **Check the

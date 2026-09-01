@@ -7,8 +7,12 @@ the story's verdict recorded. Each is a git or filesystem question with an exact
 each has failed silently at least once (see the memory index). This answers all of them.
 
     closeout_preflight.py --story 21.8b --expect-key AVCH-91 [--project P]
-                          [--worktree PATH] [--branch B] [--require-gates ruff,pytest]
+                          [--worktree PATH] [--branch B] [--require-gates suite]
                           [--sha X] [--no-fetch] [--json]
+
+A recorded `Verdict: PASS`/`CONCERNS` demands the `suite` receipt on its own, so a caller that
+omits `--require-gates` still has the claim checked against evidence; the flag names ADDITIONAL
+gates that lane actually stamped.
 
 Exit: 0 clean · 1 warnings · 2 blocking. It never flips a status - it reports whether the
 flip is safe; `story_status.py set` does the write.
@@ -308,19 +312,26 @@ def story_walkthroughs(project: Path, key: str) -> list[Path]:
             if wf.slug_matches(slug, wf.norm_id(p.parent.name).removeprefix("story-"))]
 
 
-def check_artifacts(project: Path, key: str, rep: wf.Report) -> None:
+def check_artifacts(project: Path, key: str, rep: wf.Report) -> set[str]:
     """The two-doc close puts the flip gate in the walkthrough's `Verdict:` line
-    (memory: story-artifacts-two-doc-close). Absent section = the step never ran."""
+    (memory: story-artifacts-two-doc-close). Absent section = the step never ran.
+
+    Returns the verdicts it READ, because `require_evidence_gate` below derives the receipt
+    demand from the claim rather than hardcoding it - and this reader is the only place that
+    resolves which walkthrough and which line the claim actually came from. Handing the set
+    onward keeps that scoping answered once, by the eyes that did the resolving (the same
+    reason `roster.judge` is handed the verdict rather than re-parsing the file)."""
+    claimed: set[str] = set()
     hits = story_walkthroughs(project, key)
     if not hits:
         legacy = legacy_verdict(project, key)
         if legacy:
             rep.info("artifacts", f"no walkthrough.md; verdict is in the pre-08-02 standalone "
                                   f"file {legacy.relative_to(project)}")
-            return
+            return claimed
         rep.err("artifacts", f"no walkthrough.md found for '{wf.norm_id(key)}' - "
                              f"code review never recorded a verdict")
-        return
+        return claimed
     for path in hits:
         text = wf.read_text(path)
         m = _VERDICT_RE.search(text)
@@ -335,6 +346,7 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> None:
                                  f"the review step has not run (or did not record it)")
             continue
         verdict, sha = m.group(1).upper(), m.group(2)
+        claimed.add(verdict)
         if verdict == "FAIL":
             rep.err("artifacts", f"{rel}: Verdict FAIL - blocks the done-flip")
             continue
@@ -364,6 +376,7 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> None:
             elif changed:
                 rep.err("artifacts", f"{rel}: {len(changed)} code file(s) changed since the "
                                      f"reviewed SHA - the verdict is STALE, re-gate")
+    return claimed
 
 
 # ── 4b. Is the project's overview guide current? (SCC-357) ─────────────────────────
@@ -571,6 +584,73 @@ def check_budget(project: Path, rep: wf.Report) -> None:
         "budget", f"active-context {size} bytes (~{round(size / 4)} tokens, budget 20480)")
 
 
+def receipt_dir_for(project: Path, story: str) -> Path:
+    """The directory this story's gate receipts actually live in.
+
+    ⛔ `--story` ARRIVES IN TWO SPELLINGS AND ONLY ONE OF THEM FOUND THE RECEIPT. `main()`
+    resolves a long board key (`23-9-flight-status-drawer-polish-active-curriculum`) from a
+    short id (`23-9`) for every other check, and `/cicd-prune-worktree` Step 0.2 resolves the
+    long slug before Step 0.3 asks for "the id" - so both spellings reach this script. Measured
+    on AviationChat: the SAME story reported `suite: STALE - passed at 808dce60` under the
+    short id and `suite: no receipt` under the long one, with the walkthrough resolved
+    correctly both times. Harmless while a receipt miss was a WARN; a blocking FALSE refusal
+    the moment it became an ERROR, which is what this file now does.
+
+    Literal first, so an exact directory always wins. Otherwise `wf.slug_matches` - which
+    carries the `21-8` vs `21-8b` separator guard, so a SIBLING's receipt can never answer for
+    this story - and only when it picks EXACTLY ONE. Zero or several fall back to the literal,
+    so the error below names the directory it really searched rather than a guess.
+    """
+    literal = gr.receipt_dir(project, story)
+    root = project / wf.GATES_REL
+    if literal.is_dir() or not root.is_dir():
+        return literal
+    hits = [d for d in sorted(root.iterdir())
+            if d.is_dir() and wf.slug_matches(story, d.name)]
+    return hits[0] if len(hits) == 1 else literal
+
+
+# ⛔ THE DEMAND IS DERIVED FROM THE CLAIM, NOT HARDCODED - and `--require-gates` keeps
+# `default=""` on purpose. `default="suite"` is the obvious reading of "enforce a default",
+# and it would get this gate disarmed inside a week: `/cicd-prune-worktree` runs this same
+# script on `done` stories whose lanes are already pruned, and the only remedy such an error
+# could name is "re-run the suite" in a worktree that no longer exists. A gate whose refusal
+# has no reachable fix is a gate that gets disarmed, and then nothing is checked at all.
+#
+# So the verdict itself is what raises the demand: `PASS`/`CONCERNS` IS a claim that a gate was
+# green, so `suite` becomes required. `FAIL`, `WAIVED` and a walkthrough with no `Verdict:`
+# line claim nothing and demand nothing - the same vocabulary `verdict_receipt.py` (SCC-363)
+# gates at commit time, and it deliberately leaves those alone too.
+#
+# ⛔ THE SCOPE LIMITER IS THE BOARD STATUS, NOT A DATE, and that is a deliberate departure from
+# the two dated cutoffs in this same file. `roster.lane_date` reads a `YYYY-MM-DD` prefix off
+# the artifact folder and STORY lanes do not carry one (`_artifacts/epic_23/story-23-9-<slug>/`
+# - `lane_date` is None for all 13 of epic 23's), so a cutoff here exempts everything or blocks
+# everything. Flip-eligible is `wf.PROGRESS_ORDER` strictly between `backlog` and `done`, which
+# is exactly the set `/cicd-update-sprint-memory` already advances ("only ready-for-dev /
+# in-progress / review advance; never downgrade") - no second set to keep in sync. `backlog`,
+# `descoped`, `deferred*`, `optional` and anything out of vocabulary rank 0 or -1 and fall out
+# exempt, each for the same reason: no live lane, so no suite can be run in it.
+EVIDENCE_GATE = "suite"
+CLAIMS_A_GATE_RAN = {"PASS", "CONCERNS"}
+
+
+def require_evidence_gate(require: list[str], claimed: set[str], status: str,
+                          rep: wf.Report) -> list[str]:
+    """`--require-gates` plus the gate the recorded verdict itself demands."""
+    asserts_green = claimed & CLAIMS_A_GATE_RAN
+    if EVIDENCE_GATE in require or not asserts_green:
+        return require
+    if not 0 < wf.STATUS_RANK.get(status, -1) < wf.STATUS_RANK["done"]:
+        return require
+    # ONE row, and only when the caller did not already name the gate - so the two doors that
+    # pass `--require-gates suite` do not get told twice about a gate they asked for.
+    rep.info("gates", f"{EVIDENCE_GATE} is required here because the walkthrough records "
+                      f"{'/'.join(sorted(asserts_green))} on a story still at '{status}': a "
+                      f"verdict is the review's claim, the receipt is the evidence")
+    return [EVIDENCE_GATE] + require
+
+
 def check_gates(project: Path, story: str, require: list[str], rep: wf.Report,
                 sha: str | None = None) -> None:
     """Delegates to gate_receipt so the two tools can never disagree about 'stale' -
@@ -578,13 +658,25 @@ def check_gates(project: Path, story: str, require: list[str], rep: wf.Report,
     if not require:
         return
     target = sha or wf.git_head(project)
+    rdir = receipt_dir_for(project, story)
     for gate in require:
-        if not (gr.receipt_dir(project, story) / f"{gate}.json").is_file():
-            # WARN, not ERROR: ruling 2026-08-02 keeps the receipt gate advisory for one
-            # sprint. gate_receipt's own `check` is where the hard block lives.
-            rep.warn("gates", f"{gate}: no receipt (gate_receipt.py run ...)")
+        if not (rdir / f"{gate}.json").is_file():
+            # ⛔ ERROR, not WARN. The 2026-08-02 ruling kept this "advisory for one sprint";
+            # the sprint ended, nobody came back, and AVCH-106 closed on a `Verdict: PASS` no
+            # suite ever backed. The asymmetry it left is the bug: a receipt that EXISTS and
+            # records fail or stale BLOCKS, while one that was never written was a footnote -
+            # strict about evidence it can see, silent about evidence that is absent.
+            #
+            # ⛔ THE DIRECTORY AND THE COMMAND ARE BOTH LOAD-BEARING. `gr.load_receipt` raises
+            # this same class one line below as "NO RECEIPT - the gate has no evidence it ran",
+            # which names neither - and a blocking error whose remedy is unnamed is the one
+            # that gets routed around instead of fixed. `rdir.name` rather than `story`, so the
+            # command written here fills the directory this run actually searched.
+            rep.err("gates", f"{gate}: NO RECEIPT in {wf.GATES_REL}/{rdir.name}/ - the "
+                             f"verdict has no evidence this gate ran. Fix: gate_receipt.py "
+                             f"run --story {rdir.name} --gate {gate} -- <the real command>")
             continue
-        data = gr.load_receipt(project, story, gate, rep)
+        data = gr.load_receipt(project, rdir.name, gate, rep)
         if data is not None:
             gr.check_receipt(project, data, gate, target, rep)
 
@@ -623,7 +715,10 @@ def main() -> int:
     ap.add_argument("--project")
     ap.add_argument("--worktree", help="the story's worktree, checked for sync too")
     ap.add_argument("--branch", help="the story's branch, when it is not named after the story")
-    ap.add_argument("--require-gates", default="", help="comma-separated gate names")
+    ap.add_argument("--require-gates", default="",
+                    help="comma-separated gate names to check IN ADDITION to the `suite` "
+                         "receipt a recorded PASS/CONCERNS demands on its own; name only "
+                         "gates this lane actually stamped")
     ap.add_argument("--sha", help="check gate receipts against THIS commit, not HEAD")
     # ⭐ DEFAULT-ON. It was opt-in, so freshness rested on an agent remembering a flag, and
     # the unfetched verdict read exactly like a fetched one. `--fetch` still parses, so every
@@ -672,12 +767,19 @@ def main() -> int:
         fresh = check_sync("worktree", Path(args.worktree).resolve(), args.fetch, rep) and fresh
     check_worktrees(project, rep)
     check_surfaces(project, key, rep)
-    check_artifacts(project, key, rep)
+    claimed = check_artifacts(project, key, rep)
     check_overview(project, key, rep, args.branch)
     check_file_list(project, key, rep)
     check_budget(project, rep)
-    check_gates(project, args.story,
-                [g.strip() for g in args.require_gates.split(",") if g.strip()], rep, args.sha)
+    # ⛔ THE RESOLVED `key`, NEVER THE RAW `--story`. Every other check on this page is handed
+    # the board key; `check_gates` alone got the argument as typed, and `gr.receipt_dir` keys
+    # off it - so the same story blocked or passed depending on which spelling the caller used.
+    # Reproduced on AviationChat; the resolution itself lives in `receipt_dir_for`.
+    check_gates(project, key,
+                require_evidence_gate(
+                    [g.strip() for g in args.require_gates.split(",") if g.strip()],
+                    claimed, str(board[key].get("status", "")), rep),
+                rep, args.sha)
     check_epic(project, key, rep)
 
     # ⭐ THE VERDICT IS COMPUTED ONCE, ABOVE BOTH OUTPUT PATHS. Three states, not two: the

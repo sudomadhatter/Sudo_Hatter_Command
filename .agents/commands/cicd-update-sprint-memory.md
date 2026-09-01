@@ -202,17 +202,18 @@ of change in a project is the **story**, so the check belongs at the story save.
   surfaces already disagree — that case needs `--reconcile`, which is a decision, not a default.
   It prints `board X -> Y, frontmatter X -> Y`; echo that as `Closing <story>: review → done`.
   Idempotent: only `ready-for-dev`/`in-progress`/`review` advance; never downgrade.
-  - **Gate evidence (advisory this sprint, hard after):** if the story recorded gate receipts, confirm
-    them before the flip — `python3 .agents/scripts/gate_receipt.py check --story <id> --require
-    <gates> --advisory`. A receipt proves the gate RAN, at which commit; prose cannot.
-    ⏳ Remove `--advisory` at the close of the first full sprint after this landed (ruling 2026-08-02).
+  - **Gate evidence — the receipt, never the claim:** confirm the story's gate receipts before the
+    flip — `python3 .agents/scripts/gate_receipt.py check --story <id> --require <gates>`. A receipt
+    proves the gate RAN, and at which commit; prose cannot. **A missing or unreadable receipt HOLDS the
+    flip, exactly as a red verdict does** — AVCH-106 closed on a `Verdict: PASS` no suite ever backed,
+    and flipping to `done` is what would permanently disarm the check for every later re-run.
   - **ONLY objectively-red tests block the flip.** Read the **`Verdict: … @ <sha>`** line in the story
     walkthrough's `## Code Review` section (stories closed before 2026-08-02 keep the old standalone
     verdict — fall back to `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` when the
     walkthrough has no such section). **FAIL** (a NEW regression or missing
     required tier — actually red) → do NOT flip; tell Daniel to fix via `/cicd-code-review`, then re-run.
     **Every other verdict closes it:** **PASS** → flip; **CONCERNS** → flip + record them; **WAIVED /
-    missing / stale** (verdict on an old HEAD) → flip. Fail-open: a gate-read error never blocks close-out.
+    missing / stale** (verdict on an old HEAD) → flip.
   - **No "leave it at review and ask" branch — never punt the flip back to Daniel.** A pending
     **live-test / live-verify / live-QA / live-checkride** or "stays review until X" note is NOT a blocker:
     his invocation resolves it. Flip and NOTE it (`note: pending live-test — closed on your invocation`).

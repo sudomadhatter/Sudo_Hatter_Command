@@ -1,0 +1,88 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_closeout_preflight.py"
+ ],
+ "mutants": [
+  {
+   "id": "M1 the missing-receipt row goes back to a WARN (the expired 2026-08-02 ruling)",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "rep.err(\"gates\", f\"{gate}: NO RECEIPT in",
+   "mutated": "rep.warn(\"gates\", f\"{gate}: NO RECEIPT in",
+   "case": "EV1",
+   "block": "EV · SCC-365"
+  },
+  {
+   "id": "M2 WIDTH · the claim set swallows FAIL and WAIVED, so a recorded failure demands a green suite",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "CLAIMS_A_GATE_RAN = {\"PASS\", \"CONCERNS\"}",
+   "mutated": "CLAIMS_A_GATE_RAN = {\"PASS\", \"CONCERNS\", \"WAIVED\", \"FAIL\"}",
+   "case": "EV4",
+   "block": "EV · SCC-365"
+  },
+  {
+   "id": "M3 WIDTH · the flip-eligible LOWER bound drops, so parked `deferred` lanes are demanded",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "if not 0 < wf.STATUS_RANK.get(status, -1) < wf.STATUS_RANK[\"done\"]:",
+   "mutated": "if not -2 < wf.STATUS_RANK.get(status, -1) < wf.STATUS_RANK[\"done\"]:",
+   "case": "EV3",
+   "block": "EV · SCC-365"
+  },
+  {
+   "id": "M4 WIDTH · the flip-eligible UPPER bound opens, so `done` history is demanded and the prune blocks",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "if not 0 < wf.STATUS_RANK.get(status, -1) < wf.STATUS_RANK[\"done\"]:",
+   "mutated": "if not 0 < wf.STATUS_RANK.get(status, -1) <= wf.STATUS_RANK[\"done\"]:",
+   "case": "EV3",
+   "block": "EV · SCC-365"
+  },
+  {
+   "id": "M5 the dedupe guard goes, so a door naming `suite` itself files the same error twice",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "if EVIDENCE_GATE in require or not asserts_green:",
+   "mutated": "if not asserts_green:",
+   "case": "EV5",
+   "block": "EV · SCC-365"
+  },
+  {
+   "id": "M6 the receipt directory is never resolved against disk (the reproduced spelling bug)",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "    return hits[0] if len(hits) == 1 else literal",
+   "mutated": "    return literal",
+   "case": "EV7",
+   "block": "EV · SCC-365"
+  },
+  {
+   "id": "M7 check_gates takes the raw --story again while every other check gets the resolved key",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "    check_gates(project, key,",
+   "mutated": "    check_gates(project, args.story,",
+   "case": "EV8",
+   "block": "EV · SCC-365"
+  },
+  {
+   "id": "M8 the solo close door shows the flag as optional again, demanding gates nothing stamps",
+   "file": ".agents/commands/cicd-close-story-merge-tree.md",
+   "original": "       --require-gates suite                                        # PC: `python`",
+   "mutated": "       [--require-gates suite,ruff,pyrefly]",
+   "case": "CS-14 C2",
+   "block": "CS-14",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_command_surfaces.py"
+   ]
+  },
+  {
+   "id": "M9 the flip step runs the receipt check in advisory mode again, overruling the gate",
+   "file": ".agents/commands/cicd-update-sprint-memory.md",
+   "original": "check --story <id> --require <gates>`. A receipt",
+   "mutated": "check --story <id> --require <gates> --advisory`. A receipt",
+   "case": "CS-14 C3",
+   "block": "CS-14",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_command_surfaces.py"
+   ]
+  }
+ ]
+}

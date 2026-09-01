@@ -1,0 +1,5 @@
+task_key: SCC-365
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-365-closeout-verdict-evidence
+close_command: smh-close-task-merge-tree
+secondary_repos: []

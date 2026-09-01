@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-365-closeout-verdict-evidence",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-365",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "0c5a344eb874dc7a2b14f3a2867bae88244acf71",
+  "warnings": 1,
+  "when": "2026-09-01T01:37:27-04:00"
+}
