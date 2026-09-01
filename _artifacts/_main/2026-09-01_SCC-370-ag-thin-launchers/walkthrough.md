@@ -248,21 +248,21 @@ Diff-scoped, against `docs/_scc_sops_prds/workflows_testing_SOP.md` and `.agents
 
 ## Your Actions
 
-- [x] ~~Decide what the machine-global Antigravity cache should hold.~~ **Moot — Antigravity is
-      retired** (VS Code since 2026-08-29, `zoo-code-replaces-roo-code`). `/Applications` carries
-      only VS Code, so `~/.gemini/antigravity/global_workflows` is residue from an uninstalled app
-      and nothing reads it. No decision was owed.
-- [ ] **Optional, one command:** `rm -rf ~/.gemini/antigravity/global_workflows`. `CS-18 L`/`M2`
-      already SKIP when that directory is absent, so deleting the residue stops them asserting that
-      a dead cache mirrors the doors. Left to you only because it is a delete outside the repo.
-- [ ] **Run `/smh-sync-agents` on the PC** after this lands — for the surfaces that are live
-      (opencode's command cache, the Codex prompts), not for Antigravity.
+- [x] The merge itself — lands via this branch's PR
+- [x] ~~Decide what the Antigravity cache should hold.~~ **No decision was owed — Antigravity is
+      retired** (VS Code since 2026-08-29, `zoo-code-replaces-roo-code`); `/Applications` carries only
+      VS Code. Measured: the cache holds 39 files, 0 orphans, and exactly **1** differing from this
+      lane — `cicd-push-e2e.md`, whose quote fix landed after that sync. Once this merges, `main`
+      carries these same doors, so one `/smh-sync-agents` from the main checkout makes the cache
+      correct again and `CS-18 L` green. **That run is the ceremony's, not yours** — the agent does it
+      at `--after-merge`, and the same run refreshes the surfaces that are actually live (opencode's
+      command cache, the Codex prompts).
 
-**Not yours — mine, and already done:** the review's 23 findings are all fixed in this lane, the
-declared change set reconciles 0/0/0, and the mutation table is re-aimed and re-run at 11/11. The
-merge itself lands via this branch's PR.
+**Nothing is owed by the operator on this ticket.** The review's 23 findings are fixed in-lane, the
+declared change set reconciles 0/0/0, the mutation table is re-aimed and re-run at 11/11, and the
+post-merge sync belongs to the close-out.
 
 ⭐ **One line for the record, not a new ticket:** `.agents/workflows/` is now a generated surface with
-no consumer. Retiring it belongs with SCC-349 (adding `zoo` as platform 5, under SCC-346), which is
-already the open lane for sync-agents' platform list. This lane made that retirement a delete — all
-38 doors are pointers now, where 14 used to hold the only copy of their body on that surface.
+no consumer, since Antigravity is retired. Retiring it belongs with SCC-349 (adding `zoo` as platform
+5, under SCC-346) — already the open lane for sync-agents' platform list. This work made that a
+delete: all 38 doors are pointers now, where 14 held the only copy of their body on that surface.
