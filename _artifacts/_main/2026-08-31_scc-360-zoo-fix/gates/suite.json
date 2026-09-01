@@ -1,0 +1,20 @@
+{
+  "gate": "suite",
+  "story": "scc-360",
+  "result": "pass",
+  "exit_code": 0,
+  "sha": "b6edbd367baf1a5c1861fdfd759dcfdf5e9ebe5f",
+  "dirty_tree": true,
+  "dirty_paths": [
+    "_artifacts/_main/2026-08-31_scc-360-zoo-fix/preflight-receipt.json"
+  ],
+  "totals": null,
+  "command": [
+    "python3",
+    ".agents/scripts/tests/run_all.py"
+  ],
+  "cwd": "/private/tmp/claude-501/-Users-sudohatter-Sudo-Hatter-Command/c33ae508-bf38-4af6-b51d-7fce58c51203/scratchpad/scc-360",
+  "duration_s": 84.0,
+  "recorded_at": "2026-09-01T03:02:44+00:00",
+  "output_tail": "eam rule reaches every Zoo seat, CURRENT with its master\n[PASS] B7 tracked .vscode/settings.json ships git.detectWorktrees=true (PC parity)\n[PASS] C0 the mirrored regexes can actually REJECT (unquoted / unbracketed mutants)\n[PASS] C1 the ps1 $seats table carries exactly the law's six slugs: table=[('orchestrator', 'smh-team-march-hare.md'), ('architect', 'smh-team-white-rabbit.md'), ('code', 'smh-team-cheshire-cat.md'), ('designer', 'smh-team-caterpillar.md'), ('debug', 'smh-team-queen-of-hearts.md'), ('ask', 'smh-team-gnat.md')]\n[PASS] C2 every seat master parses under the ps1's OWN stricter regexes, within its 12-line read window\n[PASS] C3 .roomodes carries one mode per table row (a skipped seat resurrects a stock Zoo mode): modes=6 table=6\n[PASS] C4 each mode's roleDefinition names the SAME master as the ps1 table row\n[PASS] C5 the ps1 zoo floor-copy list carries zoo-team.md (its ONLY publisher \u2014 the tracked copy stays byte-equal for a while after a silent drop): 'operator-profile.md', 'constitution.md', 'karpathy-guidelines.md', 'zoo-team.md'\n[PASS] C6 the mirrored frontmatter regexes appear VERBATIM in the ps1 source: a mirror pattern no longer appears in sync-agents.ps1 \u2014 the copies have drifted from the originals\n[PASS] C7 the seat loop emits the FULL description (no Get-AgDescription cut): full-desc emission line missing, or the Antigravity cut is back in the seat loop\n-- 33/33 passed --\n\n============================================================\n68/68 files passed\n"
+}

@@ -91,7 +91,7 @@ REMEDY = ("python3 docs/migrations/scripts/arm_hooks_include.py <repo>  (PC: pyt
 # has no flag, and leaving it out of the executable check would exempt the encoding gate from the
 # very failure mode this script was written for.
 #
-# ⓘ THREE flags now name `commit-msg` as their dispatcher, and `MERGE-TARGET-ENFORCE` is the one
+# ⓘ FOUR flags now name `commit-msg` as their dispatcher, and `MERGE-TARGET-ENFORCE` is the one
 # that looks misfiled until you know why (SCC-144): the merge-target guard was written for
 # `pre-merge-commit`, which fires BEFORE git writes MERGE_HEAD and never fires at all on the
 # conflicted path, so it had nothing to judge with. `commit-msg` sees both merge paths. The two
@@ -108,6 +108,7 @@ ARM_FLAGS = {
     "SOP-ENFORCE":         ("sop-currency.sh", "commit-msg"),
     "MAIN-PUSH-ENFORCE":   ("pre-push-main-approval.sh", "pre-push"),
     "MERGE-TARGET-ENFORCE": ("merge-target-guard.sh", "commit-msg"),
+    "VERDICT-ENFORCE":     ("verdict-receipt.sh", "commit-msg"),
 }
 
 

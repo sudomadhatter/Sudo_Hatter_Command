@@ -1,22 +1,27 @@
 """The Wonderland team contract — the Zoo mode picker IS the operator's org chart (SCC-350).
 
-Five seats override four of Zoo Code's built-in mode slugs plus one new one. The law this file
-pins, each piece an operator ruling from the SCC-350 planning session:
+Six seats override five of Zoo Code's built-in mode slugs plus one new one. The law this file
+pins, each piece an operator ruling (SCC-350 planning session; SCC-360/SCC-361 Zoo fix):
 
-  * THE SLUG SET IS CLOSED. Exactly {orchestrator, architect, code, debug, designer} — four
-    built-ins (a same-slug custom mode replaces a built-in wholesale, verified against the
-    Zoo v3.80.1 bundle) plus `designer`. The `ask` slug is DELIBERATELY unclaimed — stock Zoo
-    Ask stays for plain Q&A (operator amendment 3) — while claiming `debug` suppresses the
-    stock, law-free Debug mode. A missing slug resurrects a stock Zoo persona in the picker;
-    an extra one is a seat nobody chartered.
+  * THE SLUG SET IS CLOSED. Exactly {orchestrator, architect, code, debug, designer, ask} —
+    five built-ins (a same-slug custom mode replaces a built-in wholesale, verified against the
+    Zoo v3.80.1 bundle) plus `designer`. Claiming `debug` suppresses the stock, law-free Debug
+    mode; claiming `ask` for The Gnat (SCC-361) suppresses the stock Ask mode — the law-free
+    door ungoverned work leaked through. A missing slug resurrects a stock Zoo persona in the
+    picker; an extra one is a seat nobody chartered.
+  * THE READ-ONLY SEAT. The Gnat (`ask`) is the librarian: unbiased lookups, evidence-cited,
+    and its groups are EXACTLY {read} — the enforcement is the extension's group mechanism,
+    not prose, so a Gnat that grows `edit` or `command` is the regression this law exists to
+    refuse (a law-free pen on the Q&A seat).
   * THE NAME LAW. Emoji first, character name in regular case, then an em-dash and the ROLE in
     ALL CAPS: `🫖🐰 March Hare — TEAM LEAD`. The operator reads the role from the picker; a
     lowercase role or a bare name is a regression of his correction ("Use regular March Hare for
     the name then TEAM LEAD for the title in caps").
   * THE MERGED QUALITY SEAT. The operator's ruling (2026-08-29): "the tester and the QA need to
-    really be one" and she is still the Queen of Hearts — one seat, `debug`, full pen, both the
-    red phase and the review doors. Every seat is a working seat; a seat without `edit` is a
-    regression to the retired scoped-pen design.
+    really be one" and she is still the Queen of Hearts — one seat, `debug`, full pen, carrying
+    the red phase and readying the work for review. ⛔ The review doors LEFT the seat (SCC-362):
+    ③ is the operator's model-switch gate, and no seat writes a `Verdict:` stamp. Every seat is
+    a working seat; a seat without `edit` is a regression to the retired scoped-pen design.
   * ONE SOURCE. Each mode's name/slug/groups live in its master's frontmatter
     (`.agents/commands/smh-team-*.md`); `sync-agents.ps1` reads them (the ps1 stays pure ASCII — no
     emoji survive Windows PowerShell 5.1's no-BOM codepage mangling); `.roomodes` is generated.
@@ -37,8 +42,11 @@ from _harness import SCRIPTS, Cases
 
 ROOT = SCRIPTS.parents[1]
 
-LAW_SLUGS = {"orchestrator", "architect", "code", "debug", "designer"}
-BASE_GROUPS = {"read", "command"}          # every seat carries these
+LAW_SLUGS = {"orchestrator", "architect", "code", "debug", "designer", "ask"}
+# The read-only seat(s): groups EXACTLY {read} — no pen, no terminal, whatever the master says
+# (SCC-361: the Gnat is mechanically harmless, and that mechanism is this pin's whole point).
+READONLY_SLUGS = {"ask"}
+BASE_GROUPS = {"read", "command"}          # every WORKING seat carries these
 # The group CEILING (review finding, amendment 3): removing the scoped-pen law left group sets
 # floor-checked only, so any master could self-grant `mcp`/`browser` and every check stayed
 # green. `mcp` is March Hare's delegation privilege (zoo-team.md); nothing else is chartered.
@@ -95,13 +103,20 @@ def mode_problems(text: str) -> list[str]:
             # stdlib bars a real YAML parse; these are the two characters that break the
             # generated double-quoted scalar for the consumer while regex parsing stays green.
             problems.append(f"{m['slug']}: name carries a YAML-breaking character")
-        missing = BASE_GROUPS - m["groups"]
-        if missing:
-            problems.append(f"{m['slug']}: groups missing {sorted(missing)}")
-        if "edit" not in m["groups"]:
-            # Every seat is a working seat since the quality merge (amendment 3) — a stripped
-            # pen is a regression to the retired edit-strip/scoped-pen design.
-            problems.append(f"{m['slug']}: working seat has no `edit` group")
+        if m["slug"] in READONLY_SLUGS:
+            if m["groups"] != {"read"}:
+                # The read-only seat's harmlessness IS its group set (SCC-361) — any growth
+                # re-arms the law-free Q&A door this seat exists to close.
+                problems.append(f"{m['slug']}: read-only seat groups {sorted(m['groups'])} "
+                                "!= ['read']")
+        else:
+            missing = BASE_GROUPS - m["groups"]
+            if missing:
+                problems.append(f"{m['slug']}: groups missing {sorted(missing)}")
+            if "edit" not in m["groups"]:
+                # Every non-librarian seat is a working seat since the quality merge
+                # (amendment 3) — a stripped pen is a regression to the retired scoped-pen design.
+                problems.append(f"{m['slug']}: working seat has no `edit` group")
         stray = m["groups"] - ALLOWED_GROUPS
         if stray:
             problems.append(f"{m['slug']}: unchartered group(s) {sorted(stray)}")
@@ -129,9 +144,10 @@ def fixture(names_groups) -> str:
 GOOD = {
     "orchestrator": ("🫖🐰 March Hare — TEAM LEAD", ["read", "edit", "command", "mcp"]),
     "architect":    ("⏰🐇 White Rabbit — PM", ["read", "edit", "command"]),
-    "code":         ("🔨🪚 Carpenter — ENGINEER", ["read", "edit", "command"]),
+    "code":         ("😼🔨 Cheshire Cat — ENGINEER", ["read", "edit", "command"]),
     "debug":        (QUEEN_NAME, ["read", "edit", "command"]),
     "designer":     ("🦋 Caterpillar — DESIGNER", ["read", "edit", "command"]),
+    "ask":          ("🦟🔍 The Gnat — LIBRARIAN", ["read"]),
 }
 
 
@@ -151,10 +167,10 @@ def frontmatter(path: Path) -> dict[str, str]:
 
 
 def main() -> int:
-    c = Cases("the Wonderland team — five seats over Zoo's slugs (SCC-350)")
+    c = Cases("the Wonderland team — six seats over Zoo's slugs (SCC-350, SCC-360)")
 
     if c.block("A · the validator fires on every shape the law forbids"):
-        c.check("the five-seat fixture is clean", mode_problems(fixture(GOOD)) == [],
+        c.check("the six-seat fixture is clean", mode_problems(fixture(GOOD)) == [],
                 " | ".join(mode_problems(fixture(GOOD))))
         bad = dict(GOOD); bad["debug"] = ('♥️👑 Queen "of" Hearts — TESTER & QA', ["read", "edit", "command"])
         c.check("a YAML-breaking character in a name is caught (stdlib bars a real YAML parse)",
@@ -167,24 +183,32 @@ def main() -> int:
         c.check("an UNCHARTERED group self-granted by a master is caught (the ceiling the "
                 "scoped-pen removal left open)",
                 any("unchartered" in p for p in mode_problems(fixture(bad))))
-        bad = dict(GOOD); bad["code"] = ("🔨🪚 Carpenter — ENGINEER", ["read", "edit", "command", "mcp"])
+        bad = dict(GOOD); bad["code"] = ("😼🔨 Cheshire Cat — ENGINEER", ["read", "edit", "command", "mcp"])
         c.check("`mcp` on a seat other than the TEAM LEAD is caught",
                 any("delegation privilege" in p for p in mode_problems(fixture(bad))))
         bad = dict(GOOD); bad["orchestrator"] = ("🫖🐰 March Hare — team lead", ["read", "edit", "command"])
         c.check("a lowercase role is caught",
                 any("name law" in p or "not regular case" in p for p in mode_problems(fixture(bad))))
-        bad = dict(GOOD); bad["code"] = ("Carpenter — ENGINEER", ["read", "edit", "command"])
+        # SCC-360: the seat name is two words now, which NAME_RE parses as token+name — a
+        # single bare word is what actually exercises the name-law branch.
+        bad = dict(GOOD); bad["code"] = ("Cheshire — ENGINEER", ["read", "edit", "command"])
         c.check("a bare name with no leading token is caught",
                 any("name law" in p for p in mode_problems(fixture(bad))))
         # The emoji BRANCH needs a name that survives NAME_RE — a word-shaped ASCII prefix.
         # (Review finding: the fixture above dies at the regex, so the ord()>0x2000 branch was
         # deletable with the file staying green.)
-        bad = dict(GOOD); bad["code"] = ("Mr Carpenter — ENGINEER", ["read", "edit", "command"])
+        bad = dict(GOOD); bad["code"] = ("Mr Cheshire Cat — ENGINEER", ["read", "edit", "command"])
         c.check("an ASCII word prefix (no emoji) is caught by the emoji branch itself",
                 any("no emoji prefix" in p for p in mode_problems(fixture(bad))))
         bad = dict(GOOD); bad["architect"] = ("⏰🐇 White Rabbit — PM", ["read", "command"])
         c.check("a seat silently stripped of `edit` is caught (regression to the retired edit-strip)",
                 any("working seat has no" in p for p in mode_problems(fixture(bad))))
+        bad = dict(GOOD); bad["ask"] = ("🦟🔍 The Gnat — LIBRARIAN", ["read", "edit"])
+        c.check("the read-only seat growing `edit` is caught (the law-free Q&A pen, SCC-361)",
+                any("read-only seat groups" in p for p in mode_problems(fixture(bad))))
+        bad = dict(GOOD); bad["ask"] = ("🦟🔍 The Gnat — LIBRARIAN", ["read", "command"])
+        c.check("the read-only seat growing `command` is caught (a terminal is a pen too)",
+                any("read-only seat groups" in p for p in mode_problems(fixture(bad))))
         dup = [(s, n, g) for s, (n, g) in GOOD.items()] + [("code", "🔨 Ship Wright — ENGINEER", ["read", "edit", "command"])]
         c.check("a DUPLICATE slug is caught (a set-compare alone cannot see it)",
                 any("duplicate slug" in p for p in mode_problems(fixture(dup))))
@@ -254,17 +278,75 @@ def main() -> int:
         c.check("B3 every mode is generated FROM its master frontmatter (one source, current)",
                 not bad_master, " | ".join(bad_master))
 
-        # The merged quality seat (amendment 3): one master carries BOTH ends — the red phase
-        # and the review doors — plus the refusal that makes owning both safe (never weaken an
-        # assertion to reach green). Losing any half un-merges the seat silently.
+        # The quality seat after the SCC-362 rescope: she owns the red phase and REVIEW-READINESS
+        # (suites bare, receipts via gate_receipt.py, drift declared) — and the verdict is NOT
+        # hers. The old law pinned the review doors INTO her master; that sentence is what
+        # authorized a Zoo seat to self-stamp a PASS, so the pin now runs the other way.
         qa = ROOT / ".agents" / "commands" / "smh-team-queen-of-hearts.md"
         qa_text = qa.read_text(encoding="utf-8") if qa.is_file() else ""
-        qa_missing = [w for w in ("cicd-write-story-tests", "smh-code-review", "smh-self-audit",
+        qa_missing = [w for w in ("review-ready", "gate_receipt.py", "smh-self-audit",
                                   "weakening the assertion")
                       if w not in qa_text]
-        c.check("B4 the TESTER & QA master carries both halves (red-phase + review doors + the "
-                "never-weaken refusal)", not qa_missing,
-                f"missing from smh-team-queen-of-hearts.md: {qa_missing}")
+        c.check("B4 the TESTER & QA master carries the rescoped charter (red phase + "
+                "review-readiness + the never-weaken refusal), and the old verdict-format "
+                "line is gone", not qa_missing and "PASS|CONCERNS|FAIL|WAIVED" not in qa_text,
+                f"missing: {qa_missing}; old verdict line present="
+                f"{'PASS|CONCERNS|FAIL|WAIVED' in qa_text}")
+
+        # SCC-362 — the review gate binds EVERY seat: each master carries the no-verdict
+        # refusal, and the team rule carries the model-switch-gate law that explains it.
+        #
+        # ⛔ PIN THE NEGATION, NOT THE TOKEN (review finding, reproduced). This used to ask only
+        # whether the literal `` `Verdict:` `` appeared anywhere in the master — a substring
+        # sweep that CANNOT SEE POLARITY. Rewriting the refusal into its exact opposite —
+        # "You MAY run a ③ door, and you MAY write a `## Code Review` section with a
+        # `Verdict:` stamp" — left this file at 32/32 and the whole suite at 68/68, handing a
+        # seat written permission to self-certify. That is the shape `prose-pinning-guards-are-
+        # vacuous` names, in the very lane whose thesis is "fix with mechanism, never wording".
+        # So: the sentence carrying `Verdict:` must NEGATE, and no master may carry a modal
+        # granting it.
+        GRANT_RE = re.compile(r"(?i)\b(?:may|can|should|must|will)\b[^.\n]{0,120}"
+                              r"(?:`Verdict:`|write[^.\n]{0,40}`?## Code Review)")
+        verdict_bad: list[str] = []
+        for mp in sorted((ROOT / ".agents" / "commands").glob("smh-team-*.md")):
+            body = mp.read_text(encoding="utf-8")
+            # The bullet that mentions the stamp, joined across its wrapped continuation lines.
+            bullets, cur = [], ""
+            for ln in body.splitlines():
+                if ln.lstrip().startswith(("- ", "* ")):
+                    if cur:
+                        bullets.append(cur)
+                    cur = ln.strip()
+                elif cur and ln.startswith("  "):
+                    cur += " " + ln.strip()
+                elif cur:
+                    bullets.append(cur); cur = ""
+            if cur:
+                bullets.append(cur)
+            owning = [b for b in bullets if "`Verdict:`" in b]
+            if not owning:
+                verdict_bad.append(f"{mp.name}: no bullet mentions the `Verdict:` stamp")
+                continue
+            if not any(re.search(r"(?i)\bnever\b", b) for b in owning):
+                verdict_bad.append(
+                    f"{mp.name}: the `Verdict:` bullet does not NEGATE (no 'never') — "
+                    f"{owning[0][:90]!r}")
+            granted = GRANT_RE.search(body)
+            if granted:
+                verdict_bad.append(
+                    f"{mp.name}: a modal GRANTS the stamp — {granted.group(0)[:80]!r}")
+        rule_txt = (ROOT / ".agents" / "rules" / "zoo-team.md").read_text(encoding="utf-8-sig")
+        c.check("B4b every seat master REFUSES the `Verdict:` stamp in the negative, grants it "
+                "nowhere, and the team rule carries the model-switch gate (SCC-362)",
+                not verdict_bad and "model-switch gate" in rule_txt,
+                f"{verdict_bad}; rule-carries-gate={'model-switch gate' in rule_txt}")
+        # The guard must be able to FAIL — a polarity check that has never flagged an inversion
+        # is the same vacuous shape it was written to replace.
+        c.check("B4c CONTROL: the polarity guard actually fires on an inverted refusal",
+                bool(GRANT_RE.search("- **You MAY run a ③ door, and you MAY write a "
+                                     "`## Code Review` section with a `Verdict:` stamp**"))
+                and not GRANT_RE.search("- **You never run a ① or ③ door, and you never write a "
+                                        "`## Code Review` section or a `Verdict:` stamp.**"))
 
         # The COMPLEMENT of the law, never an enumerated denylist (review finding: a fixed
         # list is blind to any stray dir it did not predict — the generator's own prune
@@ -345,8 +427,8 @@ def main() -> int:
         code = "\n".join(l for l in ps1.splitlines() if not l.lstrip().startswith("#"))
         table = re.findall(r"@\{\s*Slug\s*=\s*'([a-z-]+)';\s*Master\s*=\s*'(smh-team-[a-z-]+\.md)'",
                            code)
-        c.check("C1 the ps1 $seats table carries exactly the law's five slugs",
-                {s for s, _ in table} == LAW_SLUGS and len(table) == 5,
+        c.check("C1 the ps1 $seats table carries exactly the law's six slugs",
+                {s for s, _ in table} == LAW_SLUGS and len(table) == 6,
                 f"table={table}")
         bad_fm: list[str] = []
         for s, master_name in sorted(table):
