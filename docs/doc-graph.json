@@ -8,10 +8,10 @@
     "packs": 1,
     "pack_docs": 2,
     "edges": 808,
-    "external": 40,
+    "external": 37,
     "ambiguous": 178,
-    "dangling": 300,
-    "broken_paths": 69,
+    "dangling": 303,
+    "broken_paths": 72,
     "unresolved_names": 231,
     "unresolvable": 7
   },
@@ -6554,6 +6554,10 @@
     },
     {
       "from": ".agents/commands/smh-merge-multiple-workingtrees.md",
+      "target": "_artifacts/_main/2026-08-13_scc-127-verify-wave/walkthrough.md"
+    },
+    {
+      "from": ".agents/commands/smh-merge-multiple-workingtrees.md",
       "target": "walkthrough.md"
     },
     {
@@ -6907,6 +6911,14 @@
     {
       "from": ".agents/skills/code-review-engine/SKILL.md",
       "target": "deferred-work.md"
+    },
+    {
+      "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
+      "target": "_artifacts/_main/2026-08-12_scc-124-baseline-trial/scoring.md"
+    },
+    {
+      "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
+      "target": "_artifacts/_main/2026-08-20_scc-225-review-surface/lc-cost-measurement.md"
     },
     {
       "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
@@ -7411,10 +7423,6 @@
       "target": "_artifacts/_memory/MEMORY.md"
     },
     {
-      "from": ".agents/commands/smh-merge-multiple-workingtrees.md",
-      "target": "_artifacts/_main/2026-08-13_scc-127-verify-wave/walkthrough.md"
-    },
-    {
       "from": ".agents/commands/smh-new-project.md",
       "target": "_my_resources/open_tasks/todo_list.md"
     },
@@ -7453,14 +7461,6 @@
     {
       "from": ".agents/rules/jira.md",
       "target": "_my_resources/open_tasks/todo_list.md"
-    },
-    {
-      "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
-      "target": "_artifacts/_main/2026-08-12_scc-124-baseline-trial/scoring.md"
-    },
-    {
-      "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
-      "target": "_artifacts/_main/2026-08-20_scc-225-review-surface/lc-cost-measurement.md"
     },
     {
       "from": ".agents/workflows/smh-new-project.md",
