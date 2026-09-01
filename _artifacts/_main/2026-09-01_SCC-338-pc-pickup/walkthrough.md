@@ -82,8 +82,24 @@ All three fixes are Mac-safe by construction: `PurePosixPath` is what that darwi
 `sh -c` is the shell the Mac was using anyway, and `user_dir`'s darwin branch ignores `appdata` and
 returns exactly the path the test used to hardcode.
 
-**`run_all.py` is now 71/71 files on Windows**, up from 67/71 — the first time the whole gate has
-been green on this machine.
+**`run_all.py` is now 71/71 files on Windows**, up from 67/71 — under Git Bash.
+
+⚠️ **Correction, added after the merge: that number was shell-specific and the claim was too broad.**
+Run from **PowerShell**, which is how the operator actually runs it, the same tree scored 67/71 with
+a *different* four files red — and one of those was `test_command_surfaces`, whose `CS-18 L` is the
+authoritative check on the very cache this ticket exists to fix. It had been measured only from the
+worktree, where the case **skips itself** and says so in its own output: *"This is a SKIP, not a pass
+about the cache; the claim binds in main."* That line was read and passed over. `CS-18 L` was red in
+the main checkout, and the remedy was the one command in this ticket's own runbook — the globals sync
+from the main checkout, which had last been run before `main` moved. Re-run; `test_command_surfaces`
+is now **323/323** and the cache is a byte mirror of its doors.
+
+Three files remain red **under PowerShell only** and are a separate class from anything here — POSIX
+`uid` semantics on Windows (`test_allow_scratchpad`), a folder scan walking into a vendored
+`third_party` tree (`test_sops_prds_folder`), and one more binary-resolution failure of exactly the
+kind fixed in `test_shape_guard` (`test_verdict_receipt`). All three are green under Git Bash. The
+lesson this lane keeps re-teaching, now stated once: **on Windows the shell is part of the
+environment under test**, so a green is only a green for the shell it ran in.
 
 ## The evidence, per ticket, measured on the PC 2026-09-01
 
