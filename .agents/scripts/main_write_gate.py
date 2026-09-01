@@ -296,7 +296,15 @@ def check_close_out_receipts(repo: Path, base: str, head: str,
             # legitimate is that they are UNCHANGED on the base; a manifest this PR writes or
             # edits is this PR's business whatever it declares. (`base` is often not the
             # merge-base, which is why they show up in the tree diff at all.)
-            if mainline and show(repo, mainline, rel) == text:
+            unchanged = False
+            if mainline:
+                if show(repo, mainline, rel) == text:
+                    unchanged = True
+                else:
+                    old_rel = re.sub(r"^(_artifacts/[^/]+)/\d{4}/\d{2}/", r"\1/", rel)
+                    if old_rel != rel and show(repo, mainline, old_rel) == text:
+                        unchanged = True
+            if unchanged:
                 print(f"       (skipping {rel}: declares `{branch}`, unchanged on {mainline} - "
                       f"another lane's landed receipt)")
                 continue
