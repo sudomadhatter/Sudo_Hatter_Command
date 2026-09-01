@@ -94,7 +94,7 @@ the entire delta is one line — `<pending>` → the sha. It is in this branch's
 ## Your Actions
 
 - [ ] **Verify the SCC-335 fix on the Windows PC.** Full copy-paste steps are in
-      [SCC-335](https://sudomadhatter.atlassian.net/browse/SCC-335)'s description under
+      [SCC-335](https://sudo-command.atlassian.net/browse/SCC-335)'s description under
       **PC VERIFICATION** - three read-only commands, nothing is written to the board.
       Step 1 prints the machine's Python encoding, step 2 is the negative control on the old
       line and must print `U+26D4 0 U+2B50 0`, step 3 runs the shipped seam and must print
