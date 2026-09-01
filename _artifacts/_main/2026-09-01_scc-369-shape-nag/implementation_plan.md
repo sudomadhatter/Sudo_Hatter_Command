@@ -63,6 +63,47 @@ it can never block, slow, or wedge a headless session. Measured cost ~36 ms agai
 | 6 | Zoo allow-list drift reconciled | `.vscode/settings.json` | Zoo, both machines |
 | — | SOP + changelog (required by `sop-currency` for 1, 5) | `docs/_scc_sops_prds/workflows_testing_SOP.md` + changelog | the operator |
 
+## Declared Change Set
+
+- EDIT `AGENTS.md` — §6 COMMAND-SHAPE GATE still carries the pre-SCC-351 `git -C` text → A
+- EDIT `.agents/scripts/tests/test_zoo_permissions.py` — widen the `git -C` scan to the root entry files → A
+- NEW `.agents/hooks/shape-guard.py` — the PostToolUse nag; always allows, cites the rule → B
+- NEW `.agents/scripts/tests/test_shape_guard.py` — the nag's positive, negative and `allow`-mutant batteries → C
+- EDIT `.claude/settings.json` — register the hook under `PostToolUse` → B
+- NEW `.agents/scripts/shape_scan.py` — the measurement over both stores → E
+- NEW `.agents/scripts/tests/test_shape_scan.py` — the six negative and five positive controls → E
+- EDIT `.agents/rules/command-shape.md` — add §Nag, the operator's ruling as law → F
+- EDIT `.agents/rules/INDEX.md` — the §Nag row → F
+- EDIT `.vscode/settings.json` — reconcile the 143 store-only allow entries → G
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — required by `sop-currency` for the `AGENTS.md` and rule edits → H
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — the one-line change record → H
+- EDIT `_artifacts/_main/INDEX.md` — this lane's row → H
+- EDIT `.agents/hooks/INDEX.md` — the new hook's row; that file calls itself the MASTER index → B
+- EDIT `.agents/scripts/INDEX.md` — the new script's row → E
+
+⛔ `.claude/hooks/` is NOT in this set, and the reason is **not** that it is absent. It is a
+GENERATED MIRROR: `.agents/hooks/INDEX.md:3` — *"MASTER here — mirrors to `.claude/hooks/` and
+project vendored copies via `/smh-sync-agents`"*. Editing the mirror by hand is the thing that is
+forbidden; it is excluded because `/smh-sync-agents` owns it, not because it does not exist.
+
+## Sibling lanes — landing order (read at Step 0.5, not at merge)
+
+`chore/SCC-367-retire-slash-cmd-updating` is live and already in review (its four keyed
+`lens-SCC-367-*` trees are cut). Its diff and mine **truly overlap** on three paths:
+
+| Shared path | Their change | Mine |
+|---|---|---|
+| `docs/_scc_sops_prds/workflows_testing_SOP.md` | retires `/smh-slash-command-updating` from §3 | adds the §Nag usage note |
+| `_artifacts/_main/INDEX.md` | their lane row | my lane row |
+| `docs/doc-graph.json` · `.md` | regenerated cache | regenerated if the rule edit moves a node |
+
+**SCC-367 lands first** — it is further along, and its change is a retirement that mine must not
+resurrect. **If it does not land first:** my SOP edit conflicts on §3 and my INDEX row conflicts on
+position. Both are additive and resolve by taking both sides; neither is semantic. Mitigation:
+write the SOP and INDEX edits **last** in this lane, and absorb `origin/main` immediately before
+the review gate rather than at close-out (`lane-collision-is-gates-not-files` — zero file overlap
+would still require re-running their gates on my blobs, and here the overlap is real).
+
 ## RED first — the assertion for each item
 
 Assert-first is the house standard, so every item below names the check that must **fail** before
@@ -84,6 +125,14 @@ not swept up (the existing exemption behaviour).
 - a `grep "git -C"` and a heredoc body containing `git add -A` → **silence** (the two false
   positives that beat the first scanner)
 - malformed JSON on stdin → exit 0, no output (fails open, per `guard-cwd-escape.py`)
+- ⛔ **registered through `run-hook.sh`, never a bare interpreter.** `test_shape_guard.py` asserts
+  the `.claude/settings.json` entry matches the `sh "$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh"`
+  form the other four use, and that no rule names `python3`/`python` directly. `run-hook.sh:11-13`:
+  *"NEVER name one platform's binary. Probe, in preference order, every time."* The session probe
+  that proved the channel was registered as `python3 <path>` — shipping that shape reproduces
+  SCC-77 exactly: on the PC (`python`, no `python3`) it exits **127 in silence**, and a hook that
+  fails to launch is indistinguishable from a hook with nothing to say.
+- the test spawns the hook with `sys.executable`, never a hardcoded interpreter (`run_all.py:77`)
 - **the decision is asserted to be `allow` in every case, including every hit.** This is the
   load-bearing one: a mutant flipping it to `ask` must fail the suite, because `ask` auto-denies.
 
@@ -140,3 +189,81 @@ file* on both lists. Today: `allowedCommands: 255 (143 store-only)`.
   plainly and that is why `zoo_notify.py` polls the thread store. Item 4 gives Zoo *measurement*,
   which is what makes "are they doing better" answerable; item 6 gives it a correct fence. Neither
   is a nag, and this plan does not pretend otherwise.
+
+---
+
+## Self-Audit (2026-09-01)
+
+**Level: LEDGER+BLAST** — the Declared Change Set touches a rule, a hook, scripts others will
+import, and more than one platform, so all three lenses run.
+**Mode:** PRE-WORK. **Runtime:** inline (single model; the lenses were run in sequence, so their
+agreement is NOT independent corroboration and no finding below is sorted by it).
+
+```
+lens:        1 Repo Reality + Scope Ledger
+checks_run:  every path/script/rule the plan names exists on disk
+             declared_change_set.py parse -> 13 entries, incomplete: []
+             two-machine interpreter reachability for every command the plan runs
+             lane fit: no deployable path in the set -> /smh-close-task-merge-tree is the door
+             Scope Ledger precondition: ticket acceptance rows >= 2, each with an observable
+             Scope Ledger: 4 NEW artefacts x acceptance row, empty cells
+read:        .agents/hooks/INDEX.md · .agents/scripts/INDEX.md:18 · .agents/hooks/run-hook.sh
+             .agents/scripts/tests/run_all.py:3-10,77 · acli jira workitem view SCC-369
+verdict:     findings below
+```
+
+```
+lens:        2 Parity + Blast
+checks_run:  rule change -> citing commands + workflow_lint.py _RULE_POINTERS
+             new hook -> ships ARMED (registered in settings.json)? indexed?
+             new script -> .githooks/ callers + its test + scripts/INDEX.md
+             SOP/usage surface -> both halves in the same commit
+             twins: no cicd-/smh- sibling exists for any path in the set
+             sibling worktrees: fetch, then per-tree diff --name-only origin/main...HEAD
+             risk_seam: command centre returns `unclassified` by design (SCC-289) - not run as a gate
+read:        .agents/scripts/workflow_lint.py:70-143 · git worktree list
+             .claude/worktrees/retire-slash-cmd-updating diff (21 paths)
+verdict:     findings below
+```
+
+```
+lens:        3 Pre-Mortem (bounded - attaches narrative, originates nothing)
+checks_run:  attached the other-machine narrative to F1; the next-reader narrative to F2/F3;
+             the sibling-lands-first narrative to the landing-order section
+read:        this plan's Declared Change Set and RED-first section
+verdict:     clean (no unattached output)
+```
+
+### Findings
+
+| anchor | literal text read | consequence | severity |
+|---|---|---|---|
+| `.agents/hooks/run-hook.sh:11-13` | "NEVER name one platform's binary. Probe, in preference order, every time." | The probe that proved the nag channel registered it as `python3 <path>`. Shipping that shape exits **127 in silence** on the PC and reproduces SCC-77 — the bug that let six merges reach `main` on one sign-off. Breaks acceptance B on one of the two machines. | **HIGH** |
+| `.agents/hooks/INDEX.md:3` | "MASTER here — mirrors to `.claude/hooks/` and project vendored copies via `/smh-sync-agents`" | A new hook absent from its own master index is invisible to the next reader; and the plan's stated reason for excluding `.claude/hooks/` ("does not exist") was wrong, which would invite someone to hand-edit the generated mirror. | MEDIUM |
+| `.agents/scripts/INDEX.md:18` | "\| `declared_change_set.py` \| which files did the plan DECLARE it would touch …" | `shape_scan.py` was created by the plan with no `scripts/INDEX.md` row, so the one place a reader looks up "what scripts exist" would not list the measurement this whole ticket is judged by. | MEDIUM |
+| SCC-369 board description (pre-fix) | `acli jira workitem view SCC-369` returned Key/Summary/Status only — **no description, no acceptance rows** | Scope Ledger precondition failed, which is a NO-GO ground on its own: a ticket with no acceptance rows makes the ledger match everything and produce a green that lies. | **HIGH — fixed during this audit** |
+
+**All four are resolved in this same amendment**: the change set gained `.agents/hooks/INDEX.md`
+and `.agents/scripts/INDEX.md`; item 3's RED-first list gained the `run-hook.sh` assertion and the
+`sys.executable` rule; the `.claude/hooks/` exclusion now states the real reason; and
+`jira_ticket.py describe` rendered the acceptance rows onto SCC-369 before this verdict was written.
+
+### Observations (uncounted, no severity)
+
+- `command-shape` is **absent** from `workflow_lint.py:70` `_RULE_POINTERS`, so no command body that
+  pipes a gate is required to cite its law. Adding the row is aligned with this ticket's thesis but
+  would warn across many existing command files at once — a separate, larger piece of work. Not in
+  scope here, and deliberately not converted into a finding.
+- `shape_scan.py`'s only caller is its own test. Precedent for an operator-invoked script with no
+  code caller: `zoo_permissions_apply.py`, which is likewise absent from `scripts/INDEX.md`. Noted
+  rather than raised, per the caller-count rule being falsifiable and this being intended.
+
+### Sibling landing-order dependency
+
+`chore/SCC-367-retire-slash-cmd-updating` (in review) overlaps on
+`docs/_scc_sops_prds/workflows_testing_SOP.md`, `_artifacts/_main/INDEX.md` and the `doc-graph`
+caches. **SCC-367 lands first.** Full analysis and mitigation in § Sibling lanes above.
+
+```
+Audit verdict: GO
+```
