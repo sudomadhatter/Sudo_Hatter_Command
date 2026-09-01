@@ -9,7 +9,7 @@
     "pack_docs": 2,
     "edges": 803,
     "external": 40,
-    "ambiguous": 176,
+    "ambiguous": 177,
     "dangling": 301,
     "broken_paths": 70,
     "unresolved_names": 231,
@@ -7617,6 +7617,23 @@
     {
       "from": ".agents/commands/cicd-push-e2e.md",
       "target": "PROJECT_ROOT/_artifacts/INDEX.md",
+      "candidates": [
+        ".agents/INDEX.md",
+        ".agents/bmad",
+        ".agents/commands/INDEX.md",
+        ".agents/hooks/INDEX.md",
+        ".agents/opencode-agents/INDEX.md",
+        ".agents/rules/INDEX.md",
+        ".agents/scripts/INDEX.md",
+        ".agents/skills/INDEX.md",
+        ".agents/workflows/INDEX.md",
+        "docs/_scc_sops_prds/INDEX.md",
+        "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/cicd-push-e2e.md",
+      "target": "_artifacts/INDEX.md",
       "candidates": [
         ".agents/INDEX.md",
         ".agents/bmad",

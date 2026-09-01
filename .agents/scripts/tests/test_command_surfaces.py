@@ -2890,6 +2890,317 @@ def main() -> int:
                 "edited" not in step(TWO_STATES, "## Step 3.5"),
                 "this is the exact regression the post-landing re-run turns into a refusal")
 
+    if c.block("CS-21 · SCC-358 · the close-out bookkeeping RIDES THE PR; the post-merge half "
+               "writes NOTHING"):
+        # ⛔ WHY THIS BLOCK EXISTS. `/cicd-push-e2e` wrote its ledger row and active-context in
+        # Step 6 — after the merge, standing on `main`, as a NEW direct push. Both repos now
+        # publish an ACTIVE server-side ruleset (lobby SCC-118 id 20756052; AviationChat AVCH-111
+        # id 21963341), so a PR with a green `main-write-gate` is the only road to `main` and that
+        # push is refused BY DESIGN. Measured at the AVCH-111 close-out, 2026-08-31: the ledger
+        # commit was refused and needed its own operator approval plus a hand-built `--no-ff`
+        # merge to land.
+        #
+        # ⭐ THE LAW IS NOT NEW — THIS WAS THE LAST DOOR WITHOUT IT. `/smh-close-task-merge-tree`
+        # commits its flight event pre-merge (Step 2.5) and carries ⛔ "do NOT commit anything
+        # after the merge", an instruction that "used to say the opposite, and that instruction
+        # was the whole of SCC-175" — whose refusal banner's `reset --hard` remedy then destroyed
+        # three other sessions' uncommitted work (SCC-180).
+        #
+        # ⛔ EVERY PREDICATE BELOW IS A NAMED FUNCTION, AND THE CONTROLS CALL THE SAME FUNCTION
+        # THE LIVE CHECK CALLS. The first draft of this block retyped each expression inside its
+        # control, which proves only that "an expression of this shape can be false" — never that
+        # THE SHIPPED CHECK can fail. Measured by the review: weakening the live `ipr > i35` to
+        # `ipr >= 0` left all four controls green. This is the shape the door-parity block one
+        # screen up already had right (it defines `door_verdict(...)` once and its controls call
+        # it), and it is why these predicates are hoisted instead of inlined.
+        #
+        # ⛔ RESOLVED FROM `ROOT`, NOT FROM `CMDS` — the lesson CS-19 records. `CMDS` is assigned
+        # inside a SIBLING block, so under `--case CS-21` it would be unbound and this block would
+        # die with an UnboundLocalError: a non-zero exit indistinguishable from a red.
+        door = read(ROOT / ".agents/commands/cicd-push-e2e.md")
+        sop = read(ROOT / "docs/_scc_sops_prds/workflows_testing_SOP.md")
+        index = read(ROOT / ".agents/commands/INDEX.md")
+
+        def section(hay: str, heading: str) -> str:
+            """The one `##` section starting at `heading`, or "" when it is absent."""
+            i = hay.find(heading)
+            if i < 0:
+                return ""
+            j = hay.find("\n## ", i + len(heading))
+            return hay[i:] if j < 0 else hay[i:j]
+
+        def fenced(text: str) -> str:
+            """Only the COMMANDS — the bodies of ``` fences. A write is a command, and prose
+            about a command is not one; reading them apart is what stops a ⛔ prohibition
+            (`never run `git commit``) from reading as the instruction it forbids."""
+            out, inside = [], False
+            for line in text.splitlines():
+                if line.lstrip().startswith("```"):
+                    inside = not inside
+                    continue
+                if inside:
+                    out.append(line)
+            return "\n".join(out)
+
+        def unfenced(text: str) -> str:
+            """Only the PROSE — the instructions, with every fence removed. A path that appears
+            solely inside a `git add` line is staged, not instructed, and must not satisfy a
+            check about what the step TELLS you to write."""
+            out, inside = [], False
+            for line in text.splitlines():
+                if line.lstrip().startswith("```"):
+                    inside = not inside
+                    continue
+                if not inside:
+                    out.append(line)
+            return "\n".join(out)
+
+        # ── the predicates. Each is called TWICE: once on the live door, once by its control. ──
+
+        NEGATION = re.compile(r"\bdo NOT\b|\bdon't\b|\bnever\b|\bafter the merge\b", re.I)
+
+        def instructs_both_writes(s35: str) -> bool:
+            """A0 — Step 3.5's PROSE names both halves, and names them as INSTRUCTIONS.
+
+            Two measured failures shape this. (1) Read unfenced, because `active-context` also
+            occurs inside the `git add` line: a whole-section grep stayed green when the
+            active-context instruction was deleted outright, reporting a door that writes both
+            halves while it writes one. (2) Reject NEGATION on the naming line, because a
+            presence-grep cannot see an inverted instruction — `do NOT touch active-context.md
+            here; that happens after the merge` keeps every literal and reverses the meaning,
+            which is the SCC-358 defect wearing the guard's own vocabulary."""
+            if not s35:
+                return False
+            p = unfenced(s35)
+            for needle in ("_artifacts/INDEX.md", "active-context"):
+                named = [ln for ln in p.splitlines() if needle in ln]
+                if not named or all(NEGATION.search(ln) for ln in named):
+                    return False
+            return True
+
+        def commit_is_keyed(s35: str) -> bool:
+            """A1 — the key is on the `git commit` LINE, not merely somewhere in the section.
+            `<JIRA-KEY>` appears twice in Step 3.5 (the fence and the ⛔ below it), so two
+            independent presence tests pass with the key deleted from the fence — the only place
+            it changes what `main_write_gate --mode pr` sees."""
+            for line in fenced(s35).splitlines():
+                if "git commit" in line and "<JIRA-KEY>" in line:
+                    return True
+            return False
+
+        def add_is_explicit(s35: str) -> bool:
+            """A2 — `git add -A`/`-u`/`.`/`--all` is a constitution hard stop (it sweeps other
+            lanes' work), the step's own prose demands explicit paths, and until now no suite
+            read that claim inside a command door."""
+            return re.search(r"git add\s+(-A\b|-u\b|--all\b|\.\s*$|\.\s)", fenced(s35)) is None
+
+        def pushes_what_it_commits(s35: str) -> bool:
+            """A3 — commit WITHOUT push leaves the branch `1 ahead / 0 behind`, which is exactly
+            what `ship_preflight.py` BLOCKS on (exit 2), so a run interrupted between here and
+            Step 4 becomes unresumable — halted by a hazard this step created. The sibling door
+            this law was ported from pushes inside the same block; the port dropped it."""
+            return "git push" in fenced(s35)
+
+        def order_ok(door_text: str) -> bool:
+            """B — TWO-SIDED. Below `gh pr create` the commit is the direct push the ruleset
+            refuses; ABOVE Step 3 the row cites a gate report that has not been produced and
+            Step 4's `plus Step 3.5's artifacts-only commit` becomes false. A one-sided check
+            passes the second arrangement, and the sweep's own order mutant only tests the first."""
+            i3 = door_text.find("## Step 3 —")
+            i35 = door_text.find("## Step 3.5")
+            ipr = door_text.find("gh pr create")
+            return -1 < i3 < i35 < ipr
+
+        def region_writes_nothing(door_text: str) -> bool:
+            """C1 — the WHOLE post-merge region, not just Step 6. Scoping this to `## Step 6`
+            was the block's worst hole: the retired write could be reinstated inside Step 6.5, or
+            in a brand-new `## Step 7`, with all 67 suite files green (both reproduced). Commands
+            are read from fences and destinations from the whole region, because a real write
+            must either run something or name where it lands."""
+            r = door_text[door_text.find("## Step 4.5"):]
+            if not r:
+                return False
+            f = fenced(r)
+            return ("git add" not in f and "git commit" not in f
+                    and "_artifacts/INDEX.md" not in r and "active-context" not in r
+                    and "home-base INDEX" not in r)
+
+        def no_new_tail_step(door_text: str) -> bool:
+            """C2 — the post-merge step headings are exactly these five. Without it a new
+            `## Step 7 — Ledger + context (after the merge)` restores the AVCH-111 defect
+            verbatim and every other check here stays green (reproduced)."""
+            r = door_text[door_text.find("## Step 4.5"):]
+            found = re.findall(r"^## (Step [0-9.]+)", r, re.M)
+            return found == ["Step 4.5", "Step 5", "Step 5.5", "Step 6", "Step 6.5"]
+
+        def ban_is_stated(s6: str) -> bool:
+            """E — the ⛔ ban's own IMPERATIVE, in the same paragraph as the scars that price it.
+            Checking only for `SCC-175`/`SCC-358` anywhere in the section lets the ban be deleted
+            outright — or inverted to `Commit the ledger and context here on main.` — while the
+            two ticket numbers survive in the historical paragraph below (both reproduced)."""
+            for para in s6.split("\n\n"):
+                if "DO NOT COMMIT ANYTHING HERE" in para:
+                    return "SCC-175" in para and "SCC-358" in para
+            return False
+
+        def step6_verifies_the_row(s6: str) -> bool:
+            """F — Step 6 must INSTRUMENT the question 'did Step 3.5 run?'. A PR opened by an
+            older copy of this door merges with no bookkeeping at all, and nothing else in the
+            resume half reads for it; leaving that to an agent's notice is the one judgement call
+            this door instruments everywhere else."""
+            return "--grep" in fenced(s6) and "chore/<JIRA-KEY>-bookkeeping" in s6
+
+        def reconcile_goes_to_the_ticket(s55: str) -> bool:
+            """G — every recorded outcome in Step 5.5 names the TICKET. Positive, not a ban on
+            one retired sentence: the word `ledger` legitimately survives here twice (the ⓘ that
+            explains the move, and the unrelated BMAD `epics ledger`), so a word-ban is both
+            unshippable and, against a paraphrase, useless."""
+            if not s55:
+                return False
+            records = [ln for ln in s55.splitlines() if "Record it" in ln]
+            return bool(records) and all("ticket" in ln for ln in records)
+
+        def index_teaches_the_new_order(idx: str) -> bool:
+            """H — POSITIVE. Banning the retired phrase `live verify + ledger` was satisfied by
+            every rewording of the same claim (three lenses reproduced it independently). What
+            cannot be paraphrased away is the requirement that the routing index — the file an
+            agent reads INSTEAD of the 350-line door — states the new order itself."""
+            row = next((ln for ln in idx.splitlines()
+                        if "cicd-push-e2e" in ln and "Shipping" in ln), "")
+            return "Step 3.5" in row and "before the PR opens" in row
+
+        def sop_row_is_ticket_only(sop_text: str) -> bool:
+            """I — scoped to the SOP's ONE currency row. `and the ledger row` as a file-wide ban
+            collides with the two places (SOP 1202, 2480) where that phrase means the walkthrough
+            checkbox, which this lane's plan explicitly rules OUT of scope — so the file-wide form
+            reds on a correct future edit and points the next agent at the wrong line."""
+            row = next((ln for ln in sop_text.splitlines()
+                        if ln.startswith("| **Epic** (a project)")), "")
+            return bool(row) and "ledger" not in row
+
+        s35, s6, s55 = section(door, "## Step 3.5"), section(door, "## Step 6 —"), section(door, "## Step 5.5")
+
+        c.check("CS-21 A Step 3.5 INSTRUCTS both the ledger row and active-context",
+                instructs_both_writes(s35),
+                "a write named only inside the `git add` line is staged, not instructed: "
+                + (unfenced(s35).strip()[:120] or "<no Step 3.5 section at all>"))
+        c.check("CS-21 A1 ...and its commit carries <JIRA-KEY> ON THE COMMIT LINE",
+                commit_is_keyed(s35),
+                "main_write_gate --mode pr reads every non-merge commit; one unkeyed bookkeeping "
+                "commit refuses the whole PR, epic included")
+        c.check("CS-21 A2 ...with EXPLICIT paths, never `git add -A`",
+                add_is_explicit(s35),
+                "a sweeping add takes other lanes' work into this epic's PR (constitution hard stop)")
+        c.check("CS-21 A3 ...and PUSHES it in the same step",
+                pushes_what_it_commits(s35),
+                "commit without push = 1 ahead/0 behind, which ship_preflight.py BLOCKS (exit 2) "
+                "on the resumed run — a hazard this step would have created itself")
+        c.check("CS-21 B ORDER Step 3 -> Step 3.5 -> gh pr create",
+                order_ok(door),
+                "two-sided: below the PR it is the refused direct push; above the gate it cites "
+                "an e2e report that does not exist yet")
+        c.check("CS-21 C1 the WHOLE post-merge region writes nothing",
+                region_writes_nothing(door),
+                "a write reinstated anywhere after Step 4.5 — Step 6.5 included — is the SCC-175 "
+                "commit on main the gate refuses, and SCC-180 is what its remedy cost")
+        c.check("CS-21 C2 ...and no new step may be appended after the merge",
+                no_new_tail_step(door),
+                "a fresh `## Step 7 — Ledger + context (after the merge)` restores the exact "
+                "AVCH-111 defect while every other check here stays green")
+        c.check("CS-21 E Step 6 states the ban, with its scars in the SAME paragraph",
+                ban_is_stated(s6),
+                "the ban can otherwise be deleted or inverted while two ticket numbers survive "
+                "in the historical paragraph below it")
+        c.check("CS-21 F Step 6 INSTRUMENTS whether Step 3.5 ran, and names the remedy lane",
+                step6_verifies_the_row(s6),
+                "a PR opened by an older copy of this door merges with no bookkeeping and "
+                "nothing reads for it")
+        c.check("CS-21 G Step 5.5 records every reconcile outcome to the TICKET",
+                reconcile_goes_to_the_ticket(s55),
+                "the reconcile diffs <merge-sha>^1..<merge-sha>, so it cannot ride the PR and the "
+                "ticket is its only durable home")
+        c.check("CS-21 H commands/INDEX.md teaches the NEW order, positively",
+                index_teaches_the_new_order(index),
+                "the routing index is what an agent reads INSTEAD of the door; a negative ban "
+                "there was satisfied by every rewording of the retired claim")
+        c.check("CS-21 I the SOP's Epic currency row is ticket-only",
+                sop_row_is_ticket_only(sop),
+                "scoped to that one row: file-wide, the same phrase means the walkthrough "
+                "checkbox at SOP 1202/2480, which this lane rules out of scope")
+
+        # ── CONTROLS — each calls THE SHIPPED PREDICATE against a surface built to fail it, so
+        # weakening a predicate turns its control red. Retyping the expression here instead is
+        # what made the first draft's four controls survive a deliberately gutted check.
+        c.check("CS-21 CONTROL a Step 3.5 whose active-context line is DELETED fails A",
+                not instructs_both_writes(
+                    "## Step 3.5\n\n1. Ledger: `PROJECT_ROOT/_artifacts/INDEX.md`.\n\n"
+                    "```bash\ngit add _artifacts/INDEX.md <the active-context path>\n```\n"),
+                "the surviving `git add` mention must not satisfy A, or deleting the instruction "
+                "leaves the guard green")
+        c.check("CS-21 CONTROL an INVERTED Step 3.5 fails A, every literal intact",
+                not instructs_both_writes(
+                    "## Step 3.5\n\n1. Ledger: do NOT write `_artifacts/INDEX.md` here.\n"
+                    "2. Active context: `active-context.md` is written after the merge.\n"),
+                "a presence-grep that cannot see negation passes the defect wearing its own words")
+        c.check("CS-21 CONTROL a commit whose FENCE lost the key fails A1",
+                not commit_is_keyed(
+                    "## Step 3.5\n\n```bash\ngit commit -F msg.txt   # subject: \"chore(ship)\"\n```\n"
+                    "\n⛔ `<JIRA-KEY>` in the subject is what keeps the PR landable.\n"),
+                "the key surviving in the PROSE must not satisfy A1 — the fence is the only place "
+                "it changes what the gate sees")
+        c.check("CS-21 CONTROL a sweeping add fails A2",
+                not add_is_explicit("## Step 3.5\n\n```bash\ngit add -A\n```\n"),
+                "the constitution's hard stop must actually be read")
+        c.check("CS-21 CONTROL a Step 3.5 that commits but never pushes fails A3",
+                not pushes_what_it_commits(
+                    "## Step 3.5\n\n```bash\ngit add x\ngit commit -F m\n```\n"),
+                "this is the shape that BLOCKS the resumed run at ship_preflight exit 2")
+        c.check("CS-21 CONTROL bookkeeping placed AFTER the PR fails B",
+                not order_ok("## Step 3 —\n\n## Step 4\n\ngh pr create --base main\n\n## Step 3.5\n"),
+                "B must be an ORDER claim; a presence-only check passes the exact defect")
+        c.check("CS-21 CONTROL bookkeeping placed BEFORE the gate also fails B",
+                not order_ok("## Step 3.5\n\n## Step 3 —\n\ngh pr create --base main\n"),
+                "the second arrangement a one-sided ordering check sails past")
+        c.check("CS-21 CONTROL a write reinstated in Step 6.5 fails C1",
+                not region_writes_nothing(
+                    "## Step 4.5\n\n## Step 6.5\n\nAdd the row to `_artifacts/INDEX.md`.\n"),
+                "scoping this to Step 6 was the hole: the same defect one section over stayed green")
+        c.check("CS-21 CONTROL the LOBBY hand-append reinstated fails C1",
+                not region_writes_nothing(
+                    "## Step 4.5\n\n## Step 6 —\n\nAdd the home-base INDEX row if run from the "
+                    "lobby.\n"),
+                "the lobby ledger is reconciled in batch and a project ship is not a lobby row — "
+                "AC-6, whose guard the review rebuild would otherwise have dropped")
+        c.check("CS-21 CONTROL a brand-new tail step fails C2",
+                not no_new_tail_step(
+                    "## Step 4.5\n\n## Step 5\n\n## Step 5.5\n\n## Step 6\n\n## Step 6.5\n\n"
+                    "## Step 7 — Ledger + context (after the merge)\n"),
+                "the AVCH-111 defect, restored as a new step, must not be invisible")
+        c.check("CS-21 CONTROL a DELETED ban fails E",
+                not ban_is_stated("## Step 6 —\n\nPrune it.\n\nSCC-175 and SCC-358 are why.\n"),
+                "the scars surviving without the imperative must not satisfy E")
+        c.check("CS-21 CONTROL an INVERTED ban fails E",
+                not ban_is_stated("## Step 6 —\n\nCommit the ledger here on `main`.\n\n"
+                                  "SCC-175 · SCC-358\n"),
+                "an inverted instruction is the worst case, not merely a missing one")
+        c.check("CS-21 CONTROL a Step 6 with no instrument fails F",
+                not step6_verifies_the_row("## Step 6 —\n\nPrune the branch.\n"),
+                "the check must read the instrument, not the intent")
+        c.check("CS-21 CONTROL a reconcile recorded to the ledger row fails G",
+                not reconcile_goes_to_the_ticket(
+                    "## Step 5.5\n\nRecord it in the Step 6 ledger row, exactly: `PRD: unchanged`.\n"),
+                "G is a positive claim about the ticket precisely so a paraphrase cannot dodge it")
+        c.check("CS-21 CONTROL a routing index reworded to the retired order fails H",
+                not index_teaches_the_new_order(
+                    "| **Shipping** (the e2e gate) | `cicd-push-e2e` | ...live verify, the ledger "
+                    "row, and the epic branch deleted. |"),
+                "three lenses independently reproduced the negative form passing on a rewording")
+        c.check("CS-21 CONTROL a reworded SOP currency row fails I",
+                not sop_row_is_ticket_only(
+                    "| **Epic** (a project) | the PRD | `/cicd-push-e2e` | `PRD: unchanged` on the "
+                    "ticket and in the ledger row |"),
+                "the row-scoped word check must survive a changed connective")
+
     return c.finish()
 
 
