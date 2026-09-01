@@ -46,6 +46,31 @@ Measured over one session: 19% → 39% of Bash calls auto-approved, 94 prompts r
 its shape — no verb list at all. These two hooks are what works while it is off, or where a
 command must run outside it.
 
+## The nag hook — the only one that speaks AFTER the call
+
+| File | Event | What it does |
+| --- | --- | --- |
+| `shape-guard.py` | `PostToolUse` | Points the agent back at `.agents/rules/command-shape.md` when a Bash call breaks it — a piped gate (rule 3), a `; echo "EXIT=$?"` tail (rule 2), or the `git -C` spelling (rule 1). It **cites the rule and names the remedy**; it does not restate the law. |
+
+**Why this one is `PostToolUse` and every other hook here is not.** The law it enforces was already
+on every platform and was violated in **1,933 of 7,858 Bash calls across 25 sessions — 98.9% of
+every detectable violation**. Distribution was never the gap, so the answer is not a sixth copy of
+the rule; it is a message at the moment of the mistake (SCC-369, the operator's ruling). Running
+after the call means it **cannot block, slow, or wedge a headless session** — the strongest safety
+property in this directory, bought by giving up the ability to prevent anything.
+
+⛔ **It must never block, and `test_shape_guard.py::test_never_blocks` is what holds that.**
+`permissionDecision: "ask"` becomes an auto-DENY in auto mode, and a PostToolUse `decision: "block"`
+feeds an error to the model; either would strand a headless run over a style note.
+
+⛔ **A nag cannot protect against a destructive command** — it speaks after the damage. `git add -A`
+and `git worktree remove --force` are deliberately *not* nagged; they belong to the PreToolUse
+guards above.
+
+⭐ **The channel was established by probe, not assumption:** `hookSpecificOutput.additionalContext`
+reaches the model verbatim, while `systemMessage`, hook stderr, and a `PreToolUse` allow +
+`permissionDecisionReason` all do not.
+
 ## Top-level contents
 <!-- auto-listed by /smh-update-maps-indexes — refresh via /smh-update-maps-indexes; do not hand-edit entries -->
 - `allow-readonly-chain.py`
@@ -55,4 +80,5 @@ command must run outside it.
 - `require-push-approval.py`
 - `rule-trigger.py`
 - `run-hook.sh`
+- `shape-guard.py`
 - `session-start-context.sh`
