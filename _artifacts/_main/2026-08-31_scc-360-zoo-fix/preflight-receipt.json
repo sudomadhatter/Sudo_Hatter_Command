@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-360-cheshire-cat-rename",
+  "errors": 3,
+  "exit": 2,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-360",
+  "verdict": "BLOCKED - resolve the errors above",
+  "verdict_sha": null,
+  "warnings": 4,
+  "when": null
+}
