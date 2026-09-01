@@ -4,12 +4,12 @@
     "docs"
   ],
   "counts": {
-    "files": 427,
+    "files": 428,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 803,
+    "edges": 807,
     "external": 40,
-    "ambiguous": 176,
+    "ambiguous": 177,
     "dangling": 301,
     "broken_paths": 70,
     "unresolved_names": 231,
@@ -559,27 +559,32 @@
     {
       "path": ".agents/commands/smh-team-caterpillar.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": ".agents/commands/smh-team-cheshire-cat.md",
       "in": 0,
-      "out": 3
+      "out": 4
+    },
+    {
+      "path": ".agents/commands/smh-team-gnat.md",
+      "in": 0,
+      "out": 5
     },
     {
       "path": ".agents/commands/smh-team-march-hare.md",
       "in": 0,
-      "out": 3
+      "out": 4
     },
     {
       "path": ".agents/commands/smh-team-queen-of-hearts.md",
       "in": 0,
-      "out": 3
+      "out": 4
     },
     {
       "path": ".agents/commands/smh-team-white-rabbit.md",
       "in": 0,
-      "out": 3
+      "out": 4
     },
     {
       "path": ".agents/commands/smh-update-maps-indexes.md",
@@ -748,7 +753,7 @@
     },
     {
       "path": ".agents/rules/constitution.md",
-      "in": 28,
+      "in": 29,
       "out": 1
     },
     {
@@ -768,7 +773,7 @@
     },
     {
       "path": ".agents/rules/karpathy-guidelines.md",
-      "in": 7,
+      "in": 8,
       "out": 1
     },
     {
@@ -843,7 +848,7 @@
     },
     {
       "path": ".agents/rules/zoo-team.md",
-      "in": 10,
+      "in": 17,
       "out": 6
     },
     {
@@ -2043,7 +2048,7 @@
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "in": 28,
+      "in": 29,
       "out": 55
     },
     {
@@ -3377,6 +3382,26 @@
     },
     {
       "from": ".agents/commands/smh-team-cheshire-cat.md",
+      "to": ".agents/rules/karpathy-guidelines.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-gnat.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-gnat.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-gnat.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-gnat.md",
       "to": ".agents/rules/karpathy-guidelines.md",
       "kind": "ref"
     },
@@ -7870,6 +7895,15 @@
     },
     {
       "from": ".agents/commands/smh-team-cheshire-cat.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-gnat.md",
       "target": "AGENTS.md",
       "candidates": [
         ".agents/AGENTS.md",

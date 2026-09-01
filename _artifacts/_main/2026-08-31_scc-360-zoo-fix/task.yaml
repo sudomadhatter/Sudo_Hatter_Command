@@ -1,0 +1,9 @@
+task_key: SCC-360
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-360-cheshire-cat-rename
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# One consolidated lane (work-consolidation rule 2): the three subtasks share this repo and a
+# lane class (Zoo team law + its gates), so they ride rather than cut branches of their own.
+# Each key leads its own commit subject on this branch, per the preflight's rider check.
+riders: [SCC-361, SCC-362, SCC-363]

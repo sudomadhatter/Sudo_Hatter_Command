@@ -1,14 +1,18 @@
 """The Wonderland team contract — the Zoo mode picker IS the operator's org chart (SCC-350).
 
-Five seats override four of Zoo Code's built-in mode slugs plus one new one. The law this file
-pins, each piece an operator ruling from the SCC-350 planning session:
+Six seats override five of Zoo Code's built-in mode slugs plus one new one. The law this file
+pins, each piece an operator ruling (SCC-350 planning session; SCC-360/SCC-361 Zoo fix):
 
-  * THE SLUG SET IS CLOSED. Exactly {orchestrator, architect, code, debug, designer} — four
-    built-ins (a same-slug custom mode replaces a built-in wholesale, verified against the
-    Zoo v3.80.1 bundle) plus `designer`. The `ask` slug is DELIBERATELY unclaimed — stock Zoo
-    Ask stays for plain Q&A (operator amendment 3) — while claiming `debug` suppresses the
-    stock, law-free Debug mode. A missing slug resurrects a stock Zoo persona in the picker;
-    an extra one is a seat nobody chartered.
+  * THE SLUG SET IS CLOSED. Exactly {orchestrator, architect, code, debug, designer, ask} —
+    five built-ins (a same-slug custom mode replaces a built-in wholesale, verified against the
+    Zoo v3.80.1 bundle) plus `designer`. Claiming `debug` suppresses the stock, law-free Debug
+    mode; claiming `ask` for The Gnat (SCC-361) suppresses the stock Ask mode — the law-free
+    door ungoverned work leaked through. A missing slug resurrects a stock Zoo persona in the
+    picker; an extra one is a seat nobody chartered.
+  * THE READ-ONLY SEAT. The Gnat (`ask`) is the librarian: unbiased lookups, evidence-cited,
+    and its groups are EXACTLY {read} — the enforcement is the extension's group mechanism,
+    not prose, so a Gnat that grows `edit` or `command` is the regression this law exists to
+    refuse (a law-free pen on the Q&A seat).
   * THE NAME LAW. Emoji first, character name in regular case, then an em-dash and the ROLE in
     ALL CAPS: `🫖🐰 March Hare — TEAM LEAD`. The operator reads the role from the picker; a
     lowercase role or a bare name is a regression of his correction ("Use regular March Hare for
@@ -37,8 +41,11 @@ from _harness import SCRIPTS, Cases
 
 ROOT = SCRIPTS.parents[1]
 
-LAW_SLUGS = {"orchestrator", "architect", "code", "debug", "designer"}
-BASE_GROUPS = {"read", "command"}          # every seat carries these
+LAW_SLUGS = {"orchestrator", "architect", "code", "debug", "designer", "ask"}
+# The read-only seat(s): groups EXACTLY {read} — no pen, no terminal, whatever the master says
+# (SCC-361: the Gnat is mechanically harmless, and that mechanism is this pin's whole point).
+READONLY_SLUGS = {"ask"}
+BASE_GROUPS = {"read", "command"}          # every WORKING seat carries these
 # The group CEILING (review finding, amendment 3): removing the scoped-pen law left group sets
 # floor-checked only, so any master could self-grant `mcp`/`browser` and every check stayed
 # green. `mcp` is March Hare's delegation privilege (zoo-team.md); nothing else is chartered.
@@ -95,13 +102,20 @@ def mode_problems(text: str) -> list[str]:
             # stdlib bars a real YAML parse; these are the two characters that break the
             # generated double-quoted scalar for the consumer while regex parsing stays green.
             problems.append(f"{m['slug']}: name carries a YAML-breaking character")
-        missing = BASE_GROUPS - m["groups"]
-        if missing:
-            problems.append(f"{m['slug']}: groups missing {sorted(missing)}")
-        if "edit" not in m["groups"]:
-            # Every seat is a working seat since the quality merge (amendment 3) — a stripped
-            # pen is a regression to the retired edit-strip/scoped-pen design.
-            problems.append(f"{m['slug']}: working seat has no `edit` group")
+        if m["slug"] in READONLY_SLUGS:
+            if m["groups"] != {"read"}:
+                # The read-only seat's harmlessness IS its group set (SCC-361) — any growth
+                # re-arms the law-free Q&A door this seat exists to close.
+                problems.append(f"{m['slug']}: read-only seat groups {sorted(m['groups'])} "
+                                "!= ['read']")
+        else:
+            missing = BASE_GROUPS - m["groups"]
+            if missing:
+                problems.append(f"{m['slug']}: groups missing {sorted(missing)}")
+            if "edit" not in m["groups"]:
+                # Every non-librarian seat is a working seat since the quality merge
+                # (amendment 3) — a stripped pen is a regression to the retired scoped-pen design.
+                problems.append(f"{m['slug']}: working seat has no `edit` group")
         stray = m["groups"] - ALLOWED_GROUPS
         if stray:
             problems.append(f"{m['slug']}: unchartered group(s) {sorted(stray)}")
@@ -132,6 +146,7 @@ GOOD = {
     "code":         ("😼🔨 Cheshire Cat — ENGINEER", ["read", "edit", "command"]),
     "debug":        (QUEEN_NAME, ["read", "edit", "command"]),
     "designer":     ("🦋 Caterpillar — DESIGNER", ["read", "edit", "command"]),
+    "ask":          ("🦟🔍 The Gnat — LIBRARIAN", ["read"]),
 }
 
 
@@ -151,10 +166,10 @@ def frontmatter(path: Path) -> dict[str, str]:
 
 
 def main() -> int:
-    c = Cases("the Wonderland team — five seats over Zoo's slugs (SCC-350)")
+    c = Cases("the Wonderland team — six seats over Zoo's slugs (SCC-350, SCC-360)")
 
     if c.block("A · the validator fires on every shape the law forbids"):
-        c.check("the five-seat fixture is clean", mode_problems(fixture(GOOD)) == [],
+        c.check("the six-seat fixture is clean", mode_problems(fixture(GOOD)) == [],
                 " | ".join(mode_problems(fixture(GOOD))))
         bad = dict(GOOD); bad["debug"] = ('♥️👑 Queen "of" Hearts — TESTER & QA', ["read", "edit", "command"])
         c.check("a YAML-breaking character in a name is caught (stdlib bars a real YAML parse)",
@@ -187,6 +202,12 @@ def main() -> int:
         bad = dict(GOOD); bad["architect"] = ("⏰🐇 White Rabbit — PM", ["read", "command"])
         c.check("a seat silently stripped of `edit` is caught (regression to the retired edit-strip)",
                 any("working seat has no" in p for p in mode_problems(fixture(bad))))
+        bad = dict(GOOD); bad["ask"] = ("🦟🔍 The Gnat — LIBRARIAN", ["read", "edit"])
+        c.check("the read-only seat growing `edit` is caught (the law-free Q&A pen, SCC-361)",
+                any("read-only seat groups" in p for p in mode_problems(fixture(bad))))
+        bad = dict(GOOD); bad["ask"] = ("🦟🔍 The Gnat — LIBRARIAN", ["read", "command"])
+        c.check("the read-only seat growing `command` is caught (a terminal is a pen too)",
+                any("read-only seat groups" in p for p in mode_problems(fixture(bad))))
         dup = [(s, n, g) for s, (n, g) in GOOD.items()] + [("code", "🔨 Ship Wright — ENGINEER", ["read", "edit", "command"])]
         c.check("a DUPLICATE slug is caught (a set-compare alone cannot see it)",
                 any("duplicate slug" in p for p in mode_problems(fixture(dup))))
@@ -256,17 +277,34 @@ def main() -> int:
         c.check("B3 every mode is generated FROM its master frontmatter (one source, current)",
                 not bad_master, " | ".join(bad_master))
 
-        # The merged quality seat (amendment 3): one master carries BOTH ends — the red phase
-        # and the review doors — plus the refusal that makes owning both safe (never weaken an
-        # assertion to reach green). Losing any half un-merges the seat silently.
+        # The quality seat after the SCC-362 rescope: she owns the red phase and REVIEW-READINESS
+        # (suites bare, receipts via gate_receipt.py, drift declared) — and the verdict is NOT
+        # hers. The old law pinned the review doors INTO her master; that sentence is what
+        # authorized a Zoo seat to self-stamp a PASS, so the pin now runs the other way.
         qa = ROOT / ".agents" / "commands" / "smh-team-queen-of-hearts.md"
         qa_text = qa.read_text(encoding="utf-8") if qa.is_file() else ""
-        qa_missing = [w for w in ("cicd-write-story-tests", "smh-code-review", "smh-self-audit",
+        qa_missing = [w for w in ("review-ready", "gate_receipt.py", "smh-self-audit",
                                   "weakening the assertion")
                       if w not in qa_text]
-        c.check("B4 the TESTER & QA master carries both halves (red-phase + review doors + the "
-                "never-weaken refusal)", not qa_missing,
-                f"missing from smh-team-queen-of-hearts.md: {qa_missing}")
+        c.check("B4 the TESTER & QA master carries the rescoped charter (red phase + "
+                "review-readiness + the never-weaken refusal), and the old verdict-format "
+                "line is gone", not qa_missing and "PASS|CONCERNS|FAIL|WAIVED" not in qa_text,
+                f"missing: {qa_missing}; old verdict line present="
+                f"{'PASS|CONCERNS|FAIL|WAIVED' in qa_text}")
+
+        # SCC-362 — the review gate binds EVERY seat: each master carries the no-verdict
+        # refusal, and the team rule carries the model-switch-gate law that explains it.
+        no_verdict_missing = []
+        for mp in sorted((ROOT / ".agents" / "commands").glob("smh-team-*.md")):
+            body = mp.read_text(encoding="utf-8")
+            if "`Verdict:`" not in body:
+                no_verdict_missing.append(mp.name)
+        rule_txt = (ROOT / ".agents" / "rules" / "zoo-team.md").read_text(encoding="utf-8-sig")
+        c.check("B4b every seat master refuses the `Verdict:` stamp, and the team rule carries "
+                "the model-switch review gate (SCC-362)",
+                not no_verdict_missing and "model-switch gate" in rule_txt,
+                f"masters missing the refusal: {no_verdict_missing}; "
+                f"rule-carries-gate={'model-switch gate' in rule_txt}")
 
         # The COMPLEMENT of the law, never an enumerated denylist (review finding: a fixed
         # list is blind to any stray dir it did not predict — the generator's own prune
@@ -347,8 +385,8 @@ def main() -> int:
         code = "\n".join(l for l in ps1.splitlines() if not l.lstrip().startswith("#"))
         table = re.findall(r"@\{\s*Slug\s*=\s*'([a-z-]+)';\s*Master\s*=\s*'(smh-team-[a-z-]+\.md)'",
                            code)
-        c.check("C1 the ps1 $seats table carries exactly the law's five slugs",
-                {s for s, _ in table} == LAW_SLUGS and len(table) == 5,
+        c.check("C1 the ps1 $seats table carries exactly the law's six slugs",
+                {s for s, _ in table} == LAW_SLUGS and len(table) == 6,
                 f"table={table}")
         bad_fm: list[str] = []
         for s, master_name in sorted(table):

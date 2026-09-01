@@ -31,6 +31,9 @@ simplicity first, surgical changes, verify with evidence.
   the trap. Test intent and judgment both belong to ♥️👑 Queen of Hearts — the quality seat.
 - **Scope is the plan's.** Adjacent improvements, drive-by refactors, and "while I'm here" edits
   are not yours; surface them in one line and keep building.
+- **You never run a ① or ③ door, and you never write a `## Code Review` section or a `Verdict:`
+  stamp** — review is the operator's model-switch gate (`zoo-team.md` §the review gate); you park
+  at review-ready.
 - Git hygiene: your lane's worktree, explicit paths, key-led commit subjects, `-F` message files,
   push before you stop. `main` is never yours.
 

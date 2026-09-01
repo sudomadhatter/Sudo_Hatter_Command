@@ -1638,18 +1638,23 @@ that themselves, so each rule states when it applies:
   `~/.codex/AGENTS.md` (a machine cache, markers preserved) for Codex's global merge. The law
   still lives only in `.agents/rules/` — everything else is a generated pointer or cache,
   refreshed by `/smh-sync-agents`.
-- **The Zoo Code mode picker is your team.** Five seats, each one a mode: 🫖🐰 March Hare — TEAM
+- **The Zoo Code mode picker is your team.** Six seats, each one a mode: 🫖🐰 March Hare — TEAM
   LEAD (your opt-in autopilot: hand it a whole ticket, it delegates to the other seats and parks
   at merge-ready for your click), ⏰🐇 White Rabbit — PM (your default daily seat: brainstorm,
-  research, tickets, plans), 😼🔨 Cheshire Cat — ENGINEER, 🦋 Caterpillar — DESIGNER, and ♥️👑 Queen
-  of Hearts — TESTER & QA (the quality seat at both ends: she writes the failing tests before a
-  build, then judges the finished work through the review and audit doors — the self-audit and
-  the code review ARE the QA and the testing — and fixes what the review finds in the same lane).
-  They replace four of Zoo's stock modes outright — same slots, your names; Zoo's stock Ask mode
-  stays in the picker for plain Q&A and holds no seat. Each seat's brain is a command you can
-  also summon directly in Zoo —
+  research, tickets, plans), 😼🔨 Cheshire Cat — ENGINEER, 🦋 Caterpillar — DESIGNER, ♥️👑 Queen
+  of Hearts — TESTER & QA (she writes the failing tests before a build, hunts vacuous greens,
+  and readies finished work for review — suites run, receipts written, drift declared), and
+  🦟🔍 The Gnat — LIBRARIAN (the read-only research seat: unbiased lookups answered with facts
+  from the project, cited to file and line; it carries no edit or terminal access at all, so a
+  question here can never turn into ungoverned work). They replace five of Zoo's stock modes
+  outright — same slots, your names; no stock mode is left in the picker. **The review is your
+  model-switch gate:** the seats carry a build to review-ready and stop; you switch the model to
+  your reviewing one and run `/cicd-code-review` or `/smh-code-review` yourself — no seat ever
+  writes a `Verdict:` stamp (the same split as ①: `/cicd-create-epic-sprint` and
+  `/cicd-write-story-tests` also run on your reviewing model). Each seat's brain is a command you
+  can also summon directly in Zoo —
   `/smh-team-march-hare`, `/smh-team-white-rabbit`, `/smh-team-cheshire-cat`, `/smh-team-caterpillar`,
-  `/smh-team-queen-of-hearts` — with the roster and hand-off order in
+  `/smh-team-queen-of-hearts`, `/smh-team-gnat` — with the roster and hand-off order in
   `.agents/rules/zoo-team.md`; `.roomodes` is generated — edit the master, run `/smh-sync-agents`.
   For the March Hare to delegate without prompting you each time, tick **Mode switching** and
   **Subtasks** in Zoo's Auto-Approve panel once per machine. The four protocol rules are
@@ -4125,7 +4130,7 @@ un-blocked, not to have your own fence removed.*
 *Publishes the toolkit to all five platforms — one door each — from the lobby's masters: generates
 the Claude/Codex launcher skill per command (a hand-authored skill always wins), mirrors opencode and
 Antigravity (thin launchers over ~11.5 KB), generates the Zoo Code doors (`.roo/commands/` launchers,
-`.roomodes` with the five Wonderland team seats, floor + team rule copies in `.roo/rules/` — all
+`.roomodes` with the six Wonderland team seats, floor + team rule copies in `.roo/rules/` — all
 tracked in git, so they travel to both machines), retires what the manifest says it wrote and the
 master no longer owns, and purges the two retired doors. Explained in
 [§19](#19-where-the-depth-lives). Called by: you, after any command change; the door-parity test

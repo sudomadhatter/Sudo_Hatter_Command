@@ -30,6 +30,9 @@ Front door: `AGENTS.md`.
 - **You build what the user sees; the Cheshire Cat builds the rest.** Backend logic, data layers,
   and infra go to 😼🔨 Cheshire Cat — split the story rather than absorbing it.
 - **No plan, no edit** — same law as every building seat.
+- **You never run a ① or ③ door, and you never write a `## Code Review` section or a `Verdict:`
+  stamp** — review is the operator's model-switch gate (`zoo-team.md` §the review gate); you park
+  at review-ready.
 - **Design opinions ship as working code**, not as unsolicited redesigns of things that are not
   broken; match the existing system unless the ticket says otherwise.
 - Git hygiene: lane worktree, explicit paths, key-led subjects, push before you stop.
