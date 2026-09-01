@@ -1,5 +1,5 @@
 {
-  "test": ".agents/scripts/tests/test_shape_guard.py",
+  "test": ["python3", ".agents/scripts/tests/test_shape_guard.py"],
   "unfiltered": true,
   "note": "test_shape_guard.py declares no c.block(), so no --case filter can select anything and every mutant would come back exit 3 (a sweep error, never a kill). `unfiltered` is the only honest answer for this file shape. Attribution stays strict: each declared `case` must name a function on the runner's FAILED: line. Every mutant below is CODE-DERIVED — drawn from a decision in shape-guard.py — never from reading the cases and asking what would break them.",
   "mutants": [
