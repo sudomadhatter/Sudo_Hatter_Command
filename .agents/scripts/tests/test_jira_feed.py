@@ -108,6 +108,29 @@ state = json.load(open(state_path, encoding="utf-8"))
 args = sys.argv[1:]
 
 
+def emit(obj):
+    r"""Print JSON the way the REAL acli does: raw UTF-8 bytes, never \uXXXX escapes.
+
+    ⛔ SCC-335 - THIS STUB USED `print(json.dumps(...))` AND THAT MADE A WHOLE BLOCK
+    VACUOUS. `json.dumps` defaults to `ensure_ascii=True`, so every non-ASCII character
+    left this stub as a pure-ASCII escape sequence. Measured against the live board
+    (`acli jira workitem view SCC-373 --json`): the real tool emits `e2 9b 94` and
+    `e2 ad 90` on the wire and NO `\u26d4` escape appears anywhere in 7,753 bytes. An
+    ASCII-only stub cannot mis-decode, so the encoding cases it fed passed on a bug that
+    was fully present - this file's own view-whitelist comment states the rule that was
+    broken here, one more time: a stub more generous than the tool it stands in for
+    cannot fail on the bug it exists to catch.
+
+    ⭐ `sys.stdout.buffer`, not `print`. This stub is a Python child, so under `LC_ALL=C`
+    its own stdout would be ASCII and it would raise or escape - while `acli` is a Go
+    binary whose runtime always writes UTF-8 regardless of locale. Writing bytes is what
+    models that, and the locale cases depend on it.
+    """
+    sys.stdout.buffer.write(
+        json.dumps(obj, ensure_ascii=False).encode("utf-8") + b"\n")
+    sys.stdout.buffer.flush()
+
+
 def save():
     json.dump(state, open(state_path, "w", encoding="utf-8"))
 
@@ -142,7 +165,15 @@ if head[:3] == ["jira", "workitem", "view"]:
         print("Error: could not read work item", file=sys.stderr)
         sys.exit(1)
     vkey = args[3] if len(args) > 3 else "TEST-7"
-    fields = {"description": adf(state.get("description")),
+    # SCC-335: `mojibake` models the CORRUPTED READ-BACK the PC actually produced - the
+    # field comes back with its characters mangled by a cp1252 round-trip rather than with
+    # lines missing. `lossy_drop` cannot express it: that mode DELETES lines, and the whole
+    # point of this one is that nothing is deleted, so a guard watching only for missing
+    # lines reports the wrong diagnosis and sends the operator to re-run over the damage.
+    _desc = state.get("description")
+    if state.get("mojibake") and _desc:
+        _desc = _desc.encode("utf-8").decode("cp1252", errors="replace")
+    fields = {"description": adf(_desc),
               "summary": state.get("summary", ""),
               "labels": list(state.get("labels", {}).get(vkey, [])),
               "status": {"name": state.get("statuses", {}).get(vkey, "To Do")},
@@ -169,7 +200,7 @@ if head[:3] == ["jira", "workitem", "view"]:
     if want:
         keep = [w.strip() for w in want.split(",")]
         fields = {k: v for k, v in fields.items() if k in keep}
-    print(json.dumps({"key": vkey, "fields": fields}))
+    emit({"key": vkey, "fields": fields})
 elif head[:3] == ["jira", "workitem", "transition"]:
     # Record EVERY call, landed or not. Two SCC-113 assertions need the count rather than
     # the end state: `start` must be idempotent (a second run makes no second call), and
@@ -186,8 +217,8 @@ elif head[:3] == ["jira", "workitem", "transition"]:
     save()
     print("Work item transitioned")
 elif head == ["jira", "workitem", "comment", "list"]:
-    print(json.dumps({"comments": [{"id": c["id"], "body": adf(c["body"])}
-                                   for c in state["comments"]]}))
+    emit({"comments": [{"id": c["id"], "body": adf(c["body"])}
+                       for c in state["comments"]]})
 elif head == ["jira", "workitem", "comment", "create"]:
     # `swallow` drops the comment but still reports success (the board accepted it and lost
     # it); `comment_fail` is the honest failure - acli exits non-zero. They are different
@@ -244,7 +275,7 @@ elif head[:3] == ["jira", "workitem", "search"]:
         rows = [r for r in rows
                 if state.get("statuses", {}).get(r.get("key"), "To Do").lower()
                 in ("to do", "to do next")]
-    print(json.dumps(rows))
+    emit(rows)
 elif head[:3] == ["jira", "workitem", "clone"]:
     # Modelled on the REAL behaviour, measured 2026-08-17 against the live board (test clone
     # SCC-199, created + inspected + deleted): the clone carries summary, description and
@@ -4423,6 +4454,163 @@ As **an admin**, I want **archive**, so that **nothing is lost.**
                     str(jira_feed.open_actions(p.read_text(encoding="utf-8"))))
             code2, _ = ra(p)
             c.check("A5 ...so the list exits 0", code2 == 0, f"exit={code2}")
+
+
+    # ══ SCC-335 · the acli seam decodes UTF-8 EXPLICITLY, whatever the machine's locale ══
+    #
+    # This one CORRUPTED LIVE BOARD DATA. Running `index-row --apply` on the Windows PC wrote
+    # the row correctly and silently mangled every non-ASCII character already in the
+    # description of SCC-318 (2026-08-27): U+26D4 became `a-tilde / rsquo / rdquo`, and
+    # U+2B50 became `a-tilde / shy / U+FFFD` - UTF-8 bytes decoded as cp1252. The second one
+    # is LOSSY: UTF-8 `E2 AD 90` has no cp1252 mapping for `0x90`, so `errors="replace"` eats
+    # the byte and the original is gone. `edit --description` REPLACES the whole field, so
+    # the mangled text is what landed.
+    #
+    # ⛔ THE CAUSE IS ONE MISSING KEYWORD. `subprocess.run(..., text=True)` with no
+    # `encoding=` decodes with `locale.getencoding()`, and `acli` (a Go binary) always writes
+    # UTF-8. On the Mac the locale IS UTF-8, so the code is correct there and NO Mac run can
+    # ever surface it - which is why it lived long enough to eat a real ticket.
+    #
+    # ⭐ AND THAT IS WHY THIS BLOCK FORCES THE LOCALE RATHER THAN SKIPPING ON POSIX. The
+    # ticket called this "Windows-only"; it is not - it is LOCALE-only, and the Mac can
+    # produce it on demand. `LC_ALL=C` + `PYTHONUTF8=0` makes `locale.getencoding()` return
+    # `US-ASCII` here (measured), so the same missing keyword mangles the same two codepoints
+    # on this machine. A test that skipped on the Mac would be a test the author could never
+    # see fail. `PYTHONIOENCODING=utf-8` stays set so the HARNESS can still read this child's
+    # stdout - the two settings are independent, and only the inner acli read is under test.
+    if c.block("SCC-335 · the acli seam decodes UTF-8 explicitly, whatever the locale"):
+        with TempDir() as tmp335:
+            repo335, acli335, state335 = build(tmp335)
+
+            # U+26D4 round-trips through cp1252 and is repairable; U+2B50 does NOT and is the
+            # one that proved unrecoverable on the live ticket. Both, or the block only pins
+            # the half that can be undone.
+            STOP, STAR = "\u26d4", "\u2b50"
+            # ⛔ the escape, never the literal: `workflow_lint`'s pre-commit gate
+            # counts a raw U+FFFD as an undecodable byte and BLOCKS the commit - it
+            # cannot tell a deliberate literal from a corrupted one, which is correct.
+            REPLACEMENT = "\ufffd"
+            INDEX335 = ("Rolling ticket. THE PARTS\n"
+                        f"  {STOP} Part A  SCC-401  a no-entry sign leads this row\n"
+                        f"  {STAR} Part B  SCC-402  a star leads this one\n"
+                        "  Part C  SCC-403  plain ASCII, the control\n"
+                        "INDEX\n"
+                        "  (empty - this ticket is fresh)\n")
+            ROW335 = "  Part D  SCC-404  the row this run appends"
+
+            def jf335(*args: str, locale_c: bool = True) -> tuple[int, str]:
+                """`jira_feed.py` under a NON-UTF-8 locale - the PC's condition, on any box.
+
+                Deliberately not `_harness.run_script`: that pins `encoding="utf-8"` AND
+                `utf8_env()` for the child, which is right for every other case here and
+                would mask exactly the defect under test.
+                """
+                env = {**os.environ, "STUB_STATE": str(state335),
+                       "PYTHONIOENCODING": "utf-8"}
+                if locale_c:
+                    env["LC_ALL"] = "C"
+                    env["LANG"] = "C"
+                    env["PYTHONUTF8"] = "0"
+                r = subprocess.run(
+                    [sys.executable, str(SCRIPTS / "jira_feed.py"), args[0],
+                     "--project", str(repo335), "--acli", str(acli335), *args[1:]],
+                    capture_output=True, text=True, errors="replace",
+                    encoding="utf-8", env=env)
+                return r.returncode, (r.stdout or "") + (r.stderr or "")
+
+            # A · the seam itself. Append one row under a C locale; every character that was
+            # already there must come back byte-identical.
+            set_state(state335, description=INDEX335, lossy_drop=None)
+            code, out = jf335("index-row", "--key", "TEST-1", "--line", ROW335, "--apply")
+            st = get_state(state335)
+            desc = st["description"]
+            c.check("SCC-335 A1 index-row still exits 0 under a C locale",
+                    code == 0, f"exit {code}: " + out.strip()[:300])
+            c.check("SCC-335 A2 U+26D4 survived the read-modify-write",
+                    STOP in desc, ascii(desc)[:400])
+            c.check("SCC-335 A3 U+2B50 survived - the LOSSY half, unrecoverable if it does not",
+                    STAR in desc, ascii(desc)[:400])
+            c.check("SCC-335 A4 no U+FFFD was introduced anywhere in the field",
+                    REPLACEMENT not in desc, ascii(desc)[:400])
+            c.check("SCC-335 A5 every pre-existing line is byte-identical",
+                    all(ln in desc.splitlines()
+                        for ln in INDEX335.splitlines() if ln.strip()
+                        and not ln.strip().startswith("(empty")),
+                    ascii(desc)[:500])
+            c.check("SCC-335 A6 ...and the new row did land (not a vacuous pass)",
+                    "SCC-404" in desc, ascii(desc)[-300:])
+
+            # B · POSITIVE CONTROL. The same call under the machine's own locale must also
+            # pass - otherwise A could be green because the fix broke the ordinary path.
+            set_state(state335, description=INDEX335, lossy_drop=None)
+            code, out = jf335("index-row", "--key", "TEST-1", "--line", ROW335, "--apply",
+                              locale_c=False)
+            desc = get_state(state335)["description"]
+            c.check("SCC-335 B1 control: the same write under the native locale is clean",
+                    code == 0 and STOP in desc and STAR in desc and REPLACEMENT not in desc,
+                    f"exit {code}: " + ascii(desc)[:400])
+
+            # C · the READ path, not just the write. `check` and `finish` read descriptions
+            # they never write back; a mis-decode there is a wrong ANSWER rather than lost
+            # data, and no read-back guard covers it.
+            set_state(state335, description=INDEX335, lossy_drop=None)
+            code, out = jf335("index-row", "--key", "TEST-1", "--line", ROW335)   # dry run
+            c.check("SCC-335 C1 a DRY RUN under a C locale reports no mojibake either",
+                    REPLACEMENT not in out, ascii(out)[:400])
+
+            # D · acceptance C - the read-back guard must tell MOJIBAKE from DELETION.
+            # `mojibake` makes the stub return the cp1252 round-trip on read-back, which is
+            # what the PC actually did. Today the guard reports those lines as MISSING and
+            # tells the operator to "restore the ticket" - so the natural next move (re-run,
+            # or hand-edit from the mangled copy) makes the corruption permanent.
+            set_state(state335, description=INDEX335, lossy_drop=None, mojibake=True)
+            code, out = jf335("index-row", "--key", "TEST-2", "--line", ROW335, "--apply",
+                              locale_c=False)
+            c.check("SCC-335 D1 a mojibake read-back is REFUSED (exit 2), never blessed",
+                    code == 2 and "usage: jira_feed.py" not in out,
+                    f"exit {code}: " + ascii(out)[:400])
+            c.check("SCC-335 D2 ...and it is diagnosed as CHANGED characters, not lost lines",
+                    "character" in out.lower() and "encoding" in out.lower(),
+                    ascii(out)[:600])
+            c.check("SCC-335 D3 ...and it names a specific codepoint that changed",
+                    "U+" in out, ascii(out)[:600])
+            c.check("SCC-335 D4 ...and it does NOT tell the operator to restore from the "
+                    "mangled copy",
+                    "restore the ticket" not in out.lower(), ascii(out)[:600])
+
+            # E · THE SOURCE CONTRACT (acceptance D). Behaviour cases cover the ONE seam they
+            # drive; this covers every seam, including ones added tomorrow. `task_preflight.py`
+            # is exempt by design - it holds no subprocess of its own and reaches the board
+            # through `jira_feed.acli_json` (its own comment: "ONE acli resolution path in
+            # this repo, not two"), so it is asserted to STAY that way rather than scanned.
+            #
+            # ⛔ AN AST WALK, NOT A GREP. A comment mentioning `text=True` inverts a grep
+            # (comment-literals-invert-source-grep-tests), and a grep cannot see which
+            # keywords sit on the SAME call.
+            import ast as _ast
+            offenders = []
+            for name in ("jira_feed.py", "label_tasks.py", "jira_ticket.py",
+                         "task_preflight.py"):
+                src = (SCRIPTS / name).read_text(encoding="utf-8")
+                for node in _ast.walk(_ast.parse(src)):
+                    if not isinstance(node, _ast.Call):
+                        continue
+                    fn = node.func
+                    dotted = (isinstance(fn, _ast.Attribute)
+                              and isinstance(fn.value, _ast.Name)
+                              and fn.value.id == "subprocess"
+                              and fn.attr in ("run", "Popen", "check_output"))
+                    if not dotted:
+                        continue
+                    kw = {k.arg for k in node.keywords}
+                    if "text" in kw and "encoding" not in kw:
+                        offenders.append(f"{name}:{node.lineno}")
+            c.check("SCC-335 E1 no acli-facing script decodes with text=True and no encoding=",
+                    not offenders, f"unpinned seams: {offenders}")
+            c.check("SCC-335 E2 ...and the scan is not vacuous - it found real calls to judge",
+                    any("subprocess.run" in (SCRIPTS / n).read_text(encoding="utf-8")
+                        for n in ("jira_feed.py", "label_tasks.py", "jira_ticket.py")),
+                    "the AST walk saw no subprocess calls at all")
 
 
     return c.finish()

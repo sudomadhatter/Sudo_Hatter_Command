@@ -221,9 +221,24 @@ def write_description(key, adf, acli=None, timeout=90):
     tmp = Path(tempfile.gettempdir()) / f"jira-ticket-{os.getpid()}.json"
     tmp.write_text(json.dumps(adf), encoding="utf-8")
     try:
+    # ⛔ `encoding="utf-8"` IS LOAD-BEARING, AND ITS ABSENCE CORRUPTED LIVE BOARD DATA (SCC-335).
+    # `text=True` with no `encoding=` decodes with `locale.getencoding()`. `acli` is a Go binary
+    # and Go always writes UTF-8, so on any box whose locale is not UTF-8 - the Windows PC, or
+    # anything under `LC_ALL=C` - every description read here comes back mojibake. Because
+    # `edit --description` REPLACES the whole field, a read-modify-write then writes the mojibake
+    # back: that is how SCC-318's own description was mangled on 2026-08-27, and `U+2B50` was
+    # LOST outright (UTF-8 `E2 AD 90`; cp1252 has no mapping for `0x90`, so `errors="replace"`
+    # ate the byte and the original is unrecoverable from the written text).
+    #
+    # ⭐ PINNING ONLY THIS SIDE IS CORRECT HERE, and that is not the general rule. `_harness.py`
+    # pins BOTH ends for PYTHON children, because a child left on the locale writes cp1252 and a
+    # parent hard-coded to UTF-8 then mis-decodes in the opposite direction. `acli` has no such
+    # failure mode - its runtime has no locale-dependent output path - so the parent is the whole
+    # fix. Do not "correct" this back by adding an env pin acli would ignore.
         r = subprocess.run([binary, "jira", "workitem", "edit", "--key", key,
                             "--description-file", str(tmp), "--yes"],
-                           capture_output=True, text=True, errors="replace", timeout=timeout)
+                           capture_output=True, text=True, errors="replace",
+                           encoding="utf-8", timeout=timeout)
     except (subprocess.TimeoutExpired, OSError) as exc:
         err(f"jira-ticket: acli could not be reached: {exc}")
         return TRANSPORT
@@ -242,7 +257,8 @@ def _keychain_token():
     """The OS credential store, Mac then PC. Never raises; a missing store is just no token."""
     if sys.platform == "darwin" and shutil.which("security"):
         r = subprocess.run(["security", "find-generic-password", "-s", KEYCHAIN_ITEM, "-w"],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace")   # SCC-335: never decode with the locale
         if r.returncode == 0 and r.stdout.strip():
             return r.stdout.strip()
     ps = shutil.which("pwsh") or shutil.which("powershell")
@@ -250,7 +266,8 @@ def _keychain_token():
         r = subprocess.run(
             [ps, "-NoProfile", "-Command",
              f"(Get-Secret -Name {KEYCHAIN_ITEM} -AsPlainText -ErrorAction SilentlyContinue)"],
-            capture_output=True, text=True)
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace")   # SCC-335: never decode with the locale
         if r.returncode == 0 and r.stdout.strip():
             return r.stdout.strip()
     return None
@@ -308,7 +325,8 @@ def auth_identity(acli=None):
         return site, email
     try:
         r = subprocess.run([acli_bin(acli), "jira", "auth", "status"],
-                           capture_output=True, text=True, errors="replace", timeout=30)
+                           capture_output=True, text=True, errors="replace",
+                           encoding="utf-8", timeout=30)   # SCC-335
         text = r.stdout + r.stderr
     except (SystemExit, subprocess.SubprocessError, OSError):
         text = ""

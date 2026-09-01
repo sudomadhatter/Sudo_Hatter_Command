@@ -170,7 +170,14 @@ Rewritten as bullets and re-parsed.
 - EDIT `.agents/scripts/jira_ticket.py` — four subprocess sites pinned → B3
 - EDIT `.agents/scripts/tests/test_jira_feed.py` — the round-trip, guard-message and byte-identity cases → B1, B2, B4, B5
 - NEW `.agents/scripts/tests/fixtures/acli_utf8_stub.py` — stub acli emitting U+26D4 and U+2B50 as UTF-8 bytes → B1, B2
-- EDIT `.agents/scripts/tests/test_command_surfaces.py` — the no-unpinned-seam guard, the close-out order case, the writer/reader agreement case → B3, C1, D3, D4
+- EDIT `.agents/scripts/tests/test_command_surfaces.py` — the close-out order case, the writer/reader agreement case → C1, D3, D4
+
+### Amendment (during build, Part B)
+
+B3's cross-script seam guard landed in `test_jira_feed.py`, not `test_command_surfaces.py`:
+`jira_feed.py` owns the canonical `acli()` and `task_preflight.py` imports it, so the seam
+contract belongs with its owner, and `test_command_surfaces.py` is about doors. Both files
+were already declared, so the declared set is unchanged — only this row's mapping moves.
 - EDIT `.agents/commands/smh-close-task-merge-tree.md` — tick pre-PR, board-only render post-merge → C1
 - EDIT `.agents/commands/smh-quick-dev.md` — Step 1.5 condition 3 accepts a stamp-only successor → D1
 - EDIT `.agents/commands/smh-plan-task.md` — Step 5 states what the stamp commit may contain → D2

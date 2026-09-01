@@ -145,8 +145,22 @@ def acli_bin(explicit: str | None) -> str:
 
 
 def acli(binary: str, args: list[str], timeout: int = 90) -> subprocess.CompletedProcess:
+    # ⛔ `encoding="utf-8"` IS LOAD-BEARING, AND ITS ABSENCE CORRUPTED LIVE BOARD DATA (SCC-335).
+    # `text=True` with no `encoding=` decodes with `locale.getencoding()`. `acli` is a Go binary
+    # and Go always writes UTF-8, so on any box whose locale is not UTF-8 - the Windows PC, or
+    # anything under `LC_ALL=C` - every description read here comes back mojibake. Because
+    # `edit --description` REPLACES the whole field, a read-modify-write then writes the mojibake
+    # back: that is how SCC-318's own description was mangled on 2026-08-27, and `U+2B50` was
+    # LOST outright (UTF-8 `E2 AD 90`; cp1252 has no mapping for `0x90`, so `errors="replace"`
+    # ate the byte and the original is unrecoverable from the written text).
+    #
+    # ⭐ PINNING ONLY THIS SIDE IS CORRECT HERE, and that is not the general rule. `_harness.py`
+    # pins BOTH ends for PYTHON children, because a child left on the locale writes cp1252 and a
+    # parent hard-coded to UTF-8 then mis-decodes in the opposite direction. `acli` has no such
+    # failure mode - its runtime has no locale-dependent output path - so the parent is the whole
+    # fix. Do not "correct" this back by adding an env pin acli would ignore.
     return subprocess.run([binary, *args], capture_output=True, text=True,
-                          errors="replace", timeout=timeout)
+                          errors="replace", encoding="utf-8", timeout=timeout)
 
 
 def acli_json(binary: str, args: list[str]) -> object | None:
