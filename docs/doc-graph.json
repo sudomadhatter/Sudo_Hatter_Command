@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 425,
+    "files": 429,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 808,
+    "edges": 818,
     "external": 37,
     "ambiguous": 178,
     "dangling": 303,
@@ -552,6 +552,11 @@
       "out": 3
     },
     {
+      "path": ".agents/commands/smh-sync-vscode.md",
+      "in": 2,
+      "out": 4
+    },
+    {
       "path": ".agents/commands/smh-team-caterpillar.md",
       "in": 0,
       "out": 3
@@ -748,7 +753,7 @@
     },
     {
       "path": ".agents/rules/constitution.md",
-      "in": 29,
+      "in": 31,
       "out": 1
     },
     {
@@ -758,7 +763,7 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 63,
+      "in": 65,
       "out": 4
     },
     {
@@ -823,7 +828,7 @@
     },
     {
       "path": ".agents/rules/sop-currency.md",
-      "in": 12,
+      "in": 14,
       "out": 8
     },
     {
@@ -1667,6 +1672,11 @@
       "out": 1
     },
     {
+      "path": ".agents/skills/smh-sync-vscode/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": ".agents/skills/smh-update-maps-indexes/SKILL.md",
       "in": 0,
       "out": 1
@@ -1947,6 +1957,11 @@
       "out": 3
     },
     {
+      "path": ".agents/workflows/smh-sync-vscode.md",
+      "in": 0,
+      "out": 4
+    },
+    {
       "path": ".agents/workflows/smh-update-maps-indexes.md",
       "in": 2,
       "out": 1
@@ -2033,7 +2048,7 @@
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "in": 29,
+      "in": 31,
       "out": 56
     },
     {
@@ -2054,7 +2069,7 @@
     {
       "path": "docs/migrations/INDEX.md",
       "in": 6,
-      "out": 23
+      "out": 24
     },
     {
       "path": "docs/migrations/antigravity_extensions/gemini-extensions-sync-guide.md",
@@ -2120,6 +2135,11 @@
       "path": "docs/migrations/terminal-global-permission.md",
       "in": 1,
       "out": 3
+    },
+    {
+      "path": "docs/migrations/vscode_sync/README.md",
+      "in": 0,
+      "out": 0
     },
     {
       "path": "docs/migrations/zoo-code-permissions-guide.md",
@@ -3342,6 +3362,26 @@
     },
     {
       "from": ".agents/commands/smh-sync-agents.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-sync-vscode.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-sync-vscode.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-sync-vscode.md",
+      "to": ".agents/rules/sop-currency.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-sync-vscode.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "kind": "ref"
     },
@@ -4731,6 +4771,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/skills/smh-sync-vscode/SKILL.md",
+      "to": ".agents/commands/smh-sync-vscode.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/skills/smh-update-maps-indexes/SKILL.md",
       "to": ".agents/commands/smh-update-maps-indexes.md",
       "kind": "ref"
@@ -5117,6 +5162,26 @@
     },
     {
       "from": ".agents/workflows/smh-sync-agents.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/workflows/smh-sync-vscode.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/workflows/smh-sync-vscode.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/workflows/smh-sync-vscode.md",
+      "to": ".agents/rules/sop-currency.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/workflows/smh-sync-vscode.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "kind": "ref"
     },
@@ -5814,6 +5879,11 @@
       "from": "docs/code-review-graph.md",
       "to": "docs/AGENTS.md",
       "kind": "ref"
+    },
+    {
+      "from": "docs/migrations/INDEX.md",
+      "to": ".agents/commands/smh-sync-vscode.md",
+      "kind": "link"
     },
     {
       "from": "docs/migrations/INDEX.md",
@@ -7876,6 +7946,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -7946,7 +8017,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -8006,7 +8078,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -8101,7 +8174,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -8110,7 +8184,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -8280,6 +8355,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -8296,7 +8372,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -8538,7 +8615,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -8766,6 +8844,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -8845,6 +8924,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -8924,6 +9004,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -9003,6 +9084,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -9082,6 +9164,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -9161,6 +9244,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -9240,6 +9324,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -9319,6 +9404,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -9398,6 +9484,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -9477,6 +9564,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -9556,6 +9644,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -9635,6 +9724,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -9714,6 +9804,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -9793,6 +9884,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -9872,6 +9964,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -9905,7 +9998,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -9914,7 +10008,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10020,6 +10115,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -10078,7 +10174,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10209,6 +10306,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -10293,7 +10391,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10417,6 +10516,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -10450,7 +10550,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10459,7 +10560,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10545,7 +10647,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10554,7 +10657,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10613,7 +10717,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10631,7 +10736,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10815,6 +10921,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -10848,7 +10955,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10920,6 +11028,7 @@
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -10962,7 +11071,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10980,7 +11090,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
