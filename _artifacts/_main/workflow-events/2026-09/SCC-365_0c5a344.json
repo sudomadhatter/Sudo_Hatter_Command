@@ -1,0 +1,43 @@
+{
+  "v": 1,
+  "task": "SCC-365",
+  "sha": "0c5a344eb874dc7a2b14f3a2867bae88244acf71",
+  "tip": "6b6942478079fffb57926b66edd80ba07fb2e7cb",
+  "trigger": "close-out",
+  "when": "2026-09-01T01:37:27-04:00",
+  "changes": [
+    ".agents/commands/cicd-close-story-merge-tree.md",
+    ".agents/commands/cicd-merge-epic-workingtrees.md",
+    ".agents/commands/cicd-update-sprint-memory.md",
+    ".agents/scripts/closeout_preflight.py",
+    ".agents/scripts/tests/test_closeout_preflight.py",
+    ".agents/scripts/tests/test_command_surfaces.py",
+    ".opencode/commands/cicd-close-story-merge-tree.md",
+    ".opencode/commands/cicd-merge-epic-workingtrees.md",
+    ".opencode/commands/cicd-update-sprint-memory.md",
+    "_artifacts/_main/2026-09-01_scc-365-closeout-verdict-evidence/gates/suite.json",
+    "_artifacts/_main/2026-09-01_scc-365-closeout-verdict-evidence/implementation_plan.md",
+    "_artifacts/_main/2026-09-01_scc-365-closeout-verdict-evidence/sweep.json",
+    "_artifacts/_main/INDEX.md",
+    "_artifacts/_memory/workflow-enforcement-scripts.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-01_scc-365-closeout-verdict-evidence/walkthrough.md",
+    "verdict": "PASS @ 0c5a344",
+    "gates": {
+      "suite": "pass@9409958"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
