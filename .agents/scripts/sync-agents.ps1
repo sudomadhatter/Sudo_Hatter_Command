@@ -57,7 +57,7 @@
 
 .PARAMETER GlobalsOnly
   Refresh only the machine-global caches (opencode + Antigravity command caches, Codex prompts, and the Codex
-  bmad-* skills mirror) from the lobby master. Skips local tool dirs. /smh-slash-command-updating delegates to this.
+  bmad-* skills mirror) from the lobby master. Skips local tool dirs. See /smh-sync-agents section -GlobalsOnly.
 
 .PARAMETER NoGlobals
   Sync local tool dirs only; skip the machine-global caches (incl. the Codex prompts + skills mirror) even on a

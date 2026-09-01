@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-367-retire-slash-cmd-updating",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-367",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "60ac25af810148c68bf413b8290a535053109c4e",
+  "warnings": 1,
+  "when": "2026-09-01T10:01:48-04:00"
+}

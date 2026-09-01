@@ -153,6 +153,11 @@ DISCUSSED_AS_RETIRED = {
     # workflows_testing_SOP.md section 6 names the old command in its rename note, which is
     # the sentence a reader needs to connect the command they remember to the one that exists.
     "cicd-parallel-check",
+    # SCC-367 retired this on 2026-09-01, folding it into `/smh-sync-agents -GlobalsOnly`;
+    # workflows_testing_SOP.md's `/smh-sync-agents` entry names it to explain what absorbed it
+    # and why the flag is now the only way to run that pass. It was a thin alias for exactly
+    # that flag, and its own body already told the operator to prefer the command that remains.
+    "smh-slash-command-updating",  # retired by SCC-367 (marker on THIS line: CS-22 B is line-scoped)
 }
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s#]+)")

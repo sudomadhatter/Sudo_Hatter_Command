@@ -4158,6 +4158,19 @@ master no longer owns, and purges the two retired doors. Explained in
 [§19](#19-where-the-depth-lives). Called by: you, after any command change; the door-parity test
 tells you when it is owed.*
 
+**⭐ It also owns the globals-only pass (SCC-367).** `/smh-slash-command-updating` was a thin alias
+that ran exactly `-GlobalsOnly` and nothing else, and its own closing note told you to prefer this
+command — which does that pass **and** the local doors. It is retired; the flag is the only way to
+run the pass now, and the command's own `-GlobalsOnly` section carries the law the alias used to
+hold: **the two machine-global caches read from DIFFERENT sources.**
+`~/.gemini/antigravity/global_workflows` comes from `.agents/workflows/` (thin launchers) because
+Antigravity **truncates** any workflow over 12,000 chars instead of rejecting it, while
+`~/.config/opencode/commands` comes from `.agents/commands/` (full bodies — opencode has no cap).
+
+⛔ **A worktree sync does NOT write the machine-global caches.** Run this **from the lobby checkout**
+after retiring or renaming a command, or the retired door lingers in the Antigravity and opencode
+menus with nothing in the repo able to see it.
+
 ```mermaid
 flowchart TD
     G{"did the / menu change?\nadded · renamed · retired"} -- "yes" --> SOP["update this page in the same commit\nor the SOP gate rejects it"]
@@ -4299,7 +4312,6 @@ flowchart TD
 | `/smh-update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. It **does not touch the memory store** — that is `/smh-memory-audit`'s job. ⚠ **If you ran it in Antigravity before 2026-08-12, re-check what it edited** — its door was then a full body that Antigravity truncated at 12,000 chars, so a run could reconcile partially, with no approval gate and no findings report. It is a normal thin launcher. |
 | `/smh-memory-audit` | Cleans up the shared memory store (`_artifacts/_memory/`) — the one document every model on every machine loads *before* doing any work, which is why letting it fill costs you on every session everywhere. It checks each memory's claim against the live repo, then shows you *retire · merge · compress · relocate* with the bytes each frees, and waits. **Nothing is deleted without your yes on that specific item**; git is the undo either way. See the box below. |
 | `/smh-sync-agents` | Publishes the toolkit to all five platforms (Claude, Codex, opencode, Antigravity, Zoo Code) — one door each. **It SHORTENS the description it writes into `.agents/workflows/`:** Antigravity builds its slash-command menu from those descriptions, and full-length ones blow the menu's context budget (workflows get dropped from the agent's list outright) — so the generator cuts each one to **135 characters** on a word boundary. ⛔ **Do not shorten them by hand in `.agents/workflows/`** — those files are generated, so the next sync overwrites you, *and* the door-parity check demands the mirror match its brain, so a hand-edit turns `main-write-gate` red (`chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable). The COMMANDS keep their full descriptions; only the menu has a budget. The one hand-owned door, `smh-adviser-board.md`, is shortened in place because it sits in the same menu. It reaches **the lobby and this machine's caches only**; projects read from the center, so there is nothing to push. It *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and purges the two retired doors. Hand-written skills are never overwritten. What a command *declares* decides where it publishes — nothing is inferred from its filename. Hooks are executed directly from `.agents/hooks/` via `run-hook.sh` (the duplicate `.claude/hooks/` mirror is retired under SCC-300), and in-session sandboxed runs catch `.claude/skills` write restrictions gracefully. |
-| `/smh-slash-command-updating` | A thin alias for the globals-only half of `/smh-sync-agents`. Plain `/smh-sync-agents` does this *and* the local dirs, so prefer it. |
 | `/smh-review` | Reviews the working diff outside the story loop — the quick read when there's no story to hang ③ on. |
 | `/smh-new-project` | Scaffold a new workspace. |
 | `webm-alpha-video` | **Skill only — not a slash command.** Green-screen video to transparent WebM; load it by intent. |
