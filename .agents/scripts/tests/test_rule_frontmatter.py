@@ -159,6 +159,41 @@ def main() -> int:
     c.check("⛔ no relative link in a GENERATED .claude/rules/ copy dangles",
             not dangling, str(dangling))
 
+
+    # ── §Nag: the ruling that a repeatedly-broken rule gets a HOOK, not a sixth copy (SCC-369) ──
+    # This lives here because the failure it prevents is a rule-shape failure: the reflex on a
+    # violated rule is to restate it somewhere new, and `command-shape.md` is the measured proof
+    # that restating does nothing (five copies, 98.9% of all detectable violations still its own).
+    shape = (RULES / "command-shape.md").read_text(encoding="utf-8")
+    c.check("command-shape.md carries the §Nag section (the SCC-369 ruling as law)",
+            "## §Nag" in shape, "no `## §Nag` heading in command-shape.md")
+
+    # A section that names no mechanism is a slogan. Each of these is a thing a reader can open.
+    for needed, why in (
+        ("shape-guard.py", "the hook that DOES the nagging"),
+        ("shape_scan.py", "the measurement — the only feedback loop Zoo gets"),
+        ("PostToolUse", "the one channel proven to reach the model"),
+    ):
+        c.check(f"§Nag names `{needed}` ({why})",
+                needed in shape, f"command-shape.md §Nag never mentions {needed}")
+
+    # ⛔ The limit that keeps a nag from becoming a gate. A nag that can block strands a headless
+    # run over a style note, and `permissionDecision: \"ask\"` auto-DENIES in auto mode.
+    c.check("⛔ §Nag states the never-block limit in the NEGATIVE (a nag is not a gate)",
+            "never block" in shape.lower() or "may never block" in shape.lower(),
+            "§Nag does not say a nag may never block — the limit that keeps it off the "
+            "critical path is the one a future editor is most likely to drop")
+
+    c.check("§Nag records that Zoo gets MEASUREMENT, not a nag (Zoo has no hook surface)",
+            "Zoo" in shape and "no hook surface" in shape,
+            "§Nag must say why Zoo is excluded, or the next reader will try to write one")
+
+    idx_text = (RULES / "INDEX.md").read_text(encoding="utf-8")
+    row = [ln for ln in idx_text.splitlines() if ln.startswith("| `command-shape.md`")]
+    c.check("rules/INDEX.md's command-shape row points at the nag",
+            bool(row) and "shape-guard.py" in row[0],
+            f"the INDEX row does not name the hook: {row[:1]}")
+
     return c.finish()
 
 

@@ -7,9 +7,9 @@
     "files": 428,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 808,
+    "edges": 810,
     "external": 40,
-    "ambiguous": 178,
+    "ambiguous": 179,
     "dangling": 301,
     "broken_paths": 70,
     "unresolved_names": 231,
@@ -743,8 +743,8 @@
     },
     {
       "path": ".agents/rules/command-shape.md",
-      "in": 12,
-      "out": 3
+      "in": 14,
+      "out": 4
     },
     {
       "path": ".agents/rules/completion-not-illusion.md",
@@ -848,13 +848,13 @@
     },
     {
       "path": ".agents/rules/zoo-team.md",
-      "in": 17,
+      "in": 18,
       "out": 6
     },
     {
       "path": ".agents/scripts/INDEX.md",
       "in": 4,
-      "out": 5
+      "out": 6
     },
     {
       "path": ".agents/scripts/tests/fixtures/avch58_your_actions.md",
@@ -2049,7 +2049,7 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 29,
-      "out": 55
+      "out": 56
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
@@ -3881,6 +3881,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/rules/command-shape.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/rules/constitution.md",
       "to": ".agents/rules/karpathy-guidelines.md",
       "kind": "ref"
@@ -4088,6 +4093,11 @@
     {
       "from": ".agents/scripts/INDEX.md",
       "to": ".agents/rules/sop-currency.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/scripts/INDEX.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -5592,6 +5602,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/rules/jira.md",
       "kind": "link"
     },
@@ -5708,11 +5723,6 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/rules/code-standards.md",
-      "kind": "ref"
-    },
-    {
-      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -8435,6 +8445,15 @@
     },
     {
       "from": ".agents/rules/code-standards.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/rules/command-shape.md",
       "target": "AGENTS.md",
       "candidates": [
         ".agents/AGENTS.md",

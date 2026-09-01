@@ -18,6 +18,7 @@ of `—` means the page recorded the ticket but not the day; the ticket's sessio
 
 | Date | Ticket | What changed for the operator |
 | --- | --- | --- |
+| 2026-09-01 | SCC-369 | A rule broken in 98.9% of detectable violations now **nags** instead of being rewritten: `shape-guard.py` cites `command-shape.md` back at the agent at the moment it breaks rules 1–3, and can never block (PostToolUse, fails open, `test_never_blocks`). Zoo gets no nag — it has no hook surface — but gets measurement: `shape_scan.py --self-test` proves the detector, then reads both stores. The ruling is law in `command-shape.md` §Nag. |
 | 2026-09-01 | SCC-369 | The command-shape guidance is now the same everywhere. `AGENTS.md` §6 and five places in this SOP still told agents to use the `-C` spelling — the pre-SCC-351 advice — while the rule they point at forbids it and Zoo denies it outright, so an agent obeying the front door manufactured its own approval prompts. Every one now says: pin the tree with `cd <abs> && …` in one line, no `; echo "EXIT=$?"` tails, never pipe a gate. The root entry files are covered by the suite from now on, so the two cannot drift apart again. |
 
 ## 2026-08
