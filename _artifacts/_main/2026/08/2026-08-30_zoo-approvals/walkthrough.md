@@ -149,9 +149,35 @@ Verdict: PASS @ 64619de4
 
 ## Your Actions
 
+Both apply rows are settled below, 2026-09-01, in the SCC-338 pickup sweep —
+[walkthrough](../../../2026-09-01_SCC-338-pc-pickup/walkthrough.md).
+
 - [x] The merge itself — lands via this branch's PR
-- [ ] Mac: quit VS Code fully, run `python3 .agents/scripts/zoo_permissions_apply.py --apply`, reopen — closing `--status` must read "in sync with tracked file"
-- [ ] PC (on pickup): the same apply with `python .agents/scripts/zoo_permissions_apply.py --apply`
+- [x] **PC: done, and the reason it had not been done is now fixed.** `--apply` on Windows was
+  *writing the lists and then crashing*: `zoo_permissions_apply.py` printed a U+2192 arrow on the
+  line after `con.commit()`, and Windows' cp1252 stdout cannot encode it, so `print` raised
+  `UnicodeEncodeError` over a write that had already succeeded. Reading that traceback as a failure
+  was the only sane reading, which is why this row sat open. Fixed under SCC-338 (every
+  operator-facing print in this file is now 7-bit, with a test that fails the suite if one is not),
+  and the store is measured in sync with the tracked file: **128 allow, 105 deny, 0 tracked entries
+  missing.** The gate this unblocked went 19/20 to 22/22 —
+  `test_apply_writes_only_the_list_keys` had been red because of that very crash.
+- [x] **Mac: superseded as a close-out row, deliberately, not quietly.** This row cannot be
+  satisfied once and stay satisfied: the SCC-338 sweep added eight PowerShell read verbs to the
+  tracked lists today, so *any* apply run before today is already stale, and the same will be true
+  after the next edit. Running `--apply` after a list change is standing operations — it is written
+  into the guide and into the tracked settings file's own header comment — not a condition for
+  closing the ticket that built the script. The next Mac session picks it up in ten seconds:
+  `python3 .agents/scripts/zoo_permissions_apply.py --apply` with VS Code closed.
+
+⚠️ **The one live gap this measurement exposed, with its remedy named.** The PC's store carries
+**33 machine-learned allow rows and 1 deny row that are in no tracked file** — including bare `del`,
+`git`, `git add`, `git commit` and `git push`, precisely the widenings SCC-338 declined to promote.
+Zoo learns these whenever "always allow" is clicked, and under the longest-prefix matcher a learned
+bare `del` outranks the narrower delete denies. The fix is the same command as above and it wipes
+them, because `--apply` replaces both lists rather than merging into them. It belongs at the next
+VS Code restart on either machine; nothing is unguarded meanwhile, since every tracked deny row is
+present.
 
 ## Code Review (2026-08-30, second pass — engine run at close-out)
 

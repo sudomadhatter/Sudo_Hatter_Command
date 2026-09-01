@@ -114,8 +114,14 @@ Part A (SCC-354) is planned and audited but not started, by the build order you 
       ⚠️ If a future run reports `banner=sent` and you see nothing, that is the Focus-mode failure,
       not a broken notifier — terminal-notifier must be in System Settings → Focus → Work → Allowed
       Notifications, and suppressed banners still appear in Notification Center history.
-- [ ] **Prove it on the PC — one command, five seconds:**
-      `python .agents\scripts\zoo_notify.py --self-test`
+- [x] **Prove it on the PC — DONE 2026-09-01**, in the SCC-338 pickup sweep
+      ([walkthrough](../../../2026-09-01_SCC-338-pc-pickup/walkthrough.md)).
+      `python .agents\scripts\zoo_notify.py --self-test` fired a real Windows toast and the
+      operator confirmed it on screen, verbatim: **"that worked"** — which is the only evidence
+      that could ever close this row, for the reason stated below. The installer's own status
+      command now reads `installed [ok]` with the Startup entry written, so the notifier survives
+      a reboot rather than only a session. This was the Windows branch's **first ever execution**;
+      it had shipped unit-tested and never run, and it worked unmodified.
       Exit 0 **with a toast on screen** is the pass; exit 1 names the channel that failed.
       This is the only row here that is genuinely yours, and only because a Windows toast that
       displays nothing is indistinguishable from a quiet one to any check running off-machine.

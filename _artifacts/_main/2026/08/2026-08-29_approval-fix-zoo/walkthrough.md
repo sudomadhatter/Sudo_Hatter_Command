@@ -74,15 +74,28 @@ lens_isolation: worktree
 
 ## Your Actions
 
-- [ ] **Roo → Zoo import, per machine:** in Antigravity, Roo settings panel → Export; in VS Code,
-  Zoo settings panel → Import; then DELETE the export file (it carries API keys — never commit it).
-- [ ] **Zoo auto-approve, per machine:** enable the master toggle + tiles once (the allowlists
-  themselves arrived via git in `.vscode/settings.json`).
-- [ ] **PC pickup:** pull `main` after the merge, run the guide's Part 3–6 (extensions, user
-  settings port, `git config --global core.hooksPath .githooks`, `python` spelling check).
-- [ ] **DECISION — AVCH ticket for the AGY halves** (promote its 49 local allow rules into tracked
-  settings; add its `zoo-code.*` keys) and the skeleton front-door mirror (`@` imports +
-  `.roo`/`.roomodes` shape): one ticket per repo, minting is your placement call.
+All four rows below closed on the PC, 2026-09-01, in the SCC-338 pickup sweep —
+[walkthrough](../../../2026-09-01_SCC-338-pc-pickup/walkthrough.md).
+
+- [x] **Roo → Zoo import, per machine:** done. Verified by reading the PC's VS Code globalState:
+  the Zoo extension carries its own `secret://…zoocodeorganization.zoo-code` rows for the session
+  token, the account identity and the API keys, which exist only after a completed import.
+- [x] **Zoo auto-approve, per machine:** done. Measured on the PC —
+  `zoo_permissions_apply.py --status` reports `autoApprovalEnabled: True`,
+  `alwaysAllowExecute: True`, and `destructiveCommandGuardEnabled: False` (the guard must stay off;
+  it bypasses the lists entirely). Both tracked lists are fully present in the store: 128 allow,
+  105 deny, 0 tracked entries missing.
+- [x] **PC pickup:** done — operator, verbatim: "SCC-346 done". Re-verified by measurement rather
+  than by the claim: `git config --global core.hooksPath` returns `.githooks` (the gates are armed
+  on this machine, which a fresh clone never is), and `python --version` returns Python 3.11.9 on
+  the `python` spelling, not `python3`.
+- [x] **DECISION — AVCH ticket for the AGY halves:** settled, minted as
+  [AVCH-114](https://sudo-command.atlassian.net/browse/AVCH-114). Filed on numbers re-measured
+  today rather than the ones in this row: **47** untracked allow rules in AGY's
+  `.claude/settings.local.json` (this row said 49), **zero** `zoo-code.*` keys in its tracked
+  `.vscode/settings.json`, and no `.roo` / `.roomodes`. The ticket also records the thing that
+  makes this non-urgent — Zoo's decision store is per-VS-Code-install, not per-workspace, so AGY
+  inherits the center's fence by accident today. It is a durability and review gap, not a hole.
 
 ## Code Review (2026-08-29)
 
