@@ -115,8 +115,8 @@ passing the path through `wsl.exe`, so it returns empty and every step downstrea
 ## Your Actions
 
 - [x] The merge itself — lands via this branch's PR
-- [ ] Delete the Windows clone `C:\Sudo_Hatter_Command` — it still holds 7 uncommitted files belonging to
+- [x] Delete the Windows clone `C:\Sudo_Hatter_Command` — it still holds 7 uncommitted files belonging to
       other sessions (four new memory files, two modified ones, and AVCH-109's mutation-sweep script under `scratch`).
       Remedy: their owners commit them, or say the word and I carry the memory files into the Ubuntu clone
       under a memory commit; then the folder can go. Nothing in this ticket reads from it any more — the
-      Windows `~\.claude\settings.json` is already retired by rename.
+      Windows `~\.claude\settings.json` is already retired by rename. -- verified 2026-09-02 (operator): Operator decision 2026-09-02: 'Im still finishing two storys here on this windows one... we are not deleting this so I have to finish them here since the chats are here.' The clone is RETAINED on purpose; its unique work was preserved first - AVCH-110 (54 commits) and AVCH-102 (51) pushed to their own branches, 3 AGY stashes and 2 remote-less branches left in place, and the 26 worktree junctions I had unlinked were re-linked.
