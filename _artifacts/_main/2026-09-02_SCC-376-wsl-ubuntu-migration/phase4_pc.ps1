@@ -6,7 +6,8 @@
 #            2. STOP - you close every VS Code window - then WSL shuts down
 #            3. Ubuntu exported as a disk image and imported as Ubuntu-zoo2
 #            4. Ubuntu-zoo2: the copied Claude login removed, then the same probe
-#            5. code2 repointed at Ubuntu-zoo2 (old launcher kept as code2.cmd.bak-scc376)
+#            5. code1 (instance 1 -> Ubuntu) written if absent; code2 repointed at Ubuntu-zoo2
+#               (old launcher kept as code2.cmd.bak-scc376)
 #            6. the report you paste back, then the by-hand gate
 # Re-runnable: every step checks before it acts. Prints no secret. Log: %TEMP%\phase4_pc.log
 $ErrorActionPreference = 'Continue'
@@ -43,7 +44,8 @@ case "$MODE" in
       echo "profile: JAVA_HOME added to ~/.profile"
     fi
     echo "-- code door (appendWindowsPath=false took the Windows shim off PATH)"
-    sudo ln -sfn "$SHIM" /usr/local/bin/code && echo "code: /usr/local/bin/code -> VS Code shim"
+    if [ -e /usr/local/bin/code ]; then echo "code: /usr/local/bin/code already present, left alone"
+    else sudo ln -sfn "$SHIM" /usr/local/bin/code && echo "code: /usr/local/bin/code -> VS Code shim"; fi
     echo "-- work extensions inside this distro (idempotent)"
     "$SHIM" --install-extension ms-python.python --install-extension anthropic.claude-code \
             --install-extension zoocodeorganization.zoo-code@3.81.100433 2>&1 | grep -i 'installed\|error\|fail'
@@ -104,7 +106,18 @@ else {
 Say "4. ${ZOO2}: strip the copied Claude login, probe"
 Linux $ZOO2 'strip'
 
-Say "5. code2 -> $ZOO2"
+Say "5. code1 -> Ubuntu, code2 -> $ZOO2"
+$CODE1 = Join-Path $env:USERPROFILE '.local\bin\code1.cmd'
+$launcher1 = @'
+@echo off
+REM code1 - instance 1: the PRIMARY VS Code, connected to the Ubuntu distro (SCC-376 Phase 4, Desktop Team).
+REM Mirror of code2.cmd so both instances open the same way from any Windows terminal.
+set "TARGET=%~1"
+if "%TARGET%"=="" set "TARGET=/home/dlohn/Sudo_Hatter_Command"
+"C:\Microsoft VS Code\bin\code.cmd" --new-window --remote wsl+Ubuntu "%TARGET%"
+'@
+if (Test-Path $CODE1) { 'code1.cmd already present, left alone' }
+else { [IO.File]::WriteAllText($CODE1, ($launcher1 -replace "`r?`n", "`r`n"), (New-Object System.Text.ASCIIEncoding)); "written: $CODE1" }
 $launcher = @'
 @echo off
 REM code2 - the second VS Code instance, pinned to the Ubuntu-zoo2 distro (SCC-376 Phase 4).
@@ -126,7 +139,7 @@ Stop-Transcript | Out-Null
 Write-Host @'
 
 BY HAND - the Phase 4 gate. Two instances, two distros; a change in one must not move the other.
-  1. Windows Terminal, Ubuntu tab:   code ~/Sudo_Hatter_Command
+  1. PowerShell:                     code1
        -> instance 1 opens; its title bar ends "[WSL: Ubuntu]"
   2. PowerShell:                     code2
        -> instance 2 opens with the green ZOO-2 badge; its title bar ends "[WSL: Ubuntu-zoo2]"

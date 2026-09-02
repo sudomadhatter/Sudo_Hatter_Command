@@ -1105,3 +1105,36 @@ keeps it honest: change the model in instance 2, **reload instance 2** (proves t
 
 Already done on the PC before the paste was written, both in Phase 4's own scope: the Remote-WSL
 extension on Windows, and the three work extensions inside Ubuntu.
+
+### Phase 4 — CLOSED, gate PASS (Desktop Team, 2026-09-02); the close-out note verified line by line
+
+The Desktop Team's note is a claim; each line was checked against both distros and the Windows side.
+
+| the note said | measured | disposition |
+|---|---|---|
+| gate PASS — different models in the two instances; instance 1 unchanged after a reload | the two **Windows** stores carry Zoo's state with different models: primary `gtp 5.6-sol` (zoo-gateway), isolated `glm 5.3-flash` (openrouter). No `state.vscdb` exists anywhere under either distro's home. The remote extension-host log shows Zoo activating **inside Ubuntu** at 16:50, 16:56 and 17:13 | **true**, and measured independently of the screen. It also corrects my Phase 4 record — below |
+| zoo2 probe: `dlohn`/1001, PATH leak 0, ext4, `JAVA_HOME` set, Claude login stripped, 6 extensions | re-measured identical. Ubuntu: 7 extensions (the team added `github.vscode-pull-request-github`; harmless), its Claude login present as intended. Both: `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, openjdk 17.0.20 from a login shell | **true** |
+| integrity: 157,047 files both, submodules 10/10, `git fsck` clean, 17G both | submodules 10/10 in both; head `28cc443f` in both; Ubuntu clean; **zoo2 has one modified file**, `docs/repo-map.md` (5 lines each way — the map recorder regenerated a cache inside zoo2; `git checkout -- docs/repo-map.md` there when that seat is idle) | true for what was re-run; the file count and fsck are the team's numbers |
+| export 20.10 GB, import rc=0, `code2` → `wsl+Ubuntu-zoo2`, old launcher kept | both vhdx are 21,587,034,112 bytes (20.10 GiB); `code2.cmd` is the paste's, `code2.cmd.bak-scc376` is the old one; the transcript ends 16:07:07 | **true** |
+| deviation 1 — the code door opened a *Windows* window | not reproducible from here. The shim's mechanism explains the symptom: it asks `Code.exe` to locate the Remote-WSL extension and, if that answer comes back empty, falls through to a plain local window with the Linux path as its argument. VS Code **updated** between my install (commit `08d4889f`, the `new_code*` files staged in `bin\` that afternoon were the pending update) and the team's run (`520fb30b`); the server in both distros is `520fb30b2d`, re-downloaded | owned by the team; `code1.cmd` is the right door and the paste's gate now says so |
+| deviation 2 — the shim broken, then restored with the versioned path | `bin\code` now carries `COMMIT=520fb30b…` with its three `cli.js` references hard-coded to `520fb30b2d\resources\app\out\cli.js` (the vendor's own file reaches the same folder through a `VERSIONFOLDER` variable); `/usr/local/bin/code` in **both** distros is a 3-line real file that `exec`s the shim | works. The updater rewrites `bin\` on the next update, so the hand patch is transient by design. The paste's `ln -sfn` would have replaced that real file with a symlink on a re-run — **now guarded**: the door is created only when nothing is there |
+| deviation 3 — `code1.cmd` added | present; mirrors `code2.cmd` without the isolated user-data-dir and without the clone-sync | **adopted**: the paste creates it when absent, and gate step 1 reads `code1` |
+
+**Correction to the Phase 4 record above.** Zoo *does* run inside the distro (the workspace extension
+host), but its `globalState` — model, profiles, approvals — is kept by the window on the **local** side,
+in that instance's user-data-dir `state.vscdb`, not in the distro: measured, not assumed (Zoo active in
+the remote host; no state file in the distro; both models in the two Windows stores). So the two Windows
+user-data-dirs are what isolate the two seats' models, exactly as before the migration; the second distro
+isolates the shell, the clone and Claude's own process. **Phase 5, corrected:** `zoo_permissions_apply.py`
+needs no distro path — but it does not cover the isolated instance's store either
+(`vscode-isolated/User/globalStorage/state.vscdb`; it lists the default profile and named profiles
+only), so Phase 5 adds that candidate and applies to **both stores**. Zoo's file-based settings (custom
+modes, its MCP list) are the part that lives on the extension-host side, in the distro — both empty
+stubs; the roster is `.roomodes` and travels with the clone.
+
+**AGY's ticket minted, as this plan said it would be when Phase 4 closed: AVCH-116** — the port of the
+lobby's landed Phase 5 shape into AGY's own `.claude/settings.json`, with the six port-checklist
+questions answered in its plan first, sequenced after Phase 5 lands on `main`, Zoo's side left with
+AVCH-114. Outline: [`tickets/AVCH-116.md`](tickets/AVCH-116.md).
+
+Phase 4 is closed. Phase 5 is next and is mine.
