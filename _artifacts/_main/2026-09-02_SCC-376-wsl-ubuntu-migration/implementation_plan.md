@@ -41,6 +41,15 @@ its own plan and its own port section.
 - EDIT `.claude/settings.json` — Phase 5 strips the `\Scripts\` / `.exe` rules → C
 - EDIT `.agents/scripts/tests/test_settings_allowlist.py` — case A3 amended in the same commit as the deletion → C
 - EDIT `docs/migrations/zoo-code-permissions-guide.md` — §6 counts follow the row change, gated by `test_guide_currency` → C
+- NEW `docs/migrations/terminal-permissions-guide.md` — Phase 7: the three split pages merged into one → F
+- DELETE `docs/migrations/terminal-global-permission.md` — absorbed by the merged guide → F
+- DELETE `docs/migrations/claude-terminal-permission.md` — absorbed by the merged guide → F
+- DELETE `docs/migrations/zoo-code-permissions-guide.md` — absorbed by the merged guide → F
+- EDIT `.agents/scripts/tests/test_zoo_permissions.py` — re-key off `## 6.`/`## 7.` onto stable markers, and repoint `GUIDE` → F
+- EDIT `.agents/scripts/zoo_permissions_apply.py` — docstring pointer follows the move → F
+- EDIT `.agents/scripts/shape_scan.py` — docstring pointer follows the move → F
+- EDIT `.roo/rules/zoo-team.md` — two pointers follow the move → F
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — line 2900 pointer; also the SOP-currency co-occurrence the script edits demand → F
 
 ## Five amendments the plan needs before Phase 1 starts
 
@@ -340,6 +349,82 @@ One checklist, run on the PC. Every line holds or the phase does not pass:
 [ ] Running as a normal user, not root (A1)
 ```
 
+### Phase 7 — One permissions guide · Team · **the last step of this ticket**
+
+Three documents currently describe one subject, and the split is a direct cause of how long this
+took to diagnose: the front door says *"each agent carries its own store and its own matcher"*, and
+then the two facts that actually explain the months of friction — that Claude's sandbox does not
+exist on Windows, and that `Bash(X:*)` means `Bash(X *)` — live in two different deep dives, neither
+of which the other links to at the point of need.
+
+| Today | Lines | What it is |
+|---|---|---|
+| `docs/migrations/terminal-global-permission.md` | 26 | the cross-agent front door: which agent, which store, which matcher, how to add an approval that sticks |
+| `docs/migrations/zoo-code-permissions-guide.md` | 352 | the Zoo deep dive — §1–§11, the extracted v3.80.1 matcher, the seeding trap, the canonical lists |
+| `docs/migrations/claude-terminal-permission.md` | 172 | the Claude deep dive — settings hierarchy, worktree asset linking, the escape guard, sandbox boundaries |
+
+**Target: one file, `docs/migrations/terminal-permissions-guide.md`**, and the three originals are
+**deleted, not stubbed** — the house rule is retire, don't accrete. Written *after* Phase 6 on
+purpose: roughly a third of the current content documents Windows machinery Phase 5 deletes (the
+backslash rows, the `X:*` spelling trap, "Windows has no sandbox"), so writing it earlier would
+document a system we are about to demolish and then rewrite it.
+
+**What it must carry that no current page does** — the knowledge this ticket and SCC-375 bought:
+
+1. **The two-fence model, first, as the organising idea.** Allow list and sandbox are independent;
+   the sandbox is the one that does the heavy lifting; which platforms have it. Every other section
+   hangs off that, because it is the fact that explains the whole history.
+2. **The failure catalogue** — each with its measurement, because a symptom the reader recognises is
+   worth more than a rule they must apply: the `X:*` spelling that matches nothing, the MSYS `/c/`
+   blind spot, the `VAR=` vocabulary gap, cp1252 crashes creating the `PYTHONIOENCODING=` habit,
+   and the seeding trap where the tracked file is not the decision store.
+3. **Laundering prefixes as a named concept**, with the three refusals on record (`if exist `,
+   `ForEach-Object`, `PYTHONIOENCODING=`) and *why* the best-looking numbers came from the change
+   that was refused.
+4. **The post-migration state** — one shape, Unix, on both machines — so the guide describes what
+   is, not the history of what was.
+
+> ### ⚠️ AUDIT FINDING F6 — this merge is a PATH MOVE, and one of the three is machine-read
+>
+> `test_guide_currency` does not merely mention the Zoo guide, it **parses** it:
+>
+> ```python
+> GUIDE = ROOT / "docs" / "migrations" / "zoo-code-permissions-guide.md"   # :26
+> sec = text.split("## 6.")[1].split("## 7.")[0]                            # :304
+> ```
+>
+> A naive merge throws `IndexError` on that split. **Do not contort the merged document to preserve
+> a section literally numbered `## 6.`** — a section-number split is brittle by construction and any
+> future reorganisation breaks it silently. Re-key the test to stable markers
+> (`<!-- zoo-lists-begin -->` / `<!-- zoo-lists-end -->`) placed around the canonical-lists table,
+> and move `GUIDE` to the new path, **in the same commit as the merge.** Fix with mechanism, not
+> wording.
+>
+> **Every referencing site, measured — all updated in that same commit:**
+> `.roo/rules/zoo-team.md:79,85` · `docs/_scc_sops_prds/workflows_testing_SOP.md:2900` ·
+> `.vscode/settings.json:29` (comment) · `.agents/scripts/zoo_permissions_apply.py:8` (docstring) ·
+> `.agents/scripts/shape_scan.py:5` (docstring) · `.agents/scripts/tests/test_zoo_permissions.py:4,26,303`
+> · `docs/doc-graph.json` (a cache — regenerate with `.agents/scripts/generate_doc_graph.py`, never
+> hand-edit). Relocated links are **mis-pathed, not dead** —
+> nothing 404s, they just quietly point at nothing.
+>
+> Touching `.agents/scripts/*.py` and `.agents/rules/` arms the SOP currency gate, so
+> `workflows_testing_SOP.md` is staged in the same commit — which it needs anyway for its line 2900.
+> The gate and the work agree here; no `[sop-ok]` opt-out is warranted.
+
+**Gate:**
+
+```bash
+python3 .agents/scripts/tests/test_zoo_permissions.py      # green against the NEW path + markers
+python3 .agents/scripts/check_links.py                     # no reference to any of the three old paths
+python3 .agents/scripts/tests/run_all.py                   # bare, from inside WSL
+```
+
+Plus one read-through check that is not machine-checkable and is stated so it is not skipped: a
+person who was not in these sessions can find, from the contents alone, *why Claude asked for
+approval on a command they thought was allowed* — that is the question the three split documents
+could not answer, and it is the whole reason this phase exists.
+
 ---
 
 ## Proposed subtasks — NOT minted
@@ -372,6 +457,10 @@ Lettered so the Declared Change Set can point at a row. Each names something obs
 - **D** — `code` and `code2` are isolated: a model change in one does not move the other.
 - **E** — this plan, the ticket outline and the INDEX row exist in the tree, and the ticket's
   `## Plan` checklist matches this plan's phases one for one.
+- **F** — one guide at `docs/migrations/terminal-permissions-guide.md`; the three originals are gone
+  from the tree; `check_links.py` reports no reference to any of the three old paths;
+  `test_zoo_permissions.py` is green against the new path and the new markers; and the guide opens
+  with the two-fence model rather than with any single agent's store.
 
 ## Self-Audit (2026-09-02)
 
@@ -409,8 +498,16 @@ read:        .agents/rules/port-checklist.md:25-39
              origin/chore/SCC-323-hookspath-immunisation -> arm_hooks_path.py, Arm-HooksPath.ps1
              risk_seam: not run — the command centre is markdown and returns `unclassified`
              permanently and correctly (SCC-289); judgement taken from the diff instead
-verdict:     findings below — F2, F5
+             RE-RUN after Phase 7 was added: path-move sweep for the three merged guides —
+             10 referencing sites across .roo/, docs/, .vscode/ and .agents/scripts/,
+             one of which PARSES the document rather than linking it
+verdict:     findings below — F2, F5, F6
 ```
+
+> **Amendment note.** Phase 7 (merging the three permission guides) was added by the operator
+> **after** the first audit pass. Rather than let it ride unaudited, Lens 2's path-move row was
+> re-run against it — that is what produced **F6**. Lens 1 and Lens 3 were re-read against the new
+> phase and produced nothing further. No fourth lens was added; the amendment rule forbids it.
 
 ```
 lens:        3 Pre-Mortem (bounded — attaches narrative, originates nothing)
@@ -429,6 +526,7 @@ verdict:     three narratives attached to F2, F3, F4; nothing unattached, nothin
 | `.vscode/settings.json` — rows `['dirname ', 'dir']` | `dirname ` | **F4.** Zoo matches by starts-with, so a prefix sweep on `dir` deletes `dirname `, a POSIX command that must survive. Same defect class SCC-375 closed. **Fixed:** exact-match deletion, `dirname ` named as excluded. | high |
 | the plan file itself + `.agents/rules/artifacts-always-first.md:181` | *"an absent block is the reviewer's important finding"* | **F1.** The plan shipped with no `## Declared Change Set` block and no artifact frontmatter, so the review drift check and this audit's own Scope Ledger had nothing to parse and the level defaulted to the heavier one. **Fixed:** both added. | medium |
 | `origin/chore/SCC-323-hookspath-immunisation` → `docs/migrations/scripts/arm_hooks_path.py` | the file exists on that branch, unmerged | **F5.** Phase 2 hand-types the `core.hooksPath` command that SCC-323 is shipping an installer for. **Fixed:** Phase 2 now defers to the installer if SCC-323 lands first, and flags `Arm-HooksPath.ps1` as post-migration dead weight to that lane rather than deleting it from here. | medium |
+| `.agents/scripts/tests/test_zoo_permissions.py:26,304` | `GUIDE = ROOT / "docs" / "migrations" / "zoo-code-permissions-guide.md"` and `sec = text.split("## 6.")[1].split("## 7.")[0]` | **F6.** Phase 7's merge is a path move of a **machine-read** document: the test hardcodes the path and splits on literal section numbers, so a naive merge throws `IndexError` and 10 referencing sites go quietly mis-pathed. **Fixed:** Phase 7 re-keys the test onto stable markers instead of section numbers, and names every referencing site with its line for the same commit. | high |
 
 ### Pre-Mortem narratives (attached, never originating)
 
@@ -440,6 +538,10 @@ verdict:     three narratives attached to F2, F3, F4; nothing unattached, nothin
   chains rather than typed directly, so it prompts intermittently and reads as flakiness.
 - **F2, the fresh-clone one.** AGY's settings get edited from a lobby lane. The AVCH board has no
   row for it, and the next AGY close-out preflight finds a diff no ticket accounts for.
+- **F6, the silent one.** The merge lands, the suite is red on an `IndexError` nobody expected from
+  a documentation change, and the obvious fix — re-adding a `## 6.` heading to satisfy the split —
+  restores green while leaving the same brittleness in place for the next person to reorganise the
+  page. The failure is not the red; it is the plausible wrong fix waiting behind it.
 
 ### Observations (uncounted, non-blocking)
 
