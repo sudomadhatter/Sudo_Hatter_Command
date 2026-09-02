@@ -79,7 +79,36 @@
     "env -u GITHUB_TOKEN git push origin --delete \"chore/",
     "env -u GITHUB_TOKEN git push origin --delete \"claude/",
     "env -u GITHUB_TOKEN git push origin --delete \"epic/",
-    "git push origin HEAD:epic/", "env -u GITHUB_TOKEN git push origin HEAD:epic/"
+    "git push origin HEAD:epic/", "env -u GITHUB_TOKEN git push origin HEAD:epic/",
+    // SCC-373 — the Windows toolchain half, from an audit of 42 approval stops. The headline
+    // fix is the BACKSLASH twin: `backend\.venv\Scripts\` never matched the forward-slash row
+    // above it, so every PC venv call stopped. Same reason `.venv\…\ruff.exe` /
+    // `python.exe -m pytest` carry both spellings. Deliberately NOT promoted from that audit —
+    // `if exist ` and `ForEach-Object`, which are LAUNDERING prefixes: the matcher splits on
+    // && || ; | & and newlines ONLY, so a cmd conditional (`if exist x rmdir /s /q <repo>`)
+    // and a PowerShell scriptblock (`… | ForEach-Object { Remove-Item -Recurse $_ }`) each
+    // carry their destructive verb INSIDE one unsplit piece, where no starts-with deny row can
+    // ever see it. Measured against the extracted matcher: both flip ask_user -> auto_approve
+    // on payloads the deny list otherwise catches. No deny row can fix that (deny is
+    // starts-with too), so the row comes out — the same call already made for `find ` above
+    // (`find -exec rm`) and for bare `del`. Both shapes are banned by command-shape.md §Zoo
+    // anyway ("no shell loops or multi-line if blocks — iterate in python, or repeat the call"),
+    // so the stops they caused are a signal to reshape the command, not to widen the fence.
+    "set \"JAVA_HOME=",
+    "java -version",
+    "where ",
+    "type ",
+    "del scratch\\",
+    "Write-Host",
+    "Get-Item",
+    "npm ci ",
+    "node backend/tests/",
+    "firebase\\tests\\node_modules\\.bin\\firebase emulators:exec",
+    "backend\\.venv\\Scripts\\",
+    ".venv/Scripts/python.exe -m pytest",
+    ".venv\\Scripts\\python.exe -m pytest",
+    ".venv\\Scripts\\ruff.exe check",
+    ".venv_stale\\Scripts\\python.exe scratch\\"
   ],
   "zoo-code.deniedCommands": [
     "rm -rf", "rm -r", "sudo", "chmod -R 777", "chown -R", "dd if=", "mkfs", "del /s", "rmdir /s",
