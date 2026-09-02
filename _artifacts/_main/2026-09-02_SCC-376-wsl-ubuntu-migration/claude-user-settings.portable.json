@@ -139,7 +139,8 @@
       "gh *",
       "python3 *jira_feed.py *",
       "python3 *task_preflight.py *"
-    ]
+    ],
+    "allowUnsandboxedCommands": false
   },
   "theme": "dark",
   "editorMode": "normal",

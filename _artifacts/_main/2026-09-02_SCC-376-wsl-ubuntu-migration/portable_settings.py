@@ -65,6 +65,15 @@ for i, r in enumerate(allow):
         dev.append(f"allow rule (dead X/:* spelling, SCC-375): {r}  ->  {fixed}")
         allow[i] = fixed
 
+# 5 · close the unsandboxed-retry escape hatch (vendor doc, "Strict sandbox mode"). Measured on
+#     2026-09-02: a write OUTSIDE allowWrite was refused by bwrap, then retried by Claude with
+#     dangerouslyDisableSandbox and auto-approved under defaultMode=auto — the file landed. With this
+#     false, the parameter is ignored; anything that must run outside stays in excludedCommands.
+sb = d.setdefault("sandbox", {})
+if sb.get("allowUnsandboxedCommands") is not False:
+    dev.append(f"sandbox.allowUnsandboxedCommands: {sb.get('allowUnsandboxedCommands', '(unset = true)')}  ->  false  (escape hatch closed)")
+    sb["allowUnsandboxedCommands"] = False
+
 dst.write_text(json.dumps(d, indent=2) + "\n", encoding="utf-8")
 
 print("== deviations from the Mac file (this IS the Phase 6 list) ==")
