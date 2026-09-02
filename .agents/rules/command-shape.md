@@ -36,6 +36,27 @@ when the extracted matcher proved piece-splitting; the doors were rewritten in S
 
 ### Absolute fills, and the lobby pin (close-out review, SCC-351)
 
+4. **Crossing into a WSL distro: send a FILE, never an inline command.** From a Windows shell,
+   `wsl.exe -d <distro> -- bash -c "cd ~/repo && git status"` is not the shell you wrote it for — the
+   Windows side re-parses the string before the distro ever sees it, and the `cd` is the first thing to
+   go silently wrong. When it does, the command runs in wsl.exe's start directory, which is the Windows
+   cwd mapped to `/mnt/c/…`, so it reads the **Windows clone** and answers plausibly about the wrong
+   tree. Measured three times in SCC-376: a probe reported `branch=main`, a head from days earlier, and
+   `dirty=3840` (the Windows clone read from Linux shows every file modified, because `core.filemode`
+   disagrees) — while the Linux clone was clean on its lane. Acting on that would have "recovered" a
+   repository that was already correct. **The shape:**
+
+   ```bash
+   wsl.exe -d Ubuntu -u <user> -- bash -c "tr -d '\r' < '/mnt/c/…/probe.sh' > /tmp/probe.sh && bash /tmp/probe.sh"
+   ```
+
+   The script itself uses **absolute** `/home/<user>/…` paths — never `~`, never a relative path, never
+   the inherited cwd — and the `tr` strips the CRLF a Windows-side editor leaves behind (`bash` reports
+   a stripped `\r` as *"No such file or directory"* about a file that exists). Same family as
+   `bash-cwd-resets-to-main-checkout` and `grep-reads-the-branch-you-are-parked-on`: the tool ran
+   somewhere other than where the command text says, and every number it returned was true about the
+   wrong place.
+
 Two consequences of `cd <path> && …` that `git -C` never had, both measured in this lane's review:
 
 - **Fills are ABSOLUTE.** A `cd` moves the shell, so the SECOND `cd <same-relative-path> && …`

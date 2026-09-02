@@ -358,6 +358,26 @@ def test_hook_is_indexed():
     assert "shape-guard.py" in idx, ".agents/hooks/INDEX.md has no row for shape-guard.py"
 
 
+
+def test_law_4_wsl_file_not_inline():
+    """SCC-376 · the front door must carry law 4, and carry the REMEDY, not just the ban.
+
+    Three probes in that lane answered confidently about the Windows clone because an inline
+    `wsl.exe … bash -c "cd ~/repo && …"` had run in wsl.exe's start directory. A rule that only said
+    "do not do that" would not have helped - the fix is a shape (a file, absolute paths, CRLF stripped),
+    so the shape is what this pins. Deleting the section leaves the law silent, which is how a law is
+    actually lost (the SCC-369 affirmative-half lesson)."""
+    text = (ROOT / ".agents" / "rules" / "command-shape.md").read_text(encoding="utf-8")
+    for phrase, why in (
+        ("send a FILE, never an inline command", "the law itself"),
+        ("/mnt/c/", "the Windows cwd the command silently lands in"),
+        ("tr -d", "the CRLF strip, without which bash reports a file that exists as missing"),
+        ("absolute", "the path rule that makes the file immune to the inherited cwd"),
+    ):
+        assert phrase.lower() in text.lower(), (
+            f"command-shape.md law 4 no longer states {phrase!r} ({why})")
+
+
 if __name__ == "__main__":
     import traceback
     _fns = [(n, f) for n, f in sorted(globals().items())
