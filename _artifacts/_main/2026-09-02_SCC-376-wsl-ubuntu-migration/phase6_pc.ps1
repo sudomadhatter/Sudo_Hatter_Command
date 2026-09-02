@@ -122,11 +122,30 @@ else    { $nStores = 0; $inSync = 0; $togglesOn = 0; 'VERDICT line not found - t
 
 # ---- 3. retire the Windows user file -------------------------------------------------------------------
 Say '3. retire the Windows ~\.claude\settings.json'
+# The first cut printed "renamed ->" whether or not the rename happened: with
+# $ErrorActionPreference = 'Continue' a failed Rename-Item writes its error and the string on the
+# next line still runs. A retire step that reports success over a file it did not move is the one
+# thing this step must never do, so the result is now checked and the file is CLASSIFIED - a
+# Windows Claude session rewrites a small preferences file here, and that is not a fence.
 $W = Join-Path $env:USERPROFILE '.claude\settings.json'
 $WR = "$W.retired-scc376"
-if (Test-Path $W) { Rename-Item $W $WR; "renamed -> $WR (rename it back to undo)" }
-elseif (Test-Path $WR) { "already retired: $WR" }
-else { "no Windows user file at $W - nothing to retire" }
+if (-not (Test-Path $W)) {
+  if (Test-Path $WR) { "already retired: $WR" } else { "no Windows user file at $W - nothing to retire" }
+} else {
+  $keys = @()
+  try { $keys = ((Get-Content $W -Raw) | ConvertFrom-Json).PSObject.Properties.Name } catch { $keys = @('<unparseable>') }
+  $fencing = @($keys | Where-Object { $_ -in 'permissions', 'hooks', 'sandbox' })
+  if (Test-Path $WR) {
+    if ($fencing.Count -gt 0) {
+      "STOP: $W carries $($fencing -join ', ') and $WR already exists. NOT touched - hand this line to the agent."
+    } else {
+      "left in place: $W is $((Get-Item $W).Length) bytes, keys [$($keys -join ', ')] - preferences only, it fences nothing. Already retired: $WR"
+    }
+  } else {
+    Rename-Item $W $WR -ErrorAction SilentlyContinue
+    if (Test-Path $WR) { "renamed -> $WR (rename it back to undo)" } else { "RENAME FAILED - $W is untouched" }
+  }
+}
 
 # ---- 4. the Windows clone: report, never delete -----------------------------------------------------------
 Say '4. the Windows clone C:\Sudo_Hatter_Command (report only)'

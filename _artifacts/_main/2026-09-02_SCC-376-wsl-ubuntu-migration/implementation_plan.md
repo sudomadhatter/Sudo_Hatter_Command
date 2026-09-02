@@ -1290,3 +1290,37 @@ I could not run the toggle write from here: this session **is** VS Code, and the
 the guard working. It needs one re-run of the paste with the windows closed.
 
 Phase 6 is not signed off. It is one paste away.
+
+### Phase 6 — PASS (Desktop Team, 2026-09-02, second run); all eight lines hold, and the counts are computed
+
+The corrected paste was run from `7f6b4171` with every VS Code window closed, exactly as issued, no local
+patches. Verified against the stores from here afterwards.
+
+| line | evidence in the transcript | re-measured |
+|---|---|---|
+| [1] sandbox ACTIVE | `sandbox.enabled=True` in both distros; containment demonstrated at the Phase 3 gate | — (recorded gate) |
+| [2] zero Windows binaries | `windows binaries resolving: 0`, `PATH leak=0`, both distros | yes |
+| [3] repo on the Linux disk | `clone fs=ext2/ext3` (how `stat` names the ext4 family), both | yes |
+| [4] suites green from WSL, bare | `run_all rc=0 :: 71/71 files passed` | yes, same numbers here |
+| [5] both seats isolated **and fenced** | `applied … [master toggles turned ON: autoApprovalEnabled, alwaysAllowExecute]` on the isolated store, then `VERDICT stores=2 in-sync=2 toggles-on=2` | yes — both stores read lists in sync, toggles ON |
+| [6] no Windows rows in either list | `zoo 124 rows, 0 Windows-shell rows | claude 141 rows, 0 Windows-shell rows, 0 git -C rows` | yes |
+| [7] user file == the committed portable file | `sha e1a13e0d126f0478` in both distros; the Mac printed the same at 18:22 | yes |
+| [8] normal user | `user=dlohn uid=1001`, both | yes |
+
+`PHASE 6: all eight lines hold.` The second seat's fence switch went on during this run — the first run
+had certified it while it was off — and the count that says so is now computed from the stores, not
+scraped from printed lines.
+
+**One defect in the paste, found by the team in this run and fixed.** Step 3 printed
+`renamed -> …retired-scc376` while PowerShell's own error above it said the rename had failed: with
+`$ErrorActionPreference = 'Continue'`, a failed `Rename-Item` writes its error and the success string on
+the next line still runs. The file at `~\.claude\settings.json` is the 71-byte preferences file a
+Windows Claude session rewrote after the first run (`agentPushNotifEnabled`, `inputNeededNotifEnabled` —
+no permissions, no hooks, no sandbox). Step 3 now **checks the result and classifies the file**: it
+reports "left in place … preferences only, it fences nothing" when the retired copy already exists and
+the current file carries no fencing key, prints `RENAME FAILED` if a rename it attempted did not happen,
+and **stops** if a file carrying `permissions`/`hooks`/`sandbox` ever reappears beside an existing
+retired copy. A retire step that reports success over a file it did not move is the one thing it must
+never do.
+
+**Phase 6 is signed off.** Phase 7 is the last step of this ticket and is mine.
