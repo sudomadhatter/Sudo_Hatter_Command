@@ -1,3 +1,11 @@
+---
+IsArtifact: true
+ArtifactMetadata:
+  title: SCC-376 — the PC moves to WSL2 / Ubuntu 24.04
+  type: implementation_plan
+  date: 2026-09-02
+---
+
 # SCC-376 — The PC moves to WSL2 / Ubuntu 24.04
 
 Ticket: [SCC-376](https://sudo-command.atlassian.net/browse/SCC-376) · parent [SCC-48 Machine
@@ -19,6 +27,20 @@ break if the plan is followed literally, each with the amendment that fixes it �
 probing the live distro and reading the gate suites on 2026-09-02, not by reasoning about them.
 
 ---
+
+## Declared Change Set
+
+Planning lane — the only phase that produces a lobby repo diff is Phase 5. AGY is **out of scope
+here on purpose** (see `⚠️ AUDIT FINDING F2` in Phase 5); it ships under its own AVCH ticket with
+its own plan and its own port section.
+
+- NEW `_artifacts/_main/2026-09-02_SCC-376-wsl-ubuntu-migration/implementation_plan.md` — this plan → E
+- NEW `_artifacts/_main/2026-09-02_SCC-376-wsl-ubuntu-migration/tickets/SCC-376.md` — the ticket's fast-read outline → E
+- EDIT `_artifacts/_main/INDEX.md` — the session row `check_maps` F2 requires → E
+- EDIT `.vscode/settings.json` — Phase 5 strips the Windows-shell Zoo rows and adds the Unix twins → C
+- EDIT `.claude/settings.json` — Phase 5 strips the `\Scripts\` / `.exe` rules → C
+- EDIT `.agents/scripts/tests/test_settings_allowlist.py` — case A3 amended in the same commit as the deletion → C
+- EDIT `docs/migrations/zoo-code-permissions-guide.md` — §6 counts follow the row change, gated by `test_guide_currency` → C
 
 ## Five amendments the plan needs before Phase 1 starts
 
@@ -201,6 +223,15 @@ a Linux venv — `.venv/Scripts/` ceases to exist, `.venv/bin/` is the only form
 per-machine (`git config --global core.hooksPath .githooks` — hooks are local config and a fresh clone
 has none).
 
+> ### ⚠️ AUDIT FINDING F5 — landing-order dependency on SCC-323
+>
+> `origin/chore/SCC-323-hookspath-immunisation` is unmerged and ships
+> `docs/migrations/scripts/arm_hooks_path.py` plus `Arm-HooksPath.ps1` — the installer for exactly
+> the hand-typed `git config` line above. **If SCC-323 lands first, Phase 2 calls the installer
+> rather than retyping the command**; a script plus an instruction is not delivery.
+> Note also that `Arm-HooksPath.ps1` is PowerShell and becomes dead weight on the PC once this
+> migration completes — flag it to that lane rather than deleting it from here.
+
 **Gate — run bare, read the exit code:**
 
 ```bash
@@ -239,23 +270,58 @@ at it.
 
 ### Phase 5 — Cleanup to match the Mac · Team · ONE commit
 
-Everything Windows-shaped comes out, in a single revertable commit:
+Everything Windows-shaped comes out, in a single revertable commit.
 
-- `.vscode/settings.json` Zoo allow list — every Windows-shell row: `dir`, `type `, `findstr`,
-  `where `, `del scratch\`, `set "JAVA_HOME=`, `Write-Host`, `Get-Item`, `Get-ChildItem`, `Select-*`,
-  `Test-Path`, `Write-Output`, `more`, and every `backend\.venv\Scripts\` / `.venv\Scripts\` /
-  `.venv_stale\` backslash row.
+> ### ⚠️ AUDIT FINDING F3 — this pass DELETES ONLY, and three capabilities lose their allow row
+>
+> Measured against `.vscode/settings.json`: the **only** rows covering pytest, ruff and the firebase
+> emulator are Windows-shaped, and no Unix twin exists for any of them.
+>
+> ```
+> pytest via venv     unix twin present: NONE
+> ruff via venv       unix twin present: NONE
+> firebase emulator   unix twin present: NONE
+> backend venv        unix twin present: ['backend/.venv/bin/']   ← the only one that survives
+> ```
+>
+> A delete-only Phase 5 therefore leaves Zoo prompting for the **entire test toolchain** — the exact
+> problem this migration exists to remove, reintroduced by the cleanup step. **Add these three rows
+> in the same commit as the deletions:**
+> `.venv/bin/python -m pytest` · `.venv/bin/ruff check` ·
+> `firebase/tests/node_modules/.bin/firebase emulators:exec`
+
+> ### ⚠️ AUDIT FINDING F4 — `dir` is a prefix, and it takes `dirname ` with it
+>
+> Zoo matches by lowercase starts-with. `.vscode/settings.json` carries both `'dirname '` and
+> `'dir'`, so a sweep on `dir` deletes **`dirname `** — a POSIX command that must survive the
+> migration and which the house scripts use. Delete the row `'dir'` by **exact match**, never by
+> prefix. This is the same defect class SCC-375 closed: a prefix matching more than it names.
+
+- `.vscode/settings.json` Zoo allow list — remove by **exact match**: `dir`, `type `, `findstr`,
+  `where `, `del scratch\`, `set "JAVA_HOME=`, `Write-Host`, `Get-Item`, `Get-ChildItem`,
+  `Select-Object`, `Select-String`, `Test-Path`, `Write-Output`, `more`, and the 6 backslash rows.
+  Measured: **20 rows out of 143, leaving 123** — then **+3 Unix twins per F3**, landing at 126.
+  ⛔ `dirname ` is NOT in that set (F4).
 - `.claude/settings.json` — the same pass: any `\Scripts\`, `.exe`, or Windows-only rule.
 - **A3's amendment lands in this same commit** — the interpreter-twin case is rewritten as the bare
   `python` rules are deleted, not afterwards.
-- AGY's allow list — **this is a separate repo and needs its own AVCH ticket** (cross-repo work takes
-  a ticket per repo; a lobby ticket editing files inside AGY produces a commit no AVCH ticket accounts
-  for). Mint it when Phase 4 closes, not now.
 - Retire the Windows `~/.claude/settings.json` and the Windows repo clone.
 - `zoo_permissions_apply.py --apply` on **both** distros, VS Code fully closed (SQLite single-writer).
 - `test_allow_scratchpad` case E — the uid case that could never pass on Windows — passes natively.
-  The SCC-375 open item closes here.
+  The SCC-375 open item closes here. (No edit declared: if it needs one, that is a new finding.)
 - Guide §6 counts updated in the same commit (`test_guide_currency` gates this).
+
+> ### ⚠️ AUDIT FINDING F2 — AGY is OUT OF SCOPE for this ticket
+>
+> The first draft of this plan listed AGY's `.claude/settings.json` in this phase. That file exists
+> in two repos and the copies **differ** — `git diff --no-index` returns `1`, 111 insertions /
+> 267 deletions — which fires `.agents/rules/port-checklist.md:29` and makes all six port checks due
+> **in this plan**, or the audit is a NO-GO.
+>
+> It is scoped out rather than answered here, because the honest boundary is the repo: cross-repo
+> work takes a ticket per repo, and a lobby ticket editing files inside AGY produces a commit no
+> AVCH ticket accounts for. **AGY ships under its own AVCH ticket, with its own plan carrying its
+> own port section.** Mint it when Phase 4 closes.
 
 **Gate:** `python3 .agents/scripts/tests/run_all.py` green, run bare, from inside WSL.
 
@@ -294,7 +360,116 @@ rather than becoming board noise.
 
 ## Acceptance
 
-- [ ] The five amendments are accepted, amended, or overruled — each by name.
-- [ ] Phase gates are executable as written by someone who was not in this session.
-- [ ] The `acli`-on-Linux question (A5) is answered before Phase 2 begins.
-- [ ] Every phase names one owner.
+Lettered so the Declared Change Set can point at a row. Each names something observable.
+
+- **A** — Ubuntu runs as a non-root user: `whoami` is `dlohn`, `id -u` is non-zero, `$HOME` is
+  `/home/dlohn`, and `echo $PATH | tr ':' '\n' | grep -c '^/mnt/'` returns `0`.
+- **B** — the sandbox is demonstrably containing: a command that writes outside the repo is refused,
+  with the refusal pasted as evidence. Not inferred from the config.
+- **C** — after Phase 5, `run_all.py` is green **run bare from inside WSL**, and Zoo's allow list
+  carries a Unix row for pytest, ruff and the firebase emulator (F3) while still carrying
+  `dirname ` (F4).
+- **D** — `code` and `code2` are isolated: a model change in one does not move the other.
+- **E** — this plan, the ticket outline and the INDEX row exist in the tree, and the ticket's
+  `## Plan` checklist matches this plan's phases one for one.
+
+## Self-Audit (2026-09-02)
+
+Level: **LEDGER+BLAST** — the plan's change set touches a rule-adjacent gate suite, a door surface
+(`.vscode` / `.claude` settings both platforms read), and a file that exists in more than one repo,
+so the heavier level is mandatory rather than chosen. Mode: **PRE-WORK**.
+
+```
+lens:        1 Repo Reality + Scope Ledger
+checks_run:  every path/script/rule the plan names exists on disk
+             the `## Declared Change Set` block parses
+             plan-named Zoo rows actually exist in .vscode/settings.json
+             does a Unix twin survive each Phase 5 deletion
+             ticket acceptance precondition (>=2 rows, each with an observable)
+             lane fit — does the change set touch a deployable product path
+read:        .agents/rules/artifacts-always-first.md:181-188
+             .agents/scripts/tests/test_allow_readonly_chain.py:418-441
+             .agents/scripts/tests/test_settings_allowlist.py:55-84
+             .vscode/settings.json (143 allow rows), .claude/settings.json (161 allow rules)
+             .agents/scripts/{run_all,zoo_permissions_apply,declared_change_set,risk_seam}.py — all EXIST
+             .agents/scripts/tests/test_zoo_permissions.py (owns test_guide_currency)
+verdict:     findings below — F1, F3, F4
+```
+
+```
+lens:        2 Parity + Blast
+checks_run:  cross-repo copy — git diff --no-index on the two .claude/settings.json
+             sibling worktrees — git fetch origin main, git worktree list, unmerged branches
+             a gate/hook surface — does the plan ship it ARMED
+             SOP / usage surface — both halves in the same commit
+             twins — is there a cicd-*/smh-* sibling of anything the plan changes
+read:        .agents/rules/port-checklist.md:25-39
+             git worktree list -> ONE tree (this one); no sibling lane holds these paths
+             git branch -a --no-merged origin/main -> 8 branches, one relevant
+             origin/chore/SCC-323-hookspath-immunisation -> arm_hooks_path.py, Arm-HooksPath.ps1
+             risk_seam: not run — the command centre is markdown and returns `unclassified`
+             permanently and correctly (SCC-289); judgement taken from the diff instead
+verdict:     findings below — F2, F5
+```
+
+```
+lens:        3 Pre-Mortem (bounded — attaches narrative, originates nothing)
+checks_run:  the silent failure, the other-machine failure, the fresh-clone failure,
+             the sibling-lands-first failure — each attached to an anchored finding above
+read:        no new files; operates on lens 1 and 2 output only
+verdict:     three narratives attached to F2, F3, F4; nothing unattached, nothing discarded
+```
+
+### Findings
+
+| anchor | literal text read | consequence | severity |
+|---|---|---|---|
+| `.agents/rules/port-checklist.md:29` + `git diff --no-index` → `differ=1`, 111 ins / 267 del | *"the plan's SCOPE names a file that **exists in more than one repo**"* | **F2 · NO-GO ground.** Phase 5 named AGY's `.claude/settings.json`, whose copies differ, so all six port checks were due in this plan and none were answered. **Fixed:** AGY scoped out to its own AVCH ticket. | blocker |
+| `.vscode/settings.json` — measured `unix twin present: NONE` for pytest, ruff, firebase emulator | `'.venv\Scripts\python.exe -m pytest'`, `'.venv\Scripts\ruff.exe check'`, `'firebase\tests\node_modules\.bin\firebase emulators:exec'` | **F3.** Phase 5 was delete-only, so the whole test toolchain loses its allow row and Zoo starts prompting for it — the problem this migration exists to remove, reintroduced by its own cleanup step. **Fixed:** three Unix twins added to the same commit. | high |
+| `.vscode/settings.json` — rows `['dirname ', 'dir']` | `dirname ` | **F4.** Zoo matches by starts-with, so a prefix sweep on `dir` deletes `dirname `, a POSIX command that must survive. Same defect class SCC-375 closed. **Fixed:** exact-match deletion, `dirname ` named as excluded. | high |
+| the plan file itself + `.agents/rules/artifacts-always-first.md:181` | *"an absent block is the reviewer's important finding"* | **F1.** The plan shipped with no `## Declared Change Set` block and no artifact frontmatter, so the review drift check and this audit's own Scope Ledger had nothing to parse and the level defaulted to the heavier one. **Fixed:** both added. | medium |
+| `origin/chore/SCC-323-hookspath-immunisation` → `docs/migrations/scripts/arm_hooks_path.py` | the file exists on that branch, unmerged | **F5.** Phase 2 hand-types the `core.hooksPath` command that SCC-323 is shipping an installer for. **Fixed:** Phase 2 now defers to the installer if SCC-323 lands first, and flags `Arm-HooksPath.ps1` as post-migration dead weight to that lane rather than deleting it from here. | medium |
+
+### Pre-Mortem narratives (attached, never originating)
+
+- **F3, the silent one.** Phase 5 lands, `run_all.py` is green, Phase 6 signs off — because no suite
+  asserts that Zoo's allow list covers pytest. The breakage appears the next time someone runs the
+  tests through Zoo and answers an approval prompt per command, weeks later, with nothing connecting
+  it to the cleanup commit.
+- **F4, the other-machine one.** `dirname ` vanishes. It is used inside house scripts and shell
+  chains rather than typed directly, so it prompts intermittently and reads as flakiness.
+- **F2, the fresh-clone one.** AGY's settings get edited from a lobby lane. The AVCH board has no
+  row for it, and the next AGY close-out preflight finds a diff no ticket accounts for.
+
+### Observations (uncounted, non-blocking)
+
+- Acceptance row *"phase gates are executable by someone who was not in this session"* was
+  unobservable as first written. Replaced with the lettered A–E rows above, each naming a command or
+  a state. Recording it because a vague acceptance list is what makes the Scope Ledger match
+  everything and produce nothing.
+- The Scope Ledger table is trivially clean: this plan creates only its own artifacts, and every one
+  serves row **E**. No artefact is created that no acceptance row requires.
+- Lane fit is correct — the change set touches no deployable product path
+  (`backend/ frontend/ firebase/ functions/ mobile/ .github/`), so `/smh-close-task-merge-tree` is
+  the right door and `/cicd-push-e2e` is not.
+- **A5 remains genuinely unresolved and is not a finding** — whether `acli` can authenticate on
+  Linux is unverifiable from this machine. It is written into Phase 1's gate rather than guessed at.
+
+### Sibling landing-order
+
+One worktree (this one); no sibling lane holds any declared path. The only ordering constraint is
+**F5 · SCC-323 before Phase 2** if that branch lands first — and it is a substitution, not a
+conflict, so neither order breaks the other.
+
+```
+Audit verdict: GO
+```
+
+**Found NO-GO on the first pass, flipped by remediation in this same pass — the honest record.** The
+grounds were **F2**: the port rule fired mechanically (a file in two repos, copies measurably
+differing) and the plan answered none of its six checks. That is one of the two named NO-GO grounds,
+not a judgement call. It is cleared by scoping AGY out to its own AVCH ticket rather than by
+answering the checks, because the repo is the honest boundary. F1, F3, F4 and F5 are fixed inline in
+the sections they affect, marked `⚠️ AUDIT FINDING` so the builder reads each in context.
+
+The verdict describes the plan **as it now stands**, which is the plan being put up for approval.
