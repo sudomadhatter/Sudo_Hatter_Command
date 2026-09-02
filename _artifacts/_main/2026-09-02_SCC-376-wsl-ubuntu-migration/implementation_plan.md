@@ -49,6 +49,7 @@ its own plan and its own port section.
 - EDIT `.agents/scripts/zoo_permissions_apply.py` — docstring pointer follows the move → F
 - EDIT `.agents/scripts/shape_scan.py` — docstring pointer follows the move → F
 - EDIT `.roo/rules/zoo-team.md` — two pointers follow the move → F
+- EDIT `.agents/rules/jira.md` — guardrail 5 gains the Linux row; "never persist it anywhere" was written for two machines that both have a credential store → A
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — line 2900 pointer; also the SOP-currency co-occurrence the script edits demand → F
 
 ## Five amendments the plan needs before Phase 1 starts
@@ -162,17 +163,56 @@ Measured inside the distro:
 | `command -v git`, `python3`, `curl` | present, `/usr/bin` | fine |
 | `ps -p 1 -o comm=` | `systemd` | already correct; `/etc/wsl.conf` keeps `[boot] systemd=true` |
 
-**And the one gate most likely to fail, which should be proven on day one rather than at Phase 2's
-end:** `acli` authentication. The house's entire Jira integration is `acli`, and the rule that governs
-it says the token lives in the OS credential store — *"the macOS keychain on the Mac, the Windows
-equivalent on the PC."* Linux has neither. Whether `acli` on Linux can reach a credential store in a
-headless WSL distro is **unverified from here**, and it is a hard dependency of every close-out, every
-Dev Record and every board transition.
+**`acli` authentication — RESOLVED by the operator's research (2026-09-02), and downgraded from an
+unproven blocker to a day-one step.** The house's entire Jira integration is `acli`, and the rule
+that governs it says the token lives in the OS credential store — *"the macOS keychain on the Mac,
+the Windows equivalent on the PC."* Linux has neither, which is why this was flagged. Atlassian's
+own headless-Linux guidance does not use a keychain at all: it authenticates with an API token read
+from **standard input**.
 
-**Amendment — Phase 1 proves `acli jira auth status` returns authenticated inside Ubuntu before Phase
-2 begins.** If it cannot, that is a blocker to surface immediately with the fallback named (a
-credential helper, or `$JIRA_API_TOKEN` from the operator's store), not a surprise discovered at
-sign-off.
+```bash
+echo "$JIRA_API_TOKEN" | acli jira auth login --email <email> --site sudo-command.atlassian.net --token
+```
+
+`--token` reads from stdin; `--web` is the browser flow used on the Mac and needs a desktop. The
+token is a standard Atlassian API token from id.atlassian.com → Security → API tokens.
+
+Two things settle on day one, **in this order** — the order matters because the first answer decides
+whether the second is needed at all:
+
+1. **Does the session persist?** Log in once, open a brand-new shell, run `acli jira auth status`.
+   If it is still authenticated, `acli` has written a session under `~/.config` (or similar) and the
+   environment variable was needed exactly once — nothing further to arrange. Confirm the file's
+   location and record it here.
+2. **Only if it does NOT persist** does the token need a home in the shell profile, and only then
+   does the trap below bite.
+
+> ### ⚠️ `~/.bashrc` is invisible to the shells agents actually spawn
+>
+> Ubuntu's default `~/.bashrc` begins with an interactivity guard and returns immediately for a
+> non-interactive shell — which is precisely what every agent tool call gets. A `JIRA_API_TOKEN`
+> exported there is present when the operator types in a terminal and **absent for every automated
+> call**, producing exactly the failure mode `.agents/rules/jira.md` warns about: an `acli` failure
+> that is a fact about the shell, not about the board. This is the Linux twin of the house scar
+> `zshrc-is-invisible-to-automation`. If a profile home is needed, prove it with a non-interactive
+> probe — `bash -c 'echo ${JIRA_API_TOKEN:+set}'` — not by opening a terminal and looking.
+
+> ### ⚠️ Keep the token on stdin, never in an argument
+>
+> The piped form above is not merely Atlassian's documented shape, it is the *safe* one: a token
+> passed as `--token "$JIRA_API_TOKEN"` lands in shell history and in `ps` output for every user on
+> the box. Anyone "simplifying" the pipe away reintroduces that. The token never goes in the repo,
+> never in a commit, and never on a command line.
+
+**Downstream edit this obliges, named so it is not forgotten:** `.agents/rules/jira.md` guardrail 5
+currently reads *"The token stays in the OS credential store. Never echo, copy, or persist it
+anywhere"* — written for two machines that both have one. Linux has none, so the Linux path
+necessarily persists a token somewhere, and the rule must gain that row or it reads as permanently
+violated. It is a rule edit, so it belongs in **Phase 5's commit** with the other law changes, not
+in Phase 1.
+
+**Gate — Phase 1 proves `acli jira auth status` returns authenticated inside Ubuntu, from a
+non-interactive shell, before Phase 2 begins.**
 
 ---
 
@@ -220,8 +260,15 @@ whoami; id -u; echo $HOME                      # dlohn / non-zero / /home/dlohn
 echo "$PATH" | tr ':' '\n' | grep -c '^/mnt/'  # must be 0
 for t in node npm claude acli gh python3; do printf '%-8s %s\n' "$t" "$(command -v $t)"; done
 node --version                                 # v22.x
-acli jira auth status                          # ✓ Authenticated  ← the A5 blocker
+echo "$JIRA_API_TOKEN" | acli jira auth login --email <email> \
+     --site sudo-command.atlassian.net --token   # once; --token reads stdin, --web needs a desktop
+bash -c 'acli jira auth status'                # ✓ from a NON-interactive shell — the real test
+bash -c 'echo ${JIRA_API_TOKEN:+set}'          # only matters if the session did not persist
 ```
+
+Then open a brand-new shell and re-run `acli jira auth status`. Still authenticated means the
+session persisted and the environment variable was needed exactly once — **record where it persisted
+to** in A5 above.
 
 Every path is `/usr/…` or `/home/…`. Zero `/mnt/c`.
 
@@ -448,7 +495,9 @@ rather than becoming board noise.
 Lettered so the Declared Change Set can point at a row. Each names something observable.
 
 - **A** — Ubuntu runs as a non-root user: `whoami` is `dlohn`, `id -u` is non-zero, `$HOME` is
-  `/home/dlohn`, and `echo $PATH | tr ':' '\n' | grep -c '^/mnt/'` returns `0`.
+  `/home/dlohn`, and `echo $PATH | tr ':' '\n' | grep -c '^/mnt/'` returns `0`. **And** `acli jira
+  auth status` reports authenticated **from a non-interactive shell**, with the session's persistence
+  location recorded in this plan.
 - **B** — the sandbox is demonstrably containing: a command that writes outside the repo is refused,
   with the refusal pasted as evidence. Not inferred from the config.
 - **C** — after Phase 5, `run_all.py` is green **run bare from inside WSL**, and Zoo's allow list
@@ -554,8 +603,14 @@ verdict:     three narratives attached to F2, F3, F4; nothing unattached, nothin
 - Lane fit is correct — the change set touches no deployable product path
   (`backend/ frontend/ firebase/ functions/ mobile/ .github/`), so `/smh-close-task-merge-tree` is
   the right door and `/cicd-push-e2e` is not.
-- **A5 remains genuinely unresolved and is not a finding** — whether `acli` can authenticate on
-  Linux is unverifiable from this machine. It is written into Phase 1's gate rather than guessed at.
+- **A5 was closed by the operator after this audit ran, and the closure is better than the flag.**
+  It was recorded as unverifiable from this machine and written into Phase 1's gate rather than
+  guessed at; the operator supplied Atlassian's headless-Linux guidance — `--token` over stdin, no
+  keychain — which converts a possible blocker into a day-one step. Two things were added on top of
+  that research because they are specific to this machine rather than to `acli`: Ubuntu's
+  `~/.bashrc` returns early for the non-interactive shells agents spawn, and the token must stay on
+  stdin rather than in an argument where `ps` and shell history can read it. Recording the sequence
+  because "I could not verify this" was the right answer at audit time and is no longer the answer.
 
 ### Sibling landing-order
 
