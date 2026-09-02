@@ -137,8 +137,9 @@ def violations(command: str) -> list[str]:
     if re.search(r"(^|[;&|(\s])git\s+-C\s", clean):
         found.append(
             f"{RULE} rule 1 — you used the `git -C <path>` spelling. Zoo denies it outright, and "
-            f"on Claude Code only the handful of verbs with an explicit `git -C * <verb>` allow "
-            f"rule get through — any other verb stops and waits for a human. "
+            f"on Claude Code no allow rule matches it any more — SCC-376 removed the "
+            f"`git -C * <verb>` rows, because a wildcard before the subcommand approved any option "
+            f"at that position — so it stops for a human or a classifier. "
             f"Write `cd <abs path> && git <verb> …` in ONE line instead; `git commit`, `git add`, "
             f"`git fetch`, `git push`, `git checkout` and `git worktree` are all already allowed "
             f"in that shape, on both platforms.")

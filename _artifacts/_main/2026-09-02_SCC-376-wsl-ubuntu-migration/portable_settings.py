@@ -11,6 +11,9 @@ Every deviation is itemised so Phase 6 checks the recorded list rather than a by
      arguments, same timeout. The Mac's banner behaviour is folded into that script (2026-09-02).
   4. the dead `X/:*` spelling (SCC-375) respelled `X/*`.
   5. STRICT sandbox mode — NOT applied (operator ruling 2026-09-02); kept behind STRICT = False.
+  6. the `git -C * <verb>` allow rules REMOVED (Phase 5): a wildcard before the subcommand approves
+     any option at that position (-c, --exec-path run arbitrary commands); the house law bans the
+     spelling and `cd <abs> && git <verb>` is judged per piece and already allowed.
 Nothing else is touched. Nothing is printed except the deviation list and counts.
 
 usage: python3 portable_settings.py <mac-settings.json> <out.json>
@@ -83,6 +86,15 @@ sb = d.setdefault("sandbox", {})
 if STRICT and sb.get("allowUnsandboxedCommands") is not False:
     dev.append(f"sandbox.allowUnsandboxedCommands: {sb.get('allowUnsandboxedCommands', '(unset = true)')}  ->  false  (escape hatch closed)")
     sb["allowUnsandboxedCommands"] = False
+
+# 6 · the `git -C * <verb>` rules (SCC-376 Phase 5). Claude's own warning on the project file: a
+#     wildcard BEFORE the subcommand "approves any options inserted at that position … -c and
+#     --exec-path can run arbitrary commands". command-shape.md rule 1 bans the spelling anyway;
+#     `cd <abs> && git <verb>` is judged per piece and every verb here is already allowed that way.
+dropped = [r for r in allow if re.match(r"Bash\(git -C \*", r)]
+allow[:] = [r for r in allow if r not in dropped]
+for r in dropped:
+    dev.append(f"allow rule (git -C wildcard, SCC-376 Phase 5): {r}  ->  removed")
 
 dst.write_text(json.dumps(d, indent=2) + "\n", encoding="utf-8")
 

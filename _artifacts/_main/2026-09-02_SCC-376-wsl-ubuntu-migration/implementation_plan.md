@@ -55,6 +55,13 @@ its own plan and its own port section.
 - DELETE `docs/migrations/antigravity_extensions/` — retired IDE's extension-migration guide, ids file, sync script → F
 - EDIT `docs/migrations/INDEX.md` — row 10 (the Antigravity extensions guide) removed → F
 - EDIT `.vscode/extensions.json` — `google.google-antigravity` recommendation removed → F
+- EDIT `.agents/scripts/zoo_permissions_apply.py` — Phase 5 (added 2026-09-02): `candidate_dbs` lists the isolated `code2` seat and, under WSL, both Windows stores through `/mnt/c`; an unreadable sibling account reads as absent; `vscode_running` asks `tasklist.exe` by full path → C
+- EDIT `.agents/scripts/tests/test_zoo_permissions.py` — Phase 5 (added 2026-09-02): the `candidate_dbs` pin, present/absent halves plus the locked-account half → C
+- EDIT `.agents/hooks/shape-guard.py` — Phase 5 (added 2026-09-02): the rule-1 nag no longer claims `git -C * <verb>` allow rules exist → C
+- EDIT `.agents/rules/jira.md` — Phase 5: guardrail 5's Linux row (declared above as → A; lands in C) → C
+- EDIT `_artifacts/_main/2026-09-02_SCC-376-wsl-ubuntu-migration/portable_settings.py` — Phase 5 (added 2026-09-02): step 6 drops the `git -C *` rules from the user file → C
+- EDIT `_artifacts/_main/2026-09-02_SCC-376-wsl-ubuntu-migration/claude-user-settings.portable.json` — Phase 5 (added 2026-09-02): regenerated, 82 rules, sha `e1a13e0d…` → C
+- EDIT `_artifacts/_main/2026-09-02_SCC-376-wsl-ubuntu-migration/mac_install.sh` — Phase 5 (added 2026-09-02): the rules diff names the 20 expected `-` lines → C
 
 ## Five amendments the plan needs before Phase 1 starts
 
@@ -1138,3 +1145,58 @@ questions answered in its plan first, sequenced after Phase 5 lands on `main`, Z
 AVCH-114. Outline: [`tickets/AVCH-116.md`](tickets/AVCH-116.md).
 
 Phase 4 is closed. Phase 5 is next and is mine.
+
+### Phase 5 — LANDED (2026-09-02): ONE commit, and the fence now reads as what the two machines run
+
+Everything Windows-shaped is out of the tracked permission files, in one revertable commit, with the
+tests amended in the same commit so the tree never carried a red. Every number below was measured in the
+Ubuntu clone, not copied from the audit.
+
+| file | before → after | what moved |
+|---|---|---|
+| `.vscode/settings.json` (Zoo allow) | **143 → 124** | **22 out by exact match**: the 21 Windows-shaped rows (the audit counted 20 — it missed that both `backend/.venv/Scripts/` and `.venv/Scripts/python.exe -m pytest` are Windows spellings) plus bare `python `, which resolves on neither machine (Ubuntu: `command -v python` empty; the Mac: python3 only). **3 in** per F3: `.venv/bin/python -m pytest`, `.venv/bin/ruff check`, `firebase/tests/node_modules/.bin/firebase emulators:exec`. `dirname ` survives (F4). Deny list untouched at 105. `python.defaultInterpreterPath` → `backend/.venv/bin/python` — it had pointed at `Scripts/python.exe` on the Mac all along. The SCC-338 / SCC-373 comment blocks are replaced by one SCC-376 note that keeps the laundering-prefix refusals (`if exist `, `ForEach-Object`, `find `, bare `del`) on record |
+| `.claude/settings.json` (tracked Claude allow) | **161 → 141** | 7 Windows-only rules out (`export MSYS_NO_PATHCONV=1`, the five bare-`python` rules, `backend/.venv/Scripts/*`) and the **13 `git -C *` wildcard rules** — Claude's own warning: a wildcard before the subcommand approves any option at that position, and `-c` / `--exec-path` there run arbitrary commands; command-shape.md rule 1 already bans the spelling, and `cd <abs> && git <verb>` is judged per piece and allowed |
+| `claude-user-settings.portable.json` (the ONE user file) | **102 → 82** rules | the 20 `git -C *` rules, dropped by the generator's new step 6 and itemised in its deviation list like every other change. sha256 **`e1a13e0d126f0478…`** (was `90b39f9f…`). Installed in Ubuntu and Ubuntu-zoo2; the Mac re-runs its one-liner |
+| `test_settings_allowlist.py` | A3 rewritten, A6 added | A3 is one-directional now — python3 rules exist and no bare-python rule remains; the twin requirement pinned the shape the migration leaves behind (A3 amendment, as declared). A6 pins the removals: no `\Scripts\` / `.exe` / `MSYS_NO_PATHCONV` spelling and no `git -C *` rule, so a "promote what got blocked" pass cannot quietly reverse this commit. 29/29 |
+| `zoo_permissions_apply.py` + `test_zoo_permissions.py` | `candidate_dbs` grows two candidates | the isolated `code2` seat (`~/vscode-isolated/User/globalStorage/state.vscdb`, on every platform) and, **under WSL, both Windows stores through `/mnt/c`** — the Phase 4 correction made real: Zoo keeps its state on the Windows side, so the apply runs from Ubuntu and needs no Windows checkout. `vscode_running` asks `tasklist.exe` by full path (the distro's PATH carries no Windows entries; unable to ask = treat as running). **Found by running it, not by reading:** `/mnt/c/Users` holds other accounts (`CodexSandboxOffline`, `Default`) that raise `PermissionError` on stat, and pathlib propagated it out of the first `is_dir()` — an unreadable account now reads as absent, with the chmod-000 half in the test. 23/23 |
+| `docs/migrations/zoo-code-permissions-guide.md` | §2, §6, §7, §11 | the second seat's store and the PC-stores-are-Windows-side fact (§2); the count line `124 allow / 105 deny`, the Interpreters row, a "Windows rows left with the PC" note and a Test-toolchain family row (§6, `test_guide_currency` green); the from-Ubuntu procedure (§7); the Claude row no longer cites `git -C *` (§11) |
+| `.agents/rules/jira.md` | guardrail 5 | the Linux row: no credential store inside Ubuntu, so `acli` keeps the token in its own config under `~/.config/acli/` (mode 600, the operator's home); it goes in on stdin, never as `--token "$VAR"` |
+| `.agents/hooks/shape-guard.py` | rule-1 nag text | it no longer tells the agent that "a handful of verbs with an explicit `git -C * <verb>` rule get through" — none do now |
+
+**Gate — `python3 .agents/scripts/tests/run_all.py`, bare, inside Ubuntu: 71/71 files passed, rc 0, 26 s.**
+Bare per file: `test_settings_allowlist` 29/29 · `test_zoo_permissions` 23/23 · `test_allow_readonly_chain`
+153/153 (the Linux number, A2) · `test_allow_scratchpad` **187/187 — case E, the uid case that could never
+pass on Windows, passes natively; the SCC-375 open item is closed by the migration itself, no edit needed.**
+
+**The apply script, run from Ubuntu with VS Code open (`--status` is read-only), sees both Windows stores:**
+
+```
+/mnt/c/Users/dlohn/AppData/Roaming/Code/User/globalStorage/state.vscdb      (instance 1, code1)
+  allowedCommands: 170  (DRIFT: 6 tracked entries missing from store, 52 store-only entries)
+  deniedCommands:  106  (DRIFT: 0 tracked entries missing from store, 1 store-only entries)
+  autoApprovalEnabled: True   alwaysAllowExecute: True   destructiveCommandGuardEnabled: False
+/mnt/c/Users/dlohn/vscode-isolated/User/globalStorage/state.vscdb            (instance 2, code2)
+  allowedCommands: 123  (DRIFT: 6 tracked entries missing from store, 5 store-only entries)
+  deniedCommands:  105  (in sync with tracked file)
+  autoApprovalEnabled: None   alwaysAllowExecute: False
+  WARNING: master toggles off - no list is consulted until autoApprovalEnabled AND alwaysAllowExecute are on
+```
+
+Two facts from that read that Phase 6 has to act on. The primary store carries **52 store-only rows** —
+learned approvals and their fragments — that the apply wipes by design (the SCC-369 reasoning; the
+tracked file is the policy). And **the `code2` seat's master toggles are OFF**: until they are switched on
+in that instance's Zoo Auto-Approve panel, the second seat consults no list and asks for everything —
+which is the state the Desktop Team saw as "instance 2 works" during the Phase 4 gate, because a seat
+that asks for everything is never wrong, only slow.
+
+**What Phase 5 could not do from a VS Code-hosted session on the Windows side, handed to Phase 6 as
+its first lines:** (1) the apply itself — it refuses while `Code.exe` runs, by design, and this session
+is `Code.exe`; the SQLite write over drvfs was proven separately (create, update, `copy2` backup, all on
+`/mnt/c`); (2) the `code2` toggles — a click in that window; (3) retiring the Windows
+`%USERPROFILE%\.claude\settings.json` — a rename, reversible; (4) the Windows clone
+`C:\Sudo_Hatter_Command` — it holds **six uncommitted files from other sessions** (two modified and four
+untracked memory files under `_artifacts/_memory/`, plus AVCH-109's `scratch/mutation_sweep_24_7.py`),
+so deleting it is the operator's word, after those are carried over or committed by their owners. Nothing
+else Windows-shaped remains.
+
+Phase 5 is landed. Phase 6 is the Desktop Team's; its paste follows in the next commit.

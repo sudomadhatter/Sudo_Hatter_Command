@@ -519,6 +519,49 @@ def test_apply_refuses_while_vscode_runs():
         assert db.read_bytes() == original, "refusal must leave the store untouched"
 
 
+def test_candidate_dbs_sees_the_second_seat_and_the_windows_stores_from_wsl():
+    """SCC-376 Phase 4 measured where Zoo's state lives on the PC: in the WINDOWS user-data-dirs -
+    the primary AND the isolated `~/vscode-isolated` seat `code2` launches with - never in the
+    distro. So the apply script must list the isolated seat on every machine, and from Ubuntu it
+    must reach both Windows stores through /mnt/c. Both halves: present -> listed, absent -> not
+    (a scan that cannot fail certifies nothing)."""
+    mod = _load_apply_module()
+    with tempfile.TemporaryDirectory() as tmp:
+        home = Path(tmp) / "home"
+        iso = home / "vscode-isolated" / "User" / "globalStorage"
+        iso.mkdir(parents=True)
+        _make_store(iso)
+        win_users = Path(tmp) / "mnt" / "c" / "Users"
+        prim = win_users / "someone" / "AppData" / "Roaming" / "Code" / "User" / "globalStorage"
+        prim.mkdir(parents=True)
+        _make_store(prim)
+        win_iso = win_users / "someone" / "vscode-isolated" / "User" / "globalStorage"
+        win_iso.mkdir(parents=True)
+        _make_store(win_iso)
+        found = mod.candidate_dbs(home=home, windows_users=win_users)
+        for want in (iso, prim, win_iso):
+            assert want / "state.vscdb" in found, f"{want.name} store missing: {found}"
+        (iso / "state.vscdb").unlink()
+        (win_iso / "state.vscdb").unlink()
+        after = mod.candidate_dbs(home=home, windows_users=win_users)
+        assert iso / "state.vscdb" not in after and win_iso / "state.vscdb" not in after, (
+            "ALLOW half dead: an absent store was listed")
+        assert prim / "state.vscdb" in after
+        # The half that bit for real: another Windows account under /mnt/c/Users is unreadable
+        # (PermissionError on stat), and pathlib propagated it out of candidate_dbs() before the
+        # operator's own store was reached. Unreadable = absent. (chmod is a no-op on Windows,
+        # so this half only bites on POSIX - which is the only place the WSL path runs.)
+        locked = win_users / "locked"
+        (locked / "AppData" / "Roaming" / "Code" / "User").mkdir(parents=True)
+        import os
+        os.chmod(locked, 0)
+        try:
+            again = mod.candidate_dbs(home=home, windows_users=win_users)
+        finally:
+            os.chmod(locked, 0o700)
+        assert prim / "state.vscdb" in again, "an unreadable sibling account hid the real store"
+
+
 _ASCII_SCANNED = ("zoo_permissions_apply.py", "zoo_notify.py", "zoo_notify_install.py")
 
 

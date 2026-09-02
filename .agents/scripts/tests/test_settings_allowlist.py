@@ -6,9 +6,9 @@ learned on one machine died at the machine/worktree boundary, and Zoo Code had n
 allowlist at all. These cases pin the tracked files, which are the only copies a fresh clone or
 the other machine ever sees:
 
-  A · `.claude/settings.json` `permissions.allow`: parses, floor count, BOTH interpreter
-      spellings (`python3` Mac / `python` PC — `two-machines`), and no machine-absolute path
-      (`/Users/…`, `C:\\…`) in any tracked rule.
+  A · `.claude/settings.json` `permissions.allow`: parses, floor count, ONE interpreter
+      spelling (`python3` — both machines run POSIX since SCC-376), no Windows-only row and no
+      `git -C *` wildcard rule, and no machine-absolute path (`/Users/…`, `C:\\…`) in any rule.
   B · `.vscode/settings.json` (JSONC): `zoo-code.allowedCommands` non-empty +
       `zoo-code.deniedCommands` present; `.vscode/extensions.json` recommends Zoo Code and the
       Gemini agent surface.
@@ -69,19 +69,33 @@ if c.block("A · tracked Claude allowlist travels"):
             if r.endswith(":*)") and len(r) > 8 and r[:-3].rstrip()[-1] in "/=-:"]
     c.check("A2b no rule uses the `X:*` spelling after a path separator (it can never match)",
             not dead, f"dead={dead}")
+    # ⛔ A3 · ONE interpreter spelling, since SCC-376. This case used to demand `python3 X` and bare
+    # `python X` twins in BOTH directions because the two machines disagreed about the interpreter
+    # (`python3` Mac / `python` PC). The PC now works inside WSL2 / Ubuntu, where bare `python` does
+    # not resolve either, so the twin requirement pinned a shape the system deliberately left
+    # behind — the defect class SCC-375 closed at A2b. One direction now: python3 rules exist, and
+    # no bare-python rule remains to approve a binary neither machine has.
     py3 = {r for r in allow if r.startswith("Bash(python3 ")}
-    py = {r for r in allow if r.startswith("Bash(python ")}
-    missing = sorted({r.replace("Bash(python3 ", "Bash(python ", 1) for r in py3} - set(allow)) \
-        + sorted({r.replace("Bash(python ", "Bash(python3 ", 1) for r in py} - set(allow))
-    c.check("A3 interpreter twins hold in BOTH directions (python3 Mac / python PC)",
-            bool(py3) and bool(py) and not missing,
-            f"python3={len(py3)} python={len(py)} missing_twins={missing}")
+    py = sorted(r for r in allow if re.match(r"Bash\((time )?python[ :]", r))
+    c.check("A3 python3 rules exist and no bare-python rule remains (one interpreter since SCC-376)",
+            bool(py3) and not py, f"python3={len(py3)} bare_python={py}")
     bad = [r for r in allow if "/Users/" in r or re.search(r"[A-Za-z]:\\", r)]
     c.check("A4 no machine-absolute path in any tracked rule", not bad, f"bad={bad}")
     # The plan promised a syntax pin: every rule is Tool(specifier) — a bare string or a typo'd
     # paren never silently matches nothing.
     bad_syntax = [r for r in allow if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*\(.+\)", r)]
     c.check("A5 every rule parses as Tool(specifier)", not bad_syntax, f"bad={bad_syntax}")
+    # SCC-376 · the Windows-only spellings and the wildcard-before-subcommand git rules are OUT.
+    # `\Scripts\`, `.exe` and `MSYS_NO_PATHCONV` name a shell no agent works in any more, and
+    # `Bash(git -C * <verb>:*)` approved ANY option at the wildcard — Claude's own warning names
+    # `-c` and `--exec-path` there, which run arbitrary commands — while command-shape.md rule 1
+    # already bans the spelling (`cd <abs> && git <verb>` is judged per piece and allowed). A
+    # removal is a shape the file must KEEP, or the next "promote what got blocked" pass quietly
+    # reverses it.
+    win = [r for r in allow if re.search(r"Scripts[/\\]|\.exe\b|MSYS_NO_PATHCONV|\\", r)]
+    dash_c = [r for r in allow if re.match(r"Bash\(git -C \*", r)]
+    c.check("A6 no Windows-only spelling and no `git -C *` wildcard rule in the tracked file",
+            not win and not dash_c, f"windows={win} git_dash_c={dash_c}")
 
 if c.block("B · Zoo Code allowlist + extension recommendations travel"):
     vs = _jsonc(ROOT / ".vscode" / "settings.json")

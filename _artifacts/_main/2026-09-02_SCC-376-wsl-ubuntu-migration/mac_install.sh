@@ -37,6 +37,7 @@ print("hooks:", {k: len(v) for k, v in d["hooks"].items()})
 EOF
 
 echo; echo "== rules: what changed on THIS Mac vs the backup (a '-' line = a rule the Mac had that the portable file lacks; tell the agent) =="
+echo "   (expected since Phase 5: 20 '-' lines, all 'Bash(git -C * ...)' - removed on purpose, SCC-376; anything else is news)"
 python3 - "$BAK" <<'EOF'
 import json, os, sys
 old = json.load(open(sys.argv[1])); new = json.load(open(os.path.expanduser("~/.claude/settings.json")))

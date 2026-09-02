@@ -36,6 +36,13 @@ command-shape law for the seats (§8). Measured on a real session: **34.1% auto-
 **PC paths:** `%APPDATA%\Code\User\globalStorage\state.vscdb` and `%APPDATA%\Code\User\settings.json`.
 **VS Code profiles:** a non-default VS Code profile keeps its own `state.vscdb` under
 `User/profiles/<id>/globalStorage/` — the apply script (§7) finds every copy that carries the Zoo key.
+**The second seat (`code2`) has its own store.** The isolated VS Code instance launches with
+`--user-data-dir ~/vscode-isolated`, so its Zoo state is `~/vscode-isolated/User/globalStorage/state.vscdb`
+(PC: `%USERPROFILE%\vscode-isolated\User\globalStorage\state.vscdb`) — a store the apply script never
+listed before SCC-376. **On the PC the stores stay on the Windows side:** Zoo runs inside the Ubuntu
+distro (the workspace extension host), but the window keeps its globalState in the Windows
+user-data-dir, so no `state.vscdb` exists in either distro (measured, SCC-376 Phase 4). The apply
+script, run from Ubuntu, reaches both Windows stores through `/mnt/c`.
 
 **There is no VS Code "master permissions" system.** VS Code itself never approves or denies
 terminal commands — each agent extension carries its own machinery (§11). Editing VS Code settings
@@ -114,7 +121,7 @@ Two Zoo features to leave alone, and why:
 ## 6. The canonical lists — and the reasoning per family
 
 The source of truth is [`.vscode/settings.json`](../../.vscode/settings.json) (`zoo-code.*` keys),
-tracked in git: **143 allow / 105 deny** entries. The design rule, in the operator's words
+tracked in git: **124 allow / 105 deny** entries. The design rule, in the operator's words
 (2026-08-30): *denies are the absolute minimum — only things that would really cause damage.* And
 one mechanic makes that minimum load-bearing: under a broad allow, an un-denied spelling does not
 ask — it **auto-runs**. So the allows are broad working families, and every deny row names real
@@ -165,6 +172,18 @@ un-denied spelling does not ask, it RUNS, so `n` would unblock `npx create-next-
 approve `npm publish`, `node evil.js` and `nc -l 4444` alongside it. Breadth is the decision, and
 the decision is the operator's.
 
+### The Windows rows left with the PC (SCC-376)
+
+The PC now works inside WSL2 / Ubuntu, so the rows only a Windows shell could ever match — the
+SCC-338 read verbs (`Get-ChildItem`, `dir`, `findstr`, …), the SCC-373 toolchain twins
+(`backend\.venv\Scripts\`, `.venv\Scripts\ruff.exe check`, …), `set "JAVA_HOME=`, `where `, `type `
+and bare `python ` — came out: **22 rows, by exact match, never by prefix** (`dir` is the head of
+`dirname `, which stays). Three capabilities had ONLY a Windows spelling and gained their Unix row in
+the same commit: `.venv/bin/python -m pytest`, `.venv/bin/ruff check`,
+`firebase/tests/node_modules/.bin/firebase emulators:exec`. The refusals those two tickets recorded
+still stand: `if exist `, `ForEach-Object`, `find ` and bare `del` are laundering prefixes and never
+come back. A dead row widens nothing, but it hides drift — the fence must read as what the machines run.
+
 **ALLOW families**
 
 | Family | Entries | Why |
@@ -172,7 +191,7 @@ the decision is the operator's.
 | Navigation | `cd ` | The pin that replaces `git -C` — every door command is `cd <abs> && …`, self-contained per call. |
 | Git, broad | `git `, `env -u GITHUB_TOKEN git ` | Every read/write verb the flows use. The damage spellings are DENIED below and win or lose by prefix length exactly where intended. |
 | GitHub CLI | `gh pr `, `gh run `, `env -u GITHUB_TOKEN gh pr `, `env -u GITHUB_TOKEN gh run ` | Open PRs, watch checks. `gh pr merge` denied — merges are the operator's click. `gh api` not allowed (arbitrary REST incl. merges). |
-| Interpreters | `python3 `, `python ` | The toolkit and heredoc one-offs. Both spellings per the two-machines law. |
+| Interpreters | `python3 ` | The toolkit and heredoc one-offs. One spelling since SCC-376: bare `python` resolves on neither machine. |
 | PowerShell, scoped | `pwsh -NoProfile -File .agents/scripts/` | The sync generator. `-Command` is deliberately NOT allowed. |
 | Jira | `acli jira workitem ` | Board reads/writes inside ceremonies (`delete` denied). |
 | Read-only + fs helpers | bare `ls`/`pwd`/`true`/`date`/`head`/`sort`/`uniq`/`wc`/`cat`/`echo` (pipe tails run bare), the rest spaced: `tail `, `sed `, `grep `, `rg `, `diff `, `cp `, `mkdir `, `printf `, `awk `, `cut `, `tr `, `basename `, `dirname `, `readlink `, `file `, `stat `, `du `, `cmp `, `command -v `, `which `, `jq `, `touch ` | Claude-parity read/copy set. Trailing spaces where a bare entry would swallow a different binary (`tr` → `trap`, `tail` → `tailscale`). `find` is deliberately absent (`-delete`/`-exec rm` ride behind the prefix) — it asks. |
@@ -180,6 +199,7 @@ the decision is the operator's.
 | Dot-dir adds | `git add .agents/`, `git add .claude/`, `git add .vscode/`, `git add .roo/`, `git add .roomodes`, `git add .githooks/`, `git add .opencode/`, `git add .github/`, `git add .gemini/`, `git add .agent/` | One character longer than the `git add .` deny, so explicit dot-path staging works while the bare sweep stays dead. |
 | Config reads | `git config --get `, `git config --list`, `git config -l` | Longer than the `git config` deny — reads work, writes refuse (a config write can disarm the hooks, §below). |
 | Lane/epic prune re-allows | `git branch -d chore/`, `git branch -d claude/`, `git branch -d epic/` (+ quoted twins `git branch -d "chore/`, `git branch -d "claude/`, `git branch -d "epic/`), `git push origin --delete chore/`, `git push origin --delete claude/`, `git push origin --delete epic/` (+ quoted twins `git push origin --delete "chore/`, `git push origin --delete "claude/`, `git push origin --delete "epic/`, and env -u GITHUB_TOKEN twins of all six push forms) | The close ceremonies' own prune steps — longer than their denies, so they win ONLY for lane/epic branches, in both the quoted and unquoted spellings the doors print; `main` stays denied. Lowercasing makes `-D epic/…` ≡ `-d epic/…`: the epic-close door's forced delete rides the same re-allow by design. |
+| Test toolchain (SCC-369 / SCC-373 / SCC-376) | `npx vitest `, `npm run `, `npm ci `, `node backend/tests/`, `test -`, `sleep `, `ps aux`, `ln -s `, `java -version`, `backend/.venv/bin/`, `.venv/bin/python -m pytest`, `.venv/bin/ruff check`, `firebase/tests/node_modules/.bin/firebase emulators:exec` | The gate suites and the AGY emulator tiers, Unix spelling only since SCC-376 (Java 17 and Node 22 live inside Ubuntu on the PC, natively on the Mac). `find ` stays out. |
 
 **DENY families** (every `git `/`gh ` deny also exists as an `env -u GITHUB_TOKEN ` twin — generated,
 enforced by the test — because the broad env-twin allow would otherwise bypass it)
@@ -209,7 +229,8 @@ ping. Anyone who goes looking for the hook should find this paragraph before the
 
 ## 7. Applying the lists per machine — [`zoo_permissions_apply.py`](../../.agents/scripts/zoo_permissions_apply.py)
 
-`python3 .agents/scripts/zoo_permissions_apply.py --status` (PC: `python`) shows, for every
+`python3 .agents/scripts/zoo_permissions_apply.py --status` (on the PC: from Ubuntu — the Windows
+stores, the `code2` seat's included, are reached through `/mnt/c`) shows, for every
 `state.vscdb` that carries the Zoo key: counts, master-toggle values, and drift vs the tracked
 file. `--apply` writes the tracked lists into the decision store (leaving a one-time
 `state.vscdb.scc-backup` beside each db). It **refuses while VS Code is
@@ -264,7 +285,7 @@ Close-out review additions (same day, after the measurement): the battery grew t
 
 | Surface | Store | Matcher | Notes |
 |---|---|---|---|
-| **Claude Code** | [.claude/settings.json](../../.claude/settings.json) (tracked) + `.claude/settings.local.json` (per machine) | Pattern rules: `Bash(git -C * status:*)` mid-wildcards, compound commands checked per segment | Already at target level. Deny-less; unmatched → ask; hard stops live in hooks + rules. |
+| **Claude Code** | [.claude/settings.json](../../.claude/settings.json) (tracked) + `.claude/settings.local.json` (per machine) | Pattern rules (`Bash(git status:*)` prefixes — the `git -C *` mid-wildcard rows left in SCC-376: a wildcard before the subcommand approves any option at that position), compound commands checked per segment | Already at target level. Deny-less; unmatched → ask; hard stops live in hooks + rules. |
 | **Zoo Code** | this guide | lowercase starts-with prefix, per piece | The subject of this page. |
 | **opencode** | its own config under `.opencode/` | WHOLE-string prefix, no per-piece split | **Outside `/smh-llm-approvals`** (SCC-354): a whole-string prefix unblocks exactly one invocation, so a list grown this way carries one row per command and stops being readable. Add rows by hand when a command is worth it. |
 | **Codex** | `~/.codex/` config (`approval_policy` / sandbox), per machine | policy-level, not per-command lists | **Outside `/smh-llm-approvals`** (SCC-354): there is no per-command list to grow — the policy is the whole decision. |
