@@ -1047,16 +1047,24 @@ and read back from here where a read-back was possible:
 | notifier self-test | exit 0; the push read back from the house topic at 14:25:37 as `Sudo_Hatter_Command — SCC-376 Mac install complete: the portable notifier works`, tag `robot` | proven through Claude's own runner above | **both channels live on both machines** |
 | Conductor | `hook.sh` present, **Conductor.app not installed** | absent | 11 guarded hooks still fork a dead app's script on every event on the Mac → [`mac_tune.sh`](mac_tune.sh) renames `~/.conductor`; the guard then silences all 11 with the settings file unchanged |
 | `GITHUB_TOKEN` | unset; no rc file exports it | unset | the 5 `env -u GITHUB_TOKEN …` rules are inert on both machines; harmless, left in place |
-| `core.hooksPath` (global) | **UNSET** | `.githooks` (lobby, local) | the house arms gates per machine with `git config --global core.hooksPath .githooks`; [`mac_tune.sh`](mac_tune.sh) sets it only if unset at every level and prints the origin |
+| `core.hooksPath` | global **UNSET**, but the lobby resolves **`.githooks`** from `file:.git/hooks.conf` and AGY from its own `hooks.conf` (read back later, below) | `.githooks` (lobby, local) | armed on both machines at repo level. The install report's "UNSET" read only the global level — instrument fixed |
 | node / python3 / grep | v22.23.2 / 3.14.7 / BSD grep 2.6.0 | 22 (LTS) / 3.12.3 / GNU grep | Node 22 on both per the plan. `grep` on the Mac measured as **BSD grep** from a terminal script, while a Claude session on 2026-09-01 measured ugrep 7.8.4 — the shadow depends on the launch context, so gates keep using counts, never `-q` |
 
 One stray push: a probe at 14:17 ran without a self-test topic and sent `hookprobe — ok` to the house
 topic. Mine; no action.
 
-**2026-09-02, later — the operator reports [`mac_tune.sh`](mac_tune.sh) run on the Mac ("done on mac").**
-Output not pasted, so its two results (the Conductor folder renamed; `core.hooksPath` armed) are
-operator-reported, not read back from here. Phase 6's checklist re-measures both on the Mac before
-sign-off.
+**2026-09-02, later — [`mac_tune.sh`](mac_tune.sh) read back from the Mac (the operator pasted a re-run).**
+Both items are now measured, not reported. `~/.conductor` is **absent** — "nothing to do; hook.sh
+absent, the 11 hooks are silent no-ops" — so the first run had already renamed it. And `core.hooksPath`
+was **armed all along**: from inside the lobby it resolves to `.githooks` with origin `file:.git/hooks.conf`
+(the SCC-323 include shape, repo-local), AGY resolves the same from its own `hooks.conf` under
+`.git/modules/`, and the payload is the full set (commit-msg, post-checkout, post-commit, post-merge,
+post-rewrite, pre-commit, pre-push). The install report's "core.hooksPath: UNSET" was my instrument
+reading the **global** level only — the pointer measured at the wrong level, the scar
+`hooks-armed-measures-pointer-not-payload` one level down. The tune script was right to leave global
+alone (it arms only when unset at every level). Fixed in [`mac_install.sh`](mac_install.sh): it now
+prints the effective value with its origin from inside the lobby, and the global level separately.
+Phase 6's two Mac rows close here.
 
 **Tree cleanup, 2026-09-02, operator-approved.** The PC checkout (on `main`) carried drift no lane owned.
 Measured, then acted on:

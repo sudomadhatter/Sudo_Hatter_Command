@@ -49,7 +49,7 @@ EOF
 echo; echo "== instrument — paste this block back =="
 echo "conductor: hook.sh $([ -x ~/.conductor/hook.sh ] && echo present || echo absent) | Conductor.app $([ -d /Applications/Conductor.app ] && echo installed || echo not-installed)"
 echo "GITHUB_TOKEN: $([ -n "${GITHUB_TOKEN:-}" ] && echo SET || echo unset) in this shell | exported from: $(grep -l GITHUB_TOKEN ~/.zshenv ~/.zprofile ~/.zshrc ~/.profile ~/.bash_profile 2>/dev/null | tr '\n' ' ')"
-echo "core.hooksPath: $(git config --global core.hooksPath || echo UNSET)"
+echo "core.hooksPath: $(git config --show-origin --get core.hooksPath 2>/dev/null || echo UNSET) (effective, from the lobby) | global: $(git config --global core.hooksPath 2>/dev/null || echo unset)"
 echo "node: $(node -v 2>/dev/null || echo none) | python3: $(python3 -V 2>/dev/null || echo none) | grep: $(grep --version 2>/dev/null | head -1)"
 echo "banner app: $([ -x /opt/homebrew/bin/terminal-notifier ] && echo /opt/homebrew/bin/terminal-notifier || command -v terminal-notifier || echo osascript-fallback)"
 
