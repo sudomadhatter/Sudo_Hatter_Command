@@ -1356,12 +1356,21 @@ def main() -> int:
     #    .claude/worktrees/<lane>/, so the absolute parts contain "worktrees" for every file
     #    and an absolute-path filter silently excludes the entire tree (found 0 of 2 copies).
     copies = []
-    for p in ROOT.rglob("autopilot_bmad_dev_loop.md"):
-        rel = p.relative_to(ROOT).as_posix()
-        parts = rel.split("/")
-        if {".git", "_artifacts", "Projects", "worktrees"} & set(parts):
-            continue
-        copies.append(rel)
+    # ⛔ PRUNE THE WALK — A RESULT-FILTER DOES NOT PROTECT IT. `ROOT.rglob(...)` ENTERS every
+    # directory before the test below can reject it, so it descended into
+    # `Projects/<p>/.claude/worktrees/<lane>/backend/.venv/Lib/site-packages/torch-*.dist-info/
+    # licenses/third_party/kineto/.../civetweb/examples/rest` and died with WinError 3 (Windows
+    # refuses paths over 260 chars). That crash took the WHOLE FILE down, and a file that dies
+    # has run nothing — the suite reported it as one red among many rather than as unrun.
+    # `os.walk` lets the same names be dropped from `dirnames`, so they are never entered.
+    # The exclusion set is the original four plus the module's own PRUNE (a real second copy of
+    # this doc cannot live in `.venv`/`node_modules`), so the assertion is unchanged.
+    skip = {".git", "_artifacts", "Projects", "worktrees"} | PRUNE
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        dirnames[:] = [d for d in dirnames if d not in skip]
+        if "autopilot_bmad_dev_loop.md" in filenames:
+            copies.append((Path(dirpath) / "autopilot_bmad_dev_loop.md")
+                          .relative_to(ROOT).as_posix())
     ok = len(copies) == 1
     c.check("T7 exactly one autopilot_bmad_dev_loop.md", ok, det(ok, f"copies: {sorted(copies)}"))
 

@@ -422,6 +422,14 @@ def do_unlink(worktree: Path) -> int:
 
 
 def main() -> int:
+    # Windows consoles default to cp1252 and cannot encode this script's own output
+    # markers, so a print crashes the run and the operator sees nothing. Same guard as
+    # check_maps.py and tests/_harness.py. Never raises: a non-reconfigurable stream
+    # (a pipe, a StringIO under test) simply keeps its encoding.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001 - a shim, not a feature
+        pass
     ap = argparse.ArgumentParser(description="Link gitignored runtime assets into a git worktree.")
     ap.add_argument("worktree", help="path to the worktree")
     ap.add_argument("--repo", help="source repo (default: this repo's main working tree)")

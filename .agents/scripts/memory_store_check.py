@@ -122,6 +122,14 @@ def check_delta(store: Path, rebaseline: bool = False) -> list[str]:
 
 
 def main() -> int:
+    # Windows consoles default to cp1252 and cannot encode this script's own output
+    # markers, so a print crashes the run and the operator sees nothing. Same guard as
+    # check_maps.py and tests/_harness.py. Never raises: a non-reconfigurable stream
+    # (a pipe, a StringIO under test) simply keeps its encoding.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001 - a shim, not a feature
+        pass
     ap = argparse.ArgumentParser(description="Memory store integrity + regression check")
     ap.add_argument("--store", help="path to the store (default: <repo>/_artifacts/_memory "
                                     "resolved from the current directory)")

@@ -288,6 +288,14 @@ def cmd_status(bundle_dir: Path, user_dir: Path, code_bin: str | None) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows consoles default to cp1252 and cannot encode this script's own output
+    # markers, so a print crashes the run and the operator sees nothing. Same guard as
+    # check_maps.py and tests/_harness.py. Never raises: a non-reconfigurable stream
+    # (a pipe, a StringIO under test) simply keeps its encoding.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001 - a shim, not a feature
+        pass
     parser = argparse.ArgumentParser(description="Synchronize VS Code environment between Mac and Windows PC.")
     sub = parser.add_subparsers(dest="command", help="Command to run")
 

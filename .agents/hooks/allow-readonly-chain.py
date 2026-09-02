@@ -535,9 +535,23 @@ def _canon(p: str) -> str:
     ⛔ The rewrite is Windows-only. On POSIX a backslash is a legal FILENAME character, so
     rewriting it there would turn the sibling `/ws\\x` into `/ws/x` and read it as inside a
     workspace rooted at `/ws` — a separator fix for one machine widening the other's guard.
+
+    ⛔ AND WINDOWS HAS A THIRD SPELLING, WHICH IS THE ONE THE SHELL PRODUCES. The Bash tool runs
+    Git Bash, whose own spelling of `C:\\ws` is `/c/ws` — and agents type that constantly because
+    it is what `pwd` hands back. `_is_abs` accepts it (it starts with `/`), so it arrives here and
+    used to be compared, unrewritten, against a root of `c:/ws`: never equal, so EVERY
+    `cd /c/<repo> && …` chain fell through to a prompt. Measured over 18 transcripts: 114 calls,
+    7.0% of every prompt the operator answered. Fourth instance of this bug in the house after
+    SCC-321 (`C:/` vs `/`) and SCC-171/172. It fails SAFE — a prompt, never a wrong grant — which
+    is why it survived a fixture set that spells the root `C:/…` every time.
+
+    The rewrite is exact and cannot widen anything: only a SINGLE letter between the leading
+    slash and the next separator is a drive, so `/etc`, `/tmp` and `/private` are untouched, and
+    `/d/Somewhere` becomes `d:/somewhere` — still outside a `c:` root, still refused.
     """
     if os.name == "nt":
         p = p.replace("\\", "/").casefold()
+        p = re.sub(r"^/([a-z])(?=/|$)", r"\1:", p)
     p = posixpath.normpath(p)
     # ⛔ `rstrip` must not be able to EMPTY the root. A root of "/" would become "", and the
     # caller's `target.startswith(root + "/")` would then be true of every absolute path on the
