@@ -64,4 +64,3 @@ For all three:
 - Find the authoritative source first. Prefer **first-party documentation from the vendor/company's own website**, official docs, or the tool's own `--help` / README / source. Use the **web search tool** to locate it when it isn't already on disk.
 - Match the docs to the **version you're actually on** — interfaces drift, and a remembered signature may be stale (see `dependency-awareness`).
 - Only act once you've confirmed the current, real behavior from a first-party source. "It's probably `X`" is not confirmation — it is stale memory dressed as knowledge.
-
