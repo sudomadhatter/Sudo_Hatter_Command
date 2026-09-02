@@ -1068,3 +1068,32 @@ Measured, then acted on:
 | `scratch/mutation_sweep_24_7.py` | AviationChat story 24.7's mutation-sweep evidence, cited by that story's walkthrough at this exact path | **stays** until AVCH-109 closes; that lane moves it into the story's own artifacts before close-out |
 | three `_artifacts/_memory/` edits | this session's (hook SIGTERM memory, grep correction, index) | committed on this lane at `1293a058`; they clear from the tree when the lane lands |
 | five memory deletions seen earlier | SCC-377's deliberate retirement, merged on `main` | nothing; the Linux clone's memory-store guard was re-baselined to acknowledge it |
+
+### Phase 4 — the Desktop Team's paste issued; every mechanic proven on this PC first (2026-09-02)
+
+The operator asked for one copy-and-paste command for the Desktop Team. Each thing the paste relies on
+was measured or exercised on the PC first; three of the plan's assumptions did not survive contact.
+
+| the plan assumed | measured | consequence |
+|---|---|---|
+| VS Code already talks to WSL | `ms-vscode-remote.remote-wsl` was **not installed** on Windows, and `~/.vscode-server` did not exist in Ubuntu — the distro had never been connected | installed here from the CLI (v0.104.3). It lives in the extensions dir both instances share, so `code2` has it too |
+| "install the extensions into Ubuntu" is one command | `code --remote wsl+Ubuntu --install-extension …` is **silently ignored** — it reported the Windows copies as already installed and the distro stayed empty. The working path is VS Code's own shim run *inside* the distro (`/mnt/c/Microsoft VS Code/bin/code --install-extension …`): it downloads the server headlessly and installs into `~/.vscode-server/extensions` | done here for Ubuntu — Claude Code 2.1.258, Zoo Code 3.81.100433 (pinned to the Windows version; it is a pre-release channel), Python 2026.4.0 with debugpy, pylance and envs: 6 dirs. The export carries them into zoo2 |
+| `code .` keeps working from an Ubuntu terminal | Phase 1's `appendWindowsPath=false` took the Windows shim off PATH | the paste symlinks `/usr/local/bin/code` to the shim — the same scar the node/claude symlinks closed |
+| Java, Firebase CLI and Docker are all missing (the hand-back note) | Firebase CLI: `firebase/tests/node_modules/.bin/firebase` from Phase 2's `npm ci`; nothing global needed. Docker: AGY runs `docker` only inside the GitHub deploy workflow — no local tier needs it, and the vendor doc says it is incompatible with the sandbox | **Java 17 is the one real gap** (rules + e2e emulator tiers; the two orchestrators have no Linux discovery branch, so `JAVA_HOME` must be set). The paste installs `openjdk-17-jre-headless` and puts `JAVA_HOME` in `~/.profile` (the VS Code server probes an interactive login shell, so `~/.profile` is what it reads; `~/.bashrc` is not). Docker Desktop's WSL toggle stays **off** for both distros; the Firebase CLI needs nothing |
+| `OPENROUTER_API_KEY` → `~/.profile` | its only consumer is `autopilot-dev-story.ps1`, and `pwsh` is not installed in Ubuntu — there is no Linux consumer yet; when the engine is ported it reads a gitignored `.env` | not persisted anywhere; nothing to do |
+| the two-instance rig and the roster | the roster is project-level (`.roomodes` at the repo root plus `.roo/`), so it travels with every clone; the Windows-side `custom_modes.yaml` / `mcp_settings.json` are 16- and 26-byte empties. Under Remote-WSL, Zoo runs *inside* the distro, so its globalState (model, approvals, keys) lives in `~/.vscode-server/data/User/globalStorage/` **there** — one per distro | this is exactly why two distros isolate two seats. The provider profile is imported once per distro by hand (`zoo-code.importSettings` exists). **Phase 5 consequence:** `zoo_permissions_apply.py` knows only the Windows and Mac paths today and must learn the distro path, run from inside each distro |
+| export/import carries the user | an imported distro has no launcher, so its default user comes from `/etc/wsl.conf` — `[user] default=dlohn` from Phase 1, carried by the image | the paste verifies `whoami`=dlohn and a Windows PATH leak of 0 inside zoo2 |
+| — | the export also copies `~/.claude/.credentials.json`; two distros sharing one OAuth session invite a silent logout of the primary | the paste removes the copy in zoo2 (Zoo's seat; `claude /login` there if ever needed) |
+
+The paste is [`phase4_pc.ps1`](phase4_pc.ps1): preconditions, the Linux half in Ubuntu (Java, profile,
+`code` door, extensions, probe), a hard stop for the operator to close every window, `wsl --shutdown`,
+`wsl --export … --vhd` (a block copy of the 21.6 GB disk; C: has 1.3 TB free), `wsl --import
+Ubuntu-zoo2 … --vhd --version 2`, the strip-and-probe in zoo2, `code2.cmd` rewritten to land on
+`wsl+Ubuntu-zoo2` (the old launcher kept as `code2.cmd.bak-scc376`, the isolated user-data-dir and
+the clone-sync untouched), then the report. It is re-runnable, prints no secret, and keeps the
+exported `.vhdx` as the Phase 3 snapshot. The gate at the end is by hand, and the reload is what
+keeps it honest: change the model in instance 2, **reload instance 2** (proves the change was saved),
+**reload instance 1** (proves it re-read its own state), instance 1 unchanged.
+
+Already done on the PC before the paste was written, both in Phase 4's own scope: the Remote-WSL
+extension on Windows, and the three work extensions inside Ubuntu.
