@@ -36,6 +36,7 @@ Settled project-only facts live in the project's own store (SCC-73). Working in 
 - [Follow-ons are NOT a new story](followon-fixes-are-not-a-new-story.md) — no new worktree/key; epic branch or chore/*.
 - [Close-out is the sign-off](close-out-command-is-daniels-signoff.md) — operator-invoked command IS the sign-off.
 - [active-context budget](active-context-pointer-budget.md) — ≤20 KB; entries born ≤3-line; stale text deleted.
+- **⛔ Close-out reads THREE machine contracts — a finished story blocks on any one** — [review is NARRATED until the block is in the walkthrough](review-is-narrated-until-the-block-is-in-the-walkthrough.md) (no `Verdict:` = "review has not run"; recover the roster from the lens log, never invent) · [receipts file under the BOARD-key slug](gate-receipts-file-under-the-board-key-slug.md) (`--story avch-109` reads as NO RECEIPT; re-run, never rename) · [File List paths are REPO-ROOT relative](file-list-paths-are-repo-root-relative.md) (stack-relative = all ABSENT; a backticked example in a comment is a 31st claim).
 - **Scoping discipline** — [recon reframes scope](recon-reframes-story-scope.md) · [test-debt = characterization](test-debt-stories-are-characterization.md) · [⭐ review findings are not a work queue](review-findings-are-not-a-work-queue.md) (fix in thread) · [⭐⛔ discovered work = lettered subtask](discovered-work-becomes-a-lettered-part.md) · [⛔ a defer needs a STRUCTURAL blocker](a-defer-needs-a-structural-blocker.md).
 
 ## Git, machines & worktrees
