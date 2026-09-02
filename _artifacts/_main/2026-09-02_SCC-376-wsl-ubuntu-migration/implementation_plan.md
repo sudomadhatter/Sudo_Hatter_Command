@@ -1012,3 +1012,22 @@ The deviation list, regenerated (this IS the Phase 6 list):
 == untouched: 102 allow rules, sandbox.enabled=True, autoAllowBashIfSandboxed=True, hooks={'Notification': 2, 'Stop': 2, 'SessionStart': 1, 'UserPromptSubmit': 1, 'PermissionRequest': 1, 'PreToolUse': 1, 'PostToolUse': 1, 'PostToolUseFailure': 1, 'SubagentStart': 1, 'SessionEnd': 1, 'PreCompact': 1} ==
 remaining /Users/ references: 0  (must be 0)
 ```
+
+
+### Phase 6 evidence — the Mac installed the same file (2026-09-02 14:25)
+
+The operator ran [`mac_install.sh`](mac_install.sh) on the Mac. Measured there, from the pasted report,
+and read back from here where a read-back was possible:
+
+| check | Mac | Linux | verdict |
+|---|---|---|---|
+| `~/.claude/settings.json` sha256 | `90b39f9f36eb24b8` | `90b39f9f36eb24b8` | **identical** — Phase 6's core line holds on both machines |
+| allow rules vs the Mac's own backup | 0 removed, 0 added | — | nothing lost. The Mac's live file had already been respelled since the 2026-09-02 paste, so the "5 dead rules on the Mac today" row above describes the pasted file, not the Mac at install time |
+| notifier self-test | exit 0; the push read back from the house topic at 14:25:37 as `Sudo_Hatter_Command — SCC-376 Mac install complete: the portable notifier works`, tag `robot` | proven through Claude's own runner above | **both channels live on both machines** |
+| Conductor | `hook.sh` present, **Conductor.app not installed** | absent | 11 guarded hooks still fork a dead app's script on every event on the Mac → [`mac_tune.sh`](mac_tune.sh) renames `~/.conductor`; the guard then silences all 11 with the settings file unchanged |
+| `GITHUB_TOKEN` | unset; no rc file exports it | unset | the 5 `env -u GITHUB_TOKEN …` rules are inert on both machines; harmless, left in place |
+| `core.hooksPath` (global) | **UNSET** | `.githooks` (lobby, local) | the house arms gates per machine with `git config --global core.hooksPath .githooks`; [`mac_tune.sh`](mac_tune.sh) sets it only if unset at every level and prints the origin |
+| node / python3 / grep | v22.23.2 / 3.14.7 / BSD grep 2.6.0 | 22 (LTS) / 3.12.3 / GNU grep | Node 22 on both per the plan. `grep` on the Mac measured as **BSD grep** from a terminal script, while a Claude session on 2026-09-01 measured ugrep 7.8.4 — the shadow depends on the launch context, so gates keep using counts, never `-q` |
+
+One stray push: a probe at 14:17 ran without a self-test topic and sent `hookprobe — ok` to the house
+topic. Mine; no action.
