@@ -139,12 +139,37 @@
       "gh *",
       "python3 *jira_feed.py *",
       "python3 *task_preflight.py *"
-    ],
-    "allowUnsandboxedCommands": false
+    ]
   },
   "theme": "dark",
   "editorMode": "normal",
   "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true,
-  "effortLevel": "xhigh"
+  "effortLevel": "xhigh",
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10,
+            "async": true,
+            "command": "~/.claude/notify.sh 'Claude Code' 'Input needed or task update'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10,
+            "async": true,
+            "command": "~/.claude/notify.sh 'Claude Code' 'Turn completed'"
+          }
+        ]
+      }
+    ]
+  }
 }

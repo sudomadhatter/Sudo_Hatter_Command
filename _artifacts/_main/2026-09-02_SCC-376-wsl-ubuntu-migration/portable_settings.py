@@ -55,6 +55,16 @@ for event, groups in list(hooks.items()):
 if not hooks and "hooks" in d:
     del d["hooks"]
 
+# 3b · the Mac notifier is REPLACED, not dropped: the same two hooks come back pointing at a
+#      PORTABLE ~/.claude/notify.sh (ntfy push on both machines + whichever desktop banner exists).
+#      Hooks run outside the sandbox (vendor doc), and `~/` keeps the command identical on both.
+d.setdefault("hooks", {})
+d["hooks"]["Notification"] = [{"hooks": [{"type": "command", "timeout": 10, "async": True,
+    "command": "~/.claude/notify.sh 'Claude Code' 'Input needed or task update'"}]}]
+d["hooks"]["Stop"] = [{"hooks": [{"type": "command", "timeout": 10, "async": True,
+    "command": "~/.claude/notify.sh 'Claude Code' 'Turn completed'"}]}]
+dev.append("hooks.Notification + hooks.Stop: re-added, pointing at the PORTABLE ~/.claude/notify.sh (replaces the Mac-only notifier)")
+
 # 4 · the dead `X/:*` spelling (SCC-375): Claude documents `Bash(X:*)` as `Bash(X *)`, so a prefix
 #     ending in `/` demands a space the real command never has — measured matching 0 of 22,385.
 #     Respelled to the raw-prefix form `X/*` (the A2b class), itemised so it is a recorded deviation.
@@ -69,8 +79,13 @@ for i, r in enumerate(allow):
 #     2026-09-02: a write OUTSIDE allowWrite was refused by bwrap, then retried by Claude with
 #     dangerouslyDisableSandbox and auto-approved under defaultMode=auto — the file landed. With this
 #     false, the parameter is ignored; anything that must run outside stays in excludedCommands.
+#     OPERATOR RULING 2026-09-02: NOT applied. The goal is an agent that works unattended on both
+#     machines; the hatch never prompted anyone, and closing it trades a silent success for a silent
+#     agent failure unless the fence is measured wide enough. The Mac's behaviour is the reference.
+#     Strict mode is a FUTURE option whose entry condition is p3_battery.sh producing zero refusals.
+STRICT = False
 sb = d.setdefault("sandbox", {})
-if sb.get("allowUnsandboxedCommands") is not False:
+if STRICT and sb.get("allowUnsandboxedCommands") is not False:
     dev.append(f"sandbox.allowUnsandboxedCommands: {sb.get('allowUnsandboxedCommands', '(unset = true)')}  ->  false  (escape hatch closed)")
     sb["allowUnsandboxedCommands"] = False
 

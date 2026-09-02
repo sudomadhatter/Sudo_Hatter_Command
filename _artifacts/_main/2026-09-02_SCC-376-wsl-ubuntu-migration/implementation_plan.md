@@ -883,3 +883,70 @@ A polished note is a claim; each line was checked against the distro.
 | Java, Firebase CLI, Docker missing | `java`, `firebase`, `docker` all MISSING | **true**; AGY emulator-tier prerequisites, team-owned. Note from the doc: `docker` is incompatible with the sandbox and needs `docker *` in `excludedCommands` |
 | `OPENROUTER_API_KEY` → add to `~/.bashrc` | absent in a non-interactive shell | **true that it is absent; wrong home.** `~/.bashrc` returns early for non-interactive shells (A5, and the node/claude symlink finding). `~/.profile` is the reliable home for the VS Code server's login shell |
 | — | Claude warned twice: `Bash(git -C * push … chore/*)` in the **project** settings has a wildcard before the subcommand and *"approves any options inserted at that position … -c and --exec-path can run arbitrary commands"* | **new; Phase 5** — the same laundering class as `git -C` in Zoo |
+
+### Phase 3 — the operator's ruling (2026-09-02): match the Mac; never make the agent's job harder
+
+The goal, restated by the operator and confirmed: **the agent works unattended on both machines** — no
+prompts, no commands handed back, no per-machine files. Security serves that goal, not the reverse.
+
+Against that goal, closing the unsandboxed-retry hatch was the wrong ship: it never prompted anyone
+(auto mode's classifier judges the retried command), and closing it trades a silent success for a
+silent agent failure unless the fence is measured wide enough — which would have needed the whole
+workload battery first. **Reverted.** The installed file matches the Mac's behaviour: hatch open.
+Strict mode stays in [`portable_settings.py`](portable_settings.py) behind `STRICT = False`, with
+[`p3_battery.sh`](../../../_artifacts/_main/2026-09-02_SCC-376-wsl-ubuntu-migration/) as its entry
+condition — zero refusals on real workloads, or it does not ship. The containment demonstration above
+stands as evidence of what the fence *can* do; it is not what is deployed.
+
+**The notifier is replaced, not dropped.** The Mac's `notify.sh` was macOS-only. The portable
+[`notify.sh`](notify.sh) pushes to ntfy (the phone, from either machine — the channel the house
+already uses, topic `mac-sudo-command`) and adds whichever desktop banner exists (terminal-notifier
+on macOS, notify-send on Linux). Hooks run **outside** the sandbox per the vendor doc, so no network
+allowlist entry is needed. The two hooks are back in the portable file pointing at
+`~/.claude/notify.sh`, identical on both machines. Tested on Linux with the documented Stop payload
+(`last_assistant_message`, `cwd`): exit 0, push sent.
+
+Installed `~/.claude/settings.json` sha256 `fe300a766f337233…`, byte-identical to the committed
+[`claude-user-settings.portable.json`](claude-user-settings.portable.json). Deviations now: paths →
+`~/`; Conductor hooks removed; notifier **replaced** with the portable one; the five dead `X/:*`
+rules respelled. Nothing else differs from the Mac.
+
+```
+== deviations from the Mac file (this IS the Phase 6 list) ==
+  allowWrite: /Users/sudohatter/Sudo_Hatter_Command  ->  ~/Sudo_Hatter_Command
+  allowWrite: /Users/sudohatter/Sudo_Hatter_Command/.git  ->  ~/Sudo_Hatter_Command/.git
+  allowWrite: /Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees  ->  ~/Sudo_Hatter_Command/.claude/worktrees
+  allowWrite: /Users/sudohatter/Sudo_Hatter_Command/Projects  ->  ~/Sudo_Hatter_Command/Projects
+  hooks.Notification: removed 1 Mac-only hook(s) (notify.sh)
+  hooks.Notification: removed 1 Mac-only hook(s) (.conductor/)
+  hooks.Notification: event block emptied and removed
+  hooks.Stop: removed 1 Mac-only hook(s) (notify.sh)
+  hooks.Stop: removed 1 Mac-only hook(s) (.conductor/)
+  hooks.Stop: event block emptied and removed
+  hooks.SessionStart: removed 1 Mac-only hook(s) (.conductor/)
+  hooks.SessionStart: event block emptied and removed
+  hooks.UserPromptSubmit: removed 1 Mac-only hook(s) (.conductor/)
+  hooks.UserPromptSubmit: event block emptied and removed
+  hooks.PermissionRequest: removed 1 Mac-only hook(s) (.conductor/)
+  hooks.PermissionRequest: event block emptied and removed
+  hooks.PreToolUse: removed 1 Mac-only hook(s) (.conductor/)
+  hooks.PreToolUse: event block emptied and removed
+  hooks.PostToolUse: removed 1 Mac-only hook(s) (.conductor/)
+  hooks.PostToolUse: event block emptied and removed
+  hooks.PostToolUseFailure: removed 1 Mac-only hook(s) (.conductor/)
+  hooks.PostToolUseFailure: event block emptied and removed
+  hooks.SubagentStart: removed 1 Mac-only hook(s) (.conductor/)
+  hooks.SubagentStart: event block emptied and removed
+  hooks.SessionEnd: removed 1 Mac-only hook(s) (.conductor/)
+  hooks.SessionEnd: event block emptied and removed
+  hooks.PreCompact: removed 1 Mac-only hook(s) (.conductor/)
+  hooks.PreCompact: event block emptied and removed
+  hooks.Notification + hooks.Stop: re-added, pointing at the PORTABLE ~/.claude/notify.sh (replaces the Mac-only notifier)
+  allow rule (dead X/:* spelling, SCC-375): Bash(git push -u origin chore/:*)  ->  Bash(git push -u origin chore/*)
+  allow rule (dead X/:* spelling, SCC-375): Bash(git push origin chore/:*)  ->  Bash(git push origin chore/*)
+  allow rule (dead X/:* spelling, SCC-375): Bash(python3 .agents/scripts/:*)  ->  Bash(python3 .agents/scripts/*)
+  allow rule (dead X/:* spelling, SCC-375): Bash(git -C * push -u origin chore/:*)  ->  Bash(git -C * push -u origin chore/*)
+  allow rule (dead X/:* spelling, SCC-375): Bash(git -C * push origin chore/:*)  ->  Bash(git -C * push origin chore/*)
+== untouched: 102 allow rules, sandbox.enabled=True, autoAllowBashIfSandboxed=True ==
+remaining /Users/ references: 0  (must be 0)
+```
