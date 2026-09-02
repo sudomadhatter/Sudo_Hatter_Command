@@ -171,7 +171,7 @@ own headless-Linux guidance does not use a keychain at all: it authenticates wit
 from **standard input**.
 
 ```bash
-echo "$JIRA_API_TOKEN" | acli jira auth login --email <email> --site sudo-command.atlassian.net --token
+echo "$JIRA_API_TOKEN" | acli jira auth login --email sudomadhatter@gmail.com --site sudo-command.atlassian.net --token
 ```
 
 `--token` reads from stdin; `--web` is the browser flow used on the Mac and needs a desktop. The
@@ -260,7 +260,7 @@ whoami; id -u; echo $HOME                      # dlohn / non-zero / /home/dlohn
 echo "$PATH" | tr ':' '\n' | grep -c '^/mnt/'  # must be 0
 for t in node npm claude acli gh python3; do printf '%-8s %s\n' "$t" "$(command -v $t)"; done
 node --version                                 # v22.x
-echo "$JIRA_API_TOKEN" | acli jira auth login --email <email> \
+echo "$JIRA_API_TOKEN" | acli jira auth login --email sudomadhatter@gmail.com \
      --site sudo-command.atlassian.net --token   # once; --token reads stdin, --web needs a desktop
 bash -c 'acli jira auth status'                # ✓ from a NON-interactive shell — the real test
 bash -c 'echo ${JIRA_API_TOKEN:+set}'          # only matters if the session did not persist
@@ -647,3 +647,87 @@ answering the checks, because the repo is the honest boundary. F1, F3, F4 and F5
 the sections they affect, marked `⚠️ AUDIT FINDING` so the builder reads each in context.
 
 The verdict describes the plan **as it now stands**, which is the plan being put up for approval.
+
+## Execution log (2026-09-02) — what actually happened, phase by phase
+
+Written from the Linux clone, because the shared Windows tree was moved to another lane's branch
+mid-session. Every line below is a measurement, not a plan.
+
+### Phase 0 — PASS
+
+`git diff --stat a87f1b5a -- <the three settings files>` is empty. The Windows fence is frozen and
+remains the fallback.
+
+### Phase 1 — PASS (operator ruling: passwordless sudo for `dlohn`)
+
+| check | result |
+|---|---|
+| `whoami` / `id -u` / `$HOME` | `dlohn` / `1001` / `/home/dlohn` |
+| Windows PATH entries leaking in | **50 → 0** |
+| `/etc/wsl.conf` | `[boot] systemd=true` kept; `[user] default=dlohn` and `[interop] appendWindowsPath=false` added; `.scc376.bak` kept |
+| sudoers | `/etc/sudoers.d/dlohn` NOPASSWD, validated by `visudo -c` |
+| toolchain | node **v22.23.2** · npm 10.9.8 · gh 2.99.0 · acli 1.3.36 · claude (native) · unzip |
+| `gh auth status` / `acli jira auth status` | both authenticated — done by the PC team |
+
+**A finding the plan did not anticipate, and it was load-bearing.** nvm and the `claude` installer
+both write their PATH export into `~/.bashrc`, and Ubuntu's `~/.bashrc` returns early for a
+non-interactive shell — which is exactly what every agent tool call gets. Left alone, `node`, `npm`
+and `claude` were present when the operator typed and **MISSING for automation**; the `claude`
+installer printed the warning itself. All four are symlinked into `/usr/local/bin` and every tool is
+now proven from `bash -c`. Same scar as the A5 token trap; it bit the toolchain first.
+
+**Correction.** The acli gate was written with the wrong email (`dlohneiss@gmail.com`); the Jira
+account is **`sudomadhatter@gmail.com`**. The PC team hit `Unauthorized` on the first try because of
+it. Fixed above.
+
+### Phase 2 — PASS
+
+Repo at `/home/dlohn/Sudo_Hatter_Command` on `/dev/sdc` (the Linux disk), cloned from the local
+Windows checkout (full history, no network, no auth needed), remote repointed at GitHub,
+`core.hooksPath=.githooks` armed, hooks executable.
+
+| gate | result |
+|---|---|
+| `test_allow_readonly_chain` | **153/153**, exit 0 — A2 confirmed exactly: 4 R-block reject cases present, 0 allow cases |
+| `test_settings_allowlist` | 28/28, exit 0 |
+| `test_allow_scratchpad` | **187/187**, exit 0 — the SCC-375 open item (case E, the uid test) closed by the migration itself |
+| `run_all.py` after submodules + assets | **71/71**, exit 0 |
+
+**F7 resolved.** `git submodule update --init --recursive` brought in all ten `Projects/` children
+(needed `gh auth setup-git` first — `gh auth login` alone does not wire git's credential helper).
+T9 then still named eight paths: `backend/.venv`, `backend/.env`, `frontend/node_modules`,
+`firebase/tests/node_modules` under AGY, and `docs/.maps-journal.jsonl` — all **gitignored,
+per-machine assets** that a fresh clone never has. Rebuilt for Linux, AGY only (the frozen projects
+are left alone on purpose): `.env` copied disk-to-disk with mode 600 and never printed, `npm ci` in
+both node trees (687 + 488 packages on Node 22), the journal copied from the PC checkout.
+
+**One honest caveat, then fixed.** The first `python3 -m venv` created `backend/.venv` and died on
+`ensurepip` because `python3.12-venv` was not installed — so T9 went green on a directory that was
+not a venv. A directory is not a venv. The package was installed, the venv rebuilt, requirements
+installed, and `pytest` / `ruff` proven from `.venv/bin/`. Recorded because a green that lies is the
+house's oldest scar.
+
+### Phase 3 — prerequisites in; waiting on the Mac file
+
+The plan said "copy the Mac's settings file". The vendor sandbox doc says the Linux/WSL2 sandbox
+needs **two packages the plan never named**, plus an Ubuntu 24.04-specific AppArmor step:
+
+| prerequisite | result |
+|---|---|
+| `bubblewrap` + `socat` | installed, `/usr/bin` |
+| `kernel.apparmor_restrict_unprivileged_userns` | key does not exist in this WSL kernel — doc says skip the profile |
+| `@anthropic-ai/sandbox-runtime` (seccomp, optional; on WSL2 it is what blocks Windows-binary launches) | installed |
+| `bwrap --unshare-user … /bin/true` | **namespace created — OK** |
+
+**The mechanism that ends the two-machine divergence.** The sandbox doc states that `~/` in
+`allowWrite` resolves to `$HOME` on each machine. So the Mac's `/Users/sudohatter/Sudo_Hatter_Command`
+and Linux's `/home/dlohn/Sudo_Hatter_Command` are **one identical line**, `~/Sudo_Hatter_Command`.
+Phase 3 therefore installs a **portable** `~/.claude/settings.json`, not a per-machine one, and the
+same file goes back to the Mac — which is what "match the Mac" was always meant to buy.
+
+**A4 was worse than predicted.** The Mac probe found twelve hooks pointing at Mac-only *programs*
+(`~/.conductor/hook.sh` ×11, `~/.claude/notify.sh` ×1), not merely paths. A path can be rewritten;
+a program that does not exist on Linux cannot. Phase 6's gate changes from "byte-identical" to
+**"identical except a recorded, itemised deviation list"**: the four `allowWrite` paths → `~/`, the
+eleven Conductor hooks removed, the notifier hook removed with a Linux notifier as a named follow-on.
+Everything else — including all 62 permission rules — travels untouched.
