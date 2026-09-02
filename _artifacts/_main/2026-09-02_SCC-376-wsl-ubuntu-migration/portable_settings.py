@@ -1,13 +1,17 @@
 """SCC-376 Phase 3 — turn the Mac's ~/.claude/settings.json into ONE portable file for both machines.
 
-Three deviations, each itemised so Phase 6 checks the recorded list rather than a byte diff:
-  1. sandbox.filesystem.allowWrite: /Users/<mac-user>/X  ->  ~/X   (the doc: ~/ resolves to $HOME
-     per machine, so one line serves the Mac AND Linux).
-  2. hooks whose command runs ~/.conductor/hook.sh are REMOVED (Conductor is a macOS app; on Linux
-     the command does not exist and every session would fire eleven failing hooks).
-  3. hooks whose command runs ~/.claude/notify.sh are REMOVED (macOS notifier); a Linux notifier is
-     a named follow-on, not silently dropped.
-Everything else is untouched. Nothing is printed except the deviation list and counts.
+Every deviation is itemised so Phase 6 checks the recorded list rather than a byte diff:
+  1. sandbox.filesystem.*: /Users/<mac-user>/X  ->  ~/X   (the doc: ~/ resolves to $HOME per machine,
+     so one line serves the Mac AND Linux).
+  2. hooks: every /Users/<mac-user>/ path -> ~/. The Conductor hooks are KEPT, each guarded with
+     `if [ -x ~/.conductor/hook.sh ]; then ...; fi` — they run exactly as before where Conductor is
+     installed (the Mac) and are a silent no-op where it is not (Linux). The hook's exit code passes
+     through the `if`, so nothing Conductor relies on changes.
+  3. hooks: the two notifier hooks point at the PORTABLE ~/.claude/notify.sh — same events, same
+     arguments, same timeout. The Mac's banner behaviour is folded into that script (2026-09-02).
+  4. the dead `X/:*` spelling (SCC-375) respelled `X/*`.
+  5. STRICT sandbox mode — NOT applied (operator ruling 2026-09-02); kept behind STRICT = False.
+Nothing else is touched. Nothing is printed except the deviation list and counts.
 
 usage: python3 portable_settings.py <mac-settings.json> <out.json>
 """
@@ -19,51 +23,43 @@ from pathlib import Path
 src, dst = Path(sys.argv[1]), Path(sys.argv[2])
 d = json.loads(src.read_text(encoding="utf-8"))
 dev = []
+HOME_RE = re.compile(r"/Users/[^/\s'\"]+")
 
-# 1 · allowWrite -> ~/
+# 1 · sandbox filesystem paths -> ~/
 fs = d.get("sandbox", {}).get("filesystem", {})
 for key in ("allowWrite", "allowRead", "denyRead", "denyWrite"):
     if key not in fs:
         continue
     new = []
     for p in fs[key]:
-        q = re.sub(r"^/Users/[^/]+", "~", p)
+        q = HOME_RE.sub("~", p, count=1) if p.startswith("/Users/") else p
         if q != p:
             dev.append(f"{key}: {p}  ->  {q}")
         new.append(q)
     fs[key] = new
 
-# 2 + 3 · Mac-only hook programs
-MAC_ONLY = (".conductor/", "notify.sh")
-hooks = d.get("hooks", {})
-for event, groups in list(hooks.items()):
-    kept = []
+# 2 + 3 · hooks: paths -> ~/ ; Conductor guarded ; notifier -> the portable script
+CONDUCTOR = "~/.conductor/hook.sh"
+NOTIFY = "~/.claude/notify.sh"
+guarded, notif = 0, 0
+for event, groups in d.get("hooks", {}).items():
     for g in groups:
-        inner = [h for h in g.get("hooks", []) if not any(m in h.get("command", "") for m in MAC_ONLY)]
-        removed = len(g.get("hooks", [])) - len(inner)
-        if removed:
-            dev.append(f"hooks.{event}: removed {removed} Mac-only hook(s) "
-                       f"({', '.join(sorted({m for h in g.get('hooks', []) for m in MAC_ONLY if m in h.get('command','')}))})")
-        if inner:
-            g["hooks"] = inner
-            kept.append(g)
-    if kept:
-        hooks[event] = kept
-    else:
-        del hooks[event]
-        dev.append(f"hooks.{event}: event block emptied and removed")
-if not hooks and "hooks" in d:
-    del d["hooks"]
-
-# 3b · the Mac notifier is REPLACED, not dropped: the same two hooks come back pointing at a
-#      PORTABLE ~/.claude/notify.sh (ntfy push on both machines + whichever desktop banner exists).
-#      Hooks run outside the sandbox (vendor doc), and `~/` keeps the command identical on both.
-d.setdefault("hooks", {})
-d["hooks"]["Notification"] = [{"hooks": [{"type": "command", "timeout": 10, "async": True,
-    "command": "~/.claude/notify.sh 'Claude Code' 'Input needed or task update'"}]}]
-d["hooks"]["Stop"] = [{"hooks": [{"type": "command", "timeout": 10, "async": True,
-    "command": "~/.claude/notify.sh 'Claude Code' 'Turn completed'"}]}]
-dev.append("hooks.Notification + hooks.Stop: re-added, pointing at the PORTABLE ~/.claude/notify.sh (replaces the Mac-only notifier)")
+        for h in g.get("hooks", []):
+            cmd = h.get("command", "")
+            new = HOME_RE.sub("~", cmd)
+            if new.startswith(CONDUCTOR):
+                new = f"if [ -x {CONDUCTOR} ]; then {new}; fi"
+                guarded += 1
+            elif new.startswith(NOTIFY):
+                notif += 1
+            if new != cmd:
+                h["command"] = new
+if guarded:
+    dev.append(f"hooks: {guarded} Conductor hook(s) KEPT, path -> ~/, guarded "
+               f"`if [ -x {CONDUCTOR} ]; then ...; fi` (runs as before where Conductor exists; silent no-op where it does not)")
+if notif:
+    dev.append(f"hooks: {notif} notifier hook(s) path -> {NOTIFY} — the PORTABLE notifier "
+               f"(the Mac's banner behaviour folded in; ntfy on both machines; notify-send on Linux)")
 
 # 4 · the dead `X/:*` spelling (SCC-375): Claude documents `Bash(X:*)` as `Bash(X *)`, so a prefix
 #     ending in `/` demands a space the real command never has — measured matching 0 of 22,385.
@@ -77,8 +73,7 @@ for i, r in enumerate(allow):
 
 # 5 · close the unsandboxed-retry escape hatch (vendor doc, "Strict sandbox mode"). Measured on
 #     2026-09-02: a write OUTSIDE allowWrite was refused by bwrap, then retried by Claude with
-#     dangerouslyDisableSandbox and auto-approved under defaultMode=auto — the file landed. With this
-#     false, the parameter is ignored; anything that must run outside stays in excludedCommands.
+#     dangerouslyDisableSandbox and auto-approved under defaultMode=auto — the file landed.
 #     OPERATOR RULING 2026-09-02: NOT applied. The goal is an agent that works unattended on both
 #     machines; the hatch never prompted anyone, and closing it trades a silent success for a silent
 #     agent failure unless the fence is measured wide enough. The Mac's behaviour is the reference.
@@ -96,5 +91,6 @@ for line in dev:
     print("  " + line)
 print(f"== untouched: {len(d.get('permissions', {}).get('allow', []))} allow rules, "
       f"sandbox.enabled={d.get('sandbox', {}).get('enabled')}, "
-      f"autoAllowBashIfSandboxed={d.get('sandbox', {}).get('autoAllowBashIfSandboxed')} ==")
+      f"autoAllowBashIfSandboxed={d.get('sandbox', {}).get('autoAllowBashIfSandboxed')}, "
+      f"hooks={ {k: len(v) for k, v in d.get('hooks', {}).items()} } ==")
 print(f"remaining /Users/ references: {dst.read_text(encoding='utf-8').count('/Users/')}  (must be 0)")

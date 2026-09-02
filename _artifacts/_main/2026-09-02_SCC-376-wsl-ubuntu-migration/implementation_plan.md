@@ -950,3 +950,65 @@ rules respelled. Nothing else differs from the Mac.
 == untouched: 102 allow rules, sandbox.enabled=True, autoAllowBashIfSandboxed=True ==
 remaining /Users/ references: 0  (must be 0)
 ```
+
+
+### Phase 3 — the Mac is optimised by the SAME file (2026-09-02)
+
+The operator asked what the migration can do for the Mac while we are here. The answer is the design:
+there is one file, so every fix the transform makes lands on the Mac the moment the Mac installs it, and
+the Mac's own `notify.sh` (pasted 2026-09-02) is now folded into the portable notifier so the swap loses
+nothing it did.
+
+| on the Mac today | after the portable file |
+|---|---|
+| 5 allow rules carry the dead `X/:*` spelling (SCC-375) and match nothing — every `git push origin chore/…` and `python3 .agents/scripts/…` goes to auto mode's classifier instead of the allow list | respelled `X/*`: a deterministic allow, no classifier round-trip |
+| the notifier is macOS-only (`/opt/homebrew/bin/terminal-notifier`, `osascript`) | the same banner (context line, first line of the reply, markdown stripped, 140-char cap), the same `Tags: robot` push, the same `~/.claude/last-hook-input.json` debug copy — plus `notify-send` on Linux |
+| the push can be LOST: measured on Linux, about 15 ms after a hook's shell exits Claude sends SIGTERM to the hook's process group. The Mac script backgrounds its curl (`… &`) and exits, so that TERM can take the push with it; the banner, being foreground, always lands | the body runs in a detached subshell with its stdio closed and `trap '' TERM HUP INT` — python3 and curl inherit the ignore, the push completes, and the hook returns instantly. Proven through Claude's own hook runner below. Works the same in print mode (`claude -p`) and on a session's last turn, on both machines |
+| 11 Conductor hooks on absolute `/Users/sudohatter/…` paths, one per event (PreToolUse and PostToolUse fire on every tool call) | kept and path-portable, each guarded `if [ -x ~/.conductor/hook.sh ]; then …; fi` — runs exactly as before where Conductor is installed, a silent no-op where it is not; the exit code passes through the `if`, so nothing Conductor relies on changes |
+| 5 rules prefixed `env -u GITHUB_TOKEN …` — the allow list has been carrying a workaround for a token exported somewhere in the Mac's shell that shadows `gh`'s keychain login | unchanged in the file; [`mac_install.sh`](mac_install.sh) reports whether it is set and which rc file exports it, without printing it. Removing the export at its source retires the workaround — the operator's call once the report names the file |
+
+The Conductor question the previous section left open is closed by the guard: the file no longer needs
+to know whether Conductor is in use. Nothing in the file is Mac-only or Linux-only any more; the
+`/Users/` count is 0.
+
+**Mac install — one command, with a backup and a pasted-back report.** [`mac_install.sh`](mac_install.sh)
+backs up both files with a timestamp, installs from the branch without checking it out, validates the JSON
+before anything is replaced, prints the sha256 (must equal `90b39f9f36eb24b8…`), diffs the rules against the backup
+(a rule the Mac gained since 2026-09-02 shows as a `-` line and goes into the source file, never lost),
+instruments Conductor / `GITHUB_TOKEN` / `core.hooksPath` / node / grep, and fires the notifier with a real
+Stop-shaped payload:
+
+    cd ~/Sudo_Hatter_Command && git fetch origin chore/SCC-376-wsl-ubuntu-plan && git show FETCH_HEAD:_artifacts/_main/2026-09-02_SCC-376-wsl-ubuntu-migration/mac_install.sh > /tmp/mac_install.sh && bash /tmp/mac_install.sh
+
+**Evidence on Linux (this commit):**
+
+| probe | result |
+|---|---|
+| installed `~/.claude/settings.json` | sha256 `90b39f9f36eb24b8…`, byte-identical to the committed file; `/Users/` count 0; hatch open (Mac behaviour) |
+| notifier piped both payload shapes, topic read back from ntfy | `Sudo_Hatter_Command — Done and pushed — first line` and `Sudo_Hatter_Command — Claude needs your permission to use Bash`, tag `robot` — the Mac's exact format |
+| the Conductor guard string through `sh` with `hook.sh` absent | exit 0, silent |
+| hook env passthrough (throwaway project, sync hook) | `NTFY_TOPIC` reached the hook |
+| what kills an async hook's work | a plain `sleep 2; echo` async hook never wrote; a traced detached notifier died mid-`python3`; a timestamped body caught **SIGTERM 16 ms after its start** (its python3 exited 143), continued only because it trapped TERM, and posted; a `setsid` twin was never signalled. A sync hook with a detached body added 0 s to a 4.3 s run |
+| **end to end**: Claude's own runner → Stop → `notify.sh` → ntfy, read back | 1 message(s) read back: `Claude Code | Sudo_Hatter_Command — SCC-376 hook e2e` |
+
+Phase 5 scope note: the 20 `git -C *` rules in the **user** file are the same wildcard-laundering class
+Claude flagged in the project file — same fix, same commit, both files.
+
+The deviation list, regenerated (this IS the Phase 6 list):
+
+```
+== deviations from the Mac file (this IS the Phase 6 list) ==
+  allowWrite: /Users/sudohatter/Sudo_Hatter_Command  ->  ~/Sudo_Hatter_Command
+  allowWrite: /Users/sudohatter/Sudo_Hatter_Command/.git  ->  ~/Sudo_Hatter_Command/.git
+  allowWrite: /Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees  ->  ~/Sudo_Hatter_Command/.claude/worktrees
+  allowWrite: /Users/sudohatter/Sudo_Hatter_Command/Projects  ->  ~/Sudo_Hatter_Command/Projects
+  hooks: 11 Conductor hook(s) KEPT, path -> ~/, guarded `if [ -x ~/.conductor/hook.sh ]; then ...; fi` (runs as before where Conductor exists; silent no-op where it does not)
+  hooks: 2 notifier hook(s) path -> ~/.claude/notify.sh — the PORTABLE notifier (the Mac's banner behaviour folded in; ntfy on both machines; notify-send on Linux)
+  allow rule (dead X/:* spelling, SCC-375): Bash(git push -u origin chore/:*)  ->  Bash(git push -u origin chore/*)
+  allow rule (dead X/:* spelling, SCC-375): Bash(git push origin chore/:*)  ->  Bash(git push origin chore/*)
+  allow rule (dead X/:* spelling, SCC-375): Bash(python3 .agents/scripts/:*)  ->  Bash(python3 .agents/scripts/*)
+  allow rule (dead X/:* spelling, SCC-375): Bash(git -C * push -u origin chore/:*)  ->  Bash(git -C * push -u origin chore/*)
+  allow rule (dead X/:* spelling, SCC-375): Bash(git -C * push origin chore/:*)  ->  Bash(git -C * push origin chore/*)
+== untouched: 102 allow rules, sandbox.enabled=True, autoAllowBashIfSandboxed=True, hooks={'Notification': 2, 'Stop': 2, 'SessionStart': 1, 'UserPromptSubmit': 1, 'PermissionRequest': 1, 'PreToolUse': 1, 'PostToolUse': 1, 'PostToolUseFailure': 1, 'SubagentStart': 1, 'SessionEnd': 1, 'PreCompact': 1} ==
+remaining /Users/ references: 0  (must be 0)
+```

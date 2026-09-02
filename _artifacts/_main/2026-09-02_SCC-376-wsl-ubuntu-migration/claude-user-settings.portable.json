@@ -106,6 +106,171 @@
     ],
     "defaultMode": "auto"
   },
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/notify.sh 'Claude Code' 'Input needed or task update'",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x ~/.conductor/hook.sh ]; then ~/.conductor/hook.sh; fi",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/notify.sh 'Claude Code' 'Turn completed'",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x ~/.conductor/hook.sh ]; then ~/.conductor/hook.sh; fi",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x ~/.conductor/hook.sh ]; then ~/.conductor/hook.sh; fi",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x ~/.conductor/hook.sh ]; then ~/.conductor/hook.sh; fi",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x ~/.conductor/hook.sh ]; then ~/.conductor/hook.sh; fi",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x ~/.conductor/hook.sh ]; then ~/.conductor/hook.sh; fi",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x ~/.conductor/hook.sh ]; then ~/.conductor/hook.sh; fi",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x ~/.conductor/hook.sh ]; then ~/.conductor/hook.sh; fi",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x ~/.conductor/hook.sh ]; then ~/.conductor/hook.sh; fi",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x ~/.conductor/hook.sh ]; then ~/.conductor/hook.sh; fi",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x ~/.conductor/hook.sh ]; then ~/.conductor/hook.sh; fi",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
@@ -145,31 +310,5 @@
   "editorMode": "normal",
   "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true,
-  "effortLevel": "xhigh",
-  "hooks": {
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "timeout": 10,
-            "async": true,
-            "command": "~/.claude/notify.sh 'Claude Code' 'Input needed or task update'"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "timeout": 10,
-            "async": true,
-            "command": "~/.claude/notify.sh 'Claude Code' 'Turn completed'"
-          }
-        ]
-      }
-    ]
-  }
+  "effortLevel": "xhigh"
 }
