@@ -1200,3 +1200,30 @@ so deleting it is the operator's word, after those are carried over or committed
 else Windows-shaped remains.
 
 Phase 5 is landed. Phase 6 is the Desktop Team's; its paste follows in the next commit.
+
+### Phase 6 — the Desktop Team's paste issued (2026-09-02); every Linux mode proven in both distros first
+
+Phase 6 is the Desktop Team's sign-off, and after Phase 5 it is four Windows-side actions plus the
+eight-line checklist, so it ships the way Phase 4 did: ONE paste, [`phase6_pc.ps1`](phase6_pc.ps1), run
+in PowerShell with **both VS Code windows closed** (it refuses while `Code.exe` is alive — the Zoo apply
+writes the two stores VS Code overwrites on exit). It is idempotent, so it is re-run after the one click
+it cannot make.
+
+    cd C:\Sudo_Hatter_Command; git fetch origin chore/SCC-376-wsl-ubuntu-plan; git show FETCH_HEAD:_artifacts/_main/2026-09-02_SCC-376-wsl-ubuntu-migration/phase6_pc.ps1 | Out-File -Encoding ascii $env:TEMP\phase6_pc.ps1; powershell -NoProfile -ExecutionPolicy Bypass -File $env:TEMP\phase6_pc.ps1
+
+| step | what it does | proven before issue |
+|---|---|---|
+| 1 | syncs both distros' clones to the lane (dropping zoo2's regenerated `docs/repo-map.md`, the Phase 4 remedy) and installs the ONE user file in each | run now in both: `clone: 9ab2ae82, 0 dirty`; `user file: sha e1a13e0d126f0478 (committed: e1a13e0d126f0478)`; zoo2's cache dropped |
+| 2 | `zoo_permissions_apply.py --apply` **from Ubuntu**, into both Windows stores, then `--status`; counts the four *in sync* lines and the stores whose master toggles are ON | the refusal path from Ubuntu: `REFUSED: VS Code is running`, rc 2 (this session is `Code.exe`); the SQLite write over drvfs proven on a throwaway db (Phase 5 log); `--status` reaching both stores (Phase 5 log) |
+| 3 | renames `%USERPROFILE%\.claude\settings.json` → `.retired-scc376` (reversible) | a rename; nothing to prove |
+| 4 | reports the Windows clone's uncommitted files and **does not delete it** | the six files are other sessions' memory files and AVCH-109's scratch; the operator says when |
+| 5 | probes both distros (user/uid, PATH leak, filesystem, which binaries resolve, sandbox flag, the tracked lists' Windows-row count) and runs the lobby gate bare inside Ubuntu | run now in both: `user=dlohn uid=1001`, `PATH leak=0`, `windows binaries resolving: 0`, `sandbox.enabled=True`, `zoo 124 rows, 0 Windows-shell rows`, `claude 141 rows, 0 Windows-shell rows, 0 git -C rows`; gate `71/71 files passed`, rc 0 |
+| 6 | prints the eight checklist lines against those live values, naming the recorded gates (Phase 3 containment, Phase 4 isolation) where a line is a record rather than a re-run | — |
+| 7 | the ONE by-hand click: the `code2` seat's Zoo Auto-Approve master toggle and Execute (its store reads them OFF), then re-run the paste; line [5] must read 2 of 2 | the toggle state was read from the store (Phase 5 log) |
+
+**The Mac's half is the operator's one-liner, unchanged** — [`mac_install.sh`](mac_install.sh) re-run installs the
+regenerated file; its sha must print `e1a13e0d126f0478`, and its rules diff will show exactly 20 `-` lines,
+all `Bash(git -C * …)`, removed on purpose (the script now says so). Anything else in that diff is news.
+
+Phase 6 passes when the pasted transcript reads: 4 of 4 in-sync lines, 2 of 2 stores with toggles ON, both
+probes clean, the gate green, the Windows user file retired, and the Mac's sha equal.
