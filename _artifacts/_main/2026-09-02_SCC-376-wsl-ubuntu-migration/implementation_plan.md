@@ -1227,3 +1227,20 @@ all `Bash(git -C * …)`, removed on purpose (the script now says so). Anything 
 
 Phase 6 passes when the pasted transcript reads: 4 of 4 in-sync lines, 2 of 2 stores with toggles ON, both
 probes clean, the gate green, the Windows user file retired, and the Mac's sha equal.
+
+### Phase 6 evidence — the Mac installed the Phase 5 file (operator paste-back, 2026-09-02 18:22)
+
+The operator re-ran the one-liner on the Mac. Read line by line against what Phase 5 committed:
+
+| line | the Mac printed | disposition |
+|---|---|---|
+| sha256 | `e1a13e0d126f0478` | **equal** to the committed file and to both distros — checklist line [7] holds on the Mac side |
+| rules / mode / sandbox | 82 · `auto` · sandbox on · hatch open | the Phase 5 file, Mac behaviour preserved |
+| rules diff vs the backup | 20 removed, 0 added; all twenty `Bash(git -C * …)` | exactly the expected set; no Mac-grown rule lost |
+| Conductor | `hook.sh` absent, app not installed | the 11 guarded hooks stay silent no-ops |
+| `GITHUB_TOKEN` | unset in this shell; exported from nowhere | the five `env -u GITHUB_TOKEN` rules are now pure redundancy on the Mac, harmless |
+| `core.hooksPath` | `file:.git/hooks.conf .githooks` from the lobby; global unset | armed, as the tune read-back found |
+| node / python3 / grep | v22.23.2 · 3.14.7 · BSD grep 2.6.0 | the pinned Node; BSD grep in this launch context (the ugrep scar is context-dependent) |
+| notifier | exit 0 | banner and push fired on the Phase 5 file |
+
+The Mac needs nothing further from this ticket. Phase 6 now waits only on the PC paste's transcript.
