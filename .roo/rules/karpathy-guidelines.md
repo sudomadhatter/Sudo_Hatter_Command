@@ -52,9 +52,15 @@ When your changes create dead code, remove it. When your changes make a comment 
 
 ## 5. Read the Docs, Don't Guess
 
-**Unfamiliar MCP tool, CLI, API, or library? Look up the real interface before you call it.**
+**Your training data is a snapshot — the real behavior may have changed. Before fixing, configuring, or calling anything based on what you "know," verify against the current source.**
 
-- If you're not sure how something is invoked — an MCP tool's params, a CLI's flags, an API's endpoint/shape, a library's signature — STOP. Don't guess and don't pattern-match from memory; a wrong flag or param fails silently or does the wrong thing.
+This fires in **three** situations, not just the obvious one:
+
+1. **Unfamiliar interface** — an MCP tool, CLI flag, API, or library method you haven't used before. STOP. Don't guess and don't pattern-match from memory; a wrong flag or param fails silently or does the wrong thing.
+2. **Error or unexpected behavior** — an error message, deprecation warning, config that isn't working, or behavior that doesn't match what you expected. **Search the vendor's docs for the error text or the feature in question before hypothesizing.** The answer is usually already documented; your memory of it is what's wrong.
+3. **Troubleshooting / debugging** — before proposing a fix for any issue involving a third-party tool, library, framework, or service, **check the provider's current documentation first.** Your recall of "how Firebase auth works" or "how WSL networking is configured" may be months or years out of date. One web search saves three blind guesses.
+
+For all three:
 - Find the authoritative source first. Prefer **first-party documentation from the vendor/company's own website**, official docs, or the tool's own `--help` / README / source. Use the **web search tool** to locate it when it isn't already on disk.
 - Match the docs to the **version you're actually on** — interfaces drift, and a remembered signature may be stale (see `dependency-awareness`).
-- Only write the call once you've confirmed the real interface. "It's probably `X`" is not confirmation.
+- Only act once you've confirmed the current, real behavior from a first-party source. "It's probably `X`" is not confirmation — it is stale memory dressed as knowledge.
