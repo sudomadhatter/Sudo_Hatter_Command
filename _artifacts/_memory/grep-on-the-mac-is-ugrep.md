@@ -1,11 +1,11 @@
 ---
 name: grep-on-the-mac-is-ugrep
-description: "The Mac's `grep` on PATH is ugrep, not BSD/GNU grep, and `grep -qv` returns the INVERTED exit code — 1 when lines are selected, 0 on empty input. Count with `grep -vc` instead."
+description: "The Mac's `grep` is ugrep in a Claude session (7.8.4, 2026-09-01) but BSD grep 2.6.0 from a terminal script (2026-09-02) — the shadow depends on launch context. ugrep's `grep -qv` returns the INVERTED exit code. Count with `grep -vc`; never `-q`."
 metadata: 
   node_type: memory
   type: reference
   originSessionId: b96e3a56-55ff-4082-9cc0-aff4e62375a3
-  modified: 2026-09-01T19:48:27.058Z
+  modified: 2026-09-02T18:29:47.487Z
 ---
 
 `grep --version` on the Mac reports **ugrep 7.8.4**, not BSD grep. It shadows the system grep on
@@ -27,6 +27,12 @@ prose-only version; the replacement was worse until it was run.
 BAD=$(… | grep -vc 'pattern')      # 0 on empty input, N when N lines are selected, everywhere
 [ "$BAD" -eq 0 ] && echo OK || echo STOP
 ```
+
+**2026-09-02 correction (SCC-376):** `grep --version` inside `bash /tmp/mac_install.sh`, launched from
+the operator's terminal, reported **BSD grep 2.6.0-FreeBSD**, not ugrep. So the shadow is not on the
+base PATH; it comes from the launch context (an alias or PATH entry the Claude session had on
+2026-09-01 that a plain terminal script does not). Do not assume either implementation on the Mac —
+the count idiom is right on both, and only the count idiom is.
 
 A count has one meaning on every grep implementation. Same family as
 [[piping-a-gate-hides-its-exit-code]] and [[zsh-does-not-word-split-gate-args]] — the shell layer,

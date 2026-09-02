@@ -51,6 +51,10 @@ its own plan and its own port section.
 - EDIT `.roo/rules/zoo-team.md` — two pointers follow the move → F
 - EDIT `.agents/rules/jira.md` — guardrail 5 gains the Linux row; "never persist it anywhere" was written for two machines that both have a credential store → A
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — line 2900 pointer; also the SOP-currency co-occurrence the script edits demand → F
+- DELETE `.antigravity/mcp.json` — retired IDE's MCP config (Mac-path-hardcoded) → F
+- DELETE `docs/migrations/antigravity_extensions/` — retired IDE's extension-migration guide, ids file, sync script → F
+- EDIT `docs/migrations/INDEX.md` — row 10 (the Antigravity extensions guide) removed → F
+- EDIT `.vscode/extensions.json` — `google.google-antigravity` recommendation removed → F
 
 ## Five amendments the plan needs before Phase 1 starts
 
@@ -447,6 +451,21 @@ document a system we are about to demolish and then rewrite it.
    that was refused.
 4. **The post-migration state** — one shape, Unix, on both machines — so the guide describes what
    is, not the history of what was.
+
+**Added by the operator 2026-09-02 — the Antigravity leftovers go in this same last step.**
+Antigravity the IDE was retired on 2026-08-29 (daily driving moved to VS Code; its always-proceed bug
+is upstream). Three leftovers sit in this ticket's territory and are deleted in the Phase 7 commit:
+
+- DELETE `.antigravity/mcp.json` — the IDE's MCP config for md-feedback, hard-coded to a Mac path, so it never worked on the PC in any case
+- DELETE `docs/migrations/antigravity_extensions/` (the guide, the ids file, the sync script) and its `docs/migrations/INDEX.md` row 10
+- EDIT `.vscode/extensions.json` — drop the `google.google-antigravity` recommendation
+
+**Explicitly NOT in Phase 7: retiring Antigravity as a *platform*.** That is the 46 launchers in
+`.agents/workflows/` (its command menu), the `GEMINI.md` front doors, the `.gitattributes` mirror rules,
+the `~/.gemini/antigravity/global_workflows` cache `sync-agents.ps1` writes, the platform entry in
+`_bmad/_config/manifest.yaml`, and 22 references in the testing SOP — measured 2026-09-02: 184 files
+mention Antigravity. That is a sync-agents change with the SOP-currency gate on it, and it gets its own
+ticket; a migration ticket must not absorb a platform retirement.
 
 > ### ⚠️ AUDIT FINDING F6 — this merge is a PATH MOVE, and one of the three is machine-read
 >
@@ -1031,3 +1050,8 @@ and read back from here where a read-back was possible:
 
 One stray push: a probe at 14:17 ran without a self-test topic and sent `hookprobe — ok` to the house
 topic. Mine; no action.
+
+**2026-09-02, later — the operator reports [`mac_tune.sh`](mac_tune.sh) run on the Mac ("done on mac").**
+Output not pasted, so its two results (the Conductor folder renamed; `core.hooksPath` armed) are
+operator-reported, not read back from here. Phase 6's checklist re-measures both on the Mac before
+sign-off.
