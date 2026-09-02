@@ -460,6 +460,14 @@ def check_sop_currency(repo: Path, base: str, head: str) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows consoles default to cp1252 and cannot encode this script's own output
+    # markers, so a print crashes the run and the operator sees nothing. Same guard as
+    # check_maps.py and tests/_harness.py. Never raises: a non-reconfigurable stream
+    # (a pipe, a StringIO under test) simply keeps its encoding.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001 - a shim, not a feature
+        pass
     ap = argparse.ArgumentParser(
         description="Server-side half of the main write gate (SCC-118).")
     ap.add_argument("--mode", choices=("pr", "gate"), required=True)

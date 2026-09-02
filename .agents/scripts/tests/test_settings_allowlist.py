@@ -53,10 +53,22 @@ if c.block("A · tracked Claude allowlist travels"):
     allow = tracked.get("permissions", {}).get("allow", [])
     c.check("A1 tracked permissions.allow exists and is a list", isinstance(allow, list))
     # Identity, not only cardinality (the CS-01 lesson): a wrong-but-numerous list must not pass.
-    sentinels = {"Bash(git status:*)", "Bash(python3 .agents/scripts/:*)", "Bash(git add:*)"}
+    sentinels = {"Bash(git status:*)", "Bash(python3 .agents/scripts/*)", "Bash(git add:*)"}
     c.check("A2 floor count >= 60 AND the sentinel identities are present",
             len(allow) >= 60 and sentinels <= set(allow),
             f"count={len(allow)} missing_sentinels={sorted(sentinels - set(allow))}")
+    # ⛔ A2b · THE `X:*` SPELLING IS DEAD AFTER A PATH SEPARATOR, AND THIS TEST ONCE PINNED IT.
+    # Claude Code documents `Bash(X:*)` as equivalent to `Bash(X *)` — "the space before a
+    # trailing * is part of the rule" — so a prefix ending in `/`, `=`, `-` or `:` demands a
+    # space the real command never has. `Bash(python .agents/scripts/:*)` matched ZERO of the
+    # 22,385 subcommands in 18 transcripts; respelled `…/*` it matches 199. The sentinel above
+    # carried the broken spelling, so this suite was green while the rule approved nothing —
+    # which is exactly the class `tests-must-gate-for-real` §5 calls worse than no gate.
+    # Ref: https://code.claude.com/docs/en/permissions#wildcard-patterns (SCC-375)
+    dead = [r for r in allow
+            if r.endswith(":*)") and len(r) > 8 and r[:-3].rstrip()[-1] in "/=-:"]
+    c.check("A2b no rule uses the `X:*` spelling after a path separator (it can never match)",
+            not dead, f"dead={dead}")
     py3 = {r for r in allow if r.startswith("Bash(python3 ")}
     py = {r for r in allow if r.startswith("Bash(python ")}
     missing = sorted({r.replace("Bash(python3 ", "Bash(python ", 1) for r in py3} - set(allow)) \
