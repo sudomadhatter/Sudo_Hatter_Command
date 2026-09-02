@@ -298,7 +298,7 @@ entries against the tracked 112**, and reading all 143 store-only rows found thr
 policy in any of them. **Shell wreckage:** `do`, `done`, `}`, `for d in`, `{ echo`, `exit 1` — a
 `for` loop somebody approved, shredded into tokens, plus `giast` and `giast status --short`, a typo
 of `git status` permanently blessed. **Dead one-off literals:** rows naming
-`story-24-6-chuck-rebuild`, `/tmp/avch101-pyrefly.txt` and `acli jira workitem view SCC-366`, from
+`story-24-6-chuck-rebuild`, a one-off pyrefly output file under `/tmp`, and `acli jira workitem view SCC-366`, from
 work that closed weeks earlier and can never match again. And the pile that mattered — **bare
 tokens that outrank the fence**: `rm`, `git`, `env`, `acli`. The deny list stops `rm -rf` and
 `rm -r`, so bare `rm` in the allow list meant **`rm -f somefile` and `rm *.md` auto-ran with no

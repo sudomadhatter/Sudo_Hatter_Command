@@ -116,7 +116,7 @@ passing the path through `wsl.exe`, so it returns empty and every step downstrea
 
 - [x] The merge itself — lands via this branch's PR
 - [ ] Delete the Windows clone `C:\Sudo_Hatter_Command` — it still holds 7 uncommitted files belonging to
-      other sessions (four new memory files, two modified ones, and AVCH-109's `scratch/mutation_sweep_24_7.py`).
+      other sessions (four new memory files, two modified ones, and AVCH-109's mutation-sweep script under `scratch`).
       Remedy: their owners commit them, or say the word and I carry the memory files into the Ubuntu clone
       under a memory commit; then the folder can go. Nothing in this ticket reads from it any more — the
       Windows `~\.claude\settings.json` is already retired by rename.
