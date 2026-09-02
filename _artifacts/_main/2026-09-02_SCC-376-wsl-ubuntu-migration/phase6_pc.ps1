@@ -38,9 +38,29 @@ case "$1" in
     echo "user file: sha $(sha256sum /home/dlohn/.claude/settings.json | cut -c1-16) (committed: $(sha256sum "$F" | cut -c1-16))"
     ;;
   apply)
-    python3 .agents/scripts/zoo_permissions_apply.py --apply
+    python3 .agents/scripts/zoo_permissions_apply.py --apply --enable-auto-approve
     echo "apply rc=$?"
-    python3 .agents/scripts/zoo_permissions_apply.py --status
+    ;;
+  verify)
+    # COMPUTED, never counted from text: the first cut of this paste scraped the printed lines
+    # and read 8 of 4 in-sync and 2 of 2 toggles ON while the code2 seat's own store said
+    # alwaysAllowExecute=false. A summary that can over-count is worse than none - it signed off
+    # a seat that was fenced by nothing.
+    python3 - <<'PY'
+import importlib.util
+spec = importlib.util.spec_from_file_location("z", "/home/dlohn/Sudo_Hatter_Command/.agents/scripts/zoo_permissions_apply.py")
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+allow, deny = m.tracked_lists()
+rows = [(db, m.load_memento(db)) for db in m.candidate_dbs()]
+rows = [(db, x) for db, x in rows if x]
+ins = tog = 0
+for db, x in rows:
+    sync = x.get("allowedCommands") == allow and x.get("deniedCommands") == deny
+    on = x.get("autoApprovalEnabled") is True and x.get("alwaysAllowExecute") is True
+    ins += sync; tog += on
+    print("  %-72s lists %-7s toggles %s" % (db, "in sync" if sync else "DRIFT", "ON" if on else "OFF"))
+print("VERDICT stores=%d in-sync=%d toggles-on=%d" % (len(rows), ins, tog))
+PY
     ;;
   probe)
     bash -lc '
@@ -68,7 +88,11 @@ esac
 '@
 $WINTMP = Join-Path $env:TEMP 'phase6_wsl.sh'
 [IO.File]::WriteAllText($WINTMP, ($sh -replace "`r?`n", "`n"), (New-Object System.Text.UTF8Encoding($false)))
-$WSLTMP = (& wsl.exe -d $UB -u dlohn -- wslpath -u $WINTMP).Trim()
+# wslpath is NOT usable here: PowerShell strips the backslashes passing $WINTMP through
+# wsl.exe, so wslpath reads 'C:UsersdlohnAppData...' and returns empty - every Linux step then
+# ran with no script at all ('bash: gate: No such file or directory'). Build the /mnt/ path by
+# hand, the way phase4_pc.ps1 already did. (Desktop Team, Phase 6 run, 2026-09-02.)
+$WSLTMP = '/mnt/' + $env:TEMP.Substring(0,1).ToLower() + ($env:TEMP.Substring(2) -replace '\\','/') + '/phase6_wsl.sh'
 function Linux($distro, $mode) { & wsl.exe -d $distro -u dlohn -- bash $WSLTMP $mode 2>&1 | ForEach-Object { "  $_" } }
 
 # ---- 0. preconditions -----------------------------------------------------------------------------
@@ -87,12 +111,14 @@ Say "1. sync + user file: $ZOO2"
 Linux $ZOO2 'sync'
 
 # ---- 2. the Zoo apply, from Ubuntu, into BOTH Windows stores -----------------------------------------
-Say '2. Zoo apply from Ubuntu (both Windows stores)'
-$applyOut = Linux $UB 'apply'
-$applyOut
-$inSync = @($applyOut | Select-String 'in sync with tracked file').Count
-$togglesOn = @($applyOut | Select-String 'autoApprovalEnabled: True').Count
-"in-sync lines: $inSync of 4 expected (2 stores x 2 lists) | stores with master toggles ON: $togglesOn of 2"
+Say '2. Zoo apply from Ubuntu (both Windows stores, master toggles included)'
+Linux $UB 'apply'
+$verify = Linux $UB 'verify'
+$verify
+$v = ($verify | Select-String 'VERDICT stores=(\d+) in-sync=(\d+) toggles-on=(\d+)').Matches
+if ($v) { $nStores = [int]$v.Groups[1].Value; $inSync = [int]$v.Groups[2].Value; $togglesOn = [int]$v.Groups[3].Value }
+else    { $nStores = 0; $inSync = 0; $togglesOn = 0; 'VERDICT line not found - treat every count below as 0' }
+"stores found: $nStores | lists in sync: $inSync of $nStores | master toggles ON: $togglesOn of $nStores"
 
 # ---- 3. retire the Windows user file -------------------------------------------------------------------
 Say '3. retire the Windows ~\.claude\settings.json'
@@ -128,16 +154,20 @@ Say '6. Phase 6 checklist (live values above; recorded gates named)'
 '[2] Zero Windows binaries resolve inside either distro .. live: "windows binaries resolving: 0" and "PATH leak=0" in BOTH probes'
 '[3] Repo and venvs on the Linux filesystem ............... live: "clone fs=ext2/ext3" (how stat names the ext4 family) in BOTH probes'
 "[4] All test suites green from WSL, run bare ............ live: $($gate -join ' ')"
-"[5] code and code2 isolated ............................. Phase 4 gate PASS (Desktop Team); live: master toggles ON in $togglesOn of 2 stores (must be 2)"
+"[5] code and code2 isolated, and BOTH seats fenced ...... Phase 4 gate PASS (Desktop Team); live: master toggles ON in $togglesOn of $nStores stores - a seat with them OFF consults no list and asks for everything (must be $nStores of $nStores)"
 '[6] Zoo and Claude allow lists carry no Windows rows ..... live: "0 Windows-shell rows" for zoo AND claude, "0 git -C rows"'
 "[7] PC ~/.claude/settings.json == the committed portable file ... live: both distros print the committed sha; the Mac's install must print the same (e1a13e0d126f0478)"
 '[8] Running as a normal user ............................. live: "user=dlohn uid=1001" in BOTH probes'
-"Zoo stores in sync after the apply: $inSync of 4"
+"Zoo stores in sync after the apply: $inSync of $nStores"
+if ($nStores -gt 0 -and $inSync -eq $nStores -and $togglesOn -eq $nStores) { 'PHASE 6: all eight lines hold.' }
+else { 'PHASE 6 NOT PASSED - see step 7.' }
 
 # ---- 7. the one by-hand click --------------------------------------------------------------------------------
-Say '7. by hand, if step 6 line [5] reads fewer than 2'
-'   Open code2 (the second seat). Zoo Code -> Auto-Approve panel: turn ON the master toggle and Execute'
-'   (plus the Read / Write / Mode-switch / Subtasks tiles, as the guide section 7 says). Close code2 fully.'
-'   Then re-run this paste - it is idempotent - and line [5] must read 2 of 2.'
+Say '7. if any count above is short'
+'   The apply now turns the two master toggles ON itself (--enable-auto-approve), so no Zoo panel'
+'   click is needed. A short count means the write did not happen: the usual cause is a VS Code'
+'   process still alive when step 2 ran (it flushes its own state on exit and overwrites).'
+'   Close every VS Code window, confirm with: Get-Process Code -ErrorAction SilentlyContinue'
+'   then re-run this paste - it is idempotent.'
 "transcript: $LOG  <- paste it back"
 Stop-Transcript | Out-Null

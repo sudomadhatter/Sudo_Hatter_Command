@@ -1244,3 +1244,49 @@ The operator re-ran the one-liner on the Mac. Read line by line against what Pha
 | notifier | exit 0 | banner and push fired on the Phase 5 file |
 
 The Mac needs nothing further from this ticket. Phase 6 now waits only on the PC paste's transcript.
+
+### Phase 6 — the Desktop Team's transcript verified line by line (2026-09-02); seven of eight held, line [5] did not
+
+The team ran the paste and reported all eight lines clean. Seven are. **Line [5] was reported PASS by a
+counter that could not count**, and the store it certified was fenced by nothing.
+
+| the transcript said | measured here, after the run | disposition |
+|---|---|---|
+| both clones at `803e6ca1`, 0 dirty, user file sha equal in both | identical | **true** |
+| Zoo apply: both stores `in sync with tracked file`, 124/105 | identical, and the backups exist (`state.vscdb.scc-backup`, 17:08 and 18:27) | **true** |
+| `in-sync lines: 8 of 4` · `master toggles ON: 2 of 2` | **wrong, and it is the same defect twice.** `--apply` prints its status block, then the script printed `--status` again, so every line was counted twice; and `autoApprovalEnabled: True` was counted across BOTH stores' blocks. The isolated store's own bytes: `alwaysAllowExecute: false`, `autoApprovalEnabled` **absent** | **line [5] FAILS.** The `code2` seat has had a perfectly synced allow list and no fence switch: it consults no list at all and asks for everything |
+| Windows `~\.claude\settings.json` retired | `settings.json.retired-scc376`, 12,179 bytes, 18:12 — **and a new 71-byte `settings.json` appeared at 18:42** carrying two notification preferences and nothing else | **true, and harmless**: a Windows-side Claude session rewrote its own preferences file. It carries no permissions, no hooks and no sandbox block, so nothing is fenced by it |
+| Windows clone reported, 7 files, not deleted | identical 7 | **true** (the plan said 6; the seventh is `MEMORY.md`, also another session's) |
+| probes, both distros: uid 1001, PATH leak 0, ext4, 0 Windows binaries, 0 Windows rows, 0 `git -C` rows | identical | **true** |
+| gate `71/71`, rc 0, bare inside Ubuntu | identical | **true** |
+
+**Finding 1 (the team's), adopted.** `wslpath -u $WINTMP` returns empty because PowerShell strips the
+backslashes passing the path through `wsl.exe`, so every Linux step ran with no script. Their manual
+`/mnt/c/…` construction — the shape `phase4_pc.ps1` already used — is now the committed line, with the
+reason written above it.
+
+**Finding 2 (the team's), rejected on measurement.** The claim was that both seats now run Remote-WSL, so
+Zoo's live state moved into each distro's `~/.vscode-server/data/User/globalStorage/state.vscdb`, making
+the Windows-store check the wrong thing. There is **no `state.vscdb` anywhere under either distro's
+`.vscode-server`** — only a `zoocodeorganization.zoo-code` *directory*, which is the extension's
+file-based storage (tasks, its MCP list), not the memento database. Meanwhile the two Windows stores
+carry the two seats' different models right now — primary `gtp 5.6-sol`, isolated `glm 5.3-flash` — and
+their mtimes move as the seats are used. The Windows stores are the decision stores; the check measures
+exactly the right thing. This is the same correction Phase 4's close-out made, and it is worth stating
+twice because it is genuinely counter-intuitive: **the extension host runs in the distro, the window's
+`globalState` stays local.**
+
+**Both defects fixed in the paste, and the remaining action is a command, not a click.**
+`zoo_permissions_apply.py` gains `--enable-auto-approve` (with `--apply` only): it turns
+`autoApprovalEnabled` and `alwaysAllowExecute` **on** in any store where they are off, touches no other
+key, never turns one off, and backs up first — both halves pinned by a new case in
+`test_zoo_permissions.py` (24/24). The paste's step 2 now uses it, and its summary is **computed by
+re-reading the stores** rather than scraped from printed lines: one `VERDICT stores=N in-sync=N
+toggles-on=N` line, and a closing `PHASE 6: all eight lines hold.` only when every count is full. Step 7
+no longer asks for a Zoo panel click; it says what a short count means (a VS Code process still alive
+when step 2 ran).
+
+I could not run the toggle write from here: this session **is** VS Code, and the guard refused — which is
+the guard working. It needs one re-run of the paste with the windows closed.
+
+Phase 6 is not signed off. It is one paste away.

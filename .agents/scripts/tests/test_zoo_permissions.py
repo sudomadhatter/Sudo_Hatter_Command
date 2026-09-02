@@ -501,6 +501,29 @@ def test_apply_writes_only_the_list_keys():
         assert backup.read_bytes() == original, "second apply must not overwrite the backup"
 
 
+def test_enable_auto_approve_flips_only_the_two_master_keys_and_only_when_asked():
+    """SCC-376 Phase 6. A seat with the master toggles off consults NO list - it asks for
+    everything - which is exactly what the code2 seat was doing with its lists perfectly in sync,
+    and what made the Phase 6 checklist read PASS on a seat that was not fenced at all. Both
+    halves: without the flag the toggles are left exactly as found (the default must never widen a
+    seat silently), with it they go True and nothing else moves."""
+    mod = _load_apply_module()
+    with tempfile.TemporaryDirectory() as tmp:
+        db, _, memento = _make_store(Path(tmp))
+        off = dict(memento, alwaysAllowExecute=False)
+        off.pop("autoApprovalEnabled")
+        mod.apply(db, dict(off), ["a "], ["d "])
+        got = mod.load_memento(db)
+        assert got.get("autoApprovalEnabled") is None and got["alwaysAllowExecute"] is False, (
+            "REJECT half dead: a plain --apply changed the master toggles")
+        mod.apply(db, dict(off), ["a "], ["d "], True)
+        got = mod.load_memento(db)
+        assert got["autoApprovalEnabled"] is True and got["alwaysAllowExecute"] is True, (
+            "ALLOW half dead: --enable-auto-approve left a master toggle off")
+        assert got["destructiveCommandGuardEnabled"] is False and got["unrelatedKey"] == "keep-me", (
+            "the flag must touch ONLY the two master keys")
+
+
 def test_apply_refuses_while_vscode_runs():
     """The promised fake-process probe: with vscode_running forced True, --apply exits 2 and
     the store bytes are untouched (source greps cannot see call ORDER; this can)."""

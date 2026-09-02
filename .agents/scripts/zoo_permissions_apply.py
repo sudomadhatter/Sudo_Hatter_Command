@@ -11,6 +11,8 @@ Usage (python3 on both machines; on the PC run it FROM UBUNTU - the Windows stor
 seat's included, are reached through /mnt/c; SCC-376):
     python3 .agents/scripts/zoo_permissions_apply.py --status   # read-only report, safe anytime
     python3 .agents/scripts/zoo_permissions_apply.py --apply    # write lists (VS Code must be closed)
+    python3 .agents/scripts/zoo_permissions_apply.py --apply --enable-auto-approve
+                                                                # + turn the two master toggles ON
 
 Stdlib only. Touches ONLY the two list keys inside the Zoo memento JSON — never the secret://
 rows (API keys) and never the toggles. Writes a one-off .scc-backup next to each db first.
@@ -139,12 +141,26 @@ def report(db: Path, memento: dict, allow: list[str], deny: list[str]) -> None:
               "alwaysAllowExecute are on (Zoo Auto-Approve panel).")
 
 
-def apply(db: Path, memento: dict, allow: list[str], deny: list[str]) -> None:
+MASTER_TOGGLES = ("autoApprovalEnabled", "alwaysAllowExecute")
+
+
+def apply(db: Path, memento: dict, allow: list[str], deny: list[str],
+          enable_auto_approve: bool = False) -> None:
     backup = db.with_suffix(".vscdb.scc-backup")
     if not backup.exists():
         shutil.copy2(db, backup)
     memento["allowedCommands"] = allow
     memento["deniedCommands"] = deny
+    # SCC-376 Phase 6: a seat whose master toggles are off consults NO list - it asks for
+    # everything, which is the state this migration exists to remove. Measured on the code2 seat:
+    # lists perfectly in sync, autoApprovalEnabled absent, alwaysAllowExecute false. Only these two
+    # keys, only behind the flag, and never turned OFF here.
+    flipped = []
+    if enable_auto_approve:
+        for k in MASTER_TOGGLES:
+            if memento.get(k) is not True:
+                memento[k] = True
+                flipped.append(k)
     con = sqlite3.connect(db)
     try:
         con.execute("UPDATE ItemTable SET value=? WHERE key=?",
@@ -158,7 +174,8 @@ def apply(db: Path, memento: dict, allow: list[str], deny: list[str]) -> None:
     # and the operator saw a traceback, so the only sane reading was "it failed": the PC row on
     # SCC-351 sat open for days over a decorative arrow. Same defect family as SCC-335, which fixed
     # the READ side of this pair; keep every operator-facing string in this file 7-bit.
-    print(f"  applied -> {len(allow)} allow / {len(deny)} deny  (backup: {backup.name})")
+    extra = ("  [master toggles turned ON: " + ", ".join(flipped) + "]") if flipped else ""
+    print(f"  applied -> {len(allow)} allow / {len(deny)} deny  (backup: {backup.name}){extra}")
 
 
 def main() -> int:
@@ -166,7 +183,13 @@ def main() -> int:
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument("--status", action="store_true", help="report every store, change nothing")
     mode.add_argument("--apply", action="store_true", help="write tracked lists into every store")
+    ap.add_argument("--enable-auto-approve", action="store_true",
+                    help="with --apply: also turn autoApprovalEnabled and alwaysAllowExecute ON in "
+                         "any store where they are off (a seat with them off consults no list)")
     args = ap.parse_args()
+    if args.enable_auto_approve and not args.apply:
+        print("--enable-auto-approve only means anything with --apply")
+        return 2
 
     allow, deny = tracked_lists()
     print(f"tracked file: {TRACKED}  ({len(allow)} allow / {len(deny)} deny)")
@@ -184,7 +207,7 @@ def main() -> int:
 
     for db, memento in stores:
         if args.apply:
-            apply(db, memento, allow, deny)
+            apply(db, memento, allow, deny, args.enable_auto_approve)
             memento = load_memento(db)
         report(db, memento, allow, deny)
     return 0
