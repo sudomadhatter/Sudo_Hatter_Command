@@ -26,7 +26,7 @@
   // fresh machine and never again — after ANY edit here, run
   //   python3 .agents/scripts/zoo_permissions_apply.py --apply   (VS Code closed)
   // per machine. Design, matcher semantics, and the reasoning per family:
-  // docs/migrations/zoo-code-permissions-guide.md (SCC-351). The matcher is lowercase
+  // docs/migrations/terminal-permissions-guide.md (SCC-351, SCC-376). The matcher is lowercase
   // starts-with per piece, longest prefix wins allow-vs-deny — broad allows make every
   // UN-denied spelling auto-RUN, so the deny list is the whole fence: minimum rows, each one
   // naming real damage, none colliding with legitimate agent work. Env twins for git/gh denies

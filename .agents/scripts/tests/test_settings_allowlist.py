@@ -10,8 +10,8 @@ the other machine ever sees:
       spelling (`python3` — both machines run POSIX since SCC-376), no Windows-only row and no
       `git -C *` wildcard rule, and no machine-absolute path (`/Users/…`, `C:\\…`) in any rule.
   B · `.vscode/settings.json` (JSONC): `zoo-code.allowedCommands` non-empty +
-      `zoo-code.deniedCommands` present; `.vscode/extensions.json` recommends Zoo Code and the
-      Gemini agent surface.
+      `zoo-code.deniedCommands` present; `.vscode/extensions.json` recommends Zoo Code and no
+      longer recommends the retired Antigravity surface.
   E · Zoo is sync-agents platform 5 (SCC-349): `$AllPlatforms` names `zoo`; the generated
       surfaces exist in the tree (`.roo/commands/` launchers, `.roomodes` with the five team
       seats since SCC-350, per-seat `.roo/rules-<slug>/`, floor-rule copies in `.roo/rules/`);
@@ -120,8 +120,13 @@ if c.block("B · Zoo Code allowlist + extension recommendations travel"):
     recs = ext.get("recommendations", [])
     c.check("B3 Zoo Code is a workspace recommendation",
             "ZooCodeOrganization.zoo-code" in recs)
-    c.check("B4 the Gemini agent surface is a workspace recommendation",
-            "google.google-antigravity" in recs)
+    # ⛔ B4 · Antigravity is RETIRED (SCC-349 replaced it with VS Code + Zoo; SCC-376 Phase 7 removed
+    # its last leftovers, and the platform's own retirement is SCC-378). This case used to require
+    # `google.google-antigravity` in the recommendations, so deleting the recommendation would have
+    # gone red on a suite that was pinning a shape the system deliberately left behind - the same
+    # class as A3 and A2b. Inverted: the retired surface must NOT be recommended to a fresh clone.
+    c.check("B4 the retired Antigravity extension is NOT recommended",
+            "google.google-antigravity" not in recs, f"recs={recs}")
 
 PERSONAS = ("analyst", "architect", "dev", "pm", "tech-writer", "ux-designer")
 # The mode picker belongs to the Wonderland TEAM since SCC-350 (the BMAD personas keep their

@@ -16,7 +16,8 @@ Code evaluates each segment against its pattern rules. So `cd <abs> && git statu
 pieces on both platforms — while `git -C <path> status` is ONE piece that starts `git -C`, which no
 verb rule can ever see. Under a broad `git ` allow, `-C` would also ride PAST every verb deny, so
 the tracked Zoo lists **auto-deny `git -C` and `git --git-dir` outright**. Full mechanics and the
-canonical lists: [docs/migrations/zoo-code-permissions-guide.md](../../docs/migrations/zoo-code-permissions-guide.md).
+canonical lists: [docs/migrations/terminal-permissions-guide.md](../../docs/migrations/terminal-permissions-guide.md) (SCC-376 merged the three
+permission pages into that one guide; the Zoo half is its section 4 onward).
 (An earlier cut of this rule banned cd-chains and mandated `git -C` — that inverted on 2026-08-30
 when the extracted matcher proved piece-splitting; the doors were rewritten in SCC-351.)
 

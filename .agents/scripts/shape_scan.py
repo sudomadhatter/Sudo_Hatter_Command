@@ -2,7 +2,7 @@
 """Measure how often the agents actually break `command-shape.md` — Claude AND Zoo (SCC-369).
 
 This is the instrument the nag is judged by. `shape-guard.py` can only speak to Claude Code
-(Zoo Code contributes no hook surface at all — `docs/migrations/zoo-code-permissions-guide.md`
+(Zoo Code contributes no hook surface at all — `docs/migrations/terminal-permissions-guide.md`
 §"there is no `onDidX` contribution"), so for the Zoo seats **measurement is the only feedback
 loop there is**: run this before and after, and "are they doing better" stops being an impression.
 

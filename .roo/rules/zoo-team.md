@@ -76,6 +76,6 @@ each machine's one-time setup.
 `cd <abs> && git <verb>` in ONE line (the `git -C` spelling is auto-denied), one logical line per
 command, no loops, no `$( … && … )` compounds, gates bare. The canonical allow/deny lists live in
 `.vscode/settings.json` and are explained family-by-family in
-`docs/migrations/zoo-code-permissions-guide.md`; after any list edit, the operator re-applies them
+`docs/migrations/terminal-permissions-guide.md`; after any list edit, the operator re-applies them
 per machine with `python3 .agents/scripts/zoo_permissions_apply.py --apply` (VS Code closed) —
 editing the settings file alone changes the display, not the behavior.

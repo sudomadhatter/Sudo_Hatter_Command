@@ -5,7 +5,7 @@ Zoo Code decides auto-approval from VS Code globalState (SQLite ``state.vscdb``,
 ``ZooCodeOrganization.zoo-code``), NOT from ``.vscode/settings.json`` — the tracked file seeds the
 store exactly once on a fresh machine and never again, and ``deniedCommands`` never seeds at all.
 So after ANY edit to the tracked lists, this script must run once per machine (Mac AND PC), with
-VS Code fully closed. Full mechanics: docs/migrations/zoo-code-permissions-guide.md (SCC-351).
+VS Code fully closed. Full mechanics: docs/migrations/terminal-permissions-guide.md (SCC-351, SCC-376).
 
 Usage (python3 on both machines; on the PC run it FROM UBUNTU - the Windows stores, the code2
 seat's included, are reached through /mnt/c; SCC-376):
@@ -135,7 +135,7 @@ def report(db: Path, memento: dict, allow: list[str], deny: list[str]) -> None:
         print(f"  {key}: {memento.get(key)}")
     if memento.get("destructiveCommandGuardEnabled"):
         print("  WARNING: destructiveCommandGuardEnabled=True BYPASSES the lists (external dcg "
-              "binary) - turn it OFF in Zoo settings; see the guide section 5.")
+              "binary) - turn it OFF in Zoo settings; see the guide section 7.")
     if not (memento.get("autoApprovalEnabled") and memento.get("alwaysAllowExecute")):
         print("  WARNING: master toggles off - no list is consulted until autoApprovalEnabled AND "
               "alwaysAllowExecute are on (Zoo Auto-Approve panel).")

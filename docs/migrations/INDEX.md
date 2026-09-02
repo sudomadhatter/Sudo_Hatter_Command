@@ -83,7 +83,6 @@ to use it — read the guides, run the scripts. Nothing here is read-only-protec
 | 7 | Scrum-board stale-stamp git hooks (per machine, per project — AGY today) | [`git-hooks-board-stale-install.md`](../../_my_resources/open_tasks/git-hooks-board-stale-install.md) | ✅ | needs `pwsh` (installer is `.ps1`) |
 | 8 | **Link the Claude auto-memory store** so memory travels via git instead of dying on this box | `.agents/scripts/link-memory.ps1` · macOS → `link-memory.sh` | ✅ | ✅ **use the `.sh`** |
 | 9 | Carry **VS Code setup** (extensions, user settings, keybindings) across + the **Roo→Zoo Code transition** per machine | [`/smh-sync-vscode`](../../.agents/commands/smh-sync-vscode.md) · [`vscode-ide-extension-migration.md`](install_guides/vscode-ide-extension-migration.md) | ✅ export / import | ✅ export / import |
-| 10 | Carry the **Gemini/Antigravity plugins + skills** via the repo | [`gemini-extensions-sync-guide.md`](antigravity_extensions/gemini-extensions-sync-guide.md) | ✅ | ✅ |
 | 11 | **Point the scratchpad allow-hook at this machine's scratchpad** — otherwise every verification lane asks for twenty-odd approvals per run, for a directory that dies with the session. Measured, never assumed; the file is gitignored and never travels | [`scratchpad-allow-hook-per-machine.md`](install_guides/scratchpad-allow-hook-per-machine.md) | ✅ **read its §3 first** | ⚪ not needed (the built-in root already matches) |
 
 ```powershell

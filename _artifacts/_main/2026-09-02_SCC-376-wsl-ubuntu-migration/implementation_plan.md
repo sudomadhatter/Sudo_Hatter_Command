@@ -55,6 +55,9 @@ its own plan and its own port section.
 - DELETE `docs/migrations/antigravity_extensions/` — retired IDE's extension-migration guide, ids file, sync script → F
 - EDIT `docs/migrations/INDEX.md` — row 10 (the Antigravity extensions guide) removed → F
 - EDIT `.vscode/extensions.json` — `google.google-antigravity` recommendation removed → F
+- EDIT `.agents/scripts/tests/test_settings_allowlist.py` — Phase 7 (added 2026-09-02): case B4 inverted, the retired surface must NOT be recommended → F
+- EDIT `.agents/scripts/tests/test_command_surfaces.py` — Phase 7 (added 2026-09-02): CS-15 is three LIVE platform MCP configs, with the retired one asserted absent → F
+- EDIT `docs/repo-map.md`, `docs/doc-graph.md` — Phase 7 (added 2026-09-02): regenerated after the file set changed → F
 - EDIT `.agents/scripts/zoo_permissions_apply.py` — Phase 5 (added 2026-09-02): `candidate_dbs` lists the isolated `code2` seat and, under WSL, both Windows stores through `/mnt/c`; an unreadable sibling account reads as absent; `vscode_running` asks `tasklist.exe` by full path → C
 - EDIT `.agents/scripts/tests/test_zoo_permissions.py` — Phase 5 (added 2026-09-02): the `candidate_dbs` pin, present/absent halves plus the locked-account half → C
 - EDIT `.agents/hooks/shape-guard.py` — Phase 5 (added 2026-09-02): the rule-1 nag no longer claims `git -C * <verb>` allow rules exist → C
@@ -1324,3 +1327,51 @@ retired copy. A retire step that reports success over a file it did not move is 
 never do.
 
 **Phase 6 is signed off.** Phase 7 is the last step of this ticket and is mine.
+
+### Phase 7 — LANDED (2026-09-02): three permission pages became one, and the Antigravity leftovers are gone
+
+**One guide.** [`docs/migrations/terminal-permissions-guide.md`](../../../docs/migrations/terminal-permissions-guide.md)
+— 560 lines, replacing 374 + 173 + 27. The Zoo page is the spine and was carried **section for section,
+verbatim**, with every internal `§N` reference remapped by a script rather than by eye; the cross-agent
+front door became §1 and the Claude page became §3, rewritten rather than copied because its content was
+Windows-shaped (`\Scripts\` venvs, `powershell.exe`, `c:/` write boundaries) and carried
+machine-absolute `file:///Users/…` links — both of which this ticket retired. New §14 lists the command
+that verifies each claim. The three old pages are deleted; their names survive as prose in the note that
+says so, for anyone arriving on an old bookmark.
+
+**The currency test no longer keys on section numbers.** `test_guide_currency` sliced `## 6.` to `## 7.`
+to find the canonical lists. A merge that renumbers every section would have made it slice a different
+chapter — or raise `IndexError` inside the one test whose job is to notice staleness. The lists now sit
+between `<!-- CANONICAL-LISTS:START -->` / `END` markers that travel with the content, and a **control
+case** asserts the slice is a real one (over 2,000 chars and containing a family table), because a
+marker pair that bound nothing would let the scan certify a guide it never read.
+
+**Three tests pinned the shape this phase removes — the same class three times.** Each was amended in
+this commit, never afterwards: `test_settings_allowlist` **B4** required the retired
+`google.google-antigravity` recommendation (now inverted: it must be absent);
+`test_command_surfaces` **CS-15 A** required all four platform MCP configs to exist, including the
+Antigravity one being deleted (now three live platforms, with **CS-15 A2** asserting the retired config
+does not come back); and `test_guide_currency` above. This is the A3 / A2b family the audit named at the
+start, and it has now fired at every phase that deleted anything.
+
+| deleted | why |
+|---|---|
+| `terminal-global-permission.md`, `claude-terminal-permission.md`, `zoo-code-permissions-guide.md` | absorbed, section for section |
+| `.antigravity/mcp.json` | a config for a platform nobody runs (SCC-349) |
+| `docs/migrations/antigravity_extensions/` (3 files) + its `INDEX.md` row 10 | the extension-carry guide for that platform |
+| the `google.google-antigravity` workspace recommendation | it offered a fresh clone the retired IDE |
+
+Retiring Antigravity as a **platform** — its command surface, its workflow launchers, `platforms:`
+declarations — remains **SCC-378**, deliberately not this ticket.
+
+**Gate: `run_all.py` 71/71 files, rc 0, bare, inside Ubuntu.** `check_maps` and `check_links` were run
+against a clean clone at the same head first, so the difference is attributable: the only unresolved
+paths this phase adds are the plan's own DELETE declarations pointing at the files it declares deleted,
+which is what a declaration is for. The guide contributes one, a `/tmp/…` filename quoted as an example
+of store debris, carried from the old page. Three map findings pre-date this lane and are untouched by
+it (a dead `auth_keys` path in two places, a missing level-2 INDEX under `.agents/templates/`).
+
+**SCC-376 is complete.** Phases 0-7 are closed, both machines run the same portable file, both Zoo seats
+are fenced, and the gate is green from inside WSL. What remains is downstream and already ticketed:
+**AVCH-116** (AGY's port of this shape, after this lands on `main`) and **SCC-378** (the Antigravity
+platform retirement).

@@ -1,7 +1,7 @@
 """Zoo Code auto-approve lists — behavior and currency gate (SCC-351).
 
 Pins the tracked lists in .vscode/settings.json against the matcher semantics verified by
-executing Zoo v3.80.1's own extracted parser (docs/migrations/zoo-code-permissions-guide.md §4):
+executing Zoo v3.80.1's own extracted parser (docs/migrations/terminal-permissions-guide.md §6):
 lowercase starts-with per piece, longest prefix wins allow-vs-deny, tie goes to deny. The
 destructive battery (length-pinned below) must never auto-approve, the ceremony set must always
 auto-approve, an ASK battery of unknown tools must stay ask_user,
@@ -23,8 +23,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 SETTINGS = ROOT / ".vscode" / "settings.json"
-GUIDE = ROOT / "docs" / "migrations" / "zoo-code-permissions-guide.md"
+GUIDE = ROOT / "docs" / "migrations" / "terminal-permissions-guide.md"
 APPLY = ROOT / ".agents" / "scripts" / "zoo_permissions_apply.py"
+START = "<!-- CANONICAL-LISTS:START"
+END = "<!-- CANONICAL-LISTS:END -->"
 
 
 def load_lists() -> tuple[list[str], list[str]]:
@@ -300,8 +302,14 @@ def test_no_allow_deny_tie():
 def test_guide_currency():
     text = GUIDE.read_text(encoding="utf-8")
     assert f"{len(ALLOW)} allow / {len(DENY)} deny" in text, (
-        "guide §6 count line stale — update docs/migrations/zoo-code-permissions-guide.md")
-    sec = text.split("## 6.")[1].split("## 7.")[0]
+        "guide count line stale — update docs/migrations/terminal-permissions-guide.md")
+    # ⛔ KEYED ON MARKERS, NOT SECTION NUMBERS. This used to slice `## 6.` .. `## 7.`, so SCC-376's
+    # merge of the three permission pages — which renumbered every section — would have silently
+    # sliced a different chapter, or raised IndexError inside a currency test whose whole job is to
+    # notice staleness. The markers move with the content they wrap.
+    if START not in text or END not in text:
+        raise AssertionError(f"guide lost its CANONICAL-LISTS markers ({GUIDE.name})")
+    sec = text.split(START)[1].split(END)[0]
     listed = {e.lower() for e in ALLOW} | {d.lower() for d in DENY}
     stale = []
     for line in sec.splitlines():  # Entries CELL of table rows only; prose stays free
@@ -311,7 +319,16 @@ def test_guide_currency():
         for tok in re.findall(r"`([^`]+)`", cells[2]):
             if tok.lower() not in listed:
                 stale.append(tok)
-    assert not stale, f"guide §6 Entries cells name non-entries: {stale}"
+    assert not stale, f"guide canonical-lists Entries cells name non-entries: {stale}"
+
+
+def test_guide_currency_markers_are_a_real_slice():
+    """CONTROL - if the markers ever bound nothing, the scan above passes over an empty string and
+    certifies a guide it never read (the vacuous green this suite exists to refuse)."""
+    text = GUIDE.read_text(encoding="utf-8")
+    sec = text.split(START)[1].split(END)[0]
+    assert len(sec) > 2000 and "| Family | Entries | Why |" in sec, (
+        f"the canonical-lists markers bound {len(sec)} chars and no family table - the slice is dead")
 
 
 def test_apply_script_pins():
