@@ -403,6 +403,43 @@ def main() -> int:
                 c.check(f"Q · silent on {label}", silent(out),
                         f"{cmd!r} -> {out.strip()[:160]}")
 
+        # ── R · THE MSYS `/c/…` SPELLING, WHICH IS THE ONE THE SHELL ACTUALLY USES ──────────
+        # ⛔ FOURTH INSTANCE OF THE ABSOLUTE-PATH-HAS-TWO-SPELLINGS BUG. SCC-321 taught `_is_abs`
+        # the drive-lettered form (`C:/ws`) after `startswith("/")` refused every Windows `cd`;
+        # `run-hook.sh` and the push gates (SCC-171/172) were the two before it. The spelling
+        # missed that time is the one Git Bash — the shell the Bash tool actually runs on
+        # Windows — produces for itself: `/c/Sudo_Hatter_Command`. `_is_abs` accepts it (it does
+        # start with `/`), so it reaches `_canon`, which rewrites only backslashes — leaving
+        # `/c/sudo_hatter_command` to be compared against a root of `c:/sudo_hatter_command`.
+        # They never match, so EVERY `cd /c/<repo> && …` chain fell through to a prompt.
+        # Measured over 18 transcripts: 114 calls, 7.0% of every prompt the operator answered.
+        # It fails safe (a prompt, never a wrong grant), which is exactly why it survived — and
+        # why the fixtures above could not see it: every one of them spells the root `C:/…`.
+        if c.block("R · the MSYS `/c/...` spelling of a Windows absolute path"):
+            if os.name == "nt":
+                native = str(root)
+                msys = f"/{native[0].lower()}{native[2:].replace(chr(92), '/')}"
+                for label, cmd in [
+                    ("a cd to the workspace root", f"cd {msys} && git status --short"),
+                    ("a cd to a directory inside it", f"cd {msys}/.claude && ls -la"),
+                    ("the multi-line shape", f"cd {msys}\ngit status --short\nls -la"),
+                ]:
+                    _, out = call(cmd, root)
+                    c.check(f"R · allows {label}, MSYS-spelled", allowed(out),
+                            f"{cmd!r} -> {out.strip()[:160]}")
+            # ⛔ The REJECT half runs on BOTH machines: the rewrite must never make an MSYS path
+            # OUTSIDE the workspace look inside it, and on POSIX `/c/...` is an ordinary path
+            # that is outside this fixture root either way.
+            for label, cmd in [
+                ("an MSYS path outside the workspace", "cd /c/Windows && ls -la"),
+                ("an MSYS path on another drive", "cd /d/Somewhere && ls -la"),
+                ("a bare drive root", "cd /c && ls -la"),
+                ("a write on the second atom, MSYS-spelled", "cd /c/Windows && rm -rf x"),
+            ]:
+                _, out = call(cmd, root)
+                c.check(f"R · silent on {label}", silent(out),
+                        f"{cmd!r} -> {out.strip()[:160]}")
+
         # ── L · the two legal outputs, and failing silent ────────────────────────────────────
         if c.block("L · two legal outputs, and every failure is silence"):
             probes = ["git diff | grep -n def", "git status && git checkout main",
