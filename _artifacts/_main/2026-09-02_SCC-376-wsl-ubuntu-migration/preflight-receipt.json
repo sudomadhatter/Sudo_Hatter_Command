@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-376-wsl-ubuntu-plan",
+  "errors": 0,
+  "exit": 0,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-376",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": null,
+  "warnings": 0,
+  "when": null
+}
