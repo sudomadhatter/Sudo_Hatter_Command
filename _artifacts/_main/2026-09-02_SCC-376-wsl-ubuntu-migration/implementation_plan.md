@@ -279,6 +279,23 @@ a Linux venv — `.venv/Scripts/` ceases to exist, `.venv/bin/` is the only form
 per-machine (`git config --global core.hooksPath .githooks` — hooks are local config and a fresh clone
 has none).
 
+> ### ⚠️ FINDING F7 — the lobby is TEN SUBMODULES deep, and a fresh clone has none
+>
+> Found by executing Phase 2, not by reading. The clone landed and both gate suites passed, but the
+> full suite came back **70/71** on `test_sops_prds_folder` → **T9 · every prose path reference
+> resolves**. It is not a Linux bug and not a regression: `.gitmodules` declares ten submodules under
+> `Projects/`, a fresh clone initialises none of them, and T9 resolves prose paths against project
+> roots — so references like `_bmad/bmm/stories/` (which lives inside `AGY_AVIATIONCHAT`) resolve on
+> the PC and nowhere on the new box. The test says so itself in its own NOTE and still fails rather
+> than skipping, which is the correct behaviour.
+>
+> **Consequence for the plan: Phase 5's gate — `run_all.py` green from inside WSL — is unreachable
+> until the submodules are initialised.** Phase 2 said "clone the repo" and never said "and its ten
+> children", so this would have surfaced as a mystery red at the end of Phase 5 instead of on day one.
+>
+> **Phase 2 gains a step:** `git submodule update --init --recursive` — which needs `gh auth login`
+> first, because the child repos are private. Re-run the full suite after and expect 71/71.
+
 > ### ⚠️ AUDIT FINDING F5 — landing-order dependency on SCC-323
 >
 > `origin/chore/SCC-323-hookspath-immunisation` is unmerged and ships
