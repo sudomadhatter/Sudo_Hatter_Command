@@ -629,6 +629,11 @@ ticket made every story thats an endless loop that never finishes").
    guardrail calls closed (SCC-155). It never moves a ticket the operator has already parked on one
    of those rungs, and it never moves one backwards. Placement stays the operator's (guardrail 2);
    "these three are safe together" is not a reason to move a card.
-5. **The token stays in the OS credential store.** Never echo, copy, or persist it anywhere — and
-   never bake a binary path or a store name into a doc. Both are per-machine, this file is read on
-   the Mac and the Windows PC, and a hardcoded Mac path is what teaches a PC agent it has no Jira.
+5. **The token stays in the credential store the machine has — and only there.** On the Mac that is
+   the keychain; inside Ubuntu on the PC (SCC-376) there is no store, so `acli` keeps it in its own
+   config under `~/.config/acli/` — mode 600, the operator's home, the ONE place it lives on Linux.
+   It goes in on stdin (`read -rs`, piped into `acli jira auth login`), never as `--token "$VAR"`,
+   which lands in shell history and in `ps` for every user on the box. Never echo, copy, or persist
+   it anywhere else — and never bake a binary path or a store name into a doc. All of it is
+   per-machine, this file is read on every machine, and a hardcoded Mac path is what teaches another
+   machine's agent it has no Jira.

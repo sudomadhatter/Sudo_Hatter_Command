@@ -114,15 +114,13 @@ Sudo_Hatter_Command/
     _scc_sops_prds/
         [15 files: .mdx15 | e.g. INDEX.md]
     migrations/
-      antigravity_extensions/
-          [3 files: .txtx1, .mdx1, .shx1 | e.g. antigravity-extension-ids.txt]
       install_guides/
           [10 files: .mdx10 | e.g. github-ci-gates-setup.md]
       scripts/
           [11 files: .ps1x5, .pyx3, .shx2, .patchx1 | e.g. Arm-HooksInclude.ps1]
       vscode_sync/
           [4 files: .jsonx2, .mdx1, .txtx1 | e.g. README.md]
-        [4 files: .mdx4 | e.g. INDEX.md]
+        [2 files: .mdx2 | e.g. INDEX.md]
       [10 files: .mdx9, .jsonx1 | e.g. AGENTS.md]
   scratch/
       [1 files: .pyx1 | e.g. find_brainstorm.py]

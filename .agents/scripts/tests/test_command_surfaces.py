@@ -2434,6 +2434,14 @@ def main() -> int:
     # TWO defects, one root cause: the command centre is markdown, and a code graph parses code.
     # (a) Three of the four MCP configs still started a `code-review-graph` server here — an index
     #     of nothing, on every platform but opencode, which had already been trimmed.
+    # ⛔ THREE platforms since SCC-376 Phase 7, not four. Antigravity was replaced by VS Code +
+    #     Zoo in SCC-349, and its last leftovers went with Phase 7 (`.antigravity/mcp.json`, the
+    #     extension-sync guide, the `google.google-antigravity` recommendation). This case
+    #     REQUIRED that file to exist, so deleting a config for a platform nobody runs would have
+    #     gone red - a test pinning the shape the system is deliberately leaving behind, the same
+    #     class as A3 and B4 in test_settings_allowlist. The retired platform is now asserted
+    #     ABSENT, so a re-added config is the thing that fails. Retiring the platform itself is
+    #     SCC-378.
     # (b) `risk_seam.py` resolved its repo from CWD. The four review/audit doors run from the
     #     CENTRE while reviewing a PROJECT worktree, so every project review classified the centre,
     #     which has no graph — the answer was ALWAYS `unclassified` and read as "no index here".
@@ -2441,12 +2449,15 @@ def main() -> int:
         mcp_files = {
             ".mcp.json": ROOT / ".mcp.json",
             ".claude/mcp.json": ROOT / ".claude" / "mcp.json",
-            ".antigravity/mcp.json": ROOT / ".antigravity" / "mcp.json",
             ".opencode/mcp.json": ROOT / ".opencode" / "mcp.json",
         }
+        RETIRED_MCP = {".antigravity/mcp.json": ROOT / ".antigravity" / "mcp.json"}
         present = {k: v for k, v in mcp_files.items() if v.exists()}
-        c.check("CS-15 A all four platform MCP configs exist",
+        c.check("CS-15 A all three LIVE platform MCP configs exist",
                 set(present) == set(mcp_files), f"missing: {sorted(set(mcp_files) - set(present))}")
+        back = [k for k, v in RETIRED_MCP.items() if v.exists()]
+        c.check("CS-15 A2 no config for a RETIRED platform (SCC-349 replaced Antigravity; "
+                "SCC-376 Phase 7 removed its leftovers)", not back, f"present again: {back}")
 
         server_sets = {}
         for name, path in present.items():
@@ -2461,7 +2472,7 @@ def main() -> int:
                 "; ".join(f"{k}={sorted(v)}" for k, v in server_sets.items()
                           if "code-review-graph" in v)
                 or "clean")
-        c.check("CS-15 C the four configs declare the SAME server set",
+        c.check("CS-15 C the three configs declare the SAME server set",
                 len(set(server_sets.values())) == 1,
                 "; ".join(f"{k}={sorted(v)}" for k, v in server_sets.items()))
 

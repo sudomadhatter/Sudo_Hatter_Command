@@ -1,0 +1,5 @@
+task_key: SCC-376
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-376-wsl-ubuntu-plan
+close_command: smh-close-task-merge-tree
+secondary_repos: []

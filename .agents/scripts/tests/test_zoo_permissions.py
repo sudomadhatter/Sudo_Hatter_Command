@@ -1,7 +1,7 @@
 """Zoo Code auto-approve lists — behavior and currency gate (SCC-351).
 
 Pins the tracked lists in .vscode/settings.json against the matcher semantics verified by
-executing Zoo v3.80.1's own extracted parser (docs/migrations/zoo-code-permissions-guide.md §4):
+executing Zoo v3.80.1's own extracted parser (docs/migrations/terminal-permissions-guide.md §6):
 lowercase starts-with per piece, longest prefix wins allow-vs-deny, tie goes to deny. The
 destructive battery (length-pinned below) must never auto-approve, the ceremony set must always
 auto-approve, an ASK battery of unknown tools must stay ask_user,
@@ -23,8 +23,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 SETTINGS = ROOT / ".vscode" / "settings.json"
-GUIDE = ROOT / "docs" / "migrations" / "zoo-code-permissions-guide.md"
+GUIDE = ROOT / "docs" / "migrations" / "terminal-permissions-guide.md"
 APPLY = ROOT / ".agents" / "scripts" / "zoo_permissions_apply.py"
+START = "<!-- CANONICAL-LISTS:START"
+END = "<!-- CANONICAL-LISTS:END -->"
 
 
 def load_lists() -> tuple[list[str], list[str]]:
@@ -300,8 +302,14 @@ def test_no_allow_deny_tie():
 def test_guide_currency():
     text = GUIDE.read_text(encoding="utf-8")
     assert f"{len(ALLOW)} allow / {len(DENY)} deny" in text, (
-        "guide §6 count line stale — update docs/migrations/zoo-code-permissions-guide.md")
-    sec = text.split("## 6.")[1].split("## 7.")[0]
+        "guide count line stale — update docs/migrations/terminal-permissions-guide.md")
+    # ⛔ KEYED ON MARKERS, NOT SECTION NUMBERS. This used to slice `## 6.` .. `## 7.`, so SCC-376's
+    # merge of the three permission pages — which renumbered every section — would have silently
+    # sliced a different chapter, or raised IndexError inside a currency test whose whole job is to
+    # notice staleness. The markers move with the content they wrap.
+    if START not in text or END not in text:
+        raise AssertionError(f"guide lost its CANONICAL-LISTS markers ({GUIDE.name})")
+    sec = text.split(START)[1].split(END)[0]
     listed = {e.lower() for e in ALLOW} | {d.lower() for d in DENY}
     stale = []
     for line in sec.splitlines():  # Entries CELL of table rows only; prose stays free
@@ -311,7 +319,16 @@ def test_guide_currency():
         for tok in re.findall(r"`([^`]+)`", cells[2]):
             if tok.lower() not in listed:
                 stale.append(tok)
-    assert not stale, f"guide §6 Entries cells name non-entries: {stale}"
+    assert not stale, f"guide canonical-lists Entries cells name non-entries: {stale}"
+
+
+def test_guide_currency_markers_are_a_real_slice():
+    """CONTROL - if the markers ever bound nothing, the scan above passes over an empty string and
+    certifies a guide it never read (the vacuous green this suite exists to refuse)."""
+    text = GUIDE.read_text(encoding="utf-8")
+    sec = text.split(START)[1].split(END)[0]
+    assert len(sec) > 2000 and "| Family | Entries | Why |" in sec, (
+        f"the canonical-lists markers bound {len(sec)} chars and no family table - the slice is dead")
 
 
 def test_apply_script_pins():
@@ -501,6 +518,29 @@ def test_apply_writes_only_the_list_keys():
         assert backup.read_bytes() == original, "second apply must not overwrite the backup"
 
 
+def test_enable_auto_approve_flips_only_the_two_master_keys_and_only_when_asked():
+    """SCC-376 Phase 6. A seat with the master toggles off consults NO list - it asks for
+    everything - which is exactly what the code2 seat was doing with its lists perfectly in sync,
+    and what made the Phase 6 checklist read PASS on a seat that was not fenced at all. Both
+    halves: without the flag the toggles are left exactly as found (the default must never widen a
+    seat silently), with it they go True and nothing else moves."""
+    mod = _load_apply_module()
+    with tempfile.TemporaryDirectory() as tmp:
+        db, _, memento = _make_store(Path(tmp))
+        off = dict(memento, alwaysAllowExecute=False)
+        off.pop("autoApprovalEnabled")
+        mod.apply(db, dict(off), ["a "], ["d "])
+        got = mod.load_memento(db)
+        assert got.get("autoApprovalEnabled") is None and got["alwaysAllowExecute"] is False, (
+            "REJECT half dead: a plain --apply changed the master toggles")
+        mod.apply(db, dict(off), ["a "], ["d "], True)
+        got = mod.load_memento(db)
+        assert got["autoApprovalEnabled"] is True and got["alwaysAllowExecute"] is True, (
+            "ALLOW half dead: --enable-auto-approve left a master toggle off")
+        assert got["destructiveCommandGuardEnabled"] is False and got["unrelatedKey"] == "keep-me", (
+            "the flag must touch ONLY the two master keys")
+
+
 def test_apply_refuses_while_vscode_runs():
     """The promised fake-process probe: with vscode_running forced True, --apply exits 2 and
     the store bytes are untouched (source greps cannot see call ORDER; this can)."""
@@ -517,6 +557,49 @@ def test_apply_refuses_while_vscode_runs():
             sys.argv = argv
         assert rc == 2, f"expected REFUSED exit 2, got {rc}"
         assert db.read_bytes() == original, "refusal must leave the store untouched"
+
+
+def test_candidate_dbs_sees_the_second_seat_and_the_windows_stores_from_wsl():
+    """SCC-376 Phase 4 measured where Zoo's state lives on the PC: in the WINDOWS user-data-dirs -
+    the primary AND the isolated `~/vscode-isolated` seat `code2` launches with - never in the
+    distro. So the apply script must list the isolated seat on every machine, and from Ubuntu it
+    must reach both Windows stores through /mnt/c. Both halves: present -> listed, absent -> not
+    (a scan that cannot fail certifies nothing)."""
+    mod = _load_apply_module()
+    with tempfile.TemporaryDirectory() as tmp:
+        home = Path(tmp) / "home"
+        iso = home / "vscode-isolated" / "User" / "globalStorage"
+        iso.mkdir(parents=True)
+        _make_store(iso)
+        win_users = Path(tmp) / "mnt" / "c" / "Users"
+        prim = win_users / "someone" / "AppData" / "Roaming" / "Code" / "User" / "globalStorage"
+        prim.mkdir(parents=True)
+        _make_store(prim)
+        win_iso = win_users / "someone" / "vscode-isolated" / "User" / "globalStorage"
+        win_iso.mkdir(parents=True)
+        _make_store(win_iso)
+        found = mod.candidate_dbs(home=home, windows_users=win_users)
+        for want in (iso, prim, win_iso):
+            assert want / "state.vscdb" in found, f"{want.name} store missing: {found}"
+        (iso / "state.vscdb").unlink()
+        (win_iso / "state.vscdb").unlink()
+        after = mod.candidate_dbs(home=home, windows_users=win_users)
+        assert iso / "state.vscdb" not in after and win_iso / "state.vscdb" not in after, (
+            "ALLOW half dead: an absent store was listed")
+        assert prim / "state.vscdb" in after
+        # The half that bit for real: another Windows account under /mnt/c/Users is unreadable
+        # (PermissionError on stat), and pathlib propagated it out of candidate_dbs() before the
+        # operator's own store was reached. Unreadable = absent. (chmod is a no-op on Windows,
+        # so this half only bites on POSIX - which is the only place the WSL path runs.)
+        locked = win_users / "locked"
+        (locked / "AppData" / "Roaming" / "Code" / "User").mkdir(parents=True)
+        import os
+        os.chmod(locked, 0)
+        try:
+            again = mod.candidate_dbs(home=home, windows_users=win_users)
+        finally:
+            os.chmod(locked, 0o700)
+        assert prim / "state.vscdb" in again, "an unreadable sibling account hid the real store"
 
 
 _ASCII_SCANNED = ("zoo_permissions_apply.py", "zoo_notify.py", "zoo_notify_install.py")

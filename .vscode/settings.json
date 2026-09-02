@@ -11,7 +11,7 @@
   "workbench.editor.centeredLayoutFixedWidth": true,
   "workbench.editor.closeOnFileDelete": true,
   "workbench.editor.enablePreviewFromQuickOpen": true,
-  "python.defaultInterpreterPath": "${workspaceFolder}/Projects/AGY_AVIATIONCHAT/backend/.venv/Scripts/python.exe",
+  "python.defaultInterpreterPath": "${workspaceFolder}/Projects/AGY_AVIATIONCHAT/backend/.venv/bin/python",
   "claudeCode.preferredLocation": "panel",
   "claudeCode.useTerminal": false,
   "workbench.colorTheme": "Dark Modern",
@@ -26,7 +26,7 @@
   // fresh machine and never again — after ANY edit here, run
   //   python3 .agents/scripts/zoo_permissions_apply.py --apply   (VS Code closed)
   // per machine. Design, matcher semantics, and the reasoning per family:
-  // docs/migrations/zoo-code-permissions-guide.md (SCC-351). The matcher is lowercase
+  // docs/migrations/terminal-permissions-guide.md (SCC-351, SCC-376). The matcher is lowercase
   // starts-with per piece, longest prefix wins allow-vs-deny — broad allows make every
   // UN-denied spelling auto-RUN, so the deny list is the whole fence: minimum rows, each one
   // naming real damage, none colliding with legitimate agent work. Env twins for git/gh denies
@@ -36,7 +36,7 @@
   "zoo-code.useAgentRules": true,
   "zoo-code.allowedCommands": [
     "cd ", "git ", "env -u GITHUB_TOKEN git ", "gh pr ", "gh run ", "env -u GITHUB_TOKEN gh pr ",
-    "env -u GITHUB_TOKEN gh run ", "python3 ", "python ",
+    "env -u GITHUB_TOKEN gh run ", "python3 ",
     "pwsh -NoProfile -File .agents/scripts/", "acli jira workitem ", "ls", "pwd", "true", "date",
     "head", "sort", "uniq", "wc", "cat", "echo", "tail ", "sed ", "grep ", "rg ", "diff ", "cp ",
     "mkdir ", "printf ", "awk ", "cut ", "tr ", "basename ", "dirname ", "readlink ", "file ",
@@ -47,20 +47,10 @@
     // recurring and NOT already covered by a prefix above. `find ` was deliberately NOT promoted:
     // `find -delete` and `find -exec rm` are destructive and no deny row sees them.
     "npx vitest ", "npm run ", "test -", "sleep ", "ps aux", "ln -s ",
-    // SCC-338 — the PC half of the same exercise. Every read-only verb above is POSIX-shaped
-    // (ls, cat, grep, head), so on Windows the agent's equivalents had NO row and each one
-    // stopped for approval; all eight below were learned into that machine's decision store
-    // instead, where no test can see them and the next `--apply` wipes them. Promoted here so
-    // the fence reads the same on both machines. All eight only READ — a pipe into a
-    // destructive verb splits into its own piece and is judged separately, so
-    // `Get-ChildItem | Remove-Item` still lands on the deny row. Deliberately NOT promoted
-    // from that store: bare `del` (measured auto-approving `del AGENTS.md`, outranking the
-    // delete denies) and bare `git`/`git add`/`git commit`/`git push`, which are widenings
-    // already covered by the scoped rows above.
-    "Get-ChildItem", "Select-Object", "Select-String", "Test-Path", "Write-Output",
-    "findstr", "dir", "more",
-    // The two-machine twin — venv scripts live in bin/ on the Mac and Scripts/ on the PC.
-    "backend/.venv/bin/", "backend/.venv/Scripts/",
+    // The venv door — bin/ on both machines since SCC-376 (the PC works inside Ubuntu). The
+    // SCC-338 PowerShell read verbs that sat here (Get-ChildItem, dir, findstr, ...) left with
+    // the Windows shell; the SCC-376 note below is the record.
+    "backend/.venv/bin/",
     "REPO=", "BRANCH=",
     "EXPECTED_KEY=", "BASE=", "BEHIND=", "HEAD_SHA=", "PATHS=", "VENV=", "KEY=", "MAIN=", "WT=",
     "W=", "SCR=", "EXT=", "DB=", "OUT=", "MSG=", "URL=", "CODE=", "SCRATCH=", "E=", "T=", "D=",
@@ -80,35 +70,22 @@
     "env -u GITHUB_TOKEN git push origin --delete \"claude/",
     "env -u GITHUB_TOKEN git push origin --delete \"epic/",
     "git push origin HEAD:epic/", "env -u GITHUB_TOKEN git push origin HEAD:epic/",
-    // SCC-373 — the Windows toolchain half, from an audit of 42 approval stops. The headline
-    // fix is the BACKSLASH twin: `backend\.venv\Scripts\` never matched the forward-slash row
-    // above it, so every PC venv call stopped. Same reason `.venv\…\ruff.exe` /
-    // `python.exe -m pytest` carry both spellings. Deliberately NOT promoted from that audit —
-    // `if exist ` and `ForEach-Object`, which are LAUNDERING prefixes: the matcher splits on
-    // && || ; | & and newlines ONLY, so a cmd conditional (`if exist x rmdir /s /q <repo>`)
-    // and a PowerShell scriptblock (`… | ForEach-Object { Remove-Item -Recurse $_ }`) each
-    // carry their destructive verb INSIDE one unsplit piece, where no starts-with deny row can
-    // ever see it. Measured against the extracted matcher: both flip ask_user -> auto_approve
-    // on payloads the deny list otherwise catches. No deny row can fix that (deny is
-    // starts-with too), so the row comes out — the same call already made for `find ` above
-    // (`find -exec rm`) and for bare `del`. Both shapes are banned by command-shape.md §Zoo
-    // anyway ("no shell loops or multi-line if blocks — iterate in python, or repeat the call"),
-    // so the stops they caused are a signal to reshape the command, not to widen the fence.
-    "set \"JAVA_HOME=",
+    // SCC-376 — the Windows rows are GONE, on purpose. The PC now works inside WSL2 / Ubuntu, so a
+    // PowerShell verb, a cmd builtin, a backslash path or a `.exe` can never match a command either
+    // machine's agent runs: 22 rows came out by EXACT match (the SCC-338 read verbs, the SCC-373
+    // toolchain twins, `set "JAVA_HOME=`, `where `, `type `, bare `python `) — never by prefix,
+    // because `dir` is the head of `dirname `, which stays. The three capabilities that had ONLY a
+    // Windows spelling gained their Unix row below (audit finding F3). The refusals SCC-338 and
+    // SCC-373 recorded still stand as law (guide §6): `if exist `, `ForEach-Object`, `find ` and
+    // bare `del` are LAUNDERING prefixes — the matcher splits on && || ; | & and newlines ONLY, so
+    // each carries its destructive verb inside one unsplit piece where no starts-with deny row can
+    // see it — and a stop they cause is a signal to reshape the command, never to widen the fence.
     "java -version",
-    "where ",
-    "type ",
-    "del scratch\\",
-    "Write-Host",
-    "Get-Item",
     "npm ci ",
     "node backend/tests/",
-    "firebase\\tests\\node_modules\\.bin\\firebase emulators:exec",
-    "backend\\.venv\\Scripts\\",
-    ".venv/Scripts/python.exe -m pytest",
-    ".venv\\Scripts\\python.exe -m pytest",
-    ".venv\\Scripts\\ruff.exe check",
-    ".venv_stale\\Scripts\\python.exe scratch\\"
+    ".venv/bin/python -m pytest",
+    ".venv/bin/ruff check",
+    "firebase/tests/node_modules/.bin/firebase emulators:exec"
   ],
   "zoo-code.deniedCommands": [
     "rm -rf", "rm -r", "sudo", "chmod -R 777", "chown -R", "dd if=", "mkfs", "del /s", "rmdir /s",
