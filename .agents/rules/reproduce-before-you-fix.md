@@ -72,6 +72,13 @@ cost-to-disprove**, cheap-and-likely first. Then for each, try to **disprove** i
 or extra test that would rule it out, and stop the moment evidence lands either way. **One change, one
 observation.** Never stack speculative fixes.
 
+**Before you test a hypothesis by editing code, check whether the answer is already documented.**
+Search the vendor's official docs for the error message, the API, or the behavior in question
+(`karpathy-guidelines` §5). One web search that finds a known issue, a migration guide, or a
+documented breaking change saves every hypothesis on your list. A fix built on stale training data is
+a guess dressed as knowledge — verify the current behavior from a first-party source before you touch
+the code.
+
 **Stop conditions — any one fires, you stop editing and escalate:**
 
 | Signal | Threshold |
