@@ -465,7 +465,9 @@ is upstream). Three leftovers sit in this ticket's territory and are deleted in 
 the `~/.gemini/antigravity/global_workflows` cache `sync-agents.ps1` writes, the platform entry in
 `_bmad/_config/manifest.yaml`, and 22 references in the testing SOP — measured 2026-09-02: 184 files
 mention Antigravity. That is a sync-agents change with the SOP-currency gate on it, and it gets its own
-ticket; a migration ticket must not absorb a platform retirement.
+ticket — **SCC-378**, opened 2026-09-02 on the operator's approval with the eight-step plan on the
+ticket itself (outline: [`tickets/SCC-378.md`](tickets/SCC-378.md)); a migration ticket must not absorb
+a platform retirement.
 
 > ### ⚠️ AUDIT FINDING F6 — this merge is a PATH MOVE, and one of the three is machine-read
 >
@@ -1055,3 +1057,14 @@ topic. Mine; no action.
 Output not pasted, so its two results (the Conductor folder renamed; `core.hooksPath` armed) are
 operator-reported, not read back from here. Phase 6's checklist re-measures both on the Mac before
 sign-off.
+
+**Tree cleanup, 2026-09-02, operator-approved.** The PC checkout (on `main`) carried drift no lane owned.
+Measured, then acted on:
+
+| item | what it was | action |
+|---|---|---|
+| `.claude/settings.json` (modified) | rewritten by Claude on the PC during SCC-375: one throwaway allow rule for a `wsl.exe … test_sops_prds_folder.py` command, three rules dropped, keys reordered — unreviewed | reverted to `HEAD` |
+| `.vscode/settings.json.bak-llm-approvals` | the pre-SCC-373 backup of the Zoo approvals file; the live file is committed | deleted |
+| `scratch/mutation_sweep_24_7.py` | AviationChat story 24.7's mutation-sweep evidence, cited by that story's walkthrough at this exact path | **stays** until AVCH-109 closes; that lane moves it into the story's own artifacts before close-out |
+| three `_artifacts/_memory/` edits | this session's (hook SIGTERM memory, grep correction, index) | committed on this lane at `1293a058`; they clear from the tree when the lane lands |
+| five memory deletions seen earlier | SCC-377's deliberate retirement, merged on `main` | nothing; the Linux clone's memory-store guard was re-baselined to acknowledge it |
