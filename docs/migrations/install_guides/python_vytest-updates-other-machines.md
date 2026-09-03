@@ -502,8 +502,8 @@ wrong one) before trusting it.
 |---|---|
 | Which runner flags are canonical (serial vs `-n auto`) | runner AIDEV-NOTE in `backend/requirements.txt` |
 | Declared interpreter | `pyproject.toml` `requires-python` |
-| The full 2026-08-01 record (evidence, measurements, traps) | `_artifacts/_main/2026-08-01_python-env-fix/walkthrough.md` |
-| Why the gate went parallel, and the venv-naming hazard | `_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md` (2026-08-03) |
+| The full 2026-08-01 record (evidence, measurements, traps) | `Projects/AGY_AVIATIONCHAT/_artifacts/_main/2026-08-01_python-env-fix/walkthrough.md` (the AGY repo's artifacts, not the lobby's) |
+| Why the gate went parallel, and the venv-naming hazard | `Projects/AGY_AVIATIONCHAT/_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md` (2026-08-03) |
 | Machine-wide suite lock, backend (queued ≠ hung) | root `conftest.py` |
 | Machine-wide suite lock, frontend | `frontend/vitest.global-setup.ts` (wired in `frontend/vitest.config.ts`) |
 | Frontend flake driver (jsdom setup/transform ≈85% of wall clock) | AIDEV-NOTE in `frontend/vitest.config.ts` + AGY active-context follow-on |

@@ -10,10 +10,10 @@
     "edges": 791,
     "external": 35,
     "ambiguous": 173,
-    "dangling": 290,
-    "broken_paths": 63,
+    "dangling": 288,
+    "broken_paths": 61,
     "unresolved_names": 227,
-    "unresolvable": 7
+    "unresolvable": 9
   },
   "nodes": [
     {
@@ -7179,14 +7179,6 @@
     },
     {
       "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
-      "target": "_artifacts/_main/2026-08-01_python-env-fix/walkthrough.md"
-    },
-    {
-      "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
-      "target": "_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md"
-    },
-    {
-      "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
       "target": "env-migration-guide.md"
     },
     {
@@ -10853,6 +10845,14 @@
     {
       "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",
       "target": "Projects/AGY_AVIATIONCHAT/.claude/commands/autopilot_glm.md"
+    },
+    {
+      "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
+      "target": "Projects/AGY_AVIATIONCHAT/_artifacts/_main/2026-08-01_python-env-fix/walkthrough.md"
+    },
+    {
+      "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
+      "target": "Projects/AGY_AVIATIONCHAT/_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md"
     }
   ],
   "packs": [

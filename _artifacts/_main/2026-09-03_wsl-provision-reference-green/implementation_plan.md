@@ -10,7 +10,7 @@ This WSL box fails 40 backend tests under the documented command (`pytest backen
 Mac) run the same command and get 0 failed. The difference is not code: it is that
 `Projects/AGY_AVIATIONCHAT/auth_keys/` does not exist here. `backend/main.py:22` loads
 `auth_keys/.env` at import, and that file carries `GOOGLE_APPLICATION_CREDENTIALS` pointing at
-`auth_keys/service-account.json`; without it `google.auth.default()` raises, `conftest.py` swaps in
+`service-account.json` (under `auth_keys/`); without it `google.auth.default()` raises, `conftest.py` swaps in
 `AnonymousCredentials`, and every real Firestore call is refused. The emulator run earlier today was a
 diagnostic detour — it is not how the house runs this suite.
 
@@ -25,7 +25,7 @@ re-login for the credentials that are files.
 | `docs/migrations/auth_keys/_secrets/master.env` | present, 2026-08-14, 7 FILE blocks | **absent** | INDEX step 4 |
 | lobby `.env` | present | **absent** | step 3 |
 | AGY `auth_keys/.env`, `service-account.json` | present (SA re-issued **2026-09-03**, newer than bundle) | **absent** | step 3 |
-| AGY `auth_keys/librarian-service-account.json` | present | **absent** — and **not in the bundle** | step 3 (gap) |
+| AGY `librarian-service-account.json` (under `auth_keys/`) | present | **absent** — and **not in the bundle** | step 3 (gap) |
 | AGY `backend/.env` | present | present, byte-identical | step 3 |
 | AGY `frontend/.env.local`, `.env.production` | present | **absent** | step 3 |
 | gcloud ADC (`application_default_credentials.json`, `authorized_user`, quota project `aviationchat`) | present | **absent**; `gcloud` CLI absent | step 6 |
@@ -38,12 +38,12 @@ re-login for the credentials that are files.
 1. **Hand-carry the bundle** — `cp` the Windows `master.env` to the same gitignored path in this lobby
    (`**/_secrets/` is ignored at `.gitignore:57`). Confirm `git status` stays clean.
 2. **Restore** — `bash docs/migrations/scripts/restore-env-master.sh --dry-run`, read the list, then
-   run it live. Expected writes: lobby `.env`, AGY `auth_keys/.env`, `auth_keys/service-account.json`,
+   run it live. Expected writes: lobby `.env`, AGY `auth_keys/.env`, `service-account.json` (under `auth_keys/`),
    `frontend/.env.local`, `frontend/.env.production`, BRKN `frontend/.env.local`; `backend/.env`
    reports `unchanged`. `chmod 600` everything it wrote.
 3. **Overlay the two files the bundle is behind on** — copy the live Windows
-   `auth_keys/service-account.json` (issued today, differs from the bundle's copy) and
-   `auth_keys/librarian-service-account.json` (never in the bundle) into WSL `auth_keys/`, mode 600.
+   `service-account.json` (under `auth_keys/`) (issued today, differs from the bundle's copy) and
+   `librarian-service-account.json` (under `auth_keys/`) (never in the bundle) into WSL `auth_keys/`, mode 600.
 4. **ADC** — `install -m 600` the Windows ADC file to `~/.config/gcloud/application_default_credentials.json`.
    This is the exact file `gcloud auth application-default login` would have produced. The `gcloud`
    CLI itself needs `sudo apt` and is Mr. Hatter's line to run (not needed for the suite).
