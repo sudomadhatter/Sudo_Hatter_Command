@@ -184,8 +184,11 @@ breakage the first time:
   visible effects: `git status` in the sandboxed shell shows phantom `?? .bash_profile`,
   `?? .claude/hooks` rows that vanish unsandboxed, and any git operation that must remove or replace
   one of those paths — `git reset --hard` touching `.claude/settings.json`, `git worktree prune` on
-  `.git/worktrees/*` metadata — fails with `Device or resource busy`. Read `git status` from an
-  unsandboxed call before believing a repo is dirty; use `--mixed` where `--hard` is refused.
+  `.git/worktrees/*` metadata — fails with `Device or resource busy`. `.git/config.lock` is one of
+  the mounted paths too, so `git push -u` / `git branch --set-upstream-to` push fine and then report
+  `could not lock config file ...: File exists` — the push happened, only the tracking line did not.
+  Read `git status` from an unsandboxed call before believing a repo is dirty; use `--mixed` where
+  `--hard` is refused.
 - **`sudo` is never the agent's.** `apt`, `add-apt-repository`, anything under `/usr` — the operator
   runs those in the IDE's integrated terminal (it IS the Ubuntu shell; no restart of the IDE), with
   the *Linux* user password, not the Windows one. The kit lists every such line in one block:
