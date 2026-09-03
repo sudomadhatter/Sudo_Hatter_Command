@@ -8,6 +8,8 @@ ArtifactMetadata:
 
 # SCC-378 — where the review stands (resume card)
 
+> **Superseded 2026-09-03:** the review completed — see `## Code Review (2026-09-03)` in [walkthrough.md](walkthrough.md). Kept as the record of the compaction hand-off.
+
 **Lane:** `chore/SCC-378-permission-parity` · worktree `/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/SCC-378-permission-parity` · **HEAD `59e15eff`** (the reviewed sha; the diff was re-taken there) · SCC-378 `In Progress` · child SCC-382 (Mac) open.
 ⚠ The shell's cwd may have reset to the MAIN checkout — every command below pins the worktree by absolute path (`cd <worktree> && …` in one line).
 

@@ -33,7 +33,7 @@ fence as the other two, on this machine, with the Mac one apply away.
 - [x] Step 3 — mutants declared FROM the code, one sweep: 10/10 killed on the third run (M8 survived twice — see Evidence)
 - [x] Step 3 — STAMP: `run_all.py` through the receipt writer, PASS exit 0 @ `5f9ce171`; re-stamped after the review at `3f6f42e7`
 - [x] Step 4 — `/smh-code-review` (the `## Code Review` section below): five lenses + verify wave + compound; 16 patches fixed in-lane, 1 decision handed over, CONCERNS
-- [ ] Step 5 — Dev Record
+- [x] Step 5 — Dev Record posted to SCC-378 (stage quick-dev); branch pushed; close-out is the operator's (`/smh-close-task-merge-tree`)
 
 ## Evidence
 
