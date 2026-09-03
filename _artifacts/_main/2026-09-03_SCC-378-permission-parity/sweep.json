@@ -65,7 +65,7 @@
       "file": ".agents/scripts/permission_render.py",
       "original": "        elif ch == \"/\" and text.startswith(\"//\", i):",
       "mutated": "        elif False and text.startswith(\"//\", i):",
-      "case": "B11 write() renders the hand-added row away, keeps every comment outside the arrays, and --check is clean",
+      "case": "B12 the JSONC scanner skips a line comment carrying ONE quote and still finds the right `]`",
       "block": "B ·"
     },
     {

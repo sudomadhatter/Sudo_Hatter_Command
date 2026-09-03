@@ -321,6 +321,22 @@ if c.block("B · one source, three rendered outputs, drift is red"):
                 ok11, why11 = False, f"write() raised {e!r}"
             c.check("B11 write() renders the hand-added row away, keeps every comment outside the arrays, and --check is clean",
                     ok11, why11)
+        # The JSONC scanner on a fixture the real file cannot rescue. In .vscode/settings.json nine rows
+        # carry an escaped \" - an odd count - so a comment that flips the string parity gets flipped
+        # BACK before the closing bracket and a scanner that stopped skipping comments still lands on
+        # the right `]` by luck (mutant M8 survived two sweeps exactly this way). Here the arrays hold
+        # no escapes, so the one quote in the comment desyncs the scan all the way to EOF.
+        jsonc = ('{\n  "other": 1,\n  "zoo-code.allowedCommands": [\n    // one " quote here\n    "a ", "b "\n  ],\n'
+                 '  "zoo-code.deniedCommands": [\n    "x", "y"\n  ],\n  "tail": true\n}\n')
+        try:
+            out = pr._replace_jsonc_array(jsonc, "zoo-code.allowedCommands", ["p ", "q "])
+            parsed = pr._jsonc_load(out)
+            ok12 = (parsed["zoo-code.allowedCommands"] == ["p ", "q "] and parsed["zoo-code.deniedCommands"] == ["x", "y"]
+                    and parsed["other"] == 1 and parsed["tail"] is True)
+            why12 = "" if ok12 else out[:160]
+        except Exception as e:  # noqa: BLE001
+            ok12, why12 = False, f"scanner raised {e!r}"
+        c.check("B12 the JSONC scanner skips a line comment carrying ONE quote and still finds the right `]`", ok12, why12)
         c.check("B9 no --seed left in the renderer (a migration, not a feature)",
                 "--seed" not in (SCRIPTS / "permission_render.py").read_text(encoding="utf-8"))
 
