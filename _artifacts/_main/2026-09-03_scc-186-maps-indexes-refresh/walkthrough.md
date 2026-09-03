@@ -54,3 +54,13 @@ tier-2 and hygiene checks (all green), AGENTS/README pointer reconcile (no dead 
 - AGY code graph STALE (built `563e133`, HEAD `7c5044a`) → run `code-review-graph update` from the
   AGY root after its PR merges.
 - Run `python .agents/scripts/check_maps.py --set-anchor --all` after the merges.
+
+## Your Actions
+
+| # | Action | Evidence / answer |
+|---|---|---|
+| 1 | Review and merge this PR | The PR link is the landing; the click on Merge is the decision reaching GitHub |
+| 2 | After merge: re-anchor the maps | `python .agents/scripts/check_maps.py --set-anchor --all` |
+| 3 | After merge: refresh the AGY code graph | `code-review-graph update` from `Projects/AGY_AVIATIONCHAT` |
+| 4 | (Your call, parked) AGY `_venv-rollback-old314/` | Delete the folder, or a one-line `SCAN_IGNORES` addition in a toolkit lane |
+| 5 | (Your call, parked) `scratch/mutation_sweep_24_7.py` | Committed on this lane per your word this run; keep or drop in review |

@@ -123,7 +123,7 @@ Sudo_Hatter_Command/
         [2 files: .mdx2 | e.g. INDEX.md]
       [10 files: .mdx9, .jsonx1 | e.g. AGENTS.md]
   scratch/
-      [1 files: .pyx1 | e.g. find_brainstorm.py]
+      [2 files: .pyx2 | e.g. find_brainstorm.py]
     [9 files: .mdx5, .txtx3, .jsonx1 | e.g. AGENTS.md]
 ```
 <!-- REPO-MAP:AUTO-END -->
