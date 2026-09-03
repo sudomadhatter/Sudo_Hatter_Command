@@ -1,6 +1,7 @@
 {
-  "_doc": "The ONE terminal-approval source. A row is a FAMILY (id, cmd, why); each platform's exact rule text comes from render:{zoo,claude,antigravity} when present, else is DERIVED from cmd by the platform's grammar (permission_render.py). only:/not: scope a row. Rendered by /smh-sync-agents; drift is red in tests/test_permission_parity.py. Identical DECISIONS across platforms, never identical bytes (SCC-378).",
+  "_doc": "The ONE terminal-approval source. A row is a FAMILY (id, cmd, why); each platform's exact rule text comes from render:{zoo,claude,antigravity} when present, else is DERIVED from cmd by the platform's grammar (permission_render.py). only:/not: scope a row. Rendered by /smh-sync-agents; drift is red in tests/test_permission_parity.py. Identical DECISIONS across platforms, never identical bytes (SCC-378). house_twin_prefix: every Antigravity deny is also rendered behind the house command shape `cd <abs> && ...` (command-shape.md rule 1), because the vendor documents per-token matching on the leading tokens and nothing about chains - the twin fences the shape either way (code review 2026-09-03).",
   "env_twin_prefix": "env -u GITHUB_TOKEN ",
+  "house_twin_prefix": "cd .* && ",
   "allow": [
     {
       "id": "allow-cd",
@@ -1038,7 +1039,7 @@
     {
       "id": "allow-door-vars",
       "cmd": "door-vars",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | code review 2026-09-03: `[A-Z_]+=.*` allowed ANY uppercase assignment prefix; now the named door variables only (the union of the Zoo and Claude rows)",
       "render": {
         "zoo": [
           "REPO=",
@@ -1119,8 +1120,8 @@
           "Bash(X=*)"
         ],
         "antigravity": [
-          "command([A-Z_]+=.*)",
-          "unsandboxed([A-Z_]+=.*)"
+          "command((A|B|BASE|BEHIND|BRANCH|CODE|D|DB|E|EPIC|EXPECTED_KEY|EXT|F|G|HEAD_SHA|KEY|L|M|MAIN|MSG|N|OUT|P|PATHS|PROJECT_ROOT|R|REPO|S|SCR|SCRATCH|T|TREE|URL|V|VENV|W|WORKTREE|WT|X)=.*)",
+          "unsandboxed((A|B|BASE|BEHIND|BRANCH|CODE|D|DB|E|EPIC|EXPECTED_KEY|EXT|F|G|HEAD_SHA|KEY|L|M|MAIN|MSG|N|OUT|P|PATHS|PROJECT_ROOT|R|REPO|S|SCR|SCRATCH|T|TREE|URL|V|VENV|W|WORKTREE|WT|X)=.*)"
         ]
       },
       "only": [
@@ -1762,7 +1763,7 @@
     {
       "id": "deny-git-push",
       "cmd": "git push",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | SCC-378 battery: HEAD:main was un-denied on Antigravity (Zoo's `HEAD:` deny is prefix-based; here the target is named so the `HEAD:epic/` landing stays legal)",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | SCC-378 battery: HEAD:main was un-denied on Antigravity (Zoo's `HEAD:` deny is prefix-based; here the target is named so the `HEAD:epic/` landing stays legal) | code review 2026-09-03: literal flags/targets were one anchored token each, so -fu / --force-with-lease=X / --delete origin main / HEAD:develop slipped past; now cluster classes and the same targets Zoo's longest-prefix re-allows leave legal (chore/ claude/ epic/, HEAD:epic/)",
       "render": {
         "zoo": [
           "git push --force",
@@ -1797,18 +1798,14 @@
           "env -u GITHUB_TOKEN git push origin --delete"
         ],
         "antigravity": [
-          "command(git push --force)",
-          "unsandboxed(git push --force)",
-          "command(env -u GITHUB_TOKEN git push --force)",
-          "unsandboxed(env -u GITHUB_TOKEN git push --force)",
-          "command(git push -f)",
-          "unsandboxed(git push -f)",
-          "command(env -u GITHUB_TOKEN git push -f)",
-          "unsandboxed(env -u GITHUB_TOKEN git push -f)",
-          "command(git push --force-with-lease)",
-          "unsandboxed(git push --force-with-lease)",
-          "command(env -u GITHUB_TOKEN git push --force-with-lease)",
-          "unsandboxed(env -u GITHUB_TOKEN git push --force-with-lease)",
+          "command(git push --force.*)",
+          "unsandboxed(git push --force.*)",
+          "command(env -u GITHUB_TOKEN git push --force.*)",
+          "unsandboxed(env -u GITHUB_TOKEN git push --force.*)",
+          "command(git push -[a-zA-Z]*f[a-zA-Z]*)",
+          "unsandboxed(git push -[a-zA-Z]*f[a-zA-Z]*)",
+          "command(env -u GITHUB_TOKEN git push -[a-zA-Z]*f[a-zA-Z]*)",
+          "unsandboxed(env -u GITHUB_TOKEN git push -[a-zA-Z]*f[a-zA-Z]*)",
           "command(git push --mirror)",
           "unsandboxed(git push --mirror)",
           "command(env -u GITHUB_TOKEN git push --mirror)",
@@ -1821,10 +1818,10 @@
           "unsandboxed(git push origin main)",
           "command(env -u GITHUB_TOKEN git push origin main)",
           "unsandboxed(env -u GITHUB_TOKEN git push origin main)",
-          "command(git push -u origin main)",
-          "unsandboxed(git push -u origin main)",
-          "command(env -u GITHUB_TOKEN git push -u origin main)",
-          "unsandboxed(env -u GITHUB_TOKEN git push -u origin main)",
+          "command(git push -[a-zA-Z]*u[a-zA-Z]* origin main)",
+          "unsandboxed(git push -[a-zA-Z]*u[a-zA-Z]* origin main)",
+          "command(env -u GITHUB_TOKEN git push -[a-zA-Z]*u[a-zA-Z]* origin main)",
+          "unsandboxed(env -u GITHUB_TOKEN git push -[a-zA-Z]*u[a-zA-Z]* origin main)",
           "command(git push --set-upstream origin main)",
           "unsandboxed(git push --set-upstream origin main)",
           "command(env -u GITHUB_TOKEN git push --set-upstream origin main)",
@@ -1841,18 +1838,22 @@
           "unsandboxed(git push origin \\+.*)",
           "command(env -u GITHUB_TOKEN git push origin \\+.*)",
           "unsandboxed(env -u GITHUB_TOKEN git push origin \\+.*)",
-          "command(git push origin --delete (main|master))",
-          "unsandboxed(git push origin --delete (main|master))",
-          "command(env -u GITHUB_TOKEN git push origin --delete (main|master))",
-          "unsandboxed(env -u GITHUB_TOKEN git push origin --delete (main|master))",
-          "command(git push origin :(main|master))",
-          "unsandboxed(git push origin :(main|master))",
-          "command(env -u GITHUB_TOKEN git push origin :(main|master))",
-          "unsandboxed(env -u GITHUB_TOKEN git push origin :(main|master))",
-          "command(git push origin HEAD:(main|master))",
-          "unsandboxed(git push origin HEAD:(main|master))",
-          "command(env -u GITHUB_TOKEN git push origin HEAD:(main|master))",
-          "unsandboxed(env -u GITHUB_TOKEN git push origin HEAD:(main|master))"
+          "command(git push --delete)",
+          "unsandboxed(git push --delete)",
+          "command(env -u GITHUB_TOKEN git push --delete)",
+          "unsandboxed(env -u GITHUB_TOKEN git push --delete)",
+          "command(git push origin --delete (?!\"?(chore|claude|epic)/).*)",
+          "unsandboxed(git push origin --delete (?!\"?(chore|claude|epic)/).*)",
+          "command(env -u GITHUB_TOKEN git push origin --delete (?!\"?(chore|claude|epic)/).*)",
+          "unsandboxed(env -u GITHUB_TOKEN git push origin --delete (?!\"?(chore|claude|epic)/).*)",
+          "command(git push origin :.*)",
+          "unsandboxed(git push origin :.*)",
+          "command(env -u GITHUB_TOKEN git push origin :.*)",
+          "unsandboxed(env -u GITHUB_TOKEN git push origin :.*)",
+          "command(git push origin HEAD:(?!epic/).*)",
+          "unsandboxed(git push origin HEAD:(?!epic/).*)",
+          "command(env -u GITHUB_TOKEN git push origin HEAD:(?!epic/).*)",
+          "unsandboxed(env -u GITHUB_TOKEN git push origin HEAD:(?!epic/).*)"
         ]
       },
       "only": [
@@ -1915,7 +1916,7 @@
     {
       "id": "deny-git-branch",
       "cmd": "git branch",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | code review 2026-09-03: -Df / -Mf clusters and -d/-m spellings (Zoo folds case) slipped past the literal tokens; targets follow Zoo's re-allows",
       "render": {
         "zoo": [
           "git branch -D",
@@ -1924,14 +1925,14 @@
           "env -u GITHUB_TOKEN git branch -M"
         ],
         "antigravity": [
-          "command(git branch -D (main|master|develop))",
-          "unsandboxed(git branch -D (main|master|develop))",
-          "command(env -u GITHUB_TOKEN git branch -D (main|master|develop))",
-          "unsandboxed(env -u GITHUB_TOKEN git branch -D (main|master|develop))",
-          "command(git branch -M)",
-          "unsandboxed(git branch -M)",
-          "command(env -u GITHUB_TOKEN git branch -M)",
-          "unsandboxed(env -u GITHUB_TOKEN git branch -M)"
+          "command(git branch -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
+          "unsandboxed(git branch -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
+          "command(env -u GITHUB_TOKEN git branch -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
+          "unsandboxed(env -u GITHUB_TOKEN git branch -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
+          "command(git branch -[a-zA-Z]*[mM][a-zA-Z]*)",
+          "unsandboxed(git branch -[a-zA-Z]*[mM][a-zA-Z]*)",
+          "command(env -u GITHUB_TOKEN git branch -[a-zA-Z]*[mM][a-zA-Z]*)",
+          "unsandboxed(env -u GITHUB_TOKEN git branch -[a-zA-Z]*[mM][a-zA-Z]*)"
         ]
       },
       "only": [
@@ -2167,25 +2168,17 @@
     {
       "id": "deny-git-config",
       "cmd": "git config",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | code review 2026-09-03: --local core.hooksPath, --unset, user.email slipped past the three literal rows; now every write spelling is denied and only Zoo's three read re-allows stay legal",
       "render": {
         "zoo": [
           "git config",
           "env -u GITHUB_TOKEN git config"
         ],
         "antigravity": [
-          "command(git config --global)",
-          "unsandboxed(git config --global)",
-          "command(env -u GITHUB_TOKEN git config --global)",
-          "unsandboxed(env -u GITHUB_TOKEN git config --global)",
-          "command(git config --system)",
-          "unsandboxed(git config --system)",
-          "command(env -u GITHUB_TOKEN git config --system)",
-          "unsandboxed(env -u GITHUB_TOKEN git config --system)",
-          "command(git config core\\.hooksPath)",
-          "unsandboxed(git config core\\.hooksPath)",
-          "command(env -u GITHUB_TOKEN git config core\\.hooksPath)",
-          "unsandboxed(env -u GITHUB_TOKEN git config core\\.hooksPath)"
+          "command(git config (?!(--get|--list|-l)$).*)",
+          "unsandboxed(git config (?!(--get|--list|-l)$).*)",
+          "command(env -u GITHUB_TOKEN git config (?!(--get|--list|-l)$).*)",
+          "unsandboxed(env -u GITHUB_TOKEN git config (?!(--get|--list|-l)$).*)"
         ]
       },
       "only": [
@@ -2196,7 +2189,7 @@
     {
       "id": "deny-git-add",
       "cmd": "git add",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | code review 2026-09-03: -Av and ./ ../ slipped past the literal tokens",
       "render": {
         "zoo": [
           "git add -A",
@@ -2209,18 +2202,14 @@
           "env -u GITHUB_TOKEN git add --all"
         ],
         "antigravity": [
-          "command(git add -A)",
-          "unsandboxed(git add -A)",
-          "command(env -u GITHUB_TOKEN git add -A)",
-          "unsandboxed(env -u GITHUB_TOKEN git add -A)",
-          "command(git add \\.)",
-          "unsandboxed(git add \\.)",
-          "command(env -u GITHUB_TOKEN git add \\.)",
-          "unsandboxed(env -u GITHUB_TOKEN git add \\.)",
-          "command(git add -u)",
-          "unsandboxed(git add -u)",
-          "command(env -u GITHUB_TOKEN git add -u)",
-          "unsandboxed(env -u GITHUB_TOKEN git add -u)",
+          "command(git add -[a-zA-Z]*[Au][a-zA-Z]*)",
+          "unsandboxed(git add -[a-zA-Z]*[Au][a-zA-Z]*)",
+          "command(env -u GITHUB_TOKEN git add -[a-zA-Z]*[Au][a-zA-Z]*)",
+          "unsandboxed(env -u GITHUB_TOKEN git add -[a-zA-Z]*[Au][a-zA-Z]*)",
+          "command(git add (\\.|\\.\\.)(/.*)?)",
+          "unsandboxed(git add (\\.|\\.\\.)(/.*)?)",
+          "command(env -u GITHUB_TOKEN git add (\\.|\\.\\.)(/.*)?)",
+          "unsandboxed(env -u GITHUB_TOKEN git add (\\.|\\.\\.)(/.*)?)",
           "command(git add --all)",
           "unsandboxed(git add --all)",
           "command(env -u GITHUB_TOKEN git add --all)",
@@ -2370,7 +2359,7 @@
       ]
     },
     {
-      "id": "deny-git-c",
+      "id": "deny-git-c-lower",
       "cmd": "git -c",
       "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
       "render": {

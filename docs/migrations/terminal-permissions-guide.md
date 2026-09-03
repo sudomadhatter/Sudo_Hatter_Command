@@ -229,6 +229,23 @@ consequences the battery caught on day one, each of which Zoo's prefix matcher h
 `env -u GITHUB_TOKEN git push --force` starts with the token `env`, so a `git push --force` deny does
 not see it — every git/gh deny carries its `env -u GITHUB_TOKEN` twin, as in Zoo.
 
+**Chains.** The vendor's page ([antigravity.google/docs/permissions](https://antigravity.google/docs/permissions/),
+read 2026-09-03) documents the per-token rule and says nothing about `&&`, `;` or `|`. If the whole line
+is matched, the house shape every door command takes — `cd <abs> && git <verb> …` (`command-shape.md`
+rule 1) — begins with the allowed token `cd`, and no deny row can see past it. So the render writes a
+second twin of **every** deny behind `cd .* && ` (the `house_twin_prefix` in the source): if the
+extension reads the whole line, the twin denies the house shape; if it splits chains, the twin is a dead
+row and the plain deny fires. Either way the fence holds for the shape agents are told to write. A chain
+with a *different* head (`git status; rm -rf /`) is a residual (§7) until the live probe in the SCC-378
+walkthrough's `## Your Actions` settles which way the extension reads a line.
+
+Cluster classes are not only for `rm` and `git clean`: the push/branch/add/config denies are spelled the
+same way (`git push -[a-zA-Z]*f[a-zA-Z]*`, `git push --force.*`, `git branch -[a-zA-Z]*[dD][a-zA-Z]*`,
+`git add -[a-zA-Z]*[Au][a-zA-Z]*`, `git config (?!(--get|--list|-l)$).*`), and the targets Zoo leaves
+legal by its longer allows are left legal here by a lookahead (`--delete (?!"?(chore|claude|epic)/).*`,
+`HEAD:(?!epic/).*`). Found by the SCC-378 code review, which walked the mirror with `-fu`, `-Df`, `-Av`,
+`--local core.hooksPath` and `--delete develop` and watched each auto-approve.
+
 ### 3A.4 Where the list comes from, and how it reaches the machine
 
 Nothing is edited in `config.json` by hand. The source is `.agents/permissions/families.json`; the
@@ -321,6 +338,13 @@ elsewhere:
 - **Subshell laundering** (§6): a compound inside `$( )` is scored as one piece.
 - **Prefix blindness to late flags/paths:** `git worktree remove x --force`,
   `pwsh -NoProfile -File .agents/scripts/../../evil.ps1` — a prefix can't see past its own length.
+  The same blindness in a different token order — `git push origin -d main`, `git push -d origin main`,
+  `git push origin refs/heads/main`, `git restore --source=HEAD .`, `git checkout origin/main -- .` —
+  is allowed on Zoo and Antigravity alike (measured by the SCC-378 review); adding those rows is a Zoo
+  decision change and sits with the operator (that walkthrough's `## Your Actions`).
+- **Antigravity and chains** (§3A.3): the house `cd <abs> && …` shape is fenced by the `cd .* && `
+  deny twin; a chain with any other allowed head (`git status; rm -rf /`, `true && dd …`) is not, until
+  the live probe says whether the extension reads a line whole or splits it.
 - **Env-prefix assignments:** `MSG=hi rm -rf /` is ONE piece whose head matches the `MSG=` allow —
   the assignment allows exist for the doors' standalone `VAR=…` lines and cannot tell the two
   shapes apart. The shape law (§10) bans the env-prefix spelling; the test pins the behavior.

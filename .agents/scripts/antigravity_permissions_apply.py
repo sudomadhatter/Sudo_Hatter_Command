@@ -15,7 +15,7 @@ Usage (python3 on both machines):
 
 Stdlib only. Touches ONLY ``userSettings.globalPermissionGrants``; every other key in the store
 (``remoteControlHostname`` is machine-local, ``plugins``, anything the extension adds later) is
-preserved byte-for-byte in value. Writes a one-off ``config.json.scc-backup`` beside the store
+preserved in value (re-serialised, non-ASCII kept as written). Writes a one-off ``config.json.scc-backup`` beside the store
 before the FIRST write and never overwrites it. Reads the store back after writing and reports.
 """
 from __future__ import annotations
@@ -67,7 +67,7 @@ def apply(store: Path = STORE, rendered: Path = RENDERED) -> dict:
         made_backup = True
     us = cfg.setdefault("userSettings", {})
     us[KEY] = {"allow": list(fence.get("allow", [])), "deny": list(fence.get("deny", []))}
-    store.write_text(json.dumps(cfg, indent=2) + "\n", encoding="utf-8")
+    store.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     back = _grants(store)
     return {
         "store": str(store),
@@ -96,6 +96,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if s == IN_SYNC else 1
     if not a.store.exists():
         print(f"ERROR: no store at {a.store} - is the Antigravity extension installed here?")
+        return 2
+    if not a.rendered.exists():
+        print(f"ERROR: no rendered fence at {a.rendered} - run permission_render.py first")
         return 2
     r = apply(a.store, a.rendered)
     print(f"backup  : {r['backup']} ({'written now' if r['backup_written_now'] else 'kept, already existed'})")

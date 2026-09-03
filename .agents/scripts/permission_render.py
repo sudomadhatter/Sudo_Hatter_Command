@@ -70,6 +70,27 @@ def _dedupe(items: list[str]) -> list[str]:
     return out
 
 
+def _validate_source(src: dict) -> None:
+    """Refuse a malformed row by NAME before anything is rendered (code review 2026-09-03).
+
+    `/smh-llm-approvals` and hand edits write this file. An empty `cmd` reached `cmd[-1]` as a bare
+    IndexError naming no row; a `render` value written as a string instead of a list was spread
+    character by character, so `"zoo": "git status "` rendered seven one-letter Zoo allow prefixes
+    (`g`, `i`, `t`, ...) and `gcc` auto-approved. Duplicate ids make a family unaddressable."""
+    seen: set[str] = set()
+    for kind in ("allow", "deny"):
+        for row in src.get(kind, []):
+            rid = row.get("id", "?")
+            if rid in seen:
+                raise ValueError(f"families.json: duplicate id {rid!r}")
+            seen.add(rid)
+            if not isinstance(row.get("cmd"), str) or not row["cmd"].strip():
+                raise ValueError(f"families.json: row {rid!r} has an empty cmd")
+            for platform, rules in (row.get("render") or {}).items():
+                if isinstance(rules, str) or not all(isinstance(r, str) for r in rules):
+                    raise ValueError(f"families.json: row {rid!r} render.{platform} must be a list of strings")
+
+
 # ---------------------------------------------------------------- derivation per grammar
 # Only reached for a row WITHOUT an explicit render for that platform.
 
@@ -95,10 +116,24 @@ def _derive_claude(row: dict, kind: str) -> list[str]:
     return [f"Bash({cmd}*)" if cmd[-1] in "/=-:" else f"Bash({cmd}:*)"]
 
 
+def _ag_token(tok: str, kind: str, last: bool) -> str:
+    """One derived Antigravity token, escaped, in the shape the anchored matcher needs.
+
+    A source `cmd` is a PREFIX (Zoo's grammar); this platform fullmatches each token, so the last
+    token of a prefix ending in `/ = - :` takes a `.*` tail (`backend/\\.venv/bin/.*`, or nothing
+    ever matches), and a single-letter flag on a deny becomes its cluster class (`-f` ->
+    `-[a-zA-Z]*f[a-zA-Z]*`, or `-fd` slips past). Code review 2026-09-03."""
+    if kind == "deny" and re.fullmatch(r"-[a-zA-Z]", tok):
+        return f"-[a-zA-Z]*{tok[1]}[a-zA-Z]*"
+    esc = re.escape(tok)
+    return esc + ".*" if last and tok[-1] in "/=-:" else esc
+
+
 def _derive_antigravity(row: dict, kind: str, env_twin: str) -> list[str]:
     # each token is an anchored REGEX on this platform, so a derived row escapes per token
-    # (`backend/.venv/bin/` -> `backend/\.venv/bin/`); explicit renders are written already-escaped
-    cmd = " ".join(re.escape(tok) for tok in row["cmd"].split())
+    # (`backend/.venv/bin/` -> `backend/\.venv/bin/.*`); explicit renders are written already-escaped
+    toks = row["cmd"].split()
+    cmd = " ".join(_ag_token(t, kind, i == len(toks) - 1) for i, t in enumerate(toks))
     bodies = [cmd]
     if kind == "deny" and row["cmd"].startswith(("git ", "gh ")) and env_twin:
         bodies.append(env_twin + cmd)
@@ -108,7 +143,27 @@ def _derive_antigravity(row: dict, kind: str, env_twin: str) -> list[str]:
     return out
 
 
+_AG_BODY = re.compile(r"^(command|unsandboxed)\((.*)\)$", re.S)
+
+
+def _house_twins(rules: list[str], prefix: str) -> list[str]:
+    """Every Antigravity deny, also behind the house command shape `cd <abs> && ...`.
+
+    The vendor documents per-token matching on a command's leading tokens and nothing about chains
+    (antigravity.google/docs/permissions, read 2026-09-03). If the whole line is matched, the
+    `cd <abs> && git <verb>` shape command-shape.md mandates begins with the allowed token `cd`, and
+    no deny row can see past it. The twin fences that shape either way; if the vendor splits chains
+    it is a dead row, never a wrong one. Code review 2026-09-03."""
+    out = []
+    for r in rules:
+        m = _AG_BODY.match(r)
+        if m:
+            out.append(f"{m.group(1)}({prefix}{m.group(2)})")
+    return out
+
+
 def _rows(src: dict, kind: str, platform: str) -> list[str]:
+    _validate_source(src)
     env_twin = src.get("env_twin_prefix", "")
     out: list[str] = []
     for row in src.get(kind, []):
@@ -124,6 +179,8 @@ def _rows(src: dict, kind: str, platform: str) -> list[str]:
             out += _derive_claude(row, kind)
         else:
             out += _derive_antigravity(row, kind, env_twin)
+    if platform == "antigravity" and kind == "deny" and src.get("house_twin_prefix"):
+        out += _house_twins(out, src["house_twin_prefix"])
     return _dedupe(out)
 
 
@@ -142,13 +199,54 @@ def render_antigravity(src: dict) -> dict:
 # ---------------------------------------------------------------- the three files
 
 
+def _comment_end(text: str, i: int) -> int:
+    """Index just past the JSONC comment starting at `i` (`//` to end of line, `/* */` to its close),
+    or -1 when no comment starts there. Both shapes are legal in .vscode/settings.json."""
+    if text.startswith("//", i):
+        j = text.find("\n", i)
+        return len(text) if j < 0 else j
+    if text.startswith("/*", i):
+        j = text.find("*/", i + 2)
+        return len(text) if j < 0 else j + 2
+    return -1
+
+
 def _jsonc_load(text: str) -> dict:
-    return json.loads("\n".join(l for l in text.splitlines() if not l.lstrip().startswith("//")))
+    """json.loads for the JSONC VS Code writes: comments anywhere outside a string (a whole line,
+    or trailing a value, or `/* */`) and a trailing comma before `]` / `}`. Until the code review of
+    2026-09-03 only whole-line `//` was stripped, so an inline note crashed `--check` and the parity
+    test file while `write()` accepted the same text."""
+    out, i, in_str, esc = [], 0, False, False
+    while i < len(text):
+        ch = text[i]
+        if in_str:
+            out.append(ch)
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            i += 1
+            continue
+        j = _comment_end(text, i)
+        if j >= 0:
+            i = j
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == "," and re.match(r",\s*[\]}]", text[i:]):
+            i += 1                                   # a trailing comma VS Code tolerates; json.loads does not
+            continue
+        out.append(ch)
+        i += 1
+    return json.loads("".join(out))
 
 
 def _find_array_span(text: str, key: str) -> tuple[int, int, str]:
     """(start, end, indent) of the `[...]` value of `"key":` - end is the index AFTER `]`.
-    Bracket-matched, quote-aware, so a `]` inside a string cannot end the scan."""
+    Bracket-matched, quote-aware, comment-aware, so a `]` inside a string or a comment cannot end
+    the scan."""
     m = re.search(r'^([ \t]*)"' + re.escape(key) + r'"\s*:\s*\[', text, re.M)
     if not m:
         raise KeyError(key)
@@ -162,11 +260,9 @@ def _find_array_span(text: str, key: str) -> tuple[int, int, str]:
                 esc = True
             elif ch == '"':
                 in_str = False
-        elif ch == "/" and text.startswith("//", i):
-            # a JSONC line comment: skip it whole, or a quote inside it desyncs the string state
-            i = text.find("\n", i)
-            if i < 0:
-                break
+        elif ch == "/" and _comment_end(text, i) >= 0:
+            # a JSONC comment: skip it whole, or a quote or `]` inside it desyncs the scan
+            i = _comment_end(text, i)
             continue
         elif ch == '"':
             in_str = True
@@ -188,19 +284,29 @@ def _replace_jsonc_array(text: str, key: str, values: list[str]) -> str:
 
 
 def current_lists(root: Path) -> dict:
-    """What the three files say NOW (sets are compared; order is the renderer's)."""
+    """What the three files say NOW (sets are compared; order is the renderer's).
+    A file that will not parse raises ValueError naming it - `check()` reports that as drift."""
     out: dict = {}
     vs = root / VSCODE_REL
     if vs.exists():
-        d = _jsonc_load(vs.read_text(encoding="utf-8"))
+        try:
+            d = _jsonc_load(vs.read_text(encoding="utf-8"))
+        except ValueError as e:
+            raise ValueError(f"{VSCODE_REL}: unreadable ({e})") from e
         out["zoo"] = (list(d.get(ZOO_ALLOW_KEY, [])), list(d.get(ZOO_DENY_KEY, [])))
     cl = root / CLAUDE_REL
     if cl.exists():
-        d = json.loads(cl.read_text(encoding="utf-8"))
+        try:
+            d = json.loads(cl.read_text(encoding="utf-8"))
+        except ValueError as e:
+            raise ValueError(f"{CLAUDE_REL}: unreadable ({e})") from e
         out["claude"] = list(d.get("permissions", {}).get("allow", []))
     ag = root / AG_REL
     if ag.exists():
-        g = json.loads(ag.read_text(encoding="utf-8"))["userSettings"]["globalPermissionGrants"]
+        try:
+            g = json.loads(ag.read_text(encoding="utf-8"))["userSettings"]["globalPermissionGrants"]
+        except (ValueError, KeyError, TypeError) as e:
+            raise ValueError(f"{AG_REL}: unreadable ({e!r})") from e
         out["antigravity"] = (list(g.get("allow", [])), list(g.get("deny", [])))
     return out
 
@@ -221,9 +327,12 @@ def check(root: Path = REPO_ROOT) -> list[str]:
     if not src_path.exists():
         return [f"{SOURCE_REL}: missing"]
     src = load_source(root)
-    have = current_lists(root)
+    try:
+        have = current_lists(root)
+        za, zd = render_zoo(src)
+    except ValueError as e:                  # an unreadable file or a malformed source row IS drift
+        return [str(e)]
     msgs: list[str] = []
-    za, zd = render_zoo(src)
     if "zoo" not in have:
         msgs.append(f"{VSCODE_REL}: missing")
     else:
@@ -251,26 +360,35 @@ def check(root: Path = REPO_ROOT) -> list[str]:
 
 
 def write(root: Path = REPO_ROOT) -> list[str]:
-    """Render all three targets in place, touching only the keys each platform owns."""
+    """Render all three targets in place, touching only the keys each platform owns.
+
+    Every target is rendered to text BEFORE the first write, and the Claude file goes first: run from
+    Claude Code its sandbox refuses that path, and a write order of Zoo -> Claude -> Antigravity left
+    the Zoo list ahead of the other two - the exact three-lists-disagree state this renderer exists
+    to remove (code review 2026-09-03)."""
     src = load_source(root)
-    written: list[str] = []
     za, zd = render_zoo(src)
     vs = root / VSCODE_REL
     text = vs.read_text(encoding="utf-8")
     new = _replace_jsonc_array(_replace_jsonc_array(text, ZOO_ALLOW_KEY, za), ZOO_DENY_KEY, zd)
-    if new != text:
-        vs.write_text(new, encoding="utf-8"); written.append(str(VSCODE_REL))
     cl = root / CLAUDE_REL
     data = json.loads(cl.read_text(encoding="utf-8"))
     ca = render_claude(src)
-    if data.get("permissions", {}).get("allow") != ca:
+    cl_changed = data.get("permissions", {}).get("allow") != ca
+    if cl_changed:
         data.setdefault("permissions", {})["allow"] = ca
-        cl.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        written.append(str(CLAUDE_REL))
+    cl_text = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
     ag_path = root / AG_REL
     ag_doc = {"userSettings": {"globalPermissionGrants": render_antigravity(src)}}
     ag_text = json.dumps(ag_doc, indent=2, ensure_ascii=False) + "\n"
-    if not ag_path.exists() or ag_path.read_text(encoding="utf-8") != ag_text:
+    ag_changed = not ag_path.exists() or ag_path.read_text(encoding="utf-8") != ag_text
+
+    written: list[str] = []
+    if cl_changed:
+        cl.write_text(cl_text, encoding="utf-8"); written.append(str(CLAUDE_REL))
+    if new != text:
+        vs.write_text(new, encoding="utf-8"); written.append(str(VSCODE_REL))
+    if ag_changed:
         ag_path.parent.mkdir(parents=True, exist_ok=True)
         ag_path.write_text(ag_text, encoding="utf-8"); written.append(str(AG_REL))
     return written

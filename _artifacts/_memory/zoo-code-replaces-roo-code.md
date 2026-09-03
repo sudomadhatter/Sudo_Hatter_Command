@@ -1,6 +1,6 @@
 ---
 name: zoo-code-replaces-roo-code
-description: "Operator switched Roo Code -> Zoo Code and Antigravity IDE -> VS Code (2026-08-29); Zoo keeps .roo/* paths, settings namespace is zoo-code.*, not yet in sync-agents (SCC-349)."
+description: "Operator switched Roo Code -> Zoo Code and Antigravity IDE -> VS Code (2026-08-29); Zoo keeps .roo/* paths, settings namespace is zoo-code.*, sync-agents platform 5 (SCC-349); Antigravity is live again as the VS Code extension and all three terminal fences render from one source (SCC-378)."
 metadata: 
   node_type: memory
   type: project
