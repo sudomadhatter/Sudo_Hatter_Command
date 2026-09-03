@@ -82,7 +82,7 @@ Settled project-only facts live in the project's own store (SCC-73). Working in 
 - **Search blind spots** — [grep skips gitignored projects](grep-skips-gitignored-projects.md) (blind to Projects/ from lobby) · [⭐ grep reads parked branch](grep-reads-the-branch-you-are-parked-on.md) (stale checkout fakes scope) · [relocated links are mis-pathed](relocated-doc-links-are-mispathed-not-dead.md).
 
 ## Toolkit & sync
-- [⭐ Zoo Code replaces Roo; VS Code replaces Antigravity](zoo-code-replaces-roo-code.md) — .roo/* paths kept; NOT in sync-agents yet (SCC-349).
+- [⭐ Zoo Code replaces Roo; Antigravity lives on as the extension](zoo-code-replaces-roo-code.md) — .roo/* paths kept; Zoo is sync-agents platform 5 (SCC-349); Zoo, Claude and Antigravity fences render from ONE source (SCC-378).
 - [Zoo team: Wonderland roster](zoo-team-wonderland-roster.md) — March Hare = lead; 6 seats; no seat writes a Verdict.
 - [⭐⛔ Cheap models rationalize past PROSE](cheap-models-rationalize-past-prose.md) — fix with mechanism, never wording.
 - [⭐ NAG the agent; don't rewrite the rule](nag-the-agent-dont-rewrite-the-rule.md) — PostToolUse additionalContext reaches the model; cites the rule; never for destructive commands.

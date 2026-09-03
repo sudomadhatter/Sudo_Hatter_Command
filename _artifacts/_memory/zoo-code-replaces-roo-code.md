@@ -1,6 +1,6 @@
 ---
 name: zoo-code-replaces-roo-code
-description: "Operator switched Roo Code -> Zoo Code and Antigravity IDE -> VS Code (2026-08-29); Zoo keeps .roo/* paths, settings namespace is zoo-code.*, not yet in sync-agents (SCC-349)."
+description: "Operator switched Roo Code -> Zoo Code and Antigravity IDE -> VS Code (2026-08-29); Zoo keeps .roo/* paths, settings namespace is zoo-code.*, sync-agents platform 5 (SCC-349); Antigravity is live again as the VS Code extension and all three terminal fences render from one source (SCC-378)."
 metadata: 
   node_type: memory
   type: project
@@ -18,7 +18,7 @@ Facts that bite:
 - Zoo deliberately **keeps the `.roo/*` paths** (`.roomodes`, `.roo/commands/`, `.roo/rules-{slug}/`) — do not invent `.zoo/` dirs.
 - VS Code settings namespace renamed: `roo-cline.*` -> **`zoo-code.*`** (`zoo-code.allowedCommands` / `deniedCommands`, tracked in `.vscode/settings.json` for Mac+PC parity).
 - Zoo reads AGENTS.md natively (`zoo-code.useAgentRules`) — house law applies with no sync.
-- Zoo is **NOT in sync-agents yet** — platform list is hardcoded to four; adding `zoo` as platform 5 is SCC-349 (under SCC-346, the approval-fix parent).
+- Zoo is sync-agents **platform 5** since SCC-349. Antigravity is **live again** as the VS Code extension (`google.google-antigravity`, reinstalled 2026-09-03 after the Ubuntu move) — only the desktop IDE stayed retired. All three terminal fences (Zoo, Claude, Antigravity) render from ONE source, `.agents/permissions/families.json` (SCC-378); the law lives in `docs/migrations/terminal-permissions-guide.md`.
 - Zoo auto-approve toggles are per-machine extension state; the export/import file carries API keys — never commit it.
 - deepagents (langchain) was assessed and parked: NO-GO for IDE integration.
 

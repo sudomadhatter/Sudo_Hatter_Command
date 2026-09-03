@@ -26,7 +26,7 @@ Everything about Zoo here was verified by reading and executing Zoo Code v3.80.1
 | **Zoo Code** (VS Code) | VS Code globalState `state.vscdb`, which the tracked [`.vscode/settings.json`](../../.vscode/settings.json) `zoo-code.*` lists SEED exactly once and never again | lowercase starts-with per command PIECE, longest prefix wins allow-vs-deny, tie goes to deny | edit the tracked lists, keep [test_zoo_permissions.py](../../.agents/scripts/tests/test_zoo_permissions.py) green, quit VS Code, run the apply script, reopen. Deep dive: §4 onward; procedure: §9 |
 | **opencode** | its own config under `.opencode/` | WHOLE-string prefix (no per-piece split) — compounds rarely match | accept prompts, or add whole-string prefixes by hand. **Outside `/smh-llm-approvals`** (SCC-354): a whole-string prefix unblocks exactly one invocation, so a list grown that way carries one row per command and stops being readable |
 | **Codex** | `~/.codex/` config (`approval_policy` / sandbox), per machine | policy-level, not per-command lists | set the policy per machine. **Outside `/smh-llm-approvals`** (SCC-354): there is no per-command list to grow — the policy is the whole decision |
-| **Gemini / Antigravity** | retired — VS Code + Zoo replaced Antigravity (SCC-349); the platform's own retirement is SCC-378. Gemini CLI keeps its `~/.gemini` config | — | — |
+| **Antigravity** (VS Code extension `google.google-antigravity`, bundles the `agy` CLI) | `~/.gemini/config/config.json` → `userSettings.globalPermissionGrants` (`allow` / `deny` arrays), per machine; the tracked rendering is [`.agents/permissions/antigravity.json`](../../.agents/permissions/antigravity.json) | one anchored regex per whitespace token against the command's leading tokens; strict **Deny > Ask > Allow**; two rule types, `command(X)` for execution and `unsandboxed(X)` for escaping the sandbox | add the family to the ONE source [`.agents/permissions/families.json`](../../.agents/permissions/families.json), render (`/smh-sync-agents`, or `python3 .agents/scripts/permission_render.py`), then per machine `python3 .agents/scripts/antigravity_permissions_apply.py --apply` and reload the VS Code window. Deep dive: §3A |
 
 **Where the PC's stores live, and why it surprises people (SCC-376).** The PC works inside WSL2 /
 Ubuntu, and Claude's fence travels with it: `~/.claude/settings.json` is a Linux file inside the distro,
@@ -202,6 +202,88 @@ nothing to link, and tool calls inside worktrees fail prefix matching and prompt
 scaffolding. On an existing repo, copy the sibling project's file and correct the write boundaries.
 
 ---
+
+## 3A. Antigravity — the deep dive (store, two rule types, absolute deny, the apply)
+
+The Antigravity **extension** (`google.google-antigravity`, installed in VS Code on both machines; it
+bundles the `agy` CLI, which is not on PATH and not what the operator drives) was reinstalled on
+2026-09-03 after the Ubuntu move. The desktop IDE's retirement (SCC-349) stands; the platform's does
+not — SCC-378 inverted that ticket. Everything below was measured on v1.1.0 / `agy` 1.1.25 that day.
+
+### 3A.1 The store
+
+`~/.gemini/config/config.json` → `userSettings.globalPermissionGrants`, a JSON object with `allow` and
+`deny` arrays of rule strings. Per machine, like Zoo's globalState; unlike Zoo's it is a plain file with
+no SQLite and no second writer we have measured, so the apply needs no "editor closed" refusal — a
+window reload is what makes the extension re-read it. Every OTHER key in that object is machine-local
+(`remoteControlHostname` names the machine) and the apply preserves them all.
+
+The extension's own "always allow" click records a **prefix**, not the whole command — `unsandboxed(git
+status)`, `unsandboxed(acli)` — which is why a fresh install accumulates a usable list by hand and why
+that list is also the record of what the operator had to click through (`/smh-llm-approvals` reads it).
+
+### 3A.2 Two rule types, and which one the click writes
+
+| Rule | Governs | Written by |
+|---|---|---|
+| `command(X)` | **execution** — may this command run at all | the render, from the source |
+| `unsandboxed(X)` | **escaping the sandbox** — may it run outside container isolation when sandbox mode is on | the "always allow" click, because the default (no `--sandbox`) makes every command an unsandboxed one |
+
+A fresh install therefore fills the *escape* list and never the *execution* list — measured 2026-09-03:
+59 `unsandboxed(...)` grants, 0 `command(...)`, 0 denies, and the operator approving essentially every
+command. The render writes **both** types for every allow family, so the fence holds whether or not
+`--sandbox` is ever used.
+
+⛔ **Sandbox mode does NOT auto-approve.** Claude's `autoAllowBashIfSandboxed` lets a contained command
+run without asking; Antigravity's documentation says the opposite in plain words — approval rules apply
+unchanged inside the sandbox, which only changes *where* a command runs. So the allow list is the whole
+fence here, exactly the position native Windows put Claude in before SCC-376, and `--sandbox` is not a
+lever for interruptions.
+
+### 3A.3 The matcher, exactly
+
+Each whitespace-separated token of a rule is an **anchored regex** (`^(?:tok)$`) matched against the
+command's leading tokens; a rule with more tokens than the command cannot match; the rest of the command
+is free. Precedence is **strictly `Deny > Ask > Allow`** — a deny wins whatever else matches. Three
+consequences the battery caught on day one, each of which Zoo's prefix matcher hides:
+
+| Fact | Consequence |
+|---|---|
+| Deny is absolute | Zoo's "a longer allow beats the deny" re-allow trick does NOT port. Denies name the **target**: `git push origin --delete (main\|master)` blocks main and leaves `chore/` deletes legal; `git branch -D (main\|master\|develop)` likewise. Regex is case-sensitive, so `-D` and `-d` are different rules here (they are the same rule in Zoo) |
+| Metacharacters must be escaped | `command(git add .)` means *git add any-single-character*. The render writes `git add \.`; the dot-dir re-allows Zoo needs (`git add .agents/`) are unnecessary here because `.agents/` does not match `^(?:\.)$` |
+| Tokens are anchored, so flag CLUSTERS and attached spellings are one token | `-f` never matches `-fd`; `--git-dir` never matches `--git-dir=/x`. The render writes `git clean -[a-zA-Z]*[fdx][a-zA-Z]*` and `git --git-dir.*`. `git clean -n` stays approvable (no f/d/x) |
+
+`env -u GITHUB_TOKEN git push --force` starts with the token `env`, so a `git push --force` deny does
+not see it — every git/gh deny carries its `env -u GITHUB_TOKEN` twin, as in Zoo.
+
+**Chains.** The vendor's page ([antigravity.google/docs/permissions](https://antigravity.google/docs/permissions/),
+read 2026-09-03) documents the per-token rule and says nothing about `&&`, `;` or `|`. If the whole line
+is matched, the house shape every door command takes — `cd <abs> && git <verb> …` (`command-shape.md`
+rule 1) — begins with the allowed token `cd`, and no deny row can see past it. So the render writes a
+second twin of **every** deny behind `cd .* && ` (the `house_twin_prefix` in the source): if the
+extension reads the whole line, the twin denies the house shape; if it splits chains, the twin is a dead
+row and the plain deny fires. Either way the fence holds for the shape agents are told to write. A chain
+with a *different* head (`git status; rm -rf /`) is a residual (§7) until the live probe in the SCC-378
+walkthrough's `## Your Actions` settles which way the extension reads a line.
+
+Cluster classes are not only for `rm` and `git clean`: the push/branch/add/config denies are spelled the
+same way (`git push -[a-zA-Z]*f[a-zA-Z]*`, `git push --force.*`, `git branch -[a-zA-Z]*[dD][a-zA-Z]*`,
+`git add -[a-zA-Z]*[Au][a-zA-Z]*`, `git config (?!(--get|--list|-l)$).*`), and the targets Zoo leaves
+legal by its longer allows are left legal here by a lookahead (`--delete (?!"?(chore|claude|epic)/).*`,
+`HEAD:(?!epic/).*`). Found by the SCC-378 code review, which walked the mirror with `-fu`, `-Df`, `-Av`,
+`--local core.hooksPath` and `--delete develop` and watched each auto-approve.
+
+### 3A.4 Where the list comes from, and how it reaches the machine
+
+Nothing is edited in `config.json` by hand. The source is `.agents/permissions/families.json`; the
+render (`permission_render.py`, run by `/smh-sync-agents`) writes `.agents/permissions/antigravity.json`
+beside Zoo's and Claude's lists; `antigravity_permissions_apply.py --apply` pushes that file's
+`globalPermissionGrants` into the store (backing it up once as `config.json.scc-backup`), and `--status`
+must read *in sync with tracked file*. The unified battery
+(`tests/test_permission_parity.py`) proves the three rendered lists give the same verdict on the same
+commands: destructive → deny, ceremony → allow, unknown tool → ask.
+
+---
 ## 4. Where approvals live — every store, every surface
 
 | Store | Path (Mac) | What it does |
@@ -283,6 +365,13 @@ elsewhere:
 - **Subshell laundering** (§6): a compound inside `$( )` is scored as one piece.
 - **Prefix blindness to late flags/paths:** `git worktree remove x --force`,
   `pwsh -NoProfile -File .agents/scripts/../../evil.ps1` — a prefix can't see past its own length.
+  The same blindness in a different token order — `git push origin -d main`, `git push -d origin main`,
+  `git push origin refs/heads/main`, `git restore --source=HEAD .`, `git checkout origin/main -- .` —
+  is allowed on Zoo and Antigravity alike (measured by the SCC-378 review); adding those rows is a Zoo
+  decision change and sits with the operator (that walkthrough's `## Your Actions`).
+- **Antigravity and chains** (§3A.3): the house `cd <abs> && …` shape is fenced by the `cd .* && `
+  deny twin; a chain with any other allowed head (`git status; rm -rf /`, `true && dd …`) is not, until
+  the live probe says whether the extension reads a line whole or splits it.
 - **Env-prefix assignments:** `MSG=hi rm -rf /` is ONE piece whose head matches the `MSG=` allow —
   the assignment allows exist for the doors' standalone `VAR=…` lines and cannot tell the two
   shapes apart. The shape law (§10) bans the env-prefix spelling; the test pins the behavior.
@@ -496,7 +585,7 @@ left un-named when someone asks "and what about that one?".
 | **Zoo Code** | VS Code globalState, two stores on the PC | lowercase starts-with prefix, per piece | §4 onward — most of this page. |
 | **opencode** | its own config under `.opencode/` | WHOLE-string prefix, no per-piece split | **Outside `/smh-llm-approvals`** (SCC-354): a whole-string prefix unblocks exactly one invocation, so a list grown this way carries one row per command and stops being readable. Add rows by hand when a command is worth it. |
 | **Codex** | `~/.codex/` config (`approval_policy` / sandbox), per machine | policy-level, not per-command lists | **Outside `/smh-llm-approvals`** (SCC-354): there is no per-command list to grow — the policy is the whole decision. |
-| **Antigravity** | RETIRED. VS Code + Zoo replaced it in SCC-349, and SCC-376 Phase 7 removed its last leftovers here (its MCP config, its extension-sync guide, and the workspace extension recommendation). Retiring the platform itself is SCC-378 | — | The principle it taught still applies to every surface above: find the decision store, track the source, script the apply. AGY's own allow rules ride AVCH-116 (the port of this ticket's shape) and AVCH-114 (the Zoo half), never a lobby ticket. |
+| **Antigravity** | `~/.gemini/config/config.json` → `globalPermissionGrants`, per machine; rendered from the one source into `.agents/permissions/antigravity.json` | per-token anchored regex, Deny absolute (§3A) | LIVE again since 2026-09-03 (SCC-378) — the desktop IDE is gone (SCC-349); the VS Code extension is the platform. Its store is applied by `antigravity_permissions_apply.py`; it has the same two-fence shape as the others: find the decision store, track the source, script the apply. AGY's own allow rules ride AVCH-116 (the port of this ticket's shape) and AVCH-114 (the Zoo half), never a lobby ticket. |
 
 ### 13.0 Growing a list — the audit door
 

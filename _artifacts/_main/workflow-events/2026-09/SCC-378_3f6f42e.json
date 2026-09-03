@@ -1,0 +1,62 @@
+{
+  "v": 1,
+  "task": "SCC-378",
+  "sha": "3f6f42e7fcdeed3bd51179a5c55aafe73803f2b7",
+  "tip": "f70542df8053742c9fddb9a5463c644322d6580b",
+  "trigger": "close-out",
+  "when": "2026-09-03T14:55:13-04:00",
+  "changes": [
+    ".agents/commands/INDEX.md",
+    ".agents/commands/smh-llm-approvals.md",
+    ".agents/permissions/INDEX.md",
+    ".agents/permissions/antigravity.json",
+    ".agents/permissions/families.json",
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/antigravity_permissions_apply.py",
+    ".agents/scripts/permission_matchers.py",
+    ".agents/scripts/permission_render.py",
+    ".agents/scripts/sync-agents.ps1",
+    ".agents/scripts/tests/test_permission_parity.py",
+    ".claude/settings.json",
+    ".opencode/commands/smh-llm-approvals.md",
+    ".vscode/settings.json",
+    "_artifacts/_main/2026-09-03_SCC-378-permission-parity/agy-fence.portable.json",
+    "_artifacts/_main/2026-09-03_SCC-378-permission-parity/agy_fence_apply.py",
+    "_artifacts/_main/2026-09-03_SCC-378-permission-parity/agy_fence_gen.py",
+    "_artifacts/_main/2026-09-03_SCC-378-permission-parity/agy_fence_test.py",
+    "_artifacts/_main/2026-09-03_SCC-378-permission-parity/gates/suite.json",
+    "_artifacts/_main/2026-09-03_SCC-378-permission-parity/implementation_plan.md",
+    "_artifacts/_main/2026-09-03_SCC-378-permission-parity/review-state.md",
+    "_artifacts/_main/2026-09-03_SCC-378-permission-parity/sweep.json",
+    "_artifacts/_main/2026-09-03_SCC-378-permission-parity/task.yaml",
+    "_artifacts/_main/2026-09-03_SCC-378-permission-parity/tickets/SCC-378.md",
+    "_artifacts/_main/2026-09-03_SCC-378-permission-parity/tickets/SCC-382.md",
+    "_artifacts/_main/2026-09-03_SCC-378-permission-parity/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "_artifacts/_memory/MEMORY.md",
+    "_artifacts/_memory/codex-is-fourth-platform.md",
+    "_artifacts/_memory/zoo-code-replaces-roo-code.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md",
+    "docs/migrations/terminal-permissions-guide.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-03_SCC-378-permission-parity/walkthrough.md",
+    "verdict": "CONCERNS @ 3f6f42e",
+    "gates": {
+      "suite": "pass@3f6f42e"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "CONCERNS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
