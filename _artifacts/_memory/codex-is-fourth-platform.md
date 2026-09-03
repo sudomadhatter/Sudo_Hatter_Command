@@ -7,7 +7,7 @@ metadata:
   originSessionId: b854c6e3-95bb-4b46-b6b0-725c961a456a
 ---
 
-Codex (OpenAI) was added as the **4th command surface** alongside Claude / opencode / Antigravity (2026-07-13).
+Codex (OpenAI) was added as the **4th command surface** alongside Claude / opencode / Antigravity (2026-07-13); Zoo Code became the 5th (SCC-349), and Antigravity remains live as the VS Code extension after its desktop IDE was retired (SCC-378, 2026-09-03).
 It is the **lightest** surface because it reads two layers natively:
 - **`AGENTS.md`** — native (repo root + nested + `~/.codex/AGENTS.md`). No `CODEX.md` adapter exists or is needed.
 - **Agent Skills** — native, open standard: discovers `$REPO_ROOT/.agents/skills` + `~/.codex/skills`. So our
