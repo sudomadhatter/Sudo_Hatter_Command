@@ -123,6 +123,35 @@ Set-Secret -Name sudo-jira        # prompts; paste the token
 **No-install fallback, one session only:** `$env:JIRA_API_TOKEN = '<paste>'`. Helpers check the
 environment variable first, then the store — so this works, but it dies with the window.
 
+### Linux / WSL2 (Ubuntu)
+
+**There is no OS-store lookup on Linux — `jira_ticket.py` reads `$JIRA_API_TOKEN` and nothing else on
+this platform** (`resolve_token()`: the env var first on every OS, then the macOS keychain or Windows
+SecretManagement, then exit 5). So the store here is a **600-mode file only your user can read**, and
+the login profile exports the variable from it. Paste the block whole; the second line waits silently
+for the token:
+
+```bash
+mkdir -p ~/.config/sudo-jira && chmod 700 ~/.config/sudo-jira
+T=""; printf 'paste token: '; read -rs T; echo; echo "${#T} chars"        # expect ~190
+printf '%s' "$T" > ~/.config/sudo-jira/token && chmod 600 ~/.config/sudo-jira/token && unset T
+grep -q 'sudo-jira/token' ~/.profile || printf '\n# Atlassian API token for jira_ticket.py attach\nexport JIRA_API_TOKEN="$(cat ~/.config/sudo-jira/token 2>/dev/null)"\n' >> ~/.profile
+```
+
+⛔ **`~/.profile`, not `~/.bashrc`.** Ubuntu's `.bashrc` returns on its first lines for any
+non-interactive shell, so a variable exported there is present when you test by hand and absent for
+every agent shell, hook and `bash -lc` — the same trap the Mac has with `.zshrc` vs `.zshenv`.
+`.profile` is read by every login shell, which is what a WSL terminal, the VS Code WSL server and an
+agent's `bash -lc` all are. **Verify from a fresh login shell, never the one you typed in:**
+
+```bash
+bash -lc 'echo "${#JIRA_API_TOKEN} chars"'      # expect the same ~190
+```
+
+An agent's own shell is a snapshot taken when its session started, so it sees the variable only
+through `bash -lc` (or a new session). §5's verify on Linux reads the file instead of the keychain:
+`"$(cat ~/.config/sudo-jira/token)"` where the macOS line has `security find-generic-password …`.
+
 > ⚠️ **Already authenticated to `acli`, and think you can skip this?** You can't. `acli` stores its
 > own **wrapped** copy under its own service name, keyed to an internal account id. Measured
 > 2026-08-22: feeding that stored value to `/rest/api/3/myself` as basic auth returns **401**. It
@@ -269,6 +298,7 @@ Same convention as the rest of this kit: an unticked row is **untested**, not "f
 | §1 install (Windows) | ⛔ **not run** — path and package manager unverified from here |
 | §3 macOS store | ✅ **run 2026-08-22 — and it is why the ⛔ table exists.** Both wrong routes were measured on a real token: the interactive prompt truncates to 128 chars, and `-w "$(pbpaste)"` stored the command text. The `read -rs` block landed **192 chars** |
 | §3 Windows `Set-Secret` | ⛔ **not run** |
+| §3 Linux / WSL file + `~/.profile` | ✅ **run 2026-09-03 on the WSL box** — 192 chars stored, `bash -lc` reads 192, `/rest/api/3/myself` returned the account, and `jira_ticket.py attach` landed the SCC-384 walkthrough (the `attach` that had exited 5 an hour earlier for want of this) |
 | §4 `acli` login + `auth status` | ✅ verified on the Mac 2026-08-22 — ✓ Authenticated, `api_token` |
 | §5 REST verify | ✅ **verified 2026-08-22** — `/rest/api/3/myself` returned the account. The failure paths are measured too: `acli`'s own stored credential 401s, and so does any corrupted paste |
 | §6 attachment limits | ✅ **measured AND exercised 2026-08-22** — `attachment` on 1.3.22-stable is `list` / `delete` only; the REST upload was run for real, landing a 12 KB and a 49 KB markdown file on five work items |
