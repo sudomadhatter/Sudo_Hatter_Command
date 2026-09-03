@@ -71,7 +71,7 @@ def _dedupe(items: list[str]) -> list[str]:
 
 
 def _validate_source(src: dict) -> None:
-    """Refuse a malformed row by NAME before anything is rendered (code review 2026-09-03).
+    """Refuse a malformed row by NAME before anything is rendered (SCC-378 code review, 2026-09-03).
 
     `/smh-llm-approvals` and hand edits write this file. An empty `cmd` reached `cmd[-1]` as a bare
     IndexError naming no row; a `render` value written as a string instead of a list was spread
@@ -122,7 +122,7 @@ def _ag_token(tok: str, kind: str, last: bool) -> str:
     A source `cmd` is a PREFIX (Zoo's grammar); this platform fullmatches each token, so the last
     token of a prefix ending in `/ = - :` takes a `.*` tail (`backend/\\.venv/bin/.*`, or nothing
     ever matches), and a single-letter flag on a deny becomes its cluster class (`-f` ->
-    `-[a-zA-Z]*f[a-zA-Z]*`, or `-fd` slips past). Code review 2026-09-03."""
+    `-[a-zA-Z]*f[a-zA-Z]*`, or `-fd` slips past). SCC-378 code review, 2026-09-03."""
     if kind == "deny" and re.fullmatch(r"-[a-zA-Z]", tok):
         return f"-[a-zA-Z]*{tok[1]}[a-zA-Z]*"
     esc = re.escape(tok)
@@ -153,7 +153,7 @@ def _house_twins(rules: list[str], prefix: str) -> list[str]:
     (antigravity.google/docs/permissions, read 2026-09-03). If the whole line is matched, the
     `cd <abs> && git <verb>` shape command-shape.md mandates begins with the allowed token `cd`, and
     no deny row can see past it. The twin fences that shape either way; if the vendor splits chains
-    it is a dead row, never a wrong one. Code review 2026-09-03."""
+    it is a dead row, never a wrong one. SCC-378 code review, 2026-09-03."""
     out = []
     for r in rules:
         m = _AG_BODY.match(r)
@@ -365,7 +365,7 @@ def write(root: Path = REPO_ROOT) -> list[str]:
     Every target is rendered to text BEFORE the first write, and the Claude file goes first: run from
     Claude Code its sandbox refuses that path, and a write order of Zoo -> Claude -> Antigravity left
     the Zoo list ahead of the other two - the exact three-lists-disagree state this renderer exists
-    to remove (code review 2026-09-03)."""
+    to remove (SCC-378 code review, 2026-09-03)."""
     src = load_source(root)
     za, zd = render_zoo(src)
     vs = root / VSCODE_REL

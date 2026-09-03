@@ -1015,7 +1015,7 @@ function Invoke-PermissionRender {
   }
   if ($WhatIf) { Write-Host "sync-agents: [whatif] would run permission_render.py"; return }
   & $py $script --root $HomeRoot
-  # a renderer that died (unreadable JSONC, malformed source row) must not pass as a quiet sync
+  # SCC-378 review: a renderer that died (unreadable JSONC, malformed source row) must not pass as a quiet sync
   if ($LASTEXITCODE) { Write-Host "sync-agents: permission render FAILED (rc=$LASTEXITCODE) - the three lists were NOT re-rendered" }
 }
 
