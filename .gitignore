@@ -72,6 +72,21 @@
 # (Bit AGY in d098dc63 — pre-empting it here.)
 .claude/worktrees/
 
+# Claude Code's own per-checkout runtime files (SCC-378). The CLI writes these into `<repo>/.claude/`
+# on this machine on every launch — hooks/ (the RETIRED duplicate dir, SCC-300; the sandbox denies
+# writes there), launch.json, loop.md, output-styles/, routines/, scheduled_tasks.json, workflows/.
+# None is repo content; every one showed up as `??` in the main checkout AND every worktree, so every
+# gate receipt on this machine stamped DIRTY over files no lane wrote. Same class as the three above:
+# set by the tool, per machine, never travels. `.claude/settings.json`, `.claude/rules/`, `.claude/skills/`
+# and `.claude/mcp.json` stay tracked - they are the repo's, not the tool's.
+.claude/hooks/
+.claude/launch.json
+.claude/loop.md
+.claude/output-styles/
+.claude/routines/
+.claude/scheduled_tasks.json
+.claude/workflows/
+
 
 # macOS Finder droppings — machine noise, never content
 **/.DS_Store
