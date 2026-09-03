@@ -49,7 +49,7 @@
       "file": ".agents/scripts/permission_render.py",
       "original": "    if kind == \"deny\" and row[\"cmd\"].startswith((\"git \", \"gh \")) and env_twin:",
       "mutated": "    if False:",
-      "case": "B10c derived Antigravity rows: command+unsandboxed twins, per-token escaped, env twin on git deny",
+      "case": "B10c derived Antigravity rows: command+unsandboxed twins, per-token escaped, `.*` tail after a separator, a deny's single-letter flag becomes its cluster class, env twin and house `cd .* && ` twin on the deny",
       "block": "B ·"
     },
     {
@@ -63,8 +63,8 @@
     {
       "id": "M8 JSONC scanner stops skipping comments",
       "file": ".agents/scripts/permission_render.py",
-      "original": "        elif ch == \"/\" and text.startswith(\"//\", i):",
-      "mutated": "        elif False and text.startswith(\"//\", i):",
+      "original": "        elif ch == \"/\" and _comment_end(text, i) >= 0:",
+      "mutated": "        elif False and _comment_end(text, i) >= 0:",
       "case": "B12 the JSONC scanner skips a line comment carrying ONE quote and still finds the right `]`",
       "block": "B ·"
     },
@@ -82,6 +82,126 @@
       "original": "    us[KEY] = {\"allow\": list(fence.get(\"allow\", [])), \"deny\": list(fence.get(\"deny\", []))}",
       "mutated": "    us[KEY] = {\"allow\": list(fence.get(\"allow\", [])), \"deny\": list(fence.get(\"deny\", []))}; us[\"remoteControlHostname\"] = \"mutant\"",
       "case": "C2 every other key preserved (remoteControlHostname, conversationWidth, plugins)",
+      "block": "C ·"
+    },
+    {
+      "id": "M11 house `cd .* && ` twin never rendered",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "    if platform == \"antigravity\" and kind == \"deny\" and src.get(\"house_twin_prefix\"):",
+      "mutated": "    if False:",
+      "case": "B10c derived Antigravity rows: command+unsandboxed twins, per-token escaped, `.*` tail after a separator, a deny's single-letter flag becomes its cluster class, env twin and house `cd .* && ` twin on the deny",
+      "block": "B ·"
+    },
+    {
+      "id": "M12 derived deny flag stays a literal token (no cluster class)",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "    if kind == \"deny\" and re.fullmatch(r\"-[a-zA-Z]\", tok):",
+      "mutated": "    if False:",
+      "case": "B10c derived Antigravity rows: command+unsandboxed twins, per-token escaped, `.*` tail after a separator, a deny's single-letter flag becomes its cluster class, env twin and house `cd .* && ` twin on the deny",
+      "block": "B ·"
+    },
+    {
+      "id": "M13 derived prefix ending in a separator gets no `.*` tail",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "    return esc + \".*\" if last and tok[-1] in \"/=-:\" else esc",
+      "mutated": "    return esc",
+      "case": "B10c derived Antigravity rows: command+unsandboxed twins, per-token escaped, `.*` tail after a separator, a deny's single-letter flag becomes its cluster class, env twin and house `cd .* && ` twin on the deny",
+      "block": "B ·"
+    },
+    {
+      "id": "M14 a string-valued render is accepted (spreads into one-letter rows)",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "                if isinstance(rules, str) or not all(isinstance(r, str) for r in rules):",
+      "mutated": "                if False:",
+      "case": "B2b the renderer refuses an empty cmd, a string render, and a duplicate id, naming the row",
+      "block": "B ·"
+    },
+    {
+      "id": "M15 an empty cmd is accepted",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "            if not isinstance(row.get(\"cmd\"), str) or not row[\"cmd\"].strip():",
+      "mutated": "            if False:",
+      "case": "B2b the renderer refuses an empty cmd, a string render, and a duplicate id, naming the row",
+      "block": "B ·"
+    },
+    {
+      "id": "M16 a duplicate id is accepted",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "            if rid in seen:\n                raise ValueError(f\"families.json: duplicate id {rid!r}\")",
+      "mutated": "            if rid in seen:\n                pass",
+      "case": "B2b the renderer refuses an empty cmd, a string render, and a duplicate id, naming the row",
+      "block": "B ·"
+    },
+    {
+      "id": "M17 block comments are not comments to the loader/scanner",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "    if text.startswith(\"/*\", i):\n        j = text.find(\"*/\", i + 2)",
+      "mutated": "    if False:\n        j = text.find(\"*/\", i + 2)",
+      "case": "B13 --check reads inline `//`, `/* ] */` and trailing-comma JSONC as in sync, never as a crash",
+      "block": "B ·"
+    },
+    {
+      "id": "M18 a trailing comma reaches json.loads",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "        elif ch == \",\" and re.match(r\",\\s*[\\]}]\", text[i:]):",
+      "mutated": "        elif False:",
+      "case": "B13 --check reads inline `//`, `/* ] */` and trailing-comma JSONC as in sync, never as a crash",
+      "block": "B ·"
+    },
+    {
+      "id": "M19 an unreadable file tracebacks out of check()",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "    except ValueError as e:                  # an unreadable file or a malformed source row IS drift\n        return [str(e)]",
+      "mutated": "    except ValueError as e:                  # an unreadable file or a malformed source row IS drift\n        raise",
+      "case": "B14 a file that will not parse is reported as DRIFT naming the file, never a traceback",
+      "block": "B ·"
+    },
+    {
+      "id": "M20 write() never writes the Claude file",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "    if cl_changed:\n        cl.write_text(cl_text, encoding=\"utf-8\"); written.append(str(CLAUDE_REL))",
+      "mutated": "    if False:\n        cl.write_text(cl_text, encoding=\"utf-8\"); written.append(str(CLAUDE_REL))",
+      "case": "B11 write() renders a hand-added row away in ALL THREE files, keeps every comment outside the arrays, and --check is clean",
+      "block": "B ·"
+    },
+    {
+      "id": "M21 write() never writes the Antigravity file",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "    if ag_changed:\n        ag_path.parent.mkdir(parents=True, exist_ok=True)",
+      "mutated": "    if False:\n        ag_path.parent.mkdir(parents=True, exist_ok=True)",
+      "case": "B11 write() renders a hand-added row away in ALL THREE files, keeps every comment outside the arrays, and --check is clean",
+      "block": "B ·"
+    },
+    {
+      "id": "M22 write() writes the Zoo file BEFORE the Claude file (the half-write order)",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "    if cl_changed:\n        cl.write_text(cl_text, encoding=\"utf-8\"); written.append(str(CLAUDE_REL))\n    if new != text:\n        vs.write_text(new, encoding=\"utf-8\"); written.append(str(VSCODE_REL))",
+      "mutated": "    if new != text:\n        vs.write_text(new, encoding=\"utf-8\"); written.append(str(VSCODE_REL))\n    if cl_changed:\n        cl.write_text(cl_text, encoding=\"utf-8\"); written.append(str(CLAUDE_REL))",
+      "case": "B15 a refused Claude write leaves the Zoo file UNTOUCHED (Claude is written first; nothing runs ahead)",
+      "block": "B ·"
+    },
+    {
+      "id": "M23 apply re-escapes non-ASCII store values",
+      "file": ".agents/scripts/antigravity_permissions_apply.py",
+      "original": "    store.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + \"\\n\", encoding=\"utf-8\")",
+      "mutated": "    store.write_text(json.dumps(cfg, indent=2) + \"\\n\", encoding=\"utf-8\")",
+      "case": "C2 every other key preserved (remoteControlHostname, conversationWidth, plugins) - non-ASCII kept as written",
+      "block": "C ·"
+    },
+    {
+      "id": "M24 --apply with a missing rendered file is not refused",
+      "file": ".agents/scripts/antigravity_permissions_apply.py",
+      "original": "    if not a.rendered.exists():\n        print(f\"ERROR: no rendered fence at {a.rendered} - run permission_render.py first\")\n        return 2",
+      "mutated": "    if False:\n        print(f\"ERROR: no rendered fence at {a.rendered} - run permission_render.py first\")\n        return 2",
+      "case": "C7 --apply with a missing rendered file exits 2 with an ERROR line, and writes nothing",
+      "block": "C ·"
+    },
+    {
+      "id": "M25 status() always reads in sync",
+      "file": ".agents/scripts/antigravity_permissions_apply.py",
+      "original": "    if (sa, sd) == (ra, rd):\n        return IN_SYNC",
+      "mutated": "    if True:\n        return IN_SYNC",
+      "case": "C6 --status reads DRIFT with counts when the store lost a deny row",
       "block": "C ·"
     }
   ]

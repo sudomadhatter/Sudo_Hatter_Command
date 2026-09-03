@@ -267,6 +267,8 @@ if c.block("B · one source, three rendered outputs, drift is red"):
                 pr.render_zoo(src_)
             except ValueError as e:
                 return str(e)
+            except Exception as e:  # noqa: BLE001 - a bare crash is a red row (it names no row), never a dead file
+                return f"CRASH {e!r}"
             return ""
         e1 = _raises({"allow": [{"id": "empty-cmd", "cmd": "  ", "why": "t"}]})
         e2 = _raises({"allow": [{"id": "str-render", "cmd": "git status", "why": "t", "render": {"zoo": "git status "}}]})
@@ -496,7 +498,10 @@ if c.block("C · the Antigravity apply is safe and scoped"):
             s6 = ap.status(store, AG_RENDERED)
             c.check("C6 --status reads DRIFT with counts when the store lost a deny row",
                     s6.startswith("DRIFT") and "tracked-missing=1" in s6, s6)
-            rc7 = ap.main(["--apply", "--store", str(store), "--rendered", str(Path(td) / "nope.json")])
+            try:
+                rc7 = ap.main(["--apply", "--store", str(store), "--rendered", str(Path(td) / "nope.json")])
+            except Exception as e:  # noqa: BLE001 - a traceback is the failure this row exists to catch
+                rc7 = f"raised {e!r}"
             c.check("C7 --apply with a missing rendered file exits 2 with an ERROR line, and writes nothing",
                     rc7 == 2 and json.loads(store.read_text(encoding="utf-8")) == drifted, f"rc={rc7}")
 
