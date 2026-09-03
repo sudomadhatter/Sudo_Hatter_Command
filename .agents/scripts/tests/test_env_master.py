@@ -63,15 +63,28 @@ def main() -> int:
         ignored_nm.mkdir(parents=True)
         (ignored_nm / ".env").write_text("IGNORE_ME=1\n", encoding="utf-8")
 
+        # A project that is a git repo with a TRACKED .env.production (AGY's real shape, SCC-384)
+        # and an untracked one beside it — only the untracked file may enter the bundle.
+        import subprocess
+        proj_c = temp_dir / "Projects" / "ProjectC"
+        (proj_c / "frontend").mkdir(parents=True)
+        (proj_c / "frontend" / ".env.production").write_text("PUBLIC_URL=https://x\n", encoding="utf-8")
+        (proj_c / "frontend" / ".env.local").write_text("SECRET=1\n", encoding="utf-8")
+        for cmd in (["git", "init", "-q"], ["git", "add", "frontend/.env.production"],
+                    ["git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "SCC-384 fixture"]):
+            subprocess.run(cmd, cwd=proj_c, check=True, capture_output=True)
+
         # ── Test 1: Discovery ────────────────────────────────────────────────
         discovered = env_master.discover_source_files(temp_dir)
+        c.check("skips a git-TRACKED .env.production", "Projects/ProjectC/frontend/.env.production" not in discovered)
+        c.check("keeps the untracked .env.local beside it", "Projects/ProjectC/frontend/.env.local" in discovered)
         c.check("discovers root .env", ".env" in discovered)
         c.check("discovers project backend .env", "Projects/ProjectA/backend/.env" in discovered)
         c.check("discovers auth_keys service-account.json", "Projects/ProjectB/auth_keys/service-account.json" in discovered)
         c.check("ignores node_modules .env", "Projects/ProjectA/node_modules/pkg/.env" not in discovered)
         c.check("ignores .env.example files", not any(f.endswith(".example") for f in discovered))
         c.check("ignores .bak files", not any(f.endswith(".bak") for f in discovered))
-        c.check("total discovered count matches expected", len(discovered) == 3, f"got {len(discovered)}")
+        c.check("total discovered count matches expected", len(discovered) == 4, f"got {len(discovered)}")
 
         # ── Test 2: Export ───────────────────────────────────────────────────
         vault_file = temp_dir / "master.env"
@@ -80,7 +93,7 @@ def main() -> int:
         c.check("master.env file created", vault_file.is_file())
 
         vault_text = vault_file.read_text(encoding="utf-8")
-        c.check("master.env contains manifest header", "# MANIFEST (3 files):" in vault_text)
+        c.check("master.env contains manifest header", "# MANIFEST (4 files):" in vault_text)
         c.check("master.env contains root .env marker", "# >>> FILE: .env" in vault_text)
         c.check("master.env contains secret content", "LOBBY_KEY=secret_lobby_val" in vault_text)
         c.check("master.env contains end marker", "# <<< END FILE: .env" in vault_text)
@@ -88,7 +101,7 @@ def main() -> int:
         # ── Test 3: Parse and Validation ─────────────────────────────────────
         entries, errors = env_master.parse_master_bundle(vault_file)
         c.check("parse_master_bundle succeeds with 0 errors", len(errors) == 0, str(errors))
-        c.check("parsed 3 entries", len(entries) == 3)
+        c.check("parsed 4 entries", len(entries) == 4)
 
         # ── Test 4: Path Traversal Rejection ─────────────────────────────────
         bad_vault = temp_dir / "bad_master.env"

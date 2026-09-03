@@ -7,13 +7,13 @@
     "files": 427,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 790,
+    "edges": 791,
     "external": 35,
     "ambiguous": 173,
-    "dangling": 290,
-    "broken_paths": 63,
+    "dangling": 288,
+    "broken_paths": 61,
     "unresolved_names": 227,
-    "unresolvable": 7
+    "unresolvable": 9
   },
   "nodes": [
     {
@@ -2098,7 +2098,7 @@
     },
     {
       "path": "docs/migrations/install_guides/new_machine-migration-guide.md",
-      "in": 7,
+      "in": 9,
       "out": 4
     },
     {
@@ -2129,7 +2129,7 @@
     {
       "path": "docs/migrations/terminal-permissions-guide.md",
       "in": 5,
-      "out": 3
+      "out": 5
     },
     {
       "path": "docs/migrations/vscode_sync/README.md",
@@ -5946,6 +5946,11 @@
       "kind": "link"
     },
     {
+      "from": "docs/migrations/terminal-permissions-guide.md",
+      "to": "docs/migrations/install_guides/new_machine-migration-guide.md",
+      "kind": "link"
+    },
+    {
       "from": "docs/repo-map.md",
       "to": "docs/AGENTS.md",
       "kind": "ref"
@@ -7171,14 +7176,6 @@
     {
       "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",
       "target": "/.claude/commands/autopilot_glm.md"
-    },
-    {
-      "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
-      "target": "_artifacts/_main/2026-08-01_python-env-fix/walkthrough.md"
-    },
-    {
-      "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
-      "target": "_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md"
     },
     {
       "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
@@ -10848,6 +10845,14 @@
     {
       "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",
       "target": "Projects/AGY_AVIATIONCHAT/.claude/commands/autopilot_glm.md"
+    },
+    {
+      "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
+      "target": "Projects/AGY_AVIATIONCHAT/_artifacts/_main/2026-08-01_python-env-fix/walkthrough.md"
+    },
+    {
+      "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
+      "target": "Projects/AGY_AVIATIONCHAT/_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md"
     }
   ],
   "packs": [

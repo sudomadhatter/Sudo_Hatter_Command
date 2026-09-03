@@ -323,6 +323,25 @@ through each as needed:
 - **Firebase CLI**: `firebase login`.
 - **Java 17 (Temurin)** on PATH / `JAVA_HOME` — required by the Firestore
   rules-emulator test suite.
+- **Linux / WSL2 (Ubuntu 24.04), the whole per-machine set in one place** (measured 2026-09-03,
+  SCC-384). `sudo` lines are the operator's — an agent's shell never has it; run them in the IDE
+  terminal, no restart needed:
+  ```bash
+  sudo add-apt-repository -y ppa:deadsnakes/ppa && sudo apt install -y python3.11 python3.11-venv   # 24.04 ships 3.12 only
+  sudo apt install -y openjdk-17-jdk-headless                                                     # Java 17
+  sudo apt-get install -y ca-certificates gnupg curl                                              # gcloud, Google's apt repo
+  curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+  echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+  sudo apt-get update && sudo apt-get install -y google-cloud-cli
+  npm install -g @keywaysh/cli && keyway login                                                    # Keyway (step 6c)
+  ```
+  When WSL shares a Windows box that is already set up, the credentials that are *files* need no
+  re-login: `gcloud`'s ADC (`/mnt/c/Users/<you>/AppData/Roaming/gcloud/application_default_credentials.json`
+  → `~/.config/gcloud/`, mode 600, then `gcloud config set project <GCP_PROJECT_ID>`), the secrets
+  bundle, `auth_keys/`, every `.env`. Keyway and `acli` are keyring-bound and DO need their login.
+  **Do not `npm install -g firebase-tools`**: the three emulator suites resolve the repo-local
+  `firebase-tools` 13.x from `firebase/tests/node_modules`, which runs on Java 17; the global 15.x
+  refuses anything before Java 21 and reads like a broken toolchain.
 - **Python venvs**: rebuild per project; AGY's canonical test venv is
   `Projects/AGY_AVIATIONCHAT/backend/.venv` (never the repo root one).
   **For AGY, do NOT wing this** — follow the companion guide in this folder:
@@ -482,6 +501,8 @@ through each as needed:
   > ```bash
   > for m in -c -lc -ic; do zsh $m 'echo $JAVA_HOME'; done
   > ```
+- **Java on Linux / WSL** is the easy case: `openjdk-17-jdk-headless` registers with `update-alternatives`,
+  so `java` is on PATH with no `JAVA_HOME` export. Keep 17 the default if you ever add 21 alongside it.
 - **Firebase emulator harness**: `firebase/tests/node_modules` is a **separate `npm install`** from
   the frontend's, and three different suites resolve `firebase-tools` out of it — the TEA-12 rules
   suite, the backend emulator tier, and the TEA-16 E2E journeys. Miss it and all three die at once
