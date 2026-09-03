@@ -1,0 +1,5 @@
+task_key: SCC-383
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-383-epic-sync-check
+close_command: smh-close-task-merge-tree
+secondary_repos: []

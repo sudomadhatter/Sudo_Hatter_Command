@@ -46,14 +46,29 @@ now: numeric `E.S` → `ARTIFACT_DIR = PROJECT_ROOT/_artifacts/epic_<E>/story-<E
 before Step 1; pass it explicitly to each sub-skill and **never** let one mint its own root-level or
 date-stamped folder.
 
-## Step 0.6 — Re-enter the story worktree, absorb the epic branch, link assets, read the siblings (fresh-chat resume)
+## Step 0.6 — Re-enter the story worktree, check the epic against main, absorb the epic branch, link assets, read the siblings (fresh-chat resume)
 Before any planning or edit: `cd "$PROJECT_ROOT" && git worktree list` (`worktree-per-story` → "Resuming").
 A `claude/<JIRA-KEY>-<story-slug>` tree exists → **cd into it and re-bind everything below under it** — story file,
 ① red tests, `ARTIFACT_DIR`, test commands (they commonly live ONLY in that tree; skipping this plans
 blind or opens a duplicate). None → first work session; `bmad-dev-story` opens one at first edit, off the
 EPIC branch. Echo the case (`Worktree: reused <path>` / `none yet — opens at first edit`). Then, in order:
 
-1. **Reusing a tree cut earlier? Absorb the EPIC branch FIRST, before the first edit.** A tree cut at ①
+1. **Is the EPIC branch itself behind `main`? Check FIRST, and STOP if it is.** The step below keeps
+   your tree current with the epic; nothing keeps the *epic* current with `main`, so an epic that has
+   drifted hands every story a stale base:
+   ```bash
+   cd "$PROJECT_ROOT" && git fetch origin && git rev-list --count origin/epic/<JIRA-KEY>-<slug>..origin/main
+   ```
+   **`0` → carry on.** Anything else → **STOP and report the count.** Do NOT merge `main` yourself:
+   that write lands on the epic branch and takes Mr. Hatter's sign-off (`git-policy` write gate), and
+   it is an epic-wide action that must not happen silently inside one story's lane. Say how far behind
+   it is, name what has landed on `main` since, and ask. **Why this is a stop and not a warning:** a
+   project whose `main` carries a ruleset with `strict_required_status_checks_policy` (AviationChat's
+   `main write gate (AVCH-111)` does) will REFUSE the epic's own PR at the end while it is behind — so
+   the drift is not cosmetic, it is a merge that cannot happen. Measured on Epic 24, 2026-09-03: the
+   epic branch 9 behind `main`, both in-flight story branches 105 behind the epic and cut from a base
+   that predated the rebuild one of them depended on (SCC-383).
+2. **Reusing a tree cut earlier? Absorb the EPIC branch, before the first edit.** A tree cut at ①
    and picked up days later is branched from an epic branch its sibling lanes have since moved:
    ```bash
    cd "$PROJECT_ROOT"/.claude/worktrees/<story-slug> && git fetch origin && git merge --no-edit origin/epic/<JIRA-KEY>-<slug>
@@ -61,7 +76,7 @@ EPIC branch. Echo the case (`Worktree: reused <path>` / `none yet — opens at f
    Conflicts here are cheap and yours; the same conflicts at ③'s absorb are on the epic branch's
    doorstep. A conflict → resolve it in the tree and note it in the plan; never `--hard`, never force
    (`git-policy`).
-2. **Link the gitignored assets.** A worktree inherits no `.env`, `backend/.venv`, `auth_keys/` or
+3. **Link the gitignored assets.** A worktree inherits no `.env`, `backend/.venv`, `auth_keys/` or
    `node_modules`, and pytest / uvicorn / `next dev` / the emulators resolve them relative to CWD — so
    Step 3's scoped suites and Step 4.5's certification cannot run in an unlinked tree, and running them
    in the shared checkout certifies the wrong tree. Idempotent: a resumed lane re-runs it safely; the
@@ -70,7 +85,7 @@ EPIC branch. Echo the case (`Worktree: reused <path>` / `none yet — opens at f
    cd <the lobby's absolute path — the script is the LOBBY's> && python3 .agents/scripts/link-worktree-assets.py "$PROJECT_ROOT"/.claude/worktrees/<story-slug>   # PC: `python`
    ```
    On the none-yet path, run it the moment `bmad-dev-story` opens the tree.
-3. **Read the sibling lanes NOW, not at review time.** Other `claude/*` trees on this epic carry
+4. **Read the sibling lanes NOW, not at review time.** Other `claude/*` trees on this epic carry
    uncommitted work `grep` cannot see:
    ```bash
    cd "$PROJECT_ROOT" && git worktree list

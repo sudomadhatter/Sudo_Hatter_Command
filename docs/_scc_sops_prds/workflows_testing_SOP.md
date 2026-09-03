@@ -572,6 +572,15 @@ answers it inside the line it was already typing.
 
 ▶ **Diagram:** [`/cicd-dev-story-tests` in the command atlas](#cicd-dev-story-tests) — every step, stop and refusal, checked against the live command.
 
+**Step 0.6 stops before it plans if the EPIC branch is behind `main`.** The lane already keeps your
+story worktree current with the epic branch; it now also *counts* the epic branch against `main`
+first, and halts when it is behind rather than merging on its own. It halts because that merge lands
+on the epic branch, which takes your sign-off — and because a `main` guarded by a ruleset running
+`strict_required_status_checks_policy` (AviationChat's `main write gate (AVCH-111)`) will REFUSE the
+epic's PR at the end while the branch is behind. So the drift is a merge that cannot happen, not a
+warning you can carry. When it stops, it tells you the count and what landed on `main` since; you
+decide, and the sync is its own gated action (SCC-383).
+
 **The stop at Step 2 is the whole point of this command.** It posts the plan link and waits: reply
 `continue` to audit here and go on, `changed` after you have switched the model (it audits, then
 stops again so you can switch back), or paste another team's audit path. It exists so you can switch
@@ -3439,7 +3448,7 @@ Hands to: ③.*
 
 ```mermaid
 flowchart TD
-    S0["Step 0 — resolve project\nStep 0.5 — the artifact folder\nStep 0.6 — re-enter the worktree"] --> S07{"Step 0.7 — BDD contract gate\nlocked, files on disk, or waived?"}
+    S0["Step 0 — resolve project\nStep 0.5 — the artifact folder\nStep 0.6 — re-enter the worktree\nSTOP if the epic is behind main"] --> S07{"Step 0.7 — BDD contract gate\nlocked, files on disk, or waived?"}
     S07 -- "no" --> STOP0["⛔ STOP. Run /cicd-bdd-tests first.\nNever grandfather silently."]
     S07 -- "yes" --> S1["Step 1 — bmad-dev-story PLAN mode\nwrites implementation_plan.md"]
     S1 --> GATE{"Step 2 — the plan is posted\nSTOP — modify nothing until you reply"}
