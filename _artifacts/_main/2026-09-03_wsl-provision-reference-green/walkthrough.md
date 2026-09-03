@@ -1,5 +1,19 @@
 # Walkthrough — WSL box brought to reference green (2026-09-03)
 
+**Ticket:** SCC-384 · **Branch:** `chore/SCC-384-linux-column` · **Date:** 2026-09-03
+
+## Task Checklist
+
+- [x] Gitignored files restored from the Windows side of this machine; AGY suite `3159 / 35 / 0` on the documented command
+- [x] Venv rebuilt on Python 3.11.15; suite green again (23.56 s)
+- [x] gcloud CLI + ADC, Keyway (`doctor` 5 passed / 1 warning) — machine card complete
+- [x] `docs/migrations/INDEX.md` — `Linux (WSL2 / Ubuntu)` column on every row
+- [x] `new_machine-migration-guide.md` §5 — the one-block sudo list, /mnt/c note, firebase-tools 13-vs-15 warning
+- [x] `python_vytest-updates-other-machines.md` — WSL row, Linux rebuild line, header `macOS / Linux`
+- [x] `terminal-permissions-guide.md` §3.6 + §12 — the four measured sandbox behaviors
+- [x] `env_master.py` skips git-tracked files; regression test 27/27; bundle re-exported (7 files, verified)
+- [x] The merge itself — lands via this branch's PR
+
 ## Result
 
 Documented command, run from the AGY root with `backend/.venv/bin/python`
@@ -77,3 +91,9 @@ when Epic 24 merges.
 2. `gcloud` CLI not installed (ADC file present, so the SDKs work). `sudo apt install google-cloud-cli`.
 3. Keyway not installed / not logged in (INDEX step 6c). `npm install -g @keywaysh/cli` + `keyway login`.
 4. Migration docs have no Linux/WSL column — the ticket this walkthrough feeds.
+
+## Your Actions
+
+Nothing is owed on this ticket. The three operator-only blocks were run during the lane and are measured
+done: `python3.11 --version` → 3.11.15 · `gcloud --version` → 583.0.0, ADC token minted · `keyway doctor` →
+`5 passed, 1 warnings, 0 failed`.
