@@ -14,6 +14,7 @@ Usage:
 
 import argparse
 import os
+import subprocess
 import re
 import shutil
 import sys
@@ -32,8 +33,28 @@ def get_repo_root(explicit_root: str | None = None) -> Path:
     return Path(__file__).resolve().parent.parent.parent.parent
 
 
+def _git_tracks(path: Path) -> bool:
+    """True when git tracks `path` in whichever repo/submodule contains it.
+
+    The bundle carries what git deliberately does NOT — a tracked file restored from it would
+    silently overwrite a committed one (measured 2026-09-03: AGY's `frontend/.env.production` is
+    tracked, and a restore dirtied the tree; SCC-384). Not-a-repo and untracked both return False.
+    """
+    try:
+        rc = subprocess.run(
+            ["git", "ls-files", "--error-unmatch", path.name],
+            cwd=path.parent, capture_output=True, text=True, check=False,
+        ).returncode
+    except OSError:
+        return False
+    return rc == 0
+
+
 def discover_source_files(root: Path) -> list[str]:
-    """Discovers all real .env and auth_keys files relative to the repository root."""
+    """Discovers all real .env and auth_keys files relative to the repository root.
+
+    Skips anything git tracks — see `_git_tracks`.
+    """
     found: set[str] = set()
 
     # 1. Root .env
@@ -58,7 +79,7 @@ def discover_source_files(root: Path) -> list[str]:
                 is_env = file in ENV_FILENAMES
                 is_auth_key = "auth_keys" in full_path.parts
 
-                if is_env or is_auth_key:
+                if (is_env or is_auth_key) and not _git_tracks(full_path):
                     found.add(rel_path)
 
     return sorted(found)
