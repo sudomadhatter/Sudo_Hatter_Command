@@ -1,0 +1,88 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_permission_parity.py"
+  ],
+  "mutants": [
+    {
+      "id": "M1 antigravity deny never fires",
+      "file": ".agents/scripts/permission_matchers.py",
+      "original": "        if b is not None and _ag_hit(b, cmd):\n            return \"deny\"",
+      "mutated": "        if b is not None and _ag_hit(b, cmd):\n            return \"ask\"",
+      "case": "A8 antigravity: Deny beats a longer Allow (no longest-prefix re-allow)",
+      "block": "A ·"
+    },
+    {
+      "id": "M2 antigravity token match unanchored",
+      "file": ".agents/scripts/permission_matchers.py",
+      "original": "            if not re.fullmatch(r, c):",
+      "mutated": "            if not re.match(r, c):",
+      "case": "A7 antigravity: a flag CLUSTER is one token (-fd is not -f)",
+      "block": "A ·"
+    },
+    {
+      "id": "M3 zoo shortest prefix wins",
+      "file": ".agents/scripts/permission_matchers.py",
+      "original": "        if (s == \"*\" or p.startswith(s)) and (best is None or len(s) > len(best)):",
+      "mutated": "        if (s == \"*\" or p.startswith(s)) and (best is None or len(s) < len(best)):",
+      "case": "A9 zoo: the LONGER prefix wins allow-vs-deny",
+      "block": "A ·"
+    },
+    {
+      "id": "M4 claude judges the whole compound as one segment",
+      "file": ".agents/scripts/permission_matchers.py",
+      "original": "    return [s.strip() for s in segs if s.strip()]",
+      "mutated": "    return [cmd.strip()]",
+      "case": "A10 claude: `Bash(X:*)` equals `Bash(X *)`; a compound is judged per segment",
+      "block": "A ·"
+    },
+    {
+      "id": "M5 --check always clean",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "    return msgs",
+      "mutated": "    return []",
+      "case": "B6 a one-char hand edit to the Zoo list is RED and names the file",
+      "block": "B ·"
+    },
+    {
+      "id": "M6 antigravity derived deny drops the env twin",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "    if kind == \"deny\" and row[\"cmd\"].startswith((\"git \", \"gh \")) and env_twin:",
+      "mutated": "    if False:",
+      "case": "B10c derived Antigravity rows: command+unsandboxed twins, per-token escaped, env twin on git deny",
+      "block": "B ·"
+    },
+    {
+      "id": "M7 only: scope ignored",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "    if \"only\" in row and platform not in row[\"only\"]:\n        return False",
+      "mutated": "    if \"only\" in row and platform not in row[\"only\"]:\n        return True",
+      "case": "B10b derived Claude rows: `X:*`, bare exact, `X*` after a separator, only:[zoo] excluded, no deny",
+      "block": "B ·"
+    },
+    {
+      "id": "M8 JSONC scanner stops skipping comments",
+      "file": ".agents/scripts/permission_render.py",
+      "original": "        elif ch == \"/\" and text.startswith(\"//\", i):",
+      "mutated": "        elif False and text.startswith(\"//\", i):",
+      "case": "B11 write() renders the hand-added row away, keeps every comment outside the arrays, and --check is clean",
+      "block": "B ·"
+    },
+    {
+      "id": "M9 backup overwritten on every apply",
+      "file": ".agents/scripts/antigravity_permissions_apply.py",
+      "original": "    if not backup.exists():",
+      "mutated": "    if True:",
+      "case": "C4 a second apply does NOT overwrite the backup",
+      "block": "C ·"
+    },
+    {
+      "id": "M10 apply writes a second key",
+      "file": ".agents/scripts/antigravity_permissions_apply.py",
+      "original": "    us[KEY] = {\"allow\": list(fence.get(\"allow\", [])), \"deny\": list(fence.get(\"deny\", []))}",
+      "mutated": "    us[KEY] = {\"allow\": list(fence.get(\"allow\", [])), \"deny\": list(fence.get(\"deny\", []))}; us[\"remoteControlHostname\"] = \"mutant\"",
+      "case": "C2 every other key preserved (remoteControlHostname, conversationWidth, plugins)",
+      "block": "C ·"
+    }
+  ]
+}

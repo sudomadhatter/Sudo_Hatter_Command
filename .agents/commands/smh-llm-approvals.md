@@ -3,7 +3,7 @@ description: Audit recent agent chats for the terminal commands that stopped and
 platforms: [opencode, antigravity, claude, codex, zoo]
 ---
 
-# /smh-llm-approvals — audit what you approved, then update both lists
+# /smh-llm-approvals — audit what you approved, then update the ONE source
 
 > **Rules in force:** `.agents/rules/constitution.md` §Ask First (the operator's word gates every
 > write) · `.agents/rules/command-shape.md` (`cd <abs> && …` in ONE line; `git -C` is auto-denied)
@@ -19,7 +19,7 @@ allowed. Every file read, every edit, and the apply are the agent's. A step that
 
 ## Step 1 — Read the chats
 
-Two agents, two stores, two shapes. Read both. Neither needs a script — they are files.
+Three agents, three stores, three shapes. Read all three. None needs a script — they are files.
 
 **Claude Code** — `~/.claude/projects/*/*.jsonl`, newest ~20 by modified time.
 
@@ -64,6 +64,17 @@ auto-approves and leaves it standing when the operator has to answer, so filteri
 the very asks this door exists to surface — and the operator, reading a list that is missing his
 own commands, has no way to tell. Same mechanism, same fix as `zoo_notify.classify()` (SCC-355).
 
+**Antigravity** (the VS Code extension) — `~/.gemini/config/config.json`, one file per machine.
+
+Antigravity keeps no ask log. What it keeps is the result of every "always allow" click: a rule
+appended to `userSettings.globalPermissionGrants.allow`, written as a PREFIX (`unsandboxed(git
+status)`, `unsandboxed(acli)`). So the commands the operator had to stop for are exactly the rows in
+the live store that the tracked render does not contain. Read both files and diff the `allow`
+arrays as sets — the rendered side is [`.agents/permissions/antigravity.json`](../permissions/antigravity.json);
+`python3 .agents/scripts/antigravity_permissions_apply.py --status` gives the counts. Show the
+store-only rows with their `unsandboxed(`/`command(` wrapper stripped, so he reads commands, not
+grammar. A store that is already `in sync with tracked file` has nothing to show, and says so.
+
 If a store folder is missing or empty, say so by name. An empty Zoo store is the normal state on
 a machine where Zoo has not been used — it is not an error, and it must not read like one.
 
@@ -73,7 +84,7 @@ One list, de-duplicated, newest first, in chat. Nothing else — no proposed row
 recommendations, no allow-list arithmetic. He reads the commands and decides.
 
 ```text
-Commands that stopped for approval - 12 Claude sessions, 3 Zoo threads
+Commands that stopped for approval - 12 Claude sessions, 3 Zoo threads, 1 Antigravity store
 
 Claude Code
   npx create-next-app my-app
@@ -82,6 +93,10 @@ Claude Code
 
 Zoo Code
   cd /Users/sudohatter/repo && git fetch origin main
+
+Antigravity
+  npm test
+  find .agents -type f
 ```
 
 Indent **every** line of a multi-line command, so the operator can see where one ends and the
@@ -92,9 +107,20 @@ it — he must name the commands or say "all of them".
 
 ## Step 3 — Write what he picked
 
-Two files, two formats, both edited by the agent.
+One file, then one render. Since SCC-378 the three platform lists are RENDERED from a single
+source, [`.agents/permissions/families.json`](../permissions/families.json), by
+`python3 .agents/scripts/permission_render.py`. **Edit the source, never the three rendered files**
+— a hand edit to `.vscode/settings.json`, `.claude/settings.json` or
+`.agents/permissions/antigravity.json` is drift, `permission_render.py --check` turns red, and the
+next sync overwrites it. Each picked command becomes a family row (`id`, `cmd`, `why`, and the
+platforms it applies to), or a `cmd` widened inside an existing family when it is the same intent;
+the renderer derives each platform's grammar from `cmd`. Then run the renderer, and confirm
+`--check` prints *in sync*.
 
-**Claude Code** → the repo's `.claude/settings.json`, `permissions.allow`. Rule shape is
+The per-platform shapes below are what the RENDERER writes — read them to know what a row will
+become, not as files to open.
+
+**Claude Code** → `.claude/settings.json`, `permissions.allow`. Rule shape is
 `Bash(<prefix> *)`.
 
 ⛔ **Match the narrowness already in the file.** That list scopes git to the subcommand —
@@ -104,9 +130,15 @@ Two files, two formats, both edited by the agent.
 the command is how a careful list becomes a blank cheque, and `permissions.deny` is empty, so
 nothing downstream catches it.
 
-**Zoo Code** → the repo's `.vscode/settings.json`, `zoo-code.allowedCommands`. Plain string
+**Zoo Code** → `.vscode/settings.json`, `zoo-code.allowedCommands`. Plain string
 prefixes, no wrapper. Same narrowness rule. ⛔ **Never touch `zoo-code.deniedCommands`** — the
 deny list is the fence, and this command grows allows only.
+
+**Antigravity** → `.agents/permissions/antigravity.json`, `globalPermissionGrants.allow`, as
+`command(<prefix>)` plus an `unsandboxed(<prefix>)` twin (the first governs execution, the second
+the sandbox escape; the renderer writes both). Each whitespace token is an anchored regex, so the
+renderer escapes metacharacters — you never type `\.` yourself. Same narrowness rule; the `deny`
+array is the fence and this command never adds to it.
 
 ⛔ **If the operator picked a command Zoo's deny list refuses, do not add it. Say which row
 refused it and stop.** He asked to be un-blocked, not to have his own fence removed; if he wants
@@ -132,6 +164,17 @@ Ask before quitting his editor — that is his window, with his unsaved work in 
 leave the tracked file edited and tell him the Zoo rows are staged but not live until the apply
 runs. **Claude's rows are live the moment the file is saved and need none of this.**
 
+Then make Antigravity see it — its store is also per machine:
+
+```bash
+cd <repo-abs> && python3 .agents/scripts/antigravity_permissions_apply.py --status   # read-only, safe anytime
+cd <repo-abs> && python3 .agents/scripts/antigravity_permissions_apply.py --apply    # writes the grants block, backs up once
+```
+
+No editor quit is needed (a plain JSON file, no database), but the extension re-reads it on a window
+reload — ask him to reload the VS Code window and tell him so. The closing `--status` must read
+*in sync with tracked file*.
+
 ## Step 4 — Report what changed
 
 Name each row added and which file it went into, confirm the apply result, and say plainly what
@@ -142,5 +185,6 @@ is live now versus staged. Then stop.
 - It does not propose rows, rank them, or compute a "minimal prefix". The operator reads real
   commands and picks. Machine-chosen breadth was built once and cut (SCC-354): every defect it
   produced lived in the choosing, and the operator never asked for it.
-- It does not touch either deny list.
+- It does not touch any deny list — Zoo's, Antigravity's, or a future one.
+- It does not edit the three rendered files. The source is the only thing it writes; the render does the rest.
 - It does not make the operator run anything.

@@ -997,6 +997,26 @@ Write-Host "sync-agents: master=$Master"
 Write-Host "sync-agents: target=$Target (lobby=$IsLobby)"
 if ($WhatIf) { Write-Host "sync-agents: *** WHATIF / DRY-RUN MODE *** no files will be changed" }
 
+# --- permission fence render (SCC-378) -------------------------------------------------------
+# The three terminal-approval lists (.vscode/settings.json zoo-code.*, .claude/settings.json
+# permissions.allow, .agents/permissions/antigravity.json) are RENDERED from the one source
+# .agents/permissions/families.json by permission_render.py. A sync renders; -Status runs --check.
+# It RENDERS only - pushing a list into a live machine store stays the explicit apply scripts.
+# Interpreter probed python3 -> python -> py, the same order the hooks use (two machines, two names).
+function Invoke-PermissionRender {
+  param([switch]$Check, [switch]$WhatIf)
+  $py = @('python3', 'python', 'py') | Where-Object { Get-Command $_ -ErrorAction SilentlyContinue } | Select-Object -First 1
+  if (-not $py) { Write-Host "sync-agents: permission render SKIPPED - no python3/python/py on PATH"; return }
+  $script = Join-Path $Master 'scripts/permission_render.py'
+  if (-not (Test-Path $script)) { Write-Host "sync-agents: permission render SKIPPED - $script not found"; return }
+  if ($Check) {
+    & $py $script --check --root $HomeRoot
+    return
+  }
+  if ($WhatIf) { Write-Host "sync-agents: [whatif] would run permission_render.py"; return }
+  & $py $script --root $HomeRoot
+}
+
 # --- -Status: read-only reconciliation report, then stop (writes NOTHING) -----
 if ($Status) {
   $rows = @(Get-SurfaceState $Target $Master)
@@ -1018,6 +1038,7 @@ if ($Status) {
     Write-Host ("  totals: {0} differing, {1} unclaimed orphan(s), {2} project-owned" -f $m, $o, $k)
     if ($o) { Write-Host "  resolve with: -Reconcile (stages a keep-list first; never deletes unreviewed)" }
   }
+  Invoke-PermissionRender -Check
   exit 0
 }
 
@@ -1035,6 +1056,9 @@ Write-Host "sync-agents: launcher skills -> $($genSk.Count) generated in .agents
 # Zoo Code doors (SCC-349): tracked in-repo like the workflow mirror, so they travel via git.
 $zooCmds = Sync-ZooSurfaces $Master $HomeRoot -WhatIf:$WhatIf
 Write-Host "sync-agents: zoo surfaces -> $($zooCmds.Count) launchers in .roo/commands/; .roomodes ($script:ZooSeatCount team seats); floor + team rules in .roo/rules/"
+
+# Permission fence: render the three lists from the one source (SCC-378). Renders only; never applies.
+Invoke-PermissionRender -WhatIf:$WhatIf
 
 # --- local tool dirs ----------------------------------------------------------
 if (-not $GlobalsOnly) {
