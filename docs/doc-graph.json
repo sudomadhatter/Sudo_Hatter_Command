@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 426,
+    "files": 427,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 789,
+    "edges": 790,
     "external": 35,
     "ambiguous": 173,
     "dangling": 290,
@@ -1757,8 +1757,13 @@
       "out": 0
     },
     {
+      "path": ".agents/templates/INDEX.md",
+      "in": 0,
+      "out": 2
+    },
+    {
       "path": ".agents/templates/project_overview_guide.md",
-      "in": 8,
+      "in": 10,
       "out": 4
     },
     {
@@ -4791,6 +4796,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/templates/INDEX.md",
+      "to": ".agents/templates/project_overview_guide.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/templates/project_overview_guide.md",
       "to": ".agents/rules/constitution.md",
       "kind": "ref"
@@ -7427,6 +7437,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7470,6 +7481,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7487,6 +7499,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7504,6 +7517,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7566,6 +7580,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7626,6 +7641,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7643,6 +7659,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7822,6 +7839,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7883,6 +7901,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7900,6 +7919,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7917,6 +7937,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7934,6 +7955,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -8177,6 +8199,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -8203,6 +8226,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -8247,6 +8271,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -8264,6 +8289,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -8299,6 +8325,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -8316,6 +8343,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -8342,6 +8370,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -8359,6 +8388,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -8429,6 +8459,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -8446,6 +8477,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -8472,6 +8504,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -8489,6 +8522,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -8524,6 +8558,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -9813,6 +9848,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -9943,6 +9979,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -9970,6 +10007,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -9995,6 +10033,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10021,6 +10060,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10082,6 +10122,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10251,6 +10292,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10302,6 +10344,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10418,6 +10461,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10435,6 +10479,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10461,6 +10506,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10478,6 +10524,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10513,6 +10560,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10610,6 +10658,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10726,6 +10775,7 @@
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
