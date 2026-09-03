@@ -308,7 +308,7 @@ if c.block("B · one source, three rendered outputs, drift is red"):
             vs2 = t2 / ".vscode" / "settings.json"
             txt = vs2.read_text(encoding="utf-8")
             comments_before = sum(1 for l in txt.splitlines() if l.lstrip().startswith("//"))
-            txt = txt.replace('"zoo-code.allowedCommands": [', '"zoo-code.allowedCommands": [\n    // a "quoted" note inside the array\n    "bogus-row ",', 1)
+            txt = txt.replace('"zoo-code.allowedCommands": [', '"zoo-code.allowedCommands": [\n    // a note with ONE " quote inside the array (an even count re-balances the string state and hides the bug)\n    "bogus-row ",', 1)
             vs2.write_text(txt, encoding="utf-8")
             try:
                 wrote = pr.write(t2)
