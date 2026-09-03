@@ -167,6 +167,30 @@ list has first been measured wide enough against real workloads, and it never pr
 mode stays available behind a flag in that lane's `portable_settings.py`, with a zero-refusal battery as
 its entry condition.
 
+**What the sandbox does on WSL2 / Ubuntu — measured 2026-09-03 (SCC-384), so nobody re-derives it.**
+The boundaries above are exactly what the agent sees, and four consequences follow that look like
+breakage the first time:
+
+- **`~/.config` and `~/.npm/_cacache` are outside `allowWrite`.** So `npm install -g <anything>`
+  fails with `EROFS: read-only file system` on the npm cache, `gcloud` (which writes its own
+  `~/.config/gcloud`) fails or reports `ADC token failed`, and copying a credential into `~/.config`
+  is refused with `Read-only file system`. Each of these is the hatch's intended case: the agent
+  retries unsandboxed once, and the retry is auto-approved. It is not a reason to widen `allowWrite`
+  to the home directory.
+- **`$TMPDIR` is unset under the unsandboxed retry.** A redirect written `> $TMPDIR/out.txt` becomes
+  `> /out.txt` and dies with `Permission denied`. Spell the scratchpad path out in full on a retry.
+- **Denied paths are `/dev/null` bind-mounts, not absences.** The sandbox mounts a character device
+  over every `denyWithinAllow` entry (`.claude/hooks`, `.claude/skills`, `~/.bashrc`, ...). Two
+  visible effects: `git status` in the sandboxed shell shows phantom `?? .bash_profile`,
+  `?? .claude/hooks` rows that vanish unsandboxed, and any git operation that must remove or replace
+  one of those paths — `git reset --hard` touching `.claude/settings.json`, `git worktree prune` on
+  `.git/worktrees/*` metadata — fails with `Device or resource busy`. Read `git status` from an
+  unsandboxed call before believing a repo is dirty; use `--mixed` where `--hard` is refused.
+- **`sudo` is never the agent's.** `apt`, `add-apt-repository`, anything under `/usr` — the operator
+  runs those in the IDE's integrated terminal (it IS the Ubuntu shell; no restart of the IDE), with
+  the *Linux* user password, not the Windows one. The kit lists every such line in one block:
+  [`new_machine-migration-guide.md` §5](install_guides/new_machine-migration-guide.md).
+
 ### 3.7 A fresh clone has no local file, and that is felt immediately
 
 `settings.local.json` is gitignored, so a clone starts without it: the worktree linker finds
@@ -451,6 +475,9 @@ Close-out review additions (same day, after the measurement): the battery grew t
   the suite's currency checks (test_zoo_team B-blocks) go red on the drift.
 - The UI's Auto-Approve panel writes BOTH the decision store and USER settings — so panel edits
   diverge from the tracked file silently. `--status` shows the drift; re-apply after reconciling.
+- **A "dirty" repo that is only dirty inside the sandbox** (2026-09-03): the `/dev/null` bind-mounts
+  in §3.6 make `git status` list the denied paths as untracked. The same command unsandboxed shows a
+  clean tree. Never sweep or `git add` on the strength of a sandboxed status.
 
 ---
 

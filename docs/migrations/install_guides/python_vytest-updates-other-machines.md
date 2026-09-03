@@ -12,6 +12,7 @@ fresh-machine setups.
 | **Laptop** (8-core) | Windows | ☑ 2026-08-01 · re-verified parallel 2026-08-03 | **`-n 4`** (206.81 s, vs `auto`/8 = 261.76 s) | The box most measurements in this doc came from. ⚠️ Its ☑ predates the 08-03 `requirements.txt` emoji, so it has **never** run the current install step — see the `PYTHONUTF8` box |
 | **Desktop** (16 logical cores, 64 GB RAM) | Windows | ☑ 2026-08-04 — `3024 passed / 35 skipped / 0 failed`, matching the reference totals exactly | **`-n 6`** (57.65 s) · 4 = 63.68 · 8 = 59.87 · 12 = 64.33 · `auto`(16) = **71.75 s, the slowest** | Needed Python 3.11 **installed from scratch** (only 3.14/3.10 present) and `PYTHONUTF8=1`. Old venv was 3.14.0 built `--system-site-packages`. First machine to execute **this companion** (5-min fix + CHECK 1–4) against a real environment; 4 of the 6 kit-wide defects were found here. Kit-wide coverage — including what was NOT run — is the table in `INDEX.md` |
 | **Mac** (10-core Apple Silicon, 64 GB RAM) | macOS | ☑ 2026-08-06 — `3025 passed / 35 skipped / 0 failed` (one story landed since the 3024 reference) | **`-n 8`** (11.11 s) · 6 = 11.50 · 4 = 13.00 · `auto`(10) = **13.68 s, the slowest** | Fastest machine in this table (fresh 3.11.15 venv, 170 pkgs). Java is **`openjdk@17` formula** (`/opt/homebrew/opt/openjdk@17`), NOT the temurin cask — the cask's pkg installer needs an interactive sudo the setup agent doesn't have; set `JAVA_HOME` per shell (or via `~/.zshrc`). `restore-env-master.sh` ran its first live macOS **write** here 2026-08-06: 4 files restored, mode 600, §4 clean — the `--dry-run`-only caveat in `INDEX.md` is now closed |
+| **Desktop — WSL2 / Ubuntu 24.04** (the same 16-core box, Linux side; the Windows row above is retired with SCC-376) | Linux → **macOS / Linux** column | ☑ 2026-09-03 — `3159 passed / 35 skipped / 0 failed` (23.56 s, `-n auto`) on a fresh 3.11.15 venv | not tuned yet (`auto` = 23.56 s) | Ubuntu 24.04 ships **3.12 only** — 3.11 came from `ppa:deadsnakes/ppa`; the first venv here was silently 3.12 and pytest never said so, exactly as this page warns. **Before the gitignored files were restored the same command failed 40, every one a Firestore `403`** — not a code or interpreter difference: `auth_keys/` was absent, so `backend/main.py` never found `GOOGLE_APPLICATION_CREDENTIALS` and the tests ran anonymously. Copying the files from the Windows side (`/mnt/c/...`) took it to 0 with no other change (SCC-384). Java is `openjdk-17-jdk-headless` from apt, on PATH with no `JAVA_HOME` |
 
 **Two independent axes — don't collapse them.** *OS* decides which command column you use. *Power*
 decides only your `-n` value and is otherwise handled automatically (`-n auto` reads the core count).
@@ -123,11 +124,12 @@ backend\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
 > fresh 3.11.9 venv re-bundles 24.0, so that has to be repeated per rebuild. The durable fix is to keep
 > non-ASCII out of `requirements.txt` comments; until someone does that, keep the line above.
 
-**macOS (zsh/bash)**
+**macOS / Linux (zsh/bash)**
 ```bash
 git pull                                   # 0. from the AGY_AVIATIONCHAT repo root, on main
 python3.11 --version                       # 1. installed?
-brew install python@3.11                   #    only if missing
+brew install python@3.11                   #    only if missing (macOS)
+#   WSL / Ubuntu 24.04 ships 3.12 only:  sudo add-apt-repository -y ppa:deadsnakes/ppa && sudo apt install -y python3.11 python3.11-venv
 rm -rf backend/.venv                       # 2. rebuild (deletes the drifted one)
 python3.11 -m venv backend/.venv
 backend/.venv/bin/python -m pip install -r backend/requirements.txt

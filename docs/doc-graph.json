@@ -7,7 +7,7 @@
     "files": 427,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 790,
+    "edges": 791,
     "external": 35,
     "ambiguous": 173,
     "dangling": 290,
@@ -2098,7 +2098,7 @@
     },
     {
       "path": "docs/migrations/install_guides/new_machine-migration-guide.md",
-      "in": 7,
+      "in": 9,
       "out": 4
     },
     {
@@ -2129,7 +2129,7 @@
     {
       "path": "docs/migrations/terminal-permissions-guide.md",
       "in": 5,
-      "out": 3
+      "out": 5
     },
     {
       "path": "docs/migrations/vscode_sync/README.md",
@@ -5943,6 +5943,11 @@
     {
       "from": "docs/migrations/terminal-permissions-guide.md",
       "to": ".agents/rules/command-shape.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/terminal-permissions-guide.md",
+      "to": "docs/migrations/install_guides/new_machine-migration-guide.md",
       "kind": "link"
     },
     {

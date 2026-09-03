@@ -1,0 +1,270 @@
+bringing up nodes...
+bringing up nodes...
+
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  6%]
+........................................................................ [  9%]
+........................................................................ [ 11%]
+........................................................................ [ 13%]
+........................................................................ [ 15%]
+........................................................................ [ 18%]
+........................................................................ [ 20%]
+........................................................................ [ 22%]
+........................................................................ [ 24%]
+........................................................................ [ 27%]
+........................................................................ [ 29%]
+........................................................................ [ 31%]
+........................................................................ [ 33%]
+......sss.........ss.................................................... [ 36%]
+........................................................................ [ 38%]
+........................................................................ [ 40%]
+........................................................................ [ 42%]
+........................................................................ [ 45%]
+........................................................................ [ 47%]
+...........................................sss.ssss......s.............. [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+........................................................................ [ 58%]
+........................................................................ [ 60%]
+........................................................................ [ 63%]
+........................................................................ [ 65%]
+........................................................................ [ 67%]
+........................................................................ [ 69%]
+........................................................................ [ 72%]
+........................................................................ [ 74%]
+........................................................................ [ 76%]
+.....................................s.................................. [ 78%]
+........................................................................ [ 81%]
+.....................s.................................................. [ 83%]
+........................................................................ [ 85%]
+........................................................................ [ 87%]
+........................................................................ [ 90%]
+........................................................................ [ 92%]
+.......................................s..s..s.s........................ [ 94%]
+...........................s.s.s.s.ss...sss..sss.......ss...s....s...... [ 96%]
+........................................................................ [ 99%]
+..........................                                               [100%]
+=============================== warnings summary ===============================
+backend/.venv/lib/python3.11/site-packages/opentelemetry/util/_importlib_metadata.py:32: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/opentelemetry/util/_importlib_metadata.py:32: DeprecationWarning: SelectableGroups dict interface is deprecated. Use select.
+    return EntryPoints(ep for group_eps in eps.values() for ep in group_eps)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 64 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.ac2 - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.copy - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.anti_enum - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 32 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.ac5 - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.envelope - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 48 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.ac4 - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 32 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.happy - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.failfast - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 80 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.ac3 - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.ratelimit - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/fastapi/testclient.py:1: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend/.venv/lib/python3.11/site-packages/starlette/testclient.py:53: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 48 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.operator - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 32 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.p2 - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 64 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.ac1 - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.hard-delete - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.authz - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.guard - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 48 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.scoped - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.emptystate - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.noregression - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 32 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.failclosed - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.unonboarded - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.ac2b - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.search - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.grouping - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.solos - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.tenancy - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.decline - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.full - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.rotation - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.ac3b - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: 16 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/pytest_bdd/plugin.py:137: PytestUnknownMarkWarning: Unknown pytest.mark.idempotent - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    mark = getattr(pytest.mark, tag)
+
+<frozen abc>:106: 16 warnings
+  <frozen abc>:106: DeprecationWarning: BaseAgentConfig is deprecated and will be removed in future versions. Config is now loaded via reflection so the separate config class is no longer needed.
+
+backend/.venv/lib/python3.11/site-packages/google/auth/_default.py:127: 16 warnings
+backend/tests/services/test_prefetch_service.py: 1 warning
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/google/auth/_default.py:127: DeprecationWarning: The load_credentials_from_file method is deprecated because of a potential security risk.
+  
+  This method does not validate the credential configuration. The security
+  risk occurs when a credential configuration is accepted from a source that
+  is not under your control and used without validation on your side.
+  
+  If you know that you will be loading credential configurations of a
+  specific type, it is recommended to use a credential-type-specific
+  load method.
+  This will ensure that an unexpected credential type with potential for
+  malicious intent is not loaded unintentionally. You might still have to do
+  validation for certain credential types. Please follow the recommendations
+  for that method. For example, if you want to load only service accounts,
+  you can create the service account credentials explicitly:
+  
+  ```
+  from google.oauth2 import service_account
+  creds = service_account.Credentials.from_service_account_file(filename)
+  ```
+  
+  If you are loading your credential configuration from an untrusted source and have
+  not mitigated the risks (e.g. by validating the configuration yourself), make
+  these changes as soon as possible to prevent security risks to your environment.
+  
+  Regardless of the method used, it is always your responsibility to validate
+  configurations received from external sources.
+  
+  Refer to https://cloud.google.com/docs/authentication/external/externally-sourced-credentials
+  for more details.
+  
+    warnings.warn(_GENERIC_LOAD_METHOD_WARNING.format(method_name), DeprecationWarning)
+
+backend/tests/routers/test_story_21_4_school_code_rotation.py::TestScopingRidesTheStableId::test_scope_002_admin_jwt_stamps_school_id
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/jwt/api_jwt.py:153: InsecureKeyLengthWarning: The HMAC key is 16 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    return self._jws.encode(
+
+backend/tests/routers/test_story_21_4_school_code_rotation.py::TestScopingRidesTheStableId::test_scope_002_admin_jwt_stamps_school_id
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/jwt/api_jwt.py:371: InsecureKeyLengthWarning: The HMAC key is 16 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    decoded = self.decode_complete(
+
+backend/tests/services/test_admin_auth_service.py::TestJWTOperations::test_verify_jwt_wrong_secret
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/jwt/api_jwt.py:153: InsecureKeyLengthWarning: The HMAC key is 12 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    return self._jws.encode(
+
+backend/tests/routers/test_story_11_13.py::TestToggleAndForce::test_force_true_toggle_off_runs_all_phases
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/services/evolution/nightly_overseer.py:183: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    await self._phase2b_trap_distillation(report)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+backend/tests/services/test_quiz_service.py: 11 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/services/quiz_service.py:231: RuntimeWarning: coroutine 'LearningContextService.record_quiz' was never awaited
+    logger.warning(f"LCC quiz recording failed (non-blocking): {e}")
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+backend/tests/services/test_quiz_service.py: 11 warnings
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/services/quiz_service.py:279: RuntimeWarning: coroutine 'BipartiteRewardService.score_pending_interactions' was never awaited
+    logger.warning(f"Reward computation fire-and-forget failed: {e}")
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+backend/tests/agents/test_story_19_5_adk_agent_evaluation_stage_2.py::TestEvalMetricDepInstalled::test_response_evaluator_importable
+backend/tests/agents/test_story_19_1_runtime_pins_explicit_key_auth.py::TestEvalSurface::test_eval_001_agent_evaluator_import_tripwire
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/vertexai/_genai/types/common.py:1854: PydanticDeprecatedSince212: Using `@model_validator` with mode='after' on a classmethod is deprecated. Instead, use an instance method. See the documentation at https://docs.pydantic.dev/2.13/concepts/validators/#model-after-validator. Deprecated in Pydantic V2.12 to be removed in V3.0.
+    @model_validator(mode="after")
+
+backend/tests/agents/test_story_19_5_adk_agent_evaluation_stage_2.py::TestEvalMetricDepInstalled::test_response_evaluator_importable
+backend/tests/agents/test_story_19_1_runtime_pins_explicit_key_auth.py::TestEvalSurface::test_eval_001_agent_evaluator_import_tripwire
+  /home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/lib/python3.11/site-packages/google/adk/dependencies/vertexai.py:19: UserWarning: The `vertexai.preview.rag` module is deprecated and will be removed in a future version. Please migrate to the `agentplatform` client. For example:
+  
+      import agentplatform
+  
+      client = agentplatform.Client(project="your-project", location="us-central1")
+      client.rag.create_corpus(...)
+  
+    from vertexai.preview import rag as rag
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+3159 passed, 35 skipped, 927 warnings in 23.56s
