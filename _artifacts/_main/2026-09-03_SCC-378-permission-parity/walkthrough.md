@@ -10,7 +10,7 @@ review-runtime: fan-out
 
 # SCC-378 — Fence Antigravity + Gemini as a live platform: permission parity with Claude and Zoo
 
-**Lane:** `chore/SCC-378-permission-parity` · **HEAD at review:** `2f6d4195` · **Plan:** [implementation_plan.md](implementation_plan.md) (Audit verdict: GO) · **Child:** SCC-382 (the Mac application, the operator's, separately)
+**Lane:** `chore/SCC-378-permission-parity` · **HEAD at review:** `3f6f42e7` (reviewed diff taken at `59e15eff`; review fixes `744b9f4c`, `96837cf2`, `3f6f42e7`) · **Plan:** [implementation_plan.md](implementation_plan.md) (Audit verdict: GO) · **Child:** SCC-382 (the Mac application, the operator's, separately)
 
 **What changed, in one sentence.** The three terminal-approval fences — Zoo Code's, Claude Code's and the
 Antigravity extension's — are now rendered from ONE source and proven to give the same verdict on the same
@@ -31,8 +31,8 @@ fence as the other two, on this machine, with the Mac one apply away.
   - the `.claude/settings.json` render ran ONCE unsandboxed (Claude protects its own settings inside its sandbox), as the plan said it would
   - the battery's A-block reds were the MEASUREMENT: 3 Antigravity deny gaps closed in-lane (HEAD:main, `--prune=now`, `mkfs.ext4`); 17 cross-platform disagreements pinned by name as the operator's rulings (see below)
 - [x] Step 3 — mutants declared FROM the code, one sweep: 10/10 killed on the third run (M8 survived twice — see Evidence)
-- [x] Step 3 — STAMP: `run_all.py` through the receipt writer, PASS exit 0 @ `5f9ce171`
-- [ ] Step 4 — `/smh-code-review` (appends `## Code Review` below)
+- [x] Step 3 — STAMP: `run_all.py` through the receipt writer, PASS exit 0 @ `5f9ce171`; re-stamped after the review at `3f6f42e7`
+- [x] Step 4 — `/smh-code-review` (the `## Code Review` section below): five lenses + verify wave + compound; 16 patches fixed in-lane, 1 decision handed over, CONCERNS
 - [ ] Step 5 — Dev Record
 
 ## Evidence
@@ -42,7 +42,7 @@ fence as the other two, on this machine, with the Mac one apply away.
 | **A** one battery, three matchers, identical verdicts | `test_permission_parity.py` block `A ·` | `[FAIL] A0 permission_matchers imports` · `[FAIL] A1 the three rendered lists exist: antigravity.json=False` | A0–A11 all `PASS`; A2: 52 destructive → deny on Zoo and Antigravity; A4: 35 ceremony → allow on all three; A5: 12 unknown → ask on all three; A6 parity holds; A11 every pinned disagreement still live |
 | **B** one source, three rendered outputs, drift is red | block `B ·` | `[FAIL] B0 permission_render imports` · `[FAIL] B1 the source exists` | `permission_render: in sync (zoo, claude, antigravity)` · B6 one-char Zoo edit → `file has 1 row(s) the source does not render ['git  ']` · B7 added AG row → names `antigravity.json` · B8 render ⊇ baseline (6 rows superseded by name) · B10a–c derivation · B11 `write()` round-trip · B12 scanner on a one-quote comment |
 | **B** the seed reproduces today | one-off `seed_families.py` (scratchpad, never in the renderer — B9) | — | Zoo render SET-equal to `origin/main` (124 allow / 105 deny; `test_zoo_permissions.py` 25/25, `test_guide_currency` green) · Claude render set-equal (141 rows → 140: the duplicate `Bash(cd:*)` collapsed; `test_settings_allowlist.py` 29/29, sentinels A2/A6/B1 intact) · Antigravity render ⊇ the 2026-09-03 hand-built list (`+10 / -6`: 6 old spellings replaced by their anchored-regex form) |
-| **C** the apply is scoped and safe | block `C ·` on a temp store | `[FAIL] C0 antigravity_permissions_apply imports` | C1 grants replaced · C2 `remoteControlHostname`, `conversationWidth`, `plugins` preserved · C3 backup once · C4 second apply keeps the backup · C5 `--status` → `in sync with tracked file` · **live Ubuntu store:** `--apply` → `in sync with tracked file` (allow=116 deny=204; *Live store* below) |
+| **C** the apply is scoped and safe | block `C ·` on a temp store | `[FAIL] C0 antigravity_permissions_apply imports` | C1 grants replaced · C2 `remoteControlHostname`, `conversationWidth`, `plugins` preserved · C3 backup once · C4 second apply keeps the backup · C5 `--status` → `in sync with tracked file` · **live Ubuntu store:** `--apply` → `in sync with tracked file` (allow=116 deny=204 at build; **re-applied after the review: allow=116 deny=384**, in sync; *Live store* below) |
 | **D** rendering rides sync-agents, runs without pwsh | block `D ·` | `[FAIL] D1 …calls permission_render.py` · `[FAIL] D2 -Status path runs --check` · `[FAIL] D3 …rc=2` (no script) | D1 live `.ps1` code calls it · D2 `Invoke-PermissionRender -Check` in the `-Status` block · D3 standalone `--check` rc=0 here (no `pwsh` on this machine — the `.ps1` half is exercised on the Mac) |
 | **E** `/smh-llm-approvals` writes the source, reads Antigravity | block `E ·` | `[FAIL] E1/E2/E3/E5` | E1 `families.json` · E2 `permission_render.py` · E3 `~/.gemini/config/config.json` · E4 opencode mirror byte-identical (`cmp`) · E5 commands/INDEX row 65 rewritten · `workflow_lint.py --toolkit-only` → 0 errors · `test_command_surfaces.py` 322/322 |
 | **F** the record tells the truth | block `F ·` | `[FAIL] F1…F5` | F1 guide's two Antigravity rows carry no "retired" · F2 store + both rule types named · F3 "sandbox does NOT auto-approve" recorded · F4/F5 memory entries corrected · `check_maps.py` clean for `.agents/permissions/INDEX.md` |
@@ -64,6 +64,14 @@ escaped `\"` — an odd count — so once a planted comment flipped the scanner'
 it back before the closing `]`, and the mutant landed on the right bracket by luck of the file's contents. B11
 (the real-file round-trip) could never kill it; B12 runs the scanner on a synthetic JSONC with no escapes, where
 the one quote desyncs the scan to EOF. A mutant that survives is a finding about the test, not the code.
+
+**Review sweep** (`mutation_sweep.py`, table extended to 25 mutants over 3 files @ `744b9f4c`, then re-run after two
+rows were hardened): **25/25 killed by their declared case**, restore verified byte-for-byte, closing full file
+58/58. M11–M25 are drawn from the review's own code — the house twin, the cluster class and `.*` tail in
+derivation, the three source refusals, the JSONC loader's two comment shapes and trailing comma, `check()`'s
+drift-not-traceback, the Claude/Antigravity write branches, the write ORDER, `ensure_ascii`, the `--rendered`
+refusal and `status()`'s DRIFT arm. First run: M15 and M24 came back as SWEEP ERRORS (the test file crashed
+instead of failing a row) — the two rows now report a raise as red, which is the fix the sweep was asking for.
 
 ### Live store
 
@@ -140,3 +148,105 @@ Owed to you but not holding this ticket: the eleven three-way rulings in the tab
 and a render; `/smh-llm-approvals` is the door), the nine NEW rows from the old Windows lists, and the Mac application
 (SCC-382, its own ticket, one `--apply` on that machine). The Zoo and Claude project copies under `Projects/*` are
 untouched by design — AVCH-116 / AVCH-114 own that port (guide §13).
+
+## Code Review (2026-09-03)
+
+Verdict: CONCERNS @ 3f6f42e7
+Suite evidence measured on 3f6f42e7 (`gates/suite.json`, PASS exit 0; the tree is dirty only with the operator's seven untracked `.claude/` files).
+
+review-runtime: fan-out
+lens_isolation: worktree
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+- literal-correctness-hunter · ok — 20 of 33 changed files received (lens_budget standard; 13 withheld and named; one top-up spent on the guide)
+lenses_counted: 5/5
+lenses_na: none
+findings: 1 decision · 16 patch · 0 defer   (1 noise-dismissed · 9 relevance kills)
+dispositions: per-lens: blind=8/0/1 · edge=8/0/4 · literal=3/0/2 · acceptance=5/1/4 · test-adequacy=6/0/5 · compound=3/0/0
+severity_floor: CONCERNS
+drift: undeclared=3 · unimplemented=1 · incomplete=0
+notes: verify wave ran (47 raw findings; Evidence Verifier 47/47 verified true, dossier built; Compound Synthesis 3 findings, dossier built); reviewed sha 59e15eff, diff re-taken there; review_level standard; vendor docs fetched for the chain question (antigravity.google/docs/permissions, silent on chains)
+
+**What the review found, in plain terms.** The code that ships is sound where the tests looked, and the weight of the review fell on the Antigravity deny rows themselves. Three lenses independently found the same class of hole: the push, branch, add and config denies were spelled as one literal anchored token each, so a clustered flag (`git push -fu origin main`), an attached value (`--force-with-lease=main:abc`), a scope flag (`git config --local core.hooksPath /dev/null`) or a target Zoo denies by prefix (`git push origin --delete develop`) slipped past the deny and was auto-approved by the broad `git` allow, where Zoo refused each. The compound role then raised the one that matters most: the vendor documents per-token matching on a line's leading tokens and says nothing about `&&`, so if the extension reads a whole line, the house shape every door command takes (`cd <abs> && git <verb>`) begins with the allowed token `cd` and no deny could see past it. Every one of these is closed in-lane and pinned in the battery; the vendor's chain behaviour is the one fact the repo cannot settle, so the render fences the house shape either way and the live probe in `## Your Actions` settles the residual.
+
+**Reviewed → fixed, in this lane, before this verdict** (commits `744b9f4c`, `96837cf2`, `3f6f42e7`):
+
+| # | Finding (merged) | src | sev | Disposition |
+|---|---|---|---|---|
+| F1 | Antigravity denies as literal single tokens bypassed by clusters, `=`-attached values, scope flags and non-main targets (`-fu`, `--force-with-lease=`, `-Df`, `-Av`, `./`, `--local core.hooksPath`, `--unset`, `user.email`, `--delete origin main`, `HEAD:develop`, `--delete develop`) | blind+edge+compound | important | **fixed** — source renders re-spelled as cluster classes and lookaheads that leave exactly Zoo's re-allows legal; 16 spellings added to DESTRUCTIVE; live store re-applied (allow 116, deny 384) |
+| F2 | Antigravity may judge only the leading tokens of a chain — the house `cd <abs> && …` shape would bypass every deny; vendor docs silent | edge+compound | important | **fixed** — `house_twin_prefix` renders every deny behind `cd .* && ` (dead row if the vendor splits, the fence if it does not); A12–A14 pin it; guide §3A.3/§7 record it; the live probe in Your Actions is now house-shaped and harmless |
+| F3 | `[A-Z_]+=.*` allow approved ANY uppercase assignment prefix (`HOME=/x rm -rf /`) | blind | suggestion | **fixed** — the named door variables only; `HOME=/x rm -rf /` in UNKNOWN |
+| F4 | `_derive_antigravity` emitted a never-matching rule for prefix families (`backend/.venv/bin/` without `.*`) and literal flags for derived denies; B10c pinned the wrong output | blind+compound | suggestion | **fixed** — `.*` tail after a separator, cluster class for a deny's single-letter flag; B10c/B10d assert the derived rows match what the Zoo twins match |
+| F5 | Source validation: empty `cmd` was a bare IndexError; a string `render` spread into one-letter Zoo allows (`g`, `i`, `t` → `gcc` auto-approved); duplicate id `deny-git-c` | blind+literal+edge+acceptance | suggestion | **fixed** — `_validate_source` refuses each by row name; B2 checks shape and uniqueness; B2b sees the refusals; second row renamed `deny-git-c-lower` |
+| F7 | JSONC shapes VS Code accepts (inline `//` after a value, `/* */`, trailing comma) crashed `check()` and the parity file at B4; `write()` spliced into a block comment | literal+edge | suggestion | **fixed** — quote-aware comment/comma stripping in the loader and scanner; an unreadable file is a DRIFT line naming the file; B13/B14 |
+| F8 | Apply: missing `--rendered` tracebacked; non-ASCII store values re-escaped against the docstring | blind+edge+acceptance | suggestion | **fixed** — ERROR line + rc 2; `ensure_ascii=False`; docstring corrected; C2/C7 |
+| F9 | AG denies scoped to `main\|master` where Zoo denies every non-chore/claude/epic target | blind+acceptance | suggestion | **fixed** — folded into F1's lookaheads |
+| F13 | ps1 sync-path call site unpinned (D1 matched the definition); D2 blind to order | test-adequacy | suggestion | **fixed** — D1 asserts the call line after `Sync-ZooSurfaces`; D4 pins the `$LASTEXITCODE` read |
+| F14 | `write()`'s Claude and Antigravity branches never driven | test-adequacy | suggestion | **fixed** — B11 drifts all three files |
+| F15 | `status()` never seen saying DRIFT; CLI untested | test-adequacy | suggestion | **fixed** — C6 (DRIFT with counts), C7 (`--apply` refusal); the remaining CLI rc rows dismissed under §6.5 (code correct, symmetry only) |
+| F16 | Render `main()` never seen exiting 1; `--root` unpinned | test-adequacy | suggestion | **fixed in part** — D3 now demands rc 0 + "in sync"; a drifted-root rc-1 row dismissed under §6.5 (B6 already proves `check()` red) |
+| F19 | sweep.json lacked mutants for the new surfaces | test-adequacy | suggestion | **fixed** — 25 mutants declared from the code, 25/25 killed (see the review sweep under *Mutation sweep*) |
+| F22 | Memory `description:` and MEMORY.md hook still taught "not in sync-agents" | acceptance | suggestion | **fixed** — both corrected; F4 greps frontmatter and the hook |
+| F23 | Suite receipt stamped two commits before the landing sha | acceptance | suggestion | **fixed** — re-stamped at 3f6f42e7 |
+| F26 | `write()` not atomic: from Claude Code the sandbox refuses `.claude/settings.json`, leaving the Zoo list ahead; ps1 swallowed the renderer's exit code | edge+compound | suggestion | **fixed** — all three rendered to text first, Claude file written first (B15 proves a refused Claude write leaves Zoo untouched); ps1 names a failed render |
+| F27 | Five push/branch spellings both Zoo and Antigravity auto-approve (`git push origin refs/heads/main`, `git push origin -d main`, `git push -d origin main`, `git branch --delete --force main`, `git branch --move main x`) | edge | important | **DECISION** — adding them changes a Zoo decision, which plan §5 Q1 froze; recorded in `## Your Actions` with my recommendation (add the five); guide §7 names them as the residual until then |
+
+**Dismissed (relevance gate / §6.5), one line each:** F6 `--check` compares sets while `write()` compares order — the next sync corrects it, no verdict changes (blind+literal+acceptance) · F10 Zoo double-space defeats a deny prefix — pre-existing Zoo grammar, Zoo lists unchanged by this lane, shape law (edge) · F11 Zoo `$()` inside a word not scored — the mirror equals the extracted v3.80.1 parser (edge) · F12 Claude mirror does not split on `&`/newline — no battery row, vendor unverified (edge) · F17 Zoo splitter / Claude boundary / AG token-count untested in the new module — code correct, coverage for symmetry (test-adequacy) · F18 `not:` arm, `_dedupe`, A6 redundancy — nitpicks (test-adequacy) · F21 plan rows A/B wording vs KNOWN and containment; Zoo/Claude set-equality unpinned — prose pins, and a pin that expires at merge; the measured values are in the acceptance matrix below (acceptance) · F24 `agy_fence_apply.py` reads a file not in the tree — superseded artifact history (literal) · F25 `write()` with a wrong `--root` tracebacks — ps1 always passes `$HomeRoot` (edge) · **noise:** F20 jira.md row F "never made" — cut on a live measurement, recorded under Declared vs built (acceptance).
+
+**Why CONCERNS and not PASS.** The engine's floor is CONCERNS: two `important` findings were real and fixed (F1, F2) and one `important` is the operator's decision (F27). Independently of the floor, the Antigravity deny half is proven against the mirror and the guide's model, not against the running extension — the repo holds no first-party statement of how it reads a chained line — so the fence's last inch is the two-command live probe in `## Your Actions`. Nothing else holds the ticket.
+
+### Gates (all bare, at 3f6f42e7 unless noted)
+
+| Gate | Result |
+|---|---|
+| `run_all.py` through `gate_receipt.py` | PASS exit 0 @ 3f6f42e7 (28.8 s at 96837cf2 on the first stamp; re-stamped after the provenance commit) |
+| `test_permission_parity.py` | 58/58 (46 before the review; blocks A 15 · B 20 · C 8 · D 4 · E 5 · F 6) |
+| `test_command_surfaces.py` | 328/328 |
+| `test_settings_allowlist.py` · `test_zoo_permissions.py` | 29/29 · 25/25 |
+| `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings |
+| `permission_render.py --check` | in sync (zoo, claude, antigravity) |
+| `antigravity_permissions_apply.py --status` (live Ubuntu store) | in sync with tracked file — allow 116, deny 384 |
+| `mutation_sweep.py` (25 mutants, 3 files) | 25/25 killed by declared case; restore verified; closing full file 58/58 |
+| `sop_currency.py` | silent with and without the opt-out (the SOP is in the lane's changed set) |
+| `check_links.py --base origin/main` | clean |
+| `py_compile` (7 changed `.py`) · `pwsh` parser on `sync-agents.ps1` | OK · 0 parse errors |
+| Declared Change Set vs diff | undeclared: `.agents/permissions/INDEX.md` (check_maps demanded it), `docs/doc-graph.{json,md}` (commit hook) · unimplemented: `.agents/rules/jira.md` (cut, measured) · incomplete: none |
+
+### Acceptance matrix (plan §2)
+
+| Row | Verdict | Evidence |
+|---|---|---|
+| A — one battery, identical verdicts | **satisfied, modulo the 20 named rulings** | A2–A6, A12–A14 green over 66 destructive · 36 ceremony · 13 unknown; KNOWN pins each Zoo/Claude ruling with the row that would settle it (17 at build, +3 `git add` cluster spellings on Claude by the same ruling) |
+| B — one source, three renders, drift red | **satisfied** | B4–B7, B11, B13–B15; Zoo allow 124/124 and deny 105/105 set-equal to `origin/main`, Claude 141→140 (one duplicate collapsed) — measured by the review, not pinned (a pin would expire at merge); Antigravity keeps every baseline DECISION (B8, behavioural) with 64 rows re-spelled by the review |
+| C — apply is scoped and safe | **satisfied** | C1–C7 |
+| D — rides sync-agents | **satisfied (static)** | D1 call site after the Zoo surfaces, D2 `-Status` path, D3 rc 0, D4 failure named; `pwsh` parses the file |
+| E — `/smh-llm-approvals` retargeted, mirror exact | **satisfied** | E1–E5, 328/328 surfaces |
+| F — the record tells the truth | **satisfied** | F1–F6; the jira.md row was cut on a live measurement (Declared vs built) |
+| G — receipt | **satisfied** | PASS @ 3f6f42e7 |
+
+### Clean-Code Gate — PASS
+
+**Machine floor**
+- run_all.py       : PASS — exit 0 @ 3f6f42e7 (receipt `gates/suite.json`)
+- workflow_lint    : PASS — 0 errors, 0 warnings, 8 info (`--toolkit-only`)
+- sop_currency     : PASS — silent on the lane's changed paths with and without `[sop-ok]`
+- py_compile       : PASS — 7 changed `.py`; `pwsh` parser on `sync-agents.ps1` 0 errors
+- link + anchor    : PASS — `check_links.py --base origin/main` clean
+- door parity      : n/a — no command added, renamed or deleted (the opencode mirror is byte-identical, E4)
+- lint / types     : not applicable to this repo (no venv, no ruff, no tsc)
+
+**Findings**
+| # | file:line | Severity | Category | Finding | Disposition |
+|---|-----------|----------|----------|---------|-------------|
+| 1 | .agents/scripts/permission_render.py:73 | CONCERNS | comment-contract | the review's new docstrings named the date but not the ticket key | applied (`3f6f42e7`) |
+
+The AI-drift half imports Step 1's findings above (no re-walk). Conventions: both-machines probe (`python3 → python → py`) intact; no generated file hand-edited; no new gate; artifacts in the tree. Tail: 1 finding came back, 1 real and fixed, 0 dismissed.
+
+### Step 0.7 — re-derivation
+
+1. `origin/main` = `1909df46` = merge-base; unchanged since the lane was cut, so the radius is the lane's own 35 files and nothing has moved under it.
+2. Zero overlap with any live sibling; `merge-tree` clean; the only sibling (SCC-383) landed before the lane opened.
+3. Level standard, because the radius holds the propagation engine (`sync-agents.ps1`), the SOP, a command surface and three new scripts — more than three source files.
