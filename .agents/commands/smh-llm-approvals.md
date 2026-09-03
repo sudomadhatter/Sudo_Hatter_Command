@@ -70,7 +70,7 @@ Antigravity keeps no ask log. What it keeps is the result of every "always allow
 appended to `userSettings.globalPermissionGrants.allow`, written as a PREFIX (`unsandboxed(git
 status)`, `unsandboxed(acli)`). So the commands the operator had to stop for are exactly the rows in
 the live store that the tracked render does not contain. Read both files and diff the `allow`
-arrays as sets — the rendered side is [`.agents/permissions/antigravity.json`](../permissions/antigravity.json);
+arrays as sets — the rendered side is `.agents/permissions/antigravity.json`;
 `python3 .agents/scripts/antigravity_permissions_apply.py --status` gives the counts. Show the
 store-only rows with their `unsandboxed(`/`command(` wrapper stripped, so he reads commands, not
 grammar. A store that is already `in sync with tracked file` has nothing to show, and says so.
@@ -108,7 +108,7 @@ it — he must name the commands or say "all of them".
 ## Step 3 — Write what he picked
 
 One file, then one render. Since SCC-378 the three platform lists are RENDERED from a single
-source, [`.agents/permissions/families.json`](../permissions/families.json), by
+source, `.agents/permissions/families.json`, by
 `python3 .agents/scripts/permission_render.py`. **Edit the source, never the three rendered files**
 — a hand edit to `.vscode/settings.json`, `.claude/settings.json` or
 `.agents/permissions/antigravity.json` is drift, `permission_render.py --check` turns red, and the
