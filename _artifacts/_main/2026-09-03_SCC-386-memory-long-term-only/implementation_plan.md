@@ -106,3 +106,5 @@ Automated test suite asserting:
 - `verdict`: clean
 
 ### Audit verdict: GO
+
+**Approval (2026-09-04):** "approved" — recorded at <pending>
