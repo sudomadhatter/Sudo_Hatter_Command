@@ -222,17 +222,31 @@ The extension's own "always allow" click records a **prefix**, not the whole com
 status)`, `unsandboxed(acli)` — which is why a fresh install accumulates a usable list by hand and why
 that list is also the record of what the operator had to click through (`/smh-llm-approvals` reads it).
 
-### 3A.2 Two rule types, and which one the click writes
+### 3A.2 Three rule types, and which one the click writes
 
 | Rule | Governs | Written by |
 |---|---|---|
 | `command(X)` | **execution** — may this command run at all | the render, from the source |
 | `unsandboxed(X)` | **escaping the sandbox** — may it run outside container isolation when sandbox mode is on | the "always allow" click, because the default (no `--sandbox`) makes every command an unsandboxed one |
+| `read_file(X)` | **reading a file** outside the workspace | the "always allow" click on a blocked read — and, since SCC-387, the render |
 
 A fresh install therefore fills the *escape* list and never the *execution* list — measured 2026-09-03:
 59 `unsandboxed(...)` grants, 0 `command(...)`, 0 denies, and the operator approving essentially every
 command. The render writes **both** types for every allow family, so the fence holds whether or not
 `--sandbox` is ever used.
+
+**File rules are a different kind, matched differently.** Reading and writing inside the active
+workspace is allowed automatically; everything outside it defaults to Ask, and the Claude Code memory
+store and session transcripts are outside it. The vendor documents the target as `read_file(/path)`,
+`read_file(dir)` or `read_file(*)` — *"Match absolute paths or paths relative to project workspace
+roots. Grants recursive read access to all contained files/folders"* — so a file target is a **path**,
+not the per-token anchored regex a command gets, and a **directory grant is recursive**. Confirmed
+against the shipped matcher: `~/.gemini/bin/agy` carries the literal grant formats `read_file(%s)`,
+`write_file(%s)`, `execute_url(%s)` and `mcp(*)` beside `isFilePathAllowed`, `matchesAllowedPath` and
+`isPathCovered`. A click writes the one resolved file path it was blocked on, which buys exactly that
+file; the source writes the folder, once. See `grant: "read_file"` in
+[`families.json`](../../.agents/permissions/families.json) — such a row renders on Antigravity alone
+and takes no `command(`/`unsandboxed(` twins.
 
 ⛔ **Sandbox mode does NOT auto-approve.** Claude's `autoAllowBashIfSandboxed` lets a contained command
 run without asking; Antigravity's documentation says the opposite in plain words — approval rules apply
@@ -357,7 +371,7 @@ Behaviors that follow (each verified by executing the real extracted code):
 ## 7. The honest security model — what these lists are and are not
 
 The lists are a **friction dial plus a fence against common destructive spellings — not a
-sandbox.** Three residuals are structural and accepted, because the real protections live
+sandbox.** Five residuals are structural and accepted, because the real protections live
 elsewhere:
 
 - **Interpreters are approve-anything.** `python3 `/`python ` are allowed (the whole toolkit runs

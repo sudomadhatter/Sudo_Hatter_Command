@@ -12,7 +12,9 @@ This script renders all three from ``.agents/permissions/families.json``. A row 
 a FAMILY - an intent, with ``id``, ``cmd``, ``why`` - and each platform's exact rule text either
 comes from an explicit ``render: {zoo: [...], claude: [...], antigravity: [...]}`` (the rows
 seeded from the pre-SCC-378 lists carry their historical spellings this way) or is DERIVED from
-``cmd`` by the platform's grammar. ``only: [..]`` / ``not: [..]`` scope a row to platforms when
+``cmd`` by the platform's grammar. ``grant: "read_file"`` makes the row a FILE grant instead of a
+command one - Antigravity fences reads of anything outside the workspace, and that is a different
+rule kind, not a different spelling (SCC-387). ``only: [..]`` / ``not: [..]`` scope a row to platforms when
 a row is genuinely one-platform (Zoo's longest-prefix re-allows, Antigravity's target-scoped
 denies). An honest source over a clean one that drifts in the renderers.
 
@@ -54,6 +56,13 @@ def load_source(root: Path = REPO_ROOT) -> dict:
     return json.loads((root / SOURCE_REL).read_text(encoding="utf-8"))
 
 
+GRANTS = ("command", "read_file")
+
+
+def _grant(row: dict) -> str:
+    return row.get("grant", "command")
+
+
 def _applies(row: dict, platform: str) -> bool:
     if "only" in row and platform not in row["only"]:
         return False
@@ -86,6 +95,8 @@ def _validate_source(src: dict) -> None:
             seen.add(rid)
             if not isinstance(row.get("cmd"), str) or not row["cmd"].strip():
                 raise ValueError(f"families.json: row {rid!r} has an empty cmd")
+            if _grant(row) not in GRANTS:
+                raise ValueError(f"families.json: row {rid!r} grant {row['grant']!r} is not one of {GRANTS}")
             for platform, rules in (row.get("render") or {}).items():
                 if isinstance(rules, str) or not all(isinstance(r, str) for r in rules):
                     raise ValueError(f"families.json: row {rid!r} render.{platform} must be a list of strings")
@@ -95,6 +106,8 @@ def _validate_source(src: dict) -> None:
 # Only reached for a row WITHOUT an explicit render for that platform.
 
 def _derive_zoo(row: dict, kind: str, env_twin: str) -> list[str]:
+    if _grant(row) == "read_file":
+        return []                                  # neither platform fences a file read by path
     cmd = row["cmd"].rstrip()
     if kind == "allow":
         # a prefix ending in a path/assignment separator takes NO trailing space (`backend/.venv/bin/`,
@@ -107,6 +120,8 @@ def _derive_zoo(row: dict, kind: str, env_twin: str) -> list[str]:
 
 
 def _derive_claude(row: dict, kind: str) -> list[str]:
+    if _grant(row) == "read_file":
+        return []                                  # see _derive_zoo
     if kind == "deny":
         return []                                  # Claude carries no deny list (guide s3)
     cmd = row["cmd"].rstrip()
@@ -130,6 +145,16 @@ def _ag_token(tok: str, kind: str, last: bool) -> str:
 
 
 def _derive_antigravity(row: dict, kind: str, env_twin: str) -> list[str]:
+    if _grant(row) == "read_file":
+        # ⛔ NOT a command rule and NOT regex-escaped. The vendor documents file targets as
+        # `read_file(/path)`, `read_file(dir)` or `read_file(*)` - "Match absolute paths or paths
+        # relative to project workspace roots. Grants recursive read access to all contained
+        # files/folders" (antigravity.google/docs/permissions, read 2026-09-04), and the shipped
+        # matcher carries `read_file(%s)` beside `isFilePathAllowed`/`matchesAllowedPath`/
+        # `isPathCovered` - path coverage, not the per-token anchored regex commands get. So the
+        # path goes in verbatim, it takes no `command(`/`unsandboxed(` twins, and one DIRECTORY row
+        # covers every file under it (SCC-387).
+        return [f"read_file({row['cmd'].rstrip()})"]
     # each token is an anchored REGEX on this platform, so a derived row escapes per token
     # (`backend/.venv/bin/` -> `backend/\.venv/bin/.*`); explicit renders are written already-escaped
     toks = row["cmd"].split()

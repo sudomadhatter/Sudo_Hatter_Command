@@ -117,7 +117,8 @@
         "command(\\.venv/bin/ruff check)",
         "unsandboxed(\\.venv/bin/ruff check)",
         "command(firebase/tests/node_modules/\\.bin/firebase emulators:exec)",
-        "unsandboxed(firebase/tests/node_modules/\\.bin/firebase emulators:exec)"
+        "unsandboxed(firebase/tests/node_modules/\\.bin/firebase emulators:exec)",
+        "read_file(/home/dlohn/.claude/projects/-home-dlohn-Sudo-Hatter-Command/memory)"
       ],
       "deny": [
         "command(rm -[a-zA-Z]*[rR][a-zA-Z]*)",
