@@ -100,6 +100,10 @@ the Claude half. One changelog line.
 - EDIT `.opencode/commands/smh-llm-approvals.md` — the opencode door is a FULL byte-identical MIRROR of the command body (pinned by E4); no `pwsh` here to regenerate it, so it is copied in the same commit → 3
 - EDIT `.agents/scripts/tests/test_permission_parity.py` — the G block (G0–G8) and E6/E7/E8 → the assert-first section
 - EDIT `.agents/scripts/INDEX.md` — one row for the new script, the convention every script in that folder follows → 1
+- EDIT `.agents/commands/INDEX.md` — row 65 still enumerated three sources and one list → 2
+- EDIT `.agents/skills/smh-llm-approvals/SKILL.md` — a generated launcher carrying the door's FULL description → 2
+- EDIT `.claude/skills/smh-llm-approvals/SKILL.md` — the second generated launcher carrying the FULL description; the first 130 characters are unchanged, so the two SHORTENED menu mirrors (`.agents/workflows/`, `.roo/commands/`) stay byte-valid and are deliberately not touched → 2
+- NEW `_artifacts/_main/2026-09-04_claude-approvals-harvest/sweep.json` — the ten-mutant table, run by `mutation_sweep.py` → the assert-first section
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — §13 gains a **Claude Code's approval lists** row beside Zoo's and Antigravity's; the `/smh-llm-approvals` prose, the quick-reference row and the command-table row gain the Claude half → 4
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — one line → 4
 - EDIT `_artifacts/_main/INDEX.md` — this lane's row → 4
