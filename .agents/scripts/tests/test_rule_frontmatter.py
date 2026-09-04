@@ -28,6 +28,7 @@ Stdlib only, no pytest — same constraint as everything else in this suite.
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -36,13 +37,38 @@ from _harness import Cases
 ROOT = Path(__file__).resolve().parents[3]
 RULES = ROOT / ".agents" / "rules"
 
-LOAD_ROW = re.compile(r"^\|\s*`([A-Za-z0-9_\-]+)\.md`\s*\|\s*([^|]+?)\s*\|", re.M)
+LOAD_ROW = re.compile(r"^\|\s*`([A-Za-z0-9_.\-]+)\.md`\s*\|\s*([^|]+?)\s*\|", re.M)
+
+
+def _main_checkout() -> Path:
+    try:
+        out = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--git-common-dir"],
+                             capture_output=True, text=True, timeout=10)
+        if out.returncode == 0 and out.stdout.strip():
+            g = Path(out.stdout.strip())
+            if not g.is_absolute():
+                g = ROOT / g
+            return g.resolve().parent
+    except Exception:
+        pass
+    return ROOT
 
 
 def _index_loads() -> dict[str, str]:
     """{rule stem: 'floor' | 'protocol' | 'on-demand'} from the INDEX table."""
     out = {}
     for name, load in LOAD_ROW.findall((RULES / "INDEX.md").read_text(encoding="utf-8")):
+        low = load.lower()
+        out[name] = "floor" if "floor" in low else "protocol" if "protocol" in low else "on-demand"
+    return out
+
+
+def _project_index_loads(index_path: Path) -> dict[str, str]:
+    """{rule stem: 'floor' | 'protocol' | 'on-demand'} from a project INDEX table."""
+    out = {}
+    if not index_path.exists():
+        return out
+    for name, load in LOAD_ROW.findall(index_path.read_text(encoding="utf-8")):
         low = load.lower()
         out[name] = "floor" if "floor" in low else "protocol" if "protocol" in low else "on-demand"
     return out
@@ -205,6 +231,71 @@ def main() -> int:
     c.check("rules/INDEX.md's command-shape row points at the nag",
             bool(row) and "shape-guard.py" in row[0],
             f"the INDEX row does not name the hook: {row[:1]}")
+
+    # ── Tier-2 Project rules check (SCC-388 / SCC-391) ──
+    # Every maintained project under Projects/ carrying an .agents/ directory must:
+    # 1. Have a Load row in .agents/INDEX.md for every rule on disk in .agents/rules/
+    # 2. Every rule row in .agents/INDEX.md must point to a rule that exists on disk (or be template guidance)
+    # 3. Carry NO copies of lobby tier-1 rules (project-law.md)
+    # 4. If rules exist on disk, .agents/INDEX.md must not have zero rule rows
+    tier1_stems = {p.stem for p in on_disk}
+    projects_dir = _main_checkout() / "Projects"
+    unrouted_project_rules = []
+    dangling_project_rows = []
+    forbidden_tier1_copies = []
+    empty_project_indexes = []
+
+    if projects_dir.is_dir():
+        for p in sorted(projects_dir.iterdir()):
+            if not p.is_dir() or p.name == "Fresh_Workspace_BMAD":
+                continue
+            p_agents = p / ".agents"
+            if not p_agents.is_dir():
+                continue
+            p_rules = p_agents / "rules"
+            p_index = p_agents / "INDEX.md"
+            if not p_rules.is_dir():
+                continue
+            p_loads = _project_index_loads(p_index)
+            p_on_disk = sorted(f for f in p_rules.glob("*.md") if f.name != "INDEX.md")
+
+            # Check for zero rows when rules exist
+            if p_on_disk and not p_loads:
+                empty_project_indexes.append(f"{p.name} ({len(p_on_disk)} rules on disk, 0 in INDEX.md)")
+
+            # Check unrouted rules
+            for f in p_on_disk:
+                if f.stem not in p_loads:
+                    unrouted_project_rules.append(f"{p.name}: {f.name}")
+
+            # Check dangling rows
+            for stem in p_loads:
+                # template guidance row in skeleton is permitted if marked Create this first
+                if stem == "constitution.project" and not (p_rules / f"{stem}.md").exists():
+                    if p_index.exists() and "create this first" in p_index.read_text(encoding="utf-8").lower():
+                        continue
+                if not (p_rules / f"{stem}.md").exists():
+                    dangling_project_rows.append(f"{p.name}: {stem}.md")
+
+            # Check tier-1 forbidden copies
+            for f in p_on_disk:
+                if f.stem in tier1_stems:
+                    forbidden_tier1_copies.append(f"{p.name}: {f.name}")
+
+    c.check("every project rule on disk has a Load row in that project's .agents/INDEX.md",
+            not unrouted_project_rules, str(unrouted_project_rules))
+    c.check("every project .agents/INDEX.md row points at a rule that exists",
+            not dangling_project_rows, str(dangling_project_rows))
+    c.check("⛔ no project carries a copy of a tier-1 lobby rule (project-law.md)",
+            not forbidden_tier1_copies, str(forbidden_tier1_copies))
+    c.check("no project has zero rule rows in .agents/INDEX.md when rules exist on disk",
+            not empty_project_indexes, str(empty_project_indexes))
+
+    # ── Protocol size figure in AGENTS.md §3 ──
+    agents_md = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    c.check("AGENTS.md §3 protocol-size figure is not stale (~44 KB was 2.1x understated)",
+            "~44 KB" not in agents_md,
+            "AGENTS.md still says '~44 KB' (measured ~96.6 KB)")
 
     return c.finish()
 

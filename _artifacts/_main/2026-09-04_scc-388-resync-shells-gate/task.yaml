@@ -1,0 +1,6 @@
+task_key: SCC-388
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-388-resync-shells-gate
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: [SCC-389, SCC-390, SCC-391]

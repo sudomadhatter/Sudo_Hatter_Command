@@ -271,6 +271,10 @@ ABSENT_BY_DESIGN = {
     # clean tree never has it. Naming it is the doc's job; creating it is the run's.
     "_artifacts/_autopilot-run.log":
         "runtime output - written by a live autopilot run, gitignored",
+    # Gitignored machine-local file (SCC-392): exists only on machines where local Claude settings
+    # are written, gitignored by design, so a clean tree never has it.
+    ".claude/settings.local.json":
+        "gitignored machine-local file - written by Claude Code per-project, never tracked (SCC-392)",
     # ⭐ PROVENANCE, and the T4 lesson one tier down. These two folders were emptied by
     # SCC-74, and the docs that say "consolidated FROM here" are doing their job. Flagging
     # them pushes an author to delete the sentence explaining where everything went --
