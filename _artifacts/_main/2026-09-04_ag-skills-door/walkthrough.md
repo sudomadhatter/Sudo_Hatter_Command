@@ -140,6 +140,54 @@ sync-agents: .opencode\commands -> 60 cmds
 (`sync-agents.ps1:114`), so a bare sync here would write **this machine's** global caches — and
 would run the retirement purge — from an unlanded branch.
 
+### The floor — and the one failure that is not this lane's
+
+`gate_receipt.py run --task SCC-394 --gate suite … -- run_all.py` → `gates/suite.json`:
+
+```
+72/73 files passed  FAILED: test_rule_frontmatter.py
+[FAIL] every project rule on disk has a Load row in that project's .agents/INDEX.md
+[FAIL] no project carries a copy of a tier-1 lobby rule (project-law.md)
+[FAIL] no project has zero rule rows in .agents/INDEX.md when rules exist on disk
+        ['sudo-command-center (26 rules on disk, 0 in INDEX.md)']
+```
+
+**It is pre-existing and outside this repo.** Run from the MAIN checkout at this lane's base sha
+`eee79727`, with none of this ticket's changes present, the same file fails with the same three
+messages and the same 20/23. The subject is `Projects/sudo-command-center`, a separate git repo with
+its own board, carrying 26 copies of tier-1 lobby rules that `project-law.md` forbids and listing
+none of them in its `INDEX.md`. Nothing in this ticket's 158-row change set touches it, and a lobby
+ticket editing files inside it produces a commit no ticket of theirs accounts for — the same
+constraint the plan's Port section already records for that repo.
+
+The receipt therefore records **FAIL**, which is the mechanism working rather than a claim about
+this diff: it reports what the suite actually said. Every other file is green, including all eight
+this lane edited. The remedy is one line on the port decision below — that repo needs a ticket of
+its own before 2026-11-01 anyway, and the rule-copy drift belongs in the same one.
+
+### The other three gates
+
+```
+python3 .agents/scripts/workflow_lint.py --toolkit-only   -- 0 error(s), 0 warning(s), 8 info --
+python3 .agents/scripts/check_maps.py --depth3-only --strict   (silent, exit 0)
+python3 .agents/scripts/check_links.py --base origin/main  8 unresolved path(s), 0 bad anchor(s)
+```
+
+The link check's 8 break down as **5 pre-existing** and **3 inside this lane's own plan document**:
+
+- `.agents/INDEX.md:11 -> reference/INDEX.md` — `.agents/reference/` does not exist; SCC-74 retired
+  that folder and left the row. It sat at line 12 of the same file on `main` and only surfaces now
+  because the file entered this diff. **Left alone deliberately** — a fossil row in a file I happen
+  to be editing is still orthogonal work. One line to delete, on the rolling ticket.
+- `smh-update-maps-indexes.md:279` (and its opencode mirror) `-> _artifacts/active-context.md`, and
+  `file_folder_structure+maintaining.md:11` / `:340` — all four present verbatim in the base
+  versions of those files, all four pointing at paths that do not exist on `main` either.
+- `implementation_plan.md:360 -> workflows/INDEX.md` is the `DELETE` row of the Declared Change Set.
+  A delete ticket's change set names the paths it removes, so this link is dead *because the ticket
+  worked*; `:154` and `:981` are prose mentions of a glob example and of a file that lives on the
+  `claude/teaching-edition` branch. The plan is **not** edited to silence them — editing an approved
+  plan re-arms the plan-first gate.
+
 ### Declared Change Set vs the real diff
 
 158 declared. **One file in the diff is not in the plan:** `.claude/rules/sop-currency.md`, the
@@ -168,7 +216,10 @@ decisions and the one measurement only you can take.
 - [ ] **Decide whether `Projects/sudo-command-center` and `Projects/Fresh_Workspace_BMAD` get the
       workflows-to-skills port before 2026-11-01.** Both carry `.agents/workflows/` (41 and 24
       files), both are separate repos with their own boards, and both go dark on that date.
-      `Fresh_Workspace_BMAD` is a frozen template whose disposal is already yours.
+      `Fresh_Workspace_BMAD` is a frozen template whose disposal is already yours. **Fold the
+      rule-copy drift into the same decision:** `sudo-command-center` also carries 26 copies of
+      tier-1 lobby rules with zero rows in its `INDEX.md`, which fails `test_rule_frontmatter.py`
+      today on `main` and did before this lane opened.
 - [ ] **On the other machine: pull and run `/smh-sync-agents` from the lobby**, so its retired
       Antigravity cache is purged too. Caches are per machine; git cannot carry them.
 - [ ] **`claude/teaching-edition` must land AFTER this** and must not resolve its conflicts by
