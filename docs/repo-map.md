@@ -11,7 +11,7 @@
 | Route / "what should I work on" / ownership | `router.md` (lobby map) |
 | Home-base law + gates + persistence | `AGENTS.md` (`CLAUDE.md` / `GEMINI.md` are thin adapters) |
 | The actual projects (each its own git repo + own repo-map) | `Projects/<name>/` → read that project's `docs/repo-map.md` |
-| Master toolkit (single source of authorship) | `.agents/` — rules · commands · skills · workflows · bmad · scripts · templates |
+| Master toolkit (single source of authorship) | `.agents/` — rules · commands · skills · bmad · scripts · templates |
 | Synced engine mirrors (so `/commands` + skills resolve here) | `.claude/`, `.opencode/` |
 | Shared memory (plans · walkthroughs · handoffs · ledger) | `_artifacts/` (`_main/` = home-base work; `<project>/` = per-project; `opencode/` = opencode's mirror) |
 | Home-base docs (this map · workspace standard) | `docs/` |
@@ -66,7 +66,7 @@ hint when it is stale. Tier-2/disposable — the maps above stay canonical. Full
 >
 > **Doc wiring (the prose layer the code graph does not model):** `docs/doc-graph.md` (+ `doc-graph.json`)
 > is the owned, deterministic, no-LLM map of which `.md` references which across `.agents/` — hubs, plus a
-> broken-path / ambiguous-ref report. Rebuild after editing rules/workflows:
+> broken-path / ambiguous-ref report. Rebuild after editing rules/commands:
 > `python3 .agents/scripts/generate_doc_graph.py` (PC: `python`). Source:
 > `.agents/scripts/generate_doc_graph.py`.
 

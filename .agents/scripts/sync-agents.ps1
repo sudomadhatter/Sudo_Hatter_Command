@@ -11,14 +11,14 @@
   .agents\skills\<name>\SKILL.md as /<name> (SCC-394). opencode reads
   commands\ verbatim. This copies commands / skills / hooks /
   opencode-agents into the target's .claude and .opencode dirs (Claude /commands + skills + hooks resolve there)
-  and, for a LOBBY sync, also refreshes the machine-global caches so opencode, Antigravity, and Codex see the
-  same set Claude does.
+  and, for a LOBBY sync, also refreshes the machine-global opencode cache and the Codex bmad-* skills mirror.
+  Antigravity keeps no cache of ours: it reads .agents\skills natively out of the workspace.
 
   THE DOOR MODEL (SCC-66): one door per platform per command. Claude and Codex enter through a LAUNCHER
   SKILL (generated per claude/codex/antigravity-eligible command into .agents\skills, tree-copied to
   .claude\skills; hand-authored SKILL.md always wins); Antigravity reads that SAME skill natively;
-  opencode through its command mirror; Zoo through its
-  workflow mirror. Publishing .claude\commands and ~\.codex\prompts is RETIRED - both double-doored every
+  opencode through its command mirror; Zoo through its generated launcher in .roo\commands.
+  Publishing .claude\commands, ~\.codex\prompts and .agents\workflows is RETIRED - each double-doored every
   command beside its skill. Codex reads AGENTS.md + .agents\skills natively; the only global pushed for it
   is the bmad-* skills mirror -> ~\.codex\skills (BMAD installs to .claude\skills, which Codex does not read).
 
@@ -568,6 +568,7 @@ function New-LauncherSkillStub {
 #   codex       -> the SAME launcher skill, read natively from .agents\skills
 #   antigravity -> the SAME launcher skill, read natively from .agents\skills (SCC-394)
 #   opencode    -> the command mirror in .opencode\commands (unchanged)
+#   zoo         -> the generated launcher in .roo\commands (Sync-ZooSurfaces)
 # Publishing commands into .claude\commands, ~/.codex/prompts and .agents\workflows is RETIRED - each of
 # them double-doored every command beside its skill. This stage generates the skill door for every
 # claude/codex/antigravity-eligible command:
@@ -632,7 +633,7 @@ function Sync-LauncherSkills {
 #                              mechanical in Zoo instead of depending on the agent following the
 #                              AGENTS.md pointer chain (SCC-346 Part F).
 # Generated launchers carry the GENERATED marker and are pruned when their source retires - same
-# contract as the Antigravity workflow mirror. Hand-authored files without the marker are never
+# contract as the launcher skills. Hand-authored files without the marker are never
 # touched. ASCII-only literals (PS 5.1 would mangle non-ASCII into mojibake in every generated file).
 # A rule COPY for platform injection carries the LAW, not the routing metadata: the leading YAML
 # frontmatter (name:/description:/trigger:) only means something to the platforms that load rules
@@ -1195,7 +1196,10 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
                  Where-Object { $_.Name -notmatch '^bmad-' })
     if (-not $WhatIf) { $staleWf | ForEach-Object { Remove-Item $_.FullName -Force } }
     else { $staleWf | ForEach-Object { Write-Host ("WHATIF: would purge retired antigravity workflow '{0}'" -f $_.Name) } }
-    if ($staleWf.Count) { Write-Host ("sync-agents: antigravity global cache RETIRED - purged {0} workflow door(s); Antigravity's door is .agents/skills" -f $staleWf.Count) }
+    # PAST TENSE ONLY ON A REAL RUN. A dry run that reports "purged 40" in the past tense is
+    # indistinguishable from the real thing on the one irreversible action in this file.
+    $agVerb = if ($WhatIf) { 'would purge' } else { 'purged' }
+    if ($staleWf.Count) { Write-Host ("sync-agents: antigravity global cache RETIRED - {0} {1} workflow door(s); Antigravity's door is .agents/skills" -f $agVerb, $staleWf.Count) }
   }
 
   # Codex prompts cache RETIRED (SCC-66): /prompts:<name> is Codex's deprecated door and double-doored

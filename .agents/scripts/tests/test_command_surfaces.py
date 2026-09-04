@@ -1328,7 +1328,14 @@ def main() -> int:
             src = (ROOT / ".agents/scripts/sync-agents.ps1").read_text(encoding="utf-8")
             i = src.index("function Get-AgDescription")
             fn = src[i:src.index("\n}", i) + 2]
-            probes = [d for d in AG_LIVE_DESCS] + [ASTRAL]
+            # ⛔ A SECOND ASTRAL PROBE, SHORT IN CODE POINTS AND LONG IN UTF-16 UNITS. `ASTRAL`
+            # is over budget by BOTH readings, so it takes the cut path either way and cannot
+            # separate them — measured: changing the guard from `len(b) // 2` (UTF-16 units, what
+            # .NET counts) to `len(desc)` (code points, what Python counts) left the suite green.
+            # 70 astral characters are 70 code points and 140 UTF-16 units: Python's twin must
+            # still choose to CUT, exactly as `Get-AgDescription` does, or the two disagree here.
+            NARROW = "a " + "\U0001F680" * 70
+            probes = [d for d in AG_LIVE_DESCS] + [ASTRAL, NARROW]
             with TempDir() as _t:
                 sp = _t / "probe.ps1"
                 dp = _t / "in.txt"
@@ -1354,6 +1361,12 @@ def main() -> int:
             c.check("U7 CONTROL: the astral fixture is genuinely over budget and non-BMP",
                     len(ASTRAL) > AG_DESC_MAX and max(ord(ch) for ch in ASTRAL) > 0xFFFF,
                     f"{len(ASTRAL)} chars, max ord {max(ord(ch) for ch in ASTRAL):#x}")
+            c.check("U7 CONTROL: the NARROW fixture separates code points from UTF-16 units",
+                    len(NARROW) <= AG_DESC_MAX
+                    and len(NARROW.encode("utf-16-le")) // 2 > AG_DESC_MAX,
+                    f"{len(NARROW)} code points vs {len(NARROW.encode('utf-16-le')) // 2} UTF-16 "
+                    f"units — the probe only reaches the length guard while it is SHORT by one "
+                    f"reading and LONG by the other")
             c.check("U7 CONTROL: the live probe set is a real one (not an empty differential)",
                     len(AG_LIVE_DESCS) >= 30
                     and sum(1 for d in AG_LIVE_DESCS if len(d) > AG_DESC_MAX) >= 10,
@@ -2481,31 +2494,55 @@ def main() -> int:
         # its first run — the delete undone by the very command that is supposed to have retired
         # it, silently, on the operator's machine. Every wire is named here, so the delete and the
         # engine change cannot land apart.
+        # ⛔ CASE-INSENSITIVE, AND QUOTE-AGNOSTIC — both learned by mutation (SCC-394 review,
+        # literal-correctness lens). The first cut matched `$excluded` case-sensitively against a
+        # case-INSENSITIVE language, and matched `Join-Path $x "workflows"` with DOUBLE quotes
+        # only — while every surviving emitter in this very engine spells its dirs single-quoted
+        # (`Join-Path $MasterDir 'commands'`, `'skills'`). A working workflow emitter rewritten in
+        # the file's own house style — different function name, `$Excluded`, single quotes — was
+        # injected and this sweep returned `[]`. The A0 control below now carries that exact
+        # mutant, so the detector can never again be narrower than the style the file is written in.
         def _ag_residue(src: str, wf_exists: bool) -> list[str]:
             out = []
             if wf_exists:
                 out.append(".agents/workflows/ still on disk")
+            # ⛔ WHOLE TOKENS, not substrings. A bare `in` for `$excluded` matches `$ExcludeDirs`
+            # — a live, legitimate parameter of `Sync-Dir` — so the sweep reported a wire that had
+            # been deleted and would have stayed red forever. `(?![\w-])` is what ends the token
+            # in a language where `-` is part of a function name.
             for tok in ("Sync-AntigravityWorkflowMirror", "$GlobalWfSrc", "$excluded"):
-                if tok in src:
+                if re.search(re.escape(tok) + r"(?![\w-])", src, re.I):
                     out.append(f"engine still names {tok}")
-            if re.search(r"Name\s*=\s*'antigravity'", src):
+            if re.search(r"Name\s*=\s*'antigravity'", src, re.I):
                 out.append("$caches still carries an antigravity row")
-            if re.search(r'Join-Path\s+\$\w+\s+"workflows"', src):
-                out.append('engine still resolves a "workflows" dir under the master')
-            if re.search(r"agents[\\/]workflows", src):
+            # THE LOAD-BEARING WIRE: whatever the function is called, an emitter that rebuilds the
+            # surface must resolve a directory named `workflows` under the master. Either quote.
+            if re.search(r"""Join-Path\s+\$\w+\s+['"]workflows['"]""", src, re.I):
+                out.append("engine still resolves a 'workflows' dir under the master")
+            if re.search(r"agents[\\/]workflows", src, re.I):
                 out.append(r"engine still names the .agents\workflows surface")
             return out
 
-        c.check("CS-18 A0 CONTROL: the residue sweep sees every wire, and none of the survivors",
-                len(_ag_residue('$GlobalWfSrc = Join-Path $Master "workflows"\n'
-                                "@{ Name = 'antigravity'; Src = $GlobalWfSrc }\n"
-                                "function Sync-AntigravityWorkflowMirror {\n"
-                                "$excluded = @('INDEX.md')\n", True)) == 6
+        # The old-spelling mutant (what the retired code actually looked like)...
+        _m_old = ('$GlobalWfSrc = Join-Path $Master "workflows"\n'
+                  "@{ Name = 'antigravity'; Src = $GlobalWfSrc }\n"
+                  "function Sync-AntigravityWorkflowMirror {\n"
+                  "$excluded = @('INDEX.md')\n")
+        # ...and the HOUSE-STYLE mutant, which is what a rebuild would actually be written like
+        # today: a new name, PowerShell's own casing freedom, and single quotes like every other
+        # emitter in the file. This one defeated the first cut of the sweep entirely.
+        _m_house = ("function Sync-AgWorkflowDoors {\n"
+                    "  $Excluded = @('INDEX.md')\n"
+                    "  $wfDir = Join-Path $MasterDir 'workflows'\n")
+        c.check("CS-18 A0 CONTROL: the sweep sees BOTH spellings of a restored wire, and none of the survivors",
+                len(_ag_residue(_m_old, True)) == 6
+                and len(_ag_residue(_m_house, False)) == 2
                 and not _ag_residue("$skDir = Join-Path $MasterDir 'skills'\n"
                                     "@{ Name = 'opencode'; Src = $GlobalCmdSrc }\n"
                                     "$roo = Join-Path $RepoRoot '.roo/commands'\n", False),
-                "a residue sweep blind to a restored wire passes on the engine it exists to "
-                "guard; one that fires on the surviving skill/opencode/Zoo code blocks every sync")
+                f"old-spelling mutant -> {_ag_residue(_m_old, True)}; house-style mutant -> "
+                f"{_ag_residue(_m_house, False)} - a residue sweep narrower than the style this "
+                f"engine is written in passes on the rebuild it exists to catch")
         _residue = _ag_residue(sync, (ROOT / ".agents/workflows").exists())
         c.check("CS-18 A the workflow door and every wire that fed it are gone",
                 not _residue,
@@ -2555,35 +2592,137 @@ def main() -> int:
         # their launcher bodies point at command files that still exist, so they keep WORKING —
         # invisibly wrong until 2026-11-01. The purge is modelled on the `~/.codex/prompts`
         # retirement (SCC-66) that already lives twenty lines below it.
+        # ⛔ ANCHORED ON THE VARIABLE, NOT ON A POSITIONAL WINDOW — and this is the finding the
+        # review turned up by mutation, not by reading (SCC-394, test-adequacy + literal-correctness
+        # lenses agreeing). The first cut took a 900-char window from the first `global_workflows`
+        # and asked whether `Remove-Item`, `bmad-` and `RETIRED` appeared anywhere in it. They do —
+        # but they are supplied by the `~/.codex/prompts` retirement TWENTY LINES BELOW, which sits
+        # inside that window and has the identical shape. Measured: dropping the antigravity purge's
+        # `-notmatch '^bmad-'` filter, and replacing its `Test-Path` guard with `if ($true)`, each
+        # left the suite at 300/300. Both mutants destroy the operator's machine state — one deletes
+        # BMAD's own global install, the other terminates every sync on a box that never ran
+        # Antigravity. A window that reaches a neighbour is not a scope; the variable name is.
+        _agvar = re.search(
+            r"\$(\w+)\s*=\s*Join-Path\s+\$UserHome\s+[\"']\.gemini[^\"']*global_workflows[\"']", sync)
+        c.check("CS-18 C0 the retired-cache path is assigned to a named variable",
+                _agvar is not None,
+                "no `$<var> = Join-Path $UserHome '.gemini...global_workflows'` in the engine - "
+                "every check below scopes itself by that variable's name, so without it they would "
+                "silently widen to the whole file")
         _purge = None
-        for _m in re.finditer(r"global_workflows", sync):
-            _span = sync[_m.start(): _m.start() + 900]
-            if "Remove-Item" in _span and "bmad-" in _span and "RETIRED" in _span:
-                _purge = (_m.start(), _m.start() + 900)
-                break
-        c.check("CS-18 C1 the one-time retirement purge exists as CODE",
-                _purge is not None,
-                "no removal of our non-bmad-* *.md under ~/.gemini/antigravity/global_workflows "
-                "that prints a RETIRED line — a machine that synced before this ticket keeps "
-                "offering the 40 retired doors, and nothing else on any surface removes them")
-        c.check("CS-18 C1b ...and Test-Path guards it (Remove-Item THROWS on a missing path)",
-                _purge is not None and "Test-Path" in sync[max(0, _purge[0] - 400): _purge[1]],
-                "$ErrorActionPreference = 'Stop' (sync-agents.ps1:81) makes Remove-Item on an "
-                "absent path a TERMINATING error, so an unguarded purge crashes the whole sync on "
-                "any machine that has never run Antigravity — measured on this box")
+        if _agvar:
+            # The region is this assignment up to the NEXT `Join-Path $UserHome` (the codex prompts
+            # cache), or end of file. Nothing a neighbour says can satisfy a check about this block.
+            _nxt = sync.find("Join-Path $UserHome", _agvar.end())
+            _purge = (_agvar.start(), _nxt if _nxt > 0 else len(sync))
+        _region = sync[_purge[0]:_purge[1]] if _purge else ""
+        _agname = _agvar.group(1) if _agvar else "\x00"
+        _need_purge = {"Remove-Item": "Remove-Item" in _region,
+                       "the bmad-* guard": re.search(r"-notmatch\s+'\^bmad-'", _region) is not None,
+                       "a RETIRED line": "RETIRED" in _region}
+        c.check("CS-18 C1 the one-time retirement purge exists as CODE, in its own block",
+                _purge is not None and all(_need_purge.values()),
+                f"missing from the ${_agname} block: "
+                f"{[k for k, v in _need_purge.items() if not v]} - a machine that synced before "
+                f"this ticket keeps offering the 40 retired doors, and nothing else removes them; "
+                f"without the bmad-* guard the purge deletes BMAD's own global install")
+        c.check("CS-18 C1b ...and Test-Path guards THAT path by name (Remove-Item THROWS on a missing one)",
+                _purge is not None
+                and re.search(r"Test-Path\s+\$" + re.escape(_agname) + r"\b", _region) is not None,
+                f"no `Test-Path ${_agname}` inside its own block. $ErrorActionPreference = 'Stop' "
+                f"(sync-agents.ps1:81) makes Get-ChildItem/Remove-Item on an absent path a "
+                f"TERMINATING error, so an unguarded purge takes the WHOLE sync down on any machine "
+                f"that has never run Antigravity - measured on this box")
         _gem = [(m.start(),
                  sync[sync.rfind("\n", 0, m.start()) + 1:
                       (sync.find("\n", m.start()) if sync.find("\n", m.start()) > 0 else len(sync))
                       ].strip())
                 for m in re.finditer(r"\.gemini", sync)]
-        _gem_other = [ln for pos, ln in _gem
-                      if not (_purge and _purge[0] - 400 <= pos <= _purge[1])]
+        _gem_other = [ln for pos, ln in _gem if not (_purge and _purge[0] <= pos < _purge[1])]
         c.check("CS-18 C the purge is the engine's ONLY .gemini code — no global cache is written",
                 not _gem_other and not re.search(r"config[\\/]skills", sync),
-                f"{len(_gem_other)} .gemini site(s) outside the purge: {_gem_other[:4]} — "
+                f"{len(_gem_other)} .gemini site(s) outside the purge block: {_gem_other[:4]} — "
                 f"`~/.gemini/config/skills/` is the vendor's global skills path and writing it is "
                 f"the FOLLOW-ON, gated on whether a project workspace ever read the old cache at "
                 f"all. Nothing in this ticket may create it.")
+
+        # ── S · RUN THE PURGE. Everything above reads the block as TEXT ───────────────────────
+        # ⛔ THE GAP THIS CLOSES, measured by mutation (SCC-394 review, test-adequacy lens): making
+        # the `Remove-Item` arm unreachable (`if ($false)`), INVERTING its `-WhatIf` polarity so a
+        # dry run performs the irreversible delete and a real sync performs none, and pointing the
+        # variable at a directory that does not exist — all three left the suite at 300/300. `R`
+        # below is the only assertion about the real cache and it SKIPs in every worktree and on
+        # every machine without the directory, which is to say it never binds where the change is
+        # written. This is the `CS-18 Q` pattern applied to the one destructive action in the file:
+        # extract the block, run it under pwsh against a temp home, and read the directory back.
+        import shutil as _sh
+        _pw = _sh.which("pwsh")
+        if not _pw or not _purge:
+            c.check("CS-18 S SKIPPED: no pwsh, or no purge block to extract", True,
+                    "install PowerShell 7 to execute the retirement purge against a temp home")
+        else:
+            # The block, from its own `if (Test-Path ...)` through the matching brace — taken from
+            # the RAW source so it is runnable, and brace-matched so a reformat cannot truncate it.
+            _rs = sync_raw.index("Test-Path $" + _agname)
+            _rs = sync_raw.rindex("if ", 0, _rs)
+            _d, _i = 0, sync_raw.index("{", _rs)
+            while _i < len(sync_raw):
+                if sync_raw[_i] == "{":
+                    _d += 1
+                elif sync_raw[_i] == "}":
+                    _d -= 1
+                    if _d == 0:
+                        break
+                _i += 1
+            _block = sync_raw[_rs:_i + 1]
+            _ra = re.search(r"^\s*\$" + re.escape(_agname) + r"\s*=.*$", sync_raw, re.M)
+            _rawassign = _ra.group(0).strip() if _ra else ""
+
+            def _run_purge(whatif: bool):
+                """Seed a temp cache IN POWERSHELL, run the real block, report what survived.
+
+                Seeding from the same language that purges is deliberate: `Join-Path $UserHome
+                '.gemini\\antigravity\\global_workflows'` is what the engine computes, and a Python
+                twin of that expression could disagree about separators on one of the two machines
+                and quietly seed a directory the block never opens - a green that proves nothing.
+                """
+                with TempDir() as _t:
+                    _ps = _t / "purge.ps1"
+                    _ps.write_text(
+                        '$ErrorActionPreference = "Stop"\n'
+                        + "$UserHome = '" + str(_t).replace("'", "''") + "'\n"
+                        + f"$WhatIf = ${str(whatif).lower()}\n"
+                        # ⛔ RE-FIND THE ASSIGNMENT IN THE **RAW** SOURCE. `_agvar` was matched
+                        # against the comment-stripped view, so its offsets index a different
+                        # string; slicing sync_raw with them returns the wrong text (measured:
+                        # IndexError on the first run of this case).
+                        + _rawassign + "\n"
+                        + f"New-Item -ItemType Directory -Force -Path ${_agname} | Out-Null\n"
+                        + "foreach ($n in @('smh-quick-dev.md','cicd-e2e.md','bmad-keep.md','notes.txt')) {\n"
+                        + f"  Set-Content -Path (Join-Path ${_agname} $n) -Value 'x' -Encoding utf8\n"
+                        + "}\n"
+                        + _block + "\n"
+                        + f"(Get-ChildItem -Path ${_agname} -File | Select-Object -ExpandProperty Name |"
+                          " Sort-Object) -join ','\n",
+                        encoding="utf-8")
+                    _r = subprocess.run([_pw, "-NoProfile", "-File", str(_ps)],
+                                        capture_output=True, text=True)
+                    return _r, [x for x in _r.stdout.strip().splitlines()[-1].split(",") if x]
+
+            _real, _left = _run_purge(False)
+            c.check("CS-18 S the purge REMOVES our doors and KEEPS bmad-* and non-.md files",
+                    _real.returncode == 0 and _left == ["bmad-keep.md", "notes.txt"],
+                    f"pwsh rc={_real.returncode} survivors={_left} "
+                    f"{_real.stderr.strip()[:200]} - expected exactly ['bmad-keep.md','notes.txt']: "
+                    f"our two doors purged, BMAD's own global install untouched (the directory is "
+                    f"Google's, not ours), and a non-.md file out of scope")
+            _dry, _left_dry = _run_purge(True)
+            c.check("CS-18 S2 ...and a -WhatIf run removes NOTHING",
+                    _dry.returncode == 0 and len(_left_dry) == 4
+                    and "would purge" in _dry.stdout and "RETIRED - purged" not in _dry.stdout,
+                    f"pwsh rc={_dry.returncode} survivors={_left_dry} - a dry run must leave all "
+                    f"four files and must not report the delete in the past tense; this is the one "
+                    f"irreversible action in the file and -WhatIf is the only rehearsal for it")
 
         # ── J · THE DOC THAT WOULD CAUSE THE NEXT ONE ─────────────────────────────────────────
         # SCC-332's cause was a live rule doc stating the inverse of the code, and the code
@@ -2622,13 +2761,35 @@ def main() -> int:
                 "a detector that matches nothing passes for the wrong reason — J was green over "
                 "four files that all still described the workflow mirror; one that matches the "
                 "noun alone blocks the retirement sentence this ticket has to write")
+        # ⛔ WIDENED FROM FOUR HAND-LISTED FILES TO EVERY TRACKED `.md` (SCC-394 review). The four
+        # were the sites SCC-332 burned on, and a hand list was the wrong shape — this very lane
+        # proved it: `docs/repo-map.md`'s toolkit inventory and the SOP's §19 blurb both carried
+        # the retired claim and both sat outside the list. `RULE_SITES` survives only as an
+        # anti-vacuity FLOOR: the sweep must still be reading those four.
         _fossils = [rel for rel in RULE_SITES if not (ROOT / rel).is_file()]
-        c.check("CS-18 J0b every RULE_SITES entry still exists (anti-fossil)",
+        c.check("CS-18 J0b every RULE_SITES floor entry still exists (anti-fossil)",
                 not _fossils,
-                f"{_fossils} named here but absent from disk — a member pointing at nothing "
-                f"contributes no coverage and cannot fail, so J silently checks fewer sites")
-        _offenders = {rel: _stale_claims(read(ROOT / rel))[:2] for rel in RULE_SITES
-                      if (ROOT / rel).is_file() and _stale_claims(read(ROOT / rel))}
+                f"{_fossils} named here but absent from disk — a floor pointing at nothing "
+                f"proves nothing about the sweep's coverage")
+        _jls = subprocess.run(["git", "ls-files", "-z", "--", "AGENTS.md", ".agents", "docs",
+                               ".opencode/commands", ".roo/commands", "_artifacts/_memory"],
+                              cwd=ROOT, capture_output=True, text=True)
+        _jfiles = [r for r in _jls.stdout.split("\0")
+                   if r.endswith(".md") and "changelog" not in r.lower() and "/bmad-" not in r]
+        c.check("CS-18 J0c ...and the sweep reads a real corpus that CONTAINS them",
+                _jls.returncode == 0 and len(_jfiles) >= 100
+                and all(r in _jfiles for r in RULE_SITES),
+                f"git ls-files rc={_jls.returncode}, {len(_jfiles)} files, missing floor sites: "
+                f"{[r for r in RULE_SITES if r not in _jfiles]} — a sweep that lost the four "
+                f"sites SCC-332 burned on is narrower than the hand list it replaced")
+        _offenders = {}
+        for _rel in _jfiles:
+            _fp = ROOT / _rel
+            if not _fp.is_file():
+                continue
+            _hit = _stale_claims(read(_fp))
+            if _hit:
+                _offenders[_rel] = _hit[:2]
         c.check("CS-18 J no live rule doc still sends Antigravity to workflows/",
                 not _offenders,
                 f"{_offenders} still describe the retired door — the doc is what the next agent "
@@ -2752,6 +2913,34 @@ def main() -> int:
                     # Get-CommandPlatforms returns for a command with no `platforms:` key, which
                     # 13 live commands rely on. Extracted without it the harness emits a SUBSET
                     # and then reports agreement about the subset — measured at SCC-370.
+                    # ⭐ TWO FIXTURES, because two of this engine's rules are otherwise
+                    # unreachable from here (SCC-394 review, test-adequacy lens, both proven by
+                    # surviving mutants):
+                    #  1. a synthetic command claiming ONLY opencode+antigravity. Reverting the
+                    #     `$native` arm to codex-only left the suite at 300/300, because every
+                    #     real antigravity-only command happens to carry a HAND-AUTHORED skill, so
+                    #     the emitter short-circuits and the widened arm is inert on this tree.
+                    #     This command has no hand-authored skill, so the arm is the only thing
+                    #     that can produce its launcher.
+                    #  2. a marker-less SKILL.md. "A hand-authored skill always wins" was
+                    #     unreachable inside Q by construction — the temp master starts empty, so
+                    #     nothing is ever there to win. Removing that guard from the engine left
+                    #     the suite green while the next real sync would overwrite 15 hand-written
+                    #     skill bodies with thin stubs.
+                    _PROBE = "zz-scc394-native-probe"
+                    (_m / "commands" / f"{_PROBE}.md").write_text(
+                        "---\ndescription: A synthetic probe command, antigravity-eligible only.\n"
+                        "platforms: [opencode, antigravity]\n---\n\n# /" + _PROBE + "\n",
+                        encoding="utf-8")
+                    _HAND = "zz-scc394-hand-probe"
+                    (_m / "commands" / f"{_HAND}.md").write_text(
+                        "---\ndescription: A synthetic probe command with a hand-authored skill.\n"
+                        "platforms: [claude, codex]\n---\n\n# /" + _HAND + "\n",
+                        encoding="utf-8")
+                    _handfile = _m / "skills" / _HAND / "SKILL.md"
+                    _handfile.parent.mkdir(parents=True)
+                    _HANDBYTES = b"---\nname: " + _HAND.encode() + b"\ndescription: hand.\n---\n\nMINE.\n"
+                    _handfile.write_bytes(_HANDBYTES)
                     _apl = re.search(r"^\$AllPlatforms\s*=.*$", sync_raw, re.M)
                     _ps = _t / "emit.ps1"
                     _ps.write_text(
@@ -2780,6 +2969,26 @@ def main() -> int:
                               for d in sorted(SKDIR.iterdir())
                               if d.is_dir() and (d / "SKILL.md").is_file()
                               and GEN in read(d / "SKILL.md")}
+                c.check("CS-18 Q4b CONTROL: there is a real committed set to compare against",
+                        len(_committed) >= 20,
+                        f"only {len(_committed)} committed GENERATED launchers found under "
+                        f"{SKDIR.relative_to(ROOT)} — with an empty set both the coverage check "
+                        f"and the byte comparison below are trivially true, and Q passes having "
+                        f"compared nothing (proven by forcing it empty: the suite stayed green)")
+                c.check("CS-18 Q6 the antigravity arm ALONE produces a door for an antigravity-only command",
+                        _PROBE in _emitted,
+                        f"{_PROBE} declares `platforms: [opencode, antigravity]` and has no "
+                        f"hand-authored skill, so `Sync-LauncherSkills`'s antigravity eligibility "
+                        f"is the only thing that can emit it. Its absence means the arm this "
+                        f"ticket exists to add is not doing anything — which every OTHER check "
+                        f"here would miss, because every real antigravity-only command carries a "
+                        f"hand-authored skill and never reaches the generator at all")
+                c.check("CS-18 Q7 a HAND-AUTHORED SKILL.md is never overwritten",
+                        _emitted.get(_HAND) == _HANDBYTES,
+                        f"the marker-less fixture came back changed. `Sync-LauncherSkills` skips "
+                        f"any SKILL.md without the GENERATED marker; without that guard the next "
+                        f"sync replaces all 15 hand-authored skill bodies with thin stubs, and "
+                        f"nothing in this repo reads those files before they are gone")
                 _unemitted = sorted(set(_committed) - set(_emitted))
                 c.check("CS-18 Q4 CONTROL: the emit covered every committed generated launcher",
                         not _unemitted,

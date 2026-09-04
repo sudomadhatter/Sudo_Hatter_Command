@@ -10,7 +10,8 @@ review found had zero assertions:
   * retired vocabulary (triad / caucus / stage room / stage change / three minds / team[s])
   * the retired R1-R4 round ladder (R1 READ / R2 ATTACK / R3 BALCONY / R4 SETTLE / round ladder)
   * parallel-wave vocabulary presence (opinion wave, one-message spawns, research brief, settle it)
-  * door parity (opencode mirror byte-identical, claude skill description match, AG menu budget)
+  * door parity (opencode mirror byte-identical, claude skill description match, the brain claims
+  antigravity and carries the inline-mode law its retired hand-owned door used to hold)
   * CARD.md render-contract markers (heading template, stance note, blockquote, bold slot labels,
     and all five statement slots named in the render template — the review found THE THIRD SIDE,
     which outranks THE MOVE, absent from it)

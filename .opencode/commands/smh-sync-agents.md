@@ -1,5 +1,5 @@
 ---
-description: Publish the home-base .agents command and skill masters to the lobby's local Claude/opencode surfaces plus the opencode, Antigravity, and Codex machine caches. Projects stay thin; one lobby sync serves all four platforms.
+description: Publish the home-base .agents command and skill masters to the lobby's local Claude/opencode/Zoo surfaces plus the opencode and Codex machine caches. Projects stay thin; one lobby sync serves all four platforms.
 ---
 
 # /smh-sync-agents
@@ -13,8 +13,10 @@ description: Publish the home-base .agents command and skill masters to the lobb
 Publish the two authored invocable sets — `.agents/commands/` and `.agents/skills/` — with **one door per
 platform per command (SCC-66)**: Claude and Codex enter through a **launcher skill** (Claude's menu reads
 `.claude/skills`; Codex discovers `.agents/skills` natively via `/skills` or `$skill-name` — it cannot create
-arbitrary top-level `/name` commands); opencode through its command mirror; Antigravity through its workflow
-mirror. **Authorship stays single-source — always edit `.agents/`, never the copies.**
+arbitrary top-level `/name` commands). **Antigravity reads that same `.agents/skills` surface natively** and
+invokes any `SKILL.md` there as `/<name>`, so one launcher is the door for three platforms; opencode enters
+through its command mirror and Zoo through `.roo/commands/`.
+**Authorship stays single-source — always edit `.agents/`, never the copies.**
 
 What it touches:
 - **Launcher-skill generation** — every claude/codex/antigravity-eligible command gets a thin generated

@@ -4261,11 +4261,11 @@ which commands may run, and that is never permission to write to `main`.*
 #### /smh-sync-agents
 
 *Publishes the toolkit to all five platforms — one door each — from the lobby's masters: generates
-the Claude/Codex launcher skill per command (a hand-authored skill always wins), mirrors opencode and
-Antigravity (a thin launcher for every command), generates the Zoo Code doors (`.roo/commands/` launchers,
+the launcher skill per command that Claude, Codex and Antigravity all read (a hand-authored skill
+always wins), mirrors opencode, generates the Zoo Code doors (`.roo/commands/` launchers,
 `.roomodes` with the six Wonderland team seats, floor + team rule copies in `.roo/rules/` — all
 tracked in git, so they travel to both machines), retires what the manifest says it wrote and the
-master no longer owns, and purges the two retired doors. Explained in
+master no longer owns, and purges the three retired doors. Explained in
 [§19](#19-where-the-depth-lives). Called by: you, after any command change; the door-parity test
 tells you when it is owed.*
 
