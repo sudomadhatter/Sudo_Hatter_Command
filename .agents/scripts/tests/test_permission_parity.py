@@ -22,6 +22,8 @@ row in its block, never a file that died in setup and read as a different bug.
 """
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import re
 import shutil
@@ -573,8 +575,10 @@ if c.block("E · /smh-llm-approvals writes the SOURCE and reads Antigravity"):
             "adds the ones he picks to both allow lists" not in (ROOT / ".agents" / "commands" / "INDEX.md").read_text(encoding="utf-8"))
     c.check("E6 Step 1 reads BOTH machine-local Claude lists by name",
             "~/.claude/settings.json" in body and ".claude/settings.local.json" in body)
-    c.check("E7 the door states Claude has no apply, so nothing is pushed and nothing is lost",
-            "Claude has no apply" in body and "claude_permissions_status.py" in body)
+    c.check("E7 the door states Claude has no apply, names the script, AND keeps the never-edits law "
+            "- the plan promised all three and only two were pinned (acceptance lens)",
+            "Claude has no apply" in body and "claude_permissions_status.py" in body
+            and "does not edit the two machine-local Claude files" in body)
     c.check("E8 the door names the two blank-cheque rows it must not promote silently",
             "Bash(bash:*)" in body and "Bash(sh:*)" in body)
 
@@ -627,6 +631,32 @@ if c.block("G · the Claude harvest reads the machine-local lists"):
             s_local = cs.status(tracked, user, missing)
             c.check("G5 status names the count when rows are machine-local",
                     s_local.startswith("MACHINE-LOCAL") and "1" in s_local, s_local)
+            # ⛔ G5 alone cannot tell rows from files: its fixture has one of each, so a status()
+            # counting FILES ships green. Two rows in one file plus one in another, asserted as the
+            # exact string, is the only shape that separates them (test-adequacy lens, 2026-09-04).
+            two = _write("two.json", ["Bash(git status:*)", "Bash(npm:*)", "Bash(jq:*)"])
+            one = _write("one.json", ["Bash(rsync:*)"])
+            c.check("G5b the count is ROWS, not files - 3 across two files, split by ROLE not basename",
+                    cs.status(tracked, two, one)
+                    == "MACHINE-LOCAL allow rows: 3 (user=2 project=1) - they decide on this machine only",
+                    cs.status(tracked, two, one))
+            # Claude offers the SAME grant at user and project scope, so one rule in both files is
+            # an ordinary state - and the headline is the number the door quotes (edge lens).
+            dup = _write("dup.json", ["Bash(rsync:*)"])
+            c.check("G5c one rule granted at BOTH scopes is one rule, not two",
+                    cs.status(tracked, one, dup).startswith("MACHINE-LOCAL allow rows: 1 "),
+                    cs.status(tracked, one, dup))
+            # `{"permissions": null}` is legal JSON; a .get default never fires for an explicit null.
+            nul = d / "null.json"
+            nul.write_text('{"permissions": null}', encoding="utf-8")
+            bom = d / "bom.json"
+            bom.write_bytes(b'\xef\xbb\xbf{"permissions": {"allow": ["Bash(jq:*)"]}}')
+            try:
+                g5d = (cs._allow(nul), cs._allow(bom))
+            except Exception as e:  # noqa: BLE001 - a traceback IS the failure these rows catch
+                g5d = f"raised {e!r}"
+            c.check("G5d an explicit null permissions block, and a Windows BOM, are both read - not raised",
+                    g5d == (set(), {"Bash(jq:*)"}), str(g5d)[:90])
             # The instrument must be SEEN saying the other thing too - a status() hard-wired to
             # one answer passes a one-sided check (the lesson C6 records for the sibling script).
             same = _write("same.json", ["Bash(git status:*)"])
@@ -634,11 +664,59 @@ if c.block("G · the Claude harvest reads the machine-local lists"):
                     cs.status(tracked, same, missing) == cs.NOTHING_LOCAL, cs.status(tracked, same, missing))
             c.check("G7 a missing tracked list exits 2 and says so",
                     cs.main(["--rendered", str(missing), "--user", str(user), "--project", str(missing)]) == 2)
+            # A file the operator is TOLD to edit by hand must name itself when it does not parse,
+            # not die in a traceback part-way through the door's Step 1 (blind lens, 2026-09-04).
+            bad = d / "bad.json"
+            bad.write_text('{"permissions": {"allow": ["Bash(ls:*)",]}}', encoding="utf-8")
+            try:
+                rc9 = cs.main(["--rendered", str(tracked), "--user", str(bad), "--project", str(missing)])
+            except Exception as e:  # noqa: BLE001 - a traceback IS the failure this row exists to catch
+                rc9 = f"raised {e!r}"
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                rc_ok = cs.main(["--rendered", str(tracked), "--user", str(user), "--project", str(missing)])
+            out = buf.getvalue()
+            c.check("G7b a clean run exits 0 AND PRINTS the harvested row - the list is the only product",
+                    rc_ok == 0 and "Bash(npm:*)" in out and "MACHINE-LOCAL" in out,
+                    f"rc={rc_ok} printed={len(out)}b")
+            c.check("G7c the three default paths resolve as the docstring advertises",
+                    cs.RENDERED == CLAUDE and cs.USER == Path.home() / ".claude" / "settings.json"
+                    and cs.PROJECT == ROOT / ".claude" / "settings.local.json",
+                    f"{cs.RENDERED}")
+            empty = d / "empty.json"
+            empty.write_text("", encoding="utf-8")
+            c.check("G3b an EMPTY machine-local file is EMPTY too - it declares no rows, which is not damage",
+                    cs._allow(empty) == set())
+            try:
+                rc9d = cs.main(["--rendered", str(tracked), "--user", str(d), "--project", str(missing)])
+            except Exception as e:  # noqa: BLE001 - a traceback IS the failure this row exists to catch
+                rc9d = f"raised {e!r}"
+            c.check("G9d a machine-local path that cannot be READ exits 2 too, never a traceback",
+                    rc9d == 2, f"rc={rc9d}")
+            c.check("G9 a machine-local file that does not parse exits 2, never a traceback",
+                    rc9 == 2, f"rc={rc9}")
+            try:
+                cs._allow(bad)
+                g9b = "did not raise"
+            except ValueError as e:
+                g9b = str(e)
+            c.check("G9b and the error NAMES the file - exit 2 alone passes without the guard, "
+                    "because JSONDecodeError already subclasses ValueError",
+                    "bad.json" in g9b and "not readable JSON" in g9b, g9b[:90])
             # The law, pinned structurally: Claude's rendered file IS its live file, so an apply
             # here would have nothing to write into and could only destroy. It must never appear.
             # Scan the CODE, not the prose: the module docstring STATES the law ("there is NO
             # --apply"), and a substring check over the whole file reads its own law as a breach.
-            code = (SCRIPTS / "claude_permissions_status.py").read_text(encoding="utf-8").split('"""')[2]
+            # ⛔ `.split('"""')[2]` was the first spelling and it was VACUOUS - segment 2 is only the
+            # slice between the module docstring and the first function docstring (454 of 4,886
+            # chars), so `main()` was never scanned and an --apply added there passed. Every EVEN
+            # segment is code, every odd one a docstring; join the even ones (blind lens, 2026-09-04,
+            # reproduced with an apply-mutant).
+            src8 = (SCRIPTS / "claude_permissions_status.py").read_text(encoding="utf-8")
+            code = "".join(src8.split('"""')[0::2])
+            c.check("G8a the no-apply scan covers the WHOLE file, main() included - not one 454-char slice",
+                    "def main(" in code and "def _allow(" in code and "def status(" in code,
+                    f"scanned={len(code)} of {len(src8)}")
             c.check("G8 the script has NO apply and writes nothing - read-only by construction",
                     not hasattr(cs, "apply") and "--apply" not in code
                     and not any(w in code for w in ("write_text", "write_bytes", "open(")),

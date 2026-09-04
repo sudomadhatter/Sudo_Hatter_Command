@@ -12,6 +12,11 @@ and one is tracked in git, rendered from the single permission source
 
     <repo>/.claude/settings.json
 
+Checked and deliberately NOT read: ``~/.claude.json`` carries a legacy per-project
+``projects[*].allowedTools`` array. Measured 2026-09-04 on this machine, all three project entries
+are EMPTY, so nothing is missed by leaving it out - recorded here so the next reader does not have
+to re-derive it.
+
 A rule the operator grants from a terminal chat lands in one of the first two, so it takes effect
 here and nowhere else - the other machine keeps asking for the same command. This script answers
 the one question ``/smh-llm-approvals`` must ask before it can route such a rule into the source:
@@ -22,7 +27,8 @@ Usage (python3 on the Mac, python on the PC):
 
 Stdlib only. READ-ONLY - it writes nothing, anywhere, and it exits 0 whether or not it finds
 machine-local rows, because finding them is the normal result rather than a fault. Exit 2 means
-it could not read the tracked list at all.
+it could not read one of the three files - the tracked list is missing, or a file that IS there
+does not parse - and it always says WHICH.
 
 Two deliberate absences, both load-bearing:
 
@@ -54,11 +60,32 @@ def _allow(path: Path) -> set[str]:
     Absent is the ordinary state of ``settings.local.json`` on a machine that has never needed a
     project-scope override - the same way an empty Zoo store is ordinary in ``/smh-llm-approvals``,
     and it must not read like a failure.
+
+    An EMPTY file is also empty - it declares no rows, which is not damage.
+
+    A file that IS there, holds something, and does not parse is a different thing, and so is one
+    that cannot be read at all. Both name themselves and become exit 2. The door tells the operator
+    that pruning a now-redundant row from ``~/.claude/settings.json`` is his own edit to make, so a
+    stray comma there must say WHICH file - not die in a traceback part-way through the door's
+    Step 1. Measured 2026-09-04: under the Bash sandbox this repo's ``.claude/settings.local.json``
+    is a mount artifact that raises ``PermissionError``, and the door's own advertised command died
+    on it.
     """
     if not path.exists():
         return set()
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return set(data.get(KEY, {}).get("allow", []))
+    try:
+        raw = path.read_text(encoding="utf-8-sig")   # a Windows-authored file carries a BOM
+    except (OSError, UnicodeDecodeError) as exc:
+        raise ValueError(f"{path} could not be read - {exc}") from exc
+    if not raw.strip():
+        return set()
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{path} is not readable JSON - {exc}") from exc
+    # `or {}` / `or []`, never a .get default: `{"permissions": null}` is legal JSON, the default
+    # does not fire for an explicit null, and `.get` on None is an AttributeError (edge lens).
+    return set((data.get(KEY) or {}).get("allow") or [])
 
 
 def local_only(rendered: Path = RENDERED, user: Path = USER,
@@ -69,15 +96,22 @@ def local_only(rendered: Path = RENDERED, user: Path = USER,
 
 
 def status(rendered: Path = RENDERED, user: Path = USER, project: Path = PROJECT) -> str:
-    """One line: NOTHING_LOCAL, or how many rows decide here and nowhere else."""
+    """One line: NOTHING_LOCAL, or how many rows decide here and nowhere else.
+
+    The headline counts DISTINCT rules, not (file, row) pairs - Claude offers the same grant at
+    user and project scope, so one rule granted twice is still one rule that does not travel. The
+    per-file split is labelled by ROLE rather than by filename, because both files are called
+    ``settings.json`` and the tracked one is too.
+    """
     if not rendered.exists():
         return f"no tracked list at {rendered}"
     found = local_only(rendered, user, project)
-    total = sum(len(rows) for rows in found.values())
-    if not total:
+    distinct = set().union(*found.values())
+    if not distinct:
         return NOTHING_LOCAL
-    counts = " ".join(f"{p.name}={len(rows)}" for p, rows in found.items() if rows)
-    return f"MACHINE-LOCAL allow rows: {total} ({counts}) - they decide on this machine only"
+    counts = " ".join(f"{role}={len(found[path])}"
+                      for role, path in (("user", user), ("project", project)) if found.get(path))
+    return f"MACHINE-LOCAL allow rows: {len(distinct)} ({counts}) - they decide on this machine only"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -94,8 +128,14 @@ def main(argv: list[str] | None = None) -> int:
     if not a.rendered.exists():
         print(f"ERROR: no tracked list at {a.rendered} - run permission_render.py first")
         return 2
-    print(f"status  : {status(a.rendered, a.user, a.project)}")
-    for path, rows in local_only(a.rendered, a.user, a.project).items():
+    try:
+        report = status(a.rendered, a.user, a.project)
+        found = local_only(a.rendered, a.user, a.project)
+    except ValueError as exc:
+        print(f"ERROR: {exc}")
+        return 2
+    print(f"status  : {report}")
+    for path, rows in found.items():
         if rows:
             print(f"\n{path} - {len(rows)} row(s) the tracked list does not carry:")
             for row in rows:

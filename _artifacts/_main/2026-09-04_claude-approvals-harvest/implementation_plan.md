@@ -85,9 +85,13 @@ Byte-identical mirror, refreshed. Pinned by the existing E4 check.
 ### 4. `docs/_scc_sops_prds/workflows_testing_SOP.md` (+ changelog)
 
 Usage surfaces changed (`.agents/commands/`, `.agents/scripts/`), so the SOP moves in the same
-commit or the armed `sop_currency` gate rejects it. §5's script inventory gains the new script;
-the `/smh-llm-approvals` prose and the "tired of approving" quick-reference row gain the Claude
-half. One changelog line.
+commit or the armed `sop_currency` gate rejects it. **§13 — *What does NOT travel between the
+machines*** — gains a **Claude Code's approval lists** row beside Zoo's and Antigravity's; that
+section is literally about this problem and was the one agent missing from it. (An earlier draft of
+this plan said "§5's script inventory"; §5 is *Which lane am I in?* and carries no inventory — the
+§13 table is the right home, and the scripts inventory that DOES exist is `.agents/scripts/INDEX.md`,
+declared above.) The `/smh-llm-approvals` prose and the "tired of approving" quick-reference row gain
+the Claude half. One changelog line.
 
 ## Declared Change Set
 
@@ -113,7 +117,8 @@ change. A harvest is the operator's next `/smh-llm-approvals` run.
 
 New rows in `.agents/scripts/tests/test_permission_parity.py`, against the real module:
 
-- **C-series (the script, on synthetic inputs — no dependence on this machine's live files):**
+- **G-series (the script, on synthetic inputs — no dependence on this machine's live files)** — the
+  block letter is `G`; `C` is the Antigravity-apply block and `B` the Zoo seats:
   a row present locally and absent from the render is reported; a row present in both is not; an
   absent local file counts as empty rather than raising; a deny row is never reported even when
   local and render disagree on it.

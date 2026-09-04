@@ -1,5 +1,5 @@
 ---
-description: Audit recent agent chats for the terminal commands that stopped and waited for the operator's approval, show them as one list, and — on the operator's word — add the ones he picks to Claude Code's and Zoo Code's allow lists. The operator types the command and answers one question; the agent does every read, every edit and every apply. Use when the operator says "what did I have to approve", "update the allow list", or "llm approvals".
+description: Audit recent agent chats for the terminal commands that stopped and waited for the operator's approval, show them as one list, and — on the operator's word — route the ones he picks into the ONE permission source that renders all three allow lists. It also surfaces the Claude rules that already stopped ASKING, which sit in a machine-local settings file that never travels. The operator types the command and answers one question; the agent does every read, every edit and every apply. Use when the operator says "what did I have to approve", "update the allow list", or "llm approvals".
 platforms: [opencode, antigravity, claude, codex, zoo]
 ---
 
@@ -49,7 +49,15 @@ cd <repo-abs> && python3 .agents/scripts/claude_permissions_status.py   # PC: py
 ```
 
 Read-only, exit 0 either way — a machine with nothing local prints *no machine-local rows* and has
-nothing to show. An absent `settings.local.json` counts as empty, not as an error.
+nothing to show. An absent `settings.local.json` counts as empty, not as an error, and so is an
+empty one.
+
+⛔ **If it exits 2 saying the project file could not be READ, re-run it with the Bash sandbox off.**
+Measured 2026-09-04: under the sandbox this repo's `.claude/settings.local.json` is a mount artifact
+— a character device — not a settings file, and reading it raises `PermissionError`. Outside the
+sandbox the path is simply absent and the run is clean. The script refuses rather than guessing,
+because treating an unreadable list as empty would under-report the very rows this step exists to
+find — the same silent under-report SCC-355 cost this door once already.
 
 **Zoo Code** — `<root>/*/ui_messages.json`, newest ~20 by modified time.
 
