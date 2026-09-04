@@ -103,8 +103,21 @@ store_roots():
 on disk with 0 rows in its `INDEX.md`, and a project-local copy of the tier-1 `project-law.md`.
 
 **Run on clean `main` with `--on-main`, it fails identically — the same 3 cases, 20/23.** This lane
-touches two files, neither in that tree. It arrived with the teaching-edition submodule repoint
+touches three files, none in that tree. It arrived with the teaching-edition submodule repoint
 (SCC-280, PR #152/#153).
+
+⚠️ **It is red LOCALLY only, and the reason is the more interesting half.** `main-write-gate.yml`
+checks out with `actions/checkout@v4` and sets no `submodules:` key, so `Projects/sudo-command-center`
+is an **empty directory on the runner** — `test_rule_frontmatter.py` walks projects on disk, finds
+none, and all three cases pass vacuously. Proof rather than inference: **PR #153, the pull request
+that performed the repoint, passed `main-write-gate` green** and merged at 22:34:33Z. So CI is
+green and nothing is blocked; the red fires only where the submodule is populated, which is both
+operator machines.
+
+That makes the tier-1 project-law check **structurally dead server-side** — it exists to catch a
+project forking the constitution, `main-write-gate` runs the full suite so that law is enforced on
+the way to `main`, and it has never once been able to see a project. Same defect class as this
+lane's own bug and as SCC-355: reporting success while looking at nothing. Recorded on SCC-397.
 
 ## SOP
 
@@ -137,8 +150,11 @@ The withheld stamp is about one unrelated red, not about this change.
 ## Your Actions
 
 - [ ] **Merge the PR** when the checks are green. This door does not merge.
-- [ ] **One thing to decide separately:** `main` is red on `test_rule_frontmatter.py` from the
-      SCC-280 submodule repoint — the refreshed teaching edition ships 28 rules its `INDEX.md`
-      does not list, and carries a `project-law.md` copy that tier-1 forbids. **Remedy: regenerate
-      that project's `INDEX.md` Load rows and drop the tier-1 copy.** Filed as **SCC-397**; it blocks
-      any lane that runs the full suite until it is fixed.
+- [ ] **One thing to decide separately — SCC-397, and it is bigger than it first looked.** The
+      SCC-280 repoint ships 28 rules the project's `INDEX.md` does not list plus a `project-law.md`
+      copy that tier-1 forbids, and `main-write-gate` **cannot see any of it** because it never
+      checks out submodules. Nothing is blocked today, so this is not urgent — but the tier-1
+      check has been passing vacuously in CI for its whole life. **Remedy, two halves:** fix the
+      export or the INDEX (the tier-1 failure points at the export), and either add
+      `submodules: recursive` to the gate or make the test refuse an empty project directory
+      instead of passing over it.
