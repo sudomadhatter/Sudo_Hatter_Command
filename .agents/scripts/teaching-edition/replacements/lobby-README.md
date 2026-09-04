@@ -47,8 +47,8 @@ you actually use; never commit `.env` or paste secrets into the example.
 ### Arm the Git safety gates
 
 This repository includes automated testing rules and a comprehensive Git gate stack under `.githooks/`
-and `.agents/scripts/tests/run_all.py` (`commit-msg` format & encoding verification, `pre-push` maps
-and main-branch protection, and workspace test suites).
+(`commit-msg` format & encoding verification, `pre-push` maps and main-branch protection, and workspace
+test suites).
 
 **Why Git hooks are disarmed on clone:**
 Git deliberately ignores `.githooks/` upon clone for security reasons (Git does not allow a newly cloned
