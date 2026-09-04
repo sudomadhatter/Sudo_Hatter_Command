@@ -4236,6 +4236,22 @@ origin main` earns `Bash(git fetch *)`, never `Bash(git *)`, because the tracked
 git rule to its subcommand on purpose. And it never touches any deny list: you asked to be
 un-blocked, not to have your own fence removed.*
 
+*It checks the fence before it tells you anything. Rendering only proves the three lists match the
+source; it says nothing about whether a row you picked tore a hole. So the command runs
+`test_permission_parity.py` straight after the render, and a red row is not a test to fix — it is a
+pick that cannot land. It backs that one row out and tells you which of your picks was refused and
+**which deny row of your own refused it**. On the first real run five of seventeen picks came back
+that way: `gh`, `env -u GITHUB_TOKEN gh`, `acli`, `chmod` and `npx`.*
+
+*And it lands the change itself, rather than leaving four modified files in the tree. A permissions
+harvest is exempt from the plan-and-review lane — named in `artifacts-always-first.md` under "When
+to Skip" — because there is no design to review and no assertion to write: the battery already
+exists and already guards the fence, and your pick at the second step already was the approval. The
+exemption holds only while all four of its guards do (your pick, the render in sync, the battery
+green, and the diff confined to those four permission files); a fifth file in the diff and it takes
+the full lane like anything else. The command commits by explicit path on a `chore/` branch, takes
+Road 2 to `main` so the required check can attach, and mints a single-use push token last.*
+
 *Called by: you, when an agent keeps stopping on commands you would rather it just ran.*
 
 #### /smh-sync-agents

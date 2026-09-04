@@ -172,6 +172,27 @@ platforms it applies to), or a `cmd` widened inside an existing family when it i
 the renderer derives each platform's grammar from `cmd`. Then run the renderer, and confirm
 `--check` prints *in sync*.
 
+⛔ **Then run the fence battery, BEFORE you report anything.** The render succeeding means the
+three files match the source; it says nothing about whether a picked row tore a hole in the fence.
+
+```bash
+cd <repo-abs> && python3 .agents/scripts/tests/test_permission_parity.py
+```
+
+Add `--on-main` when a lane worktree exists — the battery refuses to run on `main` beside one.
+A red row is not a test to fix: it is a pick that **cannot land**. Back that one row out of
+`families.json`, re-render, and re-run until it is green. Then tell the operator which of his
+picks could not land and **name the deny row that refused each one**, so he is reading his own
+fence rather than a verdict.
+
+Measured on the first real run (SCC-392, 2026-09-04): of 17 picks, five could not land —
+`gh` and `env -u GITHUB_TOKEN gh` (`command(gh pr merge)`, `command(gh repo delete)`,
+`command(gh release delete)`), `acli` (`command(acli jira workitem delete)`), `chmod`
+(`command(chmod -[a-zA-Z]*R[a-zA-Z]* 777)`), and `npx`, which no deny row refuses but the
+battery pins as must-ask because a bare prefix auto-approves downloading and running any
+package. Running this check AFTER writing all 17 is what turned minutes of work into a day of
+backing rows out one at a time.
+
 The per-platform shapes below are what the RENDERER writes — read them to know what a row will
 become, not as files to open.
 
@@ -243,6 +264,12 @@ osascript -e 'quit app "Visual Studio Code"'                                  # 
 cd <repo-abs> && python3 .agents/scripts/zoo_permissions_apply.py --apply
 ```
 
+⛔ **Both applies write OUTSIDE the repo, so they need the Bash sandbox OFF.** Zoo's store is
+under VS Code's user data and Antigravity's is `~/.gemini/`; neither is in the sandbox's writable
+set, and the failure is `OSError: [Errno 30] Read-only file system` raised from the script's own
+`write_text` — a traceback that looks like a broken script and is not one. Run the `--status`
+probes sandboxed (they only read), and the two `--apply` calls with it disabled.
+
 Ask before quitting his editor — that is his window, with his unsaved work in it. If he says no,
 leave the tracked file edited and tell him the Zoo rows are staged but not live until the apply
 runs. **Claude's rows are live the moment the file is saved and need none of this.**
@@ -263,10 +290,62 @@ is gone the moment it runs. That is the design (the tracked file is the fence, n
 it is his to know before it happens: say how many store-only rows are about to be dropped, by name,
 and get his word. This is the one step of this command that can take a permission away.
 
-## Step 4 — Report what changed
+## Step 4 — Land it
 
-Name each row added and which file it went into, confirm the apply result, and say plainly what
-is live now versus staged. Then stop.
+⛔ **This step is the reason the command exists in one piece.** Steps 1-3 leave FOUR modified
+tracked files in the working tree — `.agents/permissions/families.json` and its three renders —
+and a door that stops here hands the next agent a decision it has no basis to make. Improvising
+next to `main` means reaching for the heaviest thing available: a plan, a worktree, a five-lens
+review, a pull request. None of that is warranted, and the reason is written down: this change
+class is DATA whose correctness is fully machine-checked by the two gates Step 3 already ran, and
+the operator's approval was captured live at the Step 2 gate.
+
+**That exemption is named in `.agents/rules/artifacts-always-first.md` § "When to Skip", and it
+is conditional on all four guards holding** — his live pick, `--check` in sync, the battery green,
+and the diff confined to those four paths. Anything else in the diff and the exemption is void and
+the work takes the full lane. ⛔ **`lane_qualify.py` still answers `TASK` for these paths and that
+is correct** — it classifies by path and cannot see this door's guards, so a hand edit to
+`families.json` outside this command keeps the full lane. Do not "fix" it to agree.
+
+The road, given a ticket key and a slug:
+
+```bash
+cd <repo-abs> && git checkout -b chore/<KEY>-<slug> origin/main
+cd <repo-abs> && git add .agents/permissions/families.json .agents/permissions/antigravity.json .claude/settings.json .vscode/settings.json
+cd <repo-abs> && git commit -m "<KEY> chore(permissions): harvest <n> approved rows into the shared source"
+```
+
+⛔ Explicit paths only — never `git add -A`, `.` or `-u`; a permissions run is exactly when other
+lanes have work in the tree. The armed `commit-msg` hook refuses a commit with no valid Jira key.
+
+Then `main`. It is protected by a required status check, so a direct push is rejected — the road
+is **Road 2**, which `main_write_gate.py` already calls *the local door's road*:
+
+```bash
+cd <repo-abs> && git checkout main && git merge --no-ff chore/<KEY>-<slug> -m "Merge chore/<KEY>-<slug> into main"
+cd <repo-abs> && git push origin main:refs/heads/gate/<KEY>-<slug>
+```
+
+Wait for that check to go green on the pushed sha, then mint the single-use token and push:
+
+```bash
+cd <repo-abs> && sh .agents/scripts/git-hooks/mint-push-token.sh --command "<this command>" --branch chore/<KEY>-<slug> --key <KEY> --operator-approval "<his words, verbatim>"
+cd <repo-abs> && git push origin main
+```
+
+The token is single-use, expires in 30 minutes, and is spent by that push — so mint it LAST and
+commit nothing after it. If the operator's pick at Step 2 was not an unambiguous yes to landing
+this, delete `.git/main-push-approval` and ask him instead.
+
+⚠️ Under the sandbox, `.git/config.lock` can appear as a character device (`crw-rw-rw- nobody
+nogroup 1, 3`) rather than a real lock, and git fails with *could not lock config file*. It is a
+mount artifact, not a stale lock — re-run with the sandbox off rather than deleting anything.
+
+## Step 5 — Report what changed
+
+Name each row added and which file it went into, name each pick that could NOT land with the deny
+row that refused it, confirm the apply result, and say plainly what is live now versus staged.
+Then stop.
 
 ## What this command does NOT do
 

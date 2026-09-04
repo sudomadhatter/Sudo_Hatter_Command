@@ -361,6 +361,36 @@ When Mr. Hatter says **"review"** (or asks to review a document/plan), EVERY age
     it, and still carries `## Task Checklist` → `## Evidence` → `## Code Review (<date>)` (with the
     canonical `Verdict:` line) → `## Your Actions`. The walkthrough is never skipped.
 
+- **⭐ `/smh-llm-approvals` — THE PERMISSION HARVEST (SCC-393).** Routing approved commands into
+  `.agents/permissions/families.json` and re-rendering its three platform lists. **Invoking it IS
+  the "skip the plan" instruction**, the same way `/cicd-quick-dev` and `/smh-quick-fix` are: no
+  `implementation_plan.md`, no `approved`, no `/smh-self-audit`, no RED-first assertion, no review
+  verdict, no pull request. It lands through its own Step 4.
+  - **Why this change class earns it, when a toolkit change normally does not:** there is no design
+    to review — the door dictates the row shape — and no assertion to write, because
+    `test_permission_parity.py` already exists, already asserts the fence, and is auto-discovered
+    by `run_all.py`. Empirically the ceremony does not catch what matters: on the SCC-392 run the
+    plan and the five-lens review passed five fence-tearing rows (`gh`, `acli`, `chmod`, a widened
+    `find`, `npx`) and **the battery caught all five in seconds**. The test is the gate here; the
+    lane was only cost.
+  - **Conditional on all four guards, every one of them machine-checkable:**
+    1. the operator's live pick at the door's Step 2 gate — that IS the approval
+    2. `python3 .agents/scripts/permission_render.py --check` prints *in sync*
+    3. `python3 .agents/scripts/tests/test_permission_parity.py` is green
+    4. the diff is confined to `.agents/permissions/families.json`,
+       `.agents/permissions/antigravity.json`, `.claude/settings.json`, `.vscode/settings.json`
+  - ⛔ **A fifth path in the diff voids the exemption** and the work takes the full lane — same
+    re-arming rule as the two lanes above. Editing the door, the renderer or the tests is a
+    toolkit change and is not this.
+  - ⛔ **This exemption keys on the COMMAND, never on the path, and `lane_qualify.py` is
+    deliberately NOT changed to agree.** It classifies by path and answers `TASK` for
+    `.agents/permissions/*` — which is right, because a hand edit to `families.json` outside this
+    door has no operator pick, no forced `--check` and no forced battery run. The guards are the
+    door's, so the exemption is the door's.
+  - **What it still keeps:** the Jira key and a `chore/<KEY>-<slug>` branch (the armed `commit-msg`
+    hook refuses a keyless commit) · explicit-path commits · Road 2 to `main` with a minted
+    single-use token · the SOP-currency gate where it applies.
+
 ## The memory store — what it is for, and what it must never carry
 
 `_artifacts/_memory/` is **recall, not law.** Every platform reads its index at session start, on both

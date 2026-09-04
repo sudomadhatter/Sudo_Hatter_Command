@@ -720,4 +720,45 @@ if c.block("G · the Claude harvest reads the machine-local lists"):
                     and not any(w in code for w in ("write_text", "write_bytes", "open(")),
                     f"apply_attr={hasattr(cs, 'apply')}")
 
+# ═══════════════════════════════════════════════════════════════════════════════════════════
+if c.block("H · the door carries its own road - SCC-393"):
+    body = CMD.read_text(encoding="utf-8")
+    rule = (ROOT / ".agents" / "rules" / "artifacts-always-first.md").read_text(encoding="utf-8")
+
+    # ⛔ The defect this block exists for: the door described Steps 1-4 in 281 lines and ended
+    # at "Report what changed … Then stop." It named NO road to main, so four modified tracked
+    # permission files were left in the working tree with no procedure - and improvising next
+    # to `main` costs the full lane. Measured on the SCC-392 run: minutes of writing, a day of
+    # ceremony around it.
+    c.check("H1 the door has a landing step that names Road 2 - not a `Then stop.` ending",
+            "gate/" in body and "main_write_gate" in body,
+            f"gate/={'gate/' in body} write_gate={'main_write_gate' in body}")
+    c.check("H2 Step 3 names the fence battery, so damage is found BEFORE the report, not after",
+            "test_permission_parity.py" in body)
+    # ⛔ NOT a bare `"sandbox off" in body` - that passes VACUOUSLY on Step 1's caveat about
+    # claude_permissions_status.py, which is a different script and a different failure. Pin it
+    # to the APPLY region: the text from the first apply invocation onward. (Same defect class
+    # as G8a: an assertion that reads the wrong slice is green and worthless.)
+    apply_region = body[body.find("zoo_permissions_apply.py"):]
+    c.check("H3 the APPLY region - not Step 1's unrelated caveat - states the sandbox must be off",
+            len(apply_region) > 200 and re.search(r"sandbox off", apply_region, re.I) is not None
+            and "Read-only file system" in apply_region,
+            f"region={len(apply_region)}ch")
+    c.check("H4 the door states the VS Code window reload after the Antigravity apply",
+            re.search(r"reload", body, re.I) is not None)
+
+    # The exemption keys on the COMMAND, never on the path. lane_qualify.py stays a path
+    # classifier and stays right: a hand edit to families.json outside this door has no
+    # operator pick, no forced --check and no forced battery, so it keeps the full lane.
+    c.check("H5 the rule's When-to-Skip names the door AND all four guards it is conditional on",
+            "/smh-llm-approvals" in rule
+            and "permission_render.py --check" in rule
+            and "test_permission_parity.py" in rule
+            and "families.json" in rule,
+            f"named={'/smh-llm-approvals' in rule}")
+    c.check("H6 lane_qualify.py was NOT widened - a hand edit to the fence still answers TASK",
+            ".agents/permissions" not in (SCRIPTS / "lane_qualify.py").read_text(encoding="utf-8"))
+    c.check("H7 the opencode mirror carries the new step too (byte-identical)",
+            OC_MIRROR.read_bytes() == CMD.read_bytes())
+
 sys.exit(c.finish())
