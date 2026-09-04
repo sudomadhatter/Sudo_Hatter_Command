@@ -1,0 +1,5 @@
+task_key: SCC-399
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-399-frontmatter-allowlist
+close_command: smh-close-task-merge-tree
+secondary_repos: []
