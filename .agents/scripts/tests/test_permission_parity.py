@@ -260,6 +260,32 @@ if c.block("A · one battery, three matchers, identical verdicts"):
                 any(r.endswith("/memory)") and "*" not in r and not r.endswith("/)") for r in reads)
                 and not [r for r in ag_live["deny"] if r.startswith("read_file(")], f"{reads}")
 
+        # ⛔ SCC-393 · the corpus above is COMMANDS, so every verdict row in this block is blind to
+        # a `read_file` grant - a different rule kind the same source file ships. Rendered, a row
+        # {"cmd": "/home/dlohn", "grant": "read_file"} becomes read_file(/home/dlohn), which the
+        # vendor grants RECURSIVELY: ~/.ssh, cloud credentials and every .env under the home dir,
+        # readable by the extension. `--check` prints *in sync* (the renderer produced it), no
+        # command verdict moves, and A15 only asserts a /memory row still exists - so before this
+        # case the whole battery stayed green while the fence had a hole in it. Found by the gate
+        # lens on SCC-393's own review, rendered live to confirm rather than argued.
+        SENSITIVE = ("/.ssh", "/.aws", "/.gnupg", "/.config/gcloud", "/.kube", "/.docker",
+                     "/.netrc", "/.gnupg", "/.password-store")
+        def _covers(granted: str, secret_tail: str) -> bool:
+            """A recursive dir grant covers a path if that path is at or under it."""
+            home = str(Path.home())
+            return (granted == home or granted == "/"
+                    or (home + secret_tail).startswith(granted.rstrip("/") + "/"))
+        leaks = [r for r in reads
+                 for tail in SENSITIVE
+                 if _covers(r[len("read_file("):-1], tail)]
+        c.check("A16 no read_file grant reaches a credential store - a recursive dir grant is the one "
+                "rule kind this battery's command corpus cannot see",
+                not leaks, f"leaks={leaks[:3]}")
+        # The control: without it, A16 passes by having nothing to find.
+        c.check("A16b ...and the check BITES - a home-directory grant is reported",
+                [1 for tail in SENSITIVE if _covers(str(Path.home()), tail)],
+                "a read_file(<home>) row must be seen as covering ~/.ssh")
+
 # ═══════════════════════════════════════════════════════════════════════════════════════════
 if c.block("B · one source, three rendered outputs, drift is red"):
     c.check("B0 permission_render imports", pr is not None)
@@ -719,5 +745,103 @@ if c.block("G · the Claude harvest reads the machine-local lists"):
                     not hasattr(cs, "apply") and "--apply" not in code
                     and not any(w in code for w in ("write_text", "write_bytes", "open(")),
                     f"apply_attr={hasattr(cs, 'apply')}")
+
+# ═══════════════════════════════════════════════════════════════════════════════════════════
+if c.block("H · the door carries its own road - SCC-393"):
+    body = CMD.read_text(encoding="utf-8")
+    rule = (ROOT / ".agents" / "rules" / "artifacts-always-first.md").read_text(encoding="utf-8")
+
+    # ⛔ EVERY ROW IN THIS BLOCK IS SECTION-SCOPED, and that is not style. The first cut of this
+    # block was seven body-wide substring greps, and a blind lens killed FIVE of them with real
+    # mutants: the fence-battery block was moved from Step 3 into Step 5 under "afterwards, if you
+    # feel like it" and the ordering check stayed green; the whole apply paragraph was deleted and
+    # the sandbox check stayed green on an unrelated `sandbox off` in Step 4; and the SCC-393
+    # exemption was replaced with its literal INVERSE ("is NOT exempt ... takes the FULL lane")
+    # and the rule check stayed green, because the four strings it greps for appear in that text
+    # too. A substring over a whole document cannot express WHERE, and every property here is a
+    # property about where.
+    def section(text: str, head: str, nxt: str) -> str:
+        a = text.find(head)
+        b = text.find(nxt, a + 1) if a >= 0 else -1
+        return text[a:b] if a >= 0 and b > a else ""
+
+    step3 = section(body, "## Step 3 — Write what he picked", "## Step 4 — Land it")
+    step4 = section(body, "## Step 4 — Land it", "## Step 5 — Report what changed")
+    skip  = section(rule, "## When to Skip", "\n## ")
+    c.check("H0 the sections this block scopes to all resolve - a renamed heading must FAIL here, "
+            "not silently make every row below vacuous",
+            len(step3) > 500 and len(step4) > 500 and len(skip) > 500,
+            f"step3={len(step3)} step4={len(step4)} skip={len(skip)}")
+
+    # The road. git-policy.md bans a self-merge for EVERY door in this repo ("no eligibility test,
+    # no 'small enough' class, no self-merge"), and this door was written once with exactly that
+    # road - checkout main, merge --no-ff, mint, push origin main - while the suite stayed green,
+    # because test_door_preflight_order.py's DOORS dict did not name it. It does now; these two
+    # rows are the local half.
+    c.check("H1 Step 4 lands through a PR and takes NONE of the banned road (no merge, no token, "
+            "no main push, no branch switch) - git-policy bans all four for every door",
+            "gh pr create" in step4
+            and not any(w in step4 for w in ("mint-push-token", "git push origin main",
+                                             "checkout main", "merge --no-ff", "refs/heads/gate/")),
+            f"pr={'gh pr create' in step4}")
+    c.check("H1b Step 4 pushes the chore branch before opening the PR - an unpushed head is a PR "
+            "that cannot open",
+            step4.find("git push -u origin chore/") > 0
+            and step4.find("git push -u origin chore/") < step4.find("gh pr create"))
+
+    # ORDER, not presence: the fence check is worthless after the report.
+    c.check("H2 the fence battery is named INSIDE Step 3 - moving it after the report must fail, "
+            "which a body-wide substring cannot see",
+            "test_permission_parity.py" in step3 and "run_all.py" in step3,
+            f"in_step3={'test_permission_parity.py' in step3}")
+    c.check("H2b Step 3 tells the reader a red row is not always a pick to back out - A11 goes red "
+            "when a GOOD pick RESOLVES a known disagreement, and the test requires that row be "
+            "deleted, which the back-it-out instruction alone forbids",
+            "A11" in step3 and "resolve" in step3.lower())
+    c.check("H2c ...and that a refused pick may have NO deny row - npx is pinned by a battery case, "
+            "so promising a deny row unconditionally makes the reporter invent one",
+            "no deny row" in step3.lower())
+
+    # Scoped to the APPLY paragraph, not the document: Step 1 carries an unrelated `sandbox off`
+    # caveat about claude_permissions_status.py, and Step 4 carries another about config.lock.
+    c.check("H3 the SANDBOX warning sits in Step 3 with the applies - not Step 1's unrelated "
+            "caveat and not Step 4's config.lock note",
+            re.search(r"sandbox off", step3, re.I) is not None
+            and "Read-only file system" in step3)
+    c.check("H3b ...and it does not attribute write_text to BOTH applies - zoo_permissions_apply "
+            "writes through sqlite3/copy2 and raises a different error",
+            "sqlite3" in step3 or "readonly database" in step3)
+    c.check("H4 the window reload sits with the Antigravity apply in Step 3",
+            re.search(r"reload", step3, re.I) is not None)
+
+    # The exemption, scoped to the section that IS the law, and to the bullet that names the door.
+    bullet = ""
+    for chunk in skip.split("\n- "):
+        if "/smh-llm-approvals" in chunk:
+            bullet = chunk
+            break
+    c.check("H5 the exemption is a real bullet in When-to-Skip naming the door - replacing it with "
+            "its inverse must FAIL here (a blind lens did exactly that and the first cut passed)",
+            len(bullet) > 400 and "skip the plan" in bullet, f"bullet={len(bullet)}ch")
+    c.check("H5b the SAME bullet carries all four guards, including the operator's pick, and names "
+            "run_all.py - NOT the battery alone: the one-interpreter law that refused a harvested "
+            "row lives in test_settings_allowlist.py, which the battery does not run",
+            all(g in bullet for g in ("permission_render.py --check", "run_all.py",
+                                      "families.json", "pick")),
+            f"missing={[g for g in ('permission_render.py --check', 'run_all.py', 'families.json', 'pick') if g not in bullet]}")
+    c.check("H5c the bullet does NOT claim the ceremony reviewed the harvested rows - it did not: "
+            "the SCC-392 harvest branch carried no plan, no walkthrough and no review at all",
+            "five-lens review passed" not in bullet and "review passed" not in bullet)
+
+    # RUN the classifier; do not grep the file for one spelling of the widening it forbids.
+    sys.path.insert(0, str(SCRIPTS))
+    import lane_qualify as lq  # noqa: E402
+    v_perm, _ = lq.classify(ROOT, [".agents/permissions/families.json"], False, None)
+    v_all, _ = lq.classify(ROOT, [".agents/permissions/families.json", ".claude/settings.json",
+                                  ".vscode/settings.json", ".agents/permissions/antigravity.json"],
+                           False, None)
+    c.check("H6 lane_qualify STILL answers TASK for the fence - run it, never grep it: the first "
+            "cut checked one literal and a mutant that spelled the prefix by concatenation passed",
+            v_perm == "TASK" and v_all == "TASK", f"one={v_perm} four={v_all}")
 
 sys.exit(c.finish())

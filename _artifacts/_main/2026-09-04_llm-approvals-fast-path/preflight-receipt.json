@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-393-approvals-fast-path",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-393",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "042852b7cb163e83ca6d04173634f2610463eaa7",
+  "warnings": 1,
+  "when": "2026-09-04T13:42:04-04:00"
+}

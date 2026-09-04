@@ -361,6 +361,51 @@ When Mr. Hatter says **"review"** (or asks to review a document/plan), EVERY age
     it, and still carries `## Task Checklist` → `## Evidence` → `## Code Review (<date>)` (with the
     canonical `Verdict:` line) → `## Your Actions`. The walkthrough is never skipped.
 
+- **⭐ `/smh-llm-approvals` — THE PERMISSION HARVEST (SCC-393).** Routing approved commands into
+  `.agents/permissions/families.json` and re-rendering its three platform lists. **Invoking it IS
+  the "skip the plan" instruction**, the same way `/cicd-quick-dev` and `/smh-quick-fix` are: no
+  `implementation_plan.md`, no `approved`, no `/smh-self-audit`, no RED-first assertion, no review
+  verdict. It keeps a lean walkthrough and it lands the ordinary way — a pull request the operator
+  merges.
+  - **Why this change class earns it.** There is no design to review — the door dictates the row
+    shape — and no assertion to write: the gates already exist and already guard the fence. The
+    evidence is the SCC-392 harvest, stated accurately: that run carried **no plan, no walkthrough
+    and no review at all** (its branch touched zero `_artifacts/` files), wrote seventeen picks,
+    and the **suite caught every bad one** — four by deny rows, one by a battery case, one by the
+    one-interpreter law. ⛔ Do not restate this as the ceremony having examined and cleared
+    those rows: it never saw them, so it cannot have cleared them. The claim that
+    survives is the one that matters — *the machine, not the ceremony, is what protects this file*.
+  - **Conditional on all four guards:**
+    1. the operator's live **pick** at the door's Step 2 gate — that IS the approval, and it is an
+       approval about which commands may run, never about landing on `main`
+    2. `python3 .agents/scripts/permission_render.py --check` prints *in sync*
+    3. `python3 .agents/scripts/tests/run_all.py` is green — ⛔ **the whole suite, never
+       `test_permission_parity.py` alone.** The battery is blind to laws that still refuse a
+       harvested row: SCC-392's `Bash(python:*)` was caught by `test_settings_allowlist.py` A3 and
+       a guide count by `test_zoo_permissions.py`, neither of which the battery runs
+    4. outside `_artifacts/`, the diff touches only `.agents/permissions/families.json`,
+       `.agents/permissions/antigravity.json`, `.claude/settings.json` and `.vscode/settings.json`
+       — and within the last two only the rows this door renders (`permissions.allow`; the two
+       `zoo-code.*` arrays), never the `hooks` block
+  - ⛔ **A fifth path voids the exemption**, with ONE carve-out that is not discretion: a file the
+    suite *forces* — a rendered count in `terminal-permissions-guide.md`, a KNOWN row A11 requires
+    deleting once a pick resolves it. The test is mechanical: revert it and the suite goes red. A
+    file you *chose* to change is a fifth path and the work takes the full lane.
+  - ⛔ **This exemption keys on the COMMAND, never on the path, and `lane_qualify.py` is
+    deliberately NOT changed to agree.** It classifies by path and answers `TASK` for
+    `.agents/permissions/*` — which is right, because a hand edit to `families.json` outside this
+    door has no operator pick, no forced `--check` and no forced suite run.
+  - ⛔ **It does not shorten the road to `main`.** There is still no lighter door: the harvest is a
+    `chore/<KEY>-<slug>` branch, pushed, and a pull request the operator merges. This door mints no
+    push token, pushes no `gate/**` ref and never merges — `git-policy.md` bans all of that for
+    every door in this repo, and the Step 2 pick is not merge permission (ticket permission never
+    is). Pinned by `test_door_preflight_order.py`, which now names this door.
+  - **What it still keeps:** the Jira key and a `chore/<KEY>-<slug>` branch (the armed `commit-msg`
+    hook refuses a keyless commit) · explicit-path commits · a lean `walkthrough.md` with
+    `## Your Actions` and the operator's words verbatim, stamped by `flight_recorder.py` — without
+    a receipt, a hand edit that *decided* it was a harvest is indistinguishable from a real run ·
+    the SOP-currency gate where it applies.
+
 ## The memory store — what it is for, and what it must never carry
 
 `_artifacts/_memory/` is **recall, not law.** Every platform reads its index at session start, on both
