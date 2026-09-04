@@ -12,6 +12,7 @@ Ticket: [SCC-386](https://sudo-command.atlassian.net/browse/SCC-386) · Branch: 
 - [x] Assert-first test suite: Authored [`test_memory_long_term_rule.py`](file:///home/dlohn/Sudo_Hatter_Command/.agents/scripts/tests/test_memory_long_term_rule.py) (18/18 passing).
 - [x] Synchronized Zoo Code floor copy: Updated [`.roo/rules/constitution.md`](file:///home/dlohn/Sudo_Hatter_Command/.roo/rules/constitution.md) to match master.
 - [x] Memory sweep: Audited `~/.claude/projects/*/memory/`, `_artifacts/_memory/`, and `Projects/AGY_AVIATIONCHAT/_artifacts/_memory/`; confirmed no ephemeral story-scoped notes remain.
+- [x] The merge itself — lands via this branch's PR
 
 ## Evidence
 
