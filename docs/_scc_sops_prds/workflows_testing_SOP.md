@@ -4237,20 +4237,24 @@ git rule to its subcommand on purpose. And it never touches any deny list: you a
 un-blocked, not to have your own fence removed.*
 
 *It checks the fence before it tells you anything. Rendering only proves the three lists match the
-source; it says nothing about whether a row you picked tore a hole. So the command runs
-`test_permission_parity.py` straight after the render, and a red row is not a test to fix — it is a
-pick that cannot land. It backs that one row out and tells you which of your picks was refused and
-**which deny row of your own refused it**. On the first real run five of seventeen picks came back
-that way: `gh`, `env -u GITHUB_TOKEN gh`, `acli`, `chmod` and `npx`.*
+source; it says nothing about whether a row you picked tore a hole. So the command runs the whole
+enforcement suite straight after the render — not the permission battery alone, because a picked row
+can break a law the battery does not run, which is exactly how a harvested bare `python` rule got
+through on the first run and was caught by a different test. A red row is then one of two things: a
+pick your fence refuses, which it backs out and reports to you naming the deny row (or, for `npx`,
+the battery case, because no deny row refuses that one); or a pick so good it RESOLVED a known
+platform disagreement, where the right move is the opposite — the test wants that row deleted from
+its list. On the first real run six of seventeen picks could not land: `gh`,
+`env -u GITHUB_TOKEN gh`, `acli`, `chmod`, `npx`, and `python`.*
 
-*And it lands the change itself, rather than leaving four modified files in the tree. A permissions
-harvest is exempt from the plan-and-review lane — named in `artifacts-always-first.md` under "When
-to Skip" — because there is no design to review and no assertion to write: the battery already
-exists and already guards the fence, and your pick at the second step already was the approval. The
-exemption holds only while all four of its guards do (your pick, the render in sync, the battery
-green, and the diff confined to those four permission files); a fifth file in the diff and it takes
-the full lane like anything else. The command commits by explicit path on a `chore/` branch, takes
-Road 2 to `main` so the required check can attach, and mints a single-use push token last.*
+*And it takes the change all the way to a pull request, rather than leaving four modified files in
+the tree with no road. A permissions harvest skips the plan-and-review lane — named in
+`artifacts-always-first.md` under "When to Skip" — because there is nothing to design and nothing to
+assert that the suite does not already assert, and your pick at the second step already was the
+approval. It still writes a short record of what you picked and what was refused, commits by
+explicit path on a `chore/` branch, and opens a PR. ⛔ **It does not merge.** Your click on* Merge
+pull request *is what lands it, exactly as with every other door — the pick you gave it was about
+which commands may run, and that is never permission to write to `main`.*
 
 *Called by: you, when an agent keeps stopping on commands you would rather it just ran.*
 

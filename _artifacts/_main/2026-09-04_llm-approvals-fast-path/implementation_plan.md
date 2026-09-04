@@ -21,7 +21,7 @@ Four more gaps compounded it, each one a sentence the door does not carry:
 |---|---|
 | The door never names `test_permission_parity.py` | All 17 picks were written, THEN the battery reported A3/A5/A6/B8 red. Five picks (`gh`, `env -u GITHUB_TOKEN gh`, `acli`, `chmod`, `npx`) had to be found and backed out by hand, one at a time |
 | The door never says the applies need the Bash sandbox off | `antigravity_permissions_apply.py --apply` died `OSError: [Errno 30] Read-only file system` on `~/.gemini/`; the same class hit `.claude/settings.local.json` in Step 1, which the door DOES warn about |
-| The door never names Road 2 (`gate/**`) | `main` is protected by a required status check, so the direct push was rejected and the road re-derived live — although `main_write_gate.py:216` already calls `gate/**` *"the local door's road"* |
+| The door names NO road at all | `main` is protected, the direct push was rejected, and the road was re-derived live — twice. ⛔ The first cut of this fix wrote the *wrong* road into the door (local merge + minted token + `git push origin main`); `git-policy.md` bans all of it for every door in this repo, and the review caught it |
 | `lane_qualify.py` answers `TASK` for any `.agents/permissions/` path | Correct for a hand edit, but it is the machine signal an agent reads when deciding how much ceremony to spend |
 
 ## The change — the door carries the road
@@ -56,11 +56,23 @@ instead of hours.
 
 ### 3. `.agents/commands/smh-llm-approvals.md` — a real Step 4, "Land it"
 
-The road, end to end and explicit: the ticket, the `chore/<KEY>-<slug>` branch, ONE commit of the
-four files by explicit path, the local `--no-ff` merge, the Road 2 `gate/**` push that lets the
-required check attach, the minted token, the push to `main`. Plus the two things the applies need
-that nothing currently states: **the Bash sandbox off**, and **a VS Code window reload** after the
-Antigravity apply or the extension writes its in-memory copy back over the fence.
+The road, explicit end to end: run the scope guard (not eyeball it), write a lean walkthrough
+naming the picks and the operator's words verbatim, stamp it with `flight_recorder.py`, commit by
+explicit path on a `chore/<KEY>-<slug>` branch, push it, `gh pr create`, **STOP**.
+
+⛔ **The first cut of this step wrote the WRONG road** — `git checkout main && git merge --no-ff`,
+`mint-push-token.sh`, `git push origin main`. `.agents/rules/git-policy.md` bans every one of those
+for every door in this repo (*"No agent merges to `main`… no eligibility test, no 'small enough'
+class, no self-merge"*, and *"No command may change which branch a checkout is on"*), and it
+laundered a permission pick into merge permission — the SCC-37 substitution that rule names. The
+review caught it; `test_door_preflight_order.py` now names this door so the suite catches it next
+time.
+
+Plus the one operational fact nothing stated: the applies need the Bash sandbox off, and the two
+scripts **fail differently** — Antigravity raises `OSError: [Errno 30] Read-only file system` from
+`write_text`, Zoo raises `sqlite3.OperationalError: attempt to write a readonly database`. (The
+window reload was already in the door and is left alone; an earlier draft of this plan wrongly
+claimed it as new.)
 
 ### 4. `.opencode/commands/smh-llm-approvals.md`
 
@@ -76,7 +88,8 @@ leaves the SOP behind. The `/smh-llm-approvals` prose gains the landing half.
 - EDIT `.agents/rules/artifacts-always-first.md` — the third exemption + its four guards → 1
 - EDIT `.agents/commands/smh-llm-approvals.md` — Step 3 fence check, new Step 4 landing road → 2, 3
 - EDIT `.opencode/commands/smh-llm-approvals.md` — byte-identical mirror (E4) → 4
-- EDIT `.agents/scripts/tests/test_permission_parity.py` — the H block → the assert-first section
+- EDIT `.agents/scripts/tests/test_permission_parity.py` — the H block, and A16/A16b for the `read_file` grant kind the command corpus cannot see → the assert-first section
+- EDIT `.agents/scripts/tests/test_door_preflight_order.py` — add this door to `DOORS`, so the no-self-merge invariant is ENFORCED on it rather than merely true by omission → 3
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — the landing half of the door's prose → 5
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — one line → 5
 - EDIT `.agents/commands/INDEX.md` — the door's row now names a landing step → 2

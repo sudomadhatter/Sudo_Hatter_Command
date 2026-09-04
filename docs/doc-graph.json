@@ -7,12 +7,12 @@
     "files": 429,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 799,
+    "edges": 801,
     "external": 35,
     "ambiguous": 174,
-    "dangling": 290,
+    "dangling": 291,
     "broken_paths": 61,
-    "unresolved_names": 229,
+    "unresolved_names": 230,
     "unresolvable": 9
   },
   "nodes": [
@@ -499,7 +499,7 @@
     {
       "path": ".agents/commands/smh-llm-approvals.md",
       "in": 3,
-      "out": 4
+      "out": 5
     },
     {
       "path": ".agents/commands/smh-memory-audit.md",
@@ -739,7 +739,7 @@
     {
       "path": ".agents/rules/artifacts-always-first.md",
       "in": 35,
-      "out": 5
+      "out": 7
     },
     {
       "path": ".agents/rules/code-standards.md",
@@ -773,7 +773,7 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 57,
+      "in": 59,
       "out": 4
     },
     {
@@ -2138,7 +2138,7 @@
     },
     {
       "path": "docs/migrations/terminal-permissions-guide.md",
-      "in": 7,
+      "in": 8,
       "out": 5
     },
     {
@@ -3892,12 +3892,22 @@
     },
     {
       "from": ".agents/rules/artifacts-always-first.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/artifacts-always-first.md",
       "to": ".agents/rules/mobile-mode.md",
       "kind": "ref"
     },
     {
       "from": ".agents/rules/artifacts-always-first.md",
       "to": ".agents/rules/operator-profile.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/artifacts-always-first.md",
+      "to": "docs/migrations/terminal-permissions-guide.md",
       "kind": "ref"
     },
     {
@@ -6514,6 +6524,10 @@
     {
       "from": ".agents/commands/smh-label-tasks.md",
       "target": "implementation_plan.md"
+    },
+    {
+      "from": ".agents/commands/smh-llm-approvals.md",
+      "target": "walkthrough.md"
     },
     {
       "from": ".agents/commands/smh-memory-audit.md",

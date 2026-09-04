@@ -73,6 +73,14 @@ REPO = Path(__file__).resolve().parents[3]
 # The lobby's door to `main`. This is the only door whose target repo publishes the check.
 DOORS = {
     "/smh-close-task-merge-tree": REPO / ".agents/commands/smh-close-task-merge-tree.md",
+    # SCC-393. This door lands a permission harvest under the exemption in
+    # artifacts-always-first.md, so it reaches `main` on its own road and the absence
+    # assertions below are the ONLY thing standing between that road and a self-merge.
+    # It was written once WITH the token road (checkout main -> merge --no-ff -> mint ->
+    # push origin main) and the suite stayed green purely because this dict did not name
+    # it - the invariant in this file's docstring said "no live door takes that road" and
+    # was false while it said so. Naming it here is what makes the sentence true.
+    "/smh-llm-approvals": REPO / ".agents/commands/smh-llm-approvals.md",
 }
 
 # Ships PROJECT epics, never the lobby. Must NOT wait on a check its target does not publish.
