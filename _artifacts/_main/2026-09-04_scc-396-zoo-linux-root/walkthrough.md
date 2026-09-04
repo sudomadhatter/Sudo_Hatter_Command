@@ -183,12 +183,23 @@ The withheld stamp is about one unrelated red, not about this change.
 
 ## Your Actions
 
-- [ ] **Merge the PR** when the checks are green. This door does not merge.
-- [ ] **One thing to decide separately — SCC-397, and it is bigger than it first looked.** The
-      SCC-280 repoint ships 28 rules the project's `INDEX.md` does not list plus a `project-law.md`
-      copy that tier-1 forbids, and `main-write-gate` **cannot see any of it** because it never
-      checks out submodules. Nothing is blocked today, so this is not urgent — but the tier-1
-      check has been passing vacuously in CI for its whole life. **Remedy, two halves:** fix the
-      export or the INDEX (the tier-1 failure points at the export), and either add
-      `submodules: recursive` to the gate or make the test refuse an empty project directory
-      instead of passing over it.
+- [x] The merge itself — lands via this branch's PR
+
+*(SCC-175 checks that row against ancestry, not against its tick: `chore/SCC-396-zoo-linux-root`
+is an ancestor of `origin/main` at `0010b09b`, PR #154.)*
+
+**Nothing is owed to the operator on this lane.** The one finding that needed a decision — which
+half of the `sudo-command-center` INDEX / tier-1 problem to fix, and whether `main-write-gate`
+should check out submodules or refuse an empty project directory — is **SCC-397**, with both halves
+and their remedies written on the ticket. It is tracked there, not here, so it does not hold this
+close-out.
+
+### Correction to this record (2026-09-04, post-merge)
+
+This section originally carried `- [ ] Merge the PR when the checks are green` and a second
+checkbox for the SCC-397 decision. Both were wrong, and `jira_feed.py check-actions` refused the
+close-out over the first — correctly. From the operator's word on, the merge, the re-invocation,
+the Dev Record and the prune are the **ceremony's** steps, not his; `## Your Actions` holds only
+what he alone DECIDES. The door says to run that check **before** the PR, where the fix is free,
+and this lane skipped it — so the fix cost a second pull request. Recorded rather than quietly
+amended, because the next lane's author is the person this note is for.
