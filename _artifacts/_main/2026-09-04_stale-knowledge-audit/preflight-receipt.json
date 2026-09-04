@@ -1,14 +1,14 @@
 {
   "accept_unpushed_main": false,
   "branch": "chore/SCC-399-frontmatter-allowlist",
-  "errors": 1,
-  "exit": 2,
+  "errors": 0,
+  "exit": 1,
   "fetch": true,
   "fresh": true,
   "lane": "LOCAL",
   "schema_v": 1,
   "task_key": "SCC-399",
-  "verdict": "BLOCKED - resolve the errors above",
+  "verdict": "clear to close out and merge",
   "verdict_sha": null,
   "warnings": 1,
   "when": null
