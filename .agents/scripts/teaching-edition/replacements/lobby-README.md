@@ -44,6 +44,27 @@ python3 .agents/scripts/validate_teaching_edition.py .   # Windows may use: pyth
 The root `.env.example` lists optional command-center integrations. Copy it to `.env` only for values
 you actually use; never commit `.env` or paste secrets into the example.
 
+### Arm the Git safety gates
+
+This repository includes automated testing rules and a comprehensive Git gate stack under `.githooks/`
+and `.agents/scripts/tests/run_all.py` (`commit-msg` format & encoding verification, `pre-push` maps
+and main-branch protection, and workspace test suites).
+
+**Why Git hooks are disarmed on clone:**
+Git deliberately ignores `.githooks/` upon clone for security reasons (Git does not allow a newly cloned
+repository to execute untrusted scripts automatically without explicit user configuration).
+
+Arm the gates in one command:
+
+```bash
+python3 docs/migrations/scripts/arm_hooks_include.py .   # Windows: python docs/migrations/scripts/arm_hooks_include.py .
+```
+
+*Note: This script configures Git to read `.githooks` via an include file (`hooks.conf`), ensuring that
+parallel AI agent worktrees do not rewrite relative paths into absolute paths. When you later create
+child projects inside `Projects/<name>` using `/smh-new-project`, the tooling arms that project's
+hooks automatically.*
+
 ## 3. Open the command center and start the tutor
 
 Start a new agent session at this repository root and invoke:
