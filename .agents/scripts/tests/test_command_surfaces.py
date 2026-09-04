@@ -2657,13 +2657,21 @@ def main() -> int:
         # extract the block, run it under pwsh against a temp home, and read the directory back.
         import shutil as _sh
         _pw = _sh.which("pwsh")
-        if not _pw or not _purge:
-            c.check("CS-18 S SKIPPED: no pwsh, or no purge block to extract", True,
-                    "install PowerShell 7 to execute the retirement purge against a temp home")
+        # ⛔ THE EXTRACTION MUST NOT ASSUME THE THING C1b ASSERTS. This case anchors on
+        # `Test-Path $<var>` to find the block, which is the very guard C1b exists to pin — so
+        # deleting that guard made THIS file raise instead of failing a named case, and the
+        # mutation sweep correctly refuses to score a crash as a kill (a crash "kills" every
+        # mutant aimed anywhere in the file — the CS-19 lesson, recorded twice already in here).
+        # Degrade to a stated SKIP and let C1b carry the red it already owns.
+        _anchor = "Test-Path $" + _agname
+        if not _pw or not _purge or _anchor not in sync_raw:
+            c.check("CS-18 S SKIPPED: no pwsh, or no `%s` block to extract" % _anchor, True,
+                    "with pwsh present this case RUNS the purge; a missing anchor is C1b's "
+                    "finding, not a crash for every other case in this file to inherit")
         else:
             # The block, from its own `if (Test-Path ...)` through the matching brace — taken from
             # the RAW source so it is runnable, and brace-matched so a reformat cannot truncate it.
-            _rs = sync_raw.index("Test-Path $" + _agname)
+            _rs = sync_raw.index(_anchor)
             _rs = sync_raw.rindex("if ", 0, _rs)
             _d, _i = 0, sync_raw.index("{", _rs)
             while _i < len(sync_raw):
