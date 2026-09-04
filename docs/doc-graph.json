@@ -7,12 +7,12 @@
     "files": 429,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 796,
+    "edges": 801,
     "external": 35,
     "ambiguous": 174,
-    "dangling": 290,
+    "dangling": 291,
     "broken_paths": 61,
-    "unresolved_names": 229,
+    "unresolved_names": 230,
     "unresolvable": 9
   },
   "nodes": [
@@ -499,7 +499,7 @@
     {
       "path": ".agents/commands/smh-llm-approvals.md",
       "in": 3,
-      "out": 3
+      "out": 5
     },
     {
       "path": ".agents/commands/smh-memory-audit.md",
@@ -738,8 +738,8 @@
     },
     {
       "path": ".agents/rules/artifacts-always-first.md",
-      "in": 32,
-      "out": 5
+      "in": 35,
+      "out": 7
     },
     {
       "path": ".agents/rules/code-standards.md",
@@ -773,7 +773,7 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 57,
+      "in": 59,
       "out": 4
     },
     {
@@ -2064,12 +2064,12 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 29,
-      "out": 57
+      "out": 58
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 15
+      "out": 16
     },
     {
       "path": "docs/code-review-graph.md",
@@ -2138,7 +2138,7 @@
     },
     {
       "path": "docs/migrations/terminal-permissions-guide.md",
-      "in": 7,
+      "in": 8,
       "out": 5
     },
     {
@@ -3117,6 +3117,11 @@
     },
     {
       "from": ".agents/commands/smh-llm-approvals.md",
+      "to": ".agents/rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-llm-approvals.md",
       "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
@@ -3887,12 +3892,22 @@
     },
     {
       "from": ".agents/rules/artifacts-always-first.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/artifacts-always-first.md",
       "to": ".agents/rules/mobile-mode.md",
       "kind": "ref"
     },
     {
       "from": ".agents/rules/artifacts-always-first.md",
       "to": ".agents/rules/operator-profile.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/artifacts-always-first.md",
+      "to": "docs/migrations/terminal-permissions-guide.md",
       "kind": "ref"
     },
     {
@@ -5662,6 +5677,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
       "kind": "link"
     },
@@ -5738,6 +5758,11 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": ".agents/rules/agent-memory-is-long-term-only.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/artifacts-always-first.md",
       "kind": "ref"
     },
     {
@@ -6499,6 +6524,10 @@
     {
       "from": ".agents/commands/smh-label-tasks.md",
       "target": "implementation_plan.md"
+    },
+    {
+      "from": ".agents/commands/smh-llm-approvals.md",
+      "target": "walkthrough.md"
     },
     {
       "from": ".agents/commands/smh-memory-audit.md",

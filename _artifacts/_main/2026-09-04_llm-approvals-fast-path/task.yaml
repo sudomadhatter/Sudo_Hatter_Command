@@ -1,0 +1,5 @@
+task_key: SCC-393
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-393-approvals-fast-path
+close_command: smh-close-task-merge-tree
+secondary_repos: []

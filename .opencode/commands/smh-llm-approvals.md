@@ -172,6 +172,40 @@ platforms it applies to), or a `cmd` widened inside an existing family when it i
 the renderer derives each platform's grammar from `cmd`. Then run the renderer, and confirm
 `--check` prints *in sync*.
 
+⛔ **Then run the gates, BEFORE you report anything.** The render succeeding means the three files
+match the source; it says nothing about whether a picked row tore a hole in the fence.
+
+```bash
+cd <repo-abs> && python3 .agents/scripts/tests/run_all.py
+```
+
+⛔ **The whole suite, not `test_permission_parity.py` alone.** The battery is the fence's main
+guard, but it is not the only law a picked row can break, and the difference is not theoretical:
+on the first real run a harvested `Bash(python:*)` was refused by the ONE-INTERPRETER law
+(SCC-376), which lives in `test_settings_allowlist.py` A3 — a file the battery does not run. A
+second pick went stale against `test_zoo_permissions.py`'s guide-count check. Naming one file here
+would have passed both. Add `--on-main` to a single-file run when a lane worktree exists.
+
+**A red row is one of two different things, and they take opposite actions — read the failure
+before you act:**
+
+- **A pick the fence refuses.** Back *that* row out of `families.json`, re-render, and tell the
+  operator which of his picks could not land, naming the deny row that refused it. ⛔ Some have
+  **no deny row** — `npx` is refused by battery case A5, which pins `npx create-next-app` as
+  must-ask because a bare prefix auto-approves downloading and running any package. Say *that*
+  rather than inventing a deny row to fill the sentence.
+- **A pick that RESOLVED a known disagreement.** A11 asserts every row in its KNOWN list still
+  disagrees across platforms, so it goes red when a **good** pick makes one agree. The test's own
+  contract is that a resolved row is deleted from that list — backing the pick out here would
+  throw away a correct pick and report a refusal that never happened.
+
+Measured on the first real run (SCC-392, 2026-09-04): of 17 picks, **six** could not land —
+`gh` and `env -u GITHUB_TOKEN gh` (`command(gh pr merge)`, `command(gh repo delete)`,
+`command(gh release delete)`), `acli` (`command(acli jira workitem delete)`), `chmod`
+(`command(chmod -[a-zA-Z]*R[a-zA-Z]* 777)`), `npx` (battery A5, no deny row), and `python`
+(the one-interpreter law — a rule for a binary neither machine has). Running these checks AFTER
+writing all 17 is what turned minutes of work into a day of backing rows out one at a time.
+
 The per-platform shapes below are what the RENDERER writes — read them to know what a row will
 become, not as files to open.
 
@@ -243,6 +277,14 @@ osascript -e 'quit app "Visual Studio Code"'                                  # 
 cd <repo-abs> && python3 .agents/scripts/zoo_permissions_apply.py --apply
 ```
 
+⛔ **Both applies write OUTSIDE the repo, so they need the Bash sandbox OFF.** Zoo's store is
+under VS Code's user data and Antigravity's is `~/.gemini/`; neither is in the sandbox's writable
+set. ⛔ **They fail DIFFERENTLY and only one of the two errors is the one people remember.**
+Antigravity writes with `write_text` and raises `OSError: [Errno 30] Read-only file system`; Zoo
+writes through `shutil.copy2` and `sqlite3`, so it raises `sqlite3.OperationalError: attempt to
+write a readonly database` instead. Both are the sandbox, neither is a broken script. Run the
+`--status` probes sandboxed (they only read), and the two `--apply` calls with it disabled.
+
 Ask before quitting his editor — that is his window, with his unsaved work in it. If he says no,
 leave the tracked file edited and tell him the Zoo rows are staged but not live until the apply
 runs. **Claude's rows are live the moment the file is saved and need none of this.**
@@ -263,10 +305,76 @@ is gone the moment it runs. That is the design (the tracked file is the fence, n
 it is his to know before it happens: say how many store-only rows are about to be dropped, by name,
 and get his word. This is the one step of this command that can take a permission away.
 
-## Step 4 — Report what changed
+## Step 4 — Land it
 
-Name each row added and which file it went into, confirm the apply result, and say plainly what
-is live now versus staged. Then stop.
+⛔ **This step is the reason the command exists in one piece.** Steps 1-3 leave FOUR modified
+tracked files in the working tree — `.agents/permissions/families.json` and its three renders —
+and a door that stops here hands the next agent a decision it has no basis to make. Improvising
+next to `main` means reaching for the heaviest thing available: a plan, a worktree, a five-lens
+review. None of that is warranted, and the reason is written down: this change class is DATA whose
+correctness is machine-checked by the gates Step 3 already ran, and the operator's approval was
+captured live at the Step 2 gate.
+
+**That exemption is named in `.agents/rules/artifacts-always-first.md` § "When to Skip".** It is
+conditional, and ⛔ **the scope guard is RUN, never eyeballed** — a qualification an agent judges
+is one it can want its way through:
+
+```bash
+cd <repo-abs> && git diff --name-only origin/main...HEAD
+```
+
+Every path outside `_artifacts/` must be one of these four, and nothing else:
+`.agents/permissions/families.json` · `.agents/permissions/antigravity.json` ·
+`.claude/settings.json` · `.vscode/settings.json` — and in the last two, only the rows this door
+renders (`permissions.allow`; the two `zoo-code.*` arrays). A fifth path, or a touched `hooks`
+block, voids the exemption and the work takes the full lane. ⛔ **`lane_qualify.py` still answers `TASK` for these paths and that is
+correct** — it classifies by path and cannot see this door's guards, so a hand edit to
+`families.json` outside this command keeps the full lane. Do not "fix" it to agree.
+
+⛔ **Write the receipt before you commit.** The exemption drops the plan, the audit, the RED-first
+assertion and the review verdict — it does NOT drop the record, for the same reason
+`/smh-quick-fix` keeps one: without it, an agent that hand-edited `families.json` and *decided* its
+work was a harvest is indistinguishable from a real run, and every gate it does run still passes.
+A lean `walkthrough.md` under `_artifacts/_main/<YYYY-MM-DD>_<slug>/` carrying the picks, **the
+operator's words verbatim**, each pick the fence refused with the deny row that refused it, and a
+`## Your Actions` section. Then stamp it:
+
+```bash
+cd <repo-abs> && python3 .agents/scripts/flight_recorder.py record --task <KEY> --root _artifacts/_main/<YYYY-MM-DD>_<slug> --repo <repo-abs> --apply
+```
+
+Then commit and open the pull request:
+
+```bash
+cd <repo-abs> && git checkout -b chore/<KEY>-<slug> origin/main
+cd <repo-abs> && git add .agents/permissions/families.json .agents/permissions/antigravity.json .claude/settings.json .vscode/settings.json _artifacts/_main/<YYYY-MM-DD>_<slug>
+cd <repo-abs> && git commit -m "<KEY> chore(permissions): harvest <n> approved rows into the shared source"
+cd <repo-abs> && env -u GITHUB_TOKEN git push -u origin chore/<KEY>-<slug>
+cd <repo-abs> && gh pr create --base main --head chore/<KEY>-<slug> --fill
+```
+
+⛔ Explicit paths only — never `git add -A`, `.` or `-u`; a permissions run is exactly when other
+lanes have work in the tree. The armed `commit-msg` hook refuses a commit with no valid Jira key.
+Never a bare `gh pr create`: with no `--fill` it prompts, and an agent shell has no TTY to answer.
+
+⛔ **Then STOP. Report the PR link.** The operator clicks *Merge pull request*; `main-write-gate`
+runs the full enforcement suite on the PR as the fitness half. **This door does not merge, does not
+mint a push token, does not push `main`, and does not change which branch a checkout is on** —
+`.agents/rules/git-policy.md` bans all four by name, in this repo, for every door
+(*"No agent merges to `main` in this repo. There is no eligibility test, no 'small enough' class,
+no self-merge"*). The Step 2 pick is the operator's word about **which commands may run**; it was
+never a yes to landing on `main`, and treating it as one is exactly the substitution
+`git-policy.md` records as having ridden six merges on one invocation.
+
+⚠️ Under the sandbox, `.git/config.lock` can appear as a character device (`crw-rw-rw- nobody
+nogroup 1, 3`) rather than a real lock, and git fails with *could not lock config file*. It is a
+mount artifact, not a stale lock — re-run with the sandbox off rather than deleting anything.
+
+## Step 5 — Report what changed
+
+Name each row added and which file it went into, name each pick that could NOT land with the deny
+row that refused it, confirm the apply result, and say plainly what is live now versus staged.
+Then stop.
 
 ## What this command does NOT do
 
