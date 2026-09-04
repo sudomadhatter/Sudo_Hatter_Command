@@ -1,5 +1,8 @@
 {
-  "test": ["python3", ".agents/scripts/tests/test_permission_parity.py"],
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_permission_parity.py"
+  ],
   "mutants": [
     {
       "id": "M1 an --apply that overwrites the tracked list, grown inside main()",
@@ -18,11 +21,11 @@
       "block": "G ·"
     },
     {
-      "id": "M3 the unreadable-file guard removed - the error stops naming its file",
+      "id": "M3 the parse error stops naming the file it could not read",
       "file": ".agents/scripts/claude_permissions_status.py",
-      "original": "    try:\n        raw = path.read_text(encoding=\"utf-8-sig\")   # a Windows-authored file carries a BOM\n    except (OSError, UnicodeDecodeError) as exc:\n        raise ValueError(f\"{path} could not be read - {exc}\") from exc",
-      "mutated": "    raw = path.read_text(encoding=\"utf-8\")",
-      "case": "G9b and the error NAMES the file",
+      "original": "        raise ValueError(f\"{path} is not readable JSON - {exc}\") from exc",
+      "mutated": "        raise ValueError(f\"not readable JSON - {exc}\") from exc",
+      "case": "G9b and the error NAMES the file - exit 2 alone passes without the guard, because JSONDecodeError already subclasses ValueError",
       "block": "G ·"
     },
     {
@@ -72,6 +75,14 @@
       "mutated": "- It reads the two machine-local Claude files.",
       "case": "E7 the door states Claude has no apply, names the script, AND keeps the never-edits law",
       "block": "E ·"
+    },
+    {
+      "id": "M10 the OSError half of the read guard removed - an unreadable path tracebacks again",
+      "file": ".agents/scripts/claude_permissions_status.py",
+      "original": "    except (OSError, UnicodeDecodeError) as exc:",
+      "mutated": "    except UnicodeDecodeError as exc:",
+      "case": "G9d a machine-local path that cannot be READ exits 2 too, never a traceback",
+      "block": "G ·"
     }
   ]
 }
