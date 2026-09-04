@@ -1,15 +1,15 @@
 {
   "accept_unpushed_main": false,
   "branch": "chore/SCC-388-project-law-audit",
-  "errors": 3,
-  "exit": 2,
+  "errors": 0,
+  "exit": 1,
   "fetch": true,
   "fresh": true,
   "lane": "LOCAL",
   "schema_v": 1,
   "task_key": "SCC-388",
-  "verdict": "BLOCKED - resolve the errors above",
+  "verdict": "clear to close out and merge",
   "verdict_sha": null,
-  "warnings": 3,
+  "warnings": 2,
   "when": null
 }
