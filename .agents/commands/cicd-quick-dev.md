@@ -1,6 +1,6 @@
 ---
 description: Fast-track dev flow on the real quick-dev engine (`bmad-quick-dev`, one-shot route) — clarify intent and FIX acceptance criteria, implement, then a mandatory tiered review gate (independent adversarial reviewer always; acceptance auditor + clean-code machine floor + scoped tests on code; link/anchor + SOP-currency on docs). Stops for human review. Carries an EJECT tripwire back to the full ①②③ lane.
-platforms: [opencode, antigravity, claude, codex]
+platforms: [opencode, antigravity, claude, codex, zoo]
 ---
 
 # /cicd-quick-dev — Fast-Track Development (fast lane, guarded)
@@ -69,15 +69,16 @@ one. The base is a **remote-tracking ref after a fetch, never a bare local `main
 local ref is a cache a sibling lane has already moved past:
 
 ```bash
-git -C "$PROJECT_ROOT" worktree list                      # reuse this fix's tree if it exists
-git -C "$PROJECT_ROOT" fetch origin                       # ⛔ the base is origin/…, never a bare local ref
+L=$(pwd)                                                     # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
+cd "$PROJECT_ROOT" && git worktree list                      # reuse this fix's tree if it exists
+cd "$PROJECT_ROOT" && git fetch origin                       # ⛔ the base is origin/…, never a bare local ref
 # story lane — off the story's EPIC branch:
-git -C "$PROJECT_ROOT" worktree add .claude/worktrees/<slug> -b claude/<KEY>-<slug> origin/epic/<KEY>-<epic-slug>
+cd "$PROJECT_ROOT" && git worktree add .claude/worktrees/<slug> -b claude/<KEY>-<slug> origin/epic/<KEY>-<epic-slug>
 # ad-hoc lane — no epic applies (a truly ad-hoc fix outside any sprint): git-policy.md's chore lane, off main:
-git -C "$PROJECT_ROOT" worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
-git -C "<the new tree>" branch --unset-upstream           # an origin/… start-point sets upstream to the BASE branch
-python3 .agents/scripts/link-worktree-assets.py "$PROJECT_ROOT"/.claude/worktrees/<slug>   # PC: `python`  ⛔ BIND it — the arg is read from YOUR cwd (the lobby), not from PROJECT_ROOT
-BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
+cd "$PROJECT_ROOT" && git worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
+cd "$PROJECT_ROOT"/.claude/worktrees/<slug> && git branch --unset-upstream   # an origin/… start-point sets upstream to the BASE branch
+cd "$L" && python3 .agents/scripts/link-worktree-assets.py "$PROJECT_ROOT"/.claude/worktrees/<slug>   # PC: `python`  ⛔ the script lives in the LOBBY — the cd "$L" is what finds it after the cds above
+BRANCH=$(cd "$PROJECT_ROOT"/.claude/worktrees/<slug> && git rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
 ```
 
@@ -129,9 +130,9 @@ Idempotent, so a re-run or a resumed lane is a no-op. **Read its exit code — f
 work is invisible to `grep`:
 
 ```bash
-git -C "$PROJECT_ROOT" worktree list
-git -C <each-other-tree> diff --name-only <that lane's base>...HEAD   # origin/epic/<…> for a story tree, origin/main for a chore tree
-git -C <each-other-tree> status --short
+cd "$PROJECT_ROOT" && git worktree list
+cd "$PROJECT_ROOT"/.claude/worktrees/<other-slug> && git diff --name-only <that lane's base>...HEAD   # origin/epic/<…> for a story tree, origin/main for a chore tree
+cd "$PROJECT_ROOT"/.claude/worktrees/<other-slug> && git status --short
 ```
 
 Any file in both their set and your intended set is a **landing-order dependency**. Say which lane
@@ -246,7 +247,7 @@ Runs **after** the work. **Pin the diff first, from command output** — `step-o
 
 ```bash
 WORKTREE=<the tree Step 0.5 opened, or "$PROJECT_ROOT" when this lane reuses the checkout>
-# ⛔ BIND IT. `git -C ""` does NOT error - it silently resolves against the cwd, and cwd
+# ⛔ BIND IT. `cd ""` exits 0 without erroring (bash and zsh both), so the && chain runs against the cwd, and cwd
 # resets to the shared main checkout between tool calls, so an unbound WORKTREE pins the
 # diff of a tree that is not this lane's and reports normally (`worktree-per-story`
 # §"cwd is not intent").
@@ -256,11 +257,11 @@ BASE_REF=origin/main                                  # ad-hoc chore lane
 # story already landed on the epic branch - other lanes' work, reviewed and reported as
 # this one's. Name the epic the tree was cut from:
 #   BASE_REF=origin/epic/<JIRA-KEY>-<slug>            # story lane
-git -C "$WORKTREE" fetch origin --quiet
-BASE=$(git -C "$WORKTREE" merge-base HEAD "$BASE_REF")
-git -C "$WORKTREE" diff --name-only "$BASE"...HEAD       # committed
-git -C "$WORKTREE" diff --name-only                      # plus uncommitted
-git -C "$WORKTREE" diff --name-only --cached             # plus staged
+cd "$WORKTREE" && git fetch origin --quiet
+BASE=$(cd "$WORKTREE" && git merge-base HEAD "$BASE_REF")
+cd "$WORKTREE" && git diff --name-only "$BASE"...HEAD       # committed
+cd "$WORKTREE" && git diff --name-only                      # plus uncommitted
+cd "$WORKTREE" && git diff --name-only --cached             # plus staged
 ```
 
 **An empty set is a STOP, not a pass** (`tests-must-gate-for-real`): a gate that reads nothing
@@ -276,7 +277,7 @@ an agent reviewing its own reasoning anchors on it), verifies what they find, th
 | `REPO` | `PROJECT_ROOT` from Step 0 |
 | `WORKTREE` | the tree Step 0.5 opened |
 | `DIFF` | the set pinned above, taken in that worktree |
-| `HEAD_SHA` | `git -C "$WORKTREE" rev-parse HEAD`, taken **now** |
+| `HEAD_SHA` | `cd "$WORKTREE" && git rev-parse HEAD`, taken **now** |
 | `review_mode` | `full` **when you wrote the Step 1 ACs to a file** (below); `no-spec` only when you genuinely have no acceptance list |
 | `STORY_FILE` | that AC file — required for `full`, and the thing the Acceptance Auditor reads |
 | `ARTIFACT_DIR` | the Step 4 walkthrough's folder |
@@ -343,7 +344,7 @@ patch → HALT** (and see Step 1.5). Re-run the affected check after applying fi
 
 ## Step 4 — Artifacts, then stop
 - **Ad-hoc lane, FIRST: settle `close_command` in `task.yaml`.** The diff exists now, so the door is
-  a read rather than a guess. Run `git -C "<the tree>" diff --name-only origin/main...HEAD`, match it
+  a read rather than a guess. Run `cd "<the tree>" && git diff --name-only origin/main...HEAD`, match it
   against the deployable-path list in Step 0.5's door table, and **rewrite the `TBD`** —
   `cicd-push-e2e` if anything deployable is in the set, `smh-close-task-merge-tree` if not. The
   close-out reads that field; leaving it `TBD` sends the operator to a door the preflight will refuse.

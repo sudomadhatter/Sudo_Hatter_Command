@@ -1,0 +1,21 @@
+{"test": ["python3", ".agents/scripts/tests/test_link_worktree_assets.py"],
+ "mutants": [
+  {"id": "M4 exclude entries never written",
+   "file": ".agents/scripts/link-worktree-assets.py",
+   "original": "    write_exclude_entries(worktree, placed_rels)   # SCC-310: links must not read as dirt",
+   "mutated": "    # write_exclude_entries(worktree, placed_rels)   # SCC-310: links must not read as dirt",
+   "case": "X1 a freshly linked worktree reports a CLEAN git status",
+   "block": "SCC-310 · linked lanes stamp CLEAN: exclude entries hide the links, real dirt stays"},
+  {"id": "M5 sibling-lane guard dropped - unlink always removes the shared block",
+   "file": ".agents/scripts/link-worktree-assets.py",
+   "original": "    others = other_linked_worktrees(worktree)\n    if others:",
+   "mutated": "    others = other_linked_worktrees(worktree)\n    if False:",
+   "case": "X3 unlinking ONE lane keeps the entries the sibling lane still needs",
+   "block": "SCC-310 · linked lanes stamp CLEAN: exclude entries hide the links, real dirt stays"},
+  {"id": "M6 removal disabled - the block is never cleaned up",
+   "file": ".agents/scripts/link-worktree-assets.py",
+   "original": "    others = other_linked_worktrees(worktree)\n    if others:",
+   "mutated": "    others = other_linked_worktrees(worktree)\n    if True:",
+   "case": "X4 unlinking the LAST lane leaves no managed exclude entries behind",
+   "block": "SCC-310 · linked lanes stamp CLEAN: exclude entries hide the links, real dirt stays"}
+ ]}

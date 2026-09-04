@@ -153,6 +153,11 @@ DISCUSSED_AS_RETIRED = {
     # workflows_testing_SOP.md section 6 names the old command in its rename note, which is
     # the sentence a reader needs to connect the command they remember to the one that exists.
     "cicd-parallel-check",
+    # SCC-367 retired this on 2026-09-01, folding it into `/smh-sync-agents -GlobalsOnly`;
+    # workflows_testing_SOP.md's `/smh-sync-agents` entry names it to explain what absorbed it
+    # and why the flag is now the only way to run that pass. It was a thin alias for exactly
+    # that flag, and its own body already told the operator to prefer the command that remains.
+    "smh-slash-command-updating",  # retired by SCC-367 (marker on THIS line: CS-22 B is line-scoped)
 }
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s#]+)")
@@ -266,6 +271,10 @@ ABSENT_BY_DESIGN = {
     # clean tree never has it. Naming it is the doc's job; creating it is the run's.
     "_artifacts/_autopilot-run.log":
         "runtime output - written by a live autopilot run, gitignored",
+    # Gitignored machine-local file (SCC-392): exists only on machines where local Claude settings
+    # are written, gitignored by design, so a clean tree never has it.
+    ".claude/settings.local.json":
+        "gitignored machine-local file - written by Claude Code per-project, never tracked (SCC-392)",
     # ⭐ PROVENANCE, and the T4 lesson one tier down. These two folders were emptied by
     # SCC-74, and the docs that say "consolidated FROM here" are doing their job. Flagging
     # them pushes an author to delete the sentence explaining where everything went --
@@ -280,6 +289,16 @@ ABSENT_BY_DESIGN = {
     # off." Flagging it asks the author to delete the warning. (Structurally it could never
     # resolve anyway: `.git` is pruned from the index, and in a worktree it is a FILE.)
     ".git/hooks": "named as the empty default core.hooksPath bypasses - the SOP's point",
+    # ⭐ THE PAIR IS THE POINT, AND NEITHER HALF CAN EVER RESOLVE (SCC-321). These name the
+    # CONVENTION a virtualenv follows - `bin` on POSIX, `Scripts` on Windows - which is the
+    # `code-standards` §6 rule that a venv path must be resolved and never hardcoded. Whichever
+    # machine reads the doc, the other machine's spelling is absent BY DEFINITION; and neither
+    # is a repo-relative path in the first place, since a real one lives at `backend/.venv/…`.
+    # So flagging them asks an author to delete the one sentence that stops the next agent
+    # hardcoding a Windows path into a script the Mac has to run - the same inversion
+    # DISCUSSED_AS_RETIRED exists to prevent, one tier down.
+    ".venv/bin": "names the POSIX half of the venv convention - code-standards §6",
+    ".venv/Scripts": "names the Windows half of the venv convention - code-standards §6",
 
     # -- class 2: PROSPECTIVE -- the doc is telling you to create it -------------------
     # Each of these sits in a sentence whose whole job is "make this". Flagging them asks
@@ -1341,12 +1360,21 @@ def main() -> int:
     #    .claude/worktrees/<lane>/, so the absolute parts contain "worktrees" for every file
     #    and an absolute-path filter silently excludes the entire tree (found 0 of 2 copies).
     copies = []
-    for p in ROOT.rglob("autopilot_bmad_dev_loop.md"):
-        rel = p.relative_to(ROOT).as_posix()
-        parts = rel.split("/")
-        if {".git", "_artifacts", "Projects", "worktrees"} & set(parts):
-            continue
-        copies.append(rel)
+    # ⛔ PRUNE THE WALK — A RESULT-FILTER DOES NOT PROTECT IT. `ROOT.rglob(...)` ENTERS every
+    # directory before the test below can reject it, so it descended into
+    # `Projects/<p>/.claude/worktrees/<lane>/backend/.venv/Lib/site-packages/torch-*.dist-info/
+    # licenses/third_party/kineto/.../civetweb/examples/rest` and died with WinError 3 (Windows
+    # refuses paths over 260 chars). That crash took the WHOLE FILE down, and a file that dies
+    # has run nothing — the suite reported it as one red among many rather than as unrun.
+    # `os.walk` lets the same names be dropped from `dirnames`, so they are never entered.
+    # The exclusion set is the original four plus the module's own PRUNE (a real second copy of
+    # this doc cannot live in `.venv`/`node_modules`), so the assertion is unchanged.
+    skip = {".git", "_artifacts", "Projects", "worktrees"} | PRUNE
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        dirnames[:] = [d for d in dirnames if d not in skip]
+        if "autopilot_bmad_dev_loop.md" in filenames:
+            copies.append((Path(dirpath) / "autopilot_bmad_dev_loop.md")
+                          .relative_to(ROOT).as_posix())
     ok = len(copies) == 1
     c.check("T7 exactly one autopilot_bmad_dev_loop.md", ok, det(ok, f"copies: {sorted(copies)}"))
 

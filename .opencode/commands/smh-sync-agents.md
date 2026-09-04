@@ -24,8 +24,10 @@ What it touches:
   are excluded from the `.claude/skills` copy.
 - **Local tool dirs** — `.claude/skills`, `.opencode/{commands,agent}`. **`.claude/commands` is a RETIRED
   door**: the sync writes nothing there and manifest-purges what previous runs wrote.
-- **Machine-global caches** — `~/.config/opencode/commands` and `~/.gemini/antigravity/global_workflows`.
-  Each receives only commands whose `platforms:` frontmatter includes that platform. **`~/.codex/prompts` is
+- **Machine-global caches** — `~/.config/opencode/commands`, sourced from `.agents/commands/` (full bodies),
+  and `~/.gemini/antigravity/global_workflows`, sourced from **`.agents/workflows/`** so Antigravity receives
+  the same thin launchers as its per-project door and never an over-cap body (SCC-332).
+  Each receives only files whose `platforms:` frontmatter includes that platform. **`~/.codex/prompts` is
   a RETIRED door** (the deprecated `/prompts:<name>` surface double-doored every command beside its skill);
   the sync purges our non-`bmad-*` prompts from it.
 - **Codex skills mirror** (on a LOBBY sync) — the 56 `bmad-*` skills from `.claude/skills` are mirrored to
@@ -52,7 +54,9 @@ invocable surfaces (`.agents/{commands,workflows}`, `.claude/commands`, `.openco
   moved ahead and this copy hasn't synced yet. Either way, a sync resolves it.
 - `?` — **orphan**: present here, but master has no such command. Could be a project-authored command or a
   stale ghost — nothing can tell those apart automatically, which is what the keep-list is for.
-- `own` — an orphan claimed by `.agents/project-own.txt`, kept forever.
+- `own` — an orphan claimed by the `project-own.txt` keep-list in `.agents/`, kept forever.
+  (Written that way, not as one path: the file is created ON DEMAND by `-Reconcile` below, so its
+  absence is the normal state and a resolvable path claim here reads as a dead link forever.)
 
 `-Reconcile` resolves the `?`s, and **never guesses**. With no `project-own.txt` it *stages* one
 listing every orphan and deletes nothing. You review it and **delete a line to mark that file as a ghost**; the
@@ -79,11 +83,58 @@ Run (PowerShell):
 & ".agents/scripts/sync-agents.ps1"
 ```
 
-Switches: `-GlobalsOnly` (refresh only the machine-global caches — opencode + Antigravity + the Codex bmad-*
-skills mirror, plus the one-time Codex prompts retirement purge — what `/smh-slash-command-updating` delegates to) ·
+Switches: `-GlobalsOnly` (refresh only the machine-global caches — see the section below) ·
 `-NoGlobals` (local tool dirs only) · `-Status` (read-only reconciliation report; writes nothing) ·
 `-Reconcile` (resolve orphans via the staged keep-list) ·
 `-WhatIf` / `-DryRun` (preview every copy/delete action without touching disk).
+
+## `-GlobalsOnly` — the machine-global caches, and why they have DIFFERENT sources
+
+> **This was its own command until SCC-367.** `/smh-slash-command-updating` was a thin alias that ran
+> exactly `-GlobalsOnly` and nothing else, and its own closing note told the operator to prefer plain
+> `/smh-sync-agents`, which does this pass *and* the local doors. The alias is retired; the law it
+> carried is here.
+
+Refreshes only the two machine-global command caches (plus the Codex `bmad-*` skills mirror and the
+one-time Codex prompts retirement purge), leaving the lobby's local `.claude/` / `.opencode/` dirs alone:
+
+```powershell
+& ".agents/scripts/sync-agents.ps1" -GlobalsOnly
+& ".agents/scripts/sync-agents.ps1" -GlobalsOnly -WhatIf     # preview; touches no disk
+```
+
+⛔ **Each cache has its OWN source (SCC-332). They are not two copies of one folder:**
+
+- `~/.gemini/antigravity/global_workflows` ← **`.agents/workflows/`**, the generated thin-launcher door.
+  Antigravity calls its invocable units "workflows" and **truncates any one over 12,000 chars instead of
+  rejecting it** — measured: a 39,594-char body arrived cut off mid-Step-0.5, with no error anywhere. So
+  **every** command reaches this cache as a generated launcher that points back at
+  `.agents/commands/<name>.md`. **Sourcing this cache from `commands/` bypasses that and ships truncated
+  bodies to the operator's menu** — that IS the SCC-332 defect, and it shipped once.
+
+  ⭐ **This paragraph is the ONLY place in the system that still writes the number down** (SCC-370). It is
+  kept here as the *reason* the launcher surface exists, not as a rule anyone measures against: the
+  generator has no size branch, so a door is a few hundred bytes and the cap is unreachable by
+  construction. `test_command_surfaces.py` CS-18 P sweeps every other law, doc, door and memory file to
+  keep it that way, and CS-18 P3 fails if this paragraph ever loses the fact.
+- `~/.config/opencode/commands` ← **`.agents/commands/`**, the full bodies. opencode has no size cap.
+
+The globals pass regenerates `.agents/workflows/` **first**, so the cache always mirrors a fresh door set;
+`test_command_surfaces.py` CS-18 I2 pins that ordering, because a reversed pass would mirror a stale door
+set on the very run meant to refresh it. Mirror-exact otherwise: stale ghosts are purged, `bmad-*` (BMAD's
+own global install) is preserved, and per-file `platforms:` frontmatter is honored, so a claude-only
+command is never pushed to the gemini/opencode caches.
+
+**Notes:**
+- Writing to `~/.config/opencode/**` and `~/.gemini/antigravity/**` may trigger an `external_directory: ask`
+  prompt under opencode/Antigravity — confirm it.
+- **Restart opencode afterwards** so the refreshed global config + commands are picked up in other projects.
+- Prefer plain `/smh-sync-agents` (no args) when you also want the lobby's local `.claude/` / `.opencode/`
+  dirs refreshed in the same pass — it does the locals **and** these globals.
+
+## After any sync — drift, counts and restarts
+
+*(Command-wide, not scoped to `-GlobalsOnly` above.)*
 
 Check lobby drift with `& ".agents/scripts/sync-agents.ps1" -Status`. Do not use `-Maintained` or a project
 `-Target`; both are retired and fail loudly.

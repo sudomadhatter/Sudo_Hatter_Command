@@ -37,7 +37,7 @@ click path, a Sentry event id, or a failing test. *"I read the code and I can se
 
 Two legitimate exits, both endings rather than workarounds:
 
-- **You can't observe it but Daniel can** (browser console, network, Firestore, UI) →
+- **You can't observe it but Mr. Hatter can** (browser console, network, Firestore, UI) →
   `collaborative-debug-first`. One targeted log, one specific question, then resume at G1.5 with his
   output as the reproduction.
 - **It genuinely does not reproduce** — heisenbug, prod-only, race, one Sentry event and nothing since.
@@ -72,6 +72,13 @@ cost-to-disprove**, cheap-and-likely first. Then for each, try to **disprove** i
 or extra test that would rule it out, and stop the moment evidence lands either way. **One change, one
 observation.** Never stack speculative fixes.
 
+**Before you test a hypothesis by editing code, check whether the answer is already documented.**
+Search the vendor's official docs for the error message, the API, or the behavior in question
+(`karpathy-guidelines` §5). One web search that finds a known issue, a migration guide, or a
+documented breaking change saves every hypothesis on your list. A fix built on stale training data is
+a guess dressed as knowledge — verify the current behavior from a first-party source before you touch
+the code.
+
 **Stop conditions — any one fires, you stop editing and escalate:**
 
 | Signal | Threshold |
@@ -83,7 +90,7 @@ observation.** Never stack speculative fixes.
 *(Thresholds are house-set, not literature — tune them if they prove wrong; don't ignore them.)*
 
 Escalation is **not failure**. Hand over the reproduction, the minimized case, the red test, and the
-list of what is now **ruled out** — that is real progress, and exactly what the next agent or Daniel
+list of what is now **ruled out** — that is real progress, and exactly what the next agent or Mr. Hatter
 needs. In a `/cicd-quick-dev` lane it is the same signal as the EJECT tripwire: stop, this is not a
 quick fix.
 

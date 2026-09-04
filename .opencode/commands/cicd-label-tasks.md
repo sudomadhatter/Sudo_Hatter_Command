@@ -1,5 +1,5 @@
 ---
-description: After an epic's stories are WRITTEN, answer "which of these can I run side by side, and which are small enough for the quick lane?" — one snapshot over one BMAD epic's children. Reads every story file, extracts what each will actually modify, computes the largest set with no file overlap, and tags the winners `parallel-ok` + `quick-dev` on the board. Stamps the set it was computed against so it can detect its own staleness. States, never starts.
+description: After an epic's stories are WRITTEN, answer "in what ORDER do I run these, and which can go side by side?" — the whole wave schedule over one BMAD epic's children. Reads every story file, extracts what each will actually modify, solves the largest set with no file overlap, lands it, and solves again until every story has a slot. Stamps `wave-N` on every child, `parallel-ok` where a wave holds two or more, and `quick-dev` where the lane is light. Stamps the set it was computed against so it can detect its own staleness. States, never starts.
 platforms: [opencode, antigravity, claude, codex]
 ---
 
@@ -22,6 +22,48 @@ compare against. This command is the moment the comparison is possible.
 
 **The operator's lever, stated plainly: to develop an epic in parallel, write all its stories first.**
 Grounded stories unlock approval; nothing else does.
+
+## ⭐ It answers ORDER, not just "right now" — the wave schedule
+
+**The output is a schedule the operator manages the board from.** One solve answers *"which of
+these can run together right now"*, which on a chained epic is a single ticket and tells you
+nothing about what comes after it. So the engine keeps going: solve, land the winners, solve
+again, until every grounded child has a slot.
+
+```
+wave 1  NVS-19                ← certified: the set this run measured
+wave 2  NVS-20
+wave 3  NVS-22 · NVS-23       ← two members, so both are parallel-ok
+wave 4  NVS-21
+```
+
+| Label | Goes on | Means |
+|---|---|---|
+| **`wave-N`** | **every** grounded child | run it in wave N; the schedule, on the card |
+| **`parallel-ok`** | only a child whose wave holds **two or more** | run it beside the others in its wave |
+| `quick-dev` | a child the light lane fits | ships via `/cicd-quick-dev` |
+
+Measured on NVS-10: NVS-19 came back the sole approved child wearing `parallel-ok`, and
+the operator correctly read the board as nonsense. That is the defect the rule below closes.
+
+<!-- twin-law: waves-are-the-answer-not-one-snapshot -->
+⛔ **A SOLO WAVE CARRIES NO `parallel-ok`, and that is the whole reason the label is trustworthy.**
+It is a claim about SIBLINGS. On a set of one it asserts nothing while *reading* as "this one
+parallelizes" — the exact opposite of why that child was approved, which is that it is **alone**.
+
+⭐ **Wave 1 is CERTIFIED; waves 2+ are PROJECTED, and the comment says so.** Later waves are solved
+from ground nobody has broken yet, and real work always turns up surfaces no plan named.
+**Re-run after each wave lands.** Presenting the whole schedule at one authority is how a
+projection gets scheduled against as a measurement.
+
+⛔ **No schedule past an unknown.** One in-flight sibling with no landed plan already empties the
+approved set; the waves are suppressed **entirely** for the same reason. A schedule solved *around*
+unknown ground reaches the board as a label, which is a guess wearing the authority of a
+measurement (rule 3).
+
+⛔ **A dependency CYCLE emits no schedule at all, never a partial one.** Truncated waves would put
+real-looking labels on the board and silently omit the children the operator most needs to see.
+<!-- /twin-law -->
 
 ## 🛑 MANDATORY RULES
 
@@ -112,7 +154,7 @@ rather than in the working tree, which is the normal state for anything still in
 reads the miss as "no source" downgrades a grounded child:
 
 ```bash
-git -C "$REPO" show "<ref>:<path>"     # ref present  → read it from the branch
+cd "$REPO" && git show "<ref>:<path>"     # ref present  → read it from the branch
 cat "<path>"                            # ref null     → it is in the checkout
 ```
  This is the step no parser wins: across 139 AGY story
@@ -178,7 +220,7 @@ Leave the key out for any child you did not assess and its label survives untouc
 ## Step 3 — The set math (mechanical)
 
 ```bash
-python3 .agents/scripts/label_tasks.py resolve \
+cd <the lobby's absolute path — the script is the LOBBY's; Step 2's cds moved the shell> && python3 .agents/scripts/label_tasks.py resolve \
         --plan /tmp/lt-plan.json --touchsets /tmp/lt-touch.json --out /tmp/lt-verdicts.json
 ```
 
@@ -190,36 +232,40 @@ falls.
 
 ## Step 4 — Print the answer
 
-Print the table the script renders, unedited — approved list first, then one verdict per ticket:
+Print the table the script renders, unedited — the schedule line first, then one verdict per ticket:
 
 | Verdict | Meaning |
 |---|---|
-| 🟢 approved | safe to run beside **every other** 🟢 |
+| 🟢 approved | wave 1 — start here |
 | 🔒 after `<ticket>`, `<ticket>` | shares ground with EVERY ticket named — run after all of them land |
 | ⏳ waiting on `<story>` | an in-flight story's surfaces are unknown; clears when its plan lands |
 | 📝 no story | ungrounded — `/cicd-write-story-tests <id>` unlocks it |
+| **Wave `N`** | which wave the child runs in (a column, not a verdict) |
+| **🧵** | in a wave of **two or more** — carries `parallel-ok` |
 | ⚡ quick-dev | ships via `/cicd-quick-dev` (a separate column, not a verdict) |
 
 ## Step 5 — Stamp the board
 
 ```bash
-python3 .agents/scripts/label_tasks.py stamp \
+cd <the lobby's absolute path> && python3 .agents/scripts/label_tasks.py stamp \
         --plan /tmp/lt-plan.json --verdicts /tmp/lt-verdicts.json --apply
 ```
 
-Adds `parallel-ok` to the 🟢 set **and strips it from everyone else** — that rewrite is what makes
-this self-correcting where the per-story writer rotted, and it preserves every other label.
-`quick-dev` rides the same pass with the same rewrite, **except where you left it unassessed**,
-which is left exactly as it was. Posts
-one comment on the **epic** carrying the table, the evidence, and the stamp:
-`verified <date> against N children: <keys>`.
+Writes `wave-N` on every grounded child and `parallel-ok` on every child whose wave holds two or
+more — **and strips both from everyone else.** That rewrite is what makes this self-correcting
+where the per-story writer rotted, and it preserves every other label. The wave family is stripped
+as a **family**: a child that moves from wave 2 to wave 3 loses `wave-2`, or the card asserts two
+waves at once and the operator schedules against whichever they read first. `quick-dev` rides the
+same pass with the same rewrite, **except where you left it unassessed**, which is left exactly as
+it was. Posts one comment on the **epic** carrying the schedule, the table, the evidence, and the
+stamp: `verified <date> against N children: <keys>`.
 
 ⛔ **Labels and one comment only.** It does not transition anything (`jira.md` guardrail 4).
 
 ## Re-checking later — is yesterday's answer still good?
 
 ```bash
-python3 .agents/scripts/label_tasks.py check --parent <PARENT-KEY>
+cd <the lobby's absolute path> && python3 .agents/scripts/label_tasks.py check --parent <PARENT-KEY>
 ```
 
 `[FRESH]` (exit 0) or `[STALE]` (exit 1) with the children added or removed since. **A stamped set
@@ -230,11 +276,12 @@ both misled on 2026-08-09; this is the check that makes the same failure impossi
 ## Report
 
 `✅ Parallel check — <PARENT-KEY> (Epic <n>) in <repo>:`
-- `Approved (<n>): <keys>` *(or why nothing was)*
+- `Schedule: wave 1 <keys> → wave 2 <keys> → …` — ⛔ **every wave, in order.** This is the line the operator manages the board from; an approved-set-only report makes a chained epic look like one startable story and nothing else.
+- `Approved (<n>): <keys>` *(or why nothing was)* — this is wave 1
 - `Locked: <key> after <key>, <key> — <the shared path per blocker>` per row — ⛔ **every** declared blocker, not the first. A row naming one of three reads as a single dependency, and the operator schedules against it.
 - `Quick-dev (<n>): <keys>`
 - `Ungrounded: <keys> → /cicd-write-story-tests <id>`
-- `Board: <n> labels added, <n> stripped · comment on <PARENT-KEY>`
+- `Board: <n> labels added, <n> stripped · comment on <PARENT-KEY>` — name wave 1 as **certified** and waves 2+ as **projected**; a schedule reported at one authority gets scheduled against as a measurement
 - `Stamp: verified <date> against <n> children`
 
 ⛔ Never end by starting one of them. The next move is the operator's.

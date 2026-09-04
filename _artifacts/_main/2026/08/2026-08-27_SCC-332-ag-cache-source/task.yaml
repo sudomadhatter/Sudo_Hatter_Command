@@ -1,0 +1,12 @@
+task_key: SCC-332
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-332-ag-cache-source
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: []
+# riders is EMPTY on purpose. SCC-338 (the PC globals sync) is linked `SCC-332 Blocks SCC-338`,
+# not carried here: its work is a run on ANOTHER MACHINE and lands no bytes in this lane. The
+# rider contract is for subtasks whose work lands IN this branch, and work-consolidation.md is
+# explicit - never declare a ticket whose work is not real. It was briefly minted as a subtask
+# (SCC-337) and that deadlocked the close-out: the parent cannot close while a child is open,
+# and the child needs this lane's code on the PC first. Re-minted as a blocked-by sibling.

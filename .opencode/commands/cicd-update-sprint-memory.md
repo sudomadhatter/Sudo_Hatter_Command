@@ -128,6 +128,58 @@ learning yourself:
 
 Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: session artifacts)`.
 
+## Step 3.5 — Keep the project overview guide current (AUTOMATIC, never ask)
+
+`PROJECT_ROOT/docs/project_overview_guide.md` is the page that says **what was built and how a
+request flows through it**, written for a human. It is not the PRD — the PRD says what was
+*wanted*, and it is **never rewritten from this page** (operator ruling, 2026-08-31). The guide
+goes stale one story at a time, so it is kept current one story at a time, **here**, while the
+context that makes the edit correct still exists.
+
+**Read it, then do exactly one of two things — and WRITE THE LINE EITHER WAY:**
+
+1. **This story changed a flow, a part, a contract, or where something lives** → **edit the
+   guide** and extend its `## 5 What changed, per epic` row for this epic. Diagrams are
+   `flowchart TD`/`LR` only (`.agents/rules/mermaid-diagram-preferences.md`); every path is a
+   clickable link. The edit rides the story branch like everything else this command writes.
+   Then record it under the walkthrough's `## Evidence`:
+
+   ```
+   Project overview guide: edited - <what moved, and which section now says so>
+   ```
+
+2. **It changed none of those** → write the line, with the other state:
+
+   ```
+   Project overview guide: unchanged - <why: what this story touched, and why the page does not describe it>
+   ```
+
+**No guide in this project yet?** Write `Project overview guide: absent - <project> has no guide
+yet` and carry on. Writing the first edition is that project's own ticket; nothing here blocks on
+it, and `closeout_preflight.py` WARNs rather than erroring until it exists.
+
+⛔ **The line is written in ALL THREE cases, and case 1 is the one that looks unnecessary.**
+While the story branch is live the check can see the guide edit in the diff and asks for nothing.
+But `closeout_preflight.py` is re-run by the prune door and the epic-merge door —
+**after** the lane has landed, when `<base>...<lane>` is empty
+because the base now contains the lane. At that moment the only surviving evidence that the guide
+was kept current is the sentence in the walkthrough. Skip it on the story that did the most work
+and the prune is the step that refuses.
+
+⛔ **One of the three, always — the check reads for exactly them.** `closeout_preflight.py`'s
+`overview` row asks whether the guide moved on this lane **or** the walkthrough accounts for it,
+and errors when neither is true. A line claiming anything else ("updated", "reviewed") does not
+satisfy it, deliberately: those are words an agent writes having done nothing. And `absent` is
+read only where the guide really is absent — claimed over a guide that exists, it is refused
+rather than credited.
+
+ⓘ **Why this is a step here and not a commit gate.** The lobby keeps its SOP current with an armed
+`commit-msg` hook, and that works because its usage surface is five narrow paths — a fire means
+something. A project's surface is `backend/` and `frontend/`, which nearly every commit touches, so
+the same gate would fire on every commit, `[sop-ok]` would become reflex, and a gate opted out of by
+reflex checks nothing (`sop-currency.md` says exactly that about its own exclusion list). The unit
+of change in a project is the **story**, so the check belongs at the story save.
+
 ## Step 4 — Apply updates (specs / rules / active-context now; memory waits for Step 6)
 - **Every active-context entry is BORN as a pointer — ≤3 lines: outcome · STILL-OWED · pointer** to where
   the record actually lives (the map in `/cicd-prune-context`). The narrative goes in `sprint-status.yaml`'s
@@ -150,17 +202,18 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
   surfaces already disagree — that case needs `--reconcile`, which is a decision, not a default.
   It prints `board X -> Y, frontmatter X -> Y`; echo that as `Closing <story>: review → done`.
   Idempotent: only `ready-for-dev`/`in-progress`/`review` advance; never downgrade.
-  - **Gate evidence (advisory this sprint, hard after):** if the story recorded gate receipts, confirm
-    them before the flip — `python3 .agents/scripts/gate_receipt.py check --story <id> --require
-    <gates> --advisory`. A receipt proves the gate RAN, at which commit; prose cannot.
-    ⏳ Remove `--advisory` at the close of the first full sprint after this landed (ruling 2026-08-02).
+  - **Gate evidence — the receipt, never the claim:** confirm the story's gate receipts before the
+    flip — `python3 .agents/scripts/gate_receipt.py check --story <id> --require <gates>`. A receipt
+    proves the gate RAN, and at which commit; prose cannot. **A missing or unreadable receipt HOLDS the
+    flip, exactly as a red verdict does** — AVCH-106 closed on a `Verdict: PASS` no suite ever backed,
+    and flipping to `done` is what would permanently disarm the check for every later re-run.
   - **ONLY objectively-red tests block the flip.** Read the **`Verdict: … @ <sha>`** line in the story
     walkthrough's `## Code Review` section (stories closed before 2026-08-02 keep the old standalone
     verdict — fall back to `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` when the
     walkthrough has no such section). **FAIL** (a NEW regression or missing
     required tier — actually red) → do NOT flip; tell Daniel to fix via `/cicd-code-review`, then re-run.
     **Every other verdict closes it:** **PASS** → flip; **CONCERNS** → flip + record them; **WAIVED /
-    missing / stale** (verdict on an old HEAD) → flip. Fail-open: a gate-read error never blocks close-out.
+    missing / stale** (verdict on an old HEAD) → flip.
   - **No "leave it at review and ask" branch — never punt the flip back to Daniel.** A pending
     **live-test / live-verify / live-QA / live-checkride** or "stays review until X" note is NOT a blocker:
     his invocation resolves it. Flip and NOTE it (`note: pending live-test — closed on your invocation`).

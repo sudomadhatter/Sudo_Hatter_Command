@@ -1,6 +1,6 @@
 ---
 description: Review + gate TASK work — re-derives the blast radius against current main (Step 0.7, because sibling lanes land while you build), then a clean-room adversarial review of the diff, an acceptance audit against the task's checkable list, the command-centre gate (enforcement suite + assertion evidence + link/anchor + SOP currency + door parity) and /smh-clean-code-audit, producing a PASS/CONCERNS/FAIL/WAIVED verdict in the task walkthrough. The smh- counterpart of /cicd-code-review, for work with no story, no board and no epic branch. Use when the user says "review this task" / "smh code review".
-platforms: [opencode, antigravity, claude, codex]
+platforms: [opencode, antigravity, claude, codex, zoo]
 ---
 
 # /smh-code-review — Review + Gate for Task Work
@@ -40,8 +40,8 @@ use that; otherwise the current repo. Do **not** read `.agents/active-project.tx
 ```bash
 git worktree list                                     # find THIS task's tree
 REPO=$(cd "<the tree you resolved>" && git rev-parse --show-toplevel)
-BRANCH=$(git -C "$REPO" rev-parse --abbrev-ref HEAD)
-HEAD_SHA=$(git -C "$REPO" rev-parse HEAD)
+BRANCH=$(cd "$REPO" && git rev-parse --abbrev-ref HEAD)
+HEAD_SHA=$(cd "$REPO" && git rev-parse HEAD)
 echo "Reviewing: $(basename "$REPO") | $BRANCH @ ${HEAD_SHA:0:8}"
 ```
 
@@ -55,9 +55,9 @@ in the shared checkout belongs to another lane and is not evidence.
 ## Step 0.5 — Resolve the diff
 
 ```bash
-env -u GITHUB_TOKEN git -C "$REPO" fetch origin main  # a bare `main` is this checkout's LAST PULL
-git -C "$REPO" diff --name-only origin/main...HEAD    # the task's committed work
-git -C "$REPO" status --short                         # anything uncommitted (report it; it is not reviewed)
+cd "$REPO" && env -u GITHUB_TOKEN git fetch origin main  # a bare `main` is this checkout's LAST PULL
+cd "$REPO" && git diff --name-only origin/main...HEAD    # the task's committed work
+cd "$REPO" && git status --short                         # anything uncommitted (report it; it is not reviewed)
 ```
 
 Echo the file count. **An empty set is a STOP, not a pass.**
@@ -78,13 +78,13 @@ the diff still named its old path as the standard they load. The full floor was 
 Only this re-derivation caught it, which is why it is a step and not advice.
 
 ```bash
-env -u GITHUB_TOKEN git -C "$REPO" fetch origin main
-BASE=$(git -C "$REPO" merge-base HEAD origin/main)
-git -C "$REPO" diff --name-only "$BASE"..origin/main | sort > /tmp/theirs.txt  # what landed while you built
-git -C "$REPO" diff --name-only origin/main...HEAD   | sort > /tmp/mine.txt    # what you changed
+cd "$REPO" && env -u GITHUB_TOKEN git fetch origin main
+BASE=$(cd "$REPO" && git merge-base HEAD origin/main)
+cd "$REPO" && git diff --name-only "$BASE"..origin/main | sort > /tmp/theirs.txt  # what landed while you built
+cd "$REPO" && git diff --name-only origin/main...HEAD   | sort > /tmp/mine.txt    # what you changed
 grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                        # the TRUE overlap
-git -C "$REPO" merge-tree --write-tree --messages HEAD origin/main | head -40  # conflicts, before they are real
-git -C "$REPO" worktree list                                                   # sibling lanes still live
+cd "$REPO" && git merge-tree --write-tree --messages HEAD origin/main | head -40  # conflicts, before they are real
+cd "$REPO" && git worktree list                                                   # sibling lanes still live
 python3 .agents/scripts/risk_seam.py classify --repo "$REPO" $(cat /tmp/mine.txt)  # risk tiers (see below)
 ```
 
@@ -273,7 +273,7 @@ reconciliation above. Diff the block against the real diff:
 
 ```bash
 python3 .agents/scripts/declared_change_set.py diff <the plan> \
-        --changed $(git -C "$REPO" diff --name-only --no-renames <the same base this review resolved>)   # PC: `python`
+        --changed $(cd "$REPO" && git diff --name-only --no-renames <the same base this review resolved>)   # PC: `python`
 ```
 
 (`--no-renames` matters: with rename detection on, a renamed file surfaces only under its NEW

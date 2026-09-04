@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-318-bugs-cycle-9",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-318",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "e0d739199ea6e9589d8bff994a00f10393c8ae83",
+  "warnings": 4,
+  "when": "2026-09-01T15:58:55-04:00"
+}

@@ -19,7 +19,12 @@ The remedy is verified, not assumed:
 
 A subshell runs the work in a child whose cwd change dies with it. So this hook is narrow on
 purpose: it flags a `cd` only when it is a real command, at paren depth 0, leaving the workspace.
-`git -C`, absolute paths, the subshell form, and any `cd` that stays inside all pass untouched.
+Absolute paths, the subshell form, and any `cd` that stays inside all pass untouched — and so
+does `git -C`, which this hook does not flag but `shape-guard.py` nags for a different reason
+(no verb rule can match through `-C`). ⛔ This hook must never RECOMMEND that spelling: for a
+while it did, in remedy 2 of the text below, so an agent obeying this guard was immediately nagged
+by the other one. Two hooks in one settings file steering opposite ways is worse than either
+being wrong alone (SCC-369 review).
 
 ⛔ FAILS OPEN, always. Unparseable stdin, an unresolvable workspace root, a variable it cannot
 expand, any exception at all -> allow. A guard that cannot judge has learned nothing, and one
@@ -171,7 +176,12 @@ ROOT_FILE = (".claude", "scratchpad-root")
 
 def is_scratchpad(target: str, root: str) -> bool:
     """True if target is inside this machine/session's scratchpad root."""
-    norm = posixpath.normpath(target)
+    # ⛔ `target` arrives ALREADY normalised by `os.path`, which on Windows returns BACKslashes —
+    # and every comparison below is `posixpath`, so `\private\tmp\…` matched none of them and the
+    # configured-root branch was unreachable on that machine (SCC-321). Re-spell before asking —
+    # but ONLY there: on POSIX a backslash is a legal filename character, and rewriting it would
+    # turn a file named `ws\x` into the path `ws/x` and widen what counts as "inside".
+    norm = posixpath.normpath(target.replace("\\", "/") if os.name == "nt" else target)
     # 1. Configured scratchpad root if present
     path = os.path.join(root, *ROOT_FILE)
     try:
@@ -224,8 +234,29 @@ def leaves_workspace(arg: str, root: str, cwd: str) -> bool | None:
     target = os.path.normpath(arg if os.path.isabs(arg) else os.path.join(base, arg))
     if is_scratchpad(target, root):
         return False
+    # ⛔⛔ THE CONTAINMENT TEST MUST NOT CARE WHICH SLASH THE MACHINE USES (SCC-321).
+    # This compared raw strings and appended a FORWARD slash — while `os.path.normpath` on
+    # Windows returns BACKslashes. So `C:\ws\.agents` was tested for `C:\ws/` as a prefix,
+    # which is never true, and EVERY `cd` on that machine read as "leaves the workspace".
+    # This hook answers `ask`, and `ask` is an auto-DENY in headless mode: the effect was a
+    # guard that blocks `cd .agents/scripts` inside its own repo, on one of this system's two
+    # machines, while looking exactly like the guard working. The one-machine tests never saw it.
+    # Windows paths are also case-insensitive, so `c:\ws` and `C:\WS` are the same directory and
+    # a case-sensitive compare is the same false refusal wearing a different hat.
+    # ⛔ WINDOWS-ONLY, AND THE GUARD IS NOT COSMETIC. On POSIX a backslash is an ORDINARY
+    # FILENAME CHARACTER, so rewriting it there would WEAKEN this hook: `/ws\x` is a sibling
+    # file named `ws\x` sitting at `/`, and canonicalising it to `/ws/x` would read as INSIDE a
+    # workspace rooted at `/ws`. A separator fix for one machine must never become a path
+    # rewrite on the other.
+    def canon(p: str) -> str:
+        if os.name != "nt":
+            return p.rstrip("/")
+        return p.replace("\\", "/").rstrip("/").casefold()
+
+    t = canon(target)
     for r in {os.path.normpath(root), os.path.realpath(root)}:
-        if target == r or target.startswith(r.rstrip("/") + "/"):
+        r = canon(r)
+        if t == r or t.startswith(r + "/"):
             return False
     return True
 
@@ -241,8 +272,11 @@ REASON = (
     "Two remedies, both verified:\n"
     "  1. Run it in a subshell — the cd dies with the child and cwd is untouched:\n"
     "       ( cd {arg} && <your command> )\n"
-    "  2. Better: do not cd at all. Use `git -C /abs/path ...` and absolute paths for every "
-    "read and write.\n\n"
+    "  2. Or do not cd at all — use ABSOLUTE paths for every read and write.\n\n"
+    "     \u26d4 Not `git -C <path> ...`. No verb rule in either permission layer can match "
+    "through `-C`, and Zoo denies the spelling outright, so the call stops and waits for a human. "
+    "Write `cd <abs path> && git <verb> ...` on ONE line instead (see command-shape.md rule 1); "
+    "the pair is two matchable pieces and stays silent.\n\n"
     "If you genuinely mean to move this shell out of the workspace, approve this call."
 )
 

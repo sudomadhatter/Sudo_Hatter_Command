@@ -35,7 +35,12 @@ from `fail`, because a missing tool is a finding, not a skip.
 lossless at every stage — see [[board-narrative-lives-in-history]] for where narrative lives now.
 The audit's three blockers (two-byte-streams F1, note-carry F2, unpinned verify F4) were fixed
 BEFORE migrating; `split_sprint_status.py` is the 5th script (suite now 94 cases / 5 files).
-⏳ Flip owed: drop `--advisory` from the close-out receipt gate after the first full sprint.
+**The flip is DONE (SCC-365, 2026-09-01).** The receipt gate is hard: a missing receipt is an
+`ERROR` in `closeout_preflight.py`, `--advisory` is gone from `/cicd-update-sprint-memory`'s
+flip step along with its `Fail-open: a gate-read error never blocks close-out` clause, and a
+recorded `PASS`/`CONCERNS` on a flip-eligible story demands the `suite` receipt even when the
+caller omits `--require-gates`. Closed and parked statuses stay exempt — pruned lanes have no
+reachable remedy.
 ⏳ Owed: one real close-out (`/sudo-update-sprint-memory`) against the split board — the next
 story's close-out is the live test; watch the CHANGELOG re-point and the auto note-drop.
 

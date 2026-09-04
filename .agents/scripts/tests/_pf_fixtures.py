@@ -220,7 +220,13 @@ def _launcher() -> Path:
             launcher = shared / "acli"
             launcher.write_text(f'#!/bin/sh\nexec "{sys.executable}" "{stub_py}" "$@"\n',
                                 encoding="utf-8")
-            launcher.chmod(0o555)
+        # ⛔ THE FREEZE WAS INSIDE THE POSIX BRANCH, so on Windows the launcher shipped at 0o777 —
+        # writable — under a comment stating it is frozen "like every other shared executable"
+        # (SCC-321). That is the precise hazard the next paragraph describes, live on one of the
+        # two machines: one write to `$ACLI_BIN` poisons every later block in the process. Measured
+        # there: `chmod(0o555)` DOES hold on Windows — a subsequent write raises PermissionError —
+        # it was simply never reached. Frozen on both machines now, one line for both.
+        launcher.chmod(0o555)
         # ⛔ FROZEN, like every other shared executable (`_repo_template._seal`). This is the
         # most widely shared object here - one file, one fixed path, `ACLI_BIN` for ~88 blocks -
         # and unlike a scenario repo it does NOT die with its TempDir. Left owner-writable

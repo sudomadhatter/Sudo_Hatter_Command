@@ -1,6 +1,6 @@
 ---
 description: Close out ONE story — THE DOOR. Preflight, run the sprint-memory save, commit the close-out edits, LAND the story on its EPIC branch, and only THEN file the Dev Record and move the Jira ticket, then prune the worktree. Invoking it IS Daniel's sign-off for THIS story's landing, and that sign-off is spent by it. Run LAST when closing a story.
-platforms: [opencode, antigravity]
+platforms: [opencode, antigravity, zoo]
 ---
 
 # /cicd-close-story-merge-tree — Story Close-Out (the door)
@@ -48,7 +48,7 @@ these two strings, and Step 0.6 checks the preflight resolved the same ones:
 STORY=<id>            # the story you are closing
 KEY=<JIRA-KEY>        # its ticket, from the story frontmatter's `jira_key:`
 EPIC=<epic-branch>    # `epic/<EPIC-KEY>-<slug>`, from `git branch --list 'epic/*'` — see below
-BRANCH=$(git -C "<the story worktree>" rev-parse --abbrev-ref HEAD)   # from command output, never memory
+BRANCH=$(cd "<the story worktree>" && git rev-parse --abbrev-ref HEAD)   # from command output, never memory
 echo "Closing: $STORY | $KEY | $EPIC | $BRANCH"
 ```
 
@@ -83,8 +83,16 @@ answer by hand — and each of those has been silently wrong at least once:
 ```bash
 python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> \
        --expect-key <JIRA-KEY> --branch <name> --worktree <path> \
-       [--require-gates suite,ruff,pyrefly]
+       --require-gates suite                                        # PC: `python`
 ```
+
+⛔ **`--require-gates` is not optional either, and it names the gate this system actually STAMPS.**
+Without it on the CALL, `check_gates` used to return at its first line and file no row at all. It now
+also demands `suite` on its own whenever the walkthrough records `PASS`/`CONCERNS` on a story still at
+`ready-for-dev`/`in-progress`/`review` — a verdict is the review's claim and the receipt is the evidence,
+and AVCH-106 closed on a claim no suite ever backed. **Name only gates this lane really stamped:** the
+review step writes `suite` and nothing else, so demanding `ruff` or `pyrefly` blocks every close-out on
+receipts no step in this system has ever written.
 
 ⛔ **`--expect-key`, `--branch` and `--worktree` are NOT optional, and the brackets used to say otherwise.**
 This command runs when worktrees are open by definition, and that is exactly when `cwd` stops matching intent —
@@ -199,7 +207,7 @@ already landed on the epic. The net below is real; it is just an expensive one t
 **Then the branch precondition, BEFORE the commit — because a commit is the thing you cannot take back.**
 
 ```bash
-git -C "<the story worktree>" rev-parse --abbrev-ref HEAD    # must be claude/<KEY>-<slug>
+cd "<the story worktree>" && git rev-parse --abbrev-ref HEAD    # must be claude/<KEY>-<slug>
 ```
 
 HEAD must be a **`claude/*`** branch inside the story worktree — **and never `claude/incident-*`**, which
@@ -214,8 +222,14 @@ sentence forbids (*"never rescue it by committing in the shared checkout"*). The
 either: a bare `main` carries no key segment, so `--expect-key` WARNs rather than errors, and exit 1 does not
 block. Order is the guard.
 
-Then commit — **EXPLICIT PATHS ONLY** (board, story file, active-context, artifacts). `git diff --cached --stat`
+Then commit — **EXPLICIT PATHS ONLY** (board, story file, active-context, artifacts, **and
+`docs/project_overview_guide.md` when Step 3.5 of the save edited it**). `git diff --cached --stat`
 must show ONLY this story's files; `git add -A` / `.` / `-u` are banned, and the worktree does not repeal that.
+
+⛔ **A guide edit left out of this commit is the failure mode the check cannot see.** Step 3.5
+writes it into the worktree; the `overview` row of the preflight compares the BRANCH against its
+epic base. An unstaged edit satisfies neither — the branch does not carry it and the walkthrough
+does not account for it — so the close-out refuses on work that was actually done.
 
 ## Step 3 — Land the story on the EPIC branch (the one sanctioned push)
 <!-- JIRA-HOOK: ticket-moved check runs here BEFORE the landing push — the story's Jira ticket must be in the required status or the landing stops. Separate story; not built yet. -->
@@ -236,7 +250,7 @@ and follow IT end to end: it runs this command's close-out per story itself (fix
 
 **Precondition — re-read HEAD.** Step 2 checked it before committing anything, which is where the guard has
 to live; re-read it here because the push is the irreversible half and a step boundary is not a lock:
-`git -C "<the story worktree>" rev-parse --abbrev-ref HEAD` must still be the `claude/*` branch Step 0 echoed.
+`cd "<the story worktree>" && git rev-parse --abbrev-ref HEAD` must still be the `claude/*` branch Step 0 echoed.
 Anything else → **STOP**, per Step 2's rules.
 
 Then execute `git-policy.md` → **"The landing"**, inside the worktree: merge
@@ -269,9 +283,9 @@ parked, its branch is already on origin and Step 5 deletes it there.
   commit, so without this the walkthrough that actually lands carries neither, and the tree is left dirty:
 
   ```bash
-  git -C "<the story worktree>" add <the story walkthrough>
-  git -C "<the story worktree>" commit -m "<KEY> docs(walkthrough): record the landing"
-  git -C "<the story worktree>" push origin HEAD:epic/<EPIC-KEY>-<slug>
+  cd "<the story worktree>" && git add <the story walkthrough>
+  cd "<the story worktree>" && git commit -m "<KEY> docs(walkthrough): record the landing"
+  cd "<the story worktree>" && git push origin HEAD:epic/<EPIC-KEY>-<slug>
   ```
 
   **A dirty tree here is not cosmetic — it reverses two of this command's own rules.** Step 5's

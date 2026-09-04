@@ -1,6 +1,6 @@
 ---
 name: collaborative-debug-first
-description: "Activates when you cannot directly observe runtime behavior (browser console, network, Firestore, UI) but Daniel can. Instrument with one targeted debug log and ask him to report back instead of guessing."
+description: "Activates when you cannot directly observe runtime behavior (browser console, network, Firestore, UI) but Mr. Hatter can. Instrument with one targeted debug log and ask him to report back instead of guessing."
 trigger: model_decision
 triggers: [browser, console, network tab, cannot observe, firestore, the ui, on screen]
 # Intent-shaped: no glob can catch it, because the trigger is what the operator ASKS,
@@ -12,7 +12,7 @@ triggers: [browser, console, network tab, cannot observe, firestore, the ui, on 
 # Rule: Collaborative Debug-First (Ask the Pilot)
 
 > **Where this sits.** This is the **G1 can't-observe branch** of `.agents/rules/reproduce-before-you-fix.md`
-> — the debug loop's reproduction gate, for when the evidence lives in a runtime only Daniel can see. Run
+> — the debug loop's reproduction gate, for when the evidence lives in a runtime only Mr. Hatter can see. Run
 > the protocol below to *get* the reproduction, then continue at G1.5 (minimize) in that rule. Everything
 > after "the issue is Y" — pinning test, hypothesis discipline, proving the fix — lives there, not here.
 

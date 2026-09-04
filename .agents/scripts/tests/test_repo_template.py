@@ -173,7 +173,26 @@ def _run(c: Cases) -> None:
                 c.check("a clean template passes the seal check (the ALLOW half)",
                         (rt.clone(key, build_repo, t / "b") / "repo/hook.sh").is_file(),
                         "a clean template was refused")
-                (a / "hook.sh").chmod(0o755)          # the escape, performed for real
+                # ⛔ THE ESCAPE ROUTE ITSELF IS PLATFORM-SHAPED (SCC-321). On POSIX the clone's
+                # hook IS the template's inode (`HARD_LINKS`), so chmod-ing the clone corrupts
+                # the template and the next clone must refuse. On Windows `HARD_LINKS` is False
+                # BY DESIGN — the module's docstring says so, because the rmtree cleanup handler
+                # chmods read-only files and would unfreeze the template through a link — so each
+                # clone is a copy and chmod-ing one CANNOT reach the template. Asserting the POSIX
+                # refusal there would demand a corruption the design has already made impossible.
+                #
+                # So each machine drives the guard through the door it actually has, and BOTH
+                # end at `_verify_sealed` refusing a corrupt template — the Windows arm reaches
+                # it by corrupting the template directly, which is the only route that exists
+                # there, and it also pins the isolation that closes the clone route.
+                victim = (a / "hook.sh") if rt.HARD_LINKS else (
+                    rt._CACHE[key] / "repo" / "hook.sh")
+                if not rt.HARD_LINKS:
+                    (a / "hook.sh").chmod(0o755)
+                    c.check("chmod in a CLONE cannot reach the template (no shared inode here)",
+                            rt._is_frozen(rt._CACHE[key] / "repo" / "hook.sh"),
+                            "a copy-based clone leaked a mode change into the template")
+                victim.chmod(0o755)                   # the corruption, performed for real
                 err = None
                 try:
                     rt.clone(key, build_repo, t / "c")
@@ -181,9 +200,11 @@ def _run(c: Cases) -> None:
                     err = exc
                 c.check("a template whose executable was chmod'd is REFUSED (the REFUSE half)",
                         isinstance(err, rt.TemplateCorrupted),
-                        f"raised {err!r} — a scenario mutated a SHARED inode and the next "
+                        f"raised {err!r} — a scenario mutated a SHARED template and the next "
                         f"clone accepted it, which is the shared-mutable-repo the ticket bans")
-                (a / "hook.sh").chmod(0o555)          # leave the cache usable for later blocks
+                victim.chmod(0o555)                   # leave the cache usable for later blocks
+                if not rt.HARD_LINKS:
+                    (a / "hook.sh").chmod(0o555)
 
             with TempDir() as t:
                 key = ("t1", "regular-vs-exec")

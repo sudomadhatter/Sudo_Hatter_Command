@@ -135,8 +135,17 @@ def authorised_branch(name: str, keys: list[str]) -> tuple[bool, str]:
 
 
 def git(repo: Path, *args: str) -> tuple[int, str]:
+    # ⛔⛔ `encoding="utf-8"` IS LOAD-BEARING, AND THIS HELPER DRIFTED AWAY FROM ITS SIBLING.
+    # `wf_common.git` has carried this exact fix since SCC-160, in these words: git writes UTF-8
+    # (paths, messages, `--porcelain -z` filenames), while `text=True` alone decodes with the
+    # LOCALE codec — cp1252 on Windows. This local copy never got it, so `_artifacts/…-café/`
+    # came back as `cafÃ©`, matched no artifacts path, and the lane was NEVER JUDGED: a close-out
+    # reaching main with nothing looking at it, which is the failure case A9 exists to catch,
+    # recurring one layer below the check. `-c core.quotepath=false` is already passed at the
+    # call sites; it stops git OCTAL-quoting the path and cannot help with how we decode it.
+    # (SCC-321)
     r = subprocess.run(["git", *args], cwd=str(repo), capture_output=True,
-                       text=True, errors="replace")
+                       text=True, encoding="utf-8", errors="replace")
     return r.returncode, (r.stdout or "").strip()
 
 
@@ -287,7 +296,15 @@ def check_close_out_receipts(repo: Path, base: str, head: str,
             # legitimate is that they are UNCHANGED on the base; a manifest this PR writes or
             # edits is this PR's business whatever it declares. (`base` is often not the
             # merge-base, which is why they show up in the tree diff at all.)
-            if mainline and show(repo, mainline, rel) == text:
+            unchanged = False
+            if mainline:
+                if show(repo, mainline, rel) == text:
+                    unchanged = True
+                else:
+                    old_rel = re.sub(r"^(_artifacts/[^/]+)/\d{4}/\d{2}/", r"\1/", rel)
+                    if old_rel != rel and show(repo, mainline, old_rel) == text:
+                        unchanged = True
+            if unchanged:
                 print(f"       (skipping {rel}: declares `{branch}`, unchanged on {mainline} - "
                       f"another lane's landed receipt)")
                 continue
@@ -443,6 +460,14 @@ def check_sop_currency(repo: Path, base: str, head: str) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows consoles default to cp1252 and cannot encode this script's own output
+    # markers, so a print crashes the run and the operator sees nothing. Same guard as
+    # check_maps.py and tests/_harness.py. Never raises: a non-reconfigurable stream
+    # (a pipe, a StringIO under test) simply keeps its encoding.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001 - a shim, not a feature
+        pass
     ap = argparse.ArgumentParser(
         description="Server-side half of the main write gate (SCC-118).")
     ap.add_argument("--mode", choices=("pr", "gate"), required=True)

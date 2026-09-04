@@ -49,5 +49,5 @@ the lobby. The two exceptions are listed above and in `router.md`.
 `active-context.md` is the pickup/handoff brief for its owning store: an exception's named bucket or
 `_artifacts/_main/` for home-base work. Non-exempt projects use their project-local continuity contract.
 
-The `INDEX.md` ledger is reconciled in batch by the SessionStart hooks and `/update-maps-indexes` — don't
+The `INDEX.md` ledger is reconciled in batch by the SessionStart hooks and `/smh-update-maps-indexes` — don't
 hand-append a row every session.

@@ -1,0 +1,6 @@
+task_key: SCC-378
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-378-permission-parity
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+landing_mode: partial   # SCC-382 (the Mac apply) is the operator's own lane; SCC-378 stays open until it lands

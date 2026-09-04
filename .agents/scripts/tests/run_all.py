@@ -65,14 +65,18 @@ def run_one(name: str) -> tuple[str, int, str]:
     # while this child was being spawned, terminate it the moment it is registered.
     if _STOPPING:
         return name, 130, f"{name}: not started (interrupted)\n"
-    # ⛔ NO `encoding=` here: the children are Python writing to a pipe, so they encode with
-    # the LOCALE (cp1252 on the PC) - parent and child must share it, as they always did.
-    # (git output is UTF-8 by construction, which is why `wf.git` pins utf-8; test children
-    # are not git.) Decoding cp1252 bytes as UTF-8 turned every `·` into U+FFFD, which the
-    # parent's own cp1252 stdout then could not encode - the whole gate red-walled on the
-    # PC. Found by the review's edge-case lens before it shipped.
+    # ⛔ PARENT AND CHILD MUST SHARE AN ENCODING - that invariant is real, and mismatching it
+    # turned every `·` into U+FFFD which the parent's own stdout then could not encode. What
+    # was wrong was WHICH encoding: this pinned both ends at the LOCALE, and on the PC that is
+    # cp1252, which cannot represent `⛔` (U+26D4) or `⭐` (U+2B50) - characters the suite's own
+    # case NAMES carry. So the child raised UnicodeEncodeError mid-print and died, and the file
+    # was scored as one ordinary failure. 22 files were red for this and this alone; the runs
+    # that read 61/61 were made in a shell that happened to export PYTHONIOENCODING=utf-8.
+    # Both ends are now pinned at UTF-8 - the only encoding that can hold what the suite prints.
+    # `os.environ` is set once in `main()` (the children inherit it, as WF_ON_MAIN already does).
     p = subprocess.Popen([sys.executable, str(HERE / name)], stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE, text=True, errors="replace")
+                         stderr=subprocess.PIPE, text=True,
+                         encoding="utf-8", errors="replace")
     with _RUNNING_LOCK:
         _RUNNING.add(p)
         late = _STOPPING
@@ -86,6 +90,15 @@ def run_one(name: str) -> tuple[str, int, str]:
     finally:
         with _RUNNING_LOCK:
             _RUNNING.discard(p)
+    if p.returncode == 0 and not ((out or "").strip() or (err or "").strip()):
+        # ⛔ A green with ZERO output is a file that ran nothing - pytest-style functions with
+        # no __main__ block exit 0 silently under this bare runner, and the receipt then counts
+        # a gate that never fired (SCC-351 close-out: test_zoo_permissions.py scored green in a
+        # 65/65 receipt having executed no test). Every legitimate file prints its tally or its
+        # cases; a silent green is a defect. Guarded HERE, at the real child boundary, so
+        # run_pool's stubbed runners (test_suite_runner controls) stay pure.
+        return name, 1, (f"{name}: exit 0 with NO OUTPUT - this file executed nothing "
+                         f"(missing __main__ harness?)\n")
     return name, p.returncode, (out or "") + (err or "")
 
 
@@ -177,6 +190,19 @@ def run_pool(files: list[str], jobs: int, runner=run_one) -> list[str]:
 
 
 def main() -> int:
+    # ⛔ PIN BOTH ENDS OF THE PIPE AT UTF-8 BEFORE ANYTHING PRINTS OR SPAWNS (SCC-321).
+    # Windows defaults a NON-CONSOLE stdout - which is exactly what every child here gets - to
+    # cp1252, and cp1252 cannot encode `⛔`/`⭐`, which this suite's own case names carry. The
+    # child raises UnicodeEncodeError mid-print and is scored as an ordinary red; the parent
+    # then cannot print the child's output either. Setting it in `os.environ` is what reaches
+    # the children: `Popen` passes no `env=`, so they inherit this process's, as WF_ON_MAIN
+    # already relies on. Windows-only - on POSIX the streams are already UTF-8 and there is
+    # nothing to correct, so the Mac stays byte-identical.
+    if os.name == "nt":
+        os.environ["PYTHONIOENCODING"] = "utf-8"
+        for _stream in (sys.stdout, sys.stderr):
+            if hasattr(_stream, "reconfigure"):
+                _stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description="Run every workflow-script test.")
     ap.add_argument("--jobs", type=int, default=None,
                     help="how many test files to run at once (default: CPU count)")

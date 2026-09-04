@@ -101,9 +101,34 @@ def main() -> int:
             _ok = "backend/requirements.txt".startswith(CL.PROJECT_ROOTS)
             c.check("B10 convention 6 - a child-project path is not this repo's to resolve", _ok,
                     "" if _ok else "cicd-* commands cite the target project's tree; those are not lobby paths")
+            # ⛔ SCC-357 · convention 6's SECOND form, and both halves of it. A project-tree path
+            # under a directory the LOBBY also owns cannot be carved out by prefix, so it is
+            # exempted by exact filename — and the exactness is the check. A prefix here would
+            # silence real rot under `docs/`, which is the opposite of what this gate is for.
+            _ok = "docs/project_overview_guide.md" in CL.PROJECT_FILES
+            c.check("B10b convention 6b - a project page under the lobby's own docs/ is exempt",
+                    _ok, "" if _ok else "every command and standard governing the guide names it; "
+                                        "unexempted that is 12 findings correct by construction")
+            _ok = not any(f.endswith("/") for f in CL.PROJECT_FILES)
+            c.check("B10b CONTROL - the exemption is exact filenames, never a prefix", _ok,
+                    "" if _ok else "a trailing slash here turns the carve-out into a blind spot "
+                                   "over a directory the lobby really does own")
+            _ok = "docs/repo-map.md" not in CL.PROJECT_FILES
+            c.check("B10b CONTROL - a lobby page under docs/ is NOT exempted", _ok,
+                    "" if _ok else "docs/repo-map.md exists here; exempting it would hide its rot")
             _ok = "_artifacts/_main/INDEX.md".endswith(CL.NARRATIVE_LEDGERS)
             c.check("B11 convention 7 - the narrative ledgers are declared", _ok,
                     "" if _ok else "a ledger row naming a deleted file is history, not a broken link")
+            (tmp / "_artifacts").mkdir(exist_ok=True)
+            (tmp / "docs").mkdir(exist_ok=True)
+            claim = "see `docs/removed-history.md`\n"
+            (tmp / "_artifacts" / "INDEX-archive.md").write_text(claim, encoding="utf-8")
+            (tmp / "docs" / "current.md").write_text(claim, encoding="utf-8")
+            archived = CL.scan(tmp, r, ["_artifacts/INDEX-archive.md"])
+            current = CL.scan(tmp, r, ["docs/current.md"])
+            _ok = archived == ([], [], 0) and len(current[0]) == 1 and current[2] == 1
+            c.check("B11b convention 7 - archive claims are history while current claims still bite", _ok,
+                    "" if _ok else f"archive={archived}, current={current}")
             # The continuity brief is one too, and `check_maps.py` is the authority: it carries
             # `PRUNE_KEEP_BLOCKS = 10`, so the house already models this file as a dated log whose
             # old end is PRUNED. A path in a five-week-old block is a mention; the fix is the prune.

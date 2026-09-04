@@ -28,6 +28,20 @@ ROOT = SCRIPTS.parents[1]
 HOOK = SCRIPTS.parent / "hooks" / "guard-cwd-escape.py"
 WS = ""   # a REAL directory, built in main(): the hook fails open on a root that
           # does not exist, and a fixture that trips THAT path proves nothing.
+WSC = ""  # the same directory, spelled for a SHELL COMMAND — see `_cmd_path`.
+
+
+def _cmd_path(p: str) -> str:
+    """`p` as it would appear INSIDE a command string, on this machine (SCC-321).
+
+    ⛔ A NATIVE WINDOWS PATH CANNOT BE EMBEDDED IN A COMMAND HERE, and the failure is not the
+    hook's. Claude Code's Bash tool runs Git Bash, where `\\` is the ESCAPE character — so
+    `cd C:\\Users\\me\\ws` reaches the shell as `cd C:Usersmews`, and the hook's own quote-aware
+    `shlex.split` reads it exactly the same way the shell would. The parse is correct; the
+    fixture was wrong to spell a shell argument in Windows form. `cwd` in the payload stays
+    NATIVE, because that is what Claude Code actually sends.
+    """
+    return p.replace("\\", "/")
 
 
 def call(command: str, cwd: str | None = None, tool: str = "Bash", raw: str | None = None,
@@ -44,7 +58,14 @@ def call(command: str, cwd: str | None = None, tool: str = "Bash", raw: str | No
         # `~` is only judgeable against a KNOWN home. Overriding it here is what lets a
         # fixture put the workspace under `~` — the real machine's shape, which a TempDir
         # workspace does not otherwise reproduce.
+        # ⛔ USERPROFILE TOO (SCC-321). `ntpath.expanduser` consults `USERPROFILE` FIRST and
+        # only reaches `HOME` if it and HOMEDRIVE/HOMEPATH are all unset — so setting `HOME`
+        # alone silently expanded `~` to the REAL home on Windows, the tilde cases resolved
+        # outside the fixture workspace, and they read as "the guard refuses a legal cd".
         env["HOME"] = home
+        env["USERPROFILE"] = home
+        env.pop("HOMEDRIVE", None)
+        env.pop("HOMEPATH", None)
     p = subprocess.run([sys.executable, str(HOOK)], input=payload, capture_output=True,
                        text=True, env=env, errors="replace")
     return p.returncode, (p.stdout or "") + (p.stderr or "")
@@ -60,11 +81,12 @@ def blocked(out: str) -> bool:
 
 
 def main() -> int:
-    global WS
+    global WS, WSC
     c = Cases("cwd escape hook (SCC-182)")
     tmp_ctx = TempDir()
     ws = tmp_ctx.__enter__()
     WS = str(ws)
+    WSC = _cmd_path(WS)
     (ws / ".agents" / "scripts").mkdir(parents=True)
     (ws / ".claude" / "worktrees" / "lane-x").mkdir(parents=True)
     (ws.parent / "other-repo").mkdir(exist_ok=True)
@@ -89,10 +111,10 @@ def main() -> int:
                     f"exit={code} {out.strip()[:150]}")
 
     if c.block("M3 · a cd that stays inside the workspace passes untouched"):
-        for cmd in (f"cd {WS}/.agents && ls",
-                    f"cd {WS} && ls",
+        for cmd in (f"cd {WSC}/.agents && ls",
+                    f"cd {WSC} && ls",
                     "cd .agents/scripts && ls",
-                    f"cd {WS}/.claude/worktrees/lane-x && python3 t.py"):
+                    f"cd {WSC}/.claude/worktrees/lane-x && python3 t.py"):
             code, out = call(cmd)
             c.check(f"M3 allowed: {cmd}", not blocked(out) and code == 0,
                     f"exit={code} {out.strip()[:150]}")
@@ -121,7 +143,22 @@ def main() -> int:
         c.check("M3 control: the SAME `cd ..` from the ROOT leaves and is refused",
                 blocked(out), out.strip()[:150])
         # Scratchpad paths: /private/tmp/claude-<uid>/... or /tmp/claude-<uid>/... are recognized as safe
+        #
+        # ⛔ THE BUILT-IN SCRATCHPAD ROOT IS uid-BASED, SO IT DOES NOT EXIST ON WINDOWS (SCC-321).
+        # `is_scratchpad` has two branches — a configured `.claude/scratchpad-root` file, and the
+        # POSIX `<tmp>/claude-<uid>/…` fallback — and only the first needs a uid it cannot have.
+        # A machine with no uid reaches these cases through the CONFIGURED branch instead, which
+        # is a real supported route and is the one the separator fix above made reachable at all.
+        # Fabricating a uid of 501 here (the old default) described one developer's Mac and
+        # matched nothing anywhere else.
         uid = getattr(os, "getuid", lambda: 501)()
+        if getattr(os, "getuid", None) is None:
+            cfg = Path(WS, ".claude")
+            cfg.mkdir(parents=True, exist_ok=True)
+            # Both spellings, because branch 1 matches a root EXACTLY and the `/tmp` ->
+            # `/private/tmp` alias is a macOS fact the built-in branch encodes and this one cannot.
+            (cfg / "scratchpad-root").write_text(
+                f"/private/tmp/claude-{uid}\n/tmp/claude-{uid}\n", encoding="utf-8")
         for cmd in (f"cd /private/tmp/claude-{uid}/-P/sess-123/scratchpad && ls",
                     f"cd /tmp/claude-{uid}/-P/sess-123/scratchpad/exp && python3 t.py"):
             code, out = call(cmd)
@@ -130,10 +167,11 @@ def main() -> int:
 
     if c.block("M4 · every other way of leaving the workspace is caught"):
         for cmd in ("cd", "cd ~", "cd ~/Downloads", "cd -", "cd $HOME", "cd ..",
-                    "pushd /tmp", f"cd {Path(WS).parent}/other-repo && git status",
+                    "pushd /tmp",
+                    f"cd {_cmd_path(str(Path(WS).parent))}/other-repo && git status",
                     # dir BOUNDARY: a sibling whose name merely EXTENDS the root is OUTSIDE.
                     # `startswith(root)` without the trailing `/` reads it as inside.
-                    f"cd {WS}-sibling && ls",
+                    f"cd {WSC}-sibling && ls",
                     # an apostrophe in a COMMENT opens a quote that would swallow the rest of
                     # the command — including the real `cd` — unless comments are skipped first.
                     "ls   # don't do it this way\ncd /tmp && ls",

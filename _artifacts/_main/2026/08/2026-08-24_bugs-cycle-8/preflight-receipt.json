@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-305-bugs-cycle-8",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-305",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "d3e006e4070830b110423f61be8a82969ef2ff9b",
+  "warnings": 10,
+  "when": "2026-08-24T16:25:33-04:00"
+}

@@ -114,7 +114,9 @@ def main() -> int:
     # Part G's data-gating promise, landed for real: the addendum FILE is opened and the
     # cited number cross-checked against it - deleting the file or drifting the citation
     # goes red, where the old substring check stayed green through both (executed).
-    addendum = ROOT / "_artifacts/_main/2026-08-20_scc-225-review-surface/lc-cost-measurement.md"
+    addendum = ROOT / "_artifacts/_main/2026/08/2026-08-20_scc-225-review-surface/lc-cost-measurement.md"
+    if not addendum.is_file():
+        addendum = ROOT / "_artifacts/_main/2026-08-20_scc-225-review-surface/lc-cost-measurement.md"
     c.check("SCC-232: the measurement addendum file EXISTS where step-01 cites it",
             addendum.is_file(), str(addendum))
     add_txt = addendum.read_text(encoding="utf-8") if addendum.is_file() else ""

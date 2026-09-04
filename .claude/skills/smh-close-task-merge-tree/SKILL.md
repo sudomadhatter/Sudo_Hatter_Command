@@ -19,7 +19,7 @@ canonical workflow; never reconstruct the close-out from memory.
 the one most likely to be reading a file its own lane just rewrote:
 
 ```bash
-BEHIND=$(git -C "$REPO" rev-list --count HEAD..origin/main)
+BEHIND=$(cd "$REPO" && git rev-list --count HEAD..origin/main)
 ```
 
 If that is not `0`, this checkout is **behind origin/main by N** and the door text you are following

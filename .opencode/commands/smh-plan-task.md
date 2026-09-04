@@ -1,6 +1,6 @@
 ---
 description: Plan a WHOLE Task and all its subtasks in one shot — propose the breakdown, mint the Subtasks on the operator's go, then per subtask write an implementation plan, audit it, cut its worktree and push its branch, and update its ticket; finish by labelling the set with /smh-label-tasks so you can see which lanes run in parallel. The Task lane's answer to "write all the stories first". Ends at ONE approval stop for the whole set. Use when the user says "plan this task" / "smh plan task".
-platforms: [opencode, antigravity, claude, codex]
+platforms: [opencode, antigravity, claude, codex, zoo]
 ---
 
 # /smh-plan-task — Plan the whole Task, subtasks and all (SCC-155)
@@ -137,11 +137,11 @@ develope the whole ticket including subtasks"*).
 **Cutting a CONSOLIDATED lane** — the whole Step 3 loop collapses to one tree:
 
 ```bash
-git -C "$REPO" fetch origin                                   # ⛔ the base is origin/main, never a bare `main`
-git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<PARENT-KEY>-<slug> origin/main
-git -C "<the new tree>" branch --unset-upstream               # a start-point of origin/main sets upstream to MAIN
-python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
-BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
+cd "$REPO" && git fetch origin                                   # ⛔ the base is origin/main, never a bare `main`
+cd "$REPO" && git worktree add .claude/worktrees/<slug> -b chore/<PARENT-KEY>-<slug> origin/main
+cd "<the new tree>" && git branch --unset-upstream               # a start-point of origin/main sets upstream to MAIN
+cd <the lobby's absolute path — the arg resolves from the LOBBY> && python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
+BRANCH=$(cd "<the new tree>" && git rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
 ```
 
@@ -180,11 +180,11 @@ plan/audit/cut/push loop below collapses into part sections of that lane's singl
 **For each subtask, in dependency order.** Everything here happens **inside that lane's own tree**.
 
 ```bash
-git -C "$REPO" fetch origin                                   # ⛔ the base is origin/main, never a bare `main`
-git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<SUBKEY>-<slug> origin/main
-git -C "<the new tree>" branch --unset-upstream               # a start-point of origin/main sets upstream to MAIN
-python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
-BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
+cd "$REPO" && git fetch origin                                   # ⛔ the base is origin/main, never a bare `main`
+cd "$REPO" && git worktree add .claude/worktrees/<slug> -b chore/<SUBKEY>-<slug> origin/main
+cd "<the new tree>" && git branch --unset-upstream               # a start-point of origin/main sets upstream to MAIN
+cd <the lobby's absolute path — the arg resolves from the LOBBY> && python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
+BRANCH=$(cd "<the new tree>" && git rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
 ```
 
@@ -223,10 +223,10 @@ Then, in that tree:
    hand-back and carry on.
 4. **Commit and push the lane** (explicit paths; the key leads the subject):
    ```bash
-   git -C "<tree>" add _artifacts/_main/<date>_<slug>/implementation_plan.md \
+   cd "<tree>" && git add _artifacts/_main/<date>_<slug>/implementation_plan.md \
                        _artifacts/_main/<date>_<slug>/task.yaml
-   git -C "<tree>" commit -F <message-file>     # ⛔ backticks in -m "…" EXECUTE
-   git -C "<tree>" push -u origin chore/<SUBKEY>-<slug>
+   cd "<tree>" && git commit -F <message-file>     # ⛔ backticks in -m "…" EXECUTE
+   cd "<tree>" && git push -u origin chore/<SUBKEY>-<slug>
    ```
    **Unpushed is stranded** — branches travel between machines, worktrees do not.
 5. **Update the subtask ticket** so the board points at the plan — this is Step 3.5 above, run
@@ -278,7 +278,18 @@ were missing (SCC-155 review #17/#18):
 - **The sha, or the downstream check has nothing to compare against.** `/smh-quick-dev` Step 1.5
   says the plan must be unchanged *since the commit that recorded the approval* — with only a date
   and a quote on the page, an agent has one computed value and no second operand, and an agent that
-  wants to proceed will call it unchanged. Write the sha and the comparison becomes real.
+  wants to proceed will call it unchanged. Write the sha and the comparison becomes real. **No sha
+  on the line is no approval**: the reader re-arms its gate and the lane stops, so an unstamped
+  `<pending>` strands the batch exactly as an unpushed plan does.
+- ⭐ **It takes TWO commits, and the second one is the `stamp-only successor` (SCC-359).** The sha
+  you must write is the sha of the commit that records the approval, which cannot be known until
+  that commit exists. So: write the line with `<pending>`, commit, then replace `<pending>` with the
+  resulting sha and commit **that**. ⛔ **The second commit must change the approval line and
+  nothing else** — that is precisely what `/smh-quick-dev` Step 1.5 allows through, by diffing the
+  recorded sha against the plan's last touch. Fold any other edit into it and you have changed the
+  plan after approval, which re-arms that lane's gate and stops it. (Before this was written down,
+  Step 1.5 demanded bare equality with the recorded sha and the stamp commit made that impossible
+  for every conforming lane — measured on SCC-347, SCC-358 and SCC-318.)
 - **Each lane's own tree.** The plans were committed back in Step 3 in **N different worktrees**,
   on N different branches. There is no single tree where "commit that with the plans" means
   anything; naming the wrong one silently drops the approval from every other lane.

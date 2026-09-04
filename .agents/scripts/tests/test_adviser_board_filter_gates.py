@@ -1,0 +1,128 @@
+"""Adviser-board filter rework (SCC-340) — the lane's acceptance gates, made standing.
+
+The lane shipped its gates as `verify_board_filter.sh` inside its own artifact folder, which
+close-out prunes — measured by the lane's review: the day the lane lands, the rework's regression
+protection dies with the folder, and nothing in this suite would notice retired vocabulary
+("default triad", "stage room", "R1 READ") re-entering the command. This file ports the four
+gates that must outlive the lane into the standing suite, plus the rich-text render contract the
+review found had zero assertions:
+
+  * retired vocabulary (triad / caucus / stage room / stage change / three minds / team[s])
+  * the retired R1-R4 round ladder (R1 READ / R2 ATTACK / R3 BALCONY / R4 SETTLE / round ladder)
+  * parallel-wave vocabulary presence (opinion wave, one-message spawns, research brief, settle it)
+  * door parity (opencode mirror byte-identical, claude skill description match, AG menu budget)
+  * CARD.md render-contract markers (heading template, stance note, blockquote, bold slot labels,
+    and all five statement slots named in the render template — the review found THE THIRD SIDE,
+    which outranks THE MOVE, absent from it)
+
+`floor` is adjudicated exactly as the lane's script adjudicates it: only caucus-log senses fail.
+"""
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+from _harness import Cases
+
+SCRIPTS = Path(__file__).resolve().parents[1]
+ROOT = SCRIPTS.parents[1]  # .agents/scripts/tests -> repo root
+
+BRAIN = ROOT / ".agents/commands/smh-adviser-board.md"
+FOLDER = ROOT / ".agents/commands/adviser-board"
+AG = ROOT / ".agents/workflows/smh-adviser-board.md"
+SKILL = ROOT / ".claude/skills/smh-adviser-board/SKILL.md"
+OC = ROOT / ".opencode/commands/smh-adviser-board.md"
+CARD = FOLDER / "CARD.md"
+
+SURFACES = [BRAIN, FOLDER / "CARD.md", FOLDER / "TEAMS.md", FOLDER / "DOCTRINE.md",
+            FOLDER / "THIRD-SIDE.md", FOLDER / "SPAWNS.md", FOLDER / "ROSTER.md", AG, SKILL, OC]
+
+RETIRED_VOCAB = re.compile(r"triad|caucus|stage room|stage change|three minds|\bteams?\b", re.I)
+RETIRED_ROUNDS = re.compile(r"R1 READ|R2 ATTACK|R3 BALCONY|R4 SETTLE|four visible rounds|four rounds|round ladder", re.I)
+FLOOR_CAUCUS_SENSE = re.compile(
+    r"floor file|floors-to-file|floor-circulation|true of the floor|no floor|floor section|floor/card|the floor\b", re.I)
+
+
+# Justified exception, mirroring the lane script's ALLOWED list: the contract file keeps its
+# historical TEAMS.md filename (plan declared EDIT, not RENAME), so a line that merely REFERENCES
+# the filename is a hit on the name, not on team vocabulary.
+FILENAME_REF = re.compile(r"TEAMS\.md")
+
+
+def _scan(pattern: re.Pattern) -> list[str]:
+    """Every pattern hit over the gated surfaces, `minds/` excluded — the lane's own scope."""
+    hits: list[str] = []
+    for surface in SURFACES:
+        if not surface.is_file():
+            hits.append(f"SURFACE MISSING: {surface.relative_to(ROOT)}")
+            continue
+        for i, line in enumerate(surface.read_text(encoding="utf-8").splitlines(), 1):
+            if pattern.search(line):
+                rel = surface.relative_to(ROOT)
+                if "/minds/" in f"/{rel}":
+                    continue
+                stripped = line.strip()
+                if pattern is RETIRED_VOCAB and FILENAME_REF.search(stripped) and not pattern.search(
+                        FILENAME_REF.sub("", stripped)):
+                    continue  # hit exists only inside the TEAMS.md filename reference
+                hits.append(f"{rel}:{i}: {stripped[:160]}")
+    return hits
+
+
+def main() -> int:
+    c = Cases("adviser-board filter gates (SCC-340, standing)")
+
+    if c.block("A · every gated surface exists (a missing file makes greps pass vacuously)"):
+        for s in SURFACES:
+            c.check(f"A · {s.relative_to(ROOT)} present", s.is_file(), str(s))
+
+    if c.block("B · zero retired vocabulary (triad/caucus/stage room/three minds/team(s))"):
+        hits = _scan(RETIRED_VOCAB)
+        c.check("B · zero unjustified hits", not hits, "; ".join(hits[:6]) or "clean")
+
+    if c.block("C · zero retired R1–R4 round-ladder terms"):
+        hits = _scan(RETIRED_ROUNDS)
+        c.check("C · zero hits", not hits, "; ".join(hits[:6]) or "clean")
+
+    if c.block("D · parallel-wave vocabulary present (brain + SPAWNS)"):
+        brain = BRAIN.read_text(encoding="utf-8")
+        spawns = (FOLDER / "SPAWNS.md").read_text(encoding="utf-8")
+        c.check("D · brain carries 'opinion wave'", "opinion wave" in brain.lower())
+        c.check("D · brain carries one-message parallel spawns",
+                "all agent calls in a single message" in brain.lower())
+        c.check("D · SPAWNS carries 'opinion wave'", "opinion wave" in spawns.lower())
+        c.check("D · SPAWNS carries the orchestrator research brief",
+                "research brief" in spawns.lower())
+        c.check("D · brain carries the 'settle it' deepening move", "settle it" in brain.lower())
+
+    if c.block("E · 'floor' adjudication — only caucus-log senses fail"):
+        hits = _scan(FLOOR_CAUCUS_SENSE)
+        c.check("E · no caucus-log sense of 'floor'", not hits, "; ".join(hits[:6]) or "clean")
+
+    if c.block("F · door parity (opencode byte-identical · claude skill desc · AG budget)"):
+        c.check("F · opencode mirror byte-identical to brain",
+                OC.read_bytes() == BRAIN.read_bytes())
+        desc = re.compile(r"^description:(.*)$", re.M)
+        bm, sm, am = desc.search(BRAIN.read_text(encoding="utf-8")), desc.search(
+            SKILL.read_text(encoding="utf-8")), desc.search(AG.read_text(encoding="utf-8"))
+        c.check("F · claude skill description matches brain description",
+                bool(bm and sm) and bm.group(1).strip() == sm.group(1).strip())
+        ag_value = am.group(1).strip().strip("'\"") if am else ""
+        c.check("F · AG launcher description within the 135-char menu budget",
+                0 < len(ag_value) <= 135, f"{len(ag_value)} chars")
+
+    if c.block("G · CARD.md render contract — every slot has a home in the render template"):
+        card = CARD.read_text(encoding="utf-8")
+        render = card.split("## Rendering", 1)[-1]
+        for slot in ("THE THIRD SIDE", "THE MOVE", "COULDN'T SETTLE", "ASSUMED", "SPLIT"):
+            c.check(f"G · render template names {slot}", f"**{slot}:**" in render)
+        c.check("G · render template carries the heading pattern", "### {icon} {Filter} — {Mind}" in render)
+        c.check("G · render template carries the italic stance note", "*{one-line stance note" in render)
+        c.check("G · render template carries the blockquote prose", "> {the statement's prose" in render)
+
+    return c.finish()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

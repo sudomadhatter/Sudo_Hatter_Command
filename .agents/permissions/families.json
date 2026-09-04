@@ -1,0 +1,2489 @@
+{
+  "_doc": "The ONE terminal-approval source. A row is a FAMILY (id, cmd, why); each platform's exact rule text comes from render:{zoo,claude,antigravity} when present, else is DERIVED from cmd by the platform's grammar (permission_render.py). only:/not: scope a row. grant: read_file makes the row a FILE grant (rendered as read_file(<dir>), recursive over everything under it, Antigravity only) instead of a command one - SCC-387. Rendered by /smh-sync-agents; drift is red in tests/test_permission_parity.py. Identical DECISIONS across platforms, never identical bytes (SCC-378). house_twin_prefix: every Antigravity deny is also rendered behind the house command shape `cd <abs> && ...` (command-shape.md rule 1), because the vendor documents per-token matching on the leading tokens and nothing about chains - the twin fences the shape either way (code review 2026-09-03).",
+  "env_twin_prefix": "env -u GITHUB_TOKEN ",
+  "house_twin_prefix": "cd .* && ",
+  "allow": [
+    {
+      "id": "allow-cd",
+      "cmd": "cd",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "cd "
+        ],
+        "claude": [
+          "Bash(cd:*)"
+        ],
+        "antigravity": [
+          "command(cd)",
+          "unsandboxed(cd)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-git",
+      "cmd": "git",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git ",
+          "env -u GITHUB_TOKEN git "
+        ],
+        "antigravity": [
+          "command(git)",
+          "unsandboxed(git)",
+          "command(env -u GITHUB_TOKEN git)",
+          "unsandboxed(env -u GITHUB_TOKEN git)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-gh-pr",
+      "cmd": "gh pr",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "gh pr ",
+          "env -u GITHUB_TOKEN gh pr "
+        ],
+        "claude": [
+          "Bash(gh pr create:*)",
+          "Bash(gh pr view:*)",
+          "Bash(gh pr checks:*)",
+          "Bash(gh pr list:*)",
+          "Bash(env -u GITHUB_TOKEN gh pr create:*)",
+          "Bash(env -u GITHUB_TOKEN gh pr view:*)",
+          "Bash(env -u GITHUB_TOKEN gh pr checks:*)",
+          "Bash(env -u GITHUB_TOKEN gh pr list:*)"
+        ],
+        "antigravity": [
+          "command(gh pr)",
+          "unsandboxed(gh pr)",
+          "command(env -u GITHUB_TOKEN gh pr)",
+          "unsandboxed(env -u GITHUB_TOKEN gh pr)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-gh-run",
+      "cmd": "gh run",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "gh run ",
+          "env -u GITHUB_TOKEN gh run "
+        ],
+        "claude": [
+          "Bash(gh run view:*)",
+          "Bash(gh run list:*)",
+          "Bash(env -u GITHUB_TOKEN gh run view:*)",
+          "Bash(env -u GITHUB_TOKEN gh run list:*)"
+        ],
+        "antigravity": [
+          "command(gh run)",
+          "unsandboxed(gh run)",
+          "command(env -u GITHUB_TOKEN gh run)",
+          "unsandboxed(env -u GITHUB_TOKEN gh run)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-python3",
+      "cmd": "python3",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids - NOTE this row is BROADER than the narrow Claude rules above it, which stay in place",
+      "render": {
+        "zoo": [
+          "python3 "
+        ],
+        "claude": [
+          "Bash(python3 .agents/scripts/jira_feed.py *)",
+          "Bash(python3 .agents/scripts/*)",
+          "Bash(python3 -m py_compile:*)",
+          "Bash(env -u GITHUB_TOKEN python3 .agents/scripts/*)",
+          "Bash(python3 --version)",
+          "Bash(python3:*)"
+        ],
+        "antigravity": [
+          "command(python3)",
+          "unsandboxed(python3)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-pwsh",
+      "cmd": "pwsh",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "pwsh -NoProfile -File .agents/scripts/"
+        ],
+        "antigravity": [
+          "command(pwsh -NoProfile -File \\.agents/scripts/.*)",
+          "unsandboxed(pwsh -NoProfile -File \\.agents/scripts/.*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-acli-jira",
+      "cmd": "acli jira",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "acli jira workitem "
+        ],
+        "claude": [
+          "Bash(acli jira workitem transition *)",
+          "Bash(acli jira workitem view:*)",
+          "Bash(acli jira workitem create:*)",
+          "Bash(acli jira workitem search:*)"
+        ],
+        "antigravity": [
+          "command(acli jira)",
+          "unsandboxed(acli jira)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-ls",
+      "cmd": "ls",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "ls"
+        ],
+        "claude": [
+          "Bash(ls:*)"
+        ],
+        "antigravity": [
+          "command(ls)",
+          "unsandboxed(ls)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-pwd",
+      "cmd": "pwd",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "pwd"
+        ],
+        "claude": [
+          "Bash(pwd)"
+        ],
+        "antigravity": [
+          "command(pwd)",
+          "unsandboxed(pwd)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-true",
+      "cmd": "true",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "true"
+        ],
+        "antigravity": [
+          "command(true)",
+          "unsandboxed(true)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-date",
+      "cmd": "date",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "date"
+        ],
+        "antigravity": [
+          "command(date)",
+          "unsandboxed(date)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-head",
+      "cmd": "head",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "head"
+        ],
+        "claude": [
+          "Bash(head:*)"
+        ],
+        "antigravity": [
+          "command(head)",
+          "unsandboxed(head)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-sort",
+      "cmd": "sort",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "sort"
+        ],
+        "claude": [
+          "Bash(sort:*)"
+        ],
+        "antigravity": [
+          "command(sort)",
+          "unsandboxed(sort)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-uniq",
+      "cmd": "uniq",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "uniq"
+        ],
+        "claude": [
+          "Bash(uniq:*)"
+        ],
+        "antigravity": [
+          "command(uniq)",
+          "unsandboxed(uniq)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-wc",
+      "cmd": "wc",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "wc"
+        ],
+        "claude": [
+          "Bash(wc:*)"
+        ],
+        "antigravity": [
+          "command(wc)",
+          "unsandboxed(wc)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-cat",
+      "cmd": "cat",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "cat"
+        ],
+        "claude": [
+          "Bash(cat:*)"
+        ],
+        "antigravity": [
+          "command(cat)",
+          "unsandboxed(cat)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-echo",
+      "cmd": "echo",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "echo"
+        ],
+        "claude": [
+          "Bash(echo:*)"
+        ],
+        "antigravity": [
+          "command(echo)",
+          "unsandboxed(echo)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-tail",
+      "cmd": "tail",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "tail "
+        ],
+        "claude": [
+          "Bash(tail:*)"
+        ],
+        "antigravity": [
+          "command(tail)",
+          "unsandboxed(tail)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-sed",
+      "cmd": "sed",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids - NOTE this row is BROADER than the narrow Claude rules above it, which stay in place",
+      "render": {
+        "zoo": [
+          "sed "
+        ],
+        "claude": [
+          "Bash(sed -n:*)",
+          "Bash(sed:*)"
+        ],
+        "antigravity": [
+          "command(sed)",
+          "unsandboxed(sed)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-grep",
+      "cmd": "grep",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "grep "
+        ],
+        "claude": [
+          "Bash(grep:*)"
+        ],
+        "antigravity": [
+          "command(grep)",
+          "unsandboxed(grep)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-rg",
+      "cmd": "rg",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "rg "
+        ],
+        "claude": [
+          "Bash(rg:*)"
+        ],
+        "antigravity": [
+          "command(rg)",
+          "unsandboxed(rg)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-diff",
+      "cmd": "diff",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "diff "
+        ],
+        "claude": [
+          "Bash(diff:*)"
+        ],
+        "antigravity": [
+          "command(diff)",
+          "unsandboxed(diff)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-cp",
+      "cmd": "cp",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "cp "
+        ],
+        "claude": [
+          "Bash(cp:*)"
+        ],
+        "antigravity": [
+          "command(cp)",
+          "unsandboxed(cp)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-mkdir",
+      "cmd": "mkdir",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "mkdir "
+        ],
+        "claude": [
+          "Bash(mkdir:*)"
+        ],
+        "antigravity": [
+          "command(mkdir)",
+          "unsandboxed(mkdir)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-printf",
+      "cmd": "printf",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "printf "
+        ],
+        "claude": [
+          "Bash(printf:*)"
+        ],
+        "antigravity": [
+          "command(printf)",
+          "unsandboxed(printf)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-awk",
+      "cmd": "awk",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "awk "
+        ],
+        "claude": [
+          "Bash(awk:*)"
+        ],
+        "antigravity": [
+          "command(awk)",
+          "unsandboxed(awk)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-cut",
+      "cmd": "cut",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "cut "
+        ],
+        "claude": [
+          "Bash(cut:*)"
+        ],
+        "antigravity": [
+          "command(cut)",
+          "unsandboxed(cut)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-tr",
+      "cmd": "tr",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "tr "
+        ],
+        "claude": [
+          "Bash(tr:*)"
+        ],
+        "antigravity": [
+          "command(tr)",
+          "unsandboxed(tr)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-basename",
+      "cmd": "basename",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "basename "
+        ],
+        "claude": [
+          "Bash(basename:*)"
+        ],
+        "antigravity": [
+          "command(basename)",
+          "unsandboxed(basename)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-dirname",
+      "cmd": "dirname",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "dirname "
+        ],
+        "claude": [
+          "Bash(dirname:*)"
+        ],
+        "antigravity": [
+          "command(dirname)",
+          "unsandboxed(dirname)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-readlink",
+      "cmd": "readlink",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "readlink "
+        ],
+        "claude": [
+          "Bash(readlink:*)"
+        ],
+        "antigravity": [
+          "command(readlink)",
+          "unsandboxed(readlink)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-file",
+      "cmd": "file",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "file "
+        ],
+        "claude": [
+          "Bash(file:*)"
+        ],
+        "antigravity": [
+          "command(file)",
+          "unsandboxed(file)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-stat",
+      "cmd": "stat",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "stat "
+        ],
+        "claude": [
+          "Bash(stat:*)"
+        ],
+        "antigravity": [
+          "command(stat)",
+          "unsandboxed(stat)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-du",
+      "cmd": "du",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "du "
+        ],
+        "claude": [
+          "Bash(du:*)"
+        ],
+        "antigravity": [
+          "command(du)",
+          "unsandboxed(du)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-cmp",
+      "cmd": "cmp",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "cmp "
+        ],
+        "claude": [
+          "Bash(cmp:*)"
+        ],
+        "antigravity": [
+          "command(cmp)",
+          "unsandboxed(cmp)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-command",
+      "cmd": "command",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "command -v "
+        ],
+        "claude": [
+          "Bash(command -v:*)"
+        ],
+        "antigravity": [
+          "command(command -v)",
+          "unsandboxed(command -v)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-which",
+      "cmd": "which",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "which "
+        ],
+        "claude": [
+          "Bash(which:*)"
+        ],
+        "antigravity": [
+          "command(which)",
+          "unsandboxed(which)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-jq",
+      "cmd": "jq",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids",
+      "render": {
+        "zoo": [
+          "jq "
+        ],
+        "antigravity": [
+          "command(jq)",
+          "unsandboxed(jq)"
+        ],
+        "claude": [
+          "Bash(jq:*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-touch",
+      "cmd": "touch",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids",
+      "render": {
+        "zoo": [
+          "touch "
+        ],
+        "antigravity": [
+          "command(touch)",
+          "unsandboxed(touch)"
+        ],
+        "claude": [
+          "Bash(touch:*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-mktemp",
+      "cmd": "mktemp",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "mktemp"
+        ],
+        "antigravity": [
+          "command(mktemp)",
+          "unsandboxed(mktemp)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-npx",
+      "cmd": "npx",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "npx vitest "
+        ],
+        "claude": [
+          "Bash(npx vitest run:*)"
+        ],
+        "antigravity": [
+          "command(npx vitest)",
+          "unsandboxed(npx vitest)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-npm",
+      "cmd": "npm",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids - NOTE this row is BROADER than the narrow Claude rules above it, which stay in place",
+      "render": {
+        "zoo": [
+          "npm run ",
+          "npm ci "
+        ],
+        "claude": [
+          "Bash(npm run lint:*)",
+          "Bash(npm:*)"
+        ],
+        "antigravity": [
+          "command(npm run)",
+          "unsandboxed(npm run)",
+          "command(npm ci)",
+          "unsandboxed(npm ci)",
+          "command(npm test)",
+          "unsandboxed(npm test)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-test",
+      "cmd": "test",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "test -"
+        ],
+        "claude": [
+          "Bash(test:*)"
+        ],
+        "antigravity": [
+          "command(test)",
+          "unsandboxed(test)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-sleep",
+      "cmd": "sleep",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "sleep "
+        ],
+        "claude": [
+          "Bash(sleep:*)"
+        ],
+        "antigravity": [
+          "command(sleep)",
+          "unsandboxed(sleep)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-ps",
+      "cmd": "ps",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "ps aux"
+        ],
+        "antigravity": [
+          "command(ps)",
+          "unsandboxed(ps)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-ln",
+      "cmd": "ln",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "ln -s "
+        ],
+        "claude": [
+          "Bash(ln -sf:*)"
+        ],
+        "antigravity": [
+          "command(ln -s)",
+          "unsandboxed(ln -s)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-backend-venv-bin",
+      "cmd": "backend/.venv/bin/",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "backend/.venv/bin/"
+        ],
+        "claude": [
+          "Bash(backend/.venv/bin/*)"
+        ],
+        "antigravity": [
+          "command(backend/\\.venv/bin/.*)",
+          "unsandboxed(backend/\\.venv/bin/.*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-door-vars",
+      "cmd": "door-vars",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | code review 2026-09-03: `[A-Z_]+=.*` allowed ANY uppercase assignment prefix; now the named door variables only (the union of the Zoo and Claude rows)",
+      "render": {
+        "zoo": [
+          "REPO=",
+          "BRANCH=",
+          "EXPECTED_KEY=",
+          "BASE=",
+          "BEHIND=",
+          "HEAD_SHA=",
+          "PATHS=",
+          "VENV=",
+          "KEY=",
+          "MAIN=",
+          "WT=",
+          "W=",
+          "SCR=",
+          "EXT=",
+          "DB=",
+          "OUT=",
+          "MSG=",
+          "URL=",
+          "CODE=",
+          "SCRATCH=",
+          "E=",
+          "T=",
+          "D=",
+          "F=",
+          "R=",
+          "S=",
+          "P=",
+          "N=",
+          "L=",
+          "B=",
+          "A=",
+          "G=",
+          "M=",
+          "V=",
+          "X="
+        ],
+        "claude": [
+          "Bash(MSG=*)",
+          "Bash(REPO=*)",
+          "Bash(W=*)",
+          "Bash(L=*)",
+          "Bash(P=*)",
+          "Bash(S=*)",
+          "Bash(WORKTREE=*)",
+          "Bash(PROJECT_ROOT=*)",
+          "Bash(D=_artifacts/*)",
+          "Bash(EPIC=epic/*)",
+          "Bash(B=https://github.com/*)",
+          "Bash(BRANCH=$(git rev-parse *)",
+          "Bash(HEAD_SHA=$(git rev-parse *)",
+          "Bash(BEHIND=$(git rev-list *)",
+          "Bash(TREE=*)",
+          "Bash(WT=*)",
+          "Bash(A=*)",
+          "Bash(BASE=*)",
+          "Bash(CODE=*)",
+          "Bash(DB=*)",
+          "Bash(E=*)",
+          "Bash(EXPECTED_KEY=*)",
+          "Bash(EXT=*)",
+          "Bash(F=*)",
+          "Bash(G=*)",
+          "Bash(KEY=*)",
+          "Bash(M=*)",
+          "Bash(MAIN=*)",
+          "Bash(N=*)",
+          "Bash(OUT=*)",
+          "Bash(PATHS=*)",
+          "Bash(R=*)",
+          "Bash(SCR=*)",
+          "Bash(SCRATCH=*)",
+          "Bash(T=*)",
+          "Bash(URL=*)",
+          "Bash(V=*)",
+          "Bash(VENV=*)",
+          "Bash(X=*)"
+        ],
+        "antigravity": [
+          "command((A|B|BASE|BEHIND|BRANCH|CODE|D|DB|E|EPIC|EXPECTED_KEY|EXT|F|G|HEAD_SHA|KEY|L|M|MAIN|MSG|N|OUT|P|PATHS|PROJECT_ROOT|R|REPO|S|SCR|SCRATCH|T|TREE|URL|V|VENV|W|WORKTREE|WT|X)=.*)",
+          "unsandboxed((A|B|BASE|BEHIND|BRANCH|CODE|D|DB|E|EPIC|EXPECTED_KEY|EXT|F|G|HEAD_SHA|KEY|L|M|MAIN|MSG|N|OUT|P|PATHS|PROJECT_ROOT|R|REPO|S|SCR|SCRATCH|T|TREE|URL|V|VENV|W|WORKTREE|WT|X)=.*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-git-add",
+      "cmd": "git add",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git add .agents/",
+          "git add .claude/",
+          "git add .vscode/",
+          "git add .roo/",
+          "git add .roomodes",
+          "git add .githooks/",
+          "git add .opencode/",
+          "git add .github/",
+          "git add .gemini/",
+          "git add .agent/"
+        ],
+        "claude": [
+          "Bash(git add:*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-config",
+      "cmd": "git config",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git config --get ",
+          "git config --list",
+          "git config -l"
+        ],
+        "claude": [
+          "Bash(git config --get:*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-branch",
+      "cmd": "git branch",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git branch -d chore/",
+          "git branch -d claude/",
+          "git branch -d epic/",
+          "git branch -d \"chore/",
+          "git branch -d \"claude/",
+          "git branch -d \"epic/"
+        ],
+        "claude": [
+          "Bash(git branch -d chore/*)",
+          "Bash(git branch --list:*)",
+          "Bash(git branch -a:*)",
+          "Bash(git branch --show-current:*)",
+          "Bash(git branch -f chore/*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-push",
+      "cmd": "git push",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git push origin --delete chore/",
+          "git push origin --delete claude/",
+          "git push origin --delete epic/",
+          "git push origin --delete \"chore/",
+          "git push origin --delete \"claude/",
+          "git push origin --delete \"epic/",
+          "env -u GITHUB_TOKEN git push origin --delete chore/",
+          "env -u GITHUB_TOKEN git push origin --delete claude/",
+          "env -u GITHUB_TOKEN git push origin --delete epic/",
+          "env -u GITHUB_TOKEN git push origin --delete \"chore/",
+          "env -u GITHUB_TOKEN git push origin --delete \"claude/",
+          "env -u GITHUB_TOKEN git push origin --delete \"epic/",
+          "git push origin HEAD:epic/",
+          "env -u GITHUB_TOKEN git push origin HEAD:epic/"
+        ],
+        "claude": [
+          "Bash(git push origin main*)",
+          "Bash(env -u GITHUB_TOKEN git push origin main*)",
+          "Bash(git push origin --delete chore/*)",
+          "Bash(env -u GITHUB_TOKEN git push origin --delete chore/*)",
+          "Bash(git push -u origin chore/*)",
+          "Bash(git push origin chore/*)",
+          "Bash(git push -u origin claude/*)",
+          "Bash(git push origin claude/*)",
+          "Bash(env -u GITHUB_TOKEN git push origin chore/*)",
+          "Bash(env -u GITHUB_TOKEN git push -u origin chore/*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-java",
+      "cmd": "java",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "java -version"
+        ],
+        "antigravity": [
+          "command(java -version)",
+          "unsandboxed(java -version)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-node",
+      "cmd": "node",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids",
+      "render": {
+        "zoo": [
+          "node backend/tests/"
+        ],
+        "antigravity": [
+          "command(node)",
+          "unsandboxed(node)"
+        ],
+        "claude": [
+          "Bash(node:*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-venv-bin-python",
+      "cmd": ".venv/bin/python",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          ".venv/bin/python -m pytest"
+        ],
+        "antigravity": [
+          "command(\\.venv/bin/python -m pytest)",
+          "unsandboxed(\\.venv/bin/python -m pytest)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-venv-bin-ruff",
+      "cmd": ".venv/bin/ruff",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          ".venv/bin/ruff check"
+        ],
+        "antigravity": [
+          "command(\\.venv/bin/ruff check)",
+          "unsandboxed(\\.venv/bin/ruff check)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-firebase-tests-node-modules-bin-firebase",
+      "cmd": "firebase/tests/node_modules/.bin/firebase",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "firebase/tests/node_modules/.bin/firebase emulators:exec"
+        ],
+        "antigravity": [
+          "command(firebase/tests/node_modules/\\.bin/firebase emulators:exec)",
+          "unsandboxed(firebase/tests/node_modules/\\.bin/firebase emulators:exec)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-git-checkout",
+      "cmd": "git checkout",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git checkout *)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-merge",
+      "cmd": "git merge",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git merge *)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-worktree",
+      "cmd": "git worktree",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git worktree remove *)",
+          "Bash(git worktree add *)",
+          "Bash(git worktree list:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-pull",
+      "cmd": "git pull",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git pull --ff-only origin main*)",
+          "Bash(env -u GITHUB_TOKEN git pull --ff-only origin main*)",
+          "Bash(git pull --ff-only:*)",
+          "Bash(env -u GITHUB_TOKEN git pull --ff-only:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-status",
+      "cmd": "git status",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git status:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-diff",
+      "cmd": "git diff",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git diff:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-log",
+      "cmd": "git log",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git log:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-show",
+      "cmd": "git show",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git show:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-fetch",
+      "cmd": "git fetch",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git fetch:*)",
+          "Bash(env -u GITHUB_TOKEN git fetch:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-rev-parse",
+      "cmd": "git rev-parse",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git rev-parse:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-merge-base",
+      "cmd": "git merge-base",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git merge-base:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-merge-tree",
+      "cmd": "git merge-tree",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git merge-tree:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-check-ignore",
+      "cmd": "git check-ignore",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git check-ignore:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-commit",
+      "cmd": "git commit",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git commit:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-find",
+      "cmd": "find",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(find:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-ls-files",
+      "cmd": "git ls-files",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git ls-files:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-stash",
+      "cmd": "git stash",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git stash list:*)",
+          "Bash(git stash push:*)",
+          "Bash(git stash pop:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-rev-list",
+      "cmd": "git rev-list",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git rev-list:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-time",
+      "cmd": "time",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(time python3 .agents/scripts/*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-ls-remote",
+      "cmd": "git ls-remote",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "claude": [
+          "Bash(git ls-remote:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-read-claude-memory-wsl",
+      "grant": "read_file",
+      "cmd": "/home/dlohn/.claude/projects/-home-dlohn-Sudo-Hatter-Command/memory",
+      "why": "Antigravity auto-allows reads INSIDE the workspace and asks for everything outside it, and Claude Code's memory store is outside it. Five 'always allow' clicks on 2026-09-03 bought five single files, and the apply would have erased all five (it REPLACES both arrays). A directory grant is recursive over everything under it, so this one row retires them (SCC-387). Machine-scoped by construction - the Mac's own store path is its own row, in SCC-382.",
+      "only": [
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-mv",
+      "cmd": "mv",
+      "why": "harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids",
+      "render": {
+        "claude": [
+          "Bash(mv:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-pytest",
+      "cmd": "pytest",
+      "why": "harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids",
+      "render": {
+        "claude": [
+          "Bash(pytest:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-rsync",
+      "cmd": "rsync",
+      "why": "harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids",
+      "render": {
+        "claude": [
+          "Bash(rsync:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-bash",
+      "cmd": "bash",
+      "why": "harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids | BLANK CHEQUE: this rule permits ANY command. Claude-scoped deliberately - rendered to Antigravity it would become command(bash), and `bash -c \"<denied command>\"` then walks straight through that fence's 384 deny rows by one level of indirection (measured 2026-09-04).",
+      "render": {
+        "claude": [
+          "Bash(bash:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-sh",
+      "cmd": "sh",
+      "why": "harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids | BLANK CHEQUE: this rule permits ANY command. Claude-scoped deliberately - rendered to Antigravity it would become command(sh), and `sh -c \"<denied command>\"` then walks straight through that fence's 384 deny rows by one level of indirection (measured 2026-09-04).",
+      "render": {
+        "claude": [
+          "Bash(sh:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-code",
+      "cmd": "code",
+      "why": "harvested 2026-09-04 from the Antigravity store via /smh-llm-approvals (SCC-392)",
+      "render": {
+        "zoo": [
+          "code "
+        ],
+        "claude": [
+          "Bash(code:*)"
+        ],
+        "antigravity": [
+          "command(code)",
+          "unsandboxed(code)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    }
+  ],
+  "deny": [
+    {
+      "id": "deny-rm-rf",
+      "cmd": "rm -rf",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "rm -rf"
+        ]
+      },
+      "only": [
+        "zoo"
+      ]
+    },
+    {
+      "id": "deny-rm-r",
+      "cmd": "rm -r",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "rm -r"
+        ],
+        "antigravity": [
+          "command(rm -[a-zA-Z]*[rR][a-zA-Z]*)",
+          "unsandboxed(rm -[a-zA-Z]*[rR][a-zA-Z]*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-sudo",
+      "cmd": "sudo",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "sudo"
+        ],
+        "antigravity": [
+          "command(sudo)",
+          "unsandboxed(sudo)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-chmod-r",
+      "cmd": "chmod -R",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "chmod -R 777"
+        ],
+        "antigravity": [
+          "command(chmod -[a-zA-Z]*R[a-zA-Z]* 777)",
+          "unsandboxed(chmod -[a-zA-Z]*R[a-zA-Z]* 777)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-chown-r",
+      "cmd": "chown -R",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "chown -R"
+        ],
+        "antigravity": [
+          "command(chown -[a-zA-Z]*R[a-zA-Z]*)",
+          "unsandboxed(chown -[a-zA-Z]*R[a-zA-Z]*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-dd-if",
+      "cmd": "dd if=",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "dd if="
+        ],
+        "antigravity": [
+          "command(dd if=.*)",
+          "unsandboxed(dd if=.*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-mkfs",
+      "cmd": "mkfs",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | SCC-378 battery: `mkfs.ext4` is one token; anchored `mkfs` never matched it",
+      "render": {
+        "zoo": [
+          "mkfs"
+        ],
+        "antigravity": [
+          "command(mkfs.*)",
+          "unsandboxed(mkfs.*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-del-s",
+      "cmd": "del /s",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "del /s"
+        ]
+      },
+      "only": [
+        "zoo"
+      ]
+    },
+    {
+      "id": "deny-rmdir-s",
+      "cmd": "rmdir /s",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "rmdir /s"
+        ]
+      },
+      "only": [
+        "zoo"
+      ]
+    },
+    {
+      "id": "deny-remove-item-recurse",
+      "cmd": "Remove-Item -Recurse",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "Remove-Item -Recurse"
+        ]
+      },
+      "only": [
+        "zoo"
+      ]
+    },
+    {
+      "id": "deny-git-push",
+      "cmd": "git push",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | SCC-378 battery: HEAD:main was un-denied on Antigravity (Zoo's `HEAD:` deny is prefix-based; here the target is named so the `HEAD:epic/` landing stays legal) | code review 2026-09-03: literal flags/targets were one anchored token each, so -fu / --force-with-lease=X / --delete origin main / HEAD:develop slipped past; now cluster classes and the same targets Zoo's longest-prefix re-allows leave legal (chore/ claude/ epic/, HEAD:epic/)",
+      "render": {
+        "zoo": [
+          "git push --force",
+          "git push -f",
+          "git push --force-with-lease",
+          "git push --mirror",
+          "git push --all",
+          "git push origin main",
+          "git push -u origin main",
+          "git push --set-upstream origin main",
+          "git push origin main:",
+          "git push origin HEAD:",
+          "git push origin +",
+          "git push origin :",
+          "git push origin \"main",
+          "git push --delete",
+          "git push origin --delete",
+          "env -u GITHUB_TOKEN git push --force",
+          "env -u GITHUB_TOKEN git push -f",
+          "env -u GITHUB_TOKEN git push --force-with-lease",
+          "env -u GITHUB_TOKEN git push --mirror",
+          "env -u GITHUB_TOKEN git push --all",
+          "env -u GITHUB_TOKEN git push origin main",
+          "env -u GITHUB_TOKEN git push -u origin main",
+          "env -u GITHUB_TOKEN git push --set-upstream origin main",
+          "env -u GITHUB_TOKEN git push origin main:",
+          "env -u GITHUB_TOKEN git push origin HEAD:",
+          "env -u GITHUB_TOKEN git push origin +",
+          "env -u GITHUB_TOKEN git push origin :",
+          "env -u GITHUB_TOKEN git push origin \"main",
+          "env -u GITHUB_TOKEN git push --delete",
+          "env -u GITHUB_TOKEN git push origin --delete"
+        ],
+        "antigravity": [
+          "command(git push --force.*)",
+          "unsandboxed(git push --force.*)",
+          "command(env -u GITHUB_TOKEN git push --force.*)",
+          "unsandboxed(env -u GITHUB_TOKEN git push --force.*)",
+          "command(git push -[a-zA-Z]*f[a-zA-Z]*)",
+          "unsandboxed(git push -[a-zA-Z]*f[a-zA-Z]*)",
+          "command(env -u GITHUB_TOKEN git push -[a-zA-Z]*f[a-zA-Z]*)",
+          "unsandboxed(env -u GITHUB_TOKEN git push -[a-zA-Z]*f[a-zA-Z]*)",
+          "command(git push --mirror)",
+          "unsandboxed(git push --mirror)",
+          "command(env -u GITHUB_TOKEN git push --mirror)",
+          "unsandboxed(env -u GITHUB_TOKEN git push --mirror)",
+          "command(git push --all)",
+          "unsandboxed(git push --all)",
+          "command(env -u GITHUB_TOKEN git push --all)",
+          "unsandboxed(env -u GITHUB_TOKEN git push --all)",
+          "command(git push origin main)",
+          "unsandboxed(git push origin main)",
+          "command(env -u GITHUB_TOKEN git push origin main)",
+          "unsandboxed(env -u GITHUB_TOKEN git push origin main)",
+          "command(git push -[a-zA-Z]*u[a-zA-Z]* origin main)",
+          "unsandboxed(git push -[a-zA-Z]*u[a-zA-Z]* origin main)",
+          "command(env -u GITHUB_TOKEN git push -[a-zA-Z]*u[a-zA-Z]* origin main)",
+          "unsandboxed(env -u GITHUB_TOKEN git push -[a-zA-Z]*u[a-zA-Z]* origin main)",
+          "command(git push --set-upstream origin main)",
+          "unsandboxed(git push --set-upstream origin main)",
+          "command(env -u GITHUB_TOKEN git push --set-upstream origin main)",
+          "unsandboxed(env -u GITHUB_TOKEN git push --set-upstream origin main)",
+          "command(git push origin main:.*)",
+          "unsandboxed(git push origin main:.*)",
+          "command(env -u GITHUB_TOKEN git push origin main:.*)",
+          "unsandboxed(env -u GITHUB_TOKEN git push origin main:.*)",
+          "command(git push origin \"main.*)",
+          "unsandboxed(git push origin \"main.*)",
+          "command(env -u GITHUB_TOKEN git push origin \"main.*)",
+          "unsandboxed(env -u GITHUB_TOKEN git push origin \"main.*)",
+          "command(git push origin \\+.*)",
+          "unsandboxed(git push origin \\+.*)",
+          "command(env -u GITHUB_TOKEN git push origin \\+.*)",
+          "unsandboxed(env -u GITHUB_TOKEN git push origin \\+.*)",
+          "command(git push --delete)",
+          "unsandboxed(git push --delete)",
+          "command(env -u GITHUB_TOKEN git push --delete)",
+          "unsandboxed(env -u GITHUB_TOKEN git push --delete)",
+          "command(git push origin --delete (?!\"?(chore|claude|epic)/).*)",
+          "unsandboxed(git push origin --delete (?!\"?(chore|claude|epic)/).*)",
+          "command(env -u GITHUB_TOKEN git push origin --delete (?!\"?(chore|claude|epic)/).*)",
+          "unsandboxed(env -u GITHUB_TOKEN git push origin --delete (?!\"?(chore|claude|epic)/).*)",
+          "command(git push origin :.*)",
+          "unsandboxed(git push origin :.*)",
+          "command(env -u GITHUB_TOKEN git push origin :.*)",
+          "unsandboxed(env -u GITHUB_TOKEN git push origin :.*)",
+          "command(git push origin HEAD:(?!epic/).*)",
+          "unsandboxed(git push origin HEAD:(?!epic/).*)",
+          "command(env -u GITHUB_TOKEN git push origin HEAD:(?!epic/).*)",
+          "unsandboxed(env -u GITHUB_TOKEN git push origin HEAD:(?!epic/).*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-reset",
+      "cmd": "git reset",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git reset --hard",
+          "env -u GITHUB_TOKEN git reset --hard"
+        ],
+        "antigravity": [
+          "command(git reset --hard)",
+          "unsandboxed(git reset --hard)",
+          "command(env -u GITHUB_TOKEN git reset --hard)",
+          "unsandboxed(env -u GITHUB_TOKEN git reset --hard)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-clean",
+      "cmd": "git clean",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git clean -f",
+          "git clean -d",
+          "git clean -x",
+          "git clean --force",
+          "env -u GITHUB_TOKEN git clean -f",
+          "env -u GITHUB_TOKEN git clean -d",
+          "env -u GITHUB_TOKEN git clean -x",
+          "env -u GITHUB_TOKEN git clean --force"
+        ],
+        "antigravity": [
+          "command(git clean -[a-zA-Z]*[fdx][a-zA-Z]*)",
+          "unsandboxed(git clean -[a-zA-Z]*[fdx][a-zA-Z]*)",
+          "command(env -u GITHUB_TOKEN git clean -[a-zA-Z]*[fdx][a-zA-Z]*)",
+          "unsandboxed(env -u GITHUB_TOKEN git clean -[a-zA-Z]*[fdx][a-zA-Z]*)",
+          "command(git clean --force)",
+          "unsandboxed(git clean --force)",
+          "command(env -u GITHUB_TOKEN git clean --force)",
+          "unsandboxed(env -u GITHUB_TOKEN git clean --force)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-branch",
+      "cmd": "git branch",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | code review 2026-09-03: -Df / -Mf clusters and -d/-m spellings (Zoo folds case) slipped past the literal tokens; targets follow Zoo's re-allows",
+      "render": {
+        "zoo": [
+          "git branch -D",
+          "git branch -M",
+          "env -u GITHUB_TOKEN git branch -D",
+          "env -u GITHUB_TOKEN git branch -M"
+        ],
+        "antigravity": [
+          "command(git branch -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
+          "unsandboxed(git branch -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
+          "command(env -u GITHUB_TOKEN git branch -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
+          "unsandboxed(env -u GITHUB_TOKEN git branch -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
+          "command(git branch -[a-zA-Z]*[mM][a-zA-Z]*)",
+          "unsandboxed(git branch -[a-zA-Z]*[mM][a-zA-Z]*)",
+          "command(env -u GITHUB_TOKEN git branch -[a-zA-Z]*[mM][a-zA-Z]*)",
+          "unsandboxed(env -u GITHUB_TOKEN git branch -[a-zA-Z]*[mM][a-zA-Z]*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-rebase",
+      "cmd": "git rebase",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git rebase",
+          "env -u GITHUB_TOKEN git rebase"
+        ],
+        "antigravity": [
+          "command(git rebase)",
+          "unsandboxed(git rebase)",
+          "command(env -u GITHUB_TOKEN git rebase)",
+          "unsandboxed(env -u GITHUB_TOKEN git rebase)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-filter-branch",
+      "cmd": "git filter-branch",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git filter-branch",
+          "env -u GITHUB_TOKEN git filter-branch"
+        ],
+        "antigravity": [
+          "command(git filter-branch)",
+          "unsandboxed(git filter-branch)",
+          "command(env -u GITHUB_TOKEN git filter-branch)",
+          "unsandboxed(env -u GITHUB_TOKEN git filter-branch)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-reflog",
+      "cmd": "git reflog",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git reflog expire",
+          "git reflog delete",
+          "env -u GITHUB_TOKEN git reflog expire",
+          "env -u GITHUB_TOKEN git reflog delete"
+        ],
+        "antigravity": [
+          "command(git reflog expire)",
+          "unsandboxed(git reflog expire)",
+          "command(env -u GITHUB_TOKEN git reflog expire)",
+          "unsandboxed(env -u GITHUB_TOKEN git reflog expire)",
+          "command(git reflog delete)",
+          "unsandboxed(git reflog delete)",
+          "command(env -u GITHUB_TOKEN git reflog delete)",
+          "unsandboxed(env -u GITHUB_TOKEN git reflog delete)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-update-ref",
+      "cmd": "git update-ref",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git update-ref",
+          "env -u GITHUB_TOKEN git update-ref"
+        ],
+        "antigravity": [
+          "command(git update-ref)",
+          "unsandboxed(git update-ref)",
+          "command(env -u GITHUB_TOKEN git update-ref)",
+          "unsandboxed(env -u GITHUB_TOKEN git update-ref)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-gc",
+      "cmd": "git gc",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | SCC-378 battery: `--prune=now` is one token; anchored `--prune` never matched it",
+      "render": {
+        "zoo": [
+          "git gc --prune",
+          "env -u GITHUB_TOKEN git gc --prune"
+        ],
+        "antigravity": [
+          "command(git gc --prune.*)",
+          "unsandboxed(git gc --prune.*)",
+          "command(env -u GITHUB_TOKEN git gc --prune.*)",
+          "unsandboxed(env -u GITHUB_TOKEN git gc --prune.*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-stash",
+      "cmd": "git stash",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git stash drop",
+          "git stash clear",
+          "env -u GITHUB_TOKEN git stash drop",
+          "env -u GITHUB_TOKEN git stash clear"
+        ],
+        "antigravity": [
+          "command(git stash drop)",
+          "unsandboxed(git stash drop)",
+          "command(env -u GITHUB_TOKEN git stash drop)",
+          "unsandboxed(env -u GITHUB_TOKEN git stash drop)",
+          "command(git stash clear)",
+          "unsandboxed(git stash clear)",
+          "command(env -u GITHUB_TOKEN git stash clear)",
+          "unsandboxed(env -u GITHUB_TOKEN git stash clear)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-remote",
+      "cmd": "git remote",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git remote remove",
+          "git remote rm",
+          "git remote rename",
+          "git remote set-url",
+          "env -u GITHUB_TOKEN git remote remove",
+          "env -u GITHUB_TOKEN git remote rm",
+          "env -u GITHUB_TOKEN git remote rename",
+          "env -u GITHUB_TOKEN git remote set-url"
+        ],
+        "antigravity": [
+          "command(git remote remove)",
+          "unsandboxed(git remote remove)",
+          "command(env -u GITHUB_TOKEN git remote remove)",
+          "unsandboxed(env -u GITHUB_TOKEN git remote remove)",
+          "command(git remote rm)",
+          "unsandboxed(git remote rm)",
+          "command(env -u GITHUB_TOKEN git remote rm)",
+          "unsandboxed(env -u GITHUB_TOKEN git remote rm)",
+          "command(git remote rename)",
+          "unsandboxed(git remote rename)",
+          "command(env -u GITHUB_TOKEN git remote rename)",
+          "unsandboxed(env -u GITHUB_TOKEN git remote rename)",
+          "command(git remote set-url)",
+          "unsandboxed(git remote set-url)",
+          "command(env -u GITHUB_TOKEN git remote set-url)",
+          "unsandboxed(env -u GITHUB_TOKEN git remote set-url)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-restore",
+      "cmd": "git restore",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git restore .",
+          "env -u GITHUB_TOKEN git restore ."
+        ],
+        "antigravity": [
+          "command(git restore \\.)",
+          "unsandboxed(git restore \\.)",
+          "command(env -u GITHUB_TOKEN git restore \\.)",
+          "unsandboxed(env -u GITHUB_TOKEN git restore \\.)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-checkout",
+      "cmd": "git checkout",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git checkout -- ",
+          "git checkout .",
+          "env -u GITHUB_TOKEN git checkout -- ",
+          "env -u GITHUB_TOKEN git checkout ."
+        ],
+        "antigravity": [
+          "command(git checkout \\.)",
+          "unsandboxed(git checkout \\.)",
+          "command(env -u GITHUB_TOKEN git checkout \\.)",
+          "unsandboxed(env -u GITHUB_TOKEN git checkout \\.)",
+          "command(git checkout --)",
+          "unsandboxed(git checkout --)",
+          "command(env -u GITHUB_TOKEN git checkout --)",
+          "unsandboxed(env -u GITHUB_TOKEN git checkout --)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-config",
+      "cmd": "git config",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | code review 2026-09-03: --local core.hooksPath, --unset, user.email slipped past the three literal rows; now every write spelling is denied and only Zoo's three read re-allows stay legal",
+      "render": {
+        "zoo": [
+          "git config",
+          "env -u GITHUB_TOKEN git config"
+        ],
+        "antigravity": [
+          "command(git config (?!(--get|--list|-l)$).*)",
+          "unsandboxed(git config (?!(--get|--list|-l)$).*)",
+          "command(env -u GITHUB_TOKEN git config (?!(--get|--list|-l)$).*)",
+          "unsandboxed(env -u GITHUB_TOKEN git config (?!(--get|--list|-l)$).*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-add",
+      "cmd": "git add",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | code review 2026-09-03: -Av and ./ ../ slipped past the literal tokens",
+      "render": {
+        "zoo": [
+          "git add -A",
+          "git add .",
+          "git add -u",
+          "git add --all",
+          "env -u GITHUB_TOKEN git add -A",
+          "env -u GITHUB_TOKEN git add .",
+          "env -u GITHUB_TOKEN git add -u",
+          "env -u GITHUB_TOKEN git add --all"
+        ],
+        "antigravity": [
+          "command(git add -[a-zA-Z]*[Au][a-zA-Z]*)",
+          "unsandboxed(git add -[a-zA-Z]*[Au][a-zA-Z]*)",
+          "command(env -u GITHUB_TOKEN git add -[a-zA-Z]*[Au][a-zA-Z]*)",
+          "unsandboxed(env -u GITHUB_TOKEN git add -[a-zA-Z]*[Au][a-zA-Z]*)",
+          "command(git add (\\.|\\.\\.)(/.*)?)",
+          "unsandboxed(git add (\\.|\\.\\.)(/.*)?)",
+          "command(env -u GITHUB_TOKEN git add (\\.|\\.\\.)(/.*)?)",
+          "unsandboxed(env -u GITHUB_TOKEN git add (\\.|\\.\\.)(/.*)?)",
+          "command(git add --all)",
+          "unsandboxed(git add --all)",
+          "command(env -u GITHUB_TOKEN git add --all)",
+          "unsandboxed(env -u GITHUB_TOKEN git add --all)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-c",
+      "cmd": "git -C",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git -C",
+          "env -u GITHUB_TOKEN git -C"
+        ],
+        "antigravity": [
+          "command(git -C.*)",
+          "unsandboxed(git -C.*)",
+          "command(env -u GITHUB_TOKEN git -C.*)",
+          "unsandboxed(env -u GITHUB_TOKEN git -C.*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-git-dir",
+      "cmd": "git --git-dir",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "git --git-dir",
+          "env -u GITHUB_TOKEN git --git-dir"
+        ],
+        "antigravity": [
+          "command(git --git-dir.*)",
+          "unsandboxed(git --git-dir.*)",
+          "command(env -u GITHUB_TOKEN git --git-dir.*)",
+          "unsandboxed(env -u GITHUB_TOKEN git --git-dir.*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-gh-pr",
+      "cmd": "gh pr",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "gh pr merge",
+          "env -u GITHUB_TOKEN gh pr merge"
+        ],
+        "antigravity": [
+          "command(gh pr merge)",
+          "unsandboxed(gh pr merge)",
+          "command(env -u GITHUB_TOKEN gh pr merge)",
+          "unsandboxed(env -u GITHUB_TOKEN gh pr merge)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-gh-repo",
+      "cmd": "gh repo",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "gh repo delete",
+          "env -u GITHUB_TOKEN gh repo delete"
+        ],
+        "antigravity": [
+          "command(gh repo delete)",
+          "unsandboxed(gh repo delete)",
+          "command(env -u GITHUB_TOKEN gh repo delete)",
+          "unsandboxed(env -u GITHUB_TOKEN gh repo delete)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-gh-release",
+      "cmd": "gh release",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "gh release delete",
+          "env -u GITHUB_TOKEN gh release delete"
+        ],
+        "antigravity": [
+          "command(gh release delete)",
+          "unsandboxed(gh release delete)",
+          "command(env -u GITHUB_TOKEN gh release delete)",
+          "unsandboxed(env -u GITHUB_TOKEN gh release delete)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-acli-jira",
+      "cmd": "acli jira",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "zoo": [
+          "acli jira workitem delete"
+        ],
+        "antigravity": [
+          "command(acli jira workitem delete)",
+          "unsandboxed(acli jira workitem delete)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-rm-recursive",
+      "cmd": "rm --recursive",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "antigravity": [
+          "command(rm --recursive)",
+          "unsandboxed(rm --recursive)"
+        ]
+      },
+      "only": [
+        "antigravity"
+      ]
+    },
+    {
+      "id": "deny-git-c-lower",
+      "cmd": "git -c",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "render": {
+        "antigravity": [
+          "command(git -c)",
+          "unsandboxed(git -c)",
+          "command(env -u GITHUB_TOKEN git -c)",
+          "unsandboxed(env -u GITHUB_TOKEN git -c)"
+        ]
+      },
+      "only": [
+        "antigravity"
+      ]
+    }
+  ]
+}

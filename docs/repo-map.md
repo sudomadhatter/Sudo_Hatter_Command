@@ -114,18 +114,16 @@ Sudo_Hatter_Command/
     _scc_sops_prds/
         [15 files: .mdx15 | e.g. INDEX.md]
     migrations/
-      antigravity_extensions/
-          [1 files: .txtx1 | e.g. antigravity-extension-ids.txt]
-      gemini_extensions/
-          [2 files: .mdx1, .shx1 | e.g. gemini-extensions-sync-guide.md]
       install_guides/
-          [8 files: .mdx8 | e.g. antigravity-ide-extension-migration.md]
+          [10 files: .mdx10 | e.g. github-ci-gates-setup.md]
       scripts/
-          [9 files: .ps1x4, .pyx2, .shx2, .patchx1 | e.g. Export-EnvMaster.ps1]
-        [1 files: .mdx1 | e.g. INDEX.md]
+          [11 files: .ps1x5, .pyx3, .shx2, .patchx1 | e.g. Arm-HooksInclude.ps1]
+      vscode_sync/
+          [4 files: .jsonx2, .mdx1, .txtx1 | e.g. README.md]
+        [2 files: .mdx2 | e.g. INDEX.md]
       [10 files: .mdx9, .jsonx1 | e.g. AGENTS.md]
   scratch/
-      [1 files: .pyx1 | e.g. find_brainstorm.py]
+      [2 files: .pyx2 | e.g. find_brainstorm.py]
     [9 files: .mdx5, .txtx3, .jsonx1 | e.g. AGENTS.md]
 ```
 <!-- REPO-MAP:AUTO-END -->

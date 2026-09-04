@@ -642,30 +642,70 @@ def main() -> int:
     #
     # Observed rather than reasoned about: a `git` shim first on PATH records the environment
     # it was actually handed. That is the only way to see a child's env from outside it.
+    # ⛔⛔ TWO INSTRUMENTS, ONE PROPERTY — AND WINDOWS CANNOT USE THE FIRST ONE (SCC-321).
+    # A PATH shim cannot be reached from `subprocess.run(["git", …])` on Windows at all: with no
+    # extension given, `CreateProcess` appends `.exe` and ONLY `.exe`. It never consults `PATHEXT`
+    # — that is `cmd.exe`'s behaviour, not the API's — so a `.cmd` or extensionless shim is
+    # invisible no matter where it sits on `PATH`, and there is no way to author a real `.exe`
+    # from this suite. Both arms below assert the SAME thing, that `_fetch`'s child environment
+    # carries no `GITHUB_TOKEN`; neither is a skip, and both are non-vacuous by construction.
     if c.block("SP-O · the fetch child never inherits GITHUB_TOKEN"):
         with TempDir() as t:
             repo = make_repo(t, deployable=True)
             branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
-            shim, seen = t / "bin", t / "fetch-env.txt"
-            shim.mkdir()
-            real = shutil.which("git") or "/usr/bin/git"
-            (shim / "git").write_text(
-                "#!/bin/sh\n"
-                'for a in "$@"; do [ "$a" = "fetch" ] && '
-                f'printf "%s" "${{GITHUB_TOKEN-<unset>}}" > "{seen}"; done\n'
-                f'exec "{real}" "$@"\n', encoding="utf-8")
-            (shim / "git").chmod(0o755)
-            env = dict(os.environ, PATH=f"{shim}{os.pathsep}{os.environ['PATH']}",
-                       GITHUB_TOKEN="stale-token-that-must-not-travel")
-            subprocess.run([sys.executable, str(SCRIPTS / SCRIPT), "--repo", str(repo),
-                            "--branch", "epic/SCC-11-thing", "--expect-key", "SCC-11"],
-                           capture_output=True, text=True, env=env)
-            c.check("SP-O the shim saw the fetch at all (the case is not vacuous)",
-                    seen.is_file(), f"{seen} never written - PATH shim did not run")
-            if seen.is_file():
+
+            if os.name == "nt":
+                # In-process: spy on the ONE call `_fetch` makes and read the env it hands over.
+                # `GITHUB_TOKEN` is planted first, so "absent from the child" is a real difference
+                # from "absent from this machine" — that is what keeps this arm honest.
+                import ship_preflight as sp
+                saved = os.environ.get("GITHUB_TOKEN")
+                os.environ["GITHUB_TOKEN"] = "stale-token-that-must-not-travel"
+                seen_call: dict = {}
+                real_run = subprocess.run
+
+                def spy(args, **kw):
+                    seen_call["args"] = list(args)
+                    seen_call["env"] = kw.get("env")
+                    return real_run([sys.executable, "-c", ""], capture_output=True)
+
+                sp.subprocess.run = spy                      # type: ignore[assignment]
+                try:
+                    sp._fetch(repo)
+                finally:
+                    sp.subprocess.run = real_run             # type: ignore[assignment]
+                    if saved is None:
+                        os.environ.pop("GITHUB_TOKEN", None)
+                    else:
+                        os.environ["GITHUB_TOKEN"] = saved
+
+                c.check("SP-O the fetch was observed at all (the case is not vacuous)",
+                        seen_call.get("args", [])[:2] == ["git", "fetch"],
+                        f"_fetch did not run git fetch: {seen_call.get('args')!r}")
                 c.check("SP-O ...and GITHUB_TOKEN was NOT in the fetch's environment",
-                        seen.read_text(encoding="utf-8") == "<unset>",
-                        f"child saw GITHUB_TOKEN={seen.read_text(encoding='utf-8')!r}")
+                        "GITHUB_TOKEN" not in (seen_call.get("env") or {}),
+                        "the child env still carries the session token")
+            else:
+                shim, seen = t / "bin", t / "fetch-env.txt"
+                shim.mkdir()
+                real = shutil.which("git") or "/usr/bin/git"
+                (shim / "git").write_text(
+                    "#!/bin/sh\n"
+                    'for a in "$@"; do [ "$a" = "fetch" ] && '
+                    f'printf "%s" "${{GITHUB_TOKEN-<unset>}}" > "{seen}"; done\n'
+                    f'exec "{real}" "$@"\n', encoding="utf-8")
+                (shim / "git").chmod(0o755)
+                env = dict(os.environ, PATH=f"{shim}{os.pathsep}{os.environ['PATH']}",
+                           GITHUB_TOKEN="stale-token-that-must-not-travel")
+                subprocess.run([sys.executable, str(SCRIPTS / SCRIPT), "--repo", str(repo),
+                                "--branch", "epic/SCC-11-thing", "--expect-key", "SCC-11"],
+                               capture_output=True, text=True, env=env)
+                c.check("SP-O the shim saw the fetch at all (the case is not vacuous)",
+                        seen.is_file(), f"{seen} never written - PATH shim did not run")
+                if seen.is_file():
+                    c.check("SP-O ...and GITHUB_TOKEN was NOT in the fetch's environment",
+                            seen.read_text(encoding="utf-8") == "<unset>",
+                            f"child saw GITHUB_TOKEN={seen.read_text(encoding='utf-8')!r}")
 
     # ── SP-G · an unfetched comparison is not a fresh one ──────────────────────────────────
     # SCC-193's finding, one door over: a note saying the comparison was stale sat under a

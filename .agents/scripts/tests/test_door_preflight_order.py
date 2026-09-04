@@ -11,12 +11,16 @@ only then pushes `main` — checks attach to a COMMIT, so the green travels with
 So for that door this file asserts **absence**: no token mint, no `git push origin main`, no
 `gate/**` ref on its road — plus that the road it DOES take is `gh pr create`.
 
-The ordering contract below still binds `/cicd-push-e2e`, which ships PROJECT epics and still
-merges locally, and it still governs the mutant fixtures. Keeping it live matters: the reason
-the wait must precede the mint is that the approval token has a 30-minute TTL
+  ── SCC-347: NEITHER DOOR TAKES IT NOW ─────────────────────────────────────────────────────
+`/cicd-push-e2e` took that road until SCC-347 — it shipped PROJECT epics by merging locally,
+minting the token and pushing. It now opens a PR and stops, exactly as this door does, so the
+ordering contract below governs only the mutant FIXTURES. It is kept, not deleted, for two
+reasons: the fixtures are the controls that prove `order_ok` bites, and the sequence records why
+the wait had to precede the mint — the approval token has a 30-minute TTL
 (`pre-push-main-approval.sh`, `TTL_SECONDS=1800`), so a slow CI run inserted between mint and
-push silently eats the token's life and the push dies on "stale token" after all the work is
-done. Required order, where it still applies:
+push silently ate the token's life and the push died on "stale token" after all the work was
+done. Anyone re-introducing a local-merge road needs that, and it is cheaper to keep than to
+rediscover. The historical order:
 
     merge locally
     push HEAD to gate/main-<sha>          pre-flight
@@ -35,19 +39,25 @@ And a "contains" search cannot see order at all, so every ordering claim here is
 comparison with a reordered mutant to prove the comparison bites
 (`[[source-grep-guards-cannot-see-order]]`).
 
-  ── ONE DOOR, NOT TWO — AND THE SECOND ONE MUST STAY OUT ───────────────────────────────────
-The SCC-118 plan said "both doors". Building it showed that is wrong, and the wrong version
-would have been worse than doing nothing.
+  ── BOTH DOORS TAKE THE PR ROAD; WHAT DIFFERS IS THE WAIT (SCC-118, then SCC-347) ──────────
+The SCC-118 plan said "both doors" and building it showed that was wrong THEN, for one reason
+that is still true and one that no longer is.
 
-`/cicd-push-e2e` is a `cicd-*` command, so it binds exactly ONE PROJECT and never the lobby
-(AGENTS.md § command naming law): it ships `epic/*` branches in project repos. Those repos do
-not publish `main-write-gate`, and giving them the server-side half is a separate ticket in each
-of their own trackers ([[cross-repo-work-needs-a-ticket-per-repo]]). A pre-flight wait there
-would poll forever for a check that never appears — every AGY ship, a hang.
+Still true: `/cicd-push-e2e` is a `cicd-*` command, so it binds exactly ONE PROJECT and never the
+lobby (AGENTS.md § command naming law). A project publishes `main-write-gate` only once it files
+its own ticket in its own tracker ([[cross-repo-work-needs-a-ticket-per-repo]]) — AVCH-111 for
+AGY. A pre-flight WAIT there would poll forever for a check that may never appear: every ship, a
+hang. So the wait, the `gate/**` ref and the token stay out of that door, and the standing guard
+below is what keeps a later well-meaning edit from copying them in.
 
-So: the ordering contract below covers `/smh-close-task-merge-tree`, the lobby's own door, and
-there is a standing guard that the pattern has NOT been copied into `/cicd-push-e2e` by a later
-well-meaning edit.
+No longer true: that this justified leaving the LOCAL MERGE in place there. It did not. The token
+guards a push from a machine here; it is structurally absent from a merge made on GitHub's
+servers, which is the road a web or mobile session takes. Measured 2026-08-31, AGY `main` carried
+no protection and no ruleset at all, so that road into a production repo was guarded by nothing
+while the token guarded a push nobody was making. SCC-347 gave `/cicd-push-e2e` the same PR shape
+this door has: gate locally, push the gated tip, `gh pr create`, STOP, and `--after-merge` to
+finish. The guard on it is therefore now the SAME absence assertions as the DOORS loop, MINUS the
+check-wait rows.
 
 Stdlib only, no pytest.
 """
@@ -63,6 +73,14 @@ REPO = Path(__file__).resolve().parents[3]
 # The lobby's door to `main`. This is the only door whose target repo publishes the check.
 DOORS = {
     "/smh-close-task-merge-tree": REPO / ".agents/commands/smh-close-task-merge-tree.md",
+    # SCC-393. This door lands a permission harvest under the exemption in
+    # artifacts-always-first.md, so it reaches `main` on its own road and the absence
+    # assertions below are the ONLY thing standing between that road and a self-merge.
+    # It was written once WITH the token road (checkout main -> merge --no-ff -> mint ->
+    # push origin main) and the suite stayed green purely because this dict did not name
+    # it - the invariant in this file's docstring said "no live door takes that road" and
+    # was false while it said so. Naming it here is what makes the sentence true.
+    "/smh-llm-approvals": REPO / ".agents/commands/smh-llm-approvals.md",
 }
 
 # Ships PROJECT epics, never the lobby. Must NOT wait on a check its target does not publish.
@@ -230,7 +248,7 @@ REQUIRED_ORDER = (GATE_REF, CHECK_NAME, "mint-push-token.sh", "git push origin m
 # ⛔ THE ORDER CHECK ALONE CANNOT SEE A RELOCATION: move the whole ceremony under any
 # heading and every needle is still present and still in order, so `REQUIRED_ORDER` stays
 # GREEN while certifying a road the door no longer takes. `REQUIRED_ORDER` is therefore
-# kept ONLY for the fixtures below and for `/cicd-push-e2e`, which still takes it. The
+# kept ONLY for the fixtures below — since SCC-347 NO live door takes that road. The
 # live lobby door is checked by ABSENCE instead (source-grep guards cannot see ORDER's
 # sibling: they cannot see SECTION).
 BREAK_GLASS = "Break-glass"
@@ -315,15 +333,76 @@ def main() -> int:
             c.check(f"{label} · ORDER flight_recorder.py record → {DEFAULT_LANDER} (record is pre-merge)",
                     ok, detail)
 
-        # ── the standing guard on the OTHER door ───────────────────────────────────────────────
-        # Not an oversight that this one has no pre-flight — a requirement. See the docstring.
+        # ── the OTHER door takes the same road, since SCC-347 ──────────────────────────────────
+        # `/cicd-push-e2e` ships PROJECT epics, and until SCC-347 it reached `main` the way this
+        # file's ordering contract describes: merge locally, mint the single-use token, push. That
+        # was the shape SCC-183 deleted on the lobby door, kept here on the reasoning that a
+        # project publishes no check to wait for — true, and it answered the wrong question. The
+        # token guards a push FROM A MACHINE HERE; it is structurally absent from a merge performed
+        # on GitHub's servers, which is the road a web or mobile session takes.
+        #
+        # Measured 2026-08-31, before the reshape: AGY `main` carried no ruleset and no protection
+        # (`gh api repos/{owner}/{repo}/branches/main/protection` -> 404 "Branch not protected"),
+        # so the web-merge road into a PRODUCTION repo was guarded by nothing at all, while the
+        # local token diligently guarded a push the operator had stopped making. Same hole as PR #2
+        # (SCC-118), one repo over.
+        #
+        # ⭐ WHAT STAYS TRUE IS THE WAIT, AND ONLY THE WAIT. A `cicd-*` command binds a PROJECT,
+        # and a project publishes `main-write-gate` only once it files its own ticket in its own
+        # tracker (AVCH-111 for AGY). A wait here still polls forever for a check that may never
+        # appear — so this door opens the PR and STOPS, and whatever ruleset the target repo has
+        # is what gates the click. That asymmetry is the reason this guard is not simply the
+        # DOORS-loop assertions applied to a second path.
         if PROJECT_DOOR.is_file():
             proj = code_lines(PROJECT_DOOR.read_text(encoding="utf-8"))
             c.check("/cicd-push-e2e does NOT wait on a check its target repo cannot publish",
                     idx(proj, CHECK_NAME) < 0,
                     "cicd-* binds a PROJECT, never the lobby; a wait there polls forever")
-            c.check("/cicd-push-e2e still mints + pushes main unchanged",
-                    idx(proj, "mint-push-token.sh") >= 0 and idx(proj, "git push origin main") >= 0)
+            c.check(f"/cicd-push-e2e · the road IS {DEFAULT_LANDER}",
+                    idx(proj, DEFAULT_LANDER) >= 0,
+                    "the door hands back a link and stops; the click is how the sign-off reaches "
+                    "GitHub")
+            c.check("/cicd-push-e2e does NOT mint a token",
+                    idx(proj, "mint-push-token.sh") < 0,
+                    "a merge on GitHub never touches this machine, so there is no push to gate")
+            c.check("/cicd-push-e2e does NOT push main directly",
+                    idx(proj, "git push origin main") < 0,
+                    "production `main` advances by the operator's click, not by this command")
+            c.check("/cicd-push-e2e does NOT push a gate/** ref",
+                    idx(proj, GATE_REF) < 0,
+                    "a pre-flight ref exists to carry a green onto a LOCAL merge commit; there "
+                    "is no local merge commit on this road")
+            # ⛔ THE PAIR IS THE POINT. Absence alone is satisfiable by a door that does nothing
+            # after the PR — which would leave the epic ticket open, the branch unpruned and the
+            # deploy unwatched, and every absence check above would still be green.
+            c.check("/cicd-push-e2e verifies the landed merge with plain git (--after-merge)",
+                    idx(proj, "merge-base --is-ancestor") >= 0,
+                    "the resume half must PROVE the merge landed before it moves the ticket; "
+                    "`gh` is not required for that half, so it works on any machine")
+
+            # ⛔ THE ABSENCES ABOVE REMOVE THE CEREMONY'S ACCESSORIES, NOT ITS ROAD. A door that
+            # does `git checkout main && git merge --no-ff epic/<KEY>-<slug>` right before the tip
+            # push, and opens the PR anyway, trips NOT ONE of them: it mints nothing (the token is
+            # what a `main` PUSH wants, and this variant lets the PR carry the merge), it never
+            # writes `git push origin main`, and it publishes no gate ref. That mutant SURVIVED
+            # this file at 53/53 until this row — the guard certified an absence set while the
+            # thing the absences exist to forbid walked through the middle of it.
+            #
+            # The needle is the merge SOURCE, and it has to be: `git merge origin/main` at Step 2
+            # is the ABSORB, it is required, and a blanket "no `git merge`" would refuse the
+            # correct door. `git checkout main` is required too — the resume half stands on `main`
+            # after the click. So what is forbidden is naming the epic as a merge source.
+            c.check("/cicd-push-e2e does NOT merge the epic LOCALLY",
+                    idx(proj, "git merge epic/") < 0 and idx(proj, "git merge --no-ff") < 0,
+                    "the absorb (`git merge origin/main`) is the only merge on this road; an "
+                    "`epic/ -> main` merge here is the retired ceremony wearing the PR's clothes")
+            # ⛔ AND THE PAIR AGAIN, one level down. `--after-merge` is asserted above only by its
+            # ancestor check — a resume half that proves the merge and then stops leaves a shipped
+            # epic's branch on `origin` forever, and every check in this guard stays green.
+            c.check("/cicd-push-e2e PRUNES the epic branch after the merge lands",
+                    idx(proj, "git push origin --delete epic/") >= 0,
+                    "the resume half owns the cleanup; the door that opened the branch is the "
+                    "one that closes it")
 
     if c.block("CONTROLS · the fence/comment readers and the ordering mutants"):
         # ⛔ COMPUTED HERE, NOT IN THE BLOCK ABOVE. `prose`/`ok` used to be assigned at the tail
@@ -606,10 +685,16 @@ def main() -> int:
                 "a precheck whose refusal is advisory is not a precheck: "
                 + step15.strip()[:160])
 
-        # P2 · the ordering claim, the whole reason this is a preflight.
+        # P2 · the ordering claim, the whole reason this is a preflight. ⭐ SCC-347 REPOINTED
+        # ITS TAIL, NOT ITS HEAD. The head — preflight BEFORE the first write — is the SCC-211
+        # defect and is untouched. The tail was `mint -> push main`; on the PR road the last two
+        # steps are pushing the gated epic TIP and opening the PR against it, and their order
+        # matters for the same reason the old pair's did: `gh pr create --head <branch>` on an
+        # unpushed branch is an error, so a door that opens the PR first has written a ceremony
+        # that cannot run.
         ok, detail = order_ok(lines, "ship_preflight.py", "git merge origin/main",
-                              "mint-push-token.sh", "git push origin main")
-        c.check("P2 ORDER preflight -> absorb main -> mint -> push main", ok, detail)
+                              "git push origin epic/", DEFAULT_LANDER)
+        c.check("P2 ORDER preflight -> absorb main -> push the epic tip -> open the PR", ok, detail)
 
         # P6 · the key is PINNED before any tool has answered anything. A key read off the
         # branch the door just resolved cannot disagree with it - the check would compare a
@@ -644,11 +729,12 @@ def main() -> int:
         # A live sweep can only prove the tree is currently clean. These are the mutants.
         GOOD = ("# /d\n\n```bash\nEXPECTED_KEY=SCC-00\n"
                 "python3 .agents/scripts/ship_preflight.py --expect-key \"$EXPECTED_KEY\"\n"
-                "git merge origin/main\nmint-push-token.sh\ngit push origin main\n```\n")
+                "git merge origin/main\ngit push origin epic/KEY-slug\n"
+                "gh pr create --base main\n```\n")
         good = code_lines(GOOD)
         c.check("CONTROL: the reference door passes P2 and P6",
                 order_ok(good, "ship_preflight.py", "git merge origin/main",
-                         "mint-push-token.sh", "git push origin main")[0]
+                         "git push origin epic/", DEFAULT_LANDER)[0]
                 and order_ok(good, "EXPECTED_KEY=", "ship_preflight.py")[0])
 
         RELOCATED = ("# /d\n\n```bash\nEXPECTED_KEY=SCC-00\ngit merge origin/main\n"
@@ -659,6 +745,26 @@ def main() -> int:
                              "git merge origin/main")[0],
                 "presence is unchanged and every needle is still there - only ORDER moved, "
                 "which is exactly the mutation a `contains` check cannot see")
+
+        # ⛔ P2's TAIL NEEDS ITS OWN MUTANT. `RELOCATED` above fires at the HEAD of the sequence
+        # (the SCC-211 defect) and would still pass if the new tail were unordered — so until
+        # this fixture the two steps SCC-347 added to P2 were carried by the head's control.
+        # The failure it isolates is real and immediate: `gh pr create --head <branch>` against a
+        # branch that was never pushed is an error, so a door in this order has written a ceremony
+        # that cannot run on the first try.
+        PR_FIRST = ("# /d\n\n```bash\nEXPECTED_KEY=SCC-00\n"
+                    "python3 .agents/scripts/ship_preflight.py --expect-key \"$EXPECTED_KEY\"\n"
+                    "git merge origin/main\ngh pr create --base main\n"
+                    "git push origin epic/KEY-slug\n```\n")
+        pr_first = code_lines(PR_FIRST)
+        c.check("CONTROL: every P2 step is PRESENT in the tail mutant (so only order is isolated)",
+                all(idx(pr_first, n) >= 0 for n in ("ship_preflight.py", "git merge origin/main",
+                                                    "git push origin epic/", DEFAULT_LANDER)))
+        c.check("CONTROL: a door that opens the PR BEFORE pushing the tip is caught",
+                not order_ok(pr_first, "ship_preflight.py", "git merge origin/main",
+                             "git push origin epic/", DEFAULT_LANDER)[0],
+                "the head is in perfect order here - only the two steps SCC-347 added moved, "
+                "which is the half `RELOCATED` cannot see")
 
         PROSE = ("# /d\n\nRun `ship_preflight.py` first, then absorb main.\n\n"
                  "```bash\ngit merge origin/main\nmint-push-token.sh\n"

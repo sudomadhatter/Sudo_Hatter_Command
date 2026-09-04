@@ -1,6 +1,6 @@
 ---
 description: Review + gate a story — re-derives the blast radius against the current EPIC branch (Step 0.7, because sibling stories land while you build), then an adversarial code review, an acceptance audit against the story's checkable list, the test gate (suite + TEA trace + nfr + test-review) and the clean-code gate (code-standards conformance), producing a PASS/CONCERNS/FAIL/WAIVED verdict. Step ③ of the sudo dev flow.
-platforms: [opencode, antigravity]
+platforms: [opencode, antigravity, zoo]
 ---
 
 # /cicd-code-review — Review + Test Gate + Clean-Code Gate (③)
@@ -40,9 +40,9 @@ path missing under `PROJECT_ROOT` → STOP, never fall back to the lobby.
 Then say what you resolved **in the words git gave you**, not in the words you expected:
 
 ```bash
-PROJECT_ROOT=$(git -C "<the target you bound>" rev-parse --show-toplevel)
-BRANCH=$(git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD)
-HEAD_SHA=$(git -C "$PROJECT_ROOT" rev-parse HEAD)
+PROJECT_ROOT=$(cd "<the target you bound>" && git rev-parse --show-toplevel)
+BRANCH=$(cd "$PROJECT_ROOT" && git rev-parse --abbrev-ref HEAD)
+HEAD_SHA=$(cd "$PROJECT_ROOT" && git rev-parse HEAD)
 echo "Reviewing: $(basename "$PROJECT_ROOT") | $BRANCH @ ${HEAD_SHA:0:8}"
 ```
 
@@ -65,18 +65,18 @@ Bind the two strings every step below reads — from command output, before anyt
 
 ```bash
 WORKTREE=<the story tree Step 0.5 resolved, or "$PROJECT_ROOT" when none exists>
-EPIC=<epic/JIRA-KEY-slug>      # from `git -C "$PROJECT_ROOT" branch -a --list '*epic/*'`, or the story's epic in the plan
-env -u GITHUB_TOKEN git -C "$WORKTREE" fetch origin "$EPIC"        # a bare `$EPIC` is this checkout's LAST PULL
-git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD          # the story's committed work
-git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD | wc -l  # echo this count
-git -C "$WORKTREE" status --short                                  # anything uncommitted (report it; it is not reviewed)
+EPIC=<epic/JIRA-KEY-slug>      # from `cd "$PROJECT_ROOT" && git branch -a --list '*epic/*'`, or the story's epic in the plan
+cd "$WORKTREE" && env -u GITHUB_TOKEN git fetch origin "$EPIC"        # a bare `$EPIC` is this checkout's LAST PULL
+cd "$WORKTREE" && git diff --name-only "origin/$EPIC"...HEAD          # the story's committed work
+cd "$WORKTREE" && git diff --name-only "origin/$EPIC"...HEAD | wc -l  # echo this count
+cd "$WORKTREE" && git status --short                                  # anything uncommitted (report it; it is not reviewed)
 ```
 
 Echo the file count. **An empty set is a STOP, not a pass** — Step 3.5 restates it at the gate, but by
 then the engine, the acceptance audit and the whole test gate have already run on nothing.
 
-⛔ **`git -C ""` does NOT error** — git documents it as "leave the current working directory
-unchanged" — so an unassigned `$WORKTREE` silently measures whatever tree the shell is standing in:
+⛔ **`cd ""` does NOT error** — the shell builtin exits 0 with an empty argument (bash and zsh
+both, verified) — so an unassigned `$WORKTREE` silently measures whatever tree the shell is standing in:
 the shared checkout Step 0.5 just told you is empty or stale, and the redirects in Step 0.7 still
 create their two `/tmp` files, so the overlap reads clean (`preflight-resolves-repo-from-cwd`).
 ⛔ The ref is `origin/$EPIC`, never the trunk (SCC-165 — Step 0.7 says why).
@@ -100,22 +100,23 @@ epic-mate that *did* move the file lands anyway. That substitution is the stale-
 swept out of this command family — do not re-plant it here.
 
 ```bash
-env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin
-git -C "$PROJECT_ROOT" branch -a --list '*epic/*'        # normally exactly one live epic branch
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin
+cd "$PROJECT_ROOT" && git branch -a --list '*epic/*'        # normally exactly one live epic branch
 # ⛔ RE-BIND $WORKTREE and $EPIC here, to the SAME strings Step 0.6 echoed. Each ```bash block is
-# its own shell: a variable set in Step 0.6 is GONE by the time this one runs, and `git -C ""` does
+# its own shell: a variable set in Step 0.6 is GONE by the time this one runs, and `cd ""` && git does
 # not error — it silently reads whatever tree the shell is standing in.
 WORKTREE=<the same path Step 0.6 echoed>
 EPIC=<the same epic/JIRA-KEY-slug Step 0.6 echoed>
-test -n "$WORKTREE" && test -n "$EPIC" || { echo 'UNBOUND — STOP'; exit 1; }
-BASE=$(git -C "$WORKTREE" merge-base HEAD "origin/$EPIC")
-git -C "$WORKTREE" diff --name-only "$BASE".."origin/$EPIC" | sort > /tmp/theirs.txt  # landed while you built
-git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD | sort > /tmp/mine.txt      # what you changed
+L=<the LOBBY's absolute path — where the session started; the helper scripts live there>
+test -n "$WORKTREE" && test -n "$EPIC" && test -n "$L" || { echo 'UNBOUND — STOP'; exit 1; }
+BASE=$(cd "$WORKTREE" && git merge-base HEAD "origin/$EPIC")
+cd "$WORKTREE" && git diff --name-only "$BASE".."origin/$EPIC" | sort > /tmp/theirs.txt  # landed while you built
+cd "$WORKTREE" && git diff --name-only "origin/$EPIC"...HEAD | sort > /tmp/mine.txt      # what you changed
 test -s /tmp/mine.txt || { echo 'EMPTY DIFF — STOP (Step 0.6 said so)'; exit 1; }     # empty file = clean sweep
 grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                               # the TRUE overlap
-git -C "$WORKTREE" merge-tree --write-tree --messages HEAD "origin/$EPIC" | head -40  # conflicts, before they are real
-git -C "$PROJECT_ROOT" worktree list                                                  # sibling story lanes still live
-python3 .agents/scripts/risk_seam.py classify --repo "$WORKTREE" $(cat /tmp/mine.txt) # risk tiers from the PROJECT graph
+cd "$WORKTREE" && git merge-tree --write-tree --messages HEAD "origin/$EPIC" | head -40  # conflicts, before they are real
+cd "$PROJECT_ROOT" && git worktree list                                                  # sibling story lanes still live
+cd "$L" && python3 .agents/scripts/risk_seam.py classify --repo "$WORKTREE" $(cat /tmp/mine.txt) # risk tiers from the PROJECT graph — the script is the LOBBY's, and the cds above moved the shell (SCC-351 review)
 ```
 
 **Read the tier map beside the overlap list.** `risk_seam.py` *(PC: `python`)* asks the local code
@@ -304,8 +305,9 @@ file edited that satisfies an acceptance row but was never declared is invisible
 reconciliation above. Diff the block against the real diff:
 
 ```bash
-python3 .agents/scripts/declared_change_set.py diff <the plan> \
-        --changed $(git -C "$PROJECT_ROOT" diff --name-only --no-renames <the same base this review resolved>)   # PC: `python`
+L=<the LOBBY's absolute path — re-typed; earlier fences have cd'd the shell into the project>
+cd "$L" && python3 .agents/scripts/declared_change_set.py diff <the plan> \
+        --changed $(cd "$PROJECT_ROOT" && git diff --name-only --no-renames <the same base this review resolved>)   # PC: `python`
 ```
 
 (`--no-renames` matters: with rename detection on, a renamed file surfaces only under its NEW
@@ -371,19 +373,32 @@ distinct from `fail`, because per Step 3.5 a missing tool is a **finding, not a 
    - **Inherit ②'s baseline instead of re-running it — via a MECHANICAL check, not a judgment call.**
      ② Step 4.5 emits `_bmad-output/test-artifacts/certification-<story>.json`
      (`{story, sha, utc, stacks:{<stack>:{cmd, passed, skipped, failed, seconds}}}`). Read it and compare
-     its `sha` to `git rev-parse HEAD` on the worktree under review:
-     - **`sha` == HEAD and `failed: 0`** → adopt as the entry baseline. Cite the file. Do not re-run.
-     - **File absent, `sha` mismatched, a touched stack missing from `stacks`, or any `failed` > 0** →
-       run the full suite up front yourself. **Fail toward running, never toward trusting.**
+     its `sha` to `git rev-parse HEAD` on the worktree under review — **freshness is a TREE comparison,
+     never sha equality** (SCC-314). Two mechanical layers, in order:
+     - **Layer 1 — identical trees.** `gate_receipt.check_receipt` asks `wf.same_tree(repo, sha, target)`
+       — literally `git diff --quiet <sha> <HEAD>` — so a commit that moved HEAD without changing ANY
+       content (a merge whose tree is identical; a sha that IS HEAD is the trivial case) leaves the
+       certification **valid**. Identical and `failed: 0` → adopt as the entry baseline, cite the
+       file, do not re-run.
+     - **Layer 2 — trees differ, but only on evidence surfaces.** `same_tree` has no carve-outs — an
+       `_artifacts/` receipt commit fails it — so when it says the trees differ, run
+       `git diff --name-only <sha> HEAD`: if EVERY path is under `_artifacts/` or `_bmad-output/`,
+       the certification is still about this code (the same rule `task_preflight` implements as
+       code-fresh for the task lane). Any other path — `docs/` included (SCC-154) — invalidates.
+     - **File absent, a non-evidence path in the diff, a touched stack missing from `stacks`, or any
+       `failed` > 0** → run the full suite up front yourself. **Fail toward running, never toward
+       trusting.**
      No file (a pre-contract story, or a lane that skipped ② Step 4.5) → fall back to ②'s pasted
-     walkthrough totals + SHA under the same equality test; anything less specific than an exact SHA is a
+     walkthrough totals + SHA under the same tree test; anything less specific than an exact SHA is a
      miss, not a partial credit.
    - **While reviewing/fixing, run scoped** — the story's contract file + the suites of the modules you
      touched.
    - **After your LAST code/test change, run the FULL suite once** and paste the real output; record
      `git rev-parse HEAD` beside it, and **refresh `certification-<story>.json` to your SHA** (you are now
-     the certifying run). Artifact/doc-only commits after this run do NOT invalidate it — only code or test
-     changes force a re-run. Changed nothing at all? Then ②'s inherited green (SHA verified) IS the
+     the certifying run). Only `_artifacts/` and `_bmad-output/` commits after this run leave it
+     valid — a `docs/` commit is a content change and DOES invalidate (SCC-154); the mechanical
+     arbiter is the same two-layer check as the entry test (`same_tree`, then the
+     `git diff --name-only` path filter). Changed nothing at all? Then ②'s inherited green (SHA verified) IS the
      evidence — spot-run the story's own test file as a cheap independent probe and cite both. This
      replaces the old "full suite on arrival" rule, which could land a final SHA whose full green was
      measured on a DIFFERENT (pre-fix) SHA — the new invariant is strictly stronger.

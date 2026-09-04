@@ -1,6 +1,6 @@
 ---
 description: The TASK lane's dev cycle — assert-first development for command-centre work that has no story, no sprint board and no epic branch. Write the check that fails FIRST (a test for a script, a machine-verifiable assertion for a doc or a structure), then make it pass, then the review gate. Acts on the repo you are standing in. Hands off to /smh-close-task-merge-tree. Use when the user says "dev this task" / "smh quick dev".
-platforms: [opencode, antigravity, claude, codex]
+platforms: [opencode, antigravity, claude, codex, zoo]
 ---
 
 # /smh-quick-dev — The Task Lane's Dev Cycle (assert-first)
@@ -99,12 +99,12 @@ ban on `chore/*` worktrees existed only because nothing cleaned them up; `/smh-c
 Step 5 does now.
 
 ```bash
-git -C "$REPO" worktree list                                   # reuse this task's tree if it exists
-git -C "$REPO" fetch origin                                    # ⛔ the base is origin/main, never a bare `main`
-git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
-git -C "<the new tree>" branch --unset-upstream                # a start-point of origin/main sets upstream to MAIN
-python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
-BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
+cd "$REPO" && git worktree list                                   # reuse this task's tree if it exists
+cd "$REPO" && git fetch origin                                    # ⛔ the base is origin/main, never a bare `main`
+cd "$REPO" && git worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
+cd "<the new tree>" && git branch --unset-upstream                # a start-point of origin/main sets upstream to MAIN
+cd <the lobby's absolute path — the arg resolves from the LOBBY> && python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
+BRANCH=$(cd "<the new tree>" && git rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
 ```
 
@@ -113,7 +113,7 @@ lane's worktree at planning time, so a 🔒 lane picked up days later is branche
 siblings have since moved. Absorb before the first edit, never at the merge:
 
 ```bash
-git -C "<tree>" fetch origin && git -C "<tree>" merge --no-edit origin/main
+cd "<tree>" && git fetch origin && cd "<tree>" && git merge --no-edit origin/main
 ```
 
 Conflicts here are cheap and yours; the same conflicts at close-out are on `main`'s doorstep.
@@ -147,8 +147,8 @@ uncommitted work is invisible to `grep`:
 
 ```bash
 git worktree list
-git -C <each-other-tree> diff --name-only origin/main...HEAD
-git -C <each-other-tree> status --short
+cd <each-other-tree> && git diff --name-only origin/main...HEAD
+cd <each-other-tree> && git status --short
 ```
 
 Any file in both their set and your intended set is a **landing-order dependency**. Say which lane
@@ -188,8 +188,11 @@ done — verify the box's four conditions and go straight to Step 2.**
 1. **Write `implementation_plan.md`** *(skip if this lane arrived with an approved plan — see the box)* into `_artifacts/_main/<YYYY-MM-DD>_<slug>/`, right-sized to the
    work. Each acceptance item maps to a step, and each step names **the assertion that will prove it**.
    Carry the **`## Declared Change Set` block** (`artifacts-always-first.md` §2 Create the artifact folder + plan, SCC-226):
-   one path per bullet, `NEW`/`EDIT`/`DELETE`, `→ <acceptance row>` — `/smh-code-review` Step 2 diffs
-   the real diff against exactly this list.
+   one bullet per path, **op marker FIRST** — `NEW`/`EDIT`/`DELETE`, then the backticked path, then
+   `→ <acceptance row>` as the last arrow on the line, e.g.
+   ``- EDIT `scripts/thing.py` — why this file moves → A`` (path-first bullets parse to ZERO
+   entries, SCC-311; prove it with `declared_change_set.py parse <plan>` before the audit) —
+   `/smh-code-review` Step 2 diffs the real diff against exactly this list.
 2. **Invoke `/smh-self-audit`** on that plan. It appends its `## Self-Audit (<date>)` section and a
    canonical `Audit verdict: GO | NO-GO`. A **NO-GO stops the lane** — fix the plan and re-audit; do not
    proceed on a NO-GO and do not re-run it hoping for a different answer.
@@ -206,10 +209,49 @@ done — verify the box's four conditions and go straight to Step 2.**
 > 1. the line carries the operator's **verbatim words**, and they name **this** subtask key;
 > 2. that lane's plan recorded `Audit verdict: GO` at the stop;
 > 3. the plan is **unchanged since the approval was recorded** — and the approval line now ends
->    `— recorded at <sha>`, so this is a real comparison:
->    `git log -1 --format=%h -- <the plan>` **must equal that sha**. No sha on the line means the
->    planner predates this contract: **the gate re-arms, you stop.** A missing operand is never a
->    pass;
+>    `— recorded at <sha>`, so this is a real comparison. **No sha on the line** means the planner
+>    predates this contract: **the gate re-arms, you stop.** A missing operand is never a pass.
+>    With a sha, run:
+>
+>    ```bash
+>    PLAN=<the plan>; REC=<the recorded sha>
+>    LAST=$(git log -1 --format=%H -- "$PLAN")
+>    # ⛔ THE VERDICT IS THIS COMMAND'S EXIT CODE, never your reading of the hunk.
+>    # An empty diff is UNTOUCHED. A stamp-only successor touches `— recorded at` and
+>    # nothing else. Any other changed line is a real edit after approval: STOP.
+>    # count the changed lines that are NOT the approval line; zero means intact
+>    BAD=$(git diff "$REC".."$LAST" -- "$PLAN" | grep -E '^[+-][^+-]' | grep -vc 'recorded at')
+>    [ "$BAD" -eq 0 ] && echo APPROVAL-INTACT \
+>                     || echo "PLAN CHANGED AFTER APPROVAL ($BAD line(s)) - the gate re-arms, STOP"
+>    ```
+>
+>    ⛔ **Count the lines; never `grep -qv`.** Measured on the Mac while writing this box: the
+>    `grep` on `PATH` there is **ugrep**, not BSD or GNU grep, and its `-q` with `-v` returns
+>    **1 when lines are selected and 0 on empty input** — exactly inverted. The `-qv` form
+>    passed the illegal case and stopped the legal one, in the gate meant to catch exactly that
+>    class of mistake. A count has one meaning on every grep, on both machines.
+>
+>    ⛔ **Read the verdict off the command, not off the diff.** The first shape of this box
+>    printed a `git diff` and left an agent to judge "does this touch only the `— recorded at`
+>    line?" — replacing a boolean with a prose judgment, in a repo whose own law says a
+>    judgement-shaped rule is the thing that gets rationalized past
+>    (`cheap-models-rationalize-past-prose`). Three review lenses independently built a stamp
+>    commit that *also* carried a body edit and watched it read as legal. `%H` not `%h`:
+>    abbreviated shas of different lengths compare unequal for the same commit.
+>
+>    ⭐ **`$LAST` will normally NOT equal the recorded sha, and that is not drift (SCC-359).**
+>    `/smh-plan-task` Step 5 requires the line to carry the sha of the commit that recorded it,
+>    which is not knowable until that commit exists — so the planner writes `<pending>`, commits,
+>    and stamps the real sha in a **second** commit. The last-touch sha is therefore *always* the
+>    stamp commit. Demanding bare equality made this condition unpassable for every lane that
+>    followed the convention: measured on SCC-347 (recorded `acb02585`, stamped `cf198990`),
+>    SCC-358 (`4fdedf2f` → `13ffe716`) and SCC-318 (`fbd4ac20` → `6126fe6d`).
+>
+>    **The one legal difference is a `stamp-only successor` commit** — the diff above touches the
+>    `— recorded at` line and **nothing else**. That passes. Any other hunk, in any other line,
+>    is a real edit after approval: **the gate re-arms, you stop.** Two or more commits since the
+>    recorded sha are fine *provided their combined diff is still only that line*; the diff is the
+>    test, never the commit count;
 > 4. the work is still the planning-only scope the batch covered.
 >
 > Any one of them missing? You stop here like any other lane. See `000-PLAN-FIRST-GATE.md`
@@ -235,7 +277,8 @@ a one-line doc tweak. Say which, then proceed. Anything above that gets the gate
 > there an **open parent** whose surface this belongs to (then it is the next lettered
 > **Subtask** under it, with an index row added via `jira_feed.py index-row`, which reads the
 > parent's description back and refuses if a line went missing)? no thematic parent — then it is a
-> subtask on the **OPEN ROLLING TICKET** (`Bugs and Updates - <YYYY-MM>`, label `bugs-and-updates`; `SCC-190` today), which is rung 3 and the normal answer for a
+> subtask on the **OPEN ROLLING TICKET** (`Bugs and Updates - <YYYY-MM>` — find it by BOTH labels,
+> `labels IN (bugs-and-updates, running-bug-list)`, per `jira.md` §labels), which is rung 3 and the normal answer for a
 > finding a landing exposes; only then mint, for work that is a lane in its own right — and say in
 > ONE line what you looked at. Judgment, not a gate; the unstated choice is the thing that is banned.
 > *"we are not developing 3 task for every 1 we try to fix"* (operator, 2026-08-15).

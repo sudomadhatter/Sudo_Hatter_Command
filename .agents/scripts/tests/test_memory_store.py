@@ -51,11 +51,13 @@ from _harness import SCRIPTS, Cases, TempDir
 # _harness puts SCRIPTS on sys.path, so the lobby's own scripts import as top-level modules.
 # SCC-73: reuse check_maps' allowlist parser rather than adding a fourth copy of it.
 import check_maps  # noqa: E402  (must follow the _harness path insert)
+# SCC-319: check_store/index_text/INDEX_CAP/EXEMPT are PROMOTED to memory_store_check.py so
+# the post-move git hooks can call them at the moment of damage - one implementation, two
+# callers (this file was their only home, and a checker locked inside a test file runs never).
+from memory_store_check import EXEMPT, INDEX_CAP, check_store, index_text  # noqa: E402,F401
 
-INDEX_CAP = 25 * 1024
 TRIGGER_PCT = 0.90          # audit is DUE here — below the cap, on purpose (see module docstring)
 BODY_SOFT_CAP = 4 * 1024    # a memory this long is usually narrative that wants compressing
-EXEMPT = {"MEMORY.md", "README.md"}
 CLOSED_MARKS = ("CLOSED", "RETIRED", "FIXED", "SUPERSEDED", "⛔")
 
 REAL_STORE = SCRIPTS.parent.parent / "_artifacts" / "_memory"
@@ -219,42 +221,6 @@ def project_store_signals(repo: Path) -> list[str]:
                        f"problem(s) - {probs[0][:90]} (fix in that repo, under its own key)")
     out += [f"{p} (fix in that repo, under its own key)" for p in backpointer_problems(repo)]
     return out
-
-
-def index_text(store: Path) -> str:
-    idx = store / "MEMORY.md"
-    return idx.read_text(encoding="utf-8") if idx.is_file() else ""
-
-
-def check_store(store: Path) -> list[str]:
-    """Every problem as one human sentence; empty list = the contract holds."""
-    problems: list[str] = []
-    idx = store / "MEMORY.md"
-    if not idx.is_file():
-        return [f"no MEMORY.md index in {store} - the store is unreadable by contract"]
-    text = idx.read_text(encoding="utf-8")
-    size = len(text.encode("utf-8"))
-    if size > INDEX_CAP:
-        problems.append(
-            f"MEMORY.md is {size} bytes (cap {INDEX_CAP}) - every session on every "
-            f"platform pays this; run /memory-audit to retire and compress (the 90% "
-            f"trigger fired before this and was not acted on)")
-    links = {m.split("/")[-1] for m in re.findall(r"\]\(([^)#]+\.md)\)", text)}
-    files = {p.name for p in store.glob("*.md")} - EXEMPT
-    for dead in sorted(links - files):
-        problems.append(f"MEMORY.md links `{dead}` but no such file is in the store - "
-                        f"recall of nothing; fix or delete the line")
-    for orphan in sorted(files - links):
-        problems.append(f"`{orphan}` has no MEMORY.md line - an unindexed memory is "
-                        f"invisible to every session; add a one-line pointer")
-    for p in sorted(store.glob("*.md")):
-        if p.name in EXEMPT:
-            continue
-        head = p.read_text(encoding="utf-8", errors="replace")[:800]
-        if not head.startswith("---") or "description:" not in head:
-            problems.append(f"`{p.name}`: no frontmatter description - recall relevance "
-                            f"is judged from it; add the ---/description header")
-    return problems
 
 
 def audit_due(store: Path) -> bool:

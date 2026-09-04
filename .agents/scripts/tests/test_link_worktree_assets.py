@@ -22,10 +22,45 @@ and `--require-assets` is there for the caller that knows better.
 """
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
 from _harness import Cases, TempDir, run_script
+
+IS_WINDOWS = os.name == "nt"
+
+
+def linked_dir(p: Path) -> bool:
+    """A directory asset was placed as a LINK: symlink on POSIX, JUNCTION on Windows (SCC-321).
+
+    ⛔ `p.is_symlink()` is FALSE for a junction, so asserting it made every directory case red on
+    Windows against a script doing exactly the right thing — the script's docstring has said
+    "Mac: symlink   PC: junction" since it was written, and a junction is used precisely because
+    it needs no admin rights. The assertion, not the behaviour, was the one-machine artefact.
+    """
+    if p.is_symlink():
+        return True
+    if not IS_WINDOWS:
+        return False
+    if hasattr(os.path, "isjunction"):       # 3.12+
+        return os.path.isjunction(p)
+    try:                                     # 3.11 and earlier: read the reparse tag
+        return bool(getattr(os.lstat(p), "st_reparse_tag", 0))
+    except OSError:
+        return False
+
+
+def placed_file(p: Path) -> bool:
+    """A FILE asset was placed the way this platform places it: symlink on POSIX, COPY on Windows.
+
+    ⛔ The copy is deliberate and is NOT a degraded symlink. A Windows file-symlink needs admin or
+    Developer Mode, and — the larger reason — the script's own docstring rules that "anything a
+    lane MUTATES should be copied, not linked". A copied `.env` is the SAFER state: it is not
+    shared across lanes. So the two machines differ in what is CORRECT here, and the test has to
+    ask each one its own question rather than assert the Mac's answer twice.
+    """
+    return (p.is_file() and not p.is_symlink()) if IS_WINDOWS else p.is_symlink()
 
 
 def git(cwd: Path, *args: str) -> subprocess.CompletedProcess:
@@ -93,10 +128,10 @@ def main() -> int:
             c.check("B1 exits 0", code == 0, f"exit={code}\n{out}")
             c.check("B1 names the submodule WORKING TREE as the repo",
                     f"repo:     {sub.resolve()}" in out, out.splitlines()[0] if out else "(no output)")
-            c.check("B1 links the root .env", (lane / ".env").is_symlink(),
+            c.check("B1 places the root .env", placed_file(lane / ".env"),
                     f"exists={(lane / '.env').exists()} symlink={(lane / '.env').is_symlink()}")
-            c.check("B1 links backend/.venv one level down", (lane / "backend" / ".venv").is_symlink(),
-                    f"symlink={(lane / 'backend' / '.venv').is_symlink()}")
+            c.check("B1 links backend/.venv one level down", linked_dir(lane / "backend" / ".venv"),
+                    f"exists={(lane / 'backend' / '.venv').exists()}")
             c.check("B1 does NOT report 'nothing to link'", "nothing to link" not in out,
                     out)
 
@@ -252,14 +287,31 @@ def main() -> int:
             code, out = link(str(lane))
             c.check("B3 exits 0", code == 0, f"exit={code}\n{out}")
             c.check("B3 resolves the plain repo", f"repo:     {plain.resolve()}" in out, out)
-            c.check("B3 links .env", (lane / ".env").is_symlink())
-            c.check("B3 links node_modules", (lane / "node_modules").is_symlink())
-            c.check("B3 still warns that .env is shared state", "SHARED STATE" in out, out)
+            c.check("B3 places .env", placed_file(lane / ".env"))
+            c.check("B3 links node_modules", linked_dir(lane / "node_modules"))
+            # ⛔ THE WARNING IS ABOUT SHARED STATE, AND ON WINDOWS THERE IS NONE (SCC-321).
+            # `.env` is COPIED there, so editing it in this lane cannot reach any other — the
+            # warning would be false, and a tool that cries shared-state at a private copy trains
+            # the operator to ignore it. Each machine asserts its own truth, and the Windows arm
+            # is the stronger claim of the two: the warning must be ABSENT.
+            if IS_WINDOWS:
+                c.check("B3 does NOT claim shared state for a COPIED .env",
+                        "SHARED STATE" not in out, out)
+            else:
+                c.check("B3 still warns that .env is shared state", "SHARED STATE" in out, out)
 
             code, out = link("--unlink", str(lane))
-            c.check("B3 --unlink removes both links", code == 0
-                    and not (lane / ".env").exists() and not (lane / "node_modules").exists(),
+            # ⛔ `--unlink` removes LINKS, never files — `find_links` enumerates reparse points,
+            # deliberately ("ENUMERATE, never assume"). So a copied `.env` survives it on Windows,
+            # which is correct: it is this lane's own file, not a door into a shared target.
+            c.check("B3 --unlink removes the link(s)", code == 0
+                    and not (lane / "node_modules").exists()
+                    and (IS_WINDOWS or not (lane / ".env").exists()),
                     f"exit={code}\n{out}")
+            if IS_WINDOWS:
+                c.check("B3 --unlink leaves the lane's own COPY of .env in place",
+                        (lane / ".env").is_file(),
+                        "a copy is not a link; removing it is not this command's job")
             c.check("B3 --unlink leaves the TARGETS alone",
                     (plain / ".env").is_file() and (plain / "node_modules").is_dir())
 
@@ -277,17 +329,101 @@ def main() -> int:
 
             code, out = link(str(lane))
             c.check("B4 exits 0", code == 0, f"exit={code}\n{out}")
-            c.check("B4 links .claude/settings.local.json", (lane / ".claude" / "settings.local.json").is_symlink())
-            c.check("B4 links .claude/scratchpad-root", (lane / ".claude" / "scratchpad-root").is_symlink())
+            c.check("B4 places .claude/settings.local.json",
+                    placed_file(lane / ".claude" / "settings.local.json"))
+            c.check("B4 places .claude/scratchpad-root",
+                    placed_file(lane / ".claude" / "scratchpad-root"))
 
             code, out = link("--unlink", str(lane))
+            # Both are FILES, so both are copies on Windows and survive --unlink — see B3.
             c.check("B4 --unlink removes both links", code == 0
-                    and not (lane / ".claude" / "settings.local.json").exists()
-                    and not (lane / ".claude" / "scratchpad-root").exists(),
+                    and (IS_WINDOWS or (
+                        not (lane / ".claude" / "settings.local.json").exists()
+                        and not (lane / ".claude" / "scratchpad-root").exists())),
                     f"exit={code}\n{out}")
             c.check("B4 --unlink leaves the TARGETS alone",
                     (plain / ".claude" / "settings.local.json").is_file()
                     and (plain / ".claude" / "scratchpad-root").is_file())
+
+    if c.block("SCC-310 · linked lanes stamp CLEAN: exclude entries hide the links, real dirt stays"):
+        # A trailing-slash gitignore pattern (`auth_keys/`, `.venv/`) matches a DIRECTORY only,
+        # never the symlink this script creates - so every linked lane read `?? auth_keys` etc.
+        # and stamped its gate receipts dirty_tree: true. Measured (2026-08-24): a per-worktree
+        # info/exclude is IGNORED by git (`--git-path info/exclude` resolves to the COMMON one),
+        # so the fix is a managed block in `<common>/.git/info/exclude`.
+        with TempDir() as tmp:
+            plain = seed(tmp / "plain")
+            (plain / ".gitignore").write_text(".env\nauth_keys/\n.venv/\n", encoding="utf-8")
+            git(plain, "add", ".gitignore")
+            git(plain, "commit", "-qm", "ignore")
+            (plain / ".env").write_text("KEY=1\n", encoding="utf-8")
+            (plain / "auth_keys").mkdir()
+            (plain / ".venv").mkdir()
+            excl = plain / ".git" / "info" / "exclude"
+
+            lane = tmp / "lane"
+            git(plain, "worktree", "add", "-q", str(lane), "-b", "lane")
+            code, out = link(str(lane))
+            st = git(lane, "status", "--short").stdout
+            c.check("X1 a freshly linked worktree reports a CLEAN git status",
+                    code == 0 and st.strip() == "", f"exit={code} status:\n{st}")
+
+            (lane / "stray.md").write_text("real work\n", encoding="utf-8")
+            st = git(lane, "status", "--short").stdout
+            c.check("X2 real uncommitted work STILL reads dirty (no blanket silence)",
+                    "stray.md" in st, f"status:\n{st}")
+            (lane / "stray.md").unlink()
+
+            # A SECOND lane shares the one exclude file - unlinking lane 1 must not dirty lane 2.
+            lane2 = tmp / "lane2"
+            git(plain, "worktree", "add", "-q", str(lane2), "-b", "lane2")
+            link(str(lane2))
+            code, out = link("--unlink", str(lane))
+            text = excl.read_text(encoding="utf-8") if excl.is_file() else ""
+            st2 = git(lane2, "status", "--short").stdout
+            c.check("X3 unlinking ONE lane keeps the entries the sibling lane still needs",
+                    code == 0 and "link-worktree-assets" in text and st2.strip() == "",
+                    f"exit={code} exclude:\n{text}\nlane2 status:\n{st2}")
+
+            # Unlinking the LAST lane removes the managed block - no stale entries left behind.
+            git(plain, "worktree", "remove", "--force", str(lane))
+            code, out = link("--unlink", str(lane2))
+            text = excl.read_text(encoding="utf-8") if excl.is_file() else ""
+            c.check("X4 unlinking the LAST lane leaves no managed exclude entries behind",
+                    code == 0 and "link-worktree-assets" not in text,
+                    f"exit={code} exclude:\n{text}")
+
+    if c.block("SCC-310 X5 · a TRUNCATED managed block (END sentinel lost) never eats user patterns"):
+        # Review finding (VERIFIED): with BEGIN present and END missing, the first cut treated
+        # everything to end-of-file as managed - the user's own exclude patterns below the
+        # block were rewritten away, and last-lane unlink deleted them outright.
+        with TempDir() as tmp:
+            plain = seed(tmp / "plain")
+            (plain / ".gitignore").write_text(".env\n", encoding="utf-8")
+            git(plain, "add", ".gitignore")
+            git(plain, "commit", "-qm", "ignore")
+            (plain / ".env").write_text("KEY=1\n", encoding="utf-8")
+            excl = plain / ".git" / "info" / "exclude"
+            excl.parent.mkdir(parents=True, exist_ok=True)
+            excl.write_text("user-above.txt\n"
+                            "# BEGIN link-worktree-assets (auto-managed - do not edit this block)\n"
+                            "/stale-managed-entry\n"
+                            "user-below.txt\n", encoding="utf-8")
+
+            lane = tmp / "lane"
+            git(plain, "worktree", "add", "-q", str(lane), "-b", "lane")
+            code, out = link(str(lane))
+            text = excl.read_text(encoding="utf-8")
+            c.check("X5a linking over a truncated block keeps BOTH user patterns",
+                    code == 0 and "user-above.txt" in text and "user-below.txt" in text,
+                    f"exit={code} exclude:\n{text}")
+
+            code, out = link("--unlink", str(lane))
+            text = excl.read_text(encoding="utf-8") if excl.is_file() else ""
+            c.check("X5b last-lane unlink removes only the managed block - user patterns survive",
+                    code == 0 and "user-above.txt" in text and "user-below.txt" in text
+                    and "link-worktree-assets" not in text,
+                    f"exit={code} exclude:\n{text}")
 
     return c.finish()
 

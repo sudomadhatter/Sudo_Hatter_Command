@@ -98,6 +98,7 @@ def sections(rep: wf.Report, section: str) -> list[tuple[str, str]]:
 # to keep "the flag does not exist yet" from being scored as "the check fired and blocked".
 
 CP_SCRIPT = Path(cp.__file__).resolve()
+GR_SCRIPT = CP_SCRIPT.parent / "gate_receipt.py"
 
 _FINDING_RE = re.compile(r"^\[(ERROR|WARN|INFO)\s*\]\s*([\w-]+):\s*(.*)$", re.MULTILINE)
 
@@ -151,7 +152,8 @@ def verdict_line(out: str) -> str:
     return hits[-1] if hits else ""
 
 
-def lane_repo(root: Path) -> Path:
+def lane_repo(root: Path, status: str = "review", verdict: str | None = "PASS",
+              gates_id: str | None = "30-1") -> Path:
     """A close-out lane with NOTHING wrong with it - the only fixture whose verdict line
     is readable evidence.
 
@@ -165,27 +167,44 @@ def lane_repo(root: Path) -> Path:
     It also carries a REAL `origin` - a local bare repo - because the target state fetches
     by DEFAULT, and a fetch with no remote fails, which would make every default run look
     stale for a reason that is the fixture's fault rather than the script's.
+
+    ⭐ SCC-365 · IT ALSO CARRIES ITS `suite` RECEIPT, and it has to. A lane at `review`
+    claiming `Verdict: PASS` now owes the evidence, so without one this fixture stops being
+    "nothing wrong with it" and every row above it reads `BLOCKED` instead of the freshness
+    it exists to measure. The three knobs are for the EV block, which turns each of them in
+    turn; every default reproduces the fixture the rows above were written against, so a
+    caller that names none of them gets exactly the tree it always got.
+
+    ⛔ THE RECEIPT IS GITIGNORED, AND THAT IS THE ONLY WAY IT CAN READ CURRENT. A receipt
+    records the commit it ran on; committing the receipt moves HEAD past that commit, and
+    `gr.check_receipt` then compares TREES and correctly reports STALE. So a fixture that
+    commits its receipt cannot show a clean one - and staleness policy is a different
+    question from "was there any evidence at all", which is what these rows measure. The
+    ignore keeps `check_sync` clean at the same time, so the receipt is not read as lane dirt.
     """
     repo = root / "lane"
     (repo / BOARD_REL.parent).mkdir(parents=True)
-    (repo / BOARD_REL).write_text("development_status:\n  30-1-fresh: review\n",
+    (repo / BOARD_REL).write_text(f"development_status:\n  30-1-fresh: {status}\n",
                                   encoding="utf-8")
     ctx = repo / "_bmad-output/active-context"
     ctx.mkdir(parents=True)
     (ctx / "active-context.md").write_text("# active context\n", encoding="utf-8")
+    (repo / ".gitignore").write_text(f"{wf.GATES_REL}/\n", encoding="utf-8")
 
     stories = repo / "_bmad/bmm/stories"
     stories.mkdir(parents=True)
     (stories / "story-30.1-fresh.md").write_text(
-        "# Story\nStatus: review\n\n### File List\n- backend/real.py\n", encoding="utf-8")
+        f"# Story\nStatus: {status}\n\n### File List\n- backend/real.py\n", encoding="utf-8")
 
     # The artifact folder's date is pre-CUTOFF ON PURPOSE: walkthrough_roster.judge treats
     # a legacy lane as a note rather than a block, so the roster rules cannot inject the
     # error that would take over the verdict line these cases have to read.
     art = repo / "_artifacts/2026-08-01_epic_30/story-30-1-fresh"
     art.mkdir(parents=True)
-    (art / "walkthrough.md").write_text("## Code Review\n\n**Verdict: PASS**\n",
-                                        encoding="utf-8")
+    (art / "walkthrough.md").write_text(
+        "## Code Review\n\n" + (f"**Verdict: {verdict}**\n" if verdict
+                                else "The review ran; nothing to report.\n"),
+        encoding="utf-8")
 
     # A TRACKED memory store. Untracked, git would collapse the whole directory into one
     # `?? _artifacts/_memory/` row and CP-MEM would be measuring git's output folding
@@ -207,6 +226,19 @@ def lane_repo(root: Path) -> Path:
     git(repo, "branch", "claude/SCC-11-mine")
     git(repo, "branch", "claude/SCC-22-sibling")
     git(repo, "branch", "claude/xdist-tail-hang")
+
+    if gates_id:
+        # STAMPED BY THE REAL WRITER, never hand-rolled JSON: `receipt_defect` and
+        # `check_receipt` read six fields between them, and a fixture inventing that shape
+        # is a fixture that can pass while the real format has moved on without it.
+        stamped = subprocess.run(
+            [sys.executable, str(GR_SCRIPT), "run", "--story", gates_id, "--gate", "suite",
+             "--project", str(repo), "--cwd", str(repo),
+             "--", sys.executable, "-c", "print('suite ok')"],
+            cwd=str(repo), capture_output=True, text=True)
+        assert stamped.returncode == 0, (
+            f"lane_repo: gate_receipt run failed: {stamped.stdout}{stamped.stderr}")
+
     # CHECKED, not fired and forgotten. A silent failure in any of these three leaves the
     # lane with NO upstream, and `check_sync` then degrades to "no upstream to compare
     # against" - still exit 1, still zero ERRORs, so FR0 keeps passing while the fixture has
@@ -223,8 +255,307 @@ def lane_repo(root: Path) -> Path:
     return repo
 
 
+# ── EV · SCC-365 · the fixture for "a verdict must show the suite that backed it" ────
+#
+# AVCH-106 closed carrying `Verdict: PASS` in its walkthrough while the standing suite was
+# RED, and this script printed `VERDICT: clear to close out` over it. Three independent gaps
+# let that through: the verdict was never compared to any evidence, the receipt check was OFF
+# unless a caller remembered `--require-gates`, and a receipt that was never written only
+# WARNed - a ruling dated 2026-08-02 that kept the gate "advisory for one sprint" and was
+# never revisited.
+#
+# ⛔ THE SCOPE LIMITER IS THE BOARD STATUS, NOT A DATE, and that is a deliberate departure
+# from `OVERVIEW_CUTOFF` and `walkthrough_roster.CUTOFF` twelve lines apart in the same file.
+# Both read a `YYYY-MM-DD` prefix off the artifact folder via `roster.lane_date`, and STORY
+# lanes do not carry one (`_artifacts/epic_23/story-23-9-<slug>/`), so a dated exemption here
+# is inert: it exempts everything or blocks everything. Status answers the question a cutoff
+# is really asking - *is the remedy reachable?* A flip-eligible story is being closed right
+# now and one `gate_receipt.py run` away from evidence. `done`, `descoped`, `deferred*`,
+# `optional` and `backlog` have no live lane to run it in, and `/cicd-prune-worktree` runs
+# this same script on `done` stories - so an unconditional demand would refuse every already
+# closed story with a remedy nobody can perform, which is the disarming this file warns about
+# twice.
+
+
+def rows(out: str, section: str, sev: str | None = None) -> list[str]:
+    """The `[SEV  ] <section>: msg` rows of ONE section - `findings()` drops the section.
+
+    Every EV row below is about the `gates` class specifically, and two of the fixtures carry
+    an unrelated ERROR on purpose (a `Verdict: FAIL` blocks the flip in `artifacts`, which is
+    correct and is not this ticket's demand firing). Greping every ERROR row would score that
+    as a pass.
+    """
+    return [msg for s, sec, msg in _FINDING_RE.findall(out)
+            if sec == section and (sev is None or s == sev)]
+
+
+# ── OV · SCC-357 · the project overview guide, checked at the STORY close-out ────────
+#
+# The lobby keeps its SOP honest with a commit-msg gate. A project cannot use that shape:
+# its usage surface is `backend/` + `frontend/`, which every commit touches, so the gate
+# would fire on every commit and `[sop-ok]` would become reflex — and a gate opted out of
+# by reflex checks nothing (`sop-currency.md` says so itself). The unit of change in a
+# project is the STORY, so the check lives here.
+#
+# ⛔ THE CUTOFF IS THE WHOLE REASON THIS CAN BE AN ERROR AT ALL. This script is also run by
+# `/cicd-prune-worktree` and `/cicd-merge-epic-workingtrees`, so an unconditional error
+# would block the PRUNE of every story saved before the guide law existed, the moment a
+# project gains a guide — a red whose only remedy is to re-run a save on a story that is
+# already `Done`. Dated exemption, same mechanism as `walkthrough_roster.CUTOFF`, and the
+# lane's date comes from `roster.lane_date` rather than a second parser.
+def ov_repo(root: Path, date: str = "2026-09-02", guide: bool = True,
+            line: str | None = None, edit_guide: bool = False,
+            land: bool = False, review_date: str | None = None,
+            park_on_main: bool = False, undated: bool = False,
+            no_walkthrough: bool = False, no_base: bool = False) -> Path:
+    """`lane_repo`, plus a guide and a dated artifact folder, posed for one OV case.
+
+    `land` merges the story branch into the base BEFORE the check runs — the state
+    `/cicd-prune-worktree` and `/cicd-merge-epic-workingtrees` re-run this script in, which the
+    first cut of the OV block never posed. `review_date` writes a `## Code Review (<date>)`
+    header whose date deliberately disagrees with the artifact folder's.
+
+    `park_on_main` leaves the CHECKOUT on `main` with the work on the branch — the topology every
+    door actually mandates (`--project` is the shared checkout, the lane is elsewhere), and the one
+    the first cut of these cases never posed. `undated` strips the date from the artifact folder,
+    which is the shape 70 of 70 real project story lanes use.
+
+    `no_walkthrough` removes the story's walkthrough entirely — the branch this check deliberately
+    stays SILENT on, because `check_artifacts` already errors there. `no_base` renames the trunk so
+    `integration_branch`'s literal "main" resolves to nothing, which is the exact repo shape the
+    warn-on-diff-failure path was written for and the only way to reach it from the CLI.
+    """
+    repo = lane_repo(root)
+    folder = "epic_30" if undated else f"{date}_epic_30"
+    art = repo / "_artifacts/2026-08-01_epic_30"
+    art.rename(repo / f"_artifacts/{folder}")
+    art = repo / f"_artifacts/{folder}/story-30-1-fresh"
+    wt = art / "walkthrough.md"
+    if review_date:
+        wt.write_text(wt.read_text(encoding="utf-8").replace(
+            "## Code Review", f"## Code Review ({review_date})"), encoding="utf-8")
+    if line:
+        wt.write_text(wt.read_text(encoding="utf-8") + f"\n## Evidence\n\n{line}\n",
+                      encoding="utf-8")
+    if no_walkthrough:
+        wt.unlink()
+    if guide:
+        (repo / "docs").mkdir(exist_ok=True)
+        (repo / "docs/project_overview_guide.md").write_text(
+            "# Overview\n\n```mermaid\nflowchart TD\n  A --> B\n```\n", encoding="utf-8")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-qm", "pose")
+    git(repo, "push", "-q", "origin", "main")
+    # The lane itself: a story branch off main, so `<base>...HEAD` is a real comparison.
+    git(repo, "checkout", "-q", "-b", "claude/SCC-30-fresh")
+    if edit_guide:
+        (repo / "docs/project_overview_guide.md").write_text(
+            "# Overview\n\n```mermaid\nflowchart TD\n  A --> B --> C\n```\n",
+            encoding="utf-8")
+        git(repo, "add", "-A")
+        git(repo, "commit", "-qm", "SCC-30 docs(guide): the new hop")
+    if land:
+        # The lane lands on its base, then the check is re-run from the (still-live) worktree —
+        # exactly what the prune door does. `main` is `integration_branch`'s answer here.
+        git(repo, "checkout", "-q", "main")
+        git(repo, "merge", "-q", "--no-ff", "-m", "land the story", "claude/SCC-30-fresh")
+        git(repo, "push", "-q", "origin", "main")
+        git(repo, "checkout", "-q", "claude/SCC-30-fresh")
+    if park_on_main:
+        git(repo, "checkout", "-q", "main")
+    if no_base:
+        # The trunk is named something else. `integration_branch` returns the literal "main"
+        # on its zero-or-several-epics path WITHOUT checking the ref exists, so the diff below
+        # it exits 128 — and `origin/main` does not rescue it, because `main` resolves through
+        # refs/heads and refs/remotes/main, never refs/remotes/origin/main.
+        git(repo, "branch", "-m", "main", "trunk")
+    return repo
+
+
+def ov(out: str, sev: str) -> list[str]:
+    """Rows of the `overview` SECTION at one severity.
+
+    ⛔ Deliberately NOT `findings(out, sev, "overview")`: that helper filters on the MESSAGE,
+    so it would pass or fail on whether the word happens to appear in the prose, and a later
+    reword of a message would turn a behavioural check red for no behavioural reason. The
+    section is the machine-readable half of the row — assert on that.
+    """
+    return [msg for s, section, msg in _FINDING_RE.findall(out)
+            if s == sev and section == "overview"]
+
+
+def ov_run(repo: Path) -> tuple[int, str]:
+    return run_cp(repo, "--story", "30-1", "--expect-key", "SCC-30",
+                  "--branch", "claude/SCC-30-fresh", "--no-fetch")
+
+
 def main() -> int:
     c = Cases("closeout_preflight")
+    if c.block("OV · SCC-357 · the project overview guide is edited, or the walkthrough says why"):
+        # OV1 · a project with no guide yet must not be blocked — AVCH-112 writes the first
+        # edition, and every close-out between now and then still has to work.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, guide=False))
+            c.check("OV1 no guide in the project -> WARN, never an error",
+                    bool(ov(out, "WARN")) and not ov(out, "ERROR"),
+                    out.strip()[-400:])
+
+        # OV2 · the guide moved on this lane. Nothing else is asked for.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, edit_guide=True))
+            c.check("OV2 guide edited on the lane -> INFO",
+                    bool(ov(out, "INFO")) and not ov(out, "ERROR"),
+                    out.strip()[-400:])
+
+        # OV3 · unchanged, and the walkthrough accounts for it. The command writes an ASCII
+        # hyphen, which is the spelling this fixture uses; the regex ends at the state word and
+        # must not depend on whatever follows it (OV3b pins the em dash for the same reason).
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(
+                tmp, line="Project overview guide: unchanged - no flow, part or contract moved."))
+            c.check("OV3 guide unchanged + the walkthrough says why -> INFO",
+                    bool(ov(out, "INFO")) and not ov(out, "ERROR"), out.strip()[-400:])
+
+        # OV4 · THE RED THIS EXISTS FOR: unchanged, unaccounted for, and the lane is dated
+        # after the law. Step 3.5 of the save never ran.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp))
+            c.check("OV4 guide unchanged and unaccounted for -> ERROR",
+                    bool(ov(out, "ERROR")), out.strip()[-400:])
+
+        # OV5 · the same unaccounted lane, dated BEFORE the law. Exempt, and it says so.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, date="2026-07-15"))
+            c.check("OV5 a lane dated before the cutoff is EXEMPT, not blocked",
+                    not ov(out, "ERROR") and bool(ov(out, "INFO")), out.strip()[-400:])
+
+        # ⛔ OV7 · THE POST-LANDING REGRESSION, and it is the case the first cut could not see.
+        # `A...B` is `merge_base(A,B)..B`. Once the story lands, its branch IS an ancestor of the
+        # base — which is what landing MEANS and what the prune door requires before it will run —
+        # so `base...HEAD` collapses to EMPTY and the "edited on this lane" fast path silently
+        # stops answering. A story that edited the guide and correctly wrote no `unchanged` line
+        # then fails here, at `/cicd-prune-worktree`, having done exactly the right thing. The
+        # remedy the error names would be to write `unchanged` into the walkthrough of a story
+        # that changed it — a lie — so the accounting line has to cover the edited case too.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(
+                tmp, edit_guide=True, land=True,
+                line="Project overview guide: edited - the grader flow gained its own hop."))
+            c.check("OV7 a LANDED lane whose walkthrough records the edit -> INFO, not blocked",
+                    not ov(out, "ERROR") and bool(ov(out, "INFO")), out.strip()[-400:])
+
+        # ⛔ OV8 · the same landed lane with NO accounting line is the state that must still
+        # error — otherwise the OV7 fix would have bought the check's silence rather than its
+        # correctness.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, edit_guide=True, land=True))
+            c.check("OV8 CONTROL a landed lane with no accounting line still ERRORs",
+                    bool(ov(out, "ERROR")), out.strip()[-400:])
+
+        # ⛔ OV9 · the cutoff must read the STORY's date, not its EPIC folder's. An epic folder is
+        # created at kickoff and its stories close over the following weeks, so keying the
+        # exemption to the folder makes the check inert for every story of every epic opened
+        # before the law — which is precisely the population it was written to start covering.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, date="2026-07-15", review_date="2026-09-10"))
+            c.check("OV9 an epic folder predating the cutoff does NOT exempt a story reviewed after it",
+                    bool(ov(out, "ERROR")), out.strip()[-400:])
+
+        # OV3b · the em-dash spelling an operator or another command might write.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(
+                tmp, line="Project overview guide: unchanged — nothing this story touched is on it."))
+            c.check("OV3b the state word governs, not the dash that follows it",
+                    bool(ov(out, "INFO")) and not ov(out, "ERROR"), out.strip()[-400:])
+
+        # ⛔ OV10 · THE TOPOLOGY EVERY DOOR MANDATES, which the cases above did not pose.
+        # `--project` is the SHARED CHECKOUT and the lane lives elsewhere: `/cicd-prune-worktree`
+        # passes `--project <PROJECT> --branch <name>` and that checkout is parked on `main`. A
+        # diff taken against ITS HEAD is `main...main` — empty, always — so "edited on this lane"
+        # is unreachable in the only topology that ships, and a story that moved the guide is
+        # refused for not having moved it. The BRANCH is the operand, never HEAD.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, edit_guide=True, park_on_main=True))
+            c.check("OV10 the lane's BRANCH is the operand, not the checkout's HEAD",
+                    not ov(out, "ERROR") and bool(ov(out, "INFO")), out.strip()[-400:])
+
+        # ⛔ OV11 · THE REAL CORPUS SHAPE. Measured on Projects/AGY_AVIATIONCHAT: 70 of 70 story
+        # walkthroughs sit in an UNDATED epic folder (`_artifacts/epic_16/story-16-1-.../`), and
+        # 21 of those carry no dated review header either. Undatable must mean EXEMPT: we cannot
+        # show the lane is post-law, and this script gates the PRUNE of finished work, so the
+        # honest direction is not to block. It exempts history without exempting the future — a
+        # new lane is datable, because the review step writes the dated header.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, undated=True))
+            c.check("OV11 an UNDATABLE lane is exempt, not blocked",
+                    not ov(out, "ERROR") and bool(ov(out, "INFO")), out.strip()[-400:])
+
+        # ⛔ OV12 · THE FENCED-EXAMPLE BYPASS — the SCC-154 class, one script over. Step 3.5
+        # teaches the accounting line inside a ```fence```. Read from raw text, pasting the
+        # INSTRUCTION into the walkthrough satisfies the gate while doing nothing: the same defect
+        # OV6 closes, reachable by copy-paste instead of by wording.
+        with TempDir() as tmp:
+            repo = ov_repo(tmp)
+            wt = next((repo / "_artifacts").glob("*/story-30-1-fresh/walkthrough.md"))
+            wt.write_text(wt.read_text(encoding="utf-8")
+                          + "\n## Evidence\n\nThe save teaches it like this:\n\n"
+                            "```\nProject overview guide: unchanged - <why>\n```\n\n"
+                            "We did neither.\n", encoding="utf-8")
+            git(repo, "add", "-A"); git(repo, "commit", "-qm", "SCC-30 docs: quote the template")
+            rc, out = ov_run(repo)
+            c.check("OV12 CONTROL a line only inside a code FENCE does NOT satisfy the check",
+                    bool(ov(out, "ERROR")), out.strip()[-400:])
+
+        # ⛔ OV13 · `absent` is only meaningful where the guide IS absent. Accepted on the
+        # guide-present path it lets a lane that saved before the project's first guide landed
+        # ship afterwards without ever opening it.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(
+                tmp, line="Project overview guide: absent - this project has no guide yet"))
+            c.check("OV13 CONTROL `absent` does NOT account for a guide that EXISTS",
+                    bool(ov(out, "ERROR")), out.strip()[-400:])
+
+        # OV6 · ⛔ CONTROL. The line has to CLAIM one of the two states the check accepts.
+        # "updated" is a word an agent would happily write while having done nothing, and
+        # accepting it would make the whole check satisfiable by prose.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(
+                tmp, line="Project overview guide: updated where it mattered."))
+            c.check("OV6 CONTROL a line that claims neither `unchanged` nor `absent` does NOT satisfy",
+                    bool(ov(out, "ERROR")), out.strip()[-400:])
+
+        # ⛔ OV14 · THE DECORATION IS LOAD-BEARING, and nothing above proved it. Every case so
+        # far writes the line bare, so the `^[>\-*#\s]*\**` head of the regex was carried by no
+        # assertion at all — deleting it left the block at 14/14 while refusing every walkthrough
+        # that writes the line the way this house actually writes lines: as a bullet, bolded,
+        # under a quote. That is not a hypothetical spelling; it is the one Step 3.5 produces.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(
+                tmp, line="> - **Project overview guide:** unchanged - no flow or contract moved."))
+            c.check("OV14 a bulleted, bolded, quoted accounting line still satisfies the check",
+                    bool(ov(out, "INFO")) and not ov(out, "ERROR"), out.strip()[-400:])
+
+        # ⛔ OV15 · THE SILENT BRANCH. With no walkthrough at all this check RETURNS — on purpose,
+        # because `check_artifacts` already errors on exactly that file and two errors for one
+        # missing artifact read as two problems. Silence-by-design is invisible to a sweep: a
+        # mutant turning that `return` into an `err` (or deleting the guard so the empty list
+        # falls through to the cutoff arm) survived every case above, and it would hand the
+        # operator a second red whose remedy is the first red's.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, no_walkthrough=True))
+            c.check("OV15 no walkthrough at all -> the overview check says NOTHING",
+                    not ov(out, "ERROR") and not ov(out, "INFO"), out.strip()[-400:])
+
+        # ⛔ OV16 · A FAILED DIFF IS NOT AN UNEDITED GUIDE. `integration_branch` returns the
+        # literal "main" on its zero-or-several-epics path without checking the ref exists, so a
+        # repo whose trunk is named otherwise exits 128 here. Read as "not edited", that lands the
+        # lane in the ERROR arm, whose remedy — write the accounting line — is the wrong one for a
+        # repo where the comparison never ran. The WARN is the whole fix, and it was unpinned.
+        with TempDir() as tmp:
+            rc, out = ov_run(ov_repo(tmp, edit_guide=True, no_base=True))
+            c.check("OV16 a diff that FAILS warns, and never errors as though nothing was edited",
+                    bool(ov(out, "WARN")) and not ov(out, "ERROR"), out.strip()[-400:])
+
 
     # ── VR · LEGACY COVERAGE · the reader itself, read with no fixture at all ───────────
     if c.block("VR · legacy · the verdict reader's regex, and the slug predicates beside it"):
@@ -712,6 +1043,156 @@ def main() -> int:
             c.check("SCC-211 an explicitly named tree is still measured",
                     any("some-other-tree" in d for d in findings(out, "ERROR", "uncommitted")),
                     out.strip()[-400:])
+
+    # ══ EV · SCC-365 · A VERDICT IS A CLAIM; THE RECEIPT IS THE EVIDENCE ══════════════════
+    #
+    # The asymmetry these rows close: a receipt that EXISTS and records fail/stale already
+    # errors (`gr.check_receipt`). Only a receipt that was never written slipped through - the
+    # gate was strict about evidence it could see and silent about evidence that was absent,
+    # which is backwards. The demand is DERIVED FROM THE CLAIM rather than hardcoded: a
+    # `PASS`/`CONCERNS` asserts a gate was green, so `suite` becomes required; `FAIL`, `WAIVED`
+    # and a walkthrough with no verdict demand nothing new - the same vocabulary
+    # `verdict_receipt.py` (SCC-363) gates at commit time.
+    if c.block("EV · SCC-365 · a `Verdict: PASS` must show the suite that backed it"):
+        # ── EV2 · row B · THE POSITIVE CONTROL, AND EV1'S PRECONDITION ────────────────────
+        #
+        # ⛔ A GATE THAT CANNOT BE SATISFIED IS A GATE THAT GETS DELETED, so the satisfiable
+        # half is asserted FIRST and everything below inherits it: if this row fails, EV1's
+        # `rc == 2` is measuring the fixture rather than the demand.
+        #
+        with TempDir() as tmp:
+            repo = lane_repo(tmp)          # the default lane: review + PASS + its receipt
+            rc_ok, out_ok = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                   "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            c.check("EV2 row B · a flip-eligible PASS WITH a usable `suite` receipt files no "
+                    "`gates` ERROR and the verdict line reads clear - the demand is "
+                    "satisfiable, which is what earns it the right to block",
+                    not rows(out_ok, "gates", "ERROR")
+                    and any("pass @" in m for m in rows(out_ok, "gates"))
+                    and "clear to close out" in verdict_line(out_ok).lower(),
+                    f"rc={rc_ok} gates={rows(out_ok, 'gates')} "
+                    f"verdict={verdict_line(out_ok)!r}")
+
+        # ── EV1 · row A · THE HOLE ITSELF ────────────────────────────────────────────────
+        # `--require-gates` is NOT passed. Two of the four doors omit it today, and the one
+        # this ticket hardens showed it in brackets, so "the caller forgot" is the shipping
+        # path, not the edge case.
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, gates_id=None)
+            rc_a, out_a = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                 "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            c.check("EV1 row A · a flip-eligible `Verdict: PASS` with NO receipt BLOCKS with "
+                    "`--require-gates` omitted entirely",
+                    rc_a == 2 and any("suite" in m for m in rows(out_a, "gates", "ERROR")),
+                    f"rc={rc_a} gates={rows(out_a, 'gates')} "
+                    f"verdict={verdict_line(out_a)!r}")
+
+            # ⛔ EV6 · row B · THE VERDICT LINE, NOT THE EXIT CODE. `rc == 2` is reachable from
+            # any error in any section, and the line an agent actually acts on is computed
+            # separately (`if e: BLOCKED`). The AVCH-106 shape is exactly this fixture: board
+            # in `review`, a walkthrough asserting its own PASS, no receipt anywhere, and a
+            # door that did not name the flag.
+            c.check("EV6 row B · the AVCH-106 replay: the VERDICT LINE itself refuses, where "
+                    "today it reads `clear to close out` over a suite that never ran",
+                    "clear to close out" not in verdict_line(out_a).lower(),
+                    verdict_line(out_a) or "(no VERDICT line printed)")
+
+        # ── EV5 · row E · THE EXPIRED RULING, AND THE REMEDY THAT MUST SURVIVE IT ─────────
+        # ⛔ SEVERITY **AND** MESSAGE, because promoting the row without keeping its remedy is
+        # how a blocking gate gets routed around: `gr.load_receipt`'s own string is
+        # "NO RECEIPT - the gate has no evidence it ran", which names neither a directory nor
+        # a command. With the id-resolution bug live (EV7) a reader could not tell "never
+        # written" from "looked in the wrong place".
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, gates_id=None)
+            rc_e, out_e = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                 "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11",
+                                 "--require-gates", "suite")
+            errs_e = rows(out_e, "gates", "ERROR")
+            # ⛔ EXACTLY ONE ROW. `check_gates` loops `for gate in require` with no dedupe, so a
+            # derived demand that prepends `suite` unconditionally emits the identical error
+            # TWICE at the two doors that name the gate themselves - and every other assertion
+            # here is satisfied by a duplicate. This is the row that pins the guard.
+            c.check("EV5 row E · an EXPLICITLY required gate with no receipt is ONE ERROR that "
+                    "names the directory searched AND the command that fills it - the "
+                    "2026-08-02 `advisory for one sprint` ruling is retired",
+                    rc_e == 2 and len(errs_e) == 1
+                    and any(f"{wf.GATES_REL}/30-1" in m for m in errs_e)
+                    and any("gate_receipt.py run" in m for m in errs_e),
+                    f"rc={rc_e} gates={rows(out_e, 'gates')}")
+
+        # ── EV3 · row C · THE STATES WITH NO REACHABLE REMEDY ────────────────────────────
+        # CONTROLS, green today and green after: `/cicd-prune-worktree` runs this script on
+        # `done` stories with no `--require-gates`, and the live AVCH board carries 13
+        # `deferred`/`deferred-v3` rows whose lanes are pruned. Refusing those would name a
+        # remedy nobody can perform.
+        for st in ("done", "deferred"):
+            with TempDir() as tmp:
+                repo = lane_repo(tmp, status=st, gates_id=None)
+                rc_c, out_c = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                     "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+                c.check(f"EV3 row C CONTROL · a `{st}` story with a PASS and no receipt gains "
+                        "NO `gates` error - closed and parked history stays prunable",
+                        not rows(out_c, "gates", "ERROR"),
+                        f"rc={rc_c} gates={rows(out_c, 'gates')}")
+
+        # ── EV4 · row D · THE VERDICTS THAT CLAIM NOTHING ────────────────────────────────
+        # CONTROLS. `FAIL` already blocks in `artifacts` and that error is not this demand;
+        # `WAIVED` is a recorded decision not to gate; a walkthrough with no `Verdict:` line
+        # has its own `artifacts` error. Parity with `verdict_receipt.py`, which gates exactly
+        # `PASS|CONCERNS` and deliberately leaves the other two alone.
+        for v, label in ((None, "no `Verdict:` line at all"), ("FAIL", "FAIL"),
+                         ("WAIVED", "WAIVED")):
+            with TempDir() as tmp:
+                repo = lane_repo(tmp, verdict=v, gates_id=None)
+                rc_d, out_d = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                     "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+                c.check(f"EV4 row D CONTROL · {label} acquires no receipt demand",
+                        not rows(out_d, "gates", "ERROR"),
+                        f"rc={rc_d} gates={rows(out_d, 'gates')} "
+                        f"artifacts={rows(out_d, 'artifacts', 'ERROR')}")
+
+        # ── EV7 · row G · THE SAME STORY MUST NOT BLOCK BY SPELLING ──────────────────────
+        # ⛔ REPRODUCED LIVE ON AviationChat BEFORE IT WAS WRITTEN: `main()` hands `check_gates`
+        # the RAW `--story` while every other check gets the resolved board `key`, and
+        # `gr.receipt_dir` keys off that raw string. `--story 23-9` found the receipt and
+        # reported STALE; `--story 23-9-flight-status-drawer-polish-active-curriculum` reported
+        # "no receipt" - same tree, same story, same walkthrough resolved correctly both times.
+        # Today that is a harmless WARN. The rows above turn it into a blocking FALSE refusal,
+        # and the long form is reachable: `/cicd-prune-worktree` Step 0.2 resolves a long slug
+        # before Step 0.3 asks for "the id". The lane's own change creates the hazard, so the
+        # lane closes it.
+        with TempDir() as tmp:
+            repo = lane_repo(tmp)
+            tail = ("--project", str(repo), "--branch", "claude/SCC-11-mine",
+                    "--expect-key", "SCC-11", "--require-gates", "suite")
+            _, out_short = run_cp(repo, "--story", "30-1", *tail)
+            _, out_long = run_cp(repo, "--story", "30-1-fresh", *tail)
+            c.check("EV7 row G · the LONG board key resolves the SAME receipt as the short id",
+                    rows(out_long, "gates") == rows(out_short, "gates")
+                    and not rows(out_long, "gates", "ERROR"),
+                    f"short={rows(out_short, 'gates')} long={rows(out_long, 'gates')}")
+
+        # ── EV8 · row G · WHICH directory wins when BOTH spellings exist on disk ─────────
+        # ⛔ `receipt_dir_for` alone makes EV7 green from either spelling, so it does NOT pin
+        # the second half of the fix - that `main` hands `check_gates` the RESOLVED key like
+        # every other check. This is the shape where the two answers differ: the literal is
+        # tried first, so a run keyed on the raw `--story 30-1` resolves the STRAY short-id
+        # directory (empty), while one keyed on the board's own `30-1-fresh` resolves the
+        # story's own. Both directories existing is not invented: the live AGY tree names its
+        # receipt dirs by short id while its board keys are long, so a lane stamped under both
+        # spellings is one `gate_receipt.py run --story <the other spelling>` away.
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, gates_id="30-1-fresh")
+            (repo / wf.GATES_REL / "30-1").mkdir(parents=True)      # the stray, and it is EMPTY
+            rc_h, out_h = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                 "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11",
+                                 "--require-gates", "suite")
+            c.check("EV8 row G · with BOTH spellings on disk the STORY'S OWN board key wins, "
+                    "not the id the caller happened to type",
+                    not rows(out_h, "gates", "ERROR")
+                    and any("pass @" in m for m in rows(out_h, "gates")),
+                    f"rc={rc_h} gates={rows(out_h, 'gates')}")
 
     return c.finish()
 

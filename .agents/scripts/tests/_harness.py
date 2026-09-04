@@ -5,15 +5,30 @@ machine before anything is installed, which is exactly when the workflow scripts
 """
 from __future__ import annotations
 
+import contextlib
+import functools
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS))
+
+# ⛔ THE SUITE'S OWN CASE NAMES CONTAIN `⛔` AND `⭐`, AND cp1252 CANNOT ENCODE EITHER (SCC-321).
+# Windows gives a NON-CONSOLE stdout - a pipe, a redirect, `run_all.py`'s child - the locale
+# codec, so `check()` raises UnicodeEncodeError mid-print and the file dies part-run. Nothing
+# distinguishes that from an ordinary red, so it reads as a test failure about the code.
+# `run_all.py` pins its children through the environment; this pins the OTHER door - the single
+# file run by hand or by `mutation_sweep.py`, which never passes through the runner at all.
+# Windows-only: POSIX streams are already UTF-8, so the Mac is byte-identical.
+if os.name == "nt":  # pragma: no cover - platform branch
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
 
 
 def _tree_guard() -> None:
@@ -56,6 +71,56 @@ def _tree_guard() -> None:
     top, br, is_main = tag
     print(f"-- tree: {Path(top).name} [{br or 'DETACHED'}] - "
           f"{'MAIN CHECKOUT' if is_main else 'worktree'} --")
+
+
+def _write_text_lf() -> bool:
+    """Make `Path.write_text` emit LF on Windows, as it already does on the Mac (SCC-321).
+
+    ⛔⛔ THIS IS THE SINGLE ROOT CAUSE OF MOST OF THIS SUITE'S WINDOWS FAILURES, AND IT IS
+    INVISIBLE AT EVERY CALL SITE. Python's text mode translates `\\n` to `os.linesep` on write,
+    so on Windows `p.write_text("minted=1756143820\\n")` puts `minted=1756143820\\r\\n` on disk.
+    The fixture LOOKS right in every editor and in `read_text()`, which translates back. Then a
+    POSIX consumer reads the field as `1756143820\\r`:
+
+        `$(( minted ))`  -> "the approval token's timestamp is not a number"   (the main write gate)
+        `#!/bin/sh\\r`    -> shebang names an interpreter that does not exist   (any written script)
+        `grep -x val`    -> no match, because the line ends in a carriage return
+
+    Every one of those reads as a REAL failure of the thing under test. The main write gate's
+    behavioural half failed 16 cases this way, and the diagnosis for each looked like a
+    different bug.
+
+    ⭐ WHY PATCH THE SEAM AND NOT 482 CALL SITES. This directory has 482 `write_text` calls
+    across 49 files. Every one of them is writing a fixture for a POSIX consumer, and every one
+    of them wants LF — there is no call site here that wants CRLF, because THE MAC HAS NEVER
+    WRITTEN ONE and the suite is green there. So this does not introduce a behaviour: it deletes
+    a platform divergence nobody chose, and makes the two machines write byte-identical
+    fixtures. Patching call sites instead would be 482 edits that the 483rd would undo.
+
+    Scoped deliberately: the test process only, writes only, and `newline=` still wins if a
+    caller passes it explicitly. `_harness` is the seam every file in this directory imports,
+    which is why it goes here and not in a file someone can forget to import.
+
+    Returns whether the patch was applied, so `test_suite_runner` can assert it is live — a
+    silent seam that silently stops working is the failure mode this whole suite exists to
+    catch.
+    """
+    if os.name != "nt":
+        return False                          # POSIX already writes LF; nothing to correct
+
+    original = Path.write_text
+
+    @functools.wraps(original)
+    def write_text(self, data, encoding=None, errors=None, newline=None):
+        return original(self, data, encoding=encoding, errors=errors,
+                        newline="\n" if newline is None else newline)
+
+    Path.write_text = write_text               # type: ignore[method-assign]
+    return True
+
+
+WRITES_LF = _write_text_lf()
+"""True when `Path.write_text` has been corrected to emit LF (Windows only) — see above."""
 
 
 NO_MATCH = 3
@@ -180,10 +245,219 @@ class Cases:
         return 1 if failed else 0
 
 
+def utf8_env(**extra: str) -> dict:
+    """`os.environ` with the child's text encoding PINNED to UTF-8 (SCC-321).
+
+    ⛔ `text=True` WITHOUT `encoding=` DECODES WITH THE LOCALE, and on Windows that is `cp1252`
+    while the child writes UTF-8 — so `·` came back as `Â·` and any case comparing a label
+    containing a non-ASCII character failed on a string that was never wrong, only mis-decoded.
+
+    Pinning ONE side is not enough, and that is the subtle half: a child left on the locale
+    writes `cp1252`, and a parent hard-coded to UTF-8 then mis-decodes in the opposite
+    direction. Both ends are pinned here so the answer cannot depend on the machine's locale.
+    On the Mac, where the locale is already UTF-8, all of this is a no-op.
+
+    ⛔ An earlier draft of this docstring said "this machine happens to export
+    PYTHONIOENCODING=utf-8" and treated that as the reason only the parent needed fixing. **It
+    does not export it** — that was true of the one shell the fix was measured in, and believing
+    it is what let 22 files sit red on a bare run while a suite total of 61/61 stood recorded.
+    Nothing in this file may assume that variable is set; that is why it is passed explicitly.
+    """
+    return {**os.environ, "PYTHONIOENCODING": "utf-8", **extra}
+
+
 def run_script(name: str, *args: str) -> tuple[int, str]:
     r = subprocess.run([sys.executable, str(SCRIPTS / name), *args],
-                       capture_output=True, text=True, errors="replace")
+                       capture_output=True, text=True, errors="replace",
+                       encoding="utf-8", env=utf8_env())
     return r.returncode, (r.stdout or "") + (r.stderr or "")
+
+
+@contextlib.contextmanager
+def unset_hooks_path():
+    """Make a fixture repo's `core.hooksPath` genuinely UNSET, whatever this machine sets.
+
+    ⛔⛔ A FIXTURE CANNOT ASSUME "UNSET" — IT HAS TO ENFORCE IT (SCC-321). `core.hooksPath` is
+    inherited from GLOBAL config, and this system's own setup instructions tell the operator to
+    run `git config --global core.hooksPath .githooks` so every repo on a machine is armed. Where
+    that was done, a brand-new temp repo is born ARMED: the "fresh clone has no gates" fixture
+    describes a state the machine cannot produce, and cases asserting an error find none.
+
+    The real damage is that such a case measures the OPERATOR'S GIT CONFIG rather than the code.
+    It flips between machines, and between two clones on one machine, for reasons that have
+    nothing to do with what is under test. `GIT_CONFIG_GLOBAL` / `GIT_CONFIG_SYSTEM` pointed at an
+    empty file is git's own supported way to say "read no config except this repo's" (git ≥ 2.32).
+
+    ⓘ Separately worth the operator's attention: `hooks_armed`'s own REMEDY constant says NOT
+    `--global`, because a relative path set globally arms `.githooks/` in every repo on the
+    machine — including third-party clones that happen to ship that directory.
+    """
+    saved = {k: os.environ.get(k) for k in ("GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM")}
+    with tempfile.TemporaryDirectory() as cfg:
+        empty = Path(cfg, "empty-gitconfig")
+        empty.write_text("", encoding="utf-8")
+        os.environ["GIT_CONFIG_GLOBAL"] = str(empty)
+        os.environ["GIT_CONFIG_SYSTEM"] = str(empty)
+        try:
+            yield
+        finally:
+            for k, v in saved.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+
+
+def fake_exe(bindir, name: str, body: str) -> str:
+    """A stub binary running `body` (Python source), findable and runnable on BOTH machines.
+
+    ⛔⛔ A SHEBANG SCRIPT IS NOT AN EXECUTABLE ON WINDOWS, AND IT IS INVISIBLE TWICE OVER (SCC-321).
+    `#!/usr/bin/env python3` is a kernel convention POSIX has and Windows does not, so:
+
+      `shutil.which("acli")`   finds NOTHING — Windows resolves names through `PATHEXT`, and an
+                               extensionless file is not on that list. Production code probing
+                               with `which` therefore reports the tool ABSENT, and the test reads
+                               as "the fallback works" when the fixture was simply never seen.
+      `subprocess.run([stub])` raises `OSError [WinError 193] %1 is not a valid Win32 application`
+                               — or, worse for a fixture whose whole job is to record its argv,
+                               never runs, so the `argv.json` the case reads is not there and the
+                               file dies at `FileNotFoundError` before scoring a single case.
+
+    Both failures name something other than their cause, which is why this is centralised rather
+    than solved three times. On Windows the stub is a `.cmd` launcher (on `PATHEXT`, and
+    CreateProcess runs it) delegating to a `.py` beside it; on POSIX it stays the shebang script
+    it always was. `__file__` inside `body` resolves to the same directory either way, so a stub
+    that writes `argv.json` next to itself keeps working unchanged.
+
+    Returns the path to invoke — pass it to `ACLI_BIN`-style env vars, or put `bindir` on `PATH`.
+    """
+    bindir = Path(bindir)
+    bindir.mkdir(parents=True, exist_ok=True)
+
+    if os.name != "nt":
+        script = bindir / name
+        script.write_text(f"#!{sys.executable}\n{body}", encoding="utf-8")
+        script.chmod(0o755)
+        return str(script)
+
+    (bindir / f"{name}.py").write_text(body, encoding="utf-8")
+    launcher = bindir / f"{name}.cmd"
+    # `%*` forwards every argument; cmd propagates the child's exit code as its own.
+    launcher.write_text(f'@echo off\r\n"{sys.executable}" "%~dp0{name}.py" %*\r\n',
+                        encoding="utf-8", newline="")
+    return str(launcher)
+
+
+def path_entry(p) -> str:
+    """`p` spelled the way a POSIX shell's `$PATH` can actually read it (SCC-321).
+
+    ⛔ A POSIX `$PATH` is COLON-separated, and a Windows path carries a colon at character two.
+    So `C:/Users/me/shim` in `$PATH` is not one entry — it is two, `C` and `/Users/me/shim`, and
+    neither exists. Nothing errors; the directory is simply never searched.
+
+    Git Bash reads `/c/Users/me/shim`, which has no colon and resolves to the same place.
+    On POSIX this is the identity function.
+    """
+    if os.name != "nt":
+        return str(p)
+    drive, rest = os.path.splitdrive(str(p))
+    if not drive:
+        return str(p).replace(os.sep, "/")
+    return f"/{drive[0].lower()}{rest.replace(os.sep, '/')}"
+
+
+def sh_with_path(sh: str, prepend, argv: list[str]) -> list[str]:
+    """An argv that runs `argv` under `sh` with `prepend` FIRST on `$PATH` (SCC-321).
+
+    ⛔⛔ PASSING PATH IN `env=` DOES NOT WORK ON WINDOWS, AND IT FAILS SILENTLY. `C:\\Git\\bin\\sh.exe`
+    rewrites the environment it is given and puts its OWN `/mingw64/bin:/usr/bin` at the FRONT — so
+    an injected shim lands behind the very binary it exists to shadow, the real one runs, and the
+    test measures the unshimmed system while reporting normally. Measured: `command -v git` answered
+    `/mingw64/bin/git` with the shim dir present but later in the list.
+
+    Setting `$PATH` INSIDE the started shell is after that rewrite, so it wins. Combined with
+    `path_entry` (a Windows path is unreadable in a colon-separated `$PATH`), the shim resolves.
+
+    `sh -c '<script>' <argv0> <args...>` is the POSIX form: `$0` is the name, `$@` the rest — hence
+    the `"sh"` placeholder before the real command.
+    """
+    return [sh, "-c", 'PATH="$1:$PATH"; shift; exec "$@"', "sh", path_entry(prepend), *argv]
+
+
+def run_stdin_lf(args, *, stdin: str = "", **kw) -> subprocess.CompletedProcess:
+    """Run `args` feeding `stdin` BYTE-EXACT, and hand back decoded text (SCC-321).
+
+    ⛔⛔ `subprocess.run(..., text=True, input="a b\\n")` DOES NOT SEND WHAT IT SAYS ON WINDOWS.
+    Text mode wraps the child's stdin in a `TextIOWrapper` with `newline=None`, which translates
+    `\\n` to `os.linesep` on write — so the child receives `a b\\r\\n`. It is the same defect as
+    `Path.write_text` (see `_write_text_lf`), reached by a completely different road, and it is
+    the one the main write gate died on.
+
+    ⭐ WHAT IT LOOKS LIKE, because it is worth recognising on sight. `pre-push` is fed
+    `<ref> <local> <ref> <remote>` on stdin; the trailing field arrived as `84ad225…\\r`, so the
+    gate's `[ "$parent1" != "$remote_sha" ]` was TRUE and it refused a perfectly good merge. Its
+    refusal then printed both values — and they looked IDENTICAL, because a carriage return just
+    moves the cursor to the start of the line. A diagnosis by reading the error message is
+    therefore guaranteed to be wrong: the message is honest, the terminal is not.
+
+    ⭐ WHY A HELPER AND NOT A SEAM PATCH like the `write_text` one. Neutralising this inside
+    `subprocess` means rebuilding the child's stdin wrapper after `Popen.__init__` has already
+    made it — two wrappers over one buffer, with the close/detach hazard that implies. That is
+    fragile magic in the file every test imports, which is a worse trade than nineteen explicit
+    call sites. Here the byte-exactness is *visible where it matters*.
+
+    Returns a `CompletedProcess` whose `stdout`/`stderr` are `str`, so it drops into a call site
+    that had `text=True, capture_output=True` unchanged.
+    """
+    kw.pop("text", None)
+    kw.pop("universal_newlines", None)
+    kw.pop("input", None)
+    kw.setdefault("capture_output", True)
+    r = subprocess.run(list(args), input=stdin.encode("utf-8"), **kw)
+    decode = lambda b: b.decode("utf-8", "replace") if isinstance(b, bytes) else b   # noqa: E731
+    return subprocess.CompletedProcess(r.args, r.returncode, decode(r.stdout), decode(r.stderr))
+
+
+@functools.lru_cache(maxsize=1)
+def posix_sh() -> str | None:
+    """Absolute path to a POSIX shell that can read THIS machine's paths, or None (SCC-321).
+
+    ⛔ Never write `subprocess.run(["sh", ...])`. Windows has no `sh` on PATH, so that call
+    raises `FileNotFoundError [WinError 2]` — and because it raises rather than returning a
+    bad exit code, it takes the ENTIRE file down before a single case is scored. The file
+    reads as one failure in the summary; it is really "none of this ran".
+
+    ⛔ `bash` is not a fallback on Windows. `System32\\bash.exe` is the WSL launcher, and WSL
+    mounts this drive at `/mnt/c`, so a `C:\\...` argument resolves to nothing inside it. It
+    would fail later, and far less legibly, than finding no shell at all. Git for Windows
+    ships the shell these scripts were written for, so ask `git` where it lives instead of
+    guessing an install directory — the answer is right whether Git sits in `C:\\Git` or in
+    `C:\\Program Files\\Git`.
+    """
+    def usable(p: str | None) -> str | None:
+        if not p:
+            return None
+        if os.name == "nt" and Path(p).parent.name.lower() == "system32":
+            return None                       # the WSL launcher — a different filesystem view
+        return p
+
+    found = usable(shutil.which("sh"))
+    if found:
+        return found
+
+    if os.name == "nt":
+        try:
+            exec_path = subprocess.run(["git", "--exec-path"], capture_output=True,
+                                       text=True, timeout=15).stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            exec_path = ""
+        if exec_path:
+            # …/<git-root>/mingw64/libexec/git-core  ->  …/<git-root>/bin/sh.exe
+            candidate = Path(exec_path).parents[2] / "bin" / "sh.exe"
+            if candidate.is_file():
+                return str(candidate)
+
+    return usable(shutil.which("bash"))
 
 
 class TempDir:
@@ -197,4 +471,20 @@ class TempDir:
         def force(func, path, _info):  # read-only files (and .git objects) on Windows
             Path(path).chmod(0o700)
             func(path)
-        shutil.rmtree(self.path, onerror=force)
+        # ⛔ RETRY, don't just force — `force` cannot help here and the difference is the bug.
+        # `shutil.rmtree` walks with open directory fds, so a `git` subprocess that has already
+        # returned but not fully torn down can still land a file in `.git/objects` between the
+        # walk and the `rmdir`. That surfaces as `OSError: [Errno 39] Directory not empty` from
+        # the cleanup — chmod does not make a non-empty directory removable, so `force`
+        # re-raises and a test that PASSED reports as a failed file. Measured on the Linux CI
+        # runner (`test_git_hooks.py`, which builds a throwaway remote), never on the Mac; the
+        # same run had passed minutes earlier on identical code, which is what identifies it as
+        # a race rather than a regression (SCC-354).
+        for attempt in range(4):
+            try:
+                shutil.rmtree(self.path, onerror=force)
+                return
+            except OSError:
+                if attempt == 3:
+                    raise
+                time.sleep(0.2 * (attempt + 1))

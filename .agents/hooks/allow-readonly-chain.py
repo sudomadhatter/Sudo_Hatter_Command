@@ -515,6 +515,50 @@ def git_ok(args: list[str]) -> bool:
     return (sub, nxt) in GIT_READONLY_PAIRS
 
 
+def _is_abs(p: str) -> bool:
+    """Absolute in EITHER spelling: POSIX `/x`, or a Windows drive root `C:\\x` / `C:/x`.
+
+    ⛔ Deliberately not `os.path.isabs`. That answers about the machine this process runs on, and
+    a drive-lettered path must be recognised as absolute wherever this hook reads it — a fixture
+    or a transcript from the other machine must not read as a RELATIVE path, which is the one
+    shape `cd_ok` refuses outright. A bare `C:` with no root is NOT absolute (it means "the
+    current directory on drive C", which is exactly the unverifiable case).
+    """
+    if p.startswith("/"):
+        return True
+    return len(p) > 2 and p[1] == ":" and p[0].isalpha() and p[2] in "\\/"
+
+
+def _canon(p: str) -> str:
+    """One spelling for comparison: forward slashes, no trailing slash, case-folded on Windows.
+
+    ⛔ The rewrite is Windows-only. On POSIX a backslash is a legal FILENAME character, so
+    rewriting it there would turn the sibling `/ws\\x` into `/ws/x` and read it as inside a
+    workspace rooted at `/ws` — a separator fix for one machine widening the other's guard.
+
+    ⛔ AND WINDOWS HAS A THIRD SPELLING, WHICH IS THE ONE THE SHELL PRODUCES. The Bash tool runs
+    Git Bash, whose own spelling of `C:\\ws` is `/c/ws` — and agents type that constantly because
+    it is what `pwd` hands back. `_is_abs` accepts it (it starts with `/`), so it arrives here and
+    used to be compared, unrewritten, against a root of `c:/ws`: never equal, so EVERY
+    `cd /c/<repo> && …` chain fell through to a prompt. Measured over 18 transcripts: 114 calls,
+    7.0% of every prompt the operator answered. Fourth instance of this bug in the house after
+    SCC-321 (`C:/` vs `/`) and SCC-171/172. It fails SAFE — a prompt, never a wrong grant — which
+    is why it survived a fixture set that spells the root `C:/…` every time.
+
+    The rewrite is exact and cannot widen anything: only a SINGLE letter between the leading
+    slash and the next separator is a drive, so `/etc`, `/tmp` and `/private` are untouched, and
+    `/d/Somewhere` becomes `d:/somewhere` — still outside a `c:` root, still refused.
+    """
+    if os.name == "nt":
+        p = p.replace("\\", "/").casefold()
+        p = re.sub(r"^/([a-z])(?=/|$)", r"\1:", p)
+    p = posixpath.normpath(p)
+    # ⛔ `rstrip` must not be able to EMPTY the root. A root of "/" would become "", and the
+    # caller's `target.startswith(root + "/")` would then be true of every absolute path on the
+    # machine — a containment test that contains everything. Strip only a real trailing slash.
+    return p[:-1] if len(p) > 1 and p.endswith("/") else p
+
+
 def cd_ok(args: list[str]) -> bool:
     """`cd` to ONE absolute path inside this workspace, and nowhere else.
 
@@ -528,12 +572,20 @@ def cd_ok(args: list[str]) -> bool:
 
     ABSOLUTE ONLY. A relative target resolves against a cwd this process cannot see, so there is
     nothing here to verify, and `cd ../..` is the escape the guard was written for.
+
+    ⛔ AND "ABSOLUTE" HAS TWO SPELLINGS (SCC-321). This asked `startswith("/")`, which is the POSIX
+    one only — so on Windows, where the repo root is `C:\\…` and a Bash-tool command names it
+    `C:/…`, EVERY `cd` failed the test and this hook could never grant one. It fails safe (no
+    grant, so the operator just gets the ordinary prompt), which is why it went unnoticed: the
+    only symptom is the prompt this hook exists to remove, on every command, on one machine.
+    Third instance of this exact bug in the house — `run-hook.sh` and the push-gate scripts
+    (SCC-171/172) were the other two.
     """
     paths = [dequote(a) for a in args if not dequote(a).startswith("-")]
-    if len(paths) != 1 or not paths[0].startswith("/"):
+    if len(paths) != 1 or not _is_abs(paths[0]):
         return False
-    root = posixpath.normpath(_repo_root())
-    target = posixpath.normpath(paths[0])
+    root = _canon(_repo_root())
+    target = _canon(paths[0])
     return target == root or target.startswith(root + "/")
 
 

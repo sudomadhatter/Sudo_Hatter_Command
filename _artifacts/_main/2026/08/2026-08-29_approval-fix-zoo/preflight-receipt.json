@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-346-approval-fix-zoo",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-346",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "aba65b4196b4853e7fcdc7f809a129e9fcd7ff85",
+  "warnings": 2,
+  "when": "2026-08-29T16:28:22-07:00"
+}

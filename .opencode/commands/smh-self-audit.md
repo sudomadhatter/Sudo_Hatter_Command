@@ -1,6 +1,6 @@
 ---
 description: Pre-work plan audit for TASK work — three lenses (Repo Reality + Scope Ledger, Parity + Blast, Pre-Mortem), the anchor rule (no anchor, no finding), coverage-not-findings reporting, and an amendment rule that forbids ever adding a fourth lens. A quick brainstorm that gates known agent issues before time is spent building the wrong thing — NOT a code audit (that is /smh-code-review, later, on a real diff). PRE-WORK by default; POST-DEV/retroactive audits the ticket's ACCEPTANCE block + change set. Acts on the repo you are standing in, so the command centre is a valid subject. Auto-invoked by /smh-quick-dev. Use when the user says "audit the task plan" / "smh self audit".
-platforms: [opencode, antigravity, claude, codex]
+platforms: [opencode, antigravity, claude, codex, zoo]
 ---
 
 # /smh-self-audit — Pre-Work Plan Audit (three lenses, anchored)
@@ -50,7 +50,7 @@ a legitimate subject here.
 
 ```bash
 REPO=$(cd "<the path you resolved>" && git rev-parse --show-toplevel)
-BRANCH=$(git -C "$REPO" rev-parse --abbrev-ref HEAD)
+BRANCH=$(cd "$REPO" && git rev-parse --abbrev-ref HEAD)
 echo "Repo: $(basename "$REPO") | Branch: $BRANCH"
 ```
 
@@ -172,7 +172,7 @@ rows the Declared Change Set makes relevant, clear the rest in one line each:
 change to both. **Sibling worktrees:** `env -u GITHUB_TOKEN git fetch origin main` first — a bare `origin/main`
 is this checkout's LAST PULL, and an unfetched base inflates every sibling's apparent change
 set. Then `git worktree list`, then per tree
-`git -C <tree> diff --name-only origin/main...HEAD` + `status --short` — any file in both their
+`cd <tree> && git diff --name-only origin/main...HEAD` + `status --short` — any file in both their
 set and this plan's declared set is a **landing-order dependency**: name which lane lands first
 and what happens if it does not.
 

@@ -1,0 +1,44 @@
+{
+  "v": 1,
+  "task": "SCC-308",
+  "sha": "9c21f27a98f2b4a4af1eaa6e48d3551132c07e8e",
+  "tip": "4d11829b3f1e270ff743c593d73ca3a8d920a598",
+  "trigger": "close-out",
+  "when": "2026-08-24T00:19:15-04:00",
+  "changes": [
+    ".agents/commands/INDEX.md",
+    ".agents/scripts/check_links.py",
+    ".agents/scripts/check_maps.py",
+    ".agents/scripts/tests/test_check_links.py",
+    ".agents/skills/INDEX.md",
+    ".agents/workflows/INDEX.md",
+    ".claude/skills/INDEX.md",
+    "_artifacts/AGENTS.md",
+    "_artifacts/INDEX-archive.md",
+    "_artifacts/INDEX.md",
+    "_artifacts/README.md",
+    "_artifacts/_main/2026-08-23_update-maps-indexes/implementation_plan.md",
+    "_artifacts/_main/2026-08-23_update-maps-indexes/task.yaml",
+    "_artifacts/_main/2026-08-23_update-maps-indexes/tickets/SCC-308.md",
+    "_artifacts/_main/2026-08-23_update-maps-indexes/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "_artifacts/_main/active-context.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-23_update-maps-indexes/walkthrough.md",
+    "verdict": "PASS @ 9c21f27",
+    "gates": {
+      "suite": "pass@9c21f27"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}

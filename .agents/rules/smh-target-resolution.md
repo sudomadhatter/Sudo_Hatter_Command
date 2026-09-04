@@ -36,7 +36,7 @@ the mechanics. This file is the only place the ladder is written out.
 Walk the cases in order; the first match wins:
 
 0. **Self (sub-project fast path — check FIRST, and STOP here if it matches)** — if this repo has **no**
-   `Projects/` subfolder, you ARE the project: set `PROJECT_ROOT = .` and skip straight to §BIND. Do NOT
+   `Projects/` subfolder, you ARE the project: set `PROJECT_ROOT=$(pwd)` and skip straight to §BIND. Do NOT
    read `active-project.txt`, parse `$ARGUMENTS` for a project name, or ask which project — cases 1–3 are
    command-center-only (the lobby that hosts children under `Projects/`).
 1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
@@ -44,20 +44,24 @@ Walk the cases in order; the first match wins:
    the name alone into `.agents/active-project.txt` (overwrite) so later commands inherit it.
 2. **Active pointer** — else read `.agents/active-project.txt`; if it names a folder under `Projects/`,
    use it.
-3. **Ask** — else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* —
+3. **Ask** — else STOP and ask Mr. Hatter *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* —
    never guess, never operate on the lobby.
 
-Then set `PROJECT_ROOT = Projects/<name>` (or `.` on the fast path) and **echo exactly**
-`Target: Projects/<name>` before any work.
+Then set it **ABSOLUTE** — `PROJECT_ROOT=$(cd Projects/<name> && pwd)` (fast path:
+`PROJECT_ROOT=$(pwd)`) — and **echo exactly** `Target: Projects/<name>` before any work.
+⛔ **Absolute on purpose (SCC-351).** Door snippets pin every line as
+`cd "$PROJECT_ROOT" && …`, and consecutive pins only re-resolve safely from an absolute
+path — with a relative fill the SECOND `cd` runs from inside the first and dies
+(`Projects/<n>/Projects/<n>` does not exist). The echo stays relative; the variable never is.
 
 ## §ASK — the boot variant (`/cicd-boot-sprint-memory`)
 
 Cases 0–1 as in §STD (boot's case 1 is the normal way to set the session's active project, e.g.
 `/cicd-boot-sprint-memory AGY_AVIATIONCHAT`). But with no inline name (the usual case — most UIs fire `/`
 the instant it's selected), do NOT silently reuse the pointer: read `.agents/active-project.txt`, list the
-folders under `Projects/`, and ASK Daniel *"Active project is `<pointer, or none>`. Which project this
+folders under `Projects/`, and ASK Mr. Hatter *"Active project is `<pointer, or none>`. Which project this
 session?"* with that list. A plain confirmation keeps the pointer; otherwise write his choice into
-`.agents/active-project.txt` (overwrite). If Daniel already named a project in this chat, treat that as his
+`.agents/active-project.txt` (overwrite). If Mr. Hatter already named a project in this chat, treat that as his
 answer — don't re-ask. Never guess, never operate on the lobby.
 
 ## §DUAL — the machine-switch variant (`/cicd-park` · `/cicd-resume`)
@@ -66,7 +70,8 @@ Two separate git repos are in play and BOTH are in scope:
 
 1. **The lobby** — the repo you are standing in (`Sudo_Hatter_Command`): `_artifacts/`, `.agents/`, board
    sessions, open tasks.
-2. **The active project** — read `.agents/active-project.txt`; set `PROJECT_ROOT = Projects/<name>`. Pointer
+2. **The active project** — read `.agents/active-project.txt`; set
+   `PROJECT_ROOT=$(cd Projects/<name> && pwd)`. Pointer
    missing → ASK which project, never guess. (**Fast path:** no `Projects/` subfolder → lobby and project
    are the same repo; do the project half only.)
 
@@ -88,4 +93,4 @@ protocol rules before your first write in that project, on-demand rules on their
 missing there → **STOP and say so** — absence is a defect, never a default (full contract →
 `project-law.md`). In a still-vendored project the file is the toolkit inventory — reading it costs one
 small file and changes nothing. The self fast-path (case 0) binds the same obligation with
-`PROJECT_ROOT = .`.
+`PROJECT_ROOT=$(pwd)`.

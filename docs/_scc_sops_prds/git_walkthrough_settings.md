@@ -284,9 +284,9 @@ flowchart TD
     MAIN["main\nthe ONLY long-lived branch\n= live production"] --> EPIC["epic/&lt;JIRA-KEY&gt;-&lt;slug&gt;\ncut at epic kickoff\nlives one epic, then deleted"]
     EPIC --> WT["claude/&lt;JIRA-KEY&gt;-&lt;slug&gt;\none worktree per story\nyours alone"]
     WT -->|"land: push HEAD:epic/&lt;JIRA-KEY&gt;-&lt;slug&gt;"| EPIC
-    EPIC -->|"/cicd-push-e2e ONLY\ngate green + your sign-off\ngit merge --no-ff"| MAIN
+    EPIC -->|"/cicd-push-e2e ONLY\ngate green + your sign-off\nopens a PR — you click Merge"| MAIN
     MAIN --> CHORE["chore/&lt;JIRA-KEY&gt;-&lt;slug&gt;\nad-hoc work, no epic\neach carries its own ticket"]
-    CHORE -->|"same session, sign-off\ngit merge --no-ff"| MAIN
+    CHORE -->|"/smh-close-task-merge-tree\nopens a PR — you click Merge"| MAIN
 ```
 
 **Which branch you're on decides what you're allowed to do.** That's the whole model:
@@ -314,8 +314,13 @@ flowchart TD
 
 - **Never `git add -A` / `.` / `-u`.** Stage explicit paths, always. Parallel lanes mean other people's
   dirty files sit in the same checkout; a blanket add sweeps their work into your commit.
-- **`--no-ff` on the way to `main`.** A fast-forward dissolves the epic into loose commits. `--no-ff`
-  keeps it one visible unit in history, so it can be reasoned about — and reverted — as one thing.
+- **A merge commit on the way to `main`, never a fast-forward or a squash.** A fast-forward dissolves
+  the epic into loose commits; a squash rewrites them. The merge commit keeps the lane one visible unit
+  in history, so it can be reasoned about — and reverted — as one thing. You no longer type this: the
+  doors open a pull request and GitHub's *Merge pull request* button produces it. That is why every
+  repo these doors ship must have **squash and rebase merges disabled** — either one rewrites the tip,
+  and the `--after-merge` half proves the landing with `git merge-base --is-ancestor`, which a rewritten
+  commit fails.
 - **Never force-push a shared branch.** `epic/*` has other lanes on it, and `main` is production.
 
 **And one thing you do NOT have to remember:** the Jira ticket key. The armed `commit-msg` hook

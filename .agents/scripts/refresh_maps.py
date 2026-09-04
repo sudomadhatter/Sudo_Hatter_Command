@@ -98,7 +98,7 @@ VENDOR_DOORS = {
 
 
 def sh(args, cwd, check=False):
-    r = subprocess.run(args, cwd=str(cwd), capture_output=True, text=True)
+    r = subprocess.run(args, cwd=str(cwd), capture_output=True, encoding="utf-8", text=True)
     if check and r.returncode != 0:
         raise SystemExit(f"refresh-maps: `{' '.join(args)}` failed: {r.stderr.strip()[:200]}")
     return r

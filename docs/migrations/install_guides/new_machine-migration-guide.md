@@ -168,10 +168,10 @@ missing directories, and `git clone` refuses to clone into a non-empty folder.
 
 ```powershell
 # a) Every restored file must be IGNORED by its own repo — none may show as untracked.
-git -C . status --short                                   # lobby: no .env, no _secrets/ anywhere
+git status --short                                                   # lobby: no .env, no _secrets/ anywhere
 git check-ignore -v docs/migrations/auth_keys/_secrets/master.env   # must print a .gitignore rule
-git -C Projects/AGY_AVIATIONCHAT status --short           # no .env*, no auth_keys/
-git -C Projects/BRKN_Tattoos status --short               # no .env.local
+Push-Location Projects/AGY_AVIATIONCHAT; git status --short; Pop-Location   # no .env*, no auth_keys/
+Push-Location Projects/BRKN_Tattoos;     git status --short; Pop-Location   # no .env.local
 
 # b) Spot-check that keys actually landed (names, never print values):
 Select-String -Path .env -Pattern '^[A-Z_]+=' | Measure-Object            # expect ~35+ lines
@@ -247,7 +247,7 @@ through each as needed:
 - ### ⛔ **The commit gates — do this FIRST, it is one command** *(added 2026-08-08, SCC-31)*
 
   ```bash
-  git config --global core.hooksPath .githooks
+  python3 docs/migrations/scripts/arm_hooks_include.py .   # PC: python
   ```
 
   **Why this leads the list.** Every commit gate we have — the Jira key check, the encoding
@@ -258,12 +258,22 @@ through each as needed:
   weeks producing unkeyed commits and stale docs, and the first symptom is a Jira board with
   holes in it.
 
-  Setting it **globally with a RELATIVE value** is the fix, and the relative part is the trick:
-  git resolves it against *each repo's own working-tree root*, so this one command arms every
-  clone on the machine — the lobby, every project, and every repo you clone later — while
-  staying a harmless no-op in any repo that has no `.githooks/` directory. A per-repo
-  `git config core.hooksPath .githooks` also works but has to be repeated forever, which is how
-  it ended up set in three of four repos here.
+  ⛔ **Do not arm it with `git config core.hooksPath .githooks`** — not locally, and not with
+  `--global`. Two separate reasons, both measured (SCC-323):
+
+  - **The local form gets rewritten.** Claude Code's worktree setup parses `.git/config`, finds
+    the relative value, resolves it to an **absolute** path and writes it back to the **shared**
+    config. Every worktree then runs the **main checkout's** hooks instead of its own, so a
+    lane's gates are not the gates being enforced on it.
+  - **The global form breaks the test suite.** A global value is inherited by every temporary
+    repo the enforcement suite creates, so its negative controls — the cases asserting
+    *"core.hooksPath is unset"* — can no longer be reached. Measured: 58/60, with
+    `test_hooks_armed.py` and `test_install_git_hooks.py` red for that reason alone.
+
+  The arming script routes the value through an included file instead: `.git/config` gains
+  `[include] path = hooks.conf`, and the relative value lives in `hooks.conf`. Git follows
+  `include.path`; a plain ini reader does not. Run it per repo, or bare from the lobby to do
+  every repo that has a `.githooks/`.
 
   **Verify it fires** (from the lobby, on a throwaway branch — a rejected commit is a no-op,
   your staged files are untouched):
@@ -275,8 +285,10 @@ through each as needed:
   git checkout - && git branch -D tmp/gate-check
   ```
 
-  If the first one *succeeds*, the gates are not armed on this machine — re-run the config
-  command and check `git config --global core.hooksPath` reads `.githooks`.
+  If the first one *succeeds*, the gates are not armed on this machine — re-run the arming
+  script and check that `git config --get core.hooksPath` reads `.githooks` **and** that
+  `grep -c hooksPath .git/config` reads `0`. Both halves matter: the value being right while
+  the key still sits in `.git/config` is exactly the state the next worktree rewrites.
 
 - **Python's name differs per OS.** The Mac has **only `python3`** (no bare `python`, not even in
   a login shell); a python.org install on Windows has **only `python`**; `py` is the Windows
@@ -311,6 +323,25 @@ through each as needed:
 - **Firebase CLI**: `firebase login`.
 - **Java 17 (Temurin)** on PATH / `JAVA_HOME` — required by the Firestore
   rules-emulator test suite.
+- **Linux / WSL2 (Ubuntu 24.04), the whole per-machine set in one place** (measured 2026-09-03,
+  SCC-384). `sudo` lines are the operator's — an agent's shell never has it; run them in the IDE
+  terminal, no restart needed:
+  ```bash
+  sudo add-apt-repository -y ppa:deadsnakes/ppa && sudo apt install -y python3.11 python3.11-venv   # 24.04 ships 3.12 only
+  sudo apt install -y openjdk-17-jdk-headless                                                     # Java 17
+  sudo apt-get install -y ca-certificates gnupg curl                                              # gcloud, Google's apt repo
+  curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+  echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+  sudo apt-get update && sudo apt-get install -y google-cloud-cli
+  npm install -g @keywaysh/cli && keyway login                                                    # Keyway (step 6c)
+  ```
+  When WSL shares a Windows box that is already set up, the credentials that are *files* need no
+  re-login: `gcloud`'s ADC (`/mnt/c/Users/<you>/AppData/Roaming/gcloud/application_default_credentials.json`
+  → `~/.config/gcloud/`, mode 600, then `gcloud config set project <GCP_PROJECT_ID>`), the secrets
+  bundle, `auth_keys/`, every `.env`. Keyway and `acli` are keyring-bound and DO need their login.
+  **Do not `npm install -g firebase-tools`**: the three emulator suites resolve the repo-local
+  `firebase-tools` 13.x from `firebase/tests/node_modules`, which runs on Java 17; the global 15.x
+  refuses anything before Java 21 and reads like a broken toolchain.
 - **Python venvs**: rebuild per project; AGY's canonical test venv is
   `Projects/AGY_AVIATIONCHAT/backend/.venv` (never the repo root one).
   **For AGY, do NOT wing this** — follow the companion guide in this folder:
@@ -334,7 +365,7 @@ through each as needed:
   > minutes of `node down` churn with no error message that names the cause**.
   > This cost two debugging sessions (2026-08-01/03); the fix and the full
   > mechanism are quick fix 1.1 in AGY's
-  > `_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md`. The
+  > `Projects/AGY_AVIATIONCHAT/_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md`. The
   > guard `test_scan_never_walks_a_colocated_virtualenv` now fails loudly and
   > names the directory instead, but only if you run the suite.
 
@@ -416,7 +447,7 @@ through each as needed:
   > Health-check the whole surface without starting a session — `opencode debug config` must show the
   > `instructions` list, `skills.paths`, and all 12 agents.
   >
-  > ⛔ **`.opencode/agent/INDEX.md` used to load as a PHANTOM AGENT** (fixed 2026-08-07). opencode
+  > ⛔ **An `INDEX.md` inside `.opencode/agent/` used to load as a PHANTOM AGENT** (fixed 2026-08-07). opencode
   > registers every `.md` in that directory as an agent definition, so the folder's own map file became
   > a selectable agent named `INDEX` (mode `all`) whose entire prompt is a list of its sibling files. It
   > was present in six projects. The command surface never had this bug because
@@ -470,6 +501,8 @@ through each as needed:
   > ```bash
   > for m in -c -lc -ic; do zsh $m 'echo $JAVA_HOME'; done
   > ```
+- **Java on Linux / WSL** is the easy case: `openjdk-17-jdk-headless` registers with `update-alternatives`,
+  so `java` is on PATH with no `JAVA_HOME` export. Keep 17 the default if you ever add 21 alongside it.
 - **Firebase emulator harness**: `firebase/tests/node_modules` is a **separate `npm install`** from
   the frontend's, and three different suites resolve `firebase-tools` out of it — the TEA-12 rules
   suite, the backend emulator tier, and the TEA-16 E2E journeys. Miss it and all three die at once

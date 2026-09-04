@@ -408,7 +408,7 @@ if (-not $WhatIf) {
 # missing that is how .gitignore shipped four project names past the substitution pass.
 $TEXT_EXT = @('.md', '.txt', '.json', '.ps1', '.py', '.yaml', '.yml', '.toml', '.cfg', '.ini',
               '.sh', '.js', '.ts', '.html', '.css', '.xml', '.patch', '.jsonl', '.gitignore', '.gitattributes',
-              '.env.example', '.editorconfig')
+              '.env.example', '.editorconfig', '.roomodes')
 $subCount = 0
 $subFiles = 0
 

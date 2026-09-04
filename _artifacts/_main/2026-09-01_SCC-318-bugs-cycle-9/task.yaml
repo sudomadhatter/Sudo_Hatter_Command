@@ -1,0 +1,6 @@
+task_key: SCC-318
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-318-bugs-cycle-9
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: [SCC-335, SCC-359, SCC-364]

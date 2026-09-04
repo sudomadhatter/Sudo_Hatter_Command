@@ -7,8 +7,12 @@ the story's verdict recorded. Each is a git or filesystem question with an exact
 each has failed silently at least once (see the memory index). This answers all of them.
 
     closeout_preflight.py --story 21.8b --expect-key AVCH-91 [--project P]
-                          [--worktree PATH] [--branch B] [--require-gates ruff,pytest]
+                          [--worktree PATH] [--branch B] [--require-gates suite]
                           [--sha X] [--no-fetch] [--json]
+
+A recorded `Verdict: PASS`/`CONCERNS` demands the `suite` receipt on its own, so a caller that
+omits `--require-gates` still has the claim checked against evidence; the flag names ADDITIONAL
+gates that lane actually stamped.
 
 Exit: 0 clean · 1 warnings · 2 blocking. It never flips a status - it reports whether the
 flip is safe; `story_status.py set` does the write.
@@ -295,22 +299,39 @@ def legacy_verdict(project: Path, key: str) -> Path | None:
     return None
 
 
-def check_artifacts(project: Path, key: str, rep: wf.Report) -> None:
-    """The two-doc close puts the flip gate in the walkthrough's `Verdict:` line
-    (memory: story-artifacts-two-doc-close). Absent section = the step never ran."""
+def story_walkthroughs(project: Path, key: str) -> list[Path]:
+    """Every walkthrough belonging to this story.
+
+    ⛔ ONE finder, shared by `check_artifacts` and `check_overview` (SCC-357). Two copies of
+    a `slug_matches` glob is two chances to disagree about WHICH walkthrough is the story's,
+    and the second reader would be the one nobody tested against `21-8`/`21-8b`.
+    """
     slug = wf.norm_id(key)
     # slug_matches, not startswith: `21-8` must not adopt `21-8b`'s walkthrough.
-    hits = [p for p in project.glob("_artifacts/**/walkthrough.md")
+    return [p for p in project.glob("_artifacts/**/walkthrough.md")
             if wf.slug_matches(slug, wf.norm_id(p.parent.name).removeprefix("story-"))]
+
+
+def check_artifacts(project: Path, key: str, rep: wf.Report) -> set[str]:
+    """The two-doc close puts the flip gate in the walkthrough's `Verdict:` line
+    (memory: story-artifacts-two-doc-close). Absent section = the step never ran.
+
+    Returns the verdicts it READ, because `require_evidence_gate` below derives the receipt
+    demand from the claim rather than hardcoding it - and this reader is the only place that
+    resolves which walkthrough and which line the claim actually came from. Handing the set
+    onward keeps that scoping answered once, by the eyes that did the resolving (the same
+    reason `roster.judge` is handed the verdict rather than re-parsing the file)."""
+    claimed: set[str] = set()
+    hits = story_walkthroughs(project, key)
     if not hits:
         legacy = legacy_verdict(project, key)
         if legacy:
             rep.info("artifacts", f"no walkthrough.md; verdict is in the pre-08-02 standalone "
                                   f"file {legacy.relative_to(project)}")
-            return
-        rep.err("artifacts", f"no walkthrough.md found for '{slug}' - "
+            return claimed
+        rep.err("artifacts", f"no walkthrough.md found for '{wf.norm_id(key)}' - "
                              f"code review never recorded a verdict")
-        return
+        return claimed
     for path in hits:
         text = wf.read_text(path)
         m = _VERDICT_RE.search(text)
@@ -325,6 +346,7 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> None:
                                  f"the review step has not run (or did not record it)")
             continue
         verdict, sha = m.group(1).upper(), m.group(2)
+        claimed.add(verdict)
         if verdict == "FAIL":
             rep.err("artifacts", f"{rel}: Verdict FAIL - blocks the done-flip")
             continue
@@ -354,6 +376,152 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> None:
             elif changed:
                 rep.err("artifacts", f"{rel}: {len(changed)} code file(s) changed since the "
                                      f"reviewed SHA - the verdict is STALE, re-gate")
+    return claimed
+
+
+# ── 4b. Is the project's overview guide current? (SCC-357) ─────────────────────────
+#
+# `docs/project_overview_guide.md` is the page that says what was BUILT and how a request
+# flows through it — for a human. It is not the PRD: the PRD says what was WANTED, and it is
+# never rewritten from this page. The guide goes stale story by story, so it is kept current
+# story by story, at the save, while the context that makes the edit correct still exists.
+#
+# ⛔ THE DATED CUTOFF IS LOAD-BEARING, NOT A COURTESY. This script is ALSO run by
+# `/cicd-prune-worktree` and `/cicd-merge-epic-workingtrees`. Without the cutoff, the day a
+# project gains a guide every story saved before the law existed starts failing here — and
+# those stories are `Done`, their worktrees are what the operator is trying to prune, and the
+# only "remedy" the error could name is re-running a save on closed work. A gate whose refusal
+# has no reachable fix is a gate that gets disarmed. Same mechanism as
+# `walkthrough_roster.CUTOFF`, and the lane's date comes from `roster.lane_date` — the artifact
+# folder's prefix, never an mtime a checkout rewrites nor a `git log` a rebase rewrites.
+OVERVIEW_REL = "docs/project_overview_guide.md"
+OVERVIEW_CUTOFF = "2026-08-31"
+# The three states the save may CLAIM. Anything else is prose: "updated", "reviewed" and
+# "looked at" are all things an agent writes having done nothing, and accepting them would
+# make the check satisfiable by wording (test OV6 is that control).
+#
+# ⛔ `edited` IS one of the three, and leaving it out was a REACHABLE BLOCKING DEFECT (OV7).
+# The branch-diff fast path below answers "did the guide move on this lane?" with
+# `<base>...HEAD`, which is `merge_base(base, HEAD)..HEAD` — and once the lane LANDS, its
+# branch is an ancestor of the base by definition, so that diff collapses to empty. The prune
+# and set-landing doors re-run this script in exactly that state. Without `edited` accepted
+# here, a story that moved the guide and correctly wrote no `unchanged` line is refused at the
+# prune, and the only remedy the error names is to write `unchanged` into the walkthrough of a
+# story that changed it. The diff is the fast path; the LINE is what survives the landing.
+_OVERVIEW_LINE_RE = re.compile(
+    r"^[>\-*#\s]*\**\s*project\s+overview\s+guide\s*:\**\s*(edited|unchanged|absent)\b",
+    re.I | re.M)
+
+# The STORY's own date, for the cutoff. ⛔ NOT `roster.lane_date` alone: that reads the artifact
+# folder's `YYYY-MM-DD` prefix, and on a project the dated folder is the EPIC's
+# (`_artifacts/<date>_epic_<n>/story-<id>/`), created at kickoff. Its stories close over the
+# following weeks, so keying the exemption to it makes this check inert for every story of every
+# epic opened before the law — the exact population it exists to start covering (OV9). The
+# review header is per-story and equally stable (not an mtime, not a `git log`), so it is
+# preferred and the folder date is the fallback for a walkthrough that carries no dated header.
+_REVIEW_DATE_RE = re.compile(r"^#{1,6}\s*Code\s+Review\s*\((\d{4}-\d{2}-\d{2})\)", re.I | re.M)
+
+
+def overview_date(path: Path, text: str) -> str | None:
+    """The date the cutoff is measured against: the walkthrough's own `## Code Review (<date>)`
+    header, else the artifact folder's prefix. `None` when neither exists — and `None` ENFORCES,
+    never exempts, because an undated lane is not evidence of an old one."""
+    m = _REVIEW_DATE_RE.search(text)
+    return m.group(1) if m else roster.lane_date(path)
+
+
+def check_overview(project: Path, key: str, rep: wf.Report,
+                   branch: str | None = None) -> None:
+    """⛔ `branch` IS THE OPERAND, AND PASSING `HEAD` INSTEAD WAS THE DEFECT.
+
+    `--project` is the SHARED CHECKOUT. The lane lives in a separate worktree, and
+    `/cicd-prune-worktree` calls this script with `--branch` and no `--worktree` at all — the
+    very shape the SCC-211 comment in `main()` describes, where the project root stands on the
+    integration branch and is spotless. Diffing `<base>...HEAD` there measures the checkout,
+    which fails BOTH ways: a lane that edited the guide is refused for not having edited it
+    (the error's own remedy being the thing it already did), and a guide edit some OTHER lane
+    left on the checkout satisfies this one. Every other landing-sensitive check in this file
+    derives the lane rather than trusting cwd — `check_landed` from branch names,
+    `check_sync` through `wf.trees_to_measure`. This one now does too.
+    """
+    guide = project / OVERVIEW_REL
+    have_guide = guide.is_file()
+    if not have_guide:
+        rep.warn("overview", f"no {OVERVIEW_REL} in this project - the save records it "
+                             f"`absent`; writing the first edition is that project's own "
+                             f"ticket, and nothing here blocks until it exists")
+        return
+
+    # Edited on this lane? Then it was kept current and there is nothing to account for.
+    base = integration_branch(project)
+    lane = branch or "HEAD"
+    diff = wf.git(["diff", "--name-only", f"{base}...{lane}", "--", OVERVIEW_REL], project)
+    if diff.returncode != 0:
+        # ⛔ Say so rather than reading a failed command as "not edited". `integration_branch`
+        # returns the literal "main" on its zero-or-several-epics path without checking the ref
+        # exists, so a repo whose trunk is named otherwise exits 128 here — and a silent
+        # non-zero would fall through to an ERROR whose named remedy is the wrong one.
+        # ⛔ AND IT RETURNS. Warning and then falling through was the first cut, and it is the
+        # same defect one step softer: the ERROR below names ONE remedy — write the accounting
+        # line, `Step 3.5 never ran` — and that sentence is a guess when the comparison never
+        # ran at all. The lane may well have edited the guide. A check that cannot measure says
+        # so and stands down; it does not convert its own blindness into the operator's homework.
+        rep.warn("overview", f"could not diff {base}...{lane} for {OVERVIEW_REL} - "
+                             f"{(diff.stderr or '').strip()[:120]}")
+        return
+    if any(ln.strip() for ln in diff.stdout.splitlines()):
+        rep.info("overview", f"{OVERVIEW_REL} edited on {lane} (vs {base})")
+        return
+
+    hits = story_walkthroughs(project, key)
+    if not hits:
+        # `check_artifacts` already errors on this and it is the same root cause; a second
+        # error for one missing file reads as two problems.
+        return
+    # ⛔ FENCE-STRIPPED, like every other stamp reader in this house (SCC-154). Step 3.5 teaches
+    # this line inside a ```fence```, so raw text lets an agent satisfy the gate by pasting the
+    # INSTRUCTION into the walkthrough — the same defect OV6 closes, reachable by copy-paste.
+    texts = [(p, wf.strip_fenced(wf.read_text(p))) for p in hits]
+    for path, text in texts:
+        m = _OVERVIEW_LINE_RE.search(text)
+        if not m:
+            continue
+        state = m.group(1).lower()
+        # ⛔ `absent` is only meaningful where the guide IS absent — and that branch returned
+        # long before this line. Credited here it lets a lane that saved before the project's
+        # first guide landed ship afterwards without ever opening it: the walkthrough asserts
+        # the negation of a fact this function has already measured.
+        if state == "absent":
+            rep.warn("overview", f"{path.relative_to(project)}: the walkthrough says the guide "
+                                 f"is `absent`, but {OVERVIEW_REL} exists - the lane predates "
+                                 f"the guide landing; re-state it as `edited` or `unchanged`")
+            continue
+        rep.info("overview", f"{path.relative_to(project)}: the walkthrough records the "
+                             f"guide as {state}")
+        return
+    # ⛔ MAX, NOT `hits[0]`. `Path.glob` yields filesystem order, so a story with two artifact
+    # folders had its cutoff decided by a coin flip — reproduced by the review, with the
+    # pre-cutoff folder waiving a post-cutoff obligation. The NEWEST lane is the honest answer
+    # to "is this work post-law".
+    dated = sorted(d for d in (overview_date(p, x) for p, x in texts) if d)
+    if not dated:
+        # ⛔ UNDATABLE MEANS EXEMPT, and this is measured, not cautious: 70 of 70 story lanes in
+        # Projects/AGY_AVIATIONCHAT sit in an UNDATED epic folder, and 21 of those carry no dated
+        # review header either. Erroring here would block the prune of finished work with no
+        # reachable remedy — the exact outcome the cutoff exists to prevent. It exempts history
+        # without exempting the future: a new lane IS datable, because the review step writes the
+        # dated header this reader prefers.
+        rep.info("overview", "lane carries no date (no dated review header, no dated artifact "
+                             "folder) - cannot be shown to post-date the guide law; exempt")
+        return
+    if dated[-1] < OVERVIEW_CUTOFF:
+        rep.info("overview", f"lane dated {dated[-1]} predates the guide law "
+                             f"({OVERVIEW_CUTOFF}) - exempt")
+        return
+    rep.err("overview", f"{OVERVIEW_REL} did not move on this lane and no walkthrough accounts "
+                        f"for it - `/cicd-update-sprint-memory` Step 3.5 never ran. Write one "
+                        f"line into the walkthrough saying which it was: `Project overview "
+                        f"guide: edited|unchanged|absent - <reason>`")
 
 
 _FILELIST_RE = re.compile(r"^\s*(?:#{1,6}\s*|\**)File List\**\s*:?\s*$",
@@ -416,6 +584,73 @@ def check_budget(project: Path, rep: wf.Report) -> None:
         "budget", f"active-context {size} bytes (~{round(size / 4)} tokens, budget 20480)")
 
 
+def receipt_dir_for(project: Path, story: str) -> Path:
+    """The directory this story's gate receipts actually live in.
+
+    ⛔ `--story` ARRIVES IN TWO SPELLINGS AND ONLY ONE OF THEM FOUND THE RECEIPT. `main()`
+    resolves a long board key (`23-9-flight-status-drawer-polish-active-curriculum`) from a
+    short id (`23-9`) for every other check, and `/cicd-prune-worktree` Step 0.2 resolves the
+    long slug before Step 0.3 asks for "the id" - so both spellings reach this script. Measured
+    on AviationChat: the SAME story reported `suite: STALE - passed at 808dce60` under the
+    short id and `suite: no receipt` under the long one, with the walkthrough resolved
+    correctly both times. Harmless while a receipt miss was a WARN; a blocking FALSE refusal
+    the moment it became an ERROR, which is what this file now does.
+
+    Literal first, so an exact directory always wins. Otherwise `wf.slug_matches` - which
+    carries the `21-8` vs `21-8b` separator guard, so a SIBLING's receipt can never answer for
+    this story - and only when it picks EXACTLY ONE. Zero or several fall back to the literal,
+    so the error below names the directory it really searched rather than a guess.
+    """
+    literal = gr.receipt_dir(project, story)
+    root = project / wf.GATES_REL
+    if literal.is_dir() or not root.is_dir():
+        return literal
+    hits = [d for d in sorted(root.iterdir())
+            if d.is_dir() and wf.slug_matches(story, d.name)]
+    return hits[0] if len(hits) == 1 else literal
+
+
+# ⛔ THE DEMAND IS DERIVED FROM THE CLAIM, NOT HARDCODED - and `--require-gates` keeps
+# `default=""` on purpose. `default="suite"` is the obvious reading of "enforce a default",
+# and it would get this gate disarmed inside a week: `/cicd-prune-worktree` runs this same
+# script on `done` stories whose lanes are already pruned, and the only remedy such an error
+# could name is "re-run the suite" in a worktree that no longer exists. A gate whose refusal
+# has no reachable fix is a gate that gets disarmed, and then nothing is checked at all.
+#
+# So the verdict itself is what raises the demand: `PASS`/`CONCERNS` IS a claim that a gate was
+# green, so `suite` becomes required. `FAIL`, `WAIVED` and a walkthrough with no `Verdict:`
+# line claim nothing and demand nothing - the same vocabulary `verdict_receipt.py` (SCC-363)
+# gates at commit time, and it deliberately leaves those alone too.
+#
+# ⛔ THE SCOPE LIMITER IS THE BOARD STATUS, NOT A DATE, and that is a deliberate departure from
+# the two dated cutoffs in this same file. `roster.lane_date` reads a `YYYY-MM-DD` prefix off
+# the artifact folder and STORY lanes do not carry one (`_artifacts/epic_23/story-23-9-<slug>/`
+# - `lane_date` is None for all 13 of epic 23's), so a cutoff here exempts everything or blocks
+# everything. Flip-eligible is `wf.PROGRESS_ORDER` strictly between `backlog` and `done`, which
+# is exactly the set `/cicd-update-sprint-memory` already advances ("only ready-for-dev /
+# in-progress / review advance; never downgrade") - no second set to keep in sync. `backlog`,
+# `descoped`, `deferred*`, `optional` and anything out of vocabulary rank 0 or -1 and fall out
+# exempt, each for the same reason: no live lane, so no suite can be run in it.
+EVIDENCE_GATE = "suite"
+CLAIMS_A_GATE_RAN = {"PASS", "CONCERNS"}
+
+
+def require_evidence_gate(require: list[str], claimed: set[str], status: str,
+                          rep: wf.Report) -> list[str]:
+    """`--require-gates` plus the gate the recorded verdict itself demands."""
+    asserts_green = claimed & CLAIMS_A_GATE_RAN
+    if EVIDENCE_GATE in require or not asserts_green:
+        return require
+    if not 0 < wf.STATUS_RANK.get(status, -1) < wf.STATUS_RANK["done"]:
+        return require
+    # ONE row, and only when the caller did not already name the gate - so the two doors that
+    # pass `--require-gates suite` do not get told twice about a gate they asked for.
+    rep.info("gates", f"{EVIDENCE_GATE} is required here because the walkthrough records "
+                      f"{'/'.join(sorted(asserts_green))} on a story still at '{status}': a "
+                      f"verdict is the review's claim, the receipt is the evidence")
+    return [EVIDENCE_GATE] + require
+
+
 def check_gates(project: Path, story: str, require: list[str], rep: wf.Report,
                 sha: str | None = None) -> None:
     """Delegates to gate_receipt so the two tools can never disagree about 'stale' -
@@ -423,13 +658,25 @@ def check_gates(project: Path, story: str, require: list[str], rep: wf.Report,
     if not require:
         return
     target = sha or wf.git_head(project)
+    rdir = receipt_dir_for(project, story)
     for gate in require:
-        if not (gr.receipt_dir(project, story) / f"{gate}.json").is_file():
-            # WARN, not ERROR: ruling 2026-08-02 keeps the receipt gate advisory for one
-            # sprint. gate_receipt's own `check` is where the hard block lives.
-            rep.warn("gates", f"{gate}: no receipt (gate_receipt.py run ...)")
+        if not (rdir / f"{gate}.json").is_file():
+            # ⛔ ERROR, not WARN. The 2026-08-02 ruling kept this "advisory for one sprint";
+            # the sprint ended, nobody came back, and AVCH-106 closed on a `Verdict: PASS` no
+            # suite ever backed. The asymmetry it left is the bug: a receipt that EXISTS and
+            # records fail or stale BLOCKS, while one that was never written was a footnote -
+            # strict about evidence it can see, silent about evidence that is absent.
+            #
+            # ⛔ THE DIRECTORY AND THE COMMAND ARE BOTH LOAD-BEARING. `gr.load_receipt` raises
+            # this same class one line below as "NO RECEIPT - the gate has no evidence it ran",
+            # which names neither - and a blocking error whose remedy is unnamed is the one
+            # that gets routed around instead of fixed. `rdir.name` rather than `story`, so the
+            # command written here fills the directory this run actually searched.
+            rep.err("gates", f"{gate}: NO RECEIPT in {wf.GATES_REL}/{rdir.name}/ - the "
+                             f"verdict has no evidence this gate ran. Fix: gate_receipt.py "
+                             f"run --story {rdir.name} --gate {gate} -- <the real command>")
             continue
-        data = gr.load_receipt(project, story, gate, rep)
+        data = gr.load_receipt(project, rdir.name, gate, rep)
         if data is not None:
             gr.check_receipt(project, data, gate, target, rep)
 
@@ -468,7 +715,10 @@ def main() -> int:
     ap.add_argument("--project")
     ap.add_argument("--worktree", help="the story's worktree, checked for sync too")
     ap.add_argument("--branch", help="the story's branch, when it is not named after the story")
-    ap.add_argument("--require-gates", default="", help="comma-separated gate names")
+    ap.add_argument("--require-gates", default="",
+                    help="comma-separated gate names to check IN ADDITION to the `suite` "
+                         "receipt a recorded PASS/CONCERNS demands on its own; name only "
+                         "gates this lane actually stamped")
     ap.add_argument("--sha", help="check gate receipts against THIS commit, not HEAD")
     # ⭐ DEFAULT-ON. It was opt-in, so freshness rested on an agent remembering a flag, and
     # the unfetched verdict read exactly like a fetched one. `--fetch` still parses, so every
@@ -517,11 +767,19 @@ def main() -> int:
         fresh = check_sync("worktree", Path(args.worktree).resolve(), args.fetch, rep) and fresh
     check_worktrees(project, rep)
     check_surfaces(project, key, rep)
-    check_artifacts(project, key, rep)
+    claimed = check_artifacts(project, key, rep)
+    check_overview(project, key, rep, args.branch)
     check_file_list(project, key, rep)
     check_budget(project, rep)
-    check_gates(project, args.story,
-                [g.strip() for g in args.require_gates.split(",") if g.strip()], rep, args.sha)
+    # ⛔ THE RESOLVED `key`, NEVER THE RAW `--story`. Every other check on this page is handed
+    # the board key; `check_gates` alone got the argument as typed, and `gr.receipt_dir` keys
+    # off it - so the same story blocked or passed depending on which spelling the caller used.
+    # Reproduced on AviationChat; the resolution itself lives in `receipt_dir_for`.
+    check_gates(project, key,
+                require_evidence_gate(
+                    [g.strip() for g in args.require_gates.split(",") if g.strip()],
+                    claimed, str(board[key].get("status", "")), rep),
+                rep, args.sha)
     check_epic(project, key, rep)
 
     # ⭐ THE VERDICT IS COMPUTED ONCE, ABOVE BOTH OUTPUT PATHS. Three states, not two: the

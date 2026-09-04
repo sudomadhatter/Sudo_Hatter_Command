@@ -252,6 +252,8 @@ that actually rot. It now checks **placement** instead of type (no parent · par
 nested under another subtask · a parent lagging its children) and **never auto-fixes any of them**,
 because re-parenting is a board move and the right parent is the operator's call.
 
+### Labels
+
 **Label vocabulary** — a card holds ONE status but stacks labels, which is exactly why these are
 labels (a story can be quick-dev-eligible AND blocked at once). **Two writers, and which one owns a
 label is not cosmetic:**
@@ -262,7 +264,7 @@ label is not cosmetic:**
 | `blocked` | waiting on a linked blocker (the `Blocks` link names WHAT; pair with the `Blocking` status where the board has it) | ① `/cicd-write-story-tests`, at pickup |
 | **`parallel-ok`** | in the approved set the last check computed — safe to run beside **every other** 🟢 under that parent | ⭐ **the labelling pass, and nothing else** |
 | **`user-tasks`** | merged, but the walkthrough leaves something only the operator can decide — read the "User tasks" comment | ⭐ **`jira_feed.py finish`, at close-out** (SCC-155) |
-| **`bugs-and-updates`** | **the ROLLING ticket** — the one always-open `Bugs and Updates - <YYYY-MM>` Task that discovered work files under as a Subtask when no thematic parent fits (`work-consolidation.md` rule 1, rung 3). Exactly ONE open at a time; find it by this label before you mint anything | by hand, on the Task that opens the cycle (SCC-191) |
+| **`running-bug-list`** / **`bugs-and-updates`** | **the ROLLING ticket** — the always-open `Bugs and Updates - <YYYY-MM>` Task that discovered work files under as a Subtask when no thematic parent fits (`work-consolidation.md` rule 1, rung 3). TWO labels, one ticket-at-a-time: `running-bug-list` is the BATON on the not-yet-started successor; `bugs-and-updates` is what a cycle wears once it has STARTED. Find the open one with BOTH labels — `labels IN (bugs-and-updates, running-bug-list) AND statusCategory != Done` — before you mint anything; a one-label search returns empty at the wrong moment and reads as "no rolling ticket", which is how a duplicate gets minted or a Done key reused (SCC-317). During the handoff window the dual search returns TWO open rows — file new bugs into the `bugs-and-updates` one (the started cycle); the `running-bug-list` row only holds the baton. The pair is CROSS-BOARD: AVCH carries it too (AVCH-80), so a project lane finds its rolling ticket the same way | `jira_feed.py start` hands the baton on clone; the family label is by hand on the Task that opens the cycle (SCC-191) |
 
 **The labelling pass is one engine behind two commands**, and which one you run is decided by the
 parent, not by preference:
@@ -461,7 +463,7 @@ acli jira workitem comment create --key SCC-14 --body "…"        # TRAP: needs
 acli jira workitem transition --key SCC-14 --status "In Review" --yes  # TRAP: needs --key; --yes skips the interactive confirm
 acli jira workitem create --project SCC --type Task --summary "…" --description "…"
 #   children of an epic: add --parent <EPIC-KEY>; --type Epic works too; --label "a,b" at create
-#   ALWAYS create bare (no --assignee) — default-assignee is why everything once showed "assigned to Daniel"
+#   ALWAYS create bare (no --assignee) — default-assignee is why everything once showed "assigned to Daniel" (legacy account owner)
 acli jira workitem edit --key SCC-14 --labels "quick-dev,parallel-ok"   # REPLACES the label set
 acli jira workitem link create --out SCC-10 --in SCC-14 --type Blocks   # reads: SCC-10 blocks SCC-14
 ```
@@ -642,6 +644,11 @@ ticket made every story thats an endless loop that never finishes").
    guardrail calls closed (SCC-155). It never moves a ticket the operator has already parked on one
    of those rungs, and it never moves one backwards. Placement stays the operator's (guardrail 2);
    "these three are safe together" is not a reason to move a card.
-5. **The token stays in the OS credential store.** Never echo, copy, or persist it anywhere — and
-   never bake a binary path or a store name into a doc. Both are per-machine, this file is read on
-   the Mac and the Windows PC, and a hardcoded Mac path is what teaches a PC agent it has no Jira.
+5. **The token stays in the credential store the machine has — and only there.** On the Mac that is
+   the keychain; inside Ubuntu on the PC (SCC-376) there is no store, so `acli` keeps it in its own
+   config under `~/.config/acli/` — mode 600, the operator's home, the ONE place it lives on Linux.
+   It goes in on stdin (`read -rs`, piped into `acli jira auth login`), never as `--token "$VAR"`,
+   which lands in shell history and in `ps` for every user on the box. Never echo, copy, or persist
+   it anywhere else — and never bake a binary path or a store name into a doc. All of it is
+   per-machine, this file is read on every machine, and a hardcoded Mac path is what teaches another
+   machine's agent it has no Jira.

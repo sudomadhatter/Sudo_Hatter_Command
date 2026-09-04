@@ -6,7 +6,8 @@ On a fresh clone or new machine, `core.hooksPath` is unset by default, leaving e
 (Jira key check, SOP currency, push approval, merge target guard, encoding checks) silently OFF.
 
 This script arms git hooks across the Home Base repo and all maintained project repositories:
-1. Configures `git config core.hooksPath .githooks` for each repository.
+1. Points `core.hooksPath` at `.githooks` for each repository, via the include arrangement
+   in `arm_hooks_include.py` — never by writing the key into `.git/config` directly (SCC-323).
 2. Ensures executable permissions (0o755) on all hook and gate scripts on POSIX (macOS/Linux).
 3. Executes `hooks_armed.py` inspection across every configured repository to verify 100% armed status.
 
@@ -24,6 +25,9 @@ import stat
 import subprocess
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import arm_hooks_include  # noqa: E402
 
 # Resolve repo root relative to this script: docs/migrations/scripts/ -> 3 levels up
 DEFAULT_ROOT = Path(__file__).resolve().parents[3]
@@ -127,9 +131,14 @@ def arm_single_repo(repo: Path, verify_only: bool = False) -> dict:
     }
 
     if not verify_only:
-        rc, _, err = run_git(["config", "core.hooksPath", ".githooks"], cwd=repo)
-        if rc != 0:
-            result["errors"].append(f"Failed to set core.hooksPath: {err}")
+        # ⛔ NOT `git config core.hooksPath .githooks`. That writes the key into .git/config, and
+        # Claude Code's worktree setup parses that file, resolves the relative value to an ABSOLUTE
+        # one and writes it back to the SHARED config — after which every worktree runs the MAIN
+        # checkout's hooks instead of its own. The value goes into an INCLUDED file instead: git
+        # follows include.path, a plain ini reader does not. See arm_hooks_include.py (SCC-323).
+        ok, detail = arm_hooks_include.arm_repo(repo)
+        if not ok:
+            result["errors"].append(f"Failed to set core.hooksPath: {detail}")
         fix_permissions_for_repo(repo)
 
     # Read back current configuration

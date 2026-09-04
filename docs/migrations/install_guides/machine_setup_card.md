@@ -14,8 +14,10 @@
 powershell -File docs/migrations/scripts/Install-GitHooks.ps1   # Windows
 bash docs/migrations/scripts/install-git-hooks.sh             # Mac
 
-# Or set directly via git:
-git config --global core.hooksPath .githooks
+# Or arm one repo by hand:
+python3 docs/migrations/scripts/arm_hooks_include.py .   # PC: python
+
+# NEVER `git config core.hooksPath .githooks` — see below.
 ```
 
 **Why this is first.** Every gate we have — the Jira key check, the encoding check, and the
@@ -67,7 +69,7 @@ python3 .agents/scripts/tests/run_all.py     # PC: python .agents/scripts/tests/
 |---|---|
 | `.env` · `auth_keys/` · service accounts | The master bundle (`docs/migrations/auth_keys/_secrets/master.env`) → restore via `python docs/migrations/scripts/env_master.py --restore` (or `Restore-EnvMaster.ps1` / `restore-env-master.sh`). Gitignored. |
 | Python venvs | Rebuilt per project — never cloned. AGY's is `backend/.venv` on **3.11**; follow the companion guide, don't wing it. |
-| CLI logins | `acli`, `gcloud`, `gh`, `firebase`, `keyway` — each is a per-machine login. **`acli` first**: it is the whole Jira integration, and with no credential an agent reports "no Jira integration" and silently stops writing the board — [`jira-api-token-setup.md`](jira-api-token-setup.md), one token, also the only way to attach a file. The rest are ordinary logins (Keyway: `npm install -g @keywaysh/cli` on PC, `brew install keywaysh/tap/keyway` on Mac). Then `keyway login` + `keyway init` per repo. **How to actually use it, and how to share secrets with a team, is `docs/_scc_sops_prds/sharing_keys_secrets_secure.md`** — read its §8 before your first `keyway push`, which edits `.gitignore` unprompted. |
+| CLI logins | `acli`, `gcloud`, `gh`, `firebase`, `keyway` — each is a per-machine login. **Two of them have their own page, because both can look installed while being unusable:** `acli` is the whole Jira integration, and with no credential an agent reports "no Jira integration" and silently stops writing the board — [`jira-api-token-setup.md`](jira-api-token-setup.md), one token, also the only way to attach a file. **`keyway` is the live secrets vault, and its install and its login are separate acts** — [`keyway-setup.md`](keyway-setup.md), which also covers adding and removing teammates. Verify it with `keyway doctor`: `5 passed, 1 warning` is the finished state. `gcloud`, `gh` and `firebase` are ordinary logins. |
 | Shell env (Mac) | Anything a *script* needs goes in `~/.zshenv`, **not** `.zshrc` — `.zshrc` is read only by interactive shells, so agents and hooks can't see it. |
 
 ---

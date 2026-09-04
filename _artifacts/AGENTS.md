@@ -21,7 +21,7 @@ examples → `README.md`. The session ledger → `INDEX.md`.
 - Session folder set: `implementation_plan.md` (approved BEFORE edits) + ONE `walkthrough.md` ending in
   `## Task Checklist` + `## Your Actions` — **no separate `task-list.md`**.
 - After writing, update that bucket's `active-context.md` (the hand-off). **Do not hand-append an `INDEX.md`
-  row**: the ledger is reconciled in batch by the SessionStart hooks + `/update-maps-indexes`. Getting the
+  row**: the ledger is reconciled in batch by the SessionStart hooks + `/smh-update-maps-indexes`. Getting the
   folder right is what you owe.
 - History is immutable: old rows keep old paths; retire to `_archived/`, never delete.
 - **Finding history:** non-exempt project history has one authoritative home: the project's own

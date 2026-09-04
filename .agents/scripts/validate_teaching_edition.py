@@ -50,8 +50,6 @@ LIVE_TUTOR_FILES = (
 )
 
 MIRROR_PAIRS = (
-    (".agents/commands/smh-tour.md", ".agents/workflows/smh-tour.md"),
-    (".agents/commands/smh-training.md", ".agents/workflows/smh-training.md"),
     (".agents/commands/smh-tour.md", ".opencode/commands/smh-tour.md"),
     (".agents/commands/smh-training.md", ".opencode/commands/smh-training.md"),
 )
@@ -140,11 +138,13 @@ def validate(root: Path) -> list[str]:
     for rel in (
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
+        ".agents/workflows/smh-tour.md",
+        ".agents/workflows/smh-training.md",
         ".claude/skills/smh-tour/SKILL.md",
         ".claude/skills/smh-training/SKILL.md",
     ):
         launcher = _text(root / rel, errors)
-        command_name = Path(rel).parent.name
+        command_name = Path(rel).parent.name if Path(rel).name == "SKILL.md" else Path(rel).stem
         expected = f".agents/commands/{command_name}.md"
         if launcher and expected not in launcher:
             errors.append(f"generated tutor launcher points at the wrong command: {rel}")

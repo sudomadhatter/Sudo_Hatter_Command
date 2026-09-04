@@ -1,6 +1,6 @@
 ---
 description: Develop a story test-first — plan, then STOP at the self-audit gate (`continue` = audit here; `changed` = human switched the model, audit then stop to switch back; a pasted file path = another team's blind audit), implement, then auto-expand coverage. Step ② of the sudo dev flow.
-platforms: [opencode, antigravity]
+platforms: [opencode, antigravity, zoo]
 ---
 
 # /cicd-dev-story-tests — Plan → Self-Audit → Implement → Automate (②)
@@ -46,36 +46,51 @@ now: numeric `E.S` → `ARTIFACT_DIR = PROJECT_ROOT/_artifacts/epic_<E>/story-<E
 before Step 1; pass it explicitly to each sub-skill and **never** let one mint its own root-level or
 date-stamped folder.
 
-## Step 0.6 — Re-enter the story worktree, absorb the epic branch, link assets, read the siblings (fresh-chat resume)
-Before any planning or edit: `git -C "$PROJECT_ROOT" worktree list` (`worktree-per-story` → "Resuming").
+## Step 0.6 — Re-enter the story worktree, check the epic against main, absorb the epic branch, link assets, read the siblings (fresh-chat resume)
+Before any planning or edit: `cd "$PROJECT_ROOT" && git worktree list` (`worktree-per-story` → "Resuming").
 A `claude/<JIRA-KEY>-<story-slug>` tree exists → **cd into it and re-bind everything below under it** — story file,
 ① red tests, `ARTIFACT_DIR`, test commands (they commonly live ONLY in that tree; skipping this plans
 blind or opens a duplicate). None → first work session; `bmad-dev-story` opens one at first edit, off the
 EPIC branch. Echo the case (`Worktree: reused <path>` / `none yet — opens at first edit`). Then, in order:
 
-1. **Reusing a tree cut earlier? Absorb the EPIC branch FIRST, before the first edit.** A tree cut at ①
+1. **Is the EPIC branch itself behind `main`? Check FIRST, and STOP if it is.** The step below keeps
+   your tree current with the epic; nothing keeps the *epic* current with `main`, so an epic that has
+   drifted hands every story a stale base:
+   ```bash
+   cd "$PROJECT_ROOT" && git fetch origin && git rev-list --count origin/epic/<JIRA-KEY>-<slug>..origin/main
+   ```
+   **`0` → carry on.** Anything else → **STOP and report the count.** Do NOT merge `main` yourself:
+   that write lands on the epic branch and takes Mr. Hatter's sign-off (`git-policy` write gate), and
+   it is an epic-wide action that must not happen silently inside one story's lane. Say how far behind
+   it is, name what has landed on `main` since, and ask. **Why this is a stop and not a warning:** a
+   project whose `main` carries a ruleset with `strict_required_status_checks_policy` (AviationChat's
+   `main write gate (AVCH-111)` does) will REFUSE the epic's own PR at the end while it is behind — so
+   the drift is not cosmetic, it is a merge that cannot happen. Measured on Epic 24, 2026-09-03: the
+   epic branch 9 behind `main`, both in-flight story branches 105 behind the epic and cut from a base
+   that predated the rebuild one of them depended on (SCC-383).
+2. **Reusing a tree cut earlier? Absorb the EPIC branch, before the first edit.** A tree cut at ①
    and picked up days later is branched from an epic branch its sibling lanes have since moved:
    ```bash
-   git -C <tree> fetch origin && git -C <tree> merge --no-edit origin/epic/<JIRA-KEY>-<slug>
+   cd "$PROJECT_ROOT"/.claude/worktrees/<story-slug> && git fetch origin && git merge --no-edit origin/epic/<JIRA-KEY>-<slug>
    ```
    Conflicts here are cheap and yours; the same conflicts at ③'s absorb are on the epic branch's
    doorstep. A conflict → resolve it in the tree and note it in the plan; never `--hard`, never force
    (`git-policy`).
-2. **Link the gitignored assets.** A worktree inherits no `.env`, `backend/.venv`, `auth_keys/` or
+3. **Link the gitignored assets.** A worktree inherits no `.env`, `backend/.venv`, `auth_keys/` or
    `node_modules`, and pytest / uvicorn / `next dev` / the emulators resolve them relative to CWD — so
    Step 3's scoped suites and Step 4.5's certification cannot run in an unlinked tree, and running them
    in the shared checkout certifies the wrong tree. Idempotent: a resumed lane re-runs it safely; the
    prune's `--unlink` (`/cicd-prune-worktree`) is its pair.
    ```bash
-   python3 .agents/scripts/link-worktree-assets.py "$PROJECT_ROOT"/.claude/worktrees/<story-slug>   # PC: `python`
+   cd <the lobby's absolute path — the script is the LOBBY's> && python3 .agents/scripts/link-worktree-assets.py "$PROJECT_ROOT"/.claude/worktrees/<story-slug>   # PC: `python`
    ```
    On the none-yet path, run it the moment `bmad-dev-story` opens the tree.
-3. **Read the sibling lanes NOW, not at review time.** Other `claude/*` trees on this epic carry
+4. **Read the sibling lanes NOW, not at review time.** Other `claude/*` trees on this epic carry
    uncommitted work `grep` cannot see:
    ```bash
-   git -C "$PROJECT_ROOT" worktree list
-   git -C <each-other-tree> diff --name-only origin/epic/<JIRA-KEY>-<slug>...HEAD
-   git -C <each-other-tree> status --short
+   cd "$PROJECT_ROOT" && git worktree list
+   cd "$PROJECT_ROOT"/.claude/worktrees/<other-slug> && git diff --name-only origin/epic/<JIRA-KEY>-<slug>...HEAD
+   cd "$PROJECT_ROOT"/.claude/worktrees/<other-slug> && git status --short
    ```
    Any file in both their set and your intended set is a **landing-order dependency**: say which lane
    should land first and what happens to your work if it does not, and carry it into the plan (Step 1's
@@ -121,9 +136,20 @@ blocks the close-out when the roster disagrees with the header (`inline` + a len
 ## Step 1 — Plan
 Invoke **`bmad-dev-story`** in PLAN mode for the story in `$ARGUMENTS`. Produce its `implementation_plan.md`
 **into `ARTIFACT_DIR`** — not the BMAD stories dir, not the `_artifacts/` root. The plan carries the
-**`## Declared Change Set` block** (`artifacts-always-first.md` §2 Create the artifact folder + plan, SCC-226): one path per
-bullet, `NEW`/`EDIT`/`DELETE`, `→ <the AC it serves>` — Step 1.5's drift check reconciles the real
-diff against exactly this list.
+**`## Declared Change Set` block** (`artifacts-always-first.md` §2 Create the artifact folder + plan, SCC-226): one bullet
+per path, **op marker FIRST** — `NEW`/`EDIT`/`DELETE`, then the backticked path, then `→ <the AC it
+serves>` as the LAST arrow on the line. One literal bullet, exactly as the parser reads it:
+
+```
+- EDIT `backend/api/routes.py` — add the SSE heartbeat → AC-2
+```
+
+⛔ Path-first bullets parse to ZERO entries and land in `incomplete` — and a block that parses
+empty is invisible to Step 1.5's drift check, which then reconciles the diff against NOTHING and
+reports clean (SCC-311). Prove the block before leaving this step:
+`python3 .agents/scripts/declared_change_set.py parse <the plan>` *(PC: `python`)* must report
+your N entries, `incomplete: []` — Step 1.5's drift check reconciles the real diff against
+exactly this list.
 
 ## Step 2 — Self-audit STOP gate (MANDATORY — stop the moment the plan is written)
 The plan exists; **STOP before the audit and before any code.** This stop lets the human switch the model
@@ -318,13 +344,27 @@ MUST hold the TWO living docs, each carrying the `IsArtifact: true` + `ArtifactM
 - [ ] **Automate evidence (Step 4)** — `_bmad-output/test-artifacts/automation-summary-<story>.md` exists,
       OR the walkthrough carries an explicit `## Automate: skipped — <rationale>` section. (Lives with the
       TEA outputs, not `ARTIFACT_DIR`.) A silent skip fails this checklist.
+- [ ] **The STORY FILE itself (SCC-315)** — the one artifact the board is reconciled against, and the one
+      this checklist never covered: a lane shipped with the board at `review`, the story file at
+      `Status: ready-for-dev` and a placeholder Dev Agent Record, and every item above passed. Check
+      BOTH, by machine, not by eye:
+      1. `Status: review` — the file's Status agrees with the `sprint-status.yaml` row this step wrote.
+      2. `## Dev Agent Record` is FILLED — context reference, completion notes, file list, change log —
+         with **no placeholder text**. The template's placeholders are all `{{...}}` fills, so the
+         check is one grep that must return NOTHING:
+         `grep -n '{{' <story-file>` — a hit inside the file is a story that finished ②
+         with its record unwritten, and it FAILS this checklist (the record is where agent-taken
+         defaults are declared for ratification; unwritten, they ship unratified).
 
 Post a clickable Markdown link to every artifact in the chat that same turn — never a bare path.
 
 ## Done
 Report: plan-vs-built deltas, audit findings applied, tests now green (paste output), coverage added, and
-the two Step-5 artifact links. Hand to `cicd-code-review`. The dev step **may advance the story to
-`review`** — bmad-dev-story's Step 9 does this and we let it. **Never flip to `done`** — Daniel's call at
+the two Step-5 artifact links. Hand to `cicd-code-review`. The dev step **MUST advance the story file to
+`Status: review`** — bmad-dev-story's Step 9 normally does it, but the nested step is not the gate:
+Step 5's story-file checkbox is, and a file still reading `ready-for-dev` fails it (SCC-315 — the board
+moved, the file did not, and nothing in the whole ①②③ + close-out chain compared the two).
+**Never flip to `done`** — Daniel's call at
 close-out via `/cicd-close-story-merge-tree`, whose `/cicd-update-sprint-memory` save owns the flip.
 **Git:** commit freely inside the story worktree (explicit paths, never `git add -A`; `-F <file>` when
 the message holds a backtick); do NOT land it on

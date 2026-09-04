@@ -1,6 +1,6 @@
 ---
 name: git-policy
-description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<JIRA-KEY>-<slug>` branch off main; story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Daniel's in-the-moment 'approved' or via /cicd-close-story-merge-tree. The epic reaches `main` only through /cicd-push-e2e — full gate + E2E green + Daniel's sign-off."
+description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<JIRA-KEY>-epic-<N>-<slug>` branch off main (BOTH numbers: ticket AND sprint); story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Mr. Hatter's in-the-moment 'approved' or via /cicd-close-story-merge-tree. The epic reaches `main` only through /cicd-push-e2e — full gate + E2E green + Mr. Hatter's sign-off."
 trigger: model_decision
 # Protocol tier (rules/INDEX.md): conditional, not floor. Every gate it carries is ALSO
 # stated inline in AGENTS.md and constitution.md, so the stop binds even in a session
@@ -12,7 +12,7 @@ trigger: model_decision
 # Git Policy
 
 > The single, canonical git rule for the whole workspace. **Agents commit and push their own work now.**
-> This supersedes the old "never run git yourself — hand Daniel the command" default, which is gone:
+> This supersedes the old "never run git yourself — hand Mr. Hatter the command" default, which is gone:
 > that default is what produced commits carrying four unrelated sessions at once.
 
 ## Branch model — epic branches → `main` (THE dev standard)
@@ -28,9 +28,31 @@ trigger: model_decision
 - **`main` is LIVE PRODUCTION and the ONLY long-lived branch — never work on it directly, never
   auto-target it, never branch a worktree straight from it for story work.** It stays deployable;
   on projects with CI/CD, a push to `main` IS a deploy.
-- **Each epic gets one short-lived branch: `epic/<JIRA-KEY>-<slug>`, cut from `main`** at epic
-  kickoff (`/cicd-create-epic-sprint`). All of the epic's stories integrate there. This is the
+- **Each epic gets one short-lived branch: `epic/<JIRA-KEY>-epic-<N>-<slug>`, cut from `main`** at
+  epic kickoff (`/cicd-create-epic-sprint`). All of the epic's stories integrate there. This is the
   "one place to send everything" — scoped to the epic, not eternal.
+
+  ⭐ **The name carries BOTH numbers, because they are different numbers and they do not track
+  each other.** `<JIRA-KEY>` is the epic's **ticket** (`AVCH-18`); `epic-<N>` is its **sprint /
+  BMAD epic number** (`epic-19`) — the one the board key, `sprint-status.yaml`, `epics.md` and
+  `_artifacts/epic_<N>/` are all filed under. A branch naming only one of them forces every reader
+  to hold the mapping in their head, and the two are close enough to look like a typo of each other:
+  `epic/AVCH-18-…` sitting under artifacts filed at `epic_19/` reads as drift on every glance.
+
+  ```text
+  epic/AVCH-18-epic-19-adk-2x-runtime
+       └ ticket  └ sprint  └ slug
+  ```
+
+  ⛔ **The `epic/` prefix is load-bearing — the sprint number goes in the SLUG, never in front of
+  it.** Every `$EPIC` resolution in this system globs `epic/*` (`git branch --list 'epic/*'`,
+  `for-each-ref 'refs/remotes/origin/epic/*'`), and `merge-target-guard.sh` classifies branches with
+  a `case` arm that is literally `epic/*)`. A branch named `epic-19/AVCH-18-…` matches **none** of
+  them: every resolution falls back to `origin/main` — the stale-ref defect SCC-165 swept out of this
+  family — and the **armed** merge-target guard classifies it `unknown`. Measured 2026-08-24 while
+  renaming Epic 19's branch: **147 references across 38 files**, including three git hooks,
+  `main_write_gate.py`, `closeout_preflight.py`, `ship_preflight.py` and six test files. Keeping the
+  prefix costs nothing and buys both numbers.
 - **Story work happens in a worktree on a `claude/<JIRA-KEY>-<slug>` branch cut from the epic
   branch**, and lands back on the epic branch at close-out (see "The landing").
 - **Ad-hoc work outside any epic** — quick fixes, toolkit/system maintenance — takes a short-lived
@@ -64,18 +86,20 @@ trigger: model_decision
   `.agents/rules/jira.md` — the `acli` cheat-sheet, flag traps, and the ticket↔file join. The board
   is reachable from any shell-capable agent; no MCP or per-platform config exists or is needed.
 - **The epic reaches `main` exactly one way: `/cicd-push-e2e`** — the full gate (backend suite +
-  frontend build + `/cicd-e2e` GREEN) plus Daniel's explicit sign-off, then the merge. An agent
-  never merges to `main` on its own initiative. The epic branch is deleted after it merges:
-  branches are short-lived by design; nothing accumulates.
+  frontend build + `/cicd-e2e` GREEN) plus Mr. Hatter's explicit sign-off, then **a pull request he
+  merges**. The command opens the PR and stops; it never merges, and an agent never merges to
+  `main` on its own initiative. Re-invoked as `--after-merge <KEY>` it verifies the landing with
+  plain git and finishes the ceremony. The epic branch is deleted then: branches are short-lived by
+  design; nothing accumulates.
 
 ## The write gate — keyed on WHERE a write lands, not on the act
 
 | Destination | Permission |
 |---|---|
 | Your own `claude/*` story branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
-| The epic branch (`epic/*`) — a story landing | **Daniel's sign-off** — his in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (which IS the sign-off) |
+| The epic branch (`epic/*`) — a story landing | **Mr. Hatter's sign-off** — his in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (which IS the sign-off) |
 | A `chore/*` branch (commits and pushes) | **FREE** — the merge back to `main` is what's gated |
-| `main` | **In this repo: a pull request the operator merges.** In project repos: `/cicd-push-e2e` — the epic, or a `chore/*` whose diff **reaches a deployable path** (`ship_preflight.py` derives which; a project `chore/*` touching nothing deployable takes the PR door instead). See below. Never on an agent's own initiative. |
+| `main` | **A pull request the operator merges — in every repo (SCC-347).** In this repo the door is `/smh-close-task-merge-tree`; in project repos it is `/cicd-push-e2e`, shipping the epic, or a `chore/*` whose diff **reaches a deployable path** (`ship_preflight.py` derives which; a project `chore/*` touching nothing deployable takes the Task door instead). See below. Never on an agent's own initiative. |
 
 Approval for an epic-branch landing is **per-action and never carries forward**. One "approved"
 lands one story; the next needs its own.
@@ -86,14 +110,18 @@ lands one story; the next needs its own.
 
 | Step | Who | What |
 |---|---|---|
-| open the PR | the agent, inside `/smh-close-task-merge-tree` or `/smh-merge-multiple-workingtrees` | `gh pr create --base main --head <branch> --fill` — or, with no `gh`, print the `compare/main...<branch>` URL. Then **STOP** |
+| open the PR | the agent, inside `/smh-close-task-merge-tree` or `/smh-merge-multiple-workingtrees` here, or `/cicd-push-e2e` in a project | `gh pr create --base main --head <branch> --fill` (the project door passes `--title` + `--body-file` instead, to carry its gate evidence) — or, with no `gh`, print the `compare/main...<branch>` URL. Then **STOP**. ⛔ Never a bare `gh pr create`: with neither `--fill` nor a title it prompts, and an agent shell has no TTY to answer |
 | the gate | GitHub | **`main-write-gate`** must be green: the full enforcement suite plus a check that the source is `epic/*` or `chore/*` with a real ticket key |
 | the merge | GitHub, on the operator's decision | the operator clicks *Merge pull request*. **Their decision to proceed is the sign-off**; the click is how it reaches GitHub, never work they owe |
 | after | the agent, on re-invocation | `--after-merge <KEY>` — verify with `git merge-base --is-ancestor`, then Dev Record, ticket, prune |
 
-Project repos (AviationChat, etc.) publish no `main-write-gate`, so their epics still ship through
-`/cicd-push-e2e` with the single-use token (SCC-37/SCC-77). Porting the PR door to them is each
-project's own ticket, in its own tracker.
+⭐ **Since SCC-347 project repos take this road too.** `/cicd-push-e2e` gates the epic locally,
+pushes the gated tip, opens the PR and stops; the operator's click merges it. What a project repo
+may still lack is the **server-side** half — `main-write-gate` is published only once that project
+files its own ticket in its own tracker (AVCH-111 for AviationChat), so the door deliberately does
+**not** wait for a check that may never appear. Until a project has it, its PR is guarded by the
+local gate this door ran plus the operator's reading of it — which is strictly more than the merge
+had before, when the GitHub-side road was measured to have no protection and no ruleset at all.
 
 ⛔ **Why no token on this road, and why that is not a bypass.** The token proves *the operator said
 yes* before **a machine here** pushes to `main`; it lives in `.git/` and is spent by
@@ -122,9 +150,9 @@ green, suite 32/32 — could not reach `main` in a full session. The block was n
 ~15 hand-typed `git`/`gh` strings in the shared checkout, each judged separately by the agent's
 permission layer, several denied, state stranded mid-ceremony. Measured, controlled pair, same op
 and same target: `git merge X --no-ff` **allowed**, `git -C <path> merge X --no-ff` **denied** — and
-the `-C` form is the one
-[the merge-target rule](#-pin-the-merge-target-not-just-the-source---c-on-every-call-and-assert-before-you-merge)
-below *mandates*. **Obeying the safety law guaranteed the permission miss.** No gate could fix a
+the `-C` form was the one
+[the merge-target rule](#-pin-the-merge-target-not-just-the-source--pin-every-call-and-assert-before-you-merge)
+below mandated at the time (the pin idiom is now `cd "$REPO" && git …`, which both permission layers match per piece — SCC-351). **Obeying the safety law guaranteed the permission miss.** No gate could fix a
 failure of shape, and adding a second road would have made the system bigger. So the local ceremony
 was **deleted from the smh doors** instead.
 
@@ -173,8 +201,10 @@ here reads `origin/main` — a remote-tracking ref, true regardless of what any 
    consulted. **First command on any new clone:**
 
    ```bash
-   git config core.hooksPath .githooks    # relative — an absolute path cannot survive the next clone
+   python3 docs/migrations/scripts/arm_hooks_include.py .    # PC: python
    ```
+
+   ⛔ NOT `git config core.hooksPath .githooks`. That writes the key into `.git/config`, and Claude Code's worktree setup parses that file, resolves the relative value to an ABSOLUTE one and writes it back to the SHARED config — after which every worktree runs the MAIN checkout's hooks instead of its own, so a lane's gates are not the gates being enforced on it. The installer puts the value in an INCLUDED file that git follows and a plain ini reader does not (SCC-323).
 
    It is **loudly** off rather than silently off: `run_all.py` asserts `core.hooksPath` is set *and*
    relative, so the enforcement suite stays RED until you arm it.
@@ -219,9 +249,11 @@ share — so the gate is `sh`, with no interpreter probe and no Python anywhere 
    pushes `main` (checks attach to a commit, so the green travels with it). **Mint after the wait,
    never before** — the token's TTL is 30 minutes and a slow run would eat it.
 
-   ⚠ **Scope: this repo only, today.** `/cicd-push-e2e` ships `epic/*` branches in *project* repos,
-   which publish no such check — a wait there would poll forever. Giving a project the server-side
-   half is its own ticket in its own tracker. Break-glass if CI is down and `main` must move:
+   ⚠ **Scope: the CHECK is this repo only, today — the PR road is everywhere (SCC-347).**
+   `/cicd-push-e2e` ships `epic/*` branches in *project* repos through a pull request as well, but
+   those repos publish no such check, so it does not wait for one — a wait there would poll
+   forever. Giving a project the server-side half is its own ticket in its own tracker.
+   Break-glass if CI is down and `main` must move:
    `gh api -X PUT repos/{owner}/{repo}/rulesets/{id} -f enforcement=disabled` — the server-side twin
    of deleting `MAIN-PUSH-ENFORCE`.
 
@@ -231,7 +263,8 @@ converts a silent violation into a deliberate, traceable one, and it closes the 
 rule keeps losing to — a close-out command whose body stays in context and still reads exactly as
 valid on task six as on task one. Merges via `gh pr merge` or the GitHub web UI never reach a local
 hook at all — the gap tracked under epic SCC-75, closed **for this repo** by SCC-118's layer 3
-above, and still open for every project repo until each files its own.
+above. SCC-347 narrowed what remains open elsewhere: every repo now lands through a PR the
+operator merges, so what a project still owes is the server-side CHECK on that PR, not a road.
 
 ## A commit is not done until it is pushed
 
@@ -262,7 +295,7 @@ a licence to leave work uncommitted or a landing unpushed.
 ## The landing — one story, one clean push
 
 The story lands on its **epic branch** at close-out (`/cicd-close-story-merge-tree` Step 3) or on
-Daniel's in-the-moment "approved". It merges **from inside the worktree**, never by checking out the
+Mr. Hatter's in-the-moment "approved". It merges **from inside the worktree**, never by checking out the
 epic branch in the shared checkout:
 
 ```bash
@@ -300,7 +333,7 @@ checkout boring: it is always exactly production.
 
 - **Commit your OWN work via explicit paths:** `git add path/one path/two …`.
 - **NEVER `git add -A`, `git add .`, or `git add -u`** — they sweep other parallel work (other
-  agents/teams, or Daniel's own uncommitted changes) into your commit. This is the most important rule,
+  agents/teams, or Mr. Hatter's own uncommitted changes) into your commit. This is the most important rule,
   and the worktree does not repeal it.
 - **Verify the staged set first:** `git diff --cached --stat` must show ONLY your files. If anything
   else appears, unstage it (`git restore --staged <path>`) before committing.
@@ -317,7 +350,7 @@ checkout boring: it is always exactly production.
 - **If a push is rejected** (remote moved under you), **STOP and report.** Do not force-push, and do
   not blind-rebase while other uncommitted work sits in the tree.
 
-### ⛔ Pin the merge TARGET, not just the source — `-C` on every call, and assert before you merge
+### ⛔ Pin the merge TARGET, not just the source — pin every call, and assert before you merge
 
 Every guard above protects the branch you are merging **from**. Nothing protects the branch you are
 merging **onto**, and on 2026-08-11 that gap put a production merge commit on a sibling lane's
@@ -326,12 +359,13 @@ in a later one, by which point the working directory had reset to the shared che
 standing on `chore/SCC-89-…`. It reported success. The output, the changed-file list and the commit
 message (`-> main`, because that is what was typed) were all indistinguishable from a correct merge.
 
-- **A `cd` is not a lock.** Pass `-C "$REPO"` on every `git` invocation rather than relying on where
-  a previous step left you.
+- **A `cd` in an EARLIER call is not a lock.** The pin lives in the SAME compound line —
+  `cd "$REPO" && git <verb> …` — never a bare `git` that trusts where a previous step left you.
+  (The old `git -C` spelling is auto-denied by Zoo Code and banned in doors — `command-shape.md`.)
 - **Assert the target immediately before merging**, and let it stop you:
 
   ```bash
-  test "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON main — STOP"; exit 1; }
+  test "$(cd "$REPO" && git rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON main — STOP"; exit 1; }
   ```
 
 - **On the two `main` lanes this assertion is already mechanical (SCC-77).**
@@ -384,15 +418,15 @@ whether a sibling lane's landed work survives your merge. The two forms are not 
 - **The safe form, and it is the only one worth memorising:**
 
   ```bash
-  git -C "$REPO" fetch origin
-  git -C "$REPO" checkout origin/main -- <paths>
+  cd "$REPO" && git fetch origin
+  cd "$REPO" && git checkout origin/main -- <paths>
   ```
 
 - **`main` is not a synonym for `origin/main`.** A local `main` in a worktree is a *cached* pointer.
   It is stale from the moment a sibling pushes, and it is stale exactly when this matters.
 - **Re-assert immediately before the close-out, not once at the start.** `main` moves while you
   build. If the revert is meant to be a no-op, prove it is still one:
-  `git -C "$REPO" diff origin/main -- <paths>` must be empty.
+  `cd "$REPO" && git diff origin/main -- <paths>` must be empty.
 - **Why it is invisible:** git has no way to tell a deliberate revert from a stale read. Both are a
   legal write of older content. There is no conflict to raise, so nothing goes red — the only thing
   standing between you and it is which ref you typed.
@@ -411,7 +445,7 @@ diverge → rejected-push tangle. Before the landing push:
    (`git rev-list --count HEAD..origin/epic/<JIRA-KEY>-<slug>` > 0).
 2. **If behind, merge `origin/epic/<JIRA-KEY>-<slug>` into your story branch first** (the landing block above
    does this by default) so you never land on top of a stale base.
-3. **If it will not merge cleanly**, **STOP and flag it** — hand Daniel the situation. Do NOT run a
+3. **If it will not merge cleanly**, **STOP and flag it** — hand Mr. Hatter the situation. Do NOT run a
    blind merge/rebase, and never force-push.
 
 The same applies one level up: before `/cicd-push-e2e` merges an epic into `main`, it first merges
@@ -421,7 +455,7 @@ then merges to `main` — so `main` never receives an unresolved conflict.
 ## Always
 
 - **Clear the Dummy GitHub Token:** The Antigravity IDE automatically injects a dummy `GITHUB_TOKEN` into the agent's environment as a sandbox security measure. Because Git and the `gh` CLI prioritize this environment variable over the Windows Credential Manager, it causes authentication failures. **Before running any `git` or `gh` commands, you MUST clear this variable** by prefixing the command or running: `Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; <command>`.
-- **Validate CI/CD credentials**: Before landing on a deployment-triggering branch (`main`), verify that the target repository's required secrets and variables are set up on GitHub using `gh secret list` and `gh variable list` (WIF-based workflows need neither — check what the workflow actually references). If credentials are missing, STOP and notify Daniel before proceeding.
+- **Validate CI/CD credentials**: Before landing on a deployment-triggering branch (`main`), verify that the target repository's required secrets and variables are set up on GitHub using `gh secret list` and `gh variable list` (WIF-based workflows need neither — check what the workflow actually references). If credentials are missing, STOP and notify Mr. Hatter before proceeding.
 - The `walkthrough.md` **"Your Actions"** section records what landed — the branch, the commit range,
   and **errands only**: what the operator must go and DO outside the chat (an epic promotion via
   `/cicd-push-e2e`, a live test). **Never a decision or a question** — ask those in the session

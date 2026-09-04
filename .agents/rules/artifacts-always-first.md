@@ -29,17 +29,17 @@ trigger: model_decision
 
 Keep it minimal — **TWO living docs** per session, hard-budgeted:
 
-1. **Task list** — DURING work, the live `TodoWrite` list is the single tracker (Daniel watches it
+1. **Task list** — DURING work, the live `TodoWrite` list is the single tracker (Mr. Hatter watches it
    update live). AT COMPLETION its end-state becomes the walkthrough's **`## Task Checklist`** outline
    (§5) — never a separate file, never a hand-maintained parallel `task.md`.
-2. **`implementation_plan.md`** — the plan Daniel signs off on (the "approved" gate) AND the pre-dev
+2. **`implementation_plan.md`** — the plan Mr. Hatter signs off on (the "approved" gate) AND the pre-dev
    audit's home: `/cicd-self-audit` **appends its `## Self-Audit (<date>)` section here** (§7). A
    living pre-dev doc — no standalone audit file.
 3. **`walkthrough.md`** — the SINGLE closing doc, outline-first (§5): header → **`## Task Checklist`**
    (the task outline — pitfalls/findings indented under the tasks that fought back) →
    **`## Evidence`** (the ONE AC→evidence matrix + LATEST suite totals + SHA) → **`## Suite Ledger`**
    → **`## Code Review (<date>)`** (appended by the review, §6) → **`## Your Actions`** (LAST — what
-   landed + what's still on Daniel). Everything final lives here; the review appends, never forks.
+   landed + what's still on Mr. Hatter). Everything final lives here; the review appends, never forks.
 4. **`bug-list.md`** — ONLY for debugging / live-testing sessions. A simple bug list.
 
 **Dense, not short — and there is NO byte cap.** Both docs are re-read on every pass of the loop: the
@@ -91,7 +91,7 @@ each of the three seams where an artifact is produced. That repetition is delibe
 
 ## The Rule
 
-**Do NOT modify any project file until Daniel has approved a plan in the current conversation.**
+**Do NOT modify any project file until Mr. Hatter has approved a plan in the current conversation.**
 
 "Project file" means EVERYTHING in the working tree: source code, story files,
 `sprint-status.yaml`, configs, YAML, `.env`, `package.json`. The ONLY exception is the shared
@@ -138,7 +138,7 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
   stories** (create `epic_<E>/` if it isn't there yet), so stories group under their parent epic
   (e.g. `epic_14/story-14.6-graph-insight/`, or an autopilot run `epic_14/2026-06-27_autopilot-14-6/`).
   Epic-scoped, not date-prefixed at the root. This holds for **any** story — whether the autopilot, a BMAD
-  flow, or Daniel devs it by hand; the parent is decided by the story id, **not** by the tool.
+  flow, or Mr. Hatter devs it by hand; the parent is decided by the story id, **not** by the tool.
 - **Quick fix** (**neither a story nor a bug-fix story**: infra/tooling/config repair, a recorded
   follow-on, one-off maintenance — anything that still deserves a record but does not earn a story)
   → the owning store's `quick_fixes/quick-fix-<track>.<n>-<slug>/`. **Operator ruling 2026-08-03.**
@@ -178,8 +178,11 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
 Start the **TodoWrite task list** (this is the task tracker — no `task.md` file), then write
 `implementation_plan.md` (goal, every file touched with links, execution order, open questions,
 verification plan). **The touch-list half of that takes ONE fixed form (SCC-226): a
-`## Declared Change Set` section** — one repo-relative path per bullet, op marker `NEW` / `EDIT` /
-`DELETE`, and `→ <the acceptance row it serves>` — parsed by `.agents/scripts/declared_change_set.py`
+`## Declared Change Set` section** — one bullet per repo-relative path, **op marker FIRST**
+(`NEW` / `EDIT` / `DELETE`), then the backticked path, then `→ <the acceptance row it serves>` as
+the LAST arrow on the line, e.g. ``- EDIT `scripts/thing.py` — why this file moves → A``
+(a path-first bullet fails the grammar and parses to zero entries, SCC-311) —
+parsed by `.agents/scripts/declared_change_set.py`
 (the self-audit's Scope Ledger and the review drift check both read it; a bullet that fails the
 grammar is reported `incomplete`, and an absent block is the reviewer's *important* finding). The
 block **satisfies** this paragraph's requirement; it does not replace it. Use the `Write` tool. Frontmatter on every artifact file:
@@ -199,7 +202,7 @@ ArtifactMetadata:
 > for a desktop re-pass — see `mobile-mode.md` Override 3.
 
 **Paste the plan FULLY inline in the chat** AND link the artifact. Not a summary, not "key points", not a
-link with a teaser — the whole plan, in the conversation, so Daniel can approve or redirect without opening
+link with a teaser — the whole plan, in the conversation, so Mr. Hatter can approve or redirect without opening
 a file. A link alone (or a digest of a plan he cannot see) is a **gate violation**, not a style choice:
 he is being asked to approve something he has not been shown.
 
@@ -227,7 +230,7 @@ epic-level plan is NOT a license to implement stories without per-story approval
 
 ### 4. Execute
 Now — and only now — modify project files. Update the TodoWrite list (`pending` → `in_progress`
-→ `completed`) as you go so Daniel can watch progress live.
+→ `completed`) as you go so Mr. Hatter can watch progress live.
 
 ### 5. Write `walkthrough.md` (after completion — the ONE closing doc)
 An **outline, not a narrative** — the task list IS the structure; prose exists only where something
@@ -304,15 +307,15 @@ The plan's frontmatter `type:` stays `implementation_plan`.
 > never write a new one.
 
 ## MD Feedback / Review Protocol
-When Daniel says **"review"** (or asks to review a document/plan), EVERY agent must:
+When Mr. Hatter says **"review"** (or asks to review a document/plan), EVERY agent must:
 1. Immediately return to the Markdown document you were just working on.
-2. Check the `md-feedback` MCP server (or read the file's `<!-- USER_MEMO -->` blocks) for Daniel's highlights, fixes, and questions.
+2. Check the `md-feedback` MCP server (or read the file's `<!-- USER_MEMO -->` blocks) for Mr. Hatter's highlights, fixes, and questions.
 3. Address the fixes, answer the questions, and if applicable, use the MCP tools to resolve them. **NEVER manually edit the `<!-- USER_MEMO -->` HTML blocks with standard file write tools. You MUST use the MCP server tools (`apply_memo`, `batch_apply`, etc.) to update them, or you will corrupt the document's tracking hashes.**
 
 ## When to Skip
 - **Investigatory requests** ("explain how X works", "where is Y?") — no artifacts needed.
 - **Trivial one-liners** (typo, comment fix) — mention what you changed; skip the full cycle.
-- **Daniel explicitly says** "skip the plan, just do it" — that phrase names **the lightweight lane
+- **Mr. Hatter explicitly says** "skip the plan, just do it" — that phrase names **the lightweight lane
   below**, and everything written there applies. It used to dead-end here, telling an agent to skip the
   plan and nothing about what to do instead; that gap is what put a doc-only edit through the full Task
   ceremony on SCC-161. Saying it and typing `/smh-quick-fix` are the same instruction.
@@ -358,6 +361,51 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
     it, and still carries `## Task Checklist` → `## Evidence` → `## Code Review (<date>)` (with the
     canonical `Verdict:` line) → `## Your Actions`. The walkthrough is never skipped.
 
+- **⭐ `/smh-llm-approvals` — THE PERMISSION HARVEST (SCC-393).** Routing approved commands into
+  `.agents/permissions/families.json` and re-rendering its three platform lists. **Invoking it IS
+  the "skip the plan" instruction**, the same way `/cicd-quick-dev` and `/smh-quick-fix` are: no
+  `implementation_plan.md`, no `approved`, no `/smh-self-audit`, no RED-first assertion, no review
+  verdict. It keeps a lean walkthrough and it lands the ordinary way — a pull request the operator
+  merges.
+  - **Why this change class earns it.** There is no design to review — the door dictates the row
+    shape — and no assertion to write: the gates already exist and already guard the fence. The
+    evidence is the SCC-392 harvest, stated accurately: that run carried **no plan, no walkthrough
+    and no review at all** (its branch touched zero `_artifacts/` files), wrote seventeen picks,
+    and the **suite caught every bad one** — four by deny rows, one by a battery case, one by the
+    one-interpreter law. ⛔ Do not restate this as the ceremony having examined and cleared
+    those rows: it never saw them, so it cannot have cleared them. The claim that
+    survives is the one that matters — *the machine, not the ceremony, is what protects this file*.
+  - **Conditional on all four guards:**
+    1. the operator's live **pick** at the door's Step 2 gate — that IS the approval, and it is an
+       approval about which commands may run, never about landing on `main`
+    2. `python3 .agents/scripts/permission_render.py --check` prints *in sync*
+    3. `python3 .agents/scripts/tests/run_all.py` is green — ⛔ **the whole suite, never
+       `test_permission_parity.py` alone.** The battery is blind to laws that still refuse a
+       harvested row: SCC-392's `Bash(python:*)` was caught by `test_settings_allowlist.py` A3 and
+       a guide count by `test_zoo_permissions.py`, neither of which the battery runs
+    4. outside `_artifacts/`, the diff touches only `.agents/permissions/families.json`,
+       `.agents/permissions/antigravity.json`, `.claude/settings.json` and `.vscode/settings.json`
+       — and within the last two only the rows this door renders (`permissions.allow`; the two
+       `zoo-code.*` arrays), never the `hooks` block
+  - ⛔ **A fifth path voids the exemption**, with ONE carve-out that is not discretion: a file the
+    suite *forces* — a rendered count in `terminal-permissions-guide.md`, a KNOWN row A11 requires
+    deleting once a pick resolves it. The test is mechanical: revert it and the suite goes red. A
+    file you *chose* to change is a fifth path and the work takes the full lane.
+  - ⛔ **This exemption keys on the COMMAND, never on the path, and `lane_qualify.py` is
+    deliberately NOT changed to agree.** It classifies by path and answers `TASK` for
+    `.agents/permissions/*` — which is right, because a hand edit to `families.json` outside this
+    door has no operator pick, no forced `--check` and no forced suite run.
+  - ⛔ **It does not shorten the road to `main`.** There is still no lighter door: the harvest is a
+    `chore/<KEY>-<slug>` branch, pushed, and a pull request the operator merges. This door mints no
+    push token, pushes no `gate/**` ref and never merges — `git-policy.md` bans all of that for
+    every door in this repo, and the Step 2 pick is not merge permission (ticket permission never
+    is). Pinned by `test_door_preflight_order.py`, which now names this door.
+  - **What it still keeps:** the Jira key and a `chore/<KEY>-<slug>` branch (the armed `commit-msg`
+    hook refuses a keyless commit) · explicit-path commits · a lean `walkthrough.md` with
+    `## Your Actions` and the operator's words verbatim, stamped by `flight_recorder.py` — without
+    a receipt, a hand edit that *decided* it was a harvest is indistinguishable from a real run ·
+    the SOP-currency gate where it applies.
+
 ## The memory store — what it is for, and what it must never carry
 
 `_artifacts/_memory/` is **recall, not law.** Every platform reads its index at session start, on both
@@ -402,16 +450,16 @@ whatever a sibling lane left uncommitted. Explicit paths, the entries YOU wrote,
   link to it that same turn (see the "Link every artifact — and every file — in the chat" rule above).
 - NEVER claim the walkthrough is done without actual test output (totals + SHA in `## Evidence`).
 - NEVER finish a `walkthrough.md` without its `## Task Checklist`, `## Evidence` (+ `## Suite Ledger`
-  for story work), and `## Your Actions` sections (what landed + what's still on Daniel lives in the latter).
+  for story work), and `## Your Actions` sections (what landed + what's still on Mr. Hatter lives in the latter).
 - NEVER write the task outline, evidence, review, or "Your Actions" as separate files — they are sections inside `walkthrough.md` (§5).
 - NEVER let a living doc blow its budget (see The Lean Artifact Set) — compress in place; a re-run
   REPLACES pasted totals, only the `## Suite Ledger` accretes.
-- NEVER edit a project file for a commit-producing lane before opening its worktree — story and Task lanes alike (SCC-62: story → `claude/*` off the epic branch, ad-hoc/Task → `chore/*` off `main`) — then commit your own work inside it freely (explicit paths, never `git add -A`). Landing on the epic branch needs Daniel's sign-off; `main` is his alone (via `/cicd-push-e2e` for an epic, `/smh-close-task-merge-tree` for a Task). Full policy → the `git-policy` + `worktree-per-story` rules.
+- NEVER edit a project file for a commit-producing lane before opening its worktree — story and Task lanes alike (SCC-62: story → `claude/*` off the epic branch, ad-hoc/Task → `chore/*` off `main`) — then commit your own work inside it freely (explicit paths, never `git add -A`). Landing on the epic branch needs Mr. Hatter's sign-off; `main` is his alone (via `/cicd-push-e2e` for an epic, `/smh-close-task-merge-tree` for a Task). Full policy → the `git-policy` + `worktree-per-story` rules.
 - NEVER deliver code-review findings inline-only — append the `## Code Review (<date>)` section to the
   walkthrough (§6); never mint a standalone review file (legacy paths are read-only history).
 - NEVER deliver `/cicd-self-audit` findings inline-only — append the `## Self-Audit (<date>)` section
   to the plan (§7); never mint a standalone audit file.
 
 ## Why this matters
-Artifact files are Daniel's primary interface for reviewing session work, and the shared `_artifacts/`
+Artifact files are Mr. Hatter's primary interface for reviewing session work, and the shared `_artifacts/`
 store is the cross-project memory every agent reads. Skipping this breaks the entire collaboration model.

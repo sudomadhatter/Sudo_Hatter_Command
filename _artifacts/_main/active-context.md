@@ -1,7 +1,13 @@
 # ACTIVE CONTEXT — _main  (you own this, not a vendor)
 
 ## 1. PRIME STATE
-Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-08-11
+Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-08-23
+**2026-08-23: Command Center + AviationChat maps and indexes reconciled; NEXgen excluded.**
+Lobby map lint is clean; `_artifacts/INDEX.md` again carries exactly the newest 50 sessions and 110
+displaced/new-overflow rows were added to the verbatim archive (168 archived total). Current artifact,
+skills, commands, and workflow indexes now name the live command surfaces and measured inventory.
+AviationChat is thin-project conformant, has a current repo-map and Epic 23 ledger, and passes its targeted
+map gate with its code graph current. Session: `_artifacts/_main/2026-08-23_update-maps-indexes/`.
 **2026-08-11: Windows-PC → Mac Antigravity IDE extension migration guide added.**
 Exports portable extension IDs on Windows, transfers them by Git or direct upload, compares against the Mac, and installs only missing IDs. Guide: `docs/migrations/install_guides/antigravity-ide-extension-migration.md`; session: `_artifacts/_main/2026-08-11_antigravity-extension-migration-guide/`.
 **2026-08-08 (latest): the operator's SOP page is now gate-enforced, and the system is TWO machines.**

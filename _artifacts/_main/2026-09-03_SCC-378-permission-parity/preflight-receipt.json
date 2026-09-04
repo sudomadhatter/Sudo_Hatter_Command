@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-378-permission-parity",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-378",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "3f6f42e7fcdeed3bd51179a5c55aafe73803f2b7",
+  "warnings": 2,
+  "when": "2026-09-03T14:55:13-04:00"
+}

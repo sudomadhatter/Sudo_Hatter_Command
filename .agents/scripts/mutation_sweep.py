@@ -278,7 +278,19 @@ def main() -> int:
     def on_signal(signum, _frame):
         raise Terminated(f"signal {signum}")
 
-    for sig in (signal.SIGTERM, signal.SIGINT):
+    # ⛔⛔ SIGTERM IS NOT DELIVERABLE ON WINDOWS, SO THIS HANDLER COULD NEVER RUN THERE (SCC-321).
+    # `signal.signal(SIGTERM, ...)` is ACCEPTED on that machine — it raises nothing, so the code
+    # reads as covered — but nothing ever sends it: a terminate goes through `TerminateProcess`,
+    # which stops the process dead without a signal, so neither the handler nor the `finally`
+    # below is reached. An interrupted sweep therefore left a LIVE MUTANT on disk, in an
+    # uncommitted tree, which is verbatim the SCC-144 incident this whole restore mechanism was
+    # built to prevent — closed on one machine and open on the other for as long as both existed.
+    # `SIGBREAK` (Ctrl+Break) is the one interruption Windows does deliver to a handler, so it is
+    # registered too. `hasattr` rather than a platform test: the attribute IS the capability.
+    sigs = [signal.SIGTERM, signal.SIGINT]
+    if hasattr(signal, "SIGBREAK"):
+        sigs.append(signal.SIGBREAK)
+    for sig in sigs:
         signal.signal(sig, on_signal)
 
     print(f"-- sweep: {len(mutants)} mutant(s) over {len(files)} file(s) @ {pre_sha[:8]} --")

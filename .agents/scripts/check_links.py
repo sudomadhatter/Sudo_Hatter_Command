@@ -84,6 +84,17 @@ FENCE = re.compile(r"^\s*(```|~~~)")
 PROJECT_ROOTS = ("backend/", "frontend/", "firebase/", "functions/", "mobile/",
                  "_bmad-output/", "_bmad/", "docs/stories/", "quick_fixes/")
 
+# Convention 6, second form (SCC-357). Some project-tree paths sit under a directory the LOBBY
+# also has, so no prefix can carve them out: `docs/` is real here, and `docs/stories/` above only
+# works because the whole subtree is the project's. `docs/project_overview_guide.md` is a page a
+# PROJECT copies from `.agents/templates/`; the lobby's equivalent is the operator SOP and it will
+# never hold this file. Every command, rule and standard that governs the guide has to name it —
+# that is what those documents are for — so the alternative is 12 findings that are correct by
+# construction and can never be fixed, which is the thirty-false-hits failure (SCC-285) reappearing
+# on purpose. Exact filenames only, never prefixes: a prefix here would silence real rot under a
+# directory the lobby owns.
+PROJECT_FILES = ("docs/project_overview_guide.md",)
+
 # Convention 7. A NARRATIVE LEDGER records what a session did, including deleting things. A row
 # naming a file that a later lane removed is HISTORY, not a broken link — the same carve-out
 # `check_maps.py` makes with its own `NARRATIVE_LEDGERS`. Kept in step with that file deliberately:
@@ -99,7 +110,8 @@ PROJECT_ROOTS = ("backend/", "frontend/", "firebase/", "functions/", "mobile/",
 # LIVE header, and that is not a gap this exemption opens: the stale SOP path fixed at
 # `active-context.md:9` this lane was prose, not a path claim, so no version of this checker
 # ever saw it. The brief is 5x over its declared 20 KB budget; the prune is what it is owed.
-NARRATIVE_LEDGERS = ("_artifacts/INDEX.md", "_artifacts/_main/INDEX.md",
+NARRATIVE_LEDGERS = ("_artifacts/INDEX.md", "_artifacts/INDEX-archive.md",
+                     "_artifacts/_main/INDEX.md",
                      "_artifacts/_main/active-context.md")
 
 
@@ -118,7 +130,7 @@ def _strip_dot_slash(p: str) -> str:
 
 
 def run(args: list[str], cwd: Path) -> str:
-    r = subprocess.run(args, cwd=str(cwd), capture_output=True, text=True)
+    r = subprocess.run(args, cwd=str(cwd), capture_output=True, encoding="utf-8", text=True)
     if r.returncode != 0:
         raise RuntimeError(f"{' '.join(args)} -> {r.returncode}: {r.stderr.strip()[:200]}")
     return r.stdout
@@ -253,7 +265,7 @@ def scan(worktree: Path, resolver: Resolver, files: list[str]):
         for n, tok, anc in candidates(p.read_text(encoding="utf-8", errors="replace")):
             if URL.match(tok) or PLACEHOLDER.search(tok) or CAPS_VAR_DIR.search(tok):
                 continue
-            if tok.startswith(PROJECT_ROOTS):       # convention 6
+            if tok.startswith(PROJECT_ROOTS) or tok in PROJECT_FILES:   # convention 6
                 continue
             if ledger:
                 continue

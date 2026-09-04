@@ -25,7 +25,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _harness import Cases, TempDir  # noqa: E402
+from _harness import Cases, TempDir, utf8_env  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 HARNESS = HERE / "_harness.py"
@@ -128,8 +128,13 @@ def sandbox(root: Path, body: str, name: str = "test_fake.py") -> Path:
 
 
 def run(path: Path, *args: str) -> tuple[int, str]:
+    # ⛔ Encoding pinned on BOTH sides — see `_harness.utf8_env` (SCC-321). Block labels here
+    # carry `·`, and `text=True` alone decodes with the locale: on Windows that is cp1252 against
+    # a UTF-8 child, so every label came back as `BETA Â· one` and eight cases failed on strings
+    # that were never wrong.
     r = subprocess.run([sys.executable, str(path), *args],
-                       capture_output=True, text=True, errors="replace")
+                       capture_output=True, text=True, errors="replace",
+                       encoding="utf-8", env=utf8_env())
     return r.returncode, (r.stdout or "") + (r.stderr or "")
 
 
@@ -819,6 +824,47 @@ def main() -> int:
                     "the guard degrades to silence, never takes a suite down",
                     h6.returncode == 0 and "-- 1/1 passed --" in h6.stdout,
                     f"exit {h6.returncode}: {(h6.stdout + h6.stderr).strip()[-300:]}")
+
+    # ── TempDir cleanup must SURVIVE a transient OSError, or a passing file reports FAILED.
+    # The scar: `test_git_hooks.py` builds a throwaway git remote, and on the Linux CI runner
+    # `shutil.rmtree` raised `OSError: [Errno 39] Directory not empty: .../remote.git/objects`
+    # from `TempDir.__exit__` — AFTER every case in that file had passed. run_all scored the
+    # whole file FAILED and the main-write-gate refused the PR, over a cleanup race that has
+    # nothing to do with the code under test. `onerror=force` cannot cover it: chmod does not
+    # make a non-empty directory removable (SCC-354).
+    if c.block("TMPDIR · cleanup retries a transient OSError instead of failing the file"):
+        import _harness
+
+        real_rmtree = _harness.shutil.rmtree
+        calls = {"n": 0}
+
+        def flaky(path, **kw):
+            calls["n"] += 1
+            if calls["n"] == 1:                      # exactly the CI shape: fails, then settles
+                raise OSError(39, "Directory not empty")
+            return real_rmtree(path, **kw)
+
+        _harness.shutil.rmtree = flaky
+        kept = None
+        raised = None
+        try:
+            try:
+                with _harness.TempDir() as tmp:
+                    (tmp / "f.txt").write_text("x", encoding="utf-8")
+                    kept = tmp
+            except OSError as exc:                   # what the UN-retried version does
+                raised = exc
+        finally:
+            _harness.shutil.rmtree = real_rmtree
+
+        # Delete the retry loop and the first check FAILS — that is what makes this case
+        # worth its lines rather than a restatement of the code.
+        c.check("TMPDIR · a first-attempt OSError does not escape __exit__",
+                raised is None, f"__exit__ raised {raised!r}")
+        c.check("TMPDIR · it really retried (2 rmtree calls) rather than swallowing the error",
+                calls["n"] == 2, f"rmtree called {calls['n']} time(s), expected 2")
+        c.check("TMPDIR · and the directory is actually gone after the retry",
+                kept is not None and not kept.exists(), f"{kept} still present")
 
     return c.finish()
 

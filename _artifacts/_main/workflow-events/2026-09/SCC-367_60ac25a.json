@@ -1,0 +1,50 @@
+{
+  "v": 1,
+  "task": "SCC-367",
+  "sha": "60ac25af810148c68bf413b8290a535053109c4e",
+  "tip": "8b0a6f22f75acddf8d9f424b1e31ae8cbf3ccc21",
+  "trigger": "close-out",
+  "when": "2026-09-01T10:01:48-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/INDEX.md",
+    ".agents/commands/smh-slash-command-updating.md",
+    ".agents/commands/smh-sync-agents.md",
+    ".agents/scripts/sync-agents.ps1",
+    ".agents/scripts/tests/test_command_surfaces.py",
+    ".agents/scripts/tests/test_sops_prds_folder.py",
+    ".agents/scripts/tests/test_twin_parity.py",
+    ".agents/skills/smh-slash-command-updating/SKILL.md",
+    ".agents/workflows/INDEX.md",
+    ".agents/workflows/smh-slash-command-updating.md",
+    ".agents/workflows/smh-sync-agents.md",
+    ".claude/skills/smh-slash-command-updating/SKILL.md",
+    ".opencode/commands/smh-slash-command-updating.md",
+    ".opencode/commands/smh-sync-agents.md",
+    ".roo/commands/smh-slash-command-updating.md",
+    "_artifacts/_main/2026-09-01_SCC-367-retire-slash-cmd-updating/implementation_plan.md",
+    "_artifacts/_main/2026-09-01_SCC-367-retire-slash-cmd-updating/tickets/SCC-367.md",
+    "_artifacts/_main/2026-09-01_SCC-367-retire-slash-cmd-updating/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-01_SCC-367-retire-slash-cmd-updating/walkthrough.md",
+    "verdict": "PASS @ 60ac25a",
+    "gates": {
+      "suite": "pass@60ac25a"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}

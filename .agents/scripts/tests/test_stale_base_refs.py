@@ -60,7 +60,8 @@ _SYNC = ("the `0 0` local-vs-remote sync check: the LEFT operand is deliberately
          "be a tautology that always passes")
 ALLOWED: dict[tuple[str, str], str] = {
     ("cicd-push-e2e.md",
-     "git rev-list --left-right --count main...origin/main    # must be 0 0"): _SYNC,
+     'cd "$PROJECT_ROOT" && git rev-list --left-right --count main...origin/main    # must be 0 0'):
+        _SYNC,
     ("smh-close-task-merge-tree.md",
      "git rev-list --left-right --count main...origin/main    # must be 0 0"): _SYNC,
     # ⛔ SCC-183 removed a THIRD row here. `/smh-merge-multiple-workingtrees` step 4d used to
@@ -69,7 +70,7 @@ ALLOWED: dict[tuple[str, str], str] = {
     # The "no rows left ruling nothing" check is what noticed — an exemption that outlives the
     # line it excused is a hole waiting for a future line to fall into.
     ("smh-merge-multiple-workingtrees.md",
-     'git -C "$REPO" rev-list --left-right --count main...origin/main    # 0 0'): _SYNC,
+     'cd "$REPO" && git rev-list --left-right --count main...origin/main    # 0 0'): _SYNC,
 }
 
 
@@ -173,7 +174,8 @@ def main() -> int:
 
             plant = tmp / "cmds"
             plant.mkdir()
-            line = "git rev-list --left-right --count main...origin/main    # must be 0 0"
+            line = ('cd "$PROJECT_ROOT" && git rev-list --left-right --count '
+                    "main...origin/main    # must be 0 0")
             (plant / "cicd-push-e2e.md").write_text(line + "\n", encoding="utf-8")
             hits, _ = scan(plant)
             c.check("an ALLOWED row exempts its exact line", not unruled(hits), f"{unruled(hits)}")

@@ -20,9 +20,10 @@ Mode detection (PATH CONTRACT, two columns):
                  its continuity brief at `_bmad-output/active-context/active-context.md` and uses `_artifacts/`
                  for session *history*; a non-BMAD project uses `_artifacts/active-context.md`.
 
-Nine checks (1-3 fatal drift; 4 informational; 5 + 8 + 9 non-fatal hints; 6-7 fatal):
+Eleven checks (1-3 + 6-7 + 10 fatal drift; 2.5 fatal; 4 informational; 5 + 8 + 9 non-fatal hints):
   1. AUTO-block freshness   — regenerate the map's AUTO body in memory (mode-preserving) and diff.
   2. Path existence         — every backticked table-row path in the map CURATED block + each INDEX.md resolves.
+  2.5 Level-2 INDEX         — every real level-2 folder carries an INDEX.md unless its local law exempts it.
   3. Folder coverage        — every real TOP-LEVEL folder appears in the map text.
   4. Git baseline           — diff HEAD against the last reconciled SHA (<docs>/.maps-state.json); list renames.
                              (Informational — it feeds the workflow's judgment steps, never the exit code.)
@@ -39,6 +40,7 @@ Nine checks (1-3 fatal drift; 4 informational; 5 + 8 + 9 non-fatal hints; 6-7 fa
                              (.code-review-graph/graph.db), its built-at commit must equal HEAD. A git pull moves HEAD past
                              the gitignored index and impact/test-selection answers go silently wrong
                              (dirty tree != stale — only commits count). No index -> skip.
+ 10. Doc-graph freshness    — generated doc-graph outputs match their current source documents when present.
 """
 import argparse
 import json
@@ -134,7 +136,7 @@ ADAPTER_PHRASE = "Read `AGENTS.md` in this same folder"
 
 def sh(args, cwd):
     try:
-        out = subprocess.run(args, cwd=cwd, capture_output=True, text=True, check=False)
+        out = subprocess.run(args, cwd=cwd, capture_output=True, encoding="utf-8", text=True, check=False)
         return out.stdout.strip(), out.returncode
     except FileNotFoundError:
         return "", 127
@@ -664,6 +666,9 @@ def check_conformance(root, is_home, is_bmad, map_path):
             ".agents/scripts/sync-agents.ps1",
             ".agents/hooks", ".agents/templates", ".agents/reference", ".agents/bmad",
             ".agents/opencode-agents", ".opencode/commands", ".opencode/agent", "opencode.json",
+            ".agents/rules/000-PLAN-FIRST-GATE.md", ".agents/rules/artifacts-always-first.md",
+            ".agents/rules/constitution.md", ".agents/rules/git-policy.md",
+            ".agents/rules/karpathy-guidelines.md", ".agents/rules/operator-profile.md",
         ]
         # NOT markers: `.mcp.json` / `.opencode/mcp.json` / `.claude/settings.json` are per-project
         # CONFIG (which MCP servers this repo declares, its permissions, its worktree baseRef) — the
@@ -677,6 +682,17 @@ def check_conformance(root, is_home, is_bmad, map_path):
             missing.append(
                 f"STALE-VENDOR: still carries tier-1 toolkit ({shown}{more}) - "
                 "strip per project-law.md (the P3/P4 conversion worklist)")
+
+        # Unrouted project rules: INDEX.md must route what is on disk (SCC-388)
+        p_index = root / ".agents" / "INDEX.md"
+        p_rules = root / ".agents" / "rules"
+        if p_rules.is_dir() and p_index.is_file():
+            rule_files = [f for f in p_rules.glob("*.md") if f.name != "INDEX.md"]
+            if rule_files:
+                idx_text = p_index.read_text(encoding="utf-8")
+                load_matches = re.findall(r"^\|\s*`([A-Za-z0-9_.\-]+)\.md`\s*\|\s*([^|]+?)\s*\|", idx_text, re.M)
+                if not load_matches:
+                    missing.append(f"tier-2 law routes (INDEX.md has 0 rule rows while {len(rule_files)} rules exist in .agents/rules/)")
     need("_my_resources/open_tasks/todo_list.md", "open-tasks list")
     need("_artifacts/INDEX.md", "session ledger")
     if not map_path.exists():
@@ -693,7 +709,7 @@ def check_conformance(root, is_home, is_bmad, map_path):
 
 
 def lint_one(root, ignore_override=None):
-    """Run all six checks + the hygiene nag for ONE workspace, print its section, and return has_drift (bool).
+    """Run all eleven checks for ONE workspace, print its section, and return has_drift (bool).
     The fan-out loop calls this once per workspace; a single-workspace run calls it once. The final verdict
     line is printed by main() (once, combined) so a fan-out shows one overall pass/fail."""
     is_home, is_bmad = detect_mode(root)

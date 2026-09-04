@@ -264,7 +264,7 @@ def main() -> int:
                 mcp_files = (
                     target / ".mcp.json",
                     target / ".opencode" / "mcp.json",
-                    target / ".antigravity" / "mcp.json",
+                    target / ".claude" / "mcp.json",
                 )
                 mcp_text = "\n".join(
                     path.read_text(encoding="utf-8") for path in mcp_files if path.is_file()
@@ -789,6 +789,11 @@ def main() -> int:
             projects.mkdir()
             local_script = scripts / "new-project.ps1"
             shutil.copy2(SCRIPTS / "new-project.ps1", local_script)
+            (shell / "docs" / "migrations" / "scripts").mkdir(parents=True, exist_ok=True)
+            shutil.copy2(
+                REPO / "docs" / "migrations" / "scripts" / "Arm-HooksInclude.ps1",
+                shell / "docs" / "migrations" / "scripts" / "Arm-HooksInclude.ps1",
+            )
 
             skeleton = temp / "skeleton"
             skeleton.mkdir()
@@ -954,6 +959,11 @@ def main() -> int:
             projects.mkdir()
             local_script = scripts / "new-project.ps1"
             shutil.copy2(SCRIPTS / "new-project.ps1", local_script)
+            (shell / "docs" / "migrations" / "scripts").mkdir(parents=True, exist_ok=True)
+            shutil.copy2(
+                REPO / "docs" / "migrations" / "scripts" / "Arm-HooksInclude.ps1",
+                shell / "docs" / "migrations" / "scripts" / "Arm-HooksInclude.ps1",
+            )
             skeleton = temp / "skeleton"
             skeleton.mkdir()
             (skeleton / "README.md").write_text("safe\n", encoding="utf-8")

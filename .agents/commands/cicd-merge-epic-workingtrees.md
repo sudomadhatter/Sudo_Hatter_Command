@@ -44,7 +44,7 @@ Echo exactly `Target: Projects/<name>` before any work.
    pitfalls before trusting its test runs). **`claude/incident-*` matches are EXCLUDED from the
    inventory:** they are the incident pipeline's (`/cicd-mobile-error-team`), never story lanes —
    never fix, merge, land or PRUNE one here (SCC-149).
-2. Map each lane → story id → **commits ahead** (`git -C <project> rev-list --count
+2. Map each lane → story id → **commits ahead** (`cd <project> && git rev-list --count
    origin/epic/<JIRA-KEY>-<slug>..claude/<JIRA-KEY>-<slug>` — from output, never memory) → board row +
    story frontmatter status → review verdict: the
    `Verdict: … @ <sha>` line in the lane's `_artifacts/epic_<E>/<story>/walkthrough.md`
@@ -62,7 +62,7 @@ Echo exactly `Target: Projects/<name>` before any work.
 
 ## Step 2 — Check each tree: pre-flight per lane (mechanical, AUTOMATIC — the same script the solo door runs)
 Inside each worktree, `TREE` pinned from Step 1's `git worktree list` output:
-- `git -C "$TREE" status` clean — uncommitted work gets committed HERE first (explicit paths; this
+- `cd "$TREE" && git status` clean — uncommitted work gets committed HERE first (explicit paths; this
   command never commits one lane's files from another lane's tree). A lane at **0 commits ahead**
   (Step 1's column) is the exception: it was never built — send it back, do not commit it into the set.
 - **Run the preflight, every target pinned:**
@@ -70,14 +70,16 @@ Inside each worktree, `TREE` pinned from Step 1's `git worktree list` output:
   ```bash
   python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> \
          --expect-key <JIRA-KEY> --branch claude/<JIRA-KEY>-<slug> --worktree "$TREE" \
-         --require-gates suite,ruff,pyrefly
+         --require-gates suite
   ```
 
   ⛔ **`--require-gates` is what makes the `gates` class exist.** Without it `check_gates` returns at
   its first line and emits **no row at all** — so a stale or missing receipt produces silence, and the
   `gates` error named as blocking below can never fire. The solo door passes the flag; this one must
-  too, or its strictest-sounding row is structurally inert. Name the gates this project actually
-  stamps.
+  too, or its strictest-sounding row is structurally inert. **Name only the gates this project really
+  stamps** — the review step writes `suite` and nothing else, so a door demanding `ruff` or `pyrefly`
+  hard-blocks every lane on receipts nothing in this system has ever written, which is how a gate gets
+  deleted rather than obeyed.
 
   `--expect-key` is required — the resolved branch must carry the key you named, because with N trees
   open `cwd` is not intent — and `--branch`/`--worktree` are not optional here either. **Check the
@@ -113,7 +115,7 @@ zero merges is the gate that cannot fail.
 Print zero lanes landed and why per lane; Steps 3–7 do not run and the set is never reported closed.
 
 ## Step 3 — The overlap map (BEFORE any merge)
-Pairwise across the set (`git -C <project> diff --name-only <A>...<B>` per pair, plus each lane vs
+Pairwise across the set (`cd <project> && git diff --name-only <A>...<B>` per pair, plus each lane vs
 `origin/epic/<JIRA-KEY>-<slug>` — the epic's own branch), classify every file touched by ≥2 lanes.
 **Seven classes, and only the board one is mechanical:**
 
@@ -127,7 +129,7 @@ Pairwise across the set (`git -C <project> diff --name-only <A>...<B>` per pair,
 | **gate or script** | `.githooks/` · `.github/workflows/` · hook config · the project's test-runner entry point · gate scripts · anything a gate imports | ORDER MATTERS. State which version must win BEFORE merging, and re-run the gate that file feeds after each landing that touches it. |
 | **generated** | lockfiles, sync manifests, mirrors, tool-written INDEXes | Resolved by **REGENERATING**, never by hand-merge. |
 
-**⚠ `git diff` cannot see untracked files, so this map UNDERCOUNTS.** Run `git -C "$TREE" status
+**⚠ `git diff` cannot see untracked files, so this map UNDERCOUNTS.** Run `cd "$TREE" && git status
 --porcelain` per lane and fold anything untracked into the map **as if it were already committed**,
 because at merge time it will be.
 
@@ -155,14 +157,14 @@ landing runs long enough to be compacted.
 
 ## Step 4 — Fix, close, land — sequentially, verified INSIDE each worktree
 For each eligible lane, in the Step 3 order — `TREE=<that lane's worktree path>`, copied from Step 1's
-`git worktree list` output, and **`git -C "$TREE"` on EVERY git call in this step; never a bare `git`
-after a `cd`** (`git-policy.md` §"Pin the merge TARGET"). The cwd resets to the shared checkout between
+`git worktree list` output, and **pin EVERY git call in this step as `cd "$TREE" && git …` in ONE
+compound line; never a bare `git` that trusts an earlier line's `cd`** (`git-policy.md` §"Pin the merge TARGET"). The cwd resets to the shared checkout between
 tool calls, and that checkout stands on `main`: a bare merge here merges the epic branch into `main`,
 and the bare push in 4.4 lands `main`'s tip on the shared epic branch every sibling then absorbs —
 reporting success both times. That is the 2026-08-11 shape that put a merge commit on a sibling's
 branch, and the output is indistinguishable from a correct one.
 
-1. **Merge the epic branch into the lane, in the lane:** `git -C "$TREE" merge origin/epic/<JIRA-KEY>-<slug> --no-edit`
+1. **Merge the epic branch into the lane, in the lane:** `cd "$TREE" && git merge origin/epic/<JIRA-KEY>-<slug> --no-edit`
    — it now carries every previously-landed sibling, so each merge is the rolling reconcile. Resolve
    conflicts HERE using the Step 3 table. **A conflict in a file the Step 3 map did not classify is a
    finding, not a judgement call: STOP, re-derive the map for the remaining lanes (the untracked
@@ -251,16 +253,16 @@ exact state §4 exists to forbid, and this is the one window where avoiding it c
    `## Your Actions` records what lands — and passes
    `python3 .agents/scripts/jira_feed.py check-actions --walkthrough <this lane's walkthrough>`
    **now, before the commit**: 4.5's `finish` refuses (exit 2) on the same rows, and after 4.4 the
-   only fix is a commit on a branch that has already landed. Commit with `git -C "$TREE" add <paths>`
-   and `git -C "$TREE" commit -F <msg-file>` — EXPLICIT PATHS ONLY, `git -C "$TREE" diff --cached
+   only fix is a commit on a branch that has already landed. Commit with `cd "$TREE" && git add <paths>`
+   and `cd "$TREE" && git commit -F <msg-file>` — EXPLICIT PATHS ONLY, `cd "$TREE" && git diff --cached
    --stat` shows only this story's files.
 4. **Land — assert the tree, then push, then prove the remote moved:**
 
    ```bash
-   test "$(git -C "$TREE" rev-parse --abbrev-ref HEAD)" = "claude/<JIRA-KEY>-<slug>" || { echo 'WRONG TREE — STOP'; exit 1; }
-   git -C "$TREE" push origin HEAD:epic/<JIRA-KEY>-<slug>
-   git -C "$TREE" log --oneline -1 origin/epic/<JIRA-KEY>-<slug>     # must be THIS lane's merge sha
-   git -C "$TREE" rev-parse HEAD                                     # ⛔ RECORD this sha — Step 7 verifies it
+   test "$(cd "$TREE" && git rev-parse --abbrev-ref HEAD)" = "claude/<JIRA-KEY>-<slug>" || { echo 'WRONG TREE — STOP'; exit 1; }
+   cd "$TREE" && git push origin HEAD:epic/<JIRA-KEY>-<slug>
+   cd "$TREE" && git log --oneline -1 origin/epic/<JIRA-KEY>-<slug>     # must be THIS lane's merge sha
+   cd "$TREE" && git rev-parse HEAD                                     # ⛔ RECORD this sha — Step 7 verifies it
    ```
 
    ⛔ **Write that sha down, per lane, now.** Step 6 deletes `claude/<JIRA-KEY>-<slug>` local **and**
@@ -318,7 +320,8 @@ the old "N stories behind" fast-forward died with `main_debug` on 2026-08-07.)*
 
 ## Step 6 — Prune EVERY tree and branch (AUTOMATIC — only after Step 5 is green)
 
-⛔ **Every per-lane command here takes an explicit `--repo`/`--branch` (or `git -C <tree>`).** This command
+⛔ **Every per-lane command here takes an explicit `--repo`/`--branch` (or a same-line
+`cd <tree> && git …` pin).** This command
 is the one that runs with the MOST sibling trees open at once, so a default resolved from `cwd` is most
 likely to land on the wrong lane — and it prunes, which is not what you want aimed at a guess
 (`worktree-per-story.md` → *"`cwd` is not intent"*). Confirm each invocation echoed the slug you meant
@@ -334,14 +337,15 @@ Every ✓ below comes from a command you ran HERE, not from intent. `<project>` 
 checkout; it holds no local `epic/*` branch by contract, so compare against the REMOTE ref:
 
 ```bash
-git -C <project> fetch origin
-git -C <project> log --oneline -1 origin/epic/<JIRA-KEY>-<slug>          # the LAST lane's merge sha, by name
-git -C <project> merge-base --is-ancestor <each lane's 4.4 SHA> origin/epic/<JIRA-KEY>-<slug> && echo landed
+P=$(cd <project> && pwd)   # absolutize ONCE — consecutive RELATIVE cds break from inside the first (command-shape.md §Absolute fills)
+cd "$P" && git fetch origin
+cd "$P" && git log --oneline -1 origin/epic/<JIRA-KEY>-<slug>          # the LAST lane's merge sha, by name
+cd "$P" && git merge-base --is-ancestor <each lane's 4.4 SHA> origin/epic/<JIRA-KEY>-<slug> && echo landed
 # ⛔ the SHA recorded at 4.4, never `claude/<KEY>-<slug>` — Step 6 deleted that name; a dead ref
 # short-circuits the `&&`, prints nothing, and reads exactly like a lane that failed to land
-git -C <project> status --short                                          # empty — nothing rode into the shared checkout
-git -C <project> worktree list                                           # only expected trees; a HUSK here blocks the next `worktree add`
-git -C <project> branch -a --list 'claude/*'                             # only deliberately-retained lanes (`claude/incident-*` excluded)
+cd "$P" && git status --short                                          # empty — nothing rode into the shared checkout
+cd "$P" && git worktree list                                           # only expected trees; a HUSK here blocks the next `worktree add`
+cd "$P" && git branch -a --list 'claude/*'                             # only deliberately-retained lanes (`claude/incident-*` excluded)
 ```
 
 Per story: landed SHA range · pre- and post-absorb verdict · `→ done` flip · Jira: Dev Record filed,

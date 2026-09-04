@@ -4,16 +4,16 @@
     "docs"
   ],
   "counts": {
-    "files": 376,
+    "files": 442,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 726,
-    "external": 30,
-    "ambiguous": 183,
-    "dangling": 297,
-    "broken_paths": 70,
-    "unresolved_names": 227,
-    "unresolvable": 6
+    "edges": 818,
+    "external": 27,
+    "ambiguous": 194,
+    "dangling": 293,
+    "broken_paths": 61,
+    "unresolved_names": 232,
+    "unresolvable": 9
   },
   "nodes": [
     {
@@ -34,12 +34,257 @@
     {
       "path": ".agents/INDEX.md",
       "in": 9,
-      "out": 7
+      "out": 9
     },
     {
       "path": ".agents/commands/INDEX.md",
       "in": 9,
       "out": 6
+    },
+    {
+      "path": ".agents/commands/adviser-board/CARD.md",
+      "in": 5,
+      "out": 1
+    },
+    {
+      "path": ".agents/commands/adviser-board/DOCTRINE.md",
+      "in": 5,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/ROSTER.md",
+      "in": 7,
+      "out": 1
+    },
+    {
+      "path": ".agents/commands/adviser-board/SPAWNS.md",
+      "in": 4,
+      "out": 4
+    },
+    {
+      "path": ".agents/commands/adviser-board/TEAMS.md",
+      "in": 5,
+      "out": 3
+    },
+    {
+      "path": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "in": 9,
+      "out": 1
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/aurelius.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/bastiat.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/boyd.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/braudel.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/brunelleschi.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/brunson.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/curie.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/darwin.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/deming.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/diogenes.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/drucker.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/eisenhower.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/feynman.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/friston.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/fuller.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/godin.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/haeckel.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/hopkins.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/hopper.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/hormozi.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/houellebecq.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/hutton.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/identity-engineer.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/kelly-johnson.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/kepler.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/mandelbrot.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/margulis.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/munger.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/nakamoto.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/nightingale.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/ohno.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/ravikant.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/rubin.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/schwartz.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/semmelweis.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/snow.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/stevens.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/taleb.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/tesla.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/turing.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/ury.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/vaynerchuk.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/commands/adviser-board/minds/wegener.md",
+      "in": 0,
+      "out": 0
     },
     {
       "path": ".agents/commands/analyst.md",
@@ -78,7 +323,7 @@
     },
     {
       "path": ".agents/commands/cicd-bdd-tests.md",
-      "in": 2,
+      "in": 3,
       "out": 1
     },
     {
@@ -94,7 +339,7 @@
     {
       "path": ".agents/commands/cicd-close-story-merge-tree.md",
       "in": 2,
-      "out": 9
+      "out": 10
     },
     {
       "path": ".agents/commands/cicd-code-review-AP.md",
@@ -123,7 +368,7 @@
     },
     {
       "path": ".agents/commands/cicd-e2e.md",
-      "in": 1,
+      "in": 2,
       "out": 1
     },
     {
@@ -133,13 +378,13 @@
     },
     {
       "path": ".agents/commands/cicd-live-testing-team.md",
-      "in": 1,
+      "in": 2,
       "out": 2
     },
     {
       "path": ".agents/commands/cicd-merge-epic-workingtrees.md",
       "in": 3,
-      "out": 7
+      "out": 8
     },
     {
       "path": ".agents/commands/cicd-mobile-error-team.md",
@@ -148,17 +393,17 @@
     },
     {
       "path": ".agents/commands/cicd-non-crit-pr-push.md",
-      "in": 1,
+      "in": 2,
       "out": 6
     },
     {
       "path": ".agents/commands/cicd-park.md",
-      "in": 1,
+      "in": 2,
       "out": 5
     },
     {
       "path": ".agents/commands/cicd-prune-context.md",
-      "in": 1,
+      "in": 2,
       "out": 1
     },
     {
@@ -169,16 +414,16 @@
     {
       "path": ".agents/commands/cicd-push-e2e.md",
       "in": 3,
-      "out": 4
+      "out": 5
     },
     {
       "path": ".agents/commands/cicd-quick-dev.md",
       "in": 2,
-      "out": 16
+      "out": 17
     },
     {
       "path": ".agents/commands/cicd-resume.md",
-      "in": 1,
+      "in": 2,
       "out": 3
     },
     {
@@ -194,7 +439,7 @@
     {
       "path": ".agents/commands/cicd-update-sprint-memory.md",
       "in": 2,
-      "out": 4
+      "out": 7
     },
     {
       "path": ".agents/commands/cicd-write-story-tests.md",
@@ -218,7 +463,7 @@
     },
     {
       "path": ".agents/commands/sentry-security-team-avch.md",
-      "in": 1,
+      "in": 2,
       "out": 1
     },
     {
@@ -229,7 +474,7 @@
     {
       "path": ".agents/commands/smh-adviser-board.md",
       "in": 3,
-      "out": 2
+      "out": 13
     },
     {
       "path": ".agents/commands/smh-clean-code-audit.md",
@@ -252,6 +497,11 @@
       "out": 4
     },
     {
+      "path": ".agents/commands/smh-llm-approvals.md",
+      "in": 3,
+      "out": 5
+    },
+    {
       "path": ".agents/commands/smh-memory-audit.md",
       "in": 2,
       "out": 3
@@ -268,7 +518,7 @@
     },
     {
       "path": ".agents/commands/smh-non-crit-pr-push.md",
-      "in": 1,
+      "in": 2,
       "out": 3
     },
     {
@@ -283,12 +533,12 @@
     },
     {
       "path": ".agents/commands/smh-quick-fix.md",
-      "in": 1,
+      "in": 2,
       "out": 5
     },
     {
       "path": ".agents/commands/smh-review.md",
-      "in": 1,
+      "in": 2,
       "out": 0
     },
     {
@@ -297,23 +547,53 @@
       "out": 7
     },
     {
-      "path": ".agents/commands/smh-slash-command-updating.md",
-      "in": 1,
-      "out": 0
-    },
-    {
       "path": ".agents/commands/smh-sync-agents.md",
-      "in": 1,
+      "in": 2,
       "out": 3
     },
     {
+      "path": ".agents/commands/smh-sync-vscode.md",
+      "in": 3,
+      "out": 4
+    },
+    {
+      "path": ".agents/commands/smh-team-caterpillar.md",
+      "in": 0,
+      "out": 3
+    },
+    {
+      "path": ".agents/commands/smh-team-cheshire-cat.md",
+      "in": 0,
+      "out": 4
+    },
+    {
+      "path": ".agents/commands/smh-team-gnat.md",
+      "in": 0,
+      "out": 5
+    },
+    {
+      "path": ".agents/commands/smh-team-march-hare.md",
+      "in": 0,
+      "out": 4
+    },
+    {
+      "path": ".agents/commands/smh-team-queen-of-hearts.md",
+      "in": 0,
+      "out": 4
+    },
+    {
+      "path": ".agents/commands/smh-team-white-rabbit.md",
+      "in": 0,
+      "out": 4
+    },
+    {
       "path": ".agents/commands/smh-tour.md",
-      "in": 1,
+      "in": 2,
       "out": 5
     },
     {
       "path": ".agents/commands/smh-training.md",
-      "in": 1,
+      "in": 2,
       "out": 2
     },
     {
@@ -379,7 +659,7 @@
     {
       "path": ".agents/hooks/INDEX.md",
       "in": 0,
-      "out": 1
+      "out": 2
     },
     {
       "path": ".agents/opencode-agents/INDEX.md",
@@ -447,19 +727,29 @@
       "out": 4
     },
     {
+      "path": ".agents/permissions/INDEX.md",
+      "in": 0,
+      "out": 2
+    },
+    {
       "path": ".agents/rules/000-PLAN-FIRST-GATE.md",
-      "in": 20,
+      "in": 17,
       "out": 2
     },
     {
       "path": ".agents/rules/INDEX.md",
       "in": 8,
-      "out": 28
+      "out": 30
+    },
+    {
+      "path": ".agents/rules/agent-memory-is-long-term-only.md",
+      "in": 3,
+      "out": 0
     },
     {
       "path": ".agents/rules/artifacts-always-first.md",
-      "in": 33,
-      "out": 6
+      "in": 35,
+      "out": 8
     },
     {
       "path": ".agents/rules/code-standards.md",
@@ -472,13 +762,18 @@
       "out": 1
     },
     {
+      "path": ".agents/rules/command-shape.md",
+      "in": 13,
+      "out": 4
+    },
+    {
       "path": ".agents/rules/completion-not-illusion.md",
       "in": 7,
       "out": 0
     },
     {
       "path": ".agents/rules/constitution.md",
-      "in": 24,
+      "in": 30,
       "out": 1
     },
     {
@@ -489,16 +784,16 @@
     {
       "path": ".agents/rules/git-policy.md",
       "in": 59,
-      "out": 3
+      "out": 4
     },
     {
       "path": ".agents/rules/jira.md",
-      "in": 30,
+      "in": 28,
       "out": 3
     },
     {
       "path": ".agents/rules/karpathy-guidelines.md",
-      "in": 5,
+      "in": 8,
       "out": 1
     },
     {
@@ -513,7 +808,7 @@
     },
     {
       "path": ".agents/rules/mermaid-diagram-preferences.md",
-      "in": 1,
+      "in": 3,
       "out": 0
     },
     {
@@ -523,7 +818,7 @@
     },
     {
       "path": ".agents/rules/operator-profile.md",
-      "in": 4,
+      "in": 5,
       "out": 0
     },
     {
@@ -538,13 +833,8 @@
     },
     {
       "path": ".agents/rules/project-law.md",
-      "in": 16,
+      "in": 15,
       "out": 4
-    },
-    {
-      "path": ".agents/rules/prose-formatting.md",
-      "in": 2,
-      "out": 1
     },
     {
       "path": ".agents/rules/reproduce-before-you-fix.md",
@@ -553,38 +843,43 @@
     },
     {
       "path": ".agents/rules/smh-target-resolution.md",
-      "in": 44,
+      "in": 37,
       "out": 3
     },
     {
       "path": ".agents/rules/sop-currency.md",
-      "in": 11,
+      "in": 12,
       "out": 8
     },
     {
       "path": ".agents/rules/tests-must-gate-for-real.md",
-      "in": 11,
+      "in": 13,
       "out": 0
     },
     {
       "path": ".agents/rules/training-mode.md",
-      "in": 3,
+      "in": 2,
       "out": 1
     },
     {
       "path": ".agents/rules/work-consolidation.md",
-      "in": 16,
+      "in": 15,
       "out": 2
     },
     {
       "path": ".agents/rules/worktree-per-story.md",
-      "in": 36,
+      "in": 31,
       "out": 2
     },
     {
+      "path": ".agents/rules/zoo-team.md",
+      "in": 18,
+      "out": 6
+    },
+    {
       "path": ".agents/scripts/INDEX.md",
-      "in": 6,
-      "out": 5
+      "in": 4,
+      "out": 6
     },
     {
       "path": ".agents/scripts/teaching-edition/replacements/jira.md",
@@ -613,7 +908,7 @@
     },
     {
       "path": ".agents/scripts/teaching-edition/replacements/router.md",
-      "in": 14,
+      "in": 11,
       "out": 1
     },
     {
@@ -1048,8 +1343,8 @@
     },
     {
       "path": ".agents/skills/keyway-secrets/SKILL.md",
-      "in": 1,
-      "out": 1
+      "in": 2,
+      "out": 2
     },
     {
       "path": ".agents/skills/mermaid-diagram-standards/SKILL.md",
@@ -1377,6 +1672,11 @@
       "out": 1
     },
     {
+      "path": ".agents/skills/smh-llm-approvals/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": ".agents/skills/smh-memory-audit/SKILL.md",
       "in": 0,
       "out": 1
@@ -1422,12 +1722,12 @@
       "out": 1
     },
     {
-      "path": ".agents/skills/smh-slash-command-updating/SKILL.md",
+      "path": ".agents/skills/smh-sync-agents/SKILL.md",
       "in": 0,
       "out": 1
     },
     {
-      "path": ".agents/skills/smh-sync-agents/SKILL.md",
+      "path": ".agents/skills/smh-sync-vscode/SKILL.md",
       "in": 0,
       "out": 1
     },
@@ -1522,9 +1822,19 @@
       "out": 0
     },
     {
+      "path": ".agents/templates/INDEX.md",
+      "in": 0,
+      "out": 2
+    },
+    {
+      "path": ".agents/templates/project_overview_guide.md",
+      "in": 10,
+      "out": 4
+    },
+    {
       "path": ".agents/workflows/INDEX.md",
-      "in": 3,
-      "out": 11
+      "in": 2,
+      "out": 10
     },
     {
       "path": ".agents/workflows/cicd-bdd-tests.md",
@@ -1574,7 +1884,7 @@
     {
       "path": ".agents/workflows/cicd-live-testing-team.md",
       "in": 0,
-      "out": 2
+      "out": 1
     },
     {
       "path": ".agents/workflows/cicd-merge-epic-workingtrees.md",
@@ -1584,12 +1894,12 @@
     {
       "path": ".agents/workflows/cicd-non-crit-pr-push.md",
       "in": 0,
-      "out": 6
+      "out": 1
     },
     {
       "path": ".agents/workflows/cicd-park.md",
       "in": 0,
-      "out": 5
+      "out": 1
     },
     {
       "path": ".agents/workflows/cicd-prune-context.md",
@@ -1614,7 +1924,7 @@
     {
       "path": ".agents/workflows/cicd-resume.md",
       "in": 0,
-      "out": 3
+      "out": 1
     },
     {
       "path": ".agents/workflows/cicd-self-audit.md",
@@ -1639,7 +1949,7 @@
     {
       "path": ".agents/workflows/smh-adviser-board.md",
       "in": 2,
-      "out": 1
+      "out": 2
     },
     {
       "path": ".agents/workflows/smh-clean-code-audit.md",
@@ -1662,6 +1972,11 @@
       "out": 1
     },
     {
+      "path": ".agents/workflows/smh-llm-approvals.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": ".agents/workflows/smh-memory-audit.md",
       "in": 0,
       "out": 1
@@ -1674,12 +1989,12 @@
     {
       "path": ".agents/workflows/smh-new-project.md",
       "in": 1,
-      "out": 3
+      "out": 1
     },
     {
       "path": ".agents/workflows/smh-non-crit-pr-push.md",
       "in": 0,
-      "out": 3
+      "out": 1
     },
     {
       "path": ".agents/workflows/smh-plan-task.md",
@@ -1694,12 +2009,12 @@
     {
       "path": ".agents/workflows/smh-quick-fix.md",
       "in": 0,
-      "out": 5
+      "out": 1
     },
     {
       "path": ".agents/workflows/smh-review.md",
       "in": 0,
-      "out": 0
+      "out": 1
     },
     {
       "path": ".agents/workflows/smh-self-audit.md",
@@ -1707,24 +2022,24 @@
       "out": 1
     },
     {
-      "path": ".agents/workflows/smh-slash-command-updating.md",
-      "in": 1,
-      "out": 0
-    },
-    {
       "path": ".agents/workflows/smh-sync-agents.md",
       "in": 0,
-      "out": 3
+      "out": 1
+    },
+    {
+      "path": ".agents/workflows/smh-sync-vscode.md",
+      "in": 0,
+      "out": 1
     },
     {
       "path": ".agents/workflows/smh-tour.md",
       "in": 0,
-      "out": 5
+      "out": 1
     },
     {
       "path": ".agents/workflows/smh-training.md",
       "in": 0,
-      "out": 2
+      "out": 1
     },
     {
       "path": ".agents/workflows/smh-update-maps-indexes.md",
@@ -1788,13 +2103,13 @@
     },
     {
       "path": "docs/_scc_sops_prds/sharing_keys_secrets_secure.md",
-      "in": 4,
+      "in": 5,
       "out": 3
     },
     {
       "path": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
-      "in": 4,
-      "out": 1
+      "in": 2,
+      "out": 11
     },
     {
       "path": "docs/_scc_sops_prds/tdad_stack_install_guide.md",
@@ -1813,13 +2128,13 @@
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "in": 29,
-      "out": 47
+      "in": 34,
+      "out": 55
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 8
+      "out": 15
     },
     {
       "path": "docs/code-review-graph.md",
@@ -1833,37 +2148,32 @@
     },
     {
       "path": "docs/migrations/INDEX.md",
-      "in": 5,
-      "out": 17
+      "in": 6,
+      "out": 22
     },
     {
-      "path": "docs/migrations/gemini_extensions/gemini-extensions-sync-guide.md",
-      "in": 2,
-      "out": 0
-    },
-    {
-      "path": "docs/migrations/install_guides/antigravity-ide-extension-migration.md",
-      "in": 2,
-      "out": 0
-    },
-    {
-      "path": "docs/migrations/install_guides/claude-permission-sandboxed.md",
-      "in": 0,
-      "out": 0
+      "path": "docs/migrations/install_guides/github-ci-gates-setup.md",
+      "in": 3,
+      "out": 3
     },
     {
       "path": "docs/migrations/install_guides/jira-api-token-setup.md",
-      "in": 8,
+      "in": 9,
       "out": 2
     },
     {
-      "path": "docs/migrations/install_guides/machine_setup_card.md",
+      "path": "docs/migrations/install_guides/keyway-setup.md",
       "in": 5,
+      "out": 5
+    },
+    {
+      "path": "docs/migrations/install_guides/machine_setup_card.md",
+      "in": 6,
       "out": 3
     },
     {
       "path": "docs/migrations/install_guides/new_machine-migration-guide.md",
-      "in": 6,
+      "in": 9,
       "out": 4
     },
     {
@@ -1877,13 +2187,33 @@
       "out": 1
     },
     {
+      "path": "docs/migrations/install_guides/repo-gate-stack-setup.md",
+      "in": 3,
+      "out": 5
+    },
+    {
       "path": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
       "in": 4,
       "out": 1
     },
     {
+      "path": "docs/migrations/install_guides/vscode-ide-extension-migration.md",
+      "in": 2,
+      "out": 0
+    },
+    {
+      "path": "docs/migrations/terminal-permissions-guide.md",
+      "in": 8,
+      "out": 5
+    },
+    {
+      "path": "docs/migrations/vscode_sync/README.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": "docs/repo-map.md",
-      "in": 11,
+      "in": 12,
       "out": 10
     },
     {
@@ -1893,8 +2223,8 @@
     },
     {
       "path": "docs/workspace-standard.md",
-      "in": 13,
-      "out": 26
+      "in": 14,
+      "out": 27
     },
     {
       "path": ".agents/bmad",
@@ -1997,6 +2327,16 @@
     },
     {
       "from": ".agents/INDEX.md",
+      "to": "docs/workspace-standard.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/INDEX.md",
+      "to": ".agents/templates/project_overview_guide.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/INDEX.md",
       "to": ".agents/rules/INDEX.md",
       "kind": "ref"
     },
@@ -2008,6 +2348,11 @@
     {
       "from": ".agents/INDEX.md",
       "to": ".agents/workflows/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/INDEX.md",
+      "to": ".agents/rules/zoo-team.md",
       "kind": "ref"
     },
     {
@@ -2027,17 +2372,72 @@
     },
     {
       "from": ".agents/commands/INDEX.md",
-      "to": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/INDEX.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
     {
       "from": ".agents/commands/INDEX.md",
       "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/CARD.md",
+      "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/ROSTER.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/SPAWNS.md",
+      "to": ".agents/commands/adviser-board/CARD.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/SPAWNS.md",
+      "to": ".agents/commands/adviser-board/ROSTER.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/SPAWNS.md",
+      "to": ".agents/commands/adviser-board/TEAMS.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/SPAWNS.md",
+      "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/TEAMS.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/TEAMS.md",
+      "to": ".agents/commands/adviser-board/ROSTER.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/TEAMS.md",
+      "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "to": ".agents/commands/adviser-board/CARD.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/minds/hormozi.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/adviser-board/minds/ury.md",
+      "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
       "kind": "ref"
     },
     {
@@ -2148,6 +2548,11 @@
     {
       "from": ".agents/commands/cicd-close-story-merge-tree.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-close-story-merge-tree.md",
+      "to": ".agents/templates/project_overview_guide.md",
       "kind": "ref"
     },
     {
@@ -2326,6 +2731,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/commands/cicd-merge-epic-workingtrees.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/commands/cicd-mobile-error-team.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
@@ -2412,6 +2822,11 @@
     },
     {
       "from": ".agents/commands/cicd-push-e2e.md",
+      "to": ".agents/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-push-e2e.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
@@ -2423,6 +2838,11 @@
     {
       "from": ".agents/commands/cicd-push-e2e.md",
       "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-push-e2e.md",
+      "to": ".agents/templates/project_overview_guide.md",
       "kind": "ref"
     },
     {
@@ -2478,6 +2898,11 @@
     {
       "from": ".agents/commands/cicd-quick-dev.md",
       "to": ".agents/commands/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-quick-dev.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -2552,12 +2977,27 @@
     },
     {
       "from": ".agents/commands/cicd-update-sprint-memory.md",
+      "to": ".agents/rules/mermaid-diagram-preferences.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-update-sprint-memory.md",
       "to": ".agents/rules/smh-target-resolution.md",
       "kind": "ref"
     },
     {
       "from": ".agents/commands/cicd-update-sprint-memory.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-update-sprint-memory.md",
+      "to": ".agents/templates/project_overview_guide.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-update-sprint-memory.md",
+      "to": ".agents/rules/sop-currency.md",
       "kind": "ref"
     },
     {
@@ -2587,12 +3027,37 @@
     },
     {
       "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/CARD.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
       "to": ".agents/commands/INDEX.md",
       "kind": "ref"
     },
     {
       "from": ".agents/commands/smh-adviser-board.md",
-      "to": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/ROSTER.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/SPAWNS.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/TEAMS.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
       "kind": "ref"
     },
     {
@@ -2718,6 +3183,26 @@
     {
       "from": ".agents/commands/smh-label-tasks.md",
       "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-llm-approvals.md",
+      "to": ".agents/rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-llm-approvals.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-llm-approvals.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-llm-approvals.md",
+      "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
     {
@@ -2951,6 +3436,116 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/commands/smh-sync-vscode.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-sync-vscode.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-sync-vscode.md",
+      "to": ".agents/rules/sop-currency.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-sync-vscode.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-caterpillar.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-caterpillar.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-cheshire-cat.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-cheshire-cat.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-cheshire-cat.md",
+      "to": ".agents/rules/karpathy-guidelines.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-gnat.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-gnat.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-gnat.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-gnat.md",
+      "to": ".agents/rules/karpathy-guidelines.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-march-hare.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-march-hare.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-march-hare.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-queen-of-hearts.md",
+      "to": ".agents/rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-queen-of-hearts.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-queen-of-hearts.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-white-rabbit.md",
+      "to": ".agents/rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-white-rabbit.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-white-rabbit.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/commands/smh-tour.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "kind": "link"
@@ -3018,6 +3613,11 @@
     {
       "from": ".agents/commands/smh-update-maps-indexes.md",
       "to": "docs/workspace-standard.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/hooks/INDEX.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -3211,6 +3811,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/permissions/INDEX.md",
+      "to": "docs/migrations/terminal-permissions-guide.md",
+      "kind": "link"
+    },
+    {
       "from": ".agents/rules/000-PLAN-FIRST-GATE.md",
       "to": ".agents/rules/artifacts-always-first.md",
       "kind": "ref"
@@ -3232,6 +3837,11 @@
     },
     {
       "from": ".agents/rules/INDEX.md",
+      "to": ".agents/rules/agent-memory-is-long-term-only.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/INDEX.md",
       "to": ".agents/rules/artifacts-always-first.md",
       "kind": "ref"
     },
@@ -3243,6 +3853,11 @@
     {
       "from": ".agents/rules/INDEX.md",
       "to": ".agents/rules/collaborative-debug-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/INDEX.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -3322,11 +3937,6 @@
     },
     {
       "from": ".agents/rules/INDEX.md",
-      "to": ".agents/rules/prose-formatting.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/rules/INDEX.md",
       "to": ".agents/rules/reproduce-before-you-fix.md",
       "kind": "ref"
     },
@@ -3361,6 +3971,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/rules/INDEX.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/rules/artifacts-always-first.md",
       "to": ".agents/rules/INDEX.md",
       "kind": "ref"
@@ -3373,6 +3988,11 @@
     {
       "from": ".agents/rules/artifacts-always-first.md",
       "to": "docs/workspace-standard.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/artifacts-always-first.md",
+      "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
     {
@@ -3391,6 +4011,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/rules/artifacts-always-first.md",
+      "to": "docs/migrations/terminal-permissions-guide.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/rules/code-standards.md",
       "to": ".agents/skills/code-review-engine/steps/step-01-review.md",
       "kind": "ref"
@@ -3401,6 +4026,21 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/rules/command-shape.md",
+      "to": "docs/migrations/terminal-permissions-guide.md",
+      "kind": "link"
+    },
+    {
+      "from": ".agents/rules/command-shape.md",
+      "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/command-shape.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/rules/constitution.md",
       "to": ".agents/rules/karpathy-guidelines.md",
       "kind": "ref"
@@ -3408,6 +4048,11 @@
     {
       "from": ".agents/rules/git-policy.md",
       "to": ".agents/rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/git-policy.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -3501,11 +4146,6 @@
       "kind": "ref"
     },
     {
-      "from": ".agents/rules/prose-formatting.md",
-      "to": "docs/repo-map.md",
-      "kind": "ref"
-    },
-    {
       "from": ".agents/rules/smh-target-resolution.md",
       "to": ".agents/INDEX.md",
       "kind": "ref"
@@ -3576,6 +4216,36 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/rules/zoo-team.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": "docs/migrations/terminal-permissions-guide.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": ".agents/rules/karpathy-guidelines.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "to": ".agents/rules/operator-profile.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/scripts/INDEX.md",
       "to": ".agents/rules/jira.md",
       "kind": "ref"
@@ -3583,6 +4253,11 @@
     {
       "from": ".agents/scripts/INDEX.md",
       "to": ".agents/rules/sop-currency.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/scripts/INDEX.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -4096,6 +4771,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/skills/keyway-secrets/SKILL.md",
+      "to": "docs/migrations/install_guides/keyway-setup.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/skills/prototype/SKILL.md",
       "to": ".agents/skills/prototype/PICKER.md",
       "kind": "link"
@@ -4176,6 +4856,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/skills/smh-llm-approvals/SKILL.md",
+      "to": ".agents/commands/smh-llm-approvals.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/skills/smh-memory-audit/SKILL.md",
       "to": ".agents/commands/smh-memory-audit.md",
       "kind": "ref"
@@ -4221,13 +4906,13 @@
       "kind": "ref"
     },
     {
-      "from": ".agents/skills/smh-slash-command-updating/SKILL.md",
-      "to": ".agents/commands/smh-slash-command-updating.md",
+      "from": ".agents/skills/smh-sync-agents/SKILL.md",
+      "to": ".agents/commands/smh-sync-agents.md",
       "kind": "ref"
     },
     {
-      "from": ".agents/skills/smh-sync-agents/SKILL.md",
-      "to": ".agents/commands/smh-sync-agents.md",
+      "from": ".agents/skills/smh-sync-vscode/SKILL.md",
+      "to": ".agents/commands/smh-sync-vscode.md",
       "kind": "ref"
     },
     {
@@ -4268,6 +4953,26 @@
     {
       "from": ".agents/skills/workspace-structure/SKILL.md",
       "to": "docs/workspace-standard.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/templates/INDEX.md",
+      "to": ".agents/templates/project_overview_guide.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/templates/project_overview_guide.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/templates/project_overview_guide.md",
+      "to": ".agents/rules/mermaid-diagram-preferences.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/templates/project_overview_guide.md",
+      "to": "docs/repo-map.md",
       "kind": "ref"
     },
     {
@@ -4317,17 +5022,12 @@
     },
     {
       "from": ".agents/workflows/INDEX.md",
-      "to": ".agents/workflows/smh-slash-command-updating.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/INDEX.md",
       "to": ".agents/workflows/smh-update-maps-indexes.md",
       "kind": "ref"
     },
     {
       "from": ".agents/workflows/cicd-bdd-tests.md",
-      "to": ".agents/rules/smh-target-resolution.md",
+      "to": ".agents/commands/cicd-bdd-tests.md",
       "kind": "ref"
     },
     {
@@ -4362,7 +5062,7 @@
     },
     {
       "from": ".agents/workflows/cicd-e2e.md",
-      "to": ".agents/rules/smh-target-resolution.md",
+      "to": ".agents/commands/cicd-e2e.md",
       "kind": "ref"
     },
     {
@@ -4372,12 +5072,7 @@
     },
     {
       "from": ".agents/workflows/cicd-live-testing-team.md",
-      "to": ".agents/rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-live-testing-team.md",
-      "to": ".agents/rules/smh-target-resolution.md",
+      "to": ".agents/commands/cicd-live-testing-team.md",
       "kind": "ref"
     },
     {
@@ -4387,52 +5082,17 @@
     },
     {
       "from": ".agents/workflows/cicd-non-crit-pr-push.md",
-      "to": ".agents/rules/000-PLAN-FIRST-GATE.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-non-crit-pr-push.md",
-      "to": ".agents/rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-non-crit-pr-push.md",
-      "to": ".agents/rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-non-crit-pr-push.md",
-      "to": ".agents/rules/smh-target-resolution.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-non-crit-pr-push.md",
-      "to": ".agents/scripts/INDEX.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-non-crit-pr-push.md",
-      "to": ".agents/workflows/INDEX.md",
+      "to": ".agents/commands/cicd-non-crit-pr-push.md",
       "kind": "ref"
     },
     {
       "from": ".agents/workflows/cicd-park.md",
-      "to": ".agents/rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-park.md",
-      "to": ".agents/rules/smh-target-resolution.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-park.md",
-      "to": ".agents/rules/worktree-per-story.md",
+      "to": ".agents/commands/cicd-park.md",
       "kind": "ref"
     },
     {
       "from": ".agents/workflows/cicd-prune-context.md",
-      "to": ".agents/rules/smh-target-resolution.md",
+      "to": ".agents/commands/cicd-prune-context.md",
       "kind": "ref"
     },
     {
@@ -4452,12 +5112,7 @@
     },
     {
       "from": ".agents/workflows/cicd-resume.md",
-      "to": ".agents/rules/smh-target-resolution.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/cicd-resume.md",
-      "to": ".agents/rules/worktree-per-story.md",
+      "to": ".agents/commands/cicd-resume.md",
       "kind": "ref"
     },
     {
@@ -4477,7 +5132,12 @@
     },
     {
       "from": ".agents/workflows/sentry-security-team-avch.md",
-      "to": ".agents/rules/smh-target-resolution.md",
+      "to": ".agents/commands/sentry-security-team-avch.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/workflows/smh-adviser-board.md",
+      "to": ".agents/commands/adviser-board/SPAWNS.md",
       "kind": "ref"
     },
     {
@@ -4506,6 +5166,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/workflows/smh-llm-approvals.md",
+      "to": ".agents/commands/smh-llm-approvals.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/workflows/smh-memory-audit.md",
       "to": ".agents/commands/smh-memory-audit.md",
       "kind": "ref"
@@ -4517,32 +5182,12 @@
     },
     {
       "from": ".agents/workflows/smh-new-project.md",
-      "to": ".agents/INDEX.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-new-project.md",
-      "to": ".agents/rules/project-law.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-new-project.md",
-      "to": ".agents/scripts/teaching-edition/replacements/router.md",
+      "to": ".agents/commands/smh-new-project.md",
       "kind": "ref"
     },
     {
       "from": ".agents/workflows/smh-non-crit-pr-push.md",
-      "to": ".agents/rules/000-PLAN-FIRST-GATE.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-non-crit-pr-push.md",
-      "to": ".agents/rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-non-crit-pr-push.md",
-      "to": ".agents/rules/jira.md",
+      "to": ".agents/commands/smh-non-crit-pr-push.md",
       "kind": "ref"
     },
     {
@@ -4557,27 +5202,12 @@
     },
     {
       "from": ".agents/workflows/smh-quick-fix.md",
-      "to": ".agents/rules/000-PLAN-FIRST-GATE.md",
+      "to": ".agents/commands/smh-quick-fix.md",
       "kind": "ref"
     },
     {
-      "from": ".agents/workflows/smh-quick-fix.md",
-      "to": ".agents/rules/artifacts-always-first.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-quick-fix.md",
-      "to": ".agents/rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-quick-fix.md",
-      "to": ".agents/rules/worktree-per-story.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-quick-fix.md",
-      "to": ".agents/rules/work-consolidation.md",
+      "from": ".agents/workflows/smh-review.md",
+      "to": ".agents/commands/smh-review.md",
       "kind": "ref"
     },
     {
@@ -4587,47 +5217,22 @@
     },
     {
       "from": ".agents/workflows/smh-sync-agents.md",
-      "to": ".agents/rules/git-policy.md",
+      "to": ".agents/commands/smh-sync-agents.md",
       "kind": "ref"
     },
     {
-      "from": ".agents/workflows/smh-sync-agents.md",
-      "to": ".agents/rules/sop-currency.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-sync-agents.md",
-      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "from": ".agents/workflows/smh-sync-vscode.md",
+      "to": ".agents/commands/smh-sync-vscode.md",
       "kind": "ref"
     },
     {
       "from": ".agents/workflows/smh-tour.md",
-      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "kind": "link"
-    },
-    {
-      "from": ".agents/workflows/smh-tour.md",
-      "to": ".agents/commands/smh-new-project.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-tour.md",
-      "to": ".agents/scripts/INDEX.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-tour.md",
-      "to": ".agents/scripts/teaching-edition/replacements/router.md",
+      "to": ".agents/commands/smh-tour.md",
       "kind": "ref"
     },
     {
       "from": ".agents/workflows/smh-training.md",
-      "to": ".agents/rules/training-mode.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/workflows/smh-training.md",
-      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/commands/smh-training.md",
       "kind": "ref"
     },
     {
@@ -5012,7 +5617,42 @@
     },
     {
       "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/CARD.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/DOCTRINE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/ROSTER.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/SPAWNS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/TEAMS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
       "to": ".agents/commands/smh-adviser-board.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "kind": "ref"
     },
     {
@@ -5053,6 +5693,16 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/rules/000-PLAN-FIRST-GATE.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/agent-memory-is-long-term-only.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "link"
     },
     {
@@ -5112,6 +5762,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": "docs/migrations/terminal-permissions-guide.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/INDEX.md",
       "kind": "ref"
     },
@@ -5152,8 +5807,18 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": "docs/_scc_sops_prds/INDEX.md",
       "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/artifacts-always-first.md",
+      "kind": "ref"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
@@ -5222,6 +5887,36 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/templates/project_overview_guide.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/commands/adviser-board/ROSTER.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/agent-memory-is-long-term-only.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": "docs/code-review-graph.md",
       "kind": "ref"
     },
@@ -5251,14 +5946,19 @@
       "kind": "link"
     },
     {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
       "from": "docs/code-review-graph.md",
       "to": "docs/AGENTS.md",
       "kind": "ref"
     },
     {
       "from": "docs/migrations/INDEX.md",
-      "to": "docs/migrations/install_guides/antigravity-ide-extension-migration.md",
-      "kind": "ref"
+      "to": ".agents/commands/smh-sync-vscode.md",
+      "kind": "link"
     },
     {
       "from": "docs/migrations/INDEX.md",
@@ -5267,12 +5967,17 @@
     },
     {
       "from": "docs/migrations/INDEX.md",
-      "to": "docs/migrations/gemini_extensions/gemini-extensions-sync-guide.md",
+      "to": "docs/migrations/install_guides/github-ci-gates-setup.md",
       "kind": "ref"
     },
     {
       "from": "docs/migrations/INDEX.md",
       "to": "docs/migrations/install_guides/jira-api-token-setup.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/INDEX.md",
+      "to": "docs/migrations/install_guides/keyway-setup.md",
       "kind": "link"
     },
     {
@@ -5297,7 +6002,32 @@
     },
     {
       "from": "docs/migrations/INDEX.md",
+      "to": "docs/migrations/install_guides/repo-gate-stack-setup.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/INDEX.md",
       "to": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/INDEX.md",
+      "to": "docs/migrations/install_guides/vscode-ide-extension-migration.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/install_guides/github-ci-gates-setup.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/migrations/install_guides/github-ci-gates-setup.md",
+      "to": ".agents/rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/migrations/install_guides/github-ci-gates-setup.md",
+      "to": "docs/migrations/install_guides/repo-gate-stack-setup.md",
       "kind": "link"
     },
     {
@@ -5311,18 +6041,38 @@
       "kind": "link"
     },
     {
+      "from": "docs/migrations/install_guides/keyway-setup.md",
+      "to": "docs/_scc_sops_prds/sharing_keys_secrets_secure.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/install_guides/keyway-setup.md",
+      "to": "docs/migrations/INDEX.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/install_guides/keyway-setup.md",
+      "to": ".agents/skills/keyway-secrets/SKILL.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/migrations/install_guides/keyway-setup.md",
+      "to": "docs/migrations/install_guides/machine_setup_card.md",
+      "kind": "link"
+    },
+    {
       "from": "docs/migrations/install_guides/machine_setup_card.md",
       "to": "docs/migrations/INDEX.md",
       "kind": "link"
     },
     {
       "from": "docs/migrations/install_guides/machine_setup_card.md",
-      "to": "docs/_scc_sops_prds/sharing_keys_secrets_secure.md",
-      "kind": "ref"
+      "to": "docs/migrations/install_guides/jira-api-token-setup.md",
+      "kind": "link"
     },
     {
       "from": "docs/migrations/install_guides/machine_setup_card.md",
-      "to": "docs/migrations/install_guides/jira-api-token-setup.md",
+      "to": "docs/migrations/install_guides/keyway-setup.md",
       "kind": "link"
     },
     {
@@ -5351,8 +6101,48 @@
       "kind": "link"
     },
     {
+      "from": "docs/migrations/install_guides/repo-gate-stack-setup.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/migrations/install_guides/repo-gate-stack-setup.md",
+      "to": "docs/migrations/install_guides/github-ci-gates-setup.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/install_guides/repo-gate-stack-setup.md",
+      "to": "docs/migrations/install_guides/jira-api-token-setup.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/install_guides/repo-gate-stack-setup.md",
+      "to": "docs/migrations/install_guides/keyway-setup.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/install_guides/repo-gate-stack-setup.md",
+      "to": "docs/migrations/install_guides/new_machine-migration-guide.md",
+      "kind": "link"
+    },
+    {
       "from": "docs/migrations/install_guides/scratchpad-allow-hook-per-machine.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/terminal-permissions-guide.md",
+      "to": ".agents/commands/smh-llm-approvals.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/terminal-permissions-guide.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/migrations/terminal-permissions-guide.md",
+      "to": "docs/migrations/install_guides/new_machine-migration-guide.md",
       "kind": "link"
     },
     {
@@ -5442,8 +6232,8 @@
     },
     {
       "from": "docs/workspace-standard.md",
-      "to": ".agents/scripts/teaching-edition/replacements/router.md",
-      "kind": "ref"
+      "to": ".agents/templates/project_overview_guide.md",
+      "kind": "link"
     },
     {
       "from": "docs/workspace-standard.md",
@@ -5527,7 +6317,7 @@
     },
     {
       "from": "docs/workspace-standard.md",
-      "to": ".agents/rules/prose-formatting.md",
+      "to": ".agents/scripts/teaching-edition/replacements/router.md",
       "kind": "ref"
     },
     {
@@ -5660,10 +6450,6 @@
     {
       "from": ".agents/commands/cicd-create-epic-sprint.md",
       "target": "_bmad-output/planning-artifacts/epics.md"
-    },
-    {
-      "from": ".agents/commands/cicd-create-epic-sprint.md",
-      "target": "_my_resources/open_tasks/fix_list_admin_sudoadmin.md"
     },
     {
       "from": ".agents/commands/cicd-create-epic-sprint.md",
@@ -5890,6 +6676,10 @@
       "target": "implementation_plan.md"
     },
     {
+      "from": ".agents/commands/smh-llm-approvals.md",
+      "target": "walkthrough.md"
+    },
+    {
       "from": ".agents/commands/smh-memory-audit.md",
       "target": "MEMORY.md"
     },
@@ -5900,6 +6690,10 @@
     {
       "from": ".agents/commands/smh-merge-multiple-workingtrees.md",
       "target": "MEMORY.md"
+    },
+    {
+      "from": ".agents/commands/smh-merge-multiple-workingtrees.md",
+      "target": "_artifacts/_main/2026-08-13_scc-127-verify-wave/walkthrough.md"
     },
     {
       "from": ".agents/commands/smh-merge-multiple-workingtrees.md",
@@ -5936,6 +6730,10 @@
     {
       "from": ".agents/commands/smh-quick-fix.md",
       "target": "/walkthrough.md"
+    },
+    {
+      "from": ".agents/commands/smh-team-cheshire-cat.md",
+      "target": "implementation_plan.md"
     },
     {
       "from": ".agents/commands/smh-tour.md",
@@ -6066,6 +6864,18 @@
       "target": "implementation_plan.md"
     },
     {
+      "from": ".agents/rules/INDEX.md",
+      "target": "prose-formatting.md"
+    },
+    {
+      "from": ".agents/rules/agent-memory-is-long-term-only.md",
+      "target": "MEMORY.md"
+    },
+    {
+      "from": ".agents/rules/agent-memory-is-long-term-only.md",
+      "target": "walkthrough.md"
+    },
+    {
       "from": ".agents/rules/artifacts-always-first.md",
       "target": "/implementation_plan.md"
     },
@@ -6171,6 +6981,10 @@
     },
     {
       "from": ".agents/rules/git-policy.md",
+      "target": "epics.md"
+    },
+    {
+      "from": ".agents/rules/git-policy.md",
       "target": "walkthrough.md"
     },
     {
@@ -6255,6 +7069,14 @@
     },
     {
       "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
+      "target": "_artifacts/_main/2026-08-12_scc-124-baseline-trial/scoring.md"
+    },
+    {
+      "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
+      "target": "_artifacts/_main/2026-08-20_scc-225-review-surface/lc-cost-measurement.md"
+    },
+    {
+      "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
       "target": "scoring.md"
     },
     {
@@ -6296,70 +7118,6 @@
     {
       "from": ".agents/workflows/INDEX.md",
       "target": "todo_list.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-live-testing-team.md",
-      "target": "PROJECT_ROOT/_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-non-crit-pr-push.md",
-      "target": "docs/notes.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-park.md",
-      "target": "_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-prune-context.md",
-      "target": "/walkthrough.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-prune-context.md",
-      "target": "_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-prune-context.md",
-      "target": "active-context.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-prune-context.md",
-      "target": "known-pitfalls.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-prune-context.md",
-      "target": "project-context.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-resume.md",
-      "target": "_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": ".agents/workflows/cicd-resume.md",
-      "target": "walkthrough.md"
-    },
-    {
-      "from": ".agents/workflows/sentry-security-team-avch.md",
-      "target": ".github/claude/incident-triage.md"
-    },
-    {
-      "from": ".agents/workflows/sentry-security-team-avch.md",
-      "target": "/incident-report.md"
-    },
-    {
-      "from": ".agents/workflows/sentry-security-team-avch.md",
-      "target": "PROJECT_ROOT/.github/claude/incident-triage.md"
-    },
-    {
-      "from": ".agents/workflows/smh-new-project.md",
-      "target": "_bmad-output/project-context.md"
-    },
-    {
-      "from": ".agents/workflows/smh-quick-fix.md",
-      "target": "/walkthrough.md"
-    },
-    {
-      "from": ".agents/workflows/smh-tour.md",
-      "target": "tour-state.md"
     },
     {
       "from": "docs/_scc_sops_prds/INDEX.md",
@@ -6587,6 +7345,10 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "target": "MEMORY.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "active-context.md"
     },
     {
@@ -6622,16 +7384,20 @@
       "target": "walkthrough.md"
     },
     {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "MEMORY.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "prose-formatting.md"
+    },
+    {
       "from": "docs/code-review-graph.md",
       "target": "_bmad/bmm/stories/tea-6-temp0-integration.md"
     },
     {
       "from": "docs/migrations/INDEX.md",
       "target": "git-hooks-board-stale-install.md"
-    },
-    {
-      "from": "docs/migrations/install_guides/new_machine-migration-guide.md",
-      "target": "_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md"
     },
     {
       "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",
@@ -6643,15 +7409,19 @@
     },
     {
       "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
-      "target": "_artifacts/_main/2026-08-01_python-env-fix/walkthrough.md"
-    },
-    {
-      "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
-      "target": "_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md"
-    },
-    {
-      "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
       "target": "env-migration-guide.md"
+    },
+    {
+      "from": "docs/migrations/terminal-permissions-guide.md",
+      "target": "claude-terminal-permission.md"
+    },
+    {
+      "from": "docs/migrations/terminal-permissions-guide.md",
+      "target": "terminal-global-permission.md"
+    },
+    {
+      "from": "docs/migrations/terminal-permissions-guide.md",
+      "target": "zoo-code-permissions-guide.md"
     },
     {
       "from": "docs/repo-map.md",
@@ -6711,6 +7481,10 @@
     },
     {
       "from": "docs/workspace-standard.md",
+      "target": "prose-formatting.md"
+    },
+    {
+      "from": "docs/workspace-standard.md",
       "target": "task-list.md"
     },
     {
@@ -6734,10 +7508,6 @@
     {
       "from": ".agents/commands/smh-memory-audit.md",
       "target": "_artifacts/_memory/MEMORY.md"
-    },
-    {
-      "from": ".agents/commands/smh-merge-multiple-workingtrees.md",
-      "target": "_artifacts/_main/2026-08-13_scc-127-verify-wave/walkthrough.md"
     },
     {
       "from": ".agents/commands/smh-new-project.md",
@@ -6776,18 +7546,6 @@
       "target": "_my_resources/open_tasks/todo_list.md"
     },
     {
-      "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
-      "target": "_artifacts/_main/2026-08-12_scc-124-baseline-trial/scoring.md"
-    },
-    {
-      "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
-      "target": "_artifacts/_main/2026-08-20_scc-225-review-surface/lc-cost-measurement.md"
-    },
-    {
-      "from": ".agents/workflows/smh-new-project.md",
-      "target": "_my_resources/open_tasks/todo_list.md"
-    },
-    {
       "from": "docs/AGENTS.md",
       "target": "doc-graph.md"
     },
@@ -6802,6 +7560,10 @@
     {
       "from": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
       "target": "docs/doc-graph.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+      "target": "_my_resources/open_tasks/plan_adviser-board-rework.md"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
@@ -6867,12 +7629,23 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/adviser-board/SPAWNS.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {
@@ -6917,9 +7690,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -6934,9 +7709,30 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
+        ".agents/workflows/INDEX.md",
+        "docs/_scc_sops_prds/INDEX.md",
+        "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/cicd-push-e2e.md",
+      "target": "_artifacts/INDEX.md",
+      "candidates": [
+        ".agents/INDEX.md",
+        ".agents/bmad",
+        ".agents/commands/INDEX.md",
+        ".agents/hooks/INDEX.md",
+        ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
+        ".agents/rules/INDEX.md",
+        ".agents/scripts/INDEX.md",
+        ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7020,9 +7816,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7079,6 +7877,14 @@
       ]
     },
     {
+      "from": ".agents/commands/smh-quick-fix.md",
+      "target": "jira.md",
+      "candidates": [
+        ".agents/rules/jira.md",
+        ".agents/scripts/teaching-edition/replacements/jira.md"
+      ]
+    },
+    {
       "from": ".agents/commands/smh-self-audit.md",
       "target": "AGENTS.md",
       "candidates": [
@@ -7096,9 +7902,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7113,9 +7921,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7188,6 +7998,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -7197,8 +8008,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -7209,6 +8020,60 @@
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-caterpillar.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-cheshire-cat.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-gnat.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-march-hare.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-queen-of-hearts.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-team-white-rabbit.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {
@@ -7235,7 +8100,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -7256,9 +8122,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7295,7 +8163,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -7316,9 +8185,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7333,9 +8204,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7350,9 +8223,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7367,9 +8242,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7390,7 +8267,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -7399,7 +8277,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -7558,6 +8437,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -7567,8 +8447,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -7587,7 +8467,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -7608,9 +8489,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7634,12 +8517,23 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": ".agents/rules/agent-memory-is-long-term-only.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {
@@ -7678,9 +8572,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7695,9 +8591,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7705,6 +8603,15 @@
     },
     {
       "from": ".agents/rules/code-standards.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/rules/command-shape.md",
       "target": "AGENTS.md",
       "candidates": [
         ".agents/AGENTS.md",
@@ -7721,9 +8628,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7738,9 +8647,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7764,9 +8675,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7781,9 +8694,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7820,7 +8735,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -7850,9 +8766,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7867,9 +8785,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7893,9 +8813,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7910,9 +8832,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7954,9 +8878,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -7968,6 +8894,15 @@
       "candidates": [
         ".agents/commands/smh-plan-task.md",
         ".agents/workflows/smh-plan-task.md"
+      ]
+    },
+    {
+      "from": ".agents/rules/zoo-team.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {
@@ -8064,6 +8999,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8073,8 +9009,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -8145,6 +9081,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8154,8 +9091,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -8226,6 +9163,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8235,8 +9173,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -8307,6 +9245,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8316,8 +9255,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -8388,6 +9327,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8397,8 +9337,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -8469,6 +9409,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8478,8 +9419,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -8550,6 +9491,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8559,8 +9501,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -8631,6 +9573,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8640,8 +9583,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -8712,6 +9655,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8721,8 +9665,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -8793,6 +9737,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8802,8 +9747,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -8874,6 +9819,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8883,8 +9829,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -8955,6 +9901,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -8964,8 +9911,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -9036,6 +9983,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9045,8 +9993,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -9117,6 +10065,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9126,8 +10075,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -9138,6 +10087,14 @@
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
+      ]
+    },
+    {
+      "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
+      "target": "jira.md",
+      "candidates": [
+        ".agents/rules/jira.md",
+        ".agents/scripts/teaching-edition/replacements/jira.md"
       ]
     },
     {
@@ -9206,6 +10163,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9215,8 +10173,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -9252,7 +10210,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -9261,7 +10220,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -9282,9 +10242,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -9356,6 +10318,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9365,8 +10328,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -9413,9 +10376,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -9427,7 +10392,27 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
+      ]
+    },
+    {
+      "from": ".agents/workflows/INDEX.md",
+      "target": "commands/INDEX.md",
+      "candidates": [
+        ".agents/INDEX.md",
+        ".agents/bmad",
+        ".agents/commands/INDEX.md",
+        ".agents/hooks/INDEX.md",
+        ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
+        ".agents/rules/INDEX.md",
+        ".agents/scripts/INDEX.md",
+        ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
+        ".agents/workflows/INDEX.md",
+        "docs/_scc_sops_prds/INDEX.md",
+        "docs/migrations/INDEX.md"
       ]
     },
     {
@@ -9439,139 +10424,6 @@
       ]
     },
     {
-      "from": ".agents/workflows/smh-new-project.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        ".agents/AGENTS.md",
-        ".agents/skills/react-best-practices/AGENTS.md",
-        "docs/AGENTS.md"
-      ]
-    },
-    {
-      "from": ".agents/workflows/smh-new-project.md",
-      "target": "CLAUDE.md",
-      "candidates": [
-        ".agents/CLAUDE.md",
-        "docs/CLAUDE.md"
-      ]
-    },
-    {
-      "from": ".agents/workflows/smh-new-project.md",
-      "target": "GEMINI.md",
-      "candidates": [
-        ".agents/GEMINI.md",
-        "docs/GEMINI.md"
-      ]
-    },
-    {
-      "from": ".agents/workflows/smh-sync-agents.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        ".agents/AGENTS.md",
-        ".agents/skills/react-best-practices/AGENTS.md",
-        "docs/AGENTS.md"
-      ]
-    },
-    {
-      "from": ".agents/workflows/smh-sync-agents.md",
-      "target": "SKILL.md",
-      "candidates": [
-        ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
-        ".agents/skills/backend-dev-guidelines/SKILL.md",
-        ".agents/skills/cicd-bdd-tests/SKILL.md",
-        ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
-        ".agents/skills/cicd-clean-code-audit/SKILL.md",
-        ".agents/skills/cicd-close-story-merge-tree/SKILL.md",
-        ".agents/skills/cicd-code-review/SKILL.md",
-        ".agents/skills/cicd-create-epic-sprint/SKILL.md",
-        ".agents/skills/cicd-deploy-backend/SKILL.md",
-        ".agents/skills/cicd-dev-story-tests/SKILL.md",
-        ".agents/skills/cicd-e2e/SKILL.md",
-        ".agents/skills/cicd-label-tasks/SKILL.md",
-        ".agents/skills/cicd-live-testing-team/SKILL.md",
-        ".agents/skills/cicd-merge-epic-workingtrees/SKILL.md",
-        ".agents/skills/cicd-non-crit-pr-push/SKILL.md",
-        ".agents/skills/cicd-park/SKILL.md",
-        ".agents/skills/cicd-prune-context/SKILL.md",
-        ".agents/skills/cicd-prune-worktree/SKILL.md",
-        ".agents/skills/cicd-push-e2e/SKILL.md",
-        ".agents/skills/cicd-quick-dev/SKILL.md",
-        ".agents/skills/cicd-resume/SKILL.md",
-        ".agents/skills/cicd-self-audit/SKILL.md",
-        ".agents/skills/cicd-update-sprint-memory/SKILL.md",
-        ".agents/skills/cicd-write-story-tests/SKILL.md",
-        ".agents/skills/code-review-engine/SKILL.md",
-        ".agents/skills/code-review-graph/SKILL.md",
-        ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
-        ".agents/skills/firebase-ai-logic-basics/SKILL.md",
-        ".agents/skills/firebase-app-hosting-basics/SKILL.md",
-        ".agents/skills/firebase-auth-basics/SKILL.md",
-        ".agents/skills/firebase-basics/SKILL.md",
-        ".agents/skills/firebase-data-connect-basics/SKILL.md",
-        ".agents/skills/firebase-firestore-basics/SKILL.md",
-        ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
-        ".agents/skills/keyway-secrets/SKILL.md",
-        ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
-        ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
-        ".agents/skills/python-patterns/SKILL.md",
-        ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
-        ".agents/skills/sentry-security-team-avch/SKILL.md",
-        ".agents/skills/smh-adviser-board/SKILL.md",
-        ".agents/skills/smh-clean-code-audit/SKILL.md",
-        ".agents/skills/smh-close-task-merge-tree/SKILL.md",
-        ".agents/skills/smh-code-review/SKILL.md",
-        ".agents/skills/smh-label-tasks/SKILL.md",
-        ".agents/skills/smh-memory-audit/SKILL.md",
-        ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
-        ".agents/skills/smh-new-project/SKILL.md",
-        ".agents/skills/smh-non-crit-pr-push/SKILL.md",
-        ".agents/skills/smh-plan-task/SKILL.md",
-        ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
-        ".agents/skills/smh-review/SKILL.md",
-        ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
-        ".agents/skills/smh-sync-agents/SKILL.md",
-        ".agents/skills/smh-tour/SKILL.md",
-        ".agents/skills/smh-training/SKILL.md",
-        ".agents/skills/smh-update-maps-indexes/SKILL.md",
-        ".agents/skills/systematic-debugging/SKILL.md",
-        ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
-        ".agents/skills/ui-ux-pro-max/SKILL.md",
-        ".agents/skills/v3-prompt-architecture/SKILL.md",
-        ".agents/skills/webm-alpha-video/SKILL.md",
-        ".agents/skills/workspace-structure/SKILL.md",
-        ".agents/skills/write-swift/SKILL.md"
-      ]
-    },
-    {
-      "from": ".agents/workflows/smh-tour.md",
-      "target": "/AGENTS.md",
-      "candidates": [
-        ".agents/AGENTS.md",
-        ".agents/skills/react-best-practices/AGENTS.md",
-        "docs/AGENTS.md"
-      ]
-    },
-    {
-      "from": ".agents/workflows/smh-tour.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        ".agents/AGENTS.md",
-        ".agents/skills/react-best-practices/AGENTS.md",
-        "docs/AGENTS.md"
-      ]
-    },
-    {
       "from": "docs/AGENTS.md",
       "target": "INDEX.md",
       "candidates": [
@@ -9580,9 +10432,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -9606,9 +10460,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -9645,7 +10501,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -9666,9 +10523,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -9758,6 +10617,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -9767,8 +10627,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -9804,7 +10664,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -9813,7 +10674,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -9834,12 +10696,23 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "target": "/.codex/AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {
@@ -9876,9 +10749,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -9890,7 +10765,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -9899,7 +10775,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -9920,6 +10797,14 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "target": "operator-profile.md",
+      "candidates": [
+        ".agents/rules/operator-profile.md",
+        ".agents/scripts/teaching-edition/replacements/operator-profile.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "rules/operator-profile.md",
       "candidates": [
         ".agents/rules/operator-profile.md",
@@ -9932,6 +10817,24 @@
       "candidates": [
         ".agents/commands/smh-adviser-board.md",
         ".agents/workflows/smh-adviser-board.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "/.codex/AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {
@@ -9956,7 +10859,16 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "operator-profile.md",
+      "candidates": [
+        ".agents/rules/operator-profile.md",
+        ".agents/scripts/teaching-edition/replacements/operator-profile.md"
       ]
     },
     {
@@ -9974,24 +10886,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
-      ]
-    },
-    {
-      "from": "docs/migrations/install_guides/new_machine-migration-guide.md",
-      "target": ".opencode/agent/INDEX.md",
-      "candidates": [
-        ".agents/INDEX.md",
-        ".agents/bmad",
-        ".agents/commands/INDEX.md",
-        ".agents/hooks/INDEX.md",
-        ".agents/opencode-agents/INDEX.md",
-        ".agents/rules/INDEX.md",
-        ".agents/scripts/INDEX.md",
-        ".agents/skills/INDEX.md",
-        ".agents/workflows/INDEX.md",
-        "docs/_scc_sops_prds/INDEX.md",
-        "docs/migrations/INDEX.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10003,9 +10899,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10020,9 +10918,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10046,9 +10946,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10063,9 +10965,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10098,9 +11002,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10164,6 +11070,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -10173,8 +11080,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -10196,9 +11103,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10210,7 +11119,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10271,6 +11181,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
         ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
         ".agents/skills/smh-new-project/SKILL.md",
@@ -10280,8 +11191,8 @@
         ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
-        ".agents/skills/smh-slash-command-updating/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-tour/SKILL.md",
         ".agents/skills/smh-training/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
@@ -10312,9 +11223,11 @@
         ".agents/commands/INDEX.md",
         ".agents/hooks/INDEX.md",
         ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
         ".agents/rules/INDEX.md",
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
@@ -10326,7 +11239,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10344,7 +11258,8 @@
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md"
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -10375,12 +11290,24 @@
       "target": "Projects/AGY_AVIATIONCHAT/.agents/rules/testing-standards.md"
     },
     {
+      "from": "docs/migrations/install_guides/new_machine-migration-guide.md",
+      "target": "Projects/AGY_AVIATIONCHAT/_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md"
+    },
+    {
       "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",
       "target": "Projects/AGY_AVIATIONCHAT/.agents/commands/autopilot_glm.md"
     },
     {
       "from": "docs/migrations/install_guides/propagate-autopilot-glm-hybrid.md",
       "target": "Projects/AGY_AVIATIONCHAT/.claude/commands/autopilot_glm.md"
+    },
+    {
+      "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
+      "target": "Projects/AGY_AVIATIONCHAT/_artifacts/_main/2026-08-01_python-env-fix/walkthrough.md"
+    },
+    {
+      "from": "docs/migrations/install_guides/python_vytest-updates-other-machines.md",
+      "target": "Projects/AGY_AVIATIONCHAT/_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md"
     }
   ],
   "packs": [

@@ -1,6 +1,6 @@
 # ROOT LAW — Sudo_Hatter_Command Operating System
 
-Prime mission: Sudo_Hatter_Command is Daniel's **home base**. From here, an agent (Claude, opencode, or
+Prime mission: Sudo_Hatter_Command is Mr. Hatter's (Sudo Mad Hatter / SMH) **home base**. From here, an agent (Claude, opencode, or
 Antigravity/Gemini) routes into the right workspace, loads **only what the task needs**, does the
 work, and persists everything to the shared `_artifacts/` memory. The folder is the app; markdown is
 the program; you **become** the agent the workspace describes.
@@ -33,7 +33,7 @@ drift silently — and intent-shaped triggers, which no glob can catch, are surf
 `.agents/hooks/rule-trigger.py`.
 
 **FLOOR — load now, every session:** `.agents/rules/operator-profile.md` (**who you're talking to** —
-Daniel is the visionary/chair, you are the engineer; the **nine** speaking obligations that govern every
+Mr. Hatter is the visionary/chair, you are the engineer; the **nine** speaking obligations that govern every
 reply), `.agents/rules/constitution.md` (hard stops + gates), and `.agents/rules/karpathy-guidelines.md`
 (how to work).
 
@@ -41,7 +41,7 @@ reply), `.agents/rules/constitution.md` (hard stops + gates), and `.agents/rules
 not "if it seems relevant": if you are about to write and these are not loaded, **stop and load them
 first.** `.agents/rules/artifacts-always-first.md` (the plan-first gate) · `.agents/rules/000-PLAN-FIRST-GATE.md`
 (its priority-zero kill-chain) · `.agents/rules/git-policy.md` (the branch model + write gate) ·
-`.agents/rules/worktree-per-story.md`. Together ~44 KB — which is why they are conditional rather than
+`.agents/rules/worktree-per-story.md`. Together ~96.6 KB (measured) — which is why they are conditional rather than
 floor, and why the trigger has to be a rule you follow rather than a hope.
 
 > **These four are conditional, but their LAW is not.** Every gate they carry is also stated inline in
@@ -86,7 +86,7 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 > `/smh-tour` owns the guided curriculum.
 
 > **⛔ ARTIFACTS — MANDATORY FIRST ACTION.** Before modifying ANY file outside `_artifacts/`, write an
-> `implementation_plan.md` into the artifact store owned by the target workspace (§5) and **STOP until Daniel says "approved."** Track
+> `implementation_plan.md` into the artifact store owned by the target workspace (§5) and **STOP until Mr. Hatter says "approved."** Track
 > work with a live TodoWrite list; close with one `walkthrough.md`. **This applies at the lobby
 > too — not only inside projects.** Full protocol → `.agents/rules/artifacts-always-first.md`; the
 > priority-zero kill-chain that enforces it (and the `_bmad/custom/` guard tomls that load it into every
@@ -120,7 +120,7 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 | New-machine setup | `docs/migrations/` | secrets export/restore + rename-day tooling; start at its `INDEX.md`. Not day-to-day infra, but standing reference — run when pointed at, never deleted (moved out of `_my_resources/` under SCC-89) |
 | Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master. **One door per platform per command (SCC-66):** Claude + Codex enter through a **launcher skill** (generated per eligible command into `.agents/skills/`, tree-copied to `.claude/skills/`; hand-authored `SKILL.md` wins); opencode through `.opencode/commands/`; Antigravity through `.agents/workflows/`. `.claude/commands/` and `~/.codex/prompts` are **retired** doors; `platforms:` frontmatter limits a command's reach |
 | SOPs & PRDs | `docs/_scc_sops_prds/` | **every procedural doc** — what the *operator* does and types, as opposed to `.agents/`, which describes the system to an *agent*. Start at its `INDEX.md`; `workflows_testing_SOP.md` is THE quick reference and is gated by `sop-currency.md`. Consolidated here by SCC-74 |
-| Thinking space | `_my_resources/` | Daniel's brainstorming + personal notes. **⛔ IGNORE unless he links a specific document** (ruling 2026-08-10). Not authoritative, deliberately un-scanned, staleness fine by design. Standing exception: `open_tasks/todo_list.md` (the `## Open Tasks` list only). The `migrations/` exception is **retired** — SCC-89 moved that kit to `docs/migrations/`, so it is now scanned documentation like everything else under `docs/`. Local law → `_my_resources/AGENTS.md` |
+| Thinking space | `_my_resources/` | Mr. Hatter's brainstorming + personal notes. **⛔ IGNORE unless he links a specific document** (ruling 2026-08-10). Not authoritative, deliberately un-scanned, staleness fine by design. Standing exception: `open_tasks/todo_list.md` (the `## Open Tasks` list only). The `migrations/` exception is **retired** — SCC-89 moved that kit to `docs/migrations/`, so it is now scanned documentation like everything else under `docs/`. Local law → `_my_resources/AGENTS.md` |
 | BMAD (lobby) | `_bmad/` · `_bmad-output/` | BMAD module (regenerated — never hand-edit) + its state/output |
 | Projects | `Projects/<name>/` | project-owned workspaces, each with its own repo and `_artifacts/`, except the explicit Sudo-managed exceptions in `router.md` |
 
@@ -169,10 +169,19 @@ files, per §3); full model →
   `.agents/rules/worktree-per-story.md`.
 - **GIT WRITE APPROVAL — the gate is WHERE a write lands.** FREE: your own `claude/*` or `chore/*`
   branch — commits **and** pushes. SIGN-OFF (per-action, never carries): landing on **the epic branch** —
-  Daniel's in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (its Step 3 does the
+  Mr. Hatter's in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (its Step 3 does the
   landing; invoking it IS the sign-off). OWNER-ONLY: **`main`** — only via `/cicd-push-e2e` (epic merge,
-  full gate) or Daniel's direct ask. Full branch model + enforcement → `.agents/rules/git-policy.md`
+  full gate) or Mr. Hatter's direct ask. Full branch model + enforcement → `.agents/rules/git-policy.md`
   (web/mobile → `mobile-mode.md`).
+- **COMMAND-SHAPE GATE — pin the tree, run gates BARE.** Both permission layers judge a compound
+  command **per piece** (verified by executing Zoo's own extracted matcher), so a chain is
+  pre-approved only when EVERY piece is — one unallowed piece sends the whole call to the operator.
+  **Pin with `cd <abs path> && …` in ONE line, never the `-C` spelling** (no verb rule can see
+  through it, and Zoo denies it outright because under a broad `git ` allow it rides past every
+  verb deny). No `; echo "EXIT=$?"` tails (the tail becomes the shell's status, so a dead gate can
+  exit 0 behind it), and never pipe a gate (`| tee` / `| head` / `| grep` reports the LAST
+  command's status and can SIGPIPE the gate mid-run — redirect to a file and read it). Read-only
+  chains pass on Claude via the SCC-287 hook. Full mechanics → `.agents/rules/command-shape.md`.
 - Full hard stops + "ask first" list → `.agents/rules/constitution.md`.
 
 ## 7. PERSISTENCE  (you own this — not a vendor)
@@ -202,6 +211,12 @@ files, per §3); full model →
   closed-but-instructive → compress to a one-line lesson. (Claude's `~/.claude/...` harness path is a
   per-machine symlink into this store — a convenience, never the mechanism; fresh machine →
   migrations kit §1 step 8.)
+  ⭐ **Memory is LONG-TERM ONLY — story facts live in the story (operator ruling 2026-09-04, SCC-386).**
+  Memory holds only what must be remembered for a long time: how Mr. Hatter works, recurring
+  tooling/machine quirks, and standing rulings. Findings tied to a single story, bug mechanisms,
+  measurements, or temporary gate mismatches go in that story's file or `_artifacts/` walkthrough and retire
+  with the story. **Delete story-scoped memories on sight.** Narrate in chat in one line every time a memory
+  is written. Full law → `.agents/rules/agent-memory-is-long-term-only.md`.
   ⛔ **THAT SYMLINK POINTS AT THE SHARED CHECKOUT, AND IT IS WHY `main` KEEPS COMING BACK DIRTY
   (SCC-246).** `~/.claude/projects/<slug>/memory` resolves to `<repo>/_artifacts/_memory` in the
   **main** working tree — hardcoded, per machine. So an agent working in
@@ -265,7 +280,8 @@ natively — it needs no adapter file. One command set (`.agents/commands/`) rea
 via `/smh-sync-agents`, with **one door per platform per command (SCC-66)**: Claude and Codex invoke the
 **launcher skill** (generated per claude/codex-eligible command; the skill's whole body is "read the command
 file, follow it end to end", so the command stays the single brain); opencode invokes its command mirror;
-Antigravity its workflow mirror (12k-cap thin launchers included). `platforms:` frontmatter limits reach;
+Antigravity its workflow mirror — and **every** Antigravity door is a thin launcher, whatever the command's
+size (SCC-370). `platforms:` frontmatter limits reach;
 default = everywhere. The retired doors — `.claude/commands/` and Codex custom prompts (`~/.codex/prompts`,
 `/prompts:<name>`) — double-doored commands beside their skills and are purged by the sync. BMAD's skills —
 which install to `.claude/skills`, outside Codex's search path — are mirrored to `~/.codex/skills` so BMAD is

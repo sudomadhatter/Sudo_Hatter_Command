@@ -1,0 +1,64 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_door_preflight_order.py"
+ ],
+ "mutants": [
+  {
+   "id": "M1 the token mint comes back",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "cd \"$PROJECT_ROOT\" && gh pr create --base main --head epic/<JIRA-KEY>-<slug> \\",
+   "mutated": "sh .agents/scripts/git-hooks/mint-push-token.sh --branch epic/<JIRA-KEY>-<slug>\ncd \"$PROJECT_ROOT\" && gh pr create --base main --head epic/<JIRA-KEY>-<slug> \\",
+   "case": "/cicd-push-e2e does NOT mint a token",
+   "block": "LIVE"
+  },
+  {
+   "id": "M2 a direct push to main comes back",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "cd \"$PROJECT_ROOT\" && env -u GITHUB_TOKEN git pull --ff-only origin main",
+   "mutated": "cd \"$PROJECT_ROOT\" && git push origin main",
+   "case": "/cicd-push-e2e does NOT push main directly",
+   "block": "LIVE"
+  },
+  {
+   "id": "M3 the PR command is replaced by a local merge",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "cd \"$PROJECT_ROOT\" && gh pr create --base main --head epic/<JIRA-KEY>-<slug> \\",
+   "mutated": "cd \"$PROJECT_ROOT\" && git merge epic/<JIRA-KEY>-<slug> --no-ff \\",
+   "case": "/cicd-push-e2e \u00b7 the road IS gh pr create",
+   "block": "LIVE"
+  },
+  {
+   "id": "M4 the ancestor proof is downgraded to a log line",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "cd \"$PROJECT_ROOT\" && git merge-base --is-ancestor epic/<JIRA-KEY>-<slug> origin/main \\",
+   "mutated": "cd \"$PROJECT_ROOT\" && git log -1 --format=%H origin/main \\",
+   "case": "/cicd-push-e2e verifies the landed merge with plain git (--after-merge)",
+   "block": "LIVE"
+  },
+  {
+   "id": "M5 a gate/** pre-flight ref appears",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "cd \"$PROJECT_ROOT\" && env -u GITHUB_TOKEN git fetch origin main",
+   "mutated": "cd \"$PROJECT_ROOT\" && git push origin HEAD:gate/main-$(git rev-parse --short HEAD)",
+   "case": "/cicd-push-e2e does NOT push a gate/** ref",
+   "block": "LIVE"
+  },
+  {
+   "id": "M6 the door waits on a check a project may never publish",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "BEHIND=$(cd \"$PROJECT_ROOT\" && git rev-list --count HEAD..origin/main)",
+   "mutated": "gh pr checks --watch --required main-write-gate",
+   "case": "/cicd-push-e2e does NOT wait on a check its target repo cannot publish",
+   "block": "LIVE"
+  },
+  {
+   "id": "M7 the PR is opened BEFORE the gated tip is pushed",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "cd \"$PROJECT_ROOT\" && env -u GITHUB_TOKEN git push origin epic/<JIRA-KEY>-<slug>",
+   "mutated": "echo \"(the tip goes up later)\"",
+   "case": "P2 ORDER preflight -> absorb main -> push the epic tip -> open the PR",
+   "block": "SCC-211"
+  }
+ ]
+}

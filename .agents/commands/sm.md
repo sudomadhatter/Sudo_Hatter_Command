@@ -1,6 +1,6 @@
 ---
 description: BMAD Scrum Master tasks — story prep, sprint planning, sprint status
-platforms: [opencode]
+platforms: [opencode, zoo]
 ---
 
 No dedicated SM persona skill exists in this Claude install (the BMAD update removed it). Route on the user's intent:

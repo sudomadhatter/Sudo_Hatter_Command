@@ -28,6 +28,7 @@ Stdlib only, no pytest — same constraint as everything else in this suite.
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -36,13 +37,38 @@ from _harness import Cases
 ROOT = Path(__file__).resolve().parents[3]
 RULES = ROOT / ".agents" / "rules"
 
-LOAD_ROW = re.compile(r"^\|\s*`([A-Za-z0-9_\-]+)\.md`\s*\|\s*([^|]+?)\s*\|", re.M)
+LOAD_ROW = re.compile(r"^\|\s*`([A-Za-z0-9_.\-]+)\.md`\s*\|\s*([^|]+?)\s*\|", re.M)
+
+
+def _main_checkout() -> Path:
+    try:
+        out = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--git-common-dir"],
+                             capture_output=True, text=True, timeout=10)
+        if out.returncode == 0 and out.stdout.strip():
+            g = Path(out.stdout.strip())
+            if not g.is_absolute():
+                g = ROOT / g
+            return g.resolve().parent
+    except Exception:
+        pass
+    return ROOT
 
 
 def _index_loads() -> dict[str, str]:
     """{rule stem: 'floor' | 'protocol' | 'on-demand'} from the INDEX table."""
     out = {}
     for name, load in LOAD_ROW.findall((RULES / "INDEX.md").read_text(encoding="utf-8")):
+        low = load.lower()
+        out[name] = "floor" if "floor" in low else "protocol" if "protocol" in low else "on-demand"
+    return out
+
+
+def _project_index_loads(index_path: Path) -> dict[str, str]:
+    """{rule stem: 'floor' | 'protocol' | 'on-demand'} from a project INDEX table."""
+    out = {}
+    if not index_path.exists():
+        return out
+    for name, load in LOAD_ROW.findall(index_path.read_text(encoding="utf-8")):
         low = load.lower()
         out[name] = "floor" if "floor" in low else "protocol" if "protocol" in low else "on-demand"
     return out
@@ -158,6 +184,118 @@ def main() -> int:
                     dangling.append(f"{mirror.name}:{i} -> {target}")
     c.check("⛔ no relative link in a GENERATED .claude/rules/ copy dangles",
             not dangling, str(dangling))
+
+
+    # ── §Nag: the ruling that a repeatedly-broken rule gets a HOOK, not a sixth copy (SCC-369) ──
+    # This lives here because the failure it prevents is a rule-shape failure: the reflex on a
+    # violated rule is to restate it somewhere new, and `command-shape.md` is the measured proof
+    # that restating does nothing (five copies, and 23.3% of every Bash call still breaking it).
+    shape = (RULES / "command-shape.md").read_text(encoding="utf-8")
+    c.check("command-shape.md carries the §Nag section (the SCC-369 ruling as law)",
+            "## §Nag" in shape, "no `## §Nag` heading in command-shape.md")
+
+    # ⛔ Scope the checks below to the SECTION, not the file. Reading the whole file made
+    # "§Nag names `shape-guard.py`" actually assert "this file mentions it somewhere" — gutting
+    # §Nag while leaving the heading and a stray mention in §Zoo kept every one of them green
+    # (SCC-369 review). A check whose label names a section must read that section.
+    _start = shape.find("## §Nag")
+    _rest = shape[_start + 1:] if _start != -1 else ""
+    _next = _rest.find("\n## ")
+    nag = shape[_start:_start + 1 + (_next if _next != -1 else len(_rest))] if _start != -1 else ""
+    c.check("the §Nag section has a BODY, not just a heading",
+            len(nag.split("\n", 1)[-1].strip()) > 400,
+            f"§Nag is {len(nag)} chars — a heading with no law under it asserts nothing")
+
+    # A section that names no mechanism is a slogan. Each of these is a thing a reader can open.
+    for needed, why in (
+        ("shape-guard.py", "the hook that DOES the nagging"),
+        ("shape_scan.py", "the measurement — the only feedback loop Zoo gets"),
+        ("PostToolUse", "the one channel proven to reach the model"),
+    ):
+        c.check(f"§Nag names `{needed}` ({why})",
+                needed in nag, f"command-shape.md §Nag never mentions {needed}")
+
+    # ⛔ The limit that keeps a nag from becoming a gate. A nag that can block strands a headless
+    # run over a style note, and `permissionDecision: \"ask\"` auto-DENIES in auto mode.
+    c.check("⛔ §Nag states the never-block limit in the NEGATIVE (a nag is not a gate)",
+            "never block" in nag.lower(),
+            "§Nag does not say a nag may never block — the limit that keeps it off the "
+            "critical path is the one a future editor is most likely to drop")
+
+    c.check("§Nag records that Zoo gets MEASUREMENT, not a nag (Zoo has no hook surface)",
+            "Zoo" in nag and "no hook surface" in nag,
+            "§Nag must say why Zoo is excluded, or the next reader will try to write one")
+
+    idx_text = (RULES / "INDEX.md").read_text(encoding="utf-8")
+    row = [ln for ln in idx_text.splitlines() if ln.startswith("| `command-shape.md`")]
+    c.check("rules/INDEX.md's command-shape row points at the nag",
+            bool(row) and "shape-guard.py" in row[0],
+            f"the INDEX row does not name the hook: {row[:1]}")
+
+    # ── Tier-2 Project rules check (SCC-388 / SCC-391) ──
+    # Every maintained project under Projects/ carrying an .agents/ directory must:
+    # 1. Have a Load row in .agents/INDEX.md for every rule on disk in .agents/rules/
+    # 2. Every rule row in .agents/INDEX.md must point to a rule that exists on disk (or be template guidance)
+    # 3. Carry NO copies of lobby tier-1 rules (project-law.md)
+    # 4. If rules exist on disk, .agents/INDEX.md must not have zero rule rows
+    tier1_stems = {p.stem for p in on_disk}
+    projects_dir = _main_checkout() / "Projects"
+    unrouted_project_rules = []
+    dangling_project_rows = []
+    forbidden_tier1_copies = []
+    empty_project_indexes = []
+
+    if projects_dir.is_dir():
+        for p in sorted(projects_dir.iterdir()):
+            if not p.is_dir() or p.name in ("Fresh_Workspace_BMAD", "sudo-command-center"):
+                continue
+            p_agents = p / ".agents"
+            if not p_agents.is_dir():
+                continue
+            p_rules = p_agents / "rules"
+            p_index = p_agents / "INDEX.md"
+            if not p_rules.is_dir():
+                continue
+            p_loads = _project_index_loads(p_index)
+            p_on_disk = sorted(f for f in p_rules.glob("*.md") if f.name != "INDEX.md")
+
+            # Check for zero rows when rules exist
+            if p_on_disk and not p_loads:
+                empty_project_indexes.append(f"{p.name} ({len(p_on_disk)} rules on disk, 0 in INDEX.md)")
+
+            # Check unrouted rules
+            for f in p_on_disk:
+                if f.stem not in p_loads:
+                    unrouted_project_rules.append(f"{p.name}: {f.name}")
+
+            # Check dangling rows
+            for stem in p_loads:
+                # template guidance row in skeleton is permitted if marked Create this first
+                if stem == "constitution.project" and not (p_rules / f"{stem}.md").exists():
+                    if p_index.exists() and "create this first" in p_index.read_text(encoding="utf-8").lower():
+                        continue
+                if not (p_rules / f"{stem}.md").exists():
+                    dangling_project_rows.append(f"{p.name}: {stem}.md")
+
+            # Check tier-1 forbidden copies
+            for f in p_on_disk:
+                if f.stem in tier1_stems:
+                    forbidden_tier1_copies.append(f"{p.name}: {f.name}")
+
+    c.check("every project rule on disk has a Load row in that project's .agents/INDEX.md",
+            not unrouted_project_rules, str(unrouted_project_rules))
+    c.check("every project .agents/INDEX.md row points at a rule that exists",
+            not dangling_project_rows, str(dangling_project_rows))
+    c.check("⛔ no project carries a copy of a tier-1 lobby rule (project-law.md)",
+            not forbidden_tier1_copies, str(forbidden_tier1_copies))
+    c.check("no project has zero rule rows in .agents/INDEX.md when rules exist on disk",
+            not empty_project_indexes, str(empty_project_indexes))
+
+    # ── Protocol size figure in AGENTS.md §3 ──
+    agents_md = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    c.check("AGENTS.md §3 protocol-size figure is not stale (~44 KB was 2.1x understated)",
+            "~44 KB" not in agents_md,
+            "AGENTS.md still says '~44 KB' (measured ~96.6 KB)")
 
     return c.finish()
 

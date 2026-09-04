@@ -41,8 +41,8 @@ improvise** — you invoke the house engine and then act on what it returns.
 **Echo what git returned, never what the launch context implied.** Two lines, before anything else:
 
 ```bash
-git -C "$WORKTREE" rev-parse --abbrev-ref HEAD && git -C "$WORKTREE" rev-parse --short HEAD
-git -C "$PROJECT_ROOT" worktree list                 # sibling story lanes still live
+cd "$WORKTREE" && git rev-parse --abbrev-ref HEAD && cd "$WORKTREE" && git rev-parse --short HEAD
+cd "$PROJECT_ROOT" && git worktree list                 # sibling story lanes still live
 ```
 
 **Then re-derive the blast radius against the epic branch.** Your own `/cicd-self-audit-AP` traced it
@@ -50,12 +50,12 @@ before the code existed; sibling stories land on `epic/<JIRA-KEY>-<slug>` while 
 that trace can describe a tree that is gone. Unattended, nobody catches it downstream.
 
 ```bash
-env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin
-BASE=$(git -C "$WORKTREE" merge-base HEAD "origin/$EPIC")
-git -C "$WORKTREE" diff --name-only "$BASE".."origin/$EPIC" | sort > /tmp/theirs.txt
-git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD | sort > /tmp/mine.txt
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin
+BASE=$(cd "$WORKTREE" && git merge-base HEAD "origin/$EPIC")
+cd "$WORKTREE" && git diff --name-only "$BASE".."origin/$EPIC" | sort > /tmp/theirs.txt
+cd "$WORKTREE" && git diff --name-only "origin/$EPIC"...HEAD | sort > /tmp/mine.txt
 grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                               # the TRUE overlap
-git -C "$WORKTREE" merge-tree --write-tree --messages HEAD "origin/$EPIC" | head -40  # conflicts, early
+cd "$WORKTREE" && git merge-tree --write-tree --messages HEAD "origin/$EPIC" | head -40  # conflicts, early
 ```
 
 ⛔ **`origin/$EPIC`, never the trunk** — a story lane merges into its epic branch, and re-deriving

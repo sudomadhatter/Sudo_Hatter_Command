@@ -15,7 +15,7 @@ changes how the agent explains the system; it does not unlock, disable, or repla
 1. Walk upward from the current directory and use the first parent containing
    `docs/_scc_sops_prds/workflows_testing_SOP.md`. This works from the lobby, from a child project, and
    from a downloaded archive nested in another Git checkout. Refuse only when no such parent exists;
-   when Git is available, use `git -C <resolved-root> rev-parse --show-toplevel` only to report whether
+   when Git is available, use `cd <resolved-root> && git rev-parse --show-toplevel` only to report whether
    the command center is a real clone or an archive.
 2. Normalize `$ARGUMENTS` to lowercase and trim whitespace. Any value outside `on|off|status` prints
    `Usage: /smh-training on|off|status` and changes nothing.

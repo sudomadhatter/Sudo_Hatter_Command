@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-347-cicd-pr-door-and-guide",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-347",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "9d23c6a5178b106b6534ea8dbc49c81fe321d3d5",
+  "warnings": 3,
+  "when": "2026-08-31T12:23:59-04:00"
+}

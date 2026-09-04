@@ -1,0 +1,60 @@
+{
+  "v": 1,
+  "task": "SCC-340",
+  "sha": "74ced3b3e2c15bc4d911a748fafde0eec2edccc3",
+  "tip": "ef3fa2c4f9f0ae061136ba4afb98764a1c70d8b4",
+  "trigger": "close-out",
+  "when": "2026-08-28T10:18:12-05:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/INDEX.md",
+    ".agents/commands/adviser-board/CARD.md",
+    ".agents/commands/adviser-board/DOCTRINE.md",
+    ".agents/commands/adviser-board/ROSTER.md",
+    ".agents/commands/adviser-board/SPAWNS.md",
+    ".agents/commands/adviser-board/TEAMS.md",
+    ".agents/commands/adviser-board/THIRD-SIDE.md",
+    ".agents/commands/smh-adviser-board.md",
+    ".agents/scripts/tests/test_adviser_board_filter_gates.py",
+    ".agents/skills/smh-adviser-board/SKILL.md",
+    ".agents/workflows/smh-adviser-board.md",
+    ".claude/skills/smh-adviser-board/SKILL.md",
+    ".opencode/commands/smh-adviser-board.md",
+    "_artifacts/_main/2026-08-27_adviser-board-filter-rework/gates/suite.json",
+    "_artifacts/_main/2026-08-27_adviser-board-filter-rework/implementation_plan.md",
+    "_artifacts/_main/2026-08-27_adviser-board-filter-rework/self-audit.md",
+    "_artifacts/_main/2026-08-27_adviser-board-filter-rework/task.yaml",
+    "_artifacts/_main/2026-08-27_adviser-board-filter-rework/tickets/SCC-340.md",
+    "_artifacts/_main/2026-08-27_adviser-board-filter-rework/tickets/SCC-341.md",
+    "_artifacts/_main/2026-08-27_adviser-board-filter-rework/tickets/SCC-342.md",
+    "_artifacts/_main/2026-08-27_adviser-board-filter-rework/tickets/SCC-343.md",
+    "_artifacts/_main/2026-08-27_adviser-board-filter-rework/tickets/SCC-344.md",
+    "_artifacts/_main/2026-08-27_adviser-board-filter-rework/tickets/SCC-345.md",
+    "_artifacts/_main/2026-08-27_adviser-board-filter-rework/verify_board_filter.sh",
+    "_artifacts/_main/2026-08-27_adviser-board-filter-rework/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/INDEX.md",
+    "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-27_adviser-board-filter-rework/walkthrough.md",
+    "verdict": "PASS @ 74ced3b",
+    "gates": {
+      "suite": "pass@74ced3b"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}

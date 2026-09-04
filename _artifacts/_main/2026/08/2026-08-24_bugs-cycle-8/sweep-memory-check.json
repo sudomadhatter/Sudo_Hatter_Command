@@ -1,0 +1,15 @@
+{"test": ["python3", ".agents/scripts/tests/test_memory_store_check.py"],
+ "mutants": [
+  {"id": "M7 delta comparison gutted - vanished files never reported",
+   "file": ".agents/scripts/memory_store_check.py",
+   "original": "    return [n for n in previous if n not in current]",
+   "mutated": "    return []",
+   "case": "I3c the delta run SHOUTS and names every removed file",
+   "block": "SCC-319 I3 · the incident, reproduced: reset --keep removes files, the delta SHOUTS them"},
+  {"id": "M8 dead-index-row check dropped",
+   "file": ".agents/scripts/memory_store_check.py",
+   "original": "    for dead in sorted(links - files):",
+   "mutated": "    for dead in sorted(set()):",
+   "case": "I1b a MEMORY.md row naming an absent file exits non-zero",
+   "block": "SCC-319 I1 · standalone integrity: whole store exits 0, dead index row exits loud"}
+ ]}

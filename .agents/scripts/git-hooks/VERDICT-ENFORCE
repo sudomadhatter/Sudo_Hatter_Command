@@ -1,0 +1,2 @@
+Armed marker for the verdict-receipt commit gate (SCC-363).
+Delete this file to disarm to warn-only; .agents/scripts/verdict_receipt.py is the law.

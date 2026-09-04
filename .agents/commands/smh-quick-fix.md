@@ -64,17 +64,18 @@ lane exists to remove. The operator's ask IS the decision; agents mint.
 > the operator's — and the call starts by checking whether an **open parent** already covers this
 > surface, in which case this is its next lettered Subtask (add the index row with
 > `jira_feed.py index-row`, which proves the parent's other rows survived the write). **No thematic
-> parent? It is a subtask on the OPEN ROLLING TICKET** (`Bugs and Updates - <YYYY-MM>`, label
-> `bugs-and-updates`; `SCC-190` today) — rung 3 since SCC-191. Mint only for work that is a lane in
+> parent? It is a subtask on the OPEN ROLLING TICKET** (`Bugs and Updates - <YYYY-MM>` — find it by
+> BOTH labels, `labels IN (bugs-and-updates, running-bug-list)`, per `jira.md` §labels) — rung 3
+> since SCC-191. Mint only for work that is a lane in
 > its own right on day one, and say in one line what you looked at.
 
 ```bash
 acli jira workitem create --project SCC --type Task --summary "…" --description "…"
-git -C "$REPO" fetch origin                                                    # ⛔ base = origin/main
-git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
-git -C "<the new tree>" branch --unset-upstream                                # origin/main start-point sets upstream to MAIN
-python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>       # PC: `python`
-BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD) && echo "Lane: $BRANCH"
+cd "$REPO" && git fetch origin                                                    # ⛔ base = origin/main
+cd "$REPO" && git worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
+cd "<the new tree>" && git branch --unset-upstream                                # origin/main start-point sets upstream to MAIN
+cd <the lobby's absolute path — the arg resolves from the LOBBY> && python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>       # PC: `python`
+BRANCH=$(cd "<the new tree>" && git rev-parse --abbrev-ref HEAD) && echo "Lane: $BRANCH"
 python3 .agents/scripts/jira_feed.py start --key <KEY> --apply
 ```
 
@@ -88,9 +89,9 @@ No plan file, no audit, no assertion written first. **Commit explicit paths insi
 key leading every subject, and push:
 
 ```bash
-git -C "<tree>" add <the exact paths>
-git -C "<tree>" commit -F <message-file>      # ⛔ backticks in -m "…" EXECUTE
-git -C "<tree>" push -u origin <BRANCH>
+cd "<tree>" && git add <the exact paths>
+cd "<tree>" && git commit -F <message-file>      # ⛔ backticks in -m "…" EXECUTE
+cd "<tree>" && git push -u origin <BRANCH>
 ```
 
 **Unpushed is stranded** — branches travel between machines, worktrees do not.
@@ -119,7 +120,7 @@ Step 0 judged what you *intended* to touch. This judges what you *did*.
 
 ```bash
 python3 .agents/scripts/lane_qualify.py --repo "$REPO" \
-        --paths $(git -C "<tree>" diff --name-only origin/main...HEAD)
+        --paths $(cd "<tree>" && git diff --name-only origin/main...HEAD)
 ```
 
 *(That `$(…)` **is** split into separate arguments in both shells — command substitution splits where

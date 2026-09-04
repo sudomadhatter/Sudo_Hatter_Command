@@ -112,6 +112,20 @@ _ONE_SUBJECT = "single-subject: the other family has no equivalent and should no
 NOT_PAIRED = {
     "smh-quick-fix.md": "a THIRD lane, below both quick-devs - it ejects INTO smh-quick-dev; "
                         "the cicd side has no such lane and that gap is recorded, not faked",
+    # ── smh-only: the Wonderland team seats (SCC-350) — Zoo Code MODE brains, not workflows.
+    # Each is the identity/doors/refusals of one mode in the picker; the cicd side has no mode
+    # surface at all, so there is nothing to hold in parity. They route INTO the cicd doors.
+    # smh-only and permanently so: the subject is the OPERATOR'S MACHINE, not a project. Zoo's
+    # approval lists live in one VS Code globalState per machine, so there is nothing per-project
+    # for a cicd-* twin to act on — a project-scoped copy would read the same store and propose
+    # the same rows, twice.
+    "smh-llm-approvals.md": _ONE_SUBJECT + " (a per-MACHINE IDE approval store, not project work)",
+    "smh-team-march-hare.md": "Zoo mode seat (TEAM LEAD / orchestrator) - a picker identity, not a flow",
+    "smh-team-white-rabbit.md": "Zoo mode seat (PM) - a picker identity, not a flow",
+    "smh-team-cheshire-cat.md": "Zoo mode seat (ENGINEER) - a picker identity, not a flow",
+    "smh-team-caterpillar.md": "Zoo mode seat (DESIGNER) - a picker identity, not a flow",
+    "smh-team-queen-of-hearts.md": "Zoo mode seat (TESTER & QA) - a picker identity, not a flow",
+    "smh-team-gnat.md": "Zoo mode seat (LIBRARIAN, read-only) - a picker identity, not a flow",
     # ── cicd-only: BMAD story/epic/sprint machinery, deploys, and project-runtime teams ──
     "cicd-write-story-tests.md": _ONE_SUBJECT + " (story ① - there are no stories in the lobby)",
     "cicd-dev-story-tests.md": _ONE_SUBJECT + " (story ② - ditto)",
@@ -154,9 +168,9 @@ NOT_PAIRED = {
     "smh-new-project.md": _ONE_SUBJECT + " (scaffolds a new project)",
     "smh-tour.md": _ONE_SUBJECT + " (teaches command-center onboarding and project routing)",
     "smh-training.md": _ONE_SUBJECT + " (toggles the command-center-only teaching mode)",
-    "smh-slash-command-updating.md": _ONE_SUBJECT + " (authoring the command surface itself)",
     "smh-adviser-board.md": _ONE_SUBJECT + " (multi-voice advisory board)",
     "smh-review.md": _ONE_SUBJECT + " (ad-hoc read-only review)",
+    "smh-sync-vscode.md": _ONE_SUBJECT + " (cross-machine VS Code environment synchronization)",
 }
 
 # The pairs that carry a fenced shared law TODAY: FIVE of the seven, after SCC-212 promoted the
@@ -307,6 +321,21 @@ def main() -> int:
         both = sorted({n for pair in PAIRS for n in pair} & set(NOT_PAIRED))
         c.check("A0b no command is BOTH pinned and recorded unpaired (a contradiction)",
                 not both, f"in PAIRS and NOT_PAIRED at once: {both}")
+        # A0c . NOT_PAIRED is a DECISION REGISTRY, and a decision about a command that no
+        # longer exists is not a decision — it is a fossil. Nothing caught this before: A1
+        # SUBTRACTS this dict from the derived set, so a stale key can only ever suppress, and
+        # suppressing nothing looks exactly like suppressing correctly. Found retiring
+        # /smh-slash-command-updating (SCC-367), whose row sat here explaining why a deleted
+        # file had no twin. ⛔ Read the two counts in ORDER, because a reviewer read them
+        # backwards: on `origin/main` the dict held 35 keys and ALL 35 resolved — the row was
+        # not yet a fossil, because the master still existed. Deleting it made 34 keys with one
+        # fossil, which is what turned this check red. So it was green-then-red-then-green on a
+        # real state change, never grandfathering drift that was already there.
+        orphaned = sorted(k for k in NOT_PAIRED if not (CMDS / k).is_file())
+        c.check("A0c every NOT_PAIRED row names a command that still exists",
+                not orphaned,
+                f"{orphaned} recorded as unpaired but absent from .agents/commands/ - "
+                f"a retired command's row is deleted with it, not left behind")
         unpinned = unpinned_in(CMDS)
         c.check("A1 every cicd-*/smh-* command is pinned or recorded as unpaired",
                 not unpinned,

@@ -33,14 +33,38 @@ not their sum.
 access to the worktree under review, and that is not hypothetical: measured on the SCC-295 lane,
 three of five lenses edited the builder's working tree mid-review, and one reported a RED result no
 version of the code under review can produce — the builder was reading a lens's own mutant. So the
-launch contract has a TREE half, per lens from the table's **Tree** column: a repo-reading lens is
-launched with the Agent tool's `isolation: "worktree"`, so anything it writes lands in its own
-disposable copy, never the tree it is reviewing; a `DIFF`-only lens gets **no tree at all** — no
-repo access is part of what starves it. Record the mode as `lens_isolation:`, in the return and the roster —
-`worktree` when every repo-reading lens was isolated; `mixed — <lens>: <mode>, …` when they
+launch contract has a TREE half, per lens from the table's **Tree** column: a repo-reading lens gets
+its own disposable copy of **the repo under review**, so anything it writes lands there, never in the
+tree it is reviewing; a `DIFF`-only lens gets **no tree at all** — no
+repo access is part of what starves it.
+
+⛔ **What "own worktree copy" means depends on WHICH repo is under review (SCC-313, measured
+2026-08-24).** The Agent tool's `isolation: "worktree"` clones **the session repo — the lobby.**
+Reviewing the lobby itself, that IS the isolated copy, and the flag delivers the contract. Reviewing
+a project under `Projects/` it delivers **neither half**: every project is a git submodule, so the
+lobby clone holds an EMPTY stub at `Projects/<p>/` (a lens reading relative paths finds no code and
+reports from the diff alone, indistinguishable in the roster from a lens that read everything), while
+the real story worktree stays reachable AND writable by absolute path — recording
+`lens_isolation: worktree` then asserts exactly the property this contract exists to guarantee while
+providing none of it. For a submodule project, cut each repo-reading lens a real copy of the
+PROJECT at the SHA under review, before launch (about a second for four lenses, measured):
+
+```bash
+cd Projects/<p> && git worktree add --detach <scratchpad>/lens-<name> <story-sha>
+# symlink the venv in so the lens can read installed libraries (cwd is now the project):
+ln -s "$(pwd)/backend/.venv" <scratchpad>/lens-<name>/backend/.venv
+```
+
+and hand each lens ITS path as `REPO`. Verify, never assume — the probe that measured this is the
+check: from inside the lens's tree, `git rev-parse --show-toplevel` must name the lens copy, and
+`ls Projects/<p>/` from a lobby clone returning nothing is the empty-stub signature.
+Record the mode as `lens_isolation:`, in the return and the roster —
+`worktree` **only when every repo-reading lens got an isolated copy OF THE REPO UNDER REVIEW**
+(the lobby flag alone does not earn it for a submodule project); `mixed — <lens>: <mode>, …` when they
 differed (name each un-isolated lens: a partially isolated run recorded as one word hides exactly
 the lens this contract exists to expose); `shared — <why>` when the runtime could not isolate at
-all.
+all. A false `worktree` is worse than an honest `shared` — `shared` demands a written reason,
+`worktree` demands nothing.
 **A lens that WRITES is a hard failure, never a warning:** builder-tree bytes changed by a lens, or
 a lens report describing edits it made, marks that lens `dead — wrote to the tree`, its findings are
 discarded unread, and the roster must not record it `ok`.
@@ -648,7 +672,7 @@ forever, and how a real dead lens gets waved through as "just the mode".
 > When a survivor is real but out of this lane's scope, it is a lettered **Subtask under an open
 > parent** whose surface it belongs to before it is ever a new Task — the parent's index row goes on
 > with `jira_feed.py index-row` (it reads the description back and refuses if a prior row went
-> missing). **And when no thematic parent fits, it goes on the OPEN ROLLING TICKET** (`Bugs and Updates - <YYYY-MM>`, label `bugs-and-updates`; `SCC-190` today) as a subtask — rung 3
+> missing). **And when no thematic parent fits, it goes on the OPEN ROLLING TICKET** (`Bugs and Updates - <YYYY-MM>` — find it by BOTH labels, `labels IN (bugs-and-updates, running-bug-list)`, per `jira.md` §labels) as a subtask — rung 3
 > since SCC-191. Mint only for work that is a lane in its own right on day one, and name what you
 > looked at. Judgment, not a gate.
 

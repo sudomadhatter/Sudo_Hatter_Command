@@ -55,11 +55,19 @@ from _harness import Cases
 
 ROOT = Path(__file__).resolve().parents[3]
 COMMAND = ROOT / ".agents/commands/cicd-live-testing-team.md"
-# The Antigravity door. `/smh-sync-agents` mirrors this command WHOLE (it is under the
-# launcher-stub size cap), so this is a second LIVE copy of the instruction, not a stub that
-# follows the master by reference. Checked for the same properties as the master.
+# ⛔ CORRECTED BY SCC-370, and the correction is the point of that ticket. This constant used to be
+# `.agents/workflows/cicd-live-testing-team.md` with the comment "mirrors this command WHOLE (it is
+# under the launcher-stub size cap), so this is a second LIVE copy of the instruction". That was
+# true only because this command happened to be 6,909 bytes. Every Antigravity door is a thin
+# launcher now, and even before SCC-370 this check would have gone red the day the command crossed
+# 11.5 KB - with nothing connecting the failure to the edit that caused it.
+#
+# The surface that carries a SECOND live copy of the body is opencode's mirror (`Copy-Item -Force`,
+# no launcher form, no size rule). That is what belongs in BODIES. The Antigravity door is asserted
+# below for what a launcher can honestly carry: that it exists and points at this command.
+OPENCODE = ROOT / ".opencode/commands/cicd-live-testing-team.md"
 WORKFLOW = ROOT / ".agents/workflows/cicd-live-testing-team.md"
-BODIES = (COMMAND, WORKFLOW)
+BODIES = (COMMAND, OPENCODE)
 SKILLS = ROOT / ".agents/skills"
 
 # The slug this command is required to route to. Named here rather than derived, because the
@@ -167,8 +175,22 @@ def main() -> int:
         # Every case below reads one of these. A missing or unreadable input makes the whole file
         # pass by reading nothing, which is the failure mode this block exists to make loud.
         missing = [str(p.relative_to(ROOT)) for p in BODIES if not p.is_file()]
-        c.check("A1 both live command bodies resolve (master + Antigravity mirror)",
+        c.check("A1 both live command bodies resolve (master + opencode mirror)",
                 not missing, "" if not missing else f"missing: {missing}")
+        # ⛔ THE ASSERTION THE COMMENT ABOVE PROMISED, WHICH SHIPPED MISSING (SCC-370 review, found
+        # by four lenses independently). `WORKFLOW` was bound and never read again, so deleting the
+        # Antigravity door entirely left this file green at 26/26 while its own comment said the
+        # door "is asserted below". The sibling repoint in test_zoo_notify.py did add exactly this;
+        # the two halves of one edit diverged. Coverage was never lost - CS-02 and CS-18 O catch a
+        # missing or wrong-pointing door repo-wide - but a comment claiming an assertion that does
+        # not exist is worse than no comment, and A1's label named a surface it had stopped reading.
+        c.check("A1b the Antigravity door exists and points at THIS command",
+                WORKFLOW.is_file()
+                and f"`.agents/commands/{COMMAND.name}`" in read(WORKFLOW)
+                and "END TO END" in read(WORKFLOW),
+                f"{WORKFLOW.relative_to(ROOT)} is missing, or no longer points at "
+                f"{COMMAND.name} - a launcher that names the wrong brain sends the agent to "
+                f"another command's steps, and this is all a launcher can honestly carry")
         c.check("A2 the skills master directory resolves", SKILLS.is_dir(),
                 "" if SKILLS.is_dir() else f"missing: {SKILLS}")
         # ⛔ `read()` swallows OSError, so a file that EXISTS but cannot be read reaches here as "".

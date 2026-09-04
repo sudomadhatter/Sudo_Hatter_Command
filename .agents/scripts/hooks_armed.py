@@ -68,7 +68,15 @@ SCRIPT_DIR = ".agents/scripts/git-hooks"
 # NOT `--global`. A relative path set globally arms `.githooks/` in EVERY repo on the machine,
 # including third-party clones that happen to ship that directory. Per-repo is what the rest of
 # this system actually does — see `.githooks/post-commit` and `new-project.ps1`.
-REMEDY = "git config core.hooksPath .githooks"
+# ⛔ NOT `git config core.hooksPath .githooks`. That writes the key into .git/config, and
+# Claude Code's worktree setup parses that file, resolves the relative value to an ABSOLUTE
+# one and writes it back to the SHARED config — after which every worktree runs the MAIN
+# checkout's hooks instead of its own, so a lane's gates are not the gates being enforced on
+# it. The arming script puts core.hooksPath in an INCLUDED file that git follows and a plain
+# ini reader does not, so the rewrite never fires (SCC-323).
+REMEDY = ("python3 docs/migrations/scripts/arm_hooks_include.py <repo>  (PC: python) — "
+          "it sets core.hooksPath the way that survives a worktree; do NOT set it with a "
+          "bare `git config core.hooksPath`")
 
 # ⛔ DECLARED, not derived — and that is deliberate. `core.hooksPath` tells you which hook FILES
 # git runs. Nothing on disk tells you which inner script a `*-ENFORCE` flag arms, because the
@@ -83,7 +91,7 @@ REMEDY = "git config core.hooksPath .githooks"
 # has no flag, and leaving it out of the executable check would exempt the encoding gate from the
 # very failure mode this script was written for.
 #
-# ⓘ THREE flags now name `commit-msg` as their dispatcher, and `MERGE-TARGET-ENFORCE` is the one
+# ⓘ FOUR flags now name `commit-msg` as their dispatcher, and `MERGE-TARGET-ENFORCE` is the one
 # that looks misfiled until you know why (SCC-144): the merge-target guard was written for
 # `pre-merge-commit`, which fires BEFORE git writes MERGE_HEAD and never fires at all on the
 # conflicted path, so it had nothing to judge with. `commit-msg` sees both merge paths. The two
@@ -100,6 +108,7 @@ ARM_FLAGS = {
     "SOP-ENFORCE":         ("sop-currency.sh", "commit-msg"),
     "MAIN-PUSH-ENFORCE":   ("pre-push-main-approval.sh", "pre-push"),
     "MERGE-TARGET-ENFORCE": ("merge-target-guard.sh", "commit-msg"),
+    "VERDICT-ENFORCE":     ("verdict-receipt.sh", "commit-msg"),
 }
 
 
@@ -112,7 +121,7 @@ def _run(args: list[str]):
     their gates run, and it takes the close-out down with it.
     """
     try:
-        return subprocess.run(args, capture_output=True, text=True, errors="replace")
+        return subprocess.run(args, capture_output=True, encoding="utf-8", text=True, errors="replace")
     except OSError:
         return None
 

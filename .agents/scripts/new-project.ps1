@@ -25,9 +25,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$Master   = Split-Path $PSScriptRoot -Parent      # ...\.agents
+$Master = Split-Path $PSScriptRoot -Parent      # ...\.agents
 $HomeRoot = Split-Path $Master -Parent            # ...\Sudo_Hatter_Command
-
 # A project name becomes a folder, repository identity, and command argument on both Mac and
 # Windows. Keep it to one portable segment so `../name`, drive paths, and Windows device names can
 # never escape Projects/ or create a clone that another machine cannot check out.
@@ -36,7 +35,7 @@ if ($Name -notmatch '^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,78}[A-Za-z0-9_-])?$' -or
   throw "Project name must be one portable folder name (letters, digits, dot, underscore, or hyphen; no paths or trailing dot): $Name"
 }
 
-$Dest     = Join-Path $HomeRoot "Projects/$Name"
+$Dest = Join-Path $HomeRoot "Projects/$Name"
 
 if (Test-Path $Dest) { throw "Project already exists: $Dest" }
 
@@ -65,15 +64,35 @@ try {
   # Hooks are per-clone AND per-machine: git never carries core.hooksPath. Arm it now so the encoding
   # guard and the commit-msg Jira gate are live from the first commit. (The Jira gate stays SILENT
   # until .agents/jira.conf exists — see .agents/jira.conf.example for the 4-step arming procedure.)
-  git config core.hooksPath .githooks | Out-Null
-  if ($LASTEXITCODE -ne 0) { throw "could not arm project git hooks (rc=$LASTEXITCODE)" }
+  # ⛔ NOT `git config core.hooksPath .githooks`: that key, sitting in .git/config, is what
+  # Claude Code's worktree setup finds, resolves to an ABSOLUTE path and writes back to the
+  # SHARED config - after which every worktree runs the MAIN checkout's hooks (SCC-323).
+  & (Join-Path $PSScriptRoot '..\..\docs\migrations\scripts\Arm-HooksInclude.ps1') -Repos @('.') | Out-Null
+
+  # Seed .claude/settings.local.json from OS template so worktrees auto-approve immediately
+  $isWin = [System.Environment]::OSVersion.Platform -match "Win" -or $env:OS -match "Windows"
+  $exampleTemplate = if ($isWin) {
+      Join-Path $Dest ".claude/settings.local.json.example-pc"
+  } else {
+      Join-Path $Dest ".claude/settings.local.json.example-mac"
+  }
+  $localSettings = Join-Path $Dest ".claude/settings.local.json"
+  if (Test-Path $exampleTemplate) {
+      $currentUser = if ($isWin) { $env:USERNAME } else { $env:USER }
+      $content = Get-Content $exampleTemplate -Raw -Encoding UTF8
+      $content = $content.Replace("{{PROJECT_NAME}}", $Name).Replace("{{USER}}", $currentUser)
+      [System.IO.File]::WriteAllText($localSettings, $content, (New-Object System.Text.UTF8Encoding($false)))
+      Write-Host "  .claude/settings.local.json initialized from $(Split-Path $exampleTemplate -Leaf)"
+  }
+
   git add -A                            | Out-Null
   if ($LASTEXITCODE -ne 0) { throw "could not stage the scaffold (rc=$LASTEXITCODE)" }
   git commit -q -m "chore: scaffold $Name from the thin project skeleton" | Out-Null
   if ($LASTEXITCODE -ne 0) {
     throw "scaffold commit failed (rc=$LASTEXITCODE). Configure git user.name/user.email, then commit the staged scaffold in Projects/$Name; the tour must not report success until HEAD exists."
   }
-} finally { Pop-Location }
+}
+finally { Pop-Location }
 
 Write-Host ""
 Write-Host "new-project: created Projects/$Name — own git repo, hooks armed, NO vendored toolkit."

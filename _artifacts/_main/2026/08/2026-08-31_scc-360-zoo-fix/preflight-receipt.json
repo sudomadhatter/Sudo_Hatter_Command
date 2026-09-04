@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-360-cheshire-cat-rename",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-360",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "b6edbd367baf1a5c1861fdfd759dcfdf5e9ebe5f",
+  "warnings": 4,
+  "when": "2026-08-31T23:01:10-04:00"
+}

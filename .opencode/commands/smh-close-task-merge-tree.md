@@ -1,6 +1,6 @@
 ---
 description: Close out TASK work — a `chore/<JIRA-KEY>-<slug>` branch that never got an epic and a story, so BMAD's `/cicd-close-story-merge-tree` cannot close it. Preflights mechanically (branch shape, clean+pushed, main absorbed, and THE LANE — did anything deployable change?), runs the gate the lane selects, then OPENS A PULL REQUEST AND STOPS: it never merges. The operator's DECISION to proceed is the sign-off (the word approved, or invoking this command or /cicd-push-e2e); their click on Merge pull request is how that decision reaches GitHub, gated by the main-write-gate check. Re-invoked as `--after-merge <KEY>` it verifies the merge with plain git, files the Jira Dev Record, moves the Task to Done, and prunes the worktree AND the branch (SCC-62 — unlink assets before removing the tree; a recursive delete through a junction eats the shared targets). Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`.
-platforms: [opencode, antigravity]
+platforms: [opencode, antigravity, zoo]
 ---
 
 # /smh-close-task-merge-tree — Close a Task, Merge It, Prune the Tree
@@ -82,7 +82,7 @@ looking for `.git`. Run these and read the answers:
 
 ```bash
 REPO=$(cd "<the path you resolved>" && git rev-parse --show-toplevel)
-BRANCH=$(git -C "$REPO" rev-parse --abbrev-ref HEAD)
+BRANCH=$(cd "$REPO" && git rev-parse --abbrev-ref HEAD)
 echo "Repo: $(basename "$REPO") | Branch: $BRANCH"
 ```
 
@@ -316,10 +316,14 @@ fi
 # The events dir is conditional too: it is tracked in this repo, but on first adoption of this
 # door (or a lightweight lane that recorded none) it does not exist, and `git add` 128s on a
 # pathspec that matches nothing - staging NOTHING, so the flight event is lost with it.
-if [ ${#PATHS[@]} -gt 0 ] && git -C "<worktree>" status --porcelain -- "${PATHS[@]}" | grep -q .; then
-  git -C "<worktree>" add -- "${PATHS[@]}"
-  git -C "<worktree>" commit -F <msg>   # "<KEY> chore(recorder): flight event @ <sha7> [sop-ok]"
-  git -C "<worktree>" push
+CHANGED=""
+if [ ${#PATHS[@]} -gt 0 ]; then
+  CHANGED=$(cd "<worktree>" && git status --porcelain -- "${PATHS[@]}")   # subshell — the door's cwd stays the shared checkout (SCC-351 review)
+fi
+if [ -n "$CHANGED" ]; then
+  cd "<worktree>" && git add -- "${PATHS[@]}"
+  cd "<worktree>" && git commit -F <msg>   # "<KEY> chore(recorder): flight event @ <sha7> [sop-ok]"
+  cd "<worktree>" && git push
 fi
 ```
 
@@ -390,6 +394,49 @@ reads `- [ ]`, in a worktree the close-out is about to prune. An open box on a c
 exact state §4 exists to forbid, and this is the one window where avoiding it costs nothing.
 <!-- /reconcile-law -->
 
+⭐ **TICK THE TICKET OUTLINE HERE TOO — `## Plan` and `## Done` — for the lane's key and each
+rider (SCC-364).** A ticket whose Plan boxes are all still unticked reads, forever, as work that
+never happened. `jira_ticket.py done --local` rewrites the outline file **in the tree and only
+there** (`--local`: *"rewrote the file, the board was not touched"*), so the ticked copy rides this
+lane's PR onto `main` like every other write. Step 4 then renders that landed file to the board with
+`describe`.
+
+⛔ **This is the same window as the walkthrough above, for the same reason, and it was measured the
+hard way.** This tick used to live in Step 4 — *after* the merge — where `done`'s file write hits a
+tree the gate forbids committing to and Step 5 is about to delete. The edit could never land, and
+nothing said so: `done` exits 0 because the **board** half succeeded.
+
+```bash
+# ⛔ --local: the TREE only. The board is written in Step 4, from this file, after it lands.
+python3 .agents/scripts/jira_ticket.py done --local --key <JIRA-KEY> \
+       --outline _artifacts/_main/<folder>/tickets/<JIRA-KEY>.md \
+       --tick 1,2,3,4 \
+       --done-line "<what shipped, from the walkthrough - one line per Done row>" \
+       --files "Plan: _artifacts/_main/<folder>/implementation_plan.md - attached - \
+https://github.com/sudomadhatter/<repo>/blob/main/_artifacts/_main/<folder>/implementation_plan.md"
+```
+
+⛔ **Write the `Files` link as `blob/main/` NOW.** The one written at planning time points at this
+lane's branch, and `--after-merge` runs after that branch is pruned — a dead link on a closed ticket.
+`main` is where the file is about to be, so the forward-looking link is the correct one to commit.
+
+⛔ **COMMIT AND PUSH THAT FILE NOW — the write above is worthless until you do (SCC-318 review).**
+`done --local` edits the outline **in the working tree**. Nothing below commits it: the
+`reconcile-law` commit two paragraphs up ran *before* this write and names the walkthrough, and the
+`gh pr create` line asserts the branch is "already clean and pushed", which stopped being true the
+moment `done --local` returned. Left uncommitted this reproduces the SCC-364 defect one step over —
+`main` keeps the unticked outline forever — and it is worse than the original two ways: Step 4's
+`describe` reads the **worktree** copy, so the board renders ticked while `main` reads unticked, and
+Step 5's `git worktree remove` exits 128 on the dirty tree (`--force` there eats the junctioned
+`.venv` / `node_modules`, SCC-62). Measured end to end in a throwaway repo during this lane's review.
+
+```bash
+git add _artifacts/_main/<folder>/tickets/            # explicit path; never -A/./-u (git-policy)
+git commit -m "<JIRA-KEY> docs(outline): tick the ticket outline before the PR"
+git push
+git status --porcelain | grep . && { echo "tree still dirty - the PR would not carry it"; exit 1; }
+```
+
 ```bash
 grep -q "The merge itself" <walkthrough> && grep -q "^## Your Actions" <walkthrough> \
   || { echo "walkthrough incomplete — fix it BEFORE the PR"; exit 1; }
@@ -422,7 +469,7 @@ it prints is the PR URL.** Print it and **STOP.**
 the browser. Build the URL from command output, never from memory:
 
 ```bash
-git -C "$REPO" remote get-url origin      # -> the owner/repo
+cd "$REPO" && git remote get-url origin      # -> the owner/repo
 # https://github.com/<owner>/<repo>/compare/main...<BRANCH>?expand=1
 ```
 
@@ -446,9 +493,9 @@ finding). If the check is red, **STOP** — never disable the ruleset to get pas
 > green, suite 32/32 — could not reach `main` in a full session. No gate stopped it. The *landing*
 > did: each of those strings was judged separately by the agent's permission layer, several were
 > denied, and the state was left stranded halfway. Measured, same op and same target:
-> `git merge X --no-ff` **allowed**, `git -C <path> merge X --no-ff` **denied** — and `-C` is what
-> `.agents/rules/git-policy.md` §*"Pin the merge TARGET"* *mandates*. Obeying the safety law guaranteed
-> the permission miss. `gh pr create` has none of that: it is one command, it needs no checkout on
+> `git merge X --no-ff` **allowed**, `git -C <path> merge X --no-ff` **denied** — and the `-C` form is
+> what `.agents/rules/git-policy.md` §*"Pin the merge TARGET"* mandated at the time (the pin idiom is
+> `cd <path> && git …` since SCC-351). Obeying the safety law guaranteed the permission miss. `gh pr create` has none of that: it is one command, it needs no checkout on
 > `main`, it writes nothing on this machine, and it is what actually landed PR #5, #6 and #8.
 
 ### Resuming after the operator's click
@@ -463,12 +510,12 @@ merged, re-invoke it to run Steps 4–6 only:
 It verifies the merge with plain git — no `gh` required, so this half works on any machine:
 
 ```bash
-env -u GITHUB_TOKEN git -C "$REPO" fetch origin main
-git -C "$REPO" merge-base --is-ancestor "$BRANCH" origin/main || { echo "NOT merged yet — STOP"; exit 1; }
-git -C "$REPO" log -1 --format=%s origin/main        # -> "Merge pull request #N from ..."
+cd "$REPO" && env -u GITHUB_TOKEN git fetch origin main
+cd "$REPO" && git merge-base --is-ancestor "$BRANCH" origin/main || { echo "NOT merged yet — STOP"; exit 1; }
+cd "$REPO" && git log -1 --format=%s origin/main        # -> "Merge pull request #N from ..."
 ```
 
-The PR number comes off that merge subject; the merge sha is `git -C "$REPO" rev-parse --short
+The PR number comes off that merge subject; the merge sha is `cd "$REPO" && git rev-parse --short
 origin/main`. Both go in the Dev Record at Step 4.
 
 **⛔ AND CHECK THAT THE DOOR YOU ARE READING IS THE CURRENT ONE (SCC-193 C).** This is the one
@@ -477,7 +524,7 @@ followed an instruction its lane had **deleted**, because `git fetch` had been r
 tree never pulled:
 
 ```bash
-BEHIND=$(git -C "$REPO" rev-list --count HEAD..origin/main)
+BEHIND=$(cd "$REPO" && git rev-list --count HEAD..origin/main)
 ```
 
 If `BEHIND` is not `0`: ⛔ **this checkout is behind origin/main by N; the door text you are
@@ -574,31 +621,34 @@ python3 .agents/scripts/jira_feed.py finish --key <JIRA-KEY> \
 python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY> --project "$REPO"   # must exit 0
 ```
 
-⭐ **Then close the DESCRIPTION out too — the `## Plan` checklist and `## Done`.** A ticket whose
-Plan boxes are all still unticked reads, forever, as work that never happened. `jira_ticket.py done`
-ticks them and appends what shipped by rewriting the outline file in the tree and re-rendering from
-it — the tree stays the source, so the board and the branch cannot disagree
-(`.agents/rules/jira.md` §"The description is the fast read"). Do this for the lane's key **and each
-rider**:
+⭐ **Then RENDER the description from the outline Step 3 already ticked.** The outline file is on
+`main` now — it landed with the PR — so this step reads it and writes the board, and touches no file
+at all. Do it for the lane's key **and each rider**:
 
 ```bash
-python3 .agents/scripts/jira_ticket.py done --key <JIRA-KEY> \
-       --outline _artifacts/_main/<folder>/tickets/<JIRA-KEY>.md \
-       --tick 1,2,3,4 \
-       --done-line "<what shipped, from the walkthrough - one line per Done row>" \
-       --files "Plan: _artifacts/_main/<folder>/implementation_plan.md - attached - \
-https://github.com/sudomadhatter/<repo>/blob/main/_artifacts/_main/<folder>/implementation_plan.md"
+python3 .agents/scripts/jira_ticket.py describe --key <JIRA-KEY> \
+       --outline _artifacts/_main/<folder>/tickets/<JIRA-KEY>.md
 
 python3 .agents/scripts/jira_ticket.py attach --key <JIRA-KEY> \
        --file _artifacts/_main/<folder>/walkthrough.md
 ```
 
-⛔ **Rewrite the `Files` link to `blob/main/`.** The one written at planning time points at the lane
-branch, and `--after-merge` runs *after* that branch is pruned — a dead link on a closed ticket.
+⛔ **`describe`, never `done`, and the reason is SCC-364.** This step used to call
+`jira_ticket.py done`, which does TWO things: it **rewrites the outline file in the tree**, then it
+writes the board. Here the file write can never land — the lane is merged, this door's own SCC-175
+rule bans post-merge commits, and Step 5 prunes the tree — so `main` kept the unticked outline
+forever while this passage claimed the file in the tree was still the authority the board rendered
+from. That invariant was right; running it *here* broke it. `describe` renders an outline and writes
+nothing to disk, and the ticking moved to Step 3 where the commit still rides the PR. Measured
+closing SCC-358 through this door.
+
+⚠ **The old claim's exact wording is now a reserved marker** — `CS-23 E` in
+`test_command_surfaces.py` fails if Step 4 carries it again, so do not restore the sentence here
+even to explain it. Step 3 is where the tree is the source; this step only reads what landed.
 
 ⚠ **`attach` exiting 5 does not block the close-out.** It means this machine has no Atlassian API
-token (a one-time setup it prints in full); `done` still landed through acli. Record it as a line in
-the hand-back, not as a failure.
+token (a one-time setup it prints in full); `describe` still landed through acli. Record it as a
+line in the hand-back, not as a failure.
 
 ⛔ **`--project "$REPO"` is REQUIRED on both.** Both subcommands resolve their repo by walking up
 from **cwd**, and cwd is not intent — it resets to the shared checkout at slash-command boundaries,

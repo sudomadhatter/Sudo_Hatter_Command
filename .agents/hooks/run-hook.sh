@@ -29,9 +29,18 @@ shift
 ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
 [ -n "$ROOT" ] || ROOT="."
 
+# ⛔ "Absolute" has TWO spellings, and only knowing one of them is a SILENT bug (SCC-321).
+# `/*` alone is POSIX-only. A Windows absolute path — `C:\...` or `C:/...` — failed that test, fell
+# to the relative branch, got `$ROOT/` glued on front, and the file "was not found". So the hook
+# announced `not found — skipped` about a file that EXISTS, which is rule 2 of this header defeated
+# by its own error message: the words are printed, but they name the wrong fault, so a reader goes
+# looking for a missing file instead of a mis-resolved path.
+# The bracket form is deliberate. Writing the backslash arm as `[A-Za-z]:\\*` does NOT work: the
+# parser collapses `\\` to `\`, glob then reads `\*` as a LITERAL asterisk, and the pattern silently
+# stops matching anything. Verified in both bash-as-sh and dash before landing.
 case "$SCRIPT" in
-  /*) TARGET="$SCRIPT" ;;
-  *)  TARGET="$ROOT/$SCRIPT" ;;
+  /*|[A-Za-z]:[\\/]*) TARGET="$SCRIPT" ;;
+  *)                  TARGET="$ROOT/$SCRIPT" ;;
 esac
 
 if [ ! -f "$TARGET" ]; then
