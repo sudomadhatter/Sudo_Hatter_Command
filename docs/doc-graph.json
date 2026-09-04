@@ -4,15 +4,15 @@
     "docs"
   ],
   "counts": {
-    "files": 428,
+    "files": 429,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 792,
+    "edges": 796,
     "external": 35,
-    "ambiguous": 173,
-    "dangling": 288,
+    "ambiguous": 174,
+    "dangling": 290,
     "broken_paths": 61,
-    "unresolved_names": 227,
+    "unresolved_names": 229,
     "unresolvable": 9
   },
   "nodes": [
@@ -729,7 +729,12 @@
     {
       "path": ".agents/rules/INDEX.md",
       "in": 8,
-      "out": 28
+      "out": 29
+    },
+    {
+      "path": ".agents/rules/agent-memory-is-long-term-only.md",
+      "in": 3,
+      "out": 0
     },
     {
       "path": ".agents/rules/artifacts-always-first.md",
@@ -758,7 +763,7 @@
     },
     {
       "path": ".agents/rules/constitution.md",
-      "in": 29,
+      "in": 30,
       "out": 1
     },
     {
@@ -2059,12 +2064,12 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 29,
-      "out": 56
+      "out": 57
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 13
+      "out": 15
     },
     {
       "path": "docs/code-review-graph.md",
@@ -3728,6 +3733,11 @@
     {
       "from": ".agents/rules/INDEX.md",
       "to": ".agents/rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/INDEX.md",
+      "to": ".agents/rules/agent-memory-is-long-term-only.md",
       "kind": "ref"
     },
     {
@@ -5532,6 +5542,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/agent-memory-is-long-term-only.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/rules/command-shape.md",
       "kind": "link"
     },
@@ -5722,7 +5737,17 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/agent-memory-is-long-term-only.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/constitution.md",
       "kind": "ref"
     },
     {
@@ -6658,6 +6683,14 @@
     {
       "from": ".agents/rules/INDEX.md",
       "target": "prose-formatting.md"
+    },
+    {
+      "from": ".agents/rules/agent-memory-is-long-term-only.md",
+      "target": "MEMORY.md"
+    },
+    {
+      "from": ".agents/rules/agent-memory-is-long-term-only.md",
+      "target": "walkthrough.md"
     },
     {
       "from": ".agents/rules/artifacts-always-first.md",
@@ -8251,6 +8284,15 @@
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": ".agents/rules/agent-memory-is-long-term-only.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {
