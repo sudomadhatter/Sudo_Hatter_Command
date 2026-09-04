@@ -1,0 +1,37 @@
+{
+  "v": 1,
+  "task": "SCC-388",
+  "sha": "376a61bc3d223ab87d9b812029972b9fe4acb11d",
+  "tip": "b444585c373a0e98d65309a38cc36923729900f6",
+  "trigger": "close-out",
+  "when": "2026-09-04T13:54:46-04:00",
+  "changes": [
+    ".agents/scripts/check_maps.py",
+    ".agents/scripts/tests/test_rule_frontmatter.py",
+    ".agents/scripts/tests/test_sops_prds_folder.py",
+    "AGENTS.md",
+    "_artifacts/_main/2026-09-04_scc-388-resync-shells-gate/gates/suite.json",
+    "_artifacts/_main/2026-09-04_scc-388-resync-shells-gate/implementation_plan.md",
+    "_artifacts/_main/2026-09-04_scc-388-resync-shells-gate/sweep.json",
+    "_artifacts/_main/2026-09-04_scc-388-resync-shells-gate/task.yaml",
+    "_artifacts/_main/2026-09-04_scc-388-resync-shells-gate/walkthrough.md",
+    "_artifacts/_main/INDEX.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-04_scc-388-resync-shells-gate/walkthrough.md",
+    "verdict": "PASS @ 376a61b",
+    "gates": {
+      "suite": "pass@376a61b"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
