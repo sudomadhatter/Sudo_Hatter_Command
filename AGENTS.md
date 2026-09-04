@@ -202,6 +202,12 @@ files, per §3); full model →
   closed-but-instructive → compress to a one-line lesson. (Claude's `~/.claude/...` harness path is a
   per-machine symlink into this store — a convenience, never the mechanism; fresh machine →
   migrations kit §1 step 8.)
+  ⭐ **Memory is LONG-TERM ONLY — story facts live in the story (operator ruling 2026-09-04, SCC-386).**
+  Memory holds only what must be remembered for a long time: how Mr. Hatter works, recurring
+  tooling/machine quirks, and standing rulings. Findings tied to a single story, bug mechanisms,
+  measurements, or temporary gate mismatches go in that story's file or `_artifacts/` walkthrough and retire
+  with the story. **Delete story-scoped memories on sight.** Narrate in chat in one line every time a memory
+  is written. Full law → `.agents/rules/agent-memory-is-long-term-only.md`.
   ⛔ **THAT SYMLINK POINTS AT THE SHARED CHECKOUT, AND IT IS WHY `main` KEEPS COMING BACK DIRTY
   (SCC-246).** `~/.claude/projects/<slug>/memory` resolves to `<repo>/_artifacts/_memory` in the
   **main** working tree — hardcoded, per machine. So an agent working in

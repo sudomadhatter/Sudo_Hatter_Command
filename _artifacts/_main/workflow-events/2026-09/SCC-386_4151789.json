@@ -1,0 +1,47 @@
+{
+  "v": 1,
+  "task": "SCC-386",
+  "sha": "4151789865429580b4892b284e3af13601d3101f",
+  "tip": "026949e9323028d7867fc278169781f3be4f3ab9",
+  "trigger": "close-out",
+  "when": "2026-09-04T10:15:23-04:00",
+  "changes": [
+    ".agents/rules/INDEX.md",
+    ".agents/rules/agent-memory-is-long-term-only.md",
+    ".agents/rules/constitution.md",
+    ".agents/scripts/tests/test_memory_long_term_rule.py",
+    ".roo/rules/constitution.md",
+    "AGENTS.md",
+    "_artifacts/_main/2026-09-03_SCC-386-memory-long-term-only/gates/suite.json",
+    "_artifacts/_main/2026-09-03_SCC-386-memory-long-term-only/implementation_plan.md",
+    "_artifacts/_main/2026-09-03_SCC-386-memory-long-term-only/task.yaml",
+    "_artifacts/_main/2026-09-03_SCC-386-memory-long-term-only/tickets/SCC-386.md",
+    "_artifacts/_main/2026-09-03_SCC-386-memory-long-term-only/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-03_SCC-386-memory-long-term-only/walkthrough.md",
+    "verdict": "PASS @ 4151789",
+    "gates": {
+      "suite": "pass@4151789"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/INDEX.md",
+    "rule-edited:.agents/rules/agent-memory-is-long-term-only.md",
+    "rule-edited:.agents/rules/constitution.md"
+  ]
+}

@@ -233,6 +233,13 @@ in one line, with the remedy named** — never as a tail, never as *"want me to 
 > bound only code reviews; ordinary conversation was unbound, and two agents produced the identical
 > failure a day apart. The gap was in the law, not the agent.
 
+**Memory is long-term only — story facts live in the story.** Memory holds only what must be
+remembered for a long time: how you want to be worked with, recurring tooling/machine quirks, and
+standing rulings. Findings tied to a single story, bug mechanisms, measurements, or temporary gate
+mismatches go in that story's file or `_artifacts/` walkthrough and retire with the story.
+**Delete story-scoped memories on sight.** Whenever an agent writes or saves memory, it must state
+in chat in one line what was saved. (→ [`agent-memory-is-long-term-only`](../../.agents/rules/agent-memory-is-long-term-only.md))
+
 **A memory written during a lane goes ON the lane.** Claude's memory path —
 `~/.claude/projects/<slug>/memory` — is a per-machine symlink to `_artifacts/_memory` in the
 **main working tree**, hardcoded, so the harness writes an agent's memory into `main`'s tree even
