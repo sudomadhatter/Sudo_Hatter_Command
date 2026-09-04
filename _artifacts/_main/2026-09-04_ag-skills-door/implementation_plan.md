@@ -315,7 +315,7 @@ Rows A–H are the acceptance table above.
 - DELETE `.agents/workflows/smh-sync-agents.md` → A
 - DELETE `.agents/workflows/smh-sync-vscode.md` → A
 - DELETE `.agents/workflows/smh-update-maps-indexes.md` → A
-- DELETE `.gitattributes` block pinning `.agents/workflows/*.md` (EDIT to the file: the block goes, the `*.sh` pin stays) → A
+- EDIT `.gitattributes` — drop the `.agents/workflows/*.md` LF pin; the `*.sh` pin stays → A
 - EDIT `.agents/scripts/sync-agents.ps1` — launcher eligibility, master placement, `Sync-AntigravitySkills`, retired-cache purge, deletions, header → A, B, C, D
 - EDIT `.agents/commands/smh-adviser-board.md` — `platforms:` adds `antigravity` → G
 - EDIT `.opencode/commands/smh-adviser-board.md` — byte mirror of the brain → G
