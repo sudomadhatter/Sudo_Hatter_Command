@@ -1,5 +1,5 @@
 {
-  "_doc": "The ONE terminal-approval source. A row is a FAMILY (id, cmd, why); each platform's exact rule text comes from render:{zoo,claude,antigravity} when present, else is DERIVED from cmd by the platform's grammar (permission_render.py). only:/not: scope a row. Rendered by /smh-sync-agents; drift is red in tests/test_permission_parity.py. Identical DECISIONS across platforms, never identical bytes (SCC-378). house_twin_prefix: every Antigravity deny is also rendered behind the house command shape `cd <abs> && ...` (command-shape.md rule 1), because the vendor documents per-token matching on the leading tokens and nothing about chains - the twin fences the shape either way (code review 2026-09-03).",
+  "_doc": "The ONE terminal-approval source. A row is a FAMILY (id, cmd, why); each platform's exact rule text comes from render:{zoo,claude,antigravity} when present, else is DERIVED from cmd by the platform's grammar (permission_render.py). only:/not: scope a row. grant: read_file makes the row a FILE grant (rendered as read_file(<dir>), recursive over everything under it, Antigravity only) instead of a command one - SCC-387. Rendered by /smh-sync-agents; drift is red in tests/test_permission_parity.py. Identical DECISIONS across platforms, never identical bytes (SCC-378). house_twin_prefix: every Antigravity deny is also rendered behind the house command shape `cd <abs> && ...` (command-shape.md rule 1), because the vendor documents per-token matching on the leading tokens and nothing about chains - the twin fences the shape either way (code review 2026-09-03).",
   "env_twin_prefix": "env -u GITHUB_TOKEN ",
   "house_twin_prefix": "cd .* && ",
   "allow": [
@@ -1596,6 +1596,15 @@
       },
       "only": [
         "claude"
+      ]
+    },
+    {
+      "id": "allow-read-claude-memory-wsl",
+      "grant": "read_file",
+      "cmd": "/home/dlohn/.claude/projects/-home-dlohn-Sudo-Hatter-Command/memory",
+      "why": "Antigravity auto-allows reads INSIDE the workspace and asks for everything outside it, and Claude Code's memory store is outside it. Five 'always allow' clicks on 2026-09-03 bought five single files, and the apply would have erased all five (it REPLACES both arrays). A directory grant is recursive over everything under it, so this one row retires them (SCC-387). Machine-scoped by construction - the Mac's own store path is its own row, in SCC-382.",
+      "only": [
+        "antigravity"
       ]
     }
   ],
