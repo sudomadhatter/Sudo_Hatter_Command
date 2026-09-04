@@ -1,0 +1,6 @@
+task_key: SCC-388
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-388-project-law-audit
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+landing_mode: partial
