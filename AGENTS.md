@@ -41,7 +41,7 @@ reply), `.agents/rules/constitution.md` (hard stops + gates), and `.agents/rules
 not "if it seems relevant": if you are about to write and these are not loaded, **stop and load them
 first.** `.agents/rules/artifacts-always-first.md` (the plan-first gate) · `.agents/rules/000-PLAN-FIRST-GATE.md`
 (its priority-zero kill-chain) · `.agents/rules/git-policy.md` (the branch model + write gate) ·
-`.agents/rules/worktree-per-story.md`. Together ~44 KB — which is why they are conditional rather than
+`.agents/rules/worktree-per-story.md`. Together ~96.6 KB (measured) — which is why they are conditional rather than
 floor, and why the trigger has to be a rule you follow rather than a hope.
 
 > **These four are conditional, but their LAW is not.** Every gate they carry is also stated inline in

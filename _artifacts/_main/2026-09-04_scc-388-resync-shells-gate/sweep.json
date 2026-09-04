@@ -1,0 +1,33 @@
+{
+  "test": ["python3", ".agents/scripts/tests/test_rule_frontmatter.py"],
+  "mutants": [
+    {
+      "id": "M1 restore stale protocol size in AGENTS.md §3",
+      "file": "AGENTS.md",
+      "original": "`.agents/rules/worktree-per-story.md`. Together ~96.6 KB (measured) — which is why they are conditional rather than",
+      "mutated": "`.agents/rules/worktree-per-story.md`. Together ~44 KB — which is why they are conditional rather than",
+      "case": "AGENTS.md §3 protocol-size figure is not stale (~44 KB was 2.1x understated)",
+      "unfiltered": true,
+      "why": "Reverting the protocol-size figure to 44 KB triggers the freshness check in test_rule_frontmatter.py."
+    },
+    {
+      "id": "M2 break §Nag section heading in command-shape.md",
+      "file": ".agents/rules/command-shape.md",
+      "original": "## §Nag — when a rule keeps being broken, nag; do not write it again",
+      "mutated": "## §BogusNag — when a rule keeps being broken, nag; do not write it again",
+      "case": "command-shape.md carries the §Nag section (the SCC-369 ruling as law)",
+      "unfiltered": true,
+      "why": "Renaming the §Nag heading fails the section check in test_rule_frontmatter.py."
+    },
+    {
+      "id": "M3 break a rule row in rules/INDEX.md",
+      "file": ".agents/rules/INDEX.md",
+      "original": "| `constitution.md` | floor | always — hard stops, confirmation gates, partnership boundaries (shared). |",
+      "mutated": "| `constitution_broken.md` | floor | always — hard stops, confirmation gates, partnership boundaries (shared). |",
+      "case": "every rule on disk has a Load row in INDEX.md",
+      "unfiltered": true,
+      "why": "Changing a rule stem in INDEX.md causes constitution.md on disk to be unrouted."
+    }
+  ]
+}
+

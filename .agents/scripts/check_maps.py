@@ -666,6 +666,9 @@ def check_conformance(root, is_home, is_bmad, map_path):
             ".agents/scripts/sync-agents.ps1",
             ".agents/hooks", ".agents/templates", ".agents/reference", ".agents/bmad",
             ".agents/opencode-agents", ".opencode/commands", ".opencode/agent", "opencode.json",
+            ".agents/rules/000-PLAN-FIRST-GATE.md", ".agents/rules/artifacts-always-first.md",
+            ".agents/rules/constitution.md", ".agents/rules/git-policy.md",
+            ".agents/rules/karpathy-guidelines.md", ".agents/rules/operator-profile.md",
         ]
         # NOT markers: `.mcp.json` / `.opencode/mcp.json` / `.claude/settings.json` are per-project
         # CONFIG (which MCP servers this repo declares, its permissions, its worktree baseRef) — the
@@ -679,6 +682,17 @@ def check_conformance(root, is_home, is_bmad, map_path):
             missing.append(
                 f"STALE-VENDOR: still carries tier-1 toolkit ({shown}{more}) - "
                 "strip per project-law.md (the P3/P4 conversion worklist)")
+
+        # Unrouted project rules: INDEX.md must route what is on disk (SCC-388)
+        p_index = root / ".agents" / "INDEX.md"
+        p_rules = root / ".agents" / "rules"
+        if p_rules.is_dir() and p_index.is_file():
+            rule_files = [f for f in p_rules.glob("*.md") if f.name != "INDEX.md"]
+            if rule_files:
+                idx_text = p_index.read_text(encoding="utf-8")
+                load_matches = re.findall(r"^\|\s*`([A-Za-z0-9_.\-]+)\.md`\s*\|\s*([^|]+?)\s*\|", idx_text, re.M)
+                if not load_matches:
+                    missing.append(f"tier-2 law routes (INDEX.md has 0 rule rows while {len(rule_files)} rules exist in .agents/rules/)")
     need("_my_resources/open_tasks/todo_list.md", "open-tasks list")
     need("_artifacts/INDEX.md", "session ledger")
     if not map_path.exists():
