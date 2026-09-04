@@ -1,0 +1,28 @@
+{
+  "v": 1,
+  "task": "SCC-396",
+  "sha": "05c7fb545fd880b1ddc568aed5111a464ec8d34d",
+  "tip": "05c7fb545fd880b1ddc568aed5111a464ec8d34d",
+  "trigger": "close-out",
+  "when": "2026-09-04T18:44:59-04:00",
+  "changes": [
+    ".agents/scripts/tests/test_zoo_notify.py",
+    ".agents/scripts/zoo_notify.py",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-04_scc-396-zoo-linux-root/walkthrough.md",
+    "verdict": "PASS @ 05c7fb5",
+    "gates": {}
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
