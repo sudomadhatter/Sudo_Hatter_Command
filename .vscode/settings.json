@@ -182,7 +182,8 @@
     "node backend/tests/",
     ".venv/bin/python -m pytest",
     ".venv/bin/ruff check",
-    "firebase/tests/node_modules/.bin/firebase emulators:exec"
+    "firebase/tests/node_modules/.bin/firebase emulators:exec",
+    "code "
   ],
   "zoo-code.deniedCommands": [
     "rm -rf",
