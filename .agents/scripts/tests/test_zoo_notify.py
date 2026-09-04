@@ -571,6 +571,66 @@ def test_store_root_resolves_on_mac_and_on_windows():
     assert mac.parts[-2:] == (m.EXTENSION_DIR, "tasks"), mac
 
 
+def test_store_root_resolves_on_linux_and_not_to_the_mac_path():
+    """⛔ `user_dir` branched exactly TWO ways — win32, else Mac — so Ubuntu and WSL resolved to
+    `~/Library/Application Support`, a path that cannot exist there. `store_roots()` is built on
+    it, so the whole resolver reported zero threads on a machine where Zoo was installed, which
+    is indistinguishable from Zoo never having been used (SCC-396). Same class as the SCC-355
+    `partial` filter this module already carries a warning about: a silent under-report, not an
+    error. `vscode_sync.get_vscode_user_dir()` has branched three ways all along — these two
+    resolvers describe the same directory and must agree."""
+    m = _mod()
+    home = Path("/home/x")
+    linux = m.store_root(platform="linux", home=home, appdata=None)
+    mac = m.store_root(platform="darwin", home=home, appdata=None)
+    assert "Application Support" not in linux.parts, ("Linux must not resolve to the Mac path", linux)
+    assert linux != mac, (linux, mac)
+    assert linux.parts[-6:] == (
+        ".config", "Code", "User", "globalStorage", m.EXTENSION_DIR, "tasks"), linux
+
+
+def test_linux_honours_xdg_config_home():
+    """The Linux equivalent of APPDATA. A resolver that ignores it watches the wrong directory
+    on any machine that sets it, and reports the same silent zero."""
+    m = _mod()
+    got = m.user_dir(platform="linux", home=Path("/home/x"), xdg=Path("/custom/cfg"))
+    assert got == Path("/custom/cfg") / "Code" / "User", got
+
+
+def test_store_roots_finds_the_remote_server_root_under_wsl():
+    """⛔ Under VS Code Remote (WSL, SSH, containers) the extension runs SERVER-side and keeps its
+    task store in the distro at `~/.vscode-server/data/User/globalStorage/`, which no branch named.
+    Measured 2026-09-04 on the live WSL box: that directory held the store while `~/.config/Code`
+    did not exist at all, so a correct Linux branch ALONE still reports zero. Both roots are
+    candidates and the resolver must enumerate them."""
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        home = Path(d)
+        remote = home / ".vscode-server" / "data" / "User"
+        (remote / "globalStorage" / m.EXTENSION_DIR / "tasks").mkdir(parents=True)
+        roots = m.store_roots(platform="linux", home=home, appdata=None)
+        assert any(".vscode-server" in r.parts for r in roots), roots
+        assert all(r.parts[-2:] == (m.EXTENSION_DIR, "tasks") for r in roots), roots
+
+
+def test_store_roots_enumerates_both_linux_roots_and_their_profiles():
+    """A machine can have native VS Code AND a remote server. Neither shadows the other, and a
+    named profile under either is still a live case."""
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        home = Path(d)
+        native = home / ".config" / "Code" / "User"
+        remote = home / ".vscode-server" / "data" / "User"
+        (native / "globalStorage" / m.EXTENSION_DIR / "tasks").mkdir(parents=True)
+        (native / "profiles" / "builtin" / "globalStorage" / m.EXTENSION_DIR / "tasks").mkdir(parents=True)
+        (remote / "globalStorage" / m.EXTENSION_DIR / "tasks").mkdir(parents=True)
+        roots = m.store_roots(platform="linux", home=home, appdata=None)
+        assert len(roots) == 3, roots
+        assert any(".config" in r.parts and "profiles" not in r.parts for r in roots), roots
+        assert any("profiles" in r.parts for r in roots), roots
+        assert any(".vscode-server" in r.parts for r in roots), roots
+
+
 def test_custom_storage_path_setting_wins():
     """zoo-code.customStoragePath is a real Zoo setting; ignoring it watches the wrong dir."""
     m = _mod()

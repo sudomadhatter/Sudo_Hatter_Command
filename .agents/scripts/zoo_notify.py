@@ -49,16 +49,50 @@ MEASURED_ASKS = {"command", "tool", "followup", "completion_result", "resume_com
 
 
 def user_dir(platform: str | None = None, home: Path | None = None,
-             appdata: Path | None = None) -> Path:
-    """VS Code's `User` directory on this machine. [[two-machines-mac-and-pc]]"""
+             appdata: Path | None = None, xdg: Path | None = None) -> Path:
+    """VS Code's `User` directory on this machine. [[two-machines-mac-and-pc]]
+
+    ⛔ This branched exactly TWO ways until SCC-396 — `win32`, else Mac — so Linux and WSL
+    resolved to `~/Library/Application Support`, a path that cannot exist there. Nothing raised:
+    `store_roots()` simply returned a missing directory and the caller reported zero threads,
+    which reads identically to "Zoo was never used". `vscode_sync.get_vscode_user_dir()` has
+    branched three ways all along; these two resolvers describe the same directory, so a
+    disagreement between them is always a bug in one of them.
+    """
     platform = platform if platform is not None else sys.platform
     home = Path(home) if home is not None else Path.home()
     if platform == "win32":
         base = Path(appdata) if appdata is not None else Path(
             os.environ.get("APPDATA", home / "AppData" / "Roaming"))
-    else:
+    elif platform == "darwin":
         base = home / "Library" / "Application Support"
+    else:
+        env = os.environ.get("XDG_CONFIG_HOME")
+        base = Path(xdg) if xdg is not None else (Path(env) if env else home / ".config")
     return base / "Code" / "User"
+
+
+def user_dirs(platform: str | None = None, home: Path | None = None,
+              appdata: Path | None = None, xdg: Path | None = None) -> list[Path]:
+    """Every `User` directory this machine could hold — the local install AND the Remote server.
+
+    Under VS Code Remote (WSL, SSH, dev containers) the extension runs SERVER-side and keeps its
+    task store in the REMOTE home at `~/.vscode-server/data/User/globalStorage/`. Measured
+    2026-09-04 on the live WSL box: the store was there while `~/.config/Code` did not exist at
+    all, so fixing the Linux branch alone still reported zero (SCC-396).
+
+    ⛔ Not the same question as `zoo_permissions_apply.candidate_dbs()`, which is correct as it
+    stands and must not be "fixed" to match. That function hunts `state.vscdb` — the globalState
+    database — which under WSL lives in the WINDOWS user-data-dir and is reached through /mnt/c;
+    no `state.vscdb` exists in the distro (re-verified 2026-09-04). The task store and the
+    globalState DB live in different places, and both notes are true at once.
+    """
+    home = Path(home) if home is not None else Path.home()
+    dirs = [user_dir(platform, home, appdata, xdg)]
+    remote = home / ".vscode-server" / "data" / "User"
+    if remote not in dirs:
+        dirs.append(remote)
+    return dirs
 
 
 def store_root(platform: str | None = None, home: Path | None = None,
@@ -94,7 +128,8 @@ def read_custom_store(user: Path) -> Path | None:
 
 
 def store_roots(platform: str | None = None, home: Path | None = None,
-                appdata: Path | None = None, custom: Path | None = None) -> list[Path]:
+                appdata: Path | None = None, custom: Path | None = None,
+                xdg: Path | None = None) -> list[Path]:
     """Every thread store on this machine — the default profile AND each named profile.
 
     Its sibling `zoo_permissions_apply.py` already enumerates `profiles/*/globalStorage/` for this
@@ -103,11 +138,18 @@ def store_roots(platform: str | None = None, home: Path | None = None,
     """
     if custom is not None:
         return [Path(custom) / "tasks"]
-    user = user_dir(platform, home, appdata)
-    roots = [user / "globalStorage" / EXTENSION_DIR / "tasks"]
-    profiles = user / "profiles"
-    if profiles.is_dir():
-        roots += sorted(profiles.glob(f"*/globalStorage/{EXTENSION_DIR}/tasks"))
+    roots: list[Path] = []
+    for index, user in enumerate(user_dirs(platform, home, appdata, xdg)):
+        root = user / "globalStorage" / EXTENSION_DIR / "tasks"
+        # ⛔ The FIRST root is returned whether or not it exists — `main` reads an all-missing
+        # list as "Zoo is not installed" and exits 2, and that signal dies if this returns []. A
+        # further candidate only earns a row when it is really on disk, or every machine would
+        # report a Remote store it does not have.
+        if index == 0 or root.is_dir():
+            roots.append(root)
+        profiles = user / "profiles"
+        if profiles.is_dir():
+            roots += sorted(profiles.glob(f"*/globalStorage/{EXTENSION_DIR}/tasks"))
     return roots
 
 
@@ -410,7 +452,10 @@ def main() -> int:
     if args.store:
         roots = [Path(args.store)]
     else:
-        roots = store_roots(custom=read_custom_store(user_dir()))
+        # Under Remote the settings.json that carries `customStoragePath` sits beside the
+        # server-side store, not in the local User dir — ask every candidate (SCC-396).
+        custom = next((c for c in (read_custom_store(u) for u in user_dirs()) if c), None)
+        roots = store_roots(custom=custom)
     live = [r for r in roots if r.is_dir()]
     if not live:
         print(f"zoo-notify: no store at {', '.join(str(r) for r in roots)} "
