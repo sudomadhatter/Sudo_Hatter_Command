@@ -196,6 +196,21 @@ close-out.
 
 ### Correction to this record (2026-09-04, post-merge)
 
+**The lane manifest was missing, and that is the same omission twice over.** `task.yaml` is
+**Step 0** of this door — *"author the task manifest if the task never got one"* — and this lane
+went straight to the fix without opening the door first. It cost two gates, both of which were
+right to refuse:
+
+- `devrecord` died with *"no task.yaml declares the branch you are on, so there is no manifest to
+  read the lane slug from"*.
+- `finish` **re-opened the ticked merge row**: SCC-175 verifies that tick against ancestry rather
+  than trusting it, and it resolves the lane tip from `task.yaml` `branch:` or a walkthrough
+  `Verdict: … @ <sha>`. This lane had neither — the verdict is withheld on purpose — so the tip was
+  unresolvable and the row correctly held. *A tick is a claim, and that is the check.*
+
+The manifest is now written. It is the missing artifact, not a workaround for the gate.
+
+
 This section originally carried `- [ ] Merge the PR when the checks are green` and a second
 checkbox for the SCC-397 decision. Both were wrong, and `jira_feed.py check-actions` refused the
 close-out over the first — correctly. From the operator's word on, the merge, the re-invocation,
