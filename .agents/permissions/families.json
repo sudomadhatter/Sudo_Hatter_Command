@@ -109,7 +109,7 @@
     {
       "id": "allow-python3",
       "cmd": "python3",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids - NOTE this row is BROADER than the narrow Claude rules above it, which stay in place",
       "render": {
         "zoo": [
           "python3 "
@@ -119,7 +119,8 @@
           "Bash(python3 .agents/scripts/*)",
           "Bash(python3 -m py_compile:*)",
           "Bash(env -u GITHUB_TOKEN python3 .agents/scripts/*)",
-          "Bash(python3 --version)"
+          "Bash(python3 --version)",
+          "Bash(python3:*)"
         ],
         "antigravity": [
           "command(python3)",
@@ -412,13 +413,14 @@
     {
       "id": "allow-sed",
       "cmd": "sed",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids - NOTE this row is BROADER than the narrow Claude rules above it, which stay in place",
       "render": {
         "zoo": [
           "sed "
         ],
         "claude": [
-          "Bash(sed -n:*)"
+          "Bash(sed -n:*)",
+          "Bash(sed:*)"
         ],
         "antigravity": [
           "command(sed)",
@@ -830,7 +832,7 @@
     {
       "id": "allow-jq",
       "cmd": "jq",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids",
       "render": {
         "zoo": [
           "jq "
@@ -838,17 +840,21 @@
         "antigravity": [
           "command(jq)",
           "unsandboxed(jq)"
+        ],
+        "claude": [
+          "Bash(jq:*)"
         ]
       },
       "only": [
         "zoo",
+        "claude",
         "antigravity"
       ]
     },
     {
       "id": "allow-touch",
       "cmd": "touch",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids",
       "render": {
         "zoo": [
           "touch "
@@ -856,10 +862,14 @@
         "antigravity": [
           "command(touch)",
           "unsandboxed(touch)"
+        ],
+        "claude": [
+          "Bash(touch:*)"
         ]
       },
       "only": [
         "zoo",
+        "claude",
         "antigravity"
       ]
     },
@@ -906,14 +916,15 @@
     {
       "id": "allow-npm",
       "cmd": "npm",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids - NOTE this row is BROADER than the narrow Claude rules above it, which stay in place",
       "render": {
         "zoo": [
           "npm run ",
           "npm ci "
         ],
         "claude": [
-          "Bash(npm run lint:*)"
+          "Bash(npm run lint:*)",
+          "Bash(npm:*)"
         ],
         "antigravity": [
           "command(npm run)",
@@ -1261,7 +1272,7 @@
     {
       "id": "allow-node",
       "cmd": "node",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids",
       "render": {
         "zoo": [
           "node backend/tests/"
@@ -1269,10 +1280,14 @@
         "antigravity": [
           "command(node)",
           "unsandboxed(node)"
+        ],
+        "claude": [
+          "Bash(node:*)"
         ]
       },
       "only": [
         "zoo",
+        "claude",
         "antigravity"
       ]
     },
@@ -1604,6 +1619,93 @@
       "cmd": "/home/dlohn/.claude/projects/-home-dlohn-Sudo-Hatter-Command/memory",
       "why": "Antigravity auto-allows reads INSIDE the workspace and asks for everything outside it, and Claude Code's memory store is outside it. Five 'always allow' clicks on 2026-09-03 bought five single files, and the apply would have erased all five (it REPLACES both arrays). A directory grant is recursive over everything under it, so this one row retires them (SCC-387). Machine-scoped by construction - the Mac's own store path is its own row, in SCC-382.",
       "only": [
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-mv",
+      "cmd": "mv",
+      "why": "harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids",
+      "render": {
+        "claude": [
+          "Bash(mv:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-pytest",
+      "cmd": "pytest",
+      "why": "harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids",
+      "render": {
+        "claude": [
+          "Bash(pytest:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-rsync",
+      "cmd": "rsync",
+      "why": "harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids",
+      "render": {
+        "claude": [
+          "Bash(rsync:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-bash",
+      "cmd": "bash",
+      "why": "harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids | BLANK CHEQUE: this rule permits ANY command. Claude-scoped deliberately - rendered to Antigravity it would become command(bash), and `bash -c \"<denied command>\"` then walks straight through that fence's 384 deny rows by one level of indirection (measured 2026-09-04).",
+      "render": {
+        "claude": [
+          "Bash(bash:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-sh",
+      "cmd": "sh",
+      "why": "harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids | BLANK CHEQUE: this rule permits ANY command. Claude-scoped deliberately - rendered to Antigravity it would become command(sh), and `sh -c \"<denied command>\"` then walks straight through that fence's 384 deny rows by one level of indirection (measured 2026-09-04).",
+      "render": {
+        "claude": [
+          "Bash(sh:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-code",
+      "cmd": "code",
+      "why": "harvested 2026-09-04 from the Antigravity store via /smh-llm-approvals (SCC-392)",
+      "render": {
+        "zoo": [
+          "code "
+        ],
+        "claude": [
+          "Bash(code:*)"
+        ],
+        "antigravity": [
+          "command(code)",
+          "unsandboxed(code)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
         "antigravity"
       ]
     }
