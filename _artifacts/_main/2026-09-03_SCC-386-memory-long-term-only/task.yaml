@@ -1,0 +1,5 @@
+task_key: SCC-386
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-386-memory-long-term-only
+close_command: smh-close-task-merge-tree
+secondary_repos: []
