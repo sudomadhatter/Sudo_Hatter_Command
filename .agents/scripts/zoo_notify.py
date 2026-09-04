@@ -60,15 +60,25 @@ def user_dir(platform: str | None = None, home: Path | None = None,
     disagreement between them is always a bug in one of them.
     """
     platform = platform if platform is not None else sys.platform
-    home = Path(home) if home is not None else Path.home()
+    # ⛔ An explicit `home` means a CALLER pinned the machine — a test with a fake HOME, almost
+    # always — so the ambient `XDG_CONFIG_HOME` must not override it. The runner sets that
+    # variable and the operator's boxes do not, so the first cut passed on both machines and
+    # went red only in CI, reading the RUNNER's real config dir out of a tmpdir sandbox. That is
+    # the hazard `test_main_actually_honours_custom_storage_path_end_to_end` already documents
+    # for HOME/APPDATA: a test that silently escapes its sandbox and reads live user data is
+    # worse than a red one. The env var is consulted only when resolving the LIVE machine.
+    explicit_home = home is not None
+    home = Path(home) if explicit_home else Path.home()
     if platform == "win32":
         base = Path(appdata) if appdata is not None else Path(
             os.environ.get("APPDATA", home / "AppData" / "Roaming"))
     elif platform == "darwin":
         base = home / "Library" / "Application Support"
+    elif xdg is not None:
+        base = Path(xdg)
     else:
-        env = os.environ.get("XDG_CONFIG_HOME")
-        base = Path(xdg) if xdg is not None else (Path(env) if env else home / ".config")
+        env = None if explicit_home else os.environ.get("XDG_CONFIG_HOME")
+        base = Path(env) if env else home / ".config"
     return base / "Code" / "User"
 
 
@@ -87,9 +97,12 @@ def user_dirs(platform: str | None = None, home: Path | None = None,
     no `state.vscdb` exists in the distro (re-verified 2026-09-04). The task store and the
     globalState DB live in different places, and both notes are true at once.
     """
-    home = Path(home) if home is not None else Path.home()
+    # ⛔ Forward `home` UNRESOLVED: `user_dir` distinguishes "the caller pinned a home" from
+    # "resolve the live machine", and pre-resolving here would erase that and let the ambient
+    # XDG_CONFIG_HOME back into every test.
     dirs = [user_dir(platform, home, appdata, xdg)]
-    remote = home / ".vscode-server" / "data" / "User"
+    resolved = Path(home) if home is not None else Path.home()
+    remote = resolved / ".vscode-server" / "data" / "User"
     if remote not in dirs:
         dirs.append(remote)
     return dirs

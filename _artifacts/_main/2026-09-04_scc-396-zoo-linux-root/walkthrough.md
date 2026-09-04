@@ -97,6 +97,38 @@ store_roots():
 
 **Full suite:** `run_all.py` → **72/73 files passed**.
 
+### What CI caught that both machines missed — and it was mine
+
+The first `main-write-gate` run **failed on my own new test**,
+`test_store_roots_enumerates_both_linux_roots_and_their_profiles`, while every operator machine was
+green. Root cause, read from the log rather than guessed:
+
+`user_dir()` consulted `XDG_CONFIG_HOME` **unconditionally**. GitHub's runner sets that variable;
+neither operator box does. So a test that pinned a fake `home` in a tmpdir had its sandbox silently
+replaced by the runner's real config dir — it did not fail because the resolver was wrong, it failed
+because the test had escaped into live machine state.
+
+That is precisely the escape this file already documents for `HOME` and `APPDATA` in
+`test_main_actually_honours_custom_storage_path_end_to_end`: *"a test that silently escapes its
+sandbox and reads live user data is worse than a red one; it was red only by luck."* This was the
+third hatch in the same wall, and it went red only on the server.
+
+**Fixed at cause, twice:**
+
+1. An explicit `home` now means a caller pinned the machine, so the ambient `XDG_CONFIG_HOME`
+   loses to it; the variable is read only when resolving the **live** machine. `user_dirs()`
+   forwards `home` **unresolved** so that distinction survives the call.
+2. The end-to-end child's environment now pops `XDG_CONFIG_HOME` alongside `NTFY_TOPIC`, sealing
+   the third hatch the way the other two already were.
+
+**Pinned so it cannot return:** a new case sets `XDG_CONFIG_HOME` to a decoy and asserts a pinned
+`home` still wins. Verified both ways —
+`XDG_CONFIG_HOME=/runner/fake python3 test_zoo_notify.py` → **51/51**, and plain → **51/51**.
+
+⭐ The gate did its job here, and the lesson generalises past this lane: **two machines that agree
+are not a platform matrix.** Both operator boxes lacked the variable, so local green proved nothing
+about the third environment that actually runs the fence.
+
 ## The one red, and why it is not this lane's
 
 `test_rule_frontmatter.py` fails with 3 cases, all naming `Projects/sudo-command-center`: 28 rules
@@ -129,9 +161,11 @@ warning so the next reader does not undo the distinction.
 
 ## Gate
 
-- `test_zoo_notify.py` — **50 passed** (4 new, 46 pre-existing unchanged)
-- `run_all.py` — **72/73 files passed**; the single red is `test_rule_frontmatter.py`, reproduced
-  identically on clean `main` (`--on-main`, 20/23) and tracked as SCC-397
+- `test_zoo_notify.py` — **51 passed** (5 new, 46 pre-existing unchanged), verified both with and
+  without `XDG_CONFIG_HOME` set
+- `run_all.py` — **72/73 files passed**; the single LOCAL red is `test_rule_frontmatter.py`,
+  reproduced identically on clean `main` (`--on-main`, 20/23) and tracked as SCC-397. CI does not
+  see that one at all — it is the submodule case below — and CI's own first red was mine, fixed above
 - Live-machine proof that the resolver now reaches the real store
 - `sop_currency.py` — satisfied by a real SOP edit
 - Suite receipt: [`gates/suite.json`](gates/suite.json) — `fail`, exit 1, 27.4s @ `05c7fb54`
