@@ -65,6 +65,40 @@ Ticket: [SCC-386](https://sudo-command.atlassian.net/browse/SCC-386) · Branch: 
 -- 18/18 passed --
 ```
 
+## Suite Ledger
+
+| Scope | Command | Duration | Result | Why this run |
+|---|---|---|---|---|
+| targeted | `python3 .agents/scripts/tests/test_memory_long_term_rule.py` | 0.8s | PASS 18/18 | RED-to-GREEN verification of the new rule |
+| full | `python3 .agents/scripts/tests/run_all.py --jobs 4` | 34.7s | PASS 73/73 @ `a741fae7` | Full suite certification at absorbed main HEAD |
+
+## Code Review (2026-09-04)
+
+Verdict: PASS @ a741fae7
+Suite evidence measured on a741fae7 (`gates/suite.json`, PASS exit 0).
+
+review-runtime: fan-out
+lens_isolation: worktree
+lenses_run:
+- test-adequacy-auditor · ok
+- acceptance-auditor · ok
+- literal-correctness-hunter · ok
+- edge-case-hunter · ok
+- blind-hunter · ok
+lenses_counted: 5/5
+lenses_na: none
+findings: 0 decision · 0 patch · 0 defer (0 noise-dismissed · 0 relevance kills)
+dispositions: per-lens: test-adequacy-auditor=0/0/0 · acceptance-auditor=0/0/0 · literal-correctness-hunter=0/0/0 · edge-case-hunter=0/0/0 · blind-hunter=0/0/0
+severity_floor: none
+drift: undeclared=0 · unimplemented=0 · incomplete=0 — clean
+notes: all 18 long-term memory rule assertions pass; full standing suite (73/73) green.
+
+### Step 0.7 — the blast radius, re-derived against current main
+
+1. What moved: absorbed PR #146 (SCC-387 antigravity file read grants). No referenced rule or test files were deleted or renamed on main.
+2. What it changes here: merge conflict in `_artifacts/_main/INDEX.md` was resolved cleanly by keeping both session rows in chronological order; `workflows_testing_SOP.md` auto-merged cleanly.
+3. What was re-measured: `run_all.py` re-run at `a741fae7` with 73/73 files passing; suite receipt stamped at `gates/suite.json`; `review_level: quick` confirmed.
+
 ## Your Actions
 
 No operator action required. Review and run close-out when ready.
