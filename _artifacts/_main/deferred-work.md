@@ -38,3 +38,28 @@ eight rows came out, the completeness row stands, and the case count fell 873 �
 8 rows × 3 checks predicts.
 
 The ledger is empty again; that is its correct resting state.
+
+---
+
+## SCC-394 · two `SKILL.md` files carry unparseable YAML frontmatter (2026-09-04)
+
+**The finding, reproduced.** `yaml.safe_load` over all 74 master `SKILL.md` frontmatter blocks
+fails on exactly two: `cicd-prune-context` (`mapping values are not allowed here`, an unquoted
+`: ` inside the description — `` `active-context: ~X / 5,000 tokens` ``) and
+`smh-close-task-merge-tree` (same class — `STOPS: it never merges`). `New-LauncherSkillStub`
+copies the brain's `description:` line into the stub raw: no quote, no escape, no truncation.
+
+**Why it is deferred rather than fixed in SCC-394's lane.** Both description lines are
+**byte-identical on `origin/main`** — verified with `git show origin/main:<path>` — so the defect
+is pre-existing in lines this ticket does not touch, and Claude and Codex have been reading those
+same two files all along. What SCC-394 changes is that Antigravity becomes a third reader. The
+fix — quoting and escaping in the stub — rewrites the frontmatter of all 51 generated launchers,
+which is a larger unreviewed change than the defect it closes, landing after the lenses ran.
+
+**The remedy, named.** In `New-LauncherSkillStub`, emit
+`('description: "' + $d.Replace('\','\\').Replace('"','\"') + '"')` after the same
+`.Trim().Trim('"').Trim("'")` the Zoo emitter already applies, and add one assertion that every
+`.agents/skills/*/SKILL.md` frontmatter parses as YAML — `grep -rn 'safe_load' .agents/scripts/`
+returns nothing today, so no test in the repo can currently see this.
+
+**Blocker:** it is `origin/main`'s defect, not this lane's diff.

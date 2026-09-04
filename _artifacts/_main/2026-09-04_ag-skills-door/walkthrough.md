@@ -202,12 +202,15 @@ review to rule on.
 Nothing here is a ceremony step — those are the close-out's and they run on your word. These are the
 decisions and the one measurement only you can take.
 
-- [ ] **Take Step 0's two baseline numbers in Antigravity, before this lands.** (a) How many
-      **Skills** does the Customizations panel list in the lobby? (b) Open any `Projects/<name>`
-      workspace — do the 40 old workflow entries appear under **Global** at all? **(b) is the whole
-      gate for the follow-on:** if project workspaces never showed them, nothing was lost and the
-      cache half replaces nothing. Without this number, a later "project workspaces show nothing"
-      cannot be told from a condition that predates this ticket.
+- [ ] **Take Step 0's two baseline numbers in Antigravity — BEFORE your next `/smh-sync-agents`
+      from the lobby, not merely before this lands.** (a) How many **Skills** does the
+      Customizations panel list in the lobby? (b) Open any `Projects/<name>` workspace — do the 40
+      old workflow entries appear under **Global** at all?
+      ⛔ **(b) has a deadline this ticket creates.** The first lobby sync after this lands runs the
+      retirement purge and empties `~/.gemini/antigravity/global_workflows`. Once it is empty the
+      question is permanently unanswerable — a later "project workspaces show nothing" cannot be
+      told from a condition that predates this ticket — and the follow-on decision below has no
+      input at all. Two minutes now, or the measurement is gone.
 - [ ] **Decide whether the Antigravity global-cache follow-on is worth building**, from (b) above.
       If it is, it is the dumb shape every other cache in this engine already uses: `Copy-Tree
       -Mirror` the launcher dirs into `~/.gemini/config/skills/` — no manifest, no purge, a retired
@@ -228,6 +231,152 @@ decisions and the one measurement only you can take.
       and its working tree carries 44 dirty rows under that directory. After this lands it repoints
       those three doors to `.agents/skills/` and re-aims its validator, under its own key.
 
+**The four hands checks, after your first lobby sync.** Every other assertion in this ticket is
+static file analysis; no test in this repo can reach Antigravity's menu, so these are the only
+end-to-end evidence that the new door actually opens.
+
+- [ ] In the lobby, type `/smh-sync-agents` in Antigravity → it should launch from the skill and
+      say it is reading `.agents/commands/smh-sync-agents.md`. Then reload the window.
+- [ ] Customizations → **Skills**: the 74 house + 56 BMAD workspace skills are listed. Spot-check
+      the alphabetical tail (`workspace-structure`, `write-swift`).
+- [ ] Customizations → **Workflows**: no house entries, and no deprecation banner.
+- [ ] Open a project workspace: `/smh-quick-dev` is either absent, or STOPs with "that file does
+      not exist in this workspace". Record what **Global** shows — with (b) above, that is the
+      follow-on's whole input.
+
 **What landed here, for context (nothing owed):** the workflow surface and every engine wire that
 fed it; the retirement purge; the LF byte contract moved onto both `SKILL.md` surfaces; 20 law and
 doc sites; 13 memory files; `docs/repo-map.md` and `docs/doc-graph.{md,json}` regenerated.
+
+---
+
+## Code Review (2026-09-04)
+
+Verdict: CONCERNS @ e71cadef
+Suite evidence measured on: e71cadef (re-stamped after the last code-touching change)
+
+review_level: standard — the radius carries gate, hook, rule and contract surfaces and 160 files.
+review_runtime: fan-out
+lens_isolation: worktree — the four repo-reading lenses each got their own copy; the repo under
+review IS the lobby, so `isolation: "worktree"` delivers the contract. The blind hunter got no
+tree at all, by design.
+
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted:  5/5
+lenses_na:
+- none · n/a — review_mode full and review_level standard, so every lens in the roster ran
+
+### Step 0.7 — the blast radius, re-derived against current `main`
+
+`origin/main` is still `eee79727`, this lane's base: **nothing landed while I built.** Overlap
+with landed work is empty, `git merge-tree` returns a clean tree with no conflict messages, and
+no absorb was needed. `risk_seam.py classify` returns `unclassified`, which is the permanent
+correct answer here — the command centre carries no code graph.
+
+Three sibling lanes exist. `SCC-392` is spent (empty diff against `main`). `claude/teaching-edition`
+at `0d76f72c` is the landing-order dependency, unchanged since 2026-08-24, and the ordering is
+already stated in the plan and owed as a `## Your Actions` row.
+
+Nothing this diff references moved, was renamed, or was deleted on `main`.
+
+### Disposition — the tail, in one line
+
+**Twenty-six findings came back across five lenses. Fourteen were assessed real and fixed in this
+lane; twelve were dismissed** under the assessor rule (not real, not behaviour-changing, or not in
+this diff). Three assessments disagreed with the lens's own label and those are the calibration
+signal worth carrying:
+
+- The edge-case lens filed the unparseable-YAML frontmatter as `important` on this diff. **Verified
+  it myself and downgraded it out of the lane**: both descriptions are byte-identical on
+  `origin/main`, so it is pre-existing debt in lines this ticket does not touch. Recorded in
+  [deferred-work.md](../deferred-work.md) with the remedy named.
+- The blind lens filed the claude-only stub wording as `nitpick`. **Dismissed** — the plan's
+  acceptance row D explicitly requires the stub to name all three platforms, and the operator
+  approved that.
+- The test-adequacy lens filed `$masterOnly`'s missing coverage as `suggestion`. **Promoted and
+  fixed**: four mutants survived on the predicate this ticket rewrote, one of which is the exact
+  hazard the engine's own comment names.
+
+### What the review actually caught — the two that mattered
+
+**Three of my own new guards could not fail.** `CS-18 C1` and `C1b` took a 900-character window
+from the first `global_workflows` and asked whether `Remove-Item`, `bmad-` and `RETIRED` appeared
+in it. They did — supplied by the `~/.codex/prompts` retirement twenty lines below, which has the
+identical shape. Dropping the purge's `bmad-*` filter and replacing its `Test-Path` guard with
+`if ($true)` each left the suite at 300/300, and both mutants wreck the operator's machine.
+`CS-18 A`'s residue sweep matched double-quoted `Join-Path` only, while every surviving emitter
+in this engine is single-quoted; a working workflow emitter written in the file's own house style
+returned zero residue. All now scoped by name, quote-agnostic, and case-insensitive.
+
+**Three edits landed on half a wrapped sentence.** The engine's `.DESCRIPTION`, its DOOR MODEL
+comment, and `smh-sync-agents.md`'s own door paragraph each had the noun on the following line, so
+the substitution left the other half still asserting the retired model — and `CS-18 J`, the guard
+written for exactly that, could not see the last one because `workflow mirror` spanned a newline.
+J now sweeps every tracked `.md` rather than four hand-listed files, which is what would have
+caught the two further sites the acceptance lens found (`docs/repo-map.md`'s toolkit inventory and
+the SOP's §19 blurb).
+
+### Mutation sweep — 12 mutants, run through `mutation_sweep.py`
+
+Every one of these SURVIVED before the fixes and is KILLED after. Restore verified against the
+pinned pre-sweep sha and bytes; the full file ran unfiltered at the end of each sweep.
+
+| # | Mutant | Killed by |
+|---|---|---|
+| M1 | purge deletes BMAD's own global install | `CS-18 S` |
+| M2 | the `Test-Path` guard is gone | `CS-18 C1b` |
+| M3 | `-WhatIf` polarity inverted — a DRY RUN performs the delete | `CS-18 S` |
+| M4 | the `Remove-Item` arm is unreachable | `CS-18 S` |
+| M5 | a workflow emitter restored in house style | `CS-18 A` |
+| E5 | the hand-authored-SKILL-wins guard removed | `CS-18 Q7` |
+| E7 | the GENERATED-marker test inverted | `CS-18 T` |
+| E8 | `Sync-Dir` stops reading the exclusion | `CS-18 T` |
+| E11 | the manifest set ignores the exclusion | `CS-18 T` |
+| M3b | the antigravity eligibility arm reverted | `CS-18 Q6` |
+| M10 | the length guard counts code points, not UTF-16 units | `U7` |
+| T6b | Q's committed set built from a broken glob | `CS-18 Q4b` |
+
+⛔ One mutant (`M2`) initially scored **NOT KILLED — SWEEP ERROR**: removing the `Test-Path` guard
+made `CS-18 S`'s extraction raise, and a crash "kills" every mutant aimed anywhere in the file, so
+the sweep correctly refuses to score it. `S` now degrades to a stated SKIP when its anchor is
+absent, and `C1b` owns that red. That is the CS-19 lesson this file already records twice, met a
+third time.
+
+### Acceptance audit
+
+Rows **A, B, C, D, E, G** are satisfied with the assertion that proves each — see the Evidence
+matrix above; the acceptance lens re-ran every one independently in its own tree and reproduced
+the builder's RED from `origin/main` before believing the GREEN.
+
+**Row F was NOT satisfied at review time** — four live sites still carried the retired claim
+(`smh-sync-agents.md`'s door paragraph and its frontmatter description, the SOP §19 blurb, and
+`docs/repo-map.md`'s inventory). All four fixed in-thread, and `CS-18 J` widened so a hand list
+cannot miss the next one. Row F is satisfied at this sha.
+
+**Row H is NOT satisfied, and cannot be in this lane.** Two reasons, both stated rather than
+papered over: the enforcement suite is 72/73 because `test_rule_frontmatter.py` fails on
+`Projects/sudo-command-center`, identically on `origin/main` at `eee79727` with none of this
+diff present; and Step 0's two baseline numbers are a hands measurement that is now an unchecked
+`## Your Actions` row holding the ticket out of `Done`. **That is why this verdict is CONCERNS
+rather than PASS.**
+
+### Declared Change Set
+
+`declared_change_set.py diff` → `present: true`, `incomplete: []`, `unimplemented: []`,
+`undeclared: [".claude/rules/sop-currency.md"]` — one row, the generated tree copy of a declared
+master edit, disclosed above and not added to the plan because editing an approved plan re-arms
+the plan-first gate.
+
+### Clean-code gate
+
+Imported from Step 3 rather than re-run (SCC-146): `run_all.py`, `workflow_lint.py --toolkit-only`
+(0 errors, 0 warnings, 8 info — all UTF-8 BOM notices on vendored `testarch-*` commands),
+`sop_currency.py` (silent over all 160 changed paths), and the link+anchor sweep. `py_compile` is
+clean on all twelve changed Python files; `pwsh` parses `sync-agents.ps1` with zero errors. The
+comment contract holds: every comment this diff made wrong was rewritten in the same commit, which
+is what the two wrapped-sentence findings were.
