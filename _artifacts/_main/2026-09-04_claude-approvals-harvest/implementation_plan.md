@@ -89,6 +89,26 @@ commit or the armed `sop_currency` gate rejects it. §5's script inventory gains
 the `/smh-llm-approvals` prose and the "tired of approving" quick-reference row gain the Claude
 half. One changelog line.
 
+## Declared Change Set
+
+- NEW `.agents/scripts/claude_permissions_status.py` — the read-only diff of the two machine-local Claude lists against the tracked one; no apply, ever → 1
+- EDIT `.agents/commands/smh-llm-approvals.md` — Step 1 reads both machine-local files, Step 2 shows them as their own group, Step 3 stops on a blank-cheque row → 2
+- EDIT `.opencode/commands/smh-llm-approvals.md` — the opencode door is a FULL byte-identical MIRROR of the command body (pinned by E4); no `pwsh` here to regenerate it, so it is copied in the same commit → 3
+- EDIT `.agents/scripts/tests/test_permission_parity.py` — the G block (G0–G8) and E6/E7/E8 → the assert-first section
+- EDIT `.agents/scripts/INDEX.md` — one row for the new script, the convention every script in that folder follows → 1
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — §13 gains a **Claude Code's approval lists** row beside Zoo's and Antigravity's; the `/smh-llm-approvals` prose, the quick-reference row and the command-table row gain the Claude half → 4
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — one line → 4
+- EDIT `_artifacts/_main/INDEX.md` — this lane's row → 4
+- NEW `_artifacts/_main/2026-09-04_claude-approvals-harvest/walkthrough.md` — evidence, review, actions → the definition of done
+- NEW `_artifacts/_main/2026-09-04_claude-approvals-harvest/tickets/SCC-392.md` — the ticket outline → the definition of done
+- NEW `_artifacts/_main/2026-09-04_claude-approvals-harvest/gates/suite.json` — the suite receipt → the definition of done
+
+⛔ **Not declared, and deliberately never touched:** `~/.claude/settings.json`, `<repo>/.claude/settings.local.json`,
+`.claude/settings.json`, `.vscode/settings.json`, `.agents/permissions/antigravity.json`,
+`.agents/permissions/families.json` and `permission_render.py`. This lane closes a DISCOVERY gap; no
+row is harvested here, so the rendered lists are byte-identical to `main` and the renderer needs no
+change. A harvest is the operator's next `/smh-llm-approvals` run.
+
 ## Assert first — what proves it, before it is written
 
 New rows in `.agents/scripts/tests/test_permission_parity.py`, against the real module:
