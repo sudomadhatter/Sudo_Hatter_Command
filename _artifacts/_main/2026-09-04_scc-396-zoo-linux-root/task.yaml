@@ -1,0 +1,5 @@
+task_key: SCC-396
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-396-zoo-linux-root
+close_command: smh-close-task-merge-tree
+secondary_repos: []
