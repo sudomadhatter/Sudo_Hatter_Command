@@ -140,17 +140,21 @@ the check read its own law as a breach. It now scans the code with the docstring
 python3 .agents/scripts/tests/test_permission_parity.py        -- 74/74 passed --
 python3 .agents/scripts/permission_render.py --check           permission_render: in sync (zoo, claude, antigravity)
 python3 .agents/scripts/claude_permissions_status.py           MACHINE-LOCAL allow rows: 17 (settings.json=17)
-python3 .agents/scripts/tests/run_all.py                       70/72 files passed
+python3 .agents/scripts/tests/run_all.py                       72/72 files passed
+python3 .agents/scripts/check_links.py --base origin/main      8 files, 155 path claims, clean
 ```
 
-`run_all.py`'s two reds are pre-existing and neither is in this lane's radius:
+The suite reached 72/72 in two steps, and both first-run reds are worth recording because neither
+was a defect in the change:
 
-- **`test_check_maps.py` F2** — `_artifacts/_main/INDEX.md` was missing this lane's own row. **Fixed
-  in the lane**; it is this lane's bookkeeping.
+- **`test_check_maps.py` F2** — `_artifacts/_main/INDEX.md` was missing this lane's own row. Fixed in
+  the lane; it is this lane's bookkeeping, and the gate was doing its job.
 - **`test_sops_prds_folder.py` T9** — `file_folder_structure+maintaining.md` cites
-  `docs/.maps-journal.jsonl`, which is gitignored (`.gitignore:23`) and exists only in the main
-  checkout, so it resolves nowhere from any worktree. Proved rather than assumed: the same test run
-  in the main checkout with `--on-main` passes 61/61. Environmental, not a defect, and not mine.
+  `docs/.maps-journal.jsonl`, which is gitignored (`.gitignore:23`) and so does not exist in a
+  freshly cut worktree at all. It is written by the post-commit maps recorder, which had not yet run
+  here. Proved rather than assumed twice over: the same test passed 61/61 in the main checkout under
+  `--on-main` while it was failing here, and it went green in this worktree the moment the lane's
+  first commit ran the recorder. Environmental and self-clearing, not a defect.
 
 ## What is live now
 
