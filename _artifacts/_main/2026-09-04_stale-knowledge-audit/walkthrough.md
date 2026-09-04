@@ -120,7 +120,14 @@ nothing should be written against it.
 
 ## Your Actions
 
-- [ ] **Merge the PR** when checks are green. This lane does not merge.
-- [ ] **SCC-397 can close with this merge.** Both its acceptance rows are met, by a third reading it
-      did not list. It is typed `Bug`, so it clears through `jira_feed.py devrecord --closing` at
-      close-out rather than by hand.
+- [x] The merge itself — lands via this branch's PR
+
+Nothing is owed. SCC-397 closes inside this ceremony: it is typed `Bug`, so
+`jira_feed.py devrecord --closing` restores it to `Task` and closes it against this merge.
+
+⚠️ **The row this section originally carried was illegal, and the check caught it.** It read
+*"Merge the PR when checks are green"* — a ceremony step handed to the operator, which
+`jira_feed.py check-actions` refuses by name (SCC-193). From the operator's decision to proceed,
+every step is the ceremony's and the agent runs it. Recorded here rather than quietly deleted,
+because the reason this cost a second PR is that Step 3 requires the section be right **before**
+the PR opens, and this lane's PR was opened outside the door.
