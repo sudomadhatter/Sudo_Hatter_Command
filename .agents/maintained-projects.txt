@@ -6,9 +6,16 @@
 #
 # WHO READS THIS:
 #   - .agents/scripts/check_maps.py (fan_out_targets): `--all` / /smh-update-maps-indexes lint ONLY these.
+#   - .agents/scripts/tests/test_rule_frontmatter.py: the tier-2 project rule audit scans ONLY these.
 #   - sync-agents.ps1 no longer reads it: the -Maintained vendor fan-out was RETIRED 2026-08-07
 #     (thin model, .agents/rules/project-law.md — projects carry no vendored toolkit to sync).
 # Never hand-loop over Projects/* — that touches repos we deliberately do not keep current.
+# ⛔ SCC-399: the rule audit DID hand-loop, for two months, and the repo it hurt was
+#    Projects/sudo-command-center — the PUBLISHED TEACHING EDITION of this lobby, which ships 28
+#    sanitized rule files on purpose. Three assertions failed on it, the suite floor sat red at
+#    72/73, and the only "fix" those assertions would accept was deleting 27 files out of a
+#    shipped product. A name is absent from this list because the lobby does not drive that repo,
+#    never because nobody got to it.
 #
 # To add a new project to upkeep: add its folder name below.
 # ⛔ TWO-FILE EDIT since SCC-73. Adding a name here without also adding its row to the
