@@ -21,7 +21,7 @@ Four more gaps compounded it, each one a sentence the door does not carry:
 |---|---|
 | The door never names `test_permission_parity.py` | All 17 picks were written, THEN the battery reported A3/A5/A6/B8 red. Five picks (`gh`, `env -u GITHUB_TOKEN gh`, `acli`, `chmod`, `npx`) had to be found and backed out by hand, one at a time |
 | The door never says the applies need the Bash sandbox off | `antigravity_permissions_apply.py --apply` died `OSError: [Errno 30] Read-only file system` on `~/.gemini/`; the same class hit `.claude/settings.local.json` in Step 1, which the door DOES warn about |
-| The door never names Road 2 (`gate/**`) | `main` is protected by a required status check, so the direct push was rejected and the road re-derived live — although `main_write_gate.py:87` already calls `gate/**` *"the local door's road"* |
+| The door never names Road 2 (`gate/**`) | `main` is protected by a required status check, so the direct push was rejected and the road re-derived live — although `main_write_gate.py:216` already calls `gate/**` *"the local door's road"* |
 | `lane_qualify.py` answers `TASK` for any `.agents/permissions/` path | Correct for a hand edit, but it is the machine signal an agent reads when deciding how much ceremony to spend |
 
 ## The change — the door carries the road

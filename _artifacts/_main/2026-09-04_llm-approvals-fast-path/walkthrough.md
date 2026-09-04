@@ -21,7 +21,7 @@ Four gaps compounded it, each a sentence the door did not carry:
 |---|---|
 | Never names `test_permission_parity.py` | All 17 picks written, THEN the battery reported A3/A5/A6/B8 red. Five picks backed out by hand, one at a time |
 | Never says the applies need the sandbox off | `antigravity_permissions_apply.py --apply` died `OSError: [Errno 30] Read-only file system` on `~/.gemini/` |
-| Never names Road 2 (`gate/**`) | The protected-branch rejection sent the road to be re-derived live, though `main_write_gate.py:87` already calls `gate/**` *the local door's road* |
+| Never names Road 2 (`gate/**`) | The protected-branch rejection sent the road to be re-derived live, though `main_write_gate.py:216` already calls `gate/**` *the local door's road* |
 | `lane_qualify.py` answers `TASK` for `.agents/permissions/` | Correct for a hand edit — but it is the machine signal an agent reads when deciding how much ceremony to spend |
 
 ## What changed
