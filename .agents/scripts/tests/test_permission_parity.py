@@ -14,6 +14,7 @@ against the three RENDERED lists. Identical DECISIONS, never identical bytes.
   D · rendering rides sync-agents (call site present) and the renderer runs without PowerShell
   E · /smh-llm-approvals writes the SOURCE and reads Antigravity's store; opencode mirror exact
   F · the record tells the truth - guide rows, memory entries
+  G · the Claude harvest reads the two machine-local lists, reports allow only, and has no apply
 
 run_all.py executes this file bare (python3 <file>); the __main__ harness at the bottom is what
 makes it count. Imports of the modules under test are guarded so a missing module is a FAILED
@@ -57,6 +58,10 @@ try:
     import antigravity_permissions_apply as ap
 except Exception:  # noqa: BLE001
     ap = None
+try:
+    import claude_permissions_status as cs
+except Exception:  # noqa: BLE001
+    cs = None
 
 
 def _jsonc(path: Path) -> dict:
@@ -566,6 +571,12 @@ if c.block("E · /smh-llm-approvals writes the SOURCE and reads Antigravity"):
             OC_MIRROR.read_bytes() == CMD.read_bytes())
     c.check("E5 commands/INDEX.md no longer describes the old door",
             "adds the ones he picks to both allow lists" not in (ROOT / ".agents" / "commands" / "INDEX.md").read_text(encoding="utf-8"))
+    c.check("E6 Step 1 reads BOTH machine-local Claude lists by name",
+            "~/.claude/settings.json" in body and ".claude/settings.local.json" in body)
+    c.check("E7 the door states Claude has no apply, so nothing is pushed and nothing is lost",
+            "Claude has no apply" in body and "claude_permissions_status.py" in body)
+    c.check("E8 the door names the two blank-cheque rows it must not promote silently",
+            "Bash(bash:*)" in body and "Bash(sh:*)" in body)
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════
 if c.block("F · the record tells the truth"):
@@ -586,5 +597,51 @@ if c.block("F · the record tells the truth"):
             "cd .* && " in guide and re.search(r"chain", guide, re.I) is not None)
     c.check("F5 codex memory counts five surfaces (Zoo present, Antigravity live)",
             "Zoo" in MEM_CODEX.read_text(encoding="utf-8"))
+
+# ═══════════════════════════════════════════════════════════════════════════════════════════
+if c.block("G · the Claude harvest reads the machine-local lists"):
+    c.check("G0 claude_permissions_status imports", cs is not None)
+    if cs is not None:
+        with tempfile.TemporaryDirectory() as td:
+            d = Path(td)
+            def _write(name, allow, deny=None):
+                perms = {"allow": allow}
+                if deny is not None:
+                    perms["deny"] = deny
+                (d / name).write_text(json.dumps({"permissions": perms}), encoding="utf-8")
+                return d / name
+            tracked = _write("tracked.json", ["Bash(git status:*)", "Bash(ls:*)"])
+            user = _write("user.json", ["Bash(git status:*)", "Bash(npm:*)"], deny=["Bash(rm:*)"])
+            missing = d / "never-written.json"
+            c.check("G1 a row the tracked list does not carry is reported, named",
+                    cs.local_only(tracked, user, missing)[user] == ["Bash(npm:*)"],
+                    str(cs.local_only(tracked, user, missing)[user]))
+            c.check("G2 a row present in BOTH is not reported",
+                    "Bash(git status:*)" not in cs.local_only(tracked, user, missing)[user])
+            c.check("G3 an absent machine-local file counts as EMPTY, not an error",
+                    cs._allow(missing) == set() and cs.local_only(tracked, user, missing)[missing] == [])
+            # deny is the fence; this door never reads or writes one, so a report that surfaced a
+            # deny row would invite exactly the edit that law forbids.
+            c.check("G4 a deny row is never reported, even when the two files disagree on it",
+                    not any("rm" in r for rows in cs.local_only(tracked, user, missing).values() for r in rows))
+            s_local = cs.status(tracked, user, missing)
+            c.check("G5 status names the count when rows are machine-local",
+                    s_local.startswith("MACHINE-LOCAL") and "1" in s_local, s_local)
+            # The instrument must be SEEN saying the other thing too - a status() hard-wired to
+            # one answer passes a one-sided check (the lesson C6 records for the sibling script).
+            same = _write("same.json", ["Bash(git status:*)"])
+            c.check("G6 status reads clean when nothing is machine-local",
+                    cs.status(tracked, same, missing) == cs.NOTHING_LOCAL, cs.status(tracked, same, missing))
+            c.check("G7 a missing tracked list exits 2 and says so",
+                    cs.main(["--rendered", str(missing), "--user", str(user), "--project", str(missing)]) == 2)
+            # The law, pinned structurally: Claude's rendered file IS its live file, so an apply
+            # here would have nothing to write into and could only destroy. It must never appear.
+            # Scan the CODE, not the prose: the module docstring STATES the law ("there is NO
+            # --apply"), and a substring check over the whole file reads its own law as a breach.
+            code = (SCRIPTS / "claude_permissions_status.py").read_text(encoding="utf-8").split('"""')[2]
+            c.check("G8 the script has NO apply and writes nothing - read-only by construction",
+                    not hasattr(cs, "apply") and "--apply" not in code
+                    and not any(w in code for w in ("write_text", "write_bytes", "open(")),
+                    f"apply_attr={hasattr(cs, 'apply')}")
 
 sys.exit(c.finish())
