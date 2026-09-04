@@ -576,6 +576,87 @@ def test_store_root_resolves_on_mac_and_on_windows():
     assert mac.parts[-2:] == (m.EXTENSION_DIR, "tasks"), mac
 
 
+def test_store_root_resolves_on_linux_and_not_to_the_mac_path():
+    """⛔ `user_dir` branched exactly TWO ways — win32, else Mac — so Ubuntu and WSL resolved to
+    `~/Library/Application Support`, a path that cannot exist there. `store_roots()` is built on
+    it, so the whole resolver reported zero threads on a machine where Zoo was installed, which
+    is indistinguishable from Zoo never having been used (SCC-396). Same class as the SCC-355
+    `partial` filter this module already carries a warning about: a silent under-report, not an
+    error. `vscode_sync.get_vscode_user_dir()` has branched three ways all along — these two
+    resolvers describe the same directory and must agree."""
+    m = _mod()
+    home = Path("/home/x")
+    linux = m.store_root(platform="linux", home=home, appdata=None)
+    mac = m.store_root(platform="darwin", home=home, appdata=None)
+    assert "Application Support" not in linux.parts, ("Linux must not resolve to the Mac path", linux)
+    assert linux != mac, (linux, mac)
+    assert linux.parts[-6:] == (
+        ".config", "Code", "User", "globalStorage", m.EXTENSION_DIR, "tasks"), linux
+
+
+def test_an_explicit_home_is_never_overridden_by_the_ambient_xdg_config_home():
+    """⛔ CAUGHT IN CI, green on both operator machines — the exact escape this file already
+    warns about for HOME/APPDATA. GitHub's runner SETS `XDG_CONFIG_HOME`; neither operator box
+    does. The first cut read that variable unconditionally, so a test pinning a fake `home` had
+    its sandbox silently replaced by the runner's real config dir, and the suite went red only
+    on the server. An explicit `home` means a caller pinned the machine; the ambient variable
+    must lose to it, and is consulted only when resolving the LIVE machine."""
+    m = _mod()
+    old = os.environ.get("XDG_CONFIG_HOME")
+    os.environ["XDG_CONFIG_HOME"] = "/somewhere/else"
+    try:
+        got = m.user_dir(platform="linux", home=Path("/home/x"))
+        assert got == Path("/home/x") / ".config" / "Code" / "User", got
+        assert "somewhere" not in got.parts, ("the ambient env leaked into a pinned home", got)
+    finally:
+        if old is None:
+            os.environ.pop("XDG_CONFIG_HOME", None)
+        else:
+            os.environ["XDG_CONFIG_HOME"] = old
+
+
+def test_linux_honours_xdg_config_home():
+    """The Linux equivalent of APPDATA. A resolver that ignores it watches the wrong directory
+    on any machine that sets it, and reports the same silent zero."""
+    m = _mod()
+    got = m.user_dir(platform="linux", home=Path("/home/x"), xdg=Path("/custom/cfg"))
+    assert got == Path("/custom/cfg") / "Code" / "User", got
+
+
+def test_store_roots_finds_the_remote_server_root_under_wsl():
+    """⛔ Under VS Code Remote (WSL, SSH, containers) the extension runs SERVER-side and keeps its
+    task store in the distro at `~/.vscode-server/data/User/globalStorage/`, which no branch named.
+    Measured 2026-09-04 on the live WSL box: that directory held the store while `~/.config/Code`
+    did not exist at all, so a correct Linux branch ALONE still reports zero. Both roots are
+    candidates and the resolver must enumerate them."""
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        home = Path(d)
+        remote = home / ".vscode-server" / "data" / "User"
+        (remote / "globalStorage" / m.EXTENSION_DIR / "tasks").mkdir(parents=True)
+        roots = m.store_roots(platform="linux", home=home, appdata=None)
+        assert any(".vscode-server" in r.parts for r in roots), roots
+        assert all(r.parts[-2:] == (m.EXTENSION_DIR, "tasks") for r in roots), roots
+
+
+def test_store_roots_enumerates_both_linux_roots_and_their_profiles():
+    """A machine can have native VS Code AND a remote server. Neither shadows the other, and a
+    named profile under either is still a live case."""
+    m = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        home = Path(d)
+        native = home / ".config" / "Code" / "User"
+        remote = home / ".vscode-server" / "data" / "User"
+        (native / "globalStorage" / m.EXTENSION_DIR / "tasks").mkdir(parents=True)
+        (native / "profiles" / "builtin" / "globalStorage" / m.EXTENSION_DIR / "tasks").mkdir(parents=True)
+        (remote / "globalStorage" / m.EXTENSION_DIR / "tasks").mkdir(parents=True)
+        roots = m.store_roots(platform="linux", home=home, appdata=None)
+        assert len(roots) == 3, roots
+        assert any(".config" in r.parts and "profiles" not in r.parts for r in roots), roots
+        assert any("profiles" in r.parts for r in roots), roots
+        assert any(".vscode-server" in r.parts for r in roots), roots
+
+
 def test_custom_storage_path_setting_wins():
     """zoo-code.customStoragePath is a real Zoo setting; ignoring it watches the wrong dir."""
     m = _mod()
@@ -657,6 +738,11 @@ def test_main_actually_honours_custom_storage_path_end_to_end():
             json.dumps({"zoo-code.customStoragePath": str(elsewhere)}), encoding="utf-8")
         env = dict(os.environ, HOME=str(home), USERPROFILE=str(home), APPDATA=str(appdata))
         env.pop("NTFY_TOPIC", None)
+        # ⛔ The THIRD escape hatch, alongside HOME and APPDATA (SCC-396). The child resolves the
+        # live machine, so on Linux it reads `XDG_CONFIG_HOME` — which GitHub's runner sets and
+        # neither operator box does. Left standing, the fake home is ignored and the child reads
+        # the runner's real config dir: green here, red only in CI. Seal it like the others.
+        env.pop("XDG_CONFIG_HOME", None)
         proc = subprocess.run([sys.executable, str(NOTIFY), "--once", "--dry-run"],
                               capture_output=True, text=True, timeout=30, env=env)
         assert proc.returncode == 0, (proc.returncode, proc.stdout, proc.stderr)
