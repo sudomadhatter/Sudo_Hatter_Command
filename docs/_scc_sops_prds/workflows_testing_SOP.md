@@ -91,7 +91,7 @@ the twin is an AVCH ticket of its own, not something a lobby lane may do.
 | **plan** a big Task — subtasks, lanes, the parallel table | `/smh-plan-task <TASK-KEY>`, then `/smh-label-tasks <TASK-KEY>` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
 | **build** a Task — a command, a rule, a gate, the docs | `/smh-quick-dev <KEY>` → `/smh-code-review` → `/smh-close-task-merge-tree` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
 | **just get one specific thing done** — write me a guide, fix a reference, tidy a branch mess | `/smh-quick-fix "<the ask>"` — **no plan, no `approved`, no review**; it does not stop to ask whether to start ([§9a](#the-lightweight-lane--smh-quick-fix)) |
-| **tired of approving the same terminal commands** | `/smh-llm-approvals` — lists what you had to approve across Claude, Zoo and Antigravity, then adds the ones you name to the ONE permission source, which renders all three allow lists for you ([§13](#what-does-not-travel-between-the-machines)) |
+| **tired of approving the same terminal commands** (or the same file reads) | `/smh-llm-approvals` — lists what you had to approve across Claude, Zoo and Antigravity, then adds the ones you name to the ONE permission source, which renders all three allow lists for you ([§13](#what-does-not-travel-between-the-machines)) |
 | **push routine docs/notes to PR** — the standing ticket `SCC-186` | `/smh-non-crit-pr-push` — **qualifies `LIGHT`, stages, commits `SCC-186`, pushes, opens PR** ([§9a](#the-lightweight-lane--smh-quick-fix)) |
 | land **several** finished Tasks at once | `/smh-merge-multiple-workingtrees` — one sign-off per lane ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | see what a command will do before typing it | [Part VI — the command atlas](#18-every-command-one-diagram) |
@@ -4181,7 +4181,9 @@ flowchart TD
 
 *Answers "what did I keep having to approve?" and then fixes it. It reads your recent Claude Code
 sessions, your Zoo Code threads and your Antigravity store, finds every terminal command that
-stopped and waited for you, and shows them in chat as one list. You say which ones you want allowed
+stopped and waited for you, and shows them in chat as one list. Antigravity also stops on **files**
+it is asked to read from outside the open workspace — the Claude memory store is one — so those come
+back as their own group, listed as paths rather than pretended to be commands (SCC-387). You say which ones you want allowed
 — in words, in the conversation. The agent then adds them to the one permission source,
 `.agents/permissions/families.json`, renders the three platform lists from it, and runs the Zoo and
 Antigravity applies so both extensions actually see them.*
@@ -4193,6 +4195,16 @@ reports and the next sync overwrites. The one thing it asks before doing is quit
 the Zoo apply needs because its decision store is a SQLite database VS Code holds open — say no and
 your Zoo rows stay staged until you run the apply later. Antigravity's store is a plain file; it asks
 you to reload the VS Code window afterwards. Claude's rows are live the moment the file is saved.*
+
+*A file you pick is granted as its **folder**, not as the one file that asked. Antigravity grants a
+directory recursively, and a per-file grant is exactly what your "always allow" click already wrote —
+it buys one file and the next one asks again. The same narrowness law still applies, and harder,
+because a directory is recursive: it grants the folder that asked and never its parent.*
+
+*⛔ One thing to know before the Antigravity apply runs: it REPLACES that store's grant lists rather
+than merging into them. Any row your clicks added that you did not pick is gone when it runs. That is
+the design — the tracked file is the fence, not the store — but the command tells you how many are
+about to be dropped and waits for your word.*
 
 *Two things it will not do. It never widens a rule past the command it came from — `git fetch
 origin main` earns `Bash(git fetch *)`, never `Bash(git *)`, because the tracked list scopes every
@@ -4358,7 +4370,7 @@ flowchart TD
 | `/smh-non-crit-pr-push` | **The standing push lane** ([§9a](#the-standing-push-lane--smh-non-crit-pr-push-scc-186)). Routine non-critical command center changes (docs, memory, notes, quick references). Operates on standing ticket `SCC-186` + standing branch `chore/SCC-186-standing-push` directly to PR with `main-write-gate` check. |
 | `/smh-self-audit` | Pressure-tests the plan before anyone writes anything, pointed at the blast radius toolkit work actually has. Also **reads the other live lanes** and tells you which should land first. Ends in `GO` or `NO-GO`. Has a **retroactive mode** for when the work already exists and no plan was written — it audits the ticket's ACCEPTANCE block instead and stamps the result `retroactive`, so the record never reads as though a gate ran in time when it did not. |
 | `/smh-code-review` | The Task lane's verdict. Re-checks `main` (Step 0.7), hunts the diff cold, audits against the acceptance list, runs the command-centre gate, folds in the clean-code gate, and writes the one `Verdict:` line `/smh-close-task-merge-tree` reads before it will merge. |
-| `/smh-llm-approvals` | Lists the terminal commands you had to approve, across recent Claude sessions, Zoo threads and the Antigravity store. You name the ones to allow; the agent adds them to the one permission source (`.agents/permissions/families.json`), renders the three platform lists, and runs the Zoo and Antigravity applies. Never widens a rule past its command, never edits a rendered list by hand, never touches a deny list. |
+| `/smh-llm-approvals` | Lists the terminal commands you had to approve, across recent Claude sessions, Zoo threads and the Antigravity store — plus, separately, the out-of-workspace FILES Antigravity was blocked from reading. You name the ones to allow; the agent adds them to the one permission source (`.agents/permissions/families.json`), renders the three platform lists, and runs the Zoo and Antigravity applies. A picked file is granted as its folder, recursively. Never widens a rule past its command, never edits a rendered list by hand, never touches a deny list. |
 | `/smh-clean-code-audit` | The command centre's machine floor — the enforcement suite, toolkit lint, SOP currency, py_compile, links, door parity. |
 
 **Machine handoff** — [§13](#13-switching-machines)

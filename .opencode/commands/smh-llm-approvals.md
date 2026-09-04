@@ -67,13 +67,25 @@ own commands, has no way to tell. Same mechanism, same fix as `zoo_notify.classi
 **Antigravity** (the VS Code extension) — `~/.gemini/config/config.json`, one file per machine.
 
 Antigravity keeps no ask log. What it keeps is the result of every "always allow" click: a rule
-appended to `userSettings.globalPermissionGrants.allow`, written as a PREFIX (`unsandboxed(git
-status)`, `unsandboxed(acli)`). So the commands the operator had to stop for are exactly the rows in
-the live store that the tracked render does not contain. Read both files and diff the `allow`
-arrays as sets — the rendered side is `.agents/permissions/antigravity.json`;
-`python3 .agents/scripts/antigravity_permissions_apply.py --status` gives the counts. Show the
-store-only rows with their `unsandboxed(`/`command(` wrapper stripped, so he reads commands, not
-grammar. A store that is already `in sync with tracked file` has nothing to show, and says so.
+appended to `userSettings.globalPermissionGrants.allow`. ⛔ **What it stores is the FULL RESOLVED
+string, not a prefix** — measured on the live store 2026-09-04, a click on
+`find ~/.claude -name "*.md" …` stored that entire line, and a click on a file stored that one
+file's path. A click therefore buys exactly what he clicked and nothing adjacent, which is the whole
+reason those rows are worth routing back through this door. So the things the operator had to stop
+for are exactly the rows in the live store that the tracked render does not contain. Read both files
+and diff the `allow` arrays as sets — the rendered side is `.agents/permissions/antigravity.json`;
+`python3 .agents/scripts/antigravity_permissions_apply.py --status` gives the counts. A store that
+is already `in sync with tracked file` has nothing to show, and says so.
+
+⛔ **Store-only rows come in two kinds and they are not the same question. Split them.**
+
+- `command(…)` / `unsandboxed(…)` — a terminal command. Strip the wrapper and show the command, so
+  he reads commands, not grammar.
+- `read_file(…)` — a FILE the agent was blocked from reading. Not a command, and it must not be
+  listed as one. Antigravity auto-allows reads *inside* the workspace and asks for everything
+  outside it, so every row here is an out-of-workspace path. Show them under their own heading, and
+  show the **folder** each one sits in beside it — the folder, not the file, is what Step 3 grants
+  (SCC-387).
 
 If a store folder is missing or empty, say so by name. An empty Zoo store is the normal state on
 a machine where Zoo has not been used — it is not an error, and it must not read like one.
@@ -97,6 +109,10 @@ Zoo Code
 Antigravity
   npm test
   find .agents -type f
+
+Antigravity - files it was blocked from reading (outside the workspace)
+  <home>/.claude/projects/<slug>/memory/<one file>       folder: <home>/.claude/projects/<slug>/memory
+  <home>/.claude/projects/<slug>/memory/<another>        folder: <home>/.claude/projects/<slug>/memory
 ```
 
 Indent **every** line of a multi-line command, so the operator can see where one ends and the
@@ -140,6 +156,17 @@ the sandbox escape; the renderer writes both). Each whitespace token is an ancho
 renderer escapes metacharacters — you never type `\.` yourself. Same narrowness rule; the `deny`
 array is the fence and this command never adds to it.
 
+**A picked FILE row is a different rule kind, not a differently spelled command.** Add it to the
+source as `"grant": "read_file"`, with `cmd` set to the absolute **folder** — never the single file
+that asked — and `"only": ["antigravity"]`. The renderer emits one bare `read_file(<dir>)` and no
+twins, because the vendor matches file targets as paths rather than as per-token regexes and grants
+a directory **recursively** (antigravity.google/docs/permissions, read 2026-09-04). The folder is
+the unit for the same reason a prefix is the unit for a command: a per-file grant is exactly what
+the click already wrote, and it buys one file. ⛔ Narrowness still binds, and it binds harder here
+because a directory is recursive — grant the folder that asked, not its parent. `~/.claude/projects`
+would sweep in every Claude session transcript on the machine; that is the operator's call to make
+out loud, never a default you take for him.
+
 ⛔ **If the operator picked a command Zoo's deny list refuses, do not add it. Say which row
 refused it and stop.** He asked to be un-blocked, not to have his own fence removed; if he wants
 the deny row gone, that is his edit to ask for by name.
@@ -174,6 +201,11 @@ cd <repo-abs> && python3 .agents/scripts/antigravity_permissions_apply.py --appl
 No editor quit is needed (a plain JSON file, no database), but the extension re-reads it on a window
 reload — ask him to reload the VS Code window and tell him so. The closing `--status` must read
 *in sync with tracked file*.
+
+⛔ **The apply REPLACES both arrays — it does not merge.** Every click-written row he did *not* pick
+is gone the moment it runs. That is the design (the tracked file is the fence, not the store), but
+it is his to know before it happens: say how many store-only rows are about to be dropped, by name,
+and get his word. This is the one step of this command that can take a permission away.
 
 ## Step 4 — Report what changed
 

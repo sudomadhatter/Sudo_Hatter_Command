@@ -245,6 +245,15 @@ if c.block("A · one battery, three matchers, identical verdicts"):
                 pm.antigravity_verdict(HOUSE + "git push --force origin main", ["command(cd)"], ["command(git push --force.*)"]) == "allow"
                 and pm.antigravity_verdict(HOUSE + "git push --force origin main", ["command(cd)"],
                                            ["command(cd .* && git push --force.*)"]) == "deny")
+        # SCC-387: the shipped fence must carry a DIRECTORY read grant for the Claude memory store.
+        # A per-file grant is what the operator's "always allow" clicks write, and it buys one file;
+        # the vendor grants a directory recursively, so the row has to be a directory to be worth having.
+        ag_live = json.loads(AG_RENDERED.read_text(encoding="utf-8"))["userSettings"]["globalPermissionGrants"]
+        reads = [r for r in ag_live["allow"] if r.startswith("read_file(")]
+        c.check("A15 the Antigravity fence grants the Claude memory store as a DIRECTORY (recursive), not "
+                "as the single files a click writes - and file grants never leak into the deny fence",
+                any(r.endswith("/memory)") and "*" not in r and not r.endswith("/)") for r in reads)
+                and not [r for r in ag_live["deny"] if r.startswith("read_file(")], f"{reads}")
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════
 if c.block("B · one source, three rendered outputs, drift is red"):
@@ -275,6 +284,10 @@ if c.block("B · one source, three rendered outputs, drift is red"):
         e3 = _raises({"deny": [{"id": "twice", "cmd": "a", "why": "t"}, {"id": "twice", "cmd": "b", "why": "t"}]})
         c.check("B2b the renderer refuses an empty cmd, a string render, and a duplicate id, naming the row",
                 "empty-cmd" in e1 and "str-render" in e2 and "twice" in e3, f"{e1!r} {e2!r} {e3!r}")
+        e4 = _raises({"allow": [{"id": "typo-grant", "cmd": "/x", "why": "t", "grant": "read"}]})
+        c.check("B2c the renderer refuses an unknown grant kind, naming the row (a typo must not fall "
+                "through and render a bare PATH as an allowed command prefix)",
+                "typo-grant" in e4 and "read" in e4, f"{e4!r}")
         bad_p = [r["id"] for r in rows
                  for k in ("only", "not") if k in r and not set(r[k]) <= set(PLATFORMS)]
         c.check("B3 only:/not: name platforms from the closed set", not bad_p, f"{bad_p[:5]}")
@@ -359,6 +372,22 @@ if c.block("B · one source, three rendered outputs, drift is red"):
                                     f"command(cd .* && {ZAP})", f"unsandboxed(cd .* && {ZAP})",
                                     f"command(cd .* && env -u GITHUB_TOKEN {ZAP})", f"unsandboxed(cd .* && env -u GITHUB_TOKEN {ZAP})"],
                 f"{ag_}")
+        # A file grant is a different RULE KIND, not a different spelling of a command rule (SCC-387).
+        synth_r = {"allow": [{"id": "r", "cmd": "/home/x/.claude/projects/slug/memory", "why": "t",
+                              "grant": "read_file", "only": ["antigravity"]}], "deny": []}
+        agr = pr.render_antigravity(synth_r)
+        c.check("B10e a read_file row renders as ONE bare read_file(<dir>) - no command/unsandboxed twins, "
+                "no per-token regex escaping (the vendor matches file targets as paths), and nothing at all "
+                "for Zoo or Claude",
+                agr == {"allow": ["read_file(/home/x/.claude/projects/slug/memory)"], "deny": []}
+                and pr.render_zoo(synth_r) == ([], [])
+                and pr.render_claude(synth_r) == [],
+                f"{agr} {pr.render_zoo(synth_r)} {pr.render_claude(synth_r)}")
+        c.check("B10f a read_file row is skipped even without only:[antigravity] - the derivation, not the "
+                "scope, is what keeps a bare path out of the command fences",
+                pr.render_zoo({"allow": [{"id": "r2", "cmd": "/etc", "why": "t", "grant": "read_file"}],
+                               "deny": []}) == ([], [])
+                and pr.render_claude({"allow": [{"id": "r2", "cmd": "/etc", "why": "t", "grant": "read_file"}]}) == [])
         c.check("B10d the derived Antigravity rows MATCH what their Zoo twins match (the drift the renderer exists to prevent)",
                 pm is not None
                 and pm.antigravity_verdict("backend/.venv/bin/pytest -q", ag_["allow"], []) == "allow"
