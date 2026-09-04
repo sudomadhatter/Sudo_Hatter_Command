@@ -28,7 +28,7 @@ Edit each project's `.agents/bmad/` directly — a sync will NOT propagate or cl
 
 **`docs/` is NOT synced.** `docs/workspace-standard.md`, aviationChat's `docs/file_structure_rules/*`,
 and `docs/doc-graph.{md,json}` must be edited in EACH location by hand. `doc-graph.{md,json}` is
-generated — rebuild with `python .agents/scripts/generate_doc_graph.py` after editing rules/workflows.
+generated — rebuild with `python .agents/scripts/generate_doc_graph.py` after editing rules/commands.
 
 **Why:** a toolkit-wide rule change touches ~20 files × 3 repos × 3 surfaces; knowing what auto-propagates
 (`.agents/`) vs. what needs manual per-project edits (`docs/`) prevents both missed copies and wasted work.

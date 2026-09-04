@@ -151,24 +151,23 @@ def check_rule_pointers(lobby: Path, rep: wf.Report) -> None:
 # work to it.
 #
 # Scope is every AUTHORED routing surface under `.agents/`: commands (what an operator
-# invokes), rules (what an agent loads mid-run), skills (the door Claude and Codex enter
-# through), workflows (Antigravity's door) and opencode-agents (the opencode subagent
-# definitions - `opus-reviewer.md` loaded the retired rule BY PATH, so this is the surface
-# the regression actually lived on).
+# invokes), rules (what an agent loads mid-run), skills (the door Claude, Codex AND Antigravity
+# enter through) and opencode-agents (the opencode subagent definitions - `opus-reviewer.md`
+# loaded the retired rule BY PATH, so this is the surface the regression actually lived on).
 #
-# ⛔ The first draft excluded `workflows/` on the reasoning that it holds generated mirrors
-# which follow their command source. That is true of `workflows/<command>.md` and FALSE of
-# `workflows/INDEX.md`, which sync-agents lists in its `$excluded` set - hand-written router
-# prose with no command upstream, so it follows nothing and no regeneration can fix it. It
-# was carrying a live stale pointer while this guard reported the toolkit clean. A mirror
-# being scanned twice is harmless noise; a hand-owned router being scanned never is a hole.
+# ⛔ `workflows/` was a fifth surface here until SCC-394 retired it, and the reason it was in
+# the list is worth keeping: the first draft excluded it because it held generated mirrors that
+# follow their command source, which was true of `workflows/<command>.md` and FALSE of
+# `workflows/INDEX.md` - a hand-written router with no command upstream, carrying a live stale
+# pointer while this guard reported the toolkit clean. `skills/` has the same shape (hand-
+# authored SKILL.md files with no command source) and is scanned for the same reason.
 #
 # Still out of scope, each for a reason that is about ownership rather than convenience:
 # `.agents/bmad/` (vendor manifests, regenerated, never hand-edited), `_artifacts/` (history
 # that must stay readable exactly as it was written), and the machine-global/`.opencode/`,
 # `.claude/` copies (byte mirrors of masters that ARE guarded here).
 _RETIRED_REVIEW_RE = re.compile(r"bmad[-_]code[-_]review", re.I)
-_RETIRED_SURFACES = ("commands", "rules", "skills", "workflows", "opencode-agents")
+_RETIRED_SURFACES = ("commands", "rules", "skills", "opencode-agents")
 
 
 def check_retired_review_surface(lobby: Path, rep: wf.Report) -> None:
@@ -245,7 +244,7 @@ def check_both_machines(lobby: Path, rep: wf.Report) -> None:
     never touched.
 
     ⛔ Scans the AUTHORED masters only. Generated mirrors (`.claude/skills`, `.opencode`,
-    `.agents/workflows`) are byte copies whose fix is a re-sync, never an edit - flagging them
+    `.roo/commands`) are byte copies whose fix is a re-sync, never an edit - flagging them
     would ask the reader to edit a file the next sync overwrites. Door parity is what keeps
     those honest, and it is a different check.
     """

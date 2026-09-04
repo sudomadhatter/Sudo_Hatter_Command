@@ -87,7 +87,7 @@ carries this in the branch-model section and in "the write gate". Details: [[jir
 
 ⛔ **Corrected 2026-08-10: AGY does NOT keep its own copy of the rules.** This memory used to say
 "AGY keeps its own identical copy — rules are read in place, never synced", and that is false and was
-actively misleading. The command centre owns **all** rules, commands and workflows; projects are thin
+actively misleading. The command centre owns **all** rules, commands and skills; projects are thin
 by design and hold only what BMAD needs, so the Dev Record stays with the project. Binding a project
 MEANS reading the centre's `.agents/`. What *is* repo-local is **enforcement** — git hooks,
 `jira.conf`, BMAD tomls — which never centralises because it has to live in the repo it gates. So the

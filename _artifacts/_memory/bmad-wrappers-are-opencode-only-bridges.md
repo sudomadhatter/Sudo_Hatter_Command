@@ -15,6 +15,6 @@ BMAD installs its own skills (`bmad-agent-dev`, `bmad-tea`, `bmad-testarch-*`, `
 
 So: reach these in Claude via the skill name (`/bmad-agent-dev`, `/bmad-testarch-automate`), not a short alias. Set 2026-07-03; `.agents/commands/` synced, purged the 19 dups from Claude (38→19) + Antigravity global (39→20), opencode unchanged (40).
 
-**Exception — `sudo-*` wrappers stay `[opencode, antigravity]`:** those target CUSTOM (non-BMAD) skills that Antigravity does NOT get natively, so they need the sync's antigravity workflow-mirror path (`.agents/workflows/`). Only genuine BMAD-skill wrappers qualify for `[opencode]`.
+**Exception — `sudo-*` wrappers stay `[opencode, antigravity]`:** those target CUSTOM (non-BMAD) skills, so they need a door of their own. ⚠️ Their original premise is retired: since SCC-394 Antigravity reads `.agents/skills/` natively, so the wrapper's door is now a generated launcher there, not a workflow mirror. Only genuine BMAD-skill wrappers qualify for `[opencode]`.
 
 The sync ([[toolkit-sync-covers-agents-not-docs]]) already honors `platforms:` frontmatter per-file (`.agents/scripts/sync-agents.ps1` `Get-CommandPlatforms`), so scoping is a one-line frontmatter edit + resync, not a code change. Absent line = universal (all three). Related: [[antigravity-uses-workflows-not-commands]], [[command-center-sudo-skills]], [[sudo-commands-have-ap-twins-that-drift]].

@@ -45,7 +45,7 @@ description: From the home base, fan out and reconcile the lobby + every conform
 | `docs/repo-map.md` — **CURATED** block (the `To find X` + `Knowledge map` tables) | hand-written | **Verify** every referenced path exists; edit only if a **top-level folder** was added/removed. |
 | `_artifacts/INDEX.md` | session ledger (inside `_artifacts/`) | **Editable** — reconcile rows against real session folders. |
 | `_artifacts/<bucket>/INDEX.md` (depth-3, **inside `_artifacts/` only**) | per-epic/bucket session INDEX — one row per session folder, listing the story + artifact files | **Editable** — reconcile rows vs session folders under each `epic_*/`, `_main/`, `tea/`, etc. Create when a bucket has ≥2 session folders; `/smh-update-maps-indexes` keeps them current. Not for code dirs. |
-| `.agents/{rules,workflows,skills,commands}/INDEX.md` | **MASTER** family maps (this repo is the source) | **Editable here** — fix drift, then `/smh-sync-agents` to push copies to `.claude/`/`.opencode/`. |
+| `.agents/{rules,skills,commands}/INDEX.md` | **MASTER** family maps (this repo is the source) | **Editable here** — fix drift, then `/smh-sync-agents` to push copies to `.claude/`/`.opencode/`. |
 | Tier-2 local law — `{_artifacts,_my_resources,docs}/AGENTS.md` + `CLAUDE.md`/`GEMINI.md` adapters | the folder-file tier model (`workspace-standard.md` Part 1) | **Create/repair** when check 8 hints (Step 3.7): copy the house pattern, adapt the law digest to that workspace. The `_my_resources/` law files are the ONE other thing writable under that dir. |
 | **`AGENTS.md` + `README.md` CONTENT** — the root brain, every folder law, every folder README in scope | hand-written prose that *references* files, folders, and `/` commands | **Reconcile the references** (Step 3.8): verify every path / command / structure claim each file makes still matches disk (renames + command renames are the usual killers); repair dead pointers via the Step 4 gate. Repair pointers — never rewrite the prose's meaning. |
 | `.code-review-graph/graph.db` built-at commit vs HEAD | machine-local code graph (gitignored, does not travel) | **Verify-only** (check 9): if stale, hand Daniel the refresh command per repo — never run the indexer yourself mid-workflow. **In the lobby there is no graph at all, permanently and by design** (`docs/code-review-graph.md`) — check 9 skipping here is the right answer, not a missing build. |
@@ -260,7 +260,7 @@ For **every `INDEX.md` in the workspace you are currently reconciling**, do a ro
       session folder — the story/what + the artifact files present. Create the INDEX if the folder has ≥2
       sessions but no INDEX yet. Skip folders with 0–1 sessions (not worth an INDEX). **Only inside
       `_artifacts/` — never for code dirs.**
-   - **`.agents/{rules,workflows,skills,commands}/INDEX.md`** (MASTER here) — fix drift **directly** (e.g. a
+   - **`.agents/{rules,skills,commands}/INDEX.md`** (MASTER here) — fix drift **directly** (e.g. a
      new command in `.agents/commands/` not yet in its INDEX), then note that `/smh-sync-agents` must run to
      push the copies to `.claude/`/`.opencode/`. (In a project these are vendored/verify-only — not here.)
    - **Missing level-2 `INDEX.md` files** — the linter flags these under `[level-2 INDEX presence]`. If a required folder is missing its `INDEX.md`, create it and list its top-level contents so future agents can read it instead of scanning the full folder.

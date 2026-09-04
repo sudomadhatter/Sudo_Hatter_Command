@@ -10,7 +10,7 @@
 > | `_my_resources/research_docs/implementation-plan_folder-as-workspace-routing-system.md` | the **theory** (mentor transcript, distilled). In Daniel's thinking space — read it only when he links it |
 > | ~~`_my_resources/docs/master-implementation-plan.md`~~ | the rollout record — **gone**; that folder no longer exists. The build history is the git log and `_artifacts/_main/` |
 > | `docs/workspace-standard.md` | the **standing spec** (PATH CONTRACT, tier model, upkeep rules) |
-> | `.agents/workflows/smh-update-maps-indexes.md` | the **maintenance workflow** (how it stays honest) |
+> | `.agents/commands/smh-update-maps-indexes.md` | the **maintenance workflow** (how it stays honest) |
 > | *this file* | the **guide & overview** (read this first) |
 
 ---
@@ -40,7 +40,7 @@ flowchart TD
     subgraph TOOLKIT [".agents/ — MASTER TOOLKIT (single source of authorship)"]
         RULES["rules/\nconstitution, karpathy, artifacts-always-first,\ngit-policy, lobby-search, mobile-mode"]
         SCRIPTS["scripts/\ncheck_maps.py (linter)\nsync-agents.ps1 · record_map_changes.py"]
-        CMDS["commands/ + workflows/\nINDEX.md (command registry)\nsmh-update-maps-indexes.md (the workflow)"]
+        CMDS["commands/\nINDEX.md (command registry)\nsmh-update-maps-indexes.md (the workflow)"]
         OTHER["skills/, templates/, bmad/"]
     end
 
@@ -379,7 +379,7 @@ doc's ten sections had a counterpart here, and this table was the part that did 
 | `docs/workspace-standard.md` | The WHAT — structure contract (PATH CONTRACT, tier model, depth-3 rule, end-of-task checklist) |
 | **`docs/_scc_sops_prds/`** | **Every SOP and PRD in the system** — the pages that tell the *operator* what to do and what to type (as opposed to `.agents/`, which describes the system to an *agent*). Start at its `INDEX.md`; `workflows_testing_SOP.md` is THE quick reference. Consolidated here by SCC-74 — see §2.1 below for why the location is the point |
 | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` | Tier-2 local law (+ adapters) — auto-attached at point of contact |
-| `.agents/workflows/smh-update-maps-indexes.md` | The HOW — reconciliation workflow (audit → fix → commit → anchor) |
+| `.agents/commands/smh-update-maps-indexes.md` | The HOW — reconciliation workflow (audit → fix → commit → anchor) |
 | `.agents/scripts/check_maps.py` | The linter — 9 checks + unnumbered 2.5 + `--depth3-only` + `--set-anchor` |
 | `.agents/scripts/sync-agents.ps1` | The propagator — mirrors master `.agents/` to all platforms + projects (**excludes `_bmad/`** — see next row) |
 | `_bmad/custom/*.toml` + `_bmad/scripts/resolve_*.py` (projects only) | The BMAD guard layer — plan-first + artifact-insurance overrides (`bmad-dev-story`/`quick-dev`), TDAD dialect pins (`bmad-testarch-atdd`/`automate`, pytest-bdd + automate-evidence `on_complete`). Lives in ALL THREE repos (lobby included — direct BMAD skill runs from the lobby seat bind `{project-root}` to the lobby, Daniel's management lane; the sudo story flow binds to the child project). Propagates ONLY by cloning Fresh or 3-way hand-copy — never `/smh-sync-agents` |

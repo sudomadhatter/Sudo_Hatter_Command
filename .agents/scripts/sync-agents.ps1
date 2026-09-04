@@ -1,23 +1,23 @@
 <#
 .SYNOPSIS
   Push the master .agents toolkit into every command surface: the LOBBY's local tool dirs AND the
-  machine-global command caches for opencode + Antigravity/Gemini + Codex. (Project targets are retired —
+  machine-global command caches for opencode + Codex. (Project targets are retired —
   thin model 2026-08-07, .agents/rules/project-law.md: projects carry tier-2 law only, no vendor.)
 
 .DESCRIPTION
   Single source of authorship = <home>\.agents. The canonical AUTHORING set is .agents\commands\ and it reaches
-  ALL FOUR platforms (Claude, opencode, Antigravity/Gemini, Codex) — but Antigravity is reached INDIRECTLY,
-  through the generated .agents\workflows\ door, and EVERY door there is a thin launcher pointing back at
-  .agents\commands\<name>.md, whatever the command's size (SCC-370). Both Antigravity surfaces (the repo door
-  and the machine-global cache) mirror workflows\, never commands\ (SCC-332). The other three read
+  ALL FOUR platforms (Claude, opencode, Antigravity/Gemini, Codex). Antigravity is reached through the SAME
+  launcher skill Claude and Codex use: it deprecated workflows and retires them on 2026-11-01, and invokes any
+  .agents\skills\<name>\SKILL.md as /<name> (SCC-394). opencode reads
   commands\ verbatim. This copies commands / skills / hooks /
   opencode-agents into the target's .claude and .opencode dirs (Claude /commands + skills + hooks resolve there)
   and, for a LOBBY sync, also refreshes the machine-global caches so opencode, Antigravity, and Codex see the
   same set Claude does.
 
   THE DOOR MODEL (SCC-66): one door per platform per command. Claude and Codex enter through a LAUNCHER
-  SKILL (generated per claude/codex-eligible command into .agents\skills, tree-copied to .claude\skills;
-  hand-authored SKILL.md always wins); opencode through its command mirror; Antigravity through its
+  SKILL (generated per claude/codex/antigravity-eligible command into .agents\skills, tree-copied to
+  .claude\skills; hand-authored SKILL.md always wins); Antigravity reads that SAME skill natively;
+  opencode through its command mirror; Zoo through its
   workflow mirror. Publishing .claude\commands and ~\.codex\prompts is RETIRED - both double-doored every
   command beside its skill. Codex reads AGENTS.md + .agents\skills natively; the only global pushed for it
   is the bmad-* skills mirror -> ~\.codex\skills (BMAD installs to .claude\skills, which Codex does not read).
@@ -324,12 +324,10 @@ function Get-OwnAllowList([string]$target) {
 function Get-SurfaceState {
   param([string]$Target, [string]$MasterDir)
   $mCmd = @(Get-ChildItem (Join-Path $MasterDir 'commands')  -Filter *.md -File -ErrorAction SilentlyContinue)
-  $mWf  = @(Get-ChildItem (Join-Path $MasterDir 'workflows') -Filter *.md -File -ErrorAction SilentlyContinue)
   # .claude/.opencode hold a platform-FILTERED subset, so "absent" there is normal and never a finding; we only
   # ever ask whether a file present in the copy corresponds to a master command at all.
   $map = [ordered]@{
     '.agents\commands'   = $mCmd
-    '.agents\workflows'  = $mWf
     '.claude\commands'   = $mCmd
     '.opencode\commands' = $mCmd
   }
@@ -488,60 +486,37 @@ function Sync-CommandDir {
   return $eligible
 }
 
-# Mirror the antigravity-eligible commands into .agents/workflows/ so ANTIGRAVITY sees them. Antigravity
-# surfaces / from workflows/ (+ skills/), never commands/ (a Claude/opencode concept). The flow is authored
-# as commands; copy the eligible ones into workflows/ VERBATIM (frontmatter stays line 1 -- no injected
-# header) so the same / works in every tool from ONE source. Generated copies, regenerated every sync --
-# edit the command, not these.
-# THE GATE IS `platforms:`, NOT THE FILENAME (SCC-56, 2026-08-09). This used to filter by NAME first
-# ($allowed = sudo-*, 1_*, new-project, slash_command_updating) and only then consult Get-CommandPlatforms,
-# so a command's DECLARED reach was never read unless its filename happened to match. Four commands that
-# claim Antigravity reached it zero times: close-task-merge-tree, sync-agents, review,
-# and clean-code-audit -- which declares `platforms: [opencode, antigravity]` in the documented mechanism
-# and was dropped anyway. The name filter was ALSO redundant: its stated reason was keeping BMAD personas
-# and 1_* workflows out of the / menu, but every persona and testarch-* wrapper already declares
-# `platforms: [opencode]` (so Get-CommandPlatforms excludes them unaided) and no 1_*.md command has existed
-# for some time. It blocked nothing it was written to block. Now: absent/empty `platforms:` == universal ==
-# mirrored; `platforms: []` == nowhere; -AP stays claude-only by name convention.
-# EVERY ANTIGRAVITY DOOR IS A THIN LAUNCHER (SCC-370, 2026-09-01). Sync-AntigravityWorkflowMirror below emits
-# a generated launcher for every eligible command, UNCONDITIONALLY. It points the agent at
-# .agents/commands/<name>.md -- the single source of truth -- so a command can grow to any size and its door
-# never changes shape. Same pattern as the hand-authored smh-adviser-board launcher, now automatic.
+# ANTIGRAVITY'S WORKFLOW MIRROR IS RETIRED (SCC-394, 2026-09-04). `Sync-AntigravityWorkflowMirror` and the
+# whole `.agents/workflows/` surface stood here. Antigravity deprecated workflows and retires them on
+# 2026-11-01 (antigravity.google/docs/migration/workflows-to-skills); it invokes any
+# .agents/skills/<name>/SKILL.md as /<name>, with no size cap, and every antigravity-eligible command
+# already had one - so this platform was the last carrying TWO doors for the same command, and on
+# 1 November one of the two goes dark. `Sync-LauncherSkills` below now emits the single door all three
+# skill-reading platforms use. The retirement purge of the old machine cache is in the globals block.
 #
-# WHY, ONCE, AS HISTORY. Antigravity TRUNCATES a workflow over its cap rather than rejecting it (measured,
-# SCC-135), and that is the important distinction: a dropped workflow fails visibly, a truncated one runs and
-# looks fine. smh-update-maps-indexes shipped a 39,594-char body; the agent received the header, the target
-# list, Step 0 and half of Step 0.5 -- cut mid-sentence -- then improvised the remaining 70%, including past
-# the Step 4 approval gate it never saw.
+# THE HISTORY WORTH KEEPING, ONCE. Antigravity TRUNCATED an over-cap workflow rather than rejecting it
+# (measured, SCC-135): a dropped workflow fails visibly, a truncated one runs and looks fine.
+# smh-update-maps-indexes shipped a 39,594-char body and the agent received the header, the target list,
+# Step 0 and half of Step 0.5 - cut mid-sentence - then improvised the remaining 70%, past a Step 4
+# approval gate it never saw. That is why every door became a launcher (SCC-370), and it is why the skill
+# surface - an "unrestricted bundle" in the vendor's own words - is the better door rather than merely
+# the surviving one. There is no cap to reason about any more; do not reintroduce one.
+
+# ── the 135-char DESCRIPTION CUT · ZOO's, formerly Antigravity's (SCC-195 -> SCC-394) ─────────
+# A platform that builds its slash menu from `description:` frontmatter has a context budget, and this
+# repo's descriptions run 400-950+ chars (they are written for an agent reading the command, not for a
+# menu). Under SCC-195 the total blew Antigravity's budget and 15 doors were dropped from the command
+# list outright. Antigravity reads the launcher SKILL now, which carries the brain's FULL description
+# like every other skill - so the only caller left is `Sync-ZooSurfaces`, which emits `.roo/commands/`.
 #
-# ⛔ DO NOT RESTORE THE SIZE BRANCH. The 2026-07-25 fix made the launcher conditional on ~11.5 KB, which is
-# why 14 of 40 doors still shipped verbatim three months later -- and why the cap stayed an OPERATIVE rule
-# every session had to re-derive, restated across 39 door files, 8 comments here, 8 doc sites and 5 memory
-# entries. Deleting the condition makes the cap structurally unreachable: a launcher is a few hundred bytes,
-# so no door can approach it and nobody has to reason about size.
-#
-# ⛔ THE GUARD IS test_command_surfaces.py CS-18 N2, AND ONLY N2. This comment used to name "CS-18 N and
-# the door-parity SCC-370 control", and the SCC-370 review proved BOTH claims false by mutation: N greps
-# for the cap NUMBER, so a branch written `-le 9999` restores the verbatim arm with the suite at 297/297;
-# and the door-parity control is a synthetic unit test over door_verdict that never reads this file at
-# all. N2 asserts the SHAPE of Sync-AntigravityWorkflowMirror -- no file measured, no body copied -- which
-# is the invariant this barrier is actually about. Keep N (it owns the number) and keep the control (it
-# owns the verdict function); just do not mistake either for a guard on the branch.
-# ── SCC-195 · THE ANTIGRAVITY DESCRIPTION BUDGET ───────────────────────────────────────────────
-# Antigravity builds its slash-command menu from the `description:` frontmatter of every
-# .agents/workflows/*.md. This repo's descriptions run 400-950+ chars (they are written for an agent
-# reading the command, not for a menu), and the TOTAL blew the menu's context budget: 15 workflows
-# were dropped from the agent's command list outright.
-#
-# ⛔ Shortening them BY HAND in workflows/ cannot work, twice over: these files are GENERATED, so the
-# next sync overwrites them; and test_command_surfaces.py's door-parity check demands a mirror be
-# byte-identical to its brain (or a launcher whose description EQUALS the brain's), so a hand-edited
-# door reads as `stale` and main-write-gate goes red. So the rule lives HERE, in the generator, and
-# the parity check learned the same rule: truncated-from-the-brain IS parity on this surface.
+# ⛔ DO NOT DELETE THIS FUNCTION WITH THE ANTIGRAVITY CALLER. It had two call sites and only one of them
+# retired; removing it would take the Zoo stage down on the next sync, which is the stage this ticket's
+# own -NoGlobals run has to pass through.
 #
 # ⚠ TWO IMPLEMENTATIONS OF ONE RULE (this, and `ag_description` in test_command_surfaces.py). That is
-# the same shape as Get-CommandPlatforms vs platforms_declared, and it is checked rather than
-# trusted: if the two ever disagree the door reads `stale` and the test names the file.
+# the same shape as Get-CommandPlatforms vs platforms_declared, and it is checked rather than trusted:
+# `U7` runs THIS function under pwsh against the Python twin over every live description plus an astral
+# fixture, and it is now the only test of the cut anywhere.
 # `-ge 0` on LastIndexOf, not `-gt 0`, so a leading-space description cuts identically on both sides.
 function Get-AgDescription {
   param([string]$Desc)
@@ -551,110 +526,6 @@ function Get-AgDescription {
   $i = $cut.LastIndexOf(' ')
   if ($i -ge 0) { $cut = $cut.Substring(0, $i) }
   return $cut.TrimEnd(' ', ',', ';', ':', '-') + '...'
-}
-
-# Set-AgDescriptionLine lived here until SCC-370. It rewrote a VERBATIM mirror's description line in place,
-# and its only caller was the under-the-cap arm of Sync-AntigravityWorkflowMirror. With every door now a
-# generated launcher there is no verbatim mirror left on this surface to rewrite: Get-AgDescription is called
-# on the raw description when the stub is BUILT, which is the whole of the SCC-195 budget's job here.
-
-function Sync-AntigravityWorkflowMirror {
-  param([string]$MasterDir, [switch]$WhatIf)
-  $cmdDir = Join-Path $MasterDir "commands"
-  $wfDir  = Join-Path $MasterDir "workflows"
-  if (-not $WhatIf) { New-Item -ItemType Directory -Force -Path $wfDir | Out-Null } else { Write-Host "WHATIF: would ensure dir '$wfDir'" }
-  $mirrored = @()
-
-  # HAND-OWNED files in workflows/: never written by this mirror, never pruned by it. Each has a reason.
-  #   smh-adviser-board.md   - hand-authored, NOT generated: it carries Antigravity-only content the
-  #                            generator cannot produce (the INLINE-mode instruction -- AG workflows cannot
-  #                            spawn subagents, so the board must run SPAWNS.md 6 inline). A generated stub
-  #                            would silently drop that and the board would run its parallel protocol with
-  #                            every spawn missing.
-  #   INDEX.md               - the workflows router. It has NO frontmatter and NO source in commands/, and
-  #                            survived only because it failed the old name filter. With that filter gone
-  #                            the prune below would DELETE it on the next sync. Load-bearing guard.
-  # smh-update-maps-indexes.md was here until SCC-135. It was the ONLY command whose body lived in
-  # workflows/ while commands/ held a wrapper, and this exclusion is what exempted it from the launcher
-  # rule below -- so its 39.6k body shipped to Antigravity verbatim and was TRUNCATED, losing 70%
-  # of the steps including the Step 4 approval gate. Un-inverted: the body is now the command, and this
-  # function generates its launcher like every other big command. Do not re-add it.
-  $excluded = @('smh-adviser-board.md', 'INDEX.md')
-
-  $files = Get-ChildItem -Path $cmdDir -Filter '*.md' -File |
-    Where-Object { $excluded -notcontains $_.Name }
-
-  foreach ($f in $files) {
-    if (($f.Name -notmatch '-AP\.md$') -and ((Get-CommandPlatforms $f.FullName) -contains 'antigravity')) {
-      $dest = Join-Path $wfDir $f.Name
-      # ONE SHAPE, NO CONDITION. Read the brain's description off the top of the file and emit the launcher.
-      $desc = ''
-      foreach ($line in (Get-Content $f.FullName -TotalCount 30 -Encoding UTF8)) {
-        if ($line -match '^description:\s*(.+)$') { $desc = $Matches[1]; break }
-      }
-      # ⛔ THE TWO GUARDS BELOW ARE THE SAME TWO THE SIBLING EMITTERS ALREADY CARRY, AND THIS BLOCK
-      # SHIPPED WITHOUT EITHER (SCC-370 review). Both are one line, and both were already written
-      # somewhere else in this file - which is exactly why their absence here read as fine.
-      #
-      # 1. QUOTE STRIP, ported from Sync-ZooSurfaces (~line 775, landed as SCC-346). Get-AgDescription
-      #    is quote-blind: it cuts at 132 chars, so a QUOTED master description keeps its opening "
-      #    and loses its closing one, and the door's frontmatter is unparseable YAML. Found live on
-      #    cicd-push-e2e.md - the one door to main - which was already broken this way BEFORE this
-      #    lane (its brain is 29,844 bytes, so it was over the old cap and already a launcher).
-      #    Deleting the size branch did not cause that break; it widened the path that produces it
-      #    from over-cap commands to all of them, which is what makes carrying the strip mandatory.
-      # 2. EMPTY FALLBACK, ported from New-LauncherSkillStub (~line 640). No live command lacks a
-      #    description today - all 72 carry one on frontmatter line 1 - so this is latent, not a
-      #    live bug. It is here because the read that feeds it now runs for every door.
-      #
-      # ⛔ The strip belongs HERE, in the caller, NOT inside Get-AgDescription: U7 runs that function
-      # under pwsh against AG_LIVE_DESCS, which holds real quoted descriptions, so stripping inside
-      # it reds U7 against an untouched Python twin. Same placement as Zoo, for the same reason.
-      $desc = $desc.Trim().Trim('"').Trim("'")
-      if (-not $desc) {
-        $desc = ('Launcher for /' + $f.BaseName + ' - reads .agents/commands/' +
-                 $f.Name + ' and follows it end to end.')
-      }
-      # Stub literals are ASCII-only on purpose: PS 5.1 parses a BOM-less .ps1 as ANSI, which would
-      # mangle any non-ASCII literal here into mojibake in every generated file.
-      $stub = @(
-        '---',
-        ('description: ' + (Get-AgDescription $desc)),
-        'platforms: [opencode, antigravity]',
-        '---',
-        '',
-        ('# /' + $f.BaseName + ' - launcher (GENERATED by sync-agents; do not edit)'),
-        '',
-        '**THIN LAUNCHER - carries NO steps of its own.** Every Antigravity door is a launcher; the single',
-        'source of truth is the command body. Regenerated every sync - edit the command, not this file.',
-        '',
-        ('**Execute now:** read `' + '.agents/commands/' + $f.Name + '` (relative to the repo root of the'),
-        'workspace you are in) and follow it **END TO END**, passing any arguments through verbatim. If that',
-        'file does not exist in this workspace, STOP and tell the operator - never improvise the flow from memory.',
-        ''
-      ) -join "`n"
-      if (-not $WhatIf) {
-        # Explicit UTF-8 WITHOUT BOM - frontmatter '---' must stay byte 0 for the workflow parser
-        [IO.File]::WriteAllText($dest, $stub, (New-Object Text.UTF8Encoding($false)))
-      } else {
-        Write-Host ("WHATIF: would emit LAUNCHER for '{0}' -> workflows/" -f $f.Name)
-      }
-      $mirrored += $f.Name
-    }
-  }
-  # Prune stale generated mirrors: anything in workflows/ that is NO LONGER mirrored and is not hand-owned.
-  # This is now the ONLY thing standing between workflows/ and a stale twin, so $excluded above is the whole
-  # safety list -- a file that belongs in workflows/ without a commands/ source MUST be named there.
-  $stale = Get-ChildItem -Path $wfDir -Filter '*.md' -File -ErrorAction SilentlyContinue |
-    Where-Object { ($excluded -notcontains $_.Name) -and ($mirrored -notcontains $_.Name) }
-
-
-  if (-not $WhatIf) {
-    $stale | ForEach-Object { Remove-Item $_.FullName -Force }
-  } else {
-    $stale | ForEach-Object { Write-Host ("WHATIF: would delete stale mirror '{0}' from workflows/'" -f $_.Name) }
-  }
-  return $mirrored
 }
 
 # One launcher-skill body, shared by the master emit and the claude-only cache emit. ASCII-only literals
@@ -680,7 +551,8 @@ function New-LauncherSkillStub {
     ('# /' + $CommandFile.BaseName + ' - launcher (GENERATED by sync-agents; do not edit)'),
     '',
     '**THIN LAUNCHER - carries NO steps of its own.** The single source of truth is the command body;',
-    'this skill exists so the same / works in Claude and Codex, whose menus read skills, not commands.',
+    'this skill exists so the same / works in Claude, Codex and Antigravity, whose menus read skills,',
+    'not commands.',
     'Regenerated every sync - edit the command, not this file.',
     '',
     ('**Execute now:** read `' + '.agents/commands/' + $CommandFile.Name + '` (relative to the repo root of'),
@@ -694,14 +566,22 @@ function New-LauncherSkillStub {
 # THE DOOR MODEL (SCC-66): one door per platform per command.
 #   claude      -> a launcher skill (Claude's menu reads .claude\skills; every SKILL.md is a typeable /command)
 #   codex       -> the SAME launcher skill, read natively from .agents\skills
+#   antigravity -> the SAME launcher skill, read natively from .agents\skills (SCC-394)
 #   opencode    -> the command mirror in .opencode\commands (unchanged)
-#   antigravity -> the workflow mirror in .agents\workflows (unchanged)
-# Publishing commands into .claude\commands and ~/.codex/prompts is RETIRED - both double-doored every
-# command beside its skill. This stage generates the skill door for every claude/codex-eligible command:
-#   - eligible = `platforms:` includes claude or codex (absent = universal = eligible); -AP robot lane skipped;
+# Publishing commands into .claude\commands, ~/.codex/prompts and .agents\workflows is RETIRED - each of
+# them double-doored every command beside its skill. This stage generates the skill door for every
+# claude/codex/antigravity-eligible command:
+#   - eligible = `platforms:` includes claude, codex or antigravity (absent = universal = eligible);
+#     -AP robot lane skipped;
 #   - a HAND-AUTHORED SKILL.md (no GENERATED marker) always wins - it already IS the door; never overwritten;
-#   - claude-ONLY commands are NOT emitted here: .agents\skills is Codex-visible by definition, so their
-#     launcher goes straight into the .claude\skills cache at the local stage instead;
+#   - claude-ONLY commands are NOT emitted here: .agents\skills is read natively by BOTH Codex and
+#     Antigravity, so their launcher goes straight into the .claude\skills cache at the local stage;
+#
+# ⛔ THE ONE TRADEOFF, STATED RATHER THAN DISCOVERED (SCC-394). Because Codex and Antigravity read the
+#   same directory, `platforms:` can no longer give a command to one without the other. That split was
+#   already fiction: every command declaring `[opencode, antigravity]` carries a HAND-AUTHORED skill
+#   here, which Codex has been reading all along. Google documents `~/.gemini/config/skills/` as a
+#   separate global path if a real per-platform case ever appears.
 #   - stale GENERATED launchers (command deleted / renamed / no longer eligible) are pruned; hand skills never.
 function Sync-LauncherSkills {
   param([string]$MasterDir, [switch]$WhatIf)
@@ -712,8 +592,9 @@ function Sync-LauncherSkills {
   foreach ($f in (Get-ChildItem -Path $cmdDir -Filter '*.md' -File)) {
     if ($f.Name -match '-AP\.md$') { continue }
     $pl = Get-CommandPlatforms $f.FullName
-    if (-not (($pl -contains 'claude') -or ($pl -contains 'codex'))) { continue }
-    if (($pl -contains 'claude') -and -not ($pl -contains 'codex')) { continue }
+    $native = ($pl -contains 'codex') -or ($pl -contains 'antigravity')
+    if (-not (($pl -contains 'claude') -or $native)) { continue }
+    if (($pl -contains 'claude') -and -not $native) { continue }
     $dstDir    = Join-Path $skDir $f.BaseName
     $skillFile = Join-Path $dstDir 'SKILL.md'
     if ((Test-Path $skillFile) -and ((Get-Content $skillFile -Raw) -notmatch 'GENERATED by sync-agents')) {
@@ -1044,18 +925,12 @@ if ($Status) {
   exit 0
 }
 
-# Regenerate the Antigravity workflow mirrors in the master BEFORE vendoring, so projects pick them up via
-# the (additive) .agents vendor. This also runs BEFORE the machine-global block below, which mirrors this
-# same workflows/ dir into the Antigravity cache (SCC-332) - so that cache is always built from a fresh
-# door set. Do NOT move this call below the globals block. The opencode cache still mirrors commands/.
-$agWf = Sync-AntigravityWorkflowMirror $Master -WhatIf:$WhatIf
-Write-Host "sync-agents: antigravity workflow mirror -> $($agWf.Count) commands in .agents/workflows/"
-
-# Regenerate the Claude+Codex skill doors in the master BEFORE the local copy stage picks them up.
+# Regenerate the Claude + Codex + Antigravity skill doors in the master BEFORE vendoring, so projects pick
+# them up via the (additive) .agents vendor, and before the local copy stage tree-copies them to Claude.
 $genSk = Sync-LauncherSkills $Master -WhatIf:$WhatIf
 Write-Host "sync-agents: launcher skills -> $($genSk.Count) generated in .agents/skills/ (hand-authored skills untouched)"
 
-# Zoo Code doors (SCC-349): tracked in-repo like the workflow mirror, so they travel via git.
+# Zoo Code doors (SCC-349): tracked in-repo like the launcher skills, so they travel via git.
 $zooCmds = Sync-ZooSurfaces $Master $HomeRoot -WhatIf:$WhatIf
 Write-Host "sync-agents: zoo surfaces -> $($zooCmds.Count) launchers in .roo/commands/; .roomodes ($script:ZooSeatCount team seats); floor + team rules in .roo/rules/"
 
@@ -1097,22 +972,36 @@ if (-not $GlobalsOnly) {
   # .claude\skills\*\SKILL.md, so a RENAMED skill leaves a typeable ghost exactly the way a retired command file
   # does (/cicd-write-epics-stories-sprint survived its own rename this way). Sync-Dir is additive robocopy, so
   # the manifest carries the same ownership record here that it already carries for commands.
-  # Per-platform reach for the SKILL door (SCC-66): .agents\skills is Codex's NATIVE surface and
-  # .claude\skills is Claude's cache, so `platforms:` splits here rather than in Sync-CommandDir -
-  # a codex-only command's launcher must not ride the tree copy into Claude's menu, and a claude-only
-  # command's launcher never enters the master at all (it is emitted below, cache-only).
+  # Per-platform reach for the SKILL door (SCC-66, widened by SCC-394): .agents\skills is the NATIVE
+  # surface for Codex AND Antigravity, .claude\skills is Claude's cache, so `platforms:` splits here
+  # rather than in Sync-CommandDir - a launcher for a command claiming neither claude nor a native
+  # platform never exists, and a claude-only command's launcher never enters the master at all (it is
+  # emitted below, cache-only).
+  #
+  # ⛔ $masterOnly HOLDS BACK **GENERATED** LAUNCHERS ONLY, and the distinction is load-bearing. A
+  # HAND-AUTHORED SKILL.md is the command's real door and is tree-copied into Claude's cache whatever
+  # its command claims (the SCC-59 shape). Widening this to every master skill would pull the eleven
+  # hand-authored `[opencode, antigravity]` entries - ten cicd-* plus smh-close-task-merge-tree - out
+  # of Claude's menu in one edit. Measured on this tree, the generated candidates are exactly
+  # cicd-bdd-tests and sentry-security-team-avch, which is the same pair $cxOnly held before.
+  $skillSrcDir = Join-Path $src "skills"
   $doorCmds = @(Get-ChildItem -Path $cmdDir -Filter '*.md' -File | Where-Object { $_.Name -notmatch '-AP\.md$' })
-  $cxOnly = @(); $clOnly = @()
+  $masterOnly = @(); $clOnly = @()
   foreach ($f in $doorCmds) {
     $pl = Get-CommandPlatforms $f.FullName
-    if (($pl -contains 'codex')  -and -not ($pl -contains 'claude')) { $cxOnly += $f.BaseName }
-    if (($pl -contains 'claude') -and -not ($pl -contains 'codex'))  { $clOnly += $f }
+    $native = ($pl -contains 'codex') -or ($pl -contains 'antigravity')
+    if ($native -and -not ($pl -contains 'claude')) {
+      $sf = Join-Path (Join-Path $skillSrcDir $f.BaseName) 'SKILL.md'
+      if ((Test-Path $sf) -and ((Get-Content $sf -Raw) -match 'GENERATED by sync-agents')) {
+        $masterOnly += $f.BaseName
+      }
+    }
+    if (($pl -contains 'claude') -and -not $native) { $clOnly += $f }
   }
-  $skillSrcDir = Join-Path $src "skills"
   $claudeSkKey = ".claude\skills"
   $claudeSkDst = Join-Path $Target $claudeSkKey
   try {
-    Sync-Dir $skillSrcDir $claudeSkDst (@('bmad-*') + $cxOnly) -WhatIf:$WhatIf
+    Sync-Dir $skillSrcDir $claudeSkDst (@('bmad-*') + $masterOnly) -WhatIf:$WhatIf
     # claude-only launchers, emitted straight into the cache - and recorded in the manifest set below, so a
     # later retirement purges them like any other sync-written skill. A hand-authored SKILL.md wins here too.
     $clOnlyMade = @()
@@ -1135,7 +1024,7 @@ if (-not $GlobalsOnly) {
     # object - either way $now then matches no name and the manifest purge proposes deleting all 32 skill dirs
     # it ever wrote, hand-authored ones included. Caught by -WhatIf, twice, before it ran.
     $masterSk = Get-SkillDirSet $skillSrcDir
-    $sk       = @(@($masterSk | Where-Object { $cxOnly -notcontains $_ }) + $clOnlyMade)
+    $sk       = @(@($masterSk | Where-Object { $masterOnly -notcontains $_ }) + $clOnlyMade)
     $skGone = Invoke-ManifestPurgeDir $claudeSkDst $manifest.local[$claudeSkKey] $sk -WhatIf:$WhatIf
     if ($skGone.Count) { Write-Host "sync-agents: purged $($skGone.Count) retired .claude skill(s): $($skGone -join ', ')" }
     $newLocal[$claudeSkKey] = $sk
@@ -1229,7 +1118,7 @@ if (-not $GlobalsOnly) {
         Write-Host ("WHATIF: would stage keep-list '{0}' with: {1}" -f $ownPath, ($names -join ', '))
       } else {
         $header = @(
-          "# project-own.txt - commands/workflows THIS repo owns that the master toolkit does not.",
+          "# project-own.txt - commands THIS repo owns that the master toolkit does not.",
           "# Every name listed here is preserved forever; sync-agents will never purge it.",
           "# DELETE a line to mark that file as a stale ghost - the next -Reconcile removes it everywhere.",
           "# Staged automatically on the first -Reconcile. Review before re-running.",
@@ -1260,19 +1149,13 @@ if (-not $GlobalsOnly) {
 # warning, never crashes the run — so one bad path can't block the other cache or the (already-done) local sync.
 if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
   # SCC-332: each cache names its OWN source. opencode reads /-commands and wants the full body.
-  # -WhatIf FIDELITY, stated because it changed here: Sync-AntigravityWorkflowMirror writes nothing
-  # under -WhatIf, so a dry run enumerates the doors the LAST REAL SYNC wrote. A brand-new command
-  # prints "would emit LAUNCHER" above and then does not appear in this cache's preview. The opencode
-  # cache still previews from commands/ and is always current. Dry-run counts here are a floor.
-  # Antigravity must be fed the already-generated thin-launcher surface in .agents\workflows - the same doors
-  # Sync-AntigravityWorkflowMirror writes above - never the raw command bodies. Why, in one line: it TRUNCATES
-  # an over-cap workflow instead of rejecting it (SCC-135), so a verbatim body runs on partial steps and looks
-  # fine. Every door is a launcher now (SCC-370), which is what makes that unreachable rather than watched.
+  # ONE machine cache remains (SCC-394). Antigravity's was the other, and it is retired below rather
+  # than re-sourced: Antigravity reads .agents\skills natively out of the workspace, so there is
+  # nothing for a global command cache to mirror. The table shape is kept because a second cache is
+  # a table row, and CS-18 C asserts this block writes nothing else under ~/.gemini.
   $GlobalCmdSrc = Join-Path $Master "commands"
-  $GlobalWfSrc  = Join-Path $Master "workflows"
   $caches = @(
-    @{ Name = 'opencode';    Platform = 'opencode';    Src = $GlobalCmdSrc; Path = (Join-Path $UserHome ".config\opencode\commands") },
-    @{ Name = 'antigravity'; Platform = 'antigravity'; Src = $GlobalWfSrc;  Path = (Join-Path $UserHome ".gemini\antigravity\global_workflows") }
+    @{ Name = 'opencode';    Platform = 'opencode';    Src = $GlobalCmdSrc; Path = (Join-Path $UserHome ".config\opencode\commands") }
   )
   foreach ($c in $caches) {
     try {
@@ -1293,6 +1176,27 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
     Write-Host ("sync-agents: {0} global -> {1} cmds  ({2})" -f $c.Name, $names.Count, $c.Path)
   }
   Write-Host "sync-agents: (global caches mirror-exact; bmad-* preserved; restart opencode to pick up)"
+
+  # Antigravity workflow cache RETIRED (SCC-394): the vendor deprecated workflows and retires them on
+  # 2026-11-01, and Antigravity's door is now the launcher skill in .agents\skills, which it reads
+  # natively from the workspace. Deleting the repo surface does NOT empty this directory - those 40
+  # files keep serving from the Antigravity menu, and their launcher bodies still point at command
+  # files that exist, so they keep WORKING and the breakage stays invisible until 1 November. Purge
+  # our doors once per machine; bmad-* is BMAD's own global install and stays, exactly as in the
+  # mirror cache above and the codex prompts purge below.
+  #
+  # Test-Path FIRST: $ErrorActionPreference is "Stop" at the top of this file, so Remove-Item on an
+  # absent path is a TERMINATING error - an unguarded purge would take the whole sync down on any
+  # machine that has never run Antigravity. The directory itself is left in place; it is Google's,
+  # not ours, and bmad-* may still be living in it.
+  $agRetiredWf = Join-Path $UserHome ".gemini\antigravity\global_workflows"
+  if (Test-Path $agRetiredWf) {
+    $staleWf = @(Get-ChildItem -Path $agRetiredWf -Filter '*.md' -File -ErrorAction SilentlyContinue |
+                 Where-Object { $_.Name -notmatch '^bmad-' })
+    if (-not $WhatIf) { $staleWf | ForEach-Object { Remove-Item $_.FullName -Force } }
+    else { $staleWf | ForEach-Object { Write-Host ("WHATIF: would purge retired antigravity workflow '{0}'" -f $_.Name) } }
+    if ($staleWf.Count) { Write-Host ("sync-agents: antigravity global cache RETIRED - purged {0} workflow door(s); Antigravity's door is .agents/skills" -f $staleWf.Count) }
+  }
 
   # Codex prompts cache RETIRED (SCC-66): /prompts:<name> is Codex's deprecated door and double-doored
   # every command beside the native skill in .agents\skills. Purge our prompts once per machine; bmad-*

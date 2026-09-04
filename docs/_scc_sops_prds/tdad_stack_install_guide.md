@@ -316,7 +316,7 @@ backend/tests/
    MANDATORY (sole escape = a recorded, human-approved `bdd: waived` frontmatter entry); `/cicd-bdd-tests`
    writes stack-appropriate contracts + stamps `bdd: locked`/`bdd_contract:` into the story frontmatter;
    ② + `dev_AP` hard-gate on that record before any plan/code (headless → `PIPELINE_BLOCKER`). Mirrored
-   to `.agents/workflows/`; guide updates in this folder same day.
+   to `.agents/skills/`; guide updates in this folder same day.
 3. **Wire aider into `/cicd-autopilot-claude`** — Completed.
 4. **Deploy OpenHands** — Completed for Desktop tracks. Stage 3 now launches OpenHands via Docker volume mount.
 

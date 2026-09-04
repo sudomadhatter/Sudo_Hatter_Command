@@ -1,6 +1,6 @@
 ---
 description: 'Convene the Adviser Board — a third-side thinking board of 43 historical minds. An orchestrator grounds the board in a real project (recon + research — the orchestrator does all the searching; the minds reason, they do not), casts it to the topic''s real shape — one filter per distinct failure surface, up to five when the topic earns them, never more — seats ONE mind per filter from a Round-0 top-3 menu, then runs parallel opinion waves: every seated filter spawns at once in a single message, each returning ONE opinion the chair reads verbatim and guides from. Refuses the binary frame: a reframe outranks an answer. Filters must surface what they could not settle as questions to the chair. Use when the user says "convene the board" / "adviser board" / "/smh-adviser-board <topic>".'
-platforms: [claude, opencode, codex]
+platforms: [claude, opencode, antigravity, codex]
 ---
 
 # /smh-adviser-board — The Adviser Board

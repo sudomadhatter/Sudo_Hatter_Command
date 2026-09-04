@@ -104,14 +104,14 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 ## 4. WHAT LIVES WHERE  (home-base infrastructure)
 | Area | Path | Purpose |
 |---|---|---|
-| Master toolkit | `.agents/` | rules · commands · skills · workflows · bmad · scripts · templates (single source of authorship) |
+| Master toolkit | `.agents/` | rules · commands · skills · bmad · scripts · templates (single source of authorship) |
 | Home-base memory | `_artifacts/` | home-base/cross-project history plus explicitly registered Sudo-managed exceptions |
 | Docs | `docs/` | home-base documentation (master implementation plan, workspace standard) |
 | Navigation index | `docs/repo-map.md` | the lobby's repo-map (curated header + auto body); drift-checked at SessionStart |
 | Routing canary | `_routing-canary/` | model-agnostic proof the routing works (Claude/opencode/Antigravity) |
 | System builder | `docs/system-builder.md` | how to add/maintain workspaces (`/smh-new-project`, `/smh-sync-agents`) |
 | New-machine setup | `docs/migrations/` | secrets export/restore + rename-day tooling; start at its `INDEX.md`. Not day-to-day infra, but standing reference — run when pointed at, never deleted (moved out of `_my_resources/` under SCC-89) |
-| Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master. **One door per platform per command (SCC-66):** Claude + Codex enter through a **launcher skill** (generated per eligible command into `.agents/skills/`, tree-copied to `.claude/skills/`; hand-authored `SKILL.md` wins); opencode through `.opencode/commands/`; Antigravity through `.agents/workflows/`. `.claude/commands/` and `~/.codex/prompts` are **retired** doors; `platforms:` frontmatter limits a command's reach |
+| Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master. **One door per platform per command (SCC-66):** Claude + Codex enter through a **launcher skill** (generated per eligible command into `.agents/skills/`, tree-copied to `.claude/skills/`; hand-authored `SKILL.md` wins); Antigravity reads that **same** skill natively (SCC-394); opencode enters through `.opencode/commands/`, Zoo through `.roo/commands/`. `.claude/commands/`, `~/.codex/prompts` and `.agents/workflows/` are **retired** doors; `platforms:` frontmatter limits a command's reach |
 | SOPs & PRDs | `docs/_scc_sops_prds/` | **every procedural doc** — what the *operator* does and types, as opposed to `.agents/`, which describes the system to an *agent*. Start at its `INDEX.md`; `workflows_testing_SOP.md` is THE quick reference and is gated by `sop-currency.md`. Consolidated here by SCC-74 |
 | Thinking space | `_my_resources/` | Mr. Hatter's brainstorming + personal notes. **⛔ IGNORE unless he links a specific document** (ruling 2026-08-10). Not authoritative, deliberately un-scanned, staleness fine by design. Standing exception: `open_tasks/todo_list.md` (the `## Open Tasks` list only). The `migrations/` exception is **retired** — SCC-89 moved that kit to `docs/migrations/`, so it is now scanned documentation like everything else under `docs/`. Local law → `_my_resources/AGENTS.md` |
 | BMAD (lobby) | `_bmad/` · `_bmad-output/` | BMAD module (regenerated — never hand-edit) + its state/output |
@@ -269,12 +269,13 @@ any adapter line beyond the redirect (SCC-279, after root `GEMINI.md` grew three
 no other platform could see). **Codex** reads `AGENTS.md` **and** the Agent Skills in `.agents/skills/`
 natively — it needs no adapter file. One command set (`.agents/commands/`) reaches **all four** LLM surfaces
 via `/smh-sync-agents`, with **one door per platform per command (SCC-66)**: Claude and Codex invoke the
-**launcher skill** (generated per claude/codex-eligible command; the skill's whole body is "read the command
-file, follow it end to end", so the command stays the single brain); opencode invokes its command mirror;
-Antigravity its workflow mirror — and **every** Antigravity door is a thin launcher, whatever the command's
-size (SCC-370). `platforms:` frontmatter limits reach;
-default = everywhere. The retired doors — `.claude/commands/` and Codex custom prompts (`~/.codex/prompts`,
-`/prompts:<name>`) — double-doored commands beside their skills and are purged by the sync. BMAD's skills —
+**launcher skill** (generated per claude/codex/antigravity-eligible command; the skill's whole body is "read
+the command file, follow it end to end", so the command stays the single brain) — and **Antigravity reads
+that same skill natively**, so one file is the door for three platforms (SCC-394); opencode invokes its
+command mirror. `platforms:` frontmatter limits reach;
+default = everywhere. The retired doors — `.claude/commands/`, Codex custom prompts (`~/.codex/prompts`,
+`/prompts:<name>`) and Antigravity's workflow mirror (`.agents/workflows/`, which the vendor retires on
+2026-11-01) — double-doored commands beside their skills and are purged by the sync. BMAD's skills —
 which install to `.claude/skills`, outside Codex's search path — are mirrored to `~/.codex/skills` so BMAD is
 reachable there too. Full model → `docs/workspace-standard.md`.
 

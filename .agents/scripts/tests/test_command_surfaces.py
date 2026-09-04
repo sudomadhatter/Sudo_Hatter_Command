@@ -10,14 +10,22 @@ The door model, and why it is forced rather than chosen:
   * Codex cannot expose repo-defined top-level `/name` commands at all — skills are its ONLY door;
   * Claude Code publishes a slash command for every `.claude/skills/*/SKILL.md` — so a skill is
     already a Claude door, and a command mirror beside it is a second one;
-  * therefore ONE launcher skill serves Claude and Codex both, and `.claude/commands` +
-    `~/.codex/prompts` are retired. opencode keeps its command mirror; Antigravity its workflow
-    mirror (thin launcher when the body clears its 12k cap).
+  * Antigravity retires workflows on 2026-11-01 and invokes any `.agents/skills/<name>/SKILL.md`
+    as `/<name>` — the SAME surface Codex reads natively (SCC-394);
+  * therefore ONE launcher skill serves Claude, Codex and Antigravity, and `.claude/commands`,
+    `~/.codex/prompts` and `.agents/workflows/` are all retired. opencode keeps its command
+    mirror; Zoo keeps its own generated launcher in `.roo/commands`.
 
 Reach comes from `platforms:` frontmatter (absent = universal), which splits the skill door two
-ways: `.agents/skills` is Codex's NATIVE surface, so a claude-only command's launcher must live in
-the `.claude/skills` cache only, and a codex-only command's launcher must be kept OUT of that cache.
-Both directions are asserted — a door in the wrong place is exactly as wrong as a missing one.
+ways: `.agents/skills` is Codex's AND Antigravity's NATIVE surface, so a claude-only command's
+launcher must live in the `.claude/skills` cache only, and a launcher for a command claiming only
+codex/antigravity must be kept OUT of that cache. Both directions are asserted — a door in the
+wrong place is exactly as wrong as a missing one.
+
+⭐ THE ONE TRADEOFF, STATED RATHER THAN DISCOVERED. Because `.agents/skills` serves Codex and
+Antigravity both, `platforms:` can no longer give a command to one without the other. That split
+was already fiction: every command declaring `[opencode, antigravity]` carries a hand-authored
+skill Codex has been reading all along.
 """
 from __future__ import annotations
 
@@ -72,33 +80,6 @@ def ghost_doors(present: list[str], sources: set[str],
     return [n for n in present if n.casefold() not in src and n.casefold() not in kept]
 
 
-def wf_hand_owned(sync_ps1: str) -> set[str]:
-    """workflows/ files the sync engine deliberately never writes — read FROM the engine.
-
-    ⭐ Derived, not restated. This was `{"INDEX.md"}`: a hand-copied subset of the engine's
-    three-entry `$excluded`, missing `smh-update-maps-indexes.md` and `smh-adviser-board.md`,
-    which are hand-authored Antigravity workflows that legitimately differ from their command
-    bodies (one is a condensed 2 KB variant of a 52 KB brain; the other is a 40 KB doc whose
-    brain was later rewritten to 4 KB). The door-parity check below reported both as drift on
-    its first run — a false positive caused entirely by the duplicated list.
-
-    Two parsers of one fact must agree, so this reads the fact instead of copying it. A parse
-    that returns nothing fails SAFE (nothing is exempted, so the sweep gets noisier, never
-    quieter); the assertion in main() pins that it parsed at all.
-
-    ⛔ ANCHORED to the function that owns it. An unscoped search takes the FIRST
-    `$excluded = @(...)` in a 900-line file - and the file already has `$ExcludeDirs` /
-    `$ExcludeFiles` in nearby scope, so a same-named local is not exotic. A clean-room pass
-    defeated the unscoped version by adding an earlier array carrying one extra name: the
-    ghost check then went silent on a genuinely orphaned workflow and the suite stayed green.
-    OVERBROAD is the one direction that fails OPEN, which is why the scope is not optional.
-    """
-    start = sync_ps1.find("function Sync-AntigravityWorkflowMirror")
-    m = re.search(r"\$excluded\s*=\s*@\(([^)]*)\)",
-                  sync_ps1[start:] if start != -1 else sync_ps1)
-    return set(re.findall(r"'([^']+)'", m.group(1))) if m else set()
-
-
 def read(p: Path) -> str:
     # utf-8-SIG, not utf-8: 8 testarch-* commands carry a UTF-8 BOM. PowerShell's ReadAllLines
     # strips it, so sync-agents reads their `platforms: [opencode]` correctly - a plain utf-8 read
@@ -148,24 +129,6 @@ def ps_code_only(text: str) -> str:
     return "\n".join(out)
 
 
-def ag_eligible(f: Path) -> bool:
-    """Mirror of Get-CommandPlatforms' antigravity answer (sync-agents.ps1:423-439).
-
-    No frontmatter at all => UNIVERSAL (all four platforms). An explicit `platforms: []` =>
-    NOWHERE. That asymmetry is exactly what made `.agents/workflows/INDEX.md` publishable when
-    the cache's source moved here: its `commands/` twin declares `platforms: []`, this one
-    declared nothing.
-    """
-    txt = read(f)
-    lines = txt.splitlines()
-    if not lines or lines[0].strip() != "---":
-        return True
-    got = fm_field(txt, "platforms")
-    if got is None:
-        return True
-    return "antigravity" in got
-
-
 def fm_field(text: str, key: str) -> str | None:
     """A frontmatter scalar, or None. Used to compare a launcher against its brain."""
     lines = text.splitlines()
@@ -186,27 +149,23 @@ def fm_field(text: str, key: str) -> str | None:
 LAUNCH_RE = re.compile(r"read\s+`\.agents/commands/([A-Za-z0-9._-]+\.md)`")
 
 
-# ── SCC-195 · the Antigravity DESCRIPTION BUDGET ───────────────────────────────────────────
+# ── the 135-char DESCRIPTION CUT · now ZOO's, formerly Antigravity's (SCC-195 → SCC-394) ───
 #
-# Antigravity builds its slash-command menu from the `description:` frontmatter of every
-# `.agents/workflows/*.md`. This repo's descriptions run 400-950+ characters (they are written
-# for an agent reading the command, not for a menu), and the total blew the menu's context
-# budget: **15 workflows were dropped from the agent's command list outright.**
+# `Get-AgDescription` cuts a description to 135 characters on a word boundary. It was written
+# because Antigravity built its slash menu from `.agents/workflows/*.md` frontmatter, this
+# repo's descriptions run 400-950+ characters, and the total blew the menu's context budget —
+# 15 workflows were dropped from the agent's command list outright.
 #
-# ⛔ AND THE OBVIOUS FIX WAS ALREADY BLOCKED, WHICH IS THE ACTUAL TICKET. Shortening the
-# descriptions BY HAND in `.agents/workflows/` cannot work twice over: the files are GENERATED,
-# so the next `/smh-sync-agents` overwrites them; and this file's own door-parity check demands
-# the mirror be byte-identical to its brain (or a launcher whose description EQUALS the
-# brain's), so a hand-shortened door reads as `stale` and the main-write-gate goes red.
-# `origin/chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable by
-# construction.
+# That surface is RETIRED (SCC-394): Antigravity reads the launcher skill now, which carries the
+# brain's FULL description like every other skill. The cut survives because `Sync-ZooSurfaces`
+# still calls the same function for `.roo/commands/`, so the emitter, the number, and this
+# Python twin of it are all still live — just for a different platform. `U7` is what pins the
+# two implementations together, and it is the only test of that cut left.
 #
-# So the shortening moves INTO the generator, and this check learns the same rule: the
-# Antigravity door carries a TRUNCATED description, and truncated-from-the-brain is parity.
-# Two implementations of one rule (PowerShell emits, Python verifies) - which is the shape this
-# file already has for `platforms:` (`Get-CommandPlatforms` vs `platforms_declared`), and the
-# reason the check is a REAL comparison rather than a length test: if the two ever disagree the
-# door reads `stale` and names the file.
+# ⛔ Which is why `ag_description` and `AG_DESC_MAX` did NOT retire with the workflow door. The
+# first cut of SCC-394 listed both for deletion alongside `U1–U6`; `U7` runs the REAL PowerShell
+# under pwsh and compares it against this emulation, so deleting the emulation strands the one
+# surviving case with a NameError on its first run.
 AG_DESC_MAX = 135
 AG_DESC_CUT = 132
 
@@ -247,7 +206,7 @@ def ag_description(desc: str) -> str:
 # the LAUNCHER's description is cut to, which is the SCC-195 menu budget and a separate rule.
 
 
-def is_launcher_for(body: str, brain: str, cmd_name: str, budgeted: bool = False) -> bool:
+def is_launcher_for(body: str, brain: str, cmd_name: str) -> bool:
     """Is `body` the generated thin launcher for THIS command, still current?
 
     ⭐ Four conditions, and the third and fourth are what make the exemption EARNED rather
@@ -255,6 +214,13 @@ def is_launcher_for(body: str, brain: str, cmd_name: str, budgeted: bool = False
     clean-room pass defeated three ways without touching the launcher at all: change the
     BRAIN's description and never re-sync (the exact forgotten-sync shape this whole check
     exists for) and the launcher still passed, because nothing compared them.
+
+    ⛔ THE `budgeted` ARM IS GONE (SCC-394), and it was per-SURFACE, never per-launcher. It
+    applied the 135-char cut when comparing an ANTIGRAVITY workflow door against its brain;
+    every skill launcher — which is now Antigravity's door too — carries the brain's FULL
+    description. Applying the cut here turned 39 correct doors red in one edit when it was
+    briefly conflated, so the arm retires with the surface that needed it rather than staying
+    behind as a default nobody passes.
     """
     if GEN not in body or "END TO END" not in body:
         return False
@@ -262,25 +228,8 @@ def is_launcher_for(body: str, brain: str, cmd_name: str, budgeted: bool = False
     if not m or m.group(1) != cmd_name:
         return False
     # The engine copies the brain's description into the stub, so a drifted description IS a
-    # drifted door - it is what the Antigravity menu actually displays.
-    #
-    # ⛔ `budgeted` IS PER-SURFACE, and conflating the two surfaces is a real defect this check
-    # caught on itself: SCC-195's budget is ANTIGRAVITY's menu constraint. The Claude/Codex
-    # launcher skills (`New-LauncherSkillStub`) carry the brain's FULL description and must keep
-    # doing so - applying the cut to them turned 39 correct doors red in one edit.
-    want = fm_field(brain, "description") or ""
-    # ⛔ STRIP THE QUOTES BEFORE THE BUDGET CUT, AND ONLY ON THE BUDGETED SURFACE - the twin of
-    # the emitter's own `$desc.Trim().Trim('"').Trim("'")`, at the same point in the pipeline.
-    # A QUOTED master description would otherwise keep its opening " and lose its closing one to
-    # the 132-char cut, and the door would ship unparseable YAML (it did: cicd-push-e2e.md).
-    #
-    # ⛔ IT BELONGS HERE, NOT INSIDE `ag_description`. That function is pinned against the REAL
-    # PowerShell by U7, which runs `Get-AgDescription` under pwsh over the live descriptions -
-    # quoted ones included. Stripping inside the twin would red U7 against an unchanged engine
-    # and read as a generator defect. Mirror the engine's placement, not just its effect.
-    if budgeted:
-        want = want.strip().strip('"').strip("'")
-    return fm_field(body, "description") == (ag_description(want) if budgeted else want)
+    # drifted door - it is what the platform's menu actually displays.
+    return fm_field(body, "description") == (fm_field(brain, "description") or "")
 
 
 def platforms_declared(text: str) -> tuple[str, ...] | None:
@@ -322,32 +271,24 @@ def platforms_of(text: str) -> tuple[str, ...]:
     return ALL if declared is None else declared
 
 
-def claims_explicitly(text: str, platform: str) -> bool:
-    """Does this file SAY it belongs on `platform`? Silence is not a claim."""
-    declared = platforms_declared(text)
-    return declared is not None and platform in declared
-
-
 def platforms(cmd: Path) -> tuple[str, ...]:
     return platforms_of(read(cmd))
 
 
-def mirror_place_error(platform: str, pl: tuple[str, ...], present: bool,
-                       hand_owned_door: bool) -> bool:
+def mirror_place_error(platform: str, pl: tuple[str, ...], present: bool) -> bool:
     """Does a mirror door sit on a surface its command does not claim?
 
     The skill doors have asserted this in BOTH directions since SCC-66 - this file's own header
     says "a door in the wrong place is exactly as wrong as a missing one" - but the two MIRROR
     surfaces only ever asserted the missing direction. Now they assert both.
 
-    ⛔ `hand_owned_door` is the ONE exemption, and it is EARNED by the caller, never announced:
-    the engine derives generated doors from `platforms:` and makes no such promise for files in
-    `$excluded`, so the exemption applies only while the hand-owned door itself declares the
-    surface it is sitting on. See the call site.
+    ⛔ THE `hand_owned_door` EXEMPTION IS GONE (SCC-394). It existed for exactly one file:
+    `smh-adviser-board`'s hand-authored Antigravity workflow door, which its command did not
+    claim. That surface is retired and that door with it, so `.opencode/commands` is the only
+    mirror left — and `Sync-CommandDir` has no exclusion list at all, so every file it
+    recognises it manages. An exemption with no subject is a hole, not a feature.
     """
-    if not present or platform in pl:
-        return False
-    return not hand_owned_door
+    return present and platform not in pl
 
 
 def rif_block(text: str) -> str:
@@ -416,19 +357,6 @@ def main() -> int:
 
     sync_ps1 = read(ROOT / ".agents/scripts/sync-agents.ps1")
 
-    # The engine's own hand-owned list, read rather than restated (see wf_hand_owned).
-    # Pinned non-empty: a regex that stopped matching would exempt NOTHING here, but the same
-    # value gates the ghost check below, where an empty set is the SAFE direction and a
-    # runaway one is not. Assert it parsed, so a silent parse failure cannot drift either way.
-    hand_owned = wf_hand_owned(sync_ps1)
-    # Identity, not cardinality. `2 <= len(...) <= 8` encoded TODAY's count as a contract:
-    # regenerating both hand-owned workflows and shrinking $excluded to just INDEX.md is a
-    # perfectly legitimate future state, and it would have failed with the actively
-    # misleading message "not guessed" - when the list had been read correctly.
-    # Only INDEX.md is legitimately SOURCELESS - see the ghost check near the end of this file,
-    # where the difference between this set and `hand_owned` is load-bearing.
-    SOURCELESS = {"INDEX.md"}
-
     if c.block("CS-01 · the retired doors stay retired"):
         # ── The retired doors stay retired ────────────────────────────────────────
         stale_cmd_mirror = sorted(p.name for p in (ROOT / ".claude/commands").glob("*.md"))
@@ -436,133 +364,110 @@ def main() -> int:
                 not stale_cmd_mirror,
                 f"{len(stale_cmd_mirror)} left: {stale_cmd_mirror[:6]}")
 
-        unknown = sorted(n for n in hand_owned
-                         if n != "INDEX.md" and not (ROOT / ".agents/workflows" / n).is_file())
-        c.check("the hand-owned workflow list was READ from the sync engine, not guessed",
-                "INDEX.md" in hand_owned and not unknown,
-                f"parsed {sorted(hand_owned)} from $excluded; names with no such workflow: "
-                f"{unknown}")
-
-        # ⭐ What makes the hand-owned exemption below EARNED. A file in `$excluded` is exempt from
-        # "does its command claim antigravity?" because the engine never derives it from `platforms:`
-        # - `smh-adviser-board` declares `[claude, opencode, codex]` yet keeps a hand-authored
-        # Antigravity door, and that is correct. But the exemption survives only while the door
-        # itself says it belongs here. Parsed with the SAME rule the engine uses (absent = universal),
-        # so it fails CLOSED on the shape that matters: a hand-owned workflow declaring
-        # `platforms: [claude]` while sitting in Antigravity's surface, exempt from every other check.
-        # ⭐ SCC-113 tightened this from `platforms_of` to `claims_explicitly`. Under the old
-        # reading a hand-owned door with NO `platforms:` key parsed as universal, so antigravity was
-        # "declared" — and the exemption was earned by saying nothing at all. That is the same
-        # announced-not-earned shape A-2′ already cost this ticket a lane, in the check written to
-        # prevent it. Silence now fails, and `platforms: []` still fails (a real claim of nowhere).
-        disowned = sorted(n for n in hand_owned - SOURCELESS
-                          if (ROOT / ".agents/workflows" / n).is_file()
-                          and not claims_explicitly(read(ROOT / ".agents/workflows" / n),
-                                                    "antigravity"))
-        c.check("every hand-owned workflow EXPLICITLY declares the surface it sits on",
-                not disowned,
-                f"{disowned} - excluded from the sync AND from the placement check, so a wrong or "
-            f"absent `platforms:` here is invisible to everything else")
-
-        # Controls for the two readings of silence — pure strings, no disk. These are what stop the
-        # split above from quietly collapsing back into one rule.
-        c.check("declaration: silence is NOT a claim (the hand-owned exemption must be spoken)",
-                platforms_declared("---\nname: x\ndescription: y\n---\n") is None
-                and not claims_explicitly("---\nname: x\n---\n", "antigravity"),
-                "a door with no platforms: key asserts nothing and must not be exempt")
-        c.check("declaration: an explicit list is read, and only it earns the exemption",
-                claims_explicitly("---\nplatforms: [antigravity]\n---\n", "antigravity")
-                and not claims_explicitly("---\nplatforms: [claude]\n---\n", "antigravity"),
-                "the door must name the surface it is sitting on")
-        c.check("declaration: `platforms: []` is a real claim of NOWHERE, not silence",
-                platforms_declared("---\nplatforms: []\n---\n") == ()
-                and not claims_explicitly("---\nplatforms: []\n---\n", "antigravity"),
-                "[] means nowhere; it must fail the claim, not read as absent")
+        # ⛔ THE HAND-OWNED WORKFLOW CHECKS RETIRED WITH THEIR SURFACE (SCC-394). They read
+        # `$excluded` out of `Sync-AntigravityWorkflowMirror` and asked whether each name in it
+        # still declared `platforms: [antigravity]` - a rule about files in `.agents/workflows/`,
+        # which no longer exists. The three `declaration:` controls that served them went with
+        # them; the fourth stays below, because door DERIVATION still turns on absent-means-
+        # universal and that reading is what every remaining placement check is built on.
         c.check("declaration: COMMANDS keep the engine's rule - absent still means universal",
                 platforms_of("---\nname: x\n---\n") == ALL
                 and platforms_of("---\nplatforms: []\n---\n") == (),
-                "NEGATIVE CONTROL - tightening the exemption must not change door derivation")
+                "NEGATIVE CONTROL - retiring the hand-owned exemption must not change door "
+                "derivation; absent is UNIVERSAL and [] is NOWHERE, and the engine reads both")
 
-        c.check("the sync engine states the door model and both retirements",
+        # ⭐ THREE retirements now, and the engine states each one where it performs it. The
+        # third is this ticket's: Antigravity's workflow door and the machine cache behind it.
+        # Pinned in the RAW source (comments included) on purpose - the engine explaining its own
+        # retirements to the next reader IS the artifact, and it is what stops the purge from
+        # reading as an unexplained Remove-Item in someone else's global directory.
+        c.check("the sync engine states the door model and all THREE retirements",
                 "THE DOOR MODEL" in sync_ps1
                 and "codex prompts cache RETIRED" in sync_ps1
+                and "antigravity global cache RETIRED" in sync_ps1
                 and "Claude's door is .claude\\skills" in sync_ps1,
-                "sync-agents.ps1 no longer states the door model + both retirements")
+                "sync-agents.ps1 no longer states the door model + all three retirements "
+                "(.claude/commands, ~/.codex/prompts, and now ~/.gemini/.../global_workflows)")
 
     if c.block("CS-02 · one door per platform, on every platform the command claims"):
         # ── Every eligible command has EXACTLY ONE door on each platform it claims ─
+        #
+        # ⭐ THE SKILL DOOR NOW SERVES THREE PLATFORMS (SCC-394). `.agents/skills/` is Codex's
+        # native surface AND Antigravity's, so one launcher there answers for both, and
+        # `.claude/skills/` stays the tree-copied cache Claude's menu reads. The consequence is
+        # stated rather than discovered: `platforms:` can no longer give a command to Codex
+        # without also giving it to Antigravity. That split was already fiction - every command
+        # declaring `[opencode, antigravity]` carries a hand-authored skill Codex has been
+        # reading all along - so this asserts the truth instead of a distinction nobody used.
         missing_skill, wrong_place, bad_body = [], [], []
-        missing_oc, missing_ag = [], []
+        missing_oc = []
         for cmd in cmds:
             pl = platforms(cmd)
             name = cmd.stem
-            in_master = (master_skills / name / "SKILL.md").is_file()
+            master_file = master_skills / name / "SKILL.md"
+            in_master = master_file.is_file()
             in_cache = (claude_skills / name / "SKILL.md").is_file()
+            native = ("codex" in pl) or ("antigravity" in pl)
 
-            if "codex" in pl:
-                # Codex reads .agents/skills directly - the door must be in the master.
+            if native:
+                # Codex and Antigravity both read .agents/skills directly - the door must be in
+                # the master, and ONE door answers for both.
                 if not in_master:
-                    missing_skill.append(f"{name} (codex)")
-                if "claude" not in pl and in_cache:
-                    wrong_place.append(f"{name}: codex-only but present in .claude/skills")
+                    missing_skill.append(f"{name} (codex/antigravity)")
             if "claude" in pl:
                 # Claude's menu reads the cache; a claude-only launcher must NOT sit in the
-                # Codex-visible master.
+                # natively-visible master.
                 if not in_cache:
                     missing_skill.append(f"{name} (claude)")
-                if "codex" not in pl and in_master:
+                if not native and in_master:
                     wrong_place.append(f"{name}: claude-only but present in .agents/skills")
+            if native and "claude" not in pl:
+                # ⛔ THE EXCLUSION IS ON **GENERATED** LAUNCHERS ONLY, and this is the whole of
+                # `$masterOnly` in the engine. A HAND-AUTHORED skill is tree-copied into Claude's
+                # cache regardless of what its command claims (the SCC-59 shape), so widening
+                # this to every master skill would pull the eleven hand-authored
+                # `[opencode, antigravity]` entries out of Claude's menu - ten `cicd-*` plus
+                # `smh-close-task-merge-tree`. Measured: the generated candidates are exactly
+                # `cicd-bdd-tests` and `sentry-security-team-avch`.
+                if in_master and GEN in read(master_file) and in_cache:
+                    wrong_place.append(
+                        f"{name}: generated launcher for codex/antigravity only, "
+                        f"but present in .claude/skills")
 
             # Whichever copy exists, a GENERATED launcher must point at its own command body.
             # Shares `is_launcher_for` with the parity sweep below - one rule, one implementation,
             # so the next tightening cannot land in only one of the two places.
-            for sk in (master_skills / name / "SKILL.md", claude_skills / name / "SKILL.md"):
+            for sk in (master_file, claude_skills / name / "SKILL.md"):
                 if sk.is_file():
                     body = read(sk)
                     if GEN in body and not is_launcher_for(body, read(cmd), cmd.name):
                         bad_body.append(str(sk.relative_to(ROOT)))
 
-            # ── The mirror surfaces, BOTH directions ──────────────────────────────
+            # ── The mirror surface, BOTH directions ───────────────────────────────
             # Missing was always asserted; misplaced never was. The engine purges a mirror whose
-            # command stopped claiming that platform (`Sync-CommandDir`'s `$masterNames` branch;
-            # `Sync-AntigravityWorkflowMirror`'s `$stale`), so a misplaced door means the reach
-            # changed and NOBODY RAN THE SYNC - which is exactly how SCC-77 shipped stale doors.
+            # command stopped claiming that platform (`Sync-CommandDir`'s `$masterNames` branch),
+            # so a misplaced door means the reach changed and NOBODY RAN THE SYNC - which is
+            # exactly how SCC-77 shipped stale doors. `.opencode/commands` is the only mirror
+            # left; Antigravity's was the other one, and it retired at SCC-394.
             oc_here = (ROOT / ".opencode/commands" / cmd.name).is_file()
-            ag_here = (ROOT / ".agents/workflows" / cmd.name).is_file()
             if "opencode" in pl and not oc_here:
                 missing_oc.append(name)
-            if "antigravity" in pl and not ag_here:
-                missing_ag.append(name)
-            # hand_owned_door is False for opencode, per-surface like the launcher exemption (A-8):
-            # `Sync-CommandDir` has no exclusion list at all - every file it recognises it manages.
-            if mirror_place_error("opencode", pl, oc_here, hand_owned_door=False):
+            if mirror_place_error("opencode", pl, oc_here):
                 wrong_place.append(f"{name}: does not claim opencode, but .opencode/commands has it")
-            # EARNED AT THE POINT OF USE: hand-owned is not enough on its own - the door must also
-            # declare this surface. `disowned` above is not redundant with this; it catches the case
-            # placement cannot see, where the COMMAND claims antigravity and the door denies it.
-            hand_ag = (cmd.name in hand_owned and ag_here
-                       and claims_explicitly(read(ROOT / ".agents/workflows" / cmd.name),
-                                             "antigravity"))
-            if mirror_place_error("antigravity", pl, ag_here, hand_owned_door=hand_ag):
-                wrong_place.append(f"{name}: does not claim antigravity, but .agents/workflows has it")
 
-        c.check("every claude/codex-eligible command has its skill door",
+        c.check("every claude/codex/antigravity-eligible command has its skill door",
                 not missing_skill, f"{len(missing_skill)} missing: {missing_skill[:6]}")
 
         # Controls for the placement rule, both directions - a sweep that is clean today says
-        # nothing about whether the check has teeth.
+        # nothing about whether the check has teeth. All three read the one surviving mirror.
         OC_ONLY = ("opencode",)
         c.check("door-place CONTROL: a mirror on a claimed surface is fine",
-                not mirror_place_error("opencode", OC_ONLY, True, False))
+                not mirror_place_error("opencode", OC_ONLY, True))
         c.check("door-place CONTROL: a mirror on an UNCLAIMED surface is caught",
-                mirror_place_error("antigravity", OC_ONLY, True, False),
+                mirror_place_error("opencode", ("claude",), True),
                 "the reach changed and nobody ran /smh-sync-agents")
-        c.check("door-place CONTROL: a hand-owned door on an unclaimed surface is exempt",
-                not mirror_place_error("antigravity", OC_ONLY, True, True),
-                "smh-adviser-board is real: hand-authored Antigravity door, command claims three "
-            "other platforms - and the exemption is earned above, not announced")
         c.check("door-place CONTROL: no door, no error (the condition is not inverted)",
-                not mirror_place_error("antigravity", OC_ONLY, False, False))
+                not mirror_place_error("opencode", ("claude",), False))
 
         c.check("no door sits on a platform its command does not claim",
                 not wrong_place, f"{len(wrong_place)}: {wrong_place[:4]}")
@@ -570,49 +475,41 @@ def main() -> int:
                 not bad_body, f"{len(bad_body)}: {bad_body[:4]}")
         c.check("every opencode-eligible command has its mirror",
                 not missing_oc, f"{len(missing_oc)} missing: {missing_oc[:6]}")
-        c.check("every antigravity-eligible command has its workflow mirror (thin launcher counts)",
-                not missing_ag, f"{len(missing_ag)} missing: {missing_ag[:6]}")
 
     if c.block("CS-03 · door CONTENT parity - a door that no longer says what its brain says"):
         # ── Door CONTENT parity (SCC-113 follow-on) ──────────────────────────────
         # Every check above asks whether a door EXISTS. None asks whether it still says what its
         # brain says, and that gap shipped a live break: SCC-77 landed the armed `main` write gate
-        # on `main` without running /smh-sync-agents, so `.opencode/commands/` and
-        # `.agents/workflows/` kept the pre-token merge steps while MAIN-PUSH-ENFORCE was armed.
-        # An opencode or Antigravity agent following them reaches `git push origin main` with no
-        # token and is refused, with nothing in its instructions telling it to mint one. Claude and
-        # Codex were fine - their doors are thin launchers that read the brain live, which is
-        # exactly why the drift was invisible to a human spot-check.
+        # on `main` without running /smh-sync-agents, so `.opencode/commands/` kept the pre-token
+        # merge steps while MAIN-PUSH-ENFORCE was armed. An opencode agent following them reaches
+        # `git push origin main` with no token and is refused, with nothing in its instructions
+        # telling it to mint one. Claude and Codex were fine - their doors are thin launchers that
+        # read the brain live, which is exactly why the drift was invisible to a human spot-check.
         #
         # SCC-77's close-out reported a fully green floor. This is the check that was missing.
+        #
+        # ⭐ ONE MIRROR SURFACE LEFT (SCC-394). Antigravity's workflow door was the other, and it
+        # had the OPPOSITE legal shape - a thin launcher, never a byte copy - which is why
+        # `door_verdict` used to take a `launcher_ok` switch. Antigravity reads the launcher
+        # SKILL now, and skill launchers are checked by `CS-02`'s `bad_body` sweep and by
+        # `CS-18 Q`, which byte-compares them against the real emitter. So this block narrows to
+        # what it was always for: opencode's full mirror is byte-identical to its brain, or it
+        # is stale. The `is_launcher_for` controls that lived inside the retired arm move down
+        # to their own group rather than retiring with it - that function is still live.
 
-        def door_verdict(brain: str, body: str, cmd_name: str, launcher_ok: bool) -> str:
-            """'ok' | 'stale' | 'badlauncher' - for ONE mirror door against its command body.
+        def door_verdict(brain: str, body: str, cmd_name: str) -> str:
+            """'ok' | 'stale' | 'badlauncher' - for ONE opencode mirror against its command body.
 
-        ⭐ EACH SURFACE HAS EXACTLY ONE LEGAL SHAPE, and they are different shapes (SCC-370):
-          * opencode  - a FULL MIRROR, byte-identical to the brain. Nothing else.
-          * workflows - a current THIN LAUNCHER. Nothing else, at any size.
-
-        ⛔ `launcher_ok` is passed per-surface because the two surfaces are opposites, and
-        offering EITHER shape to the wrong one is a live defect rather than a laxity:
-          * a launcher on an OPENCODE door replaces a 9 KB command's gate-and-merge steps with
-            a 9-line signpost. `Sync-CommandDir` is `Copy-Item -Force` and nothing else, so the
-            engine never emits one there; an agent that followed it would get the signpost.
-          * a verbatim mirror on the ANTIGRAVITY door is the SCC-135 shape. Antigravity
-            truncates an over-cap workflow instead of rejecting it, so a body that ships whole
-            today runs on partial steps the moment its command grows - silently. Until SCC-370
-            the generator decided this per command by SIZE, and 14 of 40 doors were verbatim;
-            `smh-sync-agents` itself sat 1,648 chars under the cap. The branch is gone and this
-            check is what keeps it gone.
-        """
-            # ⛔ `not launcher_ok`. Byte-identity was unconditional here, which is why a verbatim
-            # Antigravity door read as parity for as long as the size branch existed.
-            if not launcher_ok and body == brain:
-                return "ok"
-            if launcher_ok and is_launcher_for(body, brain, cmd_name, budgeted=True):
+            The surface has exactly ONE legal shape: a FULL MIRROR, byte-identical to the brain.
+            `Sync-CommandDir` is `Copy-Item -Force` and nothing else. A launcher here would
+            replace a 9 KB command's gate-and-merge steps with a 9-line signpost, and an agent
+            that followed it would get the signpost - so the launcher shape is reported
+            distinctly (`badlauncher`), never folded into `stale`.
+            """
+            if body == brain:
                 return "ok"
             if GEN in body:
-                return "badlauncher"   # claims to be generated, but is not a current launcher
+                return "badlauncher"   # a launcher on a surface whose contract is byte-identity
             return "stale"
 
         # Controls first, as pure string cases - the live sweep below can only ever prove the
@@ -621,55 +518,47 @@ def main() -> int:
         LAUNCHER = ("---\ndescription: Do the thing.\n---\n"
                 "# /x - launcher (GENERATED by sync-agents; do not edit)\n"
                 "**Execute now:** read `.agents/commands/x.md` and follow it END TO END\n")
-        WF, OC = True, False          # launcher form exists on workflows only
 
         c.check("door-parity CONTROL: an identical mirror is ok on OPENCODE",
-                door_verdict(BRAIN, BRAIN, "x.md", OC) == "ok",
+                door_verdict(BRAIN, BRAIN, "x.md") == "ok",
                 "byte-identity is opencode's whole contract - `Copy-Item -Force`, or stale")
         c.check("door-parity CONTROL: a STALE mirror is caught",
-                door_verdict(BRAIN, BRAIN.replace("body", "old body"), "x.md", WF) == "stale",
+                door_verdict(BRAIN, BRAIN.replace("body", "old body"), "x.md") == "stale",
                 "this is the SCC-77 shape - a door that still reads the pre-change steps")
         c.check("door-parity CONTROL: a truncated mirror is caught",
-                door_verdict(BRAIN, "---\ndescription: Do the thing.\n---\n# /x\n", "x.md", WF)
+                door_verdict(BRAIN, "---\ndescription: Do the thing.\n---\n# /x\n", "x.md")
                 == "stale")
-        c.check("door-parity CONTROL: a current thin launcher is exempt",
-                door_verdict(BRAIN, LAUNCHER, "x.md", WF) == "ok")
-
-        # ⭐ The three shapes a clean-room pass used to defeat the FIRST cut of this exemption,
-        # which tested three substrings appearing anywhere in the file.
-        c.check("door-parity CONTROL: a launcher whose BRAIN's description moved on is caught",
-                door_verdict(BRAIN.replace("Do the thing.", "RETIRED - use /y instead."),
-                             LAUNCHER, "x.md", WF) == "badlauncher",
-                "the forgotten-sync shape: nobody touched the launcher, and it is now lying to "
-            "the Antigravity menu about what this command does")
-        c.check("door-parity CONTROL: a launcher REPOINTED at another brain is caught, even "
-            "with the old path still present in a comment",
-                door_verdict(BRAIN,
-                             "<!-- generated from .agents/commands/x.md -->\n"
-                             + LAUNCHER.replace("read `.agents/commands/x.md`",
-                                                "read `.agents/commands/other.md`"),
-                             "x.md", WF) == "badlauncher",
-                "a substring test reads the stale COMMENT as the pointer - the exact "
-            "comment-literals-invert-source-grep-tests inversion")
-        c.check("door-parity CONTROL: the marker alone does NOT excuse drift",
-                door_verdict(BRAIN, "# GENERATED by sync-agents\nanything at all\n", "x.md", WF)
-                == "badlauncher")
-
-        # ⭐ SCC-370 CONTROL. Antigravity's door is a launcher or it is nothing: the size branch
-        # that used to let a small command ship verbatim is gone, so a byte-identical mirror on
-        # THIS surface is no longer a legal shape. This control is what turns re-adding that
-        # branch back into a red - without it the arm could return and the live sweep, run on a
-        # freshly synced tree, would report a clean pass over doors that had simply been
-        # regenerated in the old shape.
-        c.check("door-parity CONTROL: a VERBATIM mirror is NOT legal on workflows (SCC-370)",
-                door_verdict(BRAIN, BRAIN, "x.md", WF) != "ok",
-                "byte-identity is opencode's contract, never Antigravity's - every door there "
-                "is a generated thin launcher, whatever the command's size")
-
         # opencode has no launcher form at all - Copy-Item, or it is wrong.
         c.check("door-parity CONTROL: a launcher on an OPENCODE door is NOT exempt",
-                door_verdict(BRAIN, LAUNCHER, "x.md", OC) == "badlauncher",
+                door_verdict(BRAIN, LAUNCHER, "x.md") == "badlauncher",
                 "the engine never emits a launcher there; a pointer would replace the steps")
+
+        # ── `is_launcher_for` keeps its OWN controls ─────────────────────────────
+        # ⛔ THESE DID NOT RETIRE WITH THE WORKFLOW DOOR, and letting them would have been the
+        # quiet half of this ticket. They are the three shapes a clean-room pass used to defeat
+        # the first cut of the launcher exemption, which tested three substrings appearing
+        # anywhere in the file. The function is now MORE load-bearing than it was, not less: it
+        # is what `CS-02` uses to decide whether every generated skill launcher - Claude's,
+        # Codex's and Antigravity's single door - still points at its own brain.
+        c.check("launcher CONTROL: a current thin launcher for this brain is recognised",
+                is_launcher_for(LAUNCHER, BRAIN, "x.md"))
+        c.check("launcher CONTROL: a launcher whose BRAIN's description moved on is caught",
+                not is_launcher_for(LAUNCHER,
+                                    BRAIN.replace("Do the thing.", "RETIRED - use /y instead."),
+                                    "x.md"),
+                "the forgotten-sync shape: nobody touched the launcher, and it is now lying to "
+                "the menu about what this command does")
+        c.check("launcher CONTROL: a launcher REPOINTED at another brain is caught, even "
+                "with the old path still present in a comment",
+                not is_launcher_for("<!-- generated from .agents/commands/x.md -->\n"
+                                    + LAUNCHER.replace("read `.agents/commands/x.md`",
+                                                       "read `.agents/commands/other.md`"),
+                                    BRAIN, "x.md"),
+                "a substring test reads the stale COMMENT as the pointer - the exact "
+                "comment-literals-invert-source-grep-tests inversion")
+        c.check("launcher CONTROL: the marker alone does NOT excuse drift",
+                not is_launcher_for("# GENERATED by sync-agents\nanything at all\n",
+                                    BRAIN, "x.md"))
 
         # ⭐ REGRESSION CONTROL — the real historical defect, not a shape I imagined.
         # `ea8fe97` is the commit that re-synced the doors SCC-77 left stale; its parent holds the
@@ -686,27 +575,20 @@ def main() -> int:
         else:
             stale_door, src = pushe2e.split("## Step 6")[0], "a synthesized stale door (no history)"
         c.check(f"door-parity REGRESSION CONTROL fires on {src}",
-                door_verdict(pushe2e, stale_door, "cicd-push-e2e.md", launcher_ok=False)
-                == "stale",
+                door_verdict(pushe2e, stale_door, "cicd-push-e2e.md") == "stale",
                 "the gate reported 13/13 green on exactly this file - that is the whole reason "
             "this check exists")
 
-        MIRRORS = (".opencode/commands", ".agents/workflows")
+        MIRRORS = (".opencode/commands",)
         drifted, examined = [], 0
         for cmd in cmds:
             brain = read(cmd)
             for rel in MIRRORS:
-                # A hand-owned workflow is authored, not generated, and legitimately differs from
-                # its brain — `smh-adviser-board` is a condensed 2 KB Antigravity variant of a
-                # 52 KB command. The engine never writes these, so parity is not the contract.
-                if rel == ".agents/workflows" and cmd.name in hand_owned:
-                    continue
                 door = ROOT / rel / cmd.name
                 if not door.is_file():
                     continue
                 examined += 1
-                v = door_verdict(brain, read(door), cmd.name,
-                                 launcher_ok=(rel == ".agents/workflows"))
+                v = door_verdict(brain, read(door), cmd.name)
                 if v != "ok":
                     drifted.append(f"{rel}/{cmd.name} [{v}]")
 
@@ -755,24 +637,14 @@ def main() -> int:
 
     if c.block("CS-07 · ghost doors - a mirror with no command source"):
         # ── Stale mirrors: a door with no command source is a ghost ───────────────
+        # ⛔ THE WORKFLOW HALF RETIRED WITH ITS SURFACE (SCC-394), and the exemption that made it
+        # subtle went with it: `.agents/workflows/INDEX.md` was the one legitimately SOURCELESS
+        # file there, and the two hand-owned doors were variants OF a command that still had to
+        # exist. `.agents/skills/` needs no twin of this sweep - `Sync-LauncherSkills` prunes a
+        # stale GENERATED launcher itself, by marker, every run (and `CS-18 Q4` proves every
+        # committed generated launcher is one the emitter still produces).
         cmd_names = {p.name for p in (ROOT / ".agents/commands").glob("*.md")}
-        # ⛔ The ghost exemption is NOT `hand_owned`, and the difference is load-bearing. Only
-        # `INDEX.md` is legitimately SOURCELESS; the other two hand-owned workflows are variants
-        # OF a command and must keep having one. Exempting them here (as a first cut did, by
-        # reusing `hand_owned`) made this check go silent on the one shape it most needs to
-        # catch - a hand-authored launcher left pointing at a brain that was deleted. Verified:
-        # delete `.agents/commands/smh-adviser-board.md` and the loose version reports 0 ghosts.
-        wf_present = sorted(p.name for p in (ROOT / ".agents/workflows").glob("*.md"))
-        ghosts = [n for n in wf_present if n not in cmd_names and n not in SOURCELESS]
-        c.check("no ghost workflow mirrors (every one has a command source)",
-                not ghosts, f"{len(ghosts)}: {ghosts[:6]}")
-        orphaned_hand = sorted(n for n in hand_owned - SOURCELESS if n not in cmd_names)
-        c.check("every hand-owned workflow still has the command it is a variant of",
-                not orphaned_hand,
-                f"{orphaned_hand} - excluded from the sync, so nothing else would notice")
 
-        # ⭐ The SAME check for opencode, which never had one.
-        #
         # ⛔ CORRECTED (SCC-113). This comment used to end "it falls to that final `$false` and is
         # kept FOREVER". That is FALSE, and it was false because I read `Sync-CommandDir` in
         # isolation and stopped one line short of its caller: `Invoke-ManifestPurge`
@@ -789,13 +661,6 @@ def main() -> int:
         # the manifest, hand-dropped, or authored by this repo - survives indefinitely with nothing
         # in the tree noticing. That residue is what this check covers, and it is precisely the case
         # `project-own.txt` exists to adjudicate: claimed means deliberate, unclaimed means stale.
-        #
-        # The keep-list is honoured HERE and only here (SCC-113). `Get-SurfaceState` maps
-        # `.agents\workflows` to the MASTER's own workflows (sync-agents.ps1:325), so in this repo
-        # that surface is compared against itself and can never produce an orphan — `-Reconcile`
-        # cannot stage a lobby workflow into the keep-list, and this file is lobby-only
-        # (ROOT = parents[3]). Wiring the exemption into the workflows sweep above would be
-        # unreachable code dressed as symmetry.
         oc_present = sorted(p.name for p in (ROOT / ".opencode/commands").glob("*.md"))
         own_list = ROOT / ".agents/project-own.txt"
         # ABSENT is not the same as EMPTY, and the engine draws that line too: `Get-OwnAllowList`
@@ -811,12 +676,12 @@ def main() -> int:
             f"If a door is deliberately this repo's own, claim it in .agents/project-own.txt "
             f"(sync-agents -Reconcile stages that file for you)")
 
-        # Both sweeps get A-3's guard: "0 ghosts" out of 0 files read is the vacuous green, and a
-        # renamed cache directory is exactly how you get one. Today: 34 workflows, 53 opencode.
-        c.check("the ghost sweeps read a real number of doors (not two empty directories)",
-                len(wf_present) >= 20 and len(oc_present) >= 40,
-                f"workflows={len(wf_present)} opencode={len(oc_present)} - a glob resolved to "
-            f"nothing, so every ghost check above passed on an empty set")
+        # A-3's guard: "0 ghosts" out of 0 files read is the vacuous green, and a renamed cache
+        # directory is exactly how you get one. Today: 53 opencode mirrors.
+        c.check("the ghost sweep read a real number of doors (not an empty directory)",
+                len(oc_present) >= 40,
+                f"opencode={len(oc_present)} - a glob resolved to nothing, so the ghost check "
+            f"above passed on an empty set")
 
     if c.block("CS-08 · the engine's project-own keep-list"):
         # ── The engine's keep-list is part of the contract this sweep guards (SCC-113) ─────
@@ -857,10 +722,19 @@ def main() -> int:
                 and "launcher skill" in agents_md,
                 "AGENTS.md no longer documents the door model")
         sync_cmd = read(ROOT / ".agents/commands/smh-sync-agents.md")
-        c.check("sync-agents command doc names both retired doors",
-                "RETIRED door" in sync_cmd and "/prompts:<name>" in sync_cmd
+        # ⛔ THREE retired doors now (SCC-394), and each is named by its PATH rather than by one
+        # "RETIRED door" phrase. That phrase WAS the whole assertion until this ticket, and it
+        # survived on exactly one unwrapped line - the codex-prompts sentence. Rewording that one
+        # sentence dropped this check to zero coverage while every retirement was still correctly
+        # documented, which is the same prose-pinning blind spot recorded elsewhere in this file.
+        # A path is what an operator searches for and what the engine actually purges.
+        _retired = [d for d in (".claude/commands", "~/.codex/prompts", "global_workflows")
+                    if d not in sync_cmd]
+        c.check("sync-agents command doc names all THREE retired doors",
+                not _retired and "/prompts:<name>" in sync_cmd
                 and "Do not use `-Maintained`" in sync_cmd,
-                "smh-sync-agents.md no longer matches what the engine does")
+                f"smh-sync-agents.md no longer matches what the engine does - retired door(s) "
+                f"it never names: {_retired}")
 
     if c.block("CS-10 · mutation doctrine: named, loaded into the task lane, and pinned"):
         # ── Mutation doctrine: named, loaded into the task lane, and pinned (SCC-145) ─────
@@ -1411,96 +1285,35 @@ def main() -> int:
 
 
     # ══ SCC-195 · every Antigravity door fits the menu's budget ════════════════════════════
-    if c.block("SCC-195 · the Antigravity description budget"):
-        LONG = ("The TASK lane's dev cycle - assert-first development for command-centre work "
-                "that has no story, no sprint board and no epic branch. Write the check that "
-                "fails FIRST, then make it pass, then the review gate.")
-        SHORT = "Close out TASK work."
-        c.check("U1 a short description is returned unchanged (idempotent)",
-                ag_description(SHORT) == SHORT, ag_description(SHORT))
-        cut = ag_description(LONG)
-        c.check("U2 a long one is cut to the budget and marked", len(cut) <= AG_DESC_MAX
-                and cut.endswith("..."), f"{len(cut)}: {cut}")
-        # ⭐ THE ASSERTION U-M3 PROVED WAS VACUOUS. This read `cut[:-3] in LONG`, and a HARD
-        # cut at 132 is still a prefix of the original - so "ignore the word boundary" passed
-        # it unchanged. The property is not "the text came from LONG", it is "the character
-        # immediately after the kept text is a space", i.e. no word was split.
-        kept = cut[:-3]
-        c.check("U3 ...on a word boundary, never mid-word",
-                LONG.startswith(kept) and LONG[len(kept):len(kept) + 1] == " ",
-                f"kept={kept[-25:]!r} next={LONG[len(kept):len(kept) + 1]!r}")
-        # ⛔ U3b · AND A STRING THE HARD CUT ACTUALLY SPLITS. `LONG` above is a lucky one:
-        # its 132nd character lands just after a full stop, so `rstrip` leaves a clean word
-        # boundary even with the boundary search DELETED - the mutant survived twice against
-        # a case written to catch it. This string puts a long word ACROSS the cut, so only a
-        # real backward search can end cleanly. (25x "word " = 125 chars, then a 27-letter
-        # word, so index 132 is seven letters into it.)
-        SPLIT = ("word " * 25) + "antidisestablishmentarianism is the tail"
-        kept2 = ag_description(SPLIT)[:-3]
-        c.check("U3b ...even when a long word straddles the cut point",
-                SPLIT.startswith(kept2) and SPLIT[len(kept2):len(kept2) + 1] == " "
-                and "antidis" not in kept2,
-                f"kept={kept2[-30:]!r} next={SPLIT[len(kept2):len(kept2) + 1]!r}")
-        c.check("U4 ...and re-cutting it changes nothing (the sync is idempotent)",
-                ag_description(cut) == cut, ag_description(cut))
-        c.check("U5 ...and it stays ASCII (PS 5.1 writes these literals from a BOM-less .ps1)",
-                cut.isascii(), cut)
+    if c.block("SCC-195/SCC-394 · the 135-char cut, now ZOO's - the twins agree"):
+        # ⛔ WHAT RETIRED HERE, AND WHY ONE CASE DID NOT (SCC-394). `U1`-`U6`, `U6b`-`U6d`, `U8`
+        # and `U9` all measured `.agents/workflows/` - the door set, its menu payload, the
+        # pairwise distinctness of its rows. That surface is gone, and a check whose subject is
+        # gone is a fossil, not coverage.
+        #
+        # `U7` is different in kind: it runs the REAL `Get-AgDescription` under pwsh and compares
+        # it against this file's Python emulation. `Sync-ZooSurfaces` still calls that function
+        # for `.roo/commands/`, so the cut is live on a different platform and U7 is the only
+        # test of it left anywhere. It is also STRONGER than the cases that retired around it -
+        # a mutant that drops the word-boundary search passes a hand-written Python case (it
+        # survived two rounds of exactly that at SCC-195) and cannot pass a differential against
+        # the generator that still does the search.
+        #
+        # ⛔ Which is why `ag_description`, `AG_DESC_MAX` and this setup did NOT go with them.
+        # The first cut of SCC-394 listed all three for deletion while keeping U7, which would
+        # have stranded the surviving case with a NameError on its first run.
 
-        # ⭐ THE MEASUREMENT THAT IS THE TICKET: every workflow door within budget.
-        # ⛔ HAND-OWNED DOORS ARE NOT EXEMPT. `smh-adviser-board.md` is authored rather than
-        # generated, and the sync never rewrites it - but Antigravity reads its description into
-        # the SAME menu, so exempting it would leave the biggest single row in place while the
-        # check reported the budget met. Hand-owned means "fix it by hand", not "skip it".
-        # The BRAINS' descriptions - uncut, i.e. the actual input the generator is given. The
-        # workflow doors below carry the OUTPUT, so cutting those again would be idempotent and
-        # prove nothing about the cut.
+        # The BRAINS' descriptions - uncut, i.e. the actual input the generator is given.
         AG_LIVE_DESCS = [d for d in
                          (fm_field(read(b), "description")
                           for b in sorted((ROOT / ".agents/commands").glob("*.md")))
                          if d]
 
-        over, measured, total = [], 0, 0
-        for wf_door in sorted((ROOT / ".agents/workflows").glob("*.md")):
-            d = fm_field(read(wf_door), "description")
-            if not d:
-                continue
-            measured += 1
-            total += len(d)
-            if len(d) > AG_DESC_MAX:
-                over.append(f"{wf_door.name} ({len(d)})")
-        c.check("U6 every .agents/workflows door fits Antigravity's menu budget",
-                not over, f"{len(over)} over {AG_DESC_MAX}: {over[:8]}")
-        # ⭐ THE CONTROL U-M4 PROVED WAS MISSING. "0 doors over budget" out of 0 doors read is
-        # the vacuous green `tests-must-gate-for-real` names, and the mutant that stopped the
-        # loop appending survived precisely there. The count and the TOTAL are both asserted:
-        # the total is the number Antigravity's menu actually spends (13,883 -> 4,590 chars is
-        # what SCC-195 bought), so a regression shows as a number rather than as silence.
-        c.check("U6b ...and it read a real number of doors (not a silent empty sweep)",
-                measured >= 30, f"only {measured} workflow descriptions read")
-        # ⛔ U6d · THE TEETH CONTROL. U6 sweeps the LIVE tree, where a passing run is by
-        # definition a run with nothing to report - so a detector that stopped recording
-        # offenders entirely would read exactly like a clean tree, and did (U-M4 survived
-        # both earlier rounds). The predicate is re-run here against a fabricated over-budget
-        # door, where it MUST fire. A live sweep and a synthetic offender together are what
-        # make "0 over budget" mean something.
-        fake = "x" * (AG_DESC_MAX + 1)
-        c.check("U6d CONTROL: the same predicate FIRES on a fabricated over-budget door",
-                len(fake) > AG_DESC_MAX and ag_description(fake) != fake
-                and len(ag_description(fake)) <= AG_DESC_MAX,
-                f"a {len(fake)}-char description must not survive the budget")
-        # U6e pinned the CRLF behaviour of the in-place description REWRITE (`Set-AgDescriptionLine`
-        # and its Python twin). SCC-370 deleted both: the launcher is BUILT from ASCII literals joined
-        # with "`n", so it has no brain line-endings to preserve and cannot produce the mixed-ending
-        # file U6e existed to catch. Removed with the code it described rather than left to pass
-        # vacuously - a check whose subject is gone is a fossil, not coverage.
-
-        # ⭐ U7 · THE TWINS, RUN AGAINST EACH OTHER FOR REAL. Everything above tests the
-        # PYTHON emulation; the file that ships is `sync-agents.ps1`, and the claim "if the two
-        # ever disagree the door reads stale" only holds if they agree. Until now that coupling
-        # ran solely through committed artifacts - so an emulation drift showed up as an
-        # unfixable `stale` on a GENERATED file, which is the SCC-194 wedge. This extracts the
-        # real function and runs it under pwsh over every live description plus an astral
-        # fixture, which is the one input the test-adequacy audit measured them disagreeing on.
+        # ⭐ U7 · THE TWINS, RUN AGAINST EACH OTHER FOR REAL. The file that ships is
+        # `sync-agents.ps1`; everything else here tests the PYTHON emulation, and the claim "if
+        # the two ever disagree the door reads stale" only holds if they agree. Until this
+        # existed that coupling ran solely through committed artifacts - so an emulation drift
+        # showed up as an unfixable `stale` on a GENERATED file, which is the SCC-194 wedge.
         import shutil as _shutil
         pwsh = _shutil.which("pwsh")
         # ⛔ TWENTY, NOT ONE. A single astral character shifts the UTF-16 cut by one unit,
@@ -1516,12 +1329,6 @@ def main() -> int:
             i = src.index("function Get-AgDescription")
             fn = src[i:src.index("\n}", i) + 2]
             probes = [d for d in AG_LIVE_DESCS] + [ASTRAL]
-            script = (fn + "\n$in = [Console]::In.ReadToEnd() -split \"\\u0000\"\n"
-                      + "$out = foreach ($d in $in) { Get-AgDescription $d }\n"
-                      + "[Console]::Out.Write(($out -join \"`u{0}\"))\n")
-            r = subprocess.run([pwsh, "-NoProfile", "-Command", "-"], input=script + "\n",
-                               capture_output=True, text=True, encoding="utf-8")
-            # the script is fed on stdin as the command; the probe payload goes via a temp file
             with TempDir() as _t:
                 sp = _t / "probe.ps1"
                 dp = _t / "in.txt"
@@ -1547,31 +1354,18 @@ def main() -> int:
             c.check("U7 CONTROL: the astral fixture is genuinely over budget and non-BMP",
                     len(ASTRAL) > AG_DESC_MAX and max(ord(ch) for ch in ASTRAL) > 0xFFFF,
                     f"{len(ASTRAL)} chars, max ord {max(ord(ch) for ch in ASTRAL):#x}")
-
-        # U8 pinned door_verdict's budgeted-MIRROR arm. SCC-370 deleted that arm - a verbatim body
-        # is no longer a legal Antigravity door in any description form - so the control it guarded
-        # has no subject. Its replacement is the SCC-370 control in CS-03, which asserts the
-        # opposite claim: byte-identity on this surface is NOT ok.
-
-        # U9 · green-first characterization, scoped to THE MENU. Most rows are now truncated,
-        # and what the menu is FOR is telling the commands apart - two rows that read the same
-        # for their first 60 characters are two commands the model cannot choose between.
-        # ⛔ SCOPED TO `.agents/workflows`, NOT to every brain: `qa.md` and `tea.md` share a
-        # 60-char prefix and are `platforms: [opencode]`, so they never reach this menu. A pin
-        # that reds on doors the surface does not carry would be measuring the wrong surface.
-        _menu = [d for d in (fm_field(read(w), "description")
-                             for w in sorted((ROOT / ".agents/workflows").glob("*.md"))) if d]
-        c.check("U9 the menu's descriptions stay pairwise distinct in their first 60 chars",
-                len({d[:60] for d in _menu}) == len(_menu) and len(_menu) >= 30,
-                f"{len(_menu)} menu rows, {len({d[:60] for d in _menu})} distinct 60-char prefixes")
-
-        c.check("U6c ...and the whole menu payload stays under the budget it was cut to",
-                total <= measured * AG_DESC_MAX and total < 6000,
-                f"{measured} descriptions, {total} chars total (was 13,883 before SCC-195)")
+            c.check("U7 CONTROL: the live probe set is a real one (not an empty differential)",
+                    len(AG_LIVE_DESCS) >= 30
+                    and sum(1 for d in AG_LIVE_DESCS if len(d) > AG_DESC_MAX) >= 10,
+                    f"{len(AG_LIVE_DESCS)} descriptions, "
+                    f"{sum(1 for d in AG_LIVE_DESCS if len(d) > AG_DESC_MAX)} of them long "
+                    f"enough to be CUT - a differential over short strings compares two "
+                    f"identity functions and agrees for the wrong reason")
 
         # And the control: the BRAINS are deliberately NOT shortened. The command is written for
-        # an agent that has already chosen it; only the menu has a budget. If this ever goes
-        # green-because-empty, the shortening leaked into the source of truth.
+        # an agent that has already chosen it; only a MENU has a budget, and Zoo's is the one
+        # left. If this ever goes green-because-empty, the shortening leaked into the source
+        # of truth.
         long_brains = [p.name for p in sorted((ROOT / ".agents/commands").glob("*.md"))
                        if (fm_field(read(p), "description") or "") and
                        len(fm_field(read(p), "description")) > AG_DESC_MAX]
@@ -2130,20 +1924,19 @@ def main() -> int:
 
         # ── F · every door resolves on every platform ─────────────────────────────
         # SCC-66's contract, applied to the renamed family: one command body, one launcher skill
-        # in the master (Codex) and in the cache (Claude), one opencode mirror, one Antigravity
-        # workflow. A rename that stops at `.agents/commands` leaves three menus pointing at a
-        # command that no longer exists — the SCC-77 shape, where the doors drift and the only
-        # symptom is an agent following instructions that are gone.
+        # in the master (Codex AND Antigravity, since SCC-394) and in the cache (Claude), one
+        # opencode mirror. A rename that stops at `.agents/commands` leaves three menus pointing
+        # at a command that no longer exists — the SCC-77 shape, where the doors drift and the
+        # only symptom is an agent following instructions that are gone.
         for name in ("cicd-close-story-merge-tree", "cicd-update-sprint-memory",
                      "cicd-prune-worktree"):
             surfaces = (f".agents/commands/{name}.md",
                         f".agents/skills/{name}/SKILL.md",
                         f".claude/skills/{name}/SKILL.md",
-                        f".agents/workflows/{name}.md",
                         f".opencode/commands/{name}.md")
             gone = [s for s in surfaces if not (ROOT / s).is_file()]
-            c.check(f"CS-13 F `/{name}` has all five doors",
-                    not gone, f"missing {len(gone)}/5: {gone}")
+            c.check(f"CS-13 F `/{name}` has all four doors",
+                    not gone, f"missing {len(gone)}/4: {gone}")
 
         # ── G · the SOP tells the truth ───────────────────────────────────────────
         sop = read(SOP_PATH) if SOP_PATH.is_file() else None
@@ -2480,7 +2273,7 @@ def main() -> int:
         #     invocation; `risk_seam.py classify` is. The flag must sit ON the call — a paragraph
         #     three lines below telling the reader to pass a root is not the call passing one.
         seam_sites = []
-        for surface in (ROOT / ".agents" / "commands", ROOT / ".agents" / "workflows"):
+        for surface in (ROOT / ".agents" / "commands",):
             for md in sorted(surface.rglob("*.md")):
                 text = md.read_text(encoding="utf-8-sig")
                 start = 0
@@ -2666,227 +2459,212 @@ def main() -> int:
                     "completion-not-illusion" in body,
                     "a door doing the thing must point at its law")
 
-    # -- CS-18 . SCC-332 . the Antigravity global cache is fed LAUNCHERS, not command bodies ----
-    # Antigravity TRUNCATES a workflow over 12,000 chars instead of rejecting it (SCC-135, measured):
-    # a dropped workflow fails visibly, a truncated one runs and looks fine. That is the whole reason
-    # .agents/workflows/ exists - every command over ~11.5 KB is published there as a thin launcher
-    # pointing back at .agents/commands/<name>.md. The machine-global cache sourced ONE dir for BOTH
-    # platforms, so Antigravity received raw 30-48 KB bodies and 23 of 38 arrived cut mid-sentence.
-    #
-    # DO NOT DOT-SOURCE sync-agents.ps1 to test it: the script runs top to bottom, so importing it
-    # fires a REAL sync and republishes this machine's caches - once per mutant, from deliberately
-    # broken code - and a dot-sourced `exit 0` does not terminate the caller in pwsh 7, so that
-    # failure is silent and green. Read it as TEXT.
-    #
-    # ...but a RAW-text grep is invertible by a COMMENT, and the first version of this block shipped
-    # that way: a mutant reverting the call while leaving the deleted literal in a `#` line passed
-    # all ten checks. Every check asking "does the CODE do X" reads `sync` (comment-stripped);
-    # checks about PROSE read the raw file on purpose.
-    if c.block("CS-18 . SCC-332 . Antigravity's global cache mirrors workflows/, never commands/"):
+    if c.block("CS-18 · SCC-394 · Antigravity's door IS the launcher skill; workflows/ is retired"):
+        # Antigravity deprecated workflows and RETIRES them on 2026-11-01
+        # (antigravity.google/docs/migration/workflows-to-skills). Any `.agents/skills/<name>/
+        # SKILL.md` is invoked as `/<name>`, with no size cap, and every antigravity-eligible
+        # command already had one — so `.agents/workflows/` was a SECOND door on the one platform
+        # that still carried two, and on 1 November one of the two goes dark.
+        #
+        # This block replaces the SCC-332 cache contract and the SCC-370 cap contract with the
+        # RETIREMENT contract. What used to be checked here and is now meaningless is recorded at
+        # the bottom of the block, so a reader who remembers `L`/`M`/`O` finds out where they went
+        # rather than assuming the coverage was lost by accident.
         sync_raw = read(ROOT / ".agents/scripts/sync-agents.ps1")
         sync = ps_code_only(sync_raw)
-        WFDIR = ROOT / ".agents/workflows"
+        SKDIR = ROOT / ".agents/skills"
 
-        # A . the door set exists at all. Everything below is vacuous without it.
-        #
-        # ⛔ `CS-18 B` WAS HERE: "no published Antigravity door exceeds the 12,000-char cap".
-        # SCC-370 replaced it with `CS-18 O`, which is strictly stronger and needs no number.
-        # B was green for the defect's entire life and would have stayed green through this one:
-        # .agents/workflows/ was never the over-cap surface, and a verbatim door sitting COMFORTABLY
-        # under the cap - `smh-sync-agents` at 10,352 of 12,000 - is exactly the shape that ships
-        # fine today and truncates the week its command grows. "Is it under the cap" was always a
-        # measurement of the wrong thing. O asks the question that actually holds: is it a launcher?
-        sizes = {f.name: len(read(f)) for f in sorted(WFDIR.glob("*.md"))}
-        c.check("CS-18 A the Antigravity door set is non-empty",
-                len(sizes) > 0, "an empty workflows/ would make every check below vacuous")
+        # ── A · THE RETIRED SURFACE, AND EVERY WIRE THAT FED IT ───────────────────────────────
+        # ⛔ A IS A RESIDUE SWEEP, NOT A DIRECTORY CHECK, and the difference is the whole point.
+        # Deleting `.agents/workflows/` while leaving the emitter, its `$Master`-relative source
+        # variable or its `$caches` row in the engine gives a sync that RECREATES the surface on
+        # its first run — the delete undone by the very command that is supposed to have retired
+        # it, silently, on the operator's machine. Every wire is named here, so the delete and the
+        # engine change cannot land apart.
+        def _ag_residue(src: str, wf_exists: bool) -> list[str]:
+            out = []
+            if wf_exists:
+                out.append(".agents/workflows/ still on disk")
+            for tok in ("Sync-AntigravityWorkflowMirror", "$GlobalWfSrc", "$excluded"):
+                if tok in src:
+                    out.append(f"engine still names {tok}")
+            if re.search(r"Name\s*=\s*'antigravity'", src):
+                out.append("$caches still carries an antigravity row")
+            if re.search(r'Join-Path\s+\$\w+\s+"workflows"', src):
+                out.append('engine still resolves a "workflows" dir under the master')
+            if re.search(r"agents[\\/]workflows", src):
+                out.append(r"engine still names the .agents\workflows surface")
+            return out
 
-        # C-G . the wiring, read from CODE ONLY.
-        blk = re.search(r"\$caches\s*=\s*@\((.*?)\n\s*\)", sync, re.S)
-        c.check("CS-18 C the global-cache table was found",
-                blk is not None,
-                "no $caches table in the comment-stripped source - if it was renamed, update this "
-                "check; never delete it")
-        if blk:
-            # re.S on the ROW regex too: splitting a row across physical lines is ordinary
-            # PowerShell formatting and must not read as a missing Src. (Measured: it did, and
-            # the failure text then asserted the opposite of what was true.)
-            rows = {m.group(1): m.group(2) for m in
-                    re.finditer(r"Name\s*=\s*'([^']+)'.*?Src\s*=\s*(\$\w+)", blk.group(1), re.S)}
-            missing = {"opencode", "antigravity"} - set(rows)
-            c.check("CS-18 D both known caches declare their OWN source",
-                    not missing,
-                    f"cache row(s) carrying no Src field: {sorted(missing)}; parsed: {rows}")
-            # A RELATION, never a count. `len(set(values)) == 2` red-fails a legitimate THIRD
-            # cache while printing "one source feeding both platforms" - the opposite of the truth.
-            oc, ag = rows.get("opencode"), rows.get("antigravity")
-            c.check("CS-18 E ...and opencode's source is NOT antigravity's",
-                    oc is not None and ag is not None and oc != ag,
-                    f"one source feeding both platforms IS the SCC-332 defect: "
-                    f"opencode={oc} antigravity={ag}")
-            mf = re.search(re.escape(ag or "\x00") + r'\s*=\s*Join-Path\s+\$Master\s+"([^"]+)"', sync)
-            c.check("CS-18 F the antigravity source resolves to .agents/workflows",
-                    mf is not None and mf.group(1) == "workflows",
-                    (f"{ag} resolves to {mf.group(1)!r}; it must be 'workflows', the launcher surface"
-                     if mf else f"{ag} is never assigned from $Master anywhere in the code"))
-            mo = re.search(re.escape(oc or "\x00") + r'\s*=\s*Join-Path\s+\$Master\s+"([^"]+)"', sync)
-            c.check("CS-18 G ...and opencode still gets the full command bodies",
-                    mo is not None and mo.group(1) == "commands",
-                    (f"{oc} resolves to {mo.group(1)!r}; it must stay 'commands' - opencode has no cap"
-                     if mo else f"{oc} is never assigned from $Master anywhere in the code"))
+        c.check("CS-18 A0 CONTROL: the residue sweep sees every wire, and none of the survivors",
+                len(_ag_residue('$GlobalWfSrc = Join-Path $Master "workflows"\n'
+                                "@{ Name = 'antigravity'; Src = $GlobalWfSrc }\n"
+                                "function Sync-AntigravityWorkflowMirror {\n"
+                                "$excluded = @('INDEX.md')\n", True)) == 6
+                and not _ag_residue("$skDir = Join-Path $MasterDir 'skills'\n"
+                                    "@{ Name = 'opencode'; Src = $GlobalCmdSrc }\n"
+                                    "$roo = Join-Path $RepoRoot '.roo/commands'\n", False),
+                "a residue sweep blind to a restored wire passes on the engine it exists to "
+                "guard; one that fires on the surviving skill/opencode/Zoo code blocks every sync")
+        _residue = _ag_residue(sync, (ROOT / ".agents/workflows").exists())
+        c.check("CS-18 A the workflow door and every wire that fed it are gone",
+                not _residue,
+                f"{len(_residue)} residue site(s): {_residue} — while any of these stands, a sync "
+                f"rebuilds the surface this ticket deleted, so the delete and the engine change "
+                f"must land in ONE commit")
 
-        # H . the copy call must READ that per-cache field. A correct table wired to a stale shared
-        # variable is the defect with extra steps, and C-G would every one of them still pass.
-        # `$\w+` not `$c`: renaming the loop variable is a legal refactor, not a regression.
-        c.check("CS-18 H the mirror call reads the per-cache source",
-                re.search(r"Sync-CommandDir\s+\$\w+\.Src\b", sync) is not None,
-                "the loop passes a single shared source variable to both caches")
+        # A2 · the byte contract MOVES, it does not lapse. `.gitattributes` pinned
+        # `.agents/workflows/*.md text eol=lf` for SCC-338: on the PC `core.autocrlf=true` hands
+        # every checkout CRLF, and `CS-18 Q` below byte-compares generated files on BOTH machines.
+        # Dropping the pin with the directory would move that defect one surface over, onto the
+        # SKILL.md files that are now the only generated door. No test in this repo reads
+        # `.gitattributes` today — which is exactly how the pin could have been dropped in silence.
+        _ga = read(ROOT / ".gitattributes")
+        _ga_stale = [ln.strip() for ln in _ga.splitlines()
+                     if re.match(r"\s*\.agents/workflows", ln)]
+        _ga_missing = [g for g in (".agents/skills/**/SKILL.md", ".claude/skills/**/SKILL.md")
+                       if not re.search(rf"^{re.escape(g)}\s+text\s+eol=lf\s*$", _ga, re.M)]
+        c.check("CS-18 A2 the LF pin moved from workflows/ onto both SKILL.md surfaces",
+                not _ga_stale and not _ga_missing,
+                f"stale pin(s): {_ga_stale}; missing pin(s): {_ga_missing} — without the SKILL.md "
+                f"pin a PC checkout hands every generated launcher CRLF and Q fails there and only "
+                f"there, which is the SCC-338 defect rebuilt one surface over")
 
-        # I . the doors must be regenerated BEFORE the globals block, or a -GlobalsOnly run
-        # mirrors a stale door set on the very pass meant to refresh
-        # it. Anchored to a CODE line: a `#` naming the call must not stand in for the call.
-        gen = re.search(r"^\s*\$\w+\s*=\s*Sync-AntigravityWorkflowMirror\b", sync, re.M)
-        glb = re.search(r"^\s*\$caches\s*=\s*@\(", sync, re.M)
-        c.check("CS-18 I the regen call and the globals block both exist as CODE",
-                gen is not None and glb is not None,
-                f"regen={'found' if gen else 'MISSING'}, globals={'found' if glb else 'MISSING'}")
-        if gen and glb:
-            c.check("CS-18 I2 workflows/ is regenerated before the global cache mirrors it",
-                    gen.start() < glb.start(),
-                    f"regen at char {gen.start()}, globals at {glb.start()} - reversed, a "
-                    f"-GlobalsOnly run mirrors a stale door set into the cache")
+        # A3 · `Get-AgDescription` SURVIVES, and it is not dead code. It is ZOO's launcher
+        # truncator (`Sync-ZooSurfaces`), and it had two callers: the Antigravity mirror and Zoo.
+        # Deleting the function with its Antigravity caller kills the sync at the Zoo stage — the
+        # `-NoGlobals` run this very lane owes. So the claim is not "gone", it is "exactly one
+        # caller, and that caller is Zoo's".
+        _zoo_a = sync.find("function Sync-ZooSurfaces")
+        _zoo_b = sync.find("\nfunction ", _zoo_a + 1) if _zoo_a >= 0 else -1
+        if _zoo_b < 0:
+            _zoo_b = len(sync)
+        _agd_uses = [m.start() for m in re.finditer(r"(?<!function )Get-AgDescription\b", sync)]
+        _agd_outside = [p for p in _agd_uses if not (_zoo_a <= p < _zoo_b)]
+        c.check("CS-18 A3 Get-AgDescription survives as ZOO's truncator — one caller, inside Sync-ZooSurfaces",
+                _zoo_a >= 0 and len(_agd_uses) == 1 and not _agd_outside,
+                f"Sync-ZooSurfaces {'found' if _zoo_a >= 0 else 'MISSING'}; {len(_agd_uses)} "
+                f"call site(s), {len(_agd_outside)} of them outside Zoo's function — two callers "
+                f"means the Antigravity one is still wired; zero means the function was deleted "
+                f"with its Antigravity caller and the next sync dies at the Zoo stage")
 
-        # J . the doc that CAUSED this. workspace-standard.md stated the inverse rule - that
-        # workflows/ are reference docs never pushed to a command cache - and the code followed the
-        # doc. Pin the CLAIM, not one 21-character string: the first version matched only
-        # "they are NOT pushed to", so re-wording to "are never published to any command cache"
-        # restored the defect green. Scoped to the LIVE rule sites; history may quote it freely.
+        # ── C · THE ONE-TIME RETIREMENT PURGE, AND NOTHING ELSE UNDER ~/.gemini ────────────────
+        # The old machine cache (`~/.gemini/antigravity/global_workflows/`, a path no vendor doc
+        # names) holds 40 of our doors on this machine. Deleting the repo surface does not empty
+        # it: those files keep serving from the Antigravity menu until something removes them, and
+        # their launcher bodies point at command files that still exist, so they keep WORKING —
+        # invisibly wrong until 2026-11-01. The purge is modelled on the `~/.codex/prompts`
+        # retirement (SCC-66) that already lives twenty lines below it.
+        _purge = None
+        for _m in re.finditer(r"global_workflows", sync):
+            _span = sync[_m.start(): _m.start() + 900]
+            if "Remove-Item" in _span and "bmad-" in _span and "RETIRED" in _span:
+                _purge = (_m.start(), _m.start() + 900)
+                break
+        c.check("CS-18 C1 the one-time retirement purge exists as CODE",
+                _purge is not None,
+                "no removal of our non-bmad-* *.md under ~/.gemini/antigravity/global_workflows "
+                "that prints a RETIRED line — a machine that synced before this ticket keeps "
+                "offering the 40 retired doors, and nothing else on any surface removes them")
+        c.check("CS-18 C1b ...and Test-Path guards it (Remove-Item THROWS on a missing path)",
+                _purge is not None and "Test-Path" in sync[max(0, _purge[0] - 400): _purge[1]],
+                "$ErrorActionPreference = 'Stop' (sync-agents.ps1:81) makes Remove-Item on an "
+                "absent path a TERMINATING error, so an unguarded purge crashes the whole sync on "
+                "any machine that has never run Antigravity — measured on this box")
+        _gem = [(m.start(),
+                 sync[sync.rfind("\n", 0, m.start()) + 1:
+                      (sync.find("\n", m.start()) if sync.find("\n", m.start()) > 0 else len(sync))
+                      ].strip())
+                for m in re.finditer(r"\.gemini", sync)]
+        _gem_other = [ln for pos, ln in _gem
+                      if not (_purge and _purge[0] - 400 <= pos <= _purge[1])]
+        c.check("CS-18 C the purge is the engine's ONLY .gemini code — no global cache is written",
+                not _gem_other and not re.search(r"config[\\/]skills", sync),
+                f"{len(_gem_other)} .gemini site(s) outside the purge: {_gem_other[:4]} — "
+                f"`~/.gemini/config/skills/` is the vendor's global skills path and writing it is "
+                f"the FOLLOW-ON, gated on whether a project workspace ever read the old cache at "
+                f"all. Nothing in this ticket may create it.")
+
+        # ── J · THE DOC THAT WOULD CAUSE THE NEXT ONE ─────────────────────────────────────────
+        # SCC-332's cause was a live rule doc stating the inverse of the code, and the code
+        # following the doc. Same shape, new polarity: after this ticket a doc still saying
+        # "Antigravity reads .agents/workflows" sends the next agent to rebuild the mirror.
+        # Scoped to the LIVE rule sites; `_artifacts/` history may quote the old model freely.
         RULE_SITES = ("docs/workspace-standard.md", ".agents/commands/INDEX.md",
-                      ".agents/workflows/INDEX.md", ".agents/commands/smh-sync-agents.md")
-        INVERTED = re.compile(
-            r"workflows/?[^.\n]{0,140}?(?:are|is)\s+(?:\*\*)?(?:NOT|not|never)(?:\*\*)?\s+"
-            r"(?:pushed|published|copied|mirrored|synced|sent)[^.\n]{0,80}?cache", re.I)
-        # ANTI-FOSSIL, and it is the same class this lane guarded on the sibling registry.
-        # The scan below is `is_file() and ...`, so a member pointing at a DELETED file drops out
-        # silently and shrinks J's coverage with no signal — reproduced: restoring the retired
-        # door's path to this tuple left J green. `test_twin_parity` guards its two registries
-        # exactly this way (`A0` over PAIRS, `A0c` over NOT_PAIRED); this was the third one.
-        fossils = [rel for rel in RULE_SITES if not (ROOT / rel).is_file()]
-        c.check("CS-18 J0 every RULE_SITES entry still exists (anti-fossil)",
-                not fossils,
-                f"{fossils} named here but absent from disk - a member pointing at nothing "
+                      ".agents/skills/INDEX.md", ".agents/commands/smh-sync-agents.md")
+        # ⛔ THE POLARITY IS THE HARD PART, AND A NAIVE REGEX GETS IT BACKWARDS. Every one of
+        # these files must go on NAMING the retired surface — "workflows retire 2026-11-01",
+        # "the Antigravity global cache is retired" — so a detector that fires on the noun alone
+        # blocks the very edit this ticket makes, and one written to dodge that (a verb list, a
+        # bounded gap) matched nothing at all: measured on the first cut, J0 red and J green over
+        # four files that all still described the workflow mirror. So the rule is stated as what
+        # it is: a retired-surface noun NEAR "antigravity" is a live claim UNLESS the same window
+        # marks it as history.
+        _NOUN = re.compile(r"\.agents[\\/]workflows|global_workflows|workflow mirror", re.I)
+        _HIST = re.compile(r"retir|no longer|deprecat|used to|formerly|2026-11-01", re.I)
+
+        def _stale_claims(text: str) -> list[str]:
+            out = []
+            for m in _NOUN.finditer(text):
+                w = text[max(0, m.start() - 200): m.end() + 200]
+                if "antigravity" in w.lower() and not _HIST.search(w):
+                    out.append(" ".join(w.split())[:140])
+            return out
+
+        c.check("CS-18 J0 CONTROL: the detector fires on a live claim and not on a retirement note",
+                _stale_claims("Antigravity reads the workflow mirror in .agents/workflows/.")
+                and _stale_claims("Antigravity's menu is .agents/workflows/, one door per command.")
+                and not _stale_claims("Antigravity enters through the launcher skill in "
+                                      ".agents/skills/; workflows are retired.")
+                and not _stale_claims("The ~/.gemini/antigravity/global_workflows cache is "
+                                      "RETIRED and purged once per machine.")
+                and not _stale_claims("Antigravity reads .agents/skills natively."),
+                "a detector that matches nothing passes for the wrong reason — J was green over "
+                "four files that all still described the workflow mirror; one that matches the "
+                "noun alone blocks the retirement sentence this ticket has to write")
+        _fossils = [rel for rel in RULE_SITES if not (ROOT / rel).is_file()]
+        c.check("CS-18 J0b every RULE_SITES entry still exists (anti-fossil)",
+                not _fossils,
+                f"{_fossils} named here but absent from disk — a member pointing at nothing "
                 f"contributes no coverage and cannot fail, so J silently checks fewer sites")
-        offenders = [rel for rel in RULE_SITES
-                     if (ROOT / rel).is_file() and INVERTED.search(read(ROOT / rel))]
-        c.check("CS-18 J no live rule doc claims workflows/ reach no command cache",
-                not offenders,
-                f"{offenders} carry the inverted rule that caused SCC-332 - workflows/ IS "
-                f"Antigravity's menu, on the repo door AND the machine-global cache")
+        _offenders = {rel: _stale_claims(read(ROOT / rel))[:2] for rel in RULE_SITES
+                      if (ROOT / rel).is_file() and _stale_claims(read(ROOT / rel))}
+        c.check("CS-18 J no live rule doc still sends Antigravity to workflows/",
+                not _offenders,
+                f"{_offenders} still describe the retired door — the doc is what the next agent "
+                f"reads before touching the engine, and SCC-332 is the record of code following a "
+                f"stale doc back to the defect")
 
-        # K . NOT A DOOR. `.agents/workflows/INDEX.md` is the router, and moving the cache's source
-        # here made it publishable: its `commands/` twin declares `platforms: []` (nowhere), this
-        # one declared no frontmatter at all, which Get-CommandPlatforms reads as UNIVERSAL. It
-        # would have shipped a description-less `/INDEX` into the global slash menu SCC-195 exists
-        # to protect. The old source actively PURGED it from that cache; the new source installs it.
-        c.check("CS-18 K the workflows router does not publish itself as a command",
-                not ag_eligible(WFDIR / "INDEX.md"),
-                "workflows/INDEX.md is antigravity-eligible - give it `platforms: []` like its "
-                "commands/ twin, or it becomes a `/INDEX` menu entry with no description")
-
-        # -- L/M . THE CACHE ITSELF -----------------------------------------------------------
-        # The ticket asked for a test on the CACHE; the first version of this block tested the
-        # SOURCE. They are NOT the same claim: the cache equals the source only after a sync runs
-        # ON THIS MACHINE, so a red here means "this machine has not synced since the fix" and the
-        # remedy is `/smh-sync-agents`, never an edit to the assertion.
-        #
-        # ⛔ CORRECTED (SCC-370). This comment used to explain the gap by saying "`$IsLobby` is
-        # false in a worktree". It is TRUE in a worktree, and the difference is not academic:
-        # `$HomeRoot` is derived from `$PSScriptRoot` (sync-agents.ps1:82-83) and `$Target`
-        # defaults to it (line 114), so a WORKTREE compares equal to itself and a bare sync run
-        # from a lane WRITES THIS MACHINE'S GLOBAL CACHES from that lane's doors. Believing the
-        # false version is how a lane either skips the sync it owes or fires one it did not
-        # intend; `-NoGlobals` is the flag that makes a worktree sync local-only. The real reason
-        # source and cache can disagree is simply that nobody has synced since the source changed.
-        CACHE = Path.home() / ".gemini" / "antigravity" / "global_workflows"
-        if not CACHE.is_dir():
-            c.check("CS-18 L SKIPPED: this machine has no Antigravity global cache",
+        # ── R · THE MACHINE, AFTER A REAL SYNC ────────────────────────────────────────────────
+        # C proves the purge exists in CODE. R proves it RAN. It binds only in the main checkout,
+        # for the SCC-370 reason: `CACHE` is one directory per machine while a checkout is one of
+        # several, so asserting it from a lane fails every tree but whichever synced last.
+        RETIRED_CACHE = Path.home() / ".gemini" / "antigravity" / "global_workflows"
+        _is_main = wf.tree_tag(ROOT)[2]
+        if not RETIRED_CACHE.is_dir():
+            c.check("CS-18 R SKIPPED: this machine has no retired Antigravity cache",
                     True,
-                    f"{CACHE} does not exist - nothing has ever synced here, so there is no machine "
-                    f"state to assert. This is a SKIP, not a pass about the cache.")
+                    f"{RETIRED_CACHE} does not exist — nothing to purge here. This is a SKIP, not "
+                    f"a pass about the machine.")
+        elif not _is_main:
+            c.check("CS-18 R SKIPPED in a worktree: the machine cache belongs to the main checkout",
+                    True,
+                    f"{len([f for f in RETIRED_CACHE.glob('*.md') if not f.name.startswith('bmad-')])} "
+                    f"of our files still cached — EXPECTED until the operator's next sync from the "
+                    f"lobby runs the purge. This is a SKIP; the claim binds in main.")
         else:
-            # bmad-* is BMAD's own global install and is never ours to manage (Sync-CommandDir's
-            # -Mirror branch exempts it from purge), so it is out of scope for our cap claim.
-            cached = {f.name: read(f) for f in sorted(CACHE.glob("*.md"))
-                      if not f.name.startswith("bmad-")}
-            # ⛔ L USED TO ASK "is any cached file over 12,000 chars?". SCC-370 asks the question
-            # that claim was standing in for: **is the cache the mirror it is supposed to be?**
-            # `Sync-CommandDir -Mirror` is a byte copy of `.agents/workflows/`, so a cached file
-            # that DIFFERS from its door is a stale machine, a hand-edit, or a cache fed from the
-            # wrong source - the SCC-332 defect itself, which the old size test could not see and
-            # this one cannot miss. Strictly stronger, and it needs no number.
-            # ⛔ BYTES, NOT read(). `read()` is `read_text(encoding="utf-8-sig")`, which applies
-            # universal newlines AND eats a BOM - so a door that gained CRLF or a BOM compared
-            # EQUAL while the bytes differed. Those are the exact two differences the emitter's
-            # own comment calls fatal ("frontmatter '---' must stay byte 0"), on a repo synced
-            # from a Mac AND a PC. A check whose title says "byte mirror" must compare bytes.
-            #
-            # ⛔ AND IT IS A MAIN-CHECKOUT CLAIM (SCC-370 review, edge-case lens). `WFDIR` is
-            # per-checkout; `CACHE` is ONE directory per machine. Asserting equality between them
-            # is only satisfiable in whichever checkout last ran the sync, so unconditionally it
-            # fails every OTHER tree on the machine - measured live: this lane green, the main
-            # checkout 39 of 39 desynced, for a diff main does not contain. That is the
-            # `lane-collision-is-gates-not-files` shape: a lane's gate going red for another
-            # lane's write. The cache is authoritative for the MAIN checkout, so that is where
-            # the claim binds; in a worktree the divergence is expected and is reported, not failed.
-            _is_main = wf.tree_tag(ROOT)[2]
-            desynced = sorted(n for n, body in cached.items()
-                              if (WFDIR / n).is_file()
-                              and (CACHE / n).read_bytes() != (WFDIR / n).read_bytes())
-            # A cached file with NO door is invisible to the comparison above (the `.is_file()`
-            # guard), and M2 below only looks for missing twins, never extras. That is how a
-            # RETIRED command keeps serving its old body from the menu on a machine that has not
-            # re-synced - SCC-367 retired one this month. Nothing else reports it, so L does.
-            orphans = sorted(n for n in cached if not (WFDIR / n).is_file())
-            if not _is_main:
-                c.check("CS-18 L SKIPPED in a worktree: the cache belongs to the main checkout",
-                        True,
-                        f"{len(desynced)} of {len(cached)} cached files differ from this lane's "
-                        f"doors and {len(orphans)} have no door here - EXPECTED in a worktree, "
-                        f"because the machine cache is written by whichever checkout synced last. "
-                        f"This is a SKIP, not a pass about the cache; the claim binds in main.")
-            else:
-                c.check("CS-18 L the Antigravity global cache is a byte mirror of workflows/",
-                        not desynced and not orphans,
-                        f"{len(desynced)} of {len(cached)} cached files differ from their door: "
-                        f"{desynced[:8]}; {len(orphans)} cached files have no door at all: "
-                        f"{orphans[:8]} - run `/smh-sync-agents` FROM THE MAIN CHECKOUT (running "
-                        f"it from a lane republishes that lane's doors and moves the problem). A "
-                        f"cached body that is not its door is what the agent actually reads.")
-            eligible = {n for n in sizes if ag_eligible(WFDIR / n)}
-            c.check("CS-18 M the eligible-door set is non-empty",
-                    bool(eligible), "an empty set would make the twin check below vacuous")
-            absent = sorted(eligible - set(cached))
-            c.check("CS-18 M2 every antigravity door in workflows/ has a cache twin",
-                    not absent,
-                    f"{len(eligible)} eligible doors; missing from the cache: {absent} "
-                    f"- run /smh-sync-agents on this machine")
+            _left = sorted(f.name for f in RETIRED_CACHE.glob("*.md")
+                           if not f.name.startswith("bmad-"))
+            c.check("CS-18 R the retired Antigravity cache holds none of our doors",
+                    not _left,
+                    f"{len(_left)} of our files still in the retired cache: {_left[:8]} — run "
+                    f"`/smh-sync-agents` FROM THE LOBBY once; bmad-* is BMAD's own and stays")
 
-        # -- N/O/P . SCC-370 . the cap is STRUCTURALLY unreachable, not measured against ------
-        # This surface USED to be guarded by asking "is any door over the cap?" - a question that
-        # only existed because the generator decided per command: over ~11.5 KB it emitted a thin
-        # launcher, under it a verbatim copy. 14 of 40 doors still shipped verbatim, so the
-        # 12,000-char cap stayed an operative rule an agent had to hold in its head - restated in
-        # every generated door, in eight script comments, eight doc sites and five memory files.
-        #
-        # ⛔ NO CHECK ABOVE ASKS THAT QUESTION ANY MORE, and this comment used to say it did. B was
-        # deleted in the same commit that wrote this paragraph, L was rewritten into a cache-mirror
-        # assertion, and A only asserts the door set is non-empty. The sentence describing them as
-        # cap checks survived its own edit (SCC-370 review, literal-correctness lens).
-        #
-        # SCC-370 deleted the branch. Every Antigravity door is now a launcher of a few hundred
-        # bytes, so no door CAN be near the cap and nobody has to reason about size. N pins the
-        # engine's TEXT, N2 pins the engine's SHAPE, O pins the doors it produced, P pins the prose.
-
-        # The detector both N and P use. Every spelling the repo actually wrote the rule in.
+        # ── N/P · THE 12,000 NUMBER LEAVES LIVE LAW ENTIRELY ──────────────────────────────────
+        # SCC-370 made the cap structurally unreachable and P allow-listed the ONE site that still
+        # stated it, because `-GlobalsOnly` prose had to explain why launchers exist. That surface
+        # retires with this ticket: skills are an "unrestricted bundle" (the vendor's own word), so
+        # the number now decides nothing anywhere and the allow-list is empty.
         CAP_RE = re.compile(r"\b1[12],?[05]00\b|\b12\s*k\b|\b11\.5\s*kb\b", re.I)
         c.check("CS-18 N0 CONTROL: the detector fires on every spelling, and only on those",
                 all(CAP_RE.search(t) for t in
@@ -2895,273 +2673,20 @@ def main() -> int:
                 and not CAP_RE.search("12 keys and 115 doors and v1.20.5"),
                 "a sweep whose regex matches nothing passes for the wrong reason; one that "
                 "matches everything fails for the wrong reason")
-
-        # N . the engine, read from CODE ONLY (a `#` recording the SCC-135 measurement must not
-        # fail this - that history is why the launcher surface exists and it stays in the source).
-        #
-        # ⭐ CAP_RE, NOT the bare `11500` literal. The first cut looked for the threshold alone,
-        # which a mutant defeats without restoring the branch: putting the cap sentence back into
-        # the STUB literal re-publishes it to all 39 doors on the next sync while `11500` never
-        # appears. The generated text is code here, not prose, so the sweep that owns prose (P)
-        # cannot see it until after a sync - by which time the doors already carry it.
         _cap_hits = sorted({m.group(0) for m in CAP_RE.finditer(sync)})
-        c.check("CS-18 N the generator has no size branch, no verbatim arm, and no cap number",
+        c.check("CS-18 N the engine states no cap number and has no size branch",
                 not _cap_hits and "Set-AgDescriptionLine" not in sync,
                 f"comment-stripped sync-agents.ps1 still contains "
                 f"{('the cap number ' + str(_cap_hits) + ' ') if _cap_hits else ''}"
                 f"{'Set-AgDescriptionLine ' if 'Set-AgDescriptionLine' in sync else ''}"
-                f"- a size branch means some doors ship verbatim and the cap is operative again")
+                f"— a size branch means some doors ship verbatim and the cap is operative again")
 
-        # N2 . THE SHAPE, not the number. ⛔ N ALONE DOES NOT GUARD THE INVARIANT IT IS NAMED FOR,
-        # and this was proven by mutation, not argued (SCC-370 review, test-adequacy lens): a fully
-        # restored verbatim arm written
-        #     if ((Get-Item $f.FullName).Length -le 9999) { Copy-Item ...; continue }
-        # passes N, because CAP_RE looks for 11,500/12,000/12k and 9999 is none of them. The suite
-        # stayed 297/297 and run_all stayed 68/68 with the branch back in the engine.
-        #
-        # ⭐ THE LESSON, because it is the third time this repo has paid for it: a grep is a NUMBER
-        # detector and "no size branch" is a STRUCTURAL claim. `comment-literals-invert-source-grep
-        # -tests` and `source-grep-guards-cannot-see-order` are both already recorded here, and the
-        # comment above N reasons carefully about hardening the grep (CAP_RE over the bare literal)
-        # without noticing that no grep can see control flow. Widening a detector does not change
-        # its kind. So N2 asserts the SHAPE of the one function that emits: the mirror reads a
-        # description and writes a stub, and it has no business measuring a file or copying one.
-        _mir = "function Sync-AntigravityWorkflowMirror"
-        _fn = sync[sync.index(_mir):] if _mir in sync else ""
-        _nxt = _fn.find("\nfunction ", len(_mir))
-        _fn = _fn[:_nxt] if _nxt > 0 else _fn
-
-        def _size_branch(src):
-            """The two ways the arm can come back: measure a file, or byte-copy it to the door.
-
-            Word-boundary `-le` etc on purpose - a bare substring match reads the `-le` inside
-            'BOM-less' and the check fails on its own comment, which is the comment-literal
-            inversion one line up. Run over COMMENT-STRIPPED source for the same reason.
-            """
-            return bool(re.search(r"\bCopy-Item\b", src)
-                        or re.search(r"\.Length\b", src)
-                        or re.search(r"\s-(?:le|lt|ge|gt)\s", src))
-
-        c.check("CS-18 N2 CONTROL: the shape detector fires on a restored verbatim arm",
-                _size_branch("if ((Get-Item $f.FullName).Length -le 9999) { Copy-Item -Path $x "
-                             "-Destination $d -Force; continue }")
-                and _size_branch("Copy-Item -Path $f.FullName -Destination $dest -Force")
-                and not _size_branch("$desc = $desc.Trim().Trim('\"'); $stub = @('---') -join \"`n\""),
-                "a shape detector that cannot see the mutant it exists for is the defect it "
-                "replaces; one that fires on the honest emit blocks every sync")
-        _n2_why = ("Sync-AntigravityWorkflowMirror not found in the engine" if not _fn
-                   else "the mirror measures a file size or byte-copies a command body - the "
-                        "size branch is back and some doors will ship verbatim")
-        c.check("CS-18 N2 the mirror emits ONE shape - it never measures a door or copies one",
-                bool(_fn) and not _size_branch(_fn), _n2_why)
-
-        # -- Q . RUN THE GENERATOR. Everything above reads a file as TEXT --------------------
-        # ⛔ THE SYSTEMIC GAP THIS CLOSES (SCC-370 review, compound synthesis). Every other guard
-        # over this generator reads an artifact that CORRELATES with the invariant: N reads the
-        # engine's source, O and CS-03 read the committed doors, L reads the machine cache, P
-        # reads prose. None of them RUNS the emitter. That is not five independent slips - it is
-        # one forced substitution, because the engine is PowerShell and this suite is Python, so
-        # at every site the only observable was a proxy. The measured cost: breaking the stub's
-        # pointer literal ("read" -> "open") left the whole suite green at 297/297 and 68/68,
-        # because O and CS-03 cannot see a generator change until a sync has already rewritten
-        # all 38 doors and someone has committed them.
-        #
-        # ⭐ The capability was already here. U7 (~line 1500) extracts a function out of the .ps1
-        # by string index and runs it under pwsh against real fixtures. Q is that same pattern
-        # applied to the emitter itself, and it is what makes the round trip a CHECK rather than
-        # a belief: emit into a temp master, compare to what is committed, byte for byte.
-        #
-        # It also kills the one mutant with no checkout-independent killer. M6 (a door hand-edited
-        # so that it stays a VALID launcher) was detectable only via the machine cache, which L
-        # now correctly refuses to assert outside the main checkout - so without Q, M6 would have
-        # become undetectable in exactly the tree where doors are edited.
-        import shutil as _shutil
-        _pwsh = _shutil.which("pwsh")
-        if not _pwsh:
-            c.check("CS-18 Q SKIPPED: no pwsh - the generator is unverified on this machine",
-                    True, "install PowerShell 7 to round-trip the real emitter against the doors")
-        else:
-            _need = ("function Get-AgDescription", "function Get-CommandPlatforms",
-                     "function Sync-AntigravityWorkflowMirror")
-            _have = all(n in sync_raw for n in _need)
-            c.check("CS-18 Q0 CONTROL: all three generator functions were located to extract",
-                    _have,
-                    f"missing from sync-agents.ps1: {[n for n in _need if n not in sync_raw]} - "
-                    f"an extraction that silently found nothing would run an empty script and "
-                    f"emit zero doors, which the comparison below would read as agreement")
-            if _have:
-                def _grab(name):
-                    a = sync_raw.index(name)
-                    b = sync_raw.find("\nfunction ", a + len(name))
-                    return sync_raw[a:b] if b > 0 else sync_raw[a:]
-                with TempDir() as _t:
-                    _m = _t / ".agents"
-                    (_m / "commands").mkdir(parents=True)
-                    for _src in sorted((ROOT / ".agents/commands").glob("*.md")):
-                        _shutil.copy2(_src, _m / "commands" / _src.name)
-                    (_m / "workflows").mkdir()
-                    # ⛔ $AllPlatforms IS A SCRIPT-LEVEL VARIABLE AND MUST BE CARRIED IN. It is
-                    # what `Get-CommandPlatforms` returns for a command with no `platforms:` key
-                    # ("omit the key = every platform"), and 13 live commands rely on that default.
-                    # Extracting the three functions alone left it $null, `$null -contains
-                    # 'antigravity'` is false, and the harness emitted 25 doors instead of 38 -
-                    # then compared those 25 and reported agreement. Caught while writing this
-                    # check, which is precisely the vacuity Q1/Q4 exist to make impossible.
-                    _apl = re.search(r"^\$AllPlatforms\s*=.*$", sync_raw, re.M)
-                    _ps = _t / "emit.ps1"
-                    _ps.write_text(
-                        (_apl.group(0) if _apl else "") + "\n"
-                        + "\n".join(_grab(n) for n in _need)
-                        + "\nSync-AntigravityWorkflowMirror -MasterDir '"
-                        + str(_m).replace("'", "''") + "' | Out-Null\n",
-                        encoding="utf-8")
-                    _r = subprocess.run([_pwsh, "-NoProfile", "-File", str(_ps)],
-                                        capture_output=True, text=True)
-                    _emitted = {p.name: p.read_bytes()
-                                for p in sorted((_m / "workflows").glob("*.md"))}
-
-                c.check("CS-18 Q1 the extracted generator actually ran and emitted doors",
-                        _r.returncode == 0 and len(_emitted) >= 20,
-                        f"pwsh rc={_r.returncode} emitted={len(_emitted)} "
-                        f"{_r.stderr.strip()[:300]} - zero doors would make Q vacuous")
-
-                # THE ROUND TRIP. A committed door that is not what the generator produces TODAY
-                # is drift: a hand-edit, a stale sync, or an engine change nobody re-ran.
-                # ⛔ BOTH DIRECTIONS. Comparing only the files the harness emitted is how a
-                # harness that emits a SUBSET reports agreement - measured, see the $AllPlatforms
-                # note above. `_unemitted` is the direction that catches it.
-                _hand = wf_hand_owned(sync_raw)
-                _committed = {p.name for p in WFDIR.glob("*.md")} - _hand
-                _drift = sorted(n for n, b in _emitted.items()
-                                if (WFDIR / n).is_file() and (WFDIR / n).read_bytes() != b)
-                _uncommitted = sorted(n for n in _emitted if not (WFDIR / n).is_file())
-                _unemitted = sorted(_committed - set(_emitted))
-                c.check("CS-18 Q4 CONTROL: the emit covered every committed door, not a subset",
-                        not _unemitted,
-                        f"{len(_unemitted)} committed doors the harness never emitted: "
-                        f"{_unemitted[:8]} - a subset emit makes the byte comparison below a "
-                        f"statement about the files it happened to produce, not about the surface")
-                c.check("CS-18 Q every committed door is byte-identical to what the generator emits",
-                        not _drift and not _uncommitted,
-                        f"{len(_drift)} doors differ from a fresh emit: {_drift[:8]}; "
-                        f"{len(_uncommitted)} would be created: {_uncommitted[:8]} "
-                        f"- run /smh-sync-agents and commit the result")
-
-                # THE FRONTMATTER. ⛔ A door's `description:` is what Antigravity builds its slash
-                # menu from, and an UNBALANCED QUOTE there is unparseable YAML - the door can drop
-                # out of the menu entirely. Get-AgDescription cuts at 132 chars and is quote-blind,
-                # so a quoted master description loses its closing quote. Checked on the EMITTED
-                # bytes, not the committed ones, so the engine is what answers for it.
-                def _desc_line(b):
-                    for ln in b.decode("utf-8").split("\n")[:6]:
-                        if ln.startswith("description:"):
-                            return ln[len("description:"):].strip()
-                    return None
-                _unbalanced = sorted(
-                    n for n, b in _emitted.items()
-                    if (_d := _desc_line(b)) and _d[0] in "\"'" and not _d.endswith(_d[0]))
-                c.check("CS-18 Q2 no emitted door has an unbalanced quote in its description",
-                        not _unbalanced,
-                        f"{_unbalanced[:8]} carry an opening quote with no closing one - the "
-                        f"frontmatter is invalid YAML and Antigravity may drop the door from its "
-                        f"menu. The fix is the quote strip the Zoo emitter already carries")
-                _nobom = sorted(n for n, b in _emitted.items() if not b.startswith(b"---"))
-                c.check("CS-18 Q3 every emitted door starts at byte 0 with '---' (no BOM)",
-                        not _nobom,
-                        f"{_nobom[:8]} do not begin with the frontmatter fence - the emitter's "
-                        f"own comment requires byte 0 for the workflow parser")
-
-        # O . the doors themselves. STRICTLY STRONGER than B: B asks whether a door is under the
-        # cap, which a 40 KB-command's verbatim mirror could never be but an 8 KB one always was.
-        # O asks whether it is a launcher AT ALL, which is the invariant B was standing in for.
-        # `wf_hand_owned` is re-read HERE from `sync_raw` rather than reused from the sibling
-        # block that binds it: that binding lives in a DIFFERENT `c.block`, so under
-        # `--case CS-18` it is unbound and this would die with an UnboundLocalError - a crash a
-        # mutation sweep scores as a kill for every mutant aimed here (the CS-19 lesson, again).
-        hand = wf_hand_owned(sync_raw)
-        c.check("CS-18 O0 the hand-owned list parsed (anti-vacuous)",
-                "INDEX.md" in hand and "smh-adviser-board.md" in hand,
-                f"parsed {sorted(hand)} from $excluded - if this is empty the sweep below "
-                f"exempts nothing and reads as a pass for the wrong reason")
-        not_launcher = []
-        for _f in sorted(WFDIR.glob("*.md")):
-            if _f.name in hand:
-                continue
-            _brain_p = ROOT / ".agents/commands" / _f.name
-            _body = read(_f)
-            if not _brain_p.is_file():
-                not_launcher.append(f"{_f.name} [no brain in commands/]")
-            elif not is_launcher_for(_body, read(_brain_p), _f.name, budgeted=True):
-                # ⛔ CLASSIFY BY `is_launcher_for` FIRST, and treat the marker as a HINT in the
-                # message rather than as the test. `GEN in body` is not evidence: this file's own
-                # brain (`smh-sync-agents.md`) documents the marker by name, so its VERBATIM
-                # mirror carries the string while being no launcher at all. The first cut of this
-                # check branched on the marker and labelled that door "GENERATED but not a current
-                # launcher", which reads as drift in a generated file and sends the next reader to
-                # re-run the sync instead of to the size branch that is the actual cause.
-                _why = ("carries the GENERATED marker but is not a current launcher"
-                        if GEN in _body else "verbatim mirror - no GENERATED marker")
-                not_launcher.append(f"{_f.name} [{_why}]")
-        # ⛔ THE REMEDY LINE SENDS THE READER TO THE CAUSE, NOT TO THE SYNC (SCC-370 review).
-        # It used to read "run /smh-sync-agents; a verbatim door puts the 12,000-char cap back in
-        # play" - which is the diagnostic the comment above this block says was removed for
-        # "sending the next reader to re-run the sync instead of to the actual cause". Re-syncing
-        # is right for a STALE door and wrong for a broken emitter, and since SCC-370 the emitter
-        # is the likelier of the two. CS-18 Q tells them apart: it round-trips the real generator.
-        c.check("CS-18 O every Antigravity door is a CURRENT generated thin launcher",
-                not not_launcher,
-                f"{len(not_launcher)} of {len(sizes)} doors are not: {not_launcher[:8]} "
-                f"- read CS-18 Q first: if Q is GREEN the doors are merely stale and "
-                f"`/smh-sync-agents` fixes it; if Q is RED the generator itself is wrong and "
-                f"re-syncing will republish the defect")
-        c.check("CS-18 O2 ...and the sweep read a real number of doors",
-                len(sizes) - len(hand & set(sizes)) >= 30,
-                f"{len(sizes)} doors, {len(hand & set(sizes))} hand-owned - too few to mean anything")
-        # O3 . the residue of the DELETED CS-18 B, scoped to exactly what O cannot speak for.
-        # ⛔ B was deleted as worthless and that was RIGHT for generated doors - it was green for
-        # the whole life of the defect (the largest door before this lane was 10,352 bytes, never
-        # near 12,000), and O is strictly stronger for anything the generator writes. But the
-        # hand-owned doors are exempt from O (`if _f.name in hand: continue`) AND from the CS-03
-        # door-parity sweep, so deleting B left `smh-adviser-board.md` - hand-authored, published
-        # to the machine cache, the one door here a human edits directly - with no size assertion
-        # at all. Antigravity's truncation is still silent, so this is the one file on this
-        # surface that can still grow into it unobserved.
-        _hand_over = sorted(n for n in (hand & set(sizes)) if sizes[n] > 12000)
-        c.check("CS-18 O3 the hand-owned doors O cannot check are still under the cap",
-                not _hand_over,
-                f"{_hand_over} exceed 12,000 chars - a hand-authored door is not regenerated, so "
-                f"nothing else measures it and Antigravity truncates it silently")
-
-        # P . the PROSE. The operator's actual complaint is not that the cap is enforced wrongly,
-        # it is that the NUMBER is restated everywhere and every session re-derives a rule that no
-        # longer decides anything. So P sweeps the surfaces where a number reads as LAW - tracked
-        # `.md` under the law, doc, door and memory trees - and allows it at exactly one site.
-        #
-        # ⛔ SCOPE, STATED SO THE NARROWING IS NOT SILENT. `.md` only, and vendored `bmad-*`
-        # skill knowledge is skipped (its `12000` is a Playwright timeout, nothing to do with
-        # this). The ENGINE is not swept here because N already pins its code, and SCC-135's
-        # measurement is legitimately recorded in its comments as the historical REASON launchers
-        # exist. `*changelog*` is history by definition, like `_artifacts/`.
-        #
-        # ⭐ The polarity is deliberate: this is an INCLUSIVE detector with an explicit allow-list,
-        # not an exclusive one. A comment cannot invert it (a mention in a comment IS a site and
-        # fails), which is the failure mode `comment-literals-invert-source-grep-tests` records
-        # for every source-grep guard in this file.
-        P_ALLOW = (".agents/commands/smh-sync-agents.md",
-                   ".opencode/commands/smh-sync-agents.md")   # brain + its verbatim opencode mirror
+        P_ALLOW: tuple[str, ...] = ()          # ⛔ EMPTY, and that is the ticket's whole point
         _ls = subprocess.run(["git", "ls-files", "-z", "--", "AGENTS.md", ".agents", "docs",
                               ".opencode/commands", ".roo/commands", "_artifacts/_memory"],
                              cwd=ROOT, capture_output=True, text=True)
         c.check("CS-18 P1 the tracked-file listing succeeded",
                 _ls.returncode == 0, f"git ls-files rc={_ls.returncode} {_ls.stderr.strip()[:160]}")
-        # ⛔ THE RECORDING STEP IS A NAMED FUNCTION SO IT CAN BE CONTROLLED (SCC-370 review).
-        # P1/P2/P3 all guard the sweep's INPUTS - that the listing worked, that it read enough
-        # files, that the allow-listed site still states the rule. None of them proves the sweep
-        # still RECORDS what it finds, and that gap was measured: wrapping the append in
-        # `if False and ...` left the suite at 297/297. A detector that stopped recording reads
-        # exactly like a clean tree - which is verbatim the failure `U6d · THE TEETH CONTROL`
-        # was written for, ~1,600 lines above. Same shape, same remedy: route the real sweep and
-        # the control through ONE function, so a gutted recorder fails the control too.
         _scanned, _sites = 0, []
 
         def _record(rel, text, sink):
@@ -3174,7 +2699,7 @@ def main() -> int:
         c.check("CS-18 P0 TEETH CONTROL: the recorder still records a known offender",
                 _teeth == ["CONTROL/states-the-rule.md"],
                 f"the sweep's recording step returned {_teeth} for one offender and one clean "
-                f"file - if it records nothing, P below passes on a repo that states the rule "
+                f"file — if it records nothing, P below passes on a repo that states the rule "
                 f"in every file")
         for _rel in (r for r in _ls.stdout.split("\0") if r.endswith(".md")):
             if _rel in P_ALLOW or "/bmad-" in _rel or "changelog" in _rel.lower():
@@ -3184,17 +2709,136 @@ def main() -> int:
                 continue
             _scanned += 1
             _record(_rel, read(_p), _sites)
-        c.check("CS-18 P the cap number survives ONLY at its one operative site",
+        c.check("CS-18 P the cap number is gone from live law entirely",
                 not _sites,
                 f"{len(_sites)} of {_scanned} swept files still state the size rule as law: "
-                f"{_sites[:10]} - it decides nothing now; say WHY launchers exist, not a number")
+                f"{_sites[:10]} — skills are an unrestricted bundle; the number decides nothing")
         c.check("CS-18 P2 ...and the sweep read a real number of files",
                 _scanned >= 100, f"only {_scanned} tracked .md files swept")
-        c.check("CS-18 P3 CONTROL: the one allow-listed site still STATES the rule",
-                CAP_RE.search(read(ROOT / P_ALLOW[0])) is not None,
-                f"{P_ALLOW[0]} no longer records the 12,000-char truncation that is the whole "
-                f"REASON every door is a launcher - P would then be allow-listing nothing")
 
+        # ── Q · RUN THE GENERATOR ─────────────────────────────────────────────────────────────
+        # Everything above reads a file as TEXT. Q runs the real emitter under pwsh into a temp
+        # master and byte-compares. It moves from `Sync-AntigravityWorkflowMirror` (retired) onto
+        # `Sync-LauncherSkills`, which after this ticket emits the ONE door Claude, Codex and
+        # Antigravity all read — so the round trip now covers three platforms instead of one.
+        # The measured cost of not having it, recorded at SCC-370: breaking the stub's pointer
+        # literal left the whole suite green, because every other guard reads a committed artifact
+        # and a committed artifact cannot disagree with a generator nobody ran.
+        import shutil as _shutil
+        _pwsh = _shutil.which("pwsh")
+        if not _pwsh:
+            c.check("CS-18 Q SKIPPED: no pwsh — the generator is unverified on this machine",
+                    True, "install PowerShell 7 to round-trip the real emitter against the doors")
+        else:
+            _need = ("function Get-CommandPlatforms", "function New-LauncherSkillStub",
+                     "function Sync-LauncherSkills")
+            _have = all(n in sync_raw for n in _need)
+            c.check("CS-18 Q0 CONTROL: all three generator functions were located to extract",
+                    _have,
+                    f"missing from sync-agents.ps1: {[n for n in _need if n not in sync_raw]} — "
+                    f"an extraction that silently found nothing would run an empty script and "
+                    f"emit zero launchers, which the comparison below would read as agreement")
+            if _have:
+                def _grab(name):
+                    a = sync_raw.index(name)
+                    b = sync_raw.find("\nfunction ", a + len(name))
+                    return sync_raw[a:b] if b > 0 else sync_raw[a:]
+                with TempDir() as _t:
+                    _m = _t / ".agents"
+                    (_m / "commands").mkdir(parents=True)
+                    for _src in sorted((ROOT / ".agents/commands").glob("*.md")):
+                        _shutil.copy2(_src, _m / "commands" / _src.name)
+                    # ⛔ $AllPlatforms IS SCRIPT-LEVEL AND MUST BE CARRIED IN. It is what
+                    # Get-CommandPlatforms returns for a command with no `platforms:` key, which
+                    # 13 live commands rely on. Extracted without it the harness emits a SUBSET
+                    # and then reports agreement about the subset — measured at SCC-370.
+                    _apl = re.search(r"^\$AllPlatforms\s*=.*$", sync_raw, re.M)
+                    _ps = _t / "emit.ps1"
+                    _ps.write_text(
+                        (_apl.group(0) if _apl else "") + "\n"
+                        + "\n".join(_grab(n) for n in _need)
+                        + "\nSync-LauncherSkills -MasterDir '"
+                        + str(_m).replace("'", "''") + "' | Out-Null\n",
+                        encoding="utf-8")
+                    _r = subprocess.run([_pwsh, "-NoProfile", "-File", str(_ps)],
+                                        capture_output=True, text=True)
+                    _emitted = {d.name: (d / "SKILL.md").read_bytes()
+                                for d in sorted((_m / "skills").glob("*"))
+                                if (d / "SKILL.md").is_file()}
+
+                c.check("CS-18 Q1 the extracted generator actually ran and emitted launchers",
+                        _r.returncode == 0 and len(_emitted) >= 20,
+                        f"pwsh rc={_r.returncode} emitted={len(_emitted)} "
+                        f"{_r.stderr.strip()[:300]} — zero launchers would make Q vacuous")
+
+                # ⛔ COMPARE ONLY THE COMMITTED **GENERATED** DIRS. A hand-authored SKILL.md wins
+                # over the generator (`Sync-LauncherSkills` skips a dir whose SKILL.md carries no
+                # marker), but the temp master starts EMPTY, so nothing is there to win and the
+                # harness emits a launcher for those names too. Comparing that direction would
+                # report 15 false drifts against files the engine never writes.
+                _committed = {d.name: (d / "SKILL.md").read_bytes()
+                              for d in sorted(SKDIR.iterdir())
+                              if d.is_dir() and (d / "SKILL.md").is_file()
+                              and GEN in read(d / "SKILL.md")}
+                _unemitted = sorted(set(_committed) - set(_emitted))
+                c.check("CS-18 Q4 CONTROL: the emit covered every committed generated launcher",
+                        not _unemitted,
+                        f"{len(_unemitted)} committed GENERATED launchers the harness never "
+                        f"emitted: {_unemitted[:8]} — a subset emit makes the byte comparison "
+                        f"below a statement about the files it happened to produce")
+                _drift = sorted(n for n, b in _committed.items()
+                                if n in _emitted and _emitted[n] != b)
+                c.check("CS-18 Q every committed launcher is byte-identical to a fresh emit",
+                        not _drift,
+                        f"{len(_drift)} launchers differ from a fresh emit: {_drift[:8]} — run "
+                        f"`/smh-sync-agents` and commit the result")
+
+                # Q5 · THE DOOR MUST SAY WHAT IT IS. After this ticket the launcher is
+                # Antigravity's ONLY door, and its own body is read by the agent standing in it.
+                # A stub still naming only Claude and Codex tells an Antigravity session that this
+                # file is for somebody else.
+                _stub = next(iter(_emitted.values()), b"")
+                c.check("CS-18 Q5 the launcher stub names Antigravity beside Claude and Codex",
+                        b"Antigravity" in _stub,
+                        "the generated stub still says the skill exists so the same / works in "
+                        "Claude and Codex — Antigravity now reads this very file as its menu "
+                        "entry and its only door, and the door does not name it")
+
+                def _desc_line(b):
+                    for ln in b.decode("utf-8").split("\n")[:6]:
+                        if ln.startswith("description:"):
+                            return ln[len("description:"):].strip()
+                    return None
+                _unbalanced = sorted(
+                    n for n, b in _emitted.items()
+                    if (_d := _desc_line(b)) and _d[0] in "\"'" and not _d.endswith(_d[0]))
+                c.check("CS-18 Q2 no emitted launcher has an unbalanced quote in its description",
+                        not _unbalanced,
+                        f"{_unbalanced[:8]} carry an opening quote with no closing one — the "
+                        f"frontmatter is invalid YAML and a platform may drop the door from its "
+                        f"menu entirely")
+                _nobom = sorted(n for n, b in _emitted.items() if not b.startswith(b"---"))
+                c.check("CS-18 Q3 every emitted launcher starts at byte 0 with '---' (no BOM)",
+                        not _nobom,
+                        f"{_nobom[:8]} do not begin with the frontmatter fence — every consumer "
+                        f"of this surface parses frontmatter from byte 0")
+
+        # ⛔ WHERE THE RETIRED CHECKS WENT (SCC-394), so their absence reads as a decision:
+        #   B (cap size)          deleted at SCC-370, replaced by O; O retires here with its door.
+        #   D–H (the $caches      the antigravity row is gone, so there is no second cache to keep
+        #        wiring)          honest. A pins the row's absence; G's opencode half lives on in
+        #                         A's residue sweep (opencode still resolves `commands`).
+        #   I, I2 (regen before   the mirror they ordered no longer exists. `Sync-LauncherSkills`
+        #        the globals)     already runs in the local stage, above the globals block.
+        #   K (INDEX.md not a     `.agents/workflows/INDEX.md` is deleted; `.agents/skills/` has no
+        #      publishable door)  router file to publish.
+        #   L, M, M2 (the cache   the cache is RETIRED, not mirrored. R asserts it is EMPTY of our
+        #      is a byte mirror)  files — the opposite claim about the same directory.
+        #   N2, O, O0, O2, O3     all guard the shape or size of a generated WORKFLOW door. Q now
+        #      (launcher shape)   round-trips the SKILL launcher, which is strictly stronger: it
+        #                         compares bytes against the real emitter instead of classifying.
+        #   U1–U6, U6c, U8, U9    the SCC-195 menu budget; retired with the surface it budgeted.
+        #      (~line 1414)       U7 survives there as ZOO's truncation check — see A3.
 
     if c.block("CS-19 · SCC-357 · the epic ships, so the PRD gets RECONCILED against what shipped"):
         # The story-level currency check lives in `closeout_preflight` (block OV there). This is
@@ -3657,17 +3301,19 @@ def main() -> int:
     # `$HomeRoot` derives from `$PSScriptRoot` and `$Target` defaults to it (sync-agents.ps1:82-113),
     # so a worktree compares against ITSELF and `$IsLobby` is TRUE — measured, this lane's own sync
     # printed `lobby=True`, and the only path to false exits 1 four lines later.
-    # The real reason is simpler and bigger: `.opencode/commands` and `.roo/commands` hold FULL
-    # BODIES, and `.agents/workflows` holds one for any command under the launcher threshold. A
+    # The real reason is simpler and bigger: `.opencode/commands` holds FULL BODIES (and
+    # `.roo/commands` a launcher naming its brain). A
     # retired command can therefore be named in the PROSE of a DIFFERENT command's mirror —
     # measured: `.opencode/commands/smh-sync-agents.md:85` did exactly that. A check scanning only
     # `.agents/commands/` passes the instant the master is deleted while those mirrors still name it.
     # So this scans EVERY door surface AND the live doc set — never the master alone.
     #
-    # ⛔ What is genuinely OUT OF REACH from here: the MACHINE-GLOBAL caches (`~/.gemini/...`,
-    # `~/.config/opencode/...`). They live outside the repo, so no repo-scoped assertion can see or
-    # purge them; clearing them is a close-out step (`/smh-sync-agents` from the lobby checkout),
-    # not something this block can cover. Do not add a check that pretends otherwise.
+    # ⛔ What is genuinely OUT OF REACH from here: the MACHINE-GLOBAL caches
+    # (`~/.config/opencode/...`, and the retired `~/.gemini/.../global_workflows`). This block
+    # cannot PURGE them - clearing them is a sync from the lobby checkout - and a repo-scoped
+    # check can only READ one where the machine and the checkout are the same thing, which is
+    # what `CS-18 R` does and why it binds in main only. Do not add a check here that pretends
+    # a lane can assert a machine's state.
     #
     # ⛔ The needle is the CURRENT spelling only. `sync-agents.ps1` and `commands/INDEX.md`
     # deliberately keep the OLD snake_case `slash_command_updating` inside passages documenting
@@ -3704,13 +3350,13 @@ def main() -> int:
                 return name in line
             return name in line and ticket not in line
 
-        # A . the six door surfaces. Named individually rather than globbed: the point is that
-        # retiring a command is a SIX-file job, and a glob that silently matched five would be
-        # the same defect this block was written to catch.
+        # A . the five door surfaces. Named individually rather than globbed: the point is that
+        # retiring a command is a FIVE-file job, and a glob that silently matched four would be
+        # the same defect this block was written to catch. (It was six until SCC-394 retired
+        # `.agents/workflows/`; Antigravity now reads the master skill, which is already listed.)
         for name in RETIRED:
             doors = [
                 ROOT / ".agents/commands" / f"{name}.md",
-                ROOT / ".agents/workflows" / f"{name}.md",
                 ROOT / ".agents/skills" / name / "SKILL.md",
                 ROOT / ".claude/skills" / name / "SKILL.md",
                 ROOT / ".opencode/commands" / f"{name}.md",
@@ -3821,11 +3467,14 @@ def main() -> int:
                     "retires the command, or the map ships pointing at deleted files")
 
         # D+E . THE LAW MUST SURVIVE ITS CARRIER. The retired alias was the only place that
-        # explained WHY the two machine-global caches read from different sources (SCC-332):
-        # Antigravity truncates a workflow over 12,000 chars instead of rejecting it, so it must
-        # receive the thin launchers from .agents/workflows/ while opencode takes full bodies
-        # from .agents/commands/. Delete the carrier without porting the law and the next person
-        # to touch the cache re-introduces SCC-332. Pinned to the RECEIVING door.
+        # explained what each cache is fed and why. SCC-332's version of that law - two caches,
+        # two sources, kept apart by a 12,000-char truncation - retired with the surface at
+        # SCC-394, and E follows its subject rather than outliving it. What the door must now
+        # state is the model that replaced it: opencode's cache takes FULL BODIES from
+        # `.agents/commands/`, Antigravity enters through the launcher skill in `.agents/skills/`
+        # (no cache of its own), and the old `global_workflows` cache is purged once per machine.
+        # Delete the carrier without porting THAT and the next person to touch the cache rebuilds
+        # a mirror the vendor retires on 2026-11-01. Pinned to the RECEIVING door.
         sync_cmd = read(ROOT / ".agents/commands/smh-sync-agents.md")
         # ⛔ Pinned to the ENGINE's real switch, not just to a substring of the doc. A bare
         # `"-GlobalsOnly" in sync_cmd` stays green after the switch is renamed in the ps1,
@@ -3844,27 +3493,29 @@ def main() -> int:
             controls green, because they never touched the live one. A control that re-types its
             subject tests the copy, not the code.
             """
-            return (".agents/workflows/" in body
+            return (".agents/skills/" in body
                     and ".agents/commands/" in body
-                    and "12,000" in body)
+                    and "global_workflows" in body)
 
         law = law_stated(sync_cmd)
-        c.check("CS-22 E ...and carries the SCC-332 law: both sources AND the cap",
+        c.check("CS-22 E ...and carries the door model: both sources AND the retired cache",
                 law,
-                "smh-sync-agents.md must state BOTH per-cache sources and the 12,000-char "
-                "Antigravity truncation that forces them apart - a source list with no reason "
-                "is a rule the next edit will 'simplify' back into the defect")
+                "smh-sync-agents.md must name opencode's source (.agents/commands/, full "
+                "bodies), Antigravity's door (.agents/skills/, the launcher skill) AND the "
+                "global_workflows cache this ticket purges - a source list with no reason is a "
+                "rule the next edit will 'simplify' back into a mirror the vendor is retiring")
 
         # CONTROLS — and every one of them calls the PRODUCTION predicate, never a re-typed
         # copy of it. A control that re-implements its subject tests the copy: it stays green
         # while the live expression is weakened, which is the precise opposite of its job.
-        c.check("CS-22 CONTROL E fails when the cap is dropped but both sources remain",
-                not law_stated(sync_cmd.replace("12,000", "some")),
-                "E passes on a source list with the REASON removed - the exact state SCC-332 "
-                "shipped in, and the state a well-meaning 'simplify' edit produces")
-        c.check("CS-22 CONTROL E fails when a source is dropped but the cap remains",
-                not law_stated(sync_cmd.replace(".agents/workflows/", "the door surface")),
-                "E passes while the cache's actual source is unnamed")
+        c.check("CS-22 CONTROL E fails when the retired cache is unnamed but both doors remain",
+                not law_stated(sync_cmd.replace("global_workflows", "some old folder")),
+                "E passes on a door model that never says which machine cache is being purged - "
+                "and an unnamed purge in someone else's global directory is the one edit a "
+                "reviewer cannot check")
+        c.check("CS-22 CONTROL E fails when a door is dropped but the cache is named",
+                not law_stated(sync_cmd.replace(".agents/skills/", "the door surface")),
+                "E passes while Antigravity's actual door is unnamed")
         # ⛔ D's first control was `"-GlobalsOnly" not in sync_cmd.replace("-GlobalsOnly", "")`,
         # which is TRUE for every possible input by the semantics of str.replace - it
         # discriminated nothing and could never have failed. D's real subject is the document,

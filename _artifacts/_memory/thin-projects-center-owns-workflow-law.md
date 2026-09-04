@@ -8,7 +8,7 @@ metadata:
 **Converted 2026-08-07 (SCC-31 · AVCH-23).** AGY, NEXgen-VR, RAG_Pipeline_AC and the skeleton repo
 were stripped of the vendored toolkit — ~7,000 files, ~1M lines. A project's `.agents/` now holds
 **only**: its own `rules/` + `skills/` + an **`INDEX.md` that routes them**, plus the repo-local
-enforcement set. Everything shared — rules, `/` commands, skills, workflows, scripts, sync — lives once
+enforcement set. Everything shared — rules, `/` commands, skills, scripts, sync — lives once
 in the lobby and is already loaded because sessions run from there.
 
 **The load-bearing obligation:** binding a project MEANS reading `PROJECT_ROOT/.agents/INDEX.md` and

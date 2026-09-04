@@ -43,7 +43,7 @@ TOPLEVEL_SKIP = {
     "_my_resources", ".git", ".code-review-graph", ".claude", ".opencode", ".githooks", "Projects",
 }
 # Toolkit families whose .md files each need an INDEX row (+ /sync-agents to mirror the copies).
-TOOLKIT_FAMILIES = ("commands", "skills", "workflows", "rules")
+TOOLKIT_FAMILIES = ("commands", "skills", "rules")
 
 STATUS_WORD = {"A": "added", "D": "deleted", "M": "modified", "R": "renamed", "C": "copied"}
 

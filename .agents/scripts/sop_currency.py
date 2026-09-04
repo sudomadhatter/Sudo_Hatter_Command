@@ -25,7 +25,7 @@ operator types, what a command does, or what a gate refuses:
     AGENTS.md (root)             the front door
 
 Deliberately NOT surfaces: `INDEX.md` inventory churn (mechanical, re-generated), `reference/`,
-`templates/`, `skills/`, `workflows/` (mirrors of commands), `_artifacts/` (history), and this
+`templates/`, `skills/` (generated launchers follow their command), `_artifacts/` (history), and this
 script's own tests. Widening this list is how a useful gate becomes a disabled one.
 
   ── SCOPE IS DELIBERATELY DUMB ─────────────────────────────────────────────────────────────

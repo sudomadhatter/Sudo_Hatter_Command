@@ -17,18 +17,22 @@
 # commit across several parallel story lanes — do not add it without a reason.
 *.sh text eol=lf
 
-# Antigravity's machine-global cache MUST be a byte mirror of the doors, on every machine.
+# The GENERATED launcher skills MUST be byte-identical on every machine.
 #
-# `sync-agents.ps1` writes `~/.gemini/antigravity/global_workflows/*.md` with LF, but this box
-# runs `core.autocrlf=true`, so git hands the working copy of `.agents/workflows/*.md` CRLF on
-# every checkout. `test_command_surfaces.py --case CS-18` case L byte-compares door against
-# cache, so on Windows it goes RED after any pull — 39 of 40 files "differ" while the content
-# is byte-identical once the CRLFs are stripped. It could only be green in the window between
-# a sync and the next git operation, which is not a state anyone can hold.
+# `sync-agents.ps1` writes every `SKILL.md` with LF, but this box runs `core.autocrlf=true`, so git
+# would hand the working copy CRLF on every checkout. `test_command_surfaces.py --case CS-18` case Q
+# round-trips the real emitter and byte-compares its output against the committed launchers, so on
+# Windows it would go RED after any pull — every generated door "differs" while the content is
+# byte-identical once the CRLFs are stripped. It could only be green in the window between a sync
+# and the next git operation, which is not a state anyone can hold.
 #
-# Measured 2026-09-01 (SCC-338, PC pickup): door 756 bytes / 13 CRLF vs cache 743 bytes / 0 CRLF,
-# identical after CRLF->LF. The Mac never sees it — nothing there is converting.
+# ⓘ Measured 2026-09-01 (SCC-338, PC pickup) on the surface this replaces: door 756 bytes / 13 CRLF
+# vs cache 743 bytes / 0 CRLF, identical after CRLF->LF. The Mac never sees it — nothing there is
+# converting. That pin covered `.agents/workflows/*.md`, which SCC-394 retired; the byte contract
+# moved onto the launcher skills rather than lapsing with the directory, because Q compares bytes
+# on both machines exactly as case L did.
 #
-# Pinning the doors to LF makes the byte-mirror contract true on both machines rather than
-# weakening CS-18 L to a normalised compare, which would stop it detecting a real drift.
-.agents/workflows/*.md text eol=lf
+# Pinning the generated doors to LF makes the contract true on both machines rather than weakening
+# Q to a normalised compare, which would stop it detecting a real drift.
+.agents/skills/**/SKILL.md text eol=lf
+.claude/skills/**/SKILL.md text eol=lf

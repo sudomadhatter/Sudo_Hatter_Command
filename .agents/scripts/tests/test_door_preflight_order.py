@@ -504,7 +504,6 @@ def main() -> int:
                     # sentence there is exactly as live as one in a command (blind lens, F8).
                     + sorted(REPO.glob(".agents/skills/*/steps/*.md"))
                     + sorted(REPO.glob(".claude/skills/*/steps/*.md"))
-                    + sorted(REPO.glob(".agents/workflows/*.md"))
                     + sorted(REPO.glob(".opencode/commands/*.md"))
                     + sorted(REPO.glob(".claude/skills/smh-*/SKILL.md"))
                     + sorted(REPO.glob(".agents/scripts/*.py"))

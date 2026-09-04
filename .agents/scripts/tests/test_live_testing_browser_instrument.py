@@ -63,10 +63,12 @@ COMMAND = ROOT / ".agents/commands/cicd-live-testing-team.md"
 # 11.5 KB - with nothing connecting the failure to the edit that caused it.
 #
 # The surface that carries a SECOND live copy of the body is opencode's mirror (`Copy-Item -Force`,
-# no launcher form, no size rule). That is what belongs in BODIES. The Antigravity door is asserted
+# no launcher form, no size rule). That is what belongs in BODIES. The launcher door is asserted
 # below for what a launcher can honestly carry: that it exists and points at this command.
+# ⭐ SCC-394: that door is the launcher SKILL now. Antigravity retires workflows on 2026-11-01 and
+# reads `.agents/skills/` natively, the same surface Codex already used.
 OPENCODE = ROOT / ".opencode/commands/cicd-live-testing-team.md"
-WORKFLOW = ROOT / ".agents/workflows/cicd-live-testing-team.md"
+AG_DOOR = ROOT / ".agents/skills/cicd-live-testing-team/SKILL.md"
 BODIES = (COMMAND, OPENCODE)
 SKILLS = ROOT / ".agents/skills"
 
@@ -185,10 +187,10 @@ def main() -> int:
         # missing or wrong-pointing door repo-wide - but a comment claiming an assertion that does
         # not exist is worse than no comment, and A1's label named a surface it had stopped reading.
         c.check("A1b the Antigravity door exists and points at THIS command",
-                WORKFLOW.is_file()
-                and f"`.agents/commands/{COMMAND.name}`" in read(WORKFLOW)
-                and "END TO END" in read(WORKFLOW),
-                f"{WORKFLOW.relative_to(ROOT)} is missing, or no longer points at "
+                AG_DOOR.is_file()
+                and f"`.agents/commands/{COMMAND.name}`" in read(AG_DOOR)
+                and "END TO END" in read(AG_DOOR),
+                f"{AG_DOOR.relative_to(ROOT)} is missing, or no longer points at "
                 f"{COMMAND.name} - a launcher that names the wrong brain sends the agent to "
                 f"another command's steps, and this is all a launcher can honestly carry")
         c.check("A2 the skills master directory resolves", SKILLS.is_dir(),

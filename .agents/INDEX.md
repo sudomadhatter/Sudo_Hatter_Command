@@ -7,8 +7,7 @@ the "what's in here" map. Edit at master, then `/smh-sync-agents`.
 |---|---|---|
 | `rules/` | behavioral law — constitution, karpathy-guidelines, git-policy, artifacts-always-first, mobile-mode, … | `rules/INDEX.md` |
 | `commands/` | the canonical slash-command set — `/cicd-*`, `/smh-*`, `/sentry-*` | `commands/INDEX.md` |
-| `skills/` | model-invoked capabilities | `skills/INDEX.md` |
-| `workflows/` | the Antigravity workflow mirror + real multi-stage workflows — **this is Antigravity's `/` surface**, so everything here is invocable by Gemini | `workflows/INDEX.md` |
+| `skills/` | model-invoked capabilities, and the LAUNCHER door — **this is Codex's and Antigravity's `/` surface**, read natively by both, so every `SKILL.md` here is invocable as `/<name>` | `skills/INDEX.md` |
 | `reference/` | long-form reference docs deliberately OFF every command surface (e.g. the autopilot relay reference — a Claude/opencode-only pipeline Gemini can't run) | `reference/INDEX.md` |
 | `bmad/` | the BMAD method install — **owned, regenerated on update, never hand-edit** | — |
 | `scripts/` | maintenance — `check_maps.py`, `generate_repo_map.py`, `record_map_changes.py`, `generate_doc_graph.py`, `check-repo-map-drift.ps1`, `sync-agents.ps1`, `new-project.ps1` | — |

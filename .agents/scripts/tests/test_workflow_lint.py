@@ -580,8 +580,7 @@ def main() -> int:
         #     silent" was never actually asserted - the control covered two of the surfaces
         #     it appeared to cover.
         clean = tmp / "resurrect-clean"
-        for sub in ("commands", "rules", "skills/some-skill", "workflows",
-                    "opencode-agents"):
+        for sub in ("commands", "rules", "skills/some-skill", "opencode-agents"):
             (clean / ".agents" / sub).mkdir(parents=True)
         (clean / ".agents/commands/ok.md").write_text("Run `code-review-engine`.\n",
                                                       encoding="utf-8")
@@ -589,10 +588,9 @@ def main() -> int:
                                                    encoding="utf-8")
         (clean / ".agents/skills/some-skill/SKILL.md").write_text("---\nname: ok\n---\n",
                                                                   encoding="utf-8")
-        (clean / ".agents/workflows/INDEX.md").write_text("| a | b |\n", encoding="utf-8")
         (clean / ".agents/opencode-agents/agent.md").write_text("A reviewer.\n",
                                                                 encoding="utf-8")
-        c.check("SCC-128 D5 positive control: ALL five populated surfaces, clean, silent",
+        c.check("SCC-128 D5 positive control: ALL four populated surfaces, clean, silent",
                 not res_msgs(res_report(clean)), res_msgs(res_report(clean))[:160])
 
         # E. The message must carry the REMEDY. Whoever trips this is mid-regen and did

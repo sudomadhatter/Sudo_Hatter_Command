@@ -11,7 +11,9 @@ Codex (OpenAI) was added as the **4th command surface** alongside Claude / openc
 It is the **lightest** surface because it reads two layers natively:
 - **`AGENTS.md`** — native (repo root + nested + `~/.codex/AGENTS.md`). No `CODEX.md` adapter exists or is needed.
 - **Agent Skills** — native, open standard: discovers `$REPO_ROOT/.agents/skills` + `~/.codex/skills`. So our
-  own skills (sudo-*, gitnexus…) are seen straight from the repo — zero sync work.
+  own skills (sudo-*, gitnexus…) are seen straight from the repo — zero sync work. ⭐ **Antigravity reads
+  that same directory** (SCC-394), so one launcher is the door for Claude, Codex and Antigravity — and
+  `platforms:` can no longer give a command to Codex without also giving it to Antigravity.
 
 Only **two machine-global caches** are pushed by `/sync-agents` (lobby sync only; both are machine-local like
 the opencode/AG caches → re-run per machine):
