@@ -91,6 +91,7 @@ lenses_na: none
 findings: 3 FAIL · 12 patch · 0 defer
 dispositions: per-lens: blind-hunter=12/0/0 · gate-integrity=8/0/0 · acceptance-auditor=6/0/0
 severity_floor: FAIL (at review time; every finding fixed in-lane before this verdict)
+drift: undeclared=0 · unimplemented=0 · incomplete=0 - reconciled clean; the first run reported 3 incomplete bullets (no `→` row separator) and 2 undeclared hook-regenerated files (`docs/doc-graph.{json,md}`), both repaired in-lane and re-run
 
 **The three FAILs, all fixed:**
 
