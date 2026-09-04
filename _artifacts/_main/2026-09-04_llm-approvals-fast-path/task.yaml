@@ -1,0 +1,7 @@
+key: SCC-393
+slug: llm-approvals-fast-path
+summary: /smh-llm-approvals carries its own landing road and fence check
+branch: chore/SCC-393-approvals-fast-path
+close_command: smh-close-task-merge-tree
+lane: TASK
+opened: 2026-09-04
