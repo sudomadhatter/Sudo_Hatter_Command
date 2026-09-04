@@ -78,6 +78,24 @@ M2  replace the exemption with its literal inverse ("is NOT exempt ... takes the
     -> H5 red  (bullet=342ch)
 ```
 
+### Step 0.7 — blast radius re-derived against CURRENT `main`
+
+- **What moved: nothing.** `git merge-base HEAD origin/main` and `git rev-parse origin/main` are
+  the same commit, `70154040` — no sibling lane landed while this one was built, so
+  `git diff --name-only "$BASE"..origin/main` is empty.
+- **What it changes here: nothing.** The true overlap with this lane's files is empty,
+  `git merge-tree --write-tree --messages HEAD origin/main` returns a clean tree
+  (`9cd2ef07`) with no conflict messages, and the one sibling worktree
+  (`SCC-392-claude-approvals-harvest`) is on a branch already merged to `main` — no landing-order
+  dependency either way.
+- **What was re-measured:** every repo path this diff newly names was re-resolved, because a
+  docs-and-rules lane fails by citing something that moved, not by breaking code —
+  `test_permission_parity.py`, `main_write_gate.py`, `mint-push-token.sh`,
+  `artifacts-always-first.md`, `lane_qualify.py`, `permission_render.py`,
+  `zoo_permissions_apply.py`, `antigravity_permissions_apply.py`, `families.json` all exist. The
+  quoted phrase *"the local door's road"* was re-read at source: it is `main_write_gate.py:216`,
+  **not** `:87` as this lane's plan and walkthrough first cited — corrected in `65e8187a`.
+
 review-runtime: fan-out
 
 ## Code Review (2026-09-04)
