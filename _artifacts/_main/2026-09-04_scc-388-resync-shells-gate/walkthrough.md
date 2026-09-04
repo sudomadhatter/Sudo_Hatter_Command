@@ -3,8 +3,7 @@ task: SCC-388
 type: task
 review-runtime: fan-out
 date: 2026-09-04
-commit: cff8e6ee
-verdict: PASS
+commit: 376a61bc
 ---
 
 # Walkthrough — SCC-388: Resync Shells & Enforce Thin Project Rules Gate
@@ -129,6 +128,17 @@ Children check: 3 riders recognized for close-out ceremony transition.
 
 ## Code Review (2026-09-04)
 
+lenses_run:
+- blind-hunter · ok
+- gate-integrity · ok
+- acceptance-auditor · ok
+lenses_counted: 3/3
+lenses_na: none
+findings: 0 FAIL · 0 patch · 0 defer
+dispositions: per-lens: blind-hunter=0/0/0 · gate-integrity=0/0/0 · acceptance-auditor=0/0/0
+severity_floor: none
+drift: undeclared=0 · unimplemented=0 · incomplete=0
+
 ### Lens 1: Diff & Blast Radius Analysis
 - **Lobby Infra**: Changes to `test_rule_frontmatter.py` and `check_maps.py` are strictly additive, reading project `.agents` metadata and asserting conformance with `project-law.md`.
 - **Subprojects**: Thin conversion of `sudo-command-center`, `BRKN_Tattoos`, and `B-L-WorldWide` removed 56 dead/copied tier-1 rule files, retaining project-specific law where it exists (`BRKN_Tattoos` 8 rules) and properly pointing to the command center for shared law.
@@ -144,9 +154,15 @@ Children check: 3 riders recognized for close-out ceremony transition.
 ### Lens 3: Command-Centre Gate & Clean Code Audit
 - Command center machine floor: `run_all.py` (73/73 green), `workflow_lint.py` (0 errors), `check_maps.py` (depth-3 strict clean), `py_compile` (clean on all modified python files).
 - No unhandled errors or loose files.
-- Stamped suite receipt present and verified clean at `cff8e6ee`.
+- Stamped suite receipt present and verified clean at `376a61bc`.
 
-Verdict: PASS @ cff8e6ee
+### Step 0.7 — re-derivation
+
+1. **What moved on main:** 11 commits landed from SCC-392 and SCC-393 onto `origin/main` while this lane was building.
+2. **True overlap:** 1 file (`_artifacts/_main/INDEX.md`). Conflict resolved cleanly on this branch by keeping both rows (`scc-388-resync-shells-gate` and `llm-approvals-fast-path`).
+3. **What was re-measured:** Merged `origin/main` cleanly into this branch (`376a61bc`), re-ran full test suite (`run_all.py` 73/73 passed in 28.0s). Zero worktree conflicts.
+
+Verdict: PASS @ 376a61bc
 
 ---
 
