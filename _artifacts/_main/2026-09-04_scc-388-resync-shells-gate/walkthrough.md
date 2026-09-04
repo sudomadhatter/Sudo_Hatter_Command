@@ -168,9 +168,5 @@ Verdict: PASS @ 376a61bc
 
 ## Your Actions
 
-The task and all three subtask riders ([SCC-389](https://sudo-command.atlassian.net/browse/SCC-389), [SCC-390](https://sudo-command.atlassian.net/browse/SCC-390), [SCC-391](https://sudo-command.atlassian.net/browse/SCC-391)) are verified and ready for merge.
-To land this work on `main`, run:
+- [x] The merge itself — lands via this branch's PR
 
-```bash
-/smh-close-task-merge-tree
-```
