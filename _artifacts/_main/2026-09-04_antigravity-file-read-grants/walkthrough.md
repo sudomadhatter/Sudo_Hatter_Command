@@ -80,12 +80,14 @@ Both `run_all.py` reds are pre-existing and environmental, neither touched by th
 
 ## Your Actions
 
-1. **Apply and reload.** `python3 .agents/scripts/antigravity_permissions_apply.py --apply`, then reload
-   the VS Code window. ⛔ Before you do: that apply **drops the 6 rows your clicks wrote** — the 5 memory
-   files (replaced by the folder row, so nothing is lost) and `unsandboxed(find ~/.claude -name "*.md" …)`,
-   which was **already dead** — its `"*.md"` token is not a valid regex for its own text, so it has been
-   returning `ask` since the moment it was written. If you want that `find` allowed for real, run
-   `/smh-llm-approvals` and pick it; the renderer escapes the glob so the rule actually matches.
+1. **Reload the VS Code window.** The apply already ran — measured after it:
+   `allow 117 = 58 command + 58 unsandboxed + 1 read_file`, `deny 384` unchanged, `--status: in sync with
+   tracked file`. The extension re-reads the store on a window reload, so nothing changes until you do.
+   The apply dropped the 6 rows your clicks wrote: the 5 memory files (replaced by the one folder row,
+   nothing lost) and `unsandboxed(find ~/.claude -name "*.md" …)`, which was **already dead** — its
+   `"*.md"` token is not a valid regex for its own text, so it had been returning `ask` since the moment
+   it was written. To have that `find` for real, run `/smh-llm-approvals` and pick it: the renderer
+   escapes the glob, so the rule it writes actually matches.
 2. **Confirm it worked.** Open a memory file Antigravity has never read before. It should not ask.
 3. **The Mac row is SCC-382's.** This grant is one absolute path, so it is machine-scoped by construction;
    the Mac's own store path is a second row in that lane.
