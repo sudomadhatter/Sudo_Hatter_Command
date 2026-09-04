@@ -19,50 +19,40 @@ blast radius against this line, so it is kept current rather than recording the 
 
 ## What changes for you, Mr. Hatter
 
-Nothing you type changes. `/smh-quick-dev` in Antigravity still runs the same command body; it will
-launch from the **skill** instead of the **workflow**, the way it already does in Claude and Codex.
-Three things get better:
+**Scope, after your ruling of 2026-09-04: this ticket is the retirement half only.** It deletes the
+Antigravity workflow surface and makes the launcher skill — the same generated `SKILL.md` Claude and
+Codex already read — Antigravity's one door. It writes **no** new machine-global cache. The cache half
+(mirroring our launchers into Google's documented `~/.gemini/config/skills/` so a *project* workspace can
+see the lobby's commands) is a follow-on, gated on one measurement this ticket's Step 0 takes: whether
+the old cache at the undocumented path was ever read at all. Four audit passes found nothing of
+consequence in the retirement half and everything of consequence in the cache half; the cut is what the
+fourth pass recommended and what you approved.
 
-1. **Antigravity stops offering every house command twice.** Today each of the 39 antigravity-eligible
-   commands is in its `/` menu once as a workflow and once as a skill, because every one already has a
-   launcher `SKILL.md` in `.agents/skills/` and Antigravity now reads that folder as a `/` menu. That is
-   the SCC-66 double door, back on one platform.
-2. **The machine-global Antigravity menu moves to the path the vendor actually names.** The sync
-   writes `~/.gemini/antigravity/global_workflows/`; the vendor's own shipped `migrate-workflows` skill
-   scans `~/.gemini/config/` and never looks there. The new cache is `~/.gemini/config/skills/`.
-3. **The deadline is met with room to spare.** Antigravity retires workflows on **2026-11-01**. After that
-   date the current door is dark; after this ticket there is nothing left to go dark.
+**What the ticket does.** Antigravity has deprecated workflows and retires them on **2026-11-01**. Any
+`.agents/skills/<name>/SKILL.md` is now invoked as `/<name>`, exactly like a workflow, with no size cap.
+Every one of the 39 antigravity-eligible commands already has a launcher `SKILL.md` in `.agents/skills/`,
+so today Antigravity offers each command **twice** — the double door SCC-66 retired on every other
+platform — and on 1 November one of the two goes dark. This ticket deletes `.agents/workflows/` (41
+files), tells the sync engine that Antigravity reads the launcher skill, re-aims every test and law site
+that called the workflow mirror the Antigravity door, and purges the retired machine cache once.
 
-**The one tradeoff worth your attention: Codex and Antigravity now share one surface and one door.**
-Both read `.agents/skills/` natively, so a launcher placed there reaches both, whatever `platforms:`
-says. You can no longer give a command to Codex and withhold it from Antigravity, or the reverse. In
-practice that line was already fiction: the 15 commands declared `[opencode, antigravity]` all carry a
-hand-authored skill, which Codex has been reading all along. **My recommendation is to write the truth
-into `platforms:` law rather than build a per-platform skill cache to preserve a split nobody uses** —
-the vendor offers `skills.json` declared paths for that, and it would cost a second generated surface
-to keep one command out of one menu. If a real case ever appears, that lever exists.
+**The one tradeoff that survives the cut.** Codex and Antigravity both read `.agents/skills/` natively,
+so a launcher there reaches both and `platforms:` can no longer give a command to one without the other.
+That split was already fiction: the 15 commands declared `[opencode, antigravity]` all carry hand-authored
+skills that Codex has been reading all along. This plan writes that truth into the law rather than
+building a per-platform cache to preserve a distinction nobody uses. Google's `skills.json` declared
+paths exist if a real case ever appears.
 
-**⚠️ AUDIT FINDING (2026-09-04) — this paragraph was wrong, and the corrected version is the second
-tradeoff you should see.** Antigravity injects every skill's `description:` into its context each turn.
-SCC-195 hit a budget on the workflow menu and cut those descriptions to 135 characters; skill launchers
-carry full descriptions. The original claim here was that the payload does not change. Re-measured on
-this tree, that is true in the **lobby** and false in a **project workspace**:
+**The description budget, after the cut.** Antigravity injects every skill's `description:` each turn.
+In the lobby nothing changes: the 74 workspace skills it reads today (27,026 chars) are the same 74 it
+reads after, and the 40-file workflow menu (5,051 chars) goes away. A project workspace carries nothing
+of ours after this ticket — which, if Step 0's second number is "no", is what it carried before.
 
-| Where | Carries today | Carries after | Why |
-|---|---|---|---|
-| the lobby | 74 workspace skills (27,026 chars) + the 40-file workflow menu (5,051) | the same 74 workspace skills (27,026) | the 40 global launchers share names with the workspace ones, and the vendor's "workspace beats global" precedence resolves the conflict — **down** by 5,051 |
-| a project workspace | the 40 global workflows (**5,051** chars, each capped at 135 by SCC-195) | the 40 global launchers (**17,624** chars, uncapped) | no workspace copies exist there to win the name conflict — **up 3.5×** |
-
-So this ticket **triples** the injected description payload on exactly the surface SCC-195 was written
-for, in the same change that retires SCC-195's budget machinery. Two things keep that from being a
-reason to stop. The vendor calls skills an "unrestricted bundle" against workflows' stated 12,000-char
-cap, and describes progressive disclosure as injecting names and descriptions only — so the cap that
-forced the 135-char cut is documented as *not applying* to the surface we are moving to. And 17,624
-characters is small against any plausible budget. **What is not acceptable is closing this ticket
-without the number**, which is what the original paragraph would have done. Step 9 item 3 therefore
-counts the entries in a project workspace rather than eyeballing the tail, and the count goes into the
-walkthrough. If it comes back short, the follow-on has its figure in hand — and the lever is a cap on
-the **global mirror only**, not a return of the workspace cut.
+**Worked example.** You type `/smh-quick-dev` in Antigravity inside the lobby. The menu entry comes from
+`.agents/skills/smh-quick-dev/SKILL.md`, the same file Claude and Codex use. Its body says "read
+`.agents/commands/smh-quick-dev.md` and follow it end to end", so the command body stays the one brain.
+In a project workspace the entry does not appear, because no global cache exists yet; the follow-on
+decides whether it should.
 
 ## The vendor's word (first-party, all read 2026-09-04)
 
@@ -79,25 +69,24 @@ the **global mirror only**, not a return of the workspace cut.
 change nothing except littering a generated directory with 41 `.md.bak` files. The sync engine is the
 migration.
 
-## What is on disk today (measured on `70154040`)
+## What is on disk today (measured on `70154040`; unchanged at `eee79727`)
 
 | Surface | Count | Note |
 |---|---|---|
-| commands claiming `antigravity` (not `-AP`) | **39** | `Get-CommandPlatforms` semantics |
-| … with a `.agents/skills/<name>/SKILL.md` | **39** — 24 generated + 15 hand-authored | **zero missing** — the skill door already covers the whole set |
+| commands claiming `antigravity` (not `-AP`) | **39** | `Get-CommandPlatforms` semantics; **40 after Step 3** adds `smh-adviser-board` |
+| … with a `.agents/skills/<name>/SKILL.md` | **39** — 24 generated + 15 hand-authored | zero missing — the skill door already covers the whole set |
 | `.agents/workflows/*.md` | **41** — 39 generated + `INDEX.md` + hand-owned `smh-adviser-board.md` | the surface this ticket deletes |
-| `~/.gemini/antigravity/global_workflows/*.md` on this machine | 40 | a path no vendor doc names |
-| `~/.gemini/config/skills/` on this machine | absent | the vendor's global skills path |
-| `.agent/skills/` (BMAD's install for Antigravity, tracked) | 56 `bmad-*` | untouched by this ticket |
-| workspace skill descriptions (`.agents/skills/*/SKILL.md`) | 74 skills · **27,026** chars | unchanged by this ticket |
-| workflow-menu descriptions (`.agents/workflows/*.md`, capped at 135 by SCC-195) | 40 files · **5,051** chars | retired by this ticket |
-| the ag-eligible launcher descriptions (what the new global cache carries) | **39 today · 16,832** chars → **40 after Step 3 · 17,624** chars | ⚠️ **new** cost in a project workspace — see the corrected budget table above. Third-pass audit: every "39" in the first two drafts was measured *before* this plan's own Step 3 adds `antigravity` to `smh-adviser-board` (launcher description 792 chars). The engine's source set is "the same set the retired cache carried", and that cache holds **40** files today. |
+| `~/.gemini/antigravity/global_workflows/*.md` on this machine | 40 | a path no vendor doc names; purged once by this ticket |
+| `~/.gemini/config/skills/` on this machine | absent | the vendor's global skills path — **not written by this ticket** |
+| `.agent/skills/` (BMAD's install for Antigravity, tracked) | 56 `bmad-*` | untouched |
+| workspace skill descriptions (`.agents/skills/*/SKILL.md`) | 74 skills · 27,026 chars | unchanged |
+| workflow-menu descriptions (capped at 135 by SCC-195) | 40 files · 5,051 chars | retired |
 
 `smh-adviser-board` is the one command that declares `[claude, opencode, codex]` and carries a hand-owned
-Antigravity workflow door instead of a generated one, because that door holds an INLINE-mode paragraph.
-The brain already carries that law itself — `## Running without subagents — inline mode` in
-`.agents/commands/smh-adviser-board.md` (the "can you spawn? if not, say so before Step 0" self-test,
-`SPAWNS.md` §6) — so the generated launcher is sufficient and the hand-owned door retires with the rest.
+Antigravity workflow door, because that door holds an INLINE-mode paragraph. The brain already carries
+that law itself — `## Running without subagents — inline mode` in `.agents/commands/smh-adviser-board.md`,
+a capability self-test rather than a platform branch — so the generated launcher is sufficient and the
+hand-owned door retires with the rest.
 
 ## The model after this ticket
 
@@ -105,321 +94,184 @@ The brain already carries that law itself — `## Running without subagents — 
 |---|---|---|
 | Claude | generated launcher `SKILL.md` (hand-authored wins) | `.claude/skills/` (tree-copied cache) |
 | Codex | the **same** launcher | `.agents/skills/` (native) |
-| **Antigravity** | the **same** launcher | `.agents/skills/` (native) + global `~/.gemini/config/skills/` |
+| **Antigravity** | the **same** launcher | `.agents/skills/` (native) — global cache is the follow-on |
 | opencode | full-body command mirror | `.opencode/commands/` + global `~/.config/opencode/commands` |
 | Zoo | generated launcher | `.roo/commands/` |
 
-**`platforms:` after this ticket, for the skill door:** `claude` → the launcher goes to the
-`.claude/skills` cache; `codex` **or** `antigravity` → the launcher goes to the master `.agents/skills/`
-(read by both). A command claiming only `claude` never enters the master (unchanged). A **hand-authored**
-skill is tree-copied to Claude's cache regardless of the command's `platforms:` — the SCC-59 shape,
-unchanged, and the reason the 13 `[opencode, antigravity]` `cicd-*` commands keep their Claude entries.
+**`platforms:` for the skill door:** `claude` → the launcher goes to the `.claude/skills` cache; `codex`
+**or** `antigravity` → the launcher goes to the master `.agents/skills/` (read by both). A command claiming
+only `claude` never enters the master (unchanged). A **hand-authored** skill is tree-copied to Claude's
+cache regardless of the command's `platforms:` — the SCC-59 shape, unchanged, and the reason the **11**
+hand-authored `[opencode, antigravity]` commands (ten `cicd-*` plus `smh-close-task-merge-tree`) keep
+their Claude entries (post-cut audit: the candidate set is 13; two are generated and are exactly the
+`$masterOnly` pair).
 
 ## Acceptance — checkable, each with the assertion that proves it
 
 | Row | Statement | Proven by |
 |---|---|---|
-| **A** | `.agents/workflows/` does not exist; `.gitattributes` no longer pins it **and does pin `.agents/skills/**/SKILL.md` and `.claude/skills/**/SKILL.md` LF** (audit — the byte-mirror contract moves with the surface); the comment-stripped engine contains no `Sync-AntigravityWorkflowMirror`, no `$excluded`, no `Join-Path … "workflows"`, no write to `global_workflows` other than the retirement purge, and **exactly one call to `Get-AgDescription`, inside `Sync-ZooSurfaces`** (fourth pass: it is Zoo's launcher truncator at `sync-agents.ps1:795`, not dead code — deleting it kills the sync at the Zoo stage, including Step 8's own `-NoGlobals` run) | new `CS-18 A`/`N` (re-aimed) |
+| **A** | `.agents/workflows/` does not exist; `.gitattributes` no longer pins it and **does pin `.agents/skills/**/SKILL.md` and `.claude/skills/**/SKILL.md` LF**; the comment-stripped engine contains no `Sync-AntigravityWorkflowMirror`, no `$excluded`, no `$GlobalWfSrc`, no antigravity row in `$caches`, no `Join-Path … "workflows"`, no write to `global_workflows` other than the retirement purge, and **exactly one call to `Get-AgDescription`, inside `Sync-ZooSurfaces`** (it is Zoo's launcher truncator at `sync-agents.ps1:795`, not dead code) | `CS-18 A`/`N` (re-aimed) |
 | **B** | every command claiming `antigravity` (not `-AP`) has a `.agents/skills/<name>/SKILL.md` that is a current generated launcher for its own brain OR hand-authored; a generated launcher sits in the master iff the command claims `codex` or `antigravity`, and in `.claude/skills` iff it claims `claude` | `CS-02` extended (`missing_ag`/`ag_here` retired) |
-| **C** | the Antigravity machine cache is `~/.gemini/config/skills/`, a per-dir mirror of exactly the antigravity-eligible launcher dirs, claimed by a **manifest at the cache root** (never a marker inside the mirrored dir — see the audit); the mirror **refuses** to write into an existing unclaimed dir and the purge removes only claimed dirs whose source retired; `bmad-*` and unclaimed dirs are never written or removed; the retired `~/.gemini/antigravity/global_workflows/` purge exists as CODE and leaves nothing of ours there | `CS-18 C–H` re-aimed to the skills mirror; new `S` (refuse-to-clobber, runs anywhere against a temp cache root under `pwsh`, so it does **not** SKIP in the lane); **new `S`(g)** — the full mirror into a temp root is byte-identical to the 40 source dirs and the manifest lists exactly them — is the **lane-time** proof of the mirror, in the walkthrough before the merge; `L`/`M` byte-compare + new `R` against the real machine cache, main checkout only, **run by the closing session after its own `-GlobalsOnly` sync** (Step 9 items 0a/0b — the ceremony runs no sync), recorded in the Dev Record and the close-out report |
-| **D** | the launcher stub names Claude, Codex **and** Antigravity, and every committed generated `SKILL.md` is byte-identical to a fresh `pwsh` emit of `Sync-LauncherSkills` | `CS-18 Q` re-aimed to the skill emitter (`Q1` ran, `Q4` covered every committed GEN dir, `Q2` balanced quotes, `Q3` no BOM) |
-| **E** | dead code and dead tests gone on both sides: the Antigravity call site of `Get-AgDescription` (the function survives for Zoo — fourth pass), `ag_description`, the SCC-195 `U1–U6`/`U8`/`U9` block (`U7` survives re-labelled as the Zoo truncation check, and `AG_DESC_MAX` with it), `wf_hand_owned`, `ag_eligible`, `door_verdict`'s `launcher_ok`, the size-branch guards `N2`/`O`/`O3`; the 12,000 number leaves live law entirely (`CS-18 P` allow-list empty, `P3` retired) | `CS-18 N` + `P` |
+| **C** | the engine writes **no** Antigravity global cache — nothing under `~/.gemini/config/skills/`, nothing under `global_workflows` — and the one-time retirement purge of `~/.gemini/antigravity/global_workflows/` exists as CODE, removes only our non-`bmad-*` `*.md`, prints a RETIRED line and leaves the directory | `CS-18 C` (comment-stripped engine: the purge exists, no other Antigravity global write does) + `R` (retired cache holds none of our files; main checkout only, SKIP when absent) |
+| **D** | the launcher stub names Claude, Codex **and** Antigravity, and every committed generated `SKILL.md` is byte-identical to a fresh `pwsh` emit of `Sync-LauncherSkills` | `CS-18 Q` re-aimed (`Q1` ran, `Q4` covered every committed GEN dir, `Q2` balanced quotes, `Q3` no BOM) |
+| **E** | dead code and dead tests gone on both sides: the Antigravity call site of `Get-AgDescription` (the function survives for Zoo), `ag_description`, the SCC-195 `U1–U6`/`U8`/`U9` block (`U7` survives re-labelled as the Zoo truncation check, `AG_DESC_MAX` with it), `wf_hand_owned`, `ag_eligible`, `door_verdict`'s `launcher_ok`, the size-branch guards `N2`/`O`/`O2`/`O3`, the cache-twin checks `L`/`M`, `I`/`I2` and `M2`, `U6c` (their subject retires); `ag_description` and `AG_LIVE_DESCS` **survive** for `U7`; the 12,000 number leaves live law entirely (`CS-18 P` allow-list empty, `P3` retired) | `CS-18 N` + `P` |
 | **F** | no live law, doc, door or memory says Antigravity reads `.agents/workflows/` or `global_workflows` — `RULE_SITES` widened, anti-fossil `J0` kept; SOP + changelog moved in the same commit; `repo-map.md` and `doc-graph.{md,json}` regenerated; `_artifacts/_main/INDEX.md` row present | `CS-18 J` widened · `sop_currency` gate · `check_maps --depth3-only --strict` |
-| **G** | `smh-adviser-board` declares `antigravity`; its hand-owned workflow door is gone; the brain's inline-mode section is the only inline law | `test_adviser_board_filter_gates` F re-aimed (AG budget check retired; brain carries `## Running without subagents`) |
-| **H** | floor green — `run_all.py`, `workflow_lint.py --toolkit-only`, `check_maps.py --depth3-only --strict`, `check_links.py`; the lane ran `sync-agents.ps1 -NoGlobals` and committed the regenerated tree copies; after landing **the closing session — not the ceremony, which runs no sync — runs `sync-agents.ps1 -GlobalsOnly` from the main checkout and then `CS-18 L`/`M`/`R` with `--on-main`; both outputs go into the Dev Record and the close-out report, never the walkthrough, which the ceremony freezes before the PR** (Step 9 items 0a/0b); **the walkthrough carries `S`(g), the lane-time mirror proof, before the merge;** **Step 0's two baseline numbers are in the walkthrough before Step 1 starts**; the Step 9 hands checks are recorded in `## Your Actions` with what the operator saw, including the counted number of Global launchers in a project workspace | gate receipts + walkthrough |
+| **G** | `smh-adviser-board` declares `antigravity`; its hand-owned workflow door is gone; the brain's inline-mode section is the only inline law | `test_adviser_board_filter_gates` F re-aimed |
+| **H** | floor green — `run_all.py` (73 files), `workflow_lint.py --toolkit-only`, `check_maps.py --depth3-only --strict`, `check_links.py`; the lane ran `sync-agents.ps1 -NoGlobals` and committed every regenerated file; **Step 0's two baseline numbers are in the walkthrough before Step 1 starts**; Step 9's hands checks and the four decision rows are in `## Your Actions` | gate receipts + walkthrough |
 
 ## Steps — assert-first, in this order
 
-**Step 0 · baseline (hands, REQUIRED, before any code).** In Antigravity, open the Customizations
-panel and note two numbers: how many **Skills** it lists, and whether the 40 **Workflows** in
-`~/.gemini/antigravity/global_workflows/` appear under Global at all. The second answers a question the
-repo cannot: whether that cache was ever read.
-
-> **⚠️ AUDIT FINDING (2026-09-04): this step was marked "optional" and cannot be.** It is the only
-> check anywhere in the ticket that can tell a Step 9 failure apart from a condition that predates it.
-> If the global launchers do not show up in a project workspace afterwards and no baseline was taken,
-> there is no way to know whether this ticket broke the global path or whether the global path was
-> never read — and the follow-up is spent debugging a regression that may not be one. Both numbers go
-> into the walkthrough before Step 1 starts.
+**Step 0 · baseline (hands, REQUIRED, before any code).** In Antigravity, open the Customizations panel
+and record two numbers in the walkthrough: (a) how many **Skills** it lists in the lobby, and (b) in a
+**project workspace** (any `Projects/<name>`), whether the 40 workflows from
+`~/.gemini/antigravity/global_workflows/` appear under Global at all. **(b) is the follow-on's gate**: it
+is the only check anywhere that can say whether the old cache was ever read, and therefore whether a new
+one is worth building. Without it a later "project workspaces show nothing" cannot be told from a
+condition that predates this ticket.
 
 **Step 1 · write the RED assertions.** Every new or re-aimed check in `test_command_surfaces.py` and the
-four sibling tests is written against the unmodified tree and seen red before Step 2 starts. Paste the
-red run into the walkthrough. `CS-18 Q` needs `pwsh` (`/usr/bin/pwsh` on this box).
+sibling tests is written against the unmodified tree and seen red before Step 2 starts. Paste the red run
+into the walkthrough. `CS-18 Q` needs `pwsh` (`/usr/bin/pwsh` on this box).
 
-**Step 2 · the engine** (`sync-agents.ps1`) — design in the next section.
+**Step 2 · the engine** (`sync-agents.ps1`) — design in the next section. ⛔ Same commit as Steps 3, 5, 6.
 
 **Step 3 · delete the surface — ⛔ in the SAME commit as Steps 2, 5 and 6.** `git rm -r
 .agents/workflows/` (41 files); `smh-adviser-board.md` frontmatter
-`platforms: [claude, opencode, antigravity, codex]`.
-
-⛔ **Landing order (fourth pass — this sat in the audit record and not in the body, which is the half a
-builder reads).** `claude/teaching-edition` at `0d76f72c` **adds three files into `.agents/workflows/`**
-(`smh-tour.md`, `smh-training.md`, `smh-new-project.md`), pins five distinct `.agents/workflows/` paths
-across ten sites in `validate_teaching_edition.py`, and its working tree carries **44 dirty rows** under
-that directory — uncommitted sync output. **SCC-394 lands first.** Every count in this plan is drawn
-against `eee79727` and reproduces there. That lane then repoints its three doors to `.agents/skills/`,
-re-aims its validator, and resolves its dirty tree against a directory that no longer exists — under its
-own key, and it must **not** resolve those conflicts by keeping its side, which would resurrect the
-surface on `main`. Step 9 owes a `## Your Actions` row saying so.
-
-> **⚠️ AUDIT FINDING, second pass (2026-09-04): this step edits a `sop_currency` surface and was bound
-> to no SOP commit.** `.agents/commands/smh-adviser-board.md` is `.agents/commands/` `.md` —
-> `sop_currency.py:72`'s first surface row. The first amendment bound Step 5's `.py` edits and left
-> Step 3 out, so a builder committing Step 3 as written is rejected by the armed hook, and the
-> shortest way past it is `[sop-ok]` on a `platforms:` change — a false attestation that stays in the
-> log forever. The whole law-and-surface set lands as one commit.
-
-And in `.gitattributes`, **replace** the pin rather than dropping it:
+`platforms: [claude, opencode, antigravity, codex]` (a `.agents/commands/` edit, so a `sop_currency`
+surface). In `.gitattributes`, **replace** the pin rather than dropping it — the byte-mirror contract
+moves onto `SKILL.md` (row D's `CS-18 Q` byte-compares on both machines), and on the PC
+`core.autocrlf=true` would otherwise hand every `SKILL.md` CRLF on checkout, the SCC-338 defect one
+surface over:
 
 ```gitattributes
 .agents/skills/**/SKILL.md text eol=lf
 .claude/skills/**/SKILL.md text eol=lf
 ```
 
-> **⚠️ AUDIT FINDING (2026-09-04): dropping the LF pin without replacing it reproduces SCC-338 one
-> surface over.** `.gitattributes:34` pins `.agents/workflows/*.md text eol=lf`, and the comment above
-> it at `:22-23` says why: the sync writes the machine cache with LF while the PC runs
-> `core.autocrlf=true`, so git hands the working copy CRLF and the byte-compare goes red after every
-> pull. This ticket **moves that same byte-mirror contract onto `SKILL.md`** (row C, `L`/`M` re-aimed) —
-> and `grep -c 'skills' .gitattributes` is `0`, so nothing was replacing it. On the PC, which is exactly
-> where `L`/`M` bind, rows **C and D** would have failed on every pull. `.claude/skills` is pinned too
-> because `CS-18 Q` byte-compares committed launchers against a fresh `pwsh` emit on both machines.
->
-> **Second pass:** rewrite the 14-line comment block at `.gitattributes:20-33` in the same edit. It
-> still says the sync "writes `~/.gemini/antigravity/global_workflows/*.md`" and still explains
-> `CS-18 L` in terms of `.agents/workflows/*.md` — a live statement that Antigravity reads the retired
-> surfaces, which is exactly what acceptance row **F** forbids, in a file no gate reads. Keep the
-> SCC-338 measurement as the `ⓘ` reason the pin exists; repoint the surfaces to
-> `~/.gemini/config/skills/` and `SKILL.md`.
->
-> The `**` glob was verified against git itself rather than reasoned about: in a scratch repo,
-> `git check-attr -a` returns `text: set · eol: lf` for `.agents/skills/foo/SKILL.md`,
-> `.claude/skills/bar/SKILL.md` and a nested `bar/steps/SKILL.md`, and nothing for a sibling
-> `other.md`. The narrow pin is deliberate — `.gitattributes:16-17` says the file is "Deliberately
-> NARROW" — and only `SKILL.md` carries the byte-mirror contract.
+Rewrite the 14-line comment block above the old pin (`.gitattributes:20-33`) in the same edit: it still
+says the sync writes `global_workflows` and explains `CS-18 L` in terms of `.agents/workflows/*.md`. Keep
+the SCC-338 measurement as the `ⓘ` reason the pin exists. The `**` glob was proved with
+`git check-attr -a` in a scratch repo: it matches `.agents/skills/foo/SKILL.md`, a nested `steps/SKILL.md`,
+and nothing else.
+
+⛔ **Landing order.** `claude/teaching-edition` at `0d76f72c` **adds three files into `.agents/workflows/`**
+(`smh-tour.md`, `smh-training.md`, `smh-new-project.md`), pins five distinct `.agents/workflows/` paths
+across ten sites in `validate_teaching_edition.py`, and its working tree carries **44 dirty rows** under
+that directory. **SCC-394 lands first.** That lane then repoints its three doors to `.agents/skills/`,
+re-aims its validator, and resolves its dirty tree against a directory that no longer exists — under its
+own key, and it must **not** resolve those conflicts by keeping its side. Step 9 owes a `## Your Actions`
+row saying so.
 
 **Step 4 · tests** — re-aim list in the section below.
 
-**Step 5 · scripts.** `workflow_lint.py` `_RETIRED_SURFACES` drops `"workflows"` and its three comment
-sites; `record_map_changes.py` `TOOLKIT_FAMILIES` drops `"workflows"`; `sop_currency.py` docstring line
-28 and `.agents/scripts/INDEX.md` line 67 drop `workflows/` from the exempt list; `generate_doc_graph.py`
-prose — **two** sites, not three (audit): line 575 `"… Rebuild after editing rules/workflows."` and line
-21 `prose toolkit (rules / workflows / skills / commands)`, which is spelled differently and would have
-been missed by a grep for the first. `check_maps.py` `vendor_markers` **keeps** `.agents/workflows` on
-purpose — a project carrying it is stale vendoring, and that is exactly what the marker detects.
+**Step 5 · scripts — same commit.** `workflow_lint.py` `_RETIRED_SURFACES` drops `"workflows"` and its
+three comment sites; `record_map_changes.py` `TOOLKIT_FAMILIES` drops `"workflows"`; `sop_currency.py`
+docstring line 28 and `.agents/scripts/INDEX.md` line 67 drop `workflows/` from the exempt list;
+`generate_doc_graph.py` prose — **two** sites: line 575 `"… Rebuild after editing rules/workflows."` and
+line 21 `prose toolkit (rules / workflows / skills / commands)`. `check_maps.py` `vendor_markers` **keeps**
+`.agents/workflows` on purpose — a project carrying it is stale vendoring. ⛔ These four `.py` edits fire
+the armed `sop_currency` gate (`_SURFACES` includes `.agents/scripts/` `*.py`/`*.ps1`; `tests/` and every
+`INDEX.md` are exempt).
 
-⛔ **These four `.py` edits fire the armed `sop_currency` gate** (`_SURFACES` includes `.agents/scripts/`
-`*.py`/`*.ps1`; `.agents/scripts/tests/` and every `INDEX.md` are exempt). They must ride in the **same
-commit** as Step 6's SOP edit, exactly like Step 2 — the original plan bound only Step 2 to that commit.
-
-**Step 6 · law and docs, same commit as Step 2** (the armed `sop_currency` gate fires on
-`.agents/commands/**`, `.agents/scripts/**`, `.agents/rules/**` and root `AGENTS.md`):
+**Step 6 · law and docs — same commit** (the gate fires on `.agents/commands/` `.md`, `.agents/rules/`
+`.md`, `.agents/scripts/` `.py`/`.ps1`, `.githooks/`, and root `AGENTS.md`):
 - `AGENTS.md` §4 "Master toolkit" row (drop `workflows`), "Lobby tool dirs" row (Antigravity enters
   through the launcher skill in `.agents/skills/`), §8 portability paragraph.
 - `.agents/AGENTS.md` §1, §3 routing row, §4; `.agents/INDEX.md` workflows row deleted.
 - `.agents/commands/INDEX.md` lines 20–41 (the door model paragraph, the SCC-56 paragraph, the
   `smh-adviser-board` row).
-- `.agents/skills/INDEX.md`: state that this surface is Antigravity's `/` menu too.
-- `.agents/commands/smh-sync-agents.md`: "What it touches", the machine-global caches bullet, the whole
-  `-GlobalsOnly` section (the 12,000 paragraph goes — its reason no longer exists on any surface we
-  publish), the per-surface count list, **and line 51** — the `-Status` sentence still lists
-  `.agents/{commands,workflows}` as an invocable surface; Step 2 drops it from `Get-SurfaceState`, so
-  the doc drops it too (third pass — the same brace-expansion class the second pass caught in
-  `smh-update-maps-indexes.md`, spelled `{commands,workflows}` this time). The `.opencode/commands/`
-  mirror follows byte-for-byte.
-- `.agents/rules/sop-currency.md` line 42 exempt list.
-
-> **⚠️ AUDIT FINDING (2026-09-04): four live doors still cite the surface and none of them were in this
-> list.** A repo-wide sweep (live tree, `_artifacts/` history excluded) found them; no gate in this
-> plan's Gates section can see any of them, because `check_links.py` is diff-scoped, `sop_currency` is
-> a co-occurrence gate on files already in the commit, and `CS-18 J` opens four named files. Acceptance
-> row **F** would have closed green and false. All four are added to the Declared Change Set.
-
-- `.agents/opencode-agents/opus-auditor.md:37` — **the sharpest one.** It reads
-  "**Load the audit workflow:** Read `.agents/workflows/cicd-self-audit.md` and follow it exactly",
-  directly above its own line "If any of these are missing, HALT and report which." Step 3 deletes that
-  file, so the opencode audit subagent's step 1 becomes a read of nothing. Repoint to
-  `.agents/commands/cicd-self-audit.md`. Its `.opencode/agent/opus-auditor.md` twin is a generated
-  mirror (`sync-agents.ps1:1202`, additive robocopy) and follows from the sync in Step 8 — edit the
-  source, never the mirror.
-- `.agents/commands/smh-clean-code-audit.md:98` and `:161` — the machine floor that
-  `/smh-code-review` Step 3.5 runs **on this very lane**. Line 98's **Door parity** row lists
-  `.agents/workflows/<name>.md` as a fourth door that must agree with `platforms:`; line 161 names
-  `.agents/workflows/` as a generated surface nobody may hand-edit. Drop the retired door from both;
-  the `.opencode/commands/` twin regenerates in Step 8. `sop_currency` surface — same commit.
-- `.agents/commands/smh-quick-dev.md:365` — "**Generated surfaces are never hand-edited.**
-  `.agents/workflows/`, `.opencode/commands/`, and …". Same treatment, same commit.
-- `docs/_scc_sops_prds/tdad_stack_install_guide.md:319` — "to `.agents/workflows/`; guide updates in
-  this folder same day." Repoint to `.agents/commands/`.
-- `_my_resources/open_tasks/plan_adviser-board-rework.md` — an open planning note naming the surface as
-  live. One line, so a plan picked up later does not rebuild against a door that is gone.
-
-> **⚠️ AUDIT FINDING, second pass (2026-09-04): two more live doors, and one of them is load-bearing
-> for row F itself.** The first amendment's sweep matched the literal path `.agents/workflows`; a wider
-> sweep on the brace-expansion form found these.
-
-- `.agents/commands/smh-update-maps-indexes.md:48` and `:263` — both write
-  `` `.agents/{rules,workflows,skills,commands}/INDEX.md` `` and call it a **MASTER** family map the
-  operator should "fix drift" in directly. This is the command that regenerates `docs/repo-map.md` and
-  `docs/doc-graph.{md,json}` — the two artefacts acceptance row **F** requires — so after Step 3 it
-  sends the operator to reconcile a master map at a path that does not exist. Drop `workflows` from
-  both brace lists; the `.opencode/commands/` twin regenerates in Step 8. `sop_currency` surface —
-  same commit.
-- `.agents/rules/project-law.md:20` — the tier-1 row reads "rules · commands · skills · **workflows** ·
-  scripts · templates", the identical construction to `AGENTS.md:107`, which Step 6 already edits. Line
-  23 ("No vendored commands, workflows, scripts…") describes what a project must *not* carry and stays
-  correct as prose about the retired surface, so line 20 is the edit. `.agents/rules/` is a
-  `sop_currency` surface — same commit.
-- `docs/workspace-standard.md:159` — "the MASTER toolkit (rules, commands, skills, workflows, scripts,"
-  sits in §"Supporting files every workspace carries", *outside* the §"Command sync & platform reach"
-  this step already names. The file is in the change set; this is completeness inside a listed file.
-- **Third pass, two more:** `docs/migrations/install_guides/new_machine-migration-guide.md:423` — the
-  document a new machine is built from says `-GlobalsOnly` "refreshes the Antigravity workflows";
-  one word. And `.claude/skills/INDEX.md`, which is a byte tree-copy of `.agents/skills/INDEX.md`
-  (`sync-agents.ps1:1115`, no `INDEX.md` exclusion) — Step 6 edits the master, Step 8 regenerates the
-  copy, and neither the change set nor Step 8's list named it.
-- `docs/workspace-standard.md` §"Command sync & platform reach": the surfaces bullet, the
-  `commands/` vs `workflows/` bullet (retire), the "Gemini reads two workflow surfaces" bullet
-  (Antigravity reads two **skill** surfaces; the launcher still STOPs outside the lobby).
-- `docs/_scc_sops_prds/workflows_testing_SOP.md`: the `/smh-sync-agents` row at **line 4442**, inside
-  §19's invocation table — drop its 135-char paragraph. ⚠️ **Audit: the plan said "§3" and §3 is line
-  255 (`## 3. The two laws above every command`), which contains no occurrence of `smh-sync-agents`,
-  `135` or `description`.** A builder sent to §3 edits nothing and line 4442 survives, leaving row F
-  false. Also: the `-GlobalsOnly` paragraph and the mermaid `CACHE` node,
-  and the "Antigravity's size cap is retired" box rewritten as "Antigravity enters through the same
-  skill door" with the SCC-135/332/370 history compressed to one `ⓘ` paragraph (sop-currency habit 4).
-  One line in `workflows_testing_SOP_changelog.md`.
-- `docs/_scc_sops_prds/INDEX.md` line 119 (the "anything dropped in `.agents/workflows/` becomes a `/`"
-  note — now "in `.agents/skills/`"); `docs/_scc_sops_prds/file_folder_structure+maintaining.md` lines 13
-  and 382 point at `.agents/workflows/smh-update-maps-indexes.md`, a launcher since SCC-135 — repoint to
-  `.agents/commands/smh-update-maps-indexes.md`, **and line 43**, a third mention inside a mermaid node
-  (`CMDS["commands/ + workflows/…"]`) that the audit found in the same file.
+- `.agents/skills/INDEX.md`: state that this surface is Antigravity's `/` menu too. `.claude/skills/INDEX.md`
+  is its byte tree-copy (`sync-agents.ps1:1115`, no `INDEX.md` exclusion) and regenerates in Step 8.
+- `.agents/commands/smh-sync-agents.md`: "What it touches", the machine-global caches bullet (Antigravity's
+  is retired; the vendor's global skills path is a follow-on), the whole `-GlobalsOnly` section (the
+  12,000 paragraph goes), the per-surface count list, **and line 51** — the `-Status` sentence lists
+  `.agents/{commands,workflows}` as an invocable surface; Step 2 drops it from `Get-SurfaceState`.
+- `.agents/commands/smh-clean-code-audit.md:98` (the **Door parity** row lists `.agents/workflows/<name>.md`
+  as a fourth door) and `:161` (generated-surfaces row) — the machine floor `/smh-code-review` Step 3.5
+  runs on this very lane.
+- `.agents/commands/smh-quick-dev.md:365` — "Generated surfaces are never hand-edited. `.agents/workflows/`…".
+- `.agents/commands/smh-update-maps-indexes.md:48` and `:263` — `{rules,workflows,skills,commands}/INDEX.md`
+  as MASTER family maps; drop `workflows` from both brace lists. This is the command that regenerates
+  `docs/repo-map.md` and `docs/doc-graph.{md,json}`, which row F requires.
+- `.agents/opencode-agents/opus-auditor.md:37` — "Read `.agents/workflows/cicd-self-audit.md` and follow it
+  exactly", two lines below its own "If any of these are missing, HALT" (`:33`). Repoint to
+  `.agents/commands/cicd-self-audit.md`. Its `.opencode/agent/` twin is a generated mirror
+  (`sync-agents.ps1:1202`) — edit the source only.
+- `.agents/rules/sop-currency.md:42` exempt list; `.agents/rules/project-law.md:20` tier-1 inventory.
+- `docs/workspace-standard.md` §"Command sync & platform reach" (the surfaces bullet, the `commands/` vs
+  `workflows/` bullet, the "Gemini reads two workflow surfaces" bullet → Antigravity reads the skill
+  surface natively; the launcher STOPs outside the lobby) **and line 159** in §"Supporting files".
+- `docs/_scc_sops_prds/workflows_testing_SOP.md`: the `/smh-sync-agents` row at **line 4442** (inside
+  §19's invocation table, not §3) — drop its 135-char paragraph; the `-GlobalsOnly` paragraph and the
+  mermaid `CACHE` node; §19's footnote; the "Antigravity's size cap is retired" box rewritten as
+  "Antigravity enters through the same skill door" with the SCC-135/332/370 history compressed to one `ⓘ`
+  paragraph. One line in `workflows_testing_SOP_changelog.md`.
+- `docs/_scc_sops_prds/INDEX.md:119`; `docs/_scc_sops_prds/file_folder_structure+maintaining.md` lines 13,
+  43 (a mermaid node) and 382; `docs/_scc_sops_prds/tdad_stack_install_guide.md:319`;
+  `docs/migrations/install_guides/new_machine-migration-guide.md:423` ("refreshes the Antigravity
+  workflows"); `docs/migrations/install_guides/vscode-ide-extension-migration.md:235`;
+  `_my_resources/open_tasks/plan_adviser-board-rework.md`.
 - Regenerate `docs/repo-map.md` (`generate_repo_map.py`) and `docs/doc-graph.{md,json}`
   (`generate_doc_graph.py`).
-- `test_settings_allowlist.py` B4 comment: the extension is live again (SCC-378); the recommendation
-  stays absent by the operator's choice, not because the platform is retired. Comment only.
+- `test_settings_allowlist.py` B4 comment: the extension is live again (SCC-378); the recommendation stays
+  absent by the operator's choice. Comment only.
 
-**Step 7 · memory** (content edits, declared here; the SCC-370 precedent — approval of this plan is the
-per-item yes; filenames stay stable because other memories link them):
-`antigravity-uses-workflows-not-commands.md` (body rewritten: Antigravity's `/` menu is skills,
-workflows retire 2026-11-01, the door is the launcher skill, the global path is
-`~/.gemini/config/skills/`; history compressed to two lines), `one-door-per-platform-per-command.md`
-(table row), `codex-is-fourth-platform.md` (one line: Codex and Antigravity share `.agents/skills/`),
-`MEMORY.md` line 91 hook text. Narrated in chat in one line each when written.
+**Step 7 · memory** (content edits; approval of this plan is the per-item yes, the SCC-370 precedent;
+filenames stay stable because other memories `[[link]]` them). **Thirteen files** (post-cut audit
+corrected the count; the change set carries thirteen `_artifacts/_memory/` rows):
+`antigravity-uses-workflows-not-commands.md` (body rewritten: Antigravity's `/` menu is skills, workflows
+retire 2026-11-01, the door is the launcher skill; history compressed to two lines),
+`one-door-per-platform-per-command.md` (table row), `codex-is-fourth-platform.md` (one line: Codex and
+Antigravity share `.agents/skills/`), `MEMORY.md` line 91 hook text,
+`bmad-wrappers-are-opencode-only-bridges.md:18` (the `sudo-*` wrapper exception's premise is retired),
+`sandbox-denies-writes-under-dot-claude-hooks-skills.md:30`, `grep-skips-gitignored-projects.md` (a tense
+change, not a repoint — it names the surface inside a true anecdote),
+`thin-projects-center-owns-workflow-law.md:11`, `sop-doc-currency-gate.md:20`,
+`e2e-gate-fiction-test-guardrails.md:34`, `toolkit-sync-covers-agents-not-docs.md:31`,
+`doc-graph-unc-hang-and-scope.md:10,17`, `git-branch-model-standard.md:90`. Narrated in chat in one line
+each when written. **Guard:** `git status --short _artifacts/_memory/` immediately before staging — the
+store is shared across every lane on the machine. **Sweep:** before this step closes, re-run the widest
+sweep (`.agents/workflows`, `global_workflows`, `{rules,workflows`, `{commands,workflows`,
+`workflows/INDEX`, `Antigravity workflows`, `workflow mirror`, bare `workflows` in `_artifacts/_memory/`)
+once more — every pass found "a few more" of this class.
 
-> **⚠️ AUDIT FINDING (2026-09-04): five live memory files name the surface, and this step declared
-> three of them.** Acceptance row **F** names memory explicitly and no test can catch a miss — the
-> `RULE_SITES` list holds no memory path — so the row was self-certifying. This is SCC-370's own
-> recorded miss repeating; its plan noted "the **SEVENTH** memory file; Step 5 named six." The three
-> additions:
->
-> - `bmad-wrappers-are-opencode-only-bridges.md:18` — "those target CUSTOM (non-BMAD) skills that
->   Antigravity does NOT get natively, so they need the sync's antigravity workflow-mirror path
->   (`.agents/workflows/`)." The whole premise is retired: Antigravity now reads `.agents/skills/`
->   natively, which is what makes the `sudo-*` wrapper exception unnecessary.
-> - `sandbox-denies-writes-under-dot-claude-hooks-skills.md:30` — names `.agents/workflows` in the list
->   of surfaces the sync maintains. One-word edit.
-> - `grep-skips-gitignored-projects.md` — a tense change, not a repoint: it names the surface inside
->   a true anecdote about a past investigation.
-> - **Third pass, two more:** `thin-projects-center-owns-workflow-law.md:11` — "rules, `/` commands,
->   skills, workflows, scripts, sync", the `AGENTS.md:107` construction again; and
->   `sop-doc-currency-gate.md:20` — the fourth live copy of the `sop_currency` exempt list (the other
->   three are Steps 5 and 6).
-> - **Fourth pass, four more:** `e2e-gate-fiction-test-guardrails.md:34` ("the antigravity workflow
->   mirror" as a surface the sync guards, present tense); `toolkit-sync-covers-agents-not-docs.md:31`
->   and `doc-graph-unc-hang-and-scope.md:10,17` (both quote byte-for-byte the "Rebuild after editing
->   rules/workflows" sentence Step 5 removes from `generate_doc_graph.py`);
->   `git-branch-model-standard.md:90` ("all rules, commands and workflows" — the `AGENTS.md:107`
->   construction). **Eleven memory files in all.** Every pass has found "a few more" of this class; the
->   builder re-runs the widest sweep from the third-pass record once more before Step 7 closes.
->
-> **Guard, carried forward from SCC-370:** run `git status --short _artifacts/_memory/` immediately
-> before staging. The store is shared across every lane on the machine, so a sibling's in-flight memory
-> edit is stageable by accident. SCC-388 is live right now and touches no memory file, so today's
-> exposure is nil — the guard costs one line and does not depend on that staying true.
-
-**Step 8 · sync and gates, inside the lane.** Run `pwsh .agents/scripts/sync-agents.ps1 -NoGlobals`
-with the sandbox off (`.claude/skills` is write-denied under the OS sandbox in-session), commit the
-regenerated `.agents/skills/*/SKILL.md`, `.claude/skills/*/SKILL.md`, `.agents/.sync-manifest.json`
-**and every generated file the change set declares as EDIT: the six `.opencode/` mirrors —
-`.opencode/agent/opus-auditor.md` and
-`.opencode/commands/{smh-adviser-board,smh-sync-agents,smh-clean-code-audit,smh-quick-dev,smh-update-maps-indexes}.md`
-— plus `.claude/skills/INDEX.md`, the tree copy of the master skills INDEX Step 6 edits
-(`sync-agents.ps1:1115` copies it with no `INDEX.md` exclusion, unlike the opencode-agents call).**
-⚠️ Second-pass audit added this list because the change set grew and it had not; **third-pass audit
-found the second pass's own list said "five", named four, and missed two declared `.opencode/` rows and
-the INDEX copy.** The rule, so it cannot drift a third time: stage whatever `git status --short` shows
-under `.opencode/` and `.claude/skills/` after the sync, and check each against the change set.
-⛔ `-NoGlobals` is not optional here: `$IsLobby` compares a worktree equal to itself
-(`sync-agents.ps1:114`), so a bare sync from this lane would write **this machine's** global caches.
+**Step 8 · sync and gates, inside the lane.** Run `pwsh .agents/scripts/sync-agents.ps1 -NoGlobals` with
+the sandbox off (`.claude/skills` is write-denied under the OS sandbox in-session). ⛔ `-NoGlobals` is
+not optional: `$IsLobby` compares a worktree equal to itself (`sync-agents.ps1:114`), so a bare sync from
+this lane would write **this machine's** global caches. Then commit **whatever `git status --short` shows
+under `.agents/skills/`, `.claude/skills/`, `.opencode/` and `.agents/.sync-manifest.json`**, checking
+each against the change set — the six `.opencode/` mirrors and `.claude/skills/INDEX.md` are among them.
 Then the floor: `run_all.py` · `workflow_lint.py --toolkit-only` · `check_maps.py --depth3-only --strict`
-· `check_links.py`. Receipts into `gates/`.
+· `check_links.py`, through the receipt writer into `gates/`.
 
-**Step 9 · after landing.**
+**Step 9 · after landing.** The ceremony (`/smh-close-task-merge-tree`) runs no sync. On this machine
+the operator's ordinary post-pull `/smh-sync-agents` from the lobby runs the retirement purge; the
+walkthrough's `## Your Actions` carries the hands checks and four decision rows:
 
-> **⚠️ AUDIT FINDING, third pass (2026-09-04): the sentence this step used to open with — "the
-> ceremony's plain `/smh-sync-agents` from the main checkout runs first" — was false, and both earlier
-> passes built on it.** `/smh-close-task-merge-tree` runs no sync. Its six steps merge, prune and print;
-> its only mention of the word is line 35, the paragraph explaining the `smh-*` naming. So the machine
-> cache half of row C was scheduled to be proven immediately after a step nobody runs. Worse, the
-> command item 0 named refuses to run on this machine today: `tree_guard` (`wf_common.py:569`) exits 2
-> from the main checkout while any lane worktree exists — and one always does — and if the cache root
-> is absent (measured absent), `CS-18 L` prints "SKIPPED: this machine has no Antigravity global cache"
-> and registers `True`. Three green SKIPs would have closed row C. The morning after, the operator's
-> project workspaces would still show the 40 old workflow entries, which still *work* because their
-> launchers point at command files that still exist — invisible until 2026-11-01.
-
-The **closing session** does items 0a and 0b itself, standing in the main checkout with the lane pruned,
-in this order and no other; items 1–4 are the operator's and go into `## Your Actions`.
-
-0a. **Run the globals-only sync from the main checkout, sandbox off:**
-    `pwsh .agents/scripts/sync-agents.ps1 -GlobalsOnly`. ⛔ Fourth pass: **`-GlobalsOnly`, not a bare
-    sync.** `Save-SyncManifest` (`sync-agents.ps1:1212`) sits inside the `if (-not $GlobalsOnly)` block
-    and stamps a wall-clock timestamp into the tracked `.agents/.sync-manifest.json` on every run
-    (`:263`), so a bare sync from `main` guarantees a dirty tracked file in the one checkout no agent
-    may commit to, and the operator's next `git pull` in the lobby refuses on it. The globals block at
-    `:1261` runs under `($IsLobby -or $GlobalsOnly)`, so the cache write and the retirement purge still
-    happen and nothing tracked moves. Its reported counts go into the **Dev Record**
-    (`jira_feed.py devrecord --outcome`) and the close-out's chat report.
-0b. **Then, and only then:** `python3 .agents/scripts/tests/test_command_surfaces.py --case CS-18 --on-main`
-    *(PC: `python`)*. `--on-main` is `tree_guard`'s sanctioned override for a deliberate main run
-    (measured: accepted, 34/34 on this box); without it the command refuses whenever a lane worktree is
-    on disk. `L`, `M` and `R` go into the **Dev Record and the close-out report — never the
-    walkthrough**: fourth pass found that by the time the closing session stands on `main` the
-    walkthrough has landed, and the ceremony's own Step 3 bans the post-merge commit that pasting into
-    it would need (`smh-close-task-merge-tree.md:352-354`). The lane-time proof of the mirror is
-    `CS-18 S`(g), already in the walkthrough before the merge; 0a/0b are the real-machine confirmation.
-    They SKIP outside the main checkout by design and SKIP-as-pass when the cache root is absent — so
-    0b after 0a is the only order in which they bind.
 1. In the lobby, type `/smh-sync-agents` in Antigravity → it launches from the skill and reads the
    command body (the launcher's "Execute now" line is what you should see it do first). Then a window
    reload.
-2. Customizations → Skills: the 74 house + 56 BMAD workspace skills are listed; spot-check the
-   alphabetical tail (`workspace-structure`, `write-swift`) — a dropped tail is the SCC-195 shape.
-3. Open a project workspace (any `Projects/<name>`): **count** the launchers listed under Global — the
-   number goes in the walkthrough. Expect **40** (third pass: not 39 — Step 3 adds `smh-adviser-board`).
-   **And ask the agent in that workspace to list the `/` commands it can see, and compare.** The panel
-   lists what the extension found on disk; the budget SCC-195 hit was spent on what is *injected* —
-   SOP line 4442 records the symptom as "workflows get dropped from the agent's list outright". A
-   panel count cannot see that; the agent's own list can. Both numbers go in the walkthrough. Then
-   confirm `/smh-quick-dev` STOPs with "that file does not exist in this workspace" rather than
-   improvising.
-4. Customizations → Workflows: no house entries, no deprecation banner.
+2. Customizations → Skills: the 74 house + 56 BMAD workspace skills are listed; spot-check the alphabetical
+   tail (`workspace-structure`, `write-swift`).
+3. Customizations → Workflows: no house entries, no deprecation banner.
+4. Open a project workspace: `/smh-quick-dev` is either absent (no global cache) or, if the old entries
+   linger until the purge has run there, STOPs with "that file does not exist in this workspace". Record
+   what Global shows — with Step 0 (b), that is the follow-on's whole input.
 
-**`## Your Actions` rows this step owes the operator** — each worded as a *decision*, because
-`jira_feed.py banned_action_rows` refuses a row that asks him to create ticket work (SCC-163); the
-fourth pass measured the natural per-repo "mint a follow-on ticket" spelling as REFUSED and these three
-as accepted:
-
+`## Your Actions` rows, each worded as a **decision** because `jira_feed.py banned_action_rows` refuses a
+row that asks the operator to create ticket work (measured: "mint a follow-on ticket …" REFUSED; these
+are accepted):
+- *Decide whether the Antigravity global cache follow-on is worth building, from Step 0 (b) and item 4:
+  if project workspaces never showed the 40 old entries, nothing was lost; if they did, the follow-on is
+  `Copy-Tree -Mirror` of the 40 launcher dirs into `~/.gemini/config/skills/` — no manifest, no purge, a
+  retired launcher STOPs cleanly — the Codex and opencode shape.*
 - *Decide whether `Projects/sudo-command-center` and `Projects/Fresh_Workspace_BMAD` get the
-  workflows-to-skills port before 2026-11-01 — both carry `.agents/workflows/`, both are their own
-  repos, and `Fresh_Workspace_BMAD` is a frozen template whose disposal is already yours.*
-- *On the other machine: pull, run `pwsh .agents/scripts/sync-agents.ps1 -GlobalsOnly`, and report the
-  Global launcher count in a project workspace.* — fourth pass: nothing in the tree tells the second
-  machine it owes a sync, and after 2026-11-01 its stale cache serves nothing.
+  workflows-to-skills port before 2026-11-01 — both carry `.agents/workflows/`, both are their own repos,
+  and `Fresh_Workspace_BMAD` is a frozen template whose disposal is already yours.*
+- *On the other machine: pull and run `/smh-sync-agents` so its retired cache is purged too.*
 - *`claude/teaching-edition`: repoint its three workflow doors to `.agents/skills/` and re-aim
-  `validate_teaching_edition.py` before resuming it; do not resolve its 44 dirty `.agents/workflows/`
-  rows by keeping them.*
+  `validate_teaching_edition.py` before resuming it; do not resolve its 44 dirty `.agents/workflows/` rows
+  by keeping them.*
 
 ## Engine design — the specifics
 
@@ -434,210 +286,81 @@ as accepted:
 **Local stage** (`.claude/skills` copy): `$cxOnly` becomes `$masterOnly` = commands whose master
 `SKILL.md` is **generated** and whose `platforms` claim `codex` or `antigravity` but not `claude`. Today
 that is `cicd-bdd-tests` and `sentry-security-team-avch` — the same two as now. ⛔ Not hand-authored
-skills: widening the exclusion to them would pull 13 `cicd-*` entries out of Claude's menu.
+skills: widening the exclusion to them would pull the 11 hand-authored entries (ten `cicd-*` plus
+`smh-close-task-merge-tree`) out of Claude's menu.
 
-**`Sync-AntigravitySkills`** (new; shape of `Sync-CodexSkills`):
-- source set = every `.agents/skills/<name>/` where `<name>` is an antigravity-eligible command (not
-  `-AP`), generated or hand-authored — the same set the retired cache carried. Knowledge skills
-  (`python-patterns`, …) stay workspace-only, as they are for every other global cache.
+**Retirement purge, once per machine** — the `~/.codex/prompts` shape at `sync-agents.ps1:1300-1306`,
+inside the globals block (`(-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)`): if
+`~/.gemini/antigravity/global_workflows/` exists, remove our non-`bmad-*` `*.md` from it and print a
+`RETIRED` line naming the count; leave the directory. `Test-Path` before `Remove-Item` — it throws under
+`$ErrorActionPreference = "Stop"` on a missing path. `-WhatIf` prints `would purge …` and removes nothing.
 
-> **⚠️ AUDIT FINDING (2026-09-04) — the marker design below replaces a per-dir marker file, which was
-> a data-loss path.** The original design wrote `.sync-agents-mirror` *inside* each mirrored dir. But
-> `Copy-Tree -Mirror` builds `$kept` from the **source** tree and then runs
-> `if (-not $kept.Contains($rel)) { Remove-Item -LiteralPath $item.FullName -Recurse -Force }`
-> (`sync-agents.ps1:179-202`), so the marker is deleted on every run and rewritten by the next
-> statement. Two failures follow. The marker gated only the *purge*, never the *mirror*: an operator
-> who hand-writes `~/.gemini/config/skills/<one-of-our-names>/` under the vendor's own documented path
-> would have his directory emptied, overwritten and then claimed. And any interruption between the
-> delete and the rewrite leaves a fully-mirrored, permanently unclaimable directory that the purge can
-> never reclaim and that `L`/`M` never report, because they report *claimed* orphans.
-
-- **claim manifest, at the cache ROOT, outside everything the mirror rebuilds:**
-  `~/.gemini/config/skills/.sync-agents-mirror.json` — `{"generator":"sync-agents","dirs":[…]}`,
-  one entry per dir we own. It is the single source of truth for what is ours.
-
-**The pass, in this exact order — rewritten twice.** The second pass, because "claim, then mirror"
-cancelled the refusal it was paired with. The fourth, because a *single* write-once cannot be placed
-anywhere safe: before the mirror, a purge that fails has already lost its claim and the retired dir is
-orphaned forever (measured with a scratch implementation — a caught permission error left
-`smh-retired/` on disk, unclaimed, through a second clean run); after the mirror, an interruption leaves
-a dir we wrote that the next run refuses as not ours. **Two atomic writes per run, both
-write-to-temp-then-rename** — `[IO.File]::WriteAllText` in place, the house's only manifest shape
-(`sync-agents.ps1:296`), truncates first, and a kill mid-call is exactly what produces the zero-byte
-file step 1 guards against:
-
-1. **Read the old manifest.** Three states, and the third pass found the first draft conflated two of
-   them. **Absent** (`Test-Path` false) → a fresh machine: claims = empty, proceed. **Present and
-   parses to a `dirs` array** → proceed with those claims. **Present but yields `$null`, a non-object,
-   or no `dirs`** — including the zero-byte file — → `Write-Warning` and **do nothing this run**: no
-   mirror, no purge, no manifest write. ⛔ Measured on this box: `Get-Content -Raw | ConvertFrom-Json`
-   on an empty file returns `$null` and **does not throw**, so a `try/catch` alone never fires on
-   exactly the "truncated" case the first draft named; the inert arm must test the parse *result*, not
-   only catch an exception. Fail-safe has to mean *inert*, not *unclaimed*. ⛔ Fourth pass: the inert
-   warning **prints its remedy** — `delete ~/.gemini/config/skills/.sync-agents-mirror.json and
-   re-sync` — because nothing else ever un-inerts the machine, and a bare `Write-Warning` in the middle
-   of a fifteen-line sync is exactly where a permanent freeze would hide. The
-   first draft left this unstated, and the house pattern at `sync-agents.ps1:234-238` ("unreadable …
-   purging nothing this run") only fails safe against deletion — inverted onto a claim manifest, an
-   unreadable file would read as "nothing is ours", the mirror would refuse all 39 dirs, and the global
-   menu would silently freeze at whatever the last good run wrote while `L`/`M` iterated zero claimed
-   dirs and passed. Cache dead, every gate green.
-2. **Test for refusal, against the OLD manifest.** For each name in the source set: destination exists
-   and is **not** in the old manifest → refuse it, print
-   `SKIP unclaimed '<name>' (not written by sync-agents)`, drop it from this run's set. ⛔ The refusal
-   test must read the **old** manifest and must run **before** any claim is written. The first draft
-   said "write the name into the manifest *before* mirroring that dir" and then tested against that
-   same manifest — so the name was always present by the time the test ran, the test always passed,
-   and `Copy-Tree -Mirror` clobbered the operator's directory. The two rules cancelled.
-   Use bare `Test-Path` for "destination exists", **not** `-PathType Container`: a *file* or symlink
-   sitting at one of our names must be refused too. ⛔ Third-pass audit corrected the *reason*: the
-   first draft said `New-Item -ItemType Directory` "throws" on an occupied path — measured here, with
-   `-Force` it does **not** throw and the file survives. So `-PathType Container` would silently pass
-   a file into `Copy-Tree`, which on Linux/Mac walks a file with `Get-ChildItem -Recurse` and on
-   Windows hands robocopy a file destination (rc 16 → `throw` at `sync-agents.ps1:167`). Two machines,
-   two different failures; bare `Test-Path` avoids both by never reaching the copy.
-3. **First manifest write** — `old claims ∪ (the names step 2 left)`, temp-then-rename. This claims a
-   new name **before** its dir exists, so an interruption during the mirror leaves "claimed and
-   absent or partial", which the next run simply completes — never "present and unclaimed", which step
-   2 would refuse as not ours. Two writes per run **narrow** the read-modify-write race between two
-   bare syncs in different worktrees; they do not close it. Two syncs racing can still leave a mirrored
-   dir claimed by neither, which step 2 then refuses forever — so the `SKIP unclaimed` line prints its
-   remedy: `delete the dir and re-sync`.
-4. **Mirror** each claimed dir: `Copy-Tree … -Mirror` into `~/.gemini/config/skills/<name>/`, the
-   loop body in `try/catch`.
-5. **Purge** every old claim not in the source set. Never `bmad-*`, never an unclaimed dir (the
-   operator's own global skills). ⛔ **Guard each removal with `Test-Path`** — measured: `Remove-Item`
-   on a missing path throws `ItemNotFoundException` under the script's `$ErrorActionPreference = "Stop"`
-   (`sync-agents.ps1:81`). `Sync-CodexSkills`'s purge iterates `Get-ChildItem` and can only ever delete
-   what it just saw; this purge iterates a **manifest list**, which can name a dir the operator already
-   deleted by hand. A claimed name absent on disk counts as removed. The loop body is in `try/catch`,
-   and ⛔ **a purge that fails keeps its claim** — fourth pass: with the single write placed before
-   this step, a caught failure had already stripped the claim, and the dir it failed to delete became
-   permanently unclaimable, invisible to `L`/`M`, serving a retired command from the Global menu with
-   every gate green. The claim stays so the next run retries.
-6. **Second manifest write** — the step-3 set minus what step 5 actually removed, temp-then-rename. An
-   interruption before this write leaves "claimed and retired and absent", which the next run's step 5
-   simply drops.
-
-**A claimed name is reserved while its source lives.** If the operator deletes a claimed dir and later
-creates his own under that same name, the next sync mirrors over it: the refusal protects only what we
-never claimed. That is the same ownership model every other cache in this engine uses, and it is stated
-here so it is a known shape rather than a surprise. The 40 names are ours under the vendor's global path.
-
-⛔ **`-WhatIf` writes nothing at all** — not the manifest, not a dir, not a purge. It prints
-`would mirror antigravity skill '<name>'` / `would purge …` / `would SKIP unclaimed …`. The shape this
-copies (`Sync-CodexSkills`, `sync-agents.ps1:976-984`) guards only the *copy* with `if (-not $WhatIf)`,
-so a literal implementation would have a **dry run write the claim manifest** — claiming all 39 names
-on a machine where the cache does not exist yet (measured absent). If the operator then hand-wrote one
-of those names under the vendor's documented path, the next real sync would find it *claimed*, skip the
-refusal, and empty his directory: the data-loss path reached through the one mode that writes nothing.
-
-⛔ **Wrap the per-dir loop body in `try/catch`, not just the initial `New-Item`.** On Windows
-`Copy-Tree` is `robocopy /MIR` and **throws** on `rc >= 8` (`sync-agents.ps1:167`); the PowerShell
-branch never throws. `Sync-CodexSkills` guards only the root create, so one locked destination would
-abort the whole sync mid-loop. The claim-then-mirror ordering makes that state recoverable — but only
-if the loop survives to finish the other dirs.
-
-**`CS-18 S` proves the refusal**, and unlike `L`/`M`/`R` it does not need the main checkout: it points
-the function at a temp cache root under `pwsh` and asserts **eight** things, each written RED first
-against a build that still clobbers — (a) an unclaimed dir holding a sentinel byte survives untouched and
-the manifest did not grow; (b) a bare *file* at one of our names: **its bytes are unchanged afterwards
-and the manifest did not grow** — third pass reworded this onto the bytes, because the un-fixed build
-does not throw either (measured), so "refused, not thrown on" could never have been seen RED, which
-violates Step 1's own rule; (c) a `-WhatIf` run against an absent cache root leaves **no manifest on
-disk**; (d) an unreadable manifest (malformed JSON) leaves the cache — **including the manifest's own
-bytes** — entirely unchanged rather than refusing everything; (e) a **zero-byte** manifest leaves the
-cache and its own bytes unchanged — distinct from (d) because the parse returns `$null` rather than
-throwing; (f) a claimed name absent on disk is dropped from the manifest without a throw; **(g) the full
-mirror into a temp root is byte-identical to every ag-eligible launcher dir and the manifest lists
-exactly those 40 names** — fourth pass: this is the lane-time proof of row C's mirror, the one that
-lands in the walkthrough before the merge, because `L`/`M`/`R` cannot and the post-merge run has no
-walkthrough to write to; **(h) a purge that fails (a read-only dir under the temp root) leaves its
-claim in the manifest, and a second run removes it** — the orphan the single-write ordering produced.
-
-- `-WhatIf` prints `would mirror antigravity skill '<name>'` / `would purge …`; the same fidelity caveat
-  as today (a brand-new command's launcher is emitted by `Sync-LauncherSkills`, which writes nothing
-  under `-WhatIf`, so the cache preview is a floor).
-- guarded like the other caches (missing/broken path → warning, never a crash); runs only when
-  `(-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)`; `Sync-LauncherSkills` already runs before the
-  globals block, which is the ordering `CS-18 I2` pins.
-- retired-cache purge, once per machine, same shape as the `~/.codex/prompts` purge: remove our
-  non-`bmad-*` `*.md` from `~/.gemini/antigravity/global_workflows/` and print a RETIRED line; leave
-  the directory.
-
-**Deletions:** `Sync-AntigravityWorkflowMirror`, the **Antigravity call site** of `Get-AgDescription`
-at `:622` — **not the function** (fourth pass: `Sync-ZooSurfaces:795` calls it and `.roo/commands/*.md`
-are cut to 135 today; its header comment is retitled as Zoo's truncator; `test_zoo_team.py` C7 already
-pins that the Zoo *seat* loop must not use it, which is a different emitter), the SCC-195 comment block, the
-regen call and its `Write-Host`, `$GlobalWfSrc` and the antigravity row of `$caches` (the table keeps
-the opencode row; the skills mirror is its own call), `.agents\workflows` in `Get-SurfaceState`, the
-"commands/workflows" wording in the `-Reconcile` keep-list header, and the header `.DESCRIPTION` /
-door-model comments (Antigravity enters through the launcher skill).
+**Deletions:** `Sync-AntigravityWorkflowMirror`; the **Antigravity call site** of `Get-AgDescription` at
+`:622` — **not the function**, which `Sync-ZooSurfaces:795` calls and whose header comment is retitled as
+Zoo's truncator (`test_zoo_team.py` C7 pins only that the Zoo *seat* loop avoids it — a different
+emitter); the SCC-195 comment block; the regen call and its `Write-Host`; `$GlobalWfSrc` and the
+antigravity row of `$caches` (the table keeps the opencode row); `$excluded` (all four uses sit in the
+retired region); `.agents\workflows` in `Get-SurfaceState`; the "commands/workflows" wording in the
+`-Reconcile` keep-list header; the header `.DESCRIPTION` / door-model comments.
 
 **Reported counts** after a sync: generated launcher skills · `.claude/skills` · `.opencode/commands` ·
-opencode global · **antigravity global (skills)** · codex bmad skills.
+opencode global · codex bmad skills. No Antigravity global line.
+
+**Not in this ticket:** `Sync-AntigravitySkills` and `~/.gemini/config/skills/`. Four audit passes
+designed and re-designed a claim-manifest mirror for that path; the fourth pass's recommendation, and
+the operator's ruling, is that it is a follow-on gated on Step 0 (b), and that if it is built it is the
+dumb `Copy-Tree -Mirror` shape every other cache in this engine already uses.
 
 ## Tests — the exact re-aim list
 
 `test_command_surfaces.py` (63 references to the surface today):
-- helpers: delete `wf_hand_owned`, `ag_eligible`, `ag_description`, `AG_DESC_MAX`; `is_launcher_for` loses
-  `budgeted`; `door_verdict` loses `launcher_ok`.
-- `CS-01`: keep ".claude/commands is retired"; delete the hand-owned checks and the three
-  "declaration" controls that only served them.
-- `CS-02`: eligibility for the skill door = claude|codex|antigravity; placement asserted both ways per
-  row B; `missing_ag`, `ag_here`, `hand_ag` and the antigravity `mirror_place_error` calls go; the four
+- helpers: delete `wf_hand_owned`, `ag_eligible`; `is_launcher_for` loses `budgeted`; `door_verdict`
+  loses `launcher_ok`. **`ag_description`, `AG_DESC_MAX` and the `AG_LIVE_DESCS` setup survive for `U7`**
+  — post-cut audit: `U7`'s assertion is "the real PowerShell generator and this file's emulation agree",
+  and the emulation *is* `ag_description` (`test_command_surfaces.py:1539`), reading `AG_LIVE_DESCS`
+  from the `U1–U6` setup region; deleting either strands the surviving case with a `NameError` on the
+  first run. Move the setup `U7` needs into `U7`'s own block when `U1–U6` go.
+- `CS-01`: keep ".claude/commands is retired"; delete the hand-owned checks and the three "declaration"
+  controls that only served them.
+- `CS-02`: eligibility for the skill door = claude|codex|antigravity; placement asserted both ways per row
+  B; `missing_ag`, `ag_here`, `hand_ag` and the antigravity `mirror_place_error` calls go; the four
   door-place controls keep only the opencode pair.
-- `CS-03`: `MIRRORS = (".opencode/commands",)`; the `WF` controls go; keep "a launcher on an OPENCODE
-  door is NOT exempt" and the `ea8fe97^` regression control.
+- `CS-03`: `MIRRORS = (".opencode/commands",)`; the `WF` controls go; keep "a launcher on an OPENCODE door
+  is NOT exempt" and the `ea8fe97^` regression control.
 - `CS-07`: workflow ghosts and the "≥20 workflows" count go; the opencode ghost sweep stays.
 - `CS-13 F`: four doors, not five.
 - `CS-15`: `seam_sites` sweeps `.agents/commands` only.
-- SCC-195 block: delete `U1–U6`, `U8`, `U9`. **`U7` survives** (fourth pass) — its pwsh extraction of
-  `Get-AgDescription` is the only test of a 135 cut that Zoo's launchers still carry; re-label it as the
-  Zoo truncation check and keep `AG_DESC_MAX` for it.
+- SCC-195 block: delete `U1–U6` (including `U6c`, which consumes their totals), `U8`, `U9`. **`U7`
+  survives** — its pwsh extraction of `Get-AgDescription` is the only test of a 135 cut that Zoo's
+  launchers still carry; re-label it as the Zoo truncation check and carry its setup with it.
 - `CS-18`: rewritten as "the Antigravity door is the skill door" — `A` (no workflows dir, no mirror
-  function, **`Get-AgDescription` called from exactly one site and that site inside `Sync-ZooSurfaces`**,
-  no cap number outside that function, comment-stripped, **and `.gitattributes` carries no
-  `.agents/workflows` pin while it does carry LF pins matching `.agents/skills/**/SKILL.md` and
-  `.claude/skills/**/SKILL.md`** — ⚠️ second-pass audit: the first amendment added that clause to
-  acceptance row A and added no assertion for it. `grep -rn gitattributes .agents/scripts/` finds no
-  test anywhere in the repo that reads the file, which is precisely why the SCC-338 pin it replaces
-  could be dropped silently in the first place. Without this check a builder who mistypes the pin
-  closes row A green and the failure surfaces as `L`/`M` going red on the *other* machine after the
-  next pull), `C–H` (the skills-mirror call reads
-  `$Master/skills` and targets `.gemini/config/skills`; opencode still `commands`), `I2` (launcher regen
-  precedes the globals block), `J` (`RULE_SITES` = `docs/workspace-standard.md`,
-  `.agents/commands/INDEX.md`, `.agents/skills/INDEX.md`, `.agents/commands/smh-sync-agents.md`; the
-  inverted-claim regex widened to "Antigravity … reads/mirrors … workflows"), `L`/`M` (cache twin
-  byte-compare per **manifest-claimed** launcher dir, main checkout only, claimed orphans reported),
-  new `R` (retired cache holds none of our files, main checkout only, SKIP when absent), **new `S` —
-  the refuse-to-clobber proof** (⚠️ audit: `L`/`M`/`R` all SKIP outside the main checkout, so the
-  cache half of row C had no assertion that ever binds during the build. `S` runs anywhere: it points
-  `Sync-AntigravitySkills` at a temp cache root under `pwsh` and asserts the **eight** cases the
-  Engine design names — an unclaimed dir's sentinel byte survives and the manifest does not grow; a
-  bare **file** at one of our names has its bytes unchanged afterwards and the manifest did not grow; a
-  `-WhatIf` run against an absent cache root leaves **no manifest on disk**; a malformed manifest
-  leaves the cache and its own bytes unchanged; a **zero-byte** manifest likewise; a claimed name
-  absent on disk is dropped without a throw; **the full mirror into a temp root is byte-identical to
-  the 40 source dirs and the manifest lists exactly them** (the lane-time proof of row C); **a purge
-  that fails keeps its claim and a second run removes it**. Each written RED first against a build that
-  still clobbers),
-  `P` (allow-list empty; `P0`
-  teeth control kept; `P3` retired), `Q` (round-trip `Sync-LauncherSkills` + `New-LauncherSkillStub` +
-  `Get-CommandPlatforms` + `$AllPlatforms` under `pwsh` into a temp master; compare only committed GEN
-  dirs; `Q4` = every committed GEN dir was emitted). `K`, `N2`, `O`, `O0`, `O3` retire with their subject.
+  function, `Get-AgDescription` called from exactly one site inside `Sync-ZooSurfaces`, no cap number
+  outside that function, comment-stripped, **and `.gitattributes` carries no `.agents/workflows` pin while
+  it does carry LF pins matching `.agents/skills/**/SKILL.md` and `.claude/skills/**/SKILL.md`** — no test
+  in the repo reads that file today, which is why the SCC-338 pin could be dropped silently), `C` (the
+  comment-stripped engine contains the retirement purge and **no other write under `.gemini/`**; opencode
+  still `commands`), `J` (`RULE_SITES` = `docs/workspace-standard.md`, `.agents/commands/INDEX.md`,
+  `.agents/skills/INDEX.md`, `.agents/commands/smh-sync-agents.md`; the inverted-claim regex widened to
+  "Antigravity … reads/mirrors … workflows"), `R` (retired cache holds none of our files; main checkout
+  only, SKIP when absent), `P` (allow-list empty; `P0` teeth control kept; `P3` retired), `Q` (round-trip
+  `Sync-LauncherSkills` + `New-LauncherSkillStub` + `Get-CommandPlatforms` + `$AllPlatforms` under `pwsh`
+  into a temp master; compare only committed GEN dirs; `Q4` = every committed GEN dir was emitted).
+  `D–H`, **`I`** (it asserts the mirror call is *present* — `^\s*\$\w+\s*=\s*Sync-AntigravityWorkflowMirror`
+  — so it goes RED, not stale), `I2`, `K`, `L`, `M`, **`M2`** (calls the deleted `ag_eligible` over
+  `WFDIR`), `N2`, `O`, `O0`, **`O2`** (the door-count control for `O`, reads the deleted directory), `O3`
+  retire with their subject (post-cut audit added `I`, `M2`, `O2`).
 - module docstring line 14.
 
 Sibling tests: `test_zoo_notify.py` (the `ag` door → `.agents/skills/smh-llm-approvals/SKILL.md`, same
 pointer + "END TO END" assertion); `test_live_testing_browser_instrument.py` (`WORKFLOW` → the skill
 launcher; `A1b` re-aimed); `test_adviser_board_filter_gates.py` (`AG` removed from the file list; block F
 keeps opencode byte-identity + Claude skill description, drops the 135-char budget, adds "the brain
-carries `## Running without subagents`"); `test_door_preflight_order.py` line **507** glob removed — ⚠️ **audit: the plan said 499, which is
-`+ sorted(REPO.glob(".agents/commands/*.md"))`.** Following the wrong number guts the SCC-193
-"sign-off wording, pinned both directions" block of its main surface while leaving the workflows glob
-to resolve to an empty set: two checks silently weakened, both still green;
-`test_doc_examples_parse.py` line 55 comment; `test_workflow_lint.py` lines 583/592 fixture (no
-`workflows/INDEX.md`).
+carries `## Running without subagents`"); `test_door_preflight_order.py` line **507** glob removed (499 is
+the commands glob); `test_doc_examples_parse.py` line 55 comment; `test_workflow_lint.py` lines 583/592
+fixture (no `workflows/INDEX.md`).
+
+**Mutation sweep** (`/smh-quick-dev` Step 3): the mutant table is drawn from the engine's code — the
+eligibility set, the `$masterOnly` predicate, the purge filter, the stub literal — never from the cases.
 
 ## Declared Change Set
 
@@ -708,7 +431,7 @@ Rows A–H are the acceptance table above.
 - EDIT `_artifacts/_memory/doc-graph-unc-hang-and-scope.md` — lines 10 and 17, the same sentence → F
 - EDIT `_artifacts/_memory/git-branch-model-standard.md` — line 90's toolkit inventory drops `workflows` → F
 - EDIT `docs/migrations/install_guides/vscode-ide-extension-migration.md` — line 235 lists "workflows" among the toolkit's surfaces → F
-- EDIT `.agents/scripts/sync-agents.ps1` — launcher eligibility, master placement, `Sync-AntigravitySkills`, retired-cache purge, deletions, header → A, B, C, D
+- EDIT `.agents/scripts/sync-agents.ps1` — launcher eligibility, master placement, retired-cache purge, deletions, header → A, B, C, D
 - EDIT `.agents/commands/smh-adviser-board.md` — `platforms:` adds `antigravity` → G
 - EDIT `.opencode/commands/smh-adviser-board.md` — byte mirror of the brain → G
 - EDIT `.agents/commands/smh-sync-agents.md` — door model, caches, `-GlobalsOnly`, counts → F
@@ -804,32 +527,19 @@ Rows A–H are the acceptance table above.
 
 ## Gates
 
-`run_all.py` (**73** test files on disk today — audit; `run_all.py:53` discovers them with
-`HERE.glob("test_*.py")`) · `workflow_lint.py --toolkit-only` · `check_maps.py --depth3-only --strict`
-· `check_links.py` · the armed `sop_currency` and Jira commit-msg gates · `CS-18 Q` and the new
-`CS-18 S` under `pwsh`. Then `/smh-code-review`.
-
-`CS-18 L`/`M`/`R` bind only in the main checkout after the closing session's own sync (Step 9 item
-0a — the ceremony runs none), so a lane run reports them as SKIP with the stated reason — **and Step 9
-item 0b, with `--on-main`, is what makes them actually run**, because a
-permanent SKIP is not evidence. `CS-18 S` was added precisely so the mirror's refuse-to-clobber
-guarantee has a check that binds *during* the build.
-
-⚠️ **Audit note on non-vacuity.** Almost every check this ticket writes is a source-contains assert,
-and `tests-must-gate-for-real.md` says the only way to prove a structural test non-vacuous is a
-mutation. `/smh-quick-dev` Step 3 requires the sweep regardless; it is named here so the mutant table
-is drawn **from the engine's own code** (the eligibility set, the `$masterOnly` predicate, the
-manifest claim/refuse branches, the purge filter) rather than from the cases, which SCC-144 measured
-as the difference between 14 case-derived mutants all killed and 24 of 25 code-derived ones surviving.
+`run_all.py` (73 test files) · `workflow_lint.py --toolkit-only` · `check_maps.py --depth3-only --strict`
+· `check_links.py` · the armed `sop_currency` and Jira commit-msg gates · `CS-18 Q` under `pwsh`. Then
+`/smh-code-review`. `CS-18 R` binds only in the main checkout after a real sync has run the purge, so a
+lane run reports it as SKIP with the stated reason; the purge code itself is asserted by `CS-18 C`, and
+the standing suite on `main` proves `R` after the operator's first post-landing sync.
 
 ## Out of scope, named
 
+- **The Antigravity global cache** (`~/.gemini/config/skills/`) — the follow-on, gated on Step 0 (b).
 - BMAD's `.agent/skills/` install and its manifest `ides: [claude-code, antigravity]` — untouched.
 - Rule frontmatter (`trigger:` / `globs:` — Antigravity's rule loader is not changing).
-- The permission fence (`.agents/permissions/`, `antigravity_permissions_apply.py`) — a different
-  Antigravity surface, SCC-378's.
-- The two project copies of the sync engine — see the **Port** section below, which replaces the
-  one-line dismissal that used to sit here and named the wrong repo.
+- The permission fence (`.agents/permissions/`, `antigravity_permissions_apply.py`) — SCC-378's.
+- The two project copies of the sync engine — see **Port** below; a `## Your Actions` decision.
 - Whether the `.vscode/extensions.json` recommendation for the extension comes back — the operator's.
 
 ## Port — `sync-agents.ps1` exists in three repos (`port-checklist.md`)
@@ -861,10 +571,10 @@ answered for **that decision**:
    handles its own paths.
 2. **Operator-facing text goes through `printf`, never `echo`** — n/a: this ticket adds no shell
    script. The engine is PowerShell and uses `Write-Host`, matching every existing cache routine.
-3. **On a write, verify the FILE — not `$?`** — **due and answered here**, because the new mirror
-   writes. `CS-18 L`/`M` byte-compare the written cache against the source dir, and `S` asserts the
-   sentinel file survives; neither reads an exit code. The manifest is verified by reading it back,
-   which is what makes the claim-then-mirror order safe.
+3. **On a write, verify the FILE — not `$?`** — **due and answered here**, because the engine writes:
+   this ticket's only machine-cache write is the one-time retirement purge, and `CS-18 R` verifies it by
+   reading the directory back; `CS-18 Q` byte-compares every committed launcher against a fresh emit.
+   Neither reads an exit code.
 4. **No `.agents/rules/` path the target repo does not carry** — this ticket edits
    `.agents/rules/sop-currency.md`, which is lobby-only law; neither project repo carries it
    (each project's `.agents/` holds `INDEX.md`, `rules/`, `scripts/`, `skills/`). Nothing in the change
@@ -898,6 +608,19 @@ answered for **that decision**:
 None blocking. The `claude/teaching-edition` landing order is stated in Step 3 and owed as a
 `## Your Actions` row. Parent epic placement on the board is the operator's (guardrail 2); the ticket is
 minted bare like its five sibling sync-agents tickets.
+
+---
+
+## Scope ruling (2026-09-04)
+
+After the fourth self-audit pass returned NO-GO, the auditor reported that every finding of consequence
+across four passes sat in the machine-global-cache half of the ticket — a claim manifest, a refusal test,
+atomic writes and eight test cases designed to protect a directory that does not exist on this machine —
+and recommended splitting the ticket: ship the retirement half, defer the cache to a follow-on gated on
+one measurement. The operator's word: **"Approved"** (2026-09-04, on that recommendation). This body is
+the retirement half. The four audit records below are kept as history; their findings on the retirement
+half are all folded in, and their findings on the cache half are the reason it is not here. Editing the
+plan re-armed the plan-first gate; the cut plan waits for the word again.
 
 ---
 
@@ -1462,4 +1185,72 @@ sync. Prose has found what prose can find. The recommendation is that the plan i
 operator's word and that the remaining truth lives in the RED tests; a fifth blind pass is his call, not
 the auditor's, and the rule's own text — *"do not re-run it hoping for a different answer"* — is the
 reason it is not scheduled here.
+
+
+---
+
+## Self-Audit — post-cut, on the retirement half (2026-09-04)
+
+**Level: LEDGER+BLAST. Mode: PRE-WORK. One lens** — Repo Reality + Scope Ledger — because the surviving
+half carries four full passes of history and what is new is the cut itself. Run blind on the body as
+written after the operator's scope ruling.
+
+```
+lens:        1 Repo Reality + Scope Ledger (post-cut)
+checks_run:  dangling references to the removed half - 16 tokens swept over the body; every hit is
+               framed as follow-on, history, or a different legitimate subject; zero live references
+             internal consistency - rows A-H vs Steps vs Engine vs Tests vs change set vs Gates vs
+               Port vs Out of scope; row C / CS-18 C+R / the purge paragraph agree; row H reconciles
+               with Steps 0, 8, 9; Port check 3 traces to row C; Port check 6's row is byte-identical
+               to Step 9's; row E vs the Tests list - two real breaks
+             anchors - 22 of 22 line anchors land on the literal text claimed; the 41 DELETE rows are
+               set-identical to .agents/workflows/*.md on disk
+             change set - 158 entries, incomplete [], every path on disk; no row serves only the
+               removed half; the widened rule creates zero new launcher dirs and prunes zero
+             both machines / lane fit - clean
+             the retirement purge - sync-agents.ps1:1300-1306 read; the plan's four-part description
+               of the copied shape is accurate (Test-Path, the bmad filter, -WhatIf, the RETIRED line)
+             Scope Ledger - precondition met; ten created artefacts, every cell filled
+read:        the plan body (1-614) - task.yaml - sync-agents.ps1 (fourteen regions) -
+             test_command_surfaces.py (:14 :75 :151 :210-250 :589-712 :1419-1585 :2145 :2482
+             :2669-3200) - six sibling tests - five scripts - .gitattributes - six command files -
+             opus-auditor.md - project-law.md - workspace-standard.md:159 - the SOP:4442 -
+             .agents/workflows/INDEX.md - maintained-projects.txt - the three Projects repos
+verdict:     findings below
+```
+
+### Findings
+
+| anchor | literal text read | consequence | severity | now |
+|---|---|---|---|---|
+| plan Tests re-aim "helpers" line, against `test_command_surfaces.py:1457`, `:1539-1540` | plan: "delete `wf_hand_owned`, `ag_eligible`, `ag_description`" while "`U7` survives" · test `:1539`: `want = [ag_description(d) for d in probes]` · `:1540`: "U7 the REAL PowerShell generator and this file's emulation agree" · `:1457`: `AG_LIVE_DESCS = [d for d in …]` inside the `U1–U6` region | **`U7` *is* the test of `ag_description`** — the emulation it compares the real generator against — and it reads `AG_LIVE_DESCS` from the setup the plan deletes. Delete the helper and keep `U7`, and the SCC-195 block raises `NameError` on first run; `run_all.py`, row H's floor, cannot go green and the lane never reaches its gates. Residue of the fourth pass's own "U7 survives" fix: written into row E and the U-block line, never into the helper delete list. | **blocker** | **fixed** — `ag_description`, `AG_DESC_MAX` and the `AG_LIVE_DESCS` setup survive for `U7`; the setup moves into `U7`'s block |
+| plan "retire with their subject" line, against `test_command_surfaces.py:2747`, `:2868`, `:3117`, `:1568` | `:2747`: `gen = re.search(r"^\s*\$\w+\s*=\s*Sync-AntigravityWorkflowMirror\b", sync, re.M)` (`CS-18 I` asserts the call is **present**) · `:2868`: `CS-18 M2 every antigravity door in workflows/ has a cache twin` (calls the deleted `ag_eligible`) · `:3117`: `CS-18 O2 …and the sweep read a real number of doors` (reads the deleted directory) · `:1568`: `U6c …the whole menu payload stays under the budget` (consumes `U1–U6` totals) | The enumeration is presented as exhaustive and omits four live cases whose subject this plan deletes. `I` goes RED, not stale; `M2` raises on a deleted helper; `O2` and `U6c` read what is gone. A builder working the list as written leaves four broken cases behind row H. | medium | **fixed** — `I`, `M2`, `O2`, `U6c` added to the retire list and to row E |
+| plan Step 7 "**Eleven files:**" against the thirteen names that follow and the thirteen `_artifacts/_memory/` change-set rows | the count and the list disagree | A builder who trusts the count leaves two memory files asserting the retired surface; row F fails late, at the sweep. | low | **fixed** — "Thirteen files" |
+| plan `:107` and `:286` "13 `cicd-*`", against a measurement | the `$masterOnly` candidate set is 13; two are generated and are exactly the pair the guard excludes; the hand-authored set the guard protects is **11** — ten `cicd-*` plus `smh-close-task-merge-tree`, which the wording dropped | The engine rule is right and yields the right two; only the stated blast radius was wrong, and a builder sanity-checking "13 cicd-*" measures 10 and cannot tell a stale number from a wrong build. | low | **fixed** — both sentences say 11, and name the eleventh |
+
+### Observations (uncounted)
+
+- `opus-auditor.md:37`'s HALT sentence is at `:33`, *above* the target — the plan's positional gloss was
+  inverted; corrected in Step 6. Anchor, text and repoint were right.
+- `.agents/workflows/INDEX.md` carries an 87-char `description:` despite `sync-agents.ps1:574` claiming it
+  has none; the budget actually released is 41 files / 5,138 chars, not 40 / 5,051. Direction and
+  magnitude unaffected; the two figures the argument leans on (74 / 27,026 and 56) reproduce exactly.
+- The `.gitattributes` comment block's mention of `CS-18 L` is not a dangling reference — the plan is
+  describing text it is about to rewrite.
+
+### Scope Ledger
+
+Ten created artefacts — the widened eligibility, `$masterOnly`, the stub sentence, the retirement purge,
+`CS-18 C`, `R`, `Q`, the `.gitattributes` pins, Step 0's two numbers, the four `## Your Actions` rows —
+each against the row that requires it (B, B, D, C, C, C, D, A, H, H). No empty cell.
+
+```
+Audit verdict: GO
+```
+
+The cut removed every subject the four NO-GOs were about, and the one blocker this pass found was
+residue of the cut itself — a surviving test whose Python twin was still on the delete list — closed by
+a two-line correction. Nothing in the retirement half has been found wanting across five passes beyond
+missed sites and list hygiene, all folded in. The plan-first gate is armed on this body; it waits for the
+word.
 
