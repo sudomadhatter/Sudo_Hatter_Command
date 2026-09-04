@@ -1,0 +1,88 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_permission_parity.py"
+  ],
+  "mutants": [
+    {
+      "id": "M1 an --apply that overwrites the tracked list, grown inside main()",
+      "file": ".agents/scripts/claude_permissions_status.py",
+      "original": "    a = p.parse_args(argv)",
+      "mutated": "    p.add_argument(\"--apply\", action=\"store_true\")\n    a = p.parse_args(argv)\n    if a.apply:\n        a.rendered.write_text(\"clobbered\", encoding=\"utf-8\")",
+      "case": "G8 the script has NO apply and writes nothing - read-only by construction",
+      "block": "G ·"
+    },
+    {
+      "id": "M2 the no-apply scan narrowed back to the vacuous 454-char slice",
+      "file": ".agents/scripts/tests/test_permission_parity.py",
+      "original": "            code = \"\".join(src8.split('\"\"\"')[0::2])",
+      "mutated": "            code = src8.split('\"\"\"')[2]",
+      "case": "G8a the no-apply scan covers the WHOLE file, main() included - not one 454-char slice",
+      "block": "G ·"
+    },
+    {
+      "id": "M3 the parse error stops naming the file it could not read",
+      "file": ".agents/scripts/claude_permissions_status.py",
+      "original": "        raise ValueError(f\"{path} is not readable JSON - {exc}\") from exc",
+      "mutated": "        raise ValueError(f\"not readable JSON - {exc}\") from exc",
+      "case": "G9b and the error NAMES the file - exit 2 alone passes without the guard, because JSONDecodeError already subclasses ValueError",
+      "block": "G ·"
+    },
+    {
+      "id": "M4 the headline counts FILES instead of distinct rules",
+      "file": ".agents/scripts/claude_permissions_status.py",
+      "original": "    return f\"MACHINE-LOCAL allow rows: {len(distinct)} ({counts}) - they decide on this machine only\"",
+      "mutated": "    return f\"MACHINE-LOCAL allow rows: {sum(1 for r in found.values() if r)} ({counts}) - they decide on this machine only\"",
+      "case": "G5b the count is ROWS, not files - 3 across two files, split by ROLE not basename",
+      "block": "G ·"
+    },
+    {
+      "id": "M5 the same rule at both scopes counted twice",
+      "file": ".agents/scripts/claude_permissions_status.py",
+      "original": "    distinct = set().union(*found.values())",
+      "mutated": "    distinct = [r for rows in found.values() for r in rows]",
+      "case": "G5c one rule granted at BOTH scopes is one rule, not two",
+      "block": "G ·"
+    },
+    {
+      "id": "M6 an explicit null permissions block stops being tolerated",
+      "file": ".agents/scripts/claude_permissions_status.py",
+      "original": "    return set((data.get(KEY) or {}).get(\"allow\") or [])",
+      "mutated": "    return set(data.get(KEY, {}).get(\"allow\", []))",
+      "case": "G5d an explicit null permissions block, and a Windows BOM, are both read - not raised",
+      "block": "G ·"
+    },
+    {
+      "id": "M7 the row-listing loop deleted - the header prints, the rows do not",
+      "file": ".agents/scripts/claude_permissions_status.py",
+      "original": "    for path, rows in found.items():\n        if rows:",
+      "mutated": "    for path, rows in []:\n        if rows:",
+      "case": "G7b a clean run exits 0 AND PRINTS the harvested row - the list is the only product",
+      "block": "G ·"
+    },
+    {
+      "id": "M8 the repo root resolved one level too shallow",
+      "file": ".agents/scripts/claude_permissions_status.py",
+      "original": "REPO_ROOT = Path(__file__).resolve().parents[2]",
+      "mutated": "REPO_ROOT = Path(__file__).resolve().parents[1]",
+      "case": "G7c the three default paths resolve as the docstring advertises",
+      "block": "G ·"
+    },
+    {
+      "id": "M9 the never-edits law deleted from the door body",
+      "file": ".agents/commands/smh-llm-approvals.md",
+      "original": "- It does not edit the two machine-local Claude files — it READS them.",
+      "mutated": "- It reads the two machine-local Claude files.",
+      "case": "E7 the door states Claude has no apply, names the script, AND keeps the never-edits law",
+      "block": "E ·"
+    },
+    {
+      "id": "M10 the OSError half of the read guard removed - an unreadable path tracebacks again",
+      "file": ".agents/scripts/claude_permissions_status.py",
+      "original": "    except (OSError, UnicodeDecodeError) as exc:",
+      "mutated": "    except UnicodeDecodeError as exc:",
+      "case": "G9d a machine-local path that cannot be READ exits 2 too, never a traceback",
+      "block": "G ·"
+    }
+  ]
+}

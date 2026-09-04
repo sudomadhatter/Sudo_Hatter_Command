@@ -1,5 +1,5 @@
 ---
-description: Audit recent agent chats for the terminal commands that stopped and waited for the operator's approval, show them as one list, and — on the operator's word — add the ones he picks to Claude Code's and Zoo Code's allow lists. The operator types the command and answers one question; the agent does every read, every edit and every apply. Use when the operator says "what did I have to approve", "update the allow list", or "llm approvals".
+description: Audit recent agent chats for the terminal commands that stopped and waited for the operator's approval, show them as one list, and — on the operator's word — route the ones he picks into the ONE permission source that renders all three allow lists. It also surfaces the Claude rules that already stopped ASKING, which sit in a machine-local settings file that never travels. The operator types the command and answers one question; the agent does every read, every edit and every apply. Use when the operator says "what did I have to approve", "update the allow list", or "llm approvals".
 platforms: [opencode, antigravity, claude, codex, zoo]
 ---
 
@@ -29,6 +29,35 @@ command.** It carries a `tool_use_id`, and the command lives in an earlier `tool
 `"name": "Bash"` and that same `id`. So walk the file forward, remember each Bash `tool_use` by
 its id, and pair each refusal back to the command it refused. Grepping for the rejection text
 alone finds every denial and can name none of them.
+
+**Claude Code, second half — the rules that already stopped asking.** The transcripts above find
+commands that STOPPED. They cannot find the ones that stopped *asking*, because an approval the
+operator granted in a terminal chat is written to no transcript — it is written to one of two
+machine-local files, and neither of them travels:
+
+- `~/.claude/settings.json` — user scope, outside every repo.
+- `<repo>/.claude/settings.local.json` — project scope, gitignored (`.gitignore:58`), and normally
+  absent.
+
+The tracked `<repo>/.claude/settings.json` is the only Claude list that reaches the other machine,
+so a rule living only in those two decides **here and nowhere else** — the other machine goes on
+asking for that same command forever, and nothing in this door could see it until SCC-392. Read the
+difference with the script that resolves all three paths on either machine:
+
+```bash
+cd <repo-abs> && python3 .agents/scripts/claude_permissions_status.py   # PC: python
+```
+
+Read-only, exit 0 either way — a machine with nothing local prints *no machine-local rows* and has
+nothing to show. An absent `settings.local.json` counts as empty, not as an error, and so is an
+empty one.
+
+⛔ **If it exits 2 saying the project file could not be READ, re-run it with the Bash sandbox off.**
+Measured 2026-09-04: under the sandbox this repo's `.claude/settings.local.json` is a mount artifact
+— a character device — not a settings file, and reading it raises `PermissionError`. Outside the
+sandbox the path is simply absent and the run is clean. The script refuses rather than guessing,
+because treating an unreadable list as empty would under-report the very rows this step exists to
+find — the same silent under-report SCC-355 cost this door once already.
 
 **Zoo Code** — `<root>/*/ui_messages.json`, newest ~20 by modified time.
 
@@ -113,7 +142,17 @@ Antigravity
 Antigravity - files it was blocked from reading (outside the workspace)
   <home>/.claude/projects/<slug>/memory/<one file>       folder: <home>/.claude/projects/<slug>/memory
   <home>/.claude/projects/<slug>/memory/<another>        folder: <home>/.claude/projects/<slug>/memory
+
+Claude - rules that already stopped asking, on THIS machine only
+  Bash(gh:*)
+  Bash(npm:*)
+  Bash(bash:*)                                           permits ANY command
 ```
+
+That last group is the odd one out, and it keeps its own heading for a reason: those rows are not
+commands that stopped, they are rules that already stopped asking — granted once from a terminal
+chat into a file that never leaves this machine. The question about them is not *may I run this*,
+it is *should this travel*. Folded into the list above, that distinction is gone.
 
 Indent **every** line of a multi-line command, so the operator can see where one ends and the
 next begins. Then ask one question: **which of these do you want allowed?**
@@ -145,6 +184,23 @@ become, not as files to open.
 `git fetch origin main` earns `Bash(git fetch *)`, never `Bash(git *)`. Widening one word past
 the command is how a careful list becomes a blank cheque, and `permissions.deny` is empty, so
 nothing downstream catches it.
+
+⛔ **A harvested row is already a RULE, and the narrowness law above has nothing to measure it
+against.** That law reads *a rule is only ever as wide as the command it came from* — but a row
+lifted out of `~/.claude/settings.json` did not come from a command; it came from an earlier
+decision whose command is long gone. So show it for what it is and get his word out loud before it
+goes into the source. `Bash(bash:*)` and `Bash(sh:*)` are on that list today and each one permits
+**any command at all**: locally that is his call on a machine he is watching, but the source renders
+to BOTH machines, so promoting one is a different act from having granted it. ⛔ **And do not narrow
+it for him** — this door does not compute prefixes (SCC-354). Show the row, say plainly what it
+permits, and let him answer.
+
+⛔ **Do NOT copy the apply warning at the end of this step onto Claude's path.** The Antigravity
+apply REPLACES both arrays, which is why it carries a data-loss caveat. **Claude has no apply and
+must not grow one** — its tracked file IS the live file, so a rendered row is in force the moment it
+is saved, nothing is pushed into a store and nothing can be lost. A data-loss caveat here would be a
+threat that does not exist. The machine-local files the harvest READ are never edited: a
+now-redundant row there is the operator's own edit to ask for by name.
 
 **Zoo Code** → `.vscode/settings.json`, `zoo-code.allowedCommands`. Plain string
 prefixes, no wrapper. Same narrowness rule. ⛔ **Never touch `zoo-code.deniedCommands`** — the
@@ -218,5 +274,8 @@ is live now versus staged. Then stop.
   commands and picks. Machine-chosen breadth was built once and cut (SCC-354): every defect it
   produced lived in the choosing, and the operator never asked for it.
 - It does not touch any deny list — Zoo's, Antigravity's, or a future one.
+- It does not edit the two machine-local Claude files — it READS them. Deleting a row from
+  `~/.claude/settings.json` because the source now covers it is the operator's own edit to ask
+  for by name, never a tidy-up this door performs.
 - It does not edit the three rendered files. The source is the only thing it writes; the render does the rest.
 - It does not make the operator run anything.
