@@ -189,8 +189,6 @@ if c.block("A · one battery, three matchers, identical verdicts"):
             ("git checkout .", "claude"): ("allow", "rides Claude's broad `git checkout *`; Zoo denies the spelling. Narrowing Claude's row is his call"),
             ("git checkout -- .", "claude"): ("allow", "same"),
             ("git clean -n", "claude"): ("ask", "Claude has no `git clean` row at all (safe: the dry run asks). An allow is his"),
-            ("python3 -m pytest -q", "claude"): ("ask", "Claude scopes python3 to `.agents/scripts/*`, `-m py_compile` and the venv door; bare `-m pytest` asks"),
-            ("npm test", "claude"): ("ask", "Claude has `npm run lint` and `npx vitest run`, no `npm test`"),
             ("git add -Av", "claude"): ("allow", "rides Claude's broad `git add:*` (same ruling as `git add -A`)"),
             ("git add ./", "claude"): ("allow", "same"),
             ("git add ../", "claude"): ("allow", "same"),
