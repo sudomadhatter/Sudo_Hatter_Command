@@ -155,7 +155,6 @@
       "Bash(git ls-remote:*)",
       "Bash(mv:*)",
       "Bash(pytest:*)",
-      "Bash(python:*)",
       "Bash(rsync:*)",
       "Bash(bash:*)",
       "Bash(sh:*)",

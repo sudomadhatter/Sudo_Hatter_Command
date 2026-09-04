@@ -1649,19 +1649,6 @@
       ]
     },
     {
-      "id": "allow-python",
-      "cmd": "python",
-      "why": "harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids",
-      "render": {
-        "claude": [
-          "Bash(python:*)"
-        ]
-      },
-      "only": [
-        "claude"
-      ]
-    },
-    {
       "id": "allow-rsync",
       "cmd": "rsync",
       "why": "harvested 2026-09-04 from this machine's Claude user-scope list via /smh-llm-approvals (SCC-392); Claude-scoped because that is the list it came from - rendering a harvested rule wider than its source is what the narrowness law forbids",
