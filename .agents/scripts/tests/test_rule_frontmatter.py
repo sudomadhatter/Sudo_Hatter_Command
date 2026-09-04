@@ -32,7 +32,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-from _harness import Cases
+from _harness import Cases, TempDir
+
+# _harness puts SCRIPTS on sys.path, so the lobby's own scripts import as top-level
+# modules. SCC-399: reuse check_maps' allowlist parser rather than adding a fifth copy.
+import check_maps  # noqa: E402  (must follow the _harness path insert)
 
 ROOT = Path(__file__).resolve().parents[3]
 RULES = ROOT / ".agents" / "rules"
@@ -71,6 +75,53 @@ def _project_index_loads(index_path: Path) -> dict[str, str]:
     for name, load in LOAD_ROW.findall(index_path.read_text(encoding="utf-8")):
         low = load.lower()
         out[name] = "floor" if "floor" in low else "protocol" if "protocol" in low else "on-demand"
+    return out
+
+
+def _scan_project_rules(projects_dir: Path, allowed: set[str], tier1_stems: set[str]) -> dict:
+    """Audit the MAINTAINED projects' rule sets. Pure function of (dir, allowlist, tier-1 stems).
+
+    Split out of the check body so the allowlist behaviour is provable against a FIXTURE (see
+    `_case_allowlist_control`). It could not be proved in place: `Projects/` is a set of submodule
+    gitlinks, so it is an empty stub in every `git worktree` and populated only in the main
+    checkout - a scan asserted against whatever happens to be on disk passes vacuously in exactly
+    the place most work is done. Same reasoning as `test_memory_store.maintained_project_names`.
+
+    `allowed` is the parsed `.agents/maintained-projects.txt` set. A project NOT on it is skipped
+    outright - not "skipped unless it looks conformant". That distinction is the whole fix: the
+    published teaching edition IS conformant-looking, which is why walking the folder found it.
+    """
+    out = {"unrouted": [], "dangling": [], "tier1_copies": [], "empty_indexes": [], "scanned": []}
+    if not projects_dir.is_dir():
+        return out
+    for p in sorted(projects_dir.iterdir()):
+        if not p.is_dir() or p.name not in allowed:
+            continue
+        p_agents = p / ".agents"
+        p_rules = p_agents / "rules"
+        if not p_agents.is_dir() or not p_rules.is_dir():
+            continue
+        p_index = p_agents / "INDEX.md"
+        p_loads = _project_index_loads(p_index)
+        p_on_disk = sorted(f for f in p_rules.glob("*.md") if f.name != "INDEX.md")
+        out["scanned"].append(p.name)
+
+        if p_on_disk and not p_loads:
+            out["empty_indexes"].append(f"{p.name} ({len(p_on_disk)} rules on disk, 0 in INDEX.md)")
+
+        for f in p_on_disk:
+            if f.stem not in p_loads:
+                out["unrouted"].append(f"{p.name}: {f.name}")
+            if f.stem in tier1_stems:
+                out["tier1_copies"].append(f"{p.name}: {f.name}")
+
+        for stem in p_loads:
+            # template guidance row in the skeleton is permitted if marked "create this first"
+            if stem == "constitution.project" and not (p_rules / f"{stem}.md").exists():
+                if p_index.exists() and "create this first" in p_index.read_text(encoding="utf-8").lower():
+                    continue
+            if not (p_rules / f"{stem}.md").exists():
+                out["dangling"].append(f"{p.name}: {stem}.md")
     return out
 
 
@@ -232,64 +283,89 @@ def main() -> int:
             bool(row) and "shape-guard.py" in row[0],
             f"the INDEX row does not name the hook: {row[:1]}")
 
-    # ── Tier-2 Project rules check (SCC-388 / SCC-391) ──
-    # Every maintained project under Projects/ carrying an .agents/ directory must:
+    # ── Tier-2 Project rules check (SCC-388 / SCC-391 / SCC-399) ──
+    # Every MAINTAINED project under Projects/ carrying an .agents/ directory must:
     # 1. Have a Load row in .agents/INDEX.md for every rule on disk in .agents/rules/
     # 2. Every rule row in .agents/INDEX.md must point to a rule that exists on disk (or be template guidance)
     # 3. Carry NO copies of lobby tier-1 rules (project-law.md)
     # 4. If rules exist on disk, .agents/INDEX.md must not have zero rule rows
+    #
+    # ⛔ "MAINTAINED" is READ FROM `.agents/maintained-projects.txt`, never from what happens to be
+    # on disk (SCC-399). Walking `Projects/*` audited nine repos this lobby does not drive, and the
+    # one it hurt was `Projects/sudo-command-center` — the PUBLISHED TEACHING EDITION of this lobby,
+    # which ships 28 sanitized rule files ON PURPOSE. All three assertions below fired on it, the
+    # "fix" they demanded was deleting 27 files out of a shipped product, and so the suite floor sat
+    # red at 72/73 with no legal way to clear it. The allowlist is the existing answer to "which
+    # projects does the lobby drive": its own header says "Never hand-loop over `Projects/*`" and
+    # `check_maps.fan_out_targets` already obeys it. This was the one fan-out that did not.
     tier1_stems = {p.stem for p in on_disk}
-    projects_dir = _main_checkout() / "Projects"
-    unrouted_project_rules = []
-    dangling_project_rows = []
-    forbidden_tier1_copies = []
-    empty_project_indexes = []
+    main_checkout = _main_checkout()
+    allowed = check_maps.maintained_projects(main_checkout)
 
-    if projects_dir.is_dir():
-        for p in sorted(projects_dir.iterdir()):
-            if not p.is_dir() or p.name == "Fresh_Workspace_BMAD":
-                continue
-            p_agents = p / ".agents"
-            if not p_agents.is_dir():
-                continue
-            p_rules = p_agents / "rules"
-            p_index = p_agents / "INDEX.md"
-            if not p_rules.is_dir():
-                continue
-            p_loads = _project_index_loads(p_index)
-            p_on_disk = sorted(f for f in p_rules.glob("*.md") if f.name != "INDEX.md")
+    # None means the allowlist FILE is absent, and that is a LOUD failure — never a fall back to
+    # walking every folder. The fallback would silently restore the exact behaviour this check was
+    # rewritten to remove, in the one situation where nobody is looking.
+    c.check("the maintained-projects allowlist exists (the project scan reads it, never Projects/*)",
+            allowed is not None,
+            f"missing: {main_checkout / '.agents' / 'maintained-projects.txt'}")
 
-            # Check for zero rows when rules exist
-            if p_on_disk and not p_loads:
-                empty_project_indexes.append(f"{p.name} ({len(p_on_disk)} rules on disk, 0 in INDEX.md)")
-
-            # Check unrouted rules
-            for f in p_on_disk:
-                if f.stem not in p_loads:
-                    unrouted_project_rules.append(f"{p.name}: {f.name}")
-
-            # Check dangling rows
-            for stem in p_loads:
-                # template guidance row in skeleton is permitted if marked Create this first
-                if stem == "constitution.project" and not (p_rules / f"{stem}.md").exists():
-                    if p_index.exists() and "create this first" in p_index.read_text(encoding="utf-8").lower():
-                        continue
-                if not (p_rules / f"{stem}.md").exists():
-                    dangling_project_rows.append(f"{p.name}: {stem}.md")
-
-            # Check tier-1 forbidden copies
-            for f in p_on_disk:
-                if f.stem in tier1_stems:
-                    forbidden_tier1_copies.append(f"{p.name}: {f.name}")
+    found = _scan_project_rules(main_checkout / "Projects", allowed or set(), tier1_stems)
 
     c.check("every project rule on disk has a Load row in that project's .agents/INDEX.md",
-            not unrouted_project_rules, str(unrouted_project_rules))
+            not found["unrouted"], str(found["unrouted"]))
     c.check("every project .agents/INDEX.md row points at a rule that exists",
-            not dangling_project_rows, str(dangling_project_rows))
+            not found["dangling"], str(found["dangling"]))
     c.check("⛔ no project carries a copy of a tier-1 lobby rule (project-law.md)",
-            not forbidden_tier1_copies, str(forbidden_tier1_copies))
+            not found["tier1_copies"], str(found["tier1_copies"]))
     c.check("no project has zero rule rows in .agents/INDEX.md when rules exist on disk",
-            not empty_project_indexes, str(empty_project_indexes))
+            not found["empty_indexes"], str(found["empty_indexes"]))
+
+    # ⛔ COVERAGE, not just a verdict. All four assertions above are satisfied by scanning NOTHING,
+    # and `Projects/*` is a set of submodule gitlinks — empty in a fresh clone, empty in a bare CI
+    # checkout. "0 findings" and "0 projects looked at" print identically, which is the shape of
+    # `suite-red-file-may-have-run-nothing`. So name what was audited, and name what was not and why.
+    not_scanned = []
+    for name in sorted(allowed or set()):
+        if name in found["scanned"]:
+            continue
+        d = main_checkout / "Projects" / name
+        if not (d / ".git").exists():
+            not_scanned.append(f"{name}: NOT CHECKED OUT — git submodule update --init -- Projects/{name}")
+        else:
+            not_scanned.append(f"{name}: checked out, but carries no .agents/rules/ — a maintained project with no tier-2 law")
+    print(f"[COVERAGE] project rule sets audited: {', '.join(found['scanned']) or 'NONE'}")
+    for row in not_scanned:
+        print(f"[SKIP] {row}")
+    c.check("every maintained project that IS checked out was actually audited",
+            not [r for r in not_scanned if "NOT CHECKED OUT" not in r], str(not_scanned))
+
+    # ── The allowlist control (SCC-399) ──
+    # The four checks above went from RED to GREEN by narrowing what they look at, and a narrowing
+    # is indistinguishable from a disarming unless something proves the teeth survived. Two fixture
+    # projects, IDENTICAL except for one line in the allowlist: the listed one must still fire all
+    # four findings, the unlisted one must produce none. That is what makes the exclusion of
+    # `Projects/sudo-command-center` a deliberate rule rather than an accident that happens to be
+    # quiet today.
+    with TempDir() as tmp:
+        for name in ("on-list", "off-list"):
+            rules = tmp / "Projects" / name / ".agents" / "rules"
+            rules.mkdir(parents=True)
+            (rules / "jira.md").write_text("copy of a tier-1 rule\n", encoding="utf-8")       # tier-1 copy + unrouted
+            (rules.parent / "INDEX.md").write_text("| `ghost.md` | on-demand | x |\n", encoding="utf-8")  # dangling row
+        listed = _scan_project_rules(tmp / "Projects", {"on-list"}, {"jira"})
+        unlisted = _scan_project_rules(tmp / "Projects", set(), {"jira"})
+
+        c.check("control: a project ON the allowlist still fires all four findings (the teeth survived)",
+                listed["scanned"] == ["on-list"]
+                and listed["unrouted"] == ["on-list: jira.md"]
+                and listed["tier1_copies"] == ["on-list: jira.md"]
+                and listed["dangling"] == ["on-list: ghost.md"]
+                and listed["empty_indexes"] == [],
+                f"a listed project did not fire as expected: {listed}")
+        c.check("⛔ control: an identical project OFF the allowlist fires NOTHING and is not scanned",
+                unlisted["scanned"] == []
+                and not any(unlisted[k] for k in ("unrouted", "dangling", "tier1_copies", "empty_indexes")),
+                f"an unlisted project was audited anyway: {unlisted}")
 
     # ── Protocol size figure in AGENTS.md §3 ──
     agents_md = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
