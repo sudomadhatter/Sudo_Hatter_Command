@@ -7,9 +7,9 @@
     "files": 429,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 797,
+    "edges": 796,
     "external": 35,
-    "ambiguous": 173,
+    "ambiguous": 174,
     "dangling": 290,
     "broken_paths": 61,
     "unresolved_names": 229,
@@ -733,7 +733,7 @@
     },
     {
       "path": ".agents/rules/agent-memory-is-long-term-only.md",
-      "in": 4,
+      "in": 3,
       "out": 0
     },
     {
@@ -764,7 +764,7 @@
     {
       "path": ".agents/rules/constitution.md",
       "in": 30,
-      "out": 2
+      "out": 1
     },
     {
       "path": ".agents/rules/dependency-awareness.md",
@@ -3919,11 +3919,6 @@
       "from": ".agents/rules/command-shape.md",
       "to": ".agents/rules/zoo-team.md",
       "kind": "ref"
-    },
-    {
-      "from": ".agents/rules/constitution.md",
-      "to": ".agents/rules/agent-memory-is-long-term-only.md",
-      "kind": "link"
     },
     {
       "from": ".agents/rules/constitution.md",
@@ -8289,6 +8284,15 @@
         ".agents/workflows/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": ".agents/rules/agent-memory-is-long-term-only.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {
