@@ -107,4 +107,4 @@ Automated test suite asserting:
 
 ### Audit verdict: GO
 
-**Approval (2026-09-04):** "approved" — recorded at <pending>
+**Approval (2026-09-04):** "approved" — recorded at 15978df7
