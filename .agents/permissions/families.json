@@ -2494,6 +2494,33 @@
       "only": [
         "antigravity"
       ]
+    },
+    {
+      "id": "deny-env-chdir",
+      "cmd": "env -C",
+      "why": "SCC-410 (cycle 10): `env -C <dir> <cmd>` and `env --chdir=<dir> <cmd>` run the command somewhere else entirely and nothing downstream sees the flag, so the wrapper launders a destructive command past a fence written for the bare one. Measured 2026-09-04 on this base: the wrapper read `ask` on all three platforms, and PR #165 shipped a single `Bash(env -C:*)` allow row that auto-approved `env -C <dir> rm -rf /` through a fully green battery. DENY-side only - it can never grant. Claude renders nothing here: it carries no deny list at all, and battery A3 is its guard. Both spellings and both flag shapes (`-C /tmp`, `-C/tmp`, `--chdir /tmp`, `--chdir=/tmp`) plus the env -u twin; the `cd <abs> && ` house twins are added by the render pass.",
+      "render": {
+        "zoo": [
+          "env -C",
+          "env --chdir",
+          "env -u GITHUB_TOKEN env -C",
+          "env -u GITHUB_TOKEN env --chdir"
+        ],
+        "antigravity": [
+          "command(env -C.*)",
+          "unsandboxed(env -C.*)",
+          "command(env --chdir.*)",
+          "unsandboxed(env --chdir.*)",
+          "command(env -u GITHUB_TOKEN env -C.*)",
+          "unsandboxed(env -u GITHUB_TOKEN env -C.*)",
+          "command(env -u GITHUB_TOKEN env --chdir.*)",
+          "unsandboxed(env -u GITHUB_TOKEN env --chdir.*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
     }
   ]
 }

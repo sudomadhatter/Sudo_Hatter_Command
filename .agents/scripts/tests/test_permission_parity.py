@@ -93,6 +93,13 @@ DESTRUCTIVE = [
     "chmod -R 777 /", "chown -R root /", "dd if=/dev/zero of=/dev/sda", "mkfs.ext4 /dev/sda1",
     "env -u GITHUB_TOKEN git push --force", "env -u GITHUB_TOKEN git add .",
     "env -u GITHUB_TOKEN git reset --hard", "env -u GITHUB_TOKEN gh pr merge 3",
+    # SCC-410: the chdir wrapper. `env -C <dir> <cmd>` and `env --chdir=<dir> <cmd>` run the
+    # command somewhere else entirely, and nothing downstream sees the `-C`. The twins above
+    # existed for `env -u`; without these the battery could not see the laundering row that
+    # PR #165 shipped green - a single `Bash(env -C:*)` allow made all five auto-approve.
+    "env -C /tmp rm -rf /", "env -C /tmp git push --force origin main",
+    "env -C /tmp git add .", "env -C /tmp gh pr merge 3",
+    "env --chdir=/tmp rm -rf /",
     # code review 2026-09-03: the spellings that slipped past Antigravity's literal single-token
     # denies while Zoo's prefix rows caught them - flag clusters, `=`-attached values, scope flags,
     # and targets Zoo denies by prefix (everything but chore/ claude/ epic/, HEAD:epic/)

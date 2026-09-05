@@ -319,6 +319,14 @@
         "unsandboxed(git -c)",
         "command(env -u GITHUB_TOKEN git -c)",
         "unsandboxed(env -u GITHUB_TOKEN git -c)",
+        "command(env -C.*)",
+        "unsandboxed(env -C.*)",
+        "command(env --chdir.*)",
+        "unsandboxed(env --chdir.*)",
+        "command(env -u GITHUB_TOKEN env -C.*)",
+        "unsandboxed(env -u GITHUB_TOKEN env -C.*)",
+        "command(env -u GITHUB_TOKEN env --chdir.*)",
+        "unsandboxed(env -u GITHUB_TOKEN env --chdir.*)",
         "command(cd .* && rm -[a-zA-Z]*[rR][a-zA-Z]*)",
         "unsandboxed(cd .* && rm -[a-zA-Z]*[rR][a-zA-Z]*)",
         "command(cd .* && sudo)",
@@ -510,7 +518,15 @@
         "command(cd .* && git -c)",
         "unsandboxed(cd .* && git -c)",
         "command(cd .* && env -u GITHUB_TOKEN git -c)",
-        "unsandboxed(cd .* && env -u GITHUB_TOKEN git -c)"
+        "unsandboxed(cd .* && env -u GITHUB_TOKEN git -c)",
+        "command(cd .* && env -C.*)",
+        "unsandboxed(cd .* && env -C.*)",
+        "command(cd .* && env --chdir.*)",
+        "unsandboxed(cd .* && env --chdir.*)",
+        "command(cd .* && env -u GITHUB_TOKEN env -C.*)",
+        "unsandboxed(cd .* && env -u GITHUB_TOKEN env -C.*)",
+        "command(cd .* && env -u GITHUB_TOKEN env --chdir.*)",
+        "unsandboxed(cd .* && env -u GITHUB_TOKEN env --chdir.*)"
       ]
     }
   }
