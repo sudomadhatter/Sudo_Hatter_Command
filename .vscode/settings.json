@@ -294,6 +294,12 @@
     "env -C",
     "env --chdir",
     "env -u GITHUB_TOKEN env -C",
-    "env -u GITHUB_TOKEN env --chdir"
+    "env -u GITHUB_TOKEN env --chdir",
+    "env -u GITHUB_TOKEN -C",
+    "env -u GITHUB_TOKEN --chdir",
+    "/usr/bin/env -C",
+    "/usr/bin/env --chdir",
+    "/bin/env -C",
+    "/bin/env --chdir"
   ]
 }

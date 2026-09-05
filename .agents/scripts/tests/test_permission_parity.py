@@ -100,6 +100,14 @@ DESTRUCTIVE = [
     "env -C /tmp rm -rf /", "env -C /tmp git push --force origin main",
     "env -C /tmp git add .", "env -C /tmp gh pr merge 3",
     "env --chdir=/tmp rm -rf /",
+    # Code review 2026-09-04: the family renders TEN Zoo rows and TWENTY Antigravity rows;
+    # the five above exercised four of them, so half the fence this lane ships was
+    # unfalsifiable by the lane's own battery. One twin per claimed spelling, so a later
+    # narrowing of any row turns A2 red instead of passing green over a hole.
+    "env -C/tmp rm -rf /", "env --chdir /tmp rm -rf /",
+    "env -u GITHUB_TOKEN env -C /tmp rm -rf /",
+    "env -u GITHUB_TOKEN -C /tmp rm -rf /",
+    "/usr/bin/env -C /tmp rm -rf /",
     # code review 2026-09-03: the spellings that slipped past Antigravity's literal single-token
     # denies while Zoo's prefix rows caught them - flag clusters, `=`-attached values, scope flags,
     # and targets Zoo denies by prefix (everything but chore/ claude/ epic/, HEAD:epic/)
