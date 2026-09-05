@@ -1,5 +1,13 @@
 # SCC-412 — harvest `git branch -d worktree-agent-` into the permission source
 
+> ⛔ **OUTCOME: BACKED OUT on the operator's decision, 2026-09-05.** The review proved the row could
+> not have removed the stops it was bought for — all six were `escalation` stops, and
+> `approval_stops.py` classifies escalation *before* coverage, so no allow row reaches them. Acceptance
+> row C was also falsified: `git branch -d worktree-agent-x main` reads allow on both platforms because
+> `git branch -d` takes a list. **No permission row ships.** The plan below is left as written for the
+> record; the outcome, the measurements and the five filed defects are in
+> [walkthrough.md](walkthrough.md).
+
 **Lane:** `chore/SCC-412-worktree-agent-allow` off `origin/main` @ `4a9f013a`
 **Origin:** operator pick at the `/smh-llm-approvals` Step 2 gate, 2026-09-05.
 
@@ -47,14 +55,16 @@ Antigravity gets nothing: the family is `only: ["zoo", "claude"]` and this lane 
 
 ## Declared Change Set
 
-- EDIT `.agents/permissions/families.json` — three rows into `allow-git-branch`, and its `why` → A, E
-- EDIT `.vscode/settings.json` — the two rendered Zoo rows → A, B
-- EDIT `.claude/settings.json` — the one rendered Claude row → A, B
-- EDIT `docs/migrations/terminal-permissions-guide.md` — count line 125→127 and the family row → F
-- EDIT `docs/.maps-state.json` — maps baseline re-anchored at 4a9f013a (housekeeping, declared not hidden)
-- NEW `_artifacts/_main/2026-09-05_scc-412-worktree-agent-allow/task.yaml` — lane manifest
-- NEW `_artifacts/_main/2026-09-05_scc-412-worktree-agent-allow/implementation_plan.md` — this plan
-- NEW `_artifacts/_main/2026-09-05_scc-412-worktree-agent-allow/walkthrough.md` — the lane's record
+⛔ **Four EDIT bullets were REMOVED at back-out** — `families.json`, `.vscode/settings.json`,
+`.claude/settings.json` and `terminal-permissions-guide.md`. All four were reverted to
+`origin/main`, so they are no longer changed files and a declaration for them would read as
+*unimplemented*. What was intended is recorded in the banner at the top of this plan.
+
+
+- EDIT `docs/.maps-state.json` — maps baseline re-anchored at 4a9f013a → none (housekeeping, serves no acceptance row)
+- NEW `_artifacts/_main/2026-09-05_scc-412-worktree-agent-allow/task.yaml` — lane manifest → F
+- NEW `_artifacts/_main/2026-09-05_scc-412-worktree-agent-allow/implementation_plan.md` — this plan → F
+- NEW `_artifacts/_main/2026-09-05_scc-412-worktree-agent-allow/walkthrough.md` — the lane's record → F
 
 `.agents/permissions/antigravity.json` is **deliberately not** in this list — the family does not
 render there, and if that file moves the change was not what this plan describes.

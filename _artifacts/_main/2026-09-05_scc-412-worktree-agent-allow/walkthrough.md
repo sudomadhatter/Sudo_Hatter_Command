@@ -1,14 +1,14 @@
 ---
 IsArtifact: true
 ArtifactMetadata:
-  title: SCC-412 — the agent's own scratch branches stopped asking
+  title: SCC-412 — the allow row that could not have worked
   type: walkthrough
   date: 2026-09-05
 ---
 
-# SCC-412 — the agent's own scratch branches stopped asking
+# SCC-412 — the allow row that could not have worked
 
-**Lane:** `chore/SCC-412-worktree-agent-allow` · worktree `.claude/worktrees/SCC-412-worktree-agent-allow`
+**Lane:** `chore/SCC-412-worktree-agent-allow` · **Outcome: BACKED OUT.** No permission row ships.
 **Ticket:** [SCC-412](https://sudo-command.atlassian.net/browse/SCC-412) (Task)
 **Base:** `origin/main` @ `4a9f013a`
 **Plan:** [implementation_plan.md](implementation_plan.md)
@@ -17,154 +17,117 @@ ArtifactMetadata:
 
 ## What this means for you, Mr. Hatter
 
-Every time a review fans out lenses, the harness cuts a throwaway git branch per subagent —
-`worktree-agent-<hash>` — and the close-out deletes it again. You were being asked to approve each
-of those deletes: **6 stops** across the 20 newest sessions, spent authorising the agent to clean up
-after itself. One narrow allow prefix ends that, and it cannot reach anything you care about.
+You approved one narrow allow row so the agent could delete its own throwaway
+`worktree-agent-<hash>` branches without asking you. **It was built, it was green, and the review
+proved it would have bought you nothing.** It is reverted. What the lane actually produced is four
+measured defects in the permission fence, all of which predate it.
 
-**What it is not.** It is not a widening of `git branch`. The prefix is
-`git branch -d worktree-agent-`, and a branch has to be named `worktree-agent-…` to ride it. Proven
-below against `main`, `chore/`, `claude/`, `epic/`, a bare name, and two near-miss spellings.
+**Why it could not work.** Every one of those six stops was run with the sandbox off, because the
+delete is always paired with `git worktree remove`, and worktree removal needs escalation. The
+approvals reader classifies an escalated call as `escalation` *before* it ever asks about coverage:
 
-⭐ **You asked for read forms, and the honest answer was that they would buy you nothing.** Claude
-already carries `git branch --list`, `-a` and `--show-current`. When I pulled the seven real stops
-behind the report's 10m51s, not one was a read — they were `--unset-upstream`, the
-`worktree-agent-` deletes, and a `git reset --keep`. So the pick moved to where the cost actually
-was, on your word.
+```python
+elif escalated:
+    stops.append((t1 - t0, "escalation", cmd))
+elif not covered(cmd, prefixes):
+    stops.append((t1 - t0, "waited", cmd))
+```
+
+An allow row cannot touch that branch of the tree. The repo already knew this — the scar test
+`test_L_an_ALLOWED_command_run_with_the_sandbox_off_is_still_a_stop` exists to say so — and the
+door's own report prints escalation stops under a separate heading reading *"a second, independent
+gate"*. I read the six out of the wrong bucket. Measured at the tip: of 19 calls in the window
+containing that command, **6 escalated and 0 coverage-fixable**; the other 13 were this session's
+own analysis commands that merely contain the string.
+
+**The real remedy for those stops is the sandbox, not the fence** — `/sandbox`, or leaving the
+worktree teardown escalated and accepting the prompt. A permission row was never the instrument.
+
+⛔ **And the safety claim was wrong too, which is the more serious half.** The record asserted three
+times that the prefix "cannot reach anything you care about." Two independent lenses falsified it
+and real git confirmed it:
+
+```
+$ git branch -d worktree-agent-x main
+Deleted branch worktree-agent-x (was 9dd7d8f).
+Deleted branch main (was 9dd7d8f).
+```
+
+`git branch -d` takes a **list**. The allow prefix is satisfied by the first argument and every
+argument after it rides free, with no shell metacharacter for a splitter to catch. I had tested
+eight single-argument commands and generalised from the shape of the `chore/` row instead of
+testing a two-argument one.
 
 ---
 
-## What shipped
+## What the lane leaves behind
 
-Three rendered rows, one existing family (`allow-git-branch`), no new family:
+**Reverted** — `families.json`, `.claude/settings.json`, `.vscode/settings.json` and
+`terminal-permissions-guide.md` are byte-identical to `origin/main`. `permission_render --check`
+prints *in sync*. Zoo stays at 125 allow / 115 deny; nothing was widened anywhere.
 
-| platform | row | why this spelling |
+**Kept** — `docs/.maps-state.json`, the maps baseline re-anchored at `4a9f013a`. Housekeeping from
+earlier in the session; `check_maps.py --strict` was already clean and the anchor was simply behind.
+
+**Filed on [SCC-411](https://sudo-command.atlassian.net/browse/SCC-411)** — five rows, each with its
+remedy. Every one is pre-existing and none was introduced by this lane:
+
+| # | Defect | Measured |
 |---|---|---|
-| Zoo | `git branch -d worktree-agent-` | literal prefix, longer than the `git branch -d` deny, so it wins by length exactly as `chore/` does |
-| Zoo | `git branch -d "worktree-agent-` | the quoted twin, matching the six that already exist for chore/claude/epic |
-| Claude | `Bash(git branch -d worktree-agent-*)` | **bare star** — the prefix ends in `-`, and Claude reads `Bash(X:*)` as `Bash(X *)` (battery A2b) |
+| 1 | `git branch -d <allowed> <victim>` deletes both; the prefix only guards the first argument | `allow` on zoo, claude **and** antigravity for `git branch -d chore/SCC-1-x main`; real git exits 0 deleting both |
+| 2 | `git branch --delete main` — the long form is in neither deny grammar | `allow` on zoo and antigravity |
+| 3 | `git branch -f -d main` — the deny expects `-d` in first flag position | `allow` on zoo and antigravity |
+| 4 | `git branch -rd origin/<ref>` deletes a remote-tracking ref | `allow` on zoo; reproduced end to end |
+| 5 | `zoo_pieces()` splits `$(…)` but not backticks | `` git branch -d chore/x `echo main` `` → `allow` on all three |
 
-Antigravity gets nothing: the family is `only: ["zoo", "claude"]` and this lane does not widen it.
-`.agents/permissions/antigravity.json` is byte-unchanged, which is acceptance A's other half.
+Rows 2, 3 and 4 are expressible as deny rows and the remedy names them. **Row 1 is not** — neither
+Zoo's literal-prefix grammar nor Antigravity's per-token regex can say *"exactly one argument"*, so
+closing it needs a `PreToolUse` hook that parses the branch list. That is the one worth your
+attention, and it is why this lane's own row would have been a new door into an old hole.
+
+Also filed: the `/smh-llm-approvals` fast path is **unreachable for any Zoo-side harvest**, because
+Step 3's gate requires a guide count-line edit that Step 4's four-path scope guard forbids. That
+contradiction is why this ran as a full lane at all.
 
 ---
 
 ## Evidence
 
-### Acceptance
-
-| # | Statement | Result |
+| # | Original acceptance row | Result |
 |---|---|---|
-| A | The three rows render, and only those; Antigravity untouched | ✅ diff below |
-| B | `permission_render.py --check` in sync, all three platforms | ✅ `in sync (zoo, claude, antigravity)` |
-| C | The prefix reaches no protected branch on either platform | ✅ matcher table below |
-| D | `git branch -r` excluded on evidence, not caution | ✅ measured delete below |
-| E | No other allow row added, widened or re-spelled | ✅ one family's arrays, +3 rows |
+| A | Three rows render, and only those | **void** — reverted, nothing renders |
+| B | `--check` in sync | ✅ `in sync (zoo, claude, antigravity)` after the revert |
+| C | The prefix reaches no protected branch | ❌ **FALSIFIED** — `git branch -d worktree-agent-x main` is allow/allow |
+| D | `git branch -r` excluded on evidence | ✅ still true, and now filed as SCC-411 row 4 |
+| E | No other allow row added, widened or re-spelled | ✅ and now stronger: **no** allow row at all |
 | F | `run_all.py` green at the tip | ✅ 76/76 |
 
-### Acceptance C — the matchers, run against every protected target
+Row C is the one that mattered and it did not hold. Under the house rule that an acceptance row
+without a passing assertion is not satisfied, the lane fails its own contract — which is the correct
+outcome, and the reason the row is not shipping.
 
-```
-command                                        zoo      claude    expectation
-git branch -d worktree-agent-afd9e37c41e9aa8   allow    allow     THE PICK - must be allow
-git branch -d main                             deny     ask       protected - must NOT be allow
-git branch -D main                             deny     ask       protected - must NOT be allow
-git branch -d worktree-agent                   deny     ask       no trailing hyphen - must NOT be allow
-git branch -d worktreeagent-x                  deny     ask       near-miss spelling - must NOT be allow
-git branch -D worktree-agent-x                 allow    ask       capital D on the picked prefix
-git branch -d epic/AVCH-100-x                  allow    ask       epic - pre-existing re-allow
-git branch -d chore/SCC-1-x                    allow    allow     chore - pre-existing re-allow
-```
+### Review
 
-Both near-misses fall through to the `git branch -d` deny, which is the row working. The two rows
-that matter — `main` in either spelling — stay denied on Zoo and asking on Claude.
+review-runtime: fan-out
 
-⭐ **`git branch -D worktree-agent-x` reads allow on Zoo, and that is by design, not a leak.** Zoo
-lowercases both sides, so `-D` ≡ `-d` for every re-allow in this family — the guide already records
-that for `epic/`, where the epic-close door's forced delete rides the same row deliberately. A
-forced delete of a throwaway subagent branch is the intended behaviour; a forced delete of anything
-else is unreachable through this prefix.
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- acceptance-auditor · ok
+- literal-correctness-hunter · dead — still running when the operator's back-out decision made its
+  verdict moot; no findings collected
+- test-adequacy-auditor · dead — same
+lenses_counted:  3/5
+lenses_na:       none
 
-### Acceptance D — why `git branch -r` was refused
-
-It was the obvious second candidate and it does not survive a test. In a throwaway repo:
-
-```
-=== git branch --list -D victim ===      usage error, branch survives
-=== git branch --merged -D victim ===    fatal: malformed object name -D, branch survives
-=== git branch -aD victim ===            fatal: cannot use -a with -d, branch survives
-=== git branch -rd origin/keepme ===     Deleted remote-tracking branch origin/keepme (was c98bd87).
-```
-
-`--list`, `-a` and `--merged` all refuse to combine with a delete. `-r` does not. Excluded on that
-measurement rather than on caution.
-
-### Acceptance A and E — the whole diff
-
-```
-families.json   +3 rows into allow-git-branch, + the family's `why`
-.vscode/settings.json      + "git branch -d worktree-agent-"
-                           + "git branch -d \"worktree-agent-"
-.claude/settings.json      + "Bash(git branch -d worktree-agent-*)"
-antigravity.json           (unchanged)
-```
-
-### Acceptance F — the gates
-
-```
-permission_render: in sync (zoo, claude, antigravity)
-76/76 files passed
-workflow_lint --toolkit-only: 0 error(s), 0 warning(s), 8 info
-```
-
----
-
-## Two things carried that the pick did not ask for, declared not hidden
-
-**`docs/migrations/terminal-permissions-guide.md`** — the tracked count line moves 125 → 127 allow,
-and the "Lane/epic prune re-allows" family row gains the new entries with their reasoning.
-`test_zoo_permissions.py::test_guide_currency` **requires** this: it is a live assertion that the
-guide's count matches the rendered file, and it went red the moment the Zoo rows landed.
-
-**`docs/.maps-state.json`** — the maps baseline re-anchored at `4a9f013a`. Housekeeping from earlier
-in the session that silenced a stale-journal nag; `check_maps.py --strict` was already clean, so the
-anchor was simply behind. Unrelated to the pick and named here rather than slipped in.
-
----
-
-## Why this took a lane, and the door defect behind it
-
-`/smh-llm-approvals` Step 4 carries an exemption that skips the plan, the audit and the review for
-harvest work — on the condition that the change set touches **exactly four** paths. This one touches
-six, and the door is explicit: *"A fifth path … voids the exemption and the work takes the full
-lane."*
-
-⛔ **But the two extra paths are not avoidable, and that is a defect in the door.** Step 3's gate
-*requires* the guide edit that Step 4's guard *forbids*, because any Zoo allow row moves the count
-line. So the fast path can never be used for a harvest that adds a Zoo row — the exemption is only
-reachable for a Claude-only or Antigravity-only pick. Filed on
-[SCC-411](https://sudo-command.atlassian.net/browse/SCC-411) with the remedy: either add the guide
-to the permitted set, or move the count line to a generated file the render writes.
-
----
-
-## One pre-existing hole found while testing, filed not fixed
-
-`git branch -rd origin/main` reads **allow** on Zoo. It deletes a remote-tracking ref, and Zoo
-auto-approves it through the broad `git ` prefix because the deny row is `git branch -D` — which
-lowercases to `git branch -d` and never matches `git branch -rd`.
-
-**Measured on `origin/main` @ `4a9f013a` with none of this lane present: also `allow`.** It predates
-this work and lives in a different family, so closing it here would be undeclared scope creep of
-exactly the kind the change-set reconciliation exists to catch. Low severity — it cannot touch a
-real branch or the remote, and `git fetch` restores it. On
-[SCC-411](https://sudo-command.atlassian.net/browse/SCC-411) with the flag orders the existing deny
-cannot reach, and the note that this is the getopt-clustering residual Zoo's grammar cannot express.
+The two dead lenses are recorded as dead rather than dropped. Three lenses independently found the
+multi-argument escape and the missing test coverage, and the acceptance auditor found the escalation
+misclassification that ended the lane — the finding no gate in this repo would have caught.
 
 ---
 
 ## Your Actions
 
 - [x] The merge itself — lands via this branch's PR
-- [ ] Nothing else. The Zoo rows go live on your next `zoo_permissions_apply.py --apply`; until then
-      the two deletes still ask, which costs a click and nothing else.
+- [ ] Nothing. The fence is exactly as you left it, and your six stops still stop — they always
+      would have. If you want them gone, that is a `/sandbox` conversation, not a fence one.
