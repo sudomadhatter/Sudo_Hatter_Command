@@ -1374,7 +1374,7 @@
     {
       "id": "allow-git-worktree",
       "cmd": "git worktree",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "widened 2026-09-04 (SCC-405): the family existed but rendered only to Claude, so Antigravity kept stopping for it",
       "render": {
         "claude": [
           "Bash(git worktree remove *)",
@@ -1383,7 +1383,8 @@
         ]
       },
       "only": [
-        "claude"
+        "claude",
+        "antigravity"
       ]
     },
     {
@@ -1536,7 +1537,7 @@
     {
       "id": "allow-find",
       "cmd": "find",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes -- NOT widened to antigravity (SCC-405): a bare `find` token there allows `find . -delete` and `find . -exec rm {} ;`, which test_permission_parity A5 requires to ASK on all three",
       "render": {
         "claude": [
           "Bash(find:*)"
@@ -1544,6 +1545,15 @@
       },
       "only": [
         "claude"
+      ]
+    },
+    {
+      "id": "allow-uname",
+      "cmd": "uname",
+      "why": "added 2026-09-04 (SCC-405): read-only platform probe; the two-machines rules make agents run it constantly and it was absent from every fence",
+      "only": [
+        "claude",
+        "antigravity"
       ]
     },
     {
