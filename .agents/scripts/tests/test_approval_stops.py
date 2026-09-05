@@ -119,8 +119,9 @@ def test_D_a_COVERED_command_never_reports_however_long_it_waited():
 
 
 def test_D_b_a_BARE_STAR_row_is_stripped_to_its_prefix():
-    """⛔ THE PART B BUG. Battery A2b established that a prefix ending in `/ = - :` must be
-    spelled `Bash(X/*)`, because Claude reads `Bash(X:*)` as `Bash(X *)` — so the bare-star
+    """⛔ THE PART B BUG. SCC-375's check A2b - in test_settings_allowlist.py, not in the
+    parity battery - established that a prefix ending in `/ = - :` must be spelled
+    `Bash(X/*)`, because Claude reads `Bash(X:*)` as `Bash(X *)` — so the bare-star
     spelling is the WORKING one. `allow_prefixes()` stripped `:*` and ` *` and never a bare `*`,
     so 54 of the 153 rendered Claude `Bash(...)` rows came back with the `*` still attached and
     matched nothing. Reads the REAL allow_prefixes(), not the stub the other cases use.
@@ -133,9 +134,10 @@ def test_D_b_a_BARE_STAR_row_is_stripped_to_its_prefix():
             "Bash(git status:*)",                  # colon star
             "Bash(ls *)",                          # space star
             "Read(//home/**)",                     # not a Bash rule at all
+            "Bash(ls *.py)",                       # INTERIOR star - nothing may be stripped
         ]}}), encoding="utf-8")
         got = aps.allow_prefixes(repo)
-    assert got == ["python3 .agents/scripts/", "git status", "ls"], got
+    assert got == ["python3 .agents/scripts/", "git status", "ls", "ls *.py"], got
 
 
 def test_D_c_a_slow_call_a_BARE_STAR_row_covers_is_not_a_stop():
@@ -160,6 +162,102 @@ def test_D_c_a_slow_call_a_BARE_STAR_row_covers_is_not_a_stop():
         finally:
             aps.glob.glob = real_glob
     assert not r["stops"], "a command a bare-star allow row already covers was billed as a stop"
+    # ⛔ CONTROL. `assert not stops` passes just as happily when the fixture is broken and the
+    # transcript is never read at all - the vacuous green this file's docstring exists to refuse.
+    # Same transcript, allow list EMPTIED: the harness must find exactly the one stop.
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td)
+        (repo / ".claude").mkdir()
+        (repo / ".claude" / "settings.json").write_text(
+            json.dumps({"permissions": {"allow": []}}), encoding="utf-8")
+        store = repo / "projects" / "p"
+        store.mkdir(parents=True)
+        _transcript(store / "s.jsonl", [("python3 .agents/scripts/check_maps.py", 600, None)])
+        real_glob = aps.glob.glob
+        aps.glob.glob = lambda _pat: [str(store / "s.jsonl")]
+        try:
+            ctrl = aps.scan(repo, 20, 20.0)
+        finally:
+            aps.glob.glob = real_glob
+    assert len(ctrl["stops"]) == 1, \
+        "CONTROL FAILED - with NO allow rows the harness still saw no stop, so the case above " \
+        "proved nothing: %r" % (ctrl["stops"],)
+
+
+def test_D_d_a_row_that_strips_to_NOTHING_is_dropped_not_returned_as_an_empty_prefix():
+    """⛔ THE SILENT-INSTRUMENT CASE (found by review, 2026-09-04).
+
+    An empty prefix matches EVERY command - `"rm -rf /".startswith("")` is True - so one such
+    entry makes covered() answer True for everything and the door reports ZERO stops forever.
+    That failure is indistinguishable from "nothing to harvest", which is the SCC-407 bug this
+    whole script exists to end. Adding the bare `*` strip created the shape; this holds the guard.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td)
+        (repo / ".claude").mkdir()
+        (repo / ".claude" / "settings.json").write_text(json.dumps({"permissions": {"allow": [
+            "Bash(*)",                             # strips to "" - would match everything
+            "Bash()",                              # empty body, same consequence
+            "Bash(git status:*)",                  # a real row must survive beside them
+        ]}}), encoding="utf-8")
+        got = aps.allow_prefixes(repo)
+    assert got == ["git status"], got
+    assert not aps.covered("rm -rf /", got), \
+        "an empty prefix leaked through and marked a destructive command as already covered"
+
+
+def test_D_e_the_break_is_load_bearing_one_strip_never_two():
+    """⛔ The `break` is not decoration. Without it `Bash(X* *)` strips ` *` and then `*` and
+    returns `X` - a prefix WIDER than the row that produced it, so commands the row does not
+    approve get marked covered and their stops are dropped from the report. Reviewed 2026-09-04:
+    the first cut of this lane claimed the break was inert because `"*"` is last in the tuple.
+    That reasoning is wrong - what the break stops is a SECOND strip on the same body.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td)
+        (repo / ".claude").mkdir()
+        (repo / ".claude" / "settings.json").write_text(json.dumps({"permissions": {"allow": [
+            "Bash(X* *)"]}}), encoding="utf-8")
+        got = aps.allow_prefixes(repo)
+    assert got == ["X*"], got + ["(double-stripped: the break is gone)"]
+
+
+def test_D_f_the_REAL_rendered_list_yields_no_star_bearing_and_no_empty_prefix():
+    """⛔ THE INVARIANT, asserted against the list Claude actually decides with.
+
+    The three cases above are synthetic and bind on any machine, which is the point - but the
+    original bug was a property of the SHIPPED file, and no synthetic case would have caught it:
+    54 of 153 rendered rows were bare-star and every one came back with its `*` attached. This
+    walks the tracked `.claude/settings.json` and asserts the two ways a prefix can be useless.
+    """
+    got = aps.allow_prefixes(ROOT)
+    assert got, "the rendered Claude list produced NO prefixes at all - the reader is broken"
+    starred = [p for p in got if "*" in p]
+    assert not starred, "prefixes still carry a wildcard and so match nothing: %s" % starred
+    assert all(p.strip() for p in got), "an empty prefix would mark every command covered"
+
+
+def test_D_g_a_prefix_covers_only_at_a_BOUNDARY_lsof_is_not_ls():
+    """⛔ THE MIRROR OF THE PART B BUG (found by code review, 2026-09-04).
+
+    `Bash(ls *)` yields the prefix `ls`, and a bare `startswith` then marked `lsof -i :3000`,
+    `lsblk` and `git statuses` as commands an allow rule already approves - so their stops were
+    DROPPED from the report. SCC-409's bug made the door over-report; this one made it
+    under-report, which is the direction that makes an instrument go quiet.
+
+    A prefix covers a segment when the segment IS the prefix, or continues it at a boundary:
+    a space, or a prefix already ending on a separator.
+    """
+    P = ["ls", "git status", "python3 .agents/scripts/", "MSG=", "git branch -d chore/"]
+    for cmd in ("lsof -i :3000", "lsblk", "git statuses --porcelain"):
+        assert not aps.covered(cmd, P), "%r was marked covered by a prefix it merely starts with" % cmd
+    for cmd in ("ls", "ls -la", "git status", "git status --short",
+                "python3 .agents/scripts/check_maps.py", "MSG=hello",
+                "git branch -d chore/SCC-1-x"):
+        assert aps.covered(cmd, P), "%r is genuinely covered and was reported as a stop" % cmd
+    # and the report agrees with the coverage - a dropped stop must reappear as a HEAD
+    assert aps.report_head("lsof -i :3000", P) == "lsof -i"
+    assert aps.report_head("ls -la", P) is None
 
 
 def test_E_a_self_explaining_wait_is_dropped():

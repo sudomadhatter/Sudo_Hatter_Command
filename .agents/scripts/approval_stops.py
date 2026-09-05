@@ -77,13 +77,25 @@ def allow_prefixes(repo: Path) -> list[str]:
             body = rule[5:-1]
             # ⛔ ORDER IS LOAD-BEARING: the longer suffixes strip first. Put the bare "*"
             # first and `Bash(git status:*)` comes back as `git status:`, which matches
-            # nothing. The bare star is not a typo - battery A2b established that a prefix
-            # ending in `/ = - :` MUST be spelled `Bash(X/*)`, because Claude reads
+            # nothing. The bare star is not a typo - SCC-375's check A2b, in
+            # tests/test_settings_allowlist.py (NOT the parity battery), established that a
+            # prefix ending in `/ = - :` MUST be spelled `Bash(X/*)`, because Claude reads
             # `Bash(X:*)` as `Bash(X *)`. 54 of the 153 rendered rows use it (SCC-409).
             for suffix in (":*", " *", "*"):
                 if body.endswith(suffix):
                     body = body[: -len(suffix)]
+                    # ⛔ ONE strip, and the `break` is what enforces it. Without it `Bash(X* *)`
+                    # strips ` *` and then `*` and returns `X` - a prefix WIDER than the row that
+                    # produced it, which silently marks uncovered commands as covered.
                     break
+            # ⛔ An empty prefix matches EVERY command: `"rm -rf /".startswith("")` is True, so a
+            # single `Bash(*)` row makes covered() answer True for everything and the door reports
+            # zero stops FOREVER - the exact SCC-407 silence this script exists to end, and a
+            # failure that looks identical to "nothing to harvest". A row that strips to nothing is
+            # not a prefix; drop it and let the door over-report instead. Over-reporting costs the
+            # operator one glance; under-reporting cost him the whole instrument.
+            if not body:
+                continue
             out.append(body)
     return out
 
@@ -172,6 +184,28 @@ def segments(command: str) -> list[str]:
     return out
 
 
+def _matches(seg: str, prefix: str) -> bool:
+    """Does an allow PREFIX actually cover this command segment?
+
+    ⛔ NOT a bare `startswith`. `Bash(ls *)` yields the prefix `ls`, and `"lsof -i :3000"`
+    starts with `ls` - so a plain prefix test marked `lsof`, `lsblk` and `git statuses` as
+    already-approved and DROPPED their stops from the report. That is the same defect as the
+    bare-star bug this script was just fixed for (SCC-409), pointing the other way: one made the
+    door over-report, this one made it under-report, and under-reporting is how an instrument
+    goes quiet without anyone noticing. Found by code review, 2026-09-04.
+
+    A prefix covers a segment when the segment IS the prefix, or continues it at a boundary -
+    which is either a space in the segment or a prefix that already ends on a separator
+    (`python3 .agents/scripts/`, `MSG=`, `git branch -d chore/`). Those are exactly the endings
+    A2b requires the bare-star spelling for, so the two rules meet.
+    """
+    if not prefix or not seg.startswith(prefix):
+        return False
+    if len(seg) == len(prefix):
+        return True
+    return not prefix[-1].isalnum() or not seg[len(prefix)].isalnum()
+
+
 def report_head(command: str, prefixes: list[str]) -> str | None:
     """The two words to show the operator: the first uncovered, non-preamble segment.
 
@@ -184,7 +218,7 @@ def report_head(command: str, prefixes: list[str]) -> str | None:
     for seg in segs:
         if _PREAMBLE.match(seg) or not _LOOKS_LIKE_COMMAND.match(seg):
             continue
-        if not any(seg.startswith(p) for p in prefixes):
+        if not any(_matches(seg, p) for p in prefixes):
             return " ".join(seg.split()[:2])
     return None
 
@@ -193,7 +227,7 @@ def covered(command: str, prefixes: list[str]) -> bool:
     segs = segments(command)
     if not segs:
         return True
-    return all(any(s.startswith(p) for p in prefixes) for s in segs)
+    return all(any(_matches(s, p) for p in prefixes) for s in segs)
 
 
 def scan(repo: Path, sessions: int, wait: float) -> dict:
