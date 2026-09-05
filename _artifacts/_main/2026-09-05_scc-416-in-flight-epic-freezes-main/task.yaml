@@ -1,0 +1,6 @@
+task_key: SCC-416
+primary_repo: .
+branch: chore/SCC-416-in-flight-epic-freezes-main
+close_command: /smh-close-task-merge-tree   # lobby: no deploy surface, Task door, PR into main that Mr. Hatter merges
+secondary_repos: []
+riders: []

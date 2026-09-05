@@ -97,11 +97,23 @@ Then take exactly one arm, and say in one line which and why:
   HEAD:epic/…` in this run — never a second cut, never your own slug over theirs.
 - **only a local branch exists** → `cd "$PROJECT_ROOT" && git checkout epic/<JIRA-KEY>-<slug>` and push
   it; the cut already happened and the push is what is owed.
-- **neither** → cut it:
+- **neither** → decide the epic's MODE, then cut it. ⛔ **The mode is Mr. Hatter's call, asked once,
+  here, never defaulted** (`git-policy` § The epic's mode, SCC-416):
+
+  > **Is this epic an EXTENSION OF MAIN or a QUICK-DEV branch?**
+  > *extension of main* — every story lands by PR into the epic under the full four-check gate (E2E on
+  > every landing); the epic is kept current with `main`. *quick-dev* — stories land by direct push after
+  > the local light gate; no CI per story; E2E once, at `/cicd-push-e2e`.
+
+  The answer is the branch name and nothing else — the one switch GitHub's ruleset and every local door
+  read without opening a file:
 
 ```bash
+# extension of main — the default shape:
 cd "$PROJECT_ROOT" && git checkout -b epic/<JIRA-KEY>-epic-<N>-<slug> origin/main
-cd "$PROJECT_ROOT" && git push -u origin epic/<JIRA-KEY>-epic-<N>-<slug>
+# quick-dev — the -quickdev suffix IS the switch:
+cd "$PROJECT_ROOT" && git checkout -b epic/<JIRA-KEY>-epic-<N>-<slug>-quickdev origin/main
+cd "$PROJECT_ROOT" && git push -u origin <the branch you just cut>
 ```
 
 ⛔ **BOTH numbers, and in this order** (`git-policy` § Branch model). `<JIRA-KEY>` is the epic's

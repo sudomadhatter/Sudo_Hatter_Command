@@ -69,6 +69,30 @@ trigger: model_decision
   is a product change no matter what its ticket is called. `ship_preflight.py` refuses the mirror
   case from the other side, so a lane cannot slip through both.
 
+### The epic's mode is decided at kickoff, and a live epic freezes `main` for its scope (SCC-416)
+
+When the epic branch is cut, the operator decides once — **extension of main** or **quick-dev** — and
+the answer is the branch name: a `-quickdev` suffix on the slug, or its absence. Every door reads it
+from there; an agent never chooses it and never changes it.
+
+- **Extension of main** (`epic/<KEY>-epic-<N>-<slug>`): every story lands by **pull request into the
+  epic** under the full gate — E2E on every landing — and the epic is kept current with `main`
+  (`/cicd-dev-story-tests` Step 0.6 stops a story when it is behind). It reaches `main` once, at the
+  end, through `/cicd-push-e2e`, on the operator's decision.
+- **Quick-dev** (`epic/<KEY>-epic-<N>-<slug>-quickdev`): stories land by **direct push** after the local
+  light gate (suite + build); nothing is spent on CI per story; E2E runs once, at `/cicd-push-e2e`.
+
+**In both modes, while the epic is live, `main` is frozen for everything the epic changes.** Scope is
+the epic's diff (`git diff --name-only origin/main...origin/epic/<KEY>-<slug>`), not its ticket tree. A
+main-bound lane sharing a **product file** with it is epic work: it lands on the epic via
+`claude/<KEY>-<slug>` and `/cicd-close-story-merge-tree`, never on `main`. `task_preflight.py` and
+`ship_preflight.py` both measure this before their surface decision and refuse; no flag overrides it.
+
+*Measured 2026-09-05: `chore/AVCH-80-rolling-bugs`, cut off `main`, shared three runtime files with
+the live `epic/AVCH-100` and was classed "chore touching backend → light gate → ship" by a preflight
+that never looked at the live epic. PR #72 deployed it to Cloud Run mid-epic. The ruling forbidding it
+was on the epic branch.*
+
 ### Every branch and every commit carries a Jira key (armed 2026-08-07)
 
 - **The key goes immediately after the prefix**: `chore/SCC-11-acli-wrapper`, never
