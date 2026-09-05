@@ -209,7 +209,6 @@ if c.block("A · one battery, three matchers, identical verdicts"):
             ("git add -u", "claude"): ("allow", "same"),
             ("npm test", "zoo"): ("ask", "Zoo has `npm run `/`npm ci ` and no `npm test`; allow growth is his, via /smh-llm-approvals"),
             ("git push origin HEAD:epic/SCC-1-x", "claude"): ("ask", "Claude allows `git push origin chore/*`, `claude/*`, `main*` and not the `HEAD:epic/` landing; the push hook still gates it"),
-            ("git push origin --delete claude/x", "claude"): ("ask", "Claude allows `--delete chore/*` only"),
             ("git config --list", "claude"): ("ask", "Claude allows `git config --get:*` only"),
             ("git config -l", "claude"): ("ask", "same"),
             ("find . -delete", "claude"): ("allow", "Claude allows `find:*`; Zoo refuses `find` on purpose (guide s8). Which side moves is his call"),
