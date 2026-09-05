@@ -21,14 +21,36 @@ allowed. Every file read, every edit, and the apply are the agent's. A step that
 
 Three agents, three stores, three shapes. Read all three. None needs a script — they are files.
 
-**Claude Code** — `~/.claude/projects/*/*.jsonl`, newest ~20 by modified time.
+**Claude Code** — one script, because the naive read of these transcripts measures the wrong event:
 
-Each line is a JSON record. A refusal is a `tool_result` block with `"is_error": true` whose
-content contains `doesn't want to proceed with this tool use`. ⛔ **That block does not carry the
-command.** It carries a `tool_use_id`, and the command lives in an earlier `tool_use` block with
-`"name": "Bash"` and that same `id`. So walk the file forward, remember each Bash `tool_use` by
-its id, and pair each refusal back to the command it refused. Grepping for the rejection text
-alone finds every denial and can name none of them.
+```bash
+cd <repo-abs> && python3 .agents/scripts/approval_stops.py --repo .
+```
+
+⛔ **DO NOT harvest refusals here, and do not re-derive this by grepping the transcripts.** Until
+SCC-407 this step said: *find a `tool_result` with `"is_error": true` whose content contains
+`doesn't want to proceed with this tool use`.* That is a command the operator **REFUSED** — the
+opposite of what this door is for. **An approval he GRANTS leaves no record in the transcript at
+all**, so the old reading was structurally blind to every command that actually stopped him.
+Measured 2026-09-04: it found **one** refusal across 20 sessions and reported *"nothing to
+harvest"*, in a window holding **34** stops worth **39 minutes** of him sitting there waiting.
+
+**And a stop costs more than the wait.** It breaks the prompt cache: the turn resumes cold and the
+whole context is billed again. Every interruption is charged twice — once in his attention, once on
+the invoice — which is why the script ranks by **time waited**, not by count. The expensive stop is
+the one he was away from, not the frequent one.
+
+The script reads three signals, none of which is sufficient alone:
+
+| signal | what it proves | why it is not enough alone |
+|---|---|---|
+| **latency** — the gap between a Bash `tool_use` and its `tool_result` | a human was asked, observed | `gh pr checks --watch` blocks for ten minutes with nobody asked |
+| **coverage** — replay against the RENDERED `.claude/settings.json` allow list | predicts the next stop | says nothing about whether it has cost him anything yet |
+| **classifier** — the `denied by the Claude Code auto mode classifier` error | a whole refusal class the old step never looked for | fired 4× in the session that found this bug |
+
+It reports only rows **one allow rule would fix**: shell scaffolding (`for i`, `set -e`, `done`),
+self-explaining waits (`timeout 900`, `--watch`) and wrapped continuation lines are dropped by name,
+because a list whose rows cannot be acted on is longer without being more useful.
 
 **Claude Code, second half — the rules that already stopped asking.** The transcripts above find
 commands that STOPPED. They cannot find the ones that stopped *asking*, because an approval the
