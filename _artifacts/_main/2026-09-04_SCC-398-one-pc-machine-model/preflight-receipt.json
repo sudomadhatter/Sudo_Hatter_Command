@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-398-stale-knowledge-audit",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-398",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "a331f4c30d719920db8ca1e45500f0270bb7d876",
+  "warnings": 6,
+  "when": "2026-09-04T22:43:36-04:00"
+}
