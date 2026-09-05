@@ -18,6 +18,8 @@ ArtifactMetadata:
 
 ## Task Checklist
 
+- [x] The merge itself — lands via this branch's PR
+
 ### SCC-380: Agent SOP & Human Quick-Reference Bifurcation
 - [x] **Agent SOP Optimization:** Replaced all 46 Mermaid diagram code blocks in `workflows_testing_SOP.md` with structured Markdown state-transition tables.
 - [x] **Least-Context Navigation Router:** Added the fast-lookup router to the top of `workflows_testing_SOP.md` so models never load the 4,000+ line specification for isolated tasks.
