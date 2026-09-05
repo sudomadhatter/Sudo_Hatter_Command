@@ -118,6 +118,10 @@
         "unsandboxed(\\.venv/bin/ruff check)",
         "command(firebase/tests/node_modules/\\.bin/firebase emulators:exec)",
         "unsandboxed(firebase/tests/node_modules/\\.bin/firebase emulators:exec)",
+        "command(git worktree)",
+        "unsandboxed(git worktree)",
+        "command(uname)",
+        "unsandboxed(uname)",
         "read_file(/home/dlohn/.claude/projects/-home-dlohn-Sudo-Hatter-Command/memory)",
         "command(code)",
         "unsandboxed(code)"
