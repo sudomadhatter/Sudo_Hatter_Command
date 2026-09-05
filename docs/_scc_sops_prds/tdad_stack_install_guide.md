@@ -162,7 +162,7 @@ interpreter (see the Step-2 warning) or the venv isn't synced.
 | File | Change |
 |---|---|
 | `Projects/AGY_AVIATIONCHAT/backend/requirements.txt` | Added `pytest-bdd>=7.0.0` |
-| `Projects/Fresh_Workspace_BMAD/backend/requirements.txt` | Added `pytest-bdd>=7.0.0` + `pytest-cov`, `pytest-timeout` (were missing) |
+| Fresh_Workspace_BMAD, `backend/requirements.txt` — **repo retired from this workspace** (SCC-403, 2026-09-04; it lives on GitHub only) | Added `pytest-bdd>=7.0.0` + `pytest-cov`, `pytest-timeout` (were missing) |
 | `requirements-tdad.txt` (lobby root — new) | Documents both tools + their correct install methods |
 
 ---
