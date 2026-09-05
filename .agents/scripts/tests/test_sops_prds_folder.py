@@ -1082,7 +1082,7 @@ def main() -> int:
         both_flagged = set(fresh) == {"backend/tests/conftest.py", "docs/gone.md"}
         # ...and the REMEDY is what makes that acceptable. Asserted against the SAME
         # function the check calls -- not a copy of the string, which would assert nothing.
-        remedy = uncloned_note(["AGY_AVIATIONCHAT", "Fresh_Workspace_BMAD"])
+        remedy = uncloned_note(["AGY_AVIATIONCHAT", "NEXgen-VR-Director"])
         ok_fc = (both_flagged
                  and "git submodule update --init" in remedy
                  and "AGY_AVIATIONCHAT" in remedy

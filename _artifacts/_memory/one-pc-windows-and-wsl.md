@@ -64,13 +64,14 @@ with no attr, and `git diff --ignore-cr-at-eol` returns empty. `core.autocrlf` i
 `/mnt/c/Users/dlohn/.gitconfig` nor the repo config, so the conversion comes from the Windows Git
 install's own default. **Nothing is lost there and nothing needs rescuing.**
 
-## The caches are per-side — a purge cleans only the side that ran it
+## Caches are per-side — a purge cleans only the side that ran it
 
-Antigravity keeps one workflow cache per side. On 2026-09-04, after SCC-394's purge ran on Ubuntu:
-the Ubuntu cache `~/.gemini/antigravity/global_workflows` held **0** files; the Windows cache
-`C:\Users\dlohn\.gemini\antigravity\global_workflows` still held **42**. The sync writes to
-`$UserHome` = `USERPROFILE` if set, else `HOME` — and `USERPROFILE` is empty under WSL's pwsh, so a
-purge run from Ubuntu never touches Windows.
+Antigravity's door is `.agents/skills/`; the `global_workflows` cache is the **retired** surface's,
+and SCC-394 purged it. That purge is the worked example of this whole section. On 2026-09-04, after
+it ran on Ubuntu: the Ubuntu copy held **0** files, while the Windows copy under
+`C:\Users\dlohn\.gemini\` still held **42**. The sync writes to `$UserHome` = `USERPROFILE` if
+set, else `HOME` — and `USERPROFILE` is empty under WSL's pwsh, so a purge run from Ubuntu never
+reaches the Windows side at all.
 
 **How to apply:** when a sync, purge or install "did not take", ask *which side ran it* before
 assuming the script is broken. Run it on both, or say in the doc which side it is for.

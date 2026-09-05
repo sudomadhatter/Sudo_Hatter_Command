@@ -1284,9 +1284,10 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
   Write-Host ("sync-agents: codex skills -> {0} bmad-* mirrored  ({1})" -f $codexSkillCount, $codexSkillsDst)
 }
 
-# (Fresh living-template drift check RETIRED 2026-08-07: Fresh_Workspace_BMAD is frozen — the clone
-# source is now the sudo-project-skeleton repo, and lobby canon changes no longer propagate to Fresh.
-# The living-template-sync rule is rewritten against the skeleton in the centralization epic's P6.)
+# (Fresh living-template drift check RETIRED 2026-08-07: the clone source is now the
+# sudo-project-skeleton repo, and lobby canon changes no longer propagate to Fresh. The
+# living-template-sync rule is rewritten against the skeleton in the centralization epic's P6.
+# The submodule itself was removed from git 2026-09-04, SCC-403.)
 
 Write-Host "sync-agents: done. (Edit the master .agents/ - never the copies - and re-run to propagate.)"
 exit 0

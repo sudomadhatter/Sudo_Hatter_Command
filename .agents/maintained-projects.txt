@@ -24,10 +24,13 @@
 #    list is signposted in the index. That is deliberate (a project store nothing points at is
 #    unreachable from the one index every platform loads), but it is not guessable, so it is
 #    written here where you are standing when you add the name.
-# De-listed 2026-08-07: Fresh_Workspace_BMAD — frozen template (deliberate legacy vendor must not red
-# the lint; new projects clone the sudo-project-skeleton repo instead).
+# De-listed 2026-08-07, removed from git 2026-09-04: Fresh_Workspace_BMAD — frozen template
+# (new projects clone the sudo-project-skeleton repo instead).
 
 AGY_AVIATIONCHAT
 NEXgen-VR-Director
-# Fresh_Workspace_BMAD retired 2026-08-07 (SCC-25) — was the living template; left on disk untouched,
-# no longer synced or linted. Disposal of the repo itself is the operator's call.
+# Fresh_Workspace_BMAD retired 2026-08-07 (SCC-25) — was the living template; no longer synced or
+# linted. REMOVED FROM GIT 2026-09-04 (SCC-403): it was a submodule, so de-listing it here and
+# deleting its folder left the gitlink, the .gitmodules stanza and .git/modules/ in place, and it
+# came back on every checkout. Now gone from all four. The GitHub repo
+# sudomadhatter/Fresh_Workspace_BMAD is untouched and remains the reference copy.
