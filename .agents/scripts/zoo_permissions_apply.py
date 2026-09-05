@@ -144,13 +144,33 @@ def report(db: Path, memento: dict, allow: list[str], deny: list[str]) -> None:
 MASTER_TOGGLES = ("autoApprovalEnabled", "alwaysAllowExecute")
 
 
+def merge_keep_store_only(tracked: list[str], store: list[str]) -> list[str]:
+    """Tracked rows first, then every store-only row the operator clicked, order preserved.
+
+    ⛔ SCC-414: this function exists because the apply used to REPLACE both arrays, which silently
+    deleted every approval the operator had clicked in chat. Measured 2026-09-05 on the Antigravity
+    side: 178 store rows in, 123 out - 58 of his own grants destroyed by one routine apply. He then
+    re-clicked the same commands, and the next apply destroyed them again. A permission store is
+    where his DECISIONS land; the tracked file is the subset we chose to carry between machines.
+    Overwriting the first with the second is not a sync, it is data loss with a progress message.
+    """
+    seen = set(tracked)
+    return list(tracked) + [row for row in store if row not in seen]
+
+
 def apply(db: Path, memento: dict, allow: list[str], deny: list[str],
-          enable_auto_approve: bool = False) -> None:
+          enable_auto_approve: bool = False, prune: bool = False) -> None:
     backup = db.with_suffix(".vscdb.scc-backup")
     if not backup.exists():
         shutil.copy2(db, backup)
-    memento["allowedCommands"] = allow
-    memento["deniedCommands"] = deny
+    if prune:
+        # The old behaviour, now opt-in: make the store EXACTLY the tracked file. Use it only to
+        # retire a row the source deliberately dropped - it deletes un-harvested clicks.
+        memento["allowedCommands"] = allow
+        memento["deniedCommands"] = deny
+    else:
+        memento["allowedCommands"] = merge_keep_store_only(allow, memento.get("allowedCommands") or [])
+        memento["deniedCommands"] = merge_keep_store_only(deny, memento.get("deniedCommands") or [])
     # SCC-376 Phase 6: a seat whose master toggles are off consults NO list - it asks for
     # everything, which is the state this migration exists to remove. Measured on the code2 seat:
     # lists perfectly in sync, autoApprovalEnabled absent, alwaysAllowExecute false. Only these two
@@ -183,6 +203,10 @@ def main() -> int:
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument("--status", action="store_true", help="report every store, change nothing")
     mode.add_argument("--apply", action="store_true", help="write tracked lists into every store")
+    ap.add_argument("--prune", action="store_true",
+                    help="with --apply: also DELETE store-only rows so the store matches the "
+                         "tracked file exactly. Off by default - an un-harvested row is an "
+                         "approval the operator clicked, and deleting it is data loss (SCC-414)")
     ap.add_argument("--enable-auto-approve", action="store_true",
                     help="with --apply: also turn autoApprovalEnabled and alwaysAllowExecute ON in "
                          "any store where they are off (a seat with them off consults no list)")
@@ -207,7 +231,7 @@ def main() -> int:
 
     for db, memento in stores:
         if args.apply:
-            apply(db, memento, allow, deny, args.enable_auto_approve)
+            apply(db, memento, allow, deny, args.enable_auto_approve, args.prune)
             memento = load_memento(db)
         report(db, memento, allow, deny)
     return 0
