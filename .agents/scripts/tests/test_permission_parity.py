@@ -116,6 +116,20 @@ DESTRUCTIVE = [
     "git add -Av", "git add ./", "git add ../",
     "git config --local core.hooksPath /dev/null", "git config --unset core.hooksPath", "git config user.email x",
     "git push --delete origin main", "git push origin --delete develop",
+    # SCC-412: THE MULTI-ARGUMENT ESCAPE. `git branch -d` takes a LIST, and a re-allow prefix is
+    # satisfied by the FIRST argument - every argument after it rides free, with no shell
+    # metacharacter for a splitter to see. Measured 2026-09-05 against real git 2.43:
+    #     $ git branch -d worktree-agent-x main
+    #     Deleted branch worktree-agent-x (was 9dd7d8f).
+    #     Deleted branch main (was 9dd7d8f).
+    # SCC-412 proposed exactly that prefix, and these two rows are the tripwire: they pass ONLY
+    # while no `git branch -d worktree-agent-` allow row exists. Re-add one and A2 goes red here.
+    # ⛔ The chore/, claude/ and epic/ twins are DELIBERATELY ABSENT: they are `allow` today on a
+    # PRE-EXISTING hole (`git branch -d chore/SCC-1-x main` -> allow on all three), and no
+    # permission row on either grammar can say "exactly one argument" - it needs a PreToolUse hook
+    # that parses the branch list. Adding them here would red the battery over a defect this file
+    # cannot fix. Tracked on SCC-411 with that remedy named.
+    "git branch -d worktree-agent-x main", "git branch -D worktree-agent-x main",
     "git push origin HEAD:develop", "git push origin HEAD:refs/heads/main", "git push origin :feature",
 ]
 

@@ -52,6 +52,7 @@ Antigravity gets nothing: the family is `only: ["zoo", "claude"]` and this lane 
 | D | `git branch -r` is **absent**, on evidence | `git branch -rd` deletes a remote-tracking ref; `-a`/`--list`/`--merged` refuse to combine with a delete |
 | E | No other allow row added, widened or re-spelled | `git diff` of `families.json` is one family's arrays +3 rows |
 | F | `run_all.py` green at the tip | that command |
+| G | The multi-argument escape is PINNED: `git branch -d worktree-agent-x main` must read deny/deny, so re-adding the prefix reds the battery | `tests/test_permission_parity.py` A2 |
 
 ## Declared Change Set
 
@@ -61,6 +62,7 @@ Antigravity gets nothing: the family is `only: ["zoo", "claude"]` and this lane 
 *unimplemented*. What was intended is recorded in the banner at the top of this plan.
 
 
+- EDIT `.agents/scripts/tests/test_permission_parity.py` — two multi-argument tripwire rows in `DESTRUCTIVE` → G
 - EDIT `docs/.maps-state.json` — maps baseline re-anchored at 4a9f013a → none (housekeeping, serves no acceptance row)
 - NEW `_artifacts/_main/2026-09-05_scc-412-worktree-agent-allow/task.yaml` — lane manifest → F
 - NEW `_artifacts/_main/2026-09-05_scc-412-worktree-agent-allow/implementation_plan.md` — this plan → F
