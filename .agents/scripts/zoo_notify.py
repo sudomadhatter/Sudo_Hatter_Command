@@ -50,7 +50,7 @@ MEASURED_ASKS = {"command", "tool", "followup", "completion_result", "resume_com
 
 def user_dir(platform: str | None = None, home: Path | None = None,
              appdata: Path | None = None, xdg: Path | None = None) -> Path:
-    """VS Code's `User` directory on this machine. [[two-machines-mac-and-pc]]
+    """VS Code's `User` directory on this machine. [[one-pc-windows-and-wsl]]
 
     ⛔ This branched exactly TWO ways until SCC-396 — `win32`, else Mac — so Linux and WSL
     resolved to `~/Library/Application Support`, a path that cannot exist there. Nothing raised:

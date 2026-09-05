@@ -67,7 +67,7 @@ plumbing. Three habits keep it honest:
 2. **Retire, don't accrete.** A deleted command comes OUT of §3 — it does not get a "(retired)"
    note that quietly doubles the page every year.
 3. **Every command you print must run on BOTH machines.** This system is driven from a Mac *and* a
-   Windows PC, and every page is read on both — see `two-machines-mac-and-pc`. The page said
+   Windows PC, and every page is read on both — see `one-pc-windows-and-wsl`. The page said
    `python .agents/scripts/tests/run_all.py — 94 checks` when the Mac has no bare `python` (only
    `python3`) and the count was 98. The first fix over-corrected to a blanket "it's `python3`,
    `python` is wrong" — equally false, because a python.org PC has only `python`. **A doc command is

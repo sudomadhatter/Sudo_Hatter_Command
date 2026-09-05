@@ -85,5 +85,5 @@ is a legal FILENAME character, so `p.replace("\\","/")` there is not a separator
 rewrite, and it widens a containment guard (`/ws\x` is a sibling file at `/`, not `/ws/x`). And when
 a lesson gets fixed, **carry it to the sibling copies**: "absolute has two spellings" (SCC-171/172)
 and "`encoding="utf-8"` is load-bearing" (SCC-160) both recurred here in helpers that never got the
-fix. Related: [[two-machines-mac-and-pc]], [[suite-red-file-may-have-run-nothing]],
+fix. Related: [[one-pc-windows-and-wsl]], [[suite-red-file-may-have-run-nothing]],
 [[test-certification-at-shipping-sha]].

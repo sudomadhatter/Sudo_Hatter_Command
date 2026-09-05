@@ -20,7 +20,7 @@ precisely so every platform (Claude Code, Gemini, opencode, Codex, Antigravity) 
 zero per-platform config.
 
 **Verify — never assume, and never hardcode a path.** Both the binary's location and the credential
-store are per-machine; this rule is read on the Mac AND the Windows PC (`two-machines-mac-and-pc`).
+store are per-machine; this rule is read on the Mac AND the Windows PC (`one-pc-windows-and-wsl`).
 One command answers "can I reach the board?" identically on every machine and every platform:
 
 ```bash

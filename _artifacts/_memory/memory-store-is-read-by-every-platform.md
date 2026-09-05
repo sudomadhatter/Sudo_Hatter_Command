@@ -11,7 +11,7 @@ Since 2026-08-09 (SCC-65) the memory store is **every platform's** memory, route
 - **The repo path is canonical**: `_artifacts/_memory/`. It travels via git, so it is identical on
   both machines and readable by Codex, opencode, and Antigravity. Claude's `~/.claude/...` path is
   a per-machine symlink *into* it — a convenience, never the mechanism
-  ([[portable-memory-store-dot-slug-trap]], [[two-machines-mac-and-pc]]).
+  ([[portable-memory-store-dot-slug-trap]], [[one-pc-windows-and-wsl]]).
 - **Every session, every platform: read `MEMORY.md` first**, then open the full files relevant to
   the task. Verify a recalled fact against the live repo before acting on it.
 - **READ-ONLY for everyone** except the sanctioned writers (Claude harness auto-memory,

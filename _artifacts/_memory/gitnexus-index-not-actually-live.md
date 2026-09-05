@@ -38,4 +38,4 @@ shim dies because its `#!/usr/bin/env node` shebang re-looks-up node on that str
 `check_maps` and the doc-graph. Verify a graph tool is actually reachable before trusting an answer
 from it — an absent MCP server and a tool that found nothing look identical. Related:
 [[base-is-not-a-gitnexus-replacement]] (why the swap happened and why `base` was rejected),
-[[two-machines-mac-and-pc]], [[check-maps-all-false-stale-agy]], [[map-drift-recorder]].
+[[one-pc-windows-and-wsl]], [[check-maps-all-false-stale-agy]], [[map-drift-recorder]].

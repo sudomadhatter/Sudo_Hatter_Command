@@ -18,7 +18,7 @@ An instruction a human must remember is not a delivery mechanism. This is:
 Mac -> a launchd agent at ~/Library/LaunchAgents/com.sudohatter.zoo-notify.plist, RunAtLoad +
 KeepAlive, so it starts at login and restarts if it dies. PC -> a `.cmd` in the Startup folder
 run through `pythonw` so no console window appears. Stdlib only, both machines.
-[[two-machines-mac-and-pc]]
+[[one-pc-windows-and-wsl]]
 """
 from __future__ import annotations
 

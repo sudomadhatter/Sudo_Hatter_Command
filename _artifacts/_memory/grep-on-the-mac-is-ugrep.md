@@ -10,7 +10,7 @@ metadata:
 
 `grep --version` on the Mac reports **ugrep 7.8.4**, not BSD grep. It shadows the system grep on
 `PATH`, so every `grep` in a gate, hook, or command fence runs ugrep there and something else on the
-PC ([[two-machines-mac-and-pc]]).
+PC ([[one-pc-windows-and-wsl]]).
 
 **The measured difference:** `grep -qv PATTERN` (any flag order — `-qv`, `-q -v`, `-v -q`) exits
 **1 when lines ARE selected** and **0 on empty input**. That is inverted from both GNU and BSD grep.

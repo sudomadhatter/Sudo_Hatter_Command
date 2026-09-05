@@ -26,4 +26,4 @@ length limit) and print `${#T}` — a complete token is ~190 chars.
 Full procedure, both machines: `docs/migrations/install_guides/jira-api-token-setup.md` (SCC-294).
 The token page's `Last accessed` column is the diagnostic — `Never Accessed` proves a token has
 never reached Jira, and it identifies WHICH token a machine uses when several exist.
-Related: [[jira-integration-live]] · [[two-machines-mac-and-pc]] · [[env-migration-kit]]
+Related: [[jira-integration-live]] · [[one-pc-windows-and-wsl]] · [[env-migration-kit]]

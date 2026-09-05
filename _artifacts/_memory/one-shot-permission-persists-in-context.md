@@ -26,7 +26,7 @@ loaded text rather than as a consumed token.
 `post-commit`, `pre-commit` — **no pre-push hook**, on a machine whose `core.hooksPath` is set
 correctly. The command doc claims "the push-approval hook still prompts on the push." It does not exist
 here. Between an agent and `main` there is only prose the agent is holding in its own context
-([[two-machines-mac-and-pc]] — check the other box before assuming otherwise).
+([[one-pc-windows-and-wsl]] — check the other box before assuming otherwise).
 
 **How to apply:**
 - **One invocation = one merge.** After merging, the permission is **spent**. The next task starts with

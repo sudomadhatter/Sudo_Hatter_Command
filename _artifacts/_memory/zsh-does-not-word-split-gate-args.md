@@ -27,4 +27,4 @@ bit in the same run: `${PIPESTATUS[0]}` is a **bash-ism** — zsh spells it `$pi
 silently expands to empty and prints no exit code at all (run gates bare instead); and `grep -E`
 treats `\|` as a **literal pipe**, not alternation, so `grep -cE 'A\|B'` reported 0 hits for three
 strings that were present 7, 4 and 12 times, nearly causing duplicate content to be folded into a
-command. See [[two-machines-mac-and-pc]] — the PC side runs different shells again.
+command. See [[one-pc-windows-and-wsl]] — the PC side runs different shells again.

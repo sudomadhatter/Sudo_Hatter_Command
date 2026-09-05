@@ -4,7 +4,7 @@
      Related memories share a line rather than getting one each — every file stays linked. -->
 
 ## ⛔ Read first
-- [TWO machines: Mac AND PC](two-machines-mac-and-pc.md) — shared docs read on both; python3 vs python; core.hooksPath is per-machine.
+- [ONE PC: Windows host, Ubuntu in WSL2](one-pc-windows-and-wsl.md) — not two machines, no Mac; which side runs what; three checkouts, only WSL `Ubuntu` is live; why the Windows clone is kept.
 
 ## Project stores
 <!-- Paths stay BACKTICKED, never markdown links: check_store() resolves every markdown link to a
