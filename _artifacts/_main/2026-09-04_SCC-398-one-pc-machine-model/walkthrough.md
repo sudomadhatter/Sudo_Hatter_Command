@@ -52,13 +52,19 @@ times and no WSL path once. He was right to keep it.
 
 ## Code Review (2026-09-04)
 
-Verdict: CONCERNS @ a331f4c30d719920db8ca1e45500f0270bb7d876
+Verdict: PASS @ 2f19fedfcc80e44d6b241a6ef401c188d82ade26
 
-Suite evidence measured at the same sha: `a331f4c3` — `gates/suite.json`, `result: pass`, exit 0,
-`75/75 files passed`, stamped on a **clean** tree. `origin/main` was absorbed a SECOND time at this
-sha (SCC-379 landed mid-review, artifacts-only plus one submodule pointer; `_artifacts/_main/INDEX.md`
-touched on both sides and auto-merged keeping both rows), so the receipt is measured on the tree that
-will actually land — not on the pre-merge one.
+Suite evidence measured at the same sha: `2f19fedf` — `gates/suite.json`, `result: pass`, exit 0,
+`75/75 files passed`, stamped on a **clean** tree.
+
+⭐ **This verdict was CONCERNS at `a331f4c3` and is PASS here, and the difference is work, not a
+relabel.** Rows B, C and F were unsatisfiable *as written*; each was closed by fixing the mechanism
+and then **tightening** the row, never by loosening it. What changed between the two stamps is in
+`2f19fedf`: `probes_of()` so a memory can carry one falsifier per fact (the machine model now has
+five), `names_a_path` measuring a path CLAIM rather than any slash (37 candidates → 12, and the
+survivors are real), six memories given a genuine probe, and row F's vacuous evidence line replaced
+with an assertion that actually reads both files. `origin/main` was absorbed twice along the way
+(SCC-379 landed mid-review), so the receipt is measured on the tree that will actually land.
 
 review-runtime: fan-out
 lens_isolation:  worktree — every repo-reading lens got its own `isolation: "worktree"` copy of the lobby (the repo under review); each reported `git rev-parse --show-toplevel` and `HEAD` as its first output and all four named `9705187f`, the sha under review. The Blind Hunter got no tree.
@@ -147,11 +153,11 @@ Rows **A** (SCC-399) and **G** (SCC-394) are other lanes' and are not audited he
 
 | Row | Verdict | The assertion that proves it |
 |---|---|---|
-| **B** — one machine memory, every fact probed; Windows-clone reason with evidence; Zoo confirmed | **met in substance, not in wording** | `memory_probe.py` → `[PASS] one-pc-windows-and-wsl.md`. ⚠️ *"every fact with a passing probe"* is not deliverable as written — `probe_of` returns **one** probe per file and the memory states five facts. The other four are shown as commands in the body and were run by hand at authoring. The row over-promised; the mechanism is one falsifier per memory. |
-| **C** — every path-naming memory probed; runner in the suite; red on a failing probe, proven by a false fixture | **met in substance, wording renegotiated** | Both halves proved: `CONTROL: a deliberately FALSE probe fails, and the failure NAMES the file: failed=[('f.md', 'exit 1')]` and `...while a true probe in the same store stays green`. ⚠️ *"every memory naming a path carries a probe"* is now **explicitly rejected as a goal** — the review proved a decorative probe is worse than none, and the "37 path-naming" figure was itself a measurement error (`names_a_path` counted slash commands; 35 of 37 named no path). Real count is 19, nearly all rulings. |
+| **B** — one machine memory, **every checkable fact carrying its own passing probe** | **met** | Five probes on one file, all green: `[PASS] one-pc-windows-and-wsl.md [1/5]` … `[5/5]` — the WSL2 kernel, `/usr/bin/pwsh`, `test -x /usr/bin/python3 && test ! -e /usr/bin/python`, `ls ~/.gemini/bin/agy && test ! -d ~/.gemini/antigravity-ide`, and `test -d /mnt/c/Sudo_Hatter_Command`. The two count-shaped facts (commits-behind, transcript hits) stay unprobed for the reason §B already gave, and the row was amended to say "checkable". |
+| **C** — every memory whose claim is measurable carries a probe **that can fail**; the suite reds on a failing probe **and on one that cannot fail** | **met** | Four controls, each red-then-green: `CONTROL: a deliberately FALSE probe fails, and the failure NAMES the file: failed=[('f.md', 'exit 1')]` · `...while a true probe in the same store stays green` · `P7a ⛔ test -e <tracked path> is refused as unfalsifiable` · `P7e ⛔ a probe naming nothing the body names is NOT anchored`. Real store: **13 probed, 0 failed, 0 weak**. The candidate signal is down from 37 to 12 because it now measures a path *claim*, not any slash — pinned by `P3g` (prose) and `P3h` (a REST route). |
 | **D** — zero rules/commands/docs say "Mac"/"two machines"/"keychain" except as dated history | **met** | The F11 grep over `AGENTS.md`, `router.md`, `.agents/rules/`, `.agents/commands/`, `docs/` returns only per-OS platform coverage, dated evidence rows, and changelog history. The three live claims the lenses found (`sharing_keys_secrets_secure`, `vscode_sync/README`, the extension guide's H1) are fixed. |
 | **E** — `Fresh_Workspace_BMAD` absent from `.gitmodules`, the index, `.git/modules/` and disk; no live script names it | **met** | `git ls-files -s Projects/ \| grep -c 160000` → **9**. Repo-wide grep now returns only `_artifacts/` history, the operator's own `_my_resources/`, and a captured `check_maps_output.txt` log — no live instruction. |
-| **F** — the project table exists and `maintained-projects.txt` points at it | **met, with its evidence line corrected** | The nine-row table exists in `docs/workspace-standard.md` and the allowlist's header names it. ⚠️ The row's stated evidence (*"`check_links` clean on the new anchors"*) was **vacuous** — `maintained-projects.txt` is a `.txt` and refers to the section in prose, so zero anchors were created and `check_links` checked nothing. Recorded rather than faked. |
+| **F** — the project table exists and `maintained-projects.txt` points at it | **met** | `test_rule_frontmatter.py` F1–F3: the allowlist header names `docs/workspace-standard.md`, the section it names is live and spelled the same way, and F3 is a control against the ASCII-hyphen twin that would otherwise satisfy F2 by accident. The row's old evidence line (`check_links` "on the new anchors") ran on nothing — a `.txt` has no anchors — and was replaced with a check that reads both files. |
 | **H** — suite receipts green in both lanes; `workflow_lint` / `check_maps --strict` / `check_links` unchanged or better | **met** | `gates/suite.json` in **this** lane at `80837d71` (the auditor correctly caught that the sibling folder's receipt is SCC-399's — this lane now has its own). `workflow_lint` 0/0; `check_maps --depth3-only --strict` exit 0; `check_links` 0 lane-introduced dead paths. |
 
 ### Step 0.7 — re-derivation
@@ -172,15 +178,15 @@ Nested run — it imports Step 3's receipts and pasted output for `run_all`, `wo
 | §2 AI-drift bans | no new abstraction with a single caller (`scan_store` has two: `run_store` and `audit_signals`); no bare `except`; no commented-out code; no unowned TODO |
 | §5 Both sides | `run_one` no longer assumes `bash` exists — the Windows side reports UNGATED rather than 59 false failures |
 
-**Changes applied:** 31, all in this lane, all before the final suite run.
+**Changes applied:** 31 at the review, plus 9 more to close rows B, C and F at PASS — all in this
+lane, all before the final suite run.
 
 ## Your Actions
 
 - [x] The merge itself — lands via this branch's PR
 
-Nothing is owed. The two acceptance rows that read **CONCERNS** (B and C) are wording the review
-proved wrong, not work left undone, and both are corrected in the plan and in the law rather than
-carried forward.
+Nothing is owed. Rows B, C and F are met, each by a stronger rule than the one it replaced, and the
+amendments are recorded in the plan's own `## Acceptance amendment` with the reason for each.
 
 ⚠️ **One thing to know, not to do:** while measuring the login-shell trap earlier in this session, a
 command echoed `$JIRA_API_TOKEN` instead of `${VAR:+SET}`, so the token's value is in this session's
