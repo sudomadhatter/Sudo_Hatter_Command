@@ -105,6 +105,7 @@ FOLDER = ROOT / FOLDER_REL
 EXPECTED = {
     "workflows_testing_SOP.md",          # was _quick_reference/sudo_workflows_testing.md
     "workflows_testing_SOP_changelog.md",  # SCC change history, one line per change (2026-08-21 cleanup)
+    "operator_workflows_quickref.md",    # SCC-380: Human flight manual & visual quick-reference
     "jira_manual.md",
     "jira_integration_guide.md",
     "git_walkthrough_settings.md",
@@ -284,6 +285,8 @@ ABSENT_BY_DESIGN = {
     # instruction to open a file that moved.
     "_my_resources/_quick_reference/": "retired by SCC-74 - named as provenance",
     "_my_resources/diagrams_guides/": "retired by SCC-74 - named as provenance",
+    "Projects/Fresh_Workspace_BMAD/backend/requirements.txt":
+        "retired submodule path - SCC-403 removed Fresh_Workspace_BMAD from git (tdad_stack_install_guide.md)",
     # Named as the WRONG place, and the sentence depends on it being empty: "without
     # core.hooksPath git reads `.git/hooks`, which is empty - so the gates are silently
     # off." Flagging it asks the author to delete the warning. (Structurally it could never

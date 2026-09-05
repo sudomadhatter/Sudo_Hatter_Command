@@ -18,11 +18,12 @@ paths:
 # SOP currency — the quick-reference is not documentation, it is the spec
 
 `docs/_scc_sops_prds/workflows_testing_SOP.md` is the **PRD for how this system is
-operated**. It is the only page that answers *what do I type*, and the only one an operator reads
-start to finish. Everything else — `.agents/rules/`, `.agents/commands/`, `AGENTS.md` — describes the
-system to an **agent**. This one describes it to the **human**, and it is the surface where a stale
-line does real damage: an instruction that fails in the operator's hands, months after the change
-that broke it, with no way to tell whether the doc or the system is wrong.
+operated** and the canonical machine specification. It is the single source of truth for command
+syntax, gates, and procedures, accompanied by `operator_workflows_quickref.md` (the visual flight manual
+for the human operator with all Mermaid diagrams). Everything else — `.agents/rules/`, `.agents/commands/`,
+`AGENTS.md` — describes the system to an **agent**. The SOP describes it to both the **agent and the human**,
+and it is the surface where a stale line does real damage: an instruction that fails in the operator's hands,
+months after the change that broke it, with no way to tell whether the doc or the system is wrong.
 
 **The law:** if you change how the command center is used, you update that page **in the same
 commit**. Not "in a follow-up," not "at close-out." The same commit, because the context that makes

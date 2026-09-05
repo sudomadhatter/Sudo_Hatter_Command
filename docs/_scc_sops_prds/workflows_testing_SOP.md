@@ -15,6 +15,29 @@
 
 ---
 
+
+---
+
+## ⚡ Agent Fast-Lookup Router (Read This First — Do NOT Read The Entire Page)
+
+> 🛑 **LEAST-CONTEXT MANDATE FOR AGENTS (ROOT LAW):**
+> **Do NOT load or read all 4,000+ lines of this document into your context window!**
+> This file is the canonical machine reference. Reading the whole file burns tens of thousands of tokens, crowds your context, and degrades reasoning.
+> Match your immediate task to the table below and jump directly to that section or companion file:
+
+| If you need to know / do... | Jump to Section | Core File / Rule Pointer |
+|---|---|---|
+| **Human visual flight deck / diagrams** | — | [`operator_workflows_quickref.md`](operator_workflows_quickref.md) |
+| **Which lane to pick** (Story vs Fast vs Task vs Quick-fix) | [§5 Which lane am I in?](#5-which-lane-am-i-in) | `.agents/scripts/lane_qualify.py` |
+| **All system hooks & nags** (Hard Gates vs Nags vs Probes) | [§10 The Complete Hooks & Nags Architecture](#the-complete-hooks--nags-architecture) | `.agents/rules/constitution.md` |
+| **Story development loop** (① -> ② -> ③) | [§6 The story lane](#6-the-story-lane) | `.agents/rules/artifacts-always-first.md` |
+| **Task & Chore loop** (`/smh-plan-task`, `/smh-quick-dev`) | [§9 The Task lane](#9-the-task-lane--work-on-the-system-itself) | `.agents/rules/work-consolidation.md` |
+| **Landing & close-out procedures** (single vs batch) | [§7 Landing and shipping](#7-landing-and-shipping--the-close-out-family) | `.agents/rules/git-policy.md` |
+| **Command reference & execution specs** | [Part VI — The command atlas](#18-every-command-one-diagram) | `.agents/commands/<command>.md` |
+| **Jira board queries & queue priority** | [§12 The board — what runs next](#12-the-board--what-runs-next) | `.agents/rules/jira.md` |
+| **Machine switching & handoff** | [§13 Switching machines](#13-switching-machines) | `/cicd-park` · `/cicd-resume` |
+| **Incident investigation & triage** | [§16 Incidents](#16-incidents) | `/cicd-mobile-error-team` |
+
 ## How to read this page
 
 This page has **two reading levels**, and knowing which one you're in saves you an hour.
@@ -320,40 +343,27 @@ remembering to link anything ([§10](#10-the-safety-net--what-checks-your-work),
 *Every command in the system and what hands off to what. Solid lines are the main road; dotted lines
 are the on-ramps.*
 
-```mermaid
-flowchart TD
-    BOOT["/cicd-boot-sprint-memory\nsession boot: where am I, what is next"] --> KICK["/cicd-create-epic-sprint\nONCE per epic: epic + stories + board\nrisk-score with you · mints the epic ticket"]
-    KICK --> LABEL["/cicd-label-tasks\nonce the stories are written:\nwhich run side by side, which are quick-lane"]
-    LABEL --> ONE["① /cicd-write-story-tests\nmints the story ticket · locks the behavior\nstory file + FAILING tests"]
-    ONE --> TWO["② /cicd-dev-story-tests\nplan → STOP for you → build\n→ widen coverage → certify the suite"]
-    TWO --> THREE["③ /cicd-code-review\nhunt the diff blind → the shared review engine\n→ test gate → PASS/CONCERNS/FAIL/WAIVED"]
-    THREE -.->|"Step 3.5"| CLEAN["/cicd-clean-code-audit\nmachine checks plus a taste pass"]
-    THREE --> CLOSE["/cicd-close-story-merge-tree\nclose out ONE story\nlands on the EPIC branch"]
-    THREE --> MERGE["/cicd-merge-epic-workingtrees\n2+ passed lanes of ONE epic\nlands them all on the EPIC branch"]
-    CLOSE --> SAVE["/cicd-update-sprint-memory\nits Step 1: the session SAVE\nlearnings routed · story flipped done"]
-    CLOSE --> CLOSEWT["/cicd-prune-worktree\nverify it merged, then clean up\ncalled AUTOMATICALLY by both"]
-    MERGE --> CLOSEWT
-    CLOSEWT -.->|"next story"| ONE
-    CLOSEWT --> SHIP["/cicd-push-e2e\nend-to-end suite must be green\nEPIC branch → main"]
-    SHIP --> PROD["Production"]
-    PROD -.->|"errors"| SEC["Automated incident pipeline\nSentry → triage → issue + fix branch → page"]
-    SEC -.->|"you respond"| MOBERR["/cicd-mobile-error-team\nre-diagnose → rollback-or-fix card → CI gate"]
-    MOBERR -.->|"becomes a story"| ONE
-    LIVE["/cicd-live-testing-team\nyou fly the app, agent watches the logs"] -.->|"becomes a story"| ONE
-    QD["/cicd-quick-dev\nsmall, low-risk project work\nnever closes out"] -.->|"row → review"| CLOSE
-    QD -.->|"ejects on risk"| ONE
-    ADV["/smh-adviser-board\nhistorical minds in one-mind filters"] -.->|"seeds ideation/plan"| KICK
-    AP["/cicd-autopilot-claude + 2 lanes\nthe robot runs ①②③ for you"] -.->|"alternate lane for ①②③"| TWO
-    PT["/smh-plan-task\nplan a whole Task, subtasks and all\nONE approval stop"] --> SLABEL["/smh-label-tasks\nwhich subtasks run side by side"]
-    SLABEL --> TASK["/smh-quick-dev → /smh-code-review\nwork on the SYSTEM: commands, rules, docs"]
-    QF["/smh-quick-fix\nthe LIGHTWEIGHT lane: a guide, a reference,\na source-control tidy — nothing that can break\nno plan, no approval, no review"] --> TASKCLOSE
-    QF -.->|"the real diff stops qualifying"| TASK
-    TASK --> TASKCLOSE["/smh-close-task-merge-tree\nONE chore branch → main DIRECTLY"]
-    TASK --> TASKMULTI["/smh-merge-multiple-workingtrees\nSEVERAL chore branches → main\none sign-off per lane"]
-    TASKCLOSE --> PROD
-    TASKMULTI --> PROD
-    PARK["/cicd-park\npark before closing the laptop"] <--> RESUME["/cicd-resume\nrestore on the other side"]
-```
+| Phase | Command / Action | Output & Next Hand-off |
+|---|---|---|
+| **Session Boot** | `/cicd-boot-sprint-memory` | Establishes project context, memory, and next ticket from Jira queue. |
+| **Epic Kickoff** | `/cicd-create-epic-sprint` (once per epic) | Mints epic ticket, creates story files, Murat proposes P0–P3 risk scores. |
+| **Story Queue & Sizing** | `/cicd-label-tasks <EPIC-KEY>` | Classifies `parallel-ok` vs sequential stories and quick-dev candidates. |
+| **Story Loop ①** | ① `/cicd-write-story-tests` | Mints story ticket, writes story specification and failing tests. |
+| **Story Loop ②** | ② `/cicd-dev-story-tests` | Writes plan → **STOP for operator "approved"** → implements → certifies tests. |
+| **Story Loop ③** | ③ `/cicd-code-review` | Blind diff review via shared engine → test gate → Verdict (`PASS`/`CONCERNS`/`FAIL`/`WAIVED`). |
+| **Clean Code Audit** | `/cicd-clean-code-audit` (Step 3.5) | Automated static analysis, lints, and taste pass. |
+| **Story Close-Out** | `/cicd-close-story-merge-tree` | Saves sprint learnings → lands branch on epic branch → prunes worktree. |
+| **Epic Batch Close-Out** | `/cicd-merge-epic-workingtrees` | Merges 2+ passed story branches onto epic branch at once. |
+| **Shipping to Production** | `/cicd-push-e2e` | Requires green E2E test suite → lands epic branch onto `main`. |
+| **Task Planning** | `/smh-plan-task` | Decomposes task into subtasks, maps dependencies with ONE approval stop. |
+| **Task Sequencing** | `/smh-label-tasks` | Establishes execution order and parallel-ok labels for subtasks. |
+| **Task Development** | `/smh-quick-dev` → `/smh-code-review` | Assert-first development and code review for command center/system work. |
+| **Task Close-Out** | `/smh-close-task-merge-tree` | Verifies clean tests → lands chore branch directly on `main` → prunes tree. |
+| **Task Batch Merge** | `/smh-merge-multiple-workingtrees` | Lands batch of passing chore lanes onto `main` with one sign-off per lane. |
+| **Lightweight Lane** | `/smh-quick-fix "<the ask>"` | Non-breaking guides, references, or tidying. No plan, no review, direct to close. |
+| **Incident Pipeline** | Sentry alert → `/cicd-mobile-error-team` | Evaluates rollback vs fix, becomes an expedited story in story lane. |
+| **Machine Switching** | `/cicd-park` <-> `/cicd-resume` | Safe cross-machine handoff via git sync. |
+
 
 **The one thing to take from this map:** there are **two roads to production**, and they never
 cross. Product work goes story → epic branch → `/cicd-push-e2e` → `main`. System work goes
@@ -373,21 +383,13 @@ wrong by accident. **Every box on this map has its own diagram in [Part VI](#18-
 **Answer this before you type anything.** It decides every command that follows, and it's the one
 question the system will not answer for you at the end.
 
-```mermaid
-flowchart TD
-    W["a piece of work arrives"] --> D{"does it touch anything\nthat DEPLOYS?\nbackend/ frontend/ firebase/ functions/ mobile/\n.github/ only in a repo that ships one of those"}
-    D -- "yes" --> P{"does it have\na story id?"}
-    D -- "no" --> T{"does it have\na story id?"}
-    P -- "yes" --> LOOP["THE STORY LANE\n① ② ③ then close-out\n§6 and §7"]
-    P -- "no, and it is small\nand low-risk" --> FAST["THE FAST LANE\n/cicd-quick-dev\n§8"]
-    T -- "yes" --> LOOP
-    T -- "no" --> Q{"lane_qualify.py\ndoes it touch the development system?\n.agents/ .githooks/ AGENTS.md"}
-    Q -- "TASK — yes, or scope unknown" --> TASK["THE TASK LANE\n/smh-quick-dev\n§9"]
-    Q -- "LIGHT — no" --> LIGHT["THE LIGHTWEIGHT LANE\n/smh-quick-fix\n§9a"]
-    FAST -.->|"touches auth, payments, PII,\nDB schema, a cross-service contract,\nor the router says it needs planning"| LOOP
-    TASK -.->|"a deployable path shows up\nin the diff mid-build"| LOOP
-    LIGHT -.->|"the REAL diff stops qualifying\nStep 3.5 re-runs the check"| TASK
-```
+| Condition | Qualified Lane | Entry Command | Enforcement / Eject Rules |
+|---|---|---|---|
+| Touches deployable code (`backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/`, `.github/`) with story ID | **The Story Lane** | ① `/cicd-write-story-tests` | Full ①②③ cycle with epic branch isolation. |
+| Touches deployable code, small and low-risk, no story ID | **The Fast Lane** | `/cicd-quick-dev` | **Ejects to Story Lane** if touching auth, PII, DB schema, or cross-service contracts. |
+| System/toolkit work (`.agents/`, `.githooks/`, `AGENTS.md`) qualifying `TASK` | **The Task Lane** | `/smh-quick-dev` | Worktree off `main`, closes via `/smh-close-task-merge-tree`. **Ejects to Story Lane** if deployable code touched. |
+| System/toolkit work qualifying `LIGHT` or `LIGHT-VCS` | **The Lightweight Lane** | `/smh-quick-fix` | No plan, no review, direct chore execution. **Ejects to Task Lane** if real diff expands. |
+
 
 **Read the arrows, they matter more than the boxes.** Both dotted lines are **ejects** — tripwires
 that fire mid-build and send the work back to the full loop. You do not get to argue with either one:
@@ -446,32 +448,14 @@ Three commands — ①, ② and ③ — in order, each leaving behind what the n
 *The same three steps as the map, but showing what each one leaves behind. The documents on the
 right are how the next step knows what happened — they are the system's memory.*
 
-```mermaid
-flowchart TD
-    subgraph S1 ["① /cicd-write-story-tests"]
-        A0["mint the story Jira ticket\nrule the lane and blocked labels"] --> A1["lock the behavior in plain language"]
-        A1 --> A2["write tests that FAIL"]
-    end
-    subgraph S2 ["② /cicd-dev-story-tests"]
-        B0{"contract locked or waived?\nelse it REFUSES to plan"} --> B1["write the plan"]
-        B1 --> B2{"STOP — the plan is posted\nyou read it; your reply is the trigger"}
-        B2 --> B3["audit the plan against real code"]
-        B3 --> B4["build until tests pass"]
-        B4 --> B5["widen coverage, then certify"]
-    end
-    subgraph S3 ["③ /cicd-code-review"]
-        C1["hunt the diff BLIND"] --> C2["read the story, then review"]
-        C2 --> C3["test gate plus quality audit"]
-        C3 --> C4["verdict"]
-    end
-    A2 --> B0
-    B5 --> C1
-    C4 --> D["/cicd-close-story-merge-tree\nyour sign-off\nlands it, THEN moves the ticket"]
-    S1 -.->|"writes"| F1["story file with jira_key\nplus failing tests"]
-    S2 -.->|"writes"| F2["implementation_plan.md\nthe audit is appended INTO it"]
-    S2 -.->|"writes"| F3["walkthrough.md\nplus a certified test snapshot"]
-    S3 -.->|"appends INTO the walkthrough"| F4["the Code Review section\nwith the verdict line\nplus gate receipts"]
-```
+| Stage | Primary Command | Action & Gate | Next Transition |
+|---|---|---|---|
+| **Pickup** | Board Query | Select ticket from `To Do Next`. Check worktree status; read active-context. | Advance to ① |
+| **① Write Tests** | `/cicd-write-story-tests <id>` | Mints story ticket, sets baseline, writes story file and failing tests. | Advance to ② |
+| **② Dev Story** | `/cicd-dev-story-tests <id>` | Writes plan → **STOP for operator "approved"** → implements → widens tests → certifies green. | Advance to ③ |
+| **③ Code Review** | `/cicd-code-review <id>` | Blind diff hunt → shared engine review → test gate → Verdict (`PASS`/`CONCERNS`/`FAIL`/`WAIVED`). | Advance to Close-out |
+| **Close-Out** | `/cicd-close-story-merge-tree` | Saves sprint learnings → lands on epic branch → prunes worktree. | Next story or `/cicd-push-e2e` |
+
 
 **Two documents, not ten.** Everything a story produces lives in exactly two files: the **plan** (the
 pre-build audit gets appended into it) and the **walkthrough** (the review gets appended into it).
@@ -741,44 +725,26 @@ Each command below operates on a different thing. None can substitute for anothe
 
 ### Which close-out do I run?
 
-```mermaid
-flowchart TD
-    DONE["work is reviewed\nand ready to land"] --> Q1{"does it have\na story id?"}
-    Q1 -- "no — toolkit, rules,\ncommands, docs" --> Q0{"how many finished Task\nlanes are live RIGHT NOW?"}
-    Q0 -- "one" --> TASK["/smh-close-task-merge-tree\nchore/KEY-slug → main DIRECTLY\nprunes its OWN tree"]
-    Q0 -- "two or more" --> TASKS["/smh-merge-multiple-workingtrees\nmeasured order · a STOP before every merge\nprunes its own trees"]
-    Q1 -- "yes — BMAD sprint work" --> Q2{"how many finished lanes\nof this epic are live\nRIGHT NOW?"}
-    Q1 -- "it is a claude/incident-* branch" --> INC["/cicd-mobile-error-team\nthe incident lane — no close-out touches it"]
-    Q2 -- "one" --> ONE["/cicd-close-story-merge-tree\ncloses THIS story\nits Step 1 is the save"]
-    Q2 -- "two or more" --> MANY["/cicd-merge-epic-workingtrees\ncloses the whole SET in one pass"]
-    ONE -.->|"Step 3 detects siblings\nand hands over — nothing returns"| MANY
-    ONE --> WT["/cicd-prune-worktree\nAUTOMATIC — its Step 5"]
-    MANY --> WT2["/cicd-prune-worktree\nAUTOMATIC — once per lane"]
-    WT --> EPIC["the EPIC branch\nstill NOT production"]
-    WT2 --> EPIC
-    EPIC --> Q3{"is every story\nin the epic done?"}
-    Q3 -- "no" --> NEXT["start the next story"]
-    Q3 -- "yes" --> SHIP["/cicd-push-e2e\nthe ONLY road to main\nfor product work"]
-    TASK --> MAIN["main — live for users"]
-    TASKS --> MAIN
-    SHIP --> MAIN
-```
+| Scenario | Close-Out Command | Base Branch | Target Branch | Tree Cleanup |
+|---|---|---|---|---|
+| Single story passed review | `/cicd-close-story-merge-tree` | `claude/<KEY>-<slug>` | `epic/<KEY>-<slug>` | Prunes story worktree. |
+| Batch of 2+ stories on same epic | `/cicd-merge-epic-workingtrees <epic>` | Multiple `claude/*` | `epic/<KEY>-<slug>` | Batch landing, prunes all merged worktrees. |
+| Single task / chore passed review | `/smh-close-task-merge-tree` | `chore/<KEY>-<slug>` | `main` | Self-contained prune, lands directly on `main`. |
+| Multiple tasks / chores passed review | `/smh-merge-multiple-workingtrees` | Multiple `chore/*` | `main` | Lands each chore branch sequentially on `main`. |
+| Whole epic finished & certified | `/cicd-push-e2e` | `epic/<KEY>-<slug>` | `main` | Production release gate; requires green E2E suite. |
+| Abandoned or unmerged tree cleanup | `/cicd-prune-worktree` | Any | — | Unlinks assets, removes worktree and deletes branch. |
+
 
 ### What calls what
 
-```mermaid
-flowchart LR
-    CS["/cicd-close-story-merge-tree\nthe door you type"] --> UM["/cicd-update-sprint-memory\nthe save — Step 1"]
-    UM --> PC["/cicd-prune-context"]
-    CS --> CW["/cicd-prune-worktree\nStep 5"]
-    ME["/cicd-merge-epic-workingtrees"] --> PC
-    ME --> CW
-    ME -.->|"only if the set is being promoted"| E2E["/cicd-e2e"]
-    PE["/cicd-push-e2e"] --> E2E
-    TM["/smh-close-task-merge-tree"] --> OWN["prunes its OWN tree\ndoes NOT call /cicd-prune-worktree\ndoes NOT prune context"]
-    MM["/smh-merge-multiple-workingtrees"] --> OWN
-    CS -.->|"2+ live lanes: hands over"| ME
-```
+| Caller Command | Sub-Commands Invoked | Internal Action |
+|---|---|---|
+| `/cicd-close-story-merge-tree` | `/cicd-update-sprint-memory`<br>`/cicd-prune-context`<br>`/cicd-prune-worktree` | Executes Step 1 session save, context pruning, git landing on epic branch, and worktree prune. |
+| `/cicd-merge-epic-workingtrees` | `/cicd-update-sprint-memory`<br>`/cicd-prune-context`<br>`/cicd-prune-worktree`<br>`/cicd-e2e` (optional) | Batch landing of multiple story lanes, runs memory saves, prunes worktrees. |
+| `/smh-close-task-merge-tree` | Internal prune logic | Directly fast-forwards/rebases chore branch onto `main`. Does NOT call `/cicd-prune-worktree`. |
+| `/smh-merge-multiple-workingtrees` | Internal batch logic | Sequences multiple chore branch landings directly onto `main`. |
+| `/cicd-push-e2e` | `/cicd-e2e` | Executes complete end-to-end test suite before landing epic branch on `main`. |
+
 
 `/cicd-merge-epic-workingtrees` is **not a different close-out** — it *contains*
 `/cicd-update-sprint-memory`'s per-story steps, wrapped in an overlap map and a combined gate the
@@ -1557,22 +1523,13 @@ don't.
 
 **`main` is what your users are running.** Everything else is short-lived by design.
 
-```mermaid
-flowchart TD
-    DEV["your story worktrees\nclaude/KEY-slug, one per story"] --> EPIC["the epic branch\nepic/KEY-slug, cut from main\nshort-lived: one epic, then gone"]
-    EPIC --> SHIP{"/cicd-push-e2e"}
-    SHIP --> SYNC["absorb origin/main first\nso any hotfix that shipped mid-epic\nis merged and re-tested"]
-    SYNC --> GATE{"backend suite\nplus frontend build\nplus /cicd-e2e — GREEN?"}
-    GATE -- "RED" --> STOP["REFUSES to run\nNothing ships."]
-    GATE -- "GREEN + your words in the token" --> MAIN["main\nlive for users"]
-    MAIN --> DEPLOY["deploy, then verify live"]
-    MAIN --> TICKET["Jira: evidence commented\nepic ticket → Done"]
-    MAIN --> DEL["epic branch deleted\nnothing accumulates"]
-    CHORE["chore/KEY-slug\nTask work, each with its own ticket"] -.->|"/smh-close-task-merge-tree\nor /smh-merge-multiple-workingtrees"| LANE{"anything deployable\nin the diff?"}
-    LANE -- "no — the GitHub check + the token" --> MAIN
-    LANE -- "yes — handed to /cicd-push-e2e\nlight gate; ship_preflight.py confirms\nthe diff really does deploy" --> MAIN
-    INCID["claude/incident-*\nthe incident pipeline's hotfix lane"] -.->|"/cicd-mobile-error-team\nyour merge decision, real CI"| MAIN
-```
+| Branch Level | Branch Pattern | Base Branch | Purpose & Merge Policy |
+|---|---|---|---|
+| **Production** | `main` | Root | The only long-lived branch. Protected by `.githooks/pre-push`. Merges only via `/cicd-push-e2e` or `/smh-close-task-merge-tree`. |
+| **Epic Container** | `epic/<KEY>-<slug>` | `main` | Short-lived branch for an entire BMAD epic. Cut at kickoff, deleted after push-e2e. |
+| **Story Lane** | `claude/<KEY>-<slug>` | `epic/<KEY>-<slug>` | Ephemeral worktree branch. Commits and pushes freely. Lands on epic branch at close-out. |
+| **Task Lane** | `chore/<KEY>-<slug>` | `main` | Ephemeral worktree branch for toolkit/system work. Lands directly on `main` at close-out. |
+
 
 ### Every lane gets its own workspace — not just story lanes
 
@@ -1934,24 +1891,14 @@ Bypasses, if you genuinely need one: `git commit --no-verify` for a single commi
 — plan, label, build, audit, review, clean-code, close — and the prefix is the whole point: `smh-*`
 is the family allowed to act on the repo you are standing in.
 
-```mermaid
-flowchart LR
-    TICK["a Task ticket\nno story · no board · no epic"] --> PT["/smh-plan-task\nwhole Task, subtasks and all\nONE approval stop"]
-    PT --> LT["/smh-label-tasks\nwhich subtasks run side by side"]
-    LT --> QD["/smh-quick-dev\nworktree · checkable list · plan → approved"]
-    TICK -.->|"a single lane"| QD
-    QD --> SA["/smh-self-audit\nGO or NO-GO before a file is touched"]
-    SA --> RED["write the assertion RED\na test, or a check a doc must pass"]
-    RED --> GREEN["implement until GREEN\nmutants declared and killed"]
-    GREEN --> EJ{"a deployable path\nin the diff?"}
-    EJ -- "yes" --> OUT["⛔ eject → /cicd-push-e2e"]
-    EJ -- "no" --> CR["/smh-code-review\nre-check main → blind hunt\n→ acceptance audit → the gate"]
-    CR --> CCA["/smh-clean-code-audit"]
-    CCA --> V["Verdict in the walkthrough"]
-    V --> STOP["STOP — hand back"]
-    STOP -.->|"your sign-off, ONE lane"| CLOSE["/smh-close-task-merge-tree"]
-    STOP -.->|"your sign-off, SEVERAL lanes"| MULTI["/smh-merge-multiple-workingtrees"]
-```
+| Sequence | Command | Purpose & Gate |
+|---|---|---|
+| **1. Plan** | `/smh-plan-task <TASK-KEY>` | Decomposes task into subtasks, maps dependencies with ONE plan approval stop. |
+| **2. Order** | `/smh-label-tasks <TASK-KEY>` | Assesses dependency waves and applies `parallel-ok` labels. |
+| **3. Build** | `/smh-quick-dev <KEY>` | Assert-first development: write assertions/tests first, then implement. |
+| **4. Review** | `/smh-code-review <KEY>` | Audit against toolkit standards and constitutional gates. |
+| **5. Close** | `/smh-close-task-merge-tree` | Verifies clean tests, fast-forwards/rebases chore branch to `main`, prunes tree. |
+
 
 ### One lane for a whole Task — the consolidated mode
 
@@ -2418,6 +2365,44 @@ claims). Its judgment half checks the conventions **this page** defines.
 
 ## 10. The safety net — what checks your work
 
+
+### The Complete Hooks & Nags Architecture
+
+The system enforces discipline through a strict two-tier architecture: **Hard Gates** that stop execution to protect the repo, and **Nags** that deliver non-blocking diagnostic feedback.
+
+#### 1. Hard Gates (Pre-execution & Commit Blocking)
+
+Hard Gates halt execution before damage occurs. They require either satisfying the gate condition or providing an auditable bypass.
+
+| Gate | Trigger Event | Scope | Behavior / Rejection | Recovery / Bypass |
+|---|---|---|---|---|
+| `require-push-approval.py` | `PreToolUse` (push) | Claude Code | Intercepts git push. Prompts operator if pushing to `main` or non-lane branch. | Push only to your own `claude/*` or `chore/*` branch. |
+| `.githooks/pre-push` | Git push | All platforms | Bounces direct pushes to `main`. | Production writes must land via `/cicd-push-e2e` or `/smh-close-task-merge-tree`. |
+| `sop-currency.sh` / `sop_currency.py` | `commit-msg` | Lobby | Rejects commit altering commands, rules, scripts, or hooks without staging `workflows_testing_SOP.md`. | Stage `workflows_testing_SOP.md` or add `[sop-ok]` in commit message (auditable bypass). |
+| `task_preflight.py` | Close-out merge | Task lanes | Refuses chore merge if diff touches deployable directories (`backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/`). | Product code must route through story loop and `/cicd-push-e2e`. |
+| `merge-target-guard.sh` | `commit-msg` | All lanes | Refuses merge commit if target branch violates model allowlist. | Ensure merge lands on authorized branch (`epic/*` or `main`). |
+| `000-PLAN-FIRST-GATE.md` | Pre-write | Model gate | Hard stop: no project files modified without approved `implementation_plan.md`. | Write plan, wait for operator "approved". |
+
+#### 2. Nags & Diagnostic Telemetry (Post-execution & Session-Start)
+
+Nags provide real-time guidance without halting, wedging, or blocking execution. They adhere to the non-blocking contract (`test_never_blocks`).
+
+| Nag | Trigger Event | Scope | Delivery Mechanism | Action / Remedy |
+|---|---|---|---|---|
+| `shape-guard.py` | `PostToolUse` (bash) | Claude Code | Injects advisory via `hookSpecificOutput.additionalContext` (SCC-369). | Informs agent to: (1) pin worktree with `cd <abs> && <cmd>` in one line (never `git -C`), (2) avoid `; echo "EXIT=$?"` tails, and (3) never pipe a gate into `tee`/`grep`. Non-blocking. |
+| `record_map_changes.py --nag` | `SessionStart` | All platforms | Outputs map freshness status on startup via `check-repo-map-drift.ps1`. | Run `/smh-update-maps-indexes` to reconcile untracked directories with `docs/repo-map.md`. |
+| `lint_context.py` | Context linting | Workspace | Emits `[context hygiene]` warning when session block count exceeds threshold. | Run context prune when blocks exceed hysteresis limit (nag at 12, keep ~10). |
+| `test_memory_store.py` | Test suite / CI | Memory store | Prints `MEMORY AUDIT DUE` block when `MEMORY.md` reaches 90% of the 25 KB cap. | Inform operator and propose running `/smh-memory-audit` (never compact on own judgment). |
+
+#### 3. Rule-Activation Probes
+
+Probes observe and verify rule activation without altering command execution.
+
+| Probe | Trigger Event | Scope | Purpose |
+|---|---|---|---|
+| `rule-trigger.py` | `UserPromptSubmit` | Intent matching | Scans user prompt against keyword `triggers:` and injects at most 3 rule pointers into agent context. |
+| `log-rule-load.sh` | `InstructionsLoaded` | Telemetry probe | Appends loaded instruction files to `${TMPDIR:-/tmp}/claude-rule-loads.log` to audit file-trigger firing. |
+
 **A set of small programs plus four git hooks — three that block (`pre-commit`, `commit-msg` and
 `pre-push`, carrying the encoding, lint, Jira-key, SOP-currency, merge-target and
 `main`-push-approval checks) and one that records (`post-commit`, the map-drift journal)** — do the
@@ -2426,68 +2411,15 @@ this sentence. What matters to you is *what they refuse to let happen.*
 
 *Which safety check fires inside which command:*
 
-```mermaid
-flowchart LR
-    subgraph CMD ["the commands you type"]
-        S["① /cicd-write-story-tests"]
-        R["③ /cicd-code-review\n/smh-code-review"]
-        Q["/cicd-quick-dev · /smh-quick-dev"]
-        M["/cicd-close-story-merge-tree"]
-        MS["/cicd-update-sprint-memory"]
-        W["/cicd-prune-worktree"]
-        T["/smh-close-task-merge-tree\n/smh-merge-multiple-workingtrees"]
-        L["/cicd-live-testing-team"]
-        LB["/cicd-label-tasks · /smh-label-tasks"]
-        G["every git commit"]
-        P["every git push"]
-    end
-    subgraph CHK ["the scripts and hooks that fire"]
-        GR["gate_receipt.py\nRUNS each test gate, records the real result"]
-        CP["closeout_preflight.py\nis this story actually safe to close?"]
-        SS["story_status.py\nflip BOTH status files together, or neither"]
-        JF["jira_feed.py\nmint · start · devrecord · finish · trace · flag"]
-        TP["task_preflight.py + hooks_armed.py\nthe LANE · the gates ARMED? · children · manifest"]
-        FR["flight_recorder.py\none event per close-out"]
-        LTS["label_tasks.py\nthe touch-set math + the freshness stamp"]
-        EV["evidence_extract.py\nthe review engine's fact-fetcher"]
-        WL["pre-commit: workflow_lint --staged\nbroken text encoding"]
-        JH["commit-msg: commit-msg-jira.sh — ARMED\nno ticket key, no commit"]
-        SC["commit-msg: sop_currency.py — ARMED\na usage change must move this page"]
-        MT["commit-msg: merge-target-guard.sh — ARMED\na merge onto the WRONG branch"]
-        VR["commit-msg: verdict_receipt.py — ARMED\na Verdict stamp with no suite receipt"]
-        PJ["post-commit: post-commit-jira-start.sh\nfirst keyed commit → In Progress"]
-        BS["pre-push: pre-push-merge-backstop.sh\na lane carrying another lane's unlanded work"]
-        PA["pre-push: pre-push-main-approval.sh — ARMED\nno single-use token, no push to main"]
-        MW["main-write-gate — ARMED, on GITHUB\nthe required check before main moves"]
-    end
-    S --> JF
-    R --> GR
-    R --> EV
-    Q --> JF
-    Q --> GR
-    M --> CP
-    M --> JF
-    MS --> SS
-    W --> CP
-    T --> TP
-    T --> FR
-    T --> JF
-    T --> MW
-    T --> PA
-    L -->|"you confirm the ticket"| JF
-    LB --> LTS
-    G --> WL
-    G --> JH
-    G --> SC
-    G --> MT
-    G --> VR
-    GR -.->|"the receipt a stamp stands on"| VR
-    G --> PJ
-    P --> BS
-    P --> PA
-    GR -.->|"receipts ride the branch"| CP
-    GR -.->|"receipts ride the branch"| TP
-```
+| Check / Tool | Target & Scope | Enforcement / Refusal Action |
+|---|---|---|
+| `task_preflight.py` | Branch diff | Refuses chore merge if diff touches deployable directories (`backend/`, `frontend/`, `firebase/`, etc.). |
+| `require-push-approval.py` | `PreToolUse` (push) | Prompts for confirmation when pushing to `main` or any non-lane branch. |
+| `.githooks/pre-push` | Git push hook | Rejects direct push to `main` without `/cicd-push-e2e`. |
+| `sop_currency.py` | `commit-msg` hook | Rejects commit altering commands, rules, or scripts unless SOP doc staged or `[sop-ok]`. |
+| `shape-guard.py` | `PostToolUse` (bash) | Informs agent via `additionalContext` if command used `git -C`, `; echo "EXIT=$?"`, or piped a gate. |
+| `merge-target-guard.sh` | `commit-msg` hook | Verifies merge commit lands on an authorized target branch. |
+
 
 ### The checks, and what each one refuses
 
@@ -2643,16 +2575,12 @@ something that no longer exists. So every verdict is stamped with the exact vers
 
 *How the system decides whether a story marked "review" is genuinely ready:*
 
-```mermaid
-flowchart TD
-    START["Story says 'review'"] --> Q1{"Is there a review\nwritten down?"}
-    Q1 -- "No" --> RUN["/cicd-code-review\nThe status file was wrong.\nIt never actually ran."]
-    Q1 -- "Yes" --> Q2{"What did it say?"}
-    Q2 -- "FAIL or CONCERNS" --> RUN
-    Q2 -- "PASS or WAIVED" --> Q3{"Was the code changed\nafter the review?"}
-    Q3 -- "Yes" --> RUN2["/cicd-code-review\nThe review describes older code.\nIt is not a pass anymore."]
-    Q3 -- "No" --> CLOSE["/cicd-close-story-merge-tree\nGenuinely ready. Your call."]
-```
+| Condition | Review Verdict Status | Required Remediation |
+|---|---|---|
+| Story branch unchanged since review SHA | Valid | Proceed directly to close-out. |
+| New commits added to story branch | Stale | Re-run `/cicd-code-review` on current HEAD SHA. |
+| Epic branch moved ahead | Rebase required | Merge `origin/epic` into story branch; if code changed or conflicts occurred, re-review. |
+
 
 > ⓘ **Why this exists.** For a while the boot command answered "is this ready?" from the status file
 > alone — which reads `review` whether the review passed, failed, or never happened. It cheerfully
@@ -2876,15 +2804,12 @@ matter what the status file says. The status file lags by design — only close-
 You work one sprint across desktop, laptop, and phone. **Branches travel between machines; your local
 working setup does not.** That gap is the entire reason this pair exists.
 
-```mermaid
-flowchart TD
-    M1["machine A\nyou're finishing up"] --> PARK["/cicd-park\npush everything plus write a note"]
-    PARK --> ORIGIN["GitHub\nthe only thing both sides share"]
-    ORIGIN --> RESUME["/cicd-resume\non machine B"]
-    RESUME --> PULL["shared checkout stands on main\ngit pull --ff-only origin main\nsafe: it only catches production up"]
-    PULL --> WORK["check out the live epic/* branch\nplus re-create the story worktrees"]
-    WORK --> BOOT["/cicd-boot-sprint-memory\nload the sprint and keep going"]
-```
+| Step | Machine | Command | Action |
+|---|---|---|---|
+| **1. Park** | Current Machine | `/cicd-park` | Verifies clean git status, pushes in-flight branches to origin, updates active-context. |
+| **2. Switch** | Operator | Move to target PC/Mac | Open terminal / IDE in target workspace. |
+| **3. Resume** | Target Machine | `/cicd-resume` | Fetches origin, recreates worktrees for in-flight branches, restores active-context. |
+
 
 **Why the pull is boring now.** The shared checkout stands on `main` and stays there — always exactly
 production. `git pull --ff-only origin main` from there can only catch it up to what already shipped;
@@ -3076,17 +3001,12 @@ blocks are kept identical on purpose, so a `diff` shows drift straight away.
 
 *Three layers, from fully automatic to fully yours.*
 
-```mermaid
-flowchart TD
-    ERR["a real user hits an error"] --> SENTRY["Sentry catches it"]
-    SENTRY --> AUTO["1 · Automated pipeline\ntriage → GitHub issue\nplus a starting fix branch"]
-    AUTO --> PAGE["you get paged\nwith a summary"]
-    PAGE --> YOU["2 · /cicd-mobile-error-team\nre-diagnoses from scratch"]
-    YOU --> CARD{"roll back, or fix forward?\nit gives you both timelines"}
-    CARD --> FIX["minimal fix plus a test\nthat proves it"]
-    FIX --> CI["gated on real CI\nyour sign-off to merge"]
-    DRILL["3 · /sentry-security-team-avch\nquarterly fire drill"] -.->|"keeps the runbook honest"| AUTO
-```
+| Stage | Trigger / Component | Operational Response |
+|---|---|---|
+| **Alert** | Sentry incident webhook | Sentry alert triggers incident response, issues ticket with error telemetry. |
+| **Triage** | `/cicd-mobile-error-team` | Analyzes stack trace, assesses blast radius, evaluates rollback vs hotfix card. |
+| **Remediation** | Story loop ①②③ | Hotfix is assigned to an expedited story branch with pinning reproduction test. |
+
 
 The responder **re-diagnoses independently** rather than trusting the automated triage — an automated
 first guess is a lead, not a diagnosis. It stops twice for you and never merges on its own initiative.
@@ -3124,59 +3044,15 @@ and where each command **stops for you**.
 *Solid: always. Dotted: only on a condition. The shaded engines are shared — one body, several callers
 — which is why a fix in one lands in every caller at once.*
 
-```mermaid
-flowchart LR
-    subgraph STORY ["the story lane"]
-        ONE["① /cicd-write-story-tests"]
-        TWO["② /cicd-dev-story-tests"]
-        THREE["③ /cicd-code-review"]
-        QD["/cicd-quick-dev"]
-    end
-    subgraph TASK ["the Task lane"]
-        PT["/smh-plan-task"]
-        SQD["/smh-quick-dev"]
-        SCR["/smh-code-review"]
-    end
-    subgraph LAND ["landing and shipping"]
-        CSM["/cicd-close-story-merge-tree"]
-        USM["/cicd-update-sprint-memory"]
-        MEW["/cicd-merge-epic-workingtrees"]
-        CWT["/cicd-prune-worktree"]
-        PE["/cicd-push-e2e"]
-        TM["/smh-close-task-merge-tree"]
-        MM["/smh-merge-multiple-workingtrees"]
-    end
-    subgraph ENG ["shared engines — one body, many callers"]
-        BDD["/cicd-bdd-tests"]
-        SA["/cicd-self-audit"]
-        SSA["/smh-self-audit"]
-        CRE["code-review-engine skill\n5 lenses · verify wave · triage"]
-        CCA["/cicd-clean-code-audit"]
-        SCCA["/smh-clean-code-audit"]
-        E2E["/cicd-e2e"]
-        PC["/cicd-prune-context"]
-        LT["/cicd-label-tasks · /smh-label-tasks\nlabel_tasks.py"]
-    end
-    ONE --> BDD
-    TWO --> SA
-    THREE --> CRE
-    THREE --> CCA
-    QD --> CCA
-    SQD --> SSA
-    PT --> SSA
-    PT --> LT
-    SCR --> CRE
-    SCR --> SCCA
-    CSM --> USM
-    USM --> PC
-    CSM --> CWT
-    CSM -.->|"2+ live lanes"| MEW
-    MEW --> PC
-    MEW --> CWT
-    MEW -.->|"if promoting"| E2E
-    PE --> E2E
-    AP["/cicd-autopilot-claude\nStage 4 = /cicd-code-review-AP"] --> CRE
-```
+| Category | Primary Command | Internal Downstream Invocations |
+|---|---|---|
+| **Planning** | `/cicd-create-epic-sprint` | `bmad-create-epics-and-stories`, `bmad-testarch-test-design`, `jira_feed.py mint` |
+| **Story Loop** | `/cicd-write-story-tests` | `jira_feed.py mint`, `bmad-tea` |
+| **Story Loop** | `/cicd-dev-story-tests` | `bmad-dev-story`, `/cicd-self-audit` |
+| **Story Loop** | `/cicd-code-review` | `code-review-engine`, `/cicd-clean-code-audit` |
+| **Close-Out** | `/cicd-close-story-merge-tree` | `/cicd-update-sprint-memory`, `/cicd-prune-context`, `/cicd-prune-worktree` |
+| **Shipping** | `/cicd-push-e2e` | `/cicd-e2e` |
+
 
 **Two things this graph settles.** First, `/cicd-code-review`, `/smh-code-review` and the autopilot's
 Stage 4 are the **same reviewer** — the engine skill — fed different inputs; there is no "lighter"
@@ -3189,26 +3065,16 @@ not use the story janitor, which owns `claude/*` trees only.
 *You never drag a card. These are the only seams that move a ticket or change its labels; everything
 else on the board is a comment.*
 
-```mermaid
-flowchart LR
-    subgraph MOVE ["status moves"]
-        A["first commit on a keyed branch\npost-commit hook"] -->|"In Progress"| B["the ticket"]
-        C["/smh-quick-dev Step 0.5\n/smh-plan-task Step 0"] -->|"In Progress"| B
-        D["① Step 1.6"] -->|"In Progress, or Blocking"| B
-        E["/cicd-close-story-merge-tree\n/smh-close-task-merge-tree\n/smh-merge-multiple-workingtrees\n/cicd-push-e2e"] -->|"Done — or HELD by open user tasks"| B
-        F["/cicd-live-testing-team\nonly on your word"] -->|"Story or Task → Bug, out of Done"| B
-    end
-    subgraph LABEL ["labels"]
-        G["① at pickup"] -->|"quick-dev · blocked"| B
-        H["/cicd-label-tasks · /smh-label-tasks"] -->|"parallel-ok · quick-dev\nrewritten for the whole set"| B
-        I["jira_feed.py finish"] -->|"user-tasks"| B
-    end
-    subgraph MINT ["minting"]
-        J["/cicd-create-epic-sprint"] -->|"the epic ticket"| B
-        K["① at pickup"] -->|"the story ticket"| B
-        L["/smh-plan-task, on your go"] -->|"Subtasks under the Task"| B
-    end
-```
+| Work-Item State | Event / Trigger | Authoritative Board Writer |
+|---|---|---|
+| **Epic Created** | `/cicd-create-epic-sprint` | `jira_feed.py mint --type Epic` |
+| **Story Minted** | `/cicd-write-story-tests` | `jira_feed.py mint --type Story` |
+| **Task Minted** | `/smh-plan-task` | Raw `acli jira workitem create --type Task` |
+| **Subtask Minted** | `/smh-quick-dev` (after plan approval) | Raw `acli jira workitem create --type Subtask` |
+| **In Progress** | First commit on branch | `post-commit-jira-start.sh` → `jira_feed.py start` |
+| **Flagged as Bug** | Audit or live testing finding | `jira_feed.py flag` |
+| **Done / Closed** | Close-out merge | `jira_feed.py finish` / `jira_feed.py devrecord --closing` |
+
 
 ### Where each command stops for you
 
@@ -3268,26 +3134,26 @@ it, and where the longer explanation lives.*
 it never writes the board and never starts work. Explained in [§12](#12-the-board--what-runs-next).
 Hands to: whichever step the story is at, or `/cicd-resume` when the work is only on origin.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve the project\nno name → STOP and ask"] --> LOB{"is the target\nthe command centre?"}
-    LOB -- "yes — no sprint here" --> Q["read the Jira queue instead\nIn Progress → To Do Next → To Do"]
-    LOB -- "no" --> S1["Step 1 — active-context\nStep 1.5 — this project's own memory index"]
-    S1 --> S2["Step 2 — the in-scope component specs"]
-    S2 --> S2B["Step 2b — sprint-status.yaml\nthe EPIC branch's copy, not the checkout's\nread the walkthrough Verdict, never infer it"]
-    S2B --> NEXT{"a card in To Do Next\non the board?"}
-    NEXT -- "yes" --> LEAD["lead with your card\nreport the computed pick beside it"]
-    NEXT -- "no" --> PICK["the computed next story"]
-    LEAD --> WT{"live worktree?\ndisk first, then origin"}
-    PICK --> WT
-    WT -- "on origin only" --> RES["hand to /cicd-resume"]
-    WT -- "on disk or none" --> S3["Step 3 — guardrails on\nflight-recorder proposals surfaced"]
-    S3 --> S4["Step 4 — READY\nnames the ONE command to run next\nSTOP — discovery only"]
-    S4 -.-> ONE["①"]
-    S4 -.-> TWO["②"]
-    S4 -.-> THREE["③"]
-    S4 -.-> CLOSE["/cicd-close-story-merge-tree\nor /cicd-merge-epic-workingtrees\nwhen 2+ lanes passed"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the project no name → STOP and ask | (terminal / end) |
+| `LOB` | is the target the command centre? | **yes — no sprint here** → read the Jira queue instead In Progress → To Do Next → To Do<br>**no** → Step 1 — active-context Step 1.5 — this project's own memory index |
+| `Q` | read the Jira queue instead In Progress → To Do Next → To Do | (terminal / end) |
+| `S1` | Step 1 — active-context Step 1.5 — this project's own memory index | → Step 2 — the in-scope component specs |
+| `S2` | Step 2 — the in-scope component specs | → Step 2b — sprint-status.yaml the EPIC branch's copy, not the checkout's read the walkthrough Verdict, never infer it |
+| `S2B` | Step 2b — sprint-status.yaml the EPIC branch's copy, not the checkout's read the walkthrough Verdict, never infer it | → a card in To Do Next on the board? |
+| `NEXT` | a card in To Do Next on the board? | **yes** → lead with your card report the computed pick beside it<br>**no** → the computed next story |
+| `LEAD` | lead with your card report the computed pick beside it | → live worktree? disk first, then origin |
+| `PICK` | the computed next story | → live worktree? disk first, then origin |
+| `WT` | live worktree? disk first, then origin | **on origin only** → hand to /cicd-resume<br>**on disk or none** → Step 3 — guardrails on flight-recorder proposals surfaced |
+| `RES` | hand to /cicd-resume | (terminal / end) |
+| `S3` | Step 3 — guardrails on flight-recorder proposals surfaced | → Step 4 — READY names the ONE command to run next STOP — discovery only |
+| `S4` | Step 4 — READY names the ONE command to run next STOP — discovery only | → ①<br>→ ②<br>→ ③<br>→ /cicd-close-story-merge-tree or /cicd-merge-epic-workingtrees when 2+ lanes passed |
+| `ONE` | ① | (terminal / end) |
+| `TWO` | ② | (terminal / end) |
+| `THREE` | ③ | (terminal / end) |
+| `CLOSE` | /cicd-close-story-merge-tree or /cicd-merge-epic-workingtrees when 2+ lanes passed | (terminal / end) |
+
 
 **Step 2b reads the sprint file off the epic branch, not off your checkout.** Close-out runs inside
 the story worktree, so the `sprint-status.yaml` it writes rides the story branch and lands on the
@@ -3304,22 +3170,22 @@ mint the epic ticket, generate the board, then risk-score every story. Explained
 [§6](#6-the-story-lane) and [§14](#14-how-we-test). Calls: `bmad-create-epics-and-stories`,
 `bmad-testarch-test-design`, `jira_feed.py`. Hands to: ① for the first story.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve the project\nno name → STOP and ask"] --> S1["Step 1 — bmad-create-epics-and-stories\nthe epic file and every story file"]
-    S1 --> S15["Step 1.5 — cut epic/KEY-slug from origin/main\nmint the EPIC ticket with its outline · push"]
-    S15 --> KEY{"key came back\nfrom the board?"}
-    KEY -- "no" --> REF["⛔ never cut an unkeyed branch\nnever invent a key"]
-    KEY -- "yes" --> S2["Step 2 — sprint-status.yaml\nevery story lands as backlog\nnever ready-for-dev"]
-    S2 --> S3["Step 3 — risk-score, one story at a time\nMurat proposes P0–P3"]
-    S3 --> STOP["STOP — you confirm each level\nnothing unconfirmed is written"]
-    STOP --> MORE{"more stories?"}
-    MORE -- "yes" --> S3
-    MORE -- "no" --> REC["record the P-levels\ninto the test-design and each story"]
-    REC --> DONE["Done — report the map\nSTOP: no tests, no code"]
-    DONE -.-> ONE["① /cicd-write-story-tests"]
-    DONE -.-> LT["/cicd-label-tasks\nonce every story is written"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the project no name → STOP and ask | (terminal / end) |
+| `S1` | Step 1 — bmad-create-epics-and-stories the epic file and every story file | → Step 1.5 — cut epic/KEY-slug from origin/main mint the EPIC ticket with its outline · push |
+| `S15` | Step 1.5 — cut epic/KEY-slug from origin/main mint the EPIC ticket with its outline · push | → key came back from the board? |
+| `KEY` | key came back from the board? | **no** → ⛔ never cut an unkeyed branch never invent a key<br>**yes** → Step 2 — sprint-status.yaml every story lands as backlog never ready-for-dev |
+| `REF` | ⛔ never cut an unkeyed branch never invent a key | (terminal / end) |
+| `S2` | Step 2 — sprint-status.yaml every story lands as backlog never ready-for-dev | → Step 3 — risk-score, one story at a time Murat proposes P0–P3 |
+| `S3` | Step 3 — risk-score, one story at a time Murat proposes P0–P3 | → STOP — you confirm each level nothing unconfirmed is written |
+| `STOP` | STOP — you confirm each level nothing unconfirmed is written | → more stories? |
+| `MORE` | more stories? | **yes** → Step 3 — risk-score, one story at a time Murat proposes P0–P3<br>**no** → record the P-levels into the test-design and each story |
+| `REC` | record the P-levels into the test-design and each story | → Done — report the map STOP: no tests, no code |
+| `DONE` | Done — report the map STOP: no tests, no code | → ① /cicd-write-story-tests<br>→ /cicd-label-tasks once every story is written |
+| `ONE` | ① /cicd-write-story-tests | (terminal / end) |
+| `LT` | /cicd-label-tasks once every story is written | (terminal / end) |
+
 
 #### /cicd-label-tasks and /smh-label-tasks
 
@@ -3329,26 +3195,25 @@ lane" — stamps `parallel-ok` and `quick-dev` on the board, records what it com
 says so, and never starts anything. Explained in [§6](#6-the-story-lane) and
 [§9](#9-the-task-lane--work-on-the-system-itself). Called by: you, and `/smh-plan-task` Step 4.*
 
-```mermaid
-flowchart TD
-    A["/cicd-label-tasks EPIC-KEY"] --> S0["Step 0 — resolve the repo FROM the key"]
-    B["/smh-label-tasks TASK-KEY"] --> S0
-    S0 --> UNIT{"what is under the key?"}
-    UNIT -- "an epic, typed cicd" --> G1["Step 1 — ground each STORY\nits story file, or 'write it first'"]
-    UNIT -- "a Task, typed smh" --> G2["Step 1 — ground each SUBTASK\nbranch diff → its plan → ticket text"]
-    UNIT -- "epic given to smh, or\nTask given to cicd" --> X["⛔ refuse by name\nand send you to the twin"]
-    UNIT -- "a grouping epic\nCI/CD, Thin toolkit" --> X
-    G1 --> S2["Step 2 — the touch-set per child\nwhat it will MODIFY, not mention\nthin evidence → lock, never approve"]
-    G2 --> S2
-    S2 --> S25["Step 2.5 — rule quick-dev\nin the same pass"]
-    S25 --> S3["Step 3 — set math\nthe largest group sharing no file"]
-    S3 --> S4["Step 4 — print the answer\n🟢 side by side · 🔒 after X · 📝 no file · ⚡ quick"]
-    S4 --> S5["Step 5 — stamp the board\nlabels rewritten for EVERY child\none comment on the parent: verified against N"]
-    S5 --> END["report and STOP\nit states, it never starts"]
-    END -.->|"ungrounded story"| ONE["① write it first"]
-    END -.->|"ungrounded subtask"| PT["/smh-plan-task"]
-    LATER["later: label_tasks.py check\nFRESH exit 0 · STALE exit 1 — re-run me"] -.-> S0
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `A` | /cicd-label-tasks EPIC-KEY | (terminal / end) |
+| `S0` | Step 0 — resolve the repo FROM the key | → what is under the key? |
+| `B` | /smh-label-tasks TASK-KEY | (terminal / end) |
+| `UNIT` | what is under the key? | **an epic, typed cicd** → Step 1 — ground each STORY its story file, or 'write it first'<br>**a Task, typed smh** → Step 1 — ground each SUBTASK branch diff → its plan → ticket text<br>**epic given to smh, or Task given to cicd** → ⛔ refuse by name and send you to the twin<br>**a grouping epic CI/CD, Thin toolkit** → ⛔ refuse by name and send you to the twin |
+| `G1` | Step 1 — ground each STORY its story file, or 'write it first' | → Step 2 — the touch-set per child what it will MODIFY, not mention thin evidence → lock, never approve |
+| `G2` | Step 1 — ground each SUBTASK branch diff → its plan → ticket text | → Step 2 — the touch-set per child what it will MODIFY, not mention thin evidence → lock, never approve |
+| `X` | ⛔ refuse by name and send you to the twin | (terminal / end) |
+| `S2` | Step 2 — the touch-set per child what it will MODIFY, not mention thin evidence → lock, never approve | → Step 2.5 — rule quick-dev in the same pass |
+| `S25` | Step 2.5 — rule quick-dev in the same pass | → Step 3 — set math the largest group sharing no file |
+| `S3` | Step 3 — set math the largest group sharing no file | → Step 4 — print the answer 🟢 side by side · 🔒 after X · 📝 no file · ⚡ quick |
+| `S4` | Step 4 — print the answer 🟢 side by side · 🔒 after X · 📝 no file · ⚡ quick | → Step 5 — stamp the board labels rewritten for EVERY child one comment on the parent: verified against N |
+| `S5` | Step 5 — stamp the board labels rewritten for EVERY child one comment on the parent: verified against N | → report and STOP it states, it never starts |
+| `END` | report and STOP it states, it never starts | **ungrounded story** → ① write it first<br>**ungrounded subtask** → /smh-plan-task |
+| `ONE` | ① write it first | (terminal / end) |
+| `PT` | /smh-plan-task | (terminal / end) |
+| `LATER` | later: label_tasks.py check FRESH exit 0 · STALE exit 1 — re-run me | (terminal / end) |
+
 
 **Three ways it could answer confidently and wrongly are closed.**
 
@@ -3380,30 +3245,29 @@ then **one** approval stop for everything. Explained in
 `jira_feed.py`. Hands to: `/smh-quick-dev` per lane, which skips its own approval stop for a lane
 that came through this batch.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve repo + parent from git output\nticket → In Progress"] --> TYPE{"the parent is a…"}
-    TYPE -- "Epic" --> X1["⛔ that is /cicd-create-epic-sprint\nor pick one of its Tasks"]
-    TYPE -- "Subtask" --> X2["⛔ Jira's floor — a subtask\ncannot have children"]
-    TYPE -- "Task" --> S1["Step 1 — fix the parent's checkable list\n2–6 statements you can verify"]
-    S1 --> S2["Step 2 — PROPOSE the breakdown\ndoes each piece earn its own branch?"]
-    S2 --> STOP1["STOP — nothing touches the board\nuntil you say go"]
-    STOP1 --> MINT["mint each Subtask under the Task"]
-    MINT --> LOOP["Step 3 — per subtask"]
-    LOOP --> L1["cut worktree + chore/KEY-slug"]
-    L1 --> L2["write implementation_plan.md + task.yaml"]
-    L2 --> L3["/smh-self-audit"]
-    L3 --> V{"verdict?"}
-    V -- "NO-GO" --> FIX["fix that plan and re-audit\nnever carry a NO-GO to the batch stop"]
-    FIX --> L3
-    V -- "GO" --> L4["commit + push · point the ticket at the plan"]
-    L4 --> MORE{"more subtasks?"}
-    MORE -- "yes" --> L1
-    MORE -- "no" --> S4["Step 4 — /smh-label-tasks\nthe parallel table, printed unedited"]
-    S4 --> S5["Step 5 — ONE approval stop\nevery plan · every audit verdict · the table"]
-    S5 --> STOP2["STOP — your words, quoted into each plan\n'ok' / 'continue' / a correction are NOT approval"]
-    STOP2 -.-> QD["/smh-quick-dev per lane\nstarts at its RED step"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve repo + parent from git output ticket → In Progress | (terminal / end) |
+| `TYPE` | the parent is a… | **Epic** → ⛔ that is /cicd-create-epic-sprint or pick one of its Tasks<br>**Subtask** → ⛔ Jira's floor — a subtask cannot have children<br>**Task** → Step 1 — fix the parent's checkable list 2–6 statements you can verify |
+| `X1` | ⛔ that is /cicd-create-epic-sprint or pick one of its Tasks | (terminal / end) |
+| `X2` | ⛔ Jira's floor — a subtask cannot have children | (terminal / end) |
+| `S1` | Step 1 — fix the parent's checkable list 2–6 statements you can verify | → Step 2 — PROPOSE the breakdown does each piece earn its own branch? |
+| `S2` | Step 2 — PROPOSE the breakdown does each piece earn its own branch? | → STOP — nothing touches the board until you say go |
+| `STOP1` | STOP — nothing touches the board until you say go | → mint each Subtask under the Task |
+| `MINT` | mint each Subtask under the Task | → Step 3 — per subtask |
+| `LOOP` | Step 3 — per subtask | → cut worktree + chore/KEY-slug |
+| `L1` | cut worktree + chore/KEY-slug | → write implementation_plan.md + task.yaml |
+| `L2` | write implementation_plan.md + task.yaml | → /smh-self-audit |
+| `L3` | /smh-self-audit | → verdict? |
+| `V` | verdict? | **NO-GO** → fix that plan and re-audit never carry a NO-GO to the batch stop<br>**GO** → commit + push · point the ticket at the plan |
+| `FIX` | fix that plan and re-audit never carry a NO-GO to the batch stop | → /smh-self-audit |
+| `L4` | commit + push · point the ticket at the plan | → more subtasks? |
+| `MORE` | more subtasks? | **yes** → cut worktree + chore/KEY-slug<br>**no** → Step 4 — /smh-label-tasks the parallel table, printed unedited |
+| `S4` | Step 4 — /smh-label-tasks the parallel table, printed unedited | → Step 5 — ONE approval stop every plan · every audit verdict · the table |
+| `S5` | Step 5 — ONE approval stop every plan · every audit verdict · the table | → STOP — your words, quoted into each plan 'ok' / 'continue' / a correction are NOT approval |
+| `STOP2` | STOP — your words, quoted into each plan 'ok' / 'continue' / a correction are NOT approval | → /smh-quick-dev per lane starts at its RED step |
+| `QD` | /smh-quick-dev per lane starts at its RED step | (terminal / end) |
+
 
 ### The story lane
 
@@ -3413,23 +3277,23 @@ flowchart TD
 FAIL. Explained in [§6](#6-the-story-lane). Calls: `bmad-create-story`, `jira_feed.py mint / start`,
 `/cicd-bdd-tests`, `bmad-testarch-atdd`. Hands to: ②. Called by: you, or the boot's recommendation.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve the project\nSTOP and ask rather than guess"] --> S05["Step 0.5 — open the WORKTREE\ncut from the EPIC branch, never main"]
-    S05 --> S1["Step 1 — bmad-create-story\nthe story file and its ACs\nif it stops for input, surface it — never guess"]
-    S1 --> S16["Step 1.6 — mint the Jira ticket\ndescription rendered FROM the story file\nread back · exit 2 if it did not land"]
-    S16 --> R1["rule the LANE label\nquick-dev or full"]
-    S16 --> R2["rule BLOCKED\nlink the blocker"]
-    R1 --> MV["move the ticket\nIn Progress — or Blocking if blocked\nstamp jira_key · lane · blocked_by into the story"]
-    R2 --> MV
-    MV --> S2["Step 2 — /cicd-bdd-tests\nagree the exact behavior with the Test Architect"]
-    S2 --> LOCK{"contract locked,\nor a recorded waiver?"}
-    LOCK -- "no" --> BLOCKED["② will REFUSE to build\nhard gate"]
-    LOCK -- "yes" --> S3["Step 3 — bmad-testarch-atdd\nthe acceptance tests — they MUST fail now"]
-    S3 --> G{"is each red GROUNDED?\nevery string, selector, endpoint,\nprecondition actually exists?"}
-    G -- "no" --> FICTION["that is FICTION, not a red\nfix or drop it HERE"]
-    G -- "yes" --> DONE["commit in the worktree, explicit paths\ndo NOT push the epic branch\nhand to ② — do NOT start implementing"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the project STOP and ask rather than guess | (terminal / end) |
+| `S05` | Step 0.5 — open the WORKTREE cut from the EPIC branch, never main | → Step 1 — bmad-create-story the story file and its ACs if it stops for input, surface it — never guess |
+| `S1` | Step 1 — bmad-create-story the story file and its ACs if it stops for input, surface it — never guess | → Step 1.6 — mint the Jira ticket description rendered FROM the story file read back · exit 2 if it did not land |
+| `S16` | Step 1.6 — mint the Jira ticket description rendered FROM the story file read back · exit 2 if it did not land | → rule the LANE label quick-dev or full<br>→ rule BLOCKED link the blocker |
+| `R1` | rule the LANE label quick-dev or full | → move the ticket In Progress — or Blocking if blocked stamp jira_key · lane · blocked_by into the story |
+| `R2` | rule BLOCKED link the blocker | → move the ticket In Progress — or Blocking if blocked stamp jira_key · lane · blocked_by into the story |
+| `MV` | move the ticket In Progress — or Blocking if blocked stamp jira_key · lane · blocked_by into the story | → Step 2 — /cicd-bdd-tests agree the exact behavior with the Test Architect |
+| `S2` | Step 2 — /cicd-bdd-tests agree the exact behavior with the Test Architect | → contract locked, or a recorded waiver? |
+| `LOCK` | contract locked, or a recorded waiver? | **no** → ② will REFUSE to build hard gate<br>**yes** → Step 3 — bmad-testarch-atdd the acceptance tests — they MUST fail now |
+| `BLOCKED` | ② will REFUSE to build hard gate | (terminal / end) |
+| `S3` | Step 3 — bmad-testarch-atdd the acceptance tests — they MUST fail now | → is each red GROUNDED? every string, selector, endpoint, precondition actually exists? |
+| `G` | is each red GROUNDED? every string, selector, endpoint, precondition actually exists? | **no** → that is FICTION, not a red fix or drop it HERE<br>**yes** → commit in the worktree, explicit paths do NOT push the epic branch hand to ② — do NOT start implementing |
+| `FICTION` | that is FICTION, not a red fix or drop it HERE | (terminal / end) |
+| `DONE` | commit in the worktree, explicit paths do NOT push the epic branch hand to ② — do NOT start implementing | (terminal / end) |
+
 
 #### /cicd-bdd-tests
 
@@ -3438,16 +3302,16 @@ flowchart TD
 explicit waiver. ② hard-gates on its output. Explained in [§14](#14-how-we-test). Called by: ①
 Step 2, or you.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve the project"] --> W{"is there a product-behavior\nsurface at all?"}
-    W -- "no — docs-only, config-only,\ncharacterization" --> WV["propose a WAIVER\nreal only when you confirm in chat\nAND it is recorded in the story frontmatter"]
-    W -- "yes" --> S1["Step 1 — elicit and clarify\nMurat asks until the behavior is 100 % clear\nSTOP — this is a conversation"]
-    S1 --> S2["Step 2 — codify the contract\nINTO the story's ATDD red tests\nstandalone .feature files opt-in only"]
-    S2 --> S2B["Step 2b — record bdd: locked\nand the contract files, in the story frontmatter"]
-    WV --> OUT
-    S2B --> OUT["hand back to ① / on to ②"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the project | (terminal / end) |
+| `W` | is there a product-behavior surface at all? | **no — docs-only, config-only, characterization** → propose a WAIVER real only when you confirm in chat AND it is recorded in the story frontmatter<br>**yes** → Step 1 — elicit and clarify Murat asks until the behavior is 100 % clear STOP — this is a conversation |
+| `WV` | propose a WAIVER real only when you confirm in chat AND it is recorded in the story frontmatter | → hand back to ① / on to ② |
+| `S1` | Step 1 — elicit and clarify Murat asks until the behavior is 100 % clear STOP — this is a conversation | → Step 2 — codify the contract INTO the story's ATDD red tests standalone .feature files opt-in only |
+| `S2` | Step 2 — codify the contract INTO the story's ATDD red tests standalone .feature files opt-in only | → Step 2b — record bdd: locked and the contract files, in the story frontmatter |
+| `S2B` | Step 2b — record bdd: locked and the contract files, in the story frontmatter | → hand back to ① / on to ② |
+| `OUT` | hand back to ① / on to ② | (terminal / end) |
+
 
 #### /cicd-dev-story-tests
 
@@ -3456,27 +3320,25 @@ model before the audit or hand the plan to another team blind. Explained in
 [§6](#6-the-story-lane). Calls: `bmad-dev-story`, `/cicd-self-audit`, `bmad-testarch-automate`.
 Hands to: ③.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve project\nStep 0.5 — the artifact folder\nStep 0.6 — re-enter the worktree\nSTOP if the epic is behind main"] --> S07{"Step 0.7 — BDD contract gate\nlocked, files on disk, or waived?"}
-    S07 -- "no" --> STOP0["⛔ STOP. Run /cicd-bdd-tests first.\nNever grandfather silently."]
-    S07 -- "yes" --> S1["Step 1 — bmad-dev-story PLAN mode\nwrites implementation_plan.md"]
-    S1 --> GATE{"Step 2 — the plan is posted\nSTOP — modify nothing until you reply"}
-    GATE -- "'continue'" --> A1["/cicd-self-audit runs HERE\nappended INTO the plan\nthen straight on — no second stop"]
-    GATE -- "'changed'\nyou switched the model" --> A2["audit on the switched model\nthen STOP AGAIN:\n'switch back, then say continue'"]
-    GATE -- "a pasted file path" --> A3["another team audited it blind\nfold their findings into the plan"]
-    GATE -- "'skip the audit'" --> A4["confirm once, record\n'Audit: skipped by human decision'"]
-    A1 --> S25{"Step 2.5 — do you have\nREAL questions?"}
-    A2 --> S25
-    A3 --> S25
-    A4 --> S25
-    S25 -- "yes" --> ASK["STOP and ask. Touch no file."]
-    S25 -- "no" --> S3["Step 3 — bmad-dev-story IMPLEMENT\ndrive the ① reds green\nSCOPED suites only, never the full one"]
-    S3 --> S4["Step 4 — bmad-testarch-automate\nexpand coverage, leave evidence\nor record 'Automate: skipped — why'"]
-    S4 --> S45["Step 4.5 — CERTIFY at the shipping SHA\nmachine floor → commit → ONE full-suite run\n→ certification-story.json"]
-    S45 --> S5["Step 5 — four things must exist\nplan + Self-Audit · walkthrough + Evidence + Suite Ledger\ncertification at HEAD · automate evidence"]
-    S5 --> OUT["may advance the story to 'review'\nNEVER to 'done' — hand to ③"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve project Step 0.5 — the artifact folder Step 0.6 — re-enter the worktree STOP if the epic is behind main | (terminal / end) |
+| `S07` | Step 0.7 — BDD contract gate locked, files on disk, or waived? | **no** → ⛔ STOP. Run /cicd-bdd-tests first. Never grandfather silently.<br>**yes** → Step 1 — bmad-dev-story PLAN mode writes implementation_plan.md |
+| `STOP0` | ⛔ STOP. Run /cicd-bdd-tests first. Never grandfather silently. | (terminal / end) |
+| `S1` | Step 1 — bmad-dev-story PLAN mode writes implementation_plan.md | → Step 2 — the plan is posted STOP — modify nothing until you reply |
+| `GATE` | Step 2 — the plan is posted STOP — modify nothing until you reply | **'continue'** → /cicd-self-audit runs HERE appended INTO the plan then straight on — no second stop<br>**'changed' you switched the model** → audit on the switched model then STOP AGAIN: 'switch back, then say continue'<br>**a pasted file path** → another team audited it blind fold their findings into the plan<br>**'skip the audit'** → confirm once, record 'Audit: skipped by human decision' |
+| `A1` | /cicd-self-audit runs HERE appended INTO the plan then straight on — no second stop | → Step 2.5 — do you have REAL questions? |
+| `A2` | audit on the switched model then STOP AGAIN: 'switch back, then say continue' | → Step 2.5 — do you have REAL questions? |
+| `A3` | another team audited it blind fold their findings into the plan | → Step 2.5 — do you have REAL questions? |
+| `A4` | confirm once, record 'Audit: skipped by human decision' | → Step 2.5 — do you have REAL questions? |
+| `S25` | Step 2.5 — do you have REAL questions? | **yes** → STOP and ask. Touch no file.<br>**no** → Step 3 — bmad-dev-story IMPLEMENT drive the ① reds green SCOPED suites only, never the full one |
+| `ASK` | STOP and ask. Touch no file. | (terminal / end) |
+| `S3` | Step 3 — bmad-dev-story IMPLEMENT drive the ① reds green SCOPED suites only, never the full one | → Step 4 — bmad-testarch-automate expand coverage, leave evidence or record 'Automate: skipped — why' |
+| `S4` | Step 4 — bmad-testarch-automate expand coverage, leave evidence or record 'Automate: skipped — why' | → Step 4.5 — CERTIFY at the shipping SHA machine floor → commit → ONE full-suite run → certification-story.json |
+| `S45` | Step 4.5 — CERTIFY at the shipping SHA machine floor → commit → ONE full-suite run → certification-story.json | → Step 5 — four things must exist plan + Self-Audit · walkthrough + Evidence + Suite Ledger certification at HEAD · automate evidence |
+| `S5` | Step 5 — four things must exist plan + Self-Audit · walkthrough + Evidence + Suite Ledger certification at HEAD · automate evidence | → may advance the story to 'review' NEVER to 'done' — hand to ③ |
+| `OUT` | may advance the story to 'review' NEVER to 'done' — hand to ③ | (terminal / end) |
+
 
 #### /cicd-self-audit
 
@@ -3487,16 +3349,17 @@ LEDGER (created artefact × the AC requiring it), never an opinion. An amendment
 forbids ever adding a fourth lens. Ends in `GO` or `NO-GO` written **into** the plan. Explained
 in [§6](#6-the-story-lane). Called by: ② Step 2 (automatically), or you.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — bind the project · Skip / PRE-DEV / POST-DEV"] --> LVL{"level, from the Declared Change Set\nLEDGER — Lens 1 only\nLEDGER+BLAST — all three"}
-    LVL --> L1["Lens 1 — Repo Reality\ndoes the plan's world exist? paths, ACs, block parses\n+ the Scope Ledger: created artefact × the AC requiring it"]
-    L1 --> L2["Lens 2 — Parity + Blast\ngraph when fresh, grep as the NORMAL path\ncontracts two-sided · ports · twins · sibling lanes\nrisk seam informs, never gates"]
-    L2 --> L3["Lens 3 — Pre-Mortem\nBOUNDED: attaches failure narratives to anchored findings\nunattached output is DISCARDED"]
-    L3 --> V{"verdict"}
-    V -- "GO" --> GO["append ## Self-Audit + Audit verdict: GO\ncoverage blocks per lens · findings anchored · Observations uncounted"]
-    V -- "NO-GO" --> NOGO["only two grounds: an anchored finding breaking\nan AC or a hard gate · the Ledger precondition failing"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — bind the project · Skip / PRE-DEV / POST-DEV | (terminal / end) |
+| `LVL` | level, from the Declared Change Set LEDGER — Lens 1 only LEDGER+BLAST — all three | → Lens 1 — Repo Reality does the plan's world exist? paths, ACs, block parses + the Scope Ledger: created artefact × the AC requiring it |
+| `L1` | Lens 1 — Repo Reality does the plan's world exist? paths, ACs, block parses + the Scope Ledger: created artefact × the AC requiring it | → Lens 2 — Parity + Blast graph when fresh, grep as the NORMAL path contracts two-sided · ports · twins · sibling lanes risk seam informs, never gates |
+| `L2` | Lens 2 — Parity + Blast graph when fresh, grep as the NORMAL path contracts two-sided · ports · twins · sibling lanes risk seam informs, never gates | → Lens 3 — Pre-Mortem BOUNDED: attaches failure narratives to anchored findings unattached output is DISCARDED |
+| `L3` | Lens 3 — Pre-Mortem BOUNDED: attaches failure narratives to anchored findings unattached output is DISCARDED | → verdict |
+| `V` | verdict | **GO** → append ## Self-Audit + Audit verdict: GO coverage blocks per lens · findings anchored · Observations uncounted<br>**NO-GO** → only two grounds: an anchored finding breaking an AC or a hard gate · the Ledger precondition failing |
+| `GO` | append ## Self-Audit + Audit verdict: GO coverage blocks per lens · findings anchored · Observations uncounted | (terminal / end) |
+| `NOGO` | only two grounds: an anchored finding breaking an AC or a hard gate · the Ledger precondition failing | (terminal / end) |
+
 
 #### /cicd-code-review
 
@@ -3506,28 +3369,27 @@ gate and the clean-code gate; write one verdict into the walkthrough. Explained 
 skill, `gate_receipt.py`, `bmad-testarch-trace / nfr / test-review`, `/cicd-clean-code-audit`. Hands
 to: the close-out (on your word).*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve project\nStep 0.5 — re-enter the story worktree\nthe built code often lives ONLY there"] --> EMPTY{"is the diff empty?"}
-    EMPTY -- "yes" --> X["⛔ STOP — an empty diff\nis not a pass"]
-    EMPTY -- "no" --> S1["Step 1 — the engine, clean-room\npass REPO · WORKTREE · DIFF · HEAD_SHA\nreview_mode · lens_budget: standard"]
-    S1 --> ORD["⭐ hunt the diff FIRST\nopen ②'s plan and walkthrough ONLY AFTER"]
-    ORD --> FLOOR["the engine returns lenses run,\nfindings by bucket, and a severity FLOOR\nthe verdict may be the floor or worse, never better"]
-    FLOOR --> FIX["⭐ fix IN THREAD, now — every patch applied here\nevery decision walked with you here\nnothing survives as future work; never a ticket"]
-    FIX --> S2{"Step 2 — a test baseline?\nsudo-tests.yaml"}
-    S2 -- "absent" --> WAIV["verdict WAIVED\nStep 3.5 still runs"]
-    S2 -- "present" --> S3["Step 3 — the checks\nEVERY gate through gate_receipt.py\nunrunnable is a finding, not a skip"]
-    S3 --> INH{"②'s certification SHA\nequals HEAD, 0 failures?"}
-    INH -- "yes" --> ADOPT["adopt it — cite the file"]
-    INH -- "no" --> RUN["run the full suite yourself\nfail TOWARD running\nthis becomes the certifying run"]
-    ADOPT --> TEA["testarch-trace coverage floor\ntestarch-nfr when required · test-review\nautomate evidence, else CONCERNS"]
-    RUN --> TEA
-    TEA --> S35["Step 3.5 — /cicd-clean-code-audit\nALWAYS, even on WAIVED"]
-    WAIV --> S35
-    S35 --> V["Step 4 — the VERDICT\nPASS · CONCERNS · FAIL · WAIVED @ sha\nappended to walkthrough.md as ## Code Review"]
-    V --> S5["Step 5 — refresh the walkthrough body\nand clear ## Your Actions of anything\nthe agent can do itself"]
-    S5 -.-> NO["never lands, never flips status\nthe close-out is yours"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve project Step 0.5 — re-enter the story worktree the built code often lives ONLY there | (terminal / end) |
+| `EMPTY` | is the diff empty? | **yes** → ⛔ STOP — an empty diff is not a pass<br>**no** → Step 1 — the engine, clean-room pass REPO · WORKTREE · DIFF · HEAD_SHA review_mode · lens_budget: standard |
+| `X` | ⛔ STOP — an empty diff is not a pass | (terminal / end) |
+| `S1` | Step 1 — the engine, clean-room pass REPO · WORKTREE · DIFF · HEAD_SHA review_mode · lens_budget: standard | → ⭐ hunt the diff FIRST open ②'s plan and walkthrough ONLY AFTER |
+| `ORD` | ⭐ hunt the diff FIRST open ②'s plan and walkthrough ONLY AFTER | → the engine returns lenses run, findings by bucket, and a severity FLOOR the verdict may be the floor or worse, never better |
+| `FLOOR` | the engine returns lenses run, findings by bucket, and a severity FLOOR the verdict may be the floor or worse, never better | → ⭐ fix IN THREAD, now — every patch applied here every decision walked with you here nothing survives as future work; never a ticket |
+| `FIX` | ⭐ fix IN THREAD, now — every patch applied here every decision walked with you here nothing survives as future work; never a ticket | → Step 2 — a test baseline? sudo-tests.yaml |
+| `S2` | Step 2 — a test baseline? sudo-tests.yaml | **absent** → verdict WAIVED Step 3.5 still runs<br>**present** → Step 3 — the checks EVERY gate through gate_receipt.py unrunnable is a finding, not a skip |
+| `WAIV` | verdict WAIVED Step 3.5 still runs | → Step 3.5 — /cicd-clean-code-audit ALWAYS, even on WAIVED |
+| `S3` | Step 3 — the checks EVERY gate through gate_receipt.py unrunnable is a finding, not a skip | → ②'s certification SHA equals HEAD, 0 failures? |
+| `INH` | ②'s certification SHA equals HEAD, 0 failures? | **yes** → adopt it — cite the file<br>**no** → run the full suite yourself fail TOWARD running this becomes the certifying run |
+| `ADOPT` | adopt it — cite the file | → testarch-trace coverage floor testarch-nfr when required · test-review automate evidence, else CONCERNS |
+| `RUN` | run the full suite yourself fail TOWARD running this becomes the certifying run | → testarch-trace coverage floor testarch-nfr when required · test-review automate evidence, else CONCERNS |
+| `TEA` | testarch-trace coverage floor testarch-nfr when required · test-review automate evidence, else CONCERNS | → Step 3.5 — /cicd-clean-code-audit ALWAYS, even on WAIVED |
+| `S35` | Step 3.5 — /cicd-clean-code-audit ALWAYS, even on WAIVED | → Step 4 — the VERDICT PASS · CONCERNS · FAIL · WAIVED @ sha appended to walkthrough.md as ## Code Review |
+| `V` | Step 4 — the VERDICT PASS · CONCERNS · FAIL · WAIVED @ sha appended to walkthrough.md as ## Code Review | → Step 5 — refresh the walkthrough body and clear ## Your Actions of anything the agent can do itself |
+| `S5` | Step 5 — refresh the walkthrough body and clear ## Your Actions of anything the agent can do itself | → never lands, never flips status the close-out is yours |
+| `NO` | never lands, never flips status the close-out is yours | (terminal / end) |
+
 
 #### code-review-engine (the shared reviewer)
 
@@ -3537,33 +3399,28 @@ decides what is actually worth doing, and a record. It never verdicts, never wri
 stops to ask; decisions come back as findings. Explained in [§6](#6-the-story-lane) (the
 "found ≠ owed" aside) and [§15](#15-the-autopilot-lane).*
 
-```mermaid
-flowchart TD
-    IN["the caller passes\nREPO · WORKTREE · DIFF · HEAD_SHA · review_mode\nlens_budget · optional evidence pack"] --> CHK{"invoked from a menu,\nor an input missing?"}
-    CHK -- "yes" --> X["⛔ refuse — print the contract\nnever re-derive what a caller resolved"]
-    CHK -- "no" --> L["Step 01 — the lens fan-out, in parallel"]
-    L --> L1["Blind Hunter\nsees the DIFF only, starved on purpose"]
-    L --> L2["Edge-Case Hunter"]
-    L --> L3["Literal-Correctness Hunter\nopens the real definition behind each line\nthe one lens with a budget: standard or capped"]
-    L --> L4["Acceptance Auditor\nreview_mode: full only"]
-    L --> L5["Test-Adequacy Auditor"]
-    L1 --> DEAD{"a lens could not run?"}
-    L2 --> DEAD
-    L3 --> DEAD
-    L4 --> DEAD
-    L5 --> DEAD
-    DEAD -- "retry → inline rerun → still dead" --> CAP["floor rises to CONCERNS"]
-    DEAD -- "all ran" --> V["Step 02 — the verify wave\nevidence dossier from the changed files and callers\nEvidence Verifier · Compound Synthesis"]
-    CAP --> V
-    V --> T["Step 03 — triage\nnormalize · dedupe · one bucket each\ndecision_needed · patch · defer · dismiss"]
-    T --> REL{"⭐ the relevance gate\nTRUE is not WORTH DOING"}
-    REL -- "a real path to damage today, or it\nundermines cited evidence, or you asked" --> KEEP["survives — FIXED IN THE LANE by the caller,\nbefore the verdict · a defer only against ONE named\nstructural blocker · a review NEVER produces a ticket"]
-    REL -- "fails all three legs" --> KILL["dismissed with a one-line reason\ncounted AND named in the table"]
-    KEEP --> F["score the severity floor\ncritical in decision/patch → FAIL\nimportant → CONCERNS · dead lens → CONCERNS"]
-    KILL --> F
-    F --> R["Step 04 — record the findings\nreturn lenses · counts · floor · notes"]
-    R -.-> OUT["the caller turns the floor into a Verdict"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `IN` | the caller passes REPO · WORKTREE · DIFF · HEAD_SHA · review_mode lens_budget · optional evidence pack | (terminal / end) |
+| `CHK` | invoked from a menu, or an input missing? | **yes** → ⛔ refuse — print the contract never re-derive what a caller resolved<br>**no** → Step 01 — the lens fan-out, in parallel |
+| `X` | ⛔ refuse — print the contract never re-derive what a caller resolved | (terminal / end) |
+| `L` | Step 01 — the lens fan-out, in parallel | → Blind Hunter sees the DIFF only, starved on purpose<br>→ Edge-Case Hunter<br>→ Literal-Correctness Hunter opens the real definition behind each line the one lens with a budget: standard or capped<br>→ Acceptance Auditor review_mode: full only<br>→ Test-Adequacy Auditor |
+| `L1` | Blind Hunter sees the DIFF only, starved on purpose | → a lens could not run? |
+| `L2` | Edge-Case Hunter | → a lens could not run? |
+| `L3` | Literal-Correctness Hunter opens the real definition behind each line the one lens with a budget: standard or capped | → a lens could not run? |
+| `L4` | Acceptance Auditor review_mode: full only | → a lens could not run? |
+| `L5` | Test-Adequacy Auditor | → a lens could not run? |
+| `DEAD` | a lens could not run? | **retry → inline rerun → still dead** → floor rises to CONCERNS<br>**all ran** → Step 02 — the verify wave evidence dossier from the changed files and callers Evidence Verifier · Compound Synthesis |
+| `CAP` | floor rises to CONCERNS | → Step 02 — the verify wave evidence dossier from the changed files and callers Evidence Verifier · Compound Synthesis |
+| `V` | Step 02 — the verify wave evidence dossier from the changed files and callers Evidence Verifier · Compound Synthesis | → Step 03 — triage normalize · dedupe · one bucket each decision_needed · patch · defer · dismiss |
+| `T` | Step 03 — triage normalize · dedupe · one bucket each decision_needed · patch · defer · dismiss | → ⭐ the relevance gate TRUE is not WORTH DOING |
+| `REL` | ⭐ the relevance gate TRUE is not WORTH DOING | **a real path to damage today, or it undermines cited evidence, or you asked** → survives — FIXED IN THE LANE by the caller, before the verdict · a defer only against ONE named structural blocker · a review NEVER produces a ticket<br>**fails all three legs** → dismissed with a one-line reason counted AND named in the table |
+| `KEEP` | survives — FIXED IN THE LANE by the caller, before the verdict · a defer only against ONE named structural blocker · a review NEVER produces a ticket | → score the severity floor critical in decision/patch → FAIL important → CONCERNS · dead lens → CONCERNS |
+| `KILL` | dismissed with a one-line reason counted AND named in the table | → score the severity floor critical in decision/patch → FAIL important → CONCERNS · dead lens → CONCERNS |
+| `F` | score the severity floor critical in decision/patch → FAIL important → CONCERNS · dead lens → CONCERNS | → Step 04 — record the findings return lenses · counts · floor · notes |
+| `R` | Step 04 — record the findings return lenses · counts · floor · notes | → the caller turns the floor into a Verdict |
+| `OUT` | the caller turns the floor into a Verdict | (terminal / end) |
+
 
 #### /cicd-clean-code-audit and /smh-clean-code-audit
 
@@ -3588,18 +3445,18 @@ findings can FAIL; the judgment pass caps at CONCERNS. Explained in
 > reads an empty variable and the whole discovery step fails quietly. Every `for-each-ref`,
 > `ls-remote` and `show-ref` pattern in a command body is quoted for this reason.
 
-```mermaid
-flowchart TD
-    A["/cicd-clean-code-audit\nProduct repo"] --> S0["Step 0 — resolve the diff, worktree-aware\ndiff-scoped ALWAYS — legacy debt never red-walls a story\nload the standard, never audit from memory"]
-    B["/smh-clean-code-audit\ncommand centre"] --> S0
-    S0 --> FLOOR{"Step 1 — the machine floor\nwhich repo?"}
-    FLOOR -- "product" --> P["ruff · eslint on the changed files\npyrefly · tsc counted on the changed set\na MISSING tool is a finding, not a skip"]
-    FLOOR -- "command centre" --> C["run_all.py · workflow_lint --toolkit-only\nsop_currency · py_compile · links + anchors\ndoor parity when a command changed"]
-    P --> SCAN["scan for what linters miss\nbare except · any · a committed secret\ndebug prints · commented-out code · bare python"]
-    C --> SCAN
-    SCAN --> J["Step 2 — the judgment pass\ncomment contract · AI-drift bans · toolkit conventions\ncaps at CONCERNS"]
-    J --> F["Step 3 — findings by severity\nhand back to the caller's verdict"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `A` | /cicd-clean-code-audit Product repo | (terminal / end) |
+| `S0` | Step 0 — resolve the diff, worktree-aware diff-scoped ALWAYS — legacy debt never red-walls a story load the standard, never audit from memory | → Step 1 — the machine floor which repo? |
+| `B` | /smh-clean-code-audit command centre | (terminal / end) |
+| `FLOOR` | Step 1 — the machine floor which repo? | **product** → ruff · eslint on the changed files pyrefly · tsc counted on the changed set a MISSING tool is a finding, not a skip<br>**command centre** → run_all.py · workflow_lint --toolkit-only sop_currency · py_compile · links + anchors door parity when a command changed |
+| `P` | ruff · eslint on the changed files pyrefly · tsc counted on the changed set a MISSING tool is a finding, not a skip | → scan for what linters miss bare except · any · a committed secret debug prints · commented-out code · bare python |
+| `C` | run_all.py · workflow_lint --toolkit-only sop_currency · py_compile · links + anchors door parity when a command changed | → scan for what linters miss bare except · any · a committed secret debug prints · commented-out code · bare python |
+| `SCAN` | scan for what linters miss bare except · any · a committed secret debug prints · commented-out code · bare python | → Step 2 — the judgment pass comment contract · AI-drift bans · toolkit conventions caps at CONCERNS |
+| `J` | Step 2 — the judgment pass comment contract · AI-drift bans · toolkit conventions caps at CONCERNS | → Step 3 — findings by severity hand back to the caller's verdict |
+| `F` | Step 3 — findings by severity hand back to the caller's verdict | (terminal / end) |
+
 
 ### The fast lane
 
@@ -3610,32 +3467,26 @@ mandatory review gate. It never closes out — on a story it advances the row to
 Explained in [§8](#8-the-fast-lane--cicd-quick-dev). Calls: `bmad-quick-dev`, an independent
 reviewer, `/cicd-clean-code-audit`, `jira_feed.py devrecord`. Ejects to: ①.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve project"] --> S05{"Step 0.5 — which lane?"}
-    S05 -- "a story id" --> WT["worktree on claude/KEY-slug\noff the epic branch"]
-    S05 -- "ad-hoc, no epic" --> CH["chore/KEY-slug off main\nno story file — ever"]
-    WT --> S1["Step 1 — bmad-quick-dev clarifies and routes"]
-    CH --> S1
-    S1 --> AC["⊕ FIX 2–6 CHECKABLE ACs\nechoed in chat BEFORE any code\nSTOP until they are agreed"]
-    AC --> S15{"Step 1.5 — ⛔ EJECT tripwire"}
-    S15 -- "router says plan-code-review" --> EJ["STOP. Hand to ① /cicd-write-story-tests\nkeep the worktree, discard nothing"]
-    S15 -- "auth · payments · PII · schema\nsecurity rules · cross-boundary contract" --> EJ
-    S15 -- "the intent will not reduce to ACs" --> EJ
-    S15 -- "a bug fix that will not reproduce" --> EJ
-    S15 -- "clear" --> S2["Step 2 — one-shot implementation\ncommits in the worktree, explicit paths\na bug fix carries ONE pinning regression test"]
-    S2 --> S3["Step 3 — ⭐ REVIEW GATE, mandatory"]
-    S3 --> R1["every lane: an independent adversarial\nreviewer with NO conversation context"]
-    S3 --> R2["code touched: acceptance auditor\n+ /cicd-clean-code-audit\n+ scoped tests, whole suite if a shared handler moved"]
-    S3 --> R3["docs only: link + anchor check\n+ SOP-currency check"]
-    R1 --> F{"any finding bigger\nthan a trivial patch?"}
-    R2 --> F
-    R3 --> F
-    F -- "yes" --> EJ
-    F -- "no — patches applied NOW; a defer names\nONE structural blocker, never a parking lot" --> S4["Step 4 — thin walkthrough with the Verdict line\nstory: advance the row to 'review'"]
-    S4 --> S45["Step 4.5 — file the Dev Record now\nthis lane may END here"]
-    S45 --> STOP2["⛔ STOP. No close-out. Never land on the epic\nbranch. 'done' is yours — /cicd-close-story-merge-tree"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve project | (terminal / end) |
+| `S05` | Step 0.5 — which lane? | **a story id** → worktree on claude/KEY-slug off the epic branch<br>**ad-hoc, no epic** → chore/KEY-slug off main no story file — ever |
+| `WT` | worktree on claude/KEY-slug off the epic branch | → Step 1 — bmad-quick-dev clarifies and routes |
+| `CH` | chore/KEY-slug off main no story file — ever | → Step 1 — bmad-quick-dev clarifies and routes |
+| `S1` | Step 1 — bmad-quick-dev clarifies and routes | → ⊕ FIX 2–6 CHECKABLE ACs echoed in chat BEFORE any code STOP until they are agreed |
+| `AC` | ⊕ FIX 2–6 CHECKABLE ACs echoed in chat BEFORE any code STOP until they are agreed | → Step 1.5 — ⛔ EJECT tripwire |
+| `S15` | Step 1.5 — ⛔ EJECT tripwire | **router says plan-code-review** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**auth · payments · PII · schema security rules · cross-boundary contract** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**the intent will not reduce to ACs** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**a bug fix that will not reproduce** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**clear** → Step 2 — one-shot implementation commits in the worktree, explicit paths a bug fix carries ONE pinning regression test |
+| `EJ` | STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing | (terminal / end) |
+| `S2` | Step 2 — one-shot implementation commits in the worktree, explicit paths a bug fix carries ONE pinning regression test | → Step 3 — ⭐ REVIEW GATE, mandatory |
+| `S3` | Step 3 — ⭐ REVIEW GATE, mandatory | → every lane: an independent adversarial reviewer with NO conversation context<br>→ code touched: acceptance auditor + /cicd-clean-code-audit + scoped tests, whole suite if a shared handler moved<br>→ docs only: link + anchor check + SOP-currency check |
+| `R1` | every lane: an independent adversarial reviewer with NO conversation context | → any finding bigger than a trivial patch? |
+| `R2` | code touched: acceptance auditor + /cicd-clean-code-audit + scoped tests, whole suite if a shared handler moved | → any finding bigger than a trivial patch? |
+| `R3` | docs only: link + anchor check + SOP-currency check | → any finding bigger than a trivial patch? |
+| `F` | any finding bigger than a trivial patch? | **yes** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**no — patches applied NOW; a defer names ONE structural blocker, never a parking lot** → Step 4 — thin walkthrough with the Verdict line story: advance the row to 'review' |
+| `S4` | Step 4 — thin walkthrough with the Verdict line story: advance the row to 'review' | → Step 4.5 — file the Dev Record now this lane may END here |
+| `S45` | Step 4.5 — file the Dev Record now this lane may END here | → ⛔ STOP. No close-out. Never land on the epic branch. 'done' is yours — /cicd-close-story-merge-tree |
+| `STOP2` | ⛔ STOP. No close-out. Never land on the epic branch. 'done' is yours — /cicd-close-story-merge-tree | (terminal / end) |
+
 
 ### The Task lane
 
@@ -3649,26 +3500,26 @@ intended and again on what you actually changed. Explained in
 `jira_feed.py start`, `jira_feed.py devrecord`. Hands to: `/smh-close-task-merge-tree` on your word —
 or to `/smh-quick-dev` if it ejects.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — lane_qualify.py --paths\nBEFORE minting anything"] --> Q{"verdict?"}
-    Q -- "NOT-COMMAND-CENTRE" --> OUTP["⛔ a project repo\n→ the cicd-* lanes"]
-    Q -- "HANDOFF" --> OUTD["⛔ a deployable path\n→ /cicd-push-e2e"]
-    Q -- "TASK — incl. NO paths given" --> OUTT["⛔ touches the dev system,\nor scope is unknown\n→ /smh-quick-dev, with a plan"]
-    Q -- "LIGHT / LIGHT-VCS" --> S1["Step 1 — mint the ticket, cut\nchore/KEY-slug off main, link assets\nticket → In Progress"]
-    S1 --> NOASK["⛔ never ask 'shall I mint /\nopen a lane / write a plan?'\nasking IS the over-engineering"]
-    NOASK --> S2["Step 2 — do the work\nexplicit-path commits · push"]
-    S2 --> S3["Step 3 — the gates that apply\nrun_all · workflow_lint --toolkit-only\ncheck_maps · the SOP folder test\nrun them BARE, never piped"]
-    S3 --> VCS{"LIGHT-VCS?"}
-    VCS -- "yes" --> RISK["delete only the refs the operator NAMED\nnever a swept set · -C on every call\nshow it, get the word, then delete"]
-    VCS -- "no" --> S35
-    RISK --> S35["Step 3.5 — ⛔ EJECT\nlane_qualify.py against the REAL diff\ngit diff --name-only main...HEAD"]
-    S35 --> EJ{"still LIGHT?"}
-    EJ -- "no" --> EJECT["⛔ the lane is over — keep every commit,\nthe plan-first gate RE-ARMS\n→ /smh-quick-dev"]
-    EJ -- "yes" --> S4["Step 4 — lean walkthrough\n## What changed · ## Evidence\n## Your Actions (required, even if empty)\ntask.yaml · Dev Record"]
-    S4 --> STOP["STOP — hand back\nnever merges, never closes its own ticket"]
-    STOP -.->|"your sign-off"| CLOSE["/smh-close-task-merge-tree\nno verdict to inherit, so the FULL gate runs"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — lane_qualify.py --paths BEFORE minting anything | (terminal / end) |
+| `Q` | verdict? | **NOT-COMMAND-CENTRE** → ⛔ a project repo → the cicd-* lanes<br>**HANDOFF** → ⛔ a deployable path → /cicd-push-e2e<br>**TASK — incl. NO paths given** → ⛔ touches the dev system, or scope is unknown → /smh-quick-dev, with a plan<br>**LIGHT / LIGHT-VCS** → Step 1 — mint the ticket, cut chore/KEY-slug off main, link assets ticket → In Progress |
+| `OUTP` | ⛔ a project repo → the cicd-* lanes | (terminal / end) |
+| `OUTD` | ⛔ a deployable path → /cicd-push-e2e | (terminal / end) |
+| `OUTT` | ⛔ touches the dev system, or scope is unknown → /smh-quick-dev, with a plan | (terminal / end) |
+| `S1` | Step 1 — mint the ticket, cut chore/KEY-slug off main, link assets ticket → In Progress | → ⛔ never ask 'shall I mint / open a lane / write a plan?' asking IS the over-engineering |
+| `NOASK` | ⛔ never ask 'shall I mint / open a lane / write a plan?' asking IS the over-engineering | → Step 2 — do the work explicit-path commits · push |
+| `S2` | Step 2 — do the work explicit-path commits · push | → Step 3 — the gates that apply run_all · workflow_lint --toolkit-only check_maps · the SOP folder test run them BARE, never piped |
+| `S3` | Step 3 — the gates that apply run_all · workflow_lint --toolkit-only check_maps · the SOP folder test run them BARE, never piped | → LIGHT-VCS? |
+| `VCS` | LIGHT-VCS? | **yes** → delete only the refs the operator NAMED never a swept set · -C on every call show it, get the word, then delete<br>**no** → Step 3.5 — ⛔ EJECT lane_qualify.py against the REAL diff git diff --name-only main...HEAD |
+| `RISK` | delete only the refs the operator NAMED never a swept set · -C on every call show it, get the word, then delete | → Step 3.5 — ⛔ EJECT lane_qualify.py against the REAL diff git diff --name-only main...HEAD |
+| `S35` | Step 3.5 — ⛔ EJECT lane_qualify.py against the REAL diff git diff --name-only main...HEAD | → still LIGHT? |
+| `EJ` | still LIGHT? | **no** → ⛔ the lane is over — keep every commit, the plan-first gate RE-ARMS → /smh-quick-dev<br>**yes** → Step 4 — lean walkthrough ## What changed · ## Evidence ## Your Actions (required, even if empty) task.yaml · Dev Record |
+| `EJECT` | ⛔ the lane is over — keep every commit, the plan-first gate RE-ARMS → /smh-quick-dev | (terminal / end) |
+| `S4` | Step 4 — lean walkthrough ## What changed · ## Evidence ## Your Actions (required, even if empty) task.yaml · Dev Record | → STOP — hand back never merges, never closes its own ticket |
+| `STOP` | STOP — hand back never merges, never closes its own ticket | **your sign-off** → /smh-close-task-merge-tree no verdict to inherit, so the FULL gate runs |
+| `CLOSE` | /smh-close-task-merge-tree no verdict to inherit, so the FULL gate runs | (terminal / end) |
+
 
 #### /smh-quick-dev
 
@@ -3678,32 +3529,31 @@ Explained in [§9](#9-the-task-lane--work-on-the-system-itself) — the mutation
 live there. Calls: `/smh-self-audit`, `gate_receipt.py` (stamp-first), `link-worktree-assets.py`,
 `jira_feed.py start`. Hands to: `/smh-code-review`, then `/smh-close-task-merge-tree` on your word.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve the repo FROM git output\npin EXPECTED_KEY · read the ticket's ACCEPTANCE\nno ticket → STOP and ask, never invent a key"] --> S05["Step 0.5 — worktree + chore/KEY-slug off main\nabsorb main · link assets · ticket → In Progress"]
-    S05 --> SIB["⭐ read the SIBLING lanes now\ntheir uncommitted work is invisible to grep\nname the landing-order dependency"]
-    SIB --> S1["Step 1 — FIX THE CHECKABLE LIST\nticket ACCEPTANCE → your intent → 2–6 items you confirm"]
-    S1 --> CHK{"every item checkable by a\ncommand or an inspection?"}
-    CHK -- "no" --> NOTHERE["not work for this lane — say so, stop"]
-    CHK -- "yes" --> BATCH{"came through a\n/smh-plan-task batch?"}
-    BATCH -- "yes — plan already approved" --> S2
-    BATCH -- "no" --> S15["Step 1.5 — write the plan, then /smh-self-audit"]
-    S15 --> AUD{"audit verdict?"}
-    AUD -- "NO-GO" --> FIXPLAN["fix the plan, re-audit\nnever re-run hoping"]
-    FIXPLAN --> S15
-    AUD -- "GO" --> APPR["STOP — wait for the literal 'approved'"]
-    APPR --> S16["Step 1.6 — SUBTASKS: does a piece earn its own\nbranch AND worktree? propose, then STOP"]
-    S16 --> S2["Step 2 — ⭐ RED FIRST\nscript → a test · gate → refuses the bad case\ncommand → the lint error · doc → a checkable assertion"]
-    S2 --> READ["run it, paste the RED, read WHICH LINE raised\n--case 'label' to run your cases only\nexit 3 = the filter matched nothing, never a result"]
-    READ --> S3["Step 3 — GREEN, minimally\nexplicit paths · key in every subject\nSTAMP-FIRST: the receipt run IS the suite run"]
-    S3 --> MUT["⭐ mutation — the declared table, ONE sweep\ncode-derived · targeted kills · restore in a trap\nclosing green on the whole files (§9 Mutation)"]
-    MUT --> S35{"Step 3.5 — ⛔ EJECT tripwire"}
-    S35 -- "a deployable path in the diff" --> EJ1["→ /cicd-push-e2e. No override."]
-    S35 -- "it is BMAD story work" --> EJ2["→ ① /cicd-write-story-tests"]
-    S35 -- "clear" --> S4["Step 4 — /smh-code-review, mandatory"]
-    S4 --> S5["Step 5 — walkthrough + task.yaml + Dev Record\n## Your Actions is a contract: an open box HOLDS the ticket"]
-    S5 --> STOPX["⛔ STOP. No merge, no transition, no prune.\n/smh-close-task-merge-tree is YOUR sign-off"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the repo FROM git output pin EXPECTED_KEY · read the ticket's ACCEPTANCE no ticket → STOP and ask, never invent a key | (terminal / end) |
+| `S05` | Step 0.5 — worktree + chore/KEY-slug off main absorb main · link assets · ticket → In Progress | → ⭐ read the SIBLING lanes now their uncommitted work is invisible to grep name the landing-order dependency |
+| `SIB` | ⭐ read the SIBLING lanes now their uncommitted work is invisible to grep name the landing-order dependency | → Step 1 — FIX THE CHECKABLE LIST ticket ACCEPTANCE → your intent → 2–6 items you confirm |
+| `S1` | Step 1 — FIX THE CHECKABLE LIST ticket ACCEPTANCE → your intent → 2–6 items you confirm | → every item checkable by a command or an inspection? |
+| `CHK` | every item checkable by a command or an inspection? | **no** → not work for this lane — say so, stop<br>**yes** → came through a /smh-plan-task batch? |
+| `NOTHERE` | not work for this lane — say so, stop | (terminal / end) |
+| `BATCH` | came through a /smh-plan-task batch? | **yes — plan already approved** → Step 2 — ⭐ RED FIRST script → a test · gate → refuses the bad case command → the lint error · doc → a checkable assertion<br>**no** → Step 1.5 — write the plan, then /smh-self-audit |
+| `S15` | Step 1.5 — write the plan, then /smh-self-audit | → audit verdict? |
+| `AUD` | audit verdict? | **NO-GO** → fix the plan, re-audit never re-run hoping<br>**GO** → STOP — wait for the literal 'approved' |
+| `FIXPLAN` | fix the plan, re-audit never re-run hoping | → Step 1.5 — write the plan, then /smh-self-audit |
+| `APPR` | STOP — wait for the literal 'approved' | → Step 1.6 — SUBTASKS: does a piece earn its own branch AND worktree? propose, then STOP |
+| `S16` | Step 1.6 — SUBTASKS: does a piece earn its own branch AND worktree? propose, then STOP | → Step 2 — ⭐ RED FIRST script → a test · gate → refuses the bad case command → the lint error · doc → a checkable assertion |
+| `S2` | Step 2 — ⭐ RED FIRST script → a test · gate → refuses the bad case command → the lint error · doc → a checkable assertion | → run it, paste the RED, read WHICH LINE raised --case 'label' to run your cases only exit 3 = the filter matched nothing, never a result |
+| `READ` | run it, paste the RED, read WHICH LINE raised --case 'label' to run your cases only exit 3 = the filter matched nothing, never a result | → Step 3 — GREEN, minimally explicit paths · key in every subject STAMP-FIRST: the receipt run IS the suite run |
+| `S3` | Step 3 — GREEN, minimally explicit paths · key in every subject STAMP-FIRST: the receipt run IS the suite run | → ⭐ mutation — the declared table, ONE sweep code-derived · targeted kills · restore in a trap closing green on the whole files (§9 Mutation) |
+| `MUT` | ⭐ mutation — the declared table, ONE sweep code-derived · targeted kills · restore in a trap closing green on the whole files (§9 Mutation) | → Step 3.5 — ⛔ EJECT tripwire |
+| `S35` | Step 3.5 — ⛔ EJECT tripwire | **a deployable path in the diff** → → /cicd-push-e2e. No override.<br>**it is BMAD story work** → → ① /cicd-write-story-tests<br>**clear** → Step 4 — /smh-code-review, mandatory |
+| `EJ1` | → /cicd-push-e2e. No override. | (terminal / end) |
+| `EJ2` | → ① /cicd-write-story-tests | (terminal / end) |
+| `S4` | Step 4 — /smh-code-review, mandatory | → Step 5 — walkthrough + task.yaml + Dev Record ## Your Actions is a contract: an open box HOLDS the ticket |
+| `S5` | Step 5 — walkthrough + task.yaml + Dev Record ## Your Actions is a contract: an open box HOLDS the ticket | → ⛔ STOP. No merge, no transition, no prune. /smh-close-task-merge-tree is YOUR sign-off |
+| `STOPX` | ⛔ STOP. No merge, no transition, no prune. /smh-close-task-merge-tree is YOUR sign-off | (terminal / end) |
+
 
 #### /smh-self-audit
 
@@ -3719,22 +3569,21 @@ STOP) and POST-DEV / retroactive. Explained in
 `/smh-plan-task` Step 3, or you. Its stale half (Lens 2) re-runs by itself as `/smh-code-review`
 Step 0.7.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve the repo from git output\nthe lobby is a valid subject · name the plan and the key"] --> MODE{"Skip / PRE-WORK / POST-DEV, out loud"}
-    MODE -- "PRE-WORK, no plan file" --> X["⛔ STOP and say so\ninventing a plan to audit is the failure this catches"]
-    MODE -- "POST-DEV" --> RETRO["audit the ticket's ACCEPTANCE + the change set\nlabel the run RETROACTIVE"]
-    MODE -- "PRE-WORK" --> LVL{"level, from the Declared Change Set\nLEDGER — Lens 1 only\nLEDGER+BLAST — all three"}
-    LVL --> L1["Lens 1 — Repo Reality\npaths and commands exist · block parses · both sides\n+ Scope Ledger: created artefact × the acceptance row requiring it"]
-    RETRO --> L2
-    L1 --> L2["Lens 2 — Parity + Blast\nscar table: doors, rules, scripts, gates, links, SOP, ports\ntwins diffed · sibling lanes read · risk seam informs, never gates"]
-    L2 --> L3["Lens 3 — Pre-Mortem\nBOUNDED: cannot originate — attaches failure narratives\nto anchored findings · unattached output DISCARDED"]
-    L3 --> V{"verdict"}
-    V -- "GO" --> GO["## Self-Audit appended INTO the plan\ncoverage per lens · anchored findings · Audit verdict: GO"]
-    V -- "NO-GO" --> NOGO["only two grounds: anchored finding breaking an\nacceptance row or a hard gate · Ledger precondition failing"]
-    GO -.-> NOTOUCH["writes no implementation\ntransitions no ticket"]
-    NOGO -.-> NOTOUCH
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the repo from git output the lobby is a valid subject · name the plan and the key | (terminal / end) |
+| `MODE` | Skip / PRE-WORK / POST-DEV, out loud | **PRE-WORK, no plan file** → ⛔ STOP and say so inventing a plan to audit is the failure this catches<br>**POST-DEV** → audit the ticket's ACCEPTANCE + the change set label the run RETROACTIVE<br>**PRE-WORK** → level, from the Declared Change Set LEDGER — Lens 1 only LEDGER+BLAST — all three |
+| `X` | ⛔ STOP and say so inventing a plan to audit is the failure this catches | (terminal / end) |
+| `RETRO` | audit the ticket's ACCEPTANCE + the change set label the run RETROACTIVE | → Lens 2 — Parity + Blast scar table: doors, rules, scripts, gates, links, SOP, ports twins diffed · sibling lanes read · risk seam informs, never gates |
+| `LVL` | level, from the Declared Change Set LEDGER — Lens 1 only LEDGER+BLAST — all three | → Lens 1 — Repo Reality paths and commands exist · block parses · both sides + Scope Ledger: created artefact × the acceptance row requiring it |
+| `L1` | Lens 1 — Repo Reality paths and commands exist · block parses · both sides + Scope Ledger: created artefact × the acceptance row requiring it | → Lens 2 — Parity + Blast scar table: doors, rules, scripts, gates, links, SOP, ports twins diffed · sibling lanes read · risk seam informs, never gates |
+| `L2` | Lens 2 — Parity + Blast scar table: doors, rules, scripts, gates, links, SOP, ports twins diffed · sibling lanes read · risk seam informs, never gates | → Lens 3 — Pre-Mortem BOUNDED: cannot originate — attaches failure narratives to anchored findings · unattached output DISCARDED |
+| `L3` | Lens 3 — Pre-Mortem BOUNDED: cannot originate — attaches failure narratives to anchored findings · unattached output DISCARDED | → verdict |
+| `V` | verdict | **GO** → ## Self-Audit appended INTO the plan coverage per lens · anchored findings · Audit verdict: GO<br>**NO-GO** → only two grounds: anchored finding breaking an acceptance row or a hard gate · Ledger precondition failing |
+| `GO` | ## Self-Audit appended INTO the plan coverage per lens · anchored findings · Audit verdict: GO | → writes no implementation transitions no ticket |
+| `NOGO` | only two grounds: anchored finding breaking an acceptance row or a hard gate · Ledger precondition failing | → writes no implementation transitions no ticket |
+| `NOTOUCH` | writes no implementation transitions no ticket | (terminal / end) |
+
 
 #### /smh-code-review
 
@@ -3745,33 +3594,28 @@ reads. Explained in [§9](#9-the-task-lane--work-on-the-system-itself). Calls: t
 `code-review-engine` skill, `gate_receipt.py`, `/smh-clean-code-audit`. Hands to:
 `/smh-close-task-merge-tree` on your word.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve repo, branch, HEAD from git\nStep 0.5 — the diff · EMPTY is a STOP, not a pass"] --> S07["Step 0.7 — ⭐ RE-DERIVE THE BLAST RADIUS\nagainst CURRENT main"]
-    S07 --> Q1["did anything this diff REFERENCES\nmove, rename, or vanish?"]
-    S07 --> Q2["the TRUE overlap —\ndoes merge-tree conflict?"]
-    S07 --> Q3["which sibling lanes are live —\nmust one land first?"]
-    Q1 --> ABS["absorb main NOW, before the verdict\nre-take DIFF and HEAD_SHA after"]
-    Q2 --> ABS
-    Q3 --> ABS
-    ABS --> S1["Step 1 — the engine, clean-room\nthe SAME engine ③ runs · lens_budget: standard\nhunt the diff first, open the plan ONLY AFTER"]
-    S1 --> FIX["⭐ fix IN THREAD before any gate\npatches applied now · decisions walked with you now\na defer names ONE structural blocker; never a ticket"]
-    FIX --> S2["Step 2 — acceptance audit\nagainst the CHECKABLE LIST, not the code"]
-    S2 --> EV{"each item names the\nassertion that proves it?"}
-    EV -- "no" --> CONC["CONCERNS floor\n'I read it and it looks right' is not evidence"]
-    EV -- "yes" --> S3["Step 3 — the command-centre gate"]
-    CONC --> S3
-    S3 --> G1["run_all.py — inherit quick-dev's receipt if\nclean-stamped and code-fresh, else run and RE-STAMP once"]
-    S3 --> G2["workflow_lint --toolkit-only\nerrors FAIL · warnings CONCERNS"]
-    S3 --> G3["the task's own RED assertions — GREEN now\ncite the named cases"]
-    S3 --> G4["sop_currency · link + anchor · door parity"]
-    G1 --> S35["Step 3.5 — /smh-clean-code-audit"]
-    G2 --> S35
-    G3 --> S35
-    G4 --> S35
-    S35 --> S4["Step 4 — Verdict appended to walkthrough.md\nwith Step 0.7's three lines —\n'nothing moved' is a result, silence is not"]
-    S4 --> S5["Step 5 — refresh the walkthrough body\nclear ## Your Actions of what the agent can do"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve repo, branch, HEAD from git Step 0.5 — the diff · EMPTY is a STOP, not a pass | (terminal / end) |
+| `S07` | Step 0.7 — ⭐ RE-DERIVE THE BLAST RADIUS against CURRENT main | → did anything this diff REFERENCES move, rename, or vanish?<br>→ the TRUE overlap — does merge-tree conflict?<br>→ which sibling lanes are live — must one land first? |
+| `Q1` | did anything this diff REFERENCES move, rename, or vanish? | → absorb main NOW, before the verdict re-take DIFF and HEAD_SHA after |
+| `Q2` | the TRUE overlap — does merge-tree conflict? | → absorb main NOW, before the verdict re-take DIFF and HEAD_SHA after |
+| `Q3` | which sibling lanes are live — must one land first? | → absorb main NOW, before the verdict re-take DIFF and HEAD_SHA after |
+| `ABS` | absorb main NOW, before the verdict re-take DIFF and HEAD_SHA after | → Step 1 — the engine, clean-room the SAME engine ③ runs · lens_budget: standard hunt the diff first, open the plan ONLY AFTER |
+| `S1` | Step 1 — the engine, clean-room the SAME engine ③ runs · lens_budget: standard hunt the diff first, open the plan ONLY AFTER | → ⭐ fix IN THREAD before any gate patches applied now · decisions walked with you now a defer names ONE structural blocker; never a ticket |
+| `FIX` | ⭐ fix IN THREAD before any gate patches applied now · decisions walked with you now a defer names ONE structural blocker; never a ticket | → Step 2 — acceptance audit against the CHECKABLE LIST, not the code |
+| `S2` | Step 2 — acceptance audit against the CHECKABLE LIST, not the code | → each item names the assertion that proves it? |
+| `EV` | each item names the assertion that proves it? | **no** → CONCERNS floor 'I read it and it looks right' is not evidence<br>**yes** → Step 3 — the command-centre gate |
+| `CONC` | CONCERNS floor 'I read it and it looks right' is not evidence | → Step 3 — the command-centre gate |
+| `S3` | Step 3 — the command-centre gate | → run_all.py — inherit quick-dev's receipt if clean-stamped and code-fresh, else run and RE-STAMP once<br>→ workflow_lint --toolkit-only errors FAIL · warnings CONCERNS<br>→ the task's own RED assertions — GREEN now cite the named cases<br>→ sop_currency · link + anchor · door parity |
+| `G1` | run_all.py — inherit quick-dev's receipt if clean-stamped and code-fresh, else run and RE-STAMP once | → Step 3.5 — /smh-clean-code-audit |
+| `G2` | workflow_lint --toolkit-only errors FAIL · warnings CONCERNS | → Step 3.5 — /smh-clean-code-audit |
+| `G3` | the task's own RED assertions — GREEN now cite the named cases | → Step 3.5 — /smh-clean-code-audit |
+| `G4` | sop_currency · link + anchor · door parity | → Step 3.5 — /smh-clean-code-audit |
+| `S35` | Step 3.5 — /smh-clean-code-audit | → Step 4 — Verdict appended to walkthrough.md with Step 0.7's three lines — 'nothing moved' is a result, silence is not |
+| `S4` | Step 4 — Verdict appended to walkthrough.md with Step 0.7's three lines — 'nothing moved' is a result, silence is not | → Step 5 — refresh the walkthrough body clear ## Your Actions of what the agent can do |
+| `S5` | Step 5 — refresh the walkthrough body clear ## Your Actions of what the agent can do | (terminal / end) |
+
 
 ### Landing and shipping
 
@@ -3784,36 +3628,35 @@ touches `main`. Explained in [§7](#7-landing-and-shipping--the-close-out-family
 `closeout_preflight.py`, `jira_feed.py`, `/cicd-update-sprint-memory` (Step 1), `/cicd-prune-worktree`
 (Step 5). Hands over to: `/cicd-merge-epic-workingtrees` when siblings are live.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve the project\necho the story, the KEY and the BRANCH you MEAN"] --> S05["Step 0.5 — absorb the EPIC branch FIRST\nthe save is about to rewrite the two hottest files\nconflict → STOP and report, never force"]
-    S05 --> S06["Step 0.6 — closeout_preflight.py\n--expect-key + --branch + --worktree, NOT optional\ncheck the target it ECHOES before its verdict"]
-    S06 --> PF{"exit code?"}
-    PF -- "2 — BLOCKED" --> STOP1["⛔ resolve it before anything flips\n'landing was NOT verified' is not a pass"]
-    PF -- "0 or 1" --> S1["Step 1 — the SAVE: /cicd-update-sprint-memory\nAUTOMATIC · hand it the preflight block\nit flips the story to done — every write a FILE write"]
-    S1 --> S2["Step 2 — jira_feed.py check-actions\n## Your Actions may hand you no ticket work\nand none of the ceremony's own steps"]
-    S2 --> CA{"does it refuse?"}
-    CA -- "yes" --> FIXA["fix it HERE — this is the only place it is free\nafter the landing the walkthrough is on the\nepic branch and the fix costs another commit"]
-    CA -- "no" --> CM["commit the close-out edits\nEXPLICIT PATHS ONLY — git add -A / . / -u are banned"]
-    FIXA --> CM
-    CM --> S3{"Step 3 — sibling worktrees live?"}
-    S3 -- "yes" --> HANDOVER["STOP this solo flow\nfollow /cicd-merge-epic-workingtrees\nnothing returns here"]
-    S3 -- "no" --> PRE{"HEAD is on…"}
-    PRE -- "claude/incident-*" --> INC["⛔ STOP — that is the incident lane\n/cicd-mobile-error-team"]
-    PRE -- "not a claude/* branch" --> NOLAND["⛔ not worked in a worktree\ndo NOT land it — report and stop"]
-    PRE -- "claude/KEY-slug" --> MG{"⭐ MERGE GATE — did the epic branch\nmove CODE since ③'s verdict sha?"}
-    MG -- "no" --> INH["inherit ③'s green"]
-    MG -- "yes" --> RERUN["the merged tree has NEVER been tested\nrun the full suite NOW"]
-    RERUN --> RED{"green?"}
-    RED -- "no" --> STOPALL["⛔ STOP — no push, nothing lands\nthe board flips ride this branch, and Step 4\nnever runs, so the ticket never moves"]
-    RED -- "yes" --> INH
-    INH --> PUSH["git push origin HEAD:epic/KEY-slug\nTHE landing · main untouched"]
-    PUSH --> P0{"did the push return 0?"}
-    P0 -- "no — the remote moved" --> REJ["⛔ STOP and report · re-sync and re-land, never force\nthe ticket does NOT move"]
-    P0 -- "yes" --> S4["⭐ Step 4, and only now — the one REMOTE write\na. Dev Record filed, then READ BACK\nb. ticket → Done · a Bug flag is cleared\nc. check scoped AND unscoped — the fork arm"]
-    S4 --> S5["Step 5 — /cicd-prune-worktree\nAUTOMATIC · --repo and --branch passed through"]
-    S5 --> S6["Step 6 — VERIFY, then report\nevery line from a command you actually ran"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the project echo the story, the KEY and the BRANCH you MEAN | (terminal / end) |
+| `S05` | Step 0.5 — absorb the EPIC branch FIRST the save is about to rewrite the two hottest files conflict → STOP and report, never force | → Step 0.6 — closeout_preflight.py --expect-key + --branch + --worktree, NOT optional check the target it ECHOES before its verdict |
+| `S06` | Step 0.6 — closeout_preflight.py --expect-key + --branch + --worktree, NOT optional check the target it ECHOES before its verdict | → exit code? |
+| `PF` | exit code? | **2 — BLOCKED** → ⛔ resolve it before anything flips 'landing was NOT verified' is not a pass<br>**0 or 1** → Step 1 — the SAVE: /cicd-update-sprint-memory AUTOMATIC · hand it the preflight block it flips the story to done — every write a FILE write |
+| `STOP1` | ⛔ resolve it before anything flips 'landing was NOT verified' is not a pass | (terminal / end) |
+| `S1` | Step 1 — the SAVE: /cicd-update-sprint-memory AUTOMATIC · hand it the preflight block it flips the story to done — every write a FILE write | → Step 2 — jira_feed.py check-actions ## Your Actions may hand you no ticket work and none of the ceremony's own steps |
+| `S2` | Step 2 — jira_feed.py check-actions ## Your Actions may hand you no ticket work and none of the ceremony's own steps | → does it refuse? |
+| `CA` | does it refuse? | **yes** → fix it HERE — this is the only place it is free after the landing the walkthrough is on the epic branch and the fix costs another commit<br>**no** → commit the close-out edits EXPLICIT PATHS ONLY — git add -A / . / -u are banned |
+| `FIXA` | fix it HERE — this is the only place it is free after the landing the walkthrough is on the epic branch and the fix costs another commit | → commit the close-out edits EXPLICIT PATHS ONLY — git add -A / . / -u are banned |
+| `CM` | commit the close-out edits EXPLICIT PATHS ONLY — git add -A / . / -u are banned | → Step 3 — sibling worktrees live? |
+| `S3` | Step 3 — sibling worktrees live? | **yes** → STOP this solo flow follow /cicd-merge-epic-workingtrees nothing returns here<br>**no** → HEAD is on… |
+| `HANDOVER` | STOP this solo flow follow /cicd-merge-epic-workingtrees nothing returns here | (terminal / end) |
+| `PRE` | HEAD is on… | **claude/incident-*** → ⛔ STOP — that is the incident lane /cicd-mobile-error-team<br>**not a claude/* branch** → ⛔ not worked in a worktree do NOT land it — report and stop<br>**claude/KEY-slug** → ⭐ MERGE GATE — did the epic branch move CODE since ③'s verdict sha? |
+| `INC` | ⛔ STOP — that is the incident lane /cicd-mobile-error-team | (terminal / end) |
+| `NOLAND` | ⛔ not worked in a worktree do NOT land it — report and stop | (terminal / end) |
+| `MG` | ⭐ MERGE GATE — did the epic branch move CODE since ③'s verdict sha? | **no** → inherit ③'s green<br>**yes** → the merged tree has NEVER been tested run the full suite NOW |
+| `INH` | inherit ③'s green | → git push origin HEAD:epic/KEY-slug THE landing · main untouched |
+| `RERUN` | the merged tree has NEVER been tested run the full suite NOW | → green? |
+| `RED` | green? | **no** → ⛔ STOP — no push, nothing lands the board flips ride this branch, and Step 4 never runs, so the ticket never moves<br>**yes** → inherit ③'s green |
+| `STOPALL` | ⛔ STOP — no push, nothing lands the board flips ride this branch, and Step 4 never runs, so the ticket never moves | (terminal / end) |
+| `PUSH` | git push origin HEAD:epic/KEY-slug THE landing · main untouched | → did the push return 0? |
+| `P0` | did the push return 0? | **no — the remote moved** → ⛔ STOP and report · re-sync and re-land, never force the ticket does NOT move<br>**yes** → ⭐ Step 4, and only now — the one REMOTE write a. Dev Record filed, then READ BACK b. ticket → Done · a Bug flag is cleared c. check scoped AND unscoped — the fork arm |
+| `REJ` | ⛔ STOP and report · re-sync and re-land, never force the ticket does NOT move | (terminal / end) |
+| `S4` | ⭐ Step 4, and only now — the one REMOTE write a. Dev Record filed, then READ BACK b. ticket → Done · a Bug flag is cleared c. check scoped AND unscoped — the fork arm | → Step 5 — /cicd-prune-worktree AUTOMATIC · --repo and --branch passed through |
+| `S5` | Step 5 — /cicd-prune-worktree AUTOMATIC · --repo and --branch passed through | → Step 6 — VERIFY, then report every line from a command you actually ran |
+| `S6` | Step 6 — VERIFY, then report every line from a command you actually ran | (terminal / end) |
+
 
 #### /cicd-update-sprint-memory
 
@@ -3825,24 +3668,23 @@ branch — no landing, no ticket, no Dev Record, no worktree prune. Explained in
 Invoked by: `/cicd-close-story-merge-tree` at its Step 1, or by you, standalone, any time a session
 needs saving and nothing is being closed.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve the project"] --> WHO{"who invoked this?"}
-    WHO -- "the door" --> SKIP["Steps 0.5 / 0.6 are already done\nread the preflight block it hands you\ndo NOT re-run either — it answers nothing new"]
-    WHO -- "you, standalone" --> OWNPF["absorb the EPIC branch, then run\ncloseout_preflight.py yourself\nexit 2 — BLOCKED"]
-    SKIP --> S1
-    OWNPF --> S1["Steps 1–2 — read state and this session's\nplan + walkthrough, then CODE-VERIFY\nthe claimed work on disk"]
-    S1 --> S3["Step 3 — route each learning to its home\nrule · component pitfall · open bug · memory\na ## Close-Out Handoff block is LIFTED, never re-derived"]
-    S3 --> S4{"Step 4 — flip to done?\nread the Verdict line + gate receipts"}
-    S4 -- "FAIL" --> NOFLIP["do NOT flip\nfix via ③, re-run"]
-    S4 -- "PASS · CONCERNS · WAIVED\nmissing · stale" --> FLIP["story_status.py set id done\nBOTH surfaces or NEITHER"]
-    FLIP --> EPICCLOSE["same pass: every child terminal?\n→ flip the EPIC too"]
-    EPICCLOSE --> S5["Step 5 — /cicd-prune-context\nAUTOMATIC, applies unconditionally"]
-    S5 --> S6{"Step 6 — did Step 3\nroute any learnings?"}
-    S6 -- "none" --> ASKL["ask you for manual learnings"]
-    S6 -- "some" --> ENDS
-    ASKL --> ENDS["⛔ the save ENDS here\nno landing, no ticket, no Dev Record, no prune —\nthose four are the door's, in that order"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the project | (terminal / end) |
+| `WHO` | who invoked this? | **the door** → Steps 0.5 / 0.6 are already done read the preflight block it hands you do NOT re-run either — it answers nothing new<br>**you, standalone** → absorb the EPIC branch, then run closeout_preflight.py yourself exit 2 — BLOCKED |
+| `SKIP` | Steps 0.5 / 0.6 are already done read the preflight block it hands you do NOT re-run either — it answers nothing new | → Steps 1–2 — read state and this session's plan + walkthrough, then CODE-VERIFY the claimed work on disk |
+| `OWNPF` | absorb the EPIC branch, then run closeout_preflight.py yourself exit 2 — BLOCKED | → Steps 1–2 — read state and this session's plan + walkthrough, then CODE-VERIFY the claimed work on disk |
+| `S1` | Steps 1–2 — read state and this session's plan + walkthrough, then CODE-VERIFY the claimed work on disk | → Step 3 — route each learning to its home rule · component pitfall · open bug · memory a ## Close-Out Handoff block is LIFTED, never re-derived |
+| `S3` | Step 3 — route each learning to its home rule · component pitfall · open bug · memory a ## Close-Out Handoff block is LIFTED, never re-derived | → Step 4 — flip to done? read the Verdict line + gate receipts |
+| `S4` | Step 4 — flip to done? read the Verdict line + gate receipts | **FAIL** → do NOT flip fix via ③, re-run<br>**PASS · CONCERNS · WAIVED missing · stale** → story_status.py set id done BOTH surfaces or NEITHER |
+| `NOFLIP` | do NOT flip fix via ③, re-run | (terminal / end) |
+| `FLIP` | story_status.py set id done BOTH surfaces or NEITHER | → same pass: every child terminal? → flip the EPIC too |
+| `EPICCLOSE` | same pass: every child terminal? → flip the EPIC too | → Step 5 — /cicd-prune-context AUTOMATIC, applies unconditionally |
+| `S5` | Step 5 — /cicd-prune-context AUTOMATIC, applies unconditionally | → Step 6 — did Step 3 route any learnings? |
+| `S6` | Step 6 — did Step 3 route any learnings? | **none** → ask you for manual learnings<br>**some** → ⛔ the save ENDS here no landing, no ticket, no Dev Record, no prune — those four are the door's, in that order |
+| `ASKL` | ask you for manual learnings | → ⛔ the save ENDS here no landing, no ticket, no Dev Record, no prune — those four are the door's, in that order |
+| `ENDS` | ⛔ the save ENDS here no landing, no ticket, no Dev Record, no prune — those four are the door's, in that order | (terminal / end) |
+
 
 #### /cicd-merge-epic-workingtrees
 
@@ -3856,35 +3698,32 @@ ticket — it borrows `/cicd-update-sprint-memory` Steps 1–4 + 6, and the tick
 Close a set through it and each story's ticket is still owed.
 Invoked by: you, or `/cicd-close-story-merge-tree` Step 3's hand-over.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve the project"] --> S1["Step 1 — INVENTORY every tree\nread BOTH listings: worktrees AND branches\nclaude/incident-* is NEVER in the set"]
-    S1 --> CONF["map lane → story → board row → verdict\nSTOP — confirm the set with you"]
-    CONF --> S2["Step 2 — pre-flight per lane\nclean tree · close-out eligibility"]
-    S2 --> ELIG{"per lane"}
-    ELIG -- "verdict FAIL" --> SKIP["BLOCKED — report it, keep it out\nof the order, close the rest"]
-    ELIG -- "already done" --> PRUNEONLY["prune-only — nothing to land"]
-    ELIG -- "eligible" --> S3["Step 3 — ⭐ THE OVERLAP MAP\npairwise diff every lane against every other"]
-    S3 --> O1["CODE overlaps → owner + resolution NOW\ncreator lands before importer"]
-    S3 --> O2["BOARD files → KEEP BOTH SIDES' FACTS\nnever pick a winner"]
-    S3 --> O3["TEST surfaces → which suites re-run\nsiblings' tripwires must STAY green"]
-    O1 --> S4["Step 4 — per lane, IN ORDER, inside its worktree"]
-    O2 --> S4
-    O3 --> S4
-    S4 --> L1["a. merge the epic branch INTO the lane\nit carries every landed sibling"]
-    L1 --> L2["b. post-merge gate, still in the worktree\nsuites SEQUENTIALLY, never several at once"]
-    L2 --> L3["c. close the story out IN the worktree\nits board edits ride its own landing"]
-    L3 --> L4["d. push HEAD:epic/KEY-slug"]
-    L4 --> MORE{"more lanes?"}
-    MORE -- "yes" --> L1
-    MORE -- "no" --> S5["Step 5 — ⭐ COMBINED GATE on the epic branch\nthe union of every landed story's tests"]
-    S5 --> INT{"an integration break\nno single lane caused?"}
-    INT -- "yes" --> FIXHERE["fix it HERE on the epic branch\nno new story, no new worktree"]
-    INT -- "no" --> S52["/cicd-prune-context ONCE for the set\nlearnings question only if none were routed"]
-    FIXHERE --> S52
-    S52 --> S6["Step 6 — /cicd-prune-worktree per lane\n--repo + --branch named, slug echoed back\nprune NOTHING before the combined gate is green"]
-    S6 --> END["ENDS AT THE EPIC BRANCH\nit does NOT merge to main"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the project | (terminal / end) |
+| `S1` | Step 1 — INVENTORY every tree read BOTH listings: worktrees AND branches claude/incident-* is NEVER in the set | → map lane → story → board row → verdict STOP — confirm the set with you |
+| `CONF` | map lane → story → board row → verdict STOP — confirm the set with you | → Step 2 — pre-flight per lane clean tree · close-out eligibility |
+| `S2` | Step 2 — pre-flight per lane clean tree · close-out eligibility | → per lane |
+| `ELIG` | per lane | **verdict FAIL** → BLOCKED — report it, keep it out of the order, close the rest<br>**already done** → prune-only — nothing to land<br>**eligible** → Step 3 — ⭐ THE OVERLAP MAP pairwise diff every lane against every other |
+| `SKIP` | BLOCKED — report it, keep it out of the order, close the rest | (terminal / end) |
+| `PRUNEONLY` | prune-only — nothing to land | (terminal / end) |
+| `S3` | Step 3 — ⭐ THE OVERLAP MAP pairwise diff every lane against every other | → CODE overlaps → owner + resolution NOW creator lands before importer<br>→ BOARD files → KEEP BOTH SIDES' FACTS never pick a winner<br>→ TEST surfaces → which suites re-run siblings' tripwires must STAY green |
+| `O1` | CODE overlaps → owner + resolution NOW creator lands before importer | → Step 4 — per lane, IN ORDER, inside its worktree |
+| `O2` | BOARD files → KEEP BOTH SIDES' FACTS never pick a winner | → Step 4 — per lane, IN ORDER, inside its worktree |
+| `O3` | TEST surfaces → which suites re-run siblings' tripwires must STAY green | → Step 4 — per lane, IN ORDER, inside its worktree |
+| `S4` | Step 4 — per lane, IN ORDER, inside its worktree | → a. merge the epic branch INTO the lane it carries every landed sibling |
+| `L1` | a. merge the epic branch INTO the lane it carries every landed sibling | → b. post-merge gate, still in the worktree suites SEQUENTIALLY, never several at once |
+| `L2` | b. post-merge gate, still in the worktree suites SEQUENTIALLY, never several at once | → c. close the story out IN the worktree its board edits ride its own landing |
+| `L3` | c. close the story out IN the worktree its board edits ride its own landing | → d. push HEAD:epic/KEY-slug |
+| `L4` | d. push HEAD:epic/KEY-slug | → more lanes? |
+| `MORE` | more lanes? | **yes** → a. merge the epic branch INTO the lane it carries every landed sibling<br>**no** → Step 5 — ⭐ COMBINED GATE on the epic branch the union of every landed story's tests |
+| `S5` | Step 5 — ⭐ COMBINED GATE on the epic branch the union of every landed story's tests | → an integration break no single lane caused? |
+| `INT` | an integration break no single lane caused? | **yes** → fix it HERE on the epic branch no new story, no new worktree<br>**no** → /cicd-prune-context ONCE for the set learnings question only if none were routed |
+| `FIXHERE` | fix it HERE on the epic branch no new story, no new worktree | → /cicd-prune-context ONCE for the set learnings question only if none were routed |
+| `S52` | /cicd-prune-context ONCE for the set learnings question only if none were routed | → Step 6 — /cicd-prune-worktree per lane --repo + --branch named, slug echoed back prune NOTHING before the combined gate is green |
+| `S6` | Step 6 — /cicd-prune-worktree per lane --repo + --branch named, slug echoed back prune NOTHING before the combined gate is green | → ENDS AT THE EPIC BRANCH it does NOT merge to main |
+| `END` | ENDS AT THE EPIC BRANCH it does NOT merge to main | (terminal / end) |
+
 
 #### /cicd-prune-worktree
 
@@ -3895,30 +3734,28 @@ once per lane — and you type it only when a cleanup was skipped or failed. Exp
 [§7](#7-landing-and-shipping--the-close-out-family). Calls: `closeout_preflight.py`,
 `link-worktree-assets.py --unlink`.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve project + slug + id + JIRA-KEY\nStep 0.6 — closeout_preflight.py --expect-key + --branch, NOT optional\ncheck the target it ECHOES before reading the result"] --> S1{"Step 1 — SAFETY GATE\nis the branch an ancestor of the epic branch?"}
-    S1 -- "no" --> REFUSE["⛔ REFUSE to delete\nland the story first"]
-    S1 -- "yes" --> S17{"Step 1.7 — was the STORY finished?\nfrontmatter done → board key → CHANGE LOG"}
-    S17 -- "no match" --> STOP17["⛔ STOP with the reason and the fix\nno 'looks ambiguous, checking' branch"]
-    S17 -- "authorized" --> S16["Step 1.6 — ⭐ SWEEP EVERY TREE ON DISK\nthe slug is NOT the scope — the disk is"]
-    S16 --> CLASS{"classify each directory"}
-    CLASS -- "HUSK — no .git" --> H["dead folder → unlink, then delete"]
-    CLASS -- "LOST — .git, unregistered" --> L["⛔ STOP and report. Never delete."]
-    CLASS -- "LIVE, clean" --> LC["remove only if its branch passed Step 1"]
-    CLASS -- "LIVE, uncommitted" --> S2["Step 2 — PRESERVE\ncommit to its own branch and PUSH\nnever --force past unsaved work"]
-    S2 --> FLAG["a branch you just pushed work to\nis NOT deletable — flag it for Step 5"]
-    H --> S3
-    LC --> S3
-    FLAG --> S3["Step 2.5 — leave the directory\nStep 3a — ⭐ UNLINK EVERY REPARSE POINT\na recursive delete FOLLOWS links into the shared assets"]
-    S3 --> S3B["Step 3b — git worktree remove --force\nStep 3c — delete the leftover dir\nonly once 3a proved zero links remain"]
-    S3B --> S4["Step 4 — PROBE the shared assets survived\nrun them, do not just Test-Path"]
-    S4 --> S5{"Step 5 — delete the branch?\ncode landed AND story finished"}
-    S5 -- "no" --> KEEP["keep it and say why\na tree is cheap — the branch recreates it\nthe branch is the only copy"]
-    S5 -- "yes" --> DEL["remote first — only if it is on origin —\nthen local"]
-    DEL --> S6["Step 6 — VERIFY, then report\nevery line from a command you actually ran"]
-    KEEP --> S6
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve project + slug + id + JIRA-KEY Step 0.6 — closeout_preflight.py --expect-key + --branch, NOT optional check the target it ECHOES before reading the result | (terminal / end) |
+| `S1` | Step 1 — SAFETY GATE is the branch an ancestor of the epic branch? | **no** → ⛔ REFUSE to delete land the story first<br>**yes** → Step 1.7 — was the STORY finished? frontmatter done → board key → CHANGE LOG |
+| `REFUSE` | ⛔ REFUSE to delete land the story first | (terminal / end) |
+| `S17` | Step 1.7 — was the STORY finished? frontmatter done → board key → CHANGE LOG | **no match** → ⛔ STOP with the reason and the fix no 'looks ambiguous, checking' branch<br>**authorized** → Step 1.6 — ⭐ SWEEP EVERY TREE ON DISK the slug is NOT the scope — the disk is |
+| `STOP17` | ⛔ STOP with the reason and the fix no 'looks ambiguous, checking' branch | (terminal / end) |
+| `S16` | Step 1.6 — ⭐ SWEEP EVERY TREE ON DISK the slug is NOT the scope — the disk is | → classify each directory |
+| `CLASS` | classify each directory | **HUSK — no .git** → dead folder → unlink, then delete<br>**LOST — .git, unregistered** → ⛔ STOP and report. Never delete.<br>**LIVE, clean** → remove only if its branch passed Step 1<br>**LIVE, uncommitted** → Step 2 — PRESERVE commit to its own branch and PUSH never --force past unsaved work |
+| `H` | dead folder → unlink, then delete | → Step 2.5 — leave the directory Step 3a — ⭐ UNLINK EVERY REPARSE POINT a recursive delete FOLLOWS links into the shared assets |
+| `L` | ⛔ STOP and report. Never delete. | (terminal / end) |
+| `LC` | remove only if its branch passed Step 1 | → Step 2.5 — leave the directory Step 3a — ⭐ UNLINK EVERY REPARSE POINT a recursive delete FOLLOWS links into the shared assets |
+| `S2` | Step 2 — PRESERVE commit to its own branch and PUSH never --force past unsaved work | → a branch you just pushed work to is NOT deletable — flag it for Step 5 |
+| `FLAG` | a branch you just pushed work to is NOT deletable — flag it for Step 5 | → Step 2.5 — leave the directory Step 3a — ⭐ UNLINK EVERY REPARSE POINT a recursive delete FOLLOWS links into the shared assets |
+| `S3` | Step 2.5 — leave the directory Step 3a — ⭐ UNLINK EVERY REPARSE POINT a recursive delete FOLLOWS links into the shared assets | → Step 3b — git worktree remove --force Step 3c — delete the leftover dir only once 3a proved zero links remain |
+| `S3B` | Step 3b — git worktree remove --force Step 3c — delete the leftover dir only once 3a proved zero links remain | → Step 4 — PROBE the shared assets survived run them, do not just Test-Path |
+| `S4` | Step 4 — PROBE the shared assets survived run them, do not just Test-Path | → Step 5 — delete the branch? code landed AND story finished |
+| `S5` | Step 5 — delete the branch? code landed AND story finished | **no** → keep it and say why a tree is cheap — the branch recreates it the branch is the only copy<br>**yes** → remote first — only if it is on origin — then local |
+| `KEEP` | keep it and say why a tree is cheap — the branch recreates it the branch is the only copy | → Step 6 — VERIFY, then report every line from a command you actually ran |
+| `DEL` | remote first — only if it is on origin — then local | → Step 6 — VERIFY, then report every line from a command you actually ran |
+| `S6` | Step 6 — VERIFY, then report every line from a command you actually ran | (terminal / end) |
+
 
 #### /cicd-e2e
 
@@ -3927,17 +3764,18 @@ gate `/cicd-push-e2e` requires; also runnable solo. Explained in
 [§7](#7-landing-and-shipping--the-close-out-family). Called by: `/cicd-push-e2e` Step 3,
 `/cicd-merge-epic-workingtrees` when promoting, or you.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve the project"] --> S1{"Step 1 — does the harness exist?\nfrontend/e2e/run-e2e.mjs"}
-    S1 -- "no" --> X["⛔ no E2E harness — /testarch-framework first\nnever improvise a substitute and call it the gate"]
-    S1 -- "yes" --> S2["Step 2 — npm run test:e2e, in the background\nthe harness owns emulators, port, seeding, mocks"]
-    S2 --> S3{"Step 3 — verdict"}
-    S3 -- "N/N journeys" --> G["E2E GATE: GREEN"]
-    S3 -- "any failure, harness or env included" --> R["E2E GATE: RED\neach failing spec + one line why\nan env failure is STILL red"]
-    G -.-> PE["/cicd-push-e2e continues"]
-    R -.-> FIX["solo: /cicd-quick-dev or the ①②③ loop\noffer to file bug docs"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the project | (terminal / end) |
+| `S1` | Step 1 — does the harness exist? frontend/e2e/run-e2e.mjs | **no** → ⛔ no E2E harness — /testarch-framework first never improvise a substitute and call it the gate<br>**yes** → Step 2 — npm run test:e2e, in the background the harness owns emulators, port, seeding, mocks |
+| `X` | ⛔ no E2E harness — /testarch-framework first never improvise a substitute and call it the gate | (terminal / end) |
+| `S2` | Step 2 — npm run test:e2e, in the background the harness owns emulators, port, seeding, mocks | → Step 3 — verdict |
+| `S3` | Step 3 — verdict | **N/N journeys** → E2E GATE: GREEN<br>**any failure, harness or env included** → E2E GATE: RED each failing spec + one line why an env failure is STILL red |
+| `G` | E2E GATE: GREEN | → /cicd-push-e2e continues |
+| `R` | E2E GATE: RED each failing spec + one line why an env failure is STILL red | → solo: /cicd-quick-dev or the ①②③ loop offer to file bug docs |
+| `PE` | /cicd-push-e2e continues | (terminal / end) |
+| `FIX` | solo: /cicd-quick-dev or the ①②③ loop offer to file bug docs | (terminal / end) |
+
 
 #### /cicd-push-e2e
 
@@ -3949,34 +3787,31 @@ closes the epic ticket. Explained in
 [§7](#7-landing-and-shipping--the-close-out-family). Calls: `/cicd-e2e`, `gh pr create`,
 `jira_feed.py`.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve the project"] --> S06["Step 0.6 — PIN the ticket you mean\nbefore any tool has answered anything"]
-    S06 --> S1["Step 1 — resolve the branch"]
-    S1 --> S15["Step 1.5 — ⭐ ship_preflight.py, from the LOBBY\nshape · pinned key · CLEAN · 0 0 · the lane"]
-    S15 -- "exit 2" --> PFSTOP["⛔ STOP — nothing is gated or merged\na dirty checkout means the gate would test\na tree the merge will not carry"]
-    S15 -- "epic/KEY-slug — clear\nstories still open → STOP and name them" --> S2["Step 2 — ⭐ ABSORB origin/main INTO the epic\nBEFORE gating — conflicts surface HERE, never on production"]
-    S15 -- "chore/KEY-slug whose diff\nREACHES deployable code" --> LIGHT["light gate only\nyour invocation IS the approval"]
-    S15 -- "chore/KEY-slug, nothing deployable" --> HANDOFF["⛔ STOP — Task work\n/smh-close-task-merge-tree owns its ceremony"]
-    S2 --> S3["Step 3 — the gate, on the epic branch"]
-    S3 --> G1["backend pytest via the canonical venv"]
-    S3 --> G2["frontend production build, zero errors"]
-    S3 --> G3["CI/CD credentials actually referenced"]
-    S3 --> G4["⭐ /cicd-e2e must finish GREEN"]
-    G1 --> V{"all green?"}
-    G2 --> V
-    G3 --> V
-    G4 --> V
-    LIGHT --> V
-    V -- "RED" --> STOP["REFUSES — nothing ships\nsummarize failures, suggest the lane"]
-    V -- "GREEN" --> S35["Step 3.5 — the ledger row + active-context\nCOMMITTED ON THE EPIC BRANCH, before the PR\nnumber-free: the PR # and merge sha go on the ticket"]
-    S35 --> S4["Step 4 — push the GATED TIP, open the PR\ngate numbers + e2e report in the body\n🛑 STOP — hand back the link"]
-    S4 --> CLICK{"you click Merge pull request"}
-    CLICK --> S45["Step 4.5 — --after-merge KEY\nmerge-base --is-ancestor — NOT merged? STOP\nPR number off the merge subject"]
-    S45 --> S5["Step 5 — watch every workflow run to success\nverify LIVE: /health · the prod URL · the release track"]
-    S5 --> S6["Step 6 — prune the epic branch\n0 0 clean · ⛔ COMMIT NOTHING\nthe gate refuses a post-merge push"]
-    S6 --> S65["Step 6.5 — evidence commented\nepic ticket → Done"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the project | (terminal / end) |
+| `S06` | Step 0.6 — PIN the ticket you mean before any tool has answered anything | → Step 1 — resolve the branch |
+| `S1` | Step 1 — resolve the branch | → Step 1.5 — ⭐ ship_preflight.py, from the LOBBY shape · pinned key · CLEAN · 0 0 · the lane |
+| `S15` | Step 1.5 — ⭐ ship_preflight.py, from the LOBBY shape · pinned key · CLEAN · 0 0 · the lane | **exit 2** → ⛔ STOP — nothing is gated or merged a dirty checkout means the gate would test a tree the merge will not carry<br>**epic/KEY-slug — clear stories still open → STOP and name them** → Step 2 — ⭐ ABSORB origin/main INTO the epic BEFORE gating — conflicts surface HERE, never on production<br>**chore/KEY-slug whose diff REACHES deployable code** → light gate only your invocation IS the approval<br>**chore/KEY-slug, nothing deployable** → ⛔ STOP — Task work /smh-close-task-merge-tree owns its ceremony |
+| `PFSTOP` | ⛔ STOP — nothing is gated or merged a dirty checkout means the gate would test a tree the merge will not carry | (terminal / end) |
+| `S2` | Step 2 — ⭐ ABSORB origin/main INTO the epic BEFORE gating — conflicts surface HERE, never on production | → Step 3 — the gate, on the epic branch |
+| `LIGHT` | light gate only your invocation IS the approval | → all green? |
+| `HANDOFF` | ⛔ STOP — Task work /smh-close-task-merge-tree owns its ceremony | (terminal / end) |
+| `S3` | Step 3 — the gate, on the epic branch | → backend pytest via the canonical venv<br>→ frontend production build, zero errors<br>→ CI/CD credentials actually referenced<br>→ ⭐ /cicd-e2e must finish GREEN |
+| `G1` | backend pytest via the canonical venv | → all green? |
+| `G2` | frontend production build, zero errors | → all green? |
+| `G3` | CI/CD credentials actually referenced | → all green? |
+| `G4` | ⭐ /cicd-e2e must finish GREEN | → all green? |
+| `V` | all green? | **RED** → REFUSES — nothing ships summarize failures, suggest the lane<br>**GREEN** → Step 3.5 — the ledger row + active-context COMMITTED ON THE EPIC BRANCH, before the PR number-free: the PR # and merge sha go on the ticket |
+| `STOP` | REFUSES — nothing ships summarize failures, suggest the lane | (terminal / end) |
+| `S35` | Step 3.5 — the ledger row + active-context COMMITTED ON THE EPIC BRANCH, before the PR number-free: the PR # and merge sha go on the ticket | → Step 4 — push the GATED TIP, open the PR gate numbers + e2e report in the body 🛑 STOP — hand back the link |
+| `S4` | Step 4 — push the GATED TIP, open the PR gate numbers + e2e report in the body 🛑 STOP — hand back the link | → you click Merge pull request |
+| `CLICK` | you click Merge pull request | → Step 4.5 — --after-merge KEY merge-base --is-ancestor — NOT merged? STOP PR number off the merge subject |
+| `S45` | Step 4.5 — --after-merge KEY merge-base --is-ancestor — NOT merged? STOP PR number off the merge subject | → Step 5 — watch every workflow run to success verify LIVE: /health · the prod URL · the release track |
+| `S5` | Step 5 — watch every workflow run to success verify LIVE: /health · the prod URL · the release track | → Step 6 — prune the epic branch 0 0 clean · ⛔ COMMIT NOTHING the gate refuses a post-merge push |
+| `S6` | Step 6 — prune the epic branch 0 0 clean · ⛔ COMMIT NOTHING the gate refuses a post-merge push | → Step 6.5 — evidence commented epic ticket → Done |
+| `S65` | Step 6.5 — evidence commented epic ticket → Done | (terminal / end) |
+
 
 #### /smh-close-task-merge-tree
 
@@ -3988,28 +3823,28 @@ or HELD by open user tasks), prune. Explained in
 [§7](#7-landing-and-shipping--the-close-out-family). Calls: `task_preflight.py`, `flight_recorder.py`,
 `gh pr create`, `jira_feed.py devrecord / finish`.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve the repo FROM git output\npin EXPECTED_KEY before any tool answers\nauthor task.yaml if the task lacks one"] --> S1["Step 1 — task_preflight.py --expect-key\n⭐ REQUIRED — the script refuses without it"]
-    S1 --> HDR{"the header line — is the branch\nit resolved the one you meant?"}
-    HDR -- "no, or epic/ · claude/ · incident" --> WRONG["⛔ STOP — wrong lane, or another\ncommand's branch, named for you"]
-    HDR -- "yes" --> CHECKS["shape · manifest · clean and pushed · main absorbed\nwalkthrough · open child → STOP, rider → warn\nSTALLED LANDING: local main ahead of origin?"]
-    CHECKS --> LANE{"⭐ THE LANE — derived, not asked"}
-    LANE -- "a deployable path in the diff" --> HAND["⛔ STOP — a product change\nwhatever the ticket says → /cicd-push-e2e\nNO OVERRIDE FLAG"]
-    LANE -- "nothing that deploys" --> S2{"Step 2 — did the preflight\nprint gate: SKIP?"}
-    S2 -- "yes — verdict PASS/CONCERNS,\ncode-fresh, receipts valid" --> G0["the SKIP spares the SUITE only\nstill run lint · check_maps --depth3-only --strict\ncite the review's link + SOP sweeps"]
-    S2 -- "no" --> G["run_all.py · workflow_lint --toolkit-only\ncheck_maps --depth3-only --strict\nlink + anchor · SOP currency — PASTE the output"]
-    G0 --> S25["Step 2.5 — flight_recorder.py record\npre-merge, artifacts-only commit, keyed on the verdict sha"]
-    G --> S25
-    S25 --> S3["Step 3 — reconcile ## Your Actions, then\ngh pr create --base main · 🛑 STOP — hand back the link"]
-    S3 --> CI["GitHub runs main-write-gate on the PR"]
-    CI --> CIQ{"check result?"}
-    CIQ -- "red" --> CISTOP["⛔ STOP — never --no-verify\nnever disable the ruleset"]
-    CIQ -- "green" --> MINT["you click Merge pull request\nthen --after-merge KEY:\nmerge-base --is-ancestor proves it landed"]
-    MINT --> S4["Step 4 — AFTER the merge, never before\ntick the merge row · riders → Done FIRST · one Dev Record\njira_feed.py finish → Done, or HELD on open user tasks"]
-    S4 --> S5["Step 5 — UNLINK → remove tree → delete branch\nin that order · a claude/* tree is not yours to prune"]
-    S5 --> S6["Step 6 — verify, THEN report"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the repo FROM git output pin EXPECTED_KEY before any tool answers author task.yaml if the task lacks one | (terminal / end) |
+| `S1` | Step 1 — task_preflight.py --expect-key ⭐ REQUIRED — the script refuses without it | → the header line — is the branch it resolved the one you meant? |
+| `HDR` | the header line — is the branch it resolved the one you meant? | **no, or epic/ · claude/ · incident** → ⛔ STOP — wrong lane, or another command's branch, named for you<br>**yes** → shape · manifest · clean and pushed · main absorbed walkthrough · open child → STOP, rider → warn STALLED LANDING: local main ahead of origin? |
+| `WRONG` | ⛔ STOP — wrong lane, or another command's branch, named for you | (terminal / end) |
+| `CHECKS` | shape · manifest · clean and pushed · main absorbed walkthrough · open child → STOP, rider → warn STALLED LANDING: local main ahead of origin? | → ⭐ THE LANE — derived, not asked |
+| `LANE` | ⭐ THE LANE — derived, not asked | **a deployable path in the diff** → ⛔ STOP — a product change whatever the ticket says → /cicd-push-e2e NO OVERRIDE FLAG<br>**nothing that deploys** → Step 2 — did the preflight print gate: SKIP? |
+| `HAND` | ⛔ STOP — a product change whatever the ticket says → /cicd-push-e2e NO OVERRIDE FLAG | (terminal / end) |
+| `S2` | Step 2 — did the preflight print gate: SKIP? | **yes — verdict PASS/CONCERNS, code-fresh, receipts valid** → the SKIP spares the SUITE only still run lint · check_maps --depth3-only --strict cite the review's link + SOP sweeps<br>**no** → run_all.py · workflow_lint --toolkit-only check_maps --depth3-only --strict link + anchor · SOP currency — PASTE the output |
+| `G0` | the SKIP spares the SUITE only still run lint · check_maps --depth3-only --strict cite the review's link + SOP sweeps | → Step 2.5 — flight_recorder.py record pre-merge, artifacts-only commit, keyed on the verdict sha |
+| `G` | run_all.py · workflow_lint --toolkit-only check_maps --depth3-only --strict link + anchor · SOP currency — PASTE the output | → Step 2.5 — flight_recorder.py record pre-merge, artifacts-only commit, keyed on the verdict sha |
+| `S25` | Step 2.5 — flight_recorder.py record pre-merge, artifacts-only commit, keyed on the verdict sha | → Step 3 — reconcile ## Your Actions, then gh pr create --base main · 🛑 STOP — hand back the link |
+| `S3` | Step 3 — reconcile ## Your Actions, then gh pr create --base main · 🛑 STOP — hand back the link | → GitHub runs main-write-gate on the PR |
+| `CI` | GitHub runs main-write-gate on the PR | → check result? |
+| `CIQ` | check result? | **red** → ⛔ STOP — never --no-verify never disable the ruleset<br>**green** → you click Merge pull request then --after-merge KEY: merge-base --is-ancestor proves it landed |
+| `CISTOP` | ⛔ STOP — never --no-verify never disable the ruleset | (terminal / end) |
+| `MINT` | you click Merge pull request then --after-merge KEY: merge-base --is-ancestor proves it landed | → Step 4 — AFTER the merge, never before tick the merge row · riders → Done FIRST · one Dev Record jira_feed.py finish → Done, or HELD on open user tasks |
+| `S4` | Step 4 — AFTER the merge, never before tick the merge row · riders → Done FIRST · one Dev Record jira_feed.py finish → Done, or HELD on open user tasks | → Step 5 — UNLINK → remove tree → delete branch in that order · a claude/* tree is not yours to prune |
+| `S5` | Step 5 — UNLINK → remove tree → delete branch in that order · a claude/* tree is not yours to prune | → Step 6 — verify, THEN report |
+| `S6` | Step 6 — verify, THEN report | (terminal / end) |
+
 
 #### /smh-merge-multiple-workingtrees
 
@@ -4021,26 +3856,26 @@ whole set. N lanes are N links and N clicks. Explained in
 [§7](#7-landing-and-shipping--the-close-out-family). Calls: `task_preflight.py`,
 `flight_recorder.py`, `gh pr create`, `jira_feed.py`.*
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve the repo, pin EVERY key\nfrom command output · cd REPO && git on every call"] --> S1["Step 1 — INVENTORY every lane\nbranch · key · commits · task.yaml · walkthrough Verdict"]
-    S1 --> S2["Step 2 — preflight each eligible lane\n--expect-key, one per lane"]
-    S2 --> S25["Step 2.5 — staleness against CURRENT main\nstale lanes leave the set"]
-    S25 --> S3["Step 3 — ⭐ THE OVERLAP MAP before ANY merge\nledger · rewrite-vs-edit · modify-delete · gate-or-script\ncommit/push machinery lands LAST"]
-    S3 --> L["Step 4 — the landing loop, per lane, in order"]
-    L --> A["4a — absorb origin/main into the lane's tree\nconflict outside the map → STOP and re-derive"]
-    A --> B["4b — re-gate bare: run_all · lint · its own tests\nrecord the flight event\na change during absorb voids the verdict → re-measure"]
-    B --> C["4c — 🛑 STOP — your sign-off for THIS lane\nkey · tip · verdict · gate output"]
-    C --> D["4d — gh pr create for THIS lane · 🛑 STOP\nmain-write-gate green → you click Merge\n--after-merge proves it landed"]
-    D --> E["4e — Dev Record → finish\nDone, or HELD on open user tasks — never a bare transition"]
-    E --> F["4f — prune: unlink → tree → branch\nnever a claude/* tree"]
-    F --> MORE{"more lanes?"}
-    MORE -- "yes" --> A
-    MORE -- "no" --> S5["Step 5 — ⭐ COMBINED GATE on main\nrun_all · lint · check_maps · sop_currency"]
-    S5 --> R{"green?"}
-    R -- "no" --> FWD["fix FORWARD on a new chore/* lane\nwith its own ticket — never rewrite history"]
-    R -- "yes" --> S6["Step 6 — verify 0 0 · clean · trees · branches\nthen report ✅ landed @ sha / ⏸ held"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the repo, pin EVERY key from command output · cd REPO && git on every call | (terminal / end) |
+| `S1` | Step 1 — INVENTORY every lane branch · key · commits · task.yaml · walkthrough Verdict | → Step 2 — preflight each eligible lane --expect-key, one per lane |
+| `S2` | Step 2 — preflight each eligible lane --expect-key, one per lane | → Step 2.5 — staleness against CURRENT main stale lanes leave the set |
+| `S25` | Step 2.5 — staleness against CURRENT main stale lanes leave the set | → Step 3 — ⭐ THE OVERLAP MAP before ANY merge ledger · rewrite-vs-edit · modify-delete · gate-or-script commit/push machinery lands LAST |
+| `S3` | Step 3 — ⭐ THE OVERLAP MAP before ANY merge ledger · rewrite-vs-edit · modify-delete · gate-or-script commit/push machinery lands LAST | → Step 4 — the landing loop, per lane, in order |
+| `L` | Step 4 — the landing loop, per lane, in order | → 4a — absorb origin/main into the lane's tree conflict outside the map → STOP and re-derive |
+| `A` | 4a — absorb origin/main into the lane's tree conflict outside the map → STOP and re-derive | → 4b — re-gate bare: run_all · lint · its own tests record the flight event a change during absorb voids the verdict → re-measure |
+| `B` | 4b — re-gate bare: run_all · lint · its own tests record the flight event a change during absorb voids the verdict → re-measure | → 4c — 🛑 STOP — your sign-off for THIS lane key · tip · verdict · gate output |
+| `C` | 4c — 🛑 STOP — your sign-off for THIS lane key · tip · verdict · gate output | → 4d — gh pr create for THIS lane · 🛑 STOP main-write-gate green → you click Merge --after-merge proves it landed |
+| `D` | 4d — gh pr create for THIS lane · 🛑 STOP main-write-gate green → you click Merge --after-merge proves it landed | → 4e — Dev Record → finish Done, or HELD on open user tasks — never a bare transition |
+| `E` | 4e — Dev Record → finish Done, or HELD on open user tasks — never a bare transition | → 4f — prune: unlink → tree → branch never a claude/* tree |
+| `F` | 4f — prune: unlink → tree → branch never a claude/* tree | → more lanes? |
+| `MORE` | more lanes? | **yes** → 4a — absorb origin/main into the lane's tree conflict outside the map → STOP and re-derive<br>**no** → Step 5 — ⭐ COMBINED GATE on main run_all · lint · check_maps · sop_currency |
+| `S5` | Step 5 — ⭐ COMBINED GATE on main run_all · lint · check_maps · sop_currency | → green? |
+| `R` | green? | **no** → fix FORWARD on a new chore/* lane with its own ticket — never rewrite history<br>**yes** → Step 6 — verify 0 0 · clean · trees · branches then report ✅ landed @ sha / ⏸ held |
+| `FWD` | fix FORWARD on a new chore/* lane with its own ticket — never rewrite history | (terminal / end) |
+| `S6` | Step 6 — verify 0 0 · clean · trees · branches then report ✅ landed @ sha / ⏸ held | (terminal / end) |
+
 
 ### Operations
 
@@ -4051,25 +3886,22 @@ flowchart TD
 on **origin** (a fresh machine's worktree list lies), rebuilds the surface, and hands to the boot.
 Neither touches `main`. Explained in [§13](#13-switching-machines).*
 
-```mermaid
-flowchart TD
-    subgraph PARK ["/cicd-park — machine A"]
-        P0["Step 0 — scope: lobby + the active project"] --> P1{"Step 1 — GUARD before any git add\nis a worktree committable?"}
-        P1 -- "yes" --> PX["⛔ STOP — a committed worktree entry\nbreaks re-creation on machine B"]
-        P1 -- "no" --> P2["Step 2 — per story worktree\ncommit explicit paths · absorb the epic INSIDE the tree\npush -u origin claude/KEY-slug"]
-        P2 --> P3["Step 3 — push the epic branch and both mains\nunpushed main work → a chore/* branch first\nnever push main, never force, never land a story"]
-        P3 --> P4["Step 4 — ONE resume card\ncommitted inside a story worktree so it rides the branch"]
-        P4 --> P5["Step 5 — report every branch, sha, on-origin?\nANY failed push is said out loud"]
-    end
-    subgraph RESUME ["/cicd-resume — machine B"]
-        R0["Step 0 — scope: lobby + project"] --> R1["Step 1 — fetch both repos\nshared checkout stays on main · pull --ff-only\ndiverged → STOP"]
-        R1 --> R2["Step 2 — read the resume card"]
-        R2 --> R3["Step 3 — find in-flight work on ORIGIN\nnever from git worktree list here"]
-        R3 --> R4["Step 4 — re-create the story worktrees\non their claude/* branches · CREATES only, never deletes"]
-        R4 --> R5["Step 5 — hand to /cicd-boot-sprint-memory"]
-    end
-    P5 -.->|"GitHub — the only thing both sides share"| R0
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `P0` | Step 0 — scope: lobby + the active project | (terminal / end) |
+| `P1` | Step 1 — GUARD before any git add is a worktree committable? | **yes** → ⛔ STOP — a committed worktree entry breaks re-creation on machine B<br>**no** → Step 2 — per story worktree commit explicit paths · absorb the epic INSIDE the tree push -u origin claude/KEY-slug |
+| `PX` | ⛔ STOP — a committed worktree entry breaks re-creation on machine B | (terminal / end) |
+| `P2` | Step 2 — per story worktree commit explicit paths · absorb the epic INSIDE the tree push -u origin claude/KEY-slug | → Step 3 — push the epic branch and both mains unpushed main work → a chore/* branch first never push main, never force, never land a story |
+| `P3` | Step 3 — push the epic branch and both mains unpushed main work → a chore/* branch first never push main, never force, never land a story | → Step 4 — ONE resume card committed inside a story worktree so it rides the branch |
+| `P4` | Step 4 — ONE resume card committed inside a story worktree so it rides the branch | → Step 5 — report every branch, sha, on-origin? ANY failed push is said out loud |
+| `P5` | Step 5 — report every branch, sha, on-origin? ANY failed push is said out loud | **GitHub — the only thing both sides share** → Step 0 — scope: lobby + project |
+| `R0` | Step 0 — scope: lobby + project | (terminal / end) |
+| `R1` | Step 1 — fetch both repos shared checkout stays on main · pull --ff-only diverged → STOP | → Step 2 — read the resume card |
+| `R2` | Step 2 — read the resume card | → Step 3 — find in-flight work on ORIGIN never from git worktree list here |
+| `R3` | Step 3 — find in-flight work on ORIGIN never from git worktree list here | → Step 4 — re-create the story worktrees on their claude/* branches · CREATES only, never deletes |
+| `R4` | Step 4 — re-create the story worktrees on their claude/* branches · CREATES only, never deletes | → Step 5 — hand to /cicd-boot-sprint-memory |
+| `R5` | Step 5 — hand to /cicd-boot-sprint-memory | (terminal / end) |
+
 
 #### /cicd-prune-context
 
@@ -4080,18 +3912,17 @@ status. Explained in [§7](#7-landing-and-shipping--the-close-out-family). Calle
 `/cicd-update-sprint-memory` Step 5 — and so by `/cicd-close-story-merge-tree`, which runs that save —
 and by `/cicd-merge-epic-workingtrees` Step 5 (automatically), or you.*
 
-```mermaid
-flowchart LR
-    S0["Step 0 — resolve the project"] --> B{"bytes ÷ 4 over 5,000?"}
-    B -- "either way" --> M["route every fact to its ONE home\nactive-context only POINTS"]
-    M --> K["still-live state → ≤3-line pointer\noutcome · STILL-OWED · pointer"]
-    M --> D["everything else → DELETE\nthe normal outcome"]
-    B -- "over budget" --> SW["full pitfall sweep\ndep done · degraded-until done · pattern gone → remove\npermanent invariant → keep"]
-    K --> A["completed tasks > 5 → oldest to _archive/\nspec size caps · normalize encoding"]
-    D --> A
-    SW --> A
-    A --> R["report the token line\ncompacted · deleted · archived · STILL-OWED"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the project | (terminal / end) |
+| `B` | bytes ÷ 4 over 5,000? | **either way** → route every fact to its ONE home active-context only POINTS<br>**over budget** → full pitfall sweep dep done · degraded-until done · pattern gone → remove permanent invariant → keep |
+| `M` | route every fact to its ONE home active-context only POINTS | → still-live state → ≤3-line pointer outcome · STILL-OWED · pointer<br>→ everything else → DELETE the normal outcome |
+| `K` | still-live state → ≤3-line pointer outcome · STILL-OWED · pointer | → completed tasks > 5 → oldest to _archive/ spec size caps · normalize encoding |
+| `D` | everything else → DELETE the normal outcome | → completed tasks > 5 → oldest to _archive/ spec size caps · normalize encoding |
+| `SW` | full pitfall sweep dep done · degraded-until done · pattern gone → remove permanent invariant → keep | → completed tasks > 5 → oldest to _archive/ spec size caps · normalize encoding |
+| `A` | completed tasks > 5 → oldest to _archive/ spec size caps · normalize encoding | → report the token line compacted · deleted · archived · STILL-OWED |
+| `R` | report the token line compacted · deleted · archived · STILL-OWED | (terminal / end) |
+
 
 #### /cicd-autopilot-claude (and its lanes)
 
@@ -4109,21 +3940,21 @@ review engine). Done means a script's exit code was green — never the agent's 
 > autopilot lane through that reference, and was deliberately **not** copied into the twin: the AP
 > stamp exists to stop exactly that kind of second copy from drifting.
 
-```mermaid
-flowchart TD
-    L["launch from the EPIC branch\nelse it refuses to start"] --> W["open the story's own worktree\nclaude/TICKET-story"]
-    W --> S1["1 · Plan — Dev session\nwrites the plan"]
-    S1 --> S2["2 · Audit the plan — fresh QA session\nsame model, no inherited assumptions\nappends INTO the plan"]
-    S2 --> S3["3 · Build — RESUMES the Dev session\nleaves the walkthrough"]
-    S3 --> BASE["baseline snapshot of the suite\nbefore any code"]
-    BASE --> S4["4 · Review + fix — fresh QA session\n/cicd-code-review-AP → the shared engine, capped budget\nappends INTO the walkthrough"]
-    S4 --> GATE{"the orchestrator's OWN suite run\ngreen vs the baseline?"}
-    GATE -- "regression this run introduced" --> RED["TESTS RED — parks with a receipt\nno auto-fix loop, by design"]
-    GATE -- "green, but no ## Code Review written" --> INC["REVIEW INCOMPLETE — story NOT flipped"]
-    GATE -- "green + review present" --> OK["commit its own branch, explicit paths\nstory → review · ticket → In Review · Dev Record"]
-    OK --> YOU(["you: read the plan, the walkthrough, the ticket\nthen /cicd-close-story-merge-tree"])
-    STOPS["parks for you on:\nPAUSED · CRASHED · COST CEILING · COMMIT REJECTED\nretries engine-owned, bounded · resume by (stage, sha)"] -.-> S1
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `L` | launch from the EPIC branch else it refuses to start | (terminal / end) |
+| `W` | open the story's own worktree claude/TICKET-story | → 1 · Plan — Dev session writes the plan |
+| `S1` | 1 · Plan — Dev session writes the plan | → 2 · Audit the plan — fresh QA session same model, no inherited assumptions appends INTO the plan |
+| `S2` | 2 · Audit the plan — fresh QA session same model, no inherited assumptions appends INTO the plan | → 3 · Build — RESUMES the Dev session leaves the walkthrough |
+| `S3` | 3 · Build — RESUMES the Dev session leaves the walkthrough | → baseline snapshot of the suite before any code |
+| `BASE` | baseline snapshot of the suite before any code | → 4 · Review + fix — fresh QA session /cicd-code-review-AP → the shared engine, capped budget appends INTO the walkthrough |
+| `S4` | 4 · Review + fix — fresh QA session /cicd-code-review-AP → the shared engine, capped budget appends INTO the walkthrough | → the orchestrator's OWN suite run green vs the baseline? |
+| `GATE` | the orchestrator's OWN suite run green vs the baseline? | **regression this run introduced** → TESTS RED — parks with a receipt no auto-fix loop, by design<br>**green, but no ## Code Review written** → REVIEW INCOMPLETE — story NOT flipped<br>**green + review present** → commit its own branch, explicit paths story → review · ticket → In Review · Dev Record |
+| `RED` | TESTS RED — parks with a receipt no auto-fix loop, by design | (terminal / end) |
+| `INC` | REVIEW INCOMPLETE — story NOT flipped | (terminal / end) |
+| `OK` | commit its own branch, explicit paths story → review · ticket → In Review · Dev Record | → `YOU` |
+| `STOPS` | parks for you on: PAUSED · CRASHED · COST CEILING · COMMIT REJECTED retries engine-owned, bounded · resume by (stage, sha) | (terminal / end) |
+
 
 #### /cicd-live-testing-team
 
@@ -4146,19 +3977,19 @@ the **sandbox is on** (it blocks the browser from starting, and the error never 
 the project you are testing has Playwright installed at all. This is observation only — the actual
 end-to-end test suite is still `/cicd-e2e`.
 
-```mermaid
-flowchart TD
-    S0["Step 0 — resolve the project"] --> S1["Step 1 — boot the dev env\nreap stale processes (each kill prompt-gated)\nboth servers in the background"]
-    S1 --> S2["Step 2 — the co-pilot loop, until you end it\nre-read the backend log every turn\nread the frontend with Playwright: console, errors, network, screenshot\nask you only for what a script cannot reach"]
-    S2 --> S3["Step 3 — per confirmed symptom, a bug doc\nsymptom · evidence · ranked causes (verified vs docs-say)\nfix direction · suggested lane"]
-    S3 --> S35["Step 3.5 — jira_feed.py trace\ngit history only — proposes the shipping ticket"]
-    S35 --> STOP["🛑 STOP — show you the ranked candidates\nnever pass a traced key to flag itself"]
-    STOP -- "you say yes" --> FLAG["jira_feed.py flag --apply\nStory or Task → Bug, out of Done, reason posted"]
-    STOP -- "no ticket proposed" --> NEW["new work, not a reopen"]
-    FLAG --> S4
-    NEW --> S4["Step 4 — close out\nsummary table · keep or kill the servers?\nremove every temp debug log"]
-    S4 -.-> FIX["fixes happen in /cicd-quick-dev\nor the ①②③ loop — never here"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — resolve the project | (terminal / end) |
+| `S1` | Step 1 — boot the dev env reap stale processes (each kill prompt-gated) both servers in the background | → Step 2 — the co-pilot loop, until you end it re-read the backend log every turn read the frontend with Playwright: console, errors, network, screenshot ask you only for what a script cannot reach |
+| `S2` | Step 2 — the co-pilot loop, until you end it re-read the backend log every turn read the frontend with Playwright: console, errors, network, screenshot ask you only for what a script cannot reach | → Step 3 — per confirmed symptom, a bug doc symptom · evidence · ranked causes (verified vs docs-say) fix direction · suggested lane |
+| `S3` | Step 3 — per confirmed symptom, a bug doc symptom · evidence · ranked causes (verified vs docs-say) fix direction · suggested lane | → Step 3.5 — jira_feed.py trace git history only — proposes the shipping ticket |
+| `S35` | Step 3.5 — jira_feed.py trace git history only — proposes the shipping ticket | → 🛑 STOP — show you the ranked candidates never pass a traced key to flag itself |
+| `STOP` | 🛑 STOP — show you the ranked candidates never pass a traced key to flag itself | **you say yes** → jira_feed.py flag --apply Story or Task → Bug, out of Done, reason posted<br>**no ticket proposed** → new work, not a reopen |
+| `FLAG` | jira_feed.py flag --apply Story or Task → Bug, out of Done, reason posted | → Step 4 — close out summary table · keep or kill the servers? remove every temp debug log |
+| `NEW` | new work, not a reopen | → Step 4 — close out summary table · keep or kill the servers? remove every temp debug log |
+| `S4` | Step 4 — close out summary table · keep or kill the servers? remove every temp debug log | → fixes happen in /cicd-quick-dev or the ①②③ loop — never here |
+| `FIX` | fixes happen in /cicd-quick-dev or the ①②③ loop — never here | (terminal / end) |
+
 
 #### /cicd-mobile-error-team
 
@@ -4166,23 +3997,21 @@ flowchart TD
 automated triage, stops twice for you (rollback vs fix-forward; the merge), gates on real CI, and
 never merges on its own initiative or pushes `main`. Explained in [§16](#16-incidents).*
 
-```mermaid
-flowchart TD
-    S0{"Step 0 — the project's incident runbook exists?"} -- "no" --> X["⛔ STOP — never improvise triage"]
-    S0 -- "yes" --> S1["Step 1 — resolve the incident\nresume ladder: finished stages auto-detect"]
-    S1 --> S2["Step 2 — the triage card, before any diagnosis"]
-    S2 --> E{"early exits?"}
-    E -- "not a fire" --> S9
-    E -- "bleeding NOW, deploy-correlated" --> S4
-    E -- "neither" --> S3["Step 3 — independent diagnosis\nthe Sentry event id IS the reproduction\nno repro → say so, do not fix blind"]
-    S3 --> S4["Step 4 — 🛑 STOP 1: the decision card\nroll back, or fix forward — both timelines"]
-    S4 -- "rollback" --> S5["Step 5 — roll back"]
-    S4 -- "fix forward" --> S6["Step 6 — the minimal fix + a regression test\nrevert the hunk, watch it go red, restore"]
-    S6 --> S7["Step 7 — the gate: real CI, not a claim"]
-    S7 --> S8["Step 8 — 🛑 STOP 2: the merge decision\nnever merges on its own, never pushes main"]
-    S5 --> S9
-    S8 --> S9["Step 9 — close the loop\nSentry resolved · issue closed · incident report + INDEX row\nfollow-up story if owed"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — the project's incident runbook exists? | **yes** → Step 1 — resolve the incident resume ladder: finished stages auto-detect |
+| `X` | ⛔ STOP — never improvise triage | (terminal / end) |
+| `S1` | Step 1 — resolve the incident resume ladder: finished stages auto-detect | → Step 2 — the triage card, before any diagnosis |
+| `S2` | Step 2 — the triage card, before any diagnosis | → early exits? |
+| `E` | early exits? | **not a fire** → Step 9 — close the loop Sentry resolved · issue closed · incident report + INDEX row follow-up story if owed<br>**bleeding NOW, deploy-correlated** → Step 4 — 🛑 STOP 1: the decision card roll back, or fix forward — both timelines<br>**neither** → Step 3 — independent diagnosis the Sentry event id IS the reproduction no repro → say so, do not fix blind |
+| `S3` | Step 3 — independent diagnosis the Sentry event id IS the reproduction no repro → say so, do not fix blind | → Step 4 — 🛑 STOP 1: the decision card roll back, or fix forward — both timelines |
+| `S4` | Step 4 — 🛑 STOP 1: the decision card roll back, or fix forward — both timelines | **rollback** → Step 5 — roll back<br>**fix forward** → Step 6 — the minimal fix + a regression test revert the hunk, watch it go red, restore |
+| `S5` | Step 5 — roll back | → Step 9 — close the loop Sentry resolved · issue closed · incident report + INDEX row follow-up story if owed |
+| `S6` | Step 6 — the minimal fix + a regression test revert the hunk, watch it go red, restore | → Step 7 — the gate: real CI, not a claim |
+| `S7` | Step 7 — the gate: real CI, not a claim | → Step 8 — 🛑 STOP 2: the merge decision never merges on its own, never pushes main |
+| `S8` | Step 8 — 🛑 STOP 2: the merge decision never merges on its own, never pushes main | → Step 9 — close the loop Sentry resolved · issue closed · incident report + INDEX row follow-up story if owed |
+| `S9` | Step 9 — close the loop Sentry resolved · issue closed · incident report + INDEX row follow-up story if owed | (terminal / end) |
+
 
 ### Toolkit upkeep
 
@@ -4287,33 +4116,34 @@ the retired-cache purges against your machine. Add **`-NoGlobals`** to make a la
 Run the plain sync from the main checkout after retiring or renaming a command, or the retired door
 lingers in the menu with nothing in the repo able to see it.
 
-```mermaid
-flowchart TD
-    G{"did the / menu change?\nadded · renamed · retired"} -- "yes" --> SOP["update this page in the same commit\nor the SOP gate rejects it"]
-    G -- "no" --> T
-    SOP --> T{"a project target?"}
-    T -- "yes" --> X["⛔ retired — projects stay thin\nrun from the home base, no target"]
-    T -- "no" --> L["generate launcher skills\none door per platform · hand-authored wins\nstale generated launchers pruned"]
-    L --> LOCAL["write the local dirs\n.claude/skills · .opencode/ — .claude/commands is retired"]
-    LOCAL --> CACHE["refresh the machine cache\nopencode · Codex bmad-* mirror\npurge the two retired caches"]
-    CACHE --> M["manifest retirement — deletes only what IT wrote\nmissing or corrupt manifest → purges nothing"]
-    M --> R["report per-surface counts\nrestart opencode · start a NEW Codex chat\nrun it once per machine"]
-    ST["-Status: read-only diff\n-WhatIf: preview, touches nothing\n-Reconcile: two runs — stage a keep-list, then purge"] -.-> L
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `G` | did the / menu change? added · renamed · retired | **no** → a project target? |
+| `SOP` | update this page in the same commit or the SOP gate rejects it | → a project target? |
+| `T` | a project target? | **yes** → ⛔ retired — projects stay thin run from the home base, no target<br>**no** → generate launcher skills one door per platform · hand-authored wins stale generated launchers pruned |
+| `X` | ⛔ retired — projects stay thin run from the home base, no target | (terminal / end) |
+| `L` | generate launcher skills one door per platform · hand-authored wins stale generated launchers pruned | → write the local dirs .claude/skills · .opencode/ — .claude/commands is retired |
+| `LOCAL` | write the local dirs .claude/skills · .opencode/ — .claude/commands is retired | → refresh the machine cache opencode · Codex bmad-* mirror purge the two retired caches |
+| `CACHE` | refresh the machine cache opencode · Codex bmad-* mirror purge the two retired caches | → manifest retirement — deletes only what IT wrote missing or corrupt manifest → purges nothing |
+| `M` | manifest retirement — deletes only what IT wrote missing or corrupt manifest → purges nothing | → report per-surface counts restart opencode · start a NEW Codex chat run it once per machine |
+| `R` | report per-surface counts restart opencode · start a NEW Codex chat run it once per machine | (terminal / end) |
+| `ST` | -Status: read-only diff -WhatIf: preview, touches nothing -Reconcile: two runs — stage a keep-list, then purge | (terminal / end) |
+
 
 #### /smh-sync-vscode
 
 *Synchronizes VS Code configurations (installed extensions, User `settings.json`, and `keybindings.json`) across this PC's two VS Code installs — the Windows-native one and the Ubuntu/WSL one. Runs `vscode_sync.py export` on the source side to update `docs/migrations/vscode_sync/`, and `vscode_sync.py import` on the destination side to install missing extensions and apply settings with automatic `cmd` ↔ `ctrl` modifier translation. Reminds you to transfer private Zoo Code provider profiles via Zoo Code's 1-click Export/Import button.*
 
-```mermaid
-flowchart TD
-    S0["Invoke /smh-sync-vscode [export | import | status]"] --> M{"Mode?"}
-    M -- "export" --> E1["Dump extensions to extensions.txt\nCopy settings.json & keybindings.json\nRemind about Zoo Code 1-click private export"]
-    M -- "import" --> I1["Backup existing User config (.bak)\nRun code --install-extension for missing IDs\nApply settings & translate keybindings (cmd ↔ ctrl)"]
-    M -- "status" --> D1["Compare local VS Code vs. repo bundle\nReport extension and config drift"]
-    E1 --> P["Commit and push bundle to git"]
-    I1 --> R["Reload VS Code to apply changes"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Invoke /smh-sync-vscode [export | import | status] | (terminal / end) |
+| `M` | Mode? | **export** → Dump extensions to extensions.txt Copy settings.json & keybindings.json Remind about Zoo Code 1-click private export<br>**import** → Backup existing User config (.bak) Run code --install-extension for missing IDs Apply settings & translate keybindings (cmd ↔ ctrl)<br>**status** → Compare local VS Code vs. repo bundle Report extension and config drift |
+| `E1` | Dump extensions to extensions.txt Copy settings.json & keybindings.json Remind about Zoo Code 1-click private export | → Commit and push bundle to git |
+| `I1` | Backup existing User config (.bak) Run code --install-extension for missing IDs Apply settings & translate keybindings (cmd ↔ ctrl) | → Reload VS Code to apply changes |
+| `D1` | Compare local VS Code vs. repo bundle Report extension and config drift | (terminal / end) |
+| `P` | Commit and push bundle to git | (terminal / end) |
+| `R` | Reload VS Code to apply changes | (terminal / end) |
+
 
 #### /smh-memory-audit
 
@@ -4323,18 +4153,19 @@ project's own store) with the bytes each frees, and applies only what you approv
 auto-deletes. Explained in [§19](#19-where-the-depth-lives). Triggered by: the memory gate at 90 % of
 the 25 KB index cap, or you.*
 
-```mermaid
-flowchart TD
-    S0{"Step 0 — standing in the lobby?"} -- "no" --> X["⛔ say so and stop\nit binds the LOBBY store"]
-    S0 -- "yes" --> S1["Step 1 — run the floor: test_memory_store.py"]
-    S1 --> S2["Step 2 — widen the candidate set"]
-    S2 --> S3["Step 3 — ⭐ ground-truth each one against the live repo\ndoes the rule, script, flag it names still exist?"]
-    S3 --> S4["Step 4 — PROPOSE, one block\n🔧 repair · 🗑️ retire · 🔀 merge · 🗜️ compress\n📦 relocate · ✅ keep · 🚩 not mine (dirty in git)"]
-    S4 --> STOP["STOP — your yes, PER ITEM\n'approve the retirements but keep #3' is honored exactly"]
-    STOP --> S5["Step 5 — apply only what was approved\ngit rm so deletes are staged · repoint dangling links\na relocation is TWO repos, TWO keys"]
-    S5 --> S6["Step 6 — verify this machine's harness link"]
-    S6 --> S7["Step 7 — re-run the gate, THEN report"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — standing in the lobby? | **yes** → Step 1 — run the floor: test_memory_store.py |
+| `X` | ⛔ say so and stop it binds the LOBBY store | (terminal / end) |
+| `S1` | Step 1 — run the floor: test_memory_store.py | → Step 2 — widen the candidate set |
+| `S2` | Step 2 — widen the candidate set | → Step 3 — ⭐ ground-truth each one against the live repo does the rule, script, flag it names still exist? |
+| `S3` | Step 3 — ⭐ ground-truth each one against the live repo does the rule, script, flag it names still exist? | → Step 4 — PROPOSE, one block 🔧 repair · 🗑️ retire · 🔀 merge · 🗜️ compress 📦 relocate · ✅ keep · 🚩 not mine (dirty in git) |
+| `S4` | Step 4 — PROPOSE, one block 🔧 repair · 🗑️ retire · 🔀 merge · 🗜️ compress 📦 relocate · ✅ keep · 🚩 not mine (dirty in git) | → STOP — your yes, PER ITEM 'approve the retirements but keep #3' is honored exactly |
+| `STOP` | STOP — your yes, PER ITEM 'approve the retirements but keep #3' is honored exactly | → Step 5 — apply only what was approved git rm so deletes are staged · repoint dangling links a relocation is TWO repos, TWO keys |
+| `S5` | Step 5 — apply only what was approved git rm so deletes are staged · repoint dangling links a relocation is TWO repos, TWO keys | → Step 6 — verify this machine's harness link |
+| `S6` | Step 6 — verify this machine's harness link | → Step 7 — re-run the gate, THEN report |
+| `S7` | Step 7 — re-run the gate, THEN report | (terminal / end) |
+
 
 #### /smh-update-maps-indexes
 
@@ -4348,17 +4179,18 @@ and tells you rather than fixing it: refreshing an index can take a while and is
 reconciliation run should decide for you. When it reports a stale one, the fix is one command, run in
 that repo after you commit: `code-review-graph update`.
 
-```mermaid
-flowchart TD
-    S0["Step 0 — preflight + run the drift linter\ncheck_maps.py bare, from the workspace root"] --> S05["Step 0.5 — fan-out: the lobby + the maintained list\ninside a project: just that workspace"]
-    S05 --> S1["Step 1 — regenerate the repo-map AUTO block\nmode-preserving"]
-    S1 --> S2["Step 2 — drift-check the CURATED block\nand the SessionStart hook's view"]
-    S2 --> S3["Step 3 — audit each INDEX.md against reality\n3.5 context hygiene · 3.6 open-tasks · 3.7 folder law\n3.8 AGENTS/README pointers · 3.9 memory: NOT here"]
-    S3 --> S4["Step 4 — ONE findings report, grouped by workspace"]
-    S4 --> STOP["STOP — the approval gate\nread-mostly until here, never commits"]
-    STOP --> S5["Step 5 — apply the approved edits"]
-    S5 --> S6["Step 6 — close out: re-run the linter, report"]
-```
+| Stage / Step | Details / Action | Next Step / Transition |
+|---|---|---|
+| `S0` | Step 0 — preflight + run the drift linter check_maps.py bare, from the workspace root | (terminal / end) |
+| `S05` | Step 0.5 — fan-out: the lobby + the maintained list inside a project: just that workspace | → Step 1 — regenerate the repo-map AUTO block mode-preserving |
+| `S1` | Step 1 — regenerate the repo-map AUTO block mode-preserving | → Step 2 — drift-check the CURATED block and the SessionStart hook's view |
+| `S2` | Step 2 — drift-check the CURATED block and the SessionStart hook's view | → Step 3 — audit each INDEX.md against reality 3.5 context hygiene · 3.6 open-tasks · 3.7 folder law 3.8 AGENTS/README pointers · 3.9 memory: NOT here |
+| `S3` | Step 3 — audit each INDEX.md against reality 3.5 context hygiene · 3.6 open-tasks · 3.7 folder law 3.8 AGENTS/README pointers · 3.9 memory: NOT here | → Step 4 — ONE findings report, grouped by workspace |
+| `S4` | Step 4 — ONE findings report, grouped by workspace | → STOP — the approval gate read-mostly until here, never commits |
+| `STOP` | STOP — the approval gate read-mostly until here, never commits | → Step 5 — apply the approved edits |
+| `S5` | Step 5 — apply the approved edits | → Step 6 — close out: re-run the linter, report |
+| `S6` | Step 6 — close out: re-run the linter, report | (terminal / end) |
+
 
 *[↑ back to Contents](#contents)*
 
