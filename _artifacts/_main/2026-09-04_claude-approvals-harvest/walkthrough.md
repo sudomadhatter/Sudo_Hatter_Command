@@ -311,7 +311,14 @@ Machine floor imported from the Evidence block above rather than re-run (`run_al
 
 ## Your Actions
 
-- [ ] **Which of the 17 machine-local rows should travel?** That is the harvest itself, and it is your
+- [x] **Which of the 17 machine-local rows should travel?** That is the harvest itself, and it is your
       call, not this lane's — run `/smh-llm-approvals` and name them. Two of them, `Bash(bash:*)` and
       `Bash(sh:*)`, permit any command at all; the door will stop and ask you out loud before either
       renders to both machines.
+      **Answered 2026-09-04 — the harvest ran and landed at `70154040`**, on the operator's word
+      quoted in that merge commit: *"ok lets push these files to main."* Eleven of the seventeen
+      travelled, plus the `code` row from the Antigravity store — twelve net rows in
+      `.claude/settings.json`. Six were refused by this repo's own law: four by deny rows (`gh:*`,
+      `env -u GITHUB_TOKEN gh:*`, `acli:*`, `chmod:*`), one by battery case A5 (`npx:*`), and bare
+      `python:*` by the one-interpreter law (SCC-376), which took the `allow-python` family with it.
+      Both blank-cheque rows were picked deliberately after the door stopped and asked.
