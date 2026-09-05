@@ -83,10 +83,10 @@ both shapes, and the suite reds on either:
   wired to something else is a green light with no wire behind it.
 
 **A probe you cannot write is a signal, not a problem.** Most memories are rulings, conventions and
-behavioural lessons; those take no probe and must not be given a decorative one. Five of 145 carry a
-probe today, and five true probes are worth more than fifty-nine that cannot fail.
+behavioural lessons; those take no probe and must not be given a decorative one. A small minority
+carry a probe today, and a handful of true probes are worth more than fifty-nine that cannot fail.
 
-Three further constraints, each of which has already cost something:
+Four further constraints, each of which has already cost something:
 
 1. **A probe OBSERVES.** It runs inside the suite, on every machine. Mutating and network shapes
    (`rm`, `mv`, `curl`, `>`, `git push`, `sudo`, …) are refused outright and reported as failures.
@@ -97,6 +97,16 @@ Three further constraints, each of which has already cost something:
    identity and shape. (`one-pc-windows-and-wsl` deliberately does not probe its behind-counts.)
 3. **Never echo a secret to prove it is set.** `${VAR:+SET}`, never `echo $VAR` — a bare echo puts
    the value in a transcript, a scrollback and a log, and it cannot be taken back out.
+4. **A probe is judged on the machine it describes — so the LOCAL suite run is the gate, not CI.**
+   A probe asserts something about *this* PC, and a GitHub runner is not it. Run there and the
+   answers are worthless in both directions: `grep -q microsoft-standard-WSL2 /proc/version` goes
+   **red** on a runner nobody claimed was this machine, while `test ! -e ~/.codex/prompts` goes
+   **green** because the runner has no `~/.codex` at all — a pass with no wire behind it, which is
+   the exact defect above. So `test_memory_store.py` executes the store's probes only off-CI, and
+   says so in a `[SKIP]` line naming the count. What CI *can* judge is text, and it does: every
+   probe must be falsifiable, anchored, and read-only. ⛔ **Consequence for you:** a probe that
+   passes CI has not been checked. Run `python3 .agents/scripts/memory_probe.py` on the machine
+   before you trust it.
 
 **A ruling or a preference needs no probe.** "Mr. Hatter chairs the board" is not measurable and
 must not be forced into a shell command. The probe is for claims about the world, not about judgment.

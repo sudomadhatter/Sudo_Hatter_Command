@@ -41,6 +41,7 @@ detector is alive.
 """
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -744,10 +745,37 @@ def main() -> int:
     # ── THE gate: the real store honors the contract it advertises ──
     c.check("real store exists where AGENTS.md routes every platform",
             (REAL_STORE / "MEMORY.md").is_file(), str(REAL_STORE))
-    _p, _f, _u = memory_probe.run_store(REAL_STORE, REPO_ROOT)
-    c.check(f"real store: every `probe:` still passes ({len(_p)} probed, {len(_u)} unprobed) - "
-            f"a failing one means the memory stopped being true",
-            _f == [], " | ".join(f"{n}: {d}" for n, d in _f[:3]))
+
+    # ⛔ A probe asserts something about THIS MACHINE, so only this machine can judge it. On a CI
+    # runner the store's probes answer a different question, and the answers are worthless in BOTH
+    # directions: `grep -q microsoft-standard-WSL2 /proc/version` goes RED on a runner nobody ever
+    # claimed was this PC, while `test ! -e ~/.codex/prompts` goes GREEN because the runner has no
+    # `~/.codex` at all - a pass for exactly the reason `is_anchored()` exists to refuse. Executing
+    # them there is not a stricter gate; it is a green light with no wire behind it, which is the
+    # defect this whole mechanism was built to remove (SCC-401 close-out, measured in CI run
+    # 33940983189: 3 red for the wrong reason, 5 green for the wrong reason).
+    # So execution is gated on the machine, and everything CI CAN honestly judge - falsifiability,
+    # anchoring, read-only-ness - is TEXT, and runs everywhere.
+    _scanned = [(n, cmds) for n, cmds, _ in memory_probe.scan_store(REAL_STORE) if cmds]
+    _n_probes = sum(len(cmds) for _, cmds in _scanned)
+    if os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"):
+        print(f"[SKIP] real store: {_n_probes} probe(s) across {len(_scanned)} memor(ies) NOT run - "
+              f"CI is not the machine they describe, so neither a pass nor a fail here would be "
+              f"evidence. They execute on every local `run_all.py`, which is that machine.")
+    else:
+        _p, _f, _u = memory_probe.run_store(REAL_STORE, REPO_ROOT)
+        c.check(f"real store: every `probe:` still passes ({len(_p)} probed, {len(_u)} unprobed) - "
+                f"a failing one means the memory stopped being true",
+                _f == [], " | ".join(f"{n}: {d}" for n, d in _f[:3]))
+
+    # ...and the half CI can judge, which nothing checked before. A probe is executed shell, so a
+    # mutating one is caught at RUN time - and the branch above just made "run time" conditional.
+    # Judged from text, this holds on every machine: the store cannot carry an `rm -rf` that only
+    # the operator's next local run would discover.
+    _mut = [(n, cmd) for n, cmds in _scanned for cmd in cmds if memory_probe.refuse_reason(cmd)]
+    c.check(f"real store: every `probe:` is READ-ONLY ({_n_probes} judged without running one) - "
+            f"the run-time refusal is too late to be the only gate",
+            _mut == [], " | ".join(f"{n}: {cmd}" for n, cmd in _mut[:3]))
     # ⛔ AND EVERY PROBE MUST BE ABLE TO FAIL. Without this the count above is a vanity metric:
     # the first cut of this mechanism shipped 59 probes of which 54 were `test -e <tracked path>`,
     # green forever in every checkout, five of them shared verbatim by unrelated memories. The
