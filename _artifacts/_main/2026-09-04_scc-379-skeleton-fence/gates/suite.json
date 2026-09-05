@@ -1,0 +1,21 @@
+{
+  "gate": "suite",
+  "story": "scc-379",
+  "result": "pass",
+  "exit_code": 0,
+  "sha": "99125543b4f6513bd833010e7bfad0dae2060df0",
+  "dirty_tree": true,
+  "dirty_paths": [
+    "Projects/sudo-project-skeleton",
+    "_artifacts/_main/2026-09-04_scc-379-skeleton-fence/walkthrough.md"
+  ],
+  "totals": null,
+  "command": [
+    "python3",
+    ".agents/scripts/tests/test_settings_allowlist.py"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/SCC-379-skeleton-fence",
+  "duration_s": 0.0,
+  "recorded_at": "2026-09-05T02:03:41+00:00",
+  "output_tail": "ity extension is NOT recommended: recs=['anthropic.claude-code', 'es6kr.claude-sessions', 'ZooCodeOrganization.zoo-code']\n[PASS] E1 $AllPlatforms names 'zoo': 'claude','opencode','antigravity','codex','zoo'\n[PASS] E2 .roomodes carries exactly the six team seats (SCC-350; ask is The Gnat, read-only, since SCC-361): slugs=['orchestrator', 'architect', 'code', 'designer', 'debug', 'ask']\n[PASS] E3 .roo/commands/ holds >= 10 GENERATED launchers: launchers=51 marked=51\n[PASS] E4 per-seat .roo/rules-<slug>/ dirs exist: missing=[]\n[PASS] E5 floor copies in .roo/rules/ are CURRENT with their masters: stale=[]\n[PASS] E6 the six persona masters declare zoo: missing=[]\n[PASS] E7 cicd-autopilot-opencode explicitly declares a zoo-free platform list: declared=['opencode']\n[PASS] E8 every zoo-eligible master has its .roo/commands/ door: eligible=51 missing=[]\n[PASS] E9 every GENERATED launcher points at a live, zoo-eligible brain: bad=[]\n[PASS] E10 every .roomodes entry targets a live team master and names the seat's character: bad=[]\n[PASS] F0 the three floor-rule masters exist: missing=[]\n[PASS] F1 CLAUDE.md imports the three floor rules via @path: missing=[]\n[PASS] F2 GEMINI.md imports the three floor rules via @path: missing=[]\n[PASS] F3 opencode.json instructions carries all three floor rules: missing=[]\n[PASS] F4 the LIVE code writes the Codex floor cache (~/.codex/AGENTS.md)\n[PASS] F5 Sync-ZooSurfaces is CALLED, not merely defined (dead pipeline = green artifacts)\n-- 29/29 passed --\n"
+}
