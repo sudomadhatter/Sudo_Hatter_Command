@@ -9,6 +9,9 @@
 #   - .agents/scripts/tests/test_rule_frontmatter.py: the tier-2 project rule audit scans ONLY these.
 #   - sync-agents.ps1 no longer reads it: the -Maintained vendor fan-out was RETIRED 2026-08-07
 #     (thin model, .agents/rules/project-law.md — projects carry no vendored toolkit to sync).
+# WHY these two and not the other seven: `docs/workspace-standard.md` §"The nine projects — what
+# each one IS" states the model this list implements — which submodule is a published mirror, which
+# is the new-project template, and which are separate projects on their own schedules.
 # Never hand-loop over Projects/* — that touches repos we deliberately do not keep current.
 # ⛔ SCC-399: the rule audit DID hand-loop, for two months, and the repo it hurt was
 #    Projects/sudo-command-center — the PUBLISHED TEACHING EDITION of this lobby, which ships 28

@@ -247,6 +247,30 @@ that pickup reads and pruning trims lives at `_bmad-output/active-context/active
 
 Formatting is one-time; upkeep is forever. Who does what, and when.
 
+### The nine projects — what each one IS
+
+Nine git submodules sit under `Projects/`, and until 2026-09-04 nothing said what they were. That gap
+had a cost: `test_rule_frontmatter.py` audited `sudo-command-center` — the **published teaching
+edition** — as if it were a thin project, failed three assertions on a shipped product, and held the
+suite floor red at 72/73 for every lane (SCC-399). A list with no stated model is a list anyone can
+misread.
+
+| Submodule | What it is | Kept current by | Audited by the lobby's suite? |
+|---|---|---|---|
+| `sudo-command-center` | the **published teaching edition** of this lobby — a sanitized export, never edited in place | `export-teaching-edition.ps1`, from the `claude/teaching-edition` branch | **no** — it is a mirror; its 28 rule files ship on purpose |
+| `sudo-project-skeleton` | the **new-project template** — what `/smh-new-project` seeds from | seeded from AviationChat's stack **by hand, never a blind copy** — AviationChat-specific rules must not propagate into a fresh project (Mr. Hatter's ruling, 2026-09-04) | **no** — it is a template |
+| `AGY_AVIATIONCHAT` | a maintained thin project (board `AVCH`) | its own story lanes | **yes** — listed in `.agents/maintained-projects.txt` |
+| `NEXgen-VR-Director` | a maintained thin project | its own story lanes | **yes** — listed in `.agents/maintained-projects.txt` |
+| `B-L-WorldWide` · `BRKN_Tattoos` · `NEXGen-Films` · `OpenChat-Openrouter` · `RAG_Pipeline_AC` | separate projects on their own schedules | themselves | **no** |
+
+**The rule this table states:** the lobby lints exactly the names in
+`.agents/maintained-projects.txt` and nothing else. A name is absent because the lobby does not
+drive that repo — **never** because nobody got to it. Never hand-loop over `Projects/*`; that reaches
+repos we deliberately do not keep current, and it is the exact bug SCC-399 fixed.
+
+`Fresh_Workspace_BMAD` was a tenth entry: the living template until 2026-08-07 (SCC-25), removed from
+git 2026-09-04 (SCC-403). `sudo-project-skeleton` holds that role now.
+
 ### Rules: one source, no forks
 - **Authored ONLY in `.agents/`.** Copies in `.claude/`, `.opencode/`, and per-project tool dirs are
   **vendored** by `/smh-sync-agents` — never hand-edit a copy; edit the master and re-sync.
@@ -256,7 +280,7 @@ Formatting is one-time; upkeep is forever. Who does what, and when.
   `.agents/INDEX.md` — is the two-tier contract in `.agents/rules/project-law.md`.
 - **BMAD skill overrides are the sanctioned per-repo exception:** `_bmad/custom/*.toml` customize installed
   BMAD skills per repo and survive skill updates — `/smh-sync-agents` never touches `_bmad/`. Keep the three
-  repos' sets identical by hand-copy (new projects inherit by cloning Fresh); personal tweaks go in
+  repos' sets identical by hand-copy (new projects inherit from `sudo-project-skeleton`); personal tweaks go in
   `*.user.toml` (gitignored), team law in the committed `*.toml`.
 
 ### Command sync & platform reach — one master, four platforms
