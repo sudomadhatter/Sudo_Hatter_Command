@@ -2,6 +2,7 @@
 name: writes-for-big-picture-operator
 description: "Sudo Hatter is a big-picture operator, not a hardcore dev — explain the machinery, never dumb down the system; consequence before mechanism."
 metadata: 
+  probe: "test -e .agents/skills/mermaid-diagram-standards/SKILL.md"
   node_type: memory
   type: user
   originSessionId: 188cc8d4-fd46-4a29-ada3-f8934ab750ee

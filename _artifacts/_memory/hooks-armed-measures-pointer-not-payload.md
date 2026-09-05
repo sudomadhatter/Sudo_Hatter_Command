@@ -2,6 +2,7 @@
 name: hooks-armed-measures-pointer-not-payload
 description: "hooks_armed.py reports ARMED for a repo whose .githooks holds zero gates — it checks core.hooksPath, never the directory contents."
 metadata: 
+  probe: "test -e .agents/scripts/git-hooks"
   node_type: memory
   type: project
   originSessionId: f4c376eb-04da-4a4f-a6bb-30d4b71f6d57

@@ -2,6 +2,7 @@
 name: map-drift-recorder
 description: "Commit-time recorder journals map/INDEX drift so the SessionStart nag + /update-maps-indexes (was /1_update-maps until 2026-07-14) arrive pre-scoped; machine-local cache, git-diff stays truth."
 metadata: 
+  probe: "test -e .githooks/post-commit"
   node_type: memory
   type: project
   originSessionId: 495d159d-0caa-4c24-a8cf-a403d4584edc

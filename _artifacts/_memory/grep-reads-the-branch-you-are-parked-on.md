@@ -2,6 +2,7 @@
 name: grep-reads-the-branch-you-are-parked-on
 description: "A repo checkout sitting on a stale branch reports stale file content to EVERY search tool, and no grep result names the commit it read — scope derived this way is fiction."
 metadata: 
+  probe: "test -e docs/migrations"
   node_type: memory
   type: reference
   originSessionId: 960c30f6-ee99-40cd-a99b-1a6860271651

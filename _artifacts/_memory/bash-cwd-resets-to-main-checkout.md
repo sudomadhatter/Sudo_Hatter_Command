@@ -2,6 +2,7 @@
 name: bash-cwd-resets-to-main-checkout
 description: "The Bash tool RESETS cwd to the primary working directory (the MAIN checkout) whenever a command cd's outside the workspace root — /tmp, the scratchpad, another repo. Every relative path afterwards silently reads MAIN instead of the worktree you are working in, and both files exist, so nothing errors."
 metadata:
+  probe: "test -e /tmp"
   node_type: memory
   type: feedback
 ---

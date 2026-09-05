@@ -10,9 +10,9 @@
     "edges": 750,
     "external": 35,
     "ambiguous": 172,
-    "dangling": 288,
+    "dangling": 289,
     "broken_paths": 61,
-    "unresolved_names": 227,
+    "unresolved_names": 228,
     "unresolvable": 9
   },
   "nodes": [
@@ -6256,6 +6256,10 @@
     {
       "from": ".agents/rules/agent-memory-is-long-term-only.md",
       "target": "MEMORY.md"
+    },
+    {
+      "from": ".agents/rules/agent-memory-is-long-term-only.md",
+      "target": "two-machines-mac-and-pc.md"
     },
     {
       "from": ".agents/rules/agent-memory-is-long-term-only.md",

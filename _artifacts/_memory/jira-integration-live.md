@@ -2,6 +2,7 @@
 name: jira-integration-live
 description: "Jira is LIVE for both repos as of 2026-08-07 — SCC (lobby) and AVCH (AviationChat). Every branch and commit carries a key; the commit-msg hook is ARMED (ENFORCE), so a keyless or wrong-project commit is rejected outright."
 metadata: 
+  probe: "test -e .agents/scripts/git-hooks/commit-msg-jira.sh"
   node_type: memory
   type: project
   originSessionId: 8bc78088-0a6e-4b75-b4eb-edc817c5fe79
@@ -37,7 +38,7 @@ on every commit and fail closed offline. A well-formed but wrong key is caught d
 never appears on any ticket's Development panel.
 
 **`acli` is the tool, not MCP.** `acli` 1.3.22, authenticated as `sudomadhatter@gmail.com`, token in
-the macOS keychain. One binary any model can shell out to — MCP would be per-tool config drifting
+the credential store that side has - `acli`'s own mode-600 `~/.config/acli/` inside Ubuntu. One binary any model can shell out to — MCP would be per-tool config drifting
 across all four platforms. Flag traps: `view` takes the key **positionally** (`--key` is only on
 `transition`); `project list` needs one of `--recent/--limit/--paginate`; it's `board search` and
 `board list-sprints --id N`, not `board list`; `comment create` needs `--key`; `transition` wants

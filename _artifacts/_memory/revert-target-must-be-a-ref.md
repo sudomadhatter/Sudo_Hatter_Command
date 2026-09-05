@@ -2,6 +2,7 @@
 name: revert-target-must-be-a-ref
 description: "Undoing work in a lane is a READ from a ref. `git checkout origin/main -- <path>` is safe under any later merge; `git checkout <sha> -- <path>` after absorbing main silently deletes whatever landed in between — no conflict, nothing red, and it rides onto main."
 metadata:
+  probe: "test -e .agents/rules/git-policy.md"
   node_type: memory
   type: feedback
 ---

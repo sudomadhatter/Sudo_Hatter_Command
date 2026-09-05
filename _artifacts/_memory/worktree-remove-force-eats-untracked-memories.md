@@ -2,6 +2,7 @@
 name: worktree-remove-force-eats-untracked-memories
 description: git worktree remove --force deletes UNTRACKED files reached through the worktree — a memory written this session but not yet committed is gone; write memories on the lane and commit them BEFORE the prune.
 metadata:
+  probe: "test -e _artifacts/_memory"
   type: project
 ---
 

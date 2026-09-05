@@ -2,6 +2,7 @@
 name: e2e-gate-fiction-test-guardrails
 description: AGY e2e CI gate was report-only forever hiding a fiction test + wrong-config CI; fixed the job to run the real journey harness and added a tests-must-gate-for-real rule + baked guards into ①②③. Propagation (sync + commit) still owed.
 metadata: 
+  probe: "test -e .agents/rules/tests-must-gate-for-real.md"
   node_type: memory
   type: project
   originSessionId: 6aaaddfd-6d07-4c62-9a38-782516e2742f

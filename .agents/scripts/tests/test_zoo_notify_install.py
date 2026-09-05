@@ -114,7 +114,7 @@ def test_mac_plist_never_points_at_a_virtualenv_interpreter():
 def test_mac_plist_carries_the_ntfy_topic_because_launchd_never_sources_zshrc():
     """⛔ NTFY_TOPIC lives in ~/.zshrc, which launchd does not read. It happens to equal the
     built-in default today, so the bug would be invisible until the operator changed the topic
-    and his phone quietly stopped receiving. [[zshrc-is-invisible-to-automation]]"""
+    and his phone quietly stopped receiving. [[interactive-startup-files-are-invisible-to-automation]]"""
     m = _mod()
     with tempfile.TemporaryDirectory() as d:
         p = m.build_plist(repo=ROOT, home=_home(Path(d)), platform="darwin", topic="a-test-topic")

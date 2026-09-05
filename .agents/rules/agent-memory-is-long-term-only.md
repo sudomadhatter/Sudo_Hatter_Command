@@ -40,6 +40,43 @@ categories earn a permanent home:
 3. **Standing rulings**: durable architectural, testing, or workflow decisions that govern future
    lanes and projects.
 
+## A Measurable Memory Carries Its Own Falsifier (`probe:`)
+
+Long-term is not the same as **permanently true**. `two-machines-mac-and-pc.md` was confirmed by
+Mr. Hatter on 2026-08-08, went false when SCC-376 moved the working environment into WSL2 on
+2026-09-02, and stayed loaded and trusted for two more days while an agent used it to tell him four
+wrong things in one afternoon. Nothing in the suite could tell a memory that is still true from one
+that stopped being true — age and shape cannot separate them.
+
+**The law.** A memory whose claim is *measurable* — it names an absolute or `~/` path, a binary, a
+version, or a tool's behaviour — **must** carry a `probe:` line in its frontmatter:
+
+```yaml
+metadata:
+  probe: "test -d /mnt/c/Sudo_Hatter_Command"
+```
+
+A plain shell command. **Exit 0 means the claim still holds.** No DSL: the probe IS the command you
+would type to check by hand, which is the only form that stays honest — an author who cannot type it
+cannot write it. `.agents/scripts/memory_probe.py` runs every probe, `test_memory_store.py` goes
+**red and names the file** when one fails, and `/smh-memory-audit` lists path-naming memories with
+no probe as candidates.
+
+Three constraints, each of which has already cost something:
+
+1. **A probe OBSERVES.** It runs inside the suite, on every machine. Mutating and network shapes
+   (`rm`, `mv`, `curl`, `>`, `git push`, `sudo`, …) are refused outright and reported as failures.
+   A probe that writes is a bug in the memory, not a test to skip.
+2. **Probe what is STABLE, not what is true today.** A commit count, a file count or a timestamp
+   changes on its own and would red the suite for a reason no author can fix — and a gate that cries
+   wolf is one people learn to skip, which is the disease this exists to cure. Probe existence,
+   identity and shape. (`one-pc-windows-and-wsl` deliberately does not probe its behind-counts.)
+3. **Never echo a secret to prove it is set.** `${VAR:+SET}`, never `echo $VAR` — a bare echo puts
+   the value in a transcript, a scrollback and a log, and it cannot be taken back out.
+
+**A ruling or a preference needs no probe.** "Mr. Hatter chairs the board" is not measurable and
+must not be forced into a shell command. The probe is for claims about the world, not about judgment.
+
 ## What Never Qualifies (Prohibited in Memory)
 
 The following must **never** be saved to agent memory:

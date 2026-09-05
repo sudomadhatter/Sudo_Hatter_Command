@@ -2,6 +2,7 @@
 name: cross-repo-work-needs-a-ticket-per-repo
 description: "One piece of work spanning the lobby and a project needs TWO tickets — each repo's armed commit-msg gate answers only to its own Jira project, and widening jira.conf is ruled out in writing."
 metadata: 
+  probe: "test -e .agents/jira.conf"
   node_type: memory
   type: project
   originSessionId: f3e01c24-9b74-4562-ba18-4cc66697fffd

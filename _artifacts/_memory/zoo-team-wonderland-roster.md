@@ -2,6 +2,7 @@
 name: zoo-team-wonderland-roster
 description: "Zoo Code team design — March Hare is the lead/orchestrator; emoji + regular-case name + ALL-CAPS role; SIX seats override five built-in slugs + one custom (ask = The Gnat, read-only LIBRARIAN); review is the operator's model-switch gate — no seat writes a Verdict."
 metadata: 
+  probe: "test -e docs/_scc_sops_prds/workflows_testing_SOP.md"
   node_type: memory
   type: project
   originSessionId: e6749d54-4e2f-4b6e-8a95-6db65f065496

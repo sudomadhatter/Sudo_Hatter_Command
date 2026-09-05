@@ -2,6 +2,7 @@
 name: relocated-doc-links-are-mispathed-not-dead
 description: "A broken relative link in a doc that was copied into a project usually means MIS-PATHED, not deleted — the target is still in the lobby."
 metadata: 
+  probe: "test -e docs/_scc_sops_prds"
   node_type: memory
   type: feedback
   originSessionId: 188cc8d4-fd46-4a29-ada3-f8934ab750ee

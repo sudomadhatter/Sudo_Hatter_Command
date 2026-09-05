@@ -2,6 +2,7 @@
 name: powershell-console-fakes-mojibake
 description: PS 5.1 Get-Content renders perfectly good UTF-8 as mojibake — never diagnose encoding from terminal output
 metadata: 
+  probe: "test -e .agents/scripts/workflow_lint.py"
   node_type: memory
   type: feedback
   originSessionId: d9adc5bc-e814-4396-b913-62eac264ecce

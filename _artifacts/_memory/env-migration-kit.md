@@ -2,6 +2,7 @@
 name: env-migration-kit
 description: "Machine-migration kit lives in docs/migrations/ (moved there 2026-08-11 from _my_resources/migrations/, SCC-89) — master.env bundle + scripts + new_machine-migration-guide.md (secrets) + python_vytest-updates-other-machines.md (venv rebuild + vitest lock notes, its §5 companion; renamed from python-311-test-infra-other-machines.md)"
 metadata: 
+  probe: "test -e docs/migrations/scripts"
   node_type: memory
   type: project
   originSessionId: 2878ccd7-de5c-40d1-89a3-f9cb34a15cc0

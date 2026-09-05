@@ -2,6 +2,7 @@
 name: sop-doc-currency-gate
 description: "Since 2026-08-08 an ARMED commit-msg gate rejects any change to a usage surface (.agents/commands|rules|scripts, git-hooks, .githooks, root AGENTS.md) that does not also stage docs/_scc_sops_prds/workflows_testing_SOP.md. `[sop-ok]` in the message is the logged opt-out."
 metadata: 
+  probe: "test -e docs/_scc_sops_prds/workflows_testing_SOP.md"
   node_type: memory
   type: feedback
   originSessionId: ea1c7963-b655-4c4b-861f-0b832da17b1e

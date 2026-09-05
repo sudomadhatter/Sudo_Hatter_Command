@@ -2,6 +2,7 @@
 name: rule-org-single-source-audit
 description: "Cross-project rule-org audit (2026-07-06). Lobby+AGY+Fresh clean & on single-source model, karpathy §5 added to all 3. AGY_JETCHAT + RAG_Pipeline_AC are the real rules-in-.claude offenders (still unfixed)."
 metadata: 
+  probe: "test -e .agents/rules"
   node_type: memory
   type: project
   originSessionId: fc8bbc7d-1589-4ba3-ab1c-aa8a1f4b77e3

@@ -1,7 +1,8 @@
 ---
 name: jira-attachments-need-the-rest-token
-description: "acli cannot attach files (list/delete only) — uploading to a ticket is REST + the API token in keychain item `sudo-jira`; storing that token has two silent-corruption traps"
+description: "acli cannot attach files (list/delete only) — uploading to a ticket is REST + the API token in credential-store item `sudo-jira`; storing that token has two silent-corruption traps"
 metadata:
+  probe: "test -e docs/migrations/install_guides/jira-api-token-setup.md"
   type: reference
 ---
 
@@ -23,7 +24,7 @@ interactive `security add-generic-password -w` with no value truncates at **exac
 means copying it, which replaces the token on the clipboard. Use the shell's own `read -rs` (no
 length limit) and print `${#T}` — a complete token is ~190 chars.
 
-Full procedure, both machines: `docs/migrations/install_guides/jira-api-token-setup.md` (SCC-294).
+Full procedure, either side: `docs/migrations/install_guides/jira-api-token-setup.md` (SCC-294).
 The token page's `Last accessed` column is the diagnostic — `Never Accessed` proves a token has
 never reached Jira, and it identifies WHICH token a machine uses when several exist.
 Related: [[jira-integration-live]] · [[one-pc-windows-and-wsl]] · [[env-migration-kit]]

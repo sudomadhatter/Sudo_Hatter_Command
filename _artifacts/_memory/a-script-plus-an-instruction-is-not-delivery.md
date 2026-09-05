@@ -23,7 +23,7 @@ same lane. Ship a `*_install.py` beside the script (SCC-355's fix: launchd `RunA
 `KeepAlive` on the Mac, a `pythonw` Startup `.cmd` on the PC) and prove it live: `launchctl list`
 plus the agent's own log, not "the operator will run it." Three traps that only appear on a real
 install, all of them silent: launchd sources **no** shell profile (so `NTFY_TOPIC` from `~/.zshrc`
-is gone — [[zshrc-is-invisible-to-automation]]), its default `PATH` cannot see `/opt/homebrew/bin`
+is gone — [[interactive-startup-files-are-invisible-to-automation]]), its default `PATH` cannot see `/opt/homebrew/bin`
 (so a Homebrew notifier half-works — push lands, banner dies), and Python **block-buffers stdout
 when it is not a TTY** (so the log you would check is empty, which is indistinguishable from never
 started). Related: [[hooks-armed-measures-pointer-not-payload]] — the same disease, a pointer

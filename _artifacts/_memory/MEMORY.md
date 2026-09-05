@@ -41,7 +41,7 @@ Settled project-only facts live in the project's own store (SCC-73). Working in 
 
 ## Git, machines & worktrees
 - [git merge wedges Next dev](git-merge-wedges-next-dev-tailwind.md) — merge under npm run dev wedges Tailwind.
-- **Per-machine, never travels** — [env migration kit](env-migration-kit.md) (clone first) · [`.zshrc` invisible to automation](zshrc-is-invisible-to-automation.md) (use ~/.zshenv).
+- **Per-machine, never travels** — [env migration kit](env-migration-kit.md) (clone first) · [interactive-only startup files are invisible to automation](interactive-startup-files-are-invisible-to-automation.md) (`~/.bashrc` here; use `~/.profile` + `bash -lc`).
 - [Commit and push are ONE action](commit-and-push-are-one-action.md) — verify 0 0 + clean per repo.
 - [⛔ Backticks in `-m "…"` EXECUTE](commit-message-backticks-execute.md) — use -F <file>.
 - [⭐ Git branch model + the main gate](git-branch-model-standard.md) — main only via /cicd-push-e2e or /smh-close-task-merge-tree token.
@@ -59,7 +59,7 @@ Settled project-only facts live in the project's own store (SCC-73). Working in 
 - [GitHub 408 on satellite wifi](github-408-on-satellite-uplink.md) — chunk via scratch refs or wait.
 
 ## Testing
-- **A green or a red can lie** — [⭐⛔ a red FILE may have run NOTHING](suite-red-file-may-have-run-nothing.md) (per-file tally) · [red can die pre-assertion](red-test-can-die-before-its-assertion.md) · [stubbed children = vacuous green](stubbed-children-make-green-vacuous.md) · [piped gate hides exit code](piping-a-gate-hides-its-exit-code.md) (run bare) · [zsh doesn't word-split gate args](zsh-does-not-word-split-gate-args.md) · [`echo` truncates at `\c`](echo-truncates-at-backslash-c.md) · [⛔ the Mac's `grep` may be ugrep](grep-on-the-mac-is-ugrep.md) (launch-context dependent; `-qv` INVERTED on ugrep — count, never `-q`).
+- **A green or a red can lie** — [⭐⛔ a red FILE may have run NOTHING](suite-red-file-may-have-run-nothing.md) (per-file tally) · [red can die pre-assertion](red-test-can-die-before-its-assertion.md) · [stubbed children = vacuous green](stubbed-children-make-green-vacuous.md) · [piped gate hides exit code](piping-a-gate-hides-its-exit-code.md) (run bare) · [zsh doesn't word-split gate args](zsh-does-not-word-split-gate-args.md) · [`echo` truncates at `\c`](echo-truncates-at-backslash-c.md) · [⛔ `grep` HERE is ugrep](grep-here-is-ugrep-qv-inverts.md) (live on this box; `-qv` is INVERTED — count, never `-q` with `-v`).
 - [⭐⛔ Per-function tests miss REQUEST-ORDER defects](per-function-tests-miss-request-order-defects.md) — green suite, dead feature; buy a seam test that drives the real doors in order.
 - **Source-grep guards are blind FOUR ways** — [comments invert them](comment-literals-invert-source-grep-tests.md) · [cannot see order](source-grep-guards-cannot-see-order.md) · [prose-pinning is vacuous](prose-pinning-guards-are-vacuous.md) (fail mutants first) · [⛔ a result-filter doesn't protect the WALK](rglob-sweeps-must-prune-the-walk.md) (rglob still walks .venv; Windows dies on torch's long paths — prune with os.walk).
 - **Toolchain pins** — [rules tests need Java](firestore-rules-tests-need-java.md) (JAVA_HOME in ~/.zshenv) · [Node 26 breaks vitest jsdom storage](node-26-breaks-vitest-jsdom-storage.md) (run Node 22 LTS).
@@ -100,7 +100,7 @@ Settled project-only facts live in the project's own store (SCC-73). Working in 
 - [⭐ Memory is EVERY platform's, on every machine](memory-store-is-read-by-every-platform.md) — AGENTS.md §7; memory audit due at 90%.
 - **Local plumbing** — [⛔ ARMED ≠ gated](hooks-armed-measures-pointer-not-payload.md) (checks core.hooksPath, not the payload) · [hooks live in .githooks](git-hooks-live-in-githooks-not-git-hooks.md) · [memory lives in repo](portable-memory-store-dot-slug-trap.md) (_artifacts/_memory/ + junction) · [PS console fakes mojibake](powershell-console-fakes-mojibake.md) (check bytes) · [PS `,@()` unrolls ONCE](powershell-comma-array-wrapper-unrolls-once.md).
 - [⛔ Sandbox denies `.claude/hooks` + `.claude/skills`](sandbox-denies-writes-under-dot-claude-hooks-skills.md) — breaks merge/checkout; blocks /smh-sync-agents in-session.
-- [Claude notifications: Mac + phone](claude-notifications-mac-and-phone.md) — array schema; ntfy mac-sudo-command.
+- [Claude notifications: hook schema + ntfy](claude-notifications-hook-schema-and-ntfy.md) — a plain-string hook value is SILENTLY ignored; ntfy topic `mac-sudo-command` is a legacy name, still live.
 - [⛔ Hook background work gets SIGTERM ~15 ms after the hook exits](hook-background-work-gets-sigterm.md) — `curl &` dies; use `( trap '' TERM; … ) &` (SCC-376).
 
 ## Autopilot

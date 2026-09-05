@@ -30,7 +30,7 @@ locate a Java Runtime"* right next to a working JDK; point at it explicitly:
 
 ⛔ **Do NOT set it "per shell" here.** That advice is Windows-shaped and produces a
 pass-by-hand/fail-in-automation split on macOS. JAVA_HOME belongs in **`~/.zshenv`** — `~/.zshrc` is
-interactive-only, so agents, hooks and `zsh -c` never see it ([[zshrc-is-invisible-to-automation]]).
+interactive-only, so agents, hooks and `zsh -c` never see it ([[interactive-startup-files-are-invisible-to-automation]]).
 Also required, and separate from the frontend's install: `(cd firebase/tests && npm install)` — the
 backend emulator tier and the TEA-16 E2E journeys both resolve `firebase-tools` out of that same
 directory, so all three suites die together when it is missing. Verified on the Mac: **70 pass / 0

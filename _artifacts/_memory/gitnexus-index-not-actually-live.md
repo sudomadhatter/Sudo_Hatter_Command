@@ -2,6 +2,7 @@
 name: gitnexus-index-not-actually-live
 description: "⛔ RETIRED 2026-08 (SCC-272..288). GitNexus is GONE — replaced by code-review-graph, which is PROJECTS-ONLY (SCC-288): AGY_AVIATIONCHAT has it, the command centre deliberately does not. Do not call impact()/context()/detect_changes() via gitnexus; there is no server and no index. The ~1.1 GB of leftover .gitnexus/ caches was deleted 2026-08-25. Transferable lesson kept: a code index AND its MCP registration are BOTH per-machine, and the registration is the half that fails silently."
 metadata:
+  probe: "test -e docs/code-review-graph.md"
   type: project
 ---
 

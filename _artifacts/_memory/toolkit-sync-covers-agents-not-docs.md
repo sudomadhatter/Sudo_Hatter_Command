@@ -2,6 +2,7 @@
 name: toolkit-sync-covers-agents-not-docs
 description: Toolkit-wide edits — master .agents/ auto-syncs to every project + command surface (edit master only); docs/ is NOT synced and must be edited per-project.
 metadata: 
+  probe: "test -e .agents/scripts/sync-agents.ps1"
   node_type: memory
   type: project
   originSessionId: bf3140de-d49f-4344-905c-7f15c7a243fd

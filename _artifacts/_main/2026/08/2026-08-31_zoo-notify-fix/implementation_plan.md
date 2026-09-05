@@ -20,7 +20,7 @@ working"*. Follow-on inside the same key, no new ticket ([[followon-fixes-are-no
 | Zoo exposes no event hook to subscribe to | guide §6.1, SCC-355's own probe: 19 settings keys, 20 commands, none an event | ✅ settled — polling is the only design |
 
 **The banner's on-screen appearance is still unconfirmed** and stays an operator checkbox: a Work
-Focus swallows it while the run reports `sent` ([[claude-notifications-mac-and-phone]]).
+Focus swallows it while the run reports `sent` ([[claude-notifications-hook-schema-and-ntfy]]).
 
 ---
 
@@ -32,7 +32,7 @@ Focus swallows it while the run reports `sent` ([[claude-notifications-mac-and-p
 | A2 | The fix changes **no** verdict that was already right: a `say` still streaming stays silent, an auto-approved ask stays silent, an answered ask stays silent, `completion_result` still means turn-end | the existing 38-test battery green, unchanged, plus one test asserting all four |
 | A3 | Both thread fixtures are **real redacted captures** from the live store, not hand-built stubs — the ask fixture's tail carries `partial: True` and the file holds >50 messages | a test asserting both properties of the fixture files themselves |
 | A4 | The watcher starts itself on login and is restarted if it dies — it is no longer something the operator must remember to run | `zoo_notify_install.py --status` reports the agent loaded; `launchctl list` names it |
-| A5 | A launchd-started watcher resolves the right ntfy topic even though `launchd` never sources `~/.zshrc` | a test that the generated plist carries `NTFY_TOPIC` in `EnvironmentVariables` ([[zshrc-is-invisible-to-automation]]) |
+| A5 | A launchd-started watcher resolves the right ntfy topic even though `launchd` never sources `~/.zshrc` | a test that the generated plist carries `NTFY_TOPIC` in `EnvironmentVariables` ([[interactive-startup-files-are-invisible-to-automation]]) |
 | A6 | An ask **already pending** when the watcher starts still pages — the reboot case, which `KeepAlive` makes routine rather than exotic | a test that priming stays silent for a stale thread but pages for a fresh unanswered ask |
 | A7 | The PC has a shipped, tracked install artifact and a documented step (it cannot be executed from this Mac) | the installer's `--status` renders the Windows branch under a forced platform; operator checkbox for the live run |
 | A8 | The docs say "install the agent", not "run the command", everywhere the old step appears | `sop_currency.py` passes with the SOP staged (no `[sop-ok]`); `check_links` clean; `.agents/scripts/INDEX.md` names both scripts |

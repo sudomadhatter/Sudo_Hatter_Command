@@ -2,6 +2,7 @@
 name: bmad-wrappers-are-opencode-only-bridges
 description: "BMAD command wrappers (testarch-*, bmad personas) should be platforms:[opencode] — Claude/Antigravity get the bmad-* skill natively; opencode has no native skills so the wrapper is its only bridge."
 metadata: 
+  probe: "test -e .agents/commands"
   node_type: memory
   type: project
   originSessionId: 9bdcb3af-df06-4250-b3ba-1a751b5531ac

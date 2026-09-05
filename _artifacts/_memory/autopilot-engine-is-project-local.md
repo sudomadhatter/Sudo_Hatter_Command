@@ -2,6 +2,7 @@
 name: autopilot-engine-is-project-local
 description: "The autopilot-dev-story.ps1 gate engine is maintained per-project (copies have diverged); sync-agents never propagates scripts/. The lobby (\"main\") holds only the spec doc."
 metadata: 
+  probe: "test -e docs/_scc_sops_prds/autopilot_bmad_dev_loop.md"
   node_type: memory
   type: project
   originSessionId: 82caeb9d-cf7a-4ce4-8471-9efb9c2f6c9a

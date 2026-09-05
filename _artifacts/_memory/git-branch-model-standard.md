@@ -2,6 +2,7 @@
 name: git-branch-model-standard
 description: "The dev branch standard — main is the ONLY long-lived branch and the only destination; the prefix names the work (claude/ story, chore/ task, epic/ integration). TWO commands reach main (/cicd-push-e2e, /smh-close-task-merge-tree) and since SCC-77 a pre-push hook enforces it. The epic branch is optional scaffolding, NOT a universal step."
 metadata:
+  probe: "test -e .githooks/pre-push"
   node_type: memory
   type: feedback
   originSessionId: 7cbf0af7-f318-47fc-85c4-cb46222b1d60

@@ -55,6 +55,10 @@ import check_maps  # noqa: E402  (must follow the _harness path insert)
 # the post-move git hooks can call them at the moment of damage - one implementation, two
 # callers (this file was their only home, and a checker locked inside a test file runs never).
 from memory_store_check import EXEMPT, INDEX_CAP, check_store, index_text  # noqa: E402,F401
+# SCC-401: a memory that asserts something checkable carries its own falsifier as a `probe:` line.
+# The runner lives in its own script so it is callable by hand (`memory_probe.py`) and from here -
+# a checker that only exists inside a test file is one nobody runs while debugging.
+import memory_probe  # noqa: E402
 
 TRIGGER_PCT = 0.90          # audit is DUE here — below the cap, on purpose (see module docstring)
 BODY_SOFT_CAP = 4 * 1024    # a memory this long is usually narrative that wants compressing
@@ -321,6 +325,16 @@ def audit_signals(store: Path, repo: Path | None = None) -> list[str]:
     if closed:
         out.append(f"{len(closed)} index row(s) marked {'/'.join(CLOSED_MARKS[:3])} - closed "
                    f"work whose lesson may compress to one line (or retire outright)")
+
+    # SCC-401. A memory naming an absolute or `~/` path is claiming something about one machine's
+    # disk, and that is exactly the claim that goes false without anyone noticing. A CANDIDATE,
+    # never a red: turning 76 files red in one shot would train everyone to skip this gate, which
+    # is the disease this whole file exists to cure.
+    unprobed_paths = [n for n, why in memory_probe.run_store(store, Path("."))[2] if why]
+    if unprobed_paths:
+        out.append(f"{len(unprobed_paths)} memor(ies) name an absolute or ~/ path and carry no "
+                   f"`probe:` - the claim cannot go red when it stops being true "
+                   f"(e.g. {', '.join(sorted(unprobed_paths)[:3])})")
 
     names = {p.stem for p in store.glob("*.md")} - {Path(e).stem for e in EXEMPT}
     dangling: set[str] = set()
@@ -698,9 +712,42 @@ def main() -> int:
     c.check("the audit block names Phase 2 as the remedy once the levers are spent",
             "SCC-73 Phase 2" in audit_block(REAL_STORE), "")
 
+    # ── SCC-401: a memory proves itself, and the prover can actually FAIL ──
+    # Both directions, on fixtures, before the real store is trusted: a deliberately FALSE probe
+    # must go red AND NAME THE FILE, and a true one must stay quiet. Without the false-probe
+    # control this whole mechanism could be a no-op and the real store would still read green -
+    # verbatim the [[suite-red-file-may-have-run-nothing]] failure it is here to prevent.
+    with TempDir() as d:
+        s = Path(d) / "memory"
+        write(s, "MEMORY.md", "# Index\n- [true](t.md) - x\n- [false](f.md) - x\n")
+        write(s, "t.md", '---\nname: t\ndescription: d\nmetadata:\n  probe: "true"\n---\n\nx\n')
+        write(s, "f.md", '---\nname: f\ndescription: d\nmetadata:\n  probe: "test -e no_such_path_scc401"\n---\n\nx\n')
+        passed, failed, _ = memory_probe.run_store(s, Path(d))
+        c.check("CONTROL: a deliberately FALSE probe fails, and the failure NAMES the file",
+                [n for n, _ in failed] == ["f.md"], f"failed={failed}")
+        c.check("CONTROL: ...while a true probe in the same store stays green",
+                [n for n, _ in passed] == ["t.md"], f"passed={passed}")
+
+        # A probe is executed shell. The guard that keeps that safe must itself be provable, or it
+        # is decoration. The first cut refused a CORRECT probe because `\bsudo\b` matched the ntfy
+        # topic `mac-sudo-command` - so both directions are pinned here.
+        write(s, "MEMORY.md", "# Index\n- [w](w.md) - x\n")
+        (s / "t.md").unlink(); (s / "f.md").unlink()
+        write(s, "w.md", '---\nname: w\ndescription: d\nmetadata:\n  probe: "rm -rf /tmp/x"\n---\n\nx\n')
+        _, failed, _ = memory_probe.run_store(s, Path(d))
+        c.check("CONTROL: a probe that WRITES is refused, not run",
+                len(failed) == 1 and "not read-only" in failed[0][1], f"{failed}")
+        c.check("CONTROL: ...and a hyphenated identifier is NOT mistaken for a command "
+                "(`mac-sudo-command` is a topic name, not `sudo`)",
+                memory_probe.refuse_reason("grep -q 'mac-sudo-command' f.py") is None, "")
+
     # ── THE gate: the real store honors the contract it advertises ──
     c.check("real store exists where AGENTS.md routes every platform",
             (REAL_STORE / "MEMORY.md").is_file(), str(REAL_STORE))
+    _p, _f, _u = memory_probe.run_store(REAL_STORE, REPO_ROOT)
+    c.check(f"real store: every `probe:` still passes ({len(_p)} probed, {len(_u)} unprobed) - "
+            f"a failing one means the memory stopped being true",
+            _f == [], " | ".join(f"{n}: {d}" for n, d in _f[:3]))
     got = check_store(REAL_STORE)
     c.check("real store: index <= 25KB, links resolve, no orphans, frontmatter present",
             got == [], " | ".join(got[:4]))

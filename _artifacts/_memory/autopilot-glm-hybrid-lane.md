@@ -2,6 +2,7 @@
 name: autopilot-glm-hybrid-lane
 description: /autopilot_glm = the hybrid autopilot; same engine as /autopilot_claude but Dev lane (stages 1+3) runs GLM 5.2 to save Claude tokens.
 metadata: 
+  probe: "test -e .agents/commands"
   node_type: memory
   type: project
   originSessionId: 56204375-03db-4672-8b92-85ad32bbea51

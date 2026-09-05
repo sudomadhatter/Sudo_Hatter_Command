@@ -240,7 +240,7 @@ def banner_cmd(payload: dict, platform: str | None = None) -> list[str] | None:
 
     Mac uses terminal-notifier, the same binary Claude's notify.sh uses — and the same Focus-mode
     caveat applies: a Work Focus swallows the banner while everything still exits 0, so a silent
-    Mac is not proof the notifier failed. [[claude-notifications-mac-and-phone]]
+    Mac is not proof the notifier failed. [[claude-notifications-hook-schema-and-ntfy]]
 
     ⛔ The PC branch CONSTRUCTS AND SHOWS a toast. The first cut loaded the WinRT type, threw it
     away through `Out-Null`, and then `Write-Output`-ed the text into a pipe `send()` captures —

@@ -2,6 +2,7 @@
 name: windows-authored-code-hides-posix-bugs
 description: "This toolkit was authored on Windows, so Windows-only assumptions sat green for months and only failed on the Mac — chmod semantics, hardcoded C:/ discovery paths, ';' PATH separators, $env:USERPROFILE, robocopy, a path-separator mismatch that DELETED ~570 vendored files per project, bare `python` in ~29 DOC lines when only `python3` exists here, and the TRACKED git exec bit (100644 vs 100755) leaving 4 scripts/hooks silently inert on the Mac. Eight found 2026-08-06/08 and 2026-08-27; three printed SUCCESS while failing and one skipped hooks with only a hint."
 metadata: 
+  probe: "test -e .agents/scripts/tests/test_story_status.py"
   node_type: memory
   type: project
   originSessionId: ea1c7963-b655-4c4b-861f-0b832da17b1e
@@ -53,7 +54,7 @@ run had already printed success lines**, so the sync looked like it worked (2026
 
 **A SEVENTH, in the DOCS rather than the code (2026-08-08)** — and it is the longest-lived:
 
-7. **Bare `python` does not exist on this Mac** — not in automation, not in a login shell
+7. **Bare `python` does not exist on the POSIX side** — not in automation, not in a login shell
    (`zsh -lic 'which python'` → not found). Only `python3` resolves. **~29 `.md` lines across
    `.agents/`, `docs/`, and `_my_resources/_quick_reference/` still instruct the reader to run
    `python .agents/scripts/…`** — every one is a broken instruction on the machine it is read on.
@@ -104,5 +105,5 @@ success messages. **And treat every documented command as code**: paste it into 
 writing it down — a doc line is the one "call site" no test ever executes.
 **Audit for it with `git ls-files -s .githooks/ scripts/`** whenever you land on a new POSIX
 machine — every shebanged file should read `100755`.
-Related: [[zshrc-is-invisible-to-automation]], [[powershell-console-fakes-mojibake]],
+Related: [[interactive-startup-files-are-invisible-to-automation]], [[powershell-console-fakes-mojibake]],
 [[sop-doc-currency-gate]].

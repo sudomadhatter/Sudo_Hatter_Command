@@ -2,6 +2,7 @@
 name: parallel-ok-is-a-set-property
 description: "`parallel-ok` is a property of a SET at a moment, never of one story — so ① Step 1.6 cannot rule it (the siblings don't exist yet). Operator ruled 2026-08-09: it moves out of ① into an on-request parent-scoped pass. SCC-155 renamed that pass and gave it a Task-lane twin: /cicd-label-tasks (BMAD stories) and /smh-label-tasks (Subtasks), which now stamp quick-dev too. blocked STAYS in ①."
 metadata: 
+  probe: "test -e .agents/scripts/label_tasks.py"
   node_type: memory
   type: project
   originSessionId: 58bf5a3c-75d2-4401-ab8f-a7bcaa3b2740

@@ -2,6 +2,7 @@
 name: a-defer-needs-a-structural-blocker
 description: "A deferral is only legal with a STRUCTURAL blocker (another live lane owns the file / fix is in another repo / an open operator decision). Never a blocker: 'I'd have to edit a file.' Before deferring on a dilemma, look for the third door."
 metadata:
+  probe: "test -e .agents/rules/jira.md"
   type: feedback
 ---
 

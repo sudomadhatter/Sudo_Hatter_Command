@@ -2,6 +2,7 @@
 name: nag-the-agent-dont-rewrite-the-rule
 description: "When an agent keeps deviating from a rule, add a PostToolUse nag that points it back at the rule file — never another copy of the rule in another place. Restating law in a fifth location changes nothing; a message injected at the moment of the mistake does."
 metadata:
+  probe: "test -e .agents/hooks/guard-cwd-escape.py"
   node_type: memory
   type: feedback
   originSessionId: ba4e43b2-b8f7-48f3-b17a-23f1396a6d8b

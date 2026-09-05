@@ -196,14 +196,14 @@ Rows A–H are the acceptance table above.
 - EDIT `_artifacts/_memory/antigravity-uses-workflows-not-commands.md` — IDE→CLI; sides named; probes → C
 - EDIT `_artifacts/_memory/a-script-plus-an-instruction-is-not-delivery.md` — triage → C
 - EDIT `_artifacts/_memory/budget-is-a-live-constraint-announce-spend.md` — triage → C
-- EDIT `_artifacts/_memory/claude-notifications-mac-and-phone.md` — triage; likely DELETE → C
+- EDIT `_artifacts/_memory/claude-notifications-hook-schema-and-ntfy.md` — triage; likely DELETE → C
 - EDIT `_artifacts/_memory/codex-is-fourth-platform.md` — triage → C
 - EDIT `_artifacts/_memory/firestore-rules-tests-need-java.md` — triage → C
 - EDIT `_artifacts/_memory/git-branch-model-standard.md` — triage → C
 - EDIT `_artifacts/_memory/git-hooks-live-in-githooks-not-git-hooks.md` — triage → C
 - EDIT `_artifacts/_memory/github-408-on-satellite-uplink.md` — triage → C
 - EDIT `_artifacts/_memory/gitnexus-index-not-actually-live.md` — triage → C
-- EDIT `_artifacts/_memory/grep-on-the-mac-is-ugrep.md` — triage; likely DELETE → C
+- EDIT `_artifacts/_memory/grep-here-is-ugrep-qv-inverts.md` — triage; likely DELETE → C
 - EDIT `_artifacts/_memory/hook-background-work-gets-sigterm.md` — triage → C
 - EDIT `_artifacts/_memory/hooks-armed-measures-pointer-not-payload.md` — triage → C
 - EDIT `_artifacts/_memory/jira-attachments-need-the-rest-token.md` — triage → C
@@ -219,7 +219,7 @@ Rows A–H are the acceptance table above.
 - EDIT `_artifacts/_memory/windows-authored-code-hides-posix-bugs.md` — triage; stays true for one PC with two sides → C
 - EDIT `_artifacts/_memory/zoo-code-replaces-roo-code.md` — triage → C
 - EDIT `_artifacts/_memory/zsh-does-not-word-split-gate-args.md` — triage; likely DELETE → C
-- EDIT `_artifacts/_memory/zshrc-is-invisible-to-automation.md` — triage; likely DELETE → C
+- EDIT `_artifacts/_memory/interactive-startup-files-are-invisible-to-automation.md` — triage; likely DELETE → C
 - EDIT `.agents/rules/agent-memory-is-long-term-only.md` — "macOS vs Windows vs WSL" → one PC, two sides → D
 - EDIT `.agents/rules/git-policy.md` — sweep → D
 - EDIT `.agents/rules/port-checklist.md` — sweep → D

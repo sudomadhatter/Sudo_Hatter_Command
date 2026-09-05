@@ -2,6 +2,7 @@
 name: sandbox-denies-writes-under-dot-claude-hooks-skills
 description: The OS sandbox refuses every write under .claude/hooks/ and .claude/skills/ at any depth, so git merge and /smh-sync-agents fail in-session.
 metadata:
+  probe: "test -e .agents/hooks"
   type: project
 ---
 

@@ -2,6 +2,7 @@
 name: memory-store-is-read-by-every-platform
 description: "SCC-65: root AGENTS.md §7 routes EVERY model on EVERY machine to `_artifacts/_memory/MEMORY.md` at session start — READ-ONLY outside the sanctioned write flows. 25 KB index cap gated in run_all; the gate itself raises MEMORY AUDIT DUE at 90% and the agent must ask (SCC-68)."
 metadata:
+  probe: "test -e _artifacts/_memory"
   type: project
 ---
 
@@ -9,7 +10,7 @@ Since 2026-08-09 (SCC-65) the memory store is **every platform's** memory, route
 `AGENTS.md` §7 — not just Claude's:
 
 - **The repo path is canonical**: `_artifacts/_memory/`. It travels via git, so it is identical on
-  both machines and readable by Codex, opencode, and Antigravity. Claude's `~/.claude/...` path is
+  both sides and readable by Codex, opencode, and Antigravity. Claude's `~/.claude/...` path is
   a per-machine symlink *into* it — a convenience, never the mechanism
   ([[portable-memory-store-dot-slug-trap]], [[one-pc-windows-and-wsl]]).
 - **Every session, every platform: read `MEMORY.md` first**, then open the full files relevant to

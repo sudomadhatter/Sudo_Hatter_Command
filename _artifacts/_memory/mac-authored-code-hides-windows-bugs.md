@@ -1,15 +1,18 @@
 ---
 name: mac-authored-code-hides-windows-bugs
-description: "The MIRROR of windows-authored-code-hides-posix-bugs: the enforcement suite was written on the Mac, so 18/61 files were red on the PC and EIGHT live defects sat in shipped code — every cd refused, a gate that never judged, a sweep that left live mutants. The rule: fork BEHAVIOUR, converge DATA — and gate every separator rewrite to Windows."
+description: "The MIRROR of windows-authored-code-hides-posix-bugs: the enforcement suite was authored POSIX-side, so 18/61 files were red on Windows and EIGHT live defects sat in shipped code — every cd refused, a gate that never judged, a sweep that left live mutants. The rule: fork BEHAVIOUR, converge DATA — and gate every separator rewrite to Windows."
 metadata: 
+  probe: "test -e .agents/scripts/tests"
   node_type: memory
   type: project
   originSessionId: b93ad8ff-4583-4d2c-96b3-58f746f45e90
   modified: 2026-08-25T18:31:32.886Z
 ---
 
-`.agents/scripts/tests/` was authored on the Mac and the PC never drove it, so nothing forced the
-portability question. SCC-321 (2026-08-25) took it from **43/61 to 61/61** on Windows. This is the
+`.agents/scripts/tests/` was authored POSIX-side and the Windows side never drove it, so nothing
+forced the portability question. (Written when that POSIX side was a Mac; it is now the Ubuntu
+side of this one PC — [[one-pc-windows-and-wsl]]. The Windows facts below are unchanged and still
+live, because the Windows side is still here.) SCC-321 (2026-08-25) took it from **43/61 to 61/61** on Windows. This is the
 mirror of [[windows-authored-code-hides-posix-bugs]] and the classes are completely different.
 
 **The two root causes that explained most of it — neither was in my first triage:**
