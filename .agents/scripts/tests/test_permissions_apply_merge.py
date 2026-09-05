@@ -115,6 +115,19 @@ def test_C2_status_still_reports_DRIFT_when_a_TRACKED_row_is_missing():
 
 # --- Zoo, end to end through the real apply() against a temp sqlite store ----------------------
 
+def test_C3_ZOO_status_also_reads_a_kept_click_as_IN_SYNC():
+    """SCC-413 parity: the Antigravity side got this and Zoo did not, so a kept click still read
+    DRIFT on Zoo - the same 'healthy store looks broken' signal that invites a destructive prune."""
+    assert ZOO.diff_counts(["a", "b", CLICKED], ["a", "b"]).startswith("in sync")
+    assert "store-only" in ZOO.diff_counts(["a", CLICKED], ["a"])
+
+
+def test_C4_ZOO_status_still_reports_DRIFT_on_a_MISSING_tracked_row():
+    """CONTROL for C3 - the check must still be able to fail."""
+    got = ZOO.diff_counts(["a"], ["a", "b"])
+    assert got.startswith("DRIFT") and "1 tracked entries missing" in got, got
+
+
 def _zoo_db(td: Path) -> Path:
     db = td / "state.vscdb"
     con = sqlite3.connect(db)

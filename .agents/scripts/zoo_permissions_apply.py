@@ -119,10 +119,20 @@ def vscode_running() -> bool:
 
 
 def diff_counts(state: list[str], tracked: list[str]) -> str:
+    """⛔ SCC-413: "in sync" means every TRACKED row is PRESENT - not that the two match exactly.
+
+    Store-only rows are the operator's own clicked approvals, kept on purpose by the merge in
+    apply(). Reporting them as DRIFT is what made a healthy store look broken, and a store that
+    looks broken invites the destructive `--prune` that deleted 58 of his grants on the Antigravity
+    twin (measured 2026-09-05). Only a MISSING tracked row is drift; a kept click is named and
+    counted, never flagged.
+    """
     s, t = set(state), set(tracked)
-    if s == t:
-        return "in sync with tracked file"
-    return f"DRIFT: {len(t - s)} tracked entries missing from store, {len(s - t)} store-only entries"
+    missing, extra = t - s, s - t
+    if not missing:
+        return "in sync with tracked file" + (
+            f" ({len(extra)} store-only row(s) kept - your own approvals)" if extra else "")
+    return f"DRIFT: {len(missing)} tracked entries missing from store, {len(extra)} store-only entries"
 
 
 def report(db: Path, memento: dict, allow: list[str], deny: list[str]) -> None:
