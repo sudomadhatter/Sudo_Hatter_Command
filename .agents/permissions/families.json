@@ -2494,6 +2494,51 @@
       "only": [
         "antigravity"
       ]
+    },
+    {
+      "id": "deny-env-chdir",
+      "cmd": "env -C",
+      "why": "SCC-410 (cycle 10): `env -C <dir> <cmd>` and `env --chdir=<dir> <cmd>` run the command somewhere else entirely and nothing downstream sees the flag, so the wrapper launders a destructive command past a fence written for the bare one. Measured 2026-09-04 on this base: the wrapper read `ask` on all three platforms, and PR #165 shipped a single `Bash(env -C:*)` allow row that auto-approved `env -C <dir> rm -rf /` through a fully green battery. DENY-side only - it can never grant. Claude renders nothing here: it carries no deny list at all, and battery A3 is its guard. Both spellings and both flag shapes (`-C /tmp`, `-C/tmp`, `--chdir /tmp`, `--chdir=/tmp`) plus the env -u twin, the absolute-path spellings (`/usr/bin/env`, `/bin/env`) and the single-env `env -u GITHUB_TOKEN -C` form; the `cd <abs> && ` house twins are added by the render pass. ⚠ TWO DOCUMENTED RESIDUALS (code review 2026-09-04), both grammar limits rather than oversights, and both landing on `ask` (the operator still decides) rather than on a silent allow. (1) ORDERING: an arbitrary option before the flag (`env -i -C /tmp ...`, `env FOO=1 -C /tmp ...`) is not expressible as a finite row set on either platform, because Zoo matches a literal prefix and Antigravity matches per token by position. (2) CLUSTERING, Zoo only: `env -iC /tmp ...` is a legal getopt cluster and runs (verified on coreutils 9.4). Antigravity DOES cover it - the token regex is the renderer's own cluster class `-[a-zA-Z]*C.*` - but Zoo's literal prefixes cannot express it, so it is not in the battery's DESTRUCTIVE list: A2 demands BOTH platforms deny, and listing an inexpressible spelling would red the battery over a grammar limit. Same class as the arbitrary-quoting residual the guide records for `git push origin \"main`. Every spelling this family DOES claim has a twin in the battery's DESTRUCTIVE list, so none of it is unfalsifiable.",
+      "render": {
+        "zoo": [
+          "env -C",
+          "env --chdir",
+          "env -u GITHUB_TOKEN env -C",
+          "env -u GITHUB_TOKEN env --chdir",
+          "env -u GITHUB_TOKEN -C",
+          "env -u GITHUB_TOKEN --chdir",
+          "/usr/bin/env -C",
+          "/usr/bin/env --chdir",
+          "/bin/env -C",
+          "/bin/env --chdir"
+        ],
+        "antigravity": [
+          "command(env -[a-zA-Z]*C.*)",
+          "unsandboxed(env -[a-zA-Z]*C.*)",
+          "command(env --chdir.*)",
+          "unsandboxed(env --chdir.*)",
+          "command(env -u GITHUB_TOKEN env -[a-zA-Z]*C.*)",
+          "unsandboxed(env -u GITHUB_TOKEN env -[a-zA-Z]*C.*)",
+          "command(env -u GITHUB_TOKEN env --chdir.*)",
+          "unsandboxed(env -u GITHUB_TOKEN env --chdir.*)",
+          "command(env -u GITHUB_TOKEN -[a-zA-Z]*C.*)",
+          "unsandboxed(env -u GITHUB_TOKEN -[a-zA-Z]*C.*)",
+          "command(env -u GITHUB_TOKEN --chdir.*)",
+          "unsandboxed(env -u GITHUB_TOKEN --chdir.*)",
+          "command(/usr/bin/env -[a-zA-Z]*C.*)",
+          "unsandboxed(/usr/bin/env -[a-zA-Z]*C.*)",
+          "command(/usr/bin/env --chdir.*)",
+          "unsandboxed(/usr/bin/env --chdir.*)",
+          "command(/bin/env -[a-zA-Z]*C.*)",
+          "unsandboxed(/bin/env -[a-zA-Z]*C.*)",
+          "command(/bin/env --chdir.*)",
+          "unsandboxed(/bin/env --chdir.*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
     }
   ]
 }
