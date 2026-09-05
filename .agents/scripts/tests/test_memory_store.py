@@ -330,7 +330,7 @@ def audit_signals(store: Path, repo: Path | None = None) -> list[str]:
     # disk, and that is exactly the claim that goes false without anyone noticing. A CANDIDATE,
     # never a red: turning 76 files red in one shot would train everyone to skip this gate, which
     # is the disease this whole file exists to cure.
-    unprobed_paths = [n for n, cmd, pathy in memory_probe.scan_store(store) if cmd is None and pathy]
+    unprobed_paths = [n for n, cmd, pathy in memory_probe.scan_store(store) if not cmd and pathy]
     if unprobed_paths:
         out.append(f"{len(unprobed_paths)} memor(ies) name an absolute or ~/ path and carry no "
                    f"`probe:` - the claim cannot go red when it stops being true "

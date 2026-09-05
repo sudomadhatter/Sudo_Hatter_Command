@@ -1,7 +1,8 @@
 ---
 name: antigravity-uses-workflows-not-commands
-description: Antigravity (Gemini) surfaces / via SKILLS (.agents/skills/) - the same launcher skill Claude and Codex read. Workflows are deprecated and retire 2026-11-01; .agents/workflows/ and the global_workflows machine cache are gone. ONE PC with two sides: Ubuntu-in-WSL runs the Antigravity CLI, the Windows side runs the IDE, and each has its own workflow cache.
+description: Antigravity (Gemini) surfaces / via SKILLS (.agents/skills/) - the same launcher skill Claude and Codex read. Workflows are deprecated and retire 2026-11-01; .agents/workflows/ and the global_workflows machine cache are gone. ONE PC with two sides: Ubuntu-in-WSL runs the Antigravity CLI, the Windows side runs the IDE; before the 2026-11-01 retirement each side had its own workflow cache, and both are now purged.
 metadata:
+  probe: 'test -z "$(ls -A ~/.gemini/antigravity/global_workflows 2>/dev/null)"'
   type: reference
   originSessionId: 315ab028-3603-4a16-812f-e70b12b06a2f
   modified: 2026-09-04T00:00:00.000Z

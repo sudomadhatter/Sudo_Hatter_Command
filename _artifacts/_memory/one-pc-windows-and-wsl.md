@@ -4,7 +4,11 @@ description: "There is ONE PC — Windows, with Ubuntu inside WSL2 — not two m
 metadata:
   node_type: memory
   type: project
-  probe: "grep -q microsoft-standard-WSL2 /proc/version"
+  probe: 'grep -q microsoft-standard-WSL2 /proc/version'
+  probe: 'test -x /usr/bin/pwsh'
+  probe: 'test -x /usr/bin/python3 && test ! -e /usr/bin/python'
+  probe: 'ls ~/.gemini/bin/agy && test ! -d ~/.gemini/antigravity-ide'
+  probe: 'test -d /mnt/c/Sudo_Hatter_Command'
   modified: 2026-09-04
 ---
 
@@ -30,7 +34,13 @@ Mr. Hatter in one afternoon. This file replaces it. Superseded: `two-machines-ma
 `python` vs `python3` is still a real difference and still costs cycles — but for **this** reason,
 two environments on one box, not two machines. Never delete that distinction while sweeping.
 
-    ls ~/.gemini/bin/agy && test ! -d ~/.gemini/antigravity-ide   # CLI here, IDE is not
+    test -x /usr/bin/pwsh                                        # pwsh IS on the Ubuntu side
+    test -x /usr/bin/python3 && test ! -e /usr/bin/python        # python3 here, no bare python
+    ls ~/.gemini/bin/agy && test ! -d ~/.gemini/antigravity-ide  # CLI here, IDE is not
+
+**Each of those is a `probe:` on this file, not just a line to read.** Five facts, five falsifiers:
+the kernel, `/usr/bin/pwsh`, the `python`/`python3` asymmetry, the Antigravity CLI-not-IDE split,
+and the Windows checkout below. The suite runs all five and names the one that fails.
 
 ## Three checkouts of this repo — only one is live
 

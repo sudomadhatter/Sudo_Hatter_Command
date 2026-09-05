@@ -1,7 +1,8 @@
 ---
 name: firestore-rules-tests-need-java
 description: "The tea-12 Firestore rules emulator suite runs GREEN (61/61) but needs Java on PATH; Java 17 is installed here (Temurin) — set JAVA_HOME per shell since the silent MSI didn't add it to PATH."
-metadata: 
+metadata:
+  probe: 'java -version' 
   node_type: memory
   type: project
   originSessionId: dc0bca70-54bb-4ac4-9a98-2a93ffae6a1e

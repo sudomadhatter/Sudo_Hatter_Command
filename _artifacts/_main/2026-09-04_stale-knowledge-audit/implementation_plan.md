@@ -170,11 +170,11 @@ the tests now implement.
 | Row | Done means | Evidence |
 |---|---|---|
 | A | `test_rule_frontmatter.py` audits exactly the projects in `maintained-projects.txt`; a control project off the list with a tier-1 copy does not fire | 23/23; `run_all.py` 73/73 |
-| B | one machine memory, every fact with a passing probe; "why the Windows clone is kept" answered with evidence; Zoo's clone confirmed or recorded as absent | `memory_probe.py` rows for the file, all PASS |
-| C | zero memories assert a Mac; every memory naming a path carries a probe; the runner is in the suite and red on a failing probe (proven by a deliberately false probe in a fixture) | `memory_probe.py` exit 0; the fixture test red then green |
+| B | one machine memory, **every checkable fact carrying its own passing probe**; "why the Windows clone is kept" answered with evidence; Zoo's clone confirmed or recorded as absent | `memory_probe.py` rows for the file, all PASS |
+| C | zero memories assert a Mac; **every memory whose claim is measurable carries a probe THAT CAN FAIL**; the runner is in the suite and reds both on a failing probe **and on a probe that cannot fail** (each proven by its own fixture) | `memory_probe.py` exit 0 with 0 weak; both fixture controls red then green |
 | D | zero rules/commands/docs say "Mac", "two machines" or "keychain" except as dated history | the F11 greps return only lines carrying a date marker |
 | E | `Fresh_Workspace_BMAD` absent from `.gitmodules`, the index, `.git/modules/` and disk; no live script names it | `git ls-files -s Projects/ \| grep -c 160000` → 9 |
-| F | the project table exists and `maintained-projects.txt` points at it | `check_links` clean on the new anchors |
+| F | the project table exists and `maintained-projects.txt` points at it | a suite assertion tying the allowlist header to the live section heading |
 | G | SCC-394 restamped **PASS** on a green floor with the corrected rows | its walkthrough `Verdict: PASS @ <sha>` |
 | H | suite receipts green in both lanes; `workflow_lint`, `check_maps --strict`, `check_links` unchanged or better | `gates/suite.json` in each lane |
 
@@ -265,7 +265,29 @@ Rows A–H are the acceptance table above.
 - EDIT `docs/workspace-standard.md` — the project table → F
 - EDIT `docs/repo-map.md` — regenerated → H
 
-### Amendment, 2026-09-04 (at `/smh-code-review` Step 2)
+### Acceptance amendment, 2026-09-04 (at `/smh-code-review`, on Mr. Hatter's call to close at PASS)
+
+Rows **B**, **C** and **F** above are amended, and each amendment makes the row **harder**, never
+looser. The review measured that all three were unsatisfiable *as written* for reasons that were
+defects in the wording, not gaps in the work:
+
+- **B** said *"every fact with a passing probe"* while `probe_of` returned only the FIRST probe in a
+  memory's frontmatter — so a memory could never carry more than one falsifier, and the machine
+  model's other four facts sat in the body as commands nothing ran. Fixed at the mechanism:
+  `probes_of()` reads every `probe:` line and the runner reports one numbered row per probe. The
+  machine model now carries **five**, one per checkable fact, and the two facts that are counts
+  (commits-behind, transcript hits) stay deliberately unprobed for the reason §B already gave.
+- **C** said *"every memory naming a path carries a probe"*. The review proved that goal produces
+  the exact defect this ticket exists to kill — 54 decorative probes that could not fail — and that
+  the "37 path-naming memories" figure was itself a measurement error, `names_a_path` counting
+  slash-commands, REST routes and slash-joined prose as filesystem paths. The row now demands what
+  actually protects the operator: a probe **that can fail**, enforced by `weak_probes()`, with the
+  suite red on either bad shape. Rulings correctly carry none.
+- **F**'s evidence line named `check_links` on "the new anchors" — but `maintained-projects.txt` is
+  a `.txt` that refers to the section in prose, so zero anchors existed and the check ran on nothing.
+  Replaced with an assertion that actually holds the two files together.
+
+### Change-set amendment, 2026-09-04 (at `/smh-code-review` Step 2)
 
 The block above was written before the work. Reconciled against the real diff, with the difference
 named rather than quietly absorbed:

@@ -4,7 +4,7 @@
 machine. Its denylist is the only thing standing between "a memory carries its own falsifier" and
 "the suite runs whatever the last author typed". Until this file existed the whole module was
 covered by four `c.check` calls inside `test_memory_store.py`, and the review measured what that
-bought: shrinking `_BANNED_CMDS` to `("rm",)`, deleting BOTH redirection rules, making `probe_of`
+bought: shrinking `_BANNED_CMDS` to `("rm",)`, deleting BOTH redirection rules, making `probes_of`
 read the entire file instead of the frontmatter, and ignoring `run_one`'s timeout each left the
 suite at `-- 51/51 passed --`.
 
@@ -136,29 +136,45 @@ def main() -> int:
         c.check("P1d CONTROL: the table is not vacuous - REFUSE and ALLOW are both populated",
                 len(REFUSE) >= 50 and len(ALLOW) >= 15, f"{len(REFUSE)}/{len(ALLOW)}")
 
-    if c.block("SCC-401 P2 · probe_of - the frontmatter boundary is the safety property"):
+    if c.block("SCC-401 P2 · probes_of - the frontmatter boundary is the safety property"):
         c.check("P2a a probe in the frontmatter is read",
-                mp.probe_of('---\nname: x\nmetadata:\n  probe: "true"\n---\n\nbody\n') == "true", "")
+                mp.probes_of('---\nname: x\nmetadata:\n  probe: "true"\n---\n\nbody\n') == ["true"], "")
         c.check("P2b quotes are stripped, single or double",
-                mp.probe_of("---\nprobe: 'test -e x'\n---\n\nb\n") == "test -e x", "")
+                mp.probes_of("---\nprobe: 'test -e x'\n---\n\nb\n") == ["test -e x"], "")
         c.check("P2c an unquoted value is read as written",
-                mp.probe_of("---\nprobe: test -e x\n---\n\nb\n") == "test -e x", "")
+                mp.probes_of("---\nprobe: test -e x\n---\n\nb\n") == ["test -e x"], "")
         # ⛔ THE ONE THAT MATTERS: `probe:` is documented in README.md and in the memory rule, so
         # memories WILL quote it in prose. Reading the body would execute a documentation example.
         c.check("P2d ⛔ `probe:` in the BODY is never executed",
-                mp.probe_of('---\nname: x\n---\n\nSee `probe: rm -rf /` in the rule.\n') is None,
+                mp.probes_of('---\nname: x\n---\n\nSee `probe: rm -rf /` in the rule.\n') == [],
                 "a documentation example became a command")
         c.check("P2e a file with no frontmatter yields nothing",
-                mp.probe_of("no frontmatter here\nprobe: rm -rf /\n") is None, "")
+                mp.probes_of("no frontmatter here\nprobe: rm -rf /\n") == [], "")
         c.check("P2f an UNTERMINATED frontmatter block yields nothing",
-                mp.probe_of('---\nprobe: "rm -rf /"\n') is None,
+                mp.probes_of('---\nprobe: "rm -rf /"\n') == [],
                 "a half-written file must not be trusted as frontmatter")
         c.check("P2g an empty probe value is None, not an empty command",
-                mp.probe_of('---\nprobe: ""\n---\n\nb\n') is None, "")
+                mp.probes_of('---\nprobe: ""\n---\n\nb\n') == [], "")
+
+        # ⛔ A memory may carry SEVERAL falsifiers - the machine model states five checkable facts
+        # and the first cut could only ever run one of them (SCC-401 review).
+        c.check("P2h ⛔ every `probe:` in the frontmatter is read, in order - not just the first",
+                mp.probes_of("---\nprobe: 'true'\nname: x\nprobe: 'test -e /tmp'\n---\n\nb\n")
+                == ["true", "test -e /tmp"], "")
 
     if c.block("SCC-401 P3 · names_a_path - what makes a MISSING probe an audit candidate"):
-        c.check("P3a an absolute path in the body is a path claim",
-                mp.names_a_path("---\nname: x\n---\n\nlives at /mnt/c/Sudo_Hatter_Command\n"), "")
+        c.check("P3a a path written AS CODE is a path claim",
+                mp.names_a_path("---\nname: x\n---\n\nlives at `/mnt/c/Sudo_Hatter_Command`\n"), "")
+        # ⛔ The two false-positive classes measured on the real store (SCC-401 review): a slash in
+        # PROSE is not a path, and a REST route is not a disk path. 35 of 37 "candidates" were these.
+        c.check("P3g ⛔ slashes BETWEEN code spans are prose, not a path",
+                not mp.names_a_path("---\nname: x\n---\n\n`AdminScope`/JWT/`scoped_user_query` bind it\n"),
+                "prose read as a filesystem path")
+        c.check("P3h ⛔ a REST route is not a disk path",
+                not mp.names_a_path("---\nname: x\n---\n\nit needs `PUT /rest/api/3/issue/{key}`\n"),
+                "a URL route read as a filesystem path")
+        c.check("P3i CONTROL: ...while a real path claim in the same file still counts",
+                mp.names_a_path("---\nname: x\n---\n\nthe token lives in `~/.config/acli/`\n"), "")
         c.check("P3b a `~/` path is too",
                 mp.names_a_path("---\nname: x\n---\n\nthe cache is `~/.gemini/config`\n"), "")
         c.check("P3c prose naming no path is NOT a candidate",
@@ -196,7 +212,7 @@ def main() -> int:
             memo(store, "t", probe="true")
             memo(store, "f", probe="exit 1")
             memo(store, "w", probe="rm -rf /tmp/x")
-            memo(store, "pathy", body="it lives at /mnt/c/Sudo_Hatter_Command")
+            memo(store, "pathy", body="it lives at `/mnt/c/Sudo_Hatter_Command`")
             memo(store, "prosey", body="prefer prose to bullets")
             (store / "MEMORY.md").write_text("- index\n", encoding="utf-8")
             (store / "README.md").write_text("- rules\n", encoding="utf-8")
@@ -275,23 +291,23 @@ def main() -> int:
         with TempDir() as d:
             store = Path(d) / "_memory"
             memo(store, "p", probe="exit 1")
-            memo(store, "pathy", body="it lives at /mnt/c/Sudo_Hatter_Command")
+            memo(store, "pathy", body="it lives at `/mnt/c/Sudo_Hatter_Command`")
             memo(store, "prosey", body="prefer prose to bullets")
             rows = mp.scan_store(store)
-            c.check("P8a it returns (name, probe, names_a_path) for every memory",
-                    sorted(rows) == [("p.md", "exit 1", False),
-                                     ("pathy.md", None, True),
-                                     ("prosey.md", None, False)], str(sorted(rows)))
+            c.check("P8a it returns (name, probes, names_a_path) for every memory",
+                    sorted(rows) == [("p.md", ["exit 1"], False),
+                                     ("pathy.md", [], True),
+                                     ("prosey.md", [], False)], str(sorted(rows)))
             # A false probe would have FAILED had anything executed it; nothing did.
             c.check("P8b CONTROL: the false probe is reported, not run - scan_store executes none",
-                    rows[0][1] == "exit 1", str(rows))
+                    rows[0][1] == ["exit 1"], str(rows))
 
     if c.block("SCC-401 P9 · the YAML quoting trap this file was written to stop repeating"):
-        # ⛔ probe_of strips outer quotes; it does NOT unescape YAML. A double-quoted scalar with
+        # ⛔ probes_of strips outer quotes; it does NOT unescape YAML. A double-quoted scalar with
         # \" inside reaches bash with literal backslashes and fails for a reason no author can
         # see in the output. Write a probe containing quotes in SINGLE quotes. Measured SCC-401.
-        dq = mp.probe_of('---\nprobe: "test \\"$(command -v grep)\\" = /usr/bin/grep"\n---\n\nb\n')
-        sq = mp.probe_of("---\nprobe: 'test \"$(command -v grep)\" = /usr/bin/grep'\n---\n\nb\n")
+        dq = mp.probes_of('---\nprobe: "test \\"$(command -v grep)\\" = /usr/bin/grep"\n---\n\nb\n')[0]
+        sq = mp.probes_of("---\nprobe: 'test \"$(command -v grep)\" = /usr/bin/grep'\n---\n\nb\n")[0]
         c.check("P9a a SINGLE-quoted probe survives intact",
                 sq == 'test "$(command -v grep)" = /usr/bin/grep', repr(sq))
         c.check("P9b ⛔ a double-quoted probe keeps its backslashes - write quotes in single quotes",

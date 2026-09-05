@@ -88,9 +88,11 @@ _BANNED_RE = [
     # them: `find … -delete`, `find … -exec rm`, `sed -i`, `perl -pi -e` (SCC-401 review).
     (re.compile(r"\b(find\b[^;&|]*\s-(?:delete|exec)\b)"), 1),
     (re.compile(r"\b((?:sed|perl|ruby)\s+(?:-\w*\s+)*-\w*i\w*)(?=\s|$)"), 1),
-    # ⛔ ANY redirect that writes. `2>&1` duplicates an fd and is the ONE shape spared; the first
-    # cut spared EVERY numbered fd, so `echo x 1> /tmp/f` was accepted (SCC-401 review).
-    (re.compile(r"(>>?)(?![&=])"), 1),
+    # ⛔ ANY redirect that writes A FILE. Two shapes are spared and no others: `2>&1` duplicates
+    # an fd, and `> /dev/null` discards - neither leaves a byte anywhere. The first cut spared
+    # EVERY numbered fd (so `echo x 1> /tmp/f` was accepted) and spared NOTHING for the null
+    # device, which refuses the `2>/dev/null` every author types (SCC-401 review).
+    (re.compile(r"(>>?)(?![&=])(?!\s*/dev/null\b)"), 1),
 ]
 
 # ⛔ The redirect scan runs on the string with QUOTED SPANS BLANKED. Without that there is no legal
@@ -117,16 +119,22 @@ def refuse_reason(cmd: str) -> str | None:
     return None
 
 
-def probe_of(text: str) -> str | None:
-    """The `probe:` value from the frontmatter, or None.
+def probes_of(text: str) -> list[str]:
+    """EVERY `probe:` value in the frontmatter, in order. Empty list when there is none.
 
     Read only inside the leading `---` block, so the word `probe:` in a body (this file is quoted
-    in the memory rule, and rules get quoted into memories) is never mistaken for a directive."""
+    in the memory rule, and rules get quoted into memories) is never mistaken for a directive.
+
+    ⛔ A MEMORY MAY CARRY MORE THAN ONE (SCC-401 review). The first cut returned on the first match,
+    which silently capped every memory at one falsifier - and the machine model states five separate
+    checkable facts, four of which then sat in the body as commands nothing ever ran. A memory is
+    allowed as many probes as it has measurable claims; repeat the key."""
     if not text.startswith("---"):
-        return None
+        return []
     end = text.find("\n---", 3)
     if end == -1:
-        return None
+        return []
+    out = []
     for line in text[3:end].splitlines():
         m = re.match(r'\s*probe:\s*(.+?)\s*$', line)
         if not m:
@@ -134,18 +142,44 @@ def probe_of(text: str) -> str | None:
         val = m.group(1)
         if len(val) >= 2 and val[0] == val[-1] and val[0] in "\"'":
             val = val[1:-1]
-        return val or None
-    return None
+        if val:
+            out.append(val)
+    return out
+
+
+# A path a memory CLAIMS is written as code. Prose that merely contains slashes is not a claim.
+_CODE_SPAN = re.compile(r"`([^`\n]+)`")
+_PATHLIKE = re.compile(r"(?:^|[\s(])(~/[\w.~-]|/[\w.~-]+/)")
+_HTTP_VERB = re.compile(r"^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s", re.I)
 
 
 def names_a_path(text: str) -> bool:
-    """The body asserts an absolute or `~/` path — the class that rots silently.
+    """The body CLAIMS an absolute or `~/` path — the class that rots silently.
 
     This is what makes a MISSING probe worth flagging as an audit candidate: a memory naming
     `/mnt/c/...` or `~/.gemini/...` is making a claim about one machine's disk, and that is
-    exactly the claim that goes false without anyone noticing."""
+    exactly the claim that goes false without anyone noticing.
+
+    ⛔ CLAIMED, not merely MENTIONED - and the difference is the whole accuracy of the signal
+    (SCC-401 review). The first cut scanned raw body text, so `/cicd-close-story-merge-tree`
+    counted as a filesystem path and 35 of 37 "candidates" named no path at all. A 90%-noise
+    advisory is the cry-wolf gate this module exists to avoid, and the cheapest way to clear a
+    false flag is to bolt on a probe that cannot fail - which is how the 54 got written.
+
+    Two rules, each with a measured false positive behind it:
+      * the path must sit INSIDE a code span - a memory writes a path it is claiming as code.
+        `AdminScope`/JWT/`scoped_user_query` and `run.py`/loader/judge/report are prose whose
+        slashes fall BETWEEN spans, not paths.
+      * a span opening with an HTTP verb is a ROUTE, not a disk path: `PUT /rest/api/3/issue/{key}`
+        makes no claim about this machine.
+    """
     body = text.split("\n---", 1)[-1] if text.startswith("---") else text
-    return re.search(r"[`\s(](~/[\w.~-]|/[\w.~-]+/)", body) is not None
+    for span in _CODE_SPAN.findall(body):
+        if _HTTP_VERB.match(span):
+            continue
+        if _PATHLIKE.search(span):
+            return True
+    return False
 
 
 # Shell words that carry no subject - a probe made only of these observes nothing in particular.
@@ -233,8 +267,8 @@ def run_one(cmd: str, cwd: Path, timeout: int = DEFAULT_TIMEOUT) -> tuple[bool, 
 NO_SHELL = "no-shell"          # an `unprobed` reason, NOT a failure - see run_store
 
 
-def scan_store(store: Path) -> list[tuple[str, str | None, bool]]:
-    """(name, probe_or_None, names_a_path) for every memory. Reads text; runs NOTHING.
+def scan_store(store: Path) -> list[tuple[str, list[str], bool]]:
+    """(name, probes, names_a_path) for every memory. Reads text; runs NOTHING.
 
     The audit signal only ever needed this. It used to call `run_store` and throw away both result
     lists, which executed every probe a second time - at the invoker's cwd rather than the repo
@@ -244,7 +278,7 @@ def scan_store(store: Path) -> list[tuple[str, str | None, bool]]:
         if p.name in EXEMPT:
             continue
         text = p.read_text(encoding="utf-8", errors="replace")
-        out.append((p.name, probe_of(text), names_a_path(text)))
+        out.append((p.name, probes_of(text), names_a_path(text)))
     return out
 
 
@@ -255,15 +289,13 @@ def weak_probes(store: Path, cwd: Path) -> list[tuple[str, str]]:
         if p.name in EXEMPT:
             continue
         text = p.read_text(encoding="utf-8", errors="replace")
-        cmd = probe_of(text)
-        if cmd is None:
-            continue
-        why = cannot_fail(cmd, cwd)
-        if why is None and not is_anchored(text, cmd):
-            why = (f"`{cmd}` names nothing this memory's body names - a falsifier has to be wired "
-                   f"to the claim it falsifies")
-        if why:
-            weak.append((p.name, why))
+        for cmd in probes_of(text):
+            why = cannot_fail(cmd, cwd)
+            if why is None and not is_anchored(text, cmd):
+                why = (f"`{cmd}` names nothing this memory's body names - a falsifier has to be "
+                       f"wired to the claim it falsifies")
+            if why:
+                weak.append((p.name, why))
     return weak
 
 
@@ -276,14 +308,18 @@ def run_store(store: Path, cwd: Path, timeout: int = DEFAULT_TIMEOUT) -> tuple[l
     § *It runs on BOTH sides* is the standing law it would break."""
     passed, failed, unprobed = [], [], []
     have_shell = shutil.which("bash") is not None
-    for name, cmd, pathy in scan_store(store):
-        if cmd is None:
+    for name, cmds, pathy in scan_store(store):
+        if not cmds:
             unprobed.append((name, "path-naming" if pathy else ""))
         elif not have_shell:
             unprobed.append((name, NO_SHELL))
         else:
-            ok, detail = run_one(cmd, cwd, timeout)
-            (passed if ok else failed).append((name, detail or cmd))
+            for i, cmd in enumerate(cmds, 1):
+                # A memory with several probes reports one ROW per probe, numbered, so a failure
+                # names which claim went false rather than only which file.
+                label = name if len(cmds) == 1 else f"{name} [{i}/{len(cmds)}]"
+                ok, detail = run_one(cmd, cwd, timeout)
+                (passed if ok else failed).append((label, detail or cmd))
     return passed, failed, unprobed
 
 

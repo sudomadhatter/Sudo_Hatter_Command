@@ -9,7 +9,7 @@ metadata:
 **The mechanism.** Bash cwd persists between calls *until* a command `cd`s outside the
 workspace root (`/tmp`, the session scratchpad, a sibling repo). The harness then resets cwd
 to the **primary working directory** — for this system that is the MAIN checkout
-`/Users/sudohatter/Sudo_Hatter_Command`, never the worktree. It prints
+`/home/dlohn/Sudo_Hatter_Command`, never the worktree. It prints
 `Shell cwd was reset to …`, one line, easy to read past.
 
 ⛔ **Why it is silent and expensive.** When you work in a worktree, the same relative path

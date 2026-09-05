@@ -50,7 +50,8 @@ data before this was set up:
   a count or a timestamp, which change on their own and would red the suite for nobody's fault.
   Rulings and preferences need no probe — and a decorative one is worse than none. ⛔ The probe must
   be able to FAIL: `test -e <a path git tracks>` cannot (every checkout has it), and it must name
-  something this memory's body names. Write it in SINGLE quotes. Full law:
+  something this memory's body names. Repeat the key for a memory with several checkable facts.
+  Write it in SINGLE quotes. Full law:
   `.agents/rules/agent-memory-is-long-term-only.md`.
 - **On rename day, re-run the linker.** The slug changes; the junction must be re-pointed. Nothing needs
   to move, because the data was never in the slug directory to begin with — that is the whole point.

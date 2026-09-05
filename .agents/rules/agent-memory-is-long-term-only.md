@@ -56,6 +56,9 @@ metadata:
   probe: 'grep -q microsoft-standard-WSL2 /proc/version'
 ```
 
+**A memory may carry SEVERAL — repeat the key, one per checkable fact.** The runner numbers the
+rows (`file.md [2/5]`), so a failure names which claim went false, not just which file.
+
 ⚠️ **Write it in SINGLE quotes.** The reader strips the outer quotes and does no YAML unescaping, so
 a double-quoted value containing `\"` reaches the shell with its backslashes intact and fails for a
 reason nothing in the output explains.
