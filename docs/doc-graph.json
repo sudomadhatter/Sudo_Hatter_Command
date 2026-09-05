@@ -7,7 +7,7 @@
     "files": 389,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 760,
+    "edges": 762,
     "external": 35,
     "ambiguous": 172,
     "dangling": 290,
@@ -773,7 +773,7 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 58,
+      "in": 60,
       "out": 4
     },
     {
@@ -1829,7 +1829,7 @@
     {
       "path": "docs/_scc_sops_prds/operator_workflows_quickref.md",
       "in": 4,
-      "out": 5
+      "out": 6
     },
     {
       "path": "docs/_scc_sops_prds/sentry_error_response_team.md",
@@ -1869,7 +1869,7 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 18
+      "out": 19
     },
     {
       "path": "docs/code-review-graph.md",
@@ -5021,6 +5021,11 @@
       "kind": "ref"
     },
     {
+      "from": "docs/_scc_sops_prds/operator_workflows_quickref.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
       "from": "docs/_scc_sops_prds/sentry_error_response_team.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
@@ -5329,6 +5334,11 @@
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": ".agents/rules/sop-currency.md",
       "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",

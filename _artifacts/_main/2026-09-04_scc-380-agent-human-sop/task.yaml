@@ -1,0 +1,7 @@
+task_key: SCC-380
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-380-agent-human-sop
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders:
+  - SCC-381

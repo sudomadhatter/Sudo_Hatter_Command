@@ -358,6 +358,7 @@ When working with autonomous agents, understand the fundamental difference betwe
 | **🛑 Hard Gate** | `sop_currency.py` | `commit-msg` | Rejects commit | If you altered commands, rules, scripts, or hooks, stage `docs/_scc_sops_prds/workflows_testing_SOP.md`. Or add `[sop-ok]` to commit message. |
 | **🛑 Hard Gate** | `task_preflight.py` | Close-out merge | Refuses merge | If a `chore/*` branch touched deployable code (`backend/`, `frontend/`), work must route through `/cicd-push-e2e`. |
 | **💬 Nag** | `shape-guard.py` | `PostToolUse` | Advisory in `additionalContext` | **Non-blocking**. Informs agent to pin with `cd <path> && ...`, avoid `git -C`, avoid `; echo "EXIT=$?"`, and avoid piped gates. |
+| **💬 Nag** | `closeout-nag.py` | `PostToolUse` | Advisory in `additionalContext` | **Non-blocking**. Alerts agent when push/merge to `main` is attempted or push/PR fails; directs to `git-policy.md` and `/smh-close-task-merge-tree` or `/cicd-close-story-merge-tree`. |
 | **💬 Nag** | `record_map_changes.py --nag` | `SessionStart` | Printed warning | Run `/smh-update-maps-indexes` to reconcile disk changes with repo map. |
 | **💬 Nag** | `lint_context.py` | Context linter | Printed warning | Run context prune when session blocks exceed hysteresis limit (nag at 12, keep ~10). |
 | **💬 Nag** | `test_memory_store.py` | Test suite | Printed warning | `MEMORY AUDIT DUE` prints at 90% of 25KB cap. Ask operator before running `/smh-memory-audit`. |

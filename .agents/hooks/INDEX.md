@@ -46,19 +46,20 @@ Measured over one session: 19% → 39% of Bash calls auto-approved, 94 prompts r
 its shape — no verb list at all. These two hooks are what works while it is off, or where a
 command must run outside it.
 
-## The nag hook — the only one that speaks AFTER the call
+## The nag hooks — the ones that speak AFTER the call
 
 | File | Event | What it does |
 | --- | --- | --- |
+| `shape-guard.py` | `PostToolUse` | Points the agent back at `.agents/rules/command-shape.md` when a Bash call breaks it — a piped gate (rule 3), a `; echo "EXIT=$?"` tail (rule 2), or the `git -C` spelling (rule 1). It **cites the rule and names the remedy**; it does not restate the law. (SCC-369) |
+| `closeout-nag.py` | `PostToolUse` | Nags an agent back to `.agents/rules/git-policy.md` and the lane close-out command (`/smh-close-task-merge-tree` or `/cicd-close-story-merge-tree`) when a `git push` targets `main`, a checkout/merge onto `main` is attempted, or a `git push` / `gh pr create` fails. (SCC-381) |
 
-**Why this one is `PostToolUse` and every other hook here is not.** The law it enforces was already
-on every platform and was violated in **1,946 of 8,355 Bash calls across 25 sessions — 23.3% of
-every detectable violation**. Distribution was never the gap, so the answer is not a sixth copy of
-the rule; it is a message at the moment of the mistake (SCC-369, the operator's ruling). Running
-after the call means it **cannot block, slow, or wedge a headless session** — the strongest safety
+**Why these are `PostToolUse` and every other hook here is not.** The law they enforce was already
+on every platform and was violated repeatedly across sessions. Distribution was never the gap, so the answer is not another copy of
+the rule; it is a message at the moment of the mistake (SCC-369, SCC-381). Running
+after the call means they **cannot block, slow, or wedge a headless session** — the strongest safety
 property in this directory, bought by giving up the ability to prevent anything.
 
-⛔ **It must never block, and `test_shape_guard.py::test_never_blocks` is what holds that.**
+⛔ **They must never block, and `test_shape_guard.py::test_never_blocks` and `test_closeout_nag.py::test_never_blocks` are what hold that.**
 `permissionDecision: "ask"` becomes an auto-DENY in auto mode, and a PostToolUse `decision: "block"`
 feeds an error to the model; either would strand a headless run over a style note.
 
@@ -74,6 +75,7 @@ reaches the model verbatim, while `systemMessage`, hook stderr, and a `PreToolUs
 <!-- auto-listed by /smh-update-maps-indexes — refresh via /smh-update-maps-indexes; do not hand-edit entries -->
 - `allow-readonly-chain.py`
 - `allow-scratchpad.py`
+- `closeout-nag.py`
 - `guard-cwd-escape.py`
 - `log-rule-load.sh`
 - `require-push-approval.py`
@@ -81,4 +83,4 @@ reaches the model verbatim, while `systemMessage`, hook stderr, and a `PreToolUs
 - `run-hook.sh`
 - `session-start-context.sh`
 - `shape-guard.py`
-| `shape-guard.py` | `PostToolUse` | Points the agent back at `.agents/rules/command-shape.md` when a Bash call breaks it — a piped gate (rule 3), a `; echo "EXIT=$?"` tail (rule 2), or the `git -C` spelling (rule 1). It **cites the rule and names the remedy**; it does not restate the law. |
+

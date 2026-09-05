@@ -37,6 +37,20 @@ is allowed to act on the repo you are standing in. The prefix is the permission;
 
 ## 🛑 MANDATORY RULES (before you start)
 
+> ### ⚡ RAPID COCKPIT CARD — THE 5-STEP CLOSE-OUT PROCEDURE (SCC-381)
+>
+> ⛔ **THE GOLDEN RULE:** Agents NEVER push directly to `main`. `main` is reached only through a GitHub Pull Request that Mr. Hatter merges on GitHub.
+>
+> | Step | What you run | What happens |
+> |---|---|---|
+> | **0. Resolve & Manifest** | Verify `$REPO`, `$BRANCH`, `$EXPECTED_KEY`. | Pin variables and author `task.yaml` with any `riders:`. |
+> | **1. Preflight** | `python3 .agents/scripts/task_preflight.py --fetch --repo "$REPO" --branch "$BRANCH" --expect-key "$EXPECTED_KEY"` | Verifies branch, sync (0/0), base absorbed, artifacts, lane. Exit 2 = STOP. |
+> | **2. Gates** | Run deterministic gates (`run_all.py`, `workflow_lint.py`, etc.). | Prove gates are green. Never re-run LLM review. |
+> | **3. PR & Hand-back** | Check `walkthrough.md`, tick outline locally (`jira_ticket.py done --local ...`), commit on chore branch, push, then:<br>`gh pr create --base main --head "$BRANCH" --fill` | **STOP AND HAND PR LINK TO MR. HATTER.** He clicks Merge on GitHub. |
+> | **4. Resume & Settle** | `/smh-close-task-merge-tree --after-merge <KEY>` | Verifies merge with plain git, settles riders, files Dev Record, moves ticket to Done, and prunes worktree. |
+>
+> ⚠️ **If push or PR fails:** Load `.agents/rules/git-policy.md` and `docs/_scc_sops_prds/workflows_testing_SOP.md` §3 & §10. The `closeout-nag.py` hook will guide you with exact remedies.
+
 1. **⛔ THIS COMMAND DOES NOT MERGE TO `main`. It opens a pull request and stops.**
 
    **⭐ THE SIGN-OFF IS THE OPERATOR'S DECISION TO PROCEED, and it is given in exactly one of three
