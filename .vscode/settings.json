@@ -183,7 +183,16 @@
     ".venv/bin/python -m pytest",
     ".venv/bin/ruff check",
     "firebase/tests/node_modules/.bin/firebase emulators:exec",
-    "code "
+    "code ",
+    "git ls-tree",
+    "git branch --list",
+    "git branch -a",
+    "git branch --all",
+    "git branch --show-current",
+    "git branch -r",
+    "acli jira workitem view",
+    "acli jira workitem search",
+    "acli jira workitem comment"
   ],
   "zoo-code.deniedCommands": [
     "rm -rf",

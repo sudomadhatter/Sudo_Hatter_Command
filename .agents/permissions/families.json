@@ -1718,6 +1718,140 @@
         "claude",
         "antigravity"
       ]
+    },
+    {
+      "id": "allow-env-c",
+      "cmd": "env -C",
+      "why": "SCC-406: measured 2026-09-04 over 6,999 Bash calls in the 20 newest Claude sessions - 102 stops, the single largest uncovered head. `env -C <dir> <cmd>` is the house-legal way to run in another tree (`git -C` is denied by command-shape.md rule 1); it was fenced by omission while its whole purpose is to BE the safe spelling.",
+      "render": {
+        "claude": [
+          "Bash(env -C:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-env-u-github-token",
+      "cmd": "env -u GITHUB_TOKEN git fetch",
+      "why": "SCC-406: 72 stops on `env -u GITHUB_TOKEN`. ⛔ THE FIRST DRAFT WAS A HOLE: a bare `Bash(env -u GITHUB_TOKEN:*)` prefix auto-approved `env -u GITHUB_TOKEN git push --force`, `git reset --hard`, `git add .` and `gh pr merge` - Claude carries no deny list, so the wrapper laundered every denied command past the fence in one token. Battery A3 named all four. Enumerated verbs only; the branch-scoped push spellings were dropped too because `X/:*` after a path separator can never match (battery A2b).",
+      "render": {
+        "claude": [
+          "Bash(env -u GITHUB_TOKEN git fetch:*)",
+          "Bash(env -u GITHUB_TOKEN gh pr create:*)",
+          "Bash(env -u GITHUB_TOKEN gh pr view:*)",
+          "Bash(env -u GITHUB_TOKEN gh pr checks:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-ls-tree",
+      "cmd": "git ls-tree",
+      "why": "SCC-406: 50 stops. Read-only plumbing - lists tracked paths at a ref and writes nothing.",
+      "render": {
+        "zoo": [
+          "git ls-tree"
+        ],
+        "claude": [
+          "Bash(git ls-tree:*)"
+        ],
+        "antigravity": [
+          "command(git ls-tree)",
+          "unsandboxed(git ls-tree)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-git-branch-read",
+      "cmd": "git branch --list",
+      "why": "SCC-406: 80 stops on `git branch`. READ spellings only - `--list`, `-a`, `--all`, `--show-current`, `-r`. `git branch -D` / `-M` stay denied by deny-git-branch, so this row cannot delete or rename a branch.",
+      "render": {
+        "zoo": [
+          "git branch --list",
+          "git branch -a",
+          "git branch --all",
+          "git branch --show-current",
+          "git branch -r"
+        ],
+        "claude": [
+          "Bash(git branch --list:*)",
+          "Bash(git branch -a:*)",
+          "Bash(git branch --all:*)",
+          "Bash(git branch --show-current:*)",
+          "Bash(git branch -r:*)"
+        ],
+        "antigravity": [
+          "command(git branch --list)",
+          "unsandboxed(git branch --list)",
+          "command(git branch -a)",
+          "unsandboxed(git branch -a)",
+          "command(git branch --all)",
+          "unsandboxed(git branch --all)",
+          "command(git branch --show-current)",
+          "unsandboxed(git branch --show-current)",
+          "command(git branch -r)",
+          "unsandboxed(git branch -r)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-acli-jira-read",
+      "cmd": "acli jira workitem view",
+      "why": "SCC-406: 38 stops on `acli jira`. Read verbs only - view, search, comment. `acli jira workitem delete` stays denied by deny-acli-jira; a bare `acli:*` was refused by that deny row in SCC-392, which is exactly why this row is the narrow spelling instead of the harvested one.",
+      "render": {
+        "zoo": [
+          "acli jira workitem view",
+          "acli jira workitem search",
+          "acli jira workitem comment"
+        ],
+        "claude": [
+          "Bash(acli jira workitem view:*)",
+          "Bash(acli jira workitem search:*)",
+          "Bash(acli jira workitem comment:*)"
+        ],
+        "antigravity": [
+          "command(acli jira workitem view)",
+          "unsandboxed(acli jira workitem view)",
+          "command(acli jira workitem search)",
+          "unsandboxed(acli jira workitem search)",
+          "command(acli jira workitem comment)",
+          "unsandboxed(acli jira workitem comment)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-avch-venv-tools",
+      "cmd": "backend/.venv/bin",
+      "why": "SCC-406: 92 stops combined (`backend/.venv/bin/python -m` 64, `pyrefly check` 28). AviationChat's project-local interpreter and type checker. Path-anchored to that venv, so it is not a bare-interpreter rule and does not touch the ONE-INTERPRETER law (SCC-376) that refused bare `python:*` in SCC-392.",
+      "render": {
+        "claude": [
+          "Bash(backend/.venv/bin/python:*)",
+          "Bash(backend/.venv/bin/pyrefly:*)",
+          "Bash(backend/.venv/bin/pytest:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
     }
   ],
   "deny": [

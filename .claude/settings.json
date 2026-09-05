@@ -159,7 +159,15 @@
       "Bash(rsync:*)",
       "Bash(bash:*)",
       "Bash(sh:*)",
-      "Bash(code:*)"
+      "Bash(code:*)",
+      "Bash(env -C:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git branch --all:*)",
+      "Bash(git branch -r:*)",
+      "Bash(acli jira workitem comment:*)",
+      "Bash(backend/.venv/bin/python:*)",
+      "Bash(backend/.venv/bin/pyrefly:*)",
+      "Bash(backend/.venv/bin/pytest:*)"
     ],
     "additionalDirectories": [
       "/tmp",
