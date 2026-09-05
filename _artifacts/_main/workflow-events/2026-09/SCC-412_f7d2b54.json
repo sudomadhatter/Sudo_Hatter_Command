@@ -1,0 +1,32 @@
+{
+  "v": 1,
+  "task": "SCC-412",
+  "sha": "f7d2b54382ab8bbf66d90396156185e938c2fbc3",
+  "tip": "3c63ece5bac3d96592b14fb1d0dc2028cc08cc85",
+  "trigger": "close-out",
+  "when": "2026-09-05T09:49:37-04:00",
+  "changes": [
+    "_artifacts/_main/2026-09-05_scc-412-worktree-agent-allow/implementation_plan.md",
+    "_artifacts/_main/2026-09-05_scc-412-worktree-agent-allow/task.yaml",
+    "_artifacts/_main/2026-09-05_scc-412-worktree-agent-allow/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/.maps-state.json"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-05_scc-412-worktree-agent-allow/walkthrough.md",
+    "verdict": "CONCERNS @ f7d2b54",
+    "gates": {
+      "suite": "pass@5f410bc"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "CONCERNS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
