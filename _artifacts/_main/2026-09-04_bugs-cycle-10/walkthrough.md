@@ -364,6 +364,8 @@ them.
 Until #1 runs, `env -C /tmp rm -rf /` still reads *ask* on this box rather than *deny*. Ask is safe
 — nothing auto-runs — it is simply weaker than the repo now claims.
 
+- [x] The merge itself — lands via this branch's PR
+
 ---
 
 review-runtime: fan-out
@@ -423,7 +425,7 @@ Blind Hunter has no repo access, so its claims are inferences until run.
 
 | Gate | Result |
 |---|---|
-| Enforcement suite | `75/75 files passed`, exit 0 |
+| Enforcement suite | `75/75 files passed` at the verdict sha; **`76/76`** re-run at the landing sha after absorbing SCC-380 |
 | Toolkit lint | `-- 0 error(s), 0 warning(s), 8 info --` |
 | Assertion evidence | `test_approval_stops.py` 24/24 · `test_permission_parity.py` 99/99 · `test_zoo_permissions.py` 25/25 · `test_sops_prds_folder.py` 61/61 · `test_check_maps.py` 35/35 |
 | SOP currency | accepted (`[sop-ok]` on each commit, with its reason in the body) |
@@ -437,17 +439,23 @@ re-run is 75/75. The number of record is the clean one.
 
 ### Step 0.7 — re-derivation
 
-1. **Nothing this diff references moved.** `git merge-base HEAD origin/main` == `origin/main` ==
-   `5c444d22`, and `git diff --name-only $BASE..origin/main` returned **0 files** — no lane landed
-   while this one was built, so every path, script and rule pointer the diff names still resolves.
-2. **True overlap is EMPTY and the merge is clean.** `grep -Fxf mine.txt theirs.txt` returned
-   nothing, and `git merge-tree --write-tree --messages HEAD origin/main` returned a bare tree sha
-   (`71ae3022`) with no conflict messages.
-3. **One sibling lane is live and there is no landing-order dependency.**
-   `chore/SCC-380-agent-human-sop` @ `c2a30594`, 9 files, zero overlap with this lane's 12. Worth one
-   sentence though: it edits `test_sops_prds_folder.py`, whose T9 check this lane satisfies by a doc
-   correction. No textual conflict either way, and if SCC-380 lands first this lane's T9 fix stays
-   valid — it removes a stale path, which no version of that test wants.
+Taken twice — once during the review, and again at close-out because the answer changed.
+
+1. **At review time nothing had landed; by close-out SCC-380 had, and it is now absorbed.** The
+   review measured `merge-base == origin/main == 5c444d22` with **0 files** landed. Between the
+   verdict and the close-out, PR #168 merged `chore/SCC-380-agent-human-sop` — 5 commits, 25 files
+   — and the preflight refused until it was absorbed. Merged in at `0e1ed1fd`; `origin/main` now
+   reads fully absorbed. Nothing this diff references was moved, renamed or deleted by it: the
+   files it touches are the SOP pages, the close-out door, a new nag hook and its test, and the
+   `sop-currency` rule — none of which this lane reads as a standard or a script.
+2. **One conflict, in `_artifacts/_main/INDEX.md`, resolved by keeping BOTH rows.** Both lanes added
+   a session row at the top of the same table. That is the generated-file rule's sibling case: keep
+   both sides' facts, never pick a winner. Both rows are present and the file carries no markers.
+3. **The sibling lane's landing changed nothing for this one, and the order was harmless either
+   way.** SCC-380 edits `test_sops_prds_folder.py`, whose T9 check this lane satisfies by a doc
+   correction — and with SCC-380's version of that test now in the tree, T9 still passes on this
+   lane's corrected row. The suite went 75/75 → **76/76**: SCC-380 brought one new test file
+   (`test_closeout_nag.py`), and no test of this lane's changed.
 
 ### Clean-Code Gate
 

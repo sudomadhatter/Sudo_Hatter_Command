@@ -1,0 +1,40 @@
+{
+  "v": 1,
+  "task": "SCC-373",
+  "sha": "c6f1232f8a87bf6b4ee2e4f523a41efc1f60fd96",
+  "tip": "0e1ed1fdd8103840b3b51c9fab7cf6a0d59f73e5",
+  "trigger": "close-out",
+  "when": "2026-09-05T00:16:47-04:00",
+  "changes": [
+    ".agents/permissions/antigravity.json",
+    ".agents/permissions/families.json",
+    ".agents/scripts/approval_stops.py",
+    ".agents/scripts/tests/test_approval_stops.py",
+    ".agents/scripts/tests/test_permission_parity.py",
+    ".vscode/settings.json",
+    "_artifacts/_main/2026-09-04_bugs-cycle-10/gates/suite.json",
+    "_artifacts/_main/2026-09-04_bugs-cycle-10/implementation_plan.md",
+    "_artifacts/_main/2026-09-04_bugs-cycle-10/task.yaml",
+    "_artifacts/_main/2026-09-04_bugs-cycle-10/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/tdad_stack_install_guide.md",
+    "docs/migrations/terminal-permissions-guide.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-04_bugs-cycle-10/walkthrough.md",
+    "verdict": "PASS @ c6f1232",
+    "gates": {
+      "suite": "pass@c6f1232"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
