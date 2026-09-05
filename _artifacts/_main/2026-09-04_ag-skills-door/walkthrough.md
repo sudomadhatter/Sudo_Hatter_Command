@@ -307,6 +307,20 @@ lenses_na:       none
 
 ### Step 0.7 — the blast radius, re-derived against current `main`
 
+**Current state, re-derived 2026-09-05 at `d2337511` (the second absorb):**
+
+- **What moved:** 5 commits landed on `main` after the re-review — SCC-405's Antigravity approvals
+  harvest (PR #161) and its close-out. Absorbed with **no conflict**; the only file touched on both
+  sides is `_artifacts/_main/INDEX.md`, where each side appended its own session row and both rows
+  are kept, which is the only correct resolution for an append-only ledger.
+- **What it changes here:** nothing. SCC-405 edits the shared permission source and its own session
+  folder; the intersection with this lane's 167 files is the ledger row alone. No file this diff
+  touches was moved, renamed or deleted, and `risk_seam.py classify` still returns `unclassified` —
+  the permanent correct answer here, because the command centre carries no code graph.
+- **What was re-measured after it:** `run_all.py` **73/73**, `test_command_surfaces` **317/317**,
+  `workflow_lint --toolkit-only` 0 errors / 0 warnings, `check_maps --depth3-only --strict` clean.
+  Suite receipt re-stamped `result=pass` (it had been carrying `fail` / 72/73 from before SCC-399).
+
 *As reviewed (`e71cadef`):* `origin/main` was still `eee79727`, this lane's base — nothing had
 landed while I built, overlap was empty, `git merge-tree` was clean, no absorb was needed.
 `risk_seam.py classify` returns `unclassified`, the permanent correct answer here: the command
