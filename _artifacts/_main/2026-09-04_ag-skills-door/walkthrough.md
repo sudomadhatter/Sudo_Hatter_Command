@@ -505,7 +505,10 @@ is what the two wrapped-sentence findings were.
 ## Code Review (2026-09-04) — re-review after the absorb
 
 Verdict: CONCERNS @ 80a916bf
-Suite evidence measured on: 80a916bf (re-stamped after the last code-touching change)
+Suite evidence: [gates/suite.json](gates/suite.json) records `result=pass`, `exit_code=0`, **73/73**
+— re-stamped after `80a916bf`, the last code-touching change in this lane. (It had been carrying
+`result=fail` / 72/73 from `cf0886cf`, before SCC-399 fixed the floor. `dirty_tree` reads `true` and
+its `dirty_paths` are the seven `.claude/*` OS-sandbox mount points, which are not files.)
 
 **One reason, and it is not about the code.** Acceptance Row H's second clause asks for a count from
 the Antigravity **IDE's** Customizations panel. That measurement cannot be taken on the side this
