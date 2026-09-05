@@ -14,7 +14,7 @@ Part C adds one **deny** family, which can only ever make the fence stricter.
 ## The two defects, measured on this lane's base
 
 **Part B — `approval_stops.py` reports a third of the fence as absent.**
-`allow_prefixes()` strips the suffixes `:*` and ` *` but never a bare trailing `*`. Battery A2b
+`allow_prefixes()` strips the suffixes `:*` and ` *` but never a bare trailing `*`. SCC-375's check A2b (in `tests/test_settings_allowlist.py`)
 established that a prefix ending in `/ = - :` must be spelled `Bash(X/*)`, because Claude reads
 `Bash(X:*)` as `Bash(X *)` — so the bare-star spelling is the **working** one. Measured on this
 base: **54 of the 153** rendered Claude `Bash(...)` allow rows are bare-star, including
@@ -58,8 +58,10 @@ is why this plan is slightly larger than SCC-410 as filed.
 
 **Step 1 (Part B, red first).** Add two cases to `tests/test_approval_stops.py`: one calling the real
 `allow_prefixes()` against a temp repo whose `.claude/settings.json` carries a bare-star row (A), one
-end-to-end through `scan()` with that prefix stubbed in, asserting zero stops for a slow covered
-command (B). Both must be seen RED against the unfixed script, for the right reason — the returned
+end-to-end through `scan()` reading a real `.claude/settings.json` through the real
+`allow_prefixes()`, asserting zero stops for a slow covered command (B). *(Amended during the
+review: this step originally said "with that prefix stubbed in". The shipped case does not
+stub — stubbing would have tested the harness rather than the fix.)* Both must be seen RED against the unfixed script, for the right reason — the returned
 prefix still carrying its `*`.
 
 **Step 2 (Part B, green).** Add `"*"` to the suffix tuple in `allow_prefixes()`, ordered **after**
@@ -108,6 +110,10 @@ new deny row is tracked-green and not yet live on this machine.
 - NEW `_artifacts/_main/2026-09-04_bugs-cycle-10/task.yaml` — lane manifest, riders declared → F
 - NEW `_artifacts/_main/2026-09-04_bugs-cycle-10/implementation_plan.md` — this plan → F
 - NEW `_artifacts/_main/2026-09-04_bugs-cycle-10/walkthrough.md` — the lane's record → F
+- EDIT `docs/migrations/terminal-permissions-guide.md` — the live deny count line and the Launder-shapes family row → F
+- EDIT `docs/_scc_sops_prds/tdad_stack_install_guide.md` — one ledger row naming a path SCC-403 retired → F
+
+⭐ **Amended 2026-09-04, during the code review.** The last two bullets were added after the build: neither was foreseeable at plan time, and both are *forced* by acceptance row F rather than chosen. The guide carries a live `N allow / M deny` count that `test_zoo_permissions.py::test_guide_currency` asserts against the rendered file, so any deny row stales it. The tdad row named a path SCC-403 retired **before this lane was cut**, which had `test_sops_prds_folder.py::T9` red on `origin/main` itself. Amending the block rather than leaving them as prose is the point: `declared_change_set.py` would otherwise return two `undeclared` rows on every later run of the gate, including close-out.
 
 `.claude/settings.json` is **deliberately not** in this list: Claude carries no deny list, so a new
 deny family renders nothing there. If that file moves, the change was not what this plan describes.
@@ -181,8 +187,10 @@ verdict:     findings below (attached to F1)
 prints *in sync*, the battery is green, the walkthrough says `env -C` is denied, and every one of
 those statements is true **about the tracked files**. The live Zoo store keeps answering `ask` for
 `env -C`, which is safe but weaker than the record claims, and the gap is invisible until someone
-reads `--status`. **Other-machine variant:** the applies are per-machine (Mac *and* PC), so even a
-correct apply here leaves the other seat behind.
+reads `--status`. ⛔ **Corrected during the code review:** an earlier draft of this paragraph said the applies
+are per-machine "Mac *and* PC". That is the machine model SCC-398 retired — there is ONE PC
+(Windows host, Ubuntu in WSL2). Both applies target stores on this one box; there is no
+second seat to leave behind.
 
 ### Both findings are baked into the plan, not left as a bill
 
