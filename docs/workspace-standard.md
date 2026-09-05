@@ -258,7 +258,7 @@ misread.
 | Submodule | What it is | Kept current by | Audited by the lobby's suite? |
 |---|---|---|---|
 | `sudo-command-center` | the **published teaching edition** of this lobby — a sanitized export, never edited in place | `export-teaching-edition.ps1`, from the `claude/teaching-edition` branch | **no** — it is a mirror; its 28 rule files ship on purpose |
-| `sudo-project-skeleton` | the **new-project template** — what `/smh-new-project` seeds from | seeded from AviationChat's stack **by hand, never a blind copy** — AviationChat-specific rules must not propagate into a fresh project (Mr. Hatter's ruling, 2026-09-04) | **no** — it is a template |
+| `sudo-project-skeleton` | the **new-project template** — what `/smh-new-project` seeds from | seeded from AviationChat's stack **by hand, never a blind copy** — AviationChat-specific rules must not propagate into a fresh project (Mr. Hatter's ruling, 2026-09-04). Settings and fence shape are propagated into it **deliberately, per ticket** — SCC-379 did the SCC-376 fence — so a new project is not born stale | **not by the suite** — it carries no `.agents/` the lobby audits; a ticket keeps it current |
 | `AGY_AVIATIONCHAT` | a maintained thin project (board `AVCH`) | its own story lanes | **yes** — listed in `.agents/maintained-projects.txt` |
 | `NEXgen-VR-Director` | a maintained thin project | its own story lanes | **yes** — listed in `.agents/maintained-projects.txt` |
 | `B-L-WorldWide` · `BRKN_Tattoos` · `NEXGen-Films` · `OpenChat-Openrouter` · `RAG_Pipeline_AC` | separate projects on their own schedules | themselves | **no** |
