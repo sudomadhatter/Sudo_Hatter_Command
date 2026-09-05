@@ -2,7 +2,7 @@
 name: command-shape
 description: "How to SHAPE a shell command so the platform allowlists can match it and its exit code stays readable. Load when composing any compound command (&& sequences, worktree-pinned git), when a gate/test/script run is being piped or tailed, or when an approval prompt (or auto-refusal) fires on a command you believed was allowlisted. The law: pin with `cd <abs> && <cmd>` in ONE line (never git -C — Zoo auto-denies it), no exit-echo tails, no piped gates."
 trigger: model_decision
-triggers: [allowlist, permission prompt, approval prompt, auto-denied, command shape, compound command, cd chain, exit code, run the gate, always proceed]
+triggers: [allowlist, permission prompt, approval prompt, auto-denied, command shape, compound command, cd chain, exit code, run the gate, always proceed, heredoc, leading assignment, shape-block]
 # Intent-shaped: the trigger is the act of composing a shell command, not a file being opened.
 # Antigravity judges `description:`; `.agents/hooks/rule-trigger.py` matches the keywords above.
 ---
@@ -71,6 +71,32 @@ Two consequences of `cd <path> && …` that `git -C` never had, both measured in
   Capture `L=$(pwd)` at the top of the fence, before any `cd`, and pin the call:
   `cd "$L" && python3 .agents/scripts/<tool>.py …`. (`L=` is on the Zoo allow list.)
 
+### Rules 5 and 6 — the two shapes the matcher cannot read at all (SCC-415, measured 2026-09-05)
+
+Across the 20 newest Claude sessions the operator waited **15 hours** on Bash calls that were
+sandboxed, matched an allow rule, hit no sandbox violation and were refused by nothing. Thirteen of
+those hours were two shapes: a **heredoc** (54 calls, 7h17m) and a **leading assignment** (40
+calls, 5h44m). `Bash(python3:*)` matches `python3` and then meets a body it cannot judge; no rule
+can begin with `S=`. Either way the call drops to the auto-mode classifier — 20 to 80 seconds — and
+then to the operator. In the same session `cd <abs> && …` compounds never waited once (57 of 57),
+a `Write` to a file never prompted (10 of 10), and `python3 <file>` never waited. The reshape is
+free; the shape is the whole cost. (It is NOT the sandbox: the escalation gate was blamed for 94 of
+these and `/sandbox` fixes none of them; and `sandbox.excludedCommands` is the opposite of a fix —
+it removes a command from the sandbox and so loses the auto-approval.)
+
+5. **Never a heredoc.** Not `python3 - <<'PY'`, not `git commit -F - <<'MSG'`, not `cat > f <<EOF`.
+   Write the payload with the **Write tool** — a script into the session scratchpad, then
+   `python3 <that path>`; a commit message into a file, then `git commit -F <file>`. Both shapes
+   are already allowed, and the Write itself never prompts. **Enforced as a BLOCK, not a nag:**
+   [`shape-block.py`](../hooks/shape-block.py) (`PreToolUse`) refuses the call before the
+   permission gate and hands the agent this remedy — the operator's click is the damage here, and
+   a nag speaks after it.
+6. **No leading assignment.** `S=/tmp/x; python3 …` starts with `S=`, which no rule can begin
+   with. Inline the literal. `shape-block.py` strips a run of `NAME=<literal>` and auto-allows the
+   remainder ONLY when that remainder, on its own, already matches one of the operator's allow
+   rules — the same nothing-new proof as `allow-readonly-chain.py` — so a `VAR=$(…)`, a `$VAR`, or
+   a chain after the assignment still prompts. Prefer the literal.
+
 ## §Zoo — extra shape rules for Zoo Code seats (mirrored from the guide §8)
 
 - **One logical line per command.** No backslash continuations — the continuation lines become
@@ -89,9 +115,13 @@ Two consequences of `cd <path> && …` that `git -C` never had, both measured in
 
 - **Read-only chains** (`ls A && ls B`, grep/cat sequences) pass on Claude Code via the
   `.agents/hooks/allow-readonly-chain.py` hook (SCC-287) and on Zoo via the read-only allows.
-- **Command substitution and redirects inside ONE simple command** (`git commit -F <file>`,
-  `KEY=$(cd "$REPO" && git rev-parse …)`) are fine; the bans are about compounding *gates* and
-  about shapes the matchers cannot see into.
+- **Redirects inside ONE simple command** (`git commit -F <file>`, `gate > out.txt 2>&1`) are
+  fine; the bans are about compounding *gates* and about shapes the matchers cannot see into.
+  ⛔ A leading `KEY=$(cd "$REPO" && git rev-parse …)` is NOT fine on Claude Code — it is rule 6's
+  shape with a substitution in the value, and it prompts every time (measured 2026-09-05: the
+  `VAR=$( )` bucket, 8 calls / 15 min, on top of the 40 literal ones). Resolve it in a prior plain
+  call and paste the literal, or let the door print it. (This bullet said the opposite until
+  SCC-415; the data corrected it.)
 - **opencode** still prefix-matches the WHOLE string, so compounds prompt there. Its surface is
   the BMAD wrapper set only — accept the prompt; do not reshape doors around it.
 
@@ -137,6 +167,12 @@ nothing to rationalize past.
 3. **`PostToolUse` → `hookSpecificOutput.additionalContext` is the only channel that reaches the
    model.** Established by probe, not assumption: `systemMessage`, hook stderr, and a `PreToolUse`
    `allow` with `permissionDecisionReason` were each tried and none of them arrived.
+
+⭐ **Rules 5 and 6 are not nagged — they are BLOCKED, by `shape-block.py` (`PreToolUse`), and
+limit 2 is the reason.** A nag speaks after the command; for a heredoc the operator's click IS the
+damage and it lands before the command runs, so a nag would arrive after he has already paid. The
+block returns the remedy to the agent instead — one extra model turn, zero clicks. It never emits
+an ask, it fails open, and `test_shape_block.py` pins both. (SCC-415.)
 
 ⛔ **Zoo Code gets no nag, because Zoo has no hook surface at all** — it contributes no notification,
 sound or event hook, which is the same fact that forces `zoo_notify.py` to poll the thread store.

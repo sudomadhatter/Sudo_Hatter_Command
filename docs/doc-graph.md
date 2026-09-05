@@ -57,9 +57,9 @@ _Human summary -- tables capped at 60 rows; the complete lists are in `doc-graph
 | 18 | 2 | `.agents/rules/000-PLAN-FIRST-GATE.md` |
 | 18 | 6 | `.agents/rules/zoo-team.md` |
 | 16 | 1 | `.agents/rules/code-standards.md` |
+| 15 | 4 | `.agents/rules/command-shape.md` |
 | 15 | 2 | `.agents/rules/work-consolidation.md` |
 | 14 | 4 | `.agents/rules/project-law.md` |
-| 13 | 4 | `.agents/rules/command-shape.md` |
 | 13 | 0 | `.agents/rules/tests-must-gate-for-real.md` |
 | 13 | 26 | `docs/workspace-standard.md` |
 

@@ -231,6 +231,11 @@
           },
           {
             "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .agents/hooks/shape-block.py",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .agents/hooks/require-push-approval.py",
             "timeout": 10
           },

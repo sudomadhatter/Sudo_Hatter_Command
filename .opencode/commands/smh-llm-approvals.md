@@ -18,7 +18,7 @@ Measured on his own machine, 20 newest sessions, 2026-09-05:
 | bucket | stops | wall-clock | what fixes it |
 |---|---|---|---|
 | allow-list gaps | 44 | **5h 50m** | **an allow row — this command** |
-| sandbox escalation (already allowed) | 94 | 1h 16m | `/sandbox`, not a permission row |
+| a SHAPE the matcher cannot read — heredoc, leading `VAR=` — while looking covered | 94 | **13h 01m** | `shape-block.py` refuses / proves it and the AGENT reshapes — never a row, never `/sandbox` (SCC-415; this row said "sandbox escalation → `/sandbox`" until the 2026-09-05 re-measurement, and that was wrong) |
 | **refused by a deny row** | **0** | **0** | — |
 
 ⭐ **Read the last row twice. Across 10,028 Bash calls, ZERO commands were refused by a deny rule.**
@@ -301,12 +301,17 @@ granted it. ⛔ **And do not narrow
 it for him** — this door does not compute prefixes (SCC-354). Show the row, say plainly what it
 permits, and let him answer.
 
-⛔ **Do NOT copy the apply warning at the end of this step onto Claude's path.** The Antigravity
-apply REPLACES both arrays, which is why it carries a data-loss caveat. **Claude has no apply and
-must not grow one** — its tracked file IS the live file, so a rendered row is in force the moment it
-is saved, nothing is pushed into a store and nothing can be lost. A data-loss caveat here would be a
-threat that does not exist. The machine-local files the harvest READ are never edited: a
-now-redundant row there is the operator's own edit to ask for by name.
+⛔ **Claude's apply is DIFFERENT from Antigravity's, and the difference is the whole point.** The
+Antigravity apply REPLACES both arrays, which is why it carries a data-loss caveat. Claude's tracked
+file IS the live file inside this repo — a rendered row is in force the moment it is saved. But a
+session opened in a project checkout or worktree reads THAT repo's tracked file plus the machine's
+user scope (`~/.claude/settings.json`), so a lobby row holds nowhere else until it is also in user
+scope. `claude_permissions_apply.py --apply` (SCC-415) does that merge — **additive, never a prune
+unless `--prune`, `allow` rows only, backs up once** — and widens the sandbox's writable paths.
+⛔ **An agent cannot run it.** The auto-mode classifier refuses every write to `~/.claude/settings.json`
+unconditionally (measured 2026-09-05: three refusals, identical), so it is the operator's line, the
+same as the other two applies. It never touches `sandbox.excludedCommands` (that removes a command
+from the sandbox and LOSES the auto-approval — the opposite of the fix; operator ruling 2026-09-05).
 
 **Zoo Code** → `.vscode/settings.json`, `zoo-code.allowedCommands`. Plain string
 prefixes, no wrapper. Same narrowness rule. ⛔ **Never touch `zoo-code.deniedCommands`** — the
@@ -371,6 +376,25 @@ cd <repo-abs> && python3 .agents/scripts/antigravity_permissions_apply.py --appl
 No editor quit is needed (a plain JSON file, no database), but the extension re-reads it on a window
 reload — ask him to reload the VS Code window and tell him so. The closing `--status` must read
 *in sync with tracked file*.
+
+Then make Claude's rows hold everywhere on the machine, not only in this repo. **This one the
+operator runs, in his own terminal** — the agent prints the line and stops:
+
+```bash
+cd <repo-abs> && python3 .agents/scripts/claude_permissions_apply.py --status   # read-only, safe anytime
+cd <repo-abs> && python3 .agents/scripts/claude_permissions_apply.py --apply    # HIS terminal, once per machine; PC: python
+```
+
+⭐ **The `--apply` line is the LAST thing this command prints**, every run, whether or not a row
+was picked — it is what the operator asked for (*"give me the script I can call to run once
+/smh-llm-approvals writes it"*, 2026-09-05). Run `--status` yourself (it reads only, sandboxed is
+fine) and paste its report above the line, so he sees how many rows and paths it will add before he
+runs it. A session restart makes it take effect.
+
+⛔ **And say, once, what the rows can NOT fix.** Step 1's report has a section headed *NO ALLOW ROW
+FIXES THESE - the harness bans the shape*. A heredoc or a `VAR=` head there is the AGENT's own
+command shape (command-shape.md rules 5–6, `shape-block.py`), not a missing row — do not propose a
+row for it, and do not call it the sandbox.
 
 ⛔ **The apply REPLACES both arrays — it does not merge.** Every click-written row he did *not* pick
 is gone the moment it runs. That is the design (the tracked file is the fence, not the store), but
@@ -459,7 +483,13 @@ mount artifact, not a stale lock — re-run with the sandbox off rather than del
 ## Step 5 — Report what changed
 
 Name each row added and which file it went into, name each pick that could NOT land with the deny
-row that refused it, confirm the apply result, and say plainly what is live now versus staged.
+row that refused it, confirm the apply result, say plainly what is live now versus staged — and
+**end with the one line he runs**, every time:
+
+```bash
+python3 .agents/scripts/claude_permissions_apply.py --apply    # PC: python
+```
+
 Then stop.
 
 ## What this command does NOT do
@@ -472,4 +502,6 @@ Then stop.
   `~/.claude/settings.json` because the source now covers it is the operator's own edit to ask
   for by name, never a tidy-up this door performs.
 - It does not edit the three rendered files. The source is the only thing it writes; the render does the rest.
-- It does not make the operator run anything.
+- It does not make the operator run anything to make a row live in THIS repo. The one line it
+  hands him — `claude_permissions_apply.py --apply` — is the user-scope and sandbox write he asked
+  for by name (2026-09-05), and it targets the only file no agent is permitted to write.

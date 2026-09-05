@@ -499,7 +499,7 @@
     {
       "path": ".agents/commands/smh-llm-approvals.md",
       "in": 3,
-      "out": 6
+      "out": 7
     },
     {
       "path": ".agents/commands/smh-memory-audit.md",
@@ -649,7 +649,7 @@
     {
       "path": ".agents/hooks/INDEX.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": ".agents/opencode-agents/INDEX.md",
@@ -758,7 +758,7 @@
     },
     {
       "path": ".agents/rules/command-shape.md",
-      "in": 13,
+      "in": 15,
       "out": 4
     },
     {
