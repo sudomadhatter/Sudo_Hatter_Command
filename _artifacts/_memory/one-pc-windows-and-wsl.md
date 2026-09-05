@@ -20,7 +20,7 @@ Mr. Hatter in one afternoon. This file replaces it. Superseded: `one-pc-windows-
 
 | | Windows side | Ubuntu side (WSL2, distro `Ubuntu`) |
 |---|---|---|
-| Shell | PowerShell | bash |
+| Native shell | PowerShell | bash (`pwsh` is installed here too, at `/usr/bin/pwsh` — that is how `sync-agents.ps1` runs) |
 | Python | `python` | `python3` (no bare `python`) |
 | Antigravity | the **IDE** — `C:\Users\dlohn\.gemini\antigravity-ide\` | the **CLI** — `~/.gemini/bin/agy`, store `~/.gemini/antigravity/` |
 | Agents | — | Claude Code, Codex, opencode |

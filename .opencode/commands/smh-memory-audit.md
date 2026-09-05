@@ -11,7 +11,7 @@ description: Audit the shared memory store (`_artifacts/_memory/`) and compact i
 >   is one of them**, and only for the items the operator approves in Step 5.
 
 **What this is.** `_artifacts/_memory/MEMORY.md` is loaded whole into **every session, on every
-platform, on both machines** before any work happens. That makes it the one document in the system
+platform, on both sides** before any work happens. That makes it the one document in the system
 whose upkeep everyone pays for and nobody owns. This command is the owner.
 
 **Why it is not part of `/smh-update-maps-indexes` any more (SCC-68).** It used to be that workflow's

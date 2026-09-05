@@ -90,7 +90,7 @@ in the master pollute every unrelated session's skill list; shared workflow rule
 drift from the master and start contradicting it.
 
 **The one exception is a hard dependency.** A file that a project's own machinery must load by path at
-runtime — where no center path survives both machines and a git worktree — is inlined into that
+runtime — where no center path survives both sides and a git worktree — is inlined into that
 machinery rather than referenced. The BMAD `_bmad/custom/*.toml` guard files carry the plan-first gate
 this way. Inline it, and leave the full rule at the center as the canonical copy.
 

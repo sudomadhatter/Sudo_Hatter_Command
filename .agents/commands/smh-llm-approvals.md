@@ -63,8 +63,9 @@ find — the same silent under-report SCC-355 cost this door once already.
 
 ⛔ **Do not hardcode the store path, and do not write `%APPDATA%` into one — that is a cmd.exe
 variable, not a path, and it expands to nothing in a glob or in Python.** Ask the resolver this
-repo already ships and tests, which handles Mac and PC, **every named VS Code profile**, and the
-`zoo-code.customStoragePath` setting — three cases a single hardcoded path silently misses:
+repo already ships and tests, which handles every platform this runs on, **every named VS Code
+profile**, and the `zoo-code.customStoragePath` setting — three cases a single hardcoded path
+silently misses:
 
 ```python
 import importlib.util
@@ -73,11 +74,14 @@ z = importlib.util.module_from_spec(spec); spec.loader.exec_module(z)
 roots = z.store_roots()          # a LIST — the default profile plus each named profile
 ```
 
-For reference, what it returns: on the Mac
-`~/Library/Application Support/Code/User/globalStorage/zoocodeorganization.zoo-code/tasks`, and on
-the PC the same tail under `C:/Users/<you>/AppData/Roaming/Code/User/`. Those are what the function
-computes, not a substitute for calling it — a machine with a named profile or a custom store path
-has roots this sentence does not name.
+For reference, what it returns — the tail is always
+`Code/User/globalStorage/zoocodeorganization.zoo-code/tasks`, under a base that differs per side:
+the Windows side `C:/Users/<you>/AppData/Roaming/`, the Ubuntu side `~/.config/`. ⛔ And under **VS
+Code Remote (WSL)** the extension runs SERVER-side, so the live store is
+`~/.vscode-server/data/User/globalStorage/…` while `~/.config/Code` may not exist at all — measured
+2026-09-04 on this box, SCC-396. That is exactly why you call the resolver instead of pasting a
+path: it returns a LIST, and a side with a named profile, a custom store path or a Remote server has
+roots this sentence does not name.
 
 Each file is a JSON array of messages. A command that stopped for the operator is one where
 `type` is `ask`, `ask` is `command`, and **`autoApprovalDecision` is
@@ -273,7 +277,7 @@ cd <repo-abs> && python3 .agents/scripts/zoo_permissions_apply.py --status   # P
 write needs VS Code fully closed, because SQLite will not take a second writer:
 
 ```bash
-osascript -e 'quit app "Visual Studio Code"'                                  # Mac
+# close VS Code first — from the Windows side: taskkill /IM Code.exe
 cd <repo-abs> && python3 .agents/scripts/zoo_permissions_apply.py --apply
 ```
 

@@ -225,11 +225,11 @@ done — verify the box's four conditions and go straight to Step 2.**
 >                     || echo "PLAN CHANGED AFTER APPROVAL ($BAD line(s)) - the gate re-arms, STOP"
 >    ```
 >
->    ⛔ **Count the lines; never `grep -qv`.** Measured on the Mac while writing this box: the
+>    ⛔ **Count the lines; never `grep -qv`.** Measured while writing this box: the
 >    `grep` on `PATH` there is **ugrep**, not BSD or GNU grep, and its `-q` with `-v` returns
 >    **1 when lines are selected and 0 on empty input** — exactly inverted. The `-qv` form
 >    passed the illegal case and stopped the legal one, in the gate meant to catch exactly that
->    class of mistake. A count has one meaning on every grep, on both machines.
+>    class of mistake. A count has one meaning on every grep, on both sides.
 >
 >    ⛔ **Read the verdict off the command, not off the diff.** The first shape of this box
 >    printed a `git diff` and left an agent to judge "does this touch only the `— recorded at`

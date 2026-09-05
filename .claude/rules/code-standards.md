@@ -118,7 +118,7 @@ they are what the judgment half of the audit hunts for.
 | **API** | RESTful. JSON bodies/responses. |
 | **Git** | Present tense commits. Explicit paths only — `git add -A`/`.`/`-u` are banned (`git-policy`). Never commit secrets. |
 | **Paths** | `Path(__file__).parent` — never hardcoded CWD paths. |
-| **Both machines** | This system is driven from a Mac **and** a PC. `python3` exists on one and `python` on the other, so **never hardcode either** — carry `sys.executable` down, or probe `python3 → python → py`. A `C:/…` path, a `;` separator, `robocopy`, or a bare `python` in a committed script is a finding, not a portability nicety: it works where it was written and dies on the other machine. |
+| **Both sides** | This system runs on ONE PC with two sides: Windows (PowerShell, `python`) and Ubuntu inside WSL2 (bash, `python3`). `python3` exists on one and `python` on the other, so **never hardcode either** — carry `sys.executable` down, or probe `python3 → python → py`. A `C:/…` path, a `;` separator, `robocopy`, or a bare `python` in a committed script is a finding, not a portability nicety: it works where it was written and dies on the other side. |
 
 ---
 
@@ -136,8 +136,8 @@ they are what the judgment half of the audit hunts for.
 
 > **`<VENV>` IS PER-MACHINE — resolve it, never hardcode it** (SCC-205, measured 2026-08-18). A venv
 > puts its executables in `backend/.venv/Scripts/` on Windows and `backend/.venv/bin/` on POSIX.
-> These commands read `Scripts/…exe` until 2026-08-18, so **every Mac run of the most-used audit found
-> its own machine floor unrunnable** — and under the audit's own rule a missing tool "is a finding, not
+> These commands read `Scripts/…exe` until 2026-08-18, so **every POSIX-side run of the most-used audit
+> found its own machine floor unrunnable** — and under the audit's own rule a missing tool "is a finding, not
 > a skip", so the objective half did nothing while reporting normally. Resolve it once:
 >
 > ```bash
@@ -145,11 +145,11 @@ they are what the judgment half of the audit hunts for.
 > ```
 >
 > **Use the venv's own executables.** Bare `python` / bare `ruff` is the drifted global install and
-> produces false missing-dependency findings — and bare `python` does not exist on the Mac at all
-> (§5, Both machines).
+> produces false missing-dependency findings — and bare `python` does not exist on the Ubuntu side at
+> all (§5, Both sides).
 >
 > **And pyrefly needs the interpreter PINNED even when invoked from the venv** (SCC-312, measured
-> 2026-08-24 on the Mac): `<VENV>/pyrefly check` bare resolves its site-packages from the SYSTEM
+> 2026-08-24 on the POSIX side): `<VENV>/pyrefly check` bare resolves its site-packages from the SYSTEM
 > python — 949 errors, 669 of them fabricated `missing-import`, burying the real findings — while
 > the same run with `--python-interpreter-path <VENV>/python` reported 0 missing-import. The pin
 > belongs at the CALL SITE, never in a project's `pyrefly.toml` (AGY's states why: an absolute

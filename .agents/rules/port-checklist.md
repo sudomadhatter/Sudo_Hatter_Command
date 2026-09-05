@@ -87,7 +87,7 @@ ls <target-repo>/.agents/rules/                         # what actually exists t
 
 ### 5. It runs on BOTH machines
 
-`python3` on the Mac, `python` on the PC — a hook hard-coding either exits **127 silently** on the other,
+`python3` on the Ubuntu side, `python` on the Windows side — a hook hard-coding either exits **127 silently** on the other,
 which reads as success. And `core.hooksPath` is **local config**: it does not travel with a clone, so a
 fresh checkout of the target has no gates at all until it is armed on that machine.
 

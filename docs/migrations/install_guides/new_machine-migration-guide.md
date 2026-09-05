@@ -497,7 +497,7 @@ through each as needed:
   > ⛔ **`~/.zshrc` is interactive-only.** Agents, git hooks, npm scripts and anything run as
   > `zsh -c` never source it, so the variable is there when you test by hand and gone in every
   > automated path — the tests then fail *only* under automation, on the same machine that just
-  > passed. `~/.zshenv` is read by **every** zsh. This is the second variable on this Mac to be lost
+  > passed. `~/.zshenv` is read by **every** zsh. This was the second variable on that macOS box to be lost
   > exactly this way (Node 22's PATH was the first). Verify all three modes, never one:
   > ```bash
   > for m in -c -lc -ic; do zsh $m 'echo $JAVA_HOME'; done

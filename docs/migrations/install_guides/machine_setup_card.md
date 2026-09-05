@@ -12,7 +12,7 @@
 ```bash
 # Run the automated installer (arms lobby + projects and verifies all gates):
 powershell -File docs/migrations/scripts/Install-GitHooks.ps1   # Windows
-bash docs/migrations/scripts/install-git-hooks.sh             # Mac
+bash docs/migrations/scripts/install-git-hooks.sh             # macOS / Linux
 
 # Or arm one repo by hand:
 python3 docs/migrations/scripts/arm_hooks_include.py .   # PC: python
@@ -47,7 +47,7 @@ If the first one succeeds, the gates are **not** armed — re-run the config com
 
 | Machine | The name that exists |
 |---|---|
-| **Mac** | **only `python3`** — no bare `python`, not even in your own shell |
+| **macOS / Linux (incl. this PC's Ubuntu side)** | **only `python3`** — no bare `python`, not even in your own shell |
 | **PC** (python.org install) | **only `python`** — `py` also works as the launcher |
 
 Docs are written `python3`; **on the PC, drop the `3`.** Nothing to install, nothing to alias — the
@@ -70,7 +70,7 @@ python3 .agents/scripts/tests/run_all.py     # PC: python .agents/scripts/tests/
 | `.env` · `auth_keys/` · service accounts | The master bundle (`docs/migrations/auth_keys/_secrets/master.env`) → restore via `python docs/migrations/scripts/env_master.py --restore` (or `Restore-EnvMaster.ps1` / `restore-env-master.sh`). Gitignored. |
 | Python venvs | Rebuilt per project — never cloned. AGY's is `backend/.venv` on **3.11**; follow the companion guide, don't wing it. |
 | CLI logins | `acli`, `gcloud`, `gh`, `firebase`, `keyway` — each is a per-machine login. **Two of them have their own page, because both can look installed while being unusable:** `acli` is the whole Jira integration, and with no credential an agent reports "no Jira integration" and silently stops writing the board — [`jira-api-token-setup.md`](jira-api-token-setup.md), one token, also the only way to attach a file. **`keyway` is the live secrets vault, and its install and its login are separate acts** — [`keyway-setup.md`](keyway-setup.md), which also covers adding and removing teammates. Verify it with `keyway doctor`: `5 passed, 1 warning` is the finished state. `gcloud`, `gh` and `firebase` are ordinary logins. |
-| Shell env (Mac) | Anything a *script* needs goes in `~/.zshenv`, **not** `.zshrc` — `.zshrc` is read only by interactive shells, so agents and hooks can't see it. |
+| Shell env (macOS) | Anything a *script* needs goes in `~/.zshenv`, **not** `.zshrc` — `.zshrc` is read only by interactive shells, so agents and hooks can't see it. |
 
 ---
 
@@ -85,5 +85,5 @@ python3 .agents/scripts/tests/run_all.py     # PC: python .agents/scripts/tests/
 
 > **The one idea behind all of this:** git moves *branches and files*. It does not move your git
 > **settings**, your **environment**, or your **secrets**. Everything on this card lives outside the
-> repo, which is exactly why it's invisible — and why "works on the desktop, not the Mac" is almost
+> repo, which is exactly why it's invisible — and why "works on one box, not the other" is almost
 > always one of these four rather than a bug in the code.

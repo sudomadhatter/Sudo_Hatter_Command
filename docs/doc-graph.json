@@ -7,7 +7,7 @@
     "files": 388,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 749,
+    "edges": 750,
     "external": 35,
     "ambiguous": 172,
     "dangling": 288,
@@ -778,7 +778,7 @@
     },
     {
       "path": ".agents/rules/jira.md",
-      "in": 39,
+      "in": 40,
       "out": 3
     },
     {
@@ -1864,7 +1864,7 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 16
+      "out": 17
     },
     {
       "path": "docs/code-review-graph.md",
@@ -5318,6 +5318,11 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": "docs/repo-map.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/jira.md",
       "kind": "ref"
     },
     {

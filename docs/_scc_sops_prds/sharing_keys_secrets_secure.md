@@ -349,9 +349,9 @@ it prints live secrets to the terminal.
 ### 6.8 Doing it — the actual commands for changing and sharing access
 
 Everything above says *what* the rules are. This is *how you carry them out*. Every command runs the
-same on the Mac and the PC.
+same on both sides.
 
-These use the GitHub CLI, `gh`, which is already installed and authenticated on both machines. If you
+These use the GitHub CLI, `gh`, which is already installed and authenticated on both sides. If you
 would rather click than type, each one names the equivalent page in GitHub's web interface.
 
 #### Who can read this vault right now?

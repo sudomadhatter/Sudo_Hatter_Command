@@ -35,7 +35,7 @@ categories earn a permanent home:
 1. **Operator preferences and profile**: how Mr. Hatter thinks, directs work, reviews, and
    communicates (the Jobs/Woz division of labor; consequence before mechanism; directness).
 2. **Machine and tooling quirks**: persistent toolchain behavior that recurs across stories and
-   projects (macOS vs Windows vs WSL differences, `acli` CLI syntax and flag traps, SDK bugs, shell
+   projects (Windows vs WSL/Ubuntu side differences, `acli` CLI syntax and flag traps, SDK bugs, shell
    quoting traps, permission quirks).
 3. **Standing rulings**: durable architectural, testing, or workflow decisions that govern future
    lanes and projects.

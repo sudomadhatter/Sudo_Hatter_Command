@@ -166,7 +166,7 @@ python3 .agents/scripts/jira_feed.py reconcile-actions --walkthrough <the walkth
 
 Exit `3` lists every open row with its line number. **Take each one, in this order:**
 
-1. **Derive the check and RUN it.** A keychain item, a live endpoint, a file on disk, a board
+1. **Derive the check and RUN it.** A credential-store item, a live endpoint, a file on disk, a board
    field — most rows have one. Tick on what it returned:
    `--tick <line> --evidence "<what you ran and what it returned>" --source measured`
 2. **No machine check exists? ASK the operator** and tick on their word, quoted:
@@ -376,7 +376,7 @@ if it did not move**. Hand-transitioning here gives up both guards.
 ⛔ **Read the exit code — because nothing downstream does.** This command exists so the board cannot read
 `Done` over unlanded code; the mirror failure is just as real. A transition can fail for ordinary reasons — no
 workflow path from the current status, an expired credential, a sandboxed shell that cannot reach the OS
-keychain. Step 4c's `jira_feed.py check` does **not** close the gap: it reads the description and the Dev
+credential store. Step 4c's `jira_feed.py check` does **not** close the gap: it reads the description and the Dev
 Record comments and never looks at `status`. So a failed transition would sail past it, Step 5 would prune the
 tree and the branch, and Step 6 would print `<KEY> → Done` — with the ticket still at `In Review` and the
 rollback point deleted. The exit-code table above is what stands between those two states.

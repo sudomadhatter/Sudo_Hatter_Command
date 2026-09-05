@@ -66,13 +66,14 @@ plumbing. Three habits keep it honest:
    them, then how.
 2. **Retire, don't accrete.** A deleted command comes OUT of §3 — it does not get a "(retired)"
    note that quietly doubles the page every year.
-3. **Every command you print must run on BOTH machines.** This system is driven from a Mac *and* a
-   Windows PC, and every page is read on both — see `one-pc-windows-and-wsl`. The page said
-   `python .agents/scripts/tests/run_all.py — 94 checks` when the Mac has no bare `python` (only
-   `python3`) and the count was 98. The first fix over-corrected to a blanket "it's `python3`,
-   `python` is wrong" — equally false, because a python.org PC has only `python`. **A doc command is
-   a call site no test ever executes:** paste it into a shell before writing it down, and name the
-   machine when the two disagree. Scripts and hooks must probe (`python3 → python → py`), never assume.
+3. **Every command you print must run on BOTH sides.** This system is one PC with a Windows side
+   *and* an Ubuntu side inside WSL2, and every page is read on both — see `one-pc-windows-and-wsl`.
+   The page said `python .agents/scripts/tests/run_all.py — 94 checks` when the Ubuntu side has no
+   bare `python` (only `python3`) and the count was 98. The first fix over-corrected to a blanket
+   "it's `python3`, `python` is wrong" — equally false, because the python.org install on the Windows
+   side has only `python`. **A doc command is a call site no test ever executes:** paste it into a
+   shell before writing it down, and name the side when the two disagree. Scripts and hooks must
+   probe (`python3 → python → py`), never assume.
 4. **The page states the present; the changelog records the change.** Write the current rule in
    timeless present tense, as if it had always been so. No "⭐ new", no "since SCC-x", no dates, no
    renamed-from / no-longer / before-and-after narration in the page body — the operator reading
