@@ -190,9 +190,9 @@ Rows A–H are the acceptance table above.
 - EDIT `_artifacts/_memory/README.md` — store rules gain the probe line → C
 - NEW `.agents/scripts/memory_probe.py` — runs every `probe:`; one row per memory; nonzero exit on any failure → C
 - EDIT `.agents/scripts/tests/test_memory_store.py` — a failing probe reds the suite and names the file; fixture with a false probe → C
-- EDIT `.agents/scripts/tests/test_memory_store.py` — `audit_signals()` candidate row: a path-naming
-  memory with no probe → C  *(the plan said `.agents/scripts/memory_audit.py`; no such file exists —
-  `audit_signals()` is the real candidates surface, and `/smh-memory-audit` already points at it)*
+- EDIT `.agents/scripts/tests/test_memory_store.py` — `audit_signals()` candidate row → C
+  *(the plan first said `.agents/scripts/memory_audit.py`; no such file exists — `audit_signals()`
+  is the real candidates surface, and `/smh-memory-audit` already points at it)*
 - EDIT `.agents/scripts/INDEX.md` — the new script's row → C
 - EDIT `.agents/rules/agent-memory-is-long-term-only.md` — the probe line becomes law for path-naming memories → C
 - EDIT `_artifacts/_memory/antigravity-uses-workflows-not-commands.md` — IDE→CLI; sides named; probes → C
@@ -205,8 +205,9 @@ Rows A–H are the acceptance table above.
 - EDIT `_artifacts/_memory/git-hooks-live-in-githooks-not-git-hooks.md` — triage → C
 - EDIT `_artifacts/_memory/github-408-on-satellite-uplink.md` — triage → C
 - EDIT `_artifacts/_memory/gitnexus-index-not-actually-live.md` — triage → C
-- RENAME the memory `grep-here-is-ugrep-qv-inverts` → [`agent-shell-grep-is-not-the-gate-grep.md`](../../_memory/agent-shell-grep-is-not-the-gate-grep.md)
-  — the review measured it false: `grep` is a Claude Code shell FUNCTION, not this box's grep → C
+- DELETE `_artifacts/_memory/grep-here-is-ugrep-qv-inverts.md` — the review measured it false → C
+- NEW `_artifacts/_memory/agent-shell-grep-is-not-the-gate-grep.md` — the replacement → C
+- NEW `.agents/scripts/tests/test_memory_probe.py` — the runner's own two-direction gate → C
 - EDIT `_artifacts/_memory/hook-background-work-gets-sigterm.md` — triage → C
 - EDIT `_artifacts/_memory/hooks-armed-measures-pointer-not-payload.md` — triage → C
 - EDIT `_artifacts/_memory/jira-attachments-need-the-rest-token.md` — triage → C

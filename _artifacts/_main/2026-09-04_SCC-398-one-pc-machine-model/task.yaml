@@ -1,0 +1,10 @@
+task_key: SCC-398
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-398-stale-knowledge-audit
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: [SCC-400, SCC-401, SCC-402, SCC-403, SCC-404]
+# Subtasks B-F ride THIS lane and this branch, by the plan's own §Order: they touch the same
+# memory, rule and command files and would conflict as separate branches. A (SCC-399) took its
+# own branch because it unblocked SCC-394 and had to land first - its record is the sibling
+# folder `2026-09-04_stale-knowledge-audit/`, which also holds the plan governing all six.
