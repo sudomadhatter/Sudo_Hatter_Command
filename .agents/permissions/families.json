@@ -223,7 +223,7 @@
     {
       "id": "allow-true",
       "cmd": "true",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | operator harvest 2026-09-05: widened to Claude, which was the only platform still asking - 7 stops in 20 sessions on a no-op used as a shell guard",
       "render": {
         "zoo": [
           "true"
@@ -235,7 +235,8 @@
       },
       "only": [
         "zoo",
-        "antigravity"
+        "antigravity",
+        "claude"
       ]
     },
     {
@@ -1718,6 +1719,114 @@
         "claude",
         "antigravity"
       ]
+    },
+    {
+      "id": "allow-strings",
+      "cmd": "strings",
+      "why": "operator harvest 2026-09-05: read-only binary inspection; 1 stop. Reads, never writes.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-nm",
+      "cmd": "nm",
+      "why": "operator harvest 2026-09-05: read-only symbol listing; 1 stop.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-npx-playwright",
+      "cmd": "npx playwright",
+      "why": "operator harvest 2026-09-05: test runner; 2 stops. Scoped to playwright exactly as `npx vitest` is - bare `npx` stays refused by battery A5 because `npx create-next-app` must ask.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-venv-pytest",
+      "cmd": ".venv/bin/python -m pytest",
+      "why": "operator harvest 2026-09-05: project test runner; 2 stops. Zoo already carries this spelling.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-venv-pip-list",
+      "cmd": ".venv/bin/python -m pip list",
+      "why": "operator harvest 2026-09-05: READ-only dependency listing. `pip install` is deliberately NOT here - installing a dependency is an Ask First item in the constitution.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-firebase-emul",
+      "cmd": "firebase emulators:exec",
+      "why": "operator harvest 2026-09-05: emulator test tier; 2 stops. `emulators:exec` runs a command and tears the emulator down; `firebase deploy` is not allowed.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-firebase-version",
+      "cmd": "firebase --version",
+      "why": "operator harvest 2026-09-05: version probe.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-git-remote-read",
+      "cmd": "git remote -v",
+      "why": "operator harvest 2026-09-05: read-only remote listing; 2 stops. `git remote remove/set-url/rename` stay denied - a remote edit reroutes pushes silently.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-git-remote-url",
+      "cmd": "git remote get-url",
+      "why": "operator harvest 2026-09-05: the single-remote read form.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-acli-auth",
+      "cmd": "acli jira auth status",
+      "why": "operator harvest 2026-09-05: credential probe; prints no secret.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-acli-view",
+      "cmd": "acli jira workitem view",
+      "why": "operator harvest 2026-09-05: board read. Filed per SUBCOMMAND, never bare `acli` - SCC-393 measured that a bare row is refused because `acli jira workitem delete` is denied.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-acli-search",
+      "cmd": "acli jira workitem search",
+      "why": "operator harvest 2026-09-05: board read.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-acli-comment",
+      "cmd": "acli jira workitem comment",
+      "why": "operator harvest 2026-09-05: the board write every close ceremony makes.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-acli-link",
+      "cmd": "acli jira workitem link",
+      "why": "operator harvest 2026-09-05: the board write the ticket ceremonies make.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-acli-edit",
+      "cmd": "acli jira workitem edit",
+      "why": "operator harvest 2026-09-05: the board write the ticket ceremonies make.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-acli-assign",
+      "cmd": "acli jira workitem assign",
+      "why": "operator harvest 2026-09-05: the board write the ticket ceremonies make.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-acli-create",
+      "cmd": "acli jira workitem create",
+      "why": "operator harvest 2026-09-05: the board write the ticket ceremonies make.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-acli-transition",
+      "cmd": "acli jira workitem transition",
+      "why": "operator harvest 2026-09-05: the board write every close ceremony makes.",
+      "only": ["claude"]
     }
   ],
   "deny": [

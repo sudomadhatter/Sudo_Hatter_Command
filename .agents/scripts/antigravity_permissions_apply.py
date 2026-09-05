@@ -50,14 +50,33 @@ def status(store: Path = STORE, rendered: Path = RENDERED) -> str:
         return f"no rendered fence at {rendered}"
     sa, sd = _norm(_grants(store))
     ra, rd = _norm(_grants(rendered))
-    if (sa, sd) == (ra, rd):
-        return IN_SYNC
-    return (f"DRIFT allow: store-only={len(sa - ra)} tracked-missing={len(ra - sa)} | "
-            f"deny: store-only={len(sd - rd)} tracked-missing={len(rd - sd)}")
+    # ⛔ SCC-414: "in sync" means every TRACKED row is present. Store-only rows are the operator's
+    # own clicks, kept on purpose by the merge - reporting them as DRIFT (and exiting 1) is what
+    # made a healthy store look broken and invited the destructive apply that deleted 58 of them.
+    missing_a, missing_d = ra - sa, rd - sd
+    extra_a, extra_d = sa - ra, sd - rd
+    if not missing_a and not missing_d:
+        kept = len(extra_a) + len(extra_d)
+        return IN_SYNC + (f" ({kept} store-only row(s) kept - your own approvals)" if kept else "")
+    return (f"DRIFT allow: tracked-missing={len(missing_a)} store-only={len(extra_a)} | "
+            f"deny: tracked-missing={len(missing_d)} store-only={len(extra_d)}")
 
 
-def apply(store: Path = STORE, rendered: Path = RENDERED) -> dict:
-    """Write the rendered grants into the store; return a small report dict."""
+def merge_keep_store_only(tracked: list, store: list) -> list:
+    """Tracked rows first, then every store-only row the operator clicked, order preserved.
+
+    ⛔ SCC-414: the apply used to REPLACE both arrays, which silently deleted every approval the
+    operator had clicked in the IDE. Measured 2026-09-05: 178 store rows in, 123 out - 58 of his own
+    grants destroyed by one routine apply, after which he re-clicked the same commands and the next
+    apply destroyed them again. The store is where his DECISIONS land; the rendered fence is the
+    subset we chose to carry between machines. Overwriting the first with the second is data loss.
+    """
+    seen = set(tracked)
+    return list(tracked) + [row for row in store if row not in seen]
+
+
+def apply(store: Path = STORE, rendered: Path = RENDERED, prune: bool = False) -> dict:
+    """Merge the rendered grants into the store (or replace them, with prune=True)."""
     cfg = json.loads(store.read_text(encoding="utf-8"))
     fence = _grants(rendered)
     backup = store.with_suffix(".json.scc-backup")
@@ -66,7 +85,16 @@ def apply(store: Path = STORE, rendered: Path = RENDERED) -> dict:
         shutil.copy2(store, backup)
         made_backup = True
     us = cfg.setdefault("userSettings", {})
-    us[KEY] = {"allow": list(fence.get("allow", [])), "deny": list(fence.get("deny", []))}
+    live = us.get(KEY) or {}
+    if prune:
+        # The old behaviour, now opt-in: make the store EXACTLY the rendered fence. Use it only to
+        # retire a row the source deliberately dropped - it deletes un-harvested clicks.
+        us[KEY] = {"allow": list(fence.get("allow", [])), "deny": list(fence.get("deny", []))}
+    else:
+        us[KEY] = {
+            "allow": merge_keep_store_only(fence.get("allow", []), live.get("allow", [])),
+            "deny": merge_keep_store_only(fence.get("deny", []), live.get("deny", [])),
+        }
     store.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     back = _grants(store)
     return {
@@ -84,6 +112,10 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--status", action="store_true", help="read-only report (default)")
     p.add_argument("--apply", action="store_true", help="write the rendered grants into the store")
+    p.add_argument("--prune", action="store_true",
+                   help="with --apply: also DELETE store-only rows so the store matches the "
+                        "rendered fence exactly. Off by default - an un-harvested row is an "
+                        "approval you clicked, and deleting it is data loss (SCC-414)")
     p.add_argument("--store", type=Path, default=STORE, help="override the store path (tests)")
     p.add_argument("--rendered", type=Path, default=RENDERED, help="override the rendered file")
     a = p.parse_args(argv)
@@ -100,7 +132,7 @@ def main(argv: list[str] | None = None) -> int:
     if not a.rendered.exists():
         print(f"ERROR: no rendered fence at {a.rendered} - run permission_render.py first")
         return 2
-    r = apply(a.store, a.rendered)
+    r = apply(a.store, a.rendered, a.prune)
     print(f"backup  : {r['backup']} ({'written now' if r['backup_written_now'] else 'kept, already existed'})")
     print(f"wrote and read back: allow={r['allow']} deny={r['deny']}")
     print(f"preserved keys: {r['preserved_keys']}")

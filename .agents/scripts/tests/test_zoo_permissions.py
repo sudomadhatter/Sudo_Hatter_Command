@@ -509,13 +509,30 @@ def test_apply_writes_only_the_list_keys():
         secret = con.execute(
             "SELECT value FROM ItemTable WHERE key=?", ("secret://apiKey",)).fetchone()[0]
         con.close()
-        assert got["allowedCommands"] == ["new-allow "] and got["deniedCommands"] == ["new-deny "]
+        # ⛔ SCC-414 CHANGED THIS CONTRACT ON PURPOSE. The apply used to REPLACE both arrays, which
+        # silently deleted every approval the operator had clicked in chat - measured on the
+        # Antigravity twin the same day: 178 store rows in, 123 out, 58 of his own grants destroyed,
+        # after which he re-clicked and the next apply destroyed them again. It now MERGES: the
+        # tracked row lands FIRST and the store-only row survives. --prune restores the old
+        # behaviour for a row that must be retired, and the second half below is its control.
+        assert got["allowedCommands"][0] == "new-allow ", got["allowedCommands"]
+        assert got["deniedCommands"][0] == "new-deny ", got["deniedCommands"]
+        for row in memento["allowedCommands"]:
+            assert row in got["allowedCommands"], f"the operator's click was DELETED: {row}"
         for k in ("autoApprovalEnabled", "alwaysAllowExecute", "destructiveCommandGuardEnabled",
                   "unrelatedKey"):
             assert got[k] == memento[k], f"apply must not touch memento key {k}"
         assert bytes(secret) == b"SECRET-BYTES", "apply must never touch secret:// rows"
         mod.apply(db, got, ["a2 "], ["d2 "])
         assert backup.read_bytes() == original, "second apply must not overwrite the backup"
+        # the control: --prune must still be able to delete, or the merge assert above could pass
+        # on an apply that writes nothing at all.
+        mod.apply(db, dict(memento), ["only-this "], ["only-deny "], prune=True)
+        con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        pruned = json.loads(con.execute(
+            "SELECT value FROM ItemTable WHERE key=?", ("ZooCodeOrganization.zoo-code",)).fetchone()[0])
+        con.close()
+        assert pruned["allowedCommands"] == ["only-this "], pruned["allowedCommands"]
 
 
 def test_enable_auto_approve_flips_only_the_two_master_keys_and_only_when_asked():

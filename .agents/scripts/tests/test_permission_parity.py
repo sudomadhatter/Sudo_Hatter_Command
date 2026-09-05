@@ -565,7 +565,23 @@ if c.block("C · the Antigravity apply is safe and scoped"):
             ap.apply(store, AG_RENDERED)
             after = json.loads(store.read_text(encoding="utf-8"))
             want = json.loads(AG_RENDERED.read_text(encoding="utf-8"))["userSettings"]["globalPermissionGrants"]
-            c.check("C1 grants replaced by the rendered fence", after["userSettings"]["globalPermissionGrants"] == want)
+            got = after["userSettings"]["globalPermissionGrants"]
+            # ⛔ SCC-414 CHANGED THIS CONTRACT ON PURPOSE. It used to assert the grants were
+            # REPLACED by the fence. That is what silently deleted 58 of the operator's own clicked
+            # approvals in one routine apply (measured 2026-09-05) - he re-clicked, and the next
+            # apply deleted them again. The apply now MERGES: every tracked row lands, and a
+            # store-only row survives. `--prune` restores the old behaviour when a row must be
+            # retired on purpose, and C1b is the control proving prune still deletes.
+            c.check("C1 every tracked grant lands in the store",
+                    all(r in got["allow"] for r in want["allow"])
+                    and all(r in got["deny"] for r in want["deny"]))
+            c.check("C1a the operator's store-only click SURVIVES the apply",
+                    "unsandboxed(old)" in got["allow"], f"deleted: {got['allow'][:3]}")
+            store.write_text(json.dumps(before, indent=2, ensure_ascii=False), encoding="utf-8")
+            ap.apply(store, AG_RENDERED, prune=True)
+            pruned = json.loads(store.read_text(encoding="utf-8"))["userSettings"]["globalPermissionGrants"]
+            c.check("C1b --prune still replaces (the control: without it C1a could pass on a no-op)",
+                    pruned == want and "unsandboxed(old)" not in pruned["allow"])
             c.check("C2 every other key preserved (remoteControlHostname, conversationWidth, plugins) - non-ASCII kept as written",
                     after["userSettings"]["remoteControlHostname"] == "hätter-pc"
                     and "hätter-pc" in store.read_text(encoding="utf-8")

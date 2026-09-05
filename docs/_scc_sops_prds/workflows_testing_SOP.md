@@ -114,7 +114,7 @@ the twin is an AVCH ticket of its own, not something a lobby lane may do.
 | **plan** a big Task — subtasks, lanes, the parallel table | `/smh-plan-task <TASK-KEY>`, then `/smh-label-tasks <TASK-KEY>` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
 | **build** a Task — a command, a rule, a gate, the docs | `/smh-quick-dev <KEY>` → `/smh-code-review` → `/smh-close-task-merge-tree` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
 | **just get one specific thing done** — write me a guide, fix a reference, tidy a branch mess | `/smh-quick-fix "<the ask>"` — **no plan, no `approved`, no review**; it does not stop to ask whether to start ([§9a](#the-lightweight-lane--smh-quick-fix)) |
-| **tired of approving the same terminal commands** (or the same file reads) | `/smh-llm-approvals` — lists what you had to approve across Claude, Zoo and Antigravity — **and the rules you already approved in a terminal chat, which live on one machine only** — then adds the ones you name to the ONE permission source, which renders all three allow lists for you ([§13](#what-does-not-travel-between-the-machines)) |
+| **tired of approving the same terminal commands** (or the same file reads) — **every prompt re-bills your whole context, so this is budget, not tidiness** | `/smh-llm-approvals` — lists what you had to approve across Claude, Zoo and Antigravity — **and the rules you already approved in a terminal chat, which live on one machine only** — then adds the ones you name to the ONE permission source, which renders all three allow lists for you ([§13](#what-does-not-travel-between-the-machines)) |
 | **push routine docs/notes to PR** — the standing ticket `SCC-186` | `/smh-non-crit-pr-push` — **qualifies `LIGHT`, stages, commits `SCC-186`, pushes, opens PR** ([§9a](#the-lightweight-lane--smh-quick-fix)) |
 | land **several** finished Tasks at once | `/smh-merge-multiple-workingtrees` — one sign-off per lane ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | see what a command will do before typing it | [Part VI — the command atlas](#18-every-command-one-diagram) |
@@ -4019,6 +4019,19 @@ never merges on its own initiative or pushes `main`. Explained in [§16](#16-inc
 ### Toolkit upkeep
 
 #### /smh-llm-approvals
+
+> ⛔ **This is cost control, not hygiene.** An approval prompt breaks the prompt cache: the turn
+> resumes cold and the whole context is billed a second time, so every interruption is charged twice
+> — once in your attention, once on the invoice. Measured across your 20 newest sessions and 10,028
+> Bash calls: **allow-list gaps cost 5h50m in 44 stops**, sandbox escalations another 1h16m, and
+> **deny rows refused zero commands**. The protections are not the cost, so they are never traded
+> away to fix this. The cost is the *absence* of allow rows.
+>
+> **The output of this command is a smaller prompt count.** If a run ends with a ticket, a report or
+> a plan and no new allow row, it failed — however green the gates. Adding a row is a two-file edit
+> under its own fast path, never a lane. Claude rows are free: Claude reads the tracked
+> `.claude/settings.json` directly, so a rendered row is live the moment it is saved — no store, no
+> apply, nothing for you to run. Full law: `.agents/rules/approval-cost-is-a-threat.md`.
 
 *Answers "what did I keep having to approve?" and then fixes it. It reads your recent Claude Code
 sessions, your Zoo Code threads and your Antigravity store, finds every terminal command that
