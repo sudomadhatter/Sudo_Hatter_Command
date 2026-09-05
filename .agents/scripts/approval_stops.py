@@ -75,7 +75,12 @@ def allow_prefixes(repo: Path) -> list[str]:
     for rule in cfg.get("permissions", {}).get("allow", []):
         if rule.startswith("Bash(") and rule.endswith(")"):
             body = rule[5:-1]
-            for suffix in (":*", " *"):
+            # ⛔ ORDER IS LOAD-BEARING: the longer suffixes strip first. Put the bare "*"
+            # first and `Bash(git status:*)` comes back as `git status:`, which matches
+            # nothing. The bare star is not a typo - battery A2b established that a prefix
+            # ending in `/ = - :` MUST be spelled `Bash(X/*)`, because Claude reads
+            # `Bash(X:*)` as `Bash(X *)`. 54 of the 153 rendered rows use it (SCC-409).
+            for suffix in (":*", " *", "*"):
                 if body.endswith(suffix):
                     body = body[: -len(suffix)]
                     break

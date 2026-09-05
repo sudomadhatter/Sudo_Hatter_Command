@@ -118,6 +118,50 @@ def test_D_a_COVERED_command_never_reports_however_long_it_waited():
     assert not r["stops"], "a command already on the allow list was reported as a stop"
 
 
+def test_D_b_a_BARE_STAR_row_is_stripped_to_its_prefix():
+    """⛔ THE PART B BUG. Battery A2b established that a prefix ending in `/ = - :` must be
+    spelled `Bash(X/*)`, because Claude reads `Bash(X:*)` as `Bash(X *)` — so the bare-star
+    spelling is the WORKING one. `allow_prefixes()` stripped `:*` and ` *` and never a bare `*`,
+    so 54 of the 153 rendered Claude `Bash(...)` rows came back with the `*` still attached and
+    matched nothing. Reads the REAL allow_prefixes(), not the stub the other cases use.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td)
+        (repo / ".claude").mkdir()
+        (repo / ".claude" / "settings.json").write_text(json.dumps({"permissions": {"allow": [
+            "Bash(python3 .agents/scripts/*)",     # bare star - the working spelling
+            "Bash(git status:*)",                  # colon star
+            "Bash(ls *)",                          # space star
+            "Read(//home/**)",                     # not a Bash rule at all
+        ]}}), encoding="utf-8")
+        got = aps.allow_prefixes(repo)
+    assert got == ["python3 .agents/scripts/", "git status", "ls"], got
+
+
+def test_D_c_a_slow_call_a_BARE_STAR_row_covers_is_not_a_stop():
+    """The consequence of D_b on the door itself, end to end through the real scan().
+
+    With the `*` still attached the prefix matches nothing, so a command an existing allow row
+    already approves is billed to the operator as an interruption. That is the instrument error
+    that inflated SCC-406's claimed savings.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td)
+        (repo / ".claude").mkdir()
+        (repo / ".claude" / "settings.json").write_text(json.dumps({"permissions": {"allow": [
+            "Bash(python3 .agents/scripts/*)"]}}), encoding="utf-8")
+        store = repo / "projects" / "p"
+        store.mkdir(parents=True)
+        _transcript(store / "s.jsonl", [("python3 .agents/scripts/check_maps.py", 600, None)])
+        real_glob = aps.glob.glob
+        aps.glob.glob = lambda _pat: [str(store / "s.jsonl")]
+        try:
+            r = aps.scan(repo, 20, 20.0)
+        finally:
+            aps.glob.glob = real_glob
+    assert not r["stops"], "a command a bare-star allow row already covers was billed as a stop"
+
+
 def test_E_a_self_explaining_wait_is_dropped():
     """⛔ Written `\\d` instead of `\\d+`, this matched `timeout 9` inside `timeout 900` and then
     failed the boundary against the second `0` - so the rows the filter existed to drop stayed at
