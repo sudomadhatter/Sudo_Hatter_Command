@@ -164,6 +164,8 @@
     "git branch -d \"chore/",
     "git branch -d \"claude/",
     "git branch -d \"epic/",
+    "git branch -d worktree-agent-",
+    "git branch -d \"worktree-agent-",
     "git push origin --delete chore/",
     "git push origin --delete claude/",
     "git push origin --delete epic/",

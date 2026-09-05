@@ -1189,7 +1189,7 @@
     {
       "id": "allow-git-branch",
       "cmd": "git branch",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | /smh-llm-approvals 2026-09-05 (operator pick): `git branch -d worktree-agent-` + quoted twin. The harness generates a `worktree-agent-<hash>` branch per subagent worktree and the close-out deletes it; measured 6 stops in 20 sessions of the operator waiting to delete the agent's own scratch. The prefix cannot reach chore/, claude/, epic/ or main. Claude's row uses the BARE-STAR spelling because the prefix ends in `-` and Claude reads `Bash(X:*)` as `Bash(X *)` (battery A2b). NOT added: `git branch -r` - measured 2026-09-05, `git branch -rd origin/<ref>` DELETES a remote-tracking ref, while --list/-a/--merged all refuse to combine with a delete.",
       "render": {
         "zoo": [
           "git branch -d chore/",
@@ -1197,14 +1197,17 @@
           "git branch -d epic/",
           "git branch -d \"chore/",
           "git branch -d \"claude/",
-          "git branch -d \"epic/"
+          "git branch -d \"epic/",
+          "git branch -d worktree-agent-",
+          "git branch -d \"worktree-agent-"
         ],
         "claude": [
           "Bash(git branch -d chore/*)",
           "Bash(git branch --list:*)",
           "Bash(git branch -a:*)",
           "Bash(git branch --show-current:*)",
-          "Bash(git branch -f chore/*)"
+          "Bash(git branch -f chore/*)",
+          "Bash(git branch -d worktree-agent-*)"
         ]
       },
       "only": [
