@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-379-skeleton-fence",
+  "errors": 2,
+  "exit": 2,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-379",
+  "verdict": "BLOCKED - resolve the errors above",
+  "verdict_sha": null,
+  "warnings": 1,
+  "when": null
+}

@@ -45,4 +45,5 @@ HEAD SHA in sudo-project-skeleton: ee1a2b2be1e60bfc100baf6358d871649d013f74
 
 ## Your Actions
 
-- [ ] Merge PR for `chore/SCC-379-skeleton-fence` on GitHub once CI passes.
+- [x] The merge itself — lands via this branch's PR
+

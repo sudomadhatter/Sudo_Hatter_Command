@@ -1,6 +1,8 @@
-key: SCC-379
+task_key: SCC-379
 title: Propagate the SCC-376 fence shape to sudo-project-skeleton
-repo: Sudo_Hatter_Command
+primary_repo: Sudo_Hatter_Command
 branch: chore/SCC-379-skeleton-fence
 date: 2026-09-04
-landing_mode: full
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+
