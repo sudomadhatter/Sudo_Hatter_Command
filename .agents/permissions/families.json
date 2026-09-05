@@ -1205,7 +1205,20 @@
           "Bash(git branch --list:*)",
           "Bash(git branch -a:*)",
           "Bash(git branch --show-current:*)",
-          "Bash(git branch -f chore/*)"
+          "Bash(git branch -f chore/*)",
+          "Bash(git branch -r:*)",
+          "Bash(git branch -v:*)",
+          "Bash(git branch -vv:*)",
+          "Bash(git branch --merged:*)",
+          "Bash(git branch --contains:*)",
+          "Bash(git branch --format:*)",
+          "Bash(git branch -d claude/*)",
+          "Bash(git branch -D chore/*)",
+          "Bash(git branch -D claude/*)",
+          "Bash(git branch --set-upstream-to=origin/chore/*)",
+          "Bash(git branch --set-upstream-to=origin/claude/*)",
+          "Bash(git branch chore/*)",
+          "Bash(git branch claude/*)"
         ]
       },
       "only": [
@@ -1244,7 +1257,17 @@
           "Bash(git push -u origin claude/*)",
           "Bash(git push origin claude/*)",
           "Bash(env -u GITHUB_TOKEN git push origin chore/*)",
-          "Bash(env -u GITHUB_TOKEN git push -u origin chore/*)"
+          "Bash(env -u GITHUB_TOKEN git push -u origin chore/*)",
+          "Bash(git push --set-upstream origin chore/*)",
+          "Bash(git push --set-upstream origin claude/*)",
+          "Bash(git push -q --set-upstream origin chore/*)",
+          "Bash(git push -q -u origin chore/*)",
+          "Bash(git push -q origin chore/*)",
+          "Bash(git push origin epic/*)",
+          "Bash(git push -u origin epic/*)",
+          "Bash(env -u GITHUB_TOKEN git push origin epic/*)",
+          "Bash(git push origin --delete claude/*)",
+          "Bash(env -u GITHUB_TOKEN git push origin --delete claude/*)"
         ]
       },
       "only": [
@@ -1331,7 +1354,7 @@
     {
       "id": "allow-firebase-tests-node-modules-bin-firebase",
       "cmd": "firebase/tests/node_modules/.bin/firebase",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); widened to Claude 2026-09-05 by /smh-llm-approvals — 2 stops, 41s: the E2E tier's own emulator runner, which Claude kept asking for because the family rendered only to zoo/antigravity",
       "render": {
         "zoo": [
           "firebase/tests/node_modules/.bin/firebase emulators:exec"
@@ -1339,11 +1362,15 @@
         "antigravity": [
           "command(firebase/tests/node_modules/\\.bin/firebase emulators:exec)",
           "unsandboxed(firebase/tests/node_modules/\\.bin/firebase emulators:exec)"
+        ],
+        "claude": [
+          "Bash(firebase/tests/node_modules/.bin/firebase emulators:exec:*)"
         ]
       },
       "only": [
         "zoo",
-        "antigravity"
+        "antigravity",
+        "claude"
       ]
     },
     {
@@ -1826,6 +1853,79 @@
       "id": "allow-acli-transition",
       "cmd": "acli jira workitem transition",
       "why": "operator harvest 2026-09-05: the board write every close ceremony makes.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-git-submodule",
+      "cmd": "git submodule",
+      "why": "operator harvest 2026-09-05 (/smh-llm-approvals): 2 stops; every project under Projects/ is a submodule, so status/update runs in any project-bound lane.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-git-switch",
+      "cmd": "git switch",
+      "why": "operator harvest 2026-09-05 (/smh-llm-approvals): 1 stop; the modern spelling of the already-allowed `git checkout`.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-install-mode",
+      "cmd": "install -m",
+      "why": "operator harvest 2026-09-05 (/smh-llm-approvals): 1 stop, 25s; used to place hook scripts with an explicit mode.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-rm-rf-scratchpad",
+      "cmd": "rm -rf /tmp/claude",
+      "why": "operator harvest 2026-09-05 (/smh-llm-approvals): the 5h08m whale — the observed command was `rm -rf /tmp/claude/gbtest`. SCOPED to the temp root on purpose (covers /tmp/claude/ and /tmp/claude-<uid>/); the operator picked 'rm scoped to temp paths', so bare `rm -rf` is deliberately NOT granted.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-rm-f-scratchpad",
+      "cmd": "rm -f /tmp/claude",
+      "why": "operator harvest 2026-09-05 (/smh-llm-approvals): same temp scoping as allow-rm-rf-scratchpad.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-rm-scratchpad",
+      "cmd": "rm /tmp/claude",
+      "why": "operator harvest 2026-09-05 (/smh-llm-approvals): same temp scoping; the plain form.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-rm-worktree-scratch",
+      "cmd": "rm .claude/worktrees/",
+      "why": "operator harvest 2026-09-05 (/smh-llm-approvals): deleting a lane's own scratch file. Path-scoped to the worktree tree, never bare rm.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-rmdir-worktree-scratch",
+      "cmd": "rmdir .claude/worktrees/",
+      "why": "operator harvest 2026-09-05 (/smh-llm-approvals): 2 stops, 2m30s — `rmdir .claude/worktrees/agent-*/scratch`. rmdir only removes EMPTY directories, so this is the safest delete verb there is.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-rm-f-artifacts",
+      "cmd": "rm -f _artifacts/",
+      "why": "operator harvest 2026-09-05 (/smh-llm-approvals): clearing a lane's own red-output scratch files under its artifact dir.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-git-rm",
+      "cmd": "git rm",
+      "why": "operator harvest 2026-09-05 (/smh-llm-approvals): 2 stops; staging a deletion is an ordinary lane write and `git add` is already allowed.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-worktree-venv-python",
+      "cmd": "worktree-venv-python",
+      "why": "operator harvest 2026-09-05 (/smh-llm-approvals): 3 stops, 7m00s — a lane's own venv interpreter invoked by ABSOLUTE path, which no relative prefix rule can match. Scoped to the worktrees tree of each repo, so it grants the lane's interpreter and nothing on the wider machine.",
+      "render": {
+        "claude": [
+          "Bash(/home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/.claude/worktrees/*)",
+          "Bash(/home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/bin/*)",
+          "Bash(/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/*)"
+        ]
+      },
       "only": ["claude"]
     }
   ],

@@ -32,10 +32,11 @@ does not parse - and it always says WHICH.
 
 Two deliberate absences, both load-bearing:
 
-* There is NO ``--apply``, and there must never be one. Claude reads the tracked file directly,
-  so a rendered row is in force the moment the file is saved: there is no store to push into and
-  nothing that can be replaced or lost. That is what makes Claude's path different from
-  Antigravity's (``antigravity_permissions_apply.py``), whose apply REPLACES both arrays.
+* There is NO ``--apply`` HERE. The tracked file is live the moment it is saved — inside THIS
+  repo. The apply that does exist, ``claude_permissions_apply.py`` (SCC-415), writes USER scope
+  (``~/.claude/settings.json``) so the rows also hold in project checkouts and worktrees, and it
+  widens the sandbox — the one file an agent is barred from writing, so the operator runs it, the
+  same way he runs the Antigravity and Zoo applies. This script stays the read-only half.
 * It reports ``allow`` only. ``/smh-llm-approvals`` never reads or writes any deny list, and a
   report that surfaced deny rows would invite exactly the edit that law forbids.
 """

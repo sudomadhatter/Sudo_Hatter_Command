@@ -38,13 +38,21 @@ Measured on the operator's machine, 20 newest sessions, 10,028 Bash calls, 2026-
 | bucket | stops | wall-clock | what fixes it |
 |---|---|---|---|
 | allow-list gaps | 44 | **5h 50m** | an allow row |
-| sandbox escalation (already allowed) | 94 | 1h 16m | `/sandbox`, never a permission row |
+| a SHAPE the matcher cannot read — heredoc, leading `VAR=` — while looking covered | 94 | **13h 01m** | the AGENT reshapes; `shape-block.py` refuses / proves it (SCC-415). Never a row, never `/sandbox` |
 | **refused by a deny row** | **0** | **0** | — |
+
+⚠ The middle row read *"sandbox escalation → `/sandbox`, 1h 16m"* until the 2026-09-05 re-measurement
+(SCC-415), which classified the same calls by SHAPE: 54 heredocs (7h17m) and 40 leading `VAR=`
+assignments (5h44m), every one sandboxed, rule-matched and violation-free, still stopping. `/sandbox`
+fixes none of them and `sandbox.excludedCommands` makes them worse. That diagnosis cost a full
+session; it is corrected here so it is not repeated.
 
 ⭐ **Zero commands were refused by a deny rule.** All 115 Zoo deny rows and all 424 Antigravity ones
 cost nothing measurable. **So never propose relaxing the deny fence to fix this** — it trades away a
-protection that costs nothing for a problem it is not causing. The entire cost is the *absence* of
-allow rows, and the reason they are absent is ceremony.
+protection that costs nothing for a problem it is not causing. The cost is two things: the *absence*
+of allow rows (fixed by rows, and the reason they are absent is ceremony) and the *shape* of the
+agent's own commands (fixed by the agent, and by the hook that refuses the shape before it reaches
+the operator).
 
 ## The law
 

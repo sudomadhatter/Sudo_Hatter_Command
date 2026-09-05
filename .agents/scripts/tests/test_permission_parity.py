@@ -209,7 +209,6 @@ if c.block("A · one battery, three matchers, identical verdicts"):
             ("git add -u", "claude"): ("allow", "same"),
             ("npm test", "zoo"): ("ask", "Zoo has `npm run `/`npm ci ` and no `npm test`; allow growth is his, via /smh-llm-approvals"),
             ("git push origin HEAD:epic/SCC-1-x", "claude"): ("ask", "Claude allows `git push origin chore/*`, `claude/*`, `main*` and not the `HEAD:epic/` landing; the push hook still gates it"),
-            ("git push origin --delete claude/x", "claude"): ("ask", "Claude allows `--delete chore/*` only"),
             ("git config --list", "claude"): ("ask", "Claude allows `git config --get:*` only"),
             ("git config -l", "claude"): ("ask", "same"),
             ("find . -delete", "claude"): ("allow", "Claude allows `find:*`; Zoo refuses `find` on purpose (guide s8). Which side moves is his call"),
@@ -644,9 +643,15 @@ if c.block("E · /smh-llm-approvals writes the SOURCE and reads Antigravity"):
             "adds the ones he picks to both allow lists" not in (ROOT / ".agents" / "commands" / "INDEX.md").read_text(encoding="utf-8"))
     c.check("E6 Step 1 reads BOTH machine-local Claude lists by name",
             "~/.claude/settings.json" in body and ".claude/settings.local.json" in body)
-    c.check("E7 the door states Claude has no apply, names the script, AND keeps the never-edits law "
-            "- the plan promised all three and only two were pinned (acceptance lens)",
-            "Claude has no apply" in body and "claude_permissions_status.py" in body
+    # SCC-415 (operator's direction 2026-09-05): Claude DOES have an apply now - the user-scope
+    # merge + sandbox widen the operator runs himself, like the other two platforms. The door
+    # must name BOTH scripts, say the agent cannot run the apply, and keep the never-edits law:
+    # the DOOR still edits no machine-local file; the operator's script does.
+    c.check("E7 the door names both Claude scripts (status + apply), says the AGENT cannot run the "
+            "apply, and keeps the never-edits law (SCC-392 pinned 'no apply'; SCC-415 replaced it)",
+            "claude_permissions_status.py" in body and "claude_permissions_apply.py" in body
+            and "Claude has no apply" not in body
+            and "An agent cannot run it" in body
             and "does not edit the two machine-local Claude files" in body)
     c.check("E8 the door names the two blank-cheque rows it must not promote silently",
             "Bash(bash:*)" in body and "Bash(sh:*)" in body)

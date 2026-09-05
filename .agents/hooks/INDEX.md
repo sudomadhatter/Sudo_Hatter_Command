@@ -41,10 +41,16 @@ Condition (B) requires each atom to match a rule the operator already wrote, so 
 auto-approve on its own as a separate call. It removes the prompt on running them in one call.
 Measured over one session: 19% → 39% of Bash calls auto-approved, 94 prompts removed of 375.
 
-⚠ **The general lever is `/sandbox`, not either of these.** With sandboxing on,
-`autoAllowBashIfSandboxed` (default true) auto-allows every command that runs inside it, whatever
-its shape — no verb list at all. These two hooks are what works while it is off, or where a
-command must run outside it.
+⚠ **The sandbox is NOT the general lever, and this paragraph said it was until SCC-415.** With
+sandboxing on and `autoAllowBashIfSandboxed` true, a command that runs inside it is auto-allowed —
+but only once the permission layer has read its shape, and two shapes it cannot read at all fall to
+the classifier and then to the operator regardless: a heredoc body and a leading `VAR=`. Measured
+2026-09-05 over 20 sessions: 94 such calls, **13 hours** of the operator waiting, all sandboxed, all
+rule-matched. That is what the third hook is for.
+
+| File | Covers | Decision |
+|---|---|---|
+| `shape-block.py` | a **heredoc** (`python3 - <<'PY'`, `git commit -F - <<'MSG'`) → **deny**, with the reshape (Write the payload to a file; `python3 <file>` / `git commit -F <file>`); a leading run of `NAME=<literal>` → stripped, and the remainder **allowed** ONLY when it already matches one of the operator's own allow rules on its own (the same nothing-new proof as the chain hook) | the only `PreToolUse` hook here that can **deny** — because for these shapes the operator's click IS the damage and a nag would speak after it (`command-shape.md` §Nag, limit 2). Never an ask; fails open. (SCC-415) |
 
 ## The nag hooks — the ones that speak AFTER the call
 

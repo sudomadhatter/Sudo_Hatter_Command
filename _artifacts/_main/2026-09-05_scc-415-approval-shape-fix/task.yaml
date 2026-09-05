@@ -1,0 +1,6 @@
+task_key: SCC-415
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-415-approval-sandbox-harvest
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: []

@@ -136,6 +136,22 @@ _LOOKS_LIKE_COMMAND = re.compile(r"""^["']?[\w./$~][\w./$~+-]*(\s|$)""")
 # harness refuses the shape, not the program. Reporting these beside real candidates is what makes
 # a list unactionable, so they are carried under their own heading WITH THEIR REMEDY.
 _HARNESS_BAN = [
+    # ⛔ THE THREE SHAPES THAT COST 13 OF 15 HOURS (SCC-415, 20 sessions, 2026-09-05). A heredoc
+    # body and a `VAR=` head are things the prefix matcher cannot read, so the call drops to the
+    # classifier and then to the operator - while LOOKING covered, because `python3` matched.
+    # They used to land in the "escalation" bucket and get blamed on the sandbox. No row fixes a
+    # shape; shape-block.py (PreToolUse) now refuses the heredoc and proves the literal head.
+    (re.compile(r"<<-?\s*['\"]?[A-Za-z_][A-Za-z0-9_]*['\"]?[ \t]*\n"),
+     "a heredoc - the matcher reads only the first line, the body drops to the classifier and "
+     "then to you (command-shape.md rule 5; shape-block.py now REFUSES it before the gate) - "
+     "write the payload with the Write tool and run `python3 <file>` / `git commit -F <file>`"),
+    (re.compile(r"^\s*(?:export\s+)?[A-Za-z_][A-Za-z0-9_]*=\$\("),
+     "a `VAR=$( )` head - one unsplittable piece no rule can begin with (command-shape.md "
+     "rule 6) - resolve it in a prior plain call and paste the literal"),
+    (re.compile(r"^\s*(?:export\s+)?[A-Za-z_][A-Za-z0-9_]*="),
+     "a leading `VAR=` assignment - no rule can begin with it (command-shape.md rule 6; "
+     "shape-block.py strips a literal one and allows the rest only when the rest is already "
+     "allowed on its own) - inline the value"),
     (re.compile(r"(^|[;&|]\s*)sleep\s+\d"), "foreground sleep is blocked - use Monitor with an "
                                             "until-loop, or run_in_background"),
     (re.compile(r"\bgit\s+-C\b"), "git -C is auto-denied (command-shape.md rule 1) - "
@@ -388,7 +404,7 @@ def main() -> int:
         return 0
     print("  not covered by the allow list                     : %d"
           % kinds.get("waited", 0))
-    print("  ALLOWED but stopped by the escalation gate        : %d"
+    print("  covered by a rule, yet it still waited            : %d"
           % kinds.get("escalation", 0))
     print("  a tool with no grant kind at all (Skill, Agent …) : %d"
           % kinds.get("no-grant-kind", 0))
@@ -401,8 +417,10 @@ def main() -> int:
     print("  wall-clock time you spent waiting                 : %s" % _hms(lost))
 
     _section("ONE ALLOW ROW FIXES THESE - ranked by time, not count", r["heads"])
-    _section("ALREADY ALLOWED, stopped by the SANDBOX ESCALATION gate - a second, "
-             "independent gate", r["escalated"])
+    _section("COVERED BY A RULE, YET IT STILL WAITED - the usual cause is a SHAPE the matcher "
+             "cannot read (a heredoc body, a VAR= head, a $( ) value): NOT the sandbox, and "
+             "/sandbox fixes none of it (SCC-415). A long-running search or suite lands here too",
+             r["escalated"])
     _section("NO ALLOW ROW FIXES THESE - the harness bans the shape", r["blocked"],
              r["remedies"])
     _section("NO GRANT KIND EXISTS - families.json cannot express these yet "

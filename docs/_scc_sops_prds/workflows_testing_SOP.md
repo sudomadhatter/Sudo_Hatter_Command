@@ -2377,6 +2377,7 @@ Hard Gates halt execution before damage occurs. They require either satisfying t
 | Gate | Trigger Event | Scope | Behavior / Rejection | Recovery / Bypass |
 |---|---|---|---|---|
 | `require-push-approval.py` | `PreToolUse` (push) | Claude Code | Intercepts git push. Prompts operator if pushing to `main` or non-lane branch. | Push only to your own `claude/*` or `chore/*` branch. |
+| `shape-block.py` | `PreToolUse` (bash) | Claude Code | Refuses a heredoc (`<<`) before the permission gate — the shape that cost 7h17m of operator prompts in 20 sessions — and strips a leading literal `VAR=` when the rest is already allowed on its own. The operator is never asked; the agent gets the reshape. (SCC-415) | Write the payload with the Write tool and run `python3 <file>` / `git commit -F <file>`; inline the literal. |
 | `.githooks/pre-push` | Git push | All platforms | Bounces direct pushes to `main`. | Production writes must land via `/cicd-push-e2e` or `/smh-close-task-merge-tree`. |
 | `sop-currency.sh` / `sop_currency.py` | `commit-msg` | Lobby | Rejects commit altering commands, rules, scripts, or hooks without staging `workflows_testing_SOP.md`. | Stage `workflows_testing_SOP.md` or add `[sop-ok]` in commit message (auditable bypass). |
 | `task_preflight.py` | Close-out merge | Task lanes | Refuses chore merge if diff touches deployable directories (`backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/`). | Product code must route through story loop and `/cicd-push-e2e`. |
@@ -2416,6 +2417,7 @@ this sentence. What matters to you is *what they refuse to let happen.*
 |---|---|---|
 | `task_preflight.py` | Branch diff | Refuses chore merge if diff touches deployable directories (`backend/`, `frontend/`, `firebase/`, etc.). |
 | `require-push-approval.py` | `PreToolUse` (push) | Prompts for confirmation when pushing to `main` or any non-lane branch. |
+| `shape-block.py` | `PreToolUse` (bash) | Refuses a heredoc and proves a leading literal `VAR=` — the two shapes no allow rule can read — so they never reach you. The agent reshapes (script to a file, `python3 <file>`). |
 | `.githooks/pre-push` | Git push hook | Rejects direct push to `main` without `/cicd-push-e2e`. |
 | `sop_currency.py` | `commit-msg` hook | Rejects commit altering commands, rules, or scripts unless SOP doc staged or `[sop-ok]`. |
 | `shape-guard.py` | `PostToolUse` (bash) | Informs agent via `additionalContext` if command used `git -C`, `; echo "EXIT=$?"`, or piped a gate. |
