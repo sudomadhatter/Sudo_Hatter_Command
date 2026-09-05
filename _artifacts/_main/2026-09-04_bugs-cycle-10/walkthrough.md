@@ -370,8 +370,8 @@ review-runtime: fan-out
 
 ## Code Review (2026-09-04)
 
-Verdict: PASS @ 0326278c
-Suite evidence measured on: 0326278c — `run_all.py` 75/75, `permission_render --check` in sync
+Verdict: PASS @ c6f1232f
+Suite evidence measured on: c6f1232f — `run_all.py` 75/75 through `gate_receipt.py`, clean tree, receipt at [gates/suite.json](gates/suite.json); `permission_render --check` in sync. The last code-bearing commit is `0326278c`; everything after it is record.
 
 lenses_run:
 - blind-hunter · ok
