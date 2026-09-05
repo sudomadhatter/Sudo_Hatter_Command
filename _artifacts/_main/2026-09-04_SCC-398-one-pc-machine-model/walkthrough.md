@@ -39,23 +39,26 @@ times and no WSL path once. He was right to keep it.
 | Gate | Result | Where |
 |---|---|---|
 | `run_all.py` | **75/75 files passed**, exit 0 | `gates/suite.json` |
-| `test_memory_probe.py` (NEW) | **40/40** | its own file |
-| `test_memory_store.py` | **52/52** | its own file |
-| `memory_probe.py` | 5 passed · **0 failed** · **0 weak** | bare run |
+| `test_memory_probe.py` (NEW) | **44/44** | its own file |
+| `test_memory_store.py` | **53/53** | its own file |
+| `memory_probe.py` | **13 passed** · **0 failed** · **0 weak** (9 memories; one carries 5) | bare run |
 | `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, 8 info | bare run |
-| `check_links.py --base origin/main` | 47 unresolved, **0 introduced by this lane**, 0 bad anchors | bare run |
+| `check_links.py --base origin/main` | 45 unresolved, 0 bad anchors. 5 sit on lines this lane ADDED, and all 5 name a path on purpose: the `DELETE` row for the renamed memory, and the plan's own annotation that `memory_audit.py` never existed. A change-set row must spell the path it removed | bare run |
 | `check_maps.py --depth3-only --strict` | clean, exit 0 | bare run |
 | `memory_store_check.py --delta` | clean (rebaselined once, for the deliberate rename) | bare run |
+| `run_all.py` under `CI=true` | **75/75 files passed**, exit 0 — the probes report `[SKIP]`, the text gates stay green | bare run |
 | Gitlinks under `Projects/` | `git ls-files -s Projects/ \| grep -c 160000` → **9** | subtask E |
 
 ---
 
 ## Code Review (2026-09-04)
 
-Verdict: PASS @ 2f19fedfcc80e44d6b241a6ef401c188d82ade26
+Verdict: PASS @ 702984c38a630ee5d4e4c461eec359ed24e00e48
 
-Suite evidence measured at the same sha: `2f19fedf` — `gates/suite.json`, `result: pass`, exit 0,
-`75/75 files passed`, stamped on a **clean** tree.
+Suite evidence measured at the same sha: `702984c3` — `gates/suite.json`, `result: pass`, exit 0,
+`75/75 files passed`, stamped on a **clean** tree. (The verdict was first stamped at `2f19fedf`;
+it moved to `702984c3` for the close-out fix recorded at the end of this section, which is code,
+not a re-review — the review itself was not re-run, per the close-out door's SCC-147 rule.)
 
 ⭐ **This verdict was CONCERNS at `a331f4c3` and is PASS here, and the difference is work, not a
 relabel.** Rows B, C and F were unsatisfiable *as written*; each was closed by fixing the mechanism
@@ -180,6 +183,30 @@ Nested run — it imports Step 3's receipts and pasted output for `run_all`, `wo
 
 **Changes applied:** 31 at the review, plus 9 more to close rows B, C and F at PASS — all in this
 lane, all before the final suite run.
+
+### Close-out addendum — the gate caught one more, and it was mine
+
+`main-write-gate` went **red on PR #167**, and it was right to. `test_memory_store.py` executes the
+real store's probes, and on a GitHub runner three of them failed: the WSL2 kernel check, the
+`python3`-without-`python` check, and `test -d ~/.config/acli`. None of those describes a runner.
+
+The three reds were the cheap half. **Five others passed there, and every one of them passed for the
+wrong reason** — `test ! -e ~/.codex/prompts` is green on a machine that has no `~/.codex` at all.
+That is a green light with no wire behind it, which is the precise defect `is_anchored()` was written
+to refuse. The CI run had never been evidence about the store in either direction; it had simply been
+green often enough that nobody looked.
+
+So the fix is not a loosened gate, it is a gate pointed at the right machine. Execution now happens
+only off-CI and prints a `[SKIP]` line naming the count, so no one can mistake a green CI for a
+checked store. Everything CI *can* honestly judge stays unconditional — falsifiability, anchoring,
+and one assertion that did not exist before: **every probe is proven read-only from text**, on every
+machine, rather than only at run time on a machine that may never run it.
+
+`agent-memory-is-long-term-only.md` gains constraint 4 so the next author knows the local run is the
+gate, and the SOP page and its changelog moved in the same commit.
+
+**Measured:** 75/75 locally with 13 probes executed, and 75/75 with `CI=true` with 13 skipped.
+
 
 ## Your Actions
 
