@@ -21,7 +21,6 @@ that subfolder's `INDEX.md` to dispatch — never read every rule/command/skill.
 | Behavioral law / a rule (how to act) | `rules/` | `rules/INDEX.md` |
 | A slash command (`/cicd-*`, `/smh-*`, `/sentry-*`) | `commands/` | `commands/INDEX.md` |
 | A skill (a capability the model invokes) | `skills/` | `skills/INDEX.md` |
-| An Antigravity workflow / in-repo reference doc | `workflows/` | `workflows/INDEX.md` |
 | The BMAD method install | `bmad/` | **BMAD-owned — regenerated on BMAD update, NEVER hand-edit** |
 | A maintenance script | `scripts/` | `check_maps.py` · `generate_repo_map.py` · `record_map_changes.py` · `generate_doc_graph.py` · `sync-agents.ps1` · `new-project.ps1` |
 | Scaffold a new project | — | `/smh-new-project` clones the thin skeleton repo (`sudo-project-skeleton`); the local `templates/project-template/` was retired 2026-08-07, SCC-31 |
@@ -29,8 +28,9 @@ that subfolder's `INDEX.md` to dispatch — never read every rule/command/skill.
 | opencode agent definitions | `opencode-agents/` | — |
 
 ## 4. THE LAW (authorship + sync)
-- **Single source of authorship.** Author here; `/smh-sync-agents` mirrors `commands/` + `skills/` to all three
-  platforms (Claude, opencode, the Antigravity workflow mirror) + the machine-global caches, and additively
+- **Single source of authorship.** Author here; `/smh-sync-agents` mirrors `commands/` + `skills/` to every
+  platform (Claude, Codex and Antigravity through the launcher skill; opencode and Zoo through their own
+  mirrors) + the machine-global caches, and additively
   vendors this whole `.agents/` into each `Projects/<name>/`.
 - **`platforms:` frontmatter** on a command limits its reach (absent = everywhere).
 - **After ANY edit here, run `/smh-sync-agents`** (or the project-scoped variant) so the mirrors don't drift.

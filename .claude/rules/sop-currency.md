@@ -39,7 +39,7 @@ the edit correct exists only while you are making the change.
 | `AGENTS.md` (root) | The front door — the always-load contract every session begins with. |
 
 **Not a usage change:** `INDEX.md` inventory churn, `reference/`, `templates/`, `skills/`,
-`workflows/` (mirrors of commands), `_artifacts/` history, and the gate's own tests. That exclusion
+`_artifacts/` history, and the gate's own tests. That exclusion
 list is deliberate and should stay narrow at both ends — a gate that fires on mechanical churn
 trains the operator to reach for the opt-out reflexively, and then it is checking nothing.
 

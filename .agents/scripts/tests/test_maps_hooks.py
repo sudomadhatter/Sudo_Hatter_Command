@@ -248,6 +248,50 @@ def main() -> int:
                             "HEAD").stdout.split()) == 3,
                     git(root, "rev-list", "--parents", "-n", "1", "HEAD").stdout.strip())
 
+    if c.block("MH-6 · SCC-394 · TOOLKIT_FAMILIES actually drives the INDEX-row reminder"):
+        # ⛔ THE CONSTANT WAS UNBOUND. `record_map_changes.TOOLKIT_FAMILIES` decides which
+        # `.agents/<family>/*.md` add/delete/rename raises the "needs an INDEX row + /sync-agents"
+        # hint, and SCC-394 edits it (dropping the retired `workflows`). Measured by the
+        # test-adequacy lens: setting it to `()` left THIS file, `test_check_maps.py`,
+        # `test_refresh_maps.py`, `test_workflow_lint.py` and `test_command_surfaces.py` all at
+        # baseline — every INDEX-row reminder silently stops and nothing anywhere goes red. The
+        # blocks above drive the hooks end to end, which is why they never touch the table.
+        sys.path.insert(0, str(SCRIPTS))
+        import record_map_changes as rmc            # noqa: E402
+
+        _tops = ["docs", "_artifacts", ".agents"]
+
+        def _kind(path, st="A"):
+            got = rmc.classify(st, path, None, _tops)
+            return (got or {}).get("kind")
+
+        # Each LIVE family raises the hint...
+        _missing = [f for f in ("commands", "skills", "rules")
+                    if _kind(f".agents/{f}/zzz-probe.md") != "toolkit-change"]
+        c.check("MH-6 every live toolkit family raises the INDEX-row hint",
+                not _missing,
+                f"families that raised nothing: {_missing} — with the table empty or misspelled, "
+                f"adding a command or a rule stops reminding anyone to route it, and the INDEX "
+                f"silently stops describing the tree it indexes")
+        # ...and the table is a REAL filter, not a rubber stamp that would pass with `()` inverted.
+        c.check("MH-6 CONTROL: a non-family .agents dir raises nothing",
+                _kind(".agents/templates/zzz-probe.md") is None
+                and _kind(".agents/reference/zzz-probe.md") is None,
+                "`.agents/templates` or `.agents/reference` raised a toolkit-change — the "
+                "classifier is not consulting the table at all, so MH-6 above would pass no "
+                "matter what the table said")
+        # ...and INDEX.md itself is exempt (it IS the row), and a plain M never fires.
+        c.check("MH-6 CONTROL: INDEX.md and modify-only changes are exempt",
+                _kind(".agents/commands/INDEX.md") is None
+                and _kind(".agents/commands/zzz-probe.md", "M") is None,
+                "the classifier flagged the INDEX itself or a plain modification — both would "
+                "make the journal noise, which is how a real hint gets ignored")
+        c.check("MH-6 the retired `workflows` family is gone from the table",
+                "workflows" not in rmc.TOOLKIT_FAMILIES,
+                f"TOOLKIT_FAMILIES={rmc.TOOLKIT_FAMILIES} still names the surface SCC-394 "
+                f"retired — the journal would keep asking for INDEX rows in a directory that "
+                f"no longer exists")
+
     return c.finish()
 
 

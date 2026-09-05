@@ -1,6 +1,6 @@
 ---
 description: 'Convene the Adviser Board — a third-side thinking board of 43 historical minds. An orchestrator grounds the board in a real project (recon + research — the orchestrator does all the searching; the minds reason, they do not), casts it to the topic''s real shape — one filter per distinct failure surface, up to five when the topic earns them, never more — seats ONE mind per filter from a Round-0 top-3 menu, then runs parallel opinion waves: every seated filter spawns at once in a single message, each returning ONE opinion the chair reads verbatim and guides from. Refuses the binary frame: a reframe outranks an answer. Filters must surface what they could not settle as questions to the chair. Use when the user says "convene the board" / "adviser board" / "/smh-adviser-board <topic>".'
-platforms: [claude, opencode, codex]
+platforms: [claude, opencode, antigravity, codex]
 ---
 
 # /smh-adviser-board — The Adviser Board
@@ -51,7 +51,7 @@ Seat one mind and exactly one card opens, opened by the agent that needs it. Tha
 result back to you? If not — or if you are not sure — you are inline. Say so in one line before Step 0.
 The chair should never have to guess whether he is reading four filters or one context.
 
-Claude Code and opencode spawn. **Antigravity/Gemini workflows do not**, and neither does this file
+Claude Code and opencode spawn. **Antigravity/Gemini does not**, and neither does this file
 pasted into a plain chat window. `--solo` forces inline anywhere.
 
 Inline is a real degradation and is run as one — never as parallel mode with the spawns quietly dropped.

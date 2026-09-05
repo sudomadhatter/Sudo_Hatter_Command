@@ -10,7 +10,8 @@ review found had zero assertions:
   * retired vocabulary (triad / caucus / stage room / stage change / three minds / team[s])
   * the retired R1-R4 round ladder (R1 READ / R2 ATTACK / R3 BALCONY / R4 SETTLE / round ladder)
   * parallel-wave vocabulary presence (opinion wave, one-message spawns, research brief, settle it)
-  * door parity (opencode mirror byte-identical, claude skill description match, AG menu budget)
+  * door parity (opencode mirror byte-identical, claude skill description match, the brain claims
+  antigravity and carries the inline-mode law its retired hand-owned door used to hold)
   * CARD.md render-contract markers (heading template, stance note, blockquote, bold slot labels,
     and all five statement slots named in the render template — the review found THE THIRD SIDE,
     which outranks THE MOVE, absent from it)
@@ -30,13 +31,18 @@ ROOT = SCRIPTS.parents[1]  # .agents/scripts/tests -> repo root
 
 BRAIN = ROOT / ".agents/commands/smh-adviser-board.md"
 FOLDER = ROOT / ".agents/commands/adviser-board"
-AG = ROOT / ".agents/workflows/smh-adviser-board.md"
+# ⛔ THE HAND-OWNED ANTIGRAVITY DOOR IS GONE (SCC-394). `.agents/workflows/smh-adviser-board.md`
+# was hand-authored rather than generated — a condensed variant of a 52 KB brain — and it existed
+# to carry an INLINE-mode paragraph for a platform with no subagent tool. The brain carries that
+# law itself now (`## Running without subagents — inline mode`, a capability self-test rather than
+# a platform branch), so the generated launcher is sufficient and the hand-owned door retires with
+# the surface. Block F asserts the brain still carries it, which is the substance that door held.
 SKILL = ROOT / ".claude/skills/smh-adviser-board/SKILL.md"
 OC = ROOT / ".opencode/commands/smh-adviser-board.md"
 CARD = FOLDER / "CARD.md"
 
 SURFACES = [BRAIN, FOLDER / "CARD.md", FOLDER / "TEAMS.md", FOLDER / "DOCTRINE.md",
-            FOLDER / "THIRD-SIDE.md", FOLDER / "SPAWNS.md", FOLDER / "ROSTER.md", AG, SKILL, OC]
+            FOLDER / "THIRD-SIDE.md", FOLDER / "SPAWNS.md", FOLDER / "ROSTER.md", SKILL, OC]
 
 RETIRED_VOCAB = re.compile(r"triad|caucus|stage room|stage change|three minds|\bteams?\b", re.I)
 RETIRED_ROUNDS = re.compile(r"R1 READ|R2 ATTACK|R3 BALCONY|R4 SETTLE|four visible rounds|four rounds|round ladder", re.I)
@@ -100,17 +106,46 @@ def main() -> int:
         hits = _scan(FLOOR_CAUCUS_SENSE)
         c.check("E · no caucus-log sense of 'floor'", not hits, "; ".join(hits[:6]) or "clean")
 
-    if c.block("F · door parity (opencode byte-identical · claude skill desc · AG budget)"):
+    if c.block("F · door parity (opencode byte-identical · claude skill desc · inline law in brain)"):
         c.check("F · opencode mirror byte-identical to brain",
                 OC.read_bytes() == BRAIN.read_bytes())
         desc = re.compile(r"^description:(.*)$", re.M)
-        bm, sm, am = desc.search(BRAIN.read_text(encoding="utf-8")), desc.search(
-            SKILL.read_text(encoding="utf-8")), desc.search(AG.read_text(encoding="utf-8"))
+        brain_txt = BRAIN.read_text(encoding="utf-8")
+        bm = desc.search(brain_txt)
+        sm = desc.search(SKILL.read_text(encoding="utf-8"))
+        # ⛔ COMPARE THE VALUES, NOT THE BYTES (SCC-394 re-review). The launcher's description is
+        # emitted as a QUOTED YAML scalar, because Antigravity's loader is strict YAML and an
+        # unquoted value containing ": " kills the door outright. The brain's own line may be
+        # quoted or not. So unwrap both before comparing, or this asserts a formatting accident
+        # rather than "the launcher carries the brain's description", which is the real contract.
+        def _yaml_scalar(v: str) -> str:
+            v = v.strip()
+            if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+                inner = v[1:-1]
+                return inner.replace('\\"', '"').replace("\\\\", "\\") if v[0] == '"' else inner
+            return v
         c.check("F · claude skill description matches brain description",
-                bool(bm and sm) and bm.group(1).strip() == sm.group(1).strip())
-        ag_value = am.group(1).strip().strip("'\"") if am else ""
-        c.check("F · AG launcher description within the 135-char menu budget",
-                0 < len(ag_value) <= 135, f"{len(ag_value)} chars")
+                bool(bm and sm) and _yaml_scalar(bm.group(1)) == _yaml_scalar(sm.group(1)))
+        # ⭐ THE COMMAND MUST CLAIM THE PLATFORM IT NOW HAS A DOOR ON (SCC-394). Its hand-owned
+        # Antigravity workflow was never derived from `platforms:` — that is what "hand-owned"
+        # meant — so the command could publish to Antigravity while declaring three other
+        # platforms, and did. With that surface retired, reach comes from the frontmatter like
+        # every other command, and a missing `antigravity` here silently drops the board from
+        # Antigravity's menu with nothing else in the repo noticing.
+        _pl = re.search(r"^platforms:\s*\[(.*?)\]", brain_txt, re.M)
+        _claims = [x.strip().strip("'\"").lower() for x in _pl.group(1).split(",")] if _pl else []
+        c.check("F · the brain CLAIMS antigravity, so the launcher reaches that menu",
+                "antigravity" in _claims,
+                f"platforms: {_claims or 'ABSENT'} - smh-adviser-board's hand-owned Antigravity "
+                f"door is retired, so reach comes from this list like every other command; "
+                f"without `antigravity` here the launcher never enters that menu")
+        # ⛔ AND THE LAW THAT DOOR CARRIED MUST OUTLIVE IT. The retired workflow held an
+        # INLINE-mode paragraph for a platform with no subagent tool. A generated launcher
+        # carries no sentences of its own, so if the brain does not state it, it is simply gone.
+        c.check("F · the brain carries the inline-mode law the hand-owned door used to hold",
+                "## Running without subagents" in brain_txt,
+                "the retired Antigravity door was the only place the no-subagent path was "
+                "written down; a launcher cannot carry it, so the brain must")
 
     if c.block("G · CARD.md render contract — every slot has a home in the render template"):
         card = CARD.read_text(encoding="utf-8")

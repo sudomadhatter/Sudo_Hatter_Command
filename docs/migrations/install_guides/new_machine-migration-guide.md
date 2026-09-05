@@ -420,8 +420,9 @@ through each as needed:
   opencode auth login               # 3. provider credentials — INTERACTIVE, cannot be scripted
   ```
   > **The global command cache is what makes `/cicd-*` work outside a synced repo.** Step 2 is the same
-  > `/smh-sync-agents -GlobalsOnly` used on Windows; it also refreshes the Antigravity workflows, the Codex
-  > prompts and the 56 bmad-* Codex skills. Expect `opencode global -> 47 cmds`.
+  > `/smh-sync-agents -GlobalsOnly` used on Windows; it also purges the two retired machine caches (Codex
+  > prompts and Antigravity's old `global_workflows`) and refreshes the 56 bmad-* Codex skills. Expect
+  > `opencode global -> 47 cmds`.
   >
   > ⛔ **`sync-agents.ps1` could not do step 2 on macOS before 2026-08-06 — and it failed in the two ways
   > that hide themselves.** `$env:USERPROFILE` is Windows-only, so `Join-Path $null` **threw** and took

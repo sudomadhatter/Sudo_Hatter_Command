@@ -18,7 +18,7 @@ the moment that tree was pruned. Relative roots make the output identical whoeve
 which is what lets `refresh_maps.py` stage it from a pre-commit hook and byte-verify it at push.
 
 Closes the gap the code graph does not model: it extracts code structure, not
-doc-to-doc references, so the prose toolkit (rules / workflows / skills / commands) shows
+doc-to-doc references, so the prose toolkit (rules / skills / commands) shows
 few cross-file edges (see the note in docs/repo-map.md). This script reads every .md under
 a root, extracts the references that actually dominate these files -- markdown links
 `](rules/x.md)` and inline/backtick path tokens `router.md`, `.agents/rules/x.md` -- resolves
@@ -572,7 +572,7 @@ def scaffold():
         "> centre carries no code graph by design (SCC-289), because a code graph parses code and",
         "> this repo is markdown. Deterministic, no LLM, ~$0.",
         "> Dangling = a reference that resolves to no file (likely broken). External = a real file",
-        "> outside the indexed scope (not broken). Rebuild after editing rules/workflows.",
+        "> outside the indexed scope (not broken). Rebuild after editing rules/commands.",
         CURATED_END,
         "",
     ])

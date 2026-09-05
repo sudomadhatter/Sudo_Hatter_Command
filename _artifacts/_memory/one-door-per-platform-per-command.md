@@ -13,7 +13,7 @@ Since 2026-08-09 (SCC-66) every command has **exactly one door per platform**, g
 | Claude | launcher `SKILL.md` in `.claude/skills/` (Claude publishes a slash command per SKILL.md) |
 | Codex | the **same** launcher, read natively from `.agents/skills/` |
 | opencode | command mirror in `.opencode/commands/` |
-| Antigravity | workflow mirror in `.agents/workflows/` — **always** a thin launcher, any size (SCC-370) |
+| Antigravity | the **same** launcher, read natively from `.agents/skills/` (SCC-394 — workflows retire 2026-11-01) |
 
 **Why:** Codex structurally cannot expose repo-defined top-level `/name` commands — skills are its
 only door — and Claude already publishes a slash command for every `SKILL.md`. So one launcher

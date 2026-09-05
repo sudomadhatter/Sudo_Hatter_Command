@@ -34,7 +34,7 @@ If any of these are missing, HALT and report which.
 
 ## Your Job
 
-1. **Load the audit workflow:** Read `.agents/workflows/cicd-self-audit.md` and
+1. **Load the audit workflow:** Read `.agents/commands/cicd-self-audit.md` and
    follow it exactly. This is a pre-dev gate — it audits the *plan*, never a code diff.
    There is no code yet.
 

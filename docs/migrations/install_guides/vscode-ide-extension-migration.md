@@ -232,7 +232,7 @@ Reinstall these separately when required:
   and it never enters git)
 - Python, Node.js, Java, PowerShell, Ruby, Go, or other runtimes
 - Language servers, compilers, debuggers, and command-line tools
-- Agent rules, workflows, skills, and MCP configuration (those are the toolkit's surfaces —
+- Agent rules, commands, skills, and MCP configuration (those are the toolkit's surfaces —
   `/smh-sync-agents` publishes them)
 
 ## Troubleshooting

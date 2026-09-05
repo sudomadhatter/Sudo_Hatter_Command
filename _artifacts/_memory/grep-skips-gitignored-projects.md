@@ -7,7 +7,7 @@ metadata:
   originSessionId: 75f1a599-830b-46bf-acea-c89d1d70f2a8
 ---
 
-In the Sudo_Hatter_Command home base, `Projects/` is gitignored (each project is its own git repo). The Grep tool runs ripgrep, which honors `.gitignore` — **but the blindness is path-dependent, not absolute.** A Grep whose `path` is the lobby root (or unset) **silently returns nothing from inside the project repos** — it looked like the master `.agents/workflows/` was the only copy of a file when AGY_AVIATIONCHAT and Fresh_Workspace_BMAD held their own vendored copies too.
+In the Sudo_Hatter_Command home base, `Projects/` is gitignored (each project is its own git repo). The Grep tool runs ripgrep, which honors `.gitignore` — **but the blindness is path-dependent, not absolute.** A Grep whose `path` is the lobby root (or unset) **silently returns nothing from inside the project repos** — it looked like the master `.agents/workflows/` — a surface since retired (SCC-394) — was the only copy of a file when AGY_AVIATIONCHAT and Fresh_Workspace_BMAD held their own vendored copies too.
 
 **The fix (Daniel's correction, verified 2026-06-28):** go one level down. Point the Grep tool's `path` *directly at a project repo* (`Projects/<name>/` or deeper) and it works fine — that directory is its **own git repo root**, so ripgrep starts a fresh ignore context and never applies the lobby's parent `.gitignore`. Confirmed both ways: same pattern → 0 project hits from the root, 17 hits with `path: Projects/AGY_AVIATIONCHAT`.
 

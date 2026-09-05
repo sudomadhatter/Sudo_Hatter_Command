@@ -120,11 +120,16 @@ if c.block("B · Zoo Code allowlist + extension recommendations travel"):
     recs = ext.get("recommendations", [])
     c.check("B3 Zoo Code is a workspace recommendation",
             "ZooCodeOrganization.zoo-code" in recs)
-    # ⛔ B4 · Antigravity is RETIRED (SCC-349 replaced it with VS Code + Zoo; SCC-376 Phase 7 removed
-    # its last leftovers, and the platform's own retirement is SCC-378). This case used to require
+    # ⛔ B4 · WHAT RETIRED WAS THE DESKTOP IDE, NOT THE PLATFORM, and this comment said otherwise.
+    # SCC-349 replaced the IDE with VS Code + Zoo and SCC-376 Phase 7 removed its leftovers, but
+    # SCC-378 brought Antigravity back as a live VS Code EXTENSION - it is a fenced platform with a
+    # rendered approval list, and since SCC-394 it reads `.agents/skills/` as its `/` menu. So the
+    # subject of this case is live, and the assertion still holds for a different reason: the
+    # recommendation stays absent by the operator's choice (a fresh clone should not be told to
+    # install it), not because the platform is gone. This case used to REQUIRE
     # `google.google-antigravity` in the recommendations, so deleting the recommendation would have
-    # gone red on a suite that was pinning a shape the system deliberately left behind - the same
-    # class as A3 and A2b. Inverted: the retired surface must NOT be recommended to a fresh clone.
+    # gone red on a suite pinning a shape the system deliberately left behind - the same class as
+    # A3 and A2b. Inverted: the surface must NOT be recommended to a fresh clone.
     c.check("B4 the retired Antigravity extension is NOT recommended",
             "google.google-antigravity" not in recs, f"recs={recs}")
 

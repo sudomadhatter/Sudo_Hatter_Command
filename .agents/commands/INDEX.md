@@ -19,26 +19,28 @@ Router for `.agents/commands/`. **Scan to dispatch.** Each command is invoked by
 or through the platform surface named below and carries its own frontmatter `description:`; this groups
 them by purpose. `.agents/commands/` is the canonical workflow body even when a platform enters through a
 thin native skill launcher. `/smh-sync-agents` publishes it to Claude through launcher skills in `.claude/skills/`,
-opencode (`.opencode/commands/` + global `~/.config/opencode/commands`, both full bodies), and
-Antigravity/Gemini via the generated `.agents/workflows/` door — which is ALSO the source for its global
-cache `~/.gemini/antigravity/global_workflows` (SCC-332), so both Gemini surfaces carry a thin launcher for
-**every** command, whatever its size (SCC-370). Codex discovers
-`.agents/skills/` natively; its deprecated custom-prompt fallback is namespaced `/prompts:<name>`, never
-the top-level `/<name>` used by the other command menus.
+opencode (`.opencode/commands/` + global `~/.config/opencode/commands`, both full bodies), and Zoo
+(`.roo/commands/`). Codex AND Antigravity discover `.agents/skills/` natively and invoke any
+`SKILL.md` there as `/<name>`, so **one** launcher is the door for three platforms. Codex's deprecated
+custom-prompt fallback is namespaced `/prompts:<name>`, never the top-level `/<name>` used by the other
+command menus.
 
 **Platform reach.** A command may add `platforms: [claude, opencode, antigravity, codex]` to its
 frontmatter to limit where it syncs. **Absent = universal** (all four). Tagged today: `cicd-autopilot-claude`,
 `cicd-mobile-error-team` → `[claude]`; `cicd-autopilot-opencode` → `[opencode]`; the `_AP` trio → `[claude, opencode]`;
 `sentry-security-team-avch` → `[opencode, antigravity, codex]` (deliberately NOT in the Claude menu);
-`smh-adviser-board` → `[claude, opencode, codex]` (AG gets the **hand-authored** thin launcher `.agents/workflows/smh-adviser-board.md` instead of a generated one, because it carries Antigravity-only INLINE-mode instructions the generator cannot produce — prune-protected in the sync's `$excluded` list and, since SCC-332, carried into the global cache with every other door).
+`smh-adviser-board` → `[claude, opencode, antigravity, codex]`.
 **Robot-lane rule (2026-07-14):** `*_AP` commands vendor ONLY into project tool dirs (where the autopilot
 engines read them) — the sync skips them for the lobby menus and the global caches.
-**Antigravity actually honors that reach as of 2026-08-09 (SCC-56).** The `.agents/workflows/` mirror used
-to filter by FILENAME first — the four names were `sudo-*`, `1_*`, `smh-new-project` and
-`smh-slash-command-updating` (retired by SCC-367) — and only then read
-`platforms:` — so four commands that claim Antigravity never reached it: `smh-close-task-merge-tree`,
-`smh-sync-agents`, `smh-review`, and `cicd-clean-code-audit`, which names `antigravity` outright.
-`platforms:` is now the only gate. `.agents/workflows/` is **generated** — edit the command, never a copy.
+**`platforms:` is the only gate, on every surface.** It was not always: the retired Antigravity mirror
+filtered by FILENAME first — `sudo-*`, `1_*`, `smh-new-project`, `smh-slash-command-updating` (retired by SCC-367) — and only
+then read `platforms:`, so four commands that claimed Antigravity never reached it (SCC-56, 2026-08-09).
+Every generated door is **generated** — edit the command, never a copy.
+
+⛔ **Codex and Antigravity share `.agents/skills/`, so `platforms:` cannot give a command to one without
+the other.** That split was already fiction: every command declaring `[opencode, antigravity]` carries a
+hand-authored skill Codex has been reading all along. Antigravity retires workflows on 2026-11-01 and
+reads the launcher skill instead (SCC-394).
 
 | Group | Commands | Reach for it when… |
 | --- | --- | --- |

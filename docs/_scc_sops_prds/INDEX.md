@@ -116,7 +116,7 @@ boundary being drawn is "SOP vs setup," never "watched vs unwatched."
 ## A note inherited from the toolkit's retired reference folder
 
 That folder existed to hold long-form docs **deliberately off every command surface** — anything
-dropped in `.agents/workflows/` becomes a `/` that Antigravity will offer to *run*, and
+dropped in `.agents/skills/` becomes a `/` that Codex and Antigravity will offer to *run*, and
 `platforms: []` does not help, because `/smh-sync-agents` vendors the directory wholesale. SCC-74
 retired the folder by moving its one occupant here. The constraint still holds and is better served:
 a doc in `docs/` is not on any command surface by construction.

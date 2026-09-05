@@ -52,8 +52,8 @@ import walkthrough_roster as roster  # noqa: E402
 ROOT = Path(__file__).resolve().parents[3]
 
 # Where a machine-read block is TAUGHT. Commands are the doors an operator types; the engine
-# skill is what the review itself reads. `.agents/workflows/` and `.opencode/commands/` are
-# GENERATED mirrors of the commands - scanning them would report every finding twice and make
+# skill is what the review itself reads. `.opencode/commands/` is a
+# GENERATED mirror of the commands - scanning it would report every finding twice and make
 # the failure list unreadable, and `test_command_surfaces.py` already proves they match their
 # brain byte-for-byte, so a fixed brain is a fixed mirror.
 TEACHING_GLOBS = (

@@ -17,7 +17,7 @@ approved the gate.)
 `.githooks/commit-msg` after the Jira gate): a commit touching `.agents/commands/*.md`,
 `.agents/rules/*.md`, `.agents/scripts/*.py|*.ps1`, `.agents/scripts/git-hooks/`, `.githooks/`, or
 root `AGENTS.md` is **rejected** unless the SOP doc is staged with it. Exempt by design:
-`INDEX.md` churn, `reference/`, `templates/`, `skills/`, `workflows/`, `_artifacts/`, its own tests.
+`INDEX.md` churn, `reference/`, `templates/`, `skills/`, `_artifacts/`, its own tests.
 
 - Opt out per commit with **`[sop-ok]`** (case-insensitive) — it stays in the git log as the record.
 - Disarm to warn-only by deleting `.agents/scripts/git-hooks/SOP-ENFORCE`.

@@ -433,7 +433,6 @@ four are generated and are fixed by `/smh-sync-agents` once their sources are co
 | File | Line | Authored or generated |
 |---|---|---|
 | `.agents/commands/smh-adviser-board.md` | 501, 688 | authored — resolved by the rewrite |
-| `.agents/workflows/smh-adviser-board.md` | 19 | **authored — needs a manual edit** |
 | `.agents/commands/INDEX.md` | 59 | **authored — needs a manual edit** (also still describes the deleted phase arc) |
 | `docs/_scc_sops_prds/workflows_testing_SOP.md` | 4120 | **authored — needs a manual edit** (also still describes the deleted phase arc; the SOP edit is required by the currency gate anyway) |
 | `.agents/skills/smh-adviser-board/SKILL.md` | 9 | generated |

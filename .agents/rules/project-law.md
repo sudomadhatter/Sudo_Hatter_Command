@@ -17,10 +17,10 @@ work between them.
 
 | Tier | Lives at | Holds | Reaches |
 |---|---|---|---|
-| **Tier 1 — workflow law** | the command center's `.agents/` | rules · commands · skills · workflows · scripts · templates | every project, every platform, every session |
+| **Tier 1 — workflow law** | the command center's `.agents/` | rules · commands · skills · scripts · templates | every project, every platform, every session |
 | **Tier 2 — project law** | `Projects/<name>/.agents/` | `rules/` + `skills/` + `INDEX.md`, plus the enforcement set below | that one project |
 
-A project carries **no** copy of tier 1. No vendored commands, workflows, scripts, or shared rules; no
+A project carries **no** copy of tier 1. No vendored commands, scripts, or shared rules; no
 tracked `.claude/`, `.opencode/`, `.gemini/`, `.antigravity/`. Sessions run from the command center, so
 tier 1 is already loaded — a second copy inside the project is dead weight that drifts.
 

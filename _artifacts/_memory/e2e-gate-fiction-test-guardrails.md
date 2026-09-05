@@ -31,7 +31,7 @@ fiction-red ≠ grandfathered legacy red; flag soft CI steps lacking owner+expir
 launchers → command `.md` is single source.
 
 **Propagated 2026-07-13** via `/sync-agents` × 3 (lobby + AGY + Fresh): guard now in all four surfaces —
-opencode/antigravity global caches + the antigravity workflow mirror; the rule file vendored into AGY +
+the opencode global cache + the launcher skills every platform reads; the rule file vendored into AGY +
 Fresh `.agents/rules/` (+ INDEX row). Codex reaches the 3 dev-flow commands via repo `.agents/skills`
 launchers → commands (they're `platforms:[opencode,antigravity]`, so absent from `~/.codex/prompts` BY
 DESIGN — a codex prompt would double the skill menu entry); codex reads the rule via native AGENTS.md.
