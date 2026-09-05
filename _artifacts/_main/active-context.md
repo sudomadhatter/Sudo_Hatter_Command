@@ -1,7 +1,18 @@
 # ACTIVE CONTEXT — _main  (you own this, not a vendor)
 
 ## 1. PRIME STATE
-Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-08-23
+Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-09-05
+**2026-09-05 (latest): INCIDENT — Epic 24 work reached live prod mid-epic through a chore lane; the guard now exists (SCC-416, PR pending).**
+`chore/AVCH-80-rolling-bugs` (cut off `main`) shared three runtime files with the live `epic/AVCH-100`; both
+preflights judged it by its own diff and `/cicd-push-e2e` shipped it (PR #72 → `4afaa667` → Cloud Run 00076).
+The operator's ruling forbidding it lives on the epic branch, unreadable from `main`. SCC-416 adds
+`task_preflight.epic_freeze()` — a live-epic product-file overlap check both doors run BEFORE their surface
+decision — and the operator's design: the epic's mode (extension of main / quick-dev) is decided at kickoff
+and carried in the branch name (`-quickdev` suffix); the story door lands by PR or direct push accordingly.
+`run_all.py` 79/79 @ `5d5d7f41`. **AviationChat is untouched and owed its own tickets**: the revert
+decision on `4afaa667`, re-landing AVCH-80 on the epic, ruleset `exclude` for `*-quickdev`,
+`pr-check-skip.yml` to `main`, the enforce-on-create probe, and AVCH-80's ticket/worktree cleanup.
+Session: `_artifacts/_main/2026-09-05_scc-416-in-flight-epic-freezes-main/`.
 **2026-08-23: Command Center + AviationChat maps and indexes reconciled; NEXgen excluded.**
 Lobby map lint is clean; `_artifacts/INDEX.md` again carries exactly the newest 50 sessions and 110
 displaced/new-overflow rows were added to the verbatim archive (168 archived total). Current artifact,
