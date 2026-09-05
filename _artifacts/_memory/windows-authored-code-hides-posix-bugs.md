@@ -2,7 +2,6 @@
 name: windows-authored-code-hides-posix-bugs
 description: "This toolkit was authored on Windows, so Windows-only assumptions sat green for months and only failed on the Mac — chmod semantics, hardcoded C:/ discovery paths, ';' PATH separators, $env:USERPROFILE, robocopy, a path-separator mismatch that DELETED ~570 vendored files per project, bare `python` in ~29 DOC lines when only `python3` exists here, and the TRACKED git exec bit (100644 vs 100755) leaving 4 scripts/hooks silently inert on the Mac. Eight found 2026-08-06/08 and 2026-08-27; three printed SUCCESS while failing and one skipped hooks with only a hint."
 metadata: 
-  probe: "test -e .agents/scripts/tests/test_story_status.py"
   node_type: memory
   type: project
   originSessionId: ea1c7963-b655-4c4b-861f-0b832da17b1e

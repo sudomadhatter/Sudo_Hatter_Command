@@ -2,7 +2,6 @@
 name: one-door-per-platform-per-command
 description: "SCC-66 door model — the command file is the brain; a GENERATED launcher SKILL.md is the door for Claude AND Codex. `.claude/commands` and `~/.codex/prompts` are RETIRED doors. Hand-authored skills always win."
 metadata:
-  probe: "test -e .agents/commands"
   type: project
 ---
 

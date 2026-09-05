@@ -2,7 +2,6 @@
 name: jira-attachments-need-the-rest-token
 description: "acli cannot attach files (list/delete only) — uploading to a ticket is REST + the API token in credential-store item `sudo-jira`; storing that token has two silent-corruption traps"
 metadata:
-  probe: "test -e docs/migrations/install_guides/jira-api-token-setup.md"
   type: reference
 ---
 

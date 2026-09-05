@@ -2,7 +2,6 @@
 name: repo-local-enforcement-never-centralizes
 description: Git hooks, jira.conf, and BMAD tomls live in the repo they gate — centralizing them disarms them; a thin conversion that strips them deletes enforcement, not duplication.
 metadata:
-  probe: "test -e .agents/jira.conf"
   type: project
 ---
 

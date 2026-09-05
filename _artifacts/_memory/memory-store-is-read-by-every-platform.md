@@ -2,7 +2,6 @@
 name: memory-store-is-read-by-every-platform
 description: "SCC-65: root AGENTS.md §7 routes EVERY model on EVERY machine to `_artifacts/_memory/MEMORY.md` at session start — READ-ONLY outside the sanctioned write flows. 25 KB index cap gated in run_all; the gate itself raises MEMORY AUDIT DUE at 90% and the agent must ask (SCC-68)."
 metadata:
-  probe: "test -e _artifacts/_memory"
   type: project
 ---
 

@@ -27,4 +27,4 @@ bit in the same run: `${PIPESTATUS[0]}` is a **bash-ism** — zsh spells it `$pi
 silently expands to empty and prints no exit code at all (run gates bare instead); and `grep -E`
 treats `\|` as a **literal pipe**, not alternation, so `grep -cE 'A\|B'` reported 0 hits for three
 strings that were present 7, 4 and 12 times, nearly causing duplicate content to be folded into a
-command. Measured on the Mac that was retired 2026-09-02 ([[one-pc-windows-and-wsl]]); this PC's Ubuntu side runs bash, which DOES word-split, so the specific zsh trap cannot fire here. **The lesson still can** — [[grep-here-is-ugrep-qv-inverts]] is the same false-green on the current box, and it is live.
+command. Measured on the Mac that was retired 2026-09-02 ([[one-pc-windows-and-wsl]]); this PC's Ubuntu side runs bash, which DOES word-split, so the specific zsh trap cannot fire here. **The lesson still can** — [[agent-shell-grep-is-not-the-gate-grep]] is the same false-green on the current box, and it is live.

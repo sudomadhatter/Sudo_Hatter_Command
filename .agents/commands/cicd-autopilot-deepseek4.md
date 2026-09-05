@@ -44,8 +44,8 @@ actually has. The QA lanes stay `xhigh` because Opus and Fable do have it.
 ## Prerequisites
 
 **Engine support.** The hybrid lane lives in `scripts/autopilot-dev-story.ps1` and is present in
-**`AGY_AVIATIONCHAT`, `Fresh_Workspace_BMAD`, and `NEXgen-VR-Director`** (all three verified byte-identical
-in the `-Deepseek4` block, 2026-08-04). Any *other* project's engine has no `-DevBaseUrl`/`-Deepseek4` and
+**`AGY_AVIATIONCHAT` and `NEXgen-VR-Director`** (verified byte-identical in the `-Deepseek4` block,
+2026-08-04; `Fresh_Workspace_BMAD` carried it too and left git on 2026-09-04, SCC-403). Any *other* project's engine has no `-DevBaseUrl`/`-Deepseek4` and
 will reject the flag — port the lane first (see `docs/_scc_sops_prds/autopilot_bmad_dev_loop.md` §5b).
 
 > The engine is **project-local and hand-ported** — `/smh-sync-agents` propagates `.agents/` commands, *not*

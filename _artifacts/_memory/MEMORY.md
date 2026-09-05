@@ -16,7 +16,7 @@ Settled project-only facts live in the project's own store (SCC-73). Working in 
 ## Jira & tickets
 - [Jira is LIVE (SCC + AVCH)](jira-integration-live.md) — acli authed; branch/commit carries key.
 - [⛔ acli CANNOT re-parent a subtask](acli-cannot-reparent-a-subtask.md) — create takes --parent, edit doesn't.
-- [⛔ acli CANNOT attach a file](jira-attachments-need-the-rest-token.md) — REST + keychain `sudo-jira` token.
+- [⛔ acli CANNOT attach a file](jira-attachments-need-the-rest-token.md) — REST + the OS credential store item `sudo-jira`.
 - [Cross-repo work = a ticket PER REPO](cross-repo-work-needs-a-ticket-per-repo.md) — key from epic/* branch, not BMAD number.
 - [`To Do Next` IS the queue](to-do-next-is-the-queue.md) — lead "what's next" with it; todo_list.md retired.
 - [VS Code hides hook output](vscode-hides-git-hook-output.md) — warn-only hooks look clean; ship hooks ARMED.
@@ -59,10 +59,10 @@ Settled project-only facts live in the project's own store (SCC-73). Working in 
 - [GitHub 408 on satellite wifi](github-408-on-satellite-uplink.md) — chunk via scratch refs or wait.
 
 ## Testing
-- **A green or a red can lie** — [⭐⛔ a red FILE may have run NOTHING](suite-red-file-may-have-run-nothing.md) (per-file tally) · [red can die pre-assertion](red-test-can-die-before-its-assertion.md) · [stubbed children = vacuous green](stubbed-children-make-green-vacuous.md) · [piped gate hides exit code](piping-a-gate-hides-its-exit-code.md) (run bare) · [zsh doesn't word-split gate args](zsh-does-not-word-split-gate-args.md) · [`echo` truncates at `\c`](echo-truncates-at-backslash-c.md) · [⛔ `grep` HERE is ugrep](grep-here-is-ugrep-qv-inverts.md) (live on this box; `-qv` is INVERTED — count, never `-q` with `-v`).
+- **A green or a red can lie** — [⭐⛔ a red FILE may have run NOTHING](suite-red-file-may-have-run-nothing.md) (per-file tally) · [red can die pre-assertion](red-test-can-die-before-its-assertion.md) · [stubbed children = vacuous green](stubbed-children-make-green-vacuous.md) · [piped gate hides exit code](piping-a-gate-hides-its-exit-code.md) (run bare) · [zsh doesn't word-split gate args](zsh-does-not-word-split-gate-args.md) · [`echo` truncates at `\c`](echo-truncates-at-backslash-c.md) · [⛔ the agent shell's `grep` is NOT the gate's](agent-shell-grep-is-not-the-gate-grep.md) (a Claude Code function; every gate gets GNU grep — count, never `-q` with `-v`).
 - [⭐⛔ Per-function tests miss REQUEST-ORDER defects](per-function-tests-miss-request-order-defects.md) — green suite, dead feature; buy a seam test that drives the real doors in order.
 - **Source-grep guards are blind FOUR ways** — [comments invert them](comment-literals-invert-source-grep-tests.md) · [cannot see order](source-grep-guards-cannot-see-order.md) · [prose-pinning is vacuous](prose-pinning-guards-are-vacuous.md) (fail mutants first) · [⛔ a result-filter doesn't protect the WALK](rglob-sweeps-must-prune-the-walk.md) (rglob still walks .venv; Windows dies on torch's long paths — prune with os.walk).
-- **Toolchain pins** — [rules tests need Java](firestore-rules-tests-need-java.md) (JAVA_HOME in ~/.zshenv) · [Node 26 breaks vitest jsdom storage](node-26-breaks-vitest-jsdom-storage.md) (run Node 22 LTS).
+- **Toolchain pins** — [rules tests need Java](firestore-rules-tests-need-java.md) (JAVA_HOME must be set where AUTOMATION sees it) · [Node 26 breaks vitest jsdom storage](node-26-breaks-vitest-jsdom-storage.md) (run Node 22 LTS).
 - **BDD** — [Vision Lock right-sized](bdd-vision-lock-rightsized.md) (standalone .feature opt-in) · [sync step needs asyncio.run](bdd-sync-step-needs-asyncio-run.md).
 - [coverage `source` ignores paths](coverage-source-silently-ignores-file-paths.md) — use source_pkgs.
 - **Risk + certification** — [priorities matrix](test-priorities-matrix.md) (P0 100%/P1 80%/P2 50%/P3 20%; P0+P1 need E2E) · [certification at shipping SHA](test-certification-at-shipping-sha.md) (②→③ certification-<story>.json).

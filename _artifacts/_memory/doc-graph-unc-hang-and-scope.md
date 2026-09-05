@@ -2,7 +2,6 @@
 name: doc-graph-unc-hang-and-scope
 description: "The .agents/ doc-graph (generate_doc_graph.py) silently hung for weeks on an https:// URL parsed as a Windows UNC path; fixed + bmad-pack collapsed 2026-07-14. What the doc-graph is vs GitNexus, and its correct scope."
 metadata: 
-  probe: "test -e docs/doc-graph.md"
   node_type: memory
   type: project
   originSessionId: 695db3e1-db11-4d97-ae14-3b25a2966da9

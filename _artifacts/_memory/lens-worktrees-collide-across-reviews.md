@@ -2,7 +2,6 @@
 name: lens-worktrees-collide-across-reviews
 description: "Review lens worktrees reuse lens-* names across reviews and across REPOS, so a new fan-out silently reads a stale tree at the wrong sha unless the SCC-313 probe is run."
 metadata: 
-  probe: "test -e .agents/commands"
   node_type: memory
   type: feedback
   originSessionId: 42287b1f-0feb-472a-9487-a63859121077

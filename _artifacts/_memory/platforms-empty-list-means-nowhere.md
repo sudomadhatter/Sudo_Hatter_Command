@@ -2,7 +2,6 @@
 name: platforms-empty-list-means-nowhere
 description: "`platforms: []` in a .agents/commands/*.md frontmatter syncs the command to ZERO platforms — it is the one value that means \"never surface this\", and omitting the key entirely is what means \"all four\"; a command written this way exists on disk, is INDEXed, and is silently untypeable everywhere."
 metadata: 
-  probe: "test -e .agents/scripts/sync-agents.ps1"
   node_type: memory
   type: project
   originSessionId: 27c1ed6c-690d-4f25-91b4-b537755e900d

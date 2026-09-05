@@ -2,7 +2,6 @@
 name: jira-integration-live
 description: "Jira is LIVE for both repos as of 2026-08-07 — SCC (lobby) and AVCH (AviationChat). Every branch and commit carries a key; the commit-msg hook is ARMED (ENFORCE), so a keyless or wrong-project commit is rejected outright."
 metadata: 
-  probe: "test -e .agents/scripts/git-hooks/commit-msg-jira.sh"
   node_type: memory
   type: project
   originSessionId: 8bc78088-0a6e-4b75-b4eb-edc817c5fe79

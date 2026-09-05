@@ -14,8 +14,8 @@ trigger: model_decision
 > **Shared memory follows ownership, never cwd or tool.** Work about a directory under `Projects/` goes to
 > that project's own `_artifacts/`, even when the chat starts in the home base. Read the project's
 > `_artifacts/AGENTS.md` FIRST; its local buckets win. The only alternative is an explicit Sudo-managed
-> exception in the home router. The current complete exception set is `Fresh_Workspace_BMAD` and
-> `OpenChat-Openrouter`; their operational history stays in the matching home-base `_artifacts/<name>/`.
+> exception in the home router. The current complete exception set is `OpenChat-Openrouter`; its
+> operational history stays in the matching home-base `_artifacts/<name>/`.
 > Main/home-base/cross-project work goes to `_artifacts/_main/`. The store is shared by Claude, opencode,
 > Antigravity/Gemini, and Codex so every agent can read past sessions. Full model →
 > `docs/workspace-standard.md`.
@@ -121,7 +121,7 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
   missing, create its standard skeleton; never create a home-base fallback bucket.
 - **Sudo-managed exception:** work about a name explicitly listed in the home `router.md` exception registry
   goes to the matching home-base `_artifacts/<name>/…`. The complete current set is
-  `Fresh_Workspace_BMAD` and `OpenChat-Openrouter`. An exception must be explicit; never infer one.
+  `OpenChat-Openrouter`. An exception must be explicit; never infer one.
 - **Home-base ownership:** main/home-base/cross-project work (the standard, master `.agents/`, router, lobby
   wiring) goes to `_artifacts/_main/…`.
 - **Tool identity never changes ownership.** Claude, opencode, Antigravity/Gemini, and Codex all write to the

@@ -2,7 +2,6 @@
 name: closeout-target-is-a-machine-contract
 description: "SCC-64: `task_preflight.py` now REQUIRES `--expect-key`, cross-reads a `task.yaml` manifest, and `workflow_lint --toolkit-only` stops root close-outs inheriting active-project.txt. The prose guard became an exit code."
 metadata:
-  probe: "test -e _artifacts/_memory"
   type: project
 ---
 

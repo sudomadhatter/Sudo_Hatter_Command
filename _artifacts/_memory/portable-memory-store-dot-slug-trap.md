@@ -2,7 +2,6 @@
 name: portable-memory-store-dot-slug-trap
 description: Auto-memory lives in the repo at _artifacts/_memory/ via a junction; the slug rule turns '.' into '-' too, and omitting that silently strands every memory.
 metadata:
-  probe: "test -e _artifacts/_memory"
   type: project
 ---
 

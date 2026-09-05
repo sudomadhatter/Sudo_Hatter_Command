@@ -233,7 +233,7 @@ drift:           undeclared=0 · unimplemented=0 · incomplete=0 — reconciled 
 
 ### The one that was mine, not a lens's
 
-Writing the replacement for finding 5, I shipped `grep -qv` as the verdict. **The Mac's `grep` is ugrep, not BSD or GNU grep, and its `-q` with `-v` returns the inverted exit code** — 1 when lines are selected, 0 on empty input. The gate passed the illegal case and stopped the legal one. Caught by running it against three throwaway repos before believing it. It counts now (`grep -vc`), which has one meaning on every grep and on both machines, and `CS-24 G` fails if `-qv` ever comes back. Recorded in the memory store as `grep-here-is-ugrep-qv-inverts` (it lives outside this repo, so it takes no link).
+Writing the replacement for finding 5, I shipped `grep -qv` as the verdict. **The Mac's `grep` is ugrep, not BSD or GNU grep, and its `-q` with `-v` returns the inverted exit code** — 1 when lines are selected, 0 on empty input. The gate passed the illegal case and stopped the legal one. Caught by running it against three throwaway repos before believing it. It counts now (`grep -vc`), which has one meaning on every grep and on both machines, and `CS-24 G` fails if `-qv` ever comes back. Recorded in the memory store as `agent-shell-grep-is-not-the-gate-grep` (it lives outside this repo, so it takes no link).
 
 ### Gates
 

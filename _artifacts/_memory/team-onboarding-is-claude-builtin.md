@@ -2,7 +2,6 @@
 name: team-onboarding-is-claude-builtin
 description: "The /team-onboarding slash entry is a built-in Claude Code command, NOT a toolkit file — don't re-hunt or try to delete it"
 metadata: 
-  probe: "test -e .agents/commands"
   node_type: memory
   type: reference
   originSessionId: e1569d18-80f6-4d02-84df-7509e4461fd2

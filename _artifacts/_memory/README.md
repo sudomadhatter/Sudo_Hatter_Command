@@ -48,7 +48,10 @@ data before this was set up:
   the claim holds. `.agents/scripts/memory_probe.py` runs them; `test_memory_store.py` reds and names
   the file when one fails. A probe must be **read-only** and must assert something **stable** — never
   a count or a timestamp, which change on their own and would red the suite for nobody's fault.
-  Rulings and preferences need no probe. Full law: `.agents/rules/agent-memory-is-long-term-only.md`.
+  Rulings and preferences need no probe — and a decorative one is worse than none. ⛔ The probe must
+  be able to FAIL: `test -e <a path git tracks>` cannot (every checkout has it), and it must name
+  something this memory's body names. Write it in SINGLE quotes. Full law:
+  `.agents/rules/agent-memory-is-long-term-only.md`.
 - **On rename day, re-run the linker.** The slug changes; the junction must be re-pointed. Nothing needs
   to move, because the data was never in the slug directory to begin with — that is the whole point.
 

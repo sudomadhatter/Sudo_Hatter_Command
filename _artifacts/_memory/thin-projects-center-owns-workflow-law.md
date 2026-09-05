@@ -2,7 +2,6 @@
 name: thin-projects-center-owns-workflow-law
 description: Projects carry NO vendored toolkit — only their own rules/skills/INDEX.md plus repo-local enforcement; binding a project means reading its .agents/INDEX.md.
 metadata:
-  probe: "test -e .agents/rules/project-law.md"
   type: project
 ---
 

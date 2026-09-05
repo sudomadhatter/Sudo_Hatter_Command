@@ -1,8 +1,9 @@
-# VS Code Extension Migration + Zoo Code Transition — Mac and Windows PC
+# VS Code Extension Migration + Zoo Code Transition — macOS and Windows
 
-Use this guide to consolidate day-to-day agent work in **VS Code** on either machine, carrying the
-extension set across with the portable IDs manifest, and to complete the **Roo Code → Zoo Code**
-transition on each machine. Antigravity IDE is demoted (its "Always Proceed still prompts every
+Use this guide to consolidate day-to-day agent work in **VS Code**, carrying the extension set
+across with the portable IDs manifest, and to complete the **Roo Code → Zoo Code** transition. Both
+OS columns are kept because the procedure has to work wherever it is run; on this system that is the
+Windows side of the one PC (`one-pc-windows-and-wsl`). Antigravity IDE is demoted (its "Always Proceed still prompts every
 command" bug is upstream and unfixable from our side); Roo Code was archived upstream and is frozen
 at v3.54.
 

@@ -190,7 +190,9 @@ Rows A–H are the acceptance table above.
 - EDIT `_artifacts/_memory/README.md` — store rules gain the probe line → C
 - NEW `.agents/scripts/memory_probe.py` — runs every `probe:`; one row per memory; nonzero exit on any failure → C
 - EDIT `.agents/scripts/tests/test_memory_store.py` — a failing probe reds the suite and names the file; fixture with a false probe → C
-- EDIT `.agents/scripts/memory_audit.py` — candidate row: a path-naming memory with no probe → C
+- EDIT `.agents/scripts/tests/test_memory_store.py` — `audit_signals()` candidate row: a path-naming
+  memory with no probe → C  *(the plan said `.agents/scripts/memory_audit.py`; no such file exists —
+  `audit_signals()` is the real candidates surface, and `/smh-memory-audit` already points at it)*
 - EDIT `.agents/scripts/INDEX.md` — the new script's row → C
 - EDIT `.agents/rules/agent-memory-is-long-term-only.md` — the probe line becomes law for path-naming memories → C
 - EDIT `_artifacts/_memory/antigravity-uses-workflows-not-commands.md` — IDE→CLI; sides named; probes → C
@@ -203,7 +205,8 @@ Rows A–H are the acceptance table above.
 - EDIT `_artifacts/_memory/git-hooks-live-in-githooks-not-git-hooks.md` — triage → C
 - EDIT `_artifacts/_memory/github-408-on-satellite-uplink.md` — triage → C
 - EDIT `_artifacts/_memory/gitnexus-index-not-actually-live.md` — triage → C
-- EDIT `_artifacts/_memory/grep-here-is-ugrep-qv-inverts.md` — triage; likely DELETE → C
+- RENAME the memory `grep-here-is-ugrep-qv-inverts` → [`agent-shell-grep-is-not-the-gate-grep.md`](../../_memory/agent-shell-grep-is-not-the-gate-grep.md)
+  — the review measured it false: `grep` is a Claude Code shell FUNCTION, not this box's grep → C
 - EDIT `_artifacts/_memory/hook-background-work-gets-sigterm.md` — triage → C
 - EDIT `_artifacts/_memory/hooks-armed-measures-pointer-not-payload.md` — triage → C
 - EDIT `_artifacts/_memory/jira-attachments-need-the-rest-token.md` — triage → C
@@ -260,6 +263,34 @@ Rows A–H are the acceptance table above.
 - EDIT `.agents/scripts/sync-agents.ps1` — the live reference → E
 - EDIT `docs/workspace-standard.md` — the project table → F
 - EDIT `docs/repo-map.md` — regenerated → H
+
+### Amendment, 2026-09-04 (at `/smh-code-review` Step 2)
+
+The block above was written before the work. Reconciled against the real diff, with the difference
+named rather than quietly absorbed:
+
+**Delivered but never declared** — every one a consequence of a rename or of Subtask E, so the work
+is in lane and the block was simply not kept up: `.agents/commands/{cicd-resume,smh-memory-audit,cicd-autopilot-deepseek4}.md`
+· `.agents/rules/{project-law,artifacts-always-first}.md` · `router.md` ·
+`.agents/scripts/{zoo_notify,zoo_notify_install}.py` ·
+`.agents/scripts/tests/{test_sops_prds_folder,test_zoo_notify,test_zoo_notify_install}.py` ·
+`.agents/skills/smh-sync-vscode/SKILL.md` ·
+`docs/_scc_sops_prds/{file_folder_structure+maintaining,tdad_stack_install_guide}.md` ·
+`docs/migrations/{terminal-permissions-guide.md,scripts/rename-fix.ps1,vscode_sync/README.md}` ·
+six closed lanes' artifacts (`[[wikilink]]` retargeting only). **NEW** at review:
+`.agents/scripts/tests/test_memory_probe.py`. Generated mirrors (`.opencode/`, `.claude/rules/`,
+`.claude/skills/`, `.agents/.sync-manifest.json`, `docs/doc-graph.*`) follow `sync-agents.ps1`
+mechanically and are not authored drift.
+
+**Declared and deliberately NOT delivered** — each with the reason, per the sweep discipline
+(fix present-tense claims about THIS operator's machine; KEEP per-OS platform coverage and dated
+evidence): `docs/_scc_sops_prds/autopilot_bmad_dev_loop.md` (one dated "verified on a Mac" evidence
+line) · `docs/migrations/install_guides/{keyway-setup,scratchpad-allow-hook-per-machine}.md`
+(per-OS install tables) · `.../python_vytest-updates-other-machines.md` (a dated per-machine ledger
+that already records the Windows row as retired) · `docs/repo-map.md` (regeneration was unnecessary —
+it names no removed path; `check_maps --depth3-only --strict` is clean) ·
+`.agents/scripts/tests/test_rule_frontmatter.py` (Subtask A, landed separately).
+`docs/migrations/install_guides/vscode-ide-extension-migration.md` WAS delivered at review.
 
 Session memories (outside the repo, `~/.claude/projects/.../memory/`): `wsl-jira-token-needs-a-login-shell.md`
 loses its "Mac uses the keychain" line; `MEMORY.md` gains a row for the machine model. Not in the

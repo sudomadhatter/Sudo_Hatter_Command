@@ -4,11 +4,11 @@ description: "Claude Code notifications: the `Notification`/`Stop` hook value MU
 metadata:
   node_type: memory
   type: reference
-  probe: "test -x ~/.claude/notify.sh && grep -q 'mac-sudo-command' .agents/scripts/zoo_notify.py"
+  probe: "grep -q 'mac-sudo-command' .agents/scripts/zoo_notify.py"
   modified: 2026-09-04
 ---
 
-> ⛔ Renamed from `claude-notifications-hook-schema-and-ntfy` on 2026-09-04 (SCC-401). The Mac half of the
+> ⛔ Renamed from `claude-notifications-mac-and-phone` on 2026-09-04 (SCC-401). The Mac half of the
 > old file described `terminal-notifier`, `osascript` and macOS Focus modes on a machine that no
 > longer exists ([[one-pc-windows-and-wsl]]) — `terminal-notifier` is not installed here and cannot
 > be. What survives is the part that was never about macOS at all.

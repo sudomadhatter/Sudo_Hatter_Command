@@ -2,7 +2,6 @@
 name: vscode-hides-git-hook-output
 description: "VS Code's Source Control panel swallows git-hook output — it goes to View > Output > Git. A warn-only hook fires, complains, and looks like a clean success. This is how a wrong-key commit reached AviationChat's main on 2026-08-07."
 metadata: 
-  probe: "test -e .agents/jira.conf"
   node_type: memory
   type: feedback
   originSessionId: 8bc78088-0a6e-4b75-b4eb-edc817c5fe79

@@ -2,7 +2,6 @@
 name: zoo-approvals-decision-store
 description: "Zoo Code approvals are decided by VS Code globalState (state.vscdb), which .vscode/settings.json seeds exactly ONCE — denies never seed. After any list edit run zoo_permissions_apply.py --apply per machine with VS Code closed, or the tracked lists change the display and nothing else."
 metadata:
-  probe: "test -e .agents/scripts/tests/test_zoo_permissions.py"
   node_type: memory
   type: project
 ---

@@ -2,7 +2,6 @@
 name: node-26-breaks-vitest-jsdom-storage
 description: "Node 26 breaks vitest's jsdom env — localStorage undefined in tests; run Node 22 LTS; green elsewhere may be stale node_modules/Node, not a healthy stack"
 metadata: 
-  probe: "test -e docs/migrations/install_guides/python_vytest-updates-other-machines.md"
   node_type: memory
   type: project
   originSessionId: eafbef40-5e30-4001-b696-a23ece42c00d

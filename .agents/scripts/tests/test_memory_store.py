@@ -330,7 +330,7 @@ def audit_signals(store: Path, repo: Path | None = None) -> list[str]:
     # disk, and that is exactly the claim that goes false without anyone noticing. A CANDIDATE,
     # never a red: turning 76 files red in one shot would train everyone to skip this gate, which
     # is the disease this whole file exists to cure.
-    unprobed_paths = [n for n, why in memory_probe.run_store(store, Path("."))[2] if why]
+    unprobed_paths = [n for n, cmd, pathy in memory_probe.scan_store(store) if cmd is None and pathy]
     if unprobed_paths:
         out.append(f"{len(unprobed_paths)} memor(ies) name an absolute or ~/ path and carry no "
                    f"`probe:` - the claim cannot go red when it stops being true "
@@ -748,6 +748,13 @@ def main() -> int:
     c.check(f"real store: every `probe:` still passes ({len(_p)} probed, {len(_u)} unprobed) - "
             f"a failing one means the memory stopped being true",
             _f == [], " | ".join(f"{n}: {d}" for n, d in _f[:3]))
+    # ⛔ AND EVERY PROBE MUST BE ABLE TO FAIL. Without this the count above is a vanity metric:
+    # the first cut of this mechanism shipped 59 probes of which 54 were `test -e <tracked path>`,
+    # green forever in every checkout, five of them shared verbatim by unrelated memories. The
+    # review caught it; this line is what stops it being rewritten (SCC-401 review).
+    _w = memory_probe.weak_probes(REAL_STORE, REPO_ROOT)
+    c.check("real store: every `probe:` CAN fail - none is a tracked path that always exists",
+            _w == [], " | ".join(f"{n}: {d}" for n, d in _w[:3]))
     got = check_store(REAL_STORE)
     c.check("real store: index <= 25KB, links resolve, no orphans, frontmatter present",
             got == [], " | ".join(got[:4]))

@@ -53,8 +53,12 @@ version, or a tool's behaviour — **must** carry a `probe:` line in its frontma
 
 ```yaml
 metadata:
-  probe: "test -d /mnt/c/Sudo_Hatter_Command"
+  probe: 'grep -q microsoft-standard-WSL2 /proc/version'
 ```
+
+⚠️ **Write it in SINGLE quotes.** The reader strips the outer quotes and does no YAML unescaping, so
+a double-quoted value containing `\"` reaches the shell with its backslashes intact and fails for a
+reason nothing in the output explains.
 
 A plain shell command. **Exit 0 means the claim still holds.** No DSL: the probe IS the command you
 would type to check by hand, which is the only form that stays honest — an author who cannot type it
@@ -62,7 +66,24 @@ cannot write it. `.agents/scripts/memory_probe.py` runs every probe, `test_memor
 **red and names the file** when one fails, and `/smh-memory-audit` lists path-naming memories with
 no probe as candidates.
 
-Three constraints, each of which has already cost something:
+⛔ **AND THE PROBE MUST BE ABLE TO FAIL — this is the one that was got wrong first.** The first cut
+of this mechanism shipped 59 probes and the review found **54 of them could not fail**: they were
+`test -e <a path git tracks>`, which every checkout satisfies forever. Five unrelated memories shared
+`test -e .agents/commands`; four shared `test -e _artifacts/_memory`, the very directory the runner
+walks to reach them. The suite printed `59 probe(s) passed` and that number meant nothing — a green
+tick on the same failure the mechanism was built to end. `memory_probe.weak_probes()` now refuses
+both shapes, and the suite reds on either:
+
+- **not a tracked path's existence** — git guarantees it. Probe what the memory *claims*: the content
+  of a file, the identity of a binary, a per-machine artifact git does not carry.
+- **anchored to the claim** — the probe must name something the memory's own body names. A falsifier
+  wired to something else is a green light with no wire behind it.
+
+**A probe you cannot write is a signal, not a problem.** Most memories are rulings, conventions and
+behavioural lessons; those take no probe and must not be given a decorative one. Five of 145 carry a
+probe today, and five true probes are worth more than fifty-nine that cannot fail.
+
+Three further constraints, each of which has already cost something:
 
 1. **A probe OBSERVES.** It runs inside the suite, on every machine. Mutating and network shapes
    (`rm`, `mv`, `curl`, `>`, `git push`, `sudo`, …) are refused outright and reported as failures.

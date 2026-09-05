@@ -2,7 +2,6 @@
 name: toolkit-installed-but-deliberately-unmaintained
 description: B-L-WorldWide and BRKN_Tattoos carry a frozen July sudo toolkit on purpose — RULED not-maintained 2026-08-03; never re-file as a gap.
 metadata: 
-  probe: "test -e .agents/maintained-projects.txt"
   node_type: memory
   type: project
   originSessionId: 188cc8d4-fd46-4a29-ada3-f8934ab750ee

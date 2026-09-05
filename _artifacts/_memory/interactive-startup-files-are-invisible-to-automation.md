@@ -4,15 +4,18 @@ description: "An env var set in an INTERACTIVE-only startup file (`~/.bashrc` he
 metadata:
   node_type: memory
   type: project
-  probe: "grep -q 'JIRA_API_TOKEN' ~/.profile"
+  probe: "grep -q '.profile' docs/migrations/install_guides/jira-api-token-setup.md"
   modified: 2026-09-04
 ---
+
+The install guide that encodes this is `docs/migrations/install_guides/jira-api-token-setup.md`
+— it is what the probe on this file watches, so the memory reds if that advice is ever removed.
 
 **The trap, in one line:** the variable is present when Mr. Hatter tests by hand and absent in every
 automated path **on the same box**, so a suite passes interactively and fails under automation with
 no environmental difference anyone can see.
 
-> ⛔ Renamed from `interactive-startup-files-are-invisible-to-automation` on 2026-09-04 (SCC-401). The old name pinned
+> ⛔ Renamed from `zshrc-is-invisible-to-automation` on 2026-09-04 (SCC-401). The old name pinned
 > the lesson to zsh on a Mac that does not exist ([[one-pc-windows-and-wsl]]), so an agent on this
 > box read it as "not my shell" and walked into the identical bash version. The trap is about
 > **interactive-only startup files**, not about zsh.

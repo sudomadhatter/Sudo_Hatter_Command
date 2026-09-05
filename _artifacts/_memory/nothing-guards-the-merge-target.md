@@ -2,7 +2,6 @@
 name: nothing-guards-the-merge-target
 description: "Every git guard protects the branch you merge FROM; nothing checks the branch you merge ONTO. A bare `git merge` after a `cd` landed a production merge commit on a sibling lane's branch and reported success — pin every call with cd <abs> && git in ONE line and assert rev-parse before merging (the -C spelling is auto-denied by Zoo since SCC-351)."
 metadata:
-  probe: "test -e .agents/rules/git-policy.md"
   node_type: memory
   type: feedback
 ---

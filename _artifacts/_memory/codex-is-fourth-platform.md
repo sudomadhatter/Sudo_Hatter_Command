@@ -2,7 +2,7 @@
 name: codex-is-fourth-platform
 description: "Codex (OpenAI) is the 4th LLM command surface; how it's wired into the .agents toolkit and the two machine-global caches it needs."
 metadata: 
-  probe: "test -e ~/.codex/AGENTS.md"
+  probe: "grep -q codex .agents/scripts/sync-agents.ps1"
   node_type: memory
   type: project
   originSessionId: b854c6e3-95bb-4b46-b6b0-725c961a456a

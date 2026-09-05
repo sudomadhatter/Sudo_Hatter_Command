@@ -2,7 +2,6 @@
 name: mac-authored-code-hides-windows-bugs
 description: "The MIRROR of windows-authored-code-hides-posix-bugs: the enforcement suite was authored POSIX-side, so 18/61 files were red on Windows and EIGHT live defects sat in shipped code — every cd refused, a gate that never judged, a sweep that left live mutants. The rule: fork BEHAVIOUR, converge DATA — and gate every separator rewrite to Windows."
 metadata: 
-  probe: "test -e .agents/scripts/tests"
   node_type: memory
   type: project
   originSessionId: b93ad8ff-4583-4d2c-96b3-58f746f45e90

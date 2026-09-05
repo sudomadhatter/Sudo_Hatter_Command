@@ -2,7 +2,6 @@
 name: command-center-sudo-skills
 description: "The /sudo-* dev flow is now skill-launchers in the lobby that target a child project via active-project.txt; this surface only registers SKILLS as typeable slash, not commands."
 metadata: 
-  probe: "test -e .agents/active-project.txt"
   node_type: memory
   type: project
   originSessionId: 5421655a-fc6c-40ca-966a-d7eaa2b44a08

@@ -2,7 +2,6 @@
 name: review-status-means-needs-operator
 description: "Operator ruling 2026-08-14: `review`/`In Review` = the ticket needs something from the operator that the agent cannot do. An escalation flag, never a routine stage for Tasks."
 metadata: 
-  probe: "test -e .agents/rules/jira.md"
   node_type: memory
   type: feedback
   originSessionId: 7f6e3053-d4b6-40eb-8dd6-bfa2e3469d85

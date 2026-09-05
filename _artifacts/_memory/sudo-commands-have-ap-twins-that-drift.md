@@ -2,7 +2,6 @@
 name: sudo-commands-have-ap-twins-that-drift
 description: "The MAINTAINED twin pair is /cicd-* (for CODE, in projects) beside /smh-* (for working on the SYSTEM itself) — obligations live in one and go missing in the other, so fix one and check the twin. The old _AP autopilot twins are ABANDONED as of SCC-209 (2026-08-18): frozen, unmaintained, never diffed or ported to."
 metadata:
-  probe: "test -e .agents/rules"
   type: project
   originSessionId: 315ab028-3603-4a16-812f-e70b12b06a2f
   modified: 2026-08-17T18:33:33.388Z

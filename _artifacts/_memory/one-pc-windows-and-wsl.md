@@ -12,7 +12,7 @@ metadata:
 was one on this system — the claim written 2026-08-08 ("driven from TWO machines, this Mac AND a
 Windows PC") went false when SCC-376 moved the working environment into WSL2 on 2026-09-02, and it
 stayed loaded and trusted until an agent used it on 2026-09-04 to make four wrong statements to
-Mr. Hatter in one afternoon. This file replaces it. Superseded: `one-pc-windows-and-wsl`.
+Mr. Hatter in one afternoon. This file replaces it. Superseded: `two-machines-mac-and-pc`.
 
     grep -q microsoft-standard-WSL2 /proc/version   # kernel 5.15.167.4-microsoft-standard-WSL2
 

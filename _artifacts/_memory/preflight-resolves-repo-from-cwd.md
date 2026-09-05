@@ -2,7 +2,6 @@
 name: preflight-resolves-repo-from-cwd
 description: "task_preflight/closeout_preflight resolve the repo by walking up from cwd and default --branch to that HEAD, so a close-out can print a fully honest \"clear to merge\" verdict about SOMEONE ELSE'S branch."
 metadata: 
-  probe: "test -e .agents/rules/worktree-per-story.md"
   node_type: memory
   type: feedback
   originSessionId: f3e01c24-9b74-4562-ba18-4cc66697fffd

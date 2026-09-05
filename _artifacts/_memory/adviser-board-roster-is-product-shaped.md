@@ -2,7 +2,6 @@
 name: adviser-board-roster-is-product-shaped
 description: "The adviser board's 43 minds and lens charters assume a build/market problem; on a personal topic seat 2-3 lenses, not 5."
 metadata: 
-  probe: "test -e .agents/commands/adviser-board/TEAMS.md"
   node_type: memory
   type: feedback
   originSessionId: 7ba89cf0-81b8-495e-af07-a7885823e342

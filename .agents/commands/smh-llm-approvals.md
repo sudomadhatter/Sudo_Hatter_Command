@@ -250,8 +250,9 @@ against.** That law reads *a rule is only ever as wide as the command it came fr
 lifted out of `~/.claude/settings.json` did not come from a command; it came from an earlier
 decision whose command is long gone. So show it for what it is and get his word out loud before it
 goes into the source. `Bash(bash:*)` and `Bash(sh:*)` are on that list today and each one permits
-**any command at all**: locally that is his call on a machine he is watching, but the source renders
-to BOTH machines, so promoting one is a different act from having granted it. ⛔ **And do not narrow
+**any command at all**: locally that is his call in a session he is watching, but the source is the
+tracked file every side and every clone reads, so promoting one is a different act from having
+granted it. ⛔ **And do not narrow
 it for him** — this door does not compute prefixes (SCC-354). Show the row, say plainly what it
 permits, and let him answer.
 

@@ -2,7 +2,6 @@
 name: limits-relocate-content-never-truncate
 description: "The 8/10 KB artifact caps were REMOVED 2026-08-08 (SCC-51). A limit is legitimate only when going over it means content is in the wrong file; if the only lever is destroying substance, it is a defect."
 metadata:
-  probe: "test -e .agents/rules/artifacts-always-first.md"
   node_type: memory
   type: feedback
   originSessionId: f3e01c24-9b74-4562-ba18-4cc66697fffd

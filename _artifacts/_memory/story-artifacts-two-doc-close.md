@@ -2,7 +2,6 @@
 name: story-artifacts-two-doc-close
 description: "Since 2026-08-02 a story closes with TWO living docs — plan (+## Self-Audit) and walkthrough (+## Code Review with the Verdict line close-out greps); standalone audit/review files are retired, TEA files kept."
 metadata: 
-  probe: "test -e _artifacts/AGENTS.md"
   node_type: memory
   type: project
   originSessionId: 38c898a4-0e4e-4347-b130-b313acf7f0ec
