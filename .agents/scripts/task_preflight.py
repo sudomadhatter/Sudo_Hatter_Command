@@ -113,6 +113,63 @@ PRODUCT_DIRS = ("backend/", "frontend/", "firebase/", "functions/", "mobile/")
 CI_DIR = ".github/"
 DEPLOY_DIRS = PRODUCT_DIRS + (CI_DIR,)
 
+# ── A live epic freezes main for its scope (SCC-416) ───────────────────────────
+# Measured 2026-09-05: a chore/ lane off main carried three files the live epic/AVCH-100
+# branch was also changing. Both preflights judged it by its own diff against PRODUCT_DIRS,
+# called it a product change, and it deployed mid-epic. The ruling forbidding it sat on the
+# epic branch - unreadable from a main-bound lane. So this check reads the LIVE BRANCH LIST,
+# not a file, and both callers run it BEFORE their surface decision: a lane that is epic
+# work is named epic work before "deployable -> product change" can promote it to prod.
+EPIC_REF_RE = re.compile(r"^refs/(?:heads|remotes/origin)/(epic/[A-Z][A-Z0-9]*-\d+-.+)$")
+
+
+def live_epic_branches(repo: Path) -> dict[str, str]:
+    """name -> the ref to diff against. `origin/` wins when both exist (the machine-independent
+    truth after a fetch); a local-only epic still counts - it is live on THIS machine."""
+    out = wf.git(["for-each-ref", "--format=%(refname)",
+                  "refs/heads/epic/", "refs/remotes/origin/epic/"], repo).stdout
+    live: dict[str, str] = {}
+    for line in out.splitlines():
+        m = EPIC_REF_RE.match(line.strip())
+        if not m:
+            continue
+        name = m.group(1)
+        remote = line.strip().startswith("refs/remotes/")
+        if remote or name not in live:
+            live[name] = f"origin/{name}" if remote else name
+    return live
+
+
+def epic_freeze(repo: Path, changed: list[str], base: str, section: str,
+                rep: wf.Report) -> list[str]:
+    """The product files this lane shares with ANY live epic - empty means clean.
+
+    The epic's diff is `base...ref` (merge-base to tip), so a fully merged, unpruned epic
+    diffs to nothing and cannot false-fire. Only PRODUCT_DIRS paths count: bookkeeping
+    surfaces (`active-context.md`, `sprint-status.yaml`) are touched by every lane by
+    design, and refusing on them would refuse every lane. A clean run SAYS it checked -
+    a check that is silent when clean is invisible when broken."""
+    live = live_epic_branches(repo)
+    mine = {p for p in changed if p.startswith(PRODUCT_DIRS)}
+    shared_all: list[str] = []
+    for name, ref in live.items():
+        d = wf.git(["diff", "--name-only", f"{base}...{ref}"], repo)
+        if d.returncode != 0:
+            continue
+        shared = sorted(mine & {ln.strip() for ln in d.stdout.splitlines() if ln.strip()})
+        if not shared:
+            continue
+        shared_all += shared
+        rep.err(section, f"EPIC WORK: {len(shared)} file(s) this lane changes are ALSO changed "
+                         f"on the live epic {name}: {', '.join(shared[:6])}"
+                         f"{' ...' if len(shared) > 6 else ''}. While that epic is in flight, "
+                         f"main is FROZEN for its scope. STOP. Cut claude/<KEY>-<slug> off "
+                         f"origin/{name} and land it with /cicd-close-story-merge-tree - "
+                         f"never /cicd-push-e2e, never this door.")
+    if not shared_all:
+        rep.info(section, f"{len(live)} live epic branch(es) checked, no product-file overlap")
+    return shared_all
+
 
 def git_root(arg: str | None) -> Path:
     """The repo, WITHOUT requiring a sprint board.
@@ -1203,6 +1260,12 @@ def check_scope(repo: Path, branch: str, rep: wf.Report) -> tuple[str, list[str]
     diff = wf.git(["diff", "--name-only", f"{base}...{branch}"], repo)
     changed = [ln.strip() for ln in diff.stdout.splitlines() if ln.strip()]
     rep.info("scope", f"{len(changed)} file(s) changed vs {base}")
+
+    # SCC-416: BEFORE the surface decision - epic work must never reach the handoff below,
+    # which names the production door.
+    shared = epic_freeze(repo, changed, base, "scope", rep)
+    if shared:
+        return "HANDOFF", shared
 
     if not surface:
         # ⚠ This line USED to render DEPLOY_DIRS, which appends `.github/` - so in the command

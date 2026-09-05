@@ -938,6 +938,45 @@ def main() -> int:
                     code == 2 and "open subtask" in out, f"exit {code}: " + out.strip()[-400:])
 
 
+    # ── SCC-416 · A LIVE EPIC FREEZES main — the Task door's half ────────────────────────
+    # The twin of test_ship_preflight SP-Q. This door's scope check hands a deployable diff
+    # to /cicd-push-e2e - which is exactly where AVCH-80 went (2026-09-05) and deployed
+    # mid-epic. A diff sharing a product file with a live epic is epic work, and the ONLY
+    # road it may be named is the story door. Order is the point: the epic check runs before
+    # the surface handoff, so the production door is never named for epic work.
+    if c.block("SCC-416 · a live epic freezes main: overlap is EPIC WORK, never the prod door"):
+        EPIC = "epic/SCC-12-epic-1-thing"
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, EPIC, {"backend/app.py": "x = 2\n"})
+            git(repo, "checkout", "-q", "main")
+            branch(repo, "chore/SCC-11-thing", {"backend/app.py": "x = 3\n"})
+            code, out = preflight(repo)
+            c.check("overlap with a live epic -> HANDOFF", "LANE: HANDOFF" in out,
+                    out.strip()[-400:])
+            c.check("overlap -> exit 2", code == 2, f"exit {code}")
+            c.check("...it says EPIC WORK and names the epic",
+                    "EPIC WORK" in out and EPIC in out, out.strip()[-400:])
+            c.check("...it names the STORY door", "/cicd-close-story-merge-tree" in out,
+                    out.strip()[-400:])
+            c.check("...and it does NOT hand epic work to the production door",
+                    "STOP and ship it with /cicd-push-e2e" not in out, out.strip()[-500:])
+
+        # The control: same live epic, no shared product file -> today's handoff, verbatim,
+        # and the run says the epic was checked.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, EPIC, {"backend/app.py": "x = 2\n"})
+            git(repo, "checkout", "-q", "main")
+            branch(repo, "chore/SCC-11-thing", {"backend/other.py": "y = 1\n"})
+            code, out = preflight(repo)
+            c.check("no overlap -> the deployable handoff is unchanged",
+                    code == 2 and "STOP and ship it with /cicd-push-e2e" in out,
+                    f"exit {code}: " + out.strip()[-400:])
+            c.check("...and it SAYS it checked the live epic",
+                    "1 live epic branch(es) checked, no product-file overlap" in out,
+                    out.strip()[-400:])
+
     return c.finish()
 
 

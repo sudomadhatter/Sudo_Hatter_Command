@@ -321,6 +321,10 @@ def check_lane(repo: Path, branch: str, prefix: str | None, rep: wf.Report) -> s
                         f"{(diff.stderr or '').strip()[:160]}")
         return "unknown"
     changed = [ln.strip() for ln in diff.stdout.splitlines() if ln.strip()]
+    # SCC-416: BEFORE the light-gate decision - a chore lane sharing a product file with a
+    # live epic is epic work, and "deployable -> product change -> ship" must never see it.
+    if tp.epic_freeze(repo, changed, base, "lane", rep):
+        return "handoff"
     touched = sorted({d for d in surface for p in changed if p.startswith(d)})
     if touched:
         rep.info("lane", f"chore branch touching {', '.join(touched)} -> the light gate "

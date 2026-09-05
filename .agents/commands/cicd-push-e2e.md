@@ -66,6 +66,10 @@ git branch -a --list '*epic/*'          # live epic branches, local + origin
   **deployable** path (`backend/ frontend/ firebase/ functions/ mobile/ .github/`). Nothing deployable →
   it refuses, and that lane closes out through `/smh-close-task-merge-tree`, which owns the Task ceremony
   this door does not have. (Ruling 2026-08-07: chore branches carry their own ticket key too.)
+  ⛔ **And the diff decides the GATE, not the DESTINATION:** Step 1.5's preflight refuses a chore lane
+  outright when its diff shares a **product file** with a live `epic/*` — that lane is epic work and lands
+  on the epic via `claude/<KEY>-<slug>` and `/cicd-close-story-merge-tree` (SCC-416). For a chore lane
+  that check IS the "every story done" sanity check below; the substitution does not switch it off.
 
 Extract the epic's Jira key from the branch name — it drives Step 6.5. A branch with no key is a
 pre-Jira epic: rename it first (see the branch model above), and never invent a key.

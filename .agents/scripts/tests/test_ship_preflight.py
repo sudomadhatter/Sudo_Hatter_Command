@@ -744,6 +744,111 @@ def main() -> int:
                         and doc.get("key") == "SCC-11",
                         json.dumps(doc)[:200])
 
+    # ── SP-Q · A LIVE EPIC FREEZES main FOR ITS SCOPE (SCC-416) ──────────────────────────
+    # Measured 2026-09-05: a chore/ lane off main carried three files the live epic branch
+    # was also changing; this preflight said "chore touching backend -> light gate -> clear"
+    # and the lane deployed mid-epic. The lane check judged the diff against PRODUCT_DIRS and
+    # never looked at the live branch list. These cases pin the check that does, and pin its
+    # ORDER: the refusal has to land BEFORE the surface decision, or "deployable -> product
+    # change -> ship" promotes epic work to prod exactly as it did.
+    if c.block("SP-Q · a live epic freezes main: product-file overlap is EPIC WORK"):
+        EPIC = "epic/SCC-12-epic-1-thing"
+
+        # (1) THE refusal — the incident's shape, one file shared with the live epic.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, EPIC, {"backend/app.py": "x = 2  # the epic's change\n"})
+            git(repo, "checkout", "-q", "main")
+            branch(repo, "chore/SCC-11-thing", {"backend/app.py": "x = 3  # the chore's\n"})
+            code, out = ship(repo, "chore/SCC-11-thing")
+            c.check("SP-Q.1 overlap with a live epic -> exit 2", code == 2, out.strip()[-400:])
+            c.check("SP-Q.1 ...VERDICT: BLOCKED", "VERDICT: BLOCKED" in out, out.strip()[-200:])
+            c.check("SP-Q.1 ...it says EPIC WORK", "EPIC WORK" in out, out.strip()[-400:])
+            c.check("SP-Q.1 ...it names the epic branch", EPIC in out, out.strip()[-400:])
+            c.check("SP-Q.1 ...it names the shared file", "backend/app.py" in out,
+                    out.strip()[-400:])
+            c.check("SP-Q.1 ...it names the road: the STORY door",
+                    "/cicd-close-story-merge-tree" in out, out.strip()[-400:])
+            # ORDER. The light-gate line is the surface decision; if it printed, the lane was
+            # classed a product change before anyone asked whether it was epic work.
+            c.check("SP-Q.1 ...and the refusal came BEFORE the surface decision "
+                    "(no 'light gate' line)", "light gate" not in out, out.strip()[-500:])
+
+        # (2) ALLOWS: a live epic, no shared product file -> today's behaviour, and the run
+        # SAYS it checked. A check that is silent when clean is invisible when broken.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, EPIC, {"backend/app.py": "x = 2\n"})
+            git(repo, "checkout", "-q", "main")
+            branch(repo, "chore/SCC-11-thing", {"backend/other.py": "y = 1\n"})
+            code, out = ship(repo, "chore/SCC-11-thing")
+            c.check("SP-Q.2 no overlap -> still ships (exit 0)", code == 0, out.strip()[-400:])
+            c.check("SP-Q.2 ...on the light gate", "light gate" in out, out.strip()[-300:])
+            c.check("SP-Q.2 ...and it SAYS it checked the live epic",
+                    "1 live epic branch(es) checked, no product-file overlap" in out,
+                    out.strip()[-400:])
+
+        # (3) ALLOWS: no live epic at all -> unchanged, and the count reads 0.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "chore/SCC-11-thing", {"backend/app.py": "x = 3\n"})
+            code, out = ship(repo, "chore/SCC-11-thing")
+            c.check("SP-Q.3 no live epic -> ships", code == 0, out.strip()[-300:])
+            c.check("SP-Q.3 ...and the count reads 0",
+                    "0 live epic branch(es) checked" in out, out.strip()[-300:])
+
+        # (3b) The epic branch ITSELF is never 'epic work' - a sibling epic touching the same
+        # file must not turn the full gate into a refusal.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/SCC-12-epic-2-other", {"backend/app.py": "x = 9\n"})
+            git(repo, "checkout", "-q", "main")
+            branch(repo, "epic/SCC-11-epic-1-thing", {"backend/app.py": "x = 2\n"})
+            code, out = ship(repo, "epic/SCC-11-epic-1-thing")
+            c.check("SP-Q.3b an epic under ship takes the FULL gate, sibling epic or not",
+                    code == 0 and "full gate" in out and "EPIC WORK" not in out,
+                    f"exit {code}: " + out.strip()[-300:])
+
+        # (4) A REMOTE-ONLY epic counts. The other machine cut it; this one has only
+        # refs/remotes/origin/epic/… - which is the normal shape after a fetch.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, EPIC, {"backend/app.py": "x = 2\n"})
+            git(repo, "checkout", "-q", "main")
+            git(repo, "branch", "-D", EPIC)
+            branch(repo, "chore/SCC-11-thing", {"backend/app.py": "x = 3\n"})
+            code, out = ship(repo, "chore/SCC-11-thing")
+            c.check("SP-Q.4 a remote-only live epic still refuses",
+                    code == 2 and "EPIC WORK" in out and EPIC in out,
+                    f"exit {code}: " + out.strip()[-400:])
+
+        # (5) ALLOWS: overlap only on a NON-product path. Bookkeeping files are shared by
+        # every lane by design; refusing on them would refuse every lane.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, EPIC, {"_bmad-output/x.yaml": "a\n", "backend/app.py": "x = 2\n"})
+            git(repo, "checkout", "-q", "main")
+            branch(repo, "chore/SCC-11-thing",
+                   {"_bmad-output/x.yaml": "b\n", "backend/other.py": "y = 1\n"})
+            code, out = ship(repo, "chore/SCC-11-thing")
+            c.check("SP-Q.5 a shared bookkeeping file is NOT epic work",
+                    code == 0 and "no product-file overlap" in out,
+                    f"exit {code}: " + out.strip()[-400:])
+
+        # (6) ALLOWS: a fully merged, unpruned epic diffs to nothing against main, so it
+        # cannot false-fire on the next lane that touches the same file.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, EPIC, {"backend/app.py": "x = 2\n"})
+            git(repo, "checkout", "-q", "main")
+            git(repo, "merge", "-q", "--no-ff", "--no-verify", "-m", "SCC-12 merge", EPIC)
+            git(repo, "push", "-q", "origin", "main")
+            branch(repo, "chore/SCC-11-thing", {"backend/app.py": "x = 3\n"})
+            code, out = ship(repo, "chore/SCC-11-thing")
+            c.check("SP-Q.6 a merged-but-unpruned epic does not refuse the next lane",
+                    code == 0 and "1 live epic branch(es) checked, no product-file overlap" in out,
+                    f"exit {code}: " + out.strip()[-400:])
+
     return c.finish()
 
 

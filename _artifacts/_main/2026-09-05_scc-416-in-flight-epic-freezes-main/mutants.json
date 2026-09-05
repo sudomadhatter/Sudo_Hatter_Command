@@ -1,0 +1,50 @@
+{
+  "why": "SCC-416 revert-proof. Code-derived: each mutant flips or relocates ONE decision in the guard, and each must die by the named case. M1/M2 = INVERT the refusal in each door. M3 = a width narrowing (remote-only epics dropped). M4 = the visibility line removed. M5 = RELOCATE the ship guard below the light-gate line - the ORDER assertion is the only thing that can see it.",
+  "mutants": [
+    {
+      "id": "M1",
+      "file": ".agents/scripts/ship_preflight.py",
+      "original": "    if tp.epic_freeze(repo, changed, base, \"lane\", rep):\n        return \"handoff\"\n",
+      "mutated": "    tp.epic_freeze(repo, changed, base, \"lane\", rep)\n",
+      "test": ["python3", ".agents/scripts/tests/test_ship_preflight.py"],
+      "block": "SP-Q",
+      "case": "SP-Q.1 overlap with a live epic -> exit 2"
+    },
+    {
+      "id": "M2",
+      "file": ".agents/scripts/task_preflight.py",
+      "original": "    shared = epic_freeze(repo, changed, base, \"scope\", rep)\n    if shared:\n        return \"HANDOFF\", shared\n",
+      "mutated": "    epic_freeze(repo, changed, base, \"scope\", rep)\n",
+      "test": ["python3", ".agents/scripts/tests/test_task_preflight.py"],
+      "block": "SCC-416",
+      "case": "...and it does NOT hand epic work to the production door"
+    },
+    {
+      "id": "M3",
+      "file": ".agents/scripts/task_preflight.py",
+      "original": "        if remote or name not in live:\n",
+      "mutated": "        if not remote and name not in live:\n",
+      "test": ["python3", ".agents/scripts/tests/test_ship_preflight.py"],
+      "block": "SP-Q",
+      "case": "SP-Q.4 a remote-only live epic still refuses"
+    },
+    {
+      "id": "M4",
+      "file": ".agents/scripts/task_preflight.py",
+      "original": "    if not shared_all:\n        rep.info(section, f\"{len(live)} live epic branch(es) checked, no product-file overlap\")\n",
+      "mutated": "",
+      "test": ["python3", ".agents/scripts/tests/test_ship_preflight.py"],
+      "block": "SP-Q",
+      "case": "SP-Q.2 ...and it SAYS it checked the live epic"
+    },
+    {
+      "id": "M5",
+      "file": ".agents/scripts/ship_preflight.py",
+      "original": "    if tp.epic_freeze(repo, changed, base, \"lane\", rep):\n        return \"handoff\"\n    touched = sorted({d for d in surface for p in changed if p.startswith(d)})\n    if touched:\n        rep.info(\"lane\", f\"chore branch touching {', '.join(touched)} -> the light gate \"\n                         f\"(backend suite + frontend build); a change that reaches \"\n                         f\"deployable code is a product change whatever its ticket says\")\n        return \"light\"\n",
+      "mutated": "    touched = sorted({d for d in surface for p in changed if p.startswith(d)})\n    if touched:\n        rep.info(\"lane\", f\"chore branch touching {', '.join(touched)} -> the light gate \"\n                         f\"(backend suite + frontend build); a change that reaches \"\n                         f\"deployable code is a product change whatever its ticket says\")\n        if tp.epic_freeze(repo, changed, base, \"lane\", rep):\n            return \"handoff\"\n        return \"light\"\n",
+      "test": ["python3", ".agents/scripts/tests/test_ship_preflight.py"],
+      "block": "SP-Q",
+      "case": "SP-Q.1 ...and the refusal came BEFORE the surface decision"
+    }
+  ]
+}

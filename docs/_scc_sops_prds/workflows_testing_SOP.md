@@ -477,6 +477,17 @@ just created, and the branch is never cut unkeyed. Before it mints, it **searche
 open Epic** and says in one line what it looked at — a re-run after a stall is the normal case, and a
 second Epic row for one BMAD epic is a row nothing will ever move again.
 
+**It asks you one question before it cuts the branch, and the answer lives in the branch name.** Is
+this epic an **extension of main** or a **quick-dev branch**? An extension of main is treated like
+production while it lives: every story lands by pull request into the epic under the full gate — the
+E2E suites run on every landing — and the epic is kept current with `main`. A quick-dev branch is the
+cheap shape: stories land by direct push after the local light gate, nothing is spent on CI per story,
+and E2E runs once, at the end, when the epic goes to `main`. Quick-dev epics carry a `-quickdev` suffix
+on the slug (`epic/AVCH-131-epic-25-tool-menu-quickdev`); an extension of main carries none. Every door
+reads the mode from that name, so it cannot drift from what the server enforces. In **both** modes,
+while the epic is live, `main` is frozen for everything the epic changes — a chore lane that touches a
+file the epic is also changing is epic work, and the pre-flights send it to the epic, not to `main`.
+
 **An epic branch carries two numbers, and `epic/` always comes first.** Its ticket key and its
 sprint number are different numbers that drift apart — `AVCH-18` is the ticket, `epic-19` is what
 the board, the story files and `_artifacts/epic_19/` are named after — so the branch shows both:
@@ -859,10 +870,13 @@ story file's `Status:` — only a human close-out writes `done`.
   the epic checked out in a worktree (the normal shape here) the project root stands on `main` and
   is spotless while the lane is dirty. If it refuses, it names the tree: commit and push there, or
   stash, then re-run.
-- **A `chore/*` branch is admitted here only when its diff reaches deployable code.** The diff
-  decides, never the ask alone: a docs-only chore lane is sent to `/smh-close-task-merge-tree`,
-  which owns the Task ceremony this door does not have. One that legitimately stays is told exactly
-  which lines to substitute.
+- **A `chore/*` branch is admitted here only when its diff reaches deployable code — and only when no
+  live epic branch is changing the same product files.** The diff decides, never the ask alone: a
+  docs-only chore lane is sent to `/smh-close-task-merge-tree`, which owns the Task ceremony this door
+  does not have; a chore lane that shares a product file with a live `epic/*` is refused outright,
+  the pre-flight names the epic and the files, and the lane goes to the story door instead — while an
+  epic is in flight, `main` is frozen for everything it changes. One that legitimately stays is told
+  exactly which lines to substitute.
 
 **And the sign-off does not contradict itself.** Invoking it IS your sign-off, and your
 **invocation this turn** is the authority the PR carries — it never demands separate verbatim merge
@@ -2380,7 +2394,8 @@ Hard Gates halt execution before damage occurs. They require either satisfying t
 | `shape-block.py` | `PreToolUse` (bash) | Claude Code | Refuses a heredoc (`<<`) before the permission gate — the shape that cost 7h17m of operator prompts in 20 sessions — and strips a leading literal `VAR=` when the rest is already allowed on its own. The operator is never asked; the agent gets the reshape. (SCC-415) | Write the payload with the Write tool and run `python3 <file>` / `git commit -F <file>`; inline the literal. |
 | `.githooks/pre-push` | Git push | All platforms | Bounces direct pushes to `main`. | Production writes must land via `/cicd-push-e2e` or `/smh-close-task-merge-tree`. |
 | `sop-currency.sh` / `sop_currency.py` | `commit-msg` | Lobby | Rejects commit altering commands, rules, scripts, or hooks without staging `workflows_testing_SOP.md`. | Stage `workflows_testing_SOP.md` or add `[sop-ok]` in commit message (auditable bypass). |
-| `task_preflight.py` | Close-out merge | Task lanes | Refuses chore merge if diff touches deployable directories (`backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/`). | Product code must route through story loop and `/cicd-push-e2e`. |
+| `task_preflight.py` | Close-out merge | Task lanes | Refuses chore merge if diff touches deployable directories (`backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/`); refuses it first, and names the epic, when the diff shares a product file with a live `epic/*` branch. | Product code must route through story loop and `/cicd-push-e2e`; epic work goes to the epic via `claude/<KEY>-<slug>` and `/cicd-close-story-merge-tree`. |
+| `ship_preflight.py` | `/cicd-push-e2e` Step 1.5 | Production door | Refuses a chore lane whose diff shares a product file with a live `epic/*` branch, before the gate runs. | Same road: the epic, via the story door. |
 | `merge-target-guard.sh` | `commit-msg` | All lanes | Refuses merge commit if target branch violates model allowlist. | Ensure merge lands on authorized branch (`epic/*` or `main`). |
 | `000-PLAN-FIRST-GATE.md` | Pre-write | Model gate | Hard stop: no project files modified without approved `implementation_plan.md`. | Write plan, wait for operator "approved". |
 
@@ -2415,7 +2430,8 @@ this sentence. What matters to you is *what they refuse to let happen.*
 
 | Check / Tool | Target & Scope | Enforcement / Refusal Action |
 |---|---|---|
-| `task_preflight.py` | Branch diff | Refuses chore merge if diff touches deployable directories (`backend/`, `frontend/`, `firebase/`, etc.). |
+| `task_preflight.py` | Branch diff | Refuses chore merge if diff touches deployable directories (`backend/`, `frontend/`, `firebase/`, etc.), and refuses — naming the epic — when the diff shares a product file with a live `epic/*` branch. |
+| `ship_preflight.py` | Branch diff vs live epics | Refuses a chore lane at the production door when its diff shares a product file with a live `epic/*` branch. |
 | `require-push-approval.py` | `PreToolUse` (push) | Prompts for confirmation when pushing to `main` or any non-lane branch. |
 | `shape-block.py` | `PreToolUse` (bash) | Refuses a heredoc and proves a leading literal `VAR=` — the two shapes no allow rule can read — so they never reach you. The agent reshapes (script to a file, `python3 <file>`). |
 | `.githooks/pre-push` | Git push hook | Rejects direct push to `main` without `/cicd-push-e2e`. |
