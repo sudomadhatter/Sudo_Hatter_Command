@@ -304,10 +304,10 @@ flowchart LR
 
 - **The loop:** edit master `.agents/` → `/smh-sync-agents` (or `/smh-sync-agents <project>`) → byte-identical
   copies land on all three platforms + the projects.
-- **Fresh_Workspace_BMAD is the living template** — every new project clones it (`<PROJECT_NAME>`
-  placeholders, one find-replace). Any structural change at the home base must land in Fresh
-  (`living-template-sync` rule; `/smh-sync-agents` auto-flags Fresh drift). `/smh-new-project` scaffolds and
-  registers a new workspace in `router.md`.
+- **`sudo-project-skeleton` is the new-project template** — every new project is seeded from it
+  (`<PROJECT_NAME>` placeholders, one find-replace). `/smh-new-project` scaffolds and registers a new
+  workspace in `router.md`. (Fresh_Workspace_BMAD held this role until 2026-08-07, SCC-25; the
+  submodule left git 2026-09-04, SCC-403.)
 - **Lobby-only search gotcha:** from the lobby root, Grep/Glob are **blind to `Projects/`** (ripgrep
   honors the lobby `.gitignore`). Point Grep at `Projects/<name>` or sweep with Bash `find`. Full
   mechanics → `.agents/rules/lobby-search.md`.
@@ -335,8 +335,8 @@ says **"review"**. The agent then: returns to that document, reads the annotatio
 and resolves memos **only through the MCP tools** (`apply_memo`, `batch_apply`) — never by hand-editing
 the HTML blocks (that corrupts tracking hashes).
 
-**Where the server is wired (2026-07-09):** every workspace (lobby, AGY_AVIATIONCHAT,
-Fresh_Workspace_BMAD) carries it in all four config surfaces — root **`.mcp.json`** (what Claude Code
+**Where the server is wired (2026-07-09):** every workspace (lobby, AGY_AVIATIONCHAT, and
+Fresh_Workspace_BMAD, since removed) carries it in all four config surfaces — root **`.mcp.json`** (what Claude Code
 actually reads), plus `.claude/mcp.json`, `.opencode/mcp.json`, `.antigravity/mcp.json`. Requires
 Node 18+ (`npx -y md-feedback`). New/changed servers appear after a session restart + approval.
 
@@ -346,7 +346,6 @@ Node 18+ (`npx -y md-feedback`). New/changed servers appear after a session rest
 |---|---|---|---|
 | Lobby (home base) | ✅ Yes | `content` | ignore `Projects,_my_resources`; `_bmad/custom/` guard + dialect tomls (2026-07-09 — guards direct lobby-rooted BMAD runs) |
 | AGY_AVIATIONCHAT | ✅ Yes | `content` | ignore `_my_resources,_bmad`; project rules in `constitution.project.md`; `_bmad/custom/` guard + TDAD dialect tomls (2026-07-09) |
-| Fresh_Workspace_BMAD | ✅ Yes | `auto` | ignore `_my_resources,_bmad`; **the living template — born enforcing since 2026-07-09**: armed TEA gate (`_bmad-output/sudo-tests.yaml`), CI gating `main` + `epic/**` (`pr-check.yml`), BDD layer (`backend/tests/features/` + self-binding `tests/bdd/steps_*.py`), `_bmad/custom/` guard + dialect tomls + resolver scripts |
 | BRKN_Tattoos | ⏳ active | — | active in `router.md`; conformance not yet audited |
 | RAG_Pipeline_AC (AviationChat ingestion) | ❌ No | — | needs `/smh-new-project` or manual standardization |
 | B-L-WorldWide · NEXGen-Films · OpenChat-Openrouter | ❌ pending | — | registered in `router.md`, not yet converted |

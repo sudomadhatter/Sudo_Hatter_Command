@@ -170,11 +170,11 @@ the tests now implement.
 | Row | Done means | Evidence |
 |---|---|---|
 | A | `test_rule_frontmatter.py` audits exactly the projects in `maintained-projects.txt`; a control project off the list with a tier-1 copy does not fire | 23/23; `run_all.py` 73/73 |
-| B | one machine memory, every fact with a passing probe; "why the Windows clone is kept" answered with evidence; Zoo's clone confirmed or recorded as absent | `memory_probe.py` rows for the file, all PASS |
-| C | zero memories assert a Mac; every memory naming a path carries a probe; the runner is in the suite and red on a failing probe (proven by a deliberately false probe in a fixture) | `memory_probe.py` exit 0; the fixture test red then green |
+| B | one machine memory, **every checkable fact carrying its own passing probe**; "why the Windows clone is kept" answered with evidence; Zoo's clone confirmed or recorded as absent | `memory_probe.py` rows for the file, all PASS |
+| C | zero memories assert a Mac; **every memory whose claim is measurable carries a probe THAT CAN FAIL**; the runner is in the suite and reds both on a failing probe **and on a probe that cannot fail** (each proven by its own fixture) | `memory_probe.py` exit 0 with 0 weak; both fixture controls red then green |
 | D | zero rules/commands/docs say "Mac", "two machines" or "keychain" except as dated history | the F11 greps return only lines carrying a date marker |
 | E | `Fresh_Workspace_BMAD` absent from `.gitmodules`, the index, `.git/modules/` and disk; no live script names it | `git ls-files -s Projects/ \| grep -c 160000` → 9 |
-| F | the project table exists and `maintained-projects.txt` points at it | `check_links` clean on the new anchors |
+| F | the project table exists and `maintained-projects.txt` points at it | a suite assertion tying the allowlist header to the live section heading |
 | G | SCC-394 restamped **PASS** on a green floor with the corrected rows | its walkthrough `Verdict: PASS @ <sha>` |
 | H | suite receipts green in both lanes; `workflow_lint`, `check_maps --strict`, `check_links` unchanged or better | `gates/suite.json` in each lane |
 
@@ -190,20 +190,24 @@ Rows A–H are the acceptance table above.
 - EDIT `_artifacts/_memory/README.md` — store rules gain the probe line → C
 - NEW `.agents/scripts/memory_probe.py` — runs every `probe:`; one row per memory; nonzero exit on any failure → C
 - EDIT `.agents/scripts/tests/test_memory_store.py` — a failing probe reds the suite and names the file; fixture with a false probe → C
-- EDIT `.agents/scripts/memory_audit.py` — candidate row: a path-naming memory with no probe → C
+- EDIT `.agents/scripts/tests/test_memory_store.py` — `audit_signals()` candidate row → C
+  *(the plan first said `.agents/scripts/memory_audit.py`; no such file exists — `audit_signals()`
+  is the real candidates surface, and `/smh-memory-audit` already points at it)*
 - EDIT `.agents/scripts/INDEX.md` — the new script's row → C
 - EDIT `.agents/rules/agent-memory-is-long-term-only.md` — the probe line becomes law for path-naming memories → C
 - EDIT `_artifacts/_memory/antigravity-uses-workflows-not-commands.md` — IDE→CLI; sides named; probes → C
 - EDIT `_artifacts/_memory/a-script-plus-an-instruction-is-not-delivery.md` — triage → C
 - EDIT `_artifacts/_memory/budget-is-a-live-constraint-announce-spend.md` — triage → C
-- EDIT `_artifacts/_memory/claude-notifications-mac-and-phone.md` — triage; likely DELETE → C
+- EDIT `_artifacts/_memory/claude-notifications-hook-schema-and-ntfy.md` — triage; likely DELETE → C
 - EDIT `_artifacts/_memory/codex-is-fourth-platform.md` — triage → C
 - EDIT `_artifacts/_memory/firestore-rules-tests-need-java.md` — triage → C
 - EDIT `_artifacts/_memory/git-branch-model-standard.md` — triage → C
 - EDIT `_artifacts/_memory/git-hooks-live-in-githooks-not-git-hooks.md` — triage → C
 - EDIT `_artifacts/_memory/github-408-on-satellite-uplink.md` — triage → C
 - EDIT `_artifacts/_memory/gitnexus-index-not-actually-live.md` — triage → C
-- EDIT `_artifacts/_memory/grep-on-the-mac-is-ugrep.md` — triage; likely DELETE → C
+- DELETE `_artifacts/_memory/grep-here-is-ugrep-qv-inverts.md` — the review measured it false → C
+- NEW `_artifacts/_memory/agent-shell-grep-is-not-the-gate-grep.md` — the replacement → C
+- NEW `.agents/scripts/tests/test_memory_probe.py` — the runner's own two-direction gate → C
 - EDIT `_artifacts/_memory/hook-background-work-gets-sigterm.md` — triage → C
 - EDIT `_artifacts/_memory/hooks-armed-measures-pointer-not-payload.md` — triage → C
 - EDIT `_artifacts/_memory/jira-attachments-need-the-rest-token.md` — triage → C
@@ -219,7 +223,7 @@ Rows A–H are the acceptance table above.
 - EDIT `_artifacts/_memory/windows-authored-code-hides-posix-bugs.md` — triage; stays true for one PC with two sides → C
 - EDIT `_artifacts/_memory/zoo-code-replaces-roo-code.md` — triage → C
 - EDIT `_artifacts/_memory/zsh-does-not-word-split-gate-args.md` — triage; likely DELETE → C
-- EDIT `_artifacts/_memory/zshrc-is-invisible-to-automation.md` — triage; likely DELETE → C
+- EDIT `_artifacts/_memory/interactive-startup-files-are-invisible-to-automation.md` — triage; likely DELETE → C
 - EDIT `.agents/rules/agent-memory-is-long-term-only.md` — "macOS vs Windows vs WSL" → one PC, two sides → D
 - EDIT `.agents/rules/git-policy.md` — sweep → D
 - EDIT `.agents/rules/port-checklist.md` — sweep → D
@@ -260,6 +264,56 @@ Rows A–H are the acceptance table above.
 - EDIT `.agents/scripts/sync-agents.ps1` — the live reference → E
 - EDIT `docs/workspace-standard.md` — the project table → F
 - EDIT `docs/repo-map.md` — regenerated → H
+
+### Acceptance amendment, 2026-09-04 (at `/smh-code-review`, on Mr. Hatter's call to close at PASS)
+
+Rows **B**, **C** and **F** above are amended, and each amendment makes the row **harder**, never
+looser. The review measured that all three were unsatisfiable *as written* for reasons that were
+defects in the wording, not gaps in the work:
+
+- **B** said *"every fact with a passing probe"* while `probe_of` returned only the FIRST probe in a
+  memory's frontmatter — so a memory could never carry more than one falsifier, and the machine
+  model's other four facts sat in the body as commands nothing ran. Fixed at the mechanism:
+  `probes_of()` reads every `probe:` line and the runner reports one numbered row per probe. The
+  machine model now carries **five**, one per checkable fact, and the two facts that are counts
+  (commits-behind, transcript hits) stay deliberately unprobed for the reason §B already gave.
+- **C** said *"every memory naming a path carries a probe"*. The review proved that goal produces
+  the exact defect this ticket exists to kill — 54 decorative probes that could not fail — and that
+  the "37 path-naming memories" figure was itself a measurement error, `names_a_path` counting
+  slash-commands, REST routes and slash-joined prose as filesystem paths. The row now demands what
+  actually protects the operator: a probe **that can fail**, enforced by `weak_probes()`, with the
+  suite red on either bad shape. Rulings correctly carry none.
+- **F**'s evidence line named `check_links` on "the new anchors" — but `maintained-projects.txt` is
+  a `.txt` that refers to the section in prose, so zero anchors existed and the check ran on nothing.
+  Replaced with an assertion that actually holds the two files together.
+
+### Change-set amendment, 2026-09-04 (at `/smh-code-review` Step 2)
+
+The block above was written before the work. Reconciled against the real diff, with the difference
+named rather than quietly absorbed:
+
+**Delivered but never declared** — every one a consequence of a rename or of Subtask E, so the work
+is in lane and the block was simply not kept up: `.agents/commands/{cicd-resume,smh-memory-audit,cicd-autopilot-deepseek4}.md`
+· `.agents/rules/{project-law,artifacts-always-first}.md` · `router.md` ·
+`.agents/scripts/{zoo_notify,zoo_notify_install}.py` ·
+`.agents/scripts/tests/{test_sops_prds_folder,test_zoo_notify,test_zoo_notify_install}.py` ·
+`.agents/skills/smh-sync-vscode/SKILL.md` ·
+`docs/_scc_sops_prds/{file_folder_structure+maintaining,tdad_stack_install_guide}.md` ·
+`docs/migrations/{terminal-permissions-guide.md,scripts/rename-fix.ps1,vscode_sync/README.md}` ·
+six closed lanes' artifacts (`[[wikilink]]` retargeting only). **NEW** at review:
+`.agents/scripts/tests/test_memory_probe.py`. Generated mirrors (`.opencode/`, `.claude/rules/`,
+`.claude/skills/`, `.agents/.sync-manifest.json`, `docs/doc-graph.*`) follow `sync-agents.ps1`
+mechanically and are not authored drift.
+
+**Declared and deliberately NOT delivered** — each with the reason, per the sweep discipline
+(fix present-tense claims about THIS operator's machine; KEEP per-OS platform coverage and dated
+evidence): `docs/_scc_sops_prds/autopilot_bmad_dev_loop.md` (one dated "verified on a Mac" evidence
+line) · `docs/migrations/install_guides/{keyway-setup,scratchpad-allow-hook-per-machine}.md`
+(per-OS install tables) · `.../python_vytest-updates-other-machines.md` (a dated per-machine ledger
+that already records the Windows row as retired) · `docs/repo-map.md` (regeneration was unnecessary —
+it names no removed path; `check_maps --depth3-only --strict` is clean) ·
+`.agents/scripts/tests/test_rule_frontmatter.py` (Subtask A, landed separately).
+`docs/migrations/install_guides/vscode-ide-extension-migration.md` WAS delivered at review.
 
 Session memories (outside the repo, `~/.claude/projects/.../memory/`): `wsl-jira-token-needs-a-login-shell.md`
 loses its "Mac uses the keychain" line; `MEMORY.md` gains a row for the machine model. Not in the

@@ -57,7 +57,7 @@ split before anything else.
 ```mermaid
 flowchart TD
     subgraph MECH ["CHANNEL 1 — mechanical. Always on."]
-        M1["commit-msg hook\nplain shell on your Mac"]
+        M1["commit-msg hook\nplain shell, either side"]
         M2["the issue key in the branch name\nit's just a string"]
         M3["GitHub for Atlassian app\nruns on Atlassian's servers"]
         M4["Smart Commits\nparsed server-side by Jira"]
@@ -95,7 +95,7 @@ There is no single point of failure in this design that is an AI service. That w
 | Part | Where it lives | What it does | Needs AI? |
 |---|---|---|---|
 | **Jira Cloud** | `sudo-command.atlassian.net` | Holds the tickets and the history | no |
-| **`acli`** | your Mac, `/opt/homebrew/bin/acli` | Terminal access to Jira. Any tool that can run bash can use it | no |
+| **`acli`** | this PC — `/usr/bin/acli` on the Ubuntu side | Terminal access to Jira. Any tool that can run bash can use it | no |
 | **`jira_feed.py`** | `.agents/scripts/` | **The wrapper** — every write the dev flow makes to a ticket goes through it. Seven verbs (§12) | no |
 | **`task_preflight.py`** | `.agents/scripts/` | Before a Task merges: is the branch named right, is the tree clean, and **does this diff touch deployable code?** | no |
 | **GitHub for Atlassian** | Atlassian's servers | Watches your GitHub, files commits/branches/PRs under the matching ticket | no |
@@ -805,8 +805,8 @@ fix up a ticket outside a lane.
 and the credential `acli` stores for itself is a wrapped copy that is rejected by the REST API. So
 uploading needs a real Atlassian API token of its own, stored once per machine:
 
-- **Mac / PC:** follow `docs/migrations/install_guides/jira-api-token-setup.md`. The credential item
-  is named **`sudo-jira`** on every machine — that name is the contract.
+- **Either side:** follow `docs/migrations/install_guides/jira-api-token-setup.md`. The credential
+  item is named **`sudo-jira`** wherever it lives — that name is the contract.
 - The tool looks for `$JIRA_API_TOKEN` first, then that stored item.
 
 **Until you do it, nothing is broken.** `attach` exits **5** and prints the setup instructions;
@@ -869,7 +869,7 @@ authenticated copy:
 
 | Caller | Authenticates via |
 |---|---|
-| you / any agent, through `acli` | your macOS keychain |
+| you / any agent, through `acli` | the credential store that side has — the Windows credential store, or `acli`'s own mode-600 `~/.config/acli/` inside Ubuntu |
 | GitHub Actions | the encrypted repo secret |
 | you, in a browser | your normal Atlassian login |
 

@@ -30,7 +30,7 @@ Everything about Zoo here was verified by reading and executing Zoo Code v3.80.1
 
 **Where the PC's stores live, and why it surprises people (SCC-376).** The PC works inside WSL2 /
 Ubuntu, and Claude's fence travels with it: `~/.claude/settings.json` is a Linux file inside the distro,
-byte-identical to the Mac's. **Zoo's does not.** Zoo runs inside the distro (the workspace extension
+byte-identical to the Windows side's. **Zoo's does not.** Zoo runs inside the distro (the workspace extension
 host) but the VS Code *window* keeps its `globalState` on the Windows side — measured twice, in Phase 4
 and again in Phase 6: no `state.vscdb` exists anywhere under either distro. So the apply script is run
 **from Ubuntu** and reaches the Windows stores through `/mnt/c`. There are **two** of them, because the
@@ -72,7 +72,7 @@ command-shape law for the seats (§10). Measured on a real session: **34.1% auto
 ## 3. Claude Code — the deep dive (settings tiers, sandbox, worktrees)
 
 Claude has **two independent ways not to interrupt**, and confusing them is why the PC used to prompt
-constantly while the Mac almost never did: the **allow list** (pattern rules) and the **OS sandbox**
+constantly while the Windows side almost never did: the **allow list** (pattern rules) and the **OS sandbox**
 (`sandbox.enabled`, with `autoAllowBashIfSandboxed` auto-approving anything the sandbox itself contains).
 The sandbox does not run on native Windows, which left the allow list as the entire fence on the PC —
 the finding that produced SCC-376 and moved the PC's work into WSL2 / Ubuntu.
@@ -80,15 +80,15 @@ the finding that produced SCC-376 and moved the PC's work into WSL2 / Ubuntu.
 ### 3.1 The settings tiers, in precedence order
 
 1. **User (`~/.claude/settings.json`)** — the machine-level file. Since SCC-376 it is ONE portable file
-   installed identically on the Mac and inside both Ubuntu distros: paths written `~/`, hooks guarded so
+   installed identically on the Windows side and inside both Ubuntu distros (`Ubuntu`, `Ubuntu-zoo2`): paths written `~/`, hooks guarded so
    an absent tool is a silent no-op, and no machine-absolute path anywhere. It carries `sandbox.enabled`,
    the sandbox filesystem boundaries and the broad allow rules. Its committed source of truth is
    [`claude-user-settings.portable.json`](../../_artifacts/_main/2026-09-02_SCC-376-wsl-ubuntu-migration/claude-user-settings.portable.json);
    install it with the one-liner in that lane's plan and compare the sha.
 2. **Project tracked (`.claude/settings.json`)** — committed: hooks, `ask` rules, the worktree base ref,
-   and the allow rules the whole team gets. This is the copy a fresh clone and the other machine see.
+   and the allow rules the whole team gets. This is the copy a fresh clone and the other side see.
 3. **Project local — `settings.local.json`, under the project's `.claude/`** — gitignored, machine-only, and **linked into every
-   worktree** (see 3.3). Anything here dies at the machine boundary, so a rule that both machines need
+   worktree** (see 3.3). Anything here dies at the checkout boundary, so a rule that both sides need
    belongs in tier 2, not here.
 
 > ⛔ A local file *overrides* the global one. A project whose `settings.local.json` omits
@@ -98,7 +98,7 @@ the finding that produced SCC-376 and moved the PC's work into WSL2 / Ubuntu.
 ### 3.2 What SCC-376 removed from these files, and why it stays removed
 
 - **Every Windows-only spelling** — `\Scripts\` venv paths, `.exe` rules, `MSYS_NO_PATHCONV`, and the
-  bare-`python` family (neither machine resolves bare `python`: the Mac has `python3`, and so does
+  bare-`python` family (neither side resolves bare `python`: the Ubuntu side has `python3`, and so does
   Ubuntu). A dead rule widens nothing, but it hides drift — the fence must read as what the machines run.
 - **Every `Bash(git -C * <verb>:*)` rule.** A wildcard *before* the subcommand approves any option
   inserted at that position, and `git -c` / `--exec-path` there run arbitrary commands. `cd <abs> && git
@@ -107,7 +107,7 @@ the finding that produced SCC-376 and moved the PC's work into WSL2 / Ubuntu.
   [`test_settings_allowlist.py`](../../.agents/scripts/tests/test_settings_allowlist.py) so a later
   "promote what got blocked" pass cannot quietly reverse them.
 - **The interpreter-twin requirement** (case A3) was rewritten in the same commit: it demanded a bare
-  `python` twin for every `python3` rule because the two machines used to disagree. They no longer do.
+  `python` twin for every `python3` rule because the two sides used to disagree. They no longer do.
 
 ### 3.3 Worktrees inherit nothing by default
 
@@ -139,7 +139,7 @@ is five hooks exiting 127 in silence on a machine with `pwsh` but no `powershell
 ### 3.6 Sandbox filesystem boundaries
 
 `sandbox.filesystem.allowWrite` must name the repo, its `.git`, the worktrees root, `Projects/`, and the
-temp directories — written `~/`-relative so ONE file serves both machines:
+temp directories — written `~/`-relative so ONE file serves both sides:
 
 ```json
 {
@@ -205,7 +205,7 @@ scaffolding. On an existing repo, copy the sibling project's file and correct th
 
 ## 3A. Antigravity — the deep dive (store, two rule types, absolute deny, the apply)
 
-The Antigravity **extension** (`google.google-antigravity`, installed in VS Code on both machines; it
+The Antigravity **extension** (`google.google-antigravity`, installed in VS Code on both sides; it
 bundles the `agy` CLI, which is not on PATH and not what the operator drives) was reinstalled on
 2026-09-03 after the Ubuntu move. The desktop IDE's retirement (SCC-349) stands; the platform's does
 not — SCC-378 inverted that ticket. Everything below was measured on v1.1.0 / `agy` 1.1.25 that day.
@@ -448,7 +448,7 @@ two-machine venv twin `backend/.venv/bin/` + `backend/.venv/Scripts/`. `find ` w
 promoted — `find -delete` and `find -exec rm` are destructive and no deny row sees them.
 
 ⭐ **The wipe closed the `rm -f` hole by itself, with no deny-list change**, because the tracked file
-carries no `rm` row at all. And it is the only direction that keeps the two machines equal: those
+carries no `rm` row at all. And it is the only direction that keeps the two sides equal: those
 143 rows lived in one Mac's SQLite file and had never existed on the PC, which was already running
 on the tracked list alone. Reset with `zoo_permissions_apply.py --apply` (VS Code fully quit); its
 closing `--status` must read *in sync with tracked file* on **both** lists.
@@ -654,7 +654,7 @@ each profile's settings, the same two places §9's apply script looks.
 
 The watcher is a foreground poll loop, so something has to run it. That something is a service, not
 an instruction — an install step a human must remember is not a delivery mechanism, and the first
-cut of this feature was silent on the Mac from the day it landed precisely because nobody ran it.
+cut of this feature was silent on the macOS branch from the day it landed precisely because nobody ran it.
 
 ```bash
 python3 .agents/scripts/zoo_notify_install.py --apply     # PC: python
@@ -662,7 +662,7 @@ python3 .agents/scripts/zoo_notify_install.py             # status, read-only, t
 python3 .agents/scripts/zoo_notify.py --self-test         # prove both channels in five seconds
 ```
 
-`--apply` registers a launchd agent on the Mac (`RunAtLoad` + `KeepAlive`, so it starts at login and
+`--apply` registers a launchd agent on macOS (`RunAtLoad` + `KeepAlive`, so it starts at login and
 restarts if it dies) and a `pythonw` `.cmd` in the Startup folder on the PC. Two things it carries
 that a naive copy would lose: `NTFY_TOPIC`, because launchd sources no shell profile and the topic
 lives in `~/.zshrc`; and a `PATH` reaching `/opt/homebrew/bin`, because launchd's default `PATH`

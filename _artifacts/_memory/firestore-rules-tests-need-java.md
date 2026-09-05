@@ -1,7 +1,8 @@
 ---
 name: firestore-rules-tests-need-java
 description: "The tea-12 Firestore rules emulator suite runs GREEN (61/61) but needs Java on PATH; Java 17 is installed here (Temurin) — set JAVA_HOME per shell since the silent MSI didn't add it to PATH."
-metadata: 
+metadata:
+  probe: 'java -version' 
   node_type: memory
   type: project
   originSessionId: dc0bca70-54bb-4ac4-9a98-2a93ffae6a1e
@@ -30,7 +31,7 @@ locate a Java Runtime"* right next to a working JDK; point at it explicitly:
 
 ⛔ **Do NOT set it "per shell" here.** That advice is Windows-shaped and produces a
 pass-by-hand/fail-in-automation split on macOS. JAVA_HOME belongs in **`~/.zshenv`** — `~/.zshrc` is
-interactive-only, so agents, hooks and `zsh -c` never see it ([[zshrc-is-invisible-to-automation]]).
+interactive-only, so agents, hooks and `zsh -c` never see it ([[interactive-startup-files-are-invisible-to-automation]]).
 Also required, and separate from the frontend's install: `(cd firebase/tests && npm install)` — the
 backend emulator tier and the TEA-16 E2E journeys both resolve `firebase-tools` out of that same
 directory, so all three suites die together when it is missing. Verified on the Mac: **70 pass / 0

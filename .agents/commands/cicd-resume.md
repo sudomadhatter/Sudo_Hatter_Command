@@ -13,7 +13,7 @@ Daniel works one sprint across **desktop, laptop, and mobile**. Git branches tra
 start."* **That is a false negative**, and acting on it re-does story work that already exists.
 
 This command restores the working surface from what is actually on origin. It **creates**, never deletes:
-the worktrees on your other machine stay exactly where they are, and both machines end up on the same
+the worktrees on the other side stay exactly where they are, and both sides end up on the same
 branch. That is the intended end state, not a conflict.
 
 Parked from the other machine with `/cicd-park`.

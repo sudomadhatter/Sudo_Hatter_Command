@@ -2,6 +2,7 @@
 name: codex-is-fourth-platform
 description: "Codex (OpenAI) is the 4th LLM command surface; how it's wired into the .agents toolkit and the two machine-global caches it needs."
 metadata: 
+  probe: "grep -q codex .agents/scripts/sync-agents.ps1"
   node_type: memory
   type: project
   originSessionId: b854c6e3-95bb-4b46-b6b0-725c961a456a
@@ -49,4 +50,4 @@ only), so the API-key route does not exist here — `codex login` (ChatGPT accou
 the only path, it needs a real terminal, and backgrounding it wedges exactly like `gh auth login`.
 Until it is done `codex login status` says `Not logged in` and `codex doctor` fails only the auth
 check. A `⚠ websocket` warning from `doctor` is normal on a healthy fresh install — not a blocker.
-Related: [[zshrc-is-invisible-to-automation]].
+Related: [[interactive-startup-files-are-invisible-to-automation]].

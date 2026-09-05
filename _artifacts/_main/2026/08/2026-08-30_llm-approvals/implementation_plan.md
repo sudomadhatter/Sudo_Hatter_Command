@@ -33,7 +33,7 @@ Claude's pipeline is `~/.claude/settings.json` `Notification` + `Stop` hooks →
 outline did not know:
 
 - **`notify.sh` is per-machine and untracked.** It lives under `~/.claude/`, not in this repo, and
-  per `[[claude-notifications-mac-and-phone]]` the PC has no copy yet. So "parity" cannot mean
+  per `[[claude-notifications-hook-schema-and-ntfy]]` the PC has no copy yet. So "parity" cannot mean
   "commit a hook" — it means a tracked script plus a per-machine install step, the same shape as
   `zoo_permissions_apply.py --apply`.
 - **The lobby's tracked `.vscode/settings.json` carries no notification key at all** (`grep -n
@@ -72,7 +72,7 @@ allowed is discovering the surface does not exist and stopping.
 
 ### Risk named up front
 
-The Focus-mode failure in `[[claude-notifications-mac-and-phone]]` bit this exact pipeline once: a
+The Focus-mode failure in `[[claude-notifications-hook-schema-and-ntfy]]` bit this exact pipeline once: a
 Work Focus swallows the banner while the script still exits 0 and the phone push still arrives. B4's
 check must therefore distinguish *fired but suppressed* (visible in Notification Center history)
 from *never fired*, or a green will be claimed on a silent Mac.

@@ -1,6 +1,6 @@
 ---
 name: mac-authored-code-hides-windows-bugs
-description: "The MIRROR of windows-authored-code-hides-posix-bugs: the enforcement suite was written on the Mac, so 18/61 files were red on the PC and EIGHT live defects sat in shipped code — every cd refused, a gate that never judged, a sweep that left live mutants. The rule: fork BEHAVIOUR, converge DATA — and gate every separator rewrite to Windows."
+description: "The MIRROR of windows-authored-code-hides-posix-bugs: the enforcement suite was authored POSIX-side, so 18/61 files were red on Windows and EIGHT live defects sat in shipped code — every cd refused, a gate that never judged, a sweep that left live mutants. The rule: fork BEHAVIOUR, converge DATA — and gate every separator rewrite to Windows."
 metadata: 
   node_type: memory
   type: project
@@ -8,8 +8,10 @@ metadata:
   modified: 2026-08-25T18:31:32.886Z
 ---
 
-`.agents/scripts/tests/` was authored on the Mac and the PC never drove it, so nothing forced the
-portability question. SCC-321 (2026-08-25) took it from **43/61 to 61/61** on Windows. This is the
+`.agents/scripts/tests/` was authored POSIX-side and the Windows side never drove it, so nothing
+forced the portability question. (Written when that POSIX side was a Mac; it is now the Ubuntu
+side of this one PC — [[one-pc-windows-and-wsl]]. The Windows facts below are unchanged and still
+live, because the Windows side is still here.) SCC-321 (2026-08-25) took it from **43/61 to 61/61** on Windows. This is the
 mirror of [[windows-authored-code-hides-posix-bugs]] and the classes are completely different.
 
 **The two root causes that explained most of it — neither was in my first triage:**
@@ -85,5 +87,5 @@ is a legal FILENAME character, so `p.replace("\\","/")` there is not a separator
 rewrite, and it widens a containment guard (`/ws\x` is a sibling file at `/`, not `/ws/x`). And when
 a lesson gets fixed, **carry it to the sibling copies**: "absolute has two spellings" (SCC-171/172)
 and "`encoding="utf-8"` is load-bearing" (SCC-160) both recurred here in helpers that never got the
-fix. Related: [[two-machines-mac-and-pc]], [[suite-red-file-may-have-run-nothing]],
+fix. Related: [[one-pc-windows-and-wsl]], [[suite-red-file-may-have-run-nothing]],
 [[test-certification-at-shipping-sha]].

@@ -17,8 +17,6 @@ Any workspace may send you BACK here ("if not here, go to root router").
 
 **Complete Sudo-managed exception registry:**
 
-- `Fresh_Workspace_BMAD` — living duplication template; operational history stays in
-  `_artifacts/Fresh_Workspace_BMAD/`. The exception does not transfer to clones.
 - `OpenChat-Openrouter` — Sudo-managed workspace; operational history stays in
   `_artifacts/OpenChat-Openrouter/`.
 
@@ -28,7 +26,6 @@ to this registry.
 | If the work is about… | Go to | Read first | Status |
 |---|---|---|---|
 | Aviation ground-school app (FastAPI / ADK / Gemini, voice CFI) | `Projects/AGY_AVIATIONCHAT/` | its `AGENTS.md` | converted (Phase 1) · standard-compliant · repo-map indexed · Phase 2 (rule reconcile) pending |
-| AGY quick-start project skeleton (FastAPI/ADK · Next/React · Firebase) — clone to start a new project | `Projects/Fresh_Workspace_BMAD/` | its `AGENTS.md` | quick-start skeleton · standard-compliant · repo-map indexed + drift hook |
 | AGY quick-start skeleton (canonical GitHub source) — the repo `/smh-new-project` clones | `Projects/sudo-project-skeleton/` | its `AGENTS.md` | skeleton source repo · freshly cloned |
 | BRKN_Tattoos app | `Projects/BRKN_Tattoos/` | its `AGENTS.md` | active |
 | B&L WorldWide | `Projects/B-L-WorldWide/` | its `AGENTS.md` | pending |

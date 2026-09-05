@@ -114,7 +114,7 @@ def test_mac_plist_never_points_at_a_virtualenv_interpreter():
 def test_mac_plist_carries_the_ntfy_topic_because_launchd_never_sources_zshrc():
     """⛔ NTFY_TOPIC lives in ~/.zshrc, which launchd does not read. It happens to equal the
     built-in default today, so the bug would be invisible until the operator changed the topic
-    and his phone quietly stopped receiving. [[zshrc-is-invisible-to-automation]]"""
+    and his phone quietly stopped receiving. [[interactive-startup-files-are-invisible-to-automation]]"""
     m = _mod()
     with tempfile.TemporaryDirectory() as d:
         p = m.build_plist(repo=ROOT, home=_home(Path(d)), platform="darwin", topic="a-test-topic")
@@ -286,7 +286,7 @@ def test_windows_command_starts_minimised_with_pythonw_and_sets_the_topic():
         assert "--watch" in body, body
         assert "a-test-topic" in body, body
         assert "\r\n" in body, "a .cmd must use CRLF or cmd.exe mis-parses it"
-        assert "python3" not in body, "the PC has no `python3` — [[two-machines-mac-and-pc]]"
+        assert "python3" not in body, "the PC has no `python3` — [[one-pc-windows-and-wsl]]"
 
 
 def test_windows_status_round_trips():

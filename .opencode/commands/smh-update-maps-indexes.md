@@ -92,7 +92,7 @@ Daniel's `## Todo list` prose and every task file — stays **read-only** (you m
    python3 .agents/scripts/check_maps.py                       # one workspace (lobby, or run from inside a project)
    python3 .agents/scripts/check_maps.py --root Projects/<name>   # one specific project from the lobby
    ```
-   > **Two machines, two spellings.** The Mac has only `python3`; a python.org PC has only `python`.
+   > **Two sides, two spellings.** The Ubuntu side has only `python3`; the python.org install on the Windows side has only `python`.
    > On a *command not found*, retry the same line with the other name — it is never a missing script.
    Per workspace it runs **nine** checks. Fatal drift (exit non-zero): **AUTO-block freshness** (regenerates the
    map body in memory, mode-preserving, and diffs), **path existence** (every path *promised* in a

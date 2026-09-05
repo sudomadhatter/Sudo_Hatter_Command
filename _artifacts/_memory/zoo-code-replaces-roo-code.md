@@ -22,4 +22,4 @@ Facts that bite:
 - Zoo auto-approve toggles are per-machine extension state; the export/import file carries API keys — never commit it.
 - deepagents (langchain) was assessed and parked: NO-GO for IDE integration.
 
-See [[two-machines-mac-and-pc]], [[codex-is-fourth-platform]], [[antigravity-uses-workflows-not-commands]].
+See [[one-pc-windows-and-wsl]], [[codex-is-fourth-platform]], [[antigravity-uses-workflows-not-commands]].

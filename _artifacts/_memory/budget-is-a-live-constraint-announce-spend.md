@@ -11,7 +11,7 @@ this", "no comuunitation you just are running the shit out of my credits", "talk
 and ticket are over". The work itself was correct (the review gate caught real defects) — the
 failure was spending without narrating: a 5-lens fan-out, then one more lens to satisfy the roster
 gate, launched with no heads-up while he watched credits drain. Also: two background agents froze
-when the Mac SLEPT mid-run — a hung agent may be the machine sleeping, not the model working.
+when the machine SLEPT mid-run — a hung agent may be the box sleeping, not the model working.
 
 **Why:** he pays per token in real money and plans his week around the limit; an unannounced spawn
 is spending his budget without consent, and silence reads as a runaway loop even when the ceremony

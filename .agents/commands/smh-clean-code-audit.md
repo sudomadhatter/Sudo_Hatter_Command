@@ -124,7 +124,7 @@ what fixes it.
 - **A `.venv/Scripts` path with no `.venv/bin` arm near it?** `workflow_lint` catches this one
   mechanically now (`both-machines`), so read its output rather than re-deriving it — but a
   bare `python`, a `;` path separator or `robocopy` is still yours to spot (`code-standards` §5).
-- **bare `python`** in anything an operator will type or a script will run — the Mac has only `python3`
+- **bare `python`** in anything an operator will type or a script will run — the Ubuntu side has only `python3`
 
 ---
 

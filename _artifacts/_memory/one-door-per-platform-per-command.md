@@ -2,6 +2,7 @@
 name: one-door-per-platform-per-command
 description: "SCC-66 door model — the command file is the brain; a GENERATED launcher SKILL.md is the door for Claude AND Codex. `.claude/commands` and `~/.codex/prompts` are RETIRED doors. Hand-authored skills always win."
 metadata:
+  probe: 'test ! -e ~/.codex/prompts'
   type: project
 ---
 
@@ -31,6 +32,6 @@ serves both, and a command mirror beside it was always a *second* door. Both dup
 - Enforced by `tests/test_command_surfaces.py` (13 checks, in `run_all`), so drift fails a gate
   instead of being found by opening a menu.
 
-Caches are per-machine — [[two-machines-mac-and-pc]] — so a sync must run on each box, and
+Caches are per-machine — [[one-pc-windows-and-wsl]] — so a sync must run on each box, and
 **Codex snapshots its skill catalog when a chat opens**: after a sync, start a new chat or the
 menu looks unchanged. Related: [[command-center-sudo-skills]], [[codex-is-fourth-platform]].

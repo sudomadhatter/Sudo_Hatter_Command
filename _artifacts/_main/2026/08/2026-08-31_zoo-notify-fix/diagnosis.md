@@ -41,7 +41,7 @@ exit=0
 `terminal-notifier` is at `/opt/homebrew/bin/terminal-notifier`; `NTFY_TOPIC=mac-sudo-command` is
 exported in `~/.zshrc:114`. Both channels fired and exited 0. **Operator must confirm he SAW them** —
 a Work Focus swallows the banner while the run still reports `sent`
-([[claude-notifications-mac-and-phone]]).
+([[claude-notifications-hook-schema-and-ntfy]]).
 
 ---
 
@@ -55,7 +55,7 @@ dies with the terminal or the chat session.
 
 **Fix:** a `launchd` LaunchAgent on the Mac (`~/Library/LaunchAgents/com.sudohatter.zoo-notify.plist`,
 `RunAtLoad` + `KeepAlive`) and a Startup-folder shortcut or Scheduled Task on the PC. Note
-[[zshrc-is-invisible-to-automation]]: launchd does **not** source `~/.zshrc`, so `NTFY_TOPIC` must
+[[interactive-startup-files-are-invisible-to-automation]]: launchd does **not** source `~/.zshrc`, so `NTFY_TOPIC` must
 move to `~/.zshenv` or be set in the plist's `EnvironmentVariables` (harmless today only because the
 `.zshrc` value happens to equal the built-in default).
 

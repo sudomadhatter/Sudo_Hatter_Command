@@ -10,7 +10,7 @@ workspace MODE and applies the right paths from the PATH CONTRACT in `workspace-
 SAME script reconciles the lobby OR any conformant project. Point it at a workspace with --root:
     python .agents/scripts/check_maps.py                                # the repo holding this script
     python .agents/scripts/check_maps.py --root Projects/AGY_AVIATIONCHAT
-    python .agents/scripts/check_maps.py --root Projects/Fresh_Workspace_BMAD
+    python .agents/scripts/check_maps.py --root Projects/NEXgen-VR-Director
     python .agents/scripts/check_maps.py --set-anchor                   # record HEAD as the reconciled baseline
 
 Mode detection (PATH CONTRACT, two columns):

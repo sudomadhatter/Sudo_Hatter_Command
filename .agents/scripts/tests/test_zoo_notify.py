@@ -564,7 +564,7 @@ def test_priming_freshness_window_is_configurable_and_zero_means_silent():
 # --- store_root(): BOTH machines, profiles, and the configurable path ---------------------
 
 def test_store_root_resolves_on_mac_and_on_windows():
-    """[[two-machines-mac-and-pc]] — a hardcoded Application Support path is a PC no-op."""
+    """[[one-pc-windows-and-wsl]] — a hardcoded Application Support path is a PC no-op."""
     m = _mod()
     home = Path("/Users/x")          # SAME home both times, or the paths differ for that reason
     mac = m.store_root(platform="darwin", home=home, appdata=None)

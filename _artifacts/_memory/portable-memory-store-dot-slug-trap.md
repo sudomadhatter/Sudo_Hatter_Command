@@ -35,7 +35,7 @@ prevent data loss. Caught on the seeding run before `-Apply`.
 - The two scripts are **twins by contract** — fix one, fix the other, and re-copy to the vendored
   `.agents/scripts/` in every maintained project ([[maintained-projects-allowlist]]), each of which is
   its own repo.
-- Never merge two machines' stores automatically. Second machine in gets its local set moved aside to
+- Never merge two checkouts' stores automatically. The second one in gets its local set moved aside to
   `memory.local-backup-<timestamp>`; a human reconciles.
 - On rename day the slug changes — re-run the linker to re-point. Nothing moves, because the data was
   never in the slug dir. See [[env-migration-kit]].

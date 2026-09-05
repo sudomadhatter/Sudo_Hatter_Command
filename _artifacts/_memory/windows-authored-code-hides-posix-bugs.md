@@ -53,7 +53,7 @@ run had already printed success lines**, so the sync looked like it worked (2026
 
 **A SEVENTH, in the DOCS rather than the code (2026-08-08)** — and it is the longest-lived:
 
-7. **Bare `python` does not exist on this Mac** — not in automation, not in a login shell
+7. **Bare `python` does not exist on the POSIX side** — not in automation, not in a login shell
    (`zsh -lic 'which python'` → not found). Only `python3` resolves. **~29 `.md` lines across
    `.agents/`, `docs/`, and `_my_resources/_quick_reference/` still instruct the reader to run
    `python .agents/scripts/…`** — every one is a broken instruction on the machine it is read on.
@@ -104,5 +104,5 @@ success messages. **And treat every documented command as code**: paste it into 
 writing it down — a doc line is the one "call site" no test ever executes.
 **Audit for it with `git ls-files -s .githooks/ scripts/`** whenever you land on a new POSIX
 machine — every shebanged file should read `100755`.
-Related: [[zshrc-is-invisible-to-automation]], [[powershell-console-fakes-mojibake]],
+Related: [[interactive-startup-files-are-invisible-to-automation]], [[powershell-console-fakes-mojibake]],
 [[sop-doc-currency-gate]].

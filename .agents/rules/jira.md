@@ -12,16 +12,17 @@ triggers: [jira, ticket, the board, backlog, sprint, acli, in progress, what's n
 # Jira operations — the board is one shell command away
 
 **The fact every platform misses:** Jira is fully reachable from this machine RIGHT NOW via
-**`acli`**, already authenticated — the API token lives in the OS credential store (the macOS
-keychain on the Mac, the Windows equivalent on the PC), **never** in a repo file, a commit, or chat.
+**`acli`**, already authenticated — the API token lives in the credential store each side has (the
+Windows credential store; inside Ubuntu, `acli`'s own mode-600 config), **never** in a repo file, a
+commit, or chat.
 There is no MCP server and none is needed: if you can run a bash command, you can read and write the
 board. "I have no Jira integration" is false by design — the CLI *is* the integration, chosen
 precisely so every platform (Claude Code, Gemini, opencode, Codex, Antigravity) shares one tool with
 zero per-platform config.
 
 **Verify — never assume, and never hardcode a path.** Both the binary's location and the credential
-store are per-machine; this rule is read on the Mac AND the Windows PC (`two-machines-mac-and-pc`).
-One command answers "can I reach the board?" identically on every machine and every platform:
+store differ per side; this rule is read on BOTH sides of the one PC (`one-pc-windows-and-wsl`).
+One command answers "can I reach the board?" identically on either side and every platform:
 
 ```bash
 acli jira auth status      # ✓ Authenticated + site + account, or a clear failure
@@ -629,11 +630,11 @@ ticket made every story thats an endless loop that never finishes").
    guardrail calls closed (SCC-155). It never moves a ticket the operator has already parked on one
    of those rungs, and it never moves one backwards. Placement stays the operator's (guardrail 2);
    "these three are safe together" is not a reason to move a card.
-5. **The token stays in the credential store the machine has — and only there.** On the Mac that is
-   the keychain; inside Ubuntu on the PC (SCC-376) there is no store, so `acli` keeps it in its own
+5. **The token stays in the credential store that side has — and only there.** On the Windows side
+   that is the Windows credential store; inside Ubuntu (SCC-376) there is none, so `acli` keeps it in its own
    config under `~/.config/acli/` — mode 600, the operator's home, the ONE place it lives on Linux.
    It goes in on stdin (`read -rs`, piped into `acli jira auth login`), never as `--token "$VAR"`,
    which lands in shell history and in `ps` for every user on the box. Never echo, copy, or persist
-   it anywhere else — and never bake a binary path or a store name into a doc. All of it is
-   per-machine, this file is read on every machine, and a hardcoded Mac path is what teaches another
-   machine's agent it has no Jira.
+   it anywhere else — and never bake a binary path or a store name into a doc. All of it differs per
+   side, this file is read on both, and a hardcoded one-side path is what teaches the other side's
+   agent it has no Jira.

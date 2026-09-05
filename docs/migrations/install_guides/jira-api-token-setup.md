@@ -140,7 +140,7 @@ grep -q 'sudo-jira/token' ~/.profile || printf '\n# Atlassian API token for jira
 
 ⛔ **`~/.profile`, not `~/.bashrc`.** Ubuntu's `.bashrc` returns on its first lines for any
 non-interactive shell, so a variable exported there is present when you test by hand and absent for
-every agent shell, hook and `bash -lc` — the same trap the Mac has with `.zshrc` vs `.zshenv`.
+every agent shell, hook and `bash -lc` — the same trap macOS has with `.zshrc` vs `.zshenv`.
 `.profile` is read by every login shell, which is what a WSL terminal, the VS Code WSL server and an
 agent's `bash -lc` all are. **Verify from a fresh login shell, never the one you typed in:**
 

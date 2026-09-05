@@ -1,6 +1,6 @@
 ---
 name: port-checklist
-description: "Fires at PLAN TIME, before a line is written, whenever a file being changed exists in more than one repo — a lobby→project port, a project→lobby port back, or a fix landing in two copies at once. Six checks, each with the command that answers it: (1) use a path git gave you exactly as git gave it — never re-normalise `--git-common-dir` / `--git-path`; (2) `printf`, not `echo`, for any operator-facing line; (3) on a write, verify the FILE, not `$?` — `|| exit` on the redirect and no success banner above the check; (4) no `.agents/rules/` path a thin repo does not carry (project-law.md); (5) it runs on BOTH machines — `python3` vs `python`, and `core.hooksPath` is per-machine config; (6) hooks stay repo-local and the port needs the target repo's OWN Jira key (project-law.md § carve-out). Runs in BOTH directions. From the AVCH-59 retro (2026-08-15): all four divergences came from this list, and three of them were reachable at plan time."
+description: "Fires at PLAN TIME, before a line is written, whenever a file being changed exists in more than one repo — a lobby→project port, a project→lobby port back, or a fix landing in two copies at once. Six checks, each with the command that answers it: (1) use a path git gave you exactly as git gave it — never re-normalise `--git-common-dir` / `--git-path`; (2) `printf`, not `echo`, for any operator-facing line; (3) on a write, verify the FILE, not `$?` — `|| exit` on the redirect and no success banner above the check; (4) no `.agents/rules/` path a thin repo does not carry (project-law.md); (5) it runs on BOTH sides of the one PC — `python3` vs `python`, and `core.hooksPath` is per-machine config; (6) hooks stay repo-local and the port needs the target repo's OWN Jira key (project-law.md § carve-out). Runs in BOTH directions. From the AVCH-59 retro (2026-08-15): all four divergences came from this list, and three of them were reachable at plan time."
 trigger: model_decision
 triggers: [port, both repos, exists in more than one repo, lobby to project, project to lobby]
 # Intent-shaped: no glob can catch it, because the trigger is what the operator ASKS,
@@ -85,14 +85,14 @@ grep -n '\.agents/rules/' <script>
 ls <target-repo>/.agents/rules/                         # what actually exists there
 ```
 
-### 5. It runs on BOTH machines
+### 5. It runs on BOTH sides
 
-`python3` on the Mac, `python` on the PC — a hook hard-coding either exits **127 silently** on the other,
+`python3` on the Ubuntu side, `python` on the Windows side — a hook hard-coding either exits **127 silently** on the other,
 which reads as success. And `core.hooksPath` is **local config**: it does not travel with a clone, so a
 fresh checkout of the target has no gates at all until it is armed on that machine.
 
 ```bash
-command -v python3 python                               # on each machine
+command -v python3 python                               # on each side
 cd <target-repo> && git config --get core.hooksPath        # empty = every gate is OFF here
 ```
 

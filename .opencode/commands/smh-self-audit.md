@@ -124,7 +124,7 @@ the level in the output header.
    `python3 .agents/scripts/declared_change_set.py parse <plan>` *(PC: `python`)*.
    An **absent block or `incomplete` bullets IS a finding** (anchor: the plan file itself) — the
    consumers (`/smh-code-review` drift check) depend on absence being loud.
-3. Commands the plan intends to run exist on **both machines** — Mac has no bare `python`, the PC
+3. Commands the plan intends to run exist on **both sides** — Ubuntu has no bare `python`, Windows
    has no `python3`; stdlib only, no venv.
 4. **Lane fit (wrong door) — at plan time, not at close-out:** the Declared Change Set touches a
    deployable product path (`backend/` `frontend/` `firebase/` `functions/` `mobile/` `.github/`)

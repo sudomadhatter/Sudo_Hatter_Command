@@ -158,7 +158,7 @@ silence.
 **Layer 1 is POSIX `sh` on purpose.** For weeks the *entire* claimed push enforcement was a
 Claude-only hook invoked as `powershell -NoProfile -Command "python ..."`. The Mac has neither
 binary, so it exited 127 silently on every push. Six merges reached `main` on one sign-off with
-nothing in the way. A git hook written in `sh` is the only layer both machines, all four agent
+nothing in the way. A git hook written in `sh` is the only layer both sides, all four agent
 platforms, and your own terminal share.
 
 ---

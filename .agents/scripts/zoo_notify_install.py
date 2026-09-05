@@ -18,7 +18,7 @@ An instruction a human must remember is not a delivery mechanism. This is:
 Mac -> a launchd agent at ~/Library/LaunchAgents/com.sudohatter.zoo-notify.plist, RunAtLoad +
 KeepAlive, so it starts at login and restarts if it dies. PC -> a `.cmd` in the Startup folder
 run through `pythonw` so no console window appears. Stdlib only, both machines.
-[[two-machines-mac-and-pc]]
+[[one-pc-windows-and-wsl]]
 """
 from __future__ import annotations
 
@@ -90,7 +90,7 @@ def build_plist(repo: Path, home: Path, platform: str = "darwin",
         "EnvironmentVariables": {
             # ⛔ launchd does not source ~/.zshrc, where NTFY_TOPIC actually lives. It equals the
             # built-in default today, so this would have failed silently only once he changed it.
-            # [[zshrc-is-invisible-to-automation]]
+            # [[interactive-startup-files-are-invisible-to-automation]]
             "NTFY_TOPIC": topic or os.environ.get("NTFY_TOPIC") or DEFAULT_TOPIC,
             "PATH": _MAC_PATH,
             # ⛔ Without this the log below is EMPTY. Python block-buffers stdout whenever it is

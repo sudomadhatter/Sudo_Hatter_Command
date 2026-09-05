@@ -31,7 +31,7 @@ scope: machine-wide (~/.gitconfig user-global) — applies to every repo on this
 | `init.defaultBranch` | `main` | New repos start on `main`, not `master`. |
 | `rerere.enabled` | `true` | Git **remembers** how you resolved a conflict and replays it if it reappears. |
 
-All of this lives in `~/.gitconfig` — your **user profile** (`/Users/<you>/.gitconfig` on the Mac,
+All of this lives in `~/.gitconfig` — your **user profile** (`/home/<you>/.gitconfig` on the Ubuntu side,
 `C:/Users/dlohn/.gitconfig` on the Windows box) — so it survives a Git reinstall. Every repo on that
 machine inherits it.
 
@@ -40,7 +40,9 @@ machine inherits it.
 > **2026-08-07 found zero of the ten set on the Mac** — that file held only `user.*` and the `gh`
 > credential helper, so the Mac had been running stock git the whole time (silent merge commits on
 > pull, stale `origin/*` refs piling up, `--set-upstream` needed per new branch). **Applied on the Mac
-> 2026-08-07; both machines now match.** On any *next* machine, verify before trusting this page:
+> 2026-08-07; both boxes then matched.** (That Mac is no longer part of this system — SCC-400,
+> 2026-09-04: one PC, a Windows side and an Ubuntu/WSL2 side. The paragraph stands as the record of
+> why the check exists.) On any *next* machine, verify before trusting this page:
 > `git config --global --get pull.ff` — silent output plus exit 1 means **not set**.
 
 ---

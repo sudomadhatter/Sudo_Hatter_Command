@@ -374,7 +374,7 @@ python3 .agents/scripts/jira_feed.py reconcile-actions --walkthrough <the walkth
 
 Exit `3` lists every open row with its line number. **Take each one, in this order:**
 
-1. **Derive the check and RUN it.** A keychain item, a live endpoint, a file on disk, a board
+1. **Derive the check and RUN it.** A credential-store item, a live endpoint, a file on disk, a board
    field — most rows have one. Tick on what it returned:
    `--tick <line> --evidence "<what you ran and what it returned>" --source measured`
 2. **No machine check exists? ASK the operator** and tick on their word, quoted:

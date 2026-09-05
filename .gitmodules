@@ -10,10 +10,6 @@
 	path = Projects/BRKN_Tattoos
 	url = https://github.com/sudomadhatter/BRKN_Tattoos
 	ignore = all
-[submodule "Projects/Fresh_Workspace_BMAD"]
-	path = Projects/Fresh_Workspace_BMAD
-	url = https://github.com/sudomadhatter/Fresh_Workspace_BMAD
-	ignore = all
 [submodule "Projects/NEXGen-Films"]
 	path = Projects/NEXGen-Films
 	url = https://github.com/sudomadhatter/NEXGen-Films

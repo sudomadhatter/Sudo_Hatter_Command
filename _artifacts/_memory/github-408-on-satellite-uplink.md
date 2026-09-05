@@ -21,4 +21,4 @@ push sends only the commit objects. A "failed" push may have LANDED server-side 
 lost — force-push on the scratch ref makes retries converge instead of dying on non-fast-forward.
 Script pattern: `chunk_grind.sh` in the SCC-63 session (2026-08-10). Delete the scratch ref after.
 
-Related: [[two-machines-mac-and-pc]] (the Mac has no SSH keys — HTTPS is the only transport).
+Related: [[one-pc-windows-and-wsl]] (the Mac has no SSH keys — HTTPS is the only transport).

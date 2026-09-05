@@ -124,9 +124,9 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 ## 5. NAMING & ARTIFACT PLACEMENT  (this replaces a database)
 Artifacts go **with their owning workspace, regardless of cwd or tool**. Every directory under `Projects/`
 owns its history in `Projects/<name>/_artifacts/` unless it appears in the explicit Sudo-managed exception
-registry in `router.md`. The only current exceptions are `Fresh_Workspace_BMAD` and
-`OpenChat-Openrouter`; their operational history stays in the matching home-base `_artifacts/<name>/`
-bucket. Home-base and cross-project system work uses `_artifacts/_main/`.
+registry in `router.md`. The only current exception is `OpenChat-Openrouter`; its operational history
+stays in the matching home-base `_artifacts/<name>/` bucket. (`Fresh_Workspace_BMAD` was the other
+until 2026-09-04, when SCC-403 removed the submodule from git.) Home-base and cross-project system work uses `_artifacts/_main/`.
 
 The full bucket rules (story `<epic>/<story>/`, local `_main/`, debugging, file naming, continuity) live in
 the protocol-tier **`.agents/rules/artifacts-always-first.md`** (§2 — loaded whenever a session may write

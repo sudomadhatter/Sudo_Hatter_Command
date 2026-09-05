@@ -1,6 +1,6 @@
 ---
 name: zsh-does-not-word-split-gate-args
-description: "In zsh, `--paths $VAR` passes ONE argument, not many — a gate then matches nothing and reports a false PASS at exit 0."
+description: "The false-GREEN family: a gate RAN, printed nothing alarming and exited 0 about a question it was never actually asked. Worked example — in zsh `--paths $VAR` passes ONE argument, not many, so the gate matched nothing and passed. ALWAYS run a positive control before believing a green. Recorded on the retired Mac 2026-08-13; the lesson is shell-independent."
 metadata: 
   node_type: memory
   type: feedback
@@ -27,4 +27,4 @@ bit in the same run: `${PIPESTATUS[0]}` is a **bash-ism** — zsh spells it `$pi
 silently expands to empty and prints no exit code at all (run gates bare instead); and `grep -E`
 treats `\|` as a **literal pipe**, not alternation, so `grep -cE 'A\|B'` reported 0 hits for three
 strings that were present 7, 4 and 12 times, nearly causing duplicate content to be folded into a
-command. See [[two-machines-mac-and-pc]] — the PC side runs different shells again.
+command. Measured on the Mac that was retired 2026-09-02 ([[one-pc-windows-and-wsl]]); this PC's Ubuntu side runs bash, which DOES word-split, so the specific zsh trap cannot fire here. **The lesson still can** — [[agent-shell-grep-is-not-the-gate-grep]] is the same false-green on the current box, and it is live.

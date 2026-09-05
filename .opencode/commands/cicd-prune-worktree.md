@@ -254,7 +254,7 @@ real asset in `PROJECT_ROOT` — breaking the shared checkout *and* every other 
 
 **Therefore: always ENUMERATE, never assume. The scan is the authority.**
 
-Cross-platform, Mac AND PC — the same enumerate-then-prove logic, scripted (SCC-62; the center's
+Cross-platform, both sides — the same enumerate-then-prove logic, scripted (SCC-62; the center's
 script, run from the command-center root):
 
 ```bash
@@ -309,7 +309,7 @@ bare existence check for the moment between them, so **probe, don't just `Test-P
 # ⛔ PROJECT_ROOT is a PLACEHOLDER you substitute, exactly as everywhere else in this file -
 # NOT a PowerShell variable. Nothing binds one, and pwsh expands an undefined variable inside
 # a double-quoted string to EMPTY, so `$PROJECT_ROOT/...` would probe `/backend/...`, fail on
-# both machines, and trip the STOP below on the one step guarding an irreversible delete.
+# both sides, and trip the STOP below on the one step guarding an irreversible delete.
 $PY = "PROJECT_ROOT/backend/.venv/bin/python3"
 if (-not (Test-Path $PY)) { $PY = "PROJECT_ROOT/backend/.venv/Scripts/python.exe" }
 & $PY --version                                                      # must print a version
@@ -318,8 +318,8 @@ if (-not (Test-Path $PY)) { $PY = "PROJECT_ROOT/backend/.venv/Scripts/python.exe
 ```
 
 ⛔ **This probe hardcoded the WINDOWS path until SCC-205, and it sits on the DESTRUCTIVE path.** On the
-Mac `Scripts/python.exe` does not exist, so the probe failed, and the very next line says *"Any failure
-here → STOP and report immediately... A destroyed shared asset breaks every other lane."* Every Mac
+On the POSIX side `Scripts/python.exe` does not exist, so the probe failed, and the very next line says *"Any failure
+here → STOP and report immediately... A destroyed shared asset breaks every other lane."* Every POSIX-side
 close-out would have reported a destroyed venv that was never touched — and a probe that cries wolf on
 the one step guarding an irreversible delete is a probe people learn to skip.
 

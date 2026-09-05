@@ -120,9 +120,10 @@ keyway --version      # -> keyway version 0.5.3
 keyway doctor         # full environment check, see §9
 ```
 
-> ⚠️ **Two machines, two installs.** This system runs on a Mac *and* a PC. Installing Keyway on one
-> does nothing for the other, and neither does logging in — credentials are stored in the OS keychain,
-> which is per-machine by definition. Do §3 and §4 once **per machine**.
+> ⚠️ **Two sides, two installs.** This is ONE PC with a Windows side and an Ubuntu side inside WSL2
+> (`one-pc-windows-and-wsl`). Installing Keyway on one does nothing for the other, and neither does
+> logging in — credentials go to that side's own OS keyring (Windows Credential Manager; the Linux
+> keyring or a file store on Ubuntu). Do §3 and §4 once **per side**.
 
 ---
 
@@ -349,9 +350,9 @@ it prints live secrets to the terminal.
 ### 6.8 Doing it — the actual commands for changing and sharing access
 
 Everything above says *what* the rules are. This is *how you carry them out*. Every command runs the
-same on the Mac and the PC.
+same on both sides.
 
-These use the GitHub CLI, `gh`, which is already installed and authenticated on both machines. If you
+These use the GitHub CLI, `gh`, which is already installed and authenticated on both sides. If you
 would rather click than type, each one names the equivalent page in GitHub's web interface.
 
 #### Who can read this vault right now?

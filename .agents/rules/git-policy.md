@@ -216,10 +216,10 @@ here reads `origin/main` — a remote-tracking ref, true regardless of what any 
 
 ⛔ **Why layer 1 refuses to depend on an interpreter.** Layer 2 was, for weeks, the *entire* claimed
 enforcement — and it had never executed once. `.claude/settings.json` invoked it as
-`powershell -NoProfile -Command "python ..."` and the Mac has **neither** binary (only `pwsh` and
+`powershell -NoProfile -Command "python ..."` and the Ubuntu side has **neither** binary (only `pwsh` and
 `python3`), so it exited 127 in silence on every push, as did all four SessionStart hooks. Six
 merges reached `main` on one sign-off (SCC-64 → SCC-69, 2026-08-09) with nothing in the way. A git
-hook is the only layer both machines, all four agent platforms, and the operator's own terminal
+hook is the only layer both sides, all four agent platforms, and the operator's own terminal
 share — so the gate is `sh`, with no interpreter probe and no Python anywhere in its path.
 
 3. ⭐ **The `main-write-gate` check on GitHub (SCC-118) — the half that is not on a machine.**

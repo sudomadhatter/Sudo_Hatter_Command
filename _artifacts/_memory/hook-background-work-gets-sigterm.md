@@ -21,4 +21,4 @@ finished because it trapped the signal; a `setsid` twin was never signalled, but
 body as `( trap '' TERM HUP INT; … ) >/dev/null 2>&1 </dev/null &` and `exit 0`. SIG_IGN is inherited
 across exec, so python3 and curl inside survive too, and the hook returns instantly whether async or
 not. Proof lives in the SCC-376 plan (Phase 3, "the Mac is optimised by the SAME file"). Related:
-[[claude-notifications-mac-and-phone]], [[zshrc-is-invisible-to-automation]].
+[[claude-notifications-hook-schema-and-ntfy]], [[interactive-startup-files-are-invisible-to-automation]].

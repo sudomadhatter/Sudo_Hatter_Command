@@ -27,7 +27,7 @@ install; where it is not, every clone installs once because `.git/` never travel
 
 **Mac addendum (2026-08-06):** `core.hooksPath` is LOCAL config — it never travels, so every fresh
 clone starts with it unset; the Mac set it in lobby, Fresh AND NEXgen (NEXgen's unset state above was
-the old machine's, not a ruling). **AGY on the Mac deliberately leaves hooksPath unset**: it is a
+the old machine's, not a ruling). **AGY deliberately leaves hooksPath unset on the POSIX side**: it is a
 submodule there (`.git` is a pointer file; real hooks dir is
 `<lobby>/.git/modules/Projects/AGY_AVIATIONCHAT/hooks`), and machine-local stubs in that dir CHAIN
 both systems — `.githooks/` (encoding + recorder) plus `scripts/git-hooks/board-stale-stamp.sh`

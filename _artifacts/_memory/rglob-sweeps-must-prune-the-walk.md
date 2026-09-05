@@ -13,7 +13,7 @@ guard tests (AGY: the 19.1 explicit-key sweep, the 14.2 dossier guard) excluded 
 results but `BACKEND_ROOT.rglob("*.py")` still traversed it — and on Windows, `os.scandir` throws
 `FileNotFoundError` (WinError 3) on paths past MAX_PATH, which torch's
 `dist-info/licenses/third_party/...` tree exceeds. The guard then ERRORS on any machine whose venv
-is correct (torch was the lock pin), Windows-only, while passing on Mac/CI — a fourth way
+is correct (torch was the lock pin), Windows-only, while passing on POSIX/CI — a fourth way
 source-grep guards are blind, and a [[mac-authored-code-hides-windows-bugs]] instance.
 
 **Why:** these failures masquerade as venv skew (they rode inside AVCH-109's "18 env-only reds" and

@@ -50,7 +50,7 @@ MEASURED_ASKS = {"command", "tool", "followup", "completion_result", "resume_com
 
 def user_dir(platform: str | None = None, home: Path | None = None,
              appdata: Path | None = None, xdg: Path | None = None) -> Path:
-    """VS Code's `User` directory on this machine. [[two-machines-mac-and-pc]]
+    """VS Code's `User` directory on this machine. [[one-pc-windows-and-wsl]]
 
     ⛔ This branched exactly TWO ways until SCC-396 — `win32`, else Mac — so Linux and WSL
     resolved to `~/Library/Application Support`, a path that cannot exist there. Nothing raised:
@@ -240,7 +240,7 @@ def banner_cmd(payload: dict, platform: str | None = None) -> list[str] | None:
 
     Mac uses terminal-notifier, the same binary Claude's notify.sh uses — and the same Focus-mode
     caveat applies: a Work Focus swallows the banner while everything still exits 0, so a silent
-    Mac is not proof the notifier failed. [[claude-notifications-mac-and-phone]]
+    Mac is not proof the notifier failed. [[claude-notifications-hook-schema-and-ntfy]]
 
     ⛔ The PC branch CONSTRUCTS AND SHOWS a toast. The first cut loaded the WinRT type, threw it
     away through `Out-Null`, and then `Write-Output`-ed the text into a pipe `send()` captures —

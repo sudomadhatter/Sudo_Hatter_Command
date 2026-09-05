@@ -7,12 +7,12 @@
     "files": 388,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 749,
+    "edges": 750,
     "external": 35,
     "ambiguous": 172,
-    "dangling": 288,
+    "dangling": 290,
     "broken_paths": 61,
-    "unresolved_names": 227,
+    "unresolved_names": 229,
     "unresolvable": 9
   },
   "nodes": [
@@ -778,7 +778,7 @@
     },
     {
       "path": ".agents/rules/jira.md",
-      "in": 39,
+      "in": 40,
       "out": 3
     },
     {
@@ -1864,7 +1864,7 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 16
+      "out": 17
     },
     {
       "path": "docs/code-review-graph.md",
@@ -5322,6 +5322,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": ".agents/rules/operator-profile.md",
       "kind": "ref"
     },
@@ -6251,6 +6256,14 @@
     {
       "from": ".agents/rules/agent-memory-is-long-term-only.md",
       "target": "MEMORY.md"
+    },
+    {
+      "from": ".agents/rules/agent-memory-is-long-term-only.md",
+      "target": "file.md"
+    },
+    {
+      "from": ".agents/rules/agent-memory-is-long-term-only.md",
+      "target": "two-machines-mac-and-pc.md"
     },
     {
       "from": ".agents/rules/agent-memory-is-long-term-only.md",

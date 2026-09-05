@@ -1,6 +1,8 @@
 # VS Code Sync Bundle
 
-This directory contains portable VS Code environment configuration files synchronized across Mac and Windows PC using `/smh-sync-vscode` (`.agents/scripts/vscode_sync.py`).
+This directory contains portable VS Code environment configuration files synchronized across this
+PC's two VS Code installs — the Windows one and the WSL/Ubuntu one — using `/smh-sync-vscode`
+(`.agents/scripts/vscode_sync.py`).
 
 ## Files in this bundle
 

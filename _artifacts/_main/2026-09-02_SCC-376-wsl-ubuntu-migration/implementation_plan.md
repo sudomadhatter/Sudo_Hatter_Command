@@ -208,7 +208,7 @@ whether the second is needed at all:
 > exported there is present when the operator types in a terminal and **absent for every automated
 > call**, producing exactly the failure mode `.agents/rules/jira.md` warns about: an `acli` failure
 > that is a fact about the shell, not about the board. This is the Linux twin of the house scar
-> `zshrc-is-invisible-to-automation`. If a profile home is needed, prove it with a non-interactive
+> `interactive-startup-files-are-invisible-to-automation`. If a profile home is needed, prove it with a non-interactive
 > probe — `bash -c 'echo ${JIRA_API_TOKEN:+set}'` — not by opening a terminal and looking.
 
 > ### ⚠️ Keep the token on stdin, never in an argument

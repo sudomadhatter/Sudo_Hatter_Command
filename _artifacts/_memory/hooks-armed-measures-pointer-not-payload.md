@@ -34,5 +34,5 @@ The concrete cost: NVS-69 added `.agents/jira.conf` to NEXgen to stop the Jira g
 no-op, and the conf is correct — but with no `commit-msg` hook in that repo it is inert, so the
 ticket looked like it closed a hole it had only prepared to close. Same shape as
 [[vscode-hides-git-hook-output]] and [[git-hooks-live-in-githooks-not-git-hooks]]: the failure is
-always that nothing *looks* wrong. See also [[two-machines-mac-and-pc]] for why the pointer half is
+always that nothing *looks* wrong. See also [[one-pc-windows-and-wsl]] for why the pointer half is
 per-machine in the first place.

@@ -9,7 +9,7 @@ platforms: [opencode, antigravity]
 > - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
 > - `.agents/rules/smh-target-resolution.md` — bind ONE target, never operate on the lobby
 > - `.agents/rules/code-standards.md` §6.5 — **disposition**: the assessor decides what is real, not
->   the lens; §5 — both machines; §6 — the machine floor, resolved per machine
+>   the lens; §5 — both sides; §6 — the machine floor, resolved per side
 > - `.agents/rules/tests-must-gate-for-real.md` §5 — a gate that cannot fail is a finding; §6 — run
 >   gates bare, because a pipe returns the pipe's exit code
 
@@ -92,9 +92,9 @@ left, never committed under this lane's key.
 Run the §6 commands from `code-standards.md`, scoped to the changed set. Use the venv's own
 executables, never a bare global tool. **Paste actual output** — a summarized result is not evidence.
 
-⛔ **Resolve the venv bin dir FIRST — this system runs on both machines** (`code-standards` §5). A venv
+⛔ **Resolve the venv bin dir FIRST — this system runs on both sides** (`code-standards` §5). A venv
 puts its executables in `bin/` on POSIX and `Scripts/` on Windows, and this table named `Scripts/…exe`
-outright until SCC-205: on the Mac every one of these commands missed, the floor reported itself
+outright until SCC-205: on the POSIX side every one of these commands missed, the floor reported itself
 unrunnable, and the objective half of the most-used audit did nothing while the run looked normal.
 
 ```bash
@@ -128,7 +128,7 @@ unrunnable and the project violates `tests-must-gate-for-real` §2. Report it an
 - a committed secret, key, or token
 - leftover debug prints / `console.log`
 - commented-out code
-- **Does it run on both machines?** (`code-standards` §5) A hardcoded absolute or `C:/…` path where
+- **Does it run on both sides?** (`code-standards` §5) A hardcoded absolute or `C:/…` path where
   `Path(__file__).parent` belongs, a `;` path separator, `robocopy`, `chmod` assumed present, or a
   bare `python`/`python3` hardcoded in a committed script — each works where it was written and dies
   on the other machine. This is a finding, not a nitpick.

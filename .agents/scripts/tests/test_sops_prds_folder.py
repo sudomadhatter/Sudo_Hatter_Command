@@ -1082,7 +1082,7 @@ def main() -> int:
         both_flagged = set(fresh) == {"backend/tests/conftest.py", "docs/gone.md"}
         # ...and the REMEDY is what makes that acceptable. Asserted against the SAME
         # function the check calls -- not a copy of the string, which would assert nothing.
-        remedy = uncloned_note(["AGY_AVIATIONCHAT", "Fresh_Workspace_BMAD"])
+        remedy = uncloned_note(["AGY_AVIATIONCHAT", "NEXgen-VR-Director"])
         ok_fc = (both_flagged
                  and "git submodule update --init" in remedy
                  and "AGY_AVIATIONCHAT" in remedy
@@ -1254,9 +1254,10 @@ def main() -> int:
         #    passing check, inflating the count and reading as coverage (L5). Round 2 first
         #    tried the opposite -- FAIL when a doc reaches into a project this machine
         #    cannot see -- and that fired immediately on tdad_stack_install_guide.md naming
-        #    `Projects/Fresh_Workspace_BMAD/backend/requirements.txt`. That is a DECLARED
-        #    submodule (.gitmodules, `ignore = all`) deliberately left uninitialised here:
-        #    the doc is right, the machine is right, and nothing is broken. A gate that goes
+        #    `Projects/Fresh_Workspace_BMAD/backend/requirements.txt`. That WAS a declared
+        #    submodule (.gitmodules, `ignore = all`) deliberately left uninitialised -- it left
+        #    git entirely on 2026-09-04 (SCC-403), and the same shape still holds for the nine
+        #    that remain: the doc is right, the machine is right, and nothing is broken. A gate that goes
         #    permanently red on a correct state is the same disease as one that never fires.
         #    So: named, counted, and attributed to the docs that depend on it -- loud enough
         #    that a partial run cannot read as a clean one, without asserting a defect.

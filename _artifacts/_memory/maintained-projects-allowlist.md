@@ -1,6 +1,6 @@
 ---
 name: maintained-projects-allowlist
-description: Maintained set = lobby + AGY_AVIATIONCHAT + Fresh_Workspace_BMAD + NEXgen-VR-Director — but NEVER trust an enumeration: the ONE list is .agents/maintained-projects.txt (read it each time). NEXgen is a bare gitlink in the lobby (no .gitmodules entry, no ignore=all) — committing inside it dirties the lobby until you bump the pointer.
+description: Maintained set = lobby + AGY_AVIATIONCHAT + NEXgen-VR-Director — but NEVER trust an enumeration: the ONE list is .agents/maintained-projects.txt (read it each time). NEXgen is a bare gitlink in the lobby (no .gitmodules entry, no ignore=all) — committing inside it dirties the lobby until you bump the pointer.
 metadata: 
   node_type: memory
   type: project

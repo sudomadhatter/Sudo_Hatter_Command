@@ -373,6 +373,28 @@ def main() -> int:
             "~44 KB" not in agents_md,
             "AGENTS.md still says '~44 KB' (measured ~96.6 KB)")
 
+    # ── SCC-404 F: the allowlist's pointer at the project table actually RESOLVES ──
+    # ⛔ Row F's original evidence was `check_links` "on the new anchors" - but the allowlist is a
+    # `.txt` naming the section in PROSE, so no anchor existed and the check ran on nothing. A
+    # pointer between two files is only real if something reads BOTH (SCC-401 review).
+    # ⛔ Deliberately UNGUARDED, matching this file: it uses no block guards at all, and adding the
+    # first one makes test_suite_runner's ORPHAN walker treat the file as guarded and flag all 25
+    # pre-existing checks. Match the file, or convert the whole file - never half of it.
+    # (The walker matches the guard call as a literal string, so even naming it in a comment
+    #  flips the file. Measured SCC-401 review: writing that call here turned this file red.)
+    _allow = ROOT / ".agents" / "maintained-projects.txt"
+    _std = ROOT / "docs" / "workspace-standard.md"
+    _heading = "### The nine projects — what each one IS"
+    _atext = _allow.read_text(encoding="utf-8") if _allow.is_file() else ""
+    _stext = _std.read_text(encoding="utf-8") if _std.is_file() else ""
+    c.check("F1 the allowlist header names workspace-standard.md as the WHY",
+            "docs/workspace-standard.md" in _atext, _atext[:120])
+    c.check("F2 ...and the section it names is live in that file, spelled the same way",
+            _heading in _stext, f"heading absent from {_std}")
+    c.check("F3 CONTROL: not vacuous - an ASCII-hyphen twin does NOT satisfy F2",
+            "### The nine projects - what each one IS" not in _stext,
+            "an ASCII-hyphen twin exists; the check would pass on either")
+
     return c.finish()
 
 

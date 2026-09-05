@@ -46,7 +46,7 @@ goes into `requirements.txt`.
 
 ### Prerequisites
 - Python (any version — aider brings its own 3.12)
-- A project venv already created for AGY_AVIATIONCHAT and/or Fresh_Workspace_BMAD
+- A project venv already created for AGY_AVIATIONCHAT
 
 > [!NOTE]
 > **Most of the stack ships in the repos — `git clone`/`pull` IS the install for it.**
@@ -93,12 +93,6 @@ cd Projects\AGY_AVIATIONCHAT
 .\backend\.venv\Scripts\python.exe -m pip install --prefer-binary -r backend\requirements.txt
 ```
 
-#### Fresh_Workspace_BMAD
-```powershell
-cd Projects\Fresh_Workspace_BMAD
-.\backend\.venv\Scripts\python.exe -m pip install --prefer-binary -r backend\requirements.txt
-```
-
 **Verify (run from inside the project):**
 ```powershell
 .\backend\.venv\Scripts\python.exe -c "from pytest_bdd import given, when, then; print('pytest-bdd OK')"
@@ -140,9 +134,6 @@ cd Projects\AGY_AVIATIONCHAT
 .\backend\.venv\Scripts\python.exe -m pytest backend/tests --collect-only -q
 # Expected (2026-07-09 baseline): 2335 tests collected, 0 errors
 
-# Fresh_Workspace_BMAD — the template smoke .feature must be GREEN
-cd ..\Fresh_Workspace_BMAD
-.\backend\.venv\Scripts\python.exe -m pytest backend/tests -q -k workspace_smoke
 ```
 
 If the AGY bdd run reports an import error instead of `8 skipped`, you're on the wrong

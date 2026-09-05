@@ -35,10 +35,81 @@ categories earn a permanent home:
 1. **Operator preferences and profile**: how Mr. Hatter thinks, directs work, reviews, and
    communicates (the Jobs/Woz division of labor; consequence before mechanism; directness).
 2. **Machine and tooling quirks**: persistent toolchain behavior that recurs across stories and
-   projects (macOS vs Windows vs WSL differences, `acli` CLI syntax and flag traps, SDK bugs, shell
+   projects (Windows vs WSL/Ubuntu side differences, `acli` CLI syntax and flag traps, SDK bugs, shell
    quoting traps, permission quirks).
 3. **Standing rulings**: durable architectural, testing, or workflow decisions that govern future
    lanes and projects.
+
+## A Measurable Memory Carries Its Own Falsifier (`probe:`)
+
+Long-term is not the same as **permanently true**. `two-machines-mac-and-pc.md` was confirmed by
+Mr. Hatter on 2026-08-08, went false when SCC-376 moved the working environment into WSL2 on
+2026-09-02, and stayed loaded and trusted for two more days while an agent used it to tell him four
+wrong things in one afternoon. Nothing in the suite could tell a memory that is still true from one
+that stopped being true — age and shape cannot separate them.
+
+**The law.** A memory whose claim is *measurable* — it names an absolute or `~/` path, a binary, a
+version, or a tool's behaviour — **must** carry a `probe:` line in its frontmatter:
+
+```yaml
+metadata:
+  probe: 'grep -q microsoft-standard-WSL2 /proc/version'
+```
+
+**A memory may carry SEVERAL — repeat the key, one per checkable fact.** The runner numbers the
+rows (`file.md [2/5]`), so a failure names which claim went false, not just which file.
+
+⚠️ **Write it in SINGLE quotes.** The reader strips the outer quotes and does no YAML unescaping, so
+a double-quoted value containing `\"` reaches the shell with its backslashes intact and fails for a
+reason nothing in the output explains.
+
+A plain shell command. **Exit 0 means the claim still holds.** No DSL: the probe IS the command you
+would type to check by hand, which is the only form that stays honest — an author who cannot type it
+cannot write it. `.agents/scripts/memory_probe.py` runs every probe, `test_memory_store.py` goes
+**red and names the file** when one fails, and `/smh-memory-audit` lists path-naming memories with
+no probe as candidates.
+
+⛔ **AND THE PROBE MUST BE ABLE TO FAIL — this is the one that was got wrong first.** The first cut
+of this mechanism shipped 59 probes and the review found **54 of them could not fail**: they were
+`test -e <a path git tracks>`, which every checkout satisfies forever. Five unrelated memories shared
+`test -e .agents/commands`; four shared `test -e _artifacts/_memory`, the very directory the runner
+walks to reach them. The suite printed `59 probe(s) passed` and that number meant nothing — a green
+tick on the same failure the mechanism was built to end. `memory_probe.weak_probes()` now refuses
+both shapes, and the suite reds on either:
+
+- **not a tracked path's existence** — git guarantees it. Probe what the memory *claims*: the content
+  of a file, the identity of a binary, a per-machine artifact git does not carry.
+- **anchored to the claim** — the probe must name something the memory's own body names. A falsifier
+  wired to something else is a green light with no wire behind it.
+
+**A probe you cannot write is a signal, not a problem.** Most memories are rulings, conventions and
+behavioural lessons; those take no probe and must not be given a decorative one. A small minority
+carry a probe today, and a handful of true probes are worth more than fifty-nine that cannot fail.
+
+Four further constraints, each of which has already cost something:
+
+1. **A probe OBSERVES.** It runs inside the suite, on every machine. Mutating and network shapes
+   (`rm`, `mv`, `curl`, `>`, `git push`, `sudo`, …) are refused outright and reported as failures.
+   A probe that writes is a bug in the memory, not a test to skip.
+2. **Probe what is STABLE, not what is true today.** A commit count, a file count or a timestamp
+   changes on its own and would red the suite for a reason no author can fix — and a gate that cries
+   wolf is one people learn to skip, which is the disease this exists to cure. Probe existence,
+   identity and shape. (`one-pc-windows-and-wsl` deliberately does not probe its behind-counts.)
+3. **Never echo a secret to prove it is set.** `${VAR:+SET}`, never `echo $VAR` — a bare echo puts
+   the value in a transcript, a scrollback and a log, and it cannot be taken back out.
+4. **A probe is judged on the machine it describes — so the LOCAL suite run is the gate, not CI.**
+   A probe asserts something about *this* PC, and a GitHub runner is not it. Run there and the
+   answers are worthless in both directions: `grep -q microsoft-standard-WSL2 /proc/version` goes
+   **red** on a runner nobody claimed was this machine, while `test ! -e ~/.codex/prompts` goes
+   **green** because the runner has no `~/.codex` at all — a pass with no wire behind it, which is
+   the exact defect above. So `test_memory_store.py` executes the store's probes only off-CI, and
+   says so in a `[SKIP]` line naming the count. What CI *can* judge is text, and it does: every
+   probe must be falsifiable, anchored, and read-only. ⛔ **Consequence for you:** a probe that
+   passes CI has not been checked. Run `python3 .agents/scripts/memory_probe.py` on the machine
+   before you trust it.
+
+**A ruling or a preference needs no probe.** "Mr. Hatter chairs the board" is not measurable and
+must not be forced into a shell command. The probe is for claims about the world, not about judgment.
 
 ## What Never Qualifies (Prohibited in Memory)
 
