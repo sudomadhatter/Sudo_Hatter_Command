@@ -1,11 +1,11 @@
 {
-  "why": "SCC-416 revert-proof. Code-derived: each mutant flips or relocates ONE decision in the guard, and each must die by the named case. M1/M2 = INVERT the refusal in each door. M3 = a width narrowing (remote-only epics dropped). M4 = the visibility line removed. M5 = RELOCATE the ship guard below the light-gate line - the ORDER assertion is the only thing that can see it.",
+  "why": "SCC-416 revert-proof. Code-derived: each mutant flips or relocates ONE decision in the guard, and each must die by the named case. M1 = INVERT the refusal itself (rep.err -> rep.info: the check reports and no longer refuses). M2 = INVERT the Task door's short-circuit. M3 = a width narrowing (remote-only epics dropped). M4 = the visibility line removed. M5 = RELOCATE the ship guard below the light-gate line - the ORDER assertion is the only thing that can see it. First sweep's M1 dropped the ship door's `return` instead and was a SWEEP ERROR, not a survivor: rep.err alone already makes the verdict BLOCKED, so only the ORDER case died - the same kill as M5. Re-aimed at the decision that carries the refusal.",
   "mutants": [
     {
       "id": "M1",
-      "file": ".agents/scripts/ship_preflight.py",
-      "original": "    if tp.epic_freeze(repo, changed, base, \"lane\", rep):\n        return \"handoff\"\n",
-      "mutated": "    tp.epic_freeze(repo, changed, base, \"lane\", rep)\n",
+      "file": ".agents/scripts/task_preflight.py",
+      "original": "        rep.err(section, f\"EPIC WORK: {len(shared)} file(s) this lane changes are ALSO changed \"\n",
+      "mutated": "        rep.info(section, f\"EPIC WORK: {len(shared)} file(s) this lane changes are ALSO changed \"\n",
       "test": ["python3", ".agents/scripts/tests/test_ship_preflight.py"],
       "block": "SP-Q",
       "case": "SP-Q.1 overlap with a live epic -> exit 2"

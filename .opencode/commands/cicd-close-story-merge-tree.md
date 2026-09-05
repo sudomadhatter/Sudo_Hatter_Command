@@ -283,13 +283,34 @@ counterpart of `/cicd-merge-epic-workingtrees` Step 5's combined gate): run
   never moves.** Report the failing tests + which epic-branch commits collided
   (`git log <suite-SHA>..origin/epic/<JIRA-KEY>-<slug> --oneline`); the fix is a follow-on
   on the branch, then re-gate.
-Then `git push origin HEAD:epic/<JIRA-KEY>-<slug>` — THE landing.
+Then THE landing — **two arms, keyed on the epic branch's NAME and nothing else** (`git-policy` § The
+epic's mode, SCC-416). Read the name you resolved at Step 0: a `-quickdev` suffix is a quick-dev epic;
+its absence is an extension of main.
 
-⛔ **Do NOT push `claude/<JIRA-KEY>-<story-slug>` to origin.** The local branch is the rollback point and survives a
-failed landing push intact. A story branch reaches origin **only** via `/cicd-park` — that is park's whole
-purpose, and `/cicd-resume` reads the origin `claude/*` list to find in-flight work on a cold machine.
-Pushing here made park redundant and filled that listing with landed-and-dead branches. If this story WAS
-parked, its branch is already on origin and Step 5 deletes it there.
+**Quick-dev (`…-quickdev`)** — the direct push, after the merge gate above; no CI per story:
+
+```bash
+cd "<the story worktree>" && git push origin HEAD:epic/<JIRA-KEY>-<slug>
+```
+
+**Extension of main (no suffix)** — a pull request into the epic, the full four-check gate, then the
+merge. The epic's ruleset requires those checks on every push to `epic/**`, so a direct push is refused
+by the server; the PR is the only road:
+
+```bash
+cd "<the story worktree>" && git push origin claude/<JIRA-KEY>-<story-slug>
+cd "<the story worktree>" && gh pr create --base epic/<JIRA-KEY>-<slug> --head claude/<JIRA-KEY>-<story-slug> --fill
+cd "<the story worktree>" && gh pr checks --watch     # red -> STOP and report, exactly as for a conflict
+cd "<the story worktree>" && gh pr merge --merge      # the door's invocation IS the sign-off; the ruleset's
+                                                      # bypass list governs rules, not who merges a green PR
+```
+
+⛔ **Do NOT push `claude/<JIRA-KEY>-<story-slug>` to origin** — except as the head of that PR, which is the
+one exception, and Step 5 prunes it. The local branch is the rollback point and survives a failed landing
+intact. A story branch otherwise reaches origin **only** via `/cicd-park` — that is park's whole purpose,
+and `/cicd-resume` reads the origin `claude/*` list to find in-flight work on a cold machine. Pushing it
+for any other reason made park redundant and filled that listing with landed-and-dead branches. If this
+story WAS parked, its branch is already on origin and Step 5 deletes it there.
 
 - **`main` is untouched.** Only Daniel, directly or via `/cicd-push-e2e`.
 - **Report** the branch, the commit range that landed, and the epic-branch sha — same into the walkthrough's
