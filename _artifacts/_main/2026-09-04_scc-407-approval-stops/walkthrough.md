@@ -82,6 +82,45 @@ Each was found by a control case, not by reading the code:
 4. **Fragments ranked as commands.** `-rl '^riders:'`, the second half of a wrapped `grep`, ranked
    **first at 18m27s**. Case `G`.
 
+## The operator's own eight stops — the ground truth that corrected this
+
+Mr. Hatter supplied his eight real stops with the reason each one was not an allow-list problem.
+The first cut of this script would have found **one** of them, and would have actively **hidden**
+#3. His table, verbatim:
+
+| # | what stopped | why the allow list didn't help |
+|---|---|---|
+| 1 | `Skill(code-review-engine)` | no skill-grant kind exists in `families.json` |
+| 2 | venv python probe, absolute path, sandbox off | escalation gate, not the allow list |
+| 3 | `git worktree remove --force … && git branch -d …`, sandbox off | `Bash(git worktree remove *)` was **already allowed**; escalation gate fired anyway |
+| 4–8 | five identical `sleep 60; cat …; gh pr view 154 …` | hard harness ban; remedy is Monitor, not a permission row |
+
+**Three whole classes, none of which one allow row can fix.** The report now separates them,
+because the remedy differs and mixing them is what makes a list unactionable:
+
+| class | his stops | count in the live window | remedy |
+|---|---|---:|---|
+| not covered by the allow list | — | 36 · 1h03m | one allow row |
+| **allowed, stopped by the escalation gate** | 2, 3 | 78 · 1h07m | the sandbox boundary, not a rule |
+| **no grant kind exists** (`Skill`, `Agent`) | 1 | 70 (count only) | `families.json` cannot express it yet |
+| **harness ban** | 4–8 | 21 | a different tool (Monitor), never a rule |
+
+**#3 is the one that matters most, because it was a false negative I had shipped.** The command was
+already on the allow list, so `covered()` returned true and the scan stayed silent — while he sat
+there. The escalation gate is a **second, independent gate**, and coverage says nothing about it.
+
+## Three more bugs his list exposed
+
+5. **`sleep` was filtered before it was classified.** `sleep 60; …` matched the self-explaining
+   filter first, so his five identical retries vanished into that bin instead of reporting with
+   their Monitor remedy. Ban now outranks self-explaining (case `E`/`M`).
+6. **Escalation stops went through `report_head` and were discarded.** That helper returns None
+   when every segment is covered — which is exactly the shape of an escalation stop. It now has
+   its own bucket (case `L`).
+7. **`Agent(general-purpose)` was charging him 11h37m.** 63 subagent runs, counted as though he
+   had been waiting on every one. That fabricated figure sat at the top of a report whose only
+   value is being believable about cost. Non-Bash tools are now **counted, never timed** (case `N`).
+
 ## Evidence
 
 ```

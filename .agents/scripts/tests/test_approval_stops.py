@@ -39,12 +39,18 @@ def _t(seconds: int) -> str:
 
 
 def _transcript(path: Path, rows) -> None:
-    """rows: (command, wait_seconds, error_text_or_None) -> a paired use/result transcript."""
+    """rows: (command, wait_seconds, error_or_None[, escalated[, tool_name]]) -> a transcript."""
     out, clock = [], 0
-    for i, (cmd, wait, err) in enumerate(rows):
+    for i, row in enumerate(rows):
+        cmd, wait, err = row[0], row[1], row[2]
+        escalated = row[3] if len(row) > 3 else False
+        tool = row[4] if len(row) > 4 else "Bash"
         uid = "tu_%d" % i
+        inp = {"command": cmd} if tool == "Bash" else {"skill": cmd}
+        if escalated:
+            inp["dangerouslyDisableSandbox"] = True
         out.append({"timestamp": _t(clock), "message": {"content": [
-            {"type": "tool_use", "id": uid, "name": "Bash", "input": {"command": cmd}}]}})
+            {"type": "tool_use", "id": uid, "name": tool, "input": inp}]}})
         clock += wait
         block = {"type": "tool_result", "tool_use_id": uid, "content": err or "ok"}
         if err:
@@ -116,9 +122,14 @@ def test_E_a_self_explaining_wait_is_dropped():
     """⛔ Written `\\d` instead of `\\d+`, this matched `timeout 9` inside `timeout 900` and then
     failed the boundary against the second `0` - so the rows the filter existed to drop stayed at
     the TOP of the ranking and read as real findings. Three digits is the case that broke."""
-    for cmd in ("timeout 900 ./slow", "timeout 9 ./slow", "sleep 300", "gh pr checks 5 --watch"):
+    for cmd in ("timeout 900 ./slow", "timeout 9 ./slow", "gh pr checks 5 --watch"):
         r = _scan([(cmd, 400, None)])
         assert not r["stops"], "%r was credited as an approval stop" % cmd
+    # `sleep` is NOT in this list: a foreground sleep is a HARNESS BAN (case M), which outranks
+    # self-explaining. Ordered the other way round, the operator's five identical `sleep 60; …`
+    # retries vanished into this bin instead of reporting with their remedy.
+    r = _scan([("sleep 300", 400, None)])
+    assert [k for _, k, _ in r["stops"]] == ["harness-ban"], r["stops"]
 
 
 def test_F_shell_scaffolding_is_dropped_no_rule_could_fix_it():
@@ -153,6 +164,51 @@ def test_I_heredoc_bodies_never_become_commands():
     """The first version of this measurement ranked `---` as the top interruption."""
     r = _scan([("python3 - <<'PY'\nprint('---')\ndone\nPY", 300, None)])
     assert "---" not in r["heads"] and "done" not in r["heads"], r["heads"]
+
+
+# --- the three classes the operator's own eight stops exposed (2026-09-04) --------------------
+
+def test_L_an_ALLOWED_command_run_with_the_sandbox_off_is_still_a_stop():
+    """⛔ HIS STOP #3, and a FALSE NEGATIVE the coverage filter caused.
+
+    `git worktree remove --force … && git branch -d …` was ALREADY on the allow list and stopped
+    anyway: the escalation gate is a second, independent gate. Judged on coverage alone the scan
+    marked it covered and hid a stop he actually paid for.
+    """
+    covered_cmd = "git status --porcelain"
+    plain = _scan([(covered_cmd, 120, None, False)])
+    assert not plain["stops"], "polarity: without escalation a covered command must stay silent"
+    esc = _scan([(covered_cmd, 120, None, True)])
+    assert [k for _, k, _ in esc["stops"]] == ["escalation"], esc["stops"]
+
+
+def test_M_a_harness_banned_shape_is_NOT_offered_as_an_allow_candidate():
+    """⛔ HIS STOPS #4-8: five identical `sleep 60; …` retries. No permission row fixes a shape the
+    harness refuses, so these must carry their own remedy, not sit in the allow list."""
+    r = _scan([("sleep 60; gh pr view 154", 90, None)])
+    assert [k for _, k, _ in r["stops"]] == ["harness-ban"], r["stops"]
+    assert not r["heads"], "a banned shape was offered as an allow candidate: %s" % r["heads"]
+    assert "Monitor" in "".join(r["remedies"].values()), r["remedies"]
+
+
+def test_M2_the_ban_row_names_the_OFFENCE_not_the_line_it_sat_in():
+    """Keyed on the first two words, `cat > x && git -C y` reported `cat >` with a git -C remedy."""
+    r = _scan([("cat > /tmp/x && git -C /repo status", 90, None)])
+    assert "git -C" in r["blocked"], r["blocked"]
+
+
+def test_N_a_non_Bash_tool_is_seen_but_its_DURATION_is_never_charged_to_him():
+    """⛔ HIS STOP #1 is `Skill(code-review-engine)` — invisible while this read only Bash.
+
+    But `Agent(general-purpose)` ran 63x for 11h37m in the live window: a subagent WORKING, not
+    him waiting. Crediting that put a fabricated 11 hours at the top of a report whose only value
+    is being believable about cost.
+    """
+    r = _scan([("code-review-engine", 279, None, False, "Skill")])
+    assert "Skill(code-review-engine)" in r["nogrant"], r["nogrant"]
+    assert not r["heads"], "a tool with no grant kind was offered as an allow row"
+    charged = sum(s for s, k, _ in r["stops"] if k != "no-grant-kind")
+    assert charged == 0, "a tool's own run time was charged to the operator: %ss" % charged
 
 
 # --- the door must not drift back ------------------------------------------------------------

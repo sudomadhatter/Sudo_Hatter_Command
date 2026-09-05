@@ -114,6 +114,35 @@ _SELF_EXPLAINING = re.compile(r"(\btimeout\s+\d+|\bsleep\s+\d+|--watch|--follow|
 # and a rule can no more be written for them than for `done`.
 _LOOKS_LIKE_COMMAND = re.compile(r"""^["']?[\w./$~][\w./$~+-]*(\s|$)""")
 
+# ⛔ SHAPES NO PERMISSION ROW CAN FIX (operator's own eight stops, 2026-09-04). Five of the eight
+# were the SAME banned command retried, and an allow row for it would have changed nothing — the
+# harness refuses the shape, not the program. Reporting these beside real candidates is what makes
+# a list unactionable, so they are carried under their own heading WITH THEIR REMEDY.
+_HARNESS_BAN = [
+    (re.compile(r"(^|[;&|]\s*)sleep\s+\d"), "foreground sleep is blocked - use Monitor with an "
+                                            "until-loop, or run_in_background"),
+    (re.compile(r"\bgit\s+-C\b"), "git -C is auto-denied (command-shape.md rule 1) - "
+                                  "write `cd <abs> && git <verb>`"),
+    (re.compile(r';\s*echo\s+"?EXIT='), "the `; echo EXIT=$?` tail masks the real status "
+                                        "(command-shape.md rule 2)"),
+]
+
+
+def harness_ban(command: str) -> str | None:
+    for pattern, remedy in _HARNESS_BAN:
+        if pattern.search(command):
+            return remedy
+    return None
+
+
+def _ban_key(command: str) -> str:
+    """The banned fragment itself, so the row names the offence rather than the line it sat in."""
+    for pattern, _ in _HARNESS_BAN:
+        m = pattern.search(command)
+        if m:
+            return m.group(0).strip().lstrip(";&| ").strip()
+    return " ".join(command.split()[:2])
+
 
 def segments(command: str) -> list[str]:
     """The pieces Claude judges separately.
@@ -189,39 +218,102 @@ def scan(repo: Path, sessions: int, wait: float) -> dict:
             for block in content:
                 if not isinstance(block, dict):
                     continue
-                if block.get("type") == "tool_use" and block.get("name") == "Bash":
-                    cmd = (block.get("input") or {}).get("command")
-                    if cmd:
-                        pending[block.get("id")] = (_iso(rec), cmd.strip())
+                if block.get("type") == "tool_use":
+                    inp = block.get("input") or {}
+                    if block.get("name") == "Bash":
+                        cmd = inp.get("command")
+                        if cmd:
+                            # ⛔ CARRY THE ESCALATION FLAG. The operator's stop #3 was
+                            # `git worktree remove --force …` run with the sandbox OFF: the
+                            # command was ALREADY on the allow list and it stopped anyway,
+                            # because the escalation gate is a second, independent gate. Judging
+                            # it on coverage alone marks it "covered" and HIDES it - a false
+                            # negative on a stop he actually paid for.
+                            pending[block.get("id")] = (
+                                _iso(rec), cmd.strip(), "Bash",
+                                inp.get("dangerouslyDisableSandbox") is True)
+                            total += 1
+                    else:
+                        # Non-Bash tools stop too, and no allow row exists for them at all: his
+                        # stop #1 was `Skill(code-review-engine)`, and families.json has no
+                        # skill-grant kind to write. Invisible while this scan read only Bash.
+                        label = block.get("name") or "?"
+                        detail = inp.get("skill") or inp.get("subagent_type") or ""
+                        pending[block.get("id")] = (
+                            _iso(rec), "%s(%s)" % (label, detail) if detail else label,
+                            "tool", False)
                         total += 1
                 elif block.get("type") == "tool_result":
                     got = pending.pop(block.get("tool_use_id"), None)
                     if not got:
                         continue
-                    t0, cmd = got
+                    t0, cmd, kind, escalated = got
                     raw = block.get("content")
                     text = raw if isinstance(raw, str) else json.dumps(raw)
                     if block.get("is_error") and REFUSED_BY_OPERATOR in text:
                         stops.append((0.0, "refused-by-operator", cmd))
-                    elif block.get("is_error") and REFUSED_BY_CLASSIFIER in text:
+                        continue
+                    if block.get("is_error") and REFUSED_BY_CLASSIFIER in text:
                         stops.append((0.0, "refused-by-classifier", cmd))
-                    else:
-                        t1 = _iso(rec)
-                        if (t0 and t1 and (t1 - t0) >= wait
-                                and not covered(cmd, prefixes)
-                                and not _SELF_EXPLAINING.search(cmd)):
-                            stops.append((t1 - t0, "waited", cmd))
+                        continue
+                    t1 = _iso(rec)
+                    if not (t0 and t1 and (t1 - t0) >= wait):
+                        continue
+                    if kind == "tool":
+                        stops.append((t1 - t0, "no-grant-kind", cmd))
+                    # ⛔ BAN BEFORE SELF-EXPLAINING. `sleep 60; gh pr view 154` matches BOTH, and
+                    # ordered the other way the five identical retries of it vanished into the
+                    # self-explaining bin - the operator's stops #4-8, silently dropped.
+                    elif harness_ban(cmd):
+                        stops.append((t1 - t0, "harness-ban", cmd))
+                    elif _SELF_EXPLAINING.search(cmd):
+                        pass
+                    elif escalated:
+                        stops.append((t1 - t0, "escalation", cmd))
+                    elif not covered(cmd, prefixes):
+                        stops.append((t1 - t0, "waited", cmd))
 
+    # Three buckets, because the REMEDY differs and mixing them is what makes a list unactionable:
+    # `heads` is fixed by one allow row, `blocked` by a different tool, `nogrant` by nothing that
+    # exists yet.
     heads: dict[str, list[float]] = collections.defaultdict(list)
+    blocked: dict[str, list[float]] = collections.defaultdict(list)
+    nogrant: dict[str, list[float]] = collections.defaultdict(list)
+    escalated_heads: dict[str, list[float]] = collections.defaultdict(list)
+    remedies: dict[str, str] = {}
     actionable = []
     for secs, kind, cmd in stops:
+        if kind == "no-grant-kind":
+            nogrant[cmd].append(secs)
+            actionable.append((secs, kind, cmd))
+            continue
+        if kind == "harness-ban":
+            # Key on the BANNED SHAPE, not the command's first two words. The ban usually matches
+            # deep inside a compound line, so `cat > … && git -C …` keyed as `cat >` and printed a
+            # `git -C` remedy under it - two rows that looked unrelated and neither of which named
+            # the offence.
+            key = _ban_key(cmd)
+            blocked[key].append(secs)
+            remedies[key] = harness_ban(cmd) or ""
+            actionable.append((secs, kind, cmd))
+            continue
+        if kind == "escalation":
+            # ⛔ NOT through report_head. An escalation stop is usually on an ALREADY-COVERED
+            # command (his #3 was), so report_head finds no uncovered segment, returns None, and
+            # the stop is discarded — the very false negative this class exists to surface. Its
+            # remedy is the sandbox boundary, not an allow row, so it gets its own section.
+            escalated_heads[" ".join(cmd.split()[:2])].append(secs)
+            actionable.append((secs, kind, cmd))
+            continue
         head = report_head(cmd, prefixes)
         if head is None:                                # pure shell scaffolding — no rule fixes it
             continue
         actionable.append((secs, kind, cmd))
         heads[head].append(secs)
     return {"sessions": len(files), "calls": total, "stops": actionable,
-            "scaffolding": len(stops) - len(actionable), "heads": heads}
+            "scaffolding": len(stops) - len(actionable), "heads": heads,
+            "blocked": blocked, "nogrant": nogrant, "remedies": remedies,
+            "escalated": escalated_heads}
 
 
 def main() -> int:
@@ -235,7 +327,11 @@ def main() -> int:
 
     r = scan(Path(a.repo).resolve(), a.sessions, a.wait)
     kinds = collections.Counter(k for _, k, _ in r["stops"])
-    lost = sum(s for s, _, _ in r["stops"])
+    # ⛔ NEVER credit a non-Bash tool's duration as time the operator waited. `Agent(general-purpose)`
+    # ran 63 times for 11h37m in this window — that is a subagent WORKING, not him sitting there,
+    # and counting it put a fabricated 11 hours at the top of a report whose only value is being
+    # believable about cost. Those rows are an inventory of missing grant kinds, counted not timed.
+    lost = sum(s for s, k, _ in r["stops"] if k != "no-grant-kind")
 
     if a.json:
         print(json.dumps({
@@ -251,21 +347,43 @@ def main() -> int:
     if not r["stops"]:
         print("  no stops found - nothing waited on you and nothing was refused")
         return 0
-    print("  waited >= %.0fs and not covered by the allow list : %d"
-          % (a.wait, kinds.get("waited", 0)))
+    print("  not covered by the allow list                     : %d"
+          % kinds.get("waited", 0))
+    print("  ALLOWED but stopped by the escalation gate        : %d"
+          % kinds.get("escalation", 0))
+    print("  a tool with no grant kind at all (Skill, Agent …) : %d"
+          % kinds.get("no-grant-kind", 0))
+    print("  a shape the harness BANS - no row can fix it      : %d"
+          % kinds.get("harness-ban", 0))
     print("  refused by you                                    : %d"
           % kinds.get("refused-by-operator", 0))
     print("  refused by the auto-mode classifier               : %d"
           % kinds.get("refused-by-classifier", 0))
-    print("  wall-clock time you spent waiting                 : %s"
-          % _hms(lost))
-    print("\nranked by time waited - the expensive stop is the one you were AWAY from:")
-    ranked = sorted(r["heads"].items(), key=lambda kv: -sum(kv[1]))
-    for head, waits in ranked[:25]:
-        print("  %5d x  %9s   %s" % (len(waits), _hms(sum(waits)), head))
-    print("\nEach of these would be covered by one allow row. `/smh-llm-approvals` Step 2 shows")
-    print("them to the operator; nothing here proposes or writes a rule (SCC-354).")
+    print("  wall-clock time you spent waiting                 : %s" % _hms(lost))
+
+    _section("ONE ALLOW ROW FIXES THESE - ranked by time, not count", r["heads"])
+    _section("ALREADY ALLOWED, stopped by the SANDBOX ESCALATION gate - a second, "
+             "independent gate", r["escalated"])
+    _section("NO ALLOW ROW FIXES THESE - the harness bans the shape", r["blocked"],
+             r["remedies"])
+    _section("NO GRANT KIND EXISTS - families.json cannot express these yet "
+             "(COUNT only: a long run here is the tool working, not you waiting)",
+             r["nogrant"], timed=False)
+    print("\nNothing here proposes or writes a rule (SCC-354). The first section is what")
+    print("`/smh-llm-approvals` Step 2 shows the operator; the other two are engineering.")
     return 0
+
+
+def _section(title: str, data: dict, remedies: dict | None = None, timed: bool = True) -> None:
+    if not data:
+        return
+    print("\n%s:" % title)
+    key = (lambda kv: -sum(kv[1])) if timed else (lambda kv: -len(kv[1]))
+    for head, waits in sorted(data.items(), key=key)[:20]:
+        cost = _hms(sum(waits)) if timed else ""
+        print("  %5d x  %9s   %s" % (len(waits), cost, head))
+        if remedies and remedies.get(head):
+            print("                          -> %s" % remedies[head])
 
 
 def _hms(seconds: float) -> str:
