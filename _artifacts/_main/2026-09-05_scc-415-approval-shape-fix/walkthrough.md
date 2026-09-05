@@ -117,11 +117,12 @@ too narrow: git works sandboxed in the lobby **except** writes to its `.git/conf
 
 ## Your Actions
 
-- [ ] **Run the apply once on this machine** — it is the only file no agent is permitted to write:
+- [x] The merge itself — lands via this branch's PR
+- [ ] **Run the apply once per machine** — it is the only file no agent is permitted to write:
   `python3 ~/Sudo_Hatter_Command/.agents/scripts/claude_permissions_apply.py --apply`
-  (`--status` first if you want to see the 13 rows and 4 paths it will add; restart the session after).
-- [ ] The same line on the PC (`python`), the first time you open Claude there.
-- [ ] Merge the PR when the `main-write-gate` check is green.
+  (`--status` first shows the 130 rows and 4 sandbox paths it adds — 206 tracked against 82 in user
+  scope; the IDE stays open, then reload the window so the session re-reads the file). This machine
+  now; the PC (`python`) the first time Claude opens there.
 
 ## Out of scope, named
 
