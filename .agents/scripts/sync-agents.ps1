@@ -57,8 +57,9 @@
   Must resolve to the home-base root (the default). Project targets are retired — thin model 2026-08-07.
 
 .PARAMETER GlobalsOnly
-  Refresh only the machine-global caches (opencode + Antigravity command caches, Codex prompts, and the Codex
-  bmad-* skills mirror) from the lobby master. Skips local tool dirs. See /smh-sync-agents section -GlobalsOnly.
+  Refresh only the machine-global caches (the opencode command cache, and the Codex bmad-* skills mirror) from
+  the lobby master, and run the retirement purges (Codex prompts, and the Antigravity workflow cache SCC-394
+  retired - $caches itself is opencode ALONE now). Skips local tool dirs. See /smh-sync-agents -GlobalsOnly.
 
 .PARAMETER NoGlobals
   Sync local tool dirs only; skip the machine-global caches (incl. the Codex prompts + skills mirror) even on a
@@ -1199,6 +1200,13 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
   # absent path is a TERMINATING error - an unguarded purge would take the whole sync down on any
   # machine that has never run Antigravity. The directory itself is left in place; it is Google's,
   # not ours, and bmad-* may still be living in it.
+  #
+  # ⏳ REMOVE THIS BLOCK AFTER 2026-11-01. It is a one-time migration sweep wearing an every-sync
+  # shape: the first sync on a machine empties the cache and every sync after it purges nothing.
+  # Once the vendor's retirement date passes there is no cache left to retire on any machine, and
+  # a sweep that deletes from someone else's directory forever, for a surface that no longer
+  # exists, is exactly the fossil `CS-18 J0b` exists to catch. Delete the block and its `CS-18 C`
+  # / `S` cases together - `R` already SKIPs wherever the directory is absent.
   $agRetiredWf = Join-Path $UserHome ".gemini\antigravity\global_workflows"
   if (Test-Path $agRetiredWf) {
     $staleWf = @(Get-ChildItem -Path $agRetiredWf -Filter '*.md' -File -ErrorAction SilentlyContinue |

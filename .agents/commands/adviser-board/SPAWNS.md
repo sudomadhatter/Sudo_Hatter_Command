@@ -213,7 +213,7 @@ it in his reply; the next wave's transcript then carries it everywhere.
 
 **Capability, not platform.** Can you spawn an agent that takes its own turns and hands a result back to
 you? If not — or if you are not sure — you are inline. Claude Code and opencode can. Antigravity/Gemini
-workflows cannot; neither does this file pasted into a plain chat window. `--solo` (alias `--inline`)
+cannot; neither does this file pasted into a plain chat window. `--solo` (alias `--inline`)
 forces it anywhere.
 
 Announce it in one line before Step 0 and never after:

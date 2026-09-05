@@ -51,7 +51,7 @@ Seat one mind and exactly one card opens, opened by the agent that needs it. Tha
 result back to you? If not — or if you are not sure — you are inline. Say so in one line before Step 0.
 The chair should never have to guess whether he is reading four filters or one context.
 
-Claude Code and opencode spawn. **Antigravity/Gemini workflows do not**, and neither does this file
+Claude Code and opencode spawn. **Antigravity/Gemini does not**, and neither does this file
 pasted into a plain chat window. `--solo` forces inline anywhere.
 
 Inline is a real degradation and is run as one — never as parallel mode with the spawns quietly dropped.
