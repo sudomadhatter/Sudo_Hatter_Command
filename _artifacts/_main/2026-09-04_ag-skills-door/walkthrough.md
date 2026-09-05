@@ -431,10 +431,30 @@ walkthrough before Step 1 starts"*. Measured today:
   (`~/.gemini/bin/agy`, no `antigravity-ide/` present, no skills-listing subcommand), and the IDE is
   on the Windows side where it opens `C:\Sudo_Hatter_Command` — a separate clone **90 commits
   behind** that does not contain this lane. A count taken there measures the stale tree.
-- **What (a) exists to prove is already proved, and better.** The CLI's own runtime log resolves our
-  launchers by full path (`.agents/skills/smh-close-task-merge-tree/SKILL.md`,
-  `.agents/skills/cicd-prune-context/SKILL.md`). That is the product opening the new door, which no
-  panel count can match.
+- ⛔ **The substitution offered here on 2026-09-04 was FALSE, and is withdrawn.** This bullet used to
+  read *"the CLI's own runtime log resolves our launchers by full path … that is the product opening
+  the new door."* It is not. Those log lines are **error** lines, and the verb was never read:
+
+  ```
+  E0903 … skills.go:187] Failed to parse skill file
+        .agents/skills/smh-close-task-merge-tree/SKILL.md:
+        failed to parse frontmatter: yaml: line 2: mapping values are not allowed in this context
+  ```
+
+  The paths matched, so they were cited as proof of success while recording the opposite. Two lenses
+  caught it and the acceptance auditor ruled against the substitution; **262 rejections appear in one
+  session log.** Two Antigravity doors — `/cicd-prune-context` and `/smh-close-task-merge-tree` —
+  were **DEAD**, killed by an unquoted `": "` inside a `description:` value that Antigravity's strict
+  Go YAML loader refuses. They had a second door before this lane only because the retired workflow
+  mirror truncated descriptions at 135 chars and happened to cut the colon off; **deleting that
+  surface is what made the breakage live, so it was this lane's to fix.**
+
+  Fixed at the source in `1889a79d`: `New-LauncherSkillStub` now emits a **quoted** YAML scalar, so
+  no future wording can kill a door, and the hand-authored file was quoted in place. Guard
+  **`CS-18 Q2b`** was written first and seen RED naming exactly those two files. **205/205 `SKILL.md`
+  files now parse under `yaml.safe_load`.** That — an emitter that provably cannot emit an unloadable
+  door, with a test that fails when it does — is the real evidence, and it is stronger than either
+  the panel count or the misread log.
 - **(b) is still open, still worth taking, and no longer deadline-bound.** There are two caches, one
   per side; a sync from Ubuntu purges only Ubuntu's. Both inventories are captured pre-purge in
   [evidence/global-workflows-baseline.md](evidence/global-workflows-baseline.md).
@@ -466,3 +486,117 @@ Imported from Step 3 rather than re-run (SCC-146): `run_all.py`, `workflow_lint.
 clean on all twelve changed Python files; `pwsh` parses `sync-agents.ps1` with zero errors. The
 comment contract holds: every comment this diff made wrong was rewritten in the same commit, which
 is what the two wrapped-sentence findings were.
+
+---
+
+## Code Review (2026-09-04) — re-review after the absorb
+
+Verdict: CONCERNS @ 80a916bf
+Suite evidence measured on: 80a916bf (re-stamped after the last code-touching change)
+
+**One reason, and it is not about the code.** Acceptance Row H's second clause asks for a count from
+the Antigravity **IDE's** Customizations panel. That measurement cannot be taken on the side this
+work happens on, and the row cannot be corrected without re-approving the plan — which is the
+operator's call. Every other finding this re-review produced is fixed in this lane and proved by a
+test that fails without the fix. Clause 1 of Row H is satisfied: **73/73**.
+
+review_level: standard — unchanged radius, 167 files.
+review_runtime: fan-out
+lens_isolation: worktree — the four repo-reading lenses each got their own copy; the test-adequacy
+lens extracted the branch tree into a temp git repo and ran the full suite there. The blind hunter
+got no tree at all, by design.
+
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted:  5/5
+lenses_na:
+- none · n/a — review_mode full and review_level standard, so every lens in the roster ran
+
+findings:        1 decision · 14 patch · 2 defer   (0 noise-dismissed · 0 relevance kills)
+dispositions:    per-lens: blind-hunter=3/0/0 · edge-case-hunter=2/0/0 ·
+                 literal-correctness-hunter=5/0/0 · acceptance-auditor=2/0/0 ·
+                 test-adequacy-auditor=7/0/2
+drift:           `declared_change_set.py diff` → present: true, incomplete: [], unimplemented: [],
+                 undeclared: 6 — `.agents/commands/adviser-board/SPAWNS.md`,
+                 `.agents/scripts/tests/test_maps_hooks.py`,
+                 `.agents/skills/smh-close-task-merge-tree/SKILL.md` (three master edits made to
+                 close review findings) plus their generated mirrors `.claude/rules/sop-currency.md`,
+                 `.claude/skills/smh-close-task-merge-tree/SKILL.md`, `.roo/commands/smh-sync-agents.md`.
+                 Disclosed here rather than added to the plan, for the same reason as Row H.
+severity_floor:  CONCERNS
+notes:           no degradations; every optional input was supplied by the caller.
+
+### ⭐ What this re-review actually bought — a live break the lane would have shipped
+
+**Two Antigravity doors were DEAD**, and the first review's own evidence said so while the builder
+read it as the opposite. `/cicd-prune-context` and `/smh-close-task-merge-tree` both carry a `": "`
+inside their `description:` value; Antigravity's loader is **strict Go YAML** (`skills.go:187`) and
+an unquoted plain scalar containing `": "` is a parse error, so both skills were dropped from the
+menu — **262 rejections in one session log.**
+
+They had a second door before this lane, and it worked only by accident: the retired workflow mirror
+cut descriptions at 135 characters and happened to truncate before the colon. **Deleting that surface
+is what made the breakage live**, which is what makes it this lane's to fix rather than a pre-existing
+condition to note.
+
+Fixed at the source (`1889a79d`): the emitter writes a **quoted** YAML scalar, so no future wording
+can kill a door. Guard **`CS-18 Q2b`** was written first and seen RED naming exactly
+`['cicd-prune-context: description', 'smh-close-task-merge-tree: description']`.
+**205/205 `SKILL.md` files parse under `yaml.safe_load`.**
+
+### The four unbound guards, each killed by mutation
+
+The test-adequacy lens extracted the tree and ran 22 single-edit mutants. It confirmed the prior
+review's fixes genuinely bite, then found four things nothing measured:
+
+| Mutant it ran | What survived before | Closed by |
+|---|---|---|
+| `if ($false)` on the machine-global stage guard | **all 73 files byte-identical to baseline** — purge, opencode cache and codex-prompts retirement silently dead | `CS-18 S3` — runs the REAL engine under `-WhatIf` against a temp `$UserHome`, on the DEFAULT path |
+| `.gemini\antigravity2\global_workflows` | 308/309 — every case seeds its fixture from the engine's own assignment, so they stay self-consistent with a wrong path | `CS-18 C0b` — pins the literal |
+| a 400-char `description:` in `.roo/commands/smh-quick-dev.md` | six test files green — the 135-char cut moved to Zoo, but `U6`/`U6b`/`U6d` retired with the workflow surface and were never re-pointed | `U10` — 51 doors, longest 134 |
+| `TOOLKIT_FAMILIES = ()` | five test files at baseline — every INDEX-row reminder stops | `MH-6` |
+
+`U9` (pairwise distinctness) is deliberately **not** resurrected: on the Zoo surface `qa.md` and
+`tea.md` share a 60-character prefix today, so re-pointing it blind imports a red about naming, not
+about the cut. Recorded here rather than smuggled in as a skipped case.
+
+### Also fixed, each measured before and after
+
+- **`CS-18 S` crashed instead of failing.** `stdout.strip().splitlines()[-1]` on an empty stdout —
+  which is exactly what the purge failing produces under `$ErrorActionPreference = "Stop"` — raised
+  `IndexError` out of the helper before any `c.check` ran. Measured: the file reported 206 assertions
+  and no summary line. After: **308/310, two NAMED reds** carrying rc and stderr.
+- **`CS-18 A`'s residue sweep was spelling-bound.** An interpolated emitter (`"$MasterDir/workflows"`)
+  matched neither existing pattern. Added a bare-token backstop; `A0` carries it as a third control.
+- **`CS-18 Q4b`'s floor was `>= 20` against 25 real launchers** — five doors could leave the
+  comparison set unseen. Now an exact cross-check against `git ls-files`.
+- **Every count in `skills/INDEX.md` was wrong** (73/50/23/74/130 on disk vs 74/49/25/75/131
+  measured), because nothing guarded them. Corrected, and pinned by new case **`CS-18 V`**.
+- **`.gitattributes` annexed BMAD's 56 vendored skill dirs** into a line-ending contract written for
+  the 25 launchers the emitter produces. `bmad-*` is BMAD's own — the boundary every purge in
+  `sync-agents.ps1` already keeps. Excluded, verified with `git check-attr` (both attributes back to
+  `unspecified`; `!text` alone is not enough, `eol` survives it).
+- **`docs/repo-map.md` was regenerated in the wrong mode**, producing ~90 lines of churn. The AUTO
+  block never contained `.agents/` at all, so this lane owed it nothing — and regenerating inside a
+  worktree additionally injects a `Projects/` listing that `origin/main` correctly omits, because the
+  submodule stubs are empty here (the SCC-399 vacuity trap, one directory over). Reverted to
+  `origin/main`'s block; **92 lines → the 2 real prose edits.**
+- **The adviser board decided spawn capability by naming a retired surface** — "Antigravity/Gemini
+  **workflows** do not [spawn]" at 4 sites. The capability claim is still true; the surface noun is
+  what this lane retires.
+- **Two stale citations:** `.PARAMETER GlobalsOnly` still advertised an Antigravity command cache
+  (`$caches` is opencode alone now), and a comment cited `U6`/`U9` as live tests when this same diff
+  deletes them.
+- **The purge block now carries its own removal date** (2026-11-01, the vendor's retirement).
+
+### Raised, not fixed — out of this lane's diff
+
+Two items are real and belong to **SCC-398**, the parent that stays open:
+`check_maps.py`'s `vendor_markers` never listed `.agents/skills` (remedy: add it, alongside the
+`.agents/workflows` entry which correctly stays for leftover copies); and `$UserHome`'s three-branch
+resolution has no test at any tier — swapping the branches survives, and `USERPROFILE=" "` yields a
+relative path root (remedy: a `pwsh` matrix over `{set, empty, whitespace, unset} × {HOME, no HOME}`).
