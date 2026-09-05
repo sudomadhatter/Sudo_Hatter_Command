@@ -1,6 +1,6 @@
 ---
 name: antigravity-uses-workflows-not-commands
-description: Antigravity (Gemini) surfaces / via SKILLS (.agents/skills/) - the same launcher skill Claude and Codex read. Workflows are deprecated and retire 2026-11-01; .agents/workflows/ and the global_workflows machine cache are gone. The operator runs the Antigravity IDE, whose paths differ from the CLI.
+description: Antigravity (Gemini) surfaces / via SKILLS (.agents/skills/) - the same launcher skill Claude and Codex read. Workflows are deprecated and retire 2026-11-01; .agents/workflows/ and the global_workflows machine cache are gone. ONE PC with two sides: Ubuntu-in-WSL runs the Antigravity CLI, the Windows side runs the IDE, and each has its own workflow cache.
 metadata:
   type: reference
   originSessionId: 315ab028-3603-4a16-812f-e70b12b06a2f
@@ -24,11 +24,34 @@ writes it today. See [[one-door-per-platform-per-command]].
 lobby. Under the thin model a project carries no tier-1 copy, so a command invoked inside a project STOPS
 and says so rather than running.
 
-**Daniel runs the Antigravity *IDE*, not the CLI** — and the installs use different on-disk stores:
-`~/.gemini/antigravity/` (older, `.pb` conversations), `~/.gemini/antigravity-ide/` (his ACTIVE IDE, sqlite
-`.db` conversations), and shared `~/.gemini/`. **Gotcha:** v1.20.5 has a bug where `/` doesn't trigger a
-menu entry (only the "…" dropdown shows them) — fixed in 1.19.6, so check version before concluding a setup
-is broken.
+⭐ **ONE PC, two sides, and Antigravity runs DIFFERENTLY on each** (measured 2026-09-04; this paragraph
+previously said *"Daniel runs the Antigravity IDE, not the CLI"*, which was written for a machine model
+that no longer exists and produced four wrong statements to the operator in one afternoon).
+
+| | Ubuntu, inside WSL — **where the work happens** | Windows side |
+|---|---|---|
+| what runs | the **CLI**, `~/.gemini/bin/agy` | the **IDE** (a Windows app) |
+| store | `~/.gemini/antigravity/` | `C:\Users\dlohn\.gemini\antigravity-ide\` (sqlite `.db`) |
+| logs | `~/.gemini/antigravity/log/cli-*.log` | — |
+| `antigravity-ide/` present? | **no** | yes |
+| workflow cache | 40 files, 0 `bmad-*` | 42 files, 2 `bmad-*` |
+| the repo it opens | `/home/dlohn/Sudo_Hatter_Command` | `C:\Sudo_Hatter_Command` — a SEPARATE clone |
+
+⛔ **Which cache a sync purges is decided by `$UserHome` in `sync-agents.ps1` — `USERPROFILE` else `HOME`.**
+Under WSL `pwsh`, `USERPROFILE` is **empty**, so a sync run from Ubuntu cleans the **Ubuntu** cache and
+never touches the Windows one. They are two caches on one machine, not one cache on two machines; each
+side needs its own run. Verify, never assume:
+`pwsh -NoProfile -Command 'if ($env:USERPROFILE) { $env:USERPROFILE } else { $env:HOME }'`.
+
+⭐ **Runtime proof that the skill door works, from the product rather than a doc:** the CLI's own log
+names our launchers by full path — `/home/dlohn/Sudo_Hatter_Command/.agents/skills/smh-close-task-merge-tree/SKILL.md`
+and `.../cicd-prune-context/SKILL.md`. That is Antigravity resolving `.agents/skills/<name>/SKILL.md` at
+run time, which is stronger evidence than any menu screenshot.
+
+**Gotcha:** v1.20.5 has a bug where `/` doesn't trigger a menu entry (only the "…" dropdown shows them) —
+fixed in 1.19.6, so check version before concluding a setup is broken. The **CLI has no skills listing**:
+`agy` exposes agent/mcp/models/plugin subcommands and nothing that enumerates skills, so any "count the
+Skills panel" instruction is IDE-only and cannot be followed on the Ubuntu side.
 
 ⛔ **Never run the vendor's shipped `/migrate-workflows` skill.** It scans `~/.gemini/config/` and
 `<workspace>/.agents/workflows/` and renames what it finds to `.md.bak`. Every target `SKILL.md` already

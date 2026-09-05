@@ -202,15 +202,29 @@ review to rule on.
 Nothing here is a ceremony step — those are the close-out's and they run on your word. These are the
 decisions and the one measurement only you can take.
 
-- [ ] **Take Step 0's two baseline numbers in Antigravity — BEFORE your next `/smh-sync-agents`
-      from the lobby, not merely before this lands.** (a) How many **Skills** does the
-      Customizations panel list in the lobby? (b) Open any `Projects/<name>` workspace — do the 40
-      old workflow entries appear under **Global** at all?
-      ⛔ **(b) has a deadline this ticket creates.** The first lobby sync after this lands runs the
-      retirement purge and empties `~/.gemini/antigravity/global_workflows`. Once it is empty the
-      question is permanently unanswerable — a later "project workspaces show nothing" cannot be
-      told from a condition that predates this ticket — and the follow-on decision below has no
-      input at all. Two minutes now, or the measurement is gone.
+- [ ] **(b) only, and the deadline is GONE — see the correction below.** Open any
+      `Projects/<name>` workspace in the Antigravity **IDE** and record whether the old workflow
+      entries appear under **Global** at all. This is the follow-on decision's whole input, and it
+      is the one thing on this list no command can answer.
+
+      ⭐ **Correction, measured 2026-09-04 — this row previously carried a two-minute deadline and
+      an (a) that cannot be taken here.** Both errors came from the same stale belief that you run
+      the Antigravity IDE on this side.
+      **(a) is withdrawn as unmeasurable and mechanically superseded.** "How many Skills does the
+      Customizations panel list" is an **IDE** question, and the IDE is on the Windows side, opening
+      `C:\Sudo_Hatter_Command` — a separate clone 90 commits behind, which does not contain this
+      lane. Counting there measures the stale tree, not this ticket. The Ubuntu side runs the
+      **CLI** (`~/.gemini/bin/agy`), which exposes no skills listing at all
+      (`agy help` → agent · mcp · models · plugin · remote-control · update). What (a) was meant to
+      prove is already proved better, from the product: the CLI's own log resolves our launchers by
+      full path — `/home/dlohn/Sudo_Hatter_Command/.agents/skills/smh-close-task-merge-tree/SKILL.md`.
+      That is the door opening at run time, which no panel count can beat.
+      **The deadline is false.** There are **two** caches, one per side — Ubuntu 40 files / 0
+      `bmad-*`, Windows 42 / 2 — and `$UserHome` (`USERPROFILE` else `HOME`, and `USERPROFILE` is
+      EMPTY under WSL `pwsh`) means a sync from Ubuntu purges the **Ubuntu** cache and never touches
+      the Windows one. The Windows cache survives your first lobby sync, so (b) stays answerable.
+      Both inventories are captured anyway, before any purge, in
+      [evidence/global-workflows-baseline.md](evidence/global-workflows-baseline.md).
 - [ ] **Decide whether the Antigravity global-cache follow-on is worth building**, from (b) above.
       If it is, it is the dumb shape every other cache in this engine already uses: `Copy-Tree
       -Mirror` the launcher dirs into `~/.gemini/config/skills/` — no manifest, no purge, a retired
@@ -223,13 +237,34 @@ decisions and the one measurement only you can take.
       rule-copy drift into the same decision:** `sudo-command-center` also carries 26 copies of
       tier-1 lobby rules with zero rows in its `INDEX.md`, which fails `test_rule_frontmatter.py`
       today on `main` and did before this lane opened.
-- [ ] **On the other machine: pull and run `/smh-sync-agents` from the lobby**, so its retired
-      Antigravity cache is purged too. Caches are per machine; git cannot carry them.
+- [ ] **On the WINDOWS SIDE of this PC, run `/smh-sync-agents` from a Windows PowerShell**, so its
+      retired Antigravity cache is purged too. Caches are per **side**, not per machine, and git
+      cannot carry them.
+      ⭐ **Corrected 2026-09-04 — this row used to say "on the other machine", and there is no other
+      machine.** One PC: Windows host, Ubuntu inside WSL2. The purge target is
+      `$UserHome/.gemini/antigravity/global_workflows` where `$UserHome` is `USERPROFILE` else
+      `HOME`; under WSL `pwsh` `USERPROFILE` is empty, so a run from here cleans
+      `/home/dlohn/.gemini/antigravity/global_workflows` (40 files) and leaves
+      `C:\Users\dlohn\.gemini\antigravity\global_workflows` (42 files, 2 `bmad-*`) exactly as
+      it is. ⚠ **Before you run it there, note that clone is 90 commits behind** — a sync from a
+      stale tree writes stale doors. `git pull` on the Windows side first, or run the sync from
+      here and accept that the Windows cache stays until you do.
 - [ ] **`claude/teaching-edition` must land AFTER this** and must not resolve its conflicts by
-      keeping its side. That lane adds `smh-tour.md`, `smh-training.md` and `smh-new-project.md`
-      into `.agents/workflows/`, pins five paths across ten sites in `validate_teaching_edition.py`,
-      and its working tree carries 44 dirty rows under that directory. After this lands it repoints
-      those three doors to `.agents/skills/` and re-aims its validator, under its own key.
+      keeping its side. ⭐ **Re-measured 2026-09-04 — the collision is far larger than this row
+      first said, and the branch is no longer where the review found it.** Measured against the
+      live branch tip `8b42390f` (2026-09-04):
+
+      | | measured | this row previously said |
+      |---|---|---|
+      | files under `.agents/workflows/` on that branch | **43** | "adds 3 files" |
+      | lines naming `workflows` in `validate_teaching_edition.py` | **14** | "five paths across ten sites" |
+      | lines naming `workflows` in `lobby.manifest.json` | **6** | not mentioned |
+      | branch movement since the review's `0d76f72c` | **539 commits**, and it has ABSORBED `main` | "unchanged since 2026-08-24" |
+
+      This lane deletes `.agents/workflows/` outright (41 files on `origin/main` → **0** here), so
+      the teaching edition's next merge from `main` deletes all 43 of its copies too. That is the
+      correct outcome and it must not be "fixed" by keeping its side; the port re-aims the three
+      pinned sets at `.agents/skills/` under SCC-280's own key.
 
 **The four hands checks, after your first lobby sync.** Every other assertion in this ticket is
 static file analysis; no test in this repo can reach Antigravity's menu, so these are the only
@@ -273,14 +308,23 @@ lenses_na:
 
 ### Step 0.7 — the blast radius, re-derived against current `main`
 
-`origin/main` is still `eee79727`, this lane's base: **nothing landed while I built.** Overlap
-with landed work is empty, `git merge-tree` returns a clean tree with no conflict messages, and
-no absorb was needed. `risk_seam.py classify` returns `unclassified`, which is the permanent
-correct answer here — the command centre carries no code graph.
+*As reviewed (`e71cadef`):* `origin/main` was still `eee79727`, this lane's base — nothing had
+landed while I built, overlap was empty, `git merge-tree` was clean, no absorb was needed.
+`risk_seam.py classify` returns `unclassified`, the permanent correct answer here: the command
+centre carries no code graph.
+
+⭐ **Re-derived 2026-09-04 after the review, because that is no longer true.** **37 commits**
+landed on `main` between the review and now — SCC-395, SCC-396, and SCC-398's first subtask
+SCC-399. Absorbed at `548397a9` with exactly **one** conflict, `_artifacts/_main/INDEX.md`, where
+both sides had appended a session row at the top; resolved by keeping **all four** rows, which is
+the only correct resolution for an append-only ledger. Nothing this diff touches was moved,
+renamed or deleted by any of the 37. `run_all.py` re-run after the absorb: **73/73** — see Row H.
 
 Three sibling lanes exist. `SCC-392` is spent (empty diff against `main`). `claude/teaching-edition`
-at `0d76f72c` is the landing-order dependency, unchanged since 2026-08-24, and the ordering is
-already stated in the plan and owed as a `## Your Actions` row.
+is the landing-order dependency — the review read it at `0d76f72c` and called it *"unchanged since
+2026-08-24"*; **it is now at `8b42390f`, 539 commits on, dated today, and it has absorbed `main`.**
+The ordering is already stated in the plan and owed as a `## Your Actions` row, with the corrected
+collision numbers there.
 
 Nothing this diff references moved, was renamed, or was deleted on `main`.
 
@@ -358,19 +402,61 @@ the builder's RED from `origin/main` before believing the GREEN.
 `docs/repo-map.md`'s inventory). All four fixed in-thread, and `CS-18 J` widened so a hand list
 cannot miss the next one. Row F is satisfied at this sha.
 
-**Row H is NOT satisfied, and cannot be in this lane.** Two reasons, both stated rather than
-papered over: the enforcement suite is 72/73 because `test_rule_frontmatter.py` fails on
-`Projects/sudo-command-center`, identically on `origin/main` at `eee79727` with none of this
-diff present; and Step 0's two baseline numbers are a hands measurement that is now an unchecked
-`## Your Actions` row holding the ticket out of `Done`. **That is why this verdict is CONCERNS
-rather than PASS.**
+**Row H was NOT satisfied at review time**, for two reasons, both stated rather than papered over:
+the enforcement suite was 72/73 because `test_rule_frontmatter.py` failed on
+`Projects/sudo-command-center`, identically on `origin/main` at `eee79727` with none of this diff
+present; and Step 0's two baseline numbers were a hands measurement sitting as an unchecked
+`## Your Actions` row. **That is why the verdict below reads CONCERNS rather than PASS.**
+
+### Post-review update — Row H, re-measured 2026-09-04 after absorbing `main`
+
+**Clause 1, the floor, is now SATISFIED and it was fixed at the source.** The red was never about
+this lane: `test_rule_frontmatter.py` walked every folder under `Projects/` and audited
+`Projects/sudo-command-center` — the **published teaching edition** — as if it were a thin project,
+so the only "fix" its three assertions would accept was deleting 27 files out of a shipped product.
+**SCC-399** (subtask of SCC-398, merged `6cf4d37e`) made that scan read
+`.agents/maintained-projects.txt` instead. Re-run in this lane after the absorb:
+
+```
+73/73 files passed
+[COVERAGE] project rule sets audited: AGY_AVIATIONCHAT, NEXgen-VR-Director
+```
+
+**Clause 2, the baseline, is a criterion written on a premise that is false**, and the honest thing
+is to say so rather than tick it. Row H requires *"Step 0's two baseline numbers are in the
+walkthrough before Step 1 starts"*. Measured today:
+
+- **(a) cannot be taken on the side this work happens on.** "How many Skills does the Customizations
+  panel list" is an **IDE** question. This is one PC: the Ubuntu side runs the Antigravity **CLI**
+  (`~/.gemini/bin/agy`, no `antigravity-ide/` present, no skills-listing subcommand), and the IDE is
+  on the Windows side where it opens `C:\Sudo_Hatter_Command` — a separate clone **90 commits
+  behind** that does not contain this lane. A count taken there measures the stale tree.
+- **What (a) exists to prove is already proved, and better.** The CLI's own runtime log resolves our
+  launchers by full path (`.agents/skills/smh-close-task-merge-tree/SKILL.md`,
+  `.agents/skills/cicd-prune-context/SKILL.md`). That is the product opening the new door, which no
+  panel count can match.
+- **(b) is still open, still worth taking, and no longer deadline-bound.** There are two caches, one
+  per side; a sync from Ubuntu purges only Ubuntu's. Both inventories are captured pre-purge in
+  [evidence/global-workflows-baseline.md](evidence/global-workflows-baseline.md).
+
+⛔ **The plan is NOT edited to reflect this** — editing an approved plan re-arms the plan-first gate.
+Row H's baseline clause is recorded here as **unsatisfiable as written**, with the substitution named,
+and whether to accept the substitution or amend the row is the operator's call, not the lane's.
 
 ### Declared Change Set
 
-`declared_change_set.py diff` → `present: true`, `incomplete: []`, `unimplemented: []`,
-`undeclared: [".claude/rules/sop-currency.md"]` — one row, the generated tree copy of a declared
-master edit, disclosed above and not added to the plan because editing an approved plan re-arms
-the plan-first gate.
+*As reviewed (`e71cadef`):* `declared_change_set.py diff` → `present: true`, `incomplete: []`,
+`unimplemented: []`, `undeclared: [".claude/rules/sop-currency.md"]` — one row, the generated tree
+copy of a declared master edit, disclosed above and not added to the plan because editing an
+approved plan re-arms the plan-first gate.
+
+**Re-run 2026-09-04 against the absorbed base** (162 changed paths): `present: true`,
+`incomplete: []`, `unimplemented: []`, `undeclared:` **two** rows now —
+`.claude/rules/sop-currency.md` as before, plus `.roo/commands/smh-sync-agents.md`. The second is
+the same class and not scope drift: its own first line reads *"GENERATED by sync-agents; do not
+edit"*, and it mirrors `.agents/commands/smh-sync-agents.md`, which the plan declares in four
+places. Both are generated mirrors of declared masters; neither is added to the plan, for the
+plan-first reason above.
 
 ### Clean-code gate
 
