@@ -30,6 +30,22 @@ ride this branch, so a stopped landing publishes none of them. That asymmetry is
 **Step 4, after the push returns 0** — and why it used to sit ~100 lines and three STOPs before it, leaving code
 on one disk under a ticket that read `Done`.
 
+> ### ⚡ RAPID COCKPIT CARD — STORY CLOSE-OUT (SCC-381)
+>
+> ⛔ **THE GOLDEN RULE:** This command lands on the **EPIC BRANCH** (`epic/<EPIC-KEY>-<slug>`), NEVER `main`.
+> Stories never touch production directly. The epic reaches `main` only after all stories finish, via `/cicd-push-e2e`.
+>
+> | Step | What you do | Where it lands |
+> |---|---|---|
+> | **0. Resolve** | Set `$STORY`, `$KEY`, `$EPIC`, `$BRANCH`. | Validates targets. |
+> | **1. Save** | `/cicd-update-sprint-memory` | Routes learnings, updates active-context and story file. |
+> | **2. Commit** | Stage and commit close-out edits. | Explicit paths on story branch. |
+> | **3. LAND** | Merge story branch into `$EPIC` and push. | **Lands on `epic/*` branch only.** |
+> | **4. Tickets** | Dev Record filed; Jira ticket moved to `Done`. | Recorded after epic push succeeds. |
+> | **5. Prune** | Prune story worktree. | Clean disk. |
+>
+> ⚠️ **If push fails:** Check `.agents/rules/git-policy.md`. The `closeout-nag.py` hook will guide you.
+
 ⛔ **This command does not touch `main`.** It lands on the **epic branch** and stops. The epic reaches production
 exactly one way: `/cicd-push-e2e`.
 

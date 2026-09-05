@@ -112,7 +112,7 @@ Sudo_Hatter_Command/
       [6 files: .mdx6 | e.g. AGENTS.md]
   docs/
     _scc_sops_prds/
-        [15 files: .mdx15 | e.g. INDEX.md]
+        [16 files: .mdx16 | e.g. INDEX.md]
     migrations/
       install_guides/
           [10 files: .mdx10 | e.g. github-ci-gates-setup.md]
