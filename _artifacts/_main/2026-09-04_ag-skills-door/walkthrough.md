@@ -303,8 +303,7 @@ lenses_run:
 - acceptance-auditor · ok
 - test-adequacy-auditor · ok
 lenses_counted:  5/5
-lenses_na:
-- none · n/a — review_mode full and review_level standard, so every lens in the roster ran
+lenses_na:       none
 
 ### Step 0.7 — the blast radius, re-derived against current `main`
 
@@ -513,20 +512,11 @@ lenses_run:
 - acceptance-auditor · ok
 - test-adequacy-auditor · ok
 lenses_counted:  5/5
-lenses_na:
-- none · n/a — review_mode full and review_level standard, so every lens in the roster ran
+lenses_na:       none
 
 findings:        1 decision · 14 patch · 2 defer   (0 noise-dismissed · 0 relevance kills)
-dispositions:    per-lens: blind-hunter=3/0/0 · edge-case-hunter=2/0/0 ·
-                 literal-correctness-hunter=5/0/0 · acceptance-auditor=2/0/0 ·
-                 test-adequacy-auditor=7/0/2
-drift:           `declared_change_set.py diff` → present: true, incomplete: [], unimplemented: [],
-                 undeclared: 6 — `.agents/commands/adviser-board/SPAWNS.md`,
-                 `.agents/scripts/tests/test_maps_hooks.py`,
-                 `.agents/skills/smh-close-task-merge-tree/SKILL.md` (three master edits made to
-                 close review findings) plus their generated mirrors `.claude/rules/sop-currency.md`,
-                 `.claude/skills/smh-close-task-merge-tree/SKILL.md`, `.roo/commands/smh-sync-agents.md`.
-                 Disclosed here rather than added to the plan, for the same reason as Row H.
+dispositions:    per-lens: blind-hunter=3/0/0 · edge-case-hunter=2/0/0 · literal-correctness-hunter=5/0/0 · acceptance-auditor=2/0/0 · test-adequacy-auditor=7/0/2
+drift:           declared_change_set.py diff → present: true, incomplete: [], unimplemented: [], undeclared: 6 (3 master edits made to close review findings — adviser-board/SPAWNS.md, tests/test_maps_hooks.py, skills/smh-close-task-merge-tree/SKILL.md — plus their 3 generated mirrors: .claude/rules/sop-currency.md, .claude/skills/smh-close-task-merge-tree/SKILL.md, .roo/commands/smh-sync-agents.md; disclosed here rather than added to the plan, for the same reason as Row H)
 severity_floor:  CONCERNS
 notes:           no degradations; every optional input was supplied by the caller.
 
