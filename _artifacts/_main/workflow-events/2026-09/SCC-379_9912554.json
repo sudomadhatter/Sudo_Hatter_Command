@@ -1,0 +1,32 @@
+{
+  "v": 1,
+  "task": "SCC-379",
+  "sha": "99125543b4f6513bd833010e7bfad0dae2060df0",
+  "tip": "094a45a06945c2a6936e2b8435a199cad6c5fd2f",
+  "trigger": "close-out",
+  "when": "2026-09-04T21:50:14-04:00",
+  "changes": [
+    "_artifacts/_main/2026-09-04_scc-379-skeleton-fence/implementation_plan.md",
+    "_artifacts/_main/2026-09-04_scc-379-skeleton-fence/preflight-receipt.json",
+    "_artifacts/_main/2026-09-04_scc-379-skeleton-fence/task.yaml",
+    "_artifacts/_main/2026-09-04_scc-379-skeleton-fence/walkthrough.md",
+    "_artifacts/_main/INDEX.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-04_scc-379-skeleton-fence/walkthrough.md",
+    "verdict": "PASS @ 9912554",
+    "gates": {
+      "suite": "pass@9912554"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
