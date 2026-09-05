@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-412-worktree-agent-allow",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-412",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "f7d2b54382ab8bbf66d90396156185e938c2fbc3",
+  "warnings": 1,
+  "when": "2026-09-05T09:49:37-04:00"
+}
