@@ -412,7 +412,7 @@ Two Zoo features to leave alone, and why:
 ## 8. The canonical lists — and the reasoning per family
 
 The source of truth is [`.vscode/settings.json`](../../.vscode/settings.json) (`zoo-code.*` keys),
-tracked in git: **125 allow / 105 deny** entries. The design rule, in the operator's words
+tracked in git: **125 allow / 109 deny** entries. The design rule, in the operator's words
 (2026-08-30): *denies are the absolute minimum — only things that would really cause damage.* And
 one mechanic makes that minimum load-bearing: under a broad allow, an un-denied spelling does not
 ask — it **auto-runs**. So the allows are broad working families, and every deny row names real
@@ -502,7 +502,7 @@ enforced by the test — because the broad env-twin allow would otherwise bypass
 | Work destruction | `git reset --hard`, `git clean -f`, `git clean -d`, `git clean -x`, `git clean --force`, `git branch -D`, `git branch -M`, `git rebase`, `git filter-branch`, `git reflog expire`, `git reflog delete`, `git update-ref`, `git gc --prune`, `git stash drop`, `git stash clear`, `git restore .`, `git checkout -- `, `git checkout .` | Each destroys committed or uncommitted work, or the recovery data for it. `-f`/`-d`/`-x`/`--force` leave the dry-run `git clean -n` approvable (the `-x`/`--force` escape spellings were verified auto-approving in the close-out review and denied). `update-ref` is denied whole: any spelling rewrites or deletes a ref. `git checkout main` is deliberately NOT denied — parking a checkout on main is a real ceremony step, and the damage (pushing main) is fenced elsewhere. |
 | Reroute/disarm | `git remote remove`, `git remote rm`, `git remote rename`, `git remote set-url`, `git config` | A remote edit reroutes pushes silently; a config write can disarm the hooks (`core.hooksPath`). Config READS are re-allowed above. |
 | Sweeps | `git add -A`, `git add .`, `git add -u`, `git add --all` | The git-policy ban — a sweep carries other sessions' work. |
-| Launder shapes | `git -C`, `git --git-dir` | Under the broad `git ` allow these would bypass every verb deny (§6). Auto-denied: the agent gets an immediate refusal and rewrites to `cd … && git …`. (Lowercasing means `git -c` — config override — is denied by the same row.) |
+| Launder shapes | `git -C`, `git --git-dir`, `env -C`, `env --chdir`, `env -u GITHUB_TOKEN env -C`, `env -u GITHUB_TOKEN env --chdir` | Under the broad `git ` allow these would bypass every verb deny (§6). Auto-denied: the agent gets an immediate refusal and rewrites to `cd … && git …`. (Lowercasing means `git -c` — config override — is denied by the same row.) **`env -C <dir> <cmd>` / `env --chdir=<dir> <cmd>` (SCC-410, 2026-09-04):** the chdir wrapper runs the command somewhere else entirely and nothing downstream sees the flag, so it launders a destructive command past a fence written for the bare one. It read *ask* on all three platforms until this row, and PR #165 shipped a single `Bash(env -C:*)` allow that auto-approved `env -C <dir> rm -rf /` through a fully green battery. Both flag shapes are covered (`-C /tmp`, `-C/tmp`, `--chdir /tmp`, `--chdir=/tmp`). |
 | Outward tools | `gh pr merge`, `gh repo delete`, `gh release delete`, `acli jira workitem delete` | Merges are the operator's click; deletions are operator words. |
 
 ### 8.1 What the manifest does NOT contribute — the notification probe (SCC-355)
