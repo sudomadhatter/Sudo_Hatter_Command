@@ -206,6 +206,25 @@ def ag_description(desc: str) -> str:
 # the LAUNCHER's description is cut to, which is the SCC-195 menu budget and a separate rule.
 
 
+def yaml_scalar(v: str) -> str:
+    """A frontmatter value with YAML quoting UNWRAPPED — the value, not the spelling.
+
+    ⛔ Added SCC-394 re-review. The launcher emitter now writes `description:` as a QUOTED
+    double-quoted scalar, because Antigravity's loader is strict YAML and an UNQUOTED value
+    containing ": " is `mapping values are not allowed in this context` — the door vanishes
+    from the menu (measured live: 262 rejections in one session log, two commands dead). The
+    brain's own line may be quoted or bare. Comparing the raw spellings would therefore assert
+    a formatting accident instead of the real contract, which is that the launcher carries the
+    brain's DESCRIPTION. Unwrap both sides, then compare."""
+    v = (v or "").strip()
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+        inner = v[1:-1]
+        if v[0] == '"':
+            return inner.replace('\\"', '"').replace("\\\\", "\\")
+        return inner
+    return v
+
+
 def is_launcher_for(body: str, brain: str, cmd_name: str) -> bool:
     """Is `body` the generated thin launcher for THIS command, still current?
 
@@ -229,7 +248,7 @@ def is_launcher_for(body: str, brain: str, cmd_name: str) -> bool:
         return False
     # The engine copies the brain's description into the stub, so a drifted description IS a
     # drifted door - it is what the platform's menu actually displays.
-    return fm_field(body, "description") == (fm_field(brain, "description") or "")
+    return yaml_scalar(fm_field(body, "description")) == yaml_scalar(fm_field(brain, "description"))
 
 
 def platforms_declared(text: str) -> tuple[str, ...] | None:
@@ -3068,6 +3087,62 @@ def main() -> int:
                         f"{_unbalanced[:8]} carry an opening quote with no closing one — the "
                         f"frontmatter is invalid YAML and a platform may drop the door from its "
                         f"menu entirely")
+                # ⛔ CS-18 Q2b — Q2 above checks the WRONG MECHANISM, and the door it was written to
+                # protect was broken the whole time it was green (SCC-394 re-review, 2026-09-04).
+                # Q2's own failure text names the consequence exactly — "invalid YAML and a platform
+                # may drop the door from its menu entirely" — but it only catches an UNBALANCED
+                # QUOTE. Antigravity's loader is strict YAML (Go), and the way our descriptions
+                # actually break it is an UNQUOTED plain scalar containing ": ". Measured live in
+                # the vendor's own log, 262 times in one session:
+                #   E0904 skills.go:187] Failed to parse skill file
+                #     .../.agents/skills/smh-close-task-merge-tree/SKILL.md:
+                #     failed to parse frontmatter: yaml: line 2: mapping values are not allowed
+                # Two doors were dead in Antigravity's menu — `cicd-prune-context`
+                # ("`active-context: ~X / 5,000 tokens`") and `smh-close-task-merge-tree`
+                # ("STOPS: it never merges") — and NOTHING in this repo could see it: there is no
+                # YAML parse anywhere under .agents/scripts/. Before SCC-394 those two still had a
+                # WORKING Antigravity door, because the retired workflow mirror cut the description
+                # at 135 chars and the truncation happened to remove the colon. Deleting that
+                # surface is what turned latent debt into a live break.
+                # ⭐ SWEEPS THE MASTER DIR, not just `_emitted`: the loader reads every SKILL.md,
+                # and one of the two broken files is HAND-AUTHORED, which no emitter check reaches.
+                def _plain_scalar_breaks(text: str) -> list[str]:
+                    """Frontmatter keys whose value is an unquoted plain scalar containing ': '.
+
+                    That is precisely what a strict YAML reader rejects with `mapping values are
+                    not allowed in this context`. Quoted, flow and block scalars are all legal and
+                    are skipped — the fix for a broken line is to quote it, so a checker that
+                    flagged quoted values too would have no green state."""
+                    out = []
+                    for ln in text.splitlines():
+                        m = re.match(r"^([A-Za-z_][A-Za-z0-9_-]*):\s+(.*)$", ln)
+                        if not m:
+                            continue
+                        val = m.group(2).strip()
+                        if not val or val[0] in "\"'[{|>":
+                            continue
+                        if ": " in val:
+                            out.append(m.group(1))
+                    return out
+
+                _unparseable = []
+                for _d in sorted(SKDIR.iterdir()):
+                    _sk = _d / "SKILL.md"
+                    if not _d.is_dir() or not _sk.is_file():
+                        continue
+                    _t = _sk.read_text(encoding="utf-8")
+                    if not _t.startswith("---"):
+                        continue
+                    _fm = _t.split("---", 2)[1]
+                    for _k in _plain_scalar_breaks(_fm):
+                        _unparseable.append(f"{_d.name}: {_k}")
+                c.check("CS-18 Q2b every master SKILL.md frontmatter is parseable YAML "
+                        "(an unquoted value containing ': ' is a DEAD DOOR in Antigravity)",
+                        not _unparseable,
+                        f"{_unparseable[:8]} — a strict YAML loader rejects the block and drops "
+                        f"the skill from the menu. Quote the value in the command's own "
+                        f"`description:`, or let New-LauncherSkillStub's quoting handle it")
+
                 _nobom = sorted(n for n, b in _emitted.items() if not b.startswith(b"---"))
                 c.check("CS-18 Q3 every emitted launcher starts at byte 0 with '---' (no BOM)",
                         not _nobom,

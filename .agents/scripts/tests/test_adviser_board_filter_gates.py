@@ -113,8 +113,19 @@ def main() -> int:
         brain_txt = BRAIN.read_text(encoding="utf-8")
         bm = desc.search(brain_txt)
         sm = desc.search(SKILL.read_text(encoding="utf-8"))
+        # ⛔ COMPARE THE VALUES, NOT THE BYTES (SCC-394 re-review). The launcher's description is
+        # emitted as a QUOTED YAML scalar, because Antigravity's loader is strict YAML and an
+        # unquoted value containing ": " kills the door outright. The brain's own line may be
+        # quoted or not. So unwrap both before comparing, or this asserts a formatting accident
+        # rather than "the launcher carries the brain's description", which is the real contract.
+        def _yaml_scalar(v: str) -> str:
+            v = v.strip()
+            if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+                inner = v[1:-1]
+                return inner.replace('\\"', '"').replace("\\\\", "\\") if v[0] == '"' else inner
+            return v
         c.check("F · claude skill description matches brain description",
-                bool(bm and sm) and bm.group(1).strip() == sm.group(1).strip())
+                bool(bm and sm) and _yaml_scalar(bm.group(1)) == _yaml_scalar(sm.group(1)))
         # ⭐ THE COMMAND MUST CLAIM THE PLATFORM IT NOW HAS A DOOR ON (SCC-394). Its hand-owned
         # Antigravity workflow was never derived from `platforms:` — that is what "hand-owned"
         # meant — so the command could publish to Antigravity while declaring three other
