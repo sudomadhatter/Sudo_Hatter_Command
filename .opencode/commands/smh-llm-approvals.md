@@ -1,19 +1,64 @@
 ---
-description: Audit recent agent chats for the terminal commands that stopped and waited for the operator's approval, show them as one list, and — on the operator's word — route the ones he picks into the ONE permission source that renders all three allow lists. It also surfaces the Claude rules that already stopped ASKING, which sit in a machine-local settings file that never travels. The operator types the command and answers one question; the agent does every read, every edit and every apply. Use when the operator says "what did I have to approve", "update the allow list", or "llm approvals".
+description: COST CONTROL, not hygiene. Every approval prompt breaks the prompt cache, so the turn resumes cold and the operator is billed for the whole context a second time — measured at 5h50m of stalled sessions across 20 runs, and he cancelled a paid subscription over it. This command finds the commands that stopped him and GETS THEM ALLOWED. Its output is a smaller prompt count, never a report. Use when the operator says "what did I have to approve", "update the allow list", "stop asking me", or "llm approvals".
 platforms: [opencode, antigravity, claude, codex, zoo]
 ---
 
-# /smh-llm-approvals — audit what you approved, then update the ONE source
+# /smh-llm-approvals — get commands ALLOWED, so the operator stops paying to be asked
+
+## ⛔ WHY THIS COMMAND EXISTS — read this before you read a single step
+
+**Approval prompts are a THREAT to whether this system can be paid for. They are not a UX wrinkle
+and this is not a hygiene command.** Every stop breaks the prompt cache: the turn resumes cold and
+the operator is billed for the entire context again. He pays twice — once in attention, once on the
+invoice — and he **cancelled a paid subscription over exactly this**, in his words: *"This is
+killing my workflows and budget… Until it's fixed it's not worth it."*
+
+Measured on his own machine, 20 newest sessions, 2026-09-05:
+
+| bucket | stops | wall-clock | what fixes it |
+|---|---|---|---|
+| allow-list gaps | 44 | **5h 50m** | **an allow row — this command** |
+| sandbox escalation (already allowed) | 94 | 1h 16m | `/sandbox`, not a permission row |
+| **refused by a deny row** | **0** | **0** | — |
+
+⭐ **Read the last row twice. Across 10,028 Bash calls, ZERO commands were refused by a deny rule.**
+The fence's deny side costs nothing. The entire cost is the *absence* of allow rows — and the reason
+they are absent is that agents keep turning a two-file edit into a story.
+
+### What success and failure look like
+
+- **Success is a smaller number.** Re-run `approval_stops.py` at the end and the *not covered* count
+  must have gone DOWN. Say the before and after out loud.
+- ⛔ **Ending this command with nothing allowed is a FAILURE**, even if every gate is green, every
+  finding is filed and the report is beautiful. A ticket is not an outcome here. Neither is a
+  measurement, a plan, a lane, or a review. **The operator did not ask what is wrong. He asked for
+  the commands to be allowed.**
+- ⛔ **Do not spend his turn explaining.** He has said, repeatedly, that the explaining is itself the
+  cost. Act, then report in a few lines.
+
+### The three facts that make this cheap, which agents keep missing
+
+1. **CLAUDE ROWS ARE FREE.** Claude reads `.claude/settings.json` **directly** — that tracked file
+   IS the live file. A rendered row is in force the moment it is saved. **No store, no apply, no
+   reload, nothing for the operator to run.** A Claude-only harvest touches exactly two files
+   (`families.json` + `.claude/settings.json`) and always qualifies for the Step 4 fast path.
+2. **Zoo and Antigravity clicks now SURVIVE** (SCC-414). Both applies merge rather than replace, so
+   an un-harvested click is kept. Before that fix one routine apply deleted **58** of his own
+   grants, he re-clicked, and the next apply deleted them again — which is why he believed his
+   approvals "don't seem to store". `--prune` is the opt-in that still replaces.
+3. **Narrow beats nothing.** If a command cannot be allowed whole, allow the safe *subcommand* —
+   `acli jira workitem view`, not `acli`. Refusing to add anything because the broad form is unsafe
+   is how this command produces zero rows and he keeps paying.
+
+**The operator runs nothing.** He types this command and, later, names the commands he wants
+allowed. Every file read, every edit, and the apply are the agent's. A step that ends with
+*"now run this in your terminal"* is this command failing.
 
 > **Rules in force:** `.agents/rules/constitution.md` §Ask First (the operator's word gates every
 > write) · `.agents/rules/command-shape.md` (`cd <abs> && …` in ONE line; `git -C` is auto-denied)
 > · `.agents/rules/git-policy.md` — **this command runs no git of its own.** It is named because
 > the git verbs below appear as *allow-list rules*, and that policy is why a rule covering
 > `git reset`, `git clean` or `git push --force` must never be created by widening one that isn't.
-
-**The operator runs nothing.** He types this command and, later, names the commands he wants
-allowed. Every file read, every edit, and the apply are the agent's. A step that ends with
-*"now run this in your terminal"* is this command failing.
 
 ---
 
@@ -350,11 +395,25 @@ is one it can want its way through:
 cd <repo-abs> && git diff --name-only origin/main...HEAD
 ```
 
-Every path outside `_artifacts/` must be one of these four, and nothing else:
+Every path outside `_artifacts/` must be one of these **five**, and nothing else:
 `.agents/permissions/families.json` · `.agents/permissions/antigravity.json` ·
-`.claude/settings.json` · `.vscode/settings.json` — and in the last two, only the rows this door
-renders (`permissions.allow`; the two `zoo-code.*` arrays). A fifth path, or a touched `hooks`
-block, voids the exemption and the work takes the full lane. ⛔ **`lane_qualify.py` still answers `TASK` for these paths and that is
+`.claude/settings.json` · `.vscode/settings.json` · `docs/migrations/terminal-permissions-guide.md`
+— and in the settings files, only the rows this door renders (`permissions.allow`; the two
+`zoo-code.*` arrays). A sixth path, or a touched `hooks` block, voids the exemption and the work
+takes the full lane.
+
+⭐ **The guide is on this list because Step 3's own gate FORCES it (SCC-412, measured 2026-09-05).**
+Any Zoo allow row moves the tracked count, which turns `test_zoo_permissions.py::test_guide_currency`
+red until the guide's count line is updated. With the guide excluded, Step 3 required the very edit
+Step 4 forbade, so **the fast path was unreachable for every Zoo-side harvest** — and one narrow row
+consumed a ticket, a worktree, a plan, five review lenses and a back-out before shipping nothing.
+The guide edit is a rendered consequence of the pick, not a second decision. (The deeper fix —
+generating that count line so no hand edit exists at all — is SCC-413.)
+
+⭐ **A Claude-only harvest touches TWO files and is always inside this guard.** No Zoo row, no count
+line, no store, no apply. When the picks divide, prefer landing the Claude rows immediately and
+handling any Zoo/Antigravity rows in the same pass — do not let a Zoo row drag the whole harvest
+into a lane while the operator keeps paying for prompts a free Claude row would have ended. ⛔ **`lane_qualify.py` still answers `TASK` for these paths and that is
 correct** — it classifies by path and cannot see this door's guards, so a hand edit to
 `families.json` outside this command keeps the full lane. Do not "fix" it to agree.
 

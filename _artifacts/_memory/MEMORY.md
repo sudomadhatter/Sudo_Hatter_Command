@@ -15,6 +15,7 @@ Settled project-only facts live in the project's own store (SCC-73). Working in 
 
 ## Jira & tickets
 - [Jira is LIVE (SCC + AVCH)](jira-integration-live.md) — acli authed; branch/commit carries key.
+- [⛔ Approval prompts are a BUDGET THREAT, not a UX wrinkle](approval-prompts-are-a-budget-threat.md) — every stop breaks the prompt cache and re-bills the whole context; 5h50m of allow-gap stalls in 20 sessions vs ZERO deny-row refusals. Ending an approvals run with nothing allowed is a FAILURE. Enforceable copy: `.agents/rules/approval-cost-is-a-threat.md`.
 - [⛔ acli CANNOT re-parent a subtask](acli-cannot-reparent-a-subtask.md) — create takes --parent, edit doesn't.
 - [⛔ acli CANNOT attach a file](jira-attachments-need-the-rest-token.md) — REST + the OS credential store item `sudo-jira`.
 - [Cross-repo work = a ticket PER REPO](cross-repo-work-needs-a-ticket-per-repo.md) — key from epic/* branch, not BMAD number.
