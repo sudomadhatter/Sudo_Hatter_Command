@@ -60,10 +60,12 @@
           "Bash(gh pr view:*)",
           "Bash(gh pr checks:*)",
           "Bash(gh pr list:*)",
+          "Bash(gh pr edit:*)",
           "Bash(env -u GITHUB_TOKEN gh pr create:*)",
           "Bash(env -u GITHUB_TOKEN gh pr view:*)",
           "Bash(env -u GITHUB_TOKEN gh pr checks:*)",
-          "Bash(env -u GITHUB_TOKEN gh pr list:*)"
+          "Bash(env -u GITHUB_TOKEN gh pr list:*)",
+          "Bash(env -u GITHUB_TOKEN gh pr edit:*)"
         ],
         "antigravity": [
           "command(gh pr)",
@@ -90,8 +92,10 @@
         "claude": [
           "Bash(gh run view:*)",
           "Bash(gh run list:*)",
+          "Bash(gh run watch:*)",
           "Bash(env -u GITHUB_TOKEN gh run view:*)",
-          "Bash(env -u GITHUB_TOKEN gh run list:*)"
+          "Bash(env -u GITHUB_TOKEN gh run list:*)",
+          "Bash(env -u GITHUB_TOKEN gh run watch:*)"
         ],
         "antigravity": [
           "command(gh run)",
@@ -1263,6 +1267,9 @@
           "Bash(git push -q --set-upstream origin chore/*)",
           "Bash(git push -q -u origin chore/*)",
           "Bash(git push -q origin chore/*)",
+          "Bash(env -u GITHUB_TOKEN git push -q origin chore/*)",
+          "Bash(env -u GITHUB_TOKEN git push -q -u origin chore/*)",
+          "Bash(env -u GITHUB_TOKEN git push -q --set-upstream origin chore/*)",
           "Bash(git push origin epic/*)",
           "Bash(git push -u origin epic/*)",
           "Bash(env -u GITHUB_TOKEN git push origin epic/*)",
@@ -1283,6 +1290,9 @@
         "zoo": [
           "java -version"
         ],
+        "claude": [
+          "Bash(java -version:*)"
+        ],
         "antigravity": [
           "command(java -version)",
           "unsandboxed(java -version)"
@@ -1290,7 +1300,8 @@
       },
       "only": [
         "zoo",
-        "antigravity"
+        "antigravity",
+        "claude"
       ]
     },
     {
@@ -1407,7 +1418,8 @@
         "claude": [
           "Bash(git worktree remove *)",
           "Bash(git worktree add *)",
-          "Bash(git worktree list:*)"
+          "Bash(git worktree list:*)",
+          "Bash(git worktree prune*)"
         ]
       },
       "only": [
@@ -1926,6 +1938,18 @@
           "Bash(/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/*)"
         ]
       },
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-firebase-hosting-disable",
+      "cmd": "firebase hosting:disable",
+      "why": "operator harvest 2026-09-06 via /smh-llm-approvals: disable hosting targets during testing/teardown.",
+      "only": ["claude"]
+    },
+    {
+      "id": "allow-unlink",
+      "cmd": "unlink",
+      "why": "operator harvest 2026-09-06 via /smh-llm-approvals: worktree cleanup unlinking .venv symlinks.",
       "only": ["claude"]
     }
   ],
