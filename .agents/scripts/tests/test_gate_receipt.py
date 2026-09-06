@@ -581,6 +581,101 @@ def main() -> int:
             c.check("W5 a --cwd outside any git repo refuses instead of silently using --project",
                     code != 0 and "loose-dir" in out, f"exit={code}\n{out[-300:]}")
 
+    # ══ SCC-411 · a SANDBOX BIND MOUNT is not dirt, and reading it as dirt costs a second suite run
+    #
+    # ⛔ THE DEFECT, measured 2026-09-06 from the lobby inside the Claude Code sandbox. The sandbox
+    # mounts the denied `.claude/*` paths (and `~/.bashrc`, `~/.gitconfig`) into the work tree as
+    # CHARACTER DEVICES. `git status --porcelain` cannot see that and lists all twelve as ordinary
+    # untracked entries:
+    #
+    #     ?? .bashrc          ?? .claude/agents      ?? .claude/loop.md   ?? .gitconfig   (+8 more)
+    #     $ stat -c '%F %n' .bashrc .claude/agents
+    #     character special file .bashrc
+    #     character special file .claude/agents
+    #
+    # `_measure_dirt` therefore stamps DIRTY on a tree that is genuinely clean, `/smh-code-review`
+    # Step 3 and `task_preflight` refuse to adopt a DIRTY receipt, and the whole suite gets re-run
+    # sandbox-off purely to earn a clean stamp. That is the SAME double run SCC-418 removed,
+    # arriving through a different door - which is why it is finished here rather than filed again.
+    #
+    # The exemption is EXACTLY "untracked AND a character device", and the control below is what
+    # keeps it that narrow: a real untracked file sitting beside the mounts must still read dirty,
+    # or this becomes "ignore every ?? entry", which would hand out the gate-SKIP over real dirt.
+    if c.block("gate_receipt · SCC-411: a sandbox bind mount is not a dirty tree"):
+        import importlib.util
+        _script = (Path(__file__).resolve().parents[1] / "gate_receipt.py")
+        _spec = importlib.util.spec_from_file_location("gate_receipt", _script)
+        gr_mod = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(gr_mod)
+
+        with TempDir() as tmp:
+            repo = tmp / "devrepo"
+            repo.mkdir()
+            git(repo, "init", "-q", "-b", "main")
+            git(repo, "config", "user.email", "t@t")
+            git(repo, "config", "user.name", "t")
+            (repo / "tracked.md").write_text("x\n", encoding="utf-8")
+            git(repo, "add", "tracked.md")
+            git(repo, "commit", "-qm", "seed")
+            # Two untracked entries, indistinguishable to `git status`: one stands for a mount.
+            (repo / "mounted.sock").write_text("", encoding="utf-8")
+            (repo / "real-edit.md").write_text("y\n", encoding="utf-8")
+            out_dir = repo / "gates"
+
+            base = gr_mod._measure_dirt(repo, out_dir)
+            c.check("M0 CONTROL both untracked entries are seen at all (an empty scan certifies "
+                    "nothing)",
+                    sorted(base) == ["mounted.sock", "real-edit.md"], f"{base!r}")
+
+            real_pred = gr_mod.is_sandbox_mask
+            gr_mod.is_sandbox_mask = lambda work, rel: rel == "mounted.sock"
+            try:
+                got = gr_mod._measure_dirt(repo, out_dir)
+            finally:
+                gr_mod.is_sandbox_mask = real_pred
+            c.check("M1 a character-device entry is NOT dirt - the sandbox's own mount cannot "
+                    "stamp a clean tree DIRTY",
+                    "mounted.sock" not in got, f"{got!r}")
+            c.check("M2 CONTROL a real untracked file beside it IS still dirt, and is still named "
+                    "(the exemption is devices, never every `??` row)",
+                    got == ["real-edit.md"], f"{got!r}")
+
+            c.check("M3 the predicate defaults to a real filesystem stat, not to a name pattern",
+                    real_pred(repo, "real-edit.md") is False
+                    and real_pred(repo, "does-not-exist-at-all.md") is False,
+                    "a plain file or a vanished path must never read as a device")
+
+            # ⛔ M1/M2 STUB THE PREDICATE, so on their own they certify the WIRING and nothing
+            # else: `is_sandbox_mask` could `return False` outright - restoring the exact
+            # pre-SCC-411 bug - and this file still scored green (SCC-411 review, gate lens F1).
+            # M3 was the only case holding the real function and it had two negative arms and no
+            # positive one. These four give it both poles, against REAL filesystem objects.
+            os.symlink("/dev/null", repo / "link-to-device")
+            (repo / "shape-b").write_text("", encoding="utf-8")
+            os.chmod(repo / "shape-b", 0o444)
+            (repo / "empty-writable.md").write_text("", encoding="utf-8")
+            c.check("M4 a REAL character device reads as a mask (shape A: the /dev/null bind "
+                    "mount this whole filter exists for)",
+                    real_pred(Path("/"), "dev/null") is True,
+                    "/dev/null is a character device on every POSIX box")
+            c.check("M5 a zero-byte READ-ONLY file reads as a mask (shape B, measured in an "
+                    "agent worktree seconds after shape A in the lobby)",
+                    real_pred(repo, "shape-b") is True, "0444 + empty + regular")
+            c.check("M6 CONTROL an empty but WRITABLE file is NOT a mask - the second arm needs "
+                    "all three of regular, empty and unwritable, or it exempts real work",
+                    real_pred(repo, "empty-writable.md") is False, "0644 + empty")
+            c.check("M7 CONTROL a SYMLINK to a character device is not a device - the predicate "
+                    "lstats, so it is judged as the link it is and never followed",
+                    real_pred(repo, "link-to-device") is False, "lstat, not stat")
+            # WIDTH, not existence: M6 pins the writability clause, this pins the EMPTINESS
+            # clause. Without it, dropping `st_size == 0` exempts every read-only file in the
+            # tree from the dirt check - real work included - and no case would notice.
+            (repo / "readonly-with-content.md").write_text("real work\n", encoding="utf-8")
+            os.chmod(repo / "readonly-with-content.md", 0o444)
+            c.check("M8 CONTROL a read-only file WITH CONTENT is not a mask - emptiness is a "
+                    "separate clause from unwritability and both are load-bearing",
+                    real_pred(repo, "readonly-with-content.md") is False, "0444 + non-empty")
+
     return c.finish()
 
 

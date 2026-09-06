@@ -279,10 +279,10 @@ through each as needed:
   your staged files are untouched):
 
   ```bash
-  git checkout -b tmp/gate-check
+  git checkout -b chore/gate-check
   git commit --allow-empty -m "no key here"     # expect: REJECTED, "No Jira work-item key"
   git commit --allow-empty -m "SCC-1 probe"     # expect: accepted
-  git checkout - && git branch -D tmp/gate-check
+  git checkout - && git branch -D chore/gate-check
   ```
 
   If the first one *succeeds*, the gates are not armed on this machine — re-run the arming

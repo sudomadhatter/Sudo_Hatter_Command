@@ -1144,6 +1144,14 @@ def _check_tree_dirt(repo: Path, label: str, manifest: Path | None, rep: wf.Repo
     # tracked modification. `M .claude/settings.json`, the exact shape SCC-283 was filed on.
     lines = [ln for ln in wf.git(["-c", "core.quotepath=false", "status", "--porcelain"],
                                  repo).stdout.splitlines() if ln.strip()]
+    # ⛔ A SANDBOX BIND MOUNT IS NOT UNCOMMITTED WORK (SCC-411). `git status` cannot tell that
+    # the denied `.claude/*` paths are masks, so it reports them as untracked and this check
+    # errored `9 uncommitted change(s)` on a tree holding two real files - blocking the very
+    # close-out the mask fix was written to unblock. Named, never silently dropped.
+    lines, masked = gr.strip_sandbox_masks(repo, lines)
+    if masked:
+        rep.info("sync", f"{label}: {len(masked)} sandbox mask(s) ignored, not dirt "
+                         f"({', '.join(ln[3:] for ln in masked[:3])}…)")
     if lines:
         mem = [ln for ln in lines if ln[3:].startswith("_artifacts/_memory/")]
         # ⭐ SCC-192/SCC-178 · THE WRITER IS NOT ITS OWN DIRT. This script now writes a receipt

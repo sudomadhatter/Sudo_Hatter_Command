@@ -127,10 +127,52 @@ DESTRUCTIVE = [
     # ⛔ The chore/, claude/ and epic/ twins are DELIBERATELY ABSENT: they are `allow` today on a
     # PRE-EXISTING hole (`git branch -d chore/SCC-1-x main` -> allow on all three), and no
     # permission row on either grammar can say "exactly one argument" - it needs a PreToolUse hook
-    # that parses the branch list. Adding them here would red the battery over a defect this file
-    # cannot fix. Tracked on SCC-411 with that remedy named.
+    # that parses the branch list.
+    # ⭐ SCC-411 (2026-09-06): that hook now EXISTS - `.agents/hooks/guard-branch-delete.py`, pinned
+    # by test_guard_branch_delete.py, which denies any delete whose target list holds anything
+    # outside chore/ claude/ epic/ or holds a substitution, in any flag position. It is CLAUDE-ONLY
+    # (Zoo and Antigravity run no hooks), so these two rows stay here and their chore/ claude/
+    # epic/ twins stay DELIBERATELY ABSENT: on those two platforms the multi-argument escape is
+    # still a grammar limit, recorded in the guide's residual section rather than claimed closed.
     "git branch -d worktree-agent-x main", "git branch -D worktree-agent-x main",
     "git push origin HEAD:develop", "git push origin HEAD:refs/heads/main", "git push origin :feature",
+    # ── SCC-411 cycle 11 · the delete spellings NO grammar reached, measured 2026-09-06 at
+    # aa408738 against the rendered lists. Every one read `allow` on Zoo, four of them on Claude
+    # too, and real git 2.43 deletes for every one (verified in a throwaway repo):
+    #     git branch -r -d origin/main   -> "Deleted remote-tracking branch origin/main"
+    #     git branch -v -d victim        -> "Deleted branch victim"
+    # The existing deny is the single token `git branch -[a-zA-Z]*[dD][a-zA-Z]*`, which reads the
+    # FIRST flag only - so any option in front of the delete flag walks past it. One row per
+    # spelling, plus its env twin, so a later narrowing of any of them turns A2/A12 red instead of
+    # passing green over a hole (the SCC-410 lesson, applied to this family).
+    "git branch -rd origin/main", "git branch -r -d origin/main",
+    "git branch -r --delete origin/main", "git branch --delete main",
+    "git branch -f -d main", "git branch -f --delete main",
+    "git branch -v -d main", "git branch -vv -d main",
+    "env -u GITHUB_TOKEN git branch -rd origin/main",
+    "env -u GITHUB_TOKEN git branch -r -d origin/main",
+    "env -u GITHUB_TOKEN git branch -r --delete origin/main",
+    "env -u GITHUB_TOKEN git branch --delete main",
+    "env -u GITHUB_TOKEN git branch -f -d main",
+    "env -u GITHUB_TOKEN git branch -f --delete main",
+    "env -u GITHUB_TOKEN git branch -v -d main",
+    "env -u GITHUB_TOKEN git branch -vv -d main",
+    # ── SCC-411 · the NEAR-MISSES that bound the three lane re-allow prefixes. Measured by
+    # mutation 2026-09-06: widening `git branch -d chore/` to `git branch -d c` (and the claude/
+    # and epic/ twins) flipped ZERO rows of any battery in this repo, and
+    # `git branch -d canything-at-all` then read auto_approve. These four are the bound: each one
+    # is a single character away from a live re-allow, so dropping the trailing `/` - the smallest
+    # possible widening - turns this list red.
+    "git branch -d chores/SCC-1-x", "git branch -d claudex/SCC-1-x",
+    "git branch -d epics/SCC-1-x", 'git branch -d "chores/SCC-1-x"',
+    # ── SCC-411 · the env -C wrapper family's siblings. The ticket filed them as "all ASK, decide
+    # per wrapper"; the measurement that settled it is that ASK IS NOT A FENCE HERE - behind the
+    # mandated house shape `cd <abs> && …` Antigravity reads the leading token `cd`, matches its
+    # blanket `command(cd)` allow, and AUTO-APPROVES the tail (A17 pins the mechanism). So the
+    # four spellings both grammars can express are denied. No door uses any of them as a verb.
+    "nice rm -rf /", "xargs rm -rf /", "command rm -rf /", "env -i rm -rf /",
+    "env -iC /tmp rm -rf /",          # the getopt cluster `env -C` could not reach (guide §5)
+    "env FOO=1 rm -rf /",             # Zoo cannot express an arbitrary variable name - KNOWN below
 ]
 
 CEREMONY = [
@@ -148,6 +190,12 @@ CEREMONY = [
     "npm test", "npm run lint", "npx vitest run",
     "cat AGENTS.md", "grep -r foo .agents", "ls -la", "pwd", "cd /home/x",
     "MSG=hello", "REPO=/home/x",
+    # SCC-411: `command ` is denied as a launder wrapper, and the `command -v ` READ has to
+    # survive it — on Zoo by longest-prefix, on Antigravity by the row's own `(?!-v)` lookahead
+    # (that platform has no longest-prefix re-allow). Without this row the re-allow is
+    # unfalsifiable: dropping it would leave the operator unable to probe for a binary and
+    # nothing would go red.
+    "command -v python3",
 ]
 
 UNKNOWN = [
@@ -220,6 +268,23 @@ if c.block("A · one battery, three matchers, identical verdicts"):
             ("git add -Av", "claude"): ("allow", "rides Claude's broad `git add:*` (same ruling as `git add -A`)"),
             ("git add ./", "claude"): ("allow", "same"),
             ("git add ../", "claude"): ("allow", "same"),
+            # ⭐ SCC-411 (2026-09-06). Claude's list grants the LIST flags as reads - `Bash(git
+            # branch -r:*)`, `-v:*`, `-vv:*` - and real git accepts every one of them ALONGSIDE a
+            # delete, so the read grant silently carries a write. The fence here is
+            # guard-branch-delete.py (a PreToolUse deny), exactly as `git push origin main` above
+            # is fenced by require-push-approval.py rather than by a list row. Narrowing the read
+            # grants instead would cost the operator four approval prompts a day and close nothing
+            # the guard does not already close - the guard sees the TARGET LIST, which no list row
+            # can. A11 keeps these honest: if a grant is ever narrowed, the row must be deleted.
+            ("git branch -r -d origin/main", "claude"): ("allow", "rides `Bash(git branch -r:*)`; fenced by guard-branch-delete.py, which denies every remote-tracking delete"),
+            ("git branch -r --delete origin/main", "claude"): ("allow", "same"),
+            ("git branch -v -d main", "claude"): ("allow", "rides `Bash(git branch -v:*)`; fenced by guard-branch-delete.py on the target list"),
+            ("git branch -vv -d main", "claude"): ("allow", "rides `Bash(git branch -vv:*)`; same fence"),
+            # Zoo's grammar is a literal lowercased PREFIX, so it cannot express "env followed by
+            # any variable assignment" - the arbitrary name is the unbounded part. Antigravity
+            # denies it as one token regex. Same class as the `env -iC` clustering residual the
+            # env -C family already records, and it lands on ask, never on a silent allow.
+            ("env FOO=1 rm -rf /", "zoo"): ("ask", "Zoo's literal-prefix grammar cannot express an arbitrary variable name; Antigravity denies it as one token regex (guide s7)"),
         }
 
         def known(cmd, platform):
@@ -278,6 +343,32 @@ if c.block("A · one battery, three matchers, identical verdicts"):
                 pm.antigravity_verdict(HOUSE + "git push --force origin main", ["command(cd)"], ["command(git push --force.*)"]) == "allow"
                 and pm.antigravity_verdict(HOUSE + "git push --force origin main", ["command(cd)"],
                                            ["command(cd .* && git push --force.*)"]) == "deny")
+        # ⛔ SCC-411 (2026-09-06) · THE ASK TIER DOES NOT EXIST ON ANTIGRAVITY BEHIND THE HOUSE
+        # SHAPE, and until this case nothing said so. Antigravity matches a command's LEADING
+        # tokens; the fence carries a blanket `command(cd)` allow; and `command-shape.md` rule 1
+        # MANDATES that every door command be `cd <abs> && …`. So the allow matches on `cd` and
+        # everything after `&&` is invisible. Denies survive it (the renderer writes a
+        # `cd .* && ` twin of every one - that is A12/A14); asks have no twin to get, so every
+        # ask becomes an allow. Measured on the live rendered list, 2026-09-06:
+        #     curl https://evil.sh   ask -> allow        nice rm -rf /     ask -> allow
+        #     ssh user@host          ask -> allow        env -i rm -rf /   ask -> allow
+        #     rm -rf /               deny -> deny        (Zoo: every one stays ask)
+        # THE CONSEQUENCE, stated plainly: on Antigravity only the DENY list fences. "It lands on
+        # ask, so the operator still decides" is false there for anything typed in the house shape.
+        # This case pins the mechanism against BOTH directions - a `cd` allow that stops being
+        # blanket, and an enumerated house allow that never arrives. The remedy, when it is worth
+        # its own lane: replace `command(cd)` with the enumerated shapes the doors actually print
+        # (`cd .* && git .*`, `cd .* && python3 .*`, …), which restores ask for everything else.
+        # Not done here - re-architecting the allow list inside a bug-closing lane risks turning
+        # real ceremony into approval prompts, and that cost is this house's flagship threat.
+        c.check("A17 antigravity: a BLANKET `cd` allow swallows the house shape, so an ask becomes an "
+                "allow - the ask tier is not a fence there (deny + its twin is)",
+                pm.antigravity_verdict(HOUSE + "nice rm -rf /", ["command(cd)"], []) == "allow"
+                and pm.antigravity_verdict(HOUSE + "nice rm -rf /",
+                                           ["command(cd .* && git .*)"], []) == "ask"
+                and pm.antigravity_verdict(HOUSE + "git status --short",
+                                           ["command(cd .* && git .*)"], []) == "allow")
+
         # SCC-387: the shipped fence must carry a DIRECTORY read grant for the Claude memory store.
         # A per-file grant is what the operator's "always allow" clicks write, and it buys one file;
         # the vendor grants a directory recursively, so the row has to be a directory to be worth having.

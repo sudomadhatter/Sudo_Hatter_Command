@@ -102,16 +102,48 @@ def load_memento(db: Path) -> dict | None:
     return json.loads(row[0]) if row else None
 
 
+def looks_like_tasklist(out: str | None) -> bool:
+    """Is this actually tasklist's ANSWER, or just something that came back on stdout?
+
+    ⛔ THE WHOLE FAIL-CLOSED DECISION LIVES HERE, not half here and half at the call site.
+    tasklist answers in exactly two shapes: a table under an `Image Name` header, or its own
+    `INFO: No tasks are running which match the specified criteria.` Anything else - an error
+    string, an empty capture, None - is not an answer and cannot be searched for `Code.exe`.
+    """
+    if not out:
+        return False
+    low = out.lower()
+    return "image name" in low or "no tasks are running" in low
+
+
 def vscode_running() -> bool:
     """Refuse-while-running guard: VS Code flushes globalState on exit and would overwrite us.
     Under WSL the process that matters is the WINDOWS Code.exe, asked through interop by full
-    path (the distro's PATH carries no Windows entries). Unable to ask = treat as running."""
+    path (the distro's PATH carries no Windows entries). Unable to ask = treat as running.
+
+    ⛔ "UNABLE TO ASK" IS NOT ONLY AN OSError (SCC-411, measured 2026-09-06). Inside the Claude
+    Code sandbox WSL interop is blocked, and tasklist does not raise - it prints an ERROR STRING
+    and exits 0:
+
+        $ /mnt/c/Windows/System32/tasklist.exe /FI "IMAGENAME eq Code.exe"
+        <3>WSL (35 - ) ERROR: UtilConnectUnix:505: socket failed 1
+        exit 0
+
+    The old body caught OSError only, found no `Code.exe` in that string, and returned False -
+    while the identical call outside the sandbox returned True with 19 Code.exe processes live.
+    An agent running `--apply` from a sandboxed shell would therefore have written BOTH stores
+    with VS Code open, and VS Code flushes its in-memory globalState over the top on exit: the
+    fence silently reverts and nothing reports it. The docstring above already promised this
+    behaviour; only the code was missing. A non-answer now means RUNNING.
+    """
     if sys.platform.startswith("win") or under_wsl():
         exe = "tasklist" if sys.platform.startswith("win") else "/mnt/c/Windows/System32/tasklist.exe"
         try:
             out = subprocess.run([exe, "/FI", "IMAGENAME eq Code.exe"], capture_output=True,
                                  encoding="utf-8", errors="replace", text=True).stdout
         except OSError:
+            return True
+        if not looks_like_tasklist(out):
             return True
         return "Code.exe" in out
     out = subprocess.run(["pgrep", "-f", "Visual Studio Code"], capture_output=True, encoding="utf-8", text=True)

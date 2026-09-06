@@ -92,6 +92,52 @@ def test_A_a_GRANTED_approval_is_reported():
     assert round(r["heads"]["npx playwright"][0]) == 120
 
 
+def _replayed(rows, times: int = 2, wait: float = 20.0):
+    """A transcript where every record is written `times` over — a COMPACTION REPLAY.
+
+    ⛔ THE DEFECT (SCC-411, measured 2026-09-06). A context compaction re-writes records that were
+    already in the `.jsonl`, so the SAME `tool_use` appears at two line offsets carrying an
+    IDENTICAL `toolu_` id. `scan()` paired on `tool_use_id` but never remembered which ids it had
+    already seen, so one operator interruption was counted twice — inflating `calls`, the stop
+    count, the per-head ranking and the wall-clock total the door prints. Those are the numbers
+    the operator makes allow-row decisions from. Measured on the real scan before the fix:
+    one pair -> {"calls": 1, "stops": 1}; the same pair written twice -> {"calls": 2, "stops": 2}.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        home = Path(td) / "projects" / "p"
+        home.mkdir(parents=True)
+        path = home / "s.jsonl"
+        _transcript(path, rows)
+        lines = path.read_text(encoding="utf-8").splitlines()
+        path.write_text("\n".join(lines * times), encoding="utf-8")
+        real_glob, real_allow = aps.glob.glob, aps.allow_prefixes
+        aps.glob.glob = lambda _pat: [str(path)]
+        aps.allow_prefixes = lambda _root: PREFIXES
+        try:
+            return aps.scan(ROOT, 20, wait)
+        finally:
+            aps.glob.glob, aps.allow_prefixes = real_glob, real_allow
+
+
+def test_N_a_compaction_replay_counts_the_stop_ONCE():
+    once = _scan([("npx playwright test", 120, None)])
+    twice = _replayed([("npx playwright test", 120, None)], times=2)
+    assert twice["calls"] == once["calls"] == 1, (
+        f"a replayed tool_use inflated the call count: {twice['calls']} vs {once['calls']}")
+    assert len(twice["stops"]) == len(once["stops"]) == 1, (
+        f"a replayed tool_use inflated the stop count: {twice['stops']}")
+    assert round(twice["heads"]["npx playwright"][0]) == 120, (
+        f"the replay doubled the wall clock the door reports: {twice['heads']}")
+
+
+def test_N_control_two_DISTINCT_calls_still_count_twice():
+    """Polarity: without this, deduping on the wrong key (or on the command text) would pass the
+    case above by collapsing every repeat of a command the operator really was asked about twice."""
+    r = _scan([("npx playwright test", 120, None), ("npx playwright test", 90, None)])
+    assert r["calls"] == 2, f"two distinct tool_use ids are two calls: {r['calls']}"
+    assert len(r["stops"]) == 2, f"two distinct stops must both be reported: {r['stops']}"
+
+
 def test_A_control_a_FAST_uncovered_call_is_not_a_stop():
     """Polarity: uncovered alone must not count, or every command in the log is a 'stop'."""
     r = _scan([("npx playwright test", 2, None)])

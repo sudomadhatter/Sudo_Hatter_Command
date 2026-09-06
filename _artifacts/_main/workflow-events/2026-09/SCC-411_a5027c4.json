@@ -1,0 +1,59 @@
+{
+  "v": 1,
+  "task": "SCC-411",
+  "sha": "a5027c4032f455afecf5abbf57254abee126d3a9",
+  "tip": "c6cbc64da08dff6bacd448bedb3b64abf2d81d60",
+  "trigger": "close-out",
+  "when": "2026-09-06T03:50:16-04:00",
+  "changes": [
+    ".agents/hooks/INDEX.md",
+    ".agents/hooks/guard-branch-delete.py",
+    ".agents/permissions/antigravity.json",
+    ".agents/permissions/families.json",
+    ".agents/rules/git-policy.md",
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/approval_stops.py",
+    ".agents/scripts/closeout_preflight.py",
+    ".agents/scripts/gate_receipt.py",
+    ".agents/scripts/ship_preflight.py",
+    ".agents/scripts/task_preflight.py",
+    ".agents/scripts/tests/test_approval_stops.py",
+    ".agents/scripts/tests/test_gate_receipt.py",
+    ".agents/scripts/tests/test_guard_branch_delete.py",
+    ".agents/scripts/tests/test_permission_parity.py",
+    ".agents/scripts/tests/test_task_preflight.py",
+    ".agents/scripts/tests/test_zoo_permissions.py",
+    ".agents/scripts/zoo_permissions_apply.py",
+    ".claude/settings.json",
+    ".vscode/settings.json",
+    "_artifacts/_main/2026-09-06_scc-411-bugs-cycle-11/implementation_plan.md",
+    "_artifacts/_main/2026-09-06_scc-411-bugs-cycle-11/mutants.json",
+    "_artifacts/_main/2026-09-06_scc-411-bugs-cycle-11/task.yaml",
+    "_artifacts/_main/2026-09-06_scc-411-bugs-cycle-11/tickets/SCC-411.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/migrations/install_guides/machine_setup_card.md",
+    "docs/migrations/install_guides/new_machine-migration-guide.md",
+    "docs/migrations/terminal-permissions-guide.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-06_scc-411-bugs-cycle-11/walkthrough.md",
+    "verdict": "PASS @ a5027c4",
+    "gates": {
+      "suite": "pass@a5027c4"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/git-policy.md"
+  ]
+}

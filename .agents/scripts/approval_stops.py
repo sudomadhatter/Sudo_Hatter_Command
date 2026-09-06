@@ -258,6 +258,15 @@ def scan(repo: Path, sessions: int, wait: float) -> dict:
     total = 0
     for path in files:
         pending: dict[str, tuple[float | None, str]] = {}
+        # ⛔ SCC-411 · A COMPACTION REPLAY WRITES THE SAME RECORD TWICE. When a session's context
+        # is compacted, records already in the `.jsonl` are re-emitted at new line offsets with
+        # IDENTICAL `toolu_` ids - so one operator interruption was paired, counted, and reported
+        # twice. Measured 2026-09-06 on the real scan: one use/result pair -> calls 1, stops 1;
+        # the same pair written twice -> calls 2, stops 2. Every number this door prints (the
+        # per-head ranking, the wall-clock total, the stop count the operator makes allow-row
+        # decisions from) could therefore be inflated 2x. Remember ids per FILE and keep the
+        # FIRST occurrence: the first is the real event, and the replay carries no new timing.
+        seen_ids: set[str] = set()
         try:
             lines = Path(path).read_text(encoding="utf-8", errors="replace").splitlines()
         except OSError:
@@ -274,6 +283,11 @@ def scan(repo: Path, sessions: int, wait: float) -> dict:
                 if not isinstance(block, dict):
                     continue
                 if block.get("type") == "tool_use":
+                    uid = block.get("id")
+                    if uid:
+                        if uid in seen_ids:
+                            continue          # a compaction replay of a call already counted
+                        seen_ids.add(uid)
                     inp = block.get("input") or {}
                     if block.get("name") == "Bash":
                         cmd = inp.get("command")

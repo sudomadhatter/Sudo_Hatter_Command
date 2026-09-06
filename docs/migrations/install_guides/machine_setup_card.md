@@ -33,10 +33,10 @@ and does nothing at all in repos that have no `.githooks/`.
 **Prove it works** (a rejected commit is a no-op — your files are untouched):
 
 ```bash
-git checkout -b tmp/gate-check
+git checkout -b chore/gate-check
 git commit --allow-empty -m "no key here"     # must be REJECTED
 git commit --allow-empty -m "SCC-1 probe"     # must be accepted
-git checkout - && git branch -D tmp/gate-check
+git checkout - && git branch -D chore/gate-check
 ```
 
 If the first one succeeds, the gates are **not** armed — re-run the config command.

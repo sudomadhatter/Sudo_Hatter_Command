@@ -210,8 +210,13 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report,
     for label, tree in wf.trees_to_measure(repo, branch):
         dirty = wf.git(["-c", "core.quotepath=false", "status", "--porcelain"],
                        tree).stdout.strip()
-        if dirty:
-            n = len(dirty.splitlines())
+        # A sandbox bind mount is not uncommitted work (SCC-411) - same filter, same reason, as
+        # `gate_receipt._measure_dirt`. Without it this gate reports the mounts as changes and
+        # sends the operator to commit files that do not exist.
+        rows, _masked = tp.gr.strip_sandbox_masks(
+            tree, [ln for ln in dirty.splitlines() if ln.strip()])
+        if rows:
+            n = len(rows)
             rep.err("sync", f"{n} uncommitted change(s) in {label} [{tree}] - the gate would "
                             f"run on THAT tree while the merge carries only the branch, so "
                             f"what ships was never gated. Commit (explicit paths) and push, "

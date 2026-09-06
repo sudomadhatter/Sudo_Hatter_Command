@@ -220,6 +220,9 @@ def check_sync(label: str, repo: Path, fetch: bool, rep: wf.Report) -> bool:
     dirty = wf.git(["-c", "core.quotepath=false", "status", "--porcelain"], repo).stdout
     if dirty.strip():
         lines = [ln for ln in dirty.splitlines() if ln.strip()]
+        # A sandbox bind mount is not uncommitted work (SCC-411) - same filter, same reason, as
+        # `gate_receipt._measure_dirt` and `task_preflight._check_tree_dirt`.
+        lines, _masked = gr.strip_sandbox_masks(repo, lines)
         # ⛔ ANOTHER SESSION'S MEMORY IS NOT THIS LANE'S DIRT, and folding the two together
         # does not merely under-report - it hands out the wrong instruction. Every session on
         # this machine writes `_artifacts/_memory/`, so a lane closing out routinely finds
