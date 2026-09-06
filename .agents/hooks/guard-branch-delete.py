@@ -55,17 +55,31 @@ RULE = ".agents/rules/git-policy.md"
 LANE_PREFIXES = ("chore/", "claude/", "epic/")
 
 # A git invocation carrying any run of pre-subcommand options, so `git -C <path> branch …` and
-# `git -c k=v branch …` are seen. Borrowed verbatim in shape from require-push-approval.py, which
-# learned the same lesson about `-C` on its own beat.
-_GIT_OPTS = r"(?:\s+(?:-C\s+(?:'[^']*'|\"[^\"]*\"|\S+)|-c\s+\S+|--?[A-Za-z][\w-]*(?:=\S+)?))*"
+# `git -c k=v branch …` are seen. The long options below take their value as a SEPARATE token and
+# would otherwise end the match: `git --work-tree /tmp branch -d victim` deleted the branch with
+# the guard silent (SCC-411 review, blind lens F4). `--opt=value` is covered by the generic arm.
+_GIT_SEPARATE_VALUE = r"--(?:work-tree|git-dir|namespace|super-prefix|exec-path)\s+\S+"
+_GIT_OPTS = (r"(?:\s+(?:" + _GIT_SEPARATE_VALUE +
+             r"|-C\s+(?:'[^']*'|\"[^\"]*\"|\S+)|-c\s+\S+|--?[A-Za-z][\w-]*(?:=\S+)?))*")
 _GIT_BRANCH = re.compile(r"\bgit" + _GIT_OPTS + r"\s+branch\b")
 
-# Options that swallow the NEXT token as their value. Skipping the value keeps it from being
-# read as a branch name. Every one of these is a list/create option that real git refuses
-# alongside `-d` anyway, so the skip cannot hide a target from a command that would work.
+# Options that swallow the NEXT token as their value, so the value is not read as a branch name.
+#
+# ⛔ THE SKIP IS NEVER ALLOWED TO EAT A FLAG, and that rule matters more than this list is
+# accurate. Measured on real git 2.43 (SCC-411 review, two independent lenses): `--color`, `-t`
+# and `--track` take an OPTIONAL argument, so git does NOT consume the next token — but this hook
+# did, and the token it ate was `-d`:
+#
+#     $ git branch -v --color -d victim
+#     Deleted branch victim (was fd0546a).        # hook: SILENT, and allow on all three platforms
+#
+# They are gone from the list, and `skip_value` now refuses any value starting with `-` — which is
+# git's own parse-options rule for optional arguments, and makes a future misclassification here
+# cost a false DENY (safe) instead of a silent delete of `main` (not). The survivors really do
+# consume: `git branch --merged -d x` errors with "malformed object name -d".
 _VALUE_FLAGS = frozenset({
     "--contains", "--no-contains", "--merged", "--no-merged", "--points-at",
-    "--sort", "--format", "--color", "--set-upstream-to", "--track", "-u", "-t",
+    "--sort", "--format", "--set-upstream-to", "-u",
 })
 
 # What makes a token unreadable: the shell will substitute it and we cannot know the result.
@@ -153,7 +167,11 @@ def inspect_branch_tail(tail: str) -> tuple[bool, bool, list[str]]:
     for token in tokenize(tail):
         if skip_value:
             skip_value = False
-            continue
+            # ⛔ A VALUE THAT LOOKS LIKE A FLAG IS NOT A VALUE. git's own parse-options says so,
+            # and this is the line that stops a mis-listed option from eating `-d` (SCC-411
+            # review). Falling through re-reads the token as the flag it is.
+            if not token.startswith("-"):
+                continue
         if not flags_done and token == "--":
             flags_done = True
             continue
@@ -180,6 +198,47 @@ def inspect_branch_tail(tail: str) -> tuple[bool, bool, list[str]]:
     return delete, remote, targets
 
 
+def mask_quoted(text: str) -> str:
+    """`text`'s length, with every character inside a quoted span replaced by NUL.
+
+    ⛔ A COMMAND'S TEXT IS NOT WHAT IT RUNS. `grep -rn "git branch -d main" .agents/` MENTIONS a
+    delete; it does not perform one — and refusing it fenced this repo out of searching for its
+    own literals, and out of writing the commit message that describes them (SCC-411 review,
+    blind lens F3; the same scar `shape_scan.py` carries about counting a search as a use).
+
+    The invocation is therefore searched for in this masked copy, while the tail is sliced from
+    the ORIGINAL at the same offsets — so a quoted TARGET is still read in full and
+    `git branch -d "chore/$B"` is still refused as unreadable.
+    """
+    out: list[str] = []
+    quote: str | None = None
+    for ch in text:
+        if quote is not None:
+            out.append("\x00")
+            if ch == quote:
+                quote = None
+            continue
+        if ch in _QUOTES:
+            quote = ch
+            out.append("\x00")
+            continue
+        out.append(ch)
+    return "".join(out)
+
+
+def strip_comment(segment: str, masked: str) -> tuple[str, str]:
+    """Both strings cut at the first unquoted `#` that starts a word. What follows never runs."""
+    for i, ch in enumerate(masked):
+        if ch == "#" and (i == 0 or masked[i - 1].isspace()):
+            return segment[:i], masked[:i]
+    return segment, masked
+
+
+# A segment whose executable is a shell reading its script from an argument. There the quoted
+# span IS a command, so it must NOT be masked away: `bash -c "git branch -d main"` really deletes.
+_SHELL_C = re.compile(r"^(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:\S*/)?(?:ba|z|da|k|)sh\s+(?:-\S+\s+)*-\S*c")
+
+
 def classify(command: str) -> tuple[str, str] | None:
     """('deny', reason), or None for silence. THE WHOLE DECISION LIVES HERE.
 
@@ -189,8 +248,15 @@ def classify(command: str) -> tuple[str, str] | None:
     """
     if "branch" not in command:
         return None
+    # A backslash-newline is a line continuation: the shell rejoins it and runs ONE command, but
+    # `segments()` split on the newline and handed the verb and its delete flag to two different
+    # segments, so `git branch -v \<newline>-d victim` deleted with the guard silent (SCC-411
+    # review, blind lens F2). Rejoin before splitting, exactly as the shell does.
+    command = command.replace("\\\n", " ")
     for segment in segments(command):
-        match = _GIT_BRANCH.search(segment)
+        masked = segment if _SHELL_C.match(segment) else mask_quoted(segment)
+        segment, masked = strip_comment(segment, masked)
+        match = _GIT_BRANCH.search(masked)
         if not match:
             continue
         delete, remote, targets = inspect_branch_tail(segment[match.end():])
@@ -205,7 +271,16 @@ def classify(command: str) -> tuple[str, str] | None:
                 f"is what you meant, the ceremony is `git push origin --delete chore/<KEY>-<slug>`; "
                 f"to refresh stale refs use `git fetch --prune`.")
         if not targets:
-            continue
+            # ⛔ FAILS CLOSED, per this file's own design law. A delete ALWAYS names a branch, so
+            # "a delete with no readable target" means the target was consumed by an option this
+            # parser mis-read — which is exactly how `git branch -d --color main` went silent
+            # before the review (SCC-411). Silence here would be the shrug the docstring forbids.
+            return "deny", (
+                f"{RULE} — REFUSED: this is a `git branch` DELETE whose target list came back "
+                f"EMPTY, so the branch being deleted cannot be read before it goes. That means an "
+                f"option in the command swallowed it. Nothing ran. Re-issue the delete with the "
+                f"branch named last and no option between the flag and the name: "
+                f"`git branch -d chore/<KEY>-<slug>`.")
         unreadable = [t for t in targets if any(m in t for m in _UNREADABLE)]
         unsafe = [t for t in targets if not is_lane_target(t)]
         if not unsafe:

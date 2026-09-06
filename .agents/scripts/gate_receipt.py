@@ -192,8 +192,21 @@ def _own_output_rel(work: Path, out_dir: Path) -> str | None:
     return rel.as_posix().rstrip("/") + "/"
 
 
-def _is_char_device(work: Path, rel: str) -> bool:
-    """Is this working-tree path a CHARACTER DEVICE rather than a file? (SCC-411)
+def is_sandbox_mask(work: Path, rel: str) -> bool:
+    """Is this working-tree path a SANDBOX MASK rather than a real file? (SCC-411)
+
+    ⛔ THE MASK HAS TWO SHAPES AND THE FIRST CUT ONLY SAW ONE. This started as
+    `_is_char_device`, because that is what the lobby's sandbox produces — a `/dev/null` bind
+    mount, `crw-rw-rw- nobody nogroup 1, 3`. A review lens measured the SECOND shape in its own
+    agent worktree seconds later: a zero-byte, read-only, ordinary file.
+
+        crw-rw-rw- 1 nobody nogroup 1, 3 .claude/hooks     <- shape A, this session
+        -r--r--r-- 1 dlohn  dlohn      0 .claude/hooks     <- shape B, a lens's worktree
+
+    Both are masks; neither is an edit. The predicate answers to EITHER, and the second arm is
+    kept deliberately tight — regular AND empty AND not writable by its owner, all three. A real
+    untracked file an agent just wrote is writable, and almost never zero-byte; widening this to
+    "unwritable" alone would exempt real work from a gate whose whole job is to notice it.
 
     ⛔ WHY THIS EXISTS, measured 2026-09-06 from the lobby inside the Claude Code sandbox. The
     sandbox mounts every denied `.claude/*` path (and `~/.bashrc`, `~/.gitconfig`) into the work
@@ -215,9 +228,31 @@ def _is_char_device(work: Path, rel: str) -> bool:
     A vanished path is not a device: False, and the entry stays dirt.
     """
     try:
-        return stat.S_ISCHR(os.lstat(work / rel).st_mode)
+        st = os.lstat(work / rel)
     except OSError:
         return False
+    if stat.S_ISCHR(st.st_mode):
+        return True
+    return (stat.S_ISREG(st.st_mode) and st.st_size == 0
+            and not st.st_mode & stat.S_IWUSR)
+
+
+def strip_sandbox_masks(work: Path, lines: list[str]) -> tuple[list[str], list[str]]:
+    """Split porcelain LINES into `(real, masked)` by the predicate above.
+
+    ⛔ THE FILTER LIVES WHERE THE OTHER GATES CAN REACH IT, and that is the point of this
+    function existing at all. `gate_receipt` was the only one of four "is this tree clean?"
+    readers that learned about masks; `task_preflight`, `ship_preflight` and `closeout_preflight`
+    all still counted them as uncommitted work, so the close-out this lane's own fix was supposed
+    to unblock reported `9 uncommitted change(s)` — seven of them bind mounts (measured, SCC-411
+    review). Takes porcelain lines, not paths, because that is what the three siblings hold.
+    """
+    real: list[str] = []
+    masked: list[str] = []
+    for ln in lines:
+        rel = ln[3:].split(" -> ")[-1].strip()
+        (masked if rel and is_sandbox_mask(work, rel) else real).append(ln)
+    return real, masked
 
 
 def _measure_dirt(work: Path, out_dir: Path) -> list[str]:
@@ -237,11 +272,11 @@ def _measure_dirt(work: Path, out_dir: Path) -> list[str]:
     is one subtree, not the repo) and the file-level paths are filtered individually.
     """
     raw = _porcelain_z_paths(wf.git(["status", "--porcelain", "-z"], work).stdout)
-    # A sandbox bind mount is not an edit (SCC-411). The filter is `is a character device` and
+    # A sandbox bind mount is not an edit (SCC-411). The filter is `is a sandbox mask` and
     # nothing wider: a real untracked file sitting beside the mounts is still dirt, and is still
     # named, because `task_preflight` reads `dirty_paths` to decide whether a gate SKIP is
     # authorized and anything wider hands out that skip over real changes.
-    raw = [x for x in raw if not _is_char_device(work, x)]
+    raw = [x for x in raw if not is_sandbox_mask(work, x)]
     own = _own_output_rel(work, out_dir)
     if not own:
         return raw

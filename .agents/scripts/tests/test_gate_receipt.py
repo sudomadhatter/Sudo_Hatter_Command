@@ -627,12 +627,12 @@ def main() -> int:
                     "nothing)",
                     sorted(base) == ["mounted.sock", "real-edit.md"], f"{base!r}")
 
-            real_pred = gr_mod._is_char_device
-            gr_mod._is_char_device = lambda work, rel: rel == "mounted.sock"
+            real_pred = gr_mod.is_sandbox_mask
+            gr_mod.is_sandbox_mask = lambda work, rel: rel == "mounted.sock"
             try:
                 got = gr_mod._measure_dirt(repo, out_dir)
             finally:
-                gr_mod._is_char_device = real_pred
+                gr_mod.is_sandbox_mask = real_pred
             c.check("M1 a character-device entry is NOT dirt - the sandbox's own mount cannot "
                     "stamp a clean tree DIRTY",
                     "mounted.sock" not in got, f"{got!r}")
@@ -644,6 +644,37 @@ def main() -> int:
                     real_pred(repo, "real-edit.md") is False
                     and real_pred(repo, "does-not-exist-at-all.md") is False,
                     "a plain file or a vanished path must never read as a device")
+
+            # ⛔ M1/M2 STUB THE PREDICATE, so on their own they certify the WIRING and nothing
+            # else: `is_sandbox_mask` could `return False` outright - restoring the exact
+            # pre-SCC-411 bug - and this file still scored green (SCC-411 review, gate lens F1).
+            # M3 was the only case holding the real function and it had two negative arms and no
+            # positive one. These four give it both poles, against REAL filesystem objects.
+            os.symlink("/dev/null", repo / "link-to-device")
+            (repo / "shape-b").write_text("", encoding="utf-8")
+            os.chmod(repo / "shape-b", 0o444)
+            (repo / "empty-writable.md").write_text("", encoding="utf-8")
+            c.check("M4 a REAL character device reads as a mask (shape A: the /dev/null bind "
+                    "mount this whole filter exists for)",
+                    real_pred(Path("/"), "dev/null") is True,
+                    "/dev/null is a character device on every POSIX box")
+            c.check("M5 a zero-byte READ-ONLY file reads as a mask (shape B, measured in an "
+                    "agent worktree seconds after shape A in the lobby)",
+                    real_pred(repo, "shape-b") is True, "0444 + empty + regular")
+            c.check("M6 CONTROL an empty but WRITABLE file is NOT a mask - the second arm needs "
+                    "all three of regular, empty and unwritable, or it exempts real work",
+                    real_pred(repo, "empty-writable.md") is False, "0644 + empty")
+            c.check("M7 CONTROL a SYMLINK to a character device is not a device - the predicate "
+                    "lstats, so it is judged as the link it is and never followed",
+                    real_pred(repo, "link-to-device") is False, "lstat, not stat")
+            # WIDTH, not existence: M6 pins the writability clause, this pins the EMPTINESS
+            # clause. Without it, dropping `st_size == 0` exempts every read-only file in the
+            # tree from the dirt check - real work included - and no case would notice.
+            (repo / "readonly-with-content.md").write_text("real work\n", encoding="utf-8")
+            os.chmod(repo / "readonly-with-content.md", 0o444)
+            c.check("M8 CONTROL a read-only file WITH CONTENT is not a mask - emptiness is a "
+                    "separate clause from unwritability and both are load-bearing",
+                    real_pred(repo, "readonly-with-content.md") is False, "0444 + non-empty")
 
     return c.finish()
 

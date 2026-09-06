@@ -22,6 +22,7 @@ itself. Commits use --no-verify: these fixtures must not inherit the machine's h
 """
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -222,6 +223,35 @@ def main() -> int:
                     out.strip()[-200:])
 
     # ── Clean + pushed + current ──
+    if c.block("SCC-411 · a sandbox bind mount is not uncommitted work"):
+        # ⛔ THE FIX SHIPPED IN ONE OF FOUR GATES AND THE CHANGELOG CLAIMED ALL OF THEM.
+        # `gate_receipt` learned to ignore the sandbox's masks; this script did not, so the
+        # close-out that fix was written to unblock still reported `9 uncommitted change(s)` -
+        # seven of them bind mounts (measured on the lane itself, SCC-411 review). The mask here
+        # is shape B, a zero-byte read-only file, because shape A (a real character device) needs
+        # root to create; `test_gate_receipt.py` M4 pins shape A against /dev/null.
+        with TempDir() as t:
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            write(repo, "docs/masked.json", "")
+            os.chmod(repo / "docs/masked.json", 0o444)
+            code, out = preflight(repo)
+            c.check("a masked entry does not block the close-out",
+                    code != 2 or "uncommitted change" not in out, out.strip()[-300:])
+            c.check("and it is NAMED rather than silently dropped",
+                    "sandbox mask" in out, out.strip()[-300:])
+
+        with TempDir() as t:
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            write(repo, "docs/masked.json", "")
+            os.chmod(repo / "docs/masked.json", 0o444)
+            write(repo, "docs/real.md", "a real edit beside the mask\n")
+            code, out = preflight(repo)
+            c.check("CONTROL a real untracked file beside the mask STILL blocks - the exemption "
+                    "is the mask shape, never every untracked row",
+                    code == 2 and "uncommitted change" in out, out.strip()[-300:])
+
     if c.block("Clean + pushed + current"):
         with TempDir() as t:
             repo = make_repo(t)

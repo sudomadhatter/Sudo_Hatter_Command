@@ -134,7 +134,53 @@ DENIED = {
     # remote arm can refuse it.
     "a remote-tracking ref that happens to be lane-shaped — only the -r arm catches this":
         "git branch -r -d chore/SCC-1-x",
+    # ── THE OPTIONAL-ARGUMENT HOLE (SCC-411 review). `--color`, `-t` and `--track` take an
+    # OPTIONAL argument, so real git 2.43 does NOT consume the next token — but the hook's
+    # value-skip did, and the token it swallowed was the delete flag. Measured: every one of
+    # these deleted the branch with the guard SILENT, and the first two read allow on all three
+    # platforms via the `-v`/`-vv` read grants. One row per spelling: they are three separate
+    # entries in the flag list and a fix that only drops one leaves the other two live.
+    "--color between a read flag and the delete flag":
+        "git branch -v --color -d main",
+    "-t between a read flag and the delete flag":
+        "git branch -vv -t -d main",
+    "--track between a read flag and the delete flag":
+        "git branch -v --track -d main",
+    "an optional-argument flag AFTER the delete flag, eating the target instead":
+        "git branch -d --color main",
+    # ── THE SAME HOLE'S SECOND FACE: the target is eaten and the list comes back EMPTY. Silence
+    # there is the shrug the docstring forbids, so an empty target list on a delete is a refusal.
+    "a delete whose target was swallowed, leaving nothing readable":
+        "git branch -d --sort main",
+    # ⛔ THIS ROW IS WHAT MAKES THE SKIP-REFUSAL FALSIFIABLE, and it was missing until the sweep
+    # asked. `--sort` genuinely DOES consume its value, so it is still in `_VALUE_FLAGS`; only
+    # the "never skip a token starting with `-`" rule stops it eating the delete flag here.
+    # Every other row in this block is closed by a second, independent fix as well.
+    "a genuinely value-taking flag immediately before the delete flag":
+        "git branch --sort -d main",
+    # ── A LINE CONTINUATION IS ONE COMMAND. The shell rejoins `\` + newline; the splitter did
+    # not, so the verb and its delete flag landed in two different segments and neither looked
+    # like a delete.
+    "a backslash line continuation between the verb and the delete flag":
+        "git branch -v \\\n-d main",
+    # ── PRE-SUBCOMMAND OPTIONS THAT TAKE A SEPARATE VALUE ended the invocation match.
+    "--work-tree with a separate value in front of the subcommand":
+        "git --work-tree /tmp branch -d main",
+    # ── A SHELL BODY IS A COMMAND, not an argument. The quote-masking that stops this hook
+    # refusing a `grep` for its own literals must NOT stop it reading a script the shell runs.
+    "a delete inside a shell -c body":
+        'bash -c "git branch -d main"',
+    # ── `--` ends flag parsing, so what follows is a target no matter how it is spelled.
+    "a dash-leading target after the end-of-flags marker":
+        "git branch -d -- -dashy",
 }
+
+
+def test_the_batteries_did_not_shrink():
+    """A row deleted from either dict is a fence quietly retired, and every other case here
+    still passes. The zoo battery pins its own length for the same reason (SCC-411 review)."""
+    assert len(DENIED) >= 36, f"DENIED lost rows: {len(DENIED)}"
+    assert len(ALLOWED) >= 23, f"ALLOWED lost rows: {len(ALLOWED)}"
 
 
 def test_every_measured_delete_hole_is_DENIED():
@@ -148,9 +194,14 @@ def test_every_measured_delete_hole_is_DENIED():
 
 
 def test_the_refusal_names_the_offending_target_and_the_remedy():
-    _, parsed, _ = run_hook("git branch -d chore/SCC-1-x main")
+    # ⛔ THE TARGET MUST BE ONE THE PROSE CANNOT SAY BY ITSELF. This asserted `"main" in text`,
+    # and the refusal's own static wording contains "main" three times - so replacing the
+    # interpolated target list with a constant left the case GREEN (SCC-411 review, gate lens
+    # F3). A hook that names the wrong branch, or none, passed the one test written to prove it
+    # names the right one. `zzz-victim` appears in no reason string in the file.
+    _, parsed, _ = run_hook("git branch -d chore/SCC-1-x zzz-victim")
     text = reason(parsed)
-    assert "main" in text, f"the refusal must name what it refused to delete: {text!r}"
+    assert "zzz-victim" in text, f"the refusal must name what it refused to delete: {text!r}"
     assert "chore/" in text and "claude/" in text and "epic/" in text, (
         f"the refusal must state which namespaces ARE deletable: {text!r}")
 
@@ -192,6 +243,33 @@ ALLOWED = {
         "git status --short",
     "the word branch in another position":
         "git checkout -b chore/SCC-1-x",
+    # ── A COMMAND'S TEXT IS NOT WHAT IT RUNS (SCC-411 review). The hook matched its own literals
+    # anywhere in the command, so searching this repo for the hole it fences, and writing the
+    # commit message that describes it, were both REFUSED. A guard that fences the description
+    # of a delete instead of the delete is not stricter, it is wrong — and this repo ships a test
+    # file and a git-policy section full of exactly these strings.
+    "searching the repo for the literal this hook fences":
+        'grep -rn "git branch -d main" .agents/',
+    "the same search in single quotes":
+        "grep -rn 'git branch -D main' docs/",
+    "a commit message DESCRIBING the fence":
+        'git commit -m "SCC-411 feat(gate): deny git branch -d main"',
+    "a trailing shell comment mentioning a delete that never runs":
+        "git branch -d chore/SCC-1-x  # not git branch -d main",
+    # ── THE CHAIN SPLITTER IS LOAD-BEARING AND NOTHING BOUNDED IT: with `_SEPARATORS = ""` the
+    # whole file stayed green, because no row put ceremony AFTER a legal lane delete. This is the
+    # shape `/cicd-prune-worktree` actually prints.
+    "a legal lane delete followed by more ceremony":
+        "git branch -d chore/SCC-1-x && git worktree prune",
+    # ⛔ AND THIS ROW IS WHAT MAKES THE FLAG-LIST CORRECTION FALSIFIABLE. Put `--color` back into
+    # `_VALUE_FLAGS` and it eats `chore/SCC-1-x`, the target list comes back empty, and this legal
+    # lane delete is REFUSED. Without this row the list correction is belt-and-braces that no case
+    # can tell from the belt alone - the same unfalsifiability M8 exposed in pass 1 of the sweep.
+    # The flag must sit BETWEEN the delete flag and the target — that is the only position where
+    # a wrong `_VALUE_FLAGS` entry can eat the target. In front of `-d` the skip-refusal already
+    # covers it, which is exactly why the first spelling of this row let M17 survive.
+    "an optional-argument flag between the delete flag and a LEGAL lane target":
+        "git branch -d --color chore/SCC-1-x",
 }
 
 
