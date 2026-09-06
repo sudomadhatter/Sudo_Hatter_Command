@@ -2,29 +2,34 @@
 
 **The house standard for world-class, fluid, production-ready interfaces.** This procedural guide establishes how agents and operators design, build, animate, and audit user interfaces across all projects in the command center.
 
-Consolidates the three pillars of house UI craft:
-1. **Design System & Visual Intelligence**: [`.agents/skills/ui-ux-pro-max`](../../.agents/skills/ui-ux-pro-max/SKILL.md) — 67 styles, 96 color palettes, 57 font pairings, 99 UX heuristics, and stack guidelines.
-2. **Motion, Animation & Fluid Interactions**: The Emil Kowalski skill suite — [`.agents/skills/emil-design-eng`](../../.agents/skills/emil-design-eng/SKILL.md), [`.agents/skills/apple-design`](../../.agents/skills/apple-design/SKILL.md), [`.agents/skills/animate`](../../.agents/skills/animate/SKILL.md), [`.agents/skills/review-animations`](../../.agents/skills/review-animations/SKILL.md), and companions.
-3. **Rich Visual Assets & Floating Elements**: [`.agents/skills/webm-alpha-video`](../../.agents/skills/webm-alpha-video/SKILL.md) — green-screen MP4 to WebM conversion with true alpha transparency for floating badges and video overlays.
+Consolidates the four pillars of house UI craft:
+1. **Design System & Visual Intelligence**: [`.agents/skills/ui-ux-pro-max`](../../.agents/skills/ui-ux-pro-max/SKILL.md) — 67 styles, 96 color palettes, 57 font pairings, 99 UX heuristics, and stack guidelines via `search.py`.
+2. **Master Motion Engine & Fluid Interactions**: [`.agents/skills/emil-design-eng`](../../.agents/skills/emil-design-eng/SKILL.md) — Consolidated Emil Kowalski motion craft, Apple 2-parameter spring physics, 4-gate opportunity filter, sub-300ms budget, and Before/After review tables.
+3. **3D, WebGL Shaders & Physical Materials**: [`.agents/skills/visual-fx-3d`](../../.agents/skills/visual-fx-3d/SKILL.md) — React Three Fiber (R3F), ShaderGradient fluid meshes, Liquid Glass optical refraction, and Liquid Logo plasma shaders.
+4. **Rich Media & Platform Specialists**: [`.agents/skills/webm-alpha-video`](../../.agents/skills/webm-alpha-video/SKILL.md) (green-screen to alpha WebM), [`.agents/skills/animate-expo`](../../.agents/skills/animate-expo/SKILL.md) (React Native / Expo), [`.agents/skills/write-swift`](../../.agents/skills/write-swift/SKILL.md) (iOS native).
+
+Front door: **`/smh-designer`** ([`.agents/commands/smh-designer.md`](../../.agents/commands/smh-designer.md)) — activates **🦋 Caterpillar** with the Two-Phase Creative Vision Lock lifecycle.
 
 ---
 
-## 1. The Three Pillars of UI Excellence
+## 1. The Four Pillars of UI Excellence
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                       HOUSE FRONTEND DESIGN ARCHITECTURE                     │
 ├──────────────────────────────┬──────────────────────────────┬───────────────┤
-│    1. VISUAL & DESIGN SYSTEM │      2. FLUID MOTION & UX    │ 3. ASSETS &   │
-│                              │                              │    RICH MEDIA │
-├──────────────────────────────┼──────────────────────────────┼───────────────┤
-│ • ui-ux-pro-max              │ • emil-design-eng            │ • webm-alpha- │
-│ • Typography & Optical Size  │ • apple-design (Springs)     │   video       │
-│ • Color Palettes & Contrast  │ • animate / animate-expo     │ • Pure SVG    │
-│ • Dark/Light Mode Invariants │ • review-animations          │   Icons       │
-│ • Layout, Grids & Cards      │ • find-animation-opps        │ • Translucent │
-│ • react-best-practices       │ • ask-sonner / prototype     │   Materials   │
-└──────────────────────────────┴──────────────────────────────┴───────────────┘
+│ 1. VISUAL SYSTEM & TOKENS    │ 2. FLUID MOTION & CRAFT      │ 3. 3D & FX    │
+│ • ui-ux-pro-max              │ • emil-design-eng (Merged)   │ • visual-fx-3d│
+│   (67 styles, 96 palettes,   │   (Philosophy, Apple springs,│   (R3F 3D,    │
+│    57 font pairings, search) │    recipes, review audit,    │    Shaders,   │
+│                              │    opportunity gate)         │    Glass,     │
+│                              │                              │    Logo)      │
+├──────────────────────────────┴──────────────────────────────┼───────────────┤
+│ 4. SPECIALIZED COMPANIONS                                   │ 5. MAESTRO    │
+│ • webm-alpha-video (Green screen MP4 → Alpha WebM)          │ • /smh-designer
+│ • animate-expo (React Native / Expo Reanimated)             │   (Two-phase  │
+│ • write-swift (Native iOS Swift UI)                         │    vision lock│
+└─────────────────────────────────────────────────────────────┴───────────────┘
 ```
 
 ---
@@ -101,7 +106,21 @@ Before writing any animation code, walk these four questions in order:
 
 ---
 
-## 4. Rich Media & Transparent Video ([`webm-alpha-video`](../../.agents/skills/webm-alpha-video/SKILL.md))
+## 4. 3D, WebGL Shaders & Physical Materials ([`visual-fx-3d`](../../.agents/skills/visual-fx-3d/SKILL.md))
+
+Modern interfaces incorporate physical depth, optical light refraction, and GPU-accelerated fluid shaders. We support four standard engines:
+
+1. **React Three Fiber (R3F) (`pmndrs/react-three-fiber`):** Declarative 3D canvas for spatial cards, product models, and interactive geometric accents.
+   - **Constraint:** Always use `frameloop="demand"` and cap `dpr={[1, 1.5]}` so the GPU completely idles when static.
+2. **Liquid Glass (`dashersw/liquid-glass-js`):** Apple VisionOS-style realistic optical glass refraction with chromatic edge dispersion and specular highlights.
+   - **Constraint:** Never stack two refractive layers directly over each other. Provide a clean `backdrop-filter: blur(20px)` fallback.
+3. **ShaderGradient (`ruucm/shadergradient`):** High-performance 3D fluid animated gradient mesh backgrounds.
+   - **Constraint:** Keep ambient wave speeds low ($\le 0.3$) and pause via `IntersectionObserver` when scrolled off-screen.
+4. **Liquid Logo (`collidingScopes/liquid-logo`):** Real-time liquid metal and plasma fragment shaders mapped to SVG brand marks and typography.
+
+---
+
+## 5. Rich Media & Transparent Video ([`webm-alpha-video`](../../.agents/skills/webm-alpha-video/SKILL.md))
 
 When user interfaces require floating video elements (e.g. animated mascots, floating holographic badges, voice-assistant reaction avatars):
 - Green-screen MP4 videos can be converted to true transparent WebM videos (`VP9` codec with `yuva420p` pixel format).
@@ -113,25 +132,43 @@ When user interfaces require floating video elements (e.g. animated mascots, flo
 
 ---
 
-## 5. Agent Skill Routing Matrix
+## 6. The Two-Phase Creative Vision Lock Lifecycle (`/smh-designer`)
 
-When an agent needs to perform UI/UX work, route to the appropriate master skill:
+Front-end design is sensory. To avoid coding the wrong visual aesthetic, [`/smh-designer`](../../.agents/commands/smh-designer.md) enforces a two-phase gate:
 
-| Task | Primary Skill | Supporting Resources |
-|---|---|---|
-| Creating or updating complete design systems, color palettes, font pairings, styles | [`.agents/skills/ui-ux-pro-max`](../../.agents/skills/ui-ux-pro-max/SKILL.md) | `search.py --design-system` |
-| Designing or refining animations, easings, spring physics, and micro-interactions | [`.agents/skills/emil-design-eng`](../../.agents/skills/emil-design-eng/SKILL.md) | [`.agents/skills/animate`](../../.agents/skills/animate/SKILL.md) · [`.agents/skills/apple-design`](../../.agents/skills/apple-design/SKILL.md) |
-| Reviewing/auditing motion code against industry animation standards | [`.agents/skills/review-animations`](../../.agents/skills/review-animations/SKILL.md) | [`.agents/skills/improve-animations`](../../.agents/skills/improve-animations/SKILL.md) |
-| Spotting static UI elements that need motion or transition polish | [`.agents/skills/find-animation-opportunities`](../../.agents/skills/find-animation-opportunities/SKILL.md) | [`.agents/skills/animation-vocabulary`](../../.agents/skills/animation-vocabulary/SKILL.md) |
-| Mobile animations & gestures (React Native / Expo Reanimated) | [`.agents/skills/animate-expo`](../../.agents/skills/animate-expo/SKILL.md) | Reanimated recipes & worklets |
-| Apple platform UI, fluid gestures, and Swift motion | [`.agents/skills/apple-design`](../../.agents/skills/apple-design/SKILL.md) | [`.agents/skills/write-swift`](../../.agents/skills/write-swift/SKILL.md) |
-| Toast notifications & stack management | [`.agents/skills/ask-sonner`](../../.agents/skills/ask-sonner/SKILL.md) | Sonner best practices |
-| Converting green-screen assets to transparent WebM video overlays | [`.agents/skills/webm-alpha-video`](../../.agents/skills/webm-alpha-video/SKILL.md) | ffmpeg colorkey scripts |
-| Component library selection & evaluation | [`.agents/skills/pick-ui-library`](../../.agents/skills/pick-ui-library/SKILL.md) | Radix, Base UI, Shadcn |
+```
+Phase 1: Creative Discovery & Vision Lock
+  ↳ Interview on aesthetic mood, physics, and materials
+  ↳ Deliver Creative Vision Brief
+  ↳ ⛔ STOP FOR APPROVAL: Mr. Hatter confirms "Approved"
+
+Phase 2: Technical Translation & Ticket Minting
+  ↳ Deliver formal implementation_plan.md + mint/shape Jira ticket via acli
+  ↳ ⛔ STOP FOR APPROVAL: Mr. Hatter confirms "Approved"
+
+Phase 3: Development Hand-off
+  ↳ Launch /smh-quick-dev or /cicd-dev-story-tests
+```
 
 ---
 
-## 6. Pre-Delivery UI Quality Checklist
+## 7. Agent Skill Routing Matrix
+
+When an agent needs to perform UI/UX work, route to the appropriate consolidated master skill:
+
+| Task | Primary Skill | Supporting Resources / Capabilities |
+|---|---|---|
+| Complete design systems, color palettes, font pairings, styles | [`.agents/skills/ui-ux-pro-max`](../../.agents/skills/ui-ux-pro-max/SKILL.md) | `search.py --design-system` |
+| Motion craft, animations, easings, spring physics, review tables, toasts | [`.agents/skills/emil-design-eng`](../../.agents/skills/emil-design-eng/SKILL.md) | `RECIPES.md` · Apple 2-parameter springs · Before/After tables |
+| 3D scenes, WebGL shaders, liquid glass refraction, liquid logos | [`.agents/skills/visual-fx-3d`](../../.agents/skills/visual-fx-3d/SKILL.md) | R3F · ShaderGradient · Liquid Glass · Liquid Logo |
+| Mobile gestures & animations (React Native / Expo Reanimated) | [`.agents/skills/animate-expo`](../../.agents/skills/animate-expo/SKILL.md) | Worklets & reanimated recipes |
+| Apple platform UI & native Swift motion | [`.agents/skills/write-swift`](../../.agents/skills/write-swift/SKILL.md) | Native SwiftUI springs & gestures |
+| Converting green-screen assets to transparent WebM video overlays | [`.agents/skills/webm-alpha-video`](../../.agents/skills/webm-alpha-video/SKILL.md) | ffmpeg colorkey scripts |
+| End-to-end design engineering persona with Two-Phase Vision Lock | [`.agents/commands/smh-designer.md`](../../.agents/commands/smh-designer.md) | 🦋 Caterpillar — Brainstorm, Audit, Scaffold & Build |
+
+---
+
+## 8. Pre-Delivery UI Quality Checklist
 
 Before completing any frontend story, chore, or UI refactor, verify against this checklist:
 

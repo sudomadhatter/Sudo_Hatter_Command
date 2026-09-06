@@ -4,15 +4,15 @@
     "docs"
   ],
   "counts": {
-    "files": 390,
+    "files": 379,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 769,
+    "edges": 761,
     "external": 35,
-    "ambiguous": 172,
-    "dangling": 290,
+    "ambiguous": 171,
+    "dangling": 291,
     "broken_paths": 61,
-    "unresolved_names": 229,
+    "unresolved_names": 230,
     "unresolvable": 9
   },
   "nodes": [
@@ -492,6 +492,11 @@
       "out": 8
     },
     {
+      "path": ".agents/commands/smh-designer.md",
+      "in": 3,
+      "out": 2
+    },
+    {
       "path": ".agents/commands/smh-label-tasks.md",
       "in": 1,
       "out": 5
@@ -559,7 +564,7 @@
     {
       "path": ".agents/commands/smh-team-caterpillar.md",
       "in": 0,
-      "out": 3
+      "out": 4
     },
     {
       "path": ".agents/commands/smh-team-cheshire-cat.md",
@@ -743,7 +748,7 @@
     },
     {
       "path": ".agents/rules/artifacts-always-first.md",
-      "in": 37,
+      "in": 38,
       "out": 7
     },
     {
@@ -904,36 +909,6 @@
     {
       "path": ".agents/skills/animate-expo/SKILL.md",
       "in": 2,
-      "out": 1
-    },
-    {
-      "path": ".agents/skills/animate/RECIPES.md",
-      "in": 1,
-      "out": 1
-    },
-    {
-      "path": ".agents/skills/animate/SKILL.md",
-      "in": 2,
-      "out": 1
-    },
-    {
-      "path": ".agents/skills/animation-vocabulary/SKILL.md",
-      "in": 1,
-      "out": 0
-    },
-    {
-      "path": ".agents/skills/apple-design/SKILL.md",
-      "in": 1,
-      "out": 0
-    },
-    {
-      "path": ".agents/skills/ask-sonner/API.md",
-      "in": 1,
-      "out": 0
-    },
-    {
-      "path": ".agents/skills/ask-sonner/SKILL.md",
-      "in": 1,
       "out": 1
     },
     {
@@ -1137,14 +1112,14 @@
       "out": 2
     },
     {
-      "path": ".agents/skills/emil-design-eng/SKILL.md",
+      "path": ".agents/skills/emil-design-eng/RECIPES.md",
       "in": 1,
       "out": 0
     },
     {
-      "path": ".agents/skills/find-animation-opportunities/SKILL.md",
+      "path": ".agents/skills/emil-design-eng/SKILL.md",
       "in": 1,
-      "out": 0
+      "out": 1
     },
     {
       "path": ".agents/skills/firebase-ai-logic-basics/SKILL.md",
@@ -1287,21 +1262,6 @@
       "out": 0
     },
     {
-      "path": ".agents/skills/improve-animations/AUDIT.md",
-      "in": 2,
-      "out": 0
-    },
-    {
-      "path": ".agents/skills/improve-animations/PLAN-TEMPLATE.md",
-      "in": 1,
-      "out": 1
-    },
-    {
-      "path": ".agents/skills/improve-animations/SKILL.md",
-      "in": 1,
-      "out": 2
-    },
-    {
       "path": ".agents/skills/keyway-secrets/SKILL.md",
       "in": 2,
       "out": 2
@@ -1312,24 +1272,9 @@
       "out": 0
     },
     {
-      "path": ".agents/skills/pick-ui-library/SKILL.md",
-      "in": 1,
-      "out": 0
-    },
-    {
       "path": ".agents/skills/playwright-frontend-check/SKILL.md",
       "in": 0,
       "out": 0
-    },
-    {
-      "path": ".agents/skills/prototype/PICKER.md",
-      "in": 1,
-      "out": 0
-    },
-    {
-      "path": ".agents/skills/prototype/SKILL.md",
-      "in": 0,
-      "out": 1
     },
     {
       "path": ".agents/skills/python-patterns/SKILL.md",
@@ -1587,16 +1532,6 @@
       "out": 0
     },
     {
-      "path": ".agents/skills/review-animations/SKILL.md",
-      "in": 1,
-      "out": 1
-    },
-    {
-      "path": ".agents/skills/review-animations/STANDARDS.md",
-      "in": 1,
-      "out": 0
-    },
-    {
       "path": ".agents/skills/sentry-security-team-avch/SKILL.md",
       "in": 0,
       "out": 1
@@ -1623,6 +1558,11 @@
     },
     {
       "path": ".agents/skills/smh-code-review/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": ".agents/skills/smh-designer/SKILL.md",
       "in": 0,
       "out": 1
     },
@@ -1757,6 +1697,11 @@
       "out": 0
     },
     {
+      "path": ".agents/skills/visual-fx-3d/SKILL.md",
+      "in": 1,
+      "out": 0
+    },
+    {
       "path": ".agents/skills/webm-alpha-video/SKILL.md",
       "in": 2,
       "out": 0
@@ -1813,8 +1758,8 @@
     },
     {
       "path": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
-      "in": 2,
-      "out": 13
+      "in": 6,
+      "out": 8
     },
     {
       "path": "docs/_scc_sops_prds/git_walkthrough_settings.md",
@@ -1869,7 +1814,7 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 31,
-      "out": 65
+      "out": 67
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
@@ -2891,6 +2836,16 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/commands/smh-designer.md",
+      "to": ".agents/rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-designer.md",
+      "to": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/commands/smh-label-tasks.md",
       "to": ".agents/rules/artifacts-always-first.md",
       "kind": "ref"
@@ -3188,6 +3143,11 @@
     {
       "from": ".agents/commands/smh-team-caterpillar.md",
       "to": ".agents/rules/zoo-team.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-team-caterpillar.md",
+      "to": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
       "kind": "ref"
     },
     {
@@ -4041,21 +4001,6 @@
       "kind": "link"
     },
     {
-      "from": ".agents/skills/animate/RECIPES.md",
-      "to": ".agents/skills/animate/SKILL.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/skills/animate/SKILL.md",
-      "to": ".agents/skills/animate/RECIPES.md",
-      "kind": "link"
-    },
-    {
-      "from": ".agents/skills/ask-sonner/SKILL.md",
-      "to": ".agents/skills/ask-sonner/API.md",
-      "kind": "link"
-    },
-    {
       "from": ".agents/skills/backend-dev-guidelines/resources/architecture-overview.md",
       "to": ".agents/skills/backend-dev-guidelines/resources/routing-and-controllers.md",
       "kind": "link"
@@ -4346,6 +4291,11 @@
       "kind": "link"
     },
     {
+      "from": ".agents/skills/emil-design-eng/SKILL.md",
+      "to": ".agents/skills/emil-design-eng/RECIPES.md",
+      "kind": "link"
+    },
+    {
       "from": ".agents/skills/firebase-ai-logic-basics/SKILL.md",
       "to": ".agents/skills/firebase-ai-logic-basics/references/usage_patterns_web.md",
       "kind": "link"
@@ -4461,21 +4411,6 @@
       "kind": "link"
     },
     {
-      "from": ".agents/skills/improve-animations/PLAN-TEMPLATE.md",
-      "to": ".agents/skills/improve-animations/AUDIT.md",
-      "kind": "link"
-    },
-    {
-      "from": ".agents/skills/improve-animations/SKILL.md",
-      "to": ".agents/skills/improve-animations/AUDIT.md",
-      "kind": "link"
-    },
-    {
-      "from": ".agents/skills/improve-animations/SKILL.md",
-      "to": ".agents/skills/improve-animations/PLAN-TEMPLATE.md",
-      "kind": "link"
-    },
-    {
       "from": ".agents/skills/keyway-secrets/SKILL.md",
       "to": "docs/_scc_sops_prds/sharing_keys_secrets_secure.md",
       "kind": "ref"
@@ -4484,11 +4419,6 @@
       "from": ".agents/skills/keyway-secrets/SKILL.md",
       "to": "docs/migrations/install_guides/keyway-setup.md",
       "kind": "ref"
-    },
-    {
-      "from": ".agents/skills/prototype/SKILL.md",
-      "to": ".agents/skills/prototype/PICKER.md",
-      "kind": "link"
     },
     {
       "from": ".agents/skills/react-best-practices/README.md",
@@ -4531,11 +4461,6 @@
       "kind": "ref"
     },
     {
-      "from": ".agents/skills/review-animations/SKILL.md",
-      "to": ".agents/skills/review-animations/STANDARDS.md",
-      "kind": "link"
-    },
-    {
       "from": ".agents/skills/sentry-security-team-avch/SKILL.md",
       "to": ".agents/commands/sentry-security-team-avch.md",
       "kind": "ref"
@@ -4558,6 +4483,11 @@
     {
       "from": ".agents/skills/smh-code-review/SKILL.md",
       "to": ".agents/commands/smh-code-review.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/skills/smh-designer/SKILL.md",
+      "to": ".agents/commands/smh-designer.md",
       "kind": "ref"
     },
     {
@@ -4897,27 +4827,12 @@
     },
     {
       "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
+      "to": ".agents/commands/smh-designer.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
       "to": ".agents/skills/animate-expo/SKILL.md",
-      "kind": "link"
-    },
-    {
-      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
-      "to": ".agents/skills/animate/SKILL.md",
-      "kind": "link"
-    },
-    {
-      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
-      "to": ".agents/skills/animation-vocabulary/SKILL.md",
-      "kind": "link"
-    },
-    {
-      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
-      "to": ".agents/skills/apple-design/SKILL.md",
-      "kind": "link"
-    },
-    {
-      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
-      "to": ".agents/skills/ask-sonner/SKILL.md",
       "kind": "link"
     },
     {
@@ -4927,27 +4842,12 @@
     },
     {
       "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
-      "to": ".agents/skills/find-animation-opportunities/SKILL.md",
-      "kind": "link"
-    },
-    {
-      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
-      "to": ".agents/skills/improve-animations/SKILL.md",
-      "kind": "link"
-    },
-    {
-      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
-      "to": ".agents/skills/pick-ui-library/SKILL.md",
-      "kind": "link"
-    },
-    {
-      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
-      "to": ".agents/skills/review-animations/SKILL.md",
-      "kind": "link"
-    },
-    {
-      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
       "to": ".agents/skills/ui-ux-pro-max/SKILL.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
+      "to": ".agents/skills/visual-fx-3d/SKILL.md",
       "kind": "link"
     },
     {
@@ -5303,6 +5203,11 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/rules/code-standards.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
       "kind": "ref"
     },
     {
@@ -6167,6 +6072,10 @@
       "target": "walkthrough.md"
     },
     {
+      "from": ".agents/commands/smh-designer.md",
+      "target": "implementation_plan.md"
+    },
+    {
       "from": ".agents/commands/smh-label-tasks.md",
       "target": "implementation_plan.md"
     },
@@ -6575,10 +6484,6 @@
       "target": "scoring.md"
     },
     {
-      "from": ".agents/skills/improve-animations/SKILL.md",
-      "target": "NNN-short-slug.md"
-    },
-    {
       "from": ".agents/skills/react-best-practices/README.md",
       "target": "area-description.md"
     },
@@ -6677,6 +6582,10 @@
     {
       "from": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
       "target": "walkthrough.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
+      "target": "implementation_plan.md"
     },
     {
       "from": "docs/_scc_sops_prds/jira_integration_guide.md",
@@ -7140,10 +7049,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -7170,7 +7075,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -7178,20 +7082,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -7210,6 +7111,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -7238,10 +7140,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -7268,7 +7166,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -7276,20 +7173,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -7308,6 +7202,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -7540,10 +7435,6 @@
       "target": "/SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -7570,7 +7461,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -7578,20 +7468,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -7610,6 +7497,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -7629,10 +7517,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -7659,7 +7543,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -7667,20 +7550,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -7699,6 +7579,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -8043,10 +7924,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -8073,7 +7950,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -8081,20 +7957,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -8113,6 +7986,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -8546,10 +8420,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -8576,7 +8446,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -8584,20 +8453,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -8616,6 +8482,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -8626,10 +8493,6 @@
       "target": "/SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -8656,7 +8519,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -8664,20 +8526,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -8696,6 +8555,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -8706,10 +8566,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -8736,7 +8592,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -8744,20 +8599,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -8776,6 +8628,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -8786,10 +8639,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -8816,7 +8665,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -8824,20 +8672,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -8856,6 +8701,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -8866,10 +8712,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -8896,7 +8738,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -8904,20 +8745,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -8936,6 +8774,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -8946,10 +8785,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -8976,7 +8811,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -8984,20 +8818,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9016,6 +8847,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -9026,10 +8858,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9056,7 +8884,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -9064,20 +8891,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9096,6 +8920,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -9106,10 +8931,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9136,7 +8957,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -9144,20 +8964,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9176,6 +8993,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -9186,10 +9004,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9216,7 +9030,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -9224,20 +9037,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9256,6 +9066,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -9266,10 +9077,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9296,7 +9103,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -9304,20 +9110,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9336,6 +9139,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -9346,10 +9150,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9376,7 +9176,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -9384,20 +9183,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9416,6 +9212,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -9426,10 +9223,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9456,7 +9249,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -9464,20 +9256,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9496,6 +9285,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -9506,10 +9296,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9536,7 +9322,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -9544,20 +9329,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9576,6 +9358,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -9586,10 +9369,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9616,7 +9395,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -9624,20 +9402,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9656,6 +9431,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -9666,10 +9442,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9696,7 +9468,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -9704,20 +9475,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9736,6 +9504,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -9756,26 +9525,6 @@
         ".agents/skills/backend-dev-guidelines/resources/configuration.md",
         ".agents/skills/firebase-app-hosting-basics/references/configuration.md",
         ".agents/skills/firebase-hosting-basics/references/configuration.md"
-      ]
-    },
-    {
-      "from": ".agents/skills/improve-animations/PLAN-TEMPLATE.md",
-      "target": "plans/README.md",
-      "candidates": [
-        ".agents/bmad",
-        ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md",
-        "docs/migrations/vscode_sync/README.md"
-      ]
-    },
-    {
-      "from": ".agents/skills/improve-animations/SKILL.md",
-      "target": "plans/README.md",
-      "candidates": [
-        ".agents/bmad",
-        ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md",
-        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {
@@ -9818,10 +9567,6 @@
       "target": "skill-creation/SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9848,7 +9593,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -9856,20 +9600,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9888,6 +9629,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -10063,6 +9805,14 @@
       ]
     },
     {
+      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
+      "target": "RECIPES.md",
+      "candidates": [
+        ".agents/skills/animate-expo/RECIPES.md",
+        ".agents/skills/emil-design-eng/RECIPES.md"
+      ]
+    },
+    {
       "from": "docs/_scc_sops_prds/jira_integration_guide.md",
       "target": "AGENTS.md",
       "candidates": [
@@ -10076,10 +9826,6 @@
       "target": "/SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -10106,7 +9852,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -10114,20 +9859,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -10146,6 +9888,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -10282,10 +10025,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -10312,7 +10051,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -10320,20 +10058,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -10352,6 +10087,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -10552,10 +10288,6 @@
       "target": "/SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -10582,7 +10314,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -10590,20 +10321,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -10622,6 +10350,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
@@ -10660,10 +10389,6 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
-        ".agents/skills/animate/SKILL.md",
-        ".agents/skills/animation-vocabulary/SKILL.md",
-        ".agents/skills/apple-design/SKILL.md",
-        ".agents/skills/ask-sonner/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -10690,7 +10415,6 @@
         ".agents/skills/code-review-engine/SKILL.md",
         ".agents/skills/code-review-graph/SKILL.md",
         ".agents/skills/emil-design-eng/SKILL.md",
-        ".agents/skills/find-animation-opportunities/SKILL.md",
         ".agents/skills/firebase-ai-logic-basics/SKILL.md",
         ".agents/skills/firebase-app-hosting-basics/SKILL.md",
         ".agents/skills/firebase-auth-basics/SKILL.md",
@@ -10698,20 +10422,17 @@
         ".agents/skills/firebase-data-connect-basics/SKILL.md",
         ".agents/skills/firebase-firestore-basics/SKILL.md",
         ".agents/skills/firebase-hosting-basics/SKILL.md",
-        ".agents/skills/improve-animations/SKILL.md",
         ".agents/skills/keyway-secrets/SKILL.md",
         ".agents/skills/mermaid-diagram-standards/SKILL.md",
-        ".agents/skills/pick-ui-library/SKILL.md",
         ".agents/skills/playwright-frontend-check/SKILL.md",
-        ".agents/skills/prototype/SKILL.md",
         ".agents/skills/python-patterns/SKILL.md",
         ".agents/skills/react-best-practices/SKILL.md",
-        ".agents/skills/review-animations/SKILL.md",
         ".agents/skills/sentry-security-team-avch/SKILL.md",
         ".agents/skills/smh-adviser-board/SKILL.md",
         ".agents/skills/smh-clean-code-audit/SKILL.md",
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -10730,6 +10451,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
