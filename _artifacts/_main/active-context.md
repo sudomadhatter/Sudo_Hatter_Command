@@ -2,7 +2,7 @@
 
 ## 1. PRIME STATE
 Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-09-05
-**2026-09-05 (latest): INCIDENT — Epic 24 work reached live prod mid-epic through a chore lane; the guard now exists (SCC-416, PR pending).**
+**2026-09-05 (latest): INCIDENT — Epic 24 work reached live prod mid-epic through a chore lane; the guard now exists (SCC-416, PR #176 merged @ `604a12b0`).**
 `chore/AVCH-80-rolling-bugs` (cut off `main`) shared three runtime files with the live `epic/AVCH-100`; both
 preflights judged it by its own diff and `/cicd-push-e2e` shipped it (PR #72 → `4afaa667` → Cloud Run 00076).
 The operator's ruling forbidding it lives on the epic branch, unreadable from `main`. SCC-416 adds
@@ -13,6 +13,11 @@ and carried in the branch name (`-quickdev` suffix); the story door lands by PR 
 decision on `4afaa667`, re-landing AVCH-80 on the epic, ruleset `exclude` for `*-quickdev`,
 `pr-check-skip.yml` to `main`, the enforce-on-create probe, and AVCH-80's ticket/worktree cleanup.
 Session: `_artifacts/_main/2026-09-05_scc-416-in-flight-epic-freezes-main/`.
+**Record closed 2026-09-05 (second PR, same lane name):** `finish` had held SCC-416 at `Review Required` on one
+`## Your Actions` row that handed over AviationChat work; it is now a prose section in the walkthrough (content on
+AVCH-80, comment 10437). Once that PR merges, `/smh-close-task-merge-tree --after-merge SCC-416` closes the ticket.
+Still open, elsewhere: the `jira_feed.py` banned-row pattern `ticket … your call` is order-sensitive and let that row
+through — a one-pattern fix plus a test, home SCC-411 (the September rolling ticket), on the operator's word.
 **2026-08-23: Command Center + AviationChat maps and indexes reconciled; NEXgen excluded.**
 Lobby map lint is clean; `_artifacts/INDEX.md` again carries exactly the newest 50 sessions and 110
 displaced/new-overflow rows were added to the verbatim archive (168 archived total). Current artifact,

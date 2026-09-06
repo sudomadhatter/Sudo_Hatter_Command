@@ -30,7 +30,7 @@ ArtifactMetadata:
 - [x] `cicd-push-e2e.md` Step 1 — one sentence: the diff decides the GATE, not the DESTINATION
 - [x] SOP §7 chore admission, the kickoff paragraph, the two §5 refusal rows; changelog row — same commit, sop-currency gate passed without an opt-out
 - [x] `run_all.py` 77/79 → 79/79: the two reds were this lane's own bookkeeping (three `.opencode/` mirrors of the edited doors, and the ledger row), closed in `5d5d7f41`
-- [ ] Operator: the merge — see `## Your Actions`
+- [x] Operator: the merge — PR #176, merged at `604a12b0` (2026-09-05)
 
 ## Evidence
 
@@ -94,7 +94,16 @@ A brand-new file in the epic's subsystem that the epic has not touched is not ca
 | M4 | `task_preflight.py` | DELETE the "N live epic branch(es) checked" line | `SP-Q.2 ...and it SAYS it checked the live epic` | KILLED |
 | M5 | `ship_preflight.py` | RELOCATE the guard below the light-gate line | `SP-Q.1 ...and the refusal came BEFORE the surface decision` | KILLED |
 
+## AviationChat — out of this lane's scope, and NOT owed by this ticket
+
+SCC-416 was lobby-only. Nothing below was in its scope, nothing below was touched by it, and nothing below gates it. It is context for whoever picks up AviationChat, and it is recorded where it belongs: as a comment on AVCH-80 on the AviationChat board (comment 10437, 2026-09-05). It is deliberately NOT a `- [ ]` row — a checkbox under `## Your Actions` holds this ticket open over work that belongs to another repo and another board, which is exactly what held SCC-416 at `Review Required` after PR #176 merged.
+
+**AviationChat, after recovery — its own AVCH tickets, none of it touched here:** (1) the decision on `4afaa667` — revert on `main`, and re-land the AVCH-80 fixes on the epic as a story; (2) the AVCH-119 ruleset gains `exclude: refs/heads/epic/*-quickdev` (one API call) so quick-dev epics pay nothing; (3) `pr-check-skip.yml` lands on `main` — today it lives only on `epic/AVCH-100`, so a fresh epic's docs-only story PR is unmergeable; (4) a throwaway probe of `git push -u origin epic/…` under the ruleset's enforce-on-create, because the only live epic predates it; (5) **AVCH-80's ticket, riders AVCH-120/121/122, the `avch-80-rolling-bugs` worktree and the branch** — their right state depends on (1), which is why they are not moved here.
+
+## Record closure — 2026-09-05
+
+PR #176 merged at `604a12b0` with the code live and verified, and `finish` then held the ticket at `Review Required` on the AviationChat row alone — a row this record filed against the wrong ticket. This artifacts-only lane, cut off `origin/main` under the same branch name so `task.yaml`, the Dev Record slug and `finish`'s tip resolution all keep naming one lane, moves that row into the prose section above, ticks the merge row, and changes nothing else.
+
 ## Your Actions
 
-- [ ] **The merge itself — lands via this branch's PR.** Lobby only; no deploy surface. The guard is live in every door the moment it merges.
-- [ ] **AviationChat, after recovery, on your call — its own AVCH tickets, none of it touched here:** (1) the decision on `4afaa667` — revert on `main`, and re-land the AVCH-80 fixes on the epic as a story; (2) the AVCH-119 ruleset gains `exclude: refs/heads/epic/*-quickdev` (one API call) so quick-dev epics pay nothing; (3) `pr-check-skip.yml` lands on `main` — today it lives only on `epic/AVCH-100`, so a fresh epic's docs-only story PR is unmergeable; (4) a throwaway probe of `git push -u origin epic/…` under the ruleset's enforce-on-create, because the only live epic predates it; (5) **AVCH-80's ticket, riders AVCH-120/121/122, the `avch-80-rolling-bugs` worktree and the branch** — their right state depends on (1), which is why they are not moved here.
+- [x] **The merge itself — lands via this branch's PR.** Lobby only; no deploy surface. The guard is live in every door the moment it merges. (PR #176 → `604a12b0`; this record's closure rides a second PR from the same lane name.)
