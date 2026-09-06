@@ -59,6 +59,12 @@ EPIC branch. Echo the case (`Worktree: reused <path>` / `none yet — opens at f
    ```bash
    cd "$PROJECT_ROOT" && git fetch origin && git rev-list --count origin/epic/<JIRA-KEY>-<slug>..origin/main
    ```
+   ⭐ **TRUNK mode short-circuits this check, and only this one** (SCC-423). If
+   `git for-each-ref 'refs/remotes/origin/epic/*'` returns nothing for this project, there is no epic
+   to be behind: the ref above does not exist and the command errors rather than answering. Say
+   `Epic: none — trunk mode` and go straight to item 2, where **`origin/main` is what you absorb**.
+   Everything else in this step is unchanged.
+
    **`0` → carry on.** Anything else → **STOP and report the count.** Do NOT merge `main` yourself:
    that write lands on the epic branch and takes Mr. Hatter's sign-off (`git-policy` write gate), and
    it is an epic-wide action that must not happen silently inside one story's lane. Say how far behind

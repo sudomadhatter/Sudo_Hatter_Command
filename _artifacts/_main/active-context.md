@@ -2,7 +2,26 @@
 
 ## 1. PRIME STATE
 Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-09-05
-**2026-09-05 (latest): INCIDENT — Epic 24 work reached live prod mid-epic through a chore lane; the guard now exists (SCC-416, PR #176 merged @ `604a12b0`).**
+**2026-09-06 (latest): EPIC 24 PHASE 1 IS GATED GREEN AND AWAITING THE OPERATOR'S TWO MERGES; AviationChat moves to TRUNK MODE (no more epic branch) once the plan is approved.**
+Operator direction 2026-09-06: ship `epic/AVCH-100-epic-24-agent-quality` to `main` now (nine stories done,
+24.11 retired, 24.8/24.9 backlog by design) and develop the rest from `main` with CI/CD — no epic branch.
+Sync lane `claude/AVCH-100-absorb-main-2` absorbed `origin/main @ bd010dd9` (one ledger conflict, zero product
+conflicts); gate on `ec8c503f`: backend 3569P/46S/0F (cov 67.50%) · build green · **E2E GREEN 44/44** ·
+main-write-gate pass (146 keyed commits) · enforcement 5/5. Road: AviationChat PR #86 (sync → epic; the epic
+ruleset refuses a direct push) then PR #87 (epic → `main` = production deploy; shows CONFLICTING until #86
+lands; never "Update branch"). PR #85 closed as superseded (its commit rides #86). Then
+`/cicd-push-e2e --after-merge AVCH-100`; AVCH-100 stays In Progress until 24.8/24.9.
+**Plan awaiting `approved`:** `_artifacts/_main/2026-09-06_trunk-mode-no-epic-branch/implementation_plan.md` —
+a third epic mode, *trunk*: story lanes cut from `origin/main`, PR into `main`, five checks, operator merges;
+the switch is "no `origin/epic/<KEY>-*` exists". One tradeoff for his call: widen AviationChat's
+`main_write_gate.py` to admit `claude/AVCH-<n>-<slug>` (recommended) vs. naming story lanes `chore/`. Two
+lanes after approval: C1 AviationChat docs + gate (`chore/AVCH-<new>-trunk-mode`, first lane under the new
+model), C2 lobby rules/doors/SOP (`chore/SCC-<new>-trunk-mode`). Closes SCC-416's AviationChat leftovers:
+AVCH-80's `4afaa667` rides to main as the reviewed PR #73 resolution, `pr-check-skip.yml` reaches `main`,
+AVCH-80 + riders already Done. Machine quirk saved to memory: Turbopack refuses a symlinked `node_modules`
+in a worktree (build `--webpack`; E2E needs a real `npm ci`). Record:
+`Projects/AGY_AVIATIONCHAT/_artifacts/epic_24/epic-24-ship-to-main/walkthrough.md` (on the lane).
+**2026-09-05: INCIDENT — Epic 24 work reached live prod mid-epic through a chore lane; the guard now exists (SCC-416, PR #176 merged @ `604a12b0`).**
 `chore/AVCH-80-rolling-bugs` (cut off `main`) shared three runtime files with the live `epic/AVCH-100`; both
 preflights judged it by its own diff and `/cicd-push-e2e` shipped it (PR #72 → `4afaa667` → Cloud Run 00076).
 The operator's ruling forbidding it lives on the epic branch, unreadable from `main`. SCC-416 adds
