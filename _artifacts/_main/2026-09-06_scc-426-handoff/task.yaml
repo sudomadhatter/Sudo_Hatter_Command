@@ -1,0 +1,6 @@
+task_key: SCC-426
+primary_repo: .
+branch: chore/SCC-426-handoff
+close_command: /smh-close-task-merge-tree   # lobby: docs-only, Task door, PR into main that Mr. Hatter merges
+secondary_repos: []
+riders: []
