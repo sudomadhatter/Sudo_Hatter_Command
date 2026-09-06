@@ -38,6 +38,30 @@ MEMORY_PREFIXED = [
 ]
 
 
+def env_refuses_worktree(stderr: str) -> bool:
+    """Did the ENVIRONMENT refuse to host case K's fixture, as opposed to git rejecting it?
+
+    Case K needs a real `git worktree add`, which must create `<repo>/.git/worktrees/<name>`.
+    Some environments will not allow that write — measured inside the Claude Code sandbox after
+    a worktree is removed mid-session, which leaves the admin directory read-only for the rest
+    of the session — and K then reports FAIL on its own scaffolding. That is a false red: it
+    says nothing about `check_maps.py`, and its only remedy is to run the whole suite a second
+    time somewhere else, which is how one gate run becomes two.
+
+    ⛔ DELIBERATELY NARROW, on BOTH axes, because a skip is a hole in a gate. The message must
+    name `.git/worktrees` (so a failure anywhere else in git still fails) AND carry one of three
+    environment errnos (so a git-level rejection — a bad ref, an existing worktree, a locked
+    entry — still fails). Widen either half and K stops proving anything on the machine where
+    it matters. CI is unsandboxed and hosts the fixture for real, so the skip never fires there.
+    """
+    low = stderr.lower()
+    if ".git/worktrees" not in low:
+        return False
+    return any(errno in low for errno in ("read-only file system",
+                                          "device or resource busy",
+                                          "permission denied"))
+
+
 def _bucket(root: Path, sessions: list[str], index_body: str) -> Path:
     """A depth-3 bucket: <root>/_artifacts/_main/ with >=2 session folders and an INDEX."""
     bucket = root / "_artifacts" / "_main"
@@ -257,12 +281,48 @@ def main() -> int:
     # ⚠ POSIX only. `is_executable` aside, the teardown is the problem: on Windows a pruned
     # worktree leaves a directory shell that blocks a later `worktree add`, and only PowerShell
     # removes it. Skipped rather than shipped red on the machine that cannot clean up after it.
+    # The classifier is pinned to VERBATIM stderr, both ways, so the skip cannot quietly widen.
+    # Both strings below were measured in this repo on 2026-09-05.
+    c.check("K-ENV an environment refusal of the fixture is recognised",
+            env_refuses_worktree(
+                "Preparing worktree (detached HEAD 06ba80e7)\n"
+                "fatal: could not create directory of '.git/worktrees/lane-probe': "
+                "Read-only file system")
+            and env_refuses_worktree(
+                "fatal: could not create directory of '.git/worktrees/lane-probe': "
+                "Device or resource busy"),
+            "K would report FAIL on its own scaffolding when the machine will not host it - a "
+            "red that says nothing about check_maps.py and whose only remedy is to run the "
+            "whole suite again elsewhere")
+    c.check("K-ENV CONTROL a real git rejection is NOT excused",
+            not env_refuses_worktree("fatal: invalid reference: HEAD")
+            and not env_refuses_worktree(
+                "fatal: '/tmp/x/lane-probe' already exists")
+            # names the admin directory, but the errno is git/FS refusing rather than the
+            # environment: this is the string that keeps the errno clause honest.
+            and not env_refuses_worktree(
+                "fatal: could not create directory of '.git/worktrees/lane-probe': File exists")
+            # the errno is ours, but the path is not the admin directory: this is the string
+            # that keeps the `.git/worktrees` clause honest.
+            and not env_refuses_worktree(
+                "fatal: could not create directory of '/tmp/x': Read-only file system"),
+            "the skip has widened past the environment refusing the ADMIN DIRECTORY - a git "
+            "rejection, or any other read-only path, would now be silently skipped and K would "
+            "stop proving that --depth3-only does not false-block from a lane")
+
     if os.name != "nt" and (repo / ".git").exists():
         with TempDir() as tmp:
             wt = tmp / "lane-probe"
             add = subprocess.run(["git", "-C", str(repo), "worktree", "add", "--detach",
                                   str(wt), "HEAD"], capture_output=True, text=True)
-            if add.returncode != 0:
+            if add.returncode != 0 and env_refuses_worktree(add.stderr):
+                # LOUD, and no rows: a silent skip is how a gate rots. The operator must be able
+                # to tell "K did not run here" from "K passed" at a glance, and must NOT read
+                # this line as a reason to re-run the suite somewhere else - nothing else in the
+                # suite needs the second run.
+                print(f"[SKIP] K worktree fixture - the environment refuses it: "
+                      f"{add.stderr.strip()[:200]}")
+            elif add.returncode != 0:
                 c.check("K worktree fixture could be created", False, add.stderr.strip()[:200])
             else:
                 try:

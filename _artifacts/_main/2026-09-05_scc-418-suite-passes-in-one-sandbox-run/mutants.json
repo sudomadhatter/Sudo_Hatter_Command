@@ -1,0 +1,68 @@
+{
+  "ticket": "SCC-418",
+  "date": "2026-09-05",
+  "rule": ".claude/rules/tests-must-gate-for-real.md - Mutation Testing",
+  "declared_before_the_sweep": true,
+  "derivation": "code-derived: every mutant is drawn from a decision in the source under test (the SKIP tuple, the path-normalisation, and the classifier's two clauses), never from reading the cases and asking what would break them",
+  "sweep": "one sequential sweep, .agents/scripts/tests/ patched on disk and restored in a finally; residue checked afterwards (no `return True`, no inverted classifier, git status shows only the intended edits)",
+  "result": "6/6 killed, each by its DECLARED case",
+  "mutants": [
+    {
+      "id": "M1",
+      "file": ".agents/scripts/tests/test_command_surfaces.py",
+      "decision_mutated": "SKIP gains the worktrees marker",
+      "mutant": "drop \"/.claude/worktrees/\" from the SKIP tuple",
+      "declared_killer": "CS-22 B-SKIP",
+      "outcome": "KILLED",
+      "failed_cases": ["CS-22 B-SKIP"]
+    },
+    {
+      "id": "M2",
+      "file": ".agents/scripts/tests/test_command_surfaces.py",
+      "decision_mutated": "is_skipped() matches the path against the SKIP markers",
+      "mutant": "widen the skip to every path (return True)",
+      "declared_killer": "CS-22 B-SKIP CONTROL",
+      "outcome": "KILLED",
+      "failed_cases": ["CS-22 B-SKIP CONTROL", "CS-22 B0 (anti-vacuity, collateral)"]
+    },
+    {
+      "id": "M3",
+      "file": ".agents/scripts/tests/test_command_surfaces.py",
+      "decision_mutated": "scan_path() normalises to a ROOT-relative path before matching",
+      "mutant": "match the ABSOLUTE path instead (return f.as_posix())",
+      "declared_killer": "CS-22 B-SKIP",
+      "outcome": "KILLED",
+      "note": "this is the trap the marker creates and the reason the normalisation exists: a lane checkout LIVES at <root>/.claude/worktrees/<lane>/, so an absolute match would skip every file of a lane run and report a vacuous clean scan of nothing",
+      "failed_cases": ["CS-22 B-SKIP"]
+    },
+    {
+      "id": "M4",
+      "file": ".agents/scripts/tests/test_check_maps.py",
+      "decision_mutated": "env_refuses_worktree() requires the message to name .git/worktrees",
+      "mutant": "drop the .git/worktrees clause (excuse any read-only path)",
+      "declared_killer": "K-ENV CONTROL",
+      "outcome": "KILLED",
+      "failed_cases": ["K-ENV CONTROL"]
+    },
+    {
+      "id": "M5",
+      "file": ".agents/scripts/tests/test_check_maps.py",
+      "decision_mutated": "env_refuses_worktree() requires one of three environment errnos",
+      "mutant": "drop the errno clause (excuse any admin-directory failure)",
+      "declared_killer": "K-ENV CONTROL",
+      "outcome": "KILLED",
+      "failed_cases": ["K-ENV CONTROL"]
+    },
+    {
+      "id": "M6",
+      "file": ".agents/scripts/tests/test_check_maps.py",
+      "decision_mutated": "env_refuses_worktree() returns True for an environment refusal",
+      "mutant": "invert the classifier",
+      "declared_killer": "K-ENV",
+      "outcome": "KILLED",
+      "failed_cases": ["K-ENV", "K-ENV CONTROL"]
+    }
+  ],
+  "width_note": "M4 and M5 are the two NARROWING mutants the rule asks for: each drops one arm of a two-clause AND, and each is caught by a control string that exercises exactly the arm that was dropped - one naming the admin directory with a git errno (File exists), one carrying our errno on a different path (/tmp/x). Without both control strings the two clauses would be certified only jointly, which is the boundary a real regression walks through.",
+  "closing_full_green": "both files run bare and unfiltered after the sweep: test_command_surfaces.py 319/319, test_check_maps.py 37/37"
+}
