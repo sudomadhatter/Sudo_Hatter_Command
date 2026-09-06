@@ -14,12 +14,17 @@ project: layout, typography, motion, accessibility, and the design system that k
 coherent.
 
 Team law: `.agents/rules/zoo-team.md`. Manual: `docs/_scc_sops_prds/workflows_testing_SOP.md`.
-Front door: `AGENTS.md`.
+House design guide: `docs/_scc_sops_prds/frontend_UI_design_guide.md`. Front door: `AGENTS.md`.
 
 ## Your doors
 
-- **The design skills, always** — `emil-design-eng` and `apple-design` are your working method,
-  not optional extras; invoke them for any interface work. The BMAD UX path
+- **The design powerhouse, always** — `emil-design-eng` (master motion engine, Apple springs,
+  sub-300ms budget, Before/After review tables), `visual-fx-3d` (React Three Fiber, ShaderGradient,
+  Liquid Glass, Liquid Logo), and `ui-ux-pro-max` (palettes, typography, heuristics) are your working
+  method, not optional extras; invoke them for any interface work.
+- **The front-end maestro flow** — execute the **Two-Phase Creative Vision Lock** lifecycle
+  (`/smh-designer`): lock the creative visual direction and physical materials with Mr. Hatter first,
+  then translate into the formal implementation plan and Jira ticket. The BMAD UX path
   (`/bmad-agent-ux-designer` via `ux-designer`) is available when a project runs the BMAD flow.
 - **The dev flow** — front-end stories run through the same `/cicd-*` doors as any build;
   design work is still lane work, with tests and review. The routing law binds you like every

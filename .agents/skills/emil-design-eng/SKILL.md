@@ -672,3 +672,72 @@ When reviewing UI code, check for:
 | Framer Motion `x`/`y` props under load     | Use `transform: "translateX()"` for hardware acceleration        |
 | Same enter/exit transition speed           | Make exit faster than enter (e.g., enter 2s, exit 200ms)         |
 | Elements all appear at once                | Add stagger delay (30-80ms between items)                        |
+## Apple Fluid Interfaces & 2-Parameter Spring Model
+
+Derived from Apple WWDC (Designing Fluid Interfaces): an interface feels alive when motion begins from the current on-screen value, inherits user gesture velocity, and can be redirected mid-flight.
+
+### The Two-Parameter Model
+- **Response (`response` in seconds):** The duration of one oscillation if there were no friction/damping. In UI, 0.3s to 0.45s creates snappy physical movement without lag.
+- **Damping Fraction (`damping` from 0 to 1):**
+  - `1.0` = **Critically damped:** Settles as fast as physically possible with zero overshoot or bounce. Default for clean, professional UI (modals, sheets, tabs).
+  - `0.7 - 0.85` = **Underdamped (subtle bounce):** Natural physical feel for momentum flicks, springy cards, or pull-to-refresh.
+  - `< 0.7` = **Bouncy:** Only for playful consumer apps or milestone celebration badges.
+
+```js
+// Framer Motion / Motion mapping
+const appleSpringDefault = { type: "spring", duration: 0.35, bounce: 0 };
+const appleSpringFlick = { type: "spring", duration: 0.4, bounce: 0.18 };
+```
+
+### Direct Manipulation & Interruptibility
+- **Track velocity on release:** Measure the last 3-4 pointer events so when a drag ends, the spring inherits the user's flick speed.
+- **Never lock input during transitions:** If a modal is closing and the user taps the screen, it must stop or reverse instantly without waiting for the animation to finish.
+- **Decompose 2D motion:** Animate X and Y with independent springs so diagonal momentum tracks correctly.
+
+---
+
+## The 4-Gate Opportunity Filter
+
+Before proposing or approving animation, run every element through this 4-gate filter:
+
+1. **Frequency:**
+   - *100+ times/day (command palette, keyboard shortcuts, fast navigation):* **REJECT. Zero animation.** Raycast-style instant state changes.
+   - *Tens of times/day (hover states, list selects):* Ultra-fast (<= 150ms) or no motion.
+   - *Occasional (modals, drawers, settings):* Standard smooth animation (150-300ms).
+   - *First-time / Milestone (onboarding, success celebration):* Expressive delight.
+2. **Purpose:** Must serve *Feedback*, *Spatial Consistency*, *State Indication*, *Preventing Jarring Changes*, or *Explanation*. If the only reason is "it looks cool" on a frequent action, delete it.
+3. **Speed:** UI interactions must stay within duration budgets:
+   - Buttons: 100-160ms
+   - Popovers / Tooltips: 125-200ms
+   - Dropdowns / Selects: 150-250ms
+   - Drawers / Modals: 200-350ms
+4. **Springs vs Duration:** Use springs for gestures, interruptible states, and physical drag; use cubic-bezier CSS transitions for predetermined enters/exits.
+
+---
+
+## Code Review & Remedial Hierarchy
+
+When reviewing UI code, prioritize fixes in this order:
+1. **Delete the animation:** If triggered by keyboard or seen 100+ times/day.
+2. **Reduce it:** Shorten duration, reduce transform travel distance.
+3. **Fix easing:** Swap `ease-in` to `ease-out` or custom cubic bezier.
+4. **Fix origin & physicality:** Anchor `transform-origin` to trigger; change `scale(0)` to `scale(0.95)` + opacity.
+5. **Move to GPU:** Ensure only `transform` and `opacity` animate. Replace layout property transitions (`height`, `width`, `margin`).
+6. **Interruptibility:** Replace rigid keyframes with CSS transitions or springs.
+7. **Accessibility:** Honor `@media (prefers-reduced-motion: reduce)` with gentle opacity crossfades.
+
+---
+
+## Multi-Variant Prototyping & Library Selection
+
+When exploring interface alternatives, produce three discrete variants for comparison:
+- **Variant A (Crisp & Minimal):** Instantaneous or <= 120ms transitions, zero bounce, maximum density. Best for data-dense dashboards.
+- **Variant B (Physical & Tactile):** Apple 2-parameter springs, active press scales (`scale(0.97)`), origin-aware popovers. Best for everyday product UI.
+- **Variant C (Fluid & Expressive):** Organic springs, layered depth, translucent materials, and fluid morphs. Best for marketing heroes and consumer flows.
+
+### Component Library Matrix
+- **Base UI:** Preferred for modern headless primitives with native CSS variable transform origins (`var(--transform-origin)`) and zero runtime styling overhead.
+- **Radix UI:** Battle-tested accessible headless primitives; excellent for complex dialogs, context menus, and toolbars.
+- **Shadcn / Tailwind:** Fast copy-paste component scaffolds styled with utility classes.
+
+*For ready-to-build code implementations, see [RECIPES.md](RECIPES.md).*

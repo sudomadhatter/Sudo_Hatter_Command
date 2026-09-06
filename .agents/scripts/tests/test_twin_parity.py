@@ -169,6 +169,7 @@ NOT_PAIRED = {
     "smh-adviser-board.md": _ONE_SUBJECT + " (multi-voice advisory board)",
     "smh-review.md": _ONE_SUBJECT + " (ad-hoc read-only review)",
     "smh-sync-vscode.md": _ONE_SUBJECT + " (cross-machine VS Code environment synchronization)",
+    "smh-designer.md": _ONE_SUBJECT + " (master UI/UX design orchestrator and brainstorm partner)",
 }
 
 # The pairs that carry a fenced shared law TODAY: FIVE of the seven, after SCC-212 promoted the
