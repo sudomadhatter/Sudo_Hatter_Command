@@ -2303,9 +2303,13 @@ Nothing is actually owed.
                 ("tickets (plural) + your call", "Whether the residue gets its own tickets is your call"),
                 ("your call + ticket (reversed)", "Your call whether the residue becomes a ticket"),
                 ("another board's tickets as the home", "That work is AviationChat's, on its own AVCH tickets"),
-                # Review R1 (SCC-417): the key wearing the house markup was let through, reproduced.
+                # Review R1/R9 (SCC-417): a key wearing the house markup was let through by EVERY entry
+                # that joins two tokens with `\s+` - the reader hands the patterns raw markdown. The
+                # rows below reach the flattened path; each still matches exactly one entry.
                 ("another board's tickets, key in backticks", "That work is AviationChat's, on its own `AVCH` tickets"),
                 ("another board's ticket, bold around own..ticket", "The vault needs its **own AVCH ticket**, none of it touched here"),
+                ("create/mint, verb in bold", "**Mint** its own AVCH key for the remainder"),
+                ("fold into <KEY>, key in bold", "Fold the one-line fix into **AVCH-54** (it hits that lane directly)"),
                 # Review R4 (SCC-417): the plural owner - "their" was exercised by nothing.
                 ("another board's tickets, plural owner", "Those findings are AviationChat's, on their own AVCH tickets"),
                 # Review R2 (SCC-417): the reversed arm's PLURAL had no pin of its own - the SCC-416 row

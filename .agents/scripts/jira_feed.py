@@ -2155,12 +2155,10 @@ _BANNED_PATTERNS = [
     # SCC-417: work filed as ANOTHER board's tickets ("its own AVCH tickets"). The project token
     # is case-sensitive by a scoped flag group: the list compiles under re.I, and without the
     # group "its own two tickets" would match. Measured 0 hits over 194 walkthroughs at arming.
-    # Review R1: the key may wear inline markup - "its own `AVCH` tickets" and "its **own AVCH
-    # ticket**" are the house style, and the plain-text entry let both through (reproduced). Up
-    # to two markup characters at each seam; a WORD between the key and "tickets" still does not
-    # match, on purpose.
-    (re.compile(r"\b(?:its|their)\s+[`*_]{0,2}own\s+[`*_]{0,2}(?-i:[A-Z]{2,10})[`*_]{0,2}\s+tickets?\b",
-                re.I),
+    # A key wearing inline markup ("its own `AVCH` tickets", "its **own AVCH ticket**" - the house
+    # style) reaches this entry flattened: `banned_action_rows` strips the markup before the walk,
+    # for every entry, because the blindness was the reader's, not this pattern's (SCC-417 review).
+    (re.compile(r"\b(?:its|their)\s+own\s+(?-i:[A-Z]{2,10})\s+tickets?\b", re.I),
      "files this work as another board's tickets"),
 ]
 # ⛔ DELIBERATELY NOT DETECTED: a row that is a STATUS NOTE rather than an imperative -
@@ -2169,6 +2167,9 @@ _BANNED_PATTERNS = [
 # machine-detectable, they read exactly like the context prose that legitimately surrounds an
 # owed item, and a detector that guesses at them false-reds honest walkthroughs. Acceptance B5
 # scopes Part B to row 1's class only. Widening this is a decision, not a tidy-up.
+
+
+_INLINE_MARKUP = re.compile(r"[`*_]+")   # the three inline markers markdown puts INSIDE a phrase
 
 
 def banned_action_rows(text: str) -> list[tuple[str, str]]:
@@ -2182,8 +2183,14 @@ def banned_action_rows(text: str) -> list[tuple[str, str]]:
         return []
     out: list[tuple[str, str]] = []
     for row in rows:
+        # SCC-417 review: the row arrives with its markdown markers, and every entry that joins two
+        # tokens with `\s+` went blind the moment one of them wore bold or backticks - "its own
+        # **AVCH** tickets", "**Mint** its own AVCH key", "into **AVCH-54**" all returned nothing
+        # (reproduced). Flatten the inline markup in the text the patterns SEE; the row itself is
+        # returned verbatim, so the banner still quotes what the agent wrote.
+        flat = _INLINE_MARKUP.sub("", row)
         for pat, why in _BANNED_PATTERNS:
-            m = pat.search(row)
+            m = pat.search(flat)
             if m:
                 out.append((row, f"{why} (matched: '{m.group(0).strip()[:60]}')"))
                 break          # one reason per row; the first match is the clearest one
