@@ -60,6 +60,14 @@ personal area and stays untouched.
 | enforcement suite, first run | `python3 .agents/scripts/tests/run_all.py` | **79/80 — `test_check_maps.py` FAILED** | The lobby's machine floor. It caught a real omission of mine, not a flake: `F2 the live _artifacts tree reports no MISSING rows`, because this session folder had no row in `_artifacts/_main/INDEX.md` |
 | the drift itself | `python3 .agents/scripts/check_maps.py` | exactly one row named: `_artifacts/_main/INDEX.md: missing row for 2026-09-06_scc-419-bugs-cycle-12/` | Confirming the failure was mine and bounded, rather than the known maps-journal cache drift the session banner warns about |
 | enforcement suite, after the row | `python3 .agents/scripts/tests/run_all.py` | **80/80 files passed** (`33/33` in the final group) | Certification at the shipping state |
+| toolkit workflow lint | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **0 errors, 0 warnings** | One of the three gates the lane's preflight names |
+| depth-3 index gate | `python3 .agents/scripts/check_maps.py --depth3-only --strict` | **silent — clean** | The second named gate, and the strict form of the check that caught the missing row |
+| lane preflight | `python3 .agents/scripts/task_preflight.py --expect-key SCC-419 --repo . --branch chore/SCC-419-bugs-cycle-12` | **0 errors, 1 warning — `VERDICT: clear to close out and merge`** | The PR gate refuses without its receipt; the one warning is this lane's own worktree still being checked out, which the close-out prunes |
+
+**The PR gate refused the first push**, and correctly: `main-write-gate` read a close-out manifest
+with no `preflight-receipt.json` beside it. The receipt is committed below. No `Verdict:` stamp is
+added to satisfy the flight recorder — this lane ran no code review, and a stamp it did not earn
+would pull in the roster gate and block the preflight.
 
 ## Your Actions
 
