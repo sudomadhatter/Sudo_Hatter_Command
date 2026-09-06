@@ -103,12 +103,12 @@ what the ticket says it is: inexpressible in a permission row, so documented, ne
 | A | Every measured delete spelling is DENIED on Zoo and Antigravity: `git branch -rd X`, `-r -d X`, `-r --delete X`, `--delete main`, `-f -d main`, `-f --delete main`, `-v -d main`, `-vv -d main`, plus `env -u GITHUB_TOKEN` twins and the `cd <abs> && ` house shape; every ceremony spelling still ALLOWS | each spelling in parity `DESTRUCTIVE` (A2, A3, A6, A12) and Zoo `BATTERY`; `CEREMONY` and A4/A13 unchanged and green; `permission_render.py --check` exit 0; `test_env_twin_invariant` green |
 | B | The Claude guard `guard-branch-delete.py` DENIES a branch delete whose target list holds anything outside `chore/`, `claude/`, `epic/`, or holds a substitution, in any flag position; ALLOWS the doors' own prune spellings; is SILENT on every non-delete `git branch` and on every non-git command; never returns `ask`; fails open on garbage input; wired exactly once in the single PreToolUse Bash group; has an INDEX row | `test_guard_branch_delete.py` (own harness, HOME redirected like `test_shape_block.py`); the wiring case mirrors `test_wired_inside_the_single_pretooluse_bash_group` |
 | C | Widening any lane re-allow by ONE character reds the battery | near-miss rows `git branch -d chore`, `chores/x`, `claude`, `claudes/x`, `epic`, `epics/x` in Zoo `BATTERY` and parity `DESTRUCTIVE`; the mutant sweep widens each prefix in `families.json`, re-renders, and names the case that goes red |
-| D | The five wrappers are pinned ASK on all three platforms and named in the guide | `ASK_BATTERY` + parity `UNKNOWN` (A5); the guide §7 cell names all five |
+| D | ⚠️ **AMENDED DURING THE BUILD** (see §2). Four of the five wrappers are pinned **DENY** on Zoo and Antigravity; only `env FOO=1` remains ASK | `BATTERY` (deny) for `nice`/`xargs`/`command`/`env -i` + `ASK_BATTERY` for `env FOO=1`; the guide §7 cell names all five. The original row said ASK for all five, and the measurement that changed decision row 1 changed this row with it — it was left stale until the code review caught it |
 | E | The backtick launder is pinned as a Zoo/Antigravity residual and refused by B on Claude | `RESIDUAL_APPROVE` carries the spelling; guide §7 line; B's substitution case |
 | F | `scan()` counts a replayed pair ONCE | new case in `test_approval_stops.py`: the duplicated pair → `calls == 1`, `stops == 1`; control: two DIFFERENT ids → `2, 2` |
 | G | `vscode_running()` fails CLOSED: an answer that is not a process table means "running" | cases with `subprocess.run` stubbed: the verbatim WSL interop error → True; `INFO: No tasks are running…` → False; a table naming `Code.exe` → True; a table without it → False; `OSError` → True |
 | H | `approval_stops.py` has its INDEX row | `check_maps.py --depth3-only --strict` exit 0; the row names the SCC-407 question and the door |
-| I | The receipt ignores an untracked entry that is a character device, and only that | `gate_receipt._measure_dirt` takes a device predicate; a faked device row → `dirty_tree: False`; a real file beside it → `True` and named; the predicate defaults to `stat` |
+| I | The receipt ignores an untracked entry that is a sandbox MASK, and only that | `gate_receipt._measure_dirt` consults the module-level `is_sandbox_mask`; a faked mask row → `dirty_tree: False`; a real file beside it → `True` and named; the predicate itself is driven against real filesystem objects (`/dev/null`, a 0444 empty file, a symlink to a device, a 0444 file with content). ⚠️ Widened by the code review: the predicate covered ONE mask shape and a second exists, and the filter had shipped in one of four tree gates while the changelog claimed all — both closed |
 | J | Row 9 is struck with its evidence, no code | the outline's `## Done` cites `smh-llm-approvals.md` Step 4's five-path list |
 | K | The whole suite is green in ONE sandboxed run at the shipping SHA; guide count line current; every mutant killed by a NAMED case, narrowings included; one SOP aside + changelog row for the new guard | `run_all.py` from the lane, in-sandbox; `gate_receipt.py run … --gate suite` clean; `mutants.json`; `sop_currency.py` |
 
@@ -133,7 +133,7 @@ what the ticket says it is: inexpressible in a permission row, so documented, ne
    (both the use and its result), so `total` and `stops` count the event once.
 6. **G** — `vscode_running()`: the WSL/Windows arm returns True unless the output looks like a
    `tasklist` answer (a header row containing `Image Name`, or the `INFO: No tasks` form).
-7. **H, I** — the INDEX row; `_measure_dirt(work, out_dir, is_device=…)` filters device entries.
+7. **H, I** - the INDEX row; `_measure_dirt(work, out_dir)` filters sandbox-mask entries through the module-level `is_sandbox_mask`.
 8. **Mutants** — one per fix, narrowings not only deletions: drop one deny spelling; loosen the
    guard's namespace test to `startswith("c")`; make the guard accept a substitution; make it `ask`;
    widen each lane re-allow by one character (row C's proof); dedupe on the wrong key; flip the
@@ -201,7 +201,7 @@ checks_run:  Declared Change Set parses; every EDIT path exists on disk and ever
              plan steps 1-9 referenced exist; both-sides commands (python3, stdlib only); lane fit;
              Scope Ledger (NEW artefacts x acceptance row); acceptance precondition (>=2 rows, each
              with an observable)
-read:        declared_change_set.py parse -> 24 entries, "incomplete": []; ls over 21 EDIT paths ->
+read:        declared_change_set.py parse -> 24 entries, "incomplete": []; ls over 18 EDIT paths (24 entries = 18 EDIT + 6 NEW) ->
              all ok; .agents/hooks/guard-branch-delete.py and its test -> absent (NEW); Declared
              paths: no backend/ frontend/ firebase/ functions/ mobile/ .github/ -> Task door
              /smh-close-task-merge-tree is right; NEW artefacts: guard -> B, test -> B, task.yaml ->
