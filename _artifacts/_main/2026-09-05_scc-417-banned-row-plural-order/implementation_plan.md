@@ -50,7 +50,7 @@ The reason string is unchanged ("hands a ticket decision to the operator"). A sh
 
 Reason: "files this work as another board's tickets". The project token is case-sensitive by a scoped flag group, because the list compiles under `re.I` and `[A-Z]{2,10}` would otherwise match "its own two tickets". This is the widening the code's own note calls "a decision, not a tidy-up"; this plan is that decision, and the operator's `approved` on this file is what makes it one.
 
-**Measured before any edit** (`probe_patterns.py`, the two candidates swapped in over the live list): 6 must-flag rows flagged, 14 must-not-flag rows clean (the six new near-misses plus every existing B5 and B10 negative control), and **0 new hits across the 194-walkthrough corpus**.
+**Measured before any edit** (`probe_patterns.py`, the two candidates swapped in over the live list): 6 must-flag rows flagged (the verbatim SCC-416 row, the three new shapes, the existing `ticket + your call` shape and one B5 corpus row), 14 must-not-flag rows clean (the six new near-misses, four of the seven B5 REAL_ALLOWED rows and the four B10 controls; the suite itself runs all seven), and **0 new hits across the 194-walkthrough corpus** (tracked `*walkthrough*.md` files carrying a `## Your Actions` section, as `jira_feed.open_actions` reads them).
 
 ### 2.3 `test_jira_feed.py` — the pins, written RED first
 
