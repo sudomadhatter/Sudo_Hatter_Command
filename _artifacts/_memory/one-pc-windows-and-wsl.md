@@ -1,24 +1,44 @@
 ---
 name: one-pc-windows-and-wsl
-description: "There is ONE PC — Windows, with Ubuntu inside WSL2 — not two machines and not a Mac. The Windows side runs PowerShell, `python`, the Antigravity IDE and the credential store; the Ubuntu side runs bash, `python3`, Claude Code, Codex, opencode and the Antigravity CLI. Three checkouts of this repo exist on it; only the Ubuntu `Ubuntu` one is live. Every fact here carries the command that proves it. Measured 2026-09-04 (SCC-400), replacing the false two-machines claim of 2026-08-08."
+description: "TWO machines: a Mac (Darwin, Homebrew, `/Users/sudohatter`) and ONE PC — Windows with Ubuntu inside WSL2. The PC is the primary; the Mac is the second seat and goes stale between sessions. On the PC, Windows runs PowerShell, `python`, the Antigravity IDE and the credential store while Ubuntu runs bash, `python3`, Claude Code, Codex, opencode and the Antigravity CLI; three checkouts live there and only the Ubuntu `Ubuntu` one is live. Every fact here carries the command that proves it, and every probe branches per machine. Measured 2026-09-04 (SCC-400); the Mac half restored 2026-09-06 after the 09-04 rewrite over-corrected and deleted a true fact."
 metadata:
   node_type: memory
   type: project
-  probe: 'grep -q microsoft-standard-WSL2 /proc/version'
-  probe: 'test -x /usr/bin/pwsh'
-  probe: 'test -x /usr/bin/python3 && test ! -e /usr/bin/python'
-  probe: 'ls ~/.gemini/bin/agy && test ! -d ~/.gemini/antigravity-ide'
-  probe: 'test -d /mnt/c/Sudo_Hatter_Command'
-  modified: 2026-09-04
+  probe: 'if [ -e /proc/version ]; then grep -q microsoft-standard-WSL2 /proc/version; else [ "$(uname)" = Darwin ]; fi'
+  probe: 'if [ "$(uname)" = Darwin ]; then [ -d /opt/homebrew ]; else test -x /usr/bin/pwsh; fi'
+  probe: 'if [ "$(uname)" = Darwin ]; then command -v python3 >/dev/null; else test -x /usr/bin/python3 && test ! -e /usr/bin/python; fi'
+  probe: 'if [ "$(uname)" = Darwin ]; then test -d ~/.antigravity-ide; else ls ~/.gemini/bin/agy && test ! -d ~/.gemini/antigravity-ide; fi'
+  probe: 'if [ "$(uname)" = Darwin ]; then test -d ~/Sudo_Hatter_Command; else test -d /mnt/c/Sudo_Hatter_Command; fi'
+  modified: 2026-09-06
 ---
 
-**One PC.** Windows is the host; Ubuntu runs inside WSL2 on it. There is no Mac and there never
-was one on this system — the claim written 2026-08-08 ("driven from TWO machines, this Mac AND a
-Windows PC") went false when SCC-376 moved the working environment into WSL2 on 2026-09-02, and it
-stayed loaded and trusted until an agent used it on 2026-09-04 to make four wrong statements to
-Mr. Hatter in one afternoon. This file replaces it. Superseded: `two-machines-mac-and-pc`.
+**TWO machines: a Mac, and one PC that is Windows hosting Ubuntu in WSL2.**
 
-    grep -q microsoft-standard-WSL2 /proc/version   # kernel 5.15.167.4-microsoft-standard-WSL2
+⚠️ **Corrected 2026-09-06.** The 2026-09-04 rewrite (SCC-400) said *"There is no Mac and there
+never was one on this system."* **That is false, and it was false when written.** The 08-08 claim
+it replaced was wrong about *which* environments exist on the PC; it was **right** that a Mac
+exists. Killing both halves at once meant every agent booting on the Mac — where this is the
+first-listed `⛔ Read first` memory — was told its own machine did not exist. Restore the Mac half;
+keep the PC half exactly as SCC-400 measured it. Superseded: `two-machines-mac-and-pc`.
+
+Which machine am I on? One command, and every probe on this file branches on it:
+
+    uname            # Darwin -> the Mac. Linux -> the PC's Ubuntu side.
+
+| | The Mac | The PC (Windows + WSL2 Ubuntu) |
+|---|---|---|
+| Role | **second seat** — goes stale between sessions; sync it first | **primary** — a week of work can land here while the Mac sits idle |
+| Home | `/Users/sudohatter` | `C:\Users\dlohn` · `/home/dlohn` |
+| Checkout | `~/Sudo_Hatter_Command` | three of them — see below |
+| Toolchain | Homebrew `/opt/homebrew`, `python3`, `gcloud` **authenticated** | `python` (Windows) · `python3` (Ubuntu); `gcloud` **not** authenticated |
+| Antigravity | IDE at `~/.antigravity-ide`, store `~/.gemini/config/config.json` | IDE on Windows, CLI `~/.gemini/bin/agy` on Ubuntu |
+
+**Some work can only be done on one of them, and that is the point of keeping both.** The Firestore
+TTL question that sat open on AVCH-105 was answered on the Mac on 2026-09-06 purely because
+`gcloud auth` is live there and not on the PC. Read a machine-shaped blocker as *"do it on the other
+seat"*, never as *"cannot be done."*
+
+    grep -q microsoft-standard-WSL2 /proc/version   # PC only: kernel 5.15.167.4-microsoft-standard-WSL2
 
 ## The two sides — one box, two environments
 

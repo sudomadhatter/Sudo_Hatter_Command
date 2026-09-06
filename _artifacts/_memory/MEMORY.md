@@ -4,7 +4,7 @@
      Related memories share a line rather than getting one each — every file stays linked. -->
 
 ## ⛔ Read first
-- [ONE PC: Windows host, Ubuntu in WSL2](one-pc-windows-and-wsl.md) — not two machines, no Mac; which side runs what; three checkouts, only WSL `Ubuntu` is live; why the Windows clone is kept.
+- [TWO machines: a Mac + ONE PC (Windows hosting Ubuntu in WSL2)](one-pc-windows-and-wsl.md) — run `uname` FIRST; PC is primary, Mac is the second seat and goes stale; `gcloud` is authenticated only on the Mac, so a machine-shaped blocker means "do it on the other seat", never "cannot be done"; three PC checkouts, only WSL `Ubuntu` is live.
 
 ## Project stores
 <!-- Paths stay BACKTICKED, never markdown links: check_store() resolves every markdown link to a

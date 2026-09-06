@@ -1763,169 +1763,225 @@
       "id": "allow-strings",
       "cmd": "strings",
       "why": "operator harvest 2026-09-05: read-only binary inspection; 1 stop. Reads, never writes.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-nm",
       "cmd": "nm",
       "why": "operator harvest 2026-09-05: read-only symbol listing; 1 stop.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-npx-playwright",
       "cmd": "npx playwright",
       "why": "operator harvest 2026-09-05: test runner; 2 stops. Scoped to playwright exactly as `npx vitest` is - bare `npx` stays refused by battery A5 because `npx create-next-app` must ask.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-venv-pytest",
       "cmd": ".venv/bin/python -m pytest",
       "why": "operator harvest 2026-09-05: project test runner; 2 stops. Zoo already carries this spelling.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-venv-pip-list",
       "cmd": ".venv/bin/python -m pip list",
       "why": "operator harvest 2026-09-05: READ-only dependency listing. `pip install` is deliberately NOT here - installing a dependency is an Ask First item in the constitution.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-firebase-emul",
       "cmd": "firebase emulators:exec",
       "why": "operator harvest 2026-09-05: emulator test tier; 2 stops. `emulators:exec` runs a command and tears the emulator down; `firebase deploy` is not allowed.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-firebase-version",
       "cmd": "firebase --version",
       "why": "operator harvest 2026-09-05: version probe.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-git-remote-read",
       "cmd": "git remote -v",
       "why": "operator harvest 2026-09-05: read-only remote listing; 2 stops. `git remote remove/set-url/rename` stay denied - a remote edit reroutes pushes silently.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-git-remote-url",
       "cmd": "git remote get-url",
       "why": "operator harvest 2026-09-05: the single-remote read form.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-acli-auth",
       "cmd": "acli jira auth status",
       "why": "operator harvest 2026-09-05: credential probe; prints no secret.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-acli-view",
       "cmd": "acli jira workitem view",
       "why": "operator harvest 2026-09-05: board read. Filed per SUBCOMMAND, never bare `acli` - SCC-393 measured that a bare row is refused because `acli jira workitem delete` is denied.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-acli-search",
       "cmd": "acli jira workitem search",
       "why": "operator harvest 2026-09-05: board read.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-acli-comment",
       "cmd": "acli jira workitem comment",
       "why": "operator harvest 2026-09-05: the board write every close ceremony makes.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-acli-link",
       "cmd": "acli jira workitem link",
       "why": "operator harvest 2026-09-05: the board write the ticket ceremonies make.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-acli-edit",
       "cmd": "acli jira workitem edit",
       "why": "operator harvest 2026-09-05: the board write the ticket ceremonies make.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-acli-assign",
       "cmd": "acli jira workitem assign",
       "why": "operator harvest 2026-09-05: the board write the ticket ceremonies make.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-acli-create",
       "cmd": "acli jira workitem create",
       "why": "operator harvest 2026-09-05: the board write the ticket ceremonies make.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-acli-transition",
       "cmd": "acli jira workitem transition",
       "why": "operator harvest 2026-09-05: the board write every close ceremony makes.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-git-submodule",
       "cmd": "git submodule",
       "why": "operator harvest 2026-09-05 (/smh-llm-approvals): 2 stops; every project under Projects/ is a submodule, so status/update runs in any project-bound lane.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-git-switch",
       "cmd": "git switch",
       "why": "operator harvest 2026-09-05 (/smh-llm-approvals): 1 stop; the modern spelling of the already-allowed `git checkout`.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-install-mode",
       "cmd": "install -m",
       "why": "operator harvest 2026-09-05 (/smh-llm-approvals): 1 stop, 25s; used to place hook scripts with an explicit mode.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-rm-rf-scratchpad",
       "cmd": "rm -rf /tmp/claude",
       "why": "operator harvest 2026-09-05 (/smh-llm-approvals): the 5h08m whale — the observed command was `rm -rf /tmp/claude/gbtest`. SCOPED to the temp root on purpose (covers /tmp/claude/ and /tmp/claude-<uid>/); the operator picked 'rm scoped to temp paths', so bare `rm -rf` is deliberately NOT granted.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-rm-f-scratchpad",
       "cmd": "rm -f /tmp/claude",
       "why": "operator harvest 2026-09-05 (/smh-llm-approvals): same temp scoping as allow-rm-rf-scratchpad.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-rm-scratchpad",
       "cmd": "rm /tmp/claude",
       "why": "operator harvest 2026-09-05 (/smh-llm-approvals): same temp scoping; the plain form.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-rm-worktree-scratch",
       "cmd": "rm .claude/worktrees/",
       "why": "operator harvest 2026-09-05 (/smh-llm-approvals): deleting a lane's own scratch file. Path-scoped to the worktree tree, never bare rm.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-rmdir-worktree-scratch",
       "cmd": "rmdir .claude/worktrees/",
       "why": "operator harvest 2026-09-05 (/smh-llm-approvals): 2 stops, 2m30s — `rmdir .claude/worktrees/agent-*/scratch`. rmdir only removes EMPTY directories, so this is the safest delete verb there is.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-rm-f-artifacts",
       "cmd": "rm -f _artifacts/",
       "why": "operator harvest 2026-09-05 (/smh-llm-approvals): clearing a lane's own red-output scratch files under its artifact dir.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-git-rm",
       "cmd": "git rm",
       "why": "operator harvest 2026-09-05 (/smh-llm-approvals): 2 stops; staging a deletion is an ordinary lane write and `git add` is already allowed.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-worktree-venv-python",
@@ -1938,19 +1994,43 @@
           "Bash(/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/*)"
         ]
       },
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-firebase-hosting-disable",
       "cmd": "firebase hosting:disable",
       "why": "operator harvest 2026-09-06 via /smh-llm-approvals: disable hosting targets during testing/teardown.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
     },
     {
       "id": "allow-unlink",
       "cmd": "unlink",
       "why": "operator harvest 2026-09-06 via /smh-llm-approvals: worktree cleanup unlinking .venv symlinks.",
-      "only": ["claude"]
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-git-branch-delete-lane",
+      "cmd": "git branch --delete",
+      "why": "Restores a legal close-out step Zoo's prefix deny swallowed | SCC-378 2026-09-06: Zoo matches by longest prefix and cannot express Antigravity's `(?!(chore|claude|epic)/)` lookahead, so the bare `git branch --delete` deny also swallowed the lane's own branches - measured deny on Zoo, allow on Antigravity. The three re-allows below restore a legal close-out step; they are longer than the deny prefix, so Zoo's longest-wins picks them.",
+      "render": {
+        "zoo": [
+          "git branch --delete chore/",
+          "git branch --delete claude/",
+          "git branch --delete epic/",
+          "env -u GITHUB_TOKEN git branch --delete chore/",
+          "env -u GITHUB_TOKEN git branch --delete claude/",
+          "env -u GITHUB_TOKEN git branch --delete epic/"
+        ]
+      },
+      "only": [
+        "zoo"
+      ]
     }
   ],
   "deny": [
@@ -2117,7 +2197,7 @@
     {
       "id": "deny-git-push",
       "cmd": "git push",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | SCC-378 battery: HEAD:main was un-denied on Antigravity (Zoo's `HEAD:` deny is prefix-based; here the target is named so the `HEAD:epic/` landing stays legal) | code review 2026-09-03: literal flags/targets were one anchored token each, so -fu / --force-with-lease=X / --delete origin main / HEAD:develop slipped past; now cluster classes and the same targets Zoo's longest-prefix re-allows leave legal (chore/ claude/ epic/, HEAD:epic/)",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | SCC-378 battery: HEAD:main was un-denied on Antigravity (Zoo's `HEAD:` deny is prefix-based; here the target is named so the `HEAD:epic/` landing stays legal) | code review 2026-09-03: literal flags/targets were one anchored token each, so -fu / --force-with-lease=X / --delete origin main / HEAD:develop slipped past; now cluster classes and the same targets Zoo's longest-prefix re-allows leave legal (chore/ claude/ epic/, HEAD:epic/) | SCC-378 (operator decision 2026-09-06, \"add the five\"): four token-order spellings of an already-denied operation still read ALLOW on both platforms - measured through the matcher mirrors, not grepped. `git branch --delete --force main` was NOT among them; SCC-411 cycle 11 had already closed it.",
       "render": {
         "zoo": [
           "git push --force",
@@ -2149,7 +2229,13 @@
           "env -u GITHUB_TOKEN git push origin :",
           "env -u GITHUB_TOKEN git push origin \"main",
           "env -u GITHUB_TOKEN git push --delete",
-          "env -u GITHUB_TOKEN git push origin --delete"
+          "env -u GITHUB_TOKEN git push origin --delete",
+          "git push origin refs/heads/main",
+          "git push origin -d main",
+          "git push -d origin main",
+          "env -u GITHUB_TOKEN git push origin refs/heads/main",
+          "env -u GITHUB_TOKEN git push origin -d main",
+          "env -u GITHUB_TOKEN git push -d origin main"
         ],
         "antigravity": [
           "command(git push --force.*)",
@@ -2207,7 +2293,19 @@
           "command(git push origin HEAD:(?!epic/).*)",
           "unsandboxed(git push origin HEAD:(?!epic/).*)",
           "command(env -u GITHUB_TOKEN git push origin HEAD:(?!epic/).*)",
-          "unsandboxed(env -u GITHUB_TOKEN git push origin HEAD:(?!epic/).*)"
+          "unsandboxed(env -u GITHUB_TOKEN git push origin HEAD:(?!epic/).*)",
+          "command(git push origin refs/heads/main)",
+          "command(env -u GITHUB_TOKEN git push origin refs/heads/main)",
+          "unsandboxed(git push origin refs/heads/main)",
+          "unsandboxed(env -u GITHUB_TOKEN git push origin refs/heads/main)",
+          "command(git push origin -[a-zA-Z]*d[a-zA-Z]* main)",
+          "command(env -u GITHUB_TOKEN git push origin -[a-zA-Z]*d[a-zA-Z]* main)",
+          "unsandboxed(git push origin -[a-zA-Z]*d[a-zA-Z]* main)",
+          "unsandboxed(env -u GITHUB_TOKEN git push origin -[a-zA-Z]*d[a-zA-Z]* main)",
+          "command(git push -[a-zA-Z]*d[a-zA-Z]* origin main)",
+          "command(env -u GITHUB_TOKEN git push -[a-zA-Z]*d[a-zA-Z]* origin main)",
+          "unsandboxed(git push -[a-zA-Z]*d[a-zA-Z]* origin main)",
+          "unsandboxed(env -u GITHUB_TOKEN git push -[a-zA-Z]*d[a-zA-Z]* origin main)"
         ]
       },
       "only": [
@@ -2299,7 +2397,7 @@
     {
       "id": "deny-git-branch",
       "cmd": "git branch",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | code review 2026-09-03: -Df / -Mf clusters and -d/-m spellings (Zoo folds case) slipped past the literal tokens; targets follow Zoo's re-allows | SCC-411 (cycle 11, 2026-09-06): THE DELETE FLAG IS NOT ALWAYS FIRST. Every row here named the FIRST flag - Zoo by literal prefix, Antigravity by a per-token regex in position three - so ANY option in front of the delete walked straight past the fence. Measured at aa408738 against these very lists, all reading ALLOW on Zoo: `git branch -rd origin/main`, `-r -d`, `-r --delete`, `--delete main`, `-f -d main`, `-f --delete main`, `-v -d main`, `-vv -d main`; on Antigravity all but the `-rd` cluster; on Claude the `-r`/`-v`/`-vv` forms too, because those flags are granted as READS and real git 2.43 accepts them alongside a delete (verified in a throwaway repo: `git branch -v -d victim` -> 'Deleted branch victim'). `--delete` is the long form no deny grammar named at all, and `-r` deletes a REMOTE-TRACKING ref, which is never a lane prune. Eight spellings + their env twins on Zoo; three token shapes on Antigravity (the long form, an option before the long form, an option before a d/D cluster) which cover all eight between them. TWO RESIDUALS STAY OPEN and both are grammar limits, not oversights: (1) the TARGET LIST - `git branch -d chore/x main` deletes both and neither a literal prefix nor a leading-token regex can say 'exactly one argument'; (2) an ARBITRARY option before the delete flag (`--format=%(refname) -d main`), unbounded on both. Claude closes both with `.agents/hooks/guard-branch-delete.py`, which reads the target list; on these two platforms they are documented in the guide s7 rather than claimed closed.",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | code review 2026-09-03: -Df / -Mf clusters and -d/-m spellings (Zoo folds case) slipped past the literal tokens; targets follow Zoo's re-allows | SCC-411 (cycle 11, 2026-09-06): THE DELETE FLAG IS NOT ALWAYS FIRST. Every row here named the FIRST flag - Zoo by literal prefix, Antigravity by a per-token regex in position three - so ANY option in front of the delete walked straight past the fence. Measured at aa408738 against these very lists, all reading ALLOW on Zoo: `git branch -rd origin/main`, `-r -d`, `-r --delete`, `--delete main`, `-f -d main`, `-f --delete main`, `-v -d main`, `-vv -d main`; on Antigravity all but the `-rd` cluster; on Claude the `-r`/`-v`/`-vv` forms too, because those flags are granted as READS and real git 2.43 accepts them alongside a delete (verified in a throwaway repo: `git branch -v -d victim` -> 'Deleted branch victim'). `--delete` is the long form no deny grammar named at all, and `-r` deletes a REMOTE-TRACKING ref, which is never a lane prune. Eight spellings + their env twins on Zoo; three token shapes on Antigravity (the long form, an option before the long form, an option before a d/D cluster) which cover all eight between them. TWO RESIDUALS STAY OPEN and both are grammar limits, not oversights: (1) the TARGET LIST - `git branch -d chore/x main` deletes both and neither a literal prefix nor a leading-token regex can say 'exactly one argument'; (2) an ARBITRARY option before the delete flag (`--format=%(refname) -d main`), unbounded on both. Claude closes both with `.agents/hooks/guard-branch-delete.py`, which reads the target list; on these two platforms they are documented in the guide s7 rather than claimed closed. | SCC-378 (operator decision 2026-09-06, \"add the five\"): four token-order spellings of an already-denied operation still read ALLOW on both platforms - measured through the matcher mirrors, not grepped. `git branch --delete --force main` was NOT among them; SCC-411 cycle 11 had already closed it. | SCC-378 2026-09-06: Zoo matches by longest prefix and cannot express Antigravity's `(?!(chore|claude|epic)/)` lookahead, so the bare `git branch --delete` deny also swallowed the lane's own branches - measured deny on Zoo, allow on Antigravity. The three re-allows below restore a legal close-out step; they are longer than the deny prefix, so Zoo's longest-wins picks them.",
       "render": {
         "zoo": [
           "git branch -D",
@@ -2321,7 +2419,9 @@
           "env -u GITHUB_TOKEN git branch -f -d",
           "env -u GITHUB_TOKEN git branch -f --delete",
           "env -u GITHUB_TOKEN git branch -v -d",
-          "env -u GITHUB_TOKEN git branch -vv -d"
+          "env -u GITHUB_TOKEN git branch -vv -d",
+          "git branch --move main",
+          "env -u GITHUB_TOKEN git branch --move main"
         ],
         "antigravity": [
           "command(git branch -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
@@ -2343,7 +2443,11 @@
           "command(git branch -[a-zA-Z]*[mM][a-zA-Z]*)",
           "unsandboxed(git branch -[a-zA-Z]*[mM][a-zA-Z]*)",
           "command(env -u GITHUB_TOKEN git branch -[a-zA-Z]*[mM][a-zA-Z]*)",
-          "unsandboxed(env -u GITHUB_TOKEN git branch -[a-zA-Z]*[mM][a-zA-Z]*)"
+          "unsandboxed(env -u GITHUB_TOKEN git branch -[a-zA-Z]*[mM][a-zA-Z]*)",
+          "command(git branch --move main.*)",
+          "command(env -u GITHUB_TOKEN git branch --move main.*)",
+          "unsandboxed(git branch --move main.*)",
+          "unsandboxed(env -u GITHUB_TOKEN git branch --move main.*)"
         ]
       },
       "only": [
