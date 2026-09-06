@@ -1,0 +1,6 @@
+task_key: SCC-411
+primary_repo: .
+branch: chore/SCC-411-bugs-cycle-11
+close_command: smh-close-task-merge-tree   # lobby: no deploy surface, Task door, PR into main that Mr. Hatter merges
+secondary_repos: []
+riders: []   # cycle 11 runs as ONE lane on the parent itself; no subtasks are minted for its rows (operator ruling 2026-09-06)
