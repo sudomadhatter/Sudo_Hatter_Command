@@ -176,6 +176,41 @@ DENIED = {
 }
 
 
+def test_the_tokenizer_has_not_DRIFTED_from_the_sibling_it_copies():
+    """`tokenize()` is a deliberate copy of `allow-readonly-chain.py`'s, and copies drift.
+
+    ⛔ WHY A COPY AND NOT A SHARED HELPER. The sibling's `split_atoms` REFUSES on odd input, which
+    is safe there (refusing grants nothing) and wrong here (refusing would fence nothing), so this
+    hook cannot delegate its splitter. The tokenizer alone could be shared, but the two use
+    DIFFERENT quote sets - this one treats a backtick as a quote - so extracting it would change
+    the sibling's behaviour, in a fence that is not this lane's to touch.
+
+    So the copy stays and the DRIFT is what gets fenced: fix a tokenizer bug in one and this goes
+    red naming the other. That is the whole risk the duplication carries (SCC-411 review).
+    """
+    import ast
+
+    def body(path: Path, const: str) -> str:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == "tokenize":
+                src = ast.unparse(node)
+                # The docstrings differ on purpose; the CODE must not.
+                if ast.get_docstring(node):
+                    node.body = node.body[1:]
+                    src = ast.unparse(node)
+                return src.replace(const, "QUOTESET")
+        raise AssertionError(f"no tokenize() in {path}")
+
+    hooks = Path(__file__).resolve().parents[2] / "hooks"
+    mine = body(hooks / "guard-branch-delete.py", "_QUOTES")
+    theirs = body(hooks / "allow-readonly-chain.py", "QUOTES")
+    assert mine == theirs, (
+        "guard-branch-delete.tokenize has drifted from allow-readonly-chain.tokenize. They are "
+        "deliberate copies (see this test's docstring): fix BOTH, or make the divergence "
+        "explicit here.\n--- guard ---\n" + mine + "\n--- sibling ---\n" + theirs)
+
+
 def test_the_batteries_did_not_shrink():
     """A row deleted from either dict is a fence quietly retired, and every other case here
     still passes. The zoo battery pins its own length for the same reason (SCC-411 review)."""
