@@ -1036,10 +1036,12 @@ around, and this one's exit leaves a trail.
 **`## Your Actions` is errands only — and the reader enforces it.** The section holds what you must
 go and *do* outside the chat (live-test a P0 feature, exercise an agent we built, create an account
 on an external service, promote an epic to `main`), plus a ticket transition you have reserved.
-Three things are **not** rows: *a main merge* (your **decision to proceed** is the sign-off, and
+Four things are **not** rows: *a main merge* (your **decision to proceed** is the sign-off, and
 every step after it is the ceremony's), *a decision* (a decision is a question — an agent in a live
-session asks you rather than parking it on your board), and *mint / file / rule on where a ticket
-goes* (an open box there holds the ticket on the review ladder forever). If you would not have to
+session asks you rather than parking it on your board), *mint / file / rule on where a ticket
+goes* (an open box there holds the ticket on the review ladder forever), and *work that belongs
+to another board* ("its own AVCH tickets" — it goes on that board's ticket as a comment, in a plain
+section of the walkthrough, never as a box you owe here). If you would not have to
 leave this chat to do it, it is not a row. `finish` prints a **⛔ BANNED ACTION ROW** banner naming
 the offending row and why.
 

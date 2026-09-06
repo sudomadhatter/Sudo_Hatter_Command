@@ -2270,6 +2270,14 @@ Nothing is actually owed.
             "BMAD re-emits it.",
                 "**File the follow-on Task** from the review section's \"Follow-on\" block (one "
             "ticket: check_gate's remaining edges).",
+                # SCC-417: the row `finish` let through on 2026-09-05 (SCC-416's walkthrough). "your
+                # call" comes BEFORE "tickets", and it is the plural; the entry was forward-only and
+                # singular-only, so `check-actions` reported nothing and the ticket sat at Review
+                # Required until a human read the banner that never printed.
+                "**AviationChat, after recovery, on your call — its own AVCH tickets, none of it "
+            "touched here:** (1) the decision on `4afaa667` — revert on `main`, and re-land the "
+            "AVCH-80 fixes on the epic as a story; (2) the AVCH-119 ruleset gains "
+            "`exclude: refs/heads/epic/*-quickdev`",
             ]
             for i, row in enumerate(REAL_BANNED, 1):
                 c.check(f"B5.{i}x · a REAL banned row from the same corpus IS flagged",
@@ -2284,10 +2292,31 @@ Nothing is actually owed.
             SHAPES = [
                 ("fold into <KEY>", "Fold the one-line fix into AVCH-54 (it hits that lane directly)"),
                 ("board placement", "Board placement is the operator's, not mine"),
-                ("create/mint", "Mint its own AVCH ticket for the remainder"),
+                # SCC-417: "ticket" -> "key" here, because the new another-board's entry also matches
+                # "its own AVCH ticket"; "key" is the AVCH-58 phrase the creation entry was built on.
+                ("create/mint", "Mint its own AVCH key for the remainder"),
                 ("earns a ticket", "Decide whether finding 13 earns a ticket"),
                 ("rule on + ticket", "Rule on whether the residue ticket should exist"),
                 ("ticket + your call", "The nag ticket is optional, your call"),
+                # SCC-417: the two defects of the your-call entry, pinned one per row, and the
+                # shape no entry knew at all - another board's tickets named as the home.
+                ("tickets (plural) + your call", "Whether the residue gets its own tickets is your call"),
+                ("your call + ticket (reversed)", "Your call whether the residue becomes a ticket"),
+                ("another board's tickets as the home", "That work is AviationChat's, on its own AVCH tickets"),
+                # Review R1/R9 (SCC-417): a key wearing the house markup was let through by EVERY entry
+                # that joins two tokens with `\s+` - the reader hands the patterns raw markdown. The
+                # rows below reach the flattened path; each still matches exactly one entry.
+                ("another board's tickets, key in backticks", "That work is AviationChat's, on its own `AVCH` tickets"),
+                ("another board's ticket, bold around own..ticket", "The vault needs its **own AVCH ticket**, none of it touched here"),
+                ("create/mint, verb in bold", "**Mint** its own AVCH key for the remainder"),
+                ("fold into <KEY>, key in bold", "Fold the one-line fix into **AVCH-54** (it hits that lane directly)"),
+                # Review R4 (SCC-417): the plural owner - "their" was exercised by nothing.
+                ("another board's tickets, plural owner", "Those findings are AviationChat's, on their own AVCH tickets"),
+                # Review R2 (SCC-417): the reversed arm's PLURAL had no pin of its own - the SCC-416 row
+                # is reversed AND plural, but the another-board's entry also catches it, so a reversed-
+                # singular mutant survived `len == 1`. This row reaches only the your-call entry
+                # (lowercase "own", no board token).
+                ("tickets (plural) + your call, reversed", "Your call whether the residue gets its own tickets"),
             ]
             for label, row in SHAPES:
                 c.check(f"B11 · the '{label}' shape is flagged on its own",
@@ -2313,6 +2342,31 @@ Nothing is actually owed.
                 c.check(f"B10.{i} · a NOUN-sense 'open'/'file' row is not flagged",
                         flagged(one_row(row)) == [],
                         f"verb x object must be ONE phrase, not two searches: {row}")
+
+            # ── B12 · the near-misses of the SCC-417 widening, pinned ──────────────
+            # The your-call entry now runs in BOTH orders and accepts "tickets"; a seventh entry
+            # catches "its own <BOARD> tickets". Each widening has an honest neighbour one token
+            # away, and these hold that line: a reversed "your call" with no ticket inside the
+            # window, "ticket" followed by "your" without "call", a bare KEY rather than "tickets"
+            # after "its own", a board (not tickets), a lowercase word where the case-sensitive
+            # project token sits ("its own two tickets"), a reversed pair 85 characters apart, and
+            # (review R3) a forward pair 107 characters apart - one near-miss on EACH side of the
+            # 40-character window, measured, not assumed.
+            WIDENED_PROBE = [
+                "Your call on the landing order; SCC-126 lands first, then this lane",
+                "The ticket is Done; your review of the walkthrough is the only thing left",
+                "Its own AVCH-59 lane landed first; nothing owed here",
+                "AviationChat keeps its own AVCH board; nothing there is owed here",
+                "Each finding got its own two tickets already; nothing owed here",
+                "Your call on the landing order: SCC-126 lands first, this lane second, and only "
+            "then does the ticket close",
+                "The ticket is Done; the landing order is SCC-126 first, this lane second, and only "
+            "after both land is the sequencing your call",
+            ]
+            for i, row in enumerate(WIDENED_PROBE, 1):
+                c.check(f"B12.{i} · an honest neighbour of the widened shapes is not flagged",
+                        flagged(one_row(row)) == [],
+                        f"the widening must stop one token short of this row: {row}")
 
             # ── B6 · fenced examples are documentation, not rows (B4) ──────────────
             # `jira_feed._unfenced` was written for exactly this after a live miss (SCC-154,

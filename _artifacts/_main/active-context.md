@@ -16,8 +16,12 @@ Session: `_artifacts/_main/2026-09-05_scc-416-in-flight-epic-freezes-main/`.
 **Record closed 2026-09-05 (second PR, same lane name):** `finish` had held SCC-416 at `Review Required` on one
 `## Your Actions` row that handed over AviationChat work; it is now a prose section in the walkthrough (content on
 AVCH-80, comment 10437). Once that PR merges, `/smh-close-task-merge-tree --after-merge SCC-416` closes the ticket.
-Still open, elsewhere: the `jira_feed.py` banned-row pattern `ticket … your call` is order-sensitive and let that row
-through — a one-pattern fix plus a test, home SCC-411 (the September rolling ticket), on the operator's word.
+**SCC-417 (subtask of SCC-411) closes that gap — built, reviewed PASS @ `e0027c49`, PR #178 ready for the operator's merge.**
+The banned-row gate now catches ticket(s) × "your call" in either order and the plural, a row filing work as another
+board's tickets ("its own AVCH tickets"), and both through inline markup (`banned_action_rows` flattens the markdown the
+patterns see). Ten mutants 10/10; 0 new corpus hits over 194 walkthroughs; suite 79/79. Session:
+`_artifacts/_main/2026-09-05_scc-417-banned-row-plural-order/`. Next: `/smh-close-task-merge-tree` (the sign-off; it
+stamps the preflight receipt the `main-write-gate` PR check reads), the merge, then `--after-merge SCC-417`.
 **2026-08-23: Command Center + AviationChat maps and indexes reconciled; NEXgen excluded.**
 Lobby map lint is clean; `_artifacts/INDEX.md` again carries exactly the newest 50 sessions and 110
 displaced/new-overflow rows were added to the verbatim archive (168 archived total). Current artifact,

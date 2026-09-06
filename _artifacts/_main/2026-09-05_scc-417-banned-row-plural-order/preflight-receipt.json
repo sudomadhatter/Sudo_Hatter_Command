@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-417-banned-row-plural-order",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-417",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "e0027c498535d9974fc7773779706832c6b5d214",
+  "warnings": 1,
+  "when": "2026-09-05T22:54:47-04:00"
+}
