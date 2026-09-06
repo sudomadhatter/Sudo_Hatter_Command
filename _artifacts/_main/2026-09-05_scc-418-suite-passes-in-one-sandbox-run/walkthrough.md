@@ -13,8 +13,9 @@ somewhere else. That is the "we run it every time, then run it again outside" co
 fixed at the source rather than worked around: the live-surface scan no longer reads other people's
 checkouts, and case K's worktree fixture reports a loud `[SKIP]` when the machine refuses to host
 it instead of failing on its own scaffolding. Neither gate was weakened — each fix ships with a
-control case that fails if the exclusion ever grows to cover a real defect, and all six mutants
-were killed by their declared cases.
+control case that fails if the exclusion ever grows to cover a real defect, and all **eleven**
+mutants were killed by their declared cases, five of them narrowings the review added after proving
+they survived the first sweep.
 
 ## The correction that came first
 
@@ -70,10 +71,11 @@ fatal: could not create directory of '.git/worktrees/lane-probe': Read-only file
 ```
 
 The file already had the right answer for a machine that cannot host the fixture — it skips and says
-why on Windows — but that arm keys on `os.name`, and this is not the OS. `env_refuses_worktree()`
-now classifies the refusal. It is narrow on **both** axes: the message must name `.git/worktrees`
-**and** carry one of `read-only file system`, `device or resource busy`, `permission denied`. A bad
-ref, an existing worktree, or a read-only path anywhere else still FAILS.
+why on Windows — but that arm keys on `os.name`, and this is not the OS. `classify_add()` now
+classifies the refusal, returning `run`, `skip` or `fail`. The `skip` arm is narrow on **both** axes:
+the message must name `.git/worktrees` **and** carry one of `read-only file system`,
+`device or resource busy`, `permission denied`. A bad ref, an existing worktree, a sibling
+`.claude/worktrees` path, or a read-only path anywhere else still FAILS.
 
 **The decision lives in ONE pure function, and that is a review fix, not the first cut.** This
 shipped first as a bare `env_refuses_worktree(stderr)` predicate that the call site combined with
@@ -176,3 +178,102 @@ of the "run it twice" experience: `git worktree remove` still leaves a busy admi
 That is worktree plumbing rather than the test suite, it is already recorded in the
 sandbox-mountpoints memory as the standing remedy, and it is named here so the boundary of this
 lane's claim is explicit.
+
+## Your Actions
+
+- [x] The merge itself — lands via this branch's PR
+
+Nothing else is owed. Every review finding was fixed in this lane or dismissed with its reason
+recorded in the findings table; no finding produced a ticket, and nothing was deferred.
+
+## Code Review (2026-09-06)
+
+Verdict: PASS @ fbc0cf9e
+
+Suite evidence measured at `fbc0cf9e36b7d70ff552b38f13fd2ce733474f9e` — the shipping SHA, after the
+last code and test change. `run_all.py` in-sandbox from the lane: **79/79 files passed**, one run.
+
+review-runtime: fan-out
+lens_isolation:  worktree
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted:  5/5
+lenses_na:       none
+findings:        0 decision · 19 patch · 0 defer   (2 noise-dismissed · 2 relevance kills)
+dispositions:    per-lens: blind-hunter=4/1/1 · edge-case-hunter=1/1/1 · literal-correctness-hunter=2/0/0 · acceptance-auditor=7/0/0 · test-adequacy-auditor=5/0/0
+drift:           undeclared=0 · unimplemented=0 · incomplete=0 — `declared_change_set.py diff` returns all three empty against the plan's block at the shipping SHA; the block itself was amended mid-build and every amendment is recorded in the plan's Steps 2, 3 and 5 rather than left to this file
+severity_floor:  none
+
+**Scope.** The committed `origin/main...HEAD` diff: two test files, the SOP and its changelog, plus
+this lane's artefacts. Nothing uncommitted.
+**Method.** Five lenses, each in its own clean context; the four repo-reading lenses each in their
+own isolated worktree copy of this repo at `9ca611ec`, the Blind Hunter with no repo access at all.
+Findings fixed in thread, then the whole floor re-run at the shipping SHA.
+
+**Changes applied: substantial.** The review did not rubber-stamp this lane. Three lenses
+independently found that the `[SKIP]` decision was **split** between a predicate and the `if` that
+consumed it, leaving the branch itself uncertified; the decision was restructured into one pure
+`classify_add()` so a named case can reach all three arms. Five **narrowing** mutants were then
+proven to survive the original sweep, and the sweep was re-declared at eleven and re-run.
+
+### Findings
+
+| # | file:line | severity | failure scenario | disposition |
+|---|---|---|---|---|
+| 1 | `test_check_maps.py:318` (as shipped at 9ca611ec) | important | The decision was `if add.returncode != 0 and env_refuses_worktree(...)`. Widening it to `if add.returncode != 0:` excuses **every** git rejection — bad ref, existing worktree — while `K-ENV` and `K-ENV CONTROL` both stay green, because they only ever call the predicate. Undetectable on any machine where the fixture hosts, which includes CI. | applied @ fbc0cf9e — whole decision moved into `classify_add(returncode, stderr) -> run\|skip\|fail`; `K-ENV CONTROL` now pins the success arm (mutant M11, previously unreachable) |
+| 2 | `test_check_maps.py:60-62` | important | `permission denied` was the one errno of three with no positive fixture. Dropping it from the tuple leaves both cases green while an EACCES machine silently returns to failing on its own scaffolding — the exact false red this lane removes. A lens reproduced `chmod 0500` on `.git/worktrees` against git 2.43 and got that errno **verbatim**, so the untested member was the most reproducible refusal of the three. | applied @ fbc0cf9e — third positive string added; mutant M9 |
+| 3 | `test_command_surfaces.py` `CS-22 B-SKIP CONTROL` | important | The control pinned 3 of the 6 `LIVE_DIRS`. Adding `/.opencode/` to `SKIP` leaves the control green, `B` green, and `B0`'s anti-vacuity floor unmoved (1723 → 1650 against a threshold of 200) — silently retiring the surface whose own comment records a **measured** real offender at `.opencode/commands/smh-sync-agents.md:85`. `/.roo/` and `/_bmad/` behave the same. | applied @ fbc0cf9e — one literal per live root, routed through the real `is_skipped(scan_path(...))` composition; mutant M7 |
+| 4 | `test_check_maps.py:57` / `test_command_surfaces.py` `SKIP` | important | Both path clauses survived **narrowing**: loosening `.git/worktrees` (or the SKIP marker) to a bare `worktrees` left every case green, while the loosened classifier then excuses a read-only refusal of a **lane checkout** directory — which the control's own failure message declares must still fail. | applied @ fbc0cf9e — boundary negatives added on both sides; mutants M8 and M10 |
+| 5 | `test_check_maps.py:335` | suggestion | `add.stderr.strip()[:200]` trims only the ends, and git's message is two lines, so one `print()` emitted a bare unattached `fatal:` line between two PASS rows — in the branch whose entire purpose is that the operator can tell "K did not run" from "K failed" at a glance. Reproduced. | applied @ fbc0cf9e — whitespace-collapsed with `" ".join(stderr.split())` on both the skip and fail arms |
+| 6 | `test_check_maps.py` `K-ENV` | suggestion | git has a **second** phrasing: when `.git/worktrees` does not exist yet — the first worktree in a repo, which is when its parent is most likely unwritable — git 2.43 says `could not create leading directories of`. Reproduced against real git. The classifier survives it only because it keys on path + errno and never on the phrase; the obvious future tightening to a phrase match would pass both cases while re-breaking the refusal. | applied @ fbc0cf9e — the measured string added as a fixture |
+| 7 | `implementation_plan.md` acceptance row E | important | Row E asserted `32/32`. The file reports `37/37`, and it was never `32` on either side of the change (34 `c.check` sites before, 36 after). A reader executing row E as written must score it FAILED. | applied @ fbc0cf9e — row corrected, with the arithmetic stated |
+| 8 | `implementation_plan.md` acceptance row A | important | Row A's proving command is `run_all.py --on-main` **from the lobby**, and every green in the record was a lane run. The lobby form is not runnable before the merge at all — the lobby checkout carries `main`'s copy of the test file, so it measures the unfixed code by construction. | applied @ fbc0cf9e — row restated against the command that actually proves it, with the lobby form named explicitly as the post-merge check rather than quietly scored as passed |
+| 9 | `implementation_plan.md` Steps 2/5 + Declared Change Set | important | The plan declared five mutants against six shipped, and its change-set line said "SKIP gains the worktrees marker" while the diff also introduced `scan_path()`/`is_skipped()` and changed **what the loop matches against**. The approved text and the shipped work had diverged with nothing recording it. | applied @ fbc0cf9e — three `⚠️ AMENDED DURING THE BUILD` blocks record exactly where the work grew past the approved scope |
+| 10 | `mutants.json` `width_note` | important | The record claimed M4/M5 were the narrowing mutants the rule asks for. Deleting one arm of a two-clause AND makes the predicate accept **more** strings — a widening. No mutant in pass 1 was a narrowing, and the surviving five prove it. | applied @ fbc0cf9e — corrected, and pass 1 is preserved in the JSON with why it was not enough |
+| 11 | `implementation_plan.md` `## Approval` | important | The section still read "(awaiting the operator's literal `approved`)" in the same commit that landed the code. A later reader cannot tell an unapproved lane from an approved one whose stamp was never written. | applied @ fbc0cf9e — approval stamped with its date and scope |
+| 12 | `workflows_testing_SOP.md:2511` | suggestion | The passage promised "Two `[SKIP]` shapes" and then said one of them prints nothing, sending an operator hunting for a second `[SKIP]` line the suite never emits. | applied @ fbc0cf9e — reframed as two false failures, one announced and one silent; "does not walk" also corrected to "no longer reads", which is what a result filter actually does |
+| 13 | `test_check_maps.py:257` | nitpick | The pre-existing `⚠ POSIX only` comment had been pushed ~25 lines from the `if os.name != "nt"` it describes, with two unrelated cases wedged between. | applied @ fbc0cf9e — the two new cases moved above the whole K preamble, which also puts them where their own "these run on every OS" note belongs |
+| 14 | `test_command_surfaces.py` B's loop | suggestion | The skip is a **result filter**, not a walk prune: `rglob` enters every worktree before `is_skipped` rejects it (measured from the lobby: 27,770 entries enumerated, 10,185 discarded). Two siblings prune instead, and `test_sops_prds_folder.py` carries a comment recording that a result filter over `ROOT.rglob` once crashed that file on Windows with WinError 3. | **dismissed** — correctness is identical, and the crash is not reachable today: deepest measured path is 187 chars (~221 on Windows against MAX_PATH 260). Its own lens rated it `suggestion` at confidence 0.65. Refactoring a green, mutation-certified loop for a latent cost fails question 2 of `code-standards` §6.5. Recorded in the code instead, with the house prune pattern named for whoever next touches that loop |
+| 15 | K's `finally` teardown; other K skip arms | nitpick | Two prunable `lane-probe` phantoms and empty admin stubs survive K's deliberately repo-safe teardown; and the Windows and `.git`-absent arms of K skip silently while the new arm is loud. | **relevance-killed** — both are pre-existing and outside this diff; the teardown and those two arms are untouched by this lane. The phantoms this session created were pruned |
+
+### Gates
+
+- **Enforcement suite** — `python3 .agents/scripts/tests/run_all.py` from the lane, in-sandbox: `79/79 files passed`, exit 0, at `fbc0cf9e`.
+- **Toolkit lint** — `workflow_lint.py --toolkit-only`: `-- 0 error(s), 0 warning(s), 8 info --`. The 8 info rows are pre-existing UTF-8 BOM notices on `testarch-*` commands, untouched here.
+- **Assertion evidence** — the named cases, re-run green: `test_command_surfaces.py --case "CS-22"` → `17/17`; `test_check_maps.py --case "K"` → `37/37`, with K's four real assertions running.
+- **Mutation** — 11 declared, **11 killed** by their declared cases, restore verified byte-identical against the pre-sweep `sha256` of both files.
+- **SOP currency** — `sop_currency.py --paths <changed>`: clean, exit 0. The armed gate exempts `.agents/scripts/tests/`, so the SOP edit is owed by the house rule and not by the hook; it is in the same commit either way.
+- **Link + anchor** — `check_links.py --base origin/main`: `clean` in-sandbox. Re-run **outside** the sandbox it reports 2 unresolved paths, both `.claude/settings.local.json` — pre-existing SCC-392 prose (2026-09-04) about a deliberately gitignored file. `git diff origin/main...HEAD -- docs/` contains **zero** occurrences of that path; only the line numbers moved under this lane's changelog row. Not introduced by this diff.
+- **Door parity** — n/a: no command was added, renamed or deleted.
+- **Declared change set** — `present: true`, `incomplete: []`, `undeclared: []`, `unimplemented: []`.
+
+### Acceptance matrix
+
+| Row | Proving assertion | Result |
+|---|---|---|
+| **A** | full suite from the lane, in-sandbox, with worktrees under the root | `79/79` @ `fbc0cf9e`. RED was `316/317`. ⚠️ The row's *lobby* form is not runnable pre-merge (the lobby carries `main`'s copy); named as the post-merge check |
+| **B** | `CS-22 B` + `CS-22 B0` | `0 live file(s)`, `1727` files scanned against a `> 200` floor — including one run with four review-lens worktrees open, the bug's own condition arriving unstaged |
+| **C** | `CS-22 B-SKIP CONTROL` | green, now one literal per live root through the real normaliser; mutants M2, M7, M8 |
+| **D** | `K-ENV` + `K-ENV CONTROL` | green on all three errnos, both git phrasings, and all three arms of the decision; mutants M4, M5, M6, M9, M10, M11 |
+| **E** | `test_check_maps.py` bare | `37/37`, K's four real assertions running |
+| **F** | the SOP passage + one changelog row | both in the lane, same commit as the code |
+
+### Clean-Code Gate
+
+| Check | Result |
+|---|---|
+| `py_compile` on both changed files | OK |
+| Banned patterns on added lines (`bare except`, unowned TODO/FIXME) | none |
+| Comment contract (§1) | every new block carries its *why*; the one stale-adjacency case is finding 13, fixed |
+| New abstraction with a single caller (§2) | `classify_add`, `scan_path`, `is_skipped` each have a second caller by construction — the named cases. That is the point of extracting them: a decision no case can call is the defect finding 1 records |
+| Machine floor (`ruff`/`pyrefly`) | n/a — the lobby has no `backend/.venv`; `run_all.py` is this repo's floor and it is green |
+
+### Step 0.7 — re-derivation
+
+1. **Did anything this diff references move, rename or delete on `main`?** No. `git diff --name-only <merge-base>..origin/main` is **empty** — nothing landed on `main` since this lane was cut at `06ba80e7`, so no reference could have moved. Re-resolved anyway: every path and anchor this diff names resolves (`check_links.py` clean).
+2. **True overlap and merge result.** Overlap is **empty**. `git merge-tree --write-tree --messages HEAD origin/main` wrote tree `59e0c5b6` with no conflict messages. No absorb was needed, so `HEAD` is unmoved and the verdict SHA is the tested one.
+3. **Sibling lanes and landing order.** None. `git worktree list` shows only the lobby on `main` and this lane; the five review-lens worktrees were transient and are gone. No landing-order dependency.
