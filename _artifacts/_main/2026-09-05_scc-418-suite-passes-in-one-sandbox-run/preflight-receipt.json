@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-418-suite-passes-in-one-sandbox-run",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-418",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "fbc0cf9e36b7d70ff552b38f13fd2ce733474f9e",
+  "warnings": 1,
+  "when": "2026-09-06T00:17:19-04:00"
+}
