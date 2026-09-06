@@ -57,7 +57,7 @@ dispositions: per-lens: blind-hunter=0/0/0 · edge-case-hunter=0/0/0 · code-sta
 
 drift: undeclared=0 · unimplemented=0 · incomplete=0
 
-Verdict: PASS @ 771228fa
+Verdict: PASS @ d0b29f1b
 
 All components adhere strictly to house law:
 - No dead references or phantom paths remain from the 8 retired micro-skills.

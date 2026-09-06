@@ -1,7 +1,7 @@
 {
   "accept_unpushed_main": false,
   "branch": "chore/SCC-420-designer-suite",
-  "errors": 1,
+  "errors": 2,
   "exit": 2,
   "fetch": true,
   "fresh": true,
