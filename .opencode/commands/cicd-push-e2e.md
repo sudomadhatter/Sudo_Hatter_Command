@@ -61,7 +61,13 @@ git branch -a --list '*epic/*'          # live epic branches, local + origin
 ```
 - **Exactly one live epic branch** → that's the candidate; Step 1.5 confirms it mechanically.
 - **Several** → show them with `git log --oneline origin/main..<branch> | head` each and decide together.
-- **None** → nothing to ship; if the operator is pointing at a `chore/<JIRA-KEY>-<slug>` branch, **the
+- **None** → ⭐ **first ask whether that is TRUNK mode, not an accident** (SCC-423). A project with no
+  `origin/epic/*` at all is not mid-epic with a missing branch: it develops on `main`, its stories land
+  one at a time through `/cicd-close-story-merge-tree`'s trunk arm, and **there is no epic for this door
+  to ship — that is the design, not a gap.** Say so and stop; do not cut an epic branch to give this
+  command something to do. This door still owns a `chore/*` lane whose diff reaches a deployable path
+  (below), which is the one thing it is for in a trunk project.
+  Otherwise, nothing to ship; if the operator is pointing at a `chore/<JIRA-KEY>-<slug>` branch, **the
   diff decides, not the ask**: Step 1.5 admits it here under the **light gate** only when it touches a
   **deployable** path (`backend/ frontend/ firebase/ functions/ mobile/ .github/`). Nothing deployable →
   it refuses, and that lane closes out through `/smh-close-task-merge-tree`, which owns the Task ceremony

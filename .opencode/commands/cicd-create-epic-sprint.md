@@ -100,10 +100,19 @@ Then take exactly one arm, and say in one line which and why:
 - **neither** → decide the epic's MODE, then cut it. ⛔ **The mode is Mr. Hatter's call, asked once,
   here, never defaulted** (`git-policy` § The epic's mode, SCC-416):
 
-  > **Is this epic an EXTENSION OF MAIN or a QUICK-DEV branch?**
+  > **Is this epic an EXTENSION OF MAIN, a QUICK-DEV branch, or does this project run TRUNK?**
   > *extension of main* — every story lands by PR into the epic under the full four-check gate (E2E on
   > every landing); the epic is kept current with `main`. *quick-dev* — stories land by direct push after
-  > the local light gate; no CI per story; E2E once, at `/cicd-push-e2e`.
+  > the local light gate; no CI per story; E2E once, at `/cicd-push-e2e`. *trunk* — **no epic branch is
+  > cut at all**: every story lane is cut from `origin/main` and lands on `main` by a PR he merges, and
+  > each merge is a deploy.
+
+  ⭐ **The trunk answer means this step cuts NOTHING** (SCC-423). Skip 1b entirely — no `git checkout -b`,
+  no `git push -u`. The absence of `origin/epic/<KEY>-*` IS the mode, so cutting a branch "just to have
+  one" silently converts the project back to an epic project and every door downstream reads it that
+  way. Record the mode in the epic's banner on `sprint-status.yaml` instead, and commit the kickoff's
+  artifacts on a `chore/<JIRA-KEY>-<slug>` lane off `origin/main` through its own PR — there is no epic
+  branch for them to ride.
 
   The answer is the branch name and nothing else — the one switch GitHub's ruleset and every local door
   read without opening a file:

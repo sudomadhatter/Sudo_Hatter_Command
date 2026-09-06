@@ -385,7 +385,7 @@ question the system will not answer for you at the end.
 
 | Condition | Qualified Lane | Entry Command | Enforcement / Eject Rules |
 |---|---|---|---|
-| Touches deployable code (`backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/`, `.github/`) with story ID | **The Story Lane** | ① `/cicd-write-story-tests` | Full ①②③ cycle with epic branch isolation. |
+| Touches deployable code (`backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/`, `.github/`) with story ID | **The Story Lane** | ① `/cicd-write-story-tests` | Full ①②③ cycle. Epic-branch isolation — **or, in a `trunk`-mode project, no epic branch at all: the lane is cut from `origin/main` and lands on `main` by a PR he merges** (SCC-423). |
 | Touches deployable code, small and low-risk, no story ID | **The Fast Lane** | `/cicd-quick-dev` | **Ejects to Story Lane** if touching auth, PII, DB schema, or cross-service contracts. |
 | System/toolkit work (`.agents/`, `.githooks/`, `AGENTS.md`) qualifying `TASK` | **The Task Lane** | `/smh-quick-dev` | Worktree off `main`, closes via `/smh-close-task-merge-tree`. **Ejects to Story Lane** if deployable code touched. |
 | System/toolkit work qualifying `LIGHT` or `LIGHT-VCS` | **The Lightweight Lane** | `/smh-quick-fix` | No plan, no review, direct chore execution. **Ejects to Task Lane** if real diff expands. |
@@ -477,16 +477,27 @@ just created, and the branch is never cut unkeyed. Before it mints, it **searche
 open Epic** and says in one line what it looked at — a re-run after a stall is the normal case, and a
 second Epic row for one BMAD epic is a row nothing will ever move again.
 
-**It asks you one question before it cuts the branch, and the answer lives in the branch name.** Is
-this epic an **extension of main** or a **quick-dev branch**? An extension of main is treated like
+**It asks you one question before it cuts the branch, and the answer lives in the branch name — or in
+there being no branch at all.** Is this epic an **extension of main**, a **quick-dev branch**, or does
+this project run **trunk**? An extension of main is treated like
 production while it lives: every story lands by pull request into the epic under the full gate — the
 E2E suites run on every landing — and the epic is kept current with `main`. A quick-dev branch is the
 cheap shape: stories land by direct push after the local light gate, nothing is spent on CI per story,
 and E2E runs once, at the end, when the epic goes to `main`. Quick-dev epics carry a `-quickdev` suffix
 on the slug (`epic/AVCH-131-epic-25-tool-menu-quickdev`); an extension of main carries none. Every door
-reads the mode from that name, so it cannot drift from what the server enforces. In **both** modes,
-while the epic is live, `main` is frozen for everything the epic changes — a chore lane that touches a
-file the epic is also changing is epic work, and the pre-flights send it to the epic, not to `main`.
+reads the mode from that name, so it cannot drift from what the server enforces. In **both** of those
+modes, while the epic is live, `main` is frozen for everything the epic changes — a chore lane that
+touches a file the epic is also changing is epic work, and the pre-flights send it to the epic, not
+to `main`.
+
+**Trunk is the third answer, and it means this step cuts nothing** (SCC-423; AviationChat moved to it
+on 2026-09-06). There is no epic branch and no integration branch: every story lane is cut straight
+from `origin/main`, and it lands on `main` through a pull request you merge, under whatever checks
+that repo's `main` ruleset requires. **Every merge is a deploy** — that is the trade you are making
+for losing the staging area, and it is why the story ceremony itself does not get any lighter. The
+switch is not a word in a document, it is a git query: if `git for-each-ref
+'refs/remotes/origin/epic/*'` comes back empty for that project, the doors take the trunk road. So
+there is nothing to keep in sync and nothing to freeze, because there is no second branch to drift.
 
 **An epic branch carries two numbers, and `epic/` always comes first.** Its ticket key and its
 sprint number are different numbers that drift apart — `AVCH-18` is the ticket, `epic-19` is what

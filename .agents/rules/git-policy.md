@@ -69,11 +69,12 @@ trigger: model_decision
   is a product change no matter what its ticket is called. `ship_preflight.py` refuses the mirror
   case from the other side, so a lane cannot slip through both.
 
-### The epic's mode is decided at kickoff, and a live epic freezes `main` for its scope (SCC-416)
+### The epic's mode is decided at kickoff, and a live epic freezes `main` for its scope (SCC-416, SCC-423)
 
-When the epic branch is cut, the operator decides once — **extension of main** or **quick-dev** — and
-the answer is the branch name: a `-quickdev` suffix on the slug, or its absence. Every door reads it
-from there; an agent never chooses it and never changes it.
+When the epic branch is cut, the operator decides once — **extension of main**, **quick-dev**, or
+**trunk** — and the answer is readable from git, never from prose: the `-quickdev` suffix on the slug,
+its absence, or **no epic branch at all**. Every door reads it from there; an agent never chooses it
+and never changes it.
 
 - **Extension of main** (`epic/<KEY>-epic-<N>-<slug>`): every story lands by **pull request into the
   epic** under the full gate — E2E on every landing — and the epic is kept current with `main`
@@ -81,8 +82,44 @@ from there; an agent never chooses it and never changes it.
   end, through `/cicd-push-e2e`, on the operator's decision.
 - **Quick-dev** (`epic/<KEY>-epic-<N>-<slug>-quickdev`): stories land by **direct push** after the local
   light gate (suite + build); nothing is spent on CI per story; E2E runs once, at `/cicd-push-e2e`.
+- **Trunk** — *no epic branch exists.* Story lanes are cut from **`origin/main`** and land on **`main`**
+  by a **pull request the operator merges**, under whatever checks that repo's `main` ruleset requires.
+  There is no integration branch, no epic ship step, and **every merge is a deploy**. The ①②③ story
+  ceremony is unchanged; only the base and the destination differ.
 
-**In both modes, while the epic is live, `main` is frozen for everything the epic changes.** Scope is
+  ⭐ **The switch is a git query, not a judgement** (SCC-423, AviationChat 2026-09-06):
+
+  ```bash
+  cd "$PROJECT_ROOT" && git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'
+  # a line for this project's epic -> extension-of-main or quick-dev, read the suffix
+  # NOTHING                       -> trunk: cut from origin/main, land on main by PR
+  ```
+
+  ⛔ **Trunk mode does not repeal one line of the write gate.** `main` is still reached only through a
+  pull request the operator merges; an agent still never merges it. What changes is *which branch*
+  opens that PR — a `claude/<KEY>-<slug>` story lane instead of an `epic/*`. A repo whose `main`
+  publishes a server-side branch check must therefore ADMIT that story-lane shape, or its own stories
+  cannot land (AviationChat's `main_write_gate.py`, AVCH-111, refused `claude/*` by design and was
+  widened for exactly this).
+
+  ⛔ **And it does not un-refuse the LOCAL merge.** `merge-target-guard.sh` still refuses `main:story`
+  — a `claude/*` lane merged onto `main` on this machine. A trunk landing happens on GitHub's servers,
+  where no local hook runs, so the guard was never in its way; the pair it refuses is still the
+  SCC-97 wrong-target accident. Absorbing `origin/main` **into** your lane (`story:main`) was already
+  allowed and stays the everyday move.
+
+  **Board files ride the lane, not an epic.** `sprint-status.yaml`, `active-context.md` and the story
+  file are committed in the story worktree and land with its PR — the same discipline as the epic
+  modes, one branch shorter. The shared checkout still stands on `main`, and now genuinely moves each
+  time a lane lands.
+
+  ⛔ **The `claude/*`-on-origin invariant is unchanged, because trunk inherits the extension-of-main
+  carve-out**: a story branch reaches origin as the **head of its own PR**, and the close-out prunes
+  it. It is still never pushed for any other reason, so `/cicd-resume`'s reading of the origin
+  `claude/*` list — *parked, in-flight, on another machine* — stays true.
+
+**In the two epic modes, while the epic is live, `main` is frozen for everything the epic changes.**
+(A trunk project has no epic, so nothing to freeze — and no lane can be misrouted past one.) Scope is
 the epic's diff (`git diff --name-only origin/main...origin/epic/<KEY>-<slug>`), not its ticket tree. A
 main-bound lane sharing a **product file** with it is epic work: it lands on the epic via
 `claude/<KEY>-<slug>` and `/cicd-close-story-merge-tree`, never on `main`. `task_preflight.py` and
@@ -123,7 +160,7 @@ was on the epic branch.*
 | Your own `claude/*` story branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
 | The epic branch (`epic/*`) — a story landing | **Mr. Hatter's sign-off** — his in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (which IS the sign-off) |
 | A `chore/*` branch (commits and pushes) | **FREE** — the merge back to `main` is what's gated |
-| `main` | **A pull request the operator merges — in every repo (SCC-347).** In this repo the door is `/smh-close-task-merge-tree`; in project repos it is `/cicd-push-e2e`, shipping the epic, or a `chore/*` whose diff **reaches a deployable path** (`ship_preflight.py` derives which; a project `chore/*` touching nothing deployable takes the Task door instead). See below. Never on an agent's own initiative. |
+| `main` | **A pull request the operator merges — in every repo (SCC-347).** In this repo the door is `/smh-close-task-merge-tree`; in project repos it is `/cicd-push-e2e`, shipping the epic, or a `chore/*` whose diff **reaches a deployable path** (`ship_preflight.py` derives which; a project `chore/*` touching nothing deployable takes the Task door instead). **In a trunk-mode project it is also `/cicd-close-story-merge-tree`**, landing one story (SCC-423) — same road, same click, one branch shorter. See below. Never on an agent's own initiative. |
 
 Approval for an epic-branch landing is **per-action and never carries forward**. One "approved"
 lands one story; the next needs its own.
@@ -367,6 +404,23 @@ never force-push, never blind-rebase.
 files are edited in the story worktree (or on the epic branch directly at close-out) — never in the
 shared `main` checkout, which only advances when the epic merges. This is what makes the shared
 checkout boring: it is always exactly production.
+
+**⭐ In TRUNK mode the landing above has no epic to aim at** (SCC-423 — the third mode). The lane
+absorbs `origin/main` instead of the epic, then reaches `main` the way everything else does, by a
+pull request:
+
+```bash
+git fetch origin main
+git merge origin/main                          # absorb production INSIDE the worktree
+git push origin claude/<JIRA-KEY>-<slug>       # the PR's head — the one sanctioned push of it
+gh pr create --base main --head claude/<JIRA-KEY>-<slug> --fill
+```
+
+Everything else on this page is unchanged and still binds: explicit paths, no `git add -A`, **the
+operator's DECISION to proceed is the sign-off and his click is only how it reaches GitHub** (never an
+errand handed back — see § The road to `main`), no agent merges `main`, and the board files ride the
+lane's own PR rather than an epic. The shared checkout is no longer boring in the same way — it moves
+each time a lane lands — but it still stands on `main` and is still never the place you edit.
 
 ## Safe-commit mechanics (always — inside the worktree too)
 

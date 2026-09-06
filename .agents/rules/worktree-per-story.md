@@ -62,7 +62,7 @@ project file is edited.** Automatic; the agent does not ask each time, and does 
 
 | Lane | Branch | Base — this does NOT change | Closed + pruned by |
 |---|---|---|---|
-| Sudo story lane (① · ② · `/cicd-quick-dev` · autopilot) | `claude/<JIRA-KEY>-<story-slug>` | the story's **epic branch** (`epic/<JIRA-KEY>-<slug>`) — **never `main`** | `/cicd-close-story-merge-tree` (Step 1 runs `/cicd-update-sprint-memory`'s save → Step 3 lands → Step 5 prunes via `/cicd-prune-worktree`) |
+| Sudo story lane (① · ② · `/cicd-quick-dev` · autopilot) | `claude/<JIRA-KEY>-<story-slug>` | the story's **epic branch** (`epic/<JIRA-KEY>-<slug>`) — **never `main`**, *unless the project is in **trunk** mode, where there is no epic branch and `origin/main` IS the base* (SCC-423) | `/cicd-close-story-merge-tree` (Step 1 runs `/cicd-update-sprint-memory`'s save → Step 3 lands → Step 5 prunes via `/cicd-prune-worktree`) |
 | Ad-hoc / Task work (toolkit, rules, docs, config) | `chore/<JIRA-KEY>-<slug>` | `main` | `/smh-close-task-merge-tree` (merge → Step 5 prunes branch **and** tree) |
 
 ```
@@ -257,7 +257,11 @@ is pruned later, by `/cicd-push-e2e`, after the epic merges to `main`.
   lanes alike (SCC-62). Every tree is pruned by the close-out that owns it (`/cicd-close-story-merge-tree`
   Step 5 for a story, `/smh-close-task-merge-tree` Step 5 for a Task); an unpruned tree means a close-out
   was skipped, not that the tree was illegal to open.
-- NEVER branch a story worktree from `main` — stories branch from the epic branch.
+- NEVER branch a story worktree from `main` — stories branch from the epic branch. ⭐ **The one
+  exception is a project in TRUNK mode, where no epic branch exists and `origin/main` IS the base**
+  (SCC-423, `git-policy` § The epic's mode). It is not a judgement call: `git for-each-ref
+  'refs/remotes/origin/epic/*'` returning nothing for this project IS trunk mode. In every project
+  that has a live epic branch, this hard stop binds exactly as written.
 - NEVER `git add -A` / `.` / `-u`, inside a worktree or out.
 - NEVER check out the epic branch in the shared checkout to merge a story — land from inside the
   worktree; the shared checkout stays on `main`.

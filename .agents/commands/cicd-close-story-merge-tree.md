@@ -283,9 +283,21 @@ counterpart of `/cicd-merge-epic-workingtrees` Step 5's combined gate): run
   never moves.** Report the failing tests + which epic-branch commits collided
   (`git log <suite-SHA>..origin/epic/<JIRA-KEY>-<slug> --oneline`); the fix is a follow-on
   on the branch, then re-gate.
-Then THE landing — **two arms, keyed on the epic branch's NAME and nothing else** (`git-policy` § The
-epic's mode, SCC-416). Read the name you resolved at Step 0: a `-quickdev` suffix is a quick-dev epic;
-its absence is an extension of main.
+Then THE landing — **three arms, keyed on the epic branch's NAME and nothing else** (`git-policy` § The
+epic's mode, SCC-416 + SCC-423). Read the name you resolved at Step 0: a `-quickdev` suffix is a
+quick-dev epic; its absence is an extension of main; **no epic branch at all is TRUNK mode.**
+
+⛔ **Resolve that third case mechanically, before you pick an arm** — "there was no epic" is exactly
+the belief a wrong `cd` manufactures, and picking the trunk arm on a project that HAS a live epic
+lands a story straight onto production:
+
+```bash
+cd "$PROJECT_ROOT" && git fetch origin
+cd "$PROJECT_ROOT" && git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'
+```
+
+A line comes back → this is an epic project; use one of the two arms below and NEVER the trunk arm.
+Nothing comes back → trunk mode.
 
 **Quick-dev (`…-quickdev`)** — the direct push, after the merge gate above; no CI per story:
 
@@ -304,6 +316,33 @@ cd "<the story worktree>" && gh pr checks --watch     # red -> STOP and report, 
 cd "<the story worktree>" && gh pr merge --merge      # the door's invocation IS the sign-off; the ruleset's
                                                       # bypass list governs rules, not who merges a green PR
 ```
+
+**Trunk (no epic branch at all)** — the story lands on **`main`**, and `main` is production. This arm
+is the ONLY one where this door is a `main` door, so it ends the way every `main` door in this system
+ends: **it opens the pull request and STOPS.** The operator's click is how the sign-off reaches GitHub
+(`git-policy` § The road to `main`), and the merge is a deploy.
+
+```bash
+cd "<the story worktree>" && git fetch origin main
+cd "<the story worktree>" && git merge origin/main    # absorb production INSIDE the tree; conflicts surface here
+cd "<the story worktree>" && env -u GITHUB_TOKEN git push origin claude/<JIRA-KEY>-<story-slug>
+cd "<the story worktree>" && gh pr create --base main --head claude/<JIRA-KEY>-<story-slug> --fill
+```
+
+⛔ **STOP there. Do NOT `gh pr merge` on this arm.** The two arms above merge their own PR because
+they land on an *epic* branch, which the operator's invocation of this door authorises. `main` is not
+that: it is reached only through a pull request the operator merges himself, in every repo (SCC-347),
+and no invocation of any door has ever bought that click. Hand back the PR URL.
+
+⛔ **The absorb above is `origin/main`, and the merge gate that precedes it re-runs on the merged
+tree** exactly as it does for the epic arms — same rule, different ref. If that merge changed code
+under you, ③'s green does not describe what is about to ship: run the suite again before you push.
+
+**Then Step 4 does not run yet.** The Dev Record and the ticket transition wait for the merge, because
+on this arm the landing has not happened when the PR opens. Resume with
+`/cicd-close-story-merge-tree --after-merge <JIRA-KEY>` once the operator has clicked: verify with
+`git merge-base --is-ancestor claude/<JIRA-KEY>-<story-slug> origin/main`, then Step 4, then Step 5's
+prune. ⛔ A Dev Record filed on an unmerged PR is the same lie as one filed on a failed merge.
 
 ⛔ **Do NOT push `claude/<JIRA-KEY>-<story-slug>` to origin** — except as the head of that PR, which is the
 one exception, and Step 5 prunes it. The local branch is the rollback point and survives a failed landing
