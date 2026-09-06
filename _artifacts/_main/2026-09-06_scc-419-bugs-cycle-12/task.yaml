@@ -1,0 +1,6 @@
+task_key: SCC-419
+primary_repo: .
+branch: chore/SCC-419-bugs-cycle-12
+close_command: smh-close-task-merge-tree   # lobby: no deploy surface, Task door, PR into main that Mr. Hatter merges
+secondary_repos: []
+riders: []   # cycle 12 opens on the parent itself, same as cycle 11; no subtasks minted for its rows
