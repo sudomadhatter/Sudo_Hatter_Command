@@ -1,0 +1,50 @@
+{
+  "why": "SCC-417 revert-proof. Code-derived: each mutant flips ONE decision in the two widened _BANNED_PATTERNS entries and must die by the case that pins that decision alone. M1 = NARROW the your-call entry back to the forward order (the SCC-416 defect, half of it). M2 = NARROW it back to the singular (the other half). M3 = DELETE the cross-repo entry (the shape no entry knew). M4 = WIDEN the cross-repo entry by dropping the scoped case-sensitivity, so 'its own two tickets' matches. M5 = WIDEN the reversed arm's window from 40 to 400 characters, so an honest landing-order row 85 characters wide matches. M1-M3 are killed by the B11 single-shape pins; M4 and M5 by the B12 near-miss pins - a widening that no near-miss can see is a widening nobody measured.",
+  "mutants": [
+    {
+      "id": "M1",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    (re.compile(r\"\\b(?:tickets?\\b[^\\n]{0,40}?\\byour\\s+call|your\\s+call\\b[^\\n]{0,40}?\\btickets?)\\b\",\n                re.I),\n",
+      "mutated": "    (re.compile(r\"\\btickets?\\b[^\\n]{0,40}?\\byour\\s+call\\b\",\n                re.I),\n",
+      "test": ["python3", ".agents/scripts/tests/test_jira_feed.py"],
+      "block": "legacy B",
+      "case": "your call + ticket (reversed)"
+    },
+    {
+      "id": "M2",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    (re.compile(r\"\\b(?:tickets?\\b[^\\n]{0,40}?\\byour\\s+call|your\\s+call\\b[^\\n]{0,40}?\\btickets?)\\b\",\n                re.I),\n",
+      "mutated": "    (re.compile(r\"\\b(?:ticket\\b[^\\n]{0,40}?\\byour\\s+call|your\\s+call\\b[^\\n]{0,40}?\\bticket)\\b\",\n                re.I),\n",
+      "test": ["python3", ".agents/scripts/tests/test_jira_feed.py"],
+      "block": "legacy B",
+      "case": "tickets (plural) + your call"
+    },
+    {
+      "id": "M3",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    (re.compile(r\"\\b(?:its|their)\\s+own\\s+(?-i:[A-Z]{2,10})\\s+tickets?\\b\", re.I),\n     \"files this work as another board's tickets\"),\n",
+      "mutated": "",
+      "test": ["python3", ".agents/scripts/tests/test_jira_feed.py"],
+      "block": "legacy B",
+      "case": "another board's tickets as the home"
+    },
+    {
+      "id": "M4",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "(?-i:[A-Z]{2,10})",
+      "mutated": "[A-Z]{2,10}",
+      "test": ["python3", ".agents/scripts/tests/test_jira_feed.py"],
+      "block": "legacy B",
+      "case": "B12.5"
+    },
+    {
+      "id": "M5",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "your\\s+call\\b[^\\n]{0,40}?\\btickets?",
+      "mutated": "your\\s+call\\b[^\\n]{0,400}?\\btickets?",
+      "test": ["python3", ".agents/scripts/tests/test_jira_feed.py"],
+      "block": "legacy B",
+      "case": "B12.6"
+    }
+  ]
+}

@@ -2146,8 +2146,17 @@ _BANNED_PATTERNS = [
      "asks the operator to rule whether a finding becomes a ticket"),
     (re.compile(r"\b(?:rule\s+on|decide)\b[^\n]{0,80}?\b(?:ticket|subtask|backlog)\b", re.I),
      "asks the operator to rule on ticket placement"),
-    (re.compile(r"\bticket\b[^\n]{0,40}?\byour\s+call\b", re.I),
+    # SCC-417: BOTH orders and the plural. SCC-416's row read "on your call — its own AVCH
+    # tickets" and the forward-only, singular-only entry let it through; `finish` then held the
+    # ticket on the review ladder with no banner. Same 40-character window on each arm.
+    (re.compile(r"\b(?:tickets?\b[^\n]{0,40}?\byour\s+call|your\s+call\b[^\n]{0,40}?\btickets?)\b",
+                re.I),
      "hands a ticket decision to the operator"),
+    # SCC-417: work filed as ANOTHER board's tickets ("its own AVCH tickets"). The project token
+    # is case-sensitive by a scoped flag group: the list compiles under re.I, and without the
+    # group "its own two tickets" would match. Measured 0 hits over 194 walkthroughs at arming.
+    (re.compile(r"\b(?:its|their)\s+own\s+(?-i:[A-Z]{2,10})\s+tickets?\b", re.I),
+     "files this work as another board's tickets"),
 ]
 # ⛔ DELIBERATELY NOT DETECTED: a row that is a STATUS NOTE rather than an imperative -
 # AVCH-58's rows 2 and 3 ("X remains AVCH-55's, still correctly deferred", "your local main is

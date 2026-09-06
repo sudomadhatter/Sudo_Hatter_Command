@@ -132,6 +132,8 @@ The reversed arm shares the forward arm's exposure: a landing-order row that say
 
 Pending. The operator's `approved` of 2026-09-05 was given in chat against the inline key points (both orders, the plural, the pinned SCC-416 row, home SCC-411) before this file existed, and it did not name §2.2 or the SOP edit. This plan needs its own `approved`.
 
+**Approved.** Operator, 2026-09-05, in chat, on this file as pushed: "merged, and approved. do this quick though you are blocking." — recorded at `567d3040` (the plan commit; §2.2 and the same-commit SOP edit were named in the hand-back he answered).
+
 ## Self-Audit (2026-09-05)
 
 **Level:** LEDGER+BLAST (a script others import, a gate, and a file that exists in more than one repo) · **Mode:** PRE-WORK · **Repo:** `Sudo_Hatter_Command` worktree `scc-417-banned-row-plural-order` · **Branch:** `chore/SCC-417-banned-row-plural-order` (from `git rev-parse`) · **Plan:** this file · **Ticket:** SCC-417
