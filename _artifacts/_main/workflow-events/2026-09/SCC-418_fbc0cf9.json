@@ -1,0 +1,36 @@
+{
+  "v": 1,
+  "task": "SCC-418",
+  "sha": "fbc0cf9e36b7d70ff552b38f13fd2ce733474f9e",
+  "tip": "6ea7becfdeb08a42dd7a43a0003f6f7fa716eaf4",
+  "trigger": "close-out",
+  "when": "2026-09-06T00:17:19-04:00",
+  "changes": [
+    ".agents/scripts/tests/test_check_maps.py",
+    ".agents/scripts/tests/test_command_surfaces.py",
+    "_artifacts/_main/2026-09-05_scc-418-suite-passes-in-one-sandbox-run/implementation_plan.md",
+    "_artifacts/_main/2026-09-05_scc-418-suite-passes-in-one-sandbox-run/mutants.json",
+    "_artifacts/_main/2026-09-05_scc-418-suite-passes-in-one-sandbox-run/task.yaml",
+    "_artifacts/_main/2026-09-05_scc-418-suite-passes-in-one-sandbox-run/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-05_scc-418-suite-passes-in-one-sandbox-run/walkthrough.md",
+    "verdict": "PASS @ fbc0cf9",
+    "gates": {
+      "suite": "pass@4432763"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}

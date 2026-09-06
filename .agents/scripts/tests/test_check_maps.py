@@ -38,6 +38,42 @@ MEMORY_PREFIXED = [
 ]
 
 
+def classify_add(returncode: int, stderr: str) -> str:
+    """What case K must DO about its `git worktree add`: `run`, `skip`, or `fail`.
+
+    Case K needs a real `git worktree add`, which must create `<repo>/.git/worktrees/<name>`.
+    Some environments will not allow that write — measured inside the Claude Code sandbox after
+    a worktree is removed mid-session, which leaves the admin directory read-only for the rest
+    of the session — and K then reported FAIL on its own scaffolding. That is a false red: it
+    says nothing about `check_maps.py`, and its only remedy is to run the whole suite a second
+    time somewhere else, which is how one gate run becomes two.
+
+    ⛔ THE WHOLE DECISION LIVES HERE, not half here and half at the call site. An earlier cut of
+    this shipped a bare `env_refuses_worktree(stderr)` predicate that the branch then combined
+    with `add.returncode != 0`, and the review measured the consequence: widening that branch to
+    `if add.returncode != 0:` excuses EVERY git rejection while both classifier cases stay green,
+    on any machine where the fixture hosts — which includes CI. A decision split across a
+    predicate and an `if` is a decision only half of which any case can reach.
+
+    ⛔ DELIBERATELY NARROW, on BOTH axes, because a skip is a hole in a gate. The message must
+    name `.git/worktrees` (so a failure anywhere else — including a sibling `.claude/worktrees`
+    path — still fails) AND carry one of three environment errnos (so a git-level rejection: a
+    bad ref, an existing worktree, a locked entry). Widen either half and K stops proving
+    anything on the machine where it matters. CI is unsandboxed and hosts the fixture for real,
+    so `skip` never fires there.
+    """
+    if returncode == 0:
+        return "run"
+    low = stderr.lower()
+    if ".git/worktrees" not in low:
+        return "fail"
+    if any(errno in low for errno in ("read-only file system",
+                                      "device or resource busy",
+                                      "permission denied")):
+        return "skip"
+    return "fail"
+
+
 def _bucket(root: Path, sessions: list[str], index_body: str) -> Path:
     """A depth-3 bucket: <root>/_artifacts/_main/ with >=2 session folders and an INDEX."""
     bucket = root / "_artifacts" / "_main"
@@ -244,6 +280,55 @@ def main() -> int:
         c.check("J2 ...and the refusal names the combination that works",
                 "--depth3-only --strict" in out, out[-200:])
 
+    # ── K-ENV · the fixture's THREE-WAY decision, pinned before the fixture is attempted ──
+    # `classify_add` is pure, so these run on every OS — including the machines whose `os.name`
+    # guard below skips K itself. All strings are VERBATIM stderr measured in this repo on
+    # 2026-09-05, or the git rejections whose wording is stable across versions.
+    c.check("K-ENV every environment refusal of the fixture is classified `skip`",
+            all(classify_add(128, s) == "skip" for s in (
+                "Preparing worktree (detached HEAD 06ba80e7)\n"
+                "fatal: could not create directory of '.git/worktrees/lane-probe': "
+                "Read-only file system",
+                "fatal: could not create directory of '.git/worktrees/lane-probe': "
+                "Device or resource busy",
+                # ⛔ The third errno needs its own string or a member-drop mutant SURVIVES: with
+                # only two exercised, deleting `permission denied` from the tuple leaves K-ENV
+                # and its CONTROL both green while an EACCES machine silently returns to
+                # failing on its own scaffolding (measured, SCC-418 review).
+                "fatal: could not create directory of '.git/worktrees/lane-probe': "
+                "Permission denied",
+                # ⛔ And git has a SECOND phrasing: when `.git/worktrees` does not exist yet —
+                # the FIRST worktree in a repo, which is exactly when the parent is most likely
+                # to be unwritable — git 2.43 says `leading directories of` instead. Reproduced
+                # against real git in the SCC-418 review. This classifier survives it only
+                # because it keys on the path fragment and the errno, never on the phrase; the
+                # fixture is here so that the obvious future tightening (matching the phrase)
+                # cannot pass while re-breaking the refusal this whole change absorbs.
+                "fatal: could not create leading directories of "
+                "'.git/worktrees/lane-probe': Permission denied")),
+            "K would report FAIL on its own scaffolding when the machine will not host it - a "
+            "red that says nothing about check_maps.py and whose only remedy is to run the "
+            "whole suite again elsewhere")
+    c.check("K-ENV CONTROL a success runs, and a real git rejection still FAILS",
+            classify_add(0, "") == "run"
+            and all(classify_add(128, s) == "fail" for s in (
+                "fatal: invalid reference: HEAD",
+                "fatal: '/tmp/x/lane-probe' already exists",
+                # names the admin directory, but the errno is git/FS refusing rather than the
+                # environment: this string keeps the ERRNO clause honest.
+                "fatal: could not create directory of '.git/worktrees/lane-probe': File exists",
+                # our errno, but not the admin directory: keeps the PATH clause honest against
+                # deletion...
+                "fatal: could not create directory of '/tmp/x': Read-only file system",
+                # ...and this one keeps it honest against NARROWING to a bare `worktrees`
+                # needle, which no other string here would catch (measured, SCC-418 review).
+                "fatal: could not create directory of "
+                "'/home/x/.claude/worktrees/lane-probe': Permission denied")),
+            "the skip has widened past the environment refusing the ADMIN DIRECTORY - a git "
+            "rejection, a sibling worktrees path, or any other read-only path would now be "
+            "silently skipped and K would stop proving that --depth3-only does not false-block "
+            "from a lane")
+
     # ── K · ⛔ THE WORKTREE PROOF — why the gate is a SUBSET and not the whole linter ──────
     # SCC-138 acceptance: "Proven from inside a worktree - the false-positive rows do not
     # block, and the real ones do." This cannot be shown on a synthetic fixture: the two
@@ -262,8 +347,22 @@ def main() -> int:
             wt = tmp / "lane-probe"
             add = subprocess.run(["git", "-C", str(repo), "worktree", "add", "--detach",
                                   str(wt), "HEAD"], capture_output=True, text=True)
-            if add.returncode != 0:
-                c.check("K worktree fixture could be created", False, add.stderr.strip()[:200])
+            # ⛔ The branch reads a VERDICT, it does not re-decide. `classify_add` owns all three
+            # outcomes so K-ENV can reach every one of them; an `if rc != 0 and <predicate>`
+            # here would be a second half of the decision that no case can see.
+            verdict = classify_add(add.returncode, add.stderr)
+            if verdict == "skip":
+                # LOUD, and no rows: a silent skip is how a gate rots. The operator must be able
+                # to tell "K did not run here" from "K passed" at a glance, and must NOT read
+                # this line as a reason to re-run the suite somewhere else - nothing else in the
+                # suite needs the second run. ⛔ Whitespace-collapsed, never `.strip()`: git's
+                # message is TWO lines, and `.strip()` only trims the ends, so the bare `fatal:`
+                # half landed unattached between two PASS rows in a green run.
+                print(f"[SKIP] K worktree fixture - the environment refuses it: "
+                      f"{' '.join(add.stderr.split())[:200]}")
+            elif verdict == "fail":
+                c.check("K worktree fixture could be created", False,
+                        " ".join(add.stderr.split())[:200])
             else:
                 try:
                     # ⛔ Point the WORKING COPY of the script at the worktree, rather than

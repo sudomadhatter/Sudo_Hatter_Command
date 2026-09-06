@@ -3892,7 +3892,85 @@ def main() -> int:
         # `doc-graph.md` joins its `.json` sibling: same generator, same "do NOT hand-edit" banner,
         # same failure mode — a regeneration lag reports under B as a LIVE doc reference whose
         # remedy ("delete the line") is wrong. C is where a stale graph reports as itself.
-        SKIP = ("/_artifacts/", "/node_modules/", "/doc-graph.json", "/doc-graph.md")
+        # ⛔ `/.claude/worktrees/` — OTHER CHECKOUTS ARE NOT A LIVE SURFACE OF THIS TREE. `.claude`
+        # is walked WHOLE (see above, for `.claude/rules/`), and every lane and every throwaway
+        # agent worktree is a FULL second copy of this repo underneath it — including a copy of
+        # THIS FILE, whose own `RETIRED` tuple names the retired command as its subject. So B went
+        # red on a sibling's files and green only on the days nobody else had a tree open
+        # (measured 2026-09-05 from the lobby: two offenders, both `.claude/worktrees/*/.agents/
+        # scripts/tests/test_command_surfaces.py`, one an agent tree and one a lane). The sibling
+        # sweep at the top of this file already excludes `worktrees` by name for exactly this
+        # reason; B was the one scan that did not. This is not a weakened gate: the lane's OWN
+        # files are still scanned, and CI runs unsandboxed with no worktrees at all.
+        SKIP = ("/_artifacts/", "/node_modules/", "/doc-graph.json", "/doc-graph.md",
+                "/.claude/worktrees/")
+
+        def scan_path(f: Path) -> str:
+            """The ONE string SKIP is matched against: ROOT-RELATIVE, with a leading slash.
+
+            ⛔ NOT `f.as_posix()`. An absolute path carries the checkout's own location, and a
+            lane checkout LIVES at `<root>/.claude/worktrees/<lane>/` — so an absolute match on
+            the worktrees marker above would skip every file of a lane run and report a vacuous
+            clean scan of nothing, from inside the very tree it was asked to check. Relative
+            makes that marker mean the only thing it should ever mean: another checkout nested
+            under THIS one. The four pre-existing markers are unaffected — each is a `/dir/` or
+            `/file` fragment that never appeared in the absolute prefix, which is precisely why
+            this trap stayed invisible until a marker collided with the repo's own layout.
+            """
+            return "/" + f.relative_to(ROOT).as_posix()
+
+        def is_skipped(rel: str) -> bool:
+            """The ONE skip predicate — B's loop and B-SKIP's two cases call this, not a copy.
+
+            ⓘ This is a RESULT filter, not a walk prune: `rglob` has already entered the
+            directory by the time this rejects a path (measured from the lobby: 27,770 entries
+            enumerated, 10,185 of them inside `.claude/worktrees/` and discarded). Two siblings
+            prune instead — `evidence_extract.py`'s `_SKIP_DIR_PAIRS` with `dirnames[:] = …`,
+            and the note in `test_sops_prds_folder.py` recording that a result filter over
+            `ROOT.rglob` once crashed that file on Windows with WinError 3 by descending into a
+            lane. Left as a filter deliberately: the deepest path measured here is 187 chars
+            (~221 on Windows against MAX_PATH 260), so that crash is not reachable today, and
+            correctness is identical either way. Anyone touching this loop for other reasons
+            should prune rather than filter.
+            """
+            return any(k in rel for k in SKIP)
+
+        # ⛔ B-SKIP and its CONTROL are pinned to the PREDICATE, not to a tree walk, so they say
+        # the same thing from the lobby and from a lane. A tree-walk assertion would depend on
+        # who else has a worktree open today, which is the exact flakiness this block is fixing.
+        c.check("CS-22 B-SKIP the live scan does not walk OTHER checkouts, and matches "
+                "ROOT-relative so it never skips its own",
+                is_skipped("/.claude/worktrees/agent-a913cd47/.agents/scripts/tests/x.py")
+                and scan_path(SELF) == "/.agents/scripts/tests/test_command_surfaces.py",
+                "a worktree nested under this root must be skipped (a sibling checkout's copy "
+                "of a file is not a LIVE surface of THIS tree), and the matched string must be "
+                "ROOT-relative - an absolute match would carry this checkout's own location, so "
+                "from a lane (which lives at <root>/.claude/worktrees/<lane>/) the marker would "
+                "skip EVERY file and B would report a vacuous clean scan of nothing")
+        # ⛔ ONE literal per LIVE_DIRS entry, and they go through the REAL normaliser
+        # (`is_skipped(scan_path(...))`, the exact composition the loop uses). Three literals
+        # covered only `.agents`, `docs` and `.claude`, and the review measured what that let
+        # through: adding `/.opencode/` to SKIP left this control green, `B` green, AND `B0`'s
+        # anti-vacuity floor unmoved (1723 -> 1650, still far above 200) — silently retiring the
+        # surface whose own comment above records a MEASURED real offender
+        # (`.opencode/commands/smh-sync-agents.md:85`). `/.roo/` and `/_bmad/` were the same.
+        # The last literal is the NARROWING guard: nothing else here would notice the marker
+        # being loosened from `/.claude/worktrees/` to a bare `worktrees`.
+        LIVE_CONTROLS = (".agents/commands/smh-sync-agents.md",
+                         "docs/_scc_sops_prds/workflows_testing_SOP.md",
+                         ".opencode/commands/smh-sync-agents.md",
+                         ".roo/commands/smh-sync-agents.md",
+                         ".claude/rules/constitution.md",
+                         "_bmad/custom/dev-story-guard.toml",
+                         "docs/reference/worktrees-and-lanes.md")
+        wrongly_skipped = [p for p in LIVE_CONTROLS if is_skipped(scan_path(ROOT / p))]
+        c.check("CS-22 B-SKIP CONTROL every live root is still scanned, including a path that "
+                "merely contains the word worktrees",
+                not wrongly_skipped,
+                f"the skip widened onto live surfaces {wrongly_skipped} - B still reports 'no "
+                f"offenders', but it is now reporting that about a set it never read, and B0's "
+                f"anti-vacuity floor is too coarse to notice one root going missing")
+
         for name, ticket in RETIRED.items():
             offenders = []
             scanned = 0
@@ -3903,8 +3981,7 @@ def main() -> int:
                 for f in base.rglob("*"):
                     if not f.is_file() or f.suffix not in (".md", ".py", ".ps1", ".sh", ".json"):
                         continue
-                    s = f.as_posix()
-                    if any(k in s for k in SKIP) or f.resolve() == SELF:
+                    if is_skipped(scan_path(f)) or f.resolve() == SELF:
                         continue
                     # `read()` (utf-8-sig, errors="replace"), never a strict read_text: a strict
                     # decode raises on an undecodable file and the `except` counted it CLEAN, in a
