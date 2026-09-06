@@ -2155,7 +2155,12 @@ _BANNED_PATTERNS = [
     # SCC-417: work filed as ANOTHER board's tickets ("its own AVCH tickets"). The project token
     # is case-sensitive by a scoped flag group: the list compiles under re.I, and without the
     # group "its own two tickets" would match. Measured 0 hits over 194 walkthroughs at arming.
-    (re.compile(r"\b(?:its|their)\s+own\s+(?-i:[A-Z]{2,10})\s+tickets?\b", re.I),
+    # Review R1: the key may wear inline markup - "its own `AVCH` tickets" and "its **own AVCH
+    # ticket**" are the house style, and the plain-text entry let both through (reproduced). Up
+    # to two markup characters at each seam; a WORD between the key and "tickets" still does not
+    # match, on purpose.
+    (re.compile(r"\b(?:its|their)\s+[`*_]{0,2}own\s+[`*_]{0,2}(?-i:[A-Z]{2,10})[`*_]{0,2}\s+tickets?\b",
+                re.I),
      "files this work as another board's tickets"),
 ]
 # ⛔ DELIBERATELY NOT DETECTED: a row that is a STATUS NOTE rather than an imperative -

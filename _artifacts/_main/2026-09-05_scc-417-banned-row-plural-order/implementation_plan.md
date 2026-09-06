@@ -130,9 +130,9 @@ The reversed arm shares the forward arm's exposure: a landing-order row that say
 
 ## Approval
 
-Pending. The operator's `approved` of 2026-09-05 was given in chat against the inline key points (both orders, the plural, the pinned SCC-416 row, home SCC-411) before this file existed, and it did not name §2.2 or the SOP edit. This plan needs its own `approved`.
+**Approved.** Operator, 2026-09-05, in chat, on this file as pushed at `567d3040` (which already carried §2.2 and the F1 SOP paragraph): "merged, and approved. do this quick though you are blocking." — recorded in this file at `df805f16`.
 
-**Approved.** Operator, 2026-09-05, in chat, on this file as pushed: "merged, and approved. do this quick though you are blocking." — recorded at `567d3040` (the plan commit; §2.2 and the same-commit SOP edit were named in the hand-back he answered).
+History: until that word this section read *Pending* — the operator's earlier `approved` of 2026-09-05 was given in chat against the inline key points (both orders, the plural, the pinned SCC-416 row, home SCC-411) before this file existed, and did not name §2.2 or the SOP edit.
 
 ## Self-Audit (2026-09-05)
 
