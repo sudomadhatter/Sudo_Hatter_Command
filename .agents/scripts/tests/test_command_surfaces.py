@@ -3920,7 +3920,19 @@ def main() -> int:
             return "/" + f.relative_to(ROOT).as_posix()
 
         def is_skipped(rel: str) -> bool:
-            """The ONE skip predicate — B's loop and B-SKIP's two cases call this, not a copy."""
+            """The ONE skip predicate — B's loop and B-SKIP's two cases call this, not a copy.
+
+            ⓘ This is a RESULT filter, not a walk prune: `rglob` has already entered the
+            directory by the time this rejects a path (measured from the lobby: 27,770 entries
+            enumerated, 10,185 of them inside `.claude/worktrees/` and discarded). Two siblings
+            prune instead — `evidence_extract.py`'s `_SKIP_DIR_PAIRS` with `dirnames[:] = …`,
+            and the note in `test_sops_prds_folder.py` recording that a result filter over
+            `ROOT.rglob` once crashed that file on Windows with WinError 3 by descending into a
+            lane. Left as a filter deliberately: the deepest path measured here is 187 chars
+            (~221 on Windows against MAX_PATH 260), so that crash is not reachable today, and
+            correctness is identical either way. Anyone touching this loop for other reasons
+            should prune rather than filter.
+            """
             return any(k in rel for k in SKIP)
 
         # ⛔ B-SKIP and its CONTROL are pinned to the PREDICATE, not to a tree walk, so they say
@@ -3935,12 +3947,29 @@ def main() -> int:
                 "ROOT-relative - an absolute match would carry this checkout's own location, so "
                 "from a lane (which lives at <root>/.claude/worktrees/<lane>/) the marker would "
                 "skip EVERY file and B would report a vacuous clean scan of nothing")
-        c.check("CS-22 B-SKIP CONTROL a real live surface is still scanned",
-                not is_skipped("/.agents/commands/smh-sync-agents.md")
-                and not is_skipped("/docs/_scc_sops_prds/workflows_testing_SOP.md")
-                and not is_skipped("/.claude/rules/constitution.md"),
-                "the skip widened to cover live surfaces - B still reports 'no offenders', but "
-                "it is now reporting that about a set it never read")
+        # ⛔ ONE literal per LIVE_DIRS entry, and they go through the REAL normaliser
+        # (`is_skipped(scan_path(...))`, the exact composition the loop uses). Three literals
+        # covered only `.agents`, `docs` and `.claude`, and the review measured what that let
+        # through: adding `/.opencode/` to SKIP left this control green, `B` green, AND `B0`'s
+        # anti-vacuity floor unmoved (1723 -> 1650, still far above 200) — silently retiring the
+        # surface whose own comment above records a MEASURED real offender
+        # (`.opencode/commands/smh-sync-agents.md:85`). `/.roo/` and `/_bmad/` were the same.
+        # The last literal is the NARROWING guard: nothing else here would notice the marker
+        # being loosened from `/.claude/worktrees/` to a bare `worktrees`.
+        LIVE_CONTROLS = (".agents/commands/smh-sync-agents.md",
+                         "docs/_scc_sops_prds/workflows_testing_SOP.md",
+                         ".opencode/commands/smh-sync-agents.md",
+                         ".roo/commands/smh-sync-agents.md",
+                         ".claude/rules/constitution.md",
+                         "_bmad/custom/dev-story-guard.toml",
+                         "docs/reference/worktrees-and-lanes.md")
+        wrongly_skipped = [p for p in LIVE_CONTROLS if is_skipped(scan_path(ROOT / p))]
+        c.check("CS-22 B-SKIP CONTROL every live root is still scanned, including a path that "
+                "merely contains the word worktrees",
+                not wrongly_skipped,
+                f"the skip widened onto live surfaces {wrongly_skipped} - B still reports 'no "
+                f"offenders', but it is now reporting that about a set it never read, and B0's "
+                f"anti-vacuity floor is too coarse to notice one root going missing")
 
         for name, ticket in RETIRED.items():
             offenders = []

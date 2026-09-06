@@ -75,6 +75,15 @@ now classifies the refusal. It is narrow on **both** axes: the message must name
 **and** carry one of `read-only file system`, `device or resource busy`, `permission denied`. A bad
 ref, an existing worktree, or a read-only path anywhere else still FAILS.
 
+**The decision lives in ONE pure function, and that is a review fix, not the first cut.** This
+shipped first as a bare `env_refuses_worktree(stderr)` predicate that the call site combined with
+`add.returncode != 0`. Three lenses independently proved the cost: widening that branch to
+`if add.returncode != 0:` excuses every git rejection while both classifier cases stay green, on
+any machine where the fixture hosts — which includes CI. A decision split across a predicate and an
+`if` is a decision only half of which any case can reach. `classify_add(returncode, stderr)` now
+returns `run`, `skip` or `fail`, the branch reads the verdict and does not re-decide, and all three
+arms are pinned by name.
+
 **The live state is intermittent, so it was not left to weather.** Removing a worktree mid-session
 reproduced the busy-admin-directory error but not the read-only one on this attempt, so the branch
 was proven directly with a positive control that forces the verbatim measured stderr:
@@ -97,30 +106,55 @@ file still exits green. CI is unsandboxed, so there the fixture is always built 
 | RED, `CS-22 B-SKIP` before the fix | `FAILED: CS-22 B-SKIP` (`318/319`) |
 | GREEN, `test_command_surfaces.py` from the lane | `319/319`, `CS-22 B0` still scanning 1727 files |
 | GREEN, same, with an agent worktree nested under the lane root | `319/319` — the operator's failure shape, fixed |
+| GREEN, same, with **four** review-lens worktrees open under the root | `CS-22 B` reports `0 live file(s)` — the bug's own condition, live, not firing |
 | GREEN, `test_check_maps.py` | `37/37`, K's four real assertions still run |
-| `[SKIP]` branch, forced verbatim stderr | `33/33`, one `[SKIP]`, zero FAIL rows, exit 0 |
-| Mutants | **6/6 killed, each by its declared case** |
+| `[SKIP]` branch, forced verbatim stderr *(hand-run probe, not a standing case)* | `33/33` — exactly K's four cases drop out, one `[SKIP]`, zero FAIL rows, exit 0 |
+| Mutants, pass 2 | **11/11 killed, each by its declared case**, restore byte-identical |
 | **Full suite, from the lane, IN the sandbox, one run** | **`79/79` files passed** |
+
+⚠️ **What acceptance row A can and cannot claim before the merge.** The row's lobby form
+(`run_all.py --on-main` from the lobby) is **not runnable on this lane**: the lobby checkout carries
+`main`'s copy of the test file, so a lobby run measures the unfixed code by construction. The lane
+rows above exercise the identical condition — a worktree nested under the workspace root carrying a
+second copy of the tests — and the four-lens row is that condition arriving on its own rather than
+being staged. The lobby form is the post-merge check, and it is named here rather than quietly
+scored as passed.
 
 ## Mutation sweep
 
-Declared before the sweep, code-derived, run sequentially, restored in a `finally`, residue checked
-afterwards. Full table in [mutants.json](mutants.json).
+Declared before the sweep, code-derived, run sequentially, restored in a `finally`, restore verified
+byte-identical against the pre-sweep `sha256` of both files. Full table in [mutants.json](mutants.json).
 
-| # | Mutant | File | Declared killer | Outcome |
-|---|---|---|---|---|
-| M1 | drop the worktrees marker from `SKIP` | `test_command_surfaces.py` | `CS-22 B-SKIP` | KILLED |
-| M2 | widen the skip to every path | `test_command_surfaces.py` | `CS-22 B-SKIP CONTROL` | KILLED |
-| M3 | match the ABSOLUTE path, not the relative one | `test_command_surfaces.py` | `CS-22 B-SKIP` | KILLED |
-| M4 | drop the `.git/worktrees` clause | `test_check_maps.py` | `K-ENV CONTROL` | KILLED |
-| M5 | drop the errno clause | `test_check_maps.py` | `K-ENV CONTROL` | KILLED |
-| M6 | invert the classifier | `test_check_maps.py` | `K-ENV` | KILLED |
+**The sweep ran twice, and pass 1 was not good enough.** Its six mutants were all existence
+deletions or a polarity flip — every one killed, which read as certification. The review lenses then
+proved that **five narrowings survive it**, and the rule's § WIDTH clause is exactly about that
+shape. Pass 2 declares eleven and kills eleven.
 
-M4 and M5 are the **narrowing** mutants: each drops one arm of a two-clause AND, and each is caught
-by a control string exercising exactly the arm that was dropped — one naming the admin directory
-with a git errno (`File exists`), one carrying our errno on a different path (`/tmp/x`). Without
-both, the two clauses would be certified only jointly, which is the boundary a real regression walks
-through.
+| # | Kind | Mutant | File | Declared killer | Outcome |
+|---|---|---|---|---|---|
+| M1 | existence | drop the worktrees marker from `SKIP` | `test_command_surfaces.py` | `CS-22 B-SKIP` | KILLED |
+| M2 | existence | widen the skip to every path | `test_command_surfaces.py` | `CS-22 B-SKIP CONTROL` | KILLED |
+| M3 | existence | match the ABSOLUTE path, not the relative one | `test_command_surfaces.py` | `CS-22 B-SKIP` | KILLED |
+| M4 | existence | delete the `.git/worktrees` clause | `test_check_maps.py` | `K-ENV CONTROL` | KILLED |
+| M5 | existence | delete the errno clause | `test_check_maps.py` | `K-ENV CONTROL` | KILLED |
+| M6 | polarity | invert the errno clause | `test_check_maps.py` | `K-ENV` | KILLED |
+| **M7** | **narrowing** | widen `SKIP` by one live root (`/.opencode/`) | `test_command_surfaces.py` | `CS-22 B-SKIP CONTROL` | KILLED *(survived pass 1)* |
+| **M8** | **narrowing** | loosen the marker to a bare `worktrees` | `test_command_surfaces.py` | `CS-22 B-SKIP CONTROL` | KILLED *(survived pass 1)* |
+| **M9** | **narrowing** | drop ONE errno member (`permission denied`) | `test_check_maps.py` | `K-ENV` | KILLED *(survived pass 1)* |
+| **M10** | **narrowing** | loosen the path needle to a bare `worktrees` | `test_check_maps.py` | `K-ENV CONTROL` | KILLED *(survived pass 1)* |
+| **M11** | **narrowing** | the success arm returns `skip` instead of `run` | `test_check_maps.py` | `K-ENV CONTROL` | KILLED *(unreachable in pass 1)* |
+
+Three of the five are worth stating plainly, because each is a real regression shape rather than a
+theoretical one. **M7** widens the skip onto `.opencode` — the surface whose own comment records a
+*measured* real offender — and `CS-22 B0`'s anti-vacuity floor cannot see it, because the scan count
+only falls from 1723 to 1650 against a threshold of 200. **M9** drops the one errno member that a
+lens reproduced live against git 2.43: `chmod 0500` on `.git/worktrees` yields verbatim
+`Permission denied`, so the untested member was the *most* reproducible refusal of the three.
+**M11** was not merely unkilled in pass 1, it was unreachable: while the decision was split between
+a predicate and an `if` at the call site, no case could reach the success arm at all.
+
+Pass 1's record also called M4 and M5 narrowings. That was wrong — deleting one arm of an AND makes
+the predicate accept *more* strings, which is a widening — and it is corrected in the JSON.
 
 ## SOP currency
 

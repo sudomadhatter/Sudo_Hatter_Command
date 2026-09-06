@@ -90,11 +90,11 @@ worktree **churn** during the session, which is exactly what a close-out's Step 
 
 | # | Statement | The command that proves it |
 |---|---|---|
-| **A** | With both a lane worktree and a throwaway agent worktree present, `run_all.py --on-main` from the lobby in-sandbox is `79/79`; today it is `78/79`, `CS-22 B` naming **both** worktrees' copies (measured above) | `python3 .agents/scripts/tests/run_all.py --on-main` from the lobby |
+| **A** | With worktrees present under the workspace root, the full suite in-sandbox is `79/79` in ONE run; today it is `78/79`, `CS-22 B` naming both worktrees' copies (measured above) | `python3 .agents/scripts/tests/run_all.py` from the lane, with an agent worktree nested under the lane root. ⚠️ **The lobby form of this row (`--on-main` from the lobby) cannot be run before the merge** — the lobby checkout carries `main`'s copy of the test file, so a lobby run measures the unfixed code by construction. The lane form exercises the identical condition; the lobby form is the post-merge check |
 | **B** | `CS-22 B` reports no offender under a worktree path, and `CS-22 B0` still scans > 200 files | `python3 .agents/scripts/tests/test_command_surfaces.py` |
 | **C** | The gate is not blunted: a retired-command reference on a real live surface is still reported | new case `CS-22 B-SKIP CONTROL` |
 | **D** | An `add` failure that is the environment refusing prints a visible `[SKIP]` and no FAIL row; any other `add` failure still FAILS | new cases `K-ENV` (the two verbatim stderr strings above) and `K-ENV CONTROL` (`fatal: invalid reference: HEAD`) |
-| **E** | Nothing changes where the fixture works: `test_check_maps.py` still runs K's four real assertions and reports `32/32` | `python3 .agents/scripts/tests/test_check_maps.py` from the lane |
+| **E** | Nothing changes where the fixture works: `test_check_maps.py` still runs K's four real assertions, and the file reports `37/37` (35 before this lane, plus the two new `K-ENV` cases) | `python3 .agents/scripts/tests/test_check_maps.py` from the lane |
 | **F** | The SOP records the two expected `[SKIP]` shapes so a skip is never read as a reason to re-run elsewhere, with a changelog row in the same commit | the SOP passage at `workflows_testing_SOP.md:2509` and one changelog row |
 
 ## 3. Steps, each naming its assertion
@@ -106,11 +106,28 @@ two `K-ENV` cases are written first and fail, because the classifier does not ex
 **Step 2 — the live-surface scan skips other checkouts.** Add the worktrees marker to `SKIP` in
 `test_command_surfaces.py`, with `CS-22 B-SKIP` and `CS-22 B-SKIP CONTROL` written before it. → B, C
 
-**Step 3 — classify the fixture's refusal in `test_check_maps.py`.** A module-level helper returns
-True only when the message names `.git/worktrees` **and** carries one of `read-only file system`,
-`device or resource busy`, `permission denied`. On True the block prints
-`[SKIP] K worktree fixture - the environment refuses it: <stderr>` and adds no rows; on False `K`
-fails exactly as today. → D, E
+⚠️ **AMENDED DURING THE BUILD (recorded here rather than left to the walkthrough).** The marker
+alone is not a safe change and the plan understated the edit. `SKIP` was matched against
+`f.as_posix()`, the **absolute** path, and a lane checkout lives at
+`<root>/.claude/worktrees/<lane>/` — so the marker alone would have skipped every file of a lane
+run and reported a vacuous clean scan of nothing. Two small named helpers are therefore part of
+this step: `scan_path(f)` normalises to the ROOT-relative path, and `is_skipped(rel)` is the one
+predicate both the loop and the two new cases call. Mutant M3 is exactly the un-normalised
+version.
+
+**Step 3 — classify the fixture's refusal in `test_check_maps.py`.** A module-level
+`classify_add(returncode, stderr)` returns `run`, `skip` or `fail`: `skip` only when the message
+names `.git/worktrees` **and** carries one of `read-only file system`, `device or resource busy`,
+`permission denied`; `run` on success; `fail` otherwise. On `skip` the block prints
+`[SKIP] K worktree fixture - the environment refuses it: <stderr, whitespace-collapsed>` and adds
+no rows; on `fail` `K` fails exactly as today. → D, E
+
+⚠️ **AMENDED DURING THE BUILD.** This shipped first as a bare predicate the call site combined
+with `add.returncode != 0`, and the review measured the cost: widening that branch to
+`if add.returncode != 0:` excuses every git rejection while both classifier cases stay green, on
+any machine where the fixture hosts — which includes CI. **The whole decision now lives in one
+pure function** so a named case can reach all three arms. Mutant M11 is the arm that had no case
+at all while the decision was split.
 
 **Step 4 — SOP currency.** One passage naming both expected `[SKIP]` shapes, one changelog row,
 same commit. → F
@@ -120,9 +137,22 @@ returns clean, so the armed gate does **not** demand this. The SOP edit is owed 
 (a usage change), not by the gate; the plan must not claim a gate that will not fire.
 
 **Step 5 — mutants.** Drop the worktrees marker (killed by `CS-22 B-SKIP`); widen the skip to every
-path (killed by `CS-22 B-SKIP CONTROL`); drop the `.git/worktrees` clause from the classifier so any
-failure is excused (killed by `K-ENV CONTROL`); drop the errno clause (killed by `K-ENV CONTROL`);
-invert the classifier (killed by `K-ENV`). Each declared with the case that kills it.
+path (killed by `CS-22 B-SKIP CONTROL`); match the absolute path instead of the ROOT-relative one
+(killed by `CS-22 B-SKIP`); drop the `.git/worktrees` clause so any failure is excused (killed by
+`K-ENV CONTROL`); drop the errno clause (killed by `K-ENV CONTROL`); invert the classifier (killed
+by `K-ENV`). Each declared with the case that kills it.
+
+⚠️ **AMENDED DURING THE BUILD — the sweep runs TWICE, and pass 1 was not enough.** Those six are
+all existence or polarity mutants. `tests-must-gate-for-real` § WIDTH asks for **narrowings** too,
+and the review lenses proved five separate narrowings survive pass 1: widening `SKIP` by one live
+root (`/.opencode/`, whose own comment records a measured real offender, and which `CS-22 B0`'s
+anti-vacuity floor cannot see — 1723 → 1650, still far above 200); loosening the marker to a bare
+`worktrees`; dropping the single errno member `permission denied` (which a lens reproduced as the
+verbatim git 2.43 message for a `chmod`-refused admin directory); loosening the path needle to a
+bare `worktrees`; and flipping `classify_add`'s success arm. **Pass 2 declares eleven mutants and
+kills eleven.** The pass-1 record also mislabelled the two clause-deletions as narrowings; deleting
+one arm of an AND makes the predicate accept *more*, which is a widening. Both errors are corrected
+in [mutants.json](mutants.json).
 
 ## 4. What this deliberately does NOT do
 
@@ -137,8 +167,8 @@ invert the classifier (killed by `K-ENV`). Each declared with the case that kill
 
 ## Declared Change Set
 
-- EDIT `.agents/scripts/tests/test_command_surfaces.py` — `SKIP` gains the worktrees marker; two new pinned cases → B, C
-- EDIT `.agents/scripts/tests/test_check_maps.py` — an environment-refusal classifier, the `[SKIP]` arm, two new pinned cases → D, E
+- EDIT `.agents/scripts/tests/test_command_surfaces.py` — `SKIP` gains the worktrees marker; `scan_path()` normalises the matched string to ROOT-relative and `is_skipped()` becomes the one predicate the loop and the cases share; two new pinned cases → B, C
+- EDIT `.agents/scripts/tests/test_check_maps.py` — `classify_add()`, the three-way environment-refusal decision; the `[SKIP]` arm; two new pinned cases → D, E
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — the two expected `[SKIP]` shapes → F
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — one row, newest first → F
 - NEW `_artifacts/_main/2026-09-05_scc-418-suite-passes-in-one-sandbox-run/mutants.json` — the five mutants above → A
@@ -201,4 +231,8 @@ reproducible scope and both blockers are resolved in the text; this line is pass
 
 ## Approval
 
-(awaiting the operator's literal `approved`)
+**APPROVED by Mr. Hatter, 2026-09-05, in chat, with the literal word.** The self-audit above
+returned `NO-GO` on the first draft; this plan is the corrected second draft, and the approval is
+against this text. The `⚠️ AMENDED DURING THE BUILD` notes in Steps 2, 3 and 5 record where the
+work grew past the approved scope during the code review, so a later reader can see the difference
+between what was approved and what shipped without diffing two versions of this file.
