@@ -112,4 +112,11 @@ shared checkout was restored with `git checkout origin/main -- …` (the safe fo
 
 ## Your Actions
 
-- [ ] Merge this lane's pull request.
+- [x] The merge itself — landed via this branch's PR (#186, `41fb27a1`).
+
+ⓘ **The first version of this section asked the operator to "merge this lane's pull request", and
+`jira_feed.py finish` refused the close-out over it (exit 2) — correctly.** The merge is the
+ceremony's own step, not work owed to him: his **decision** to proceed is the sign-off, and the click
+is only how that decision reaches GitHub. This section holds what only he *decides*. Recorded here
+because the same lane wrote the doctrine into `git-policy` and then broke it in its own record two
+files later, which is precisely the drift the gate exists to catch.
