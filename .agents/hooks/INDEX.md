@@ -50,7 +50,8 @@ rule-matched. That is what the third hook is for.
 
 | File | Covers | Decision |
 |---|---|---|
-| `shape-block.py` | a **heredoc** (`python3 - <<'PY'`, `git commit -F - <<'MSG'`) → **deny**, with the reshape (Write the payload to a file; `python3 <file>` / `git commit -F <file>`); a leading run of `NAME=<literal>` → stripped, and the remainder **allowed** ONLY when it already matches one of the operator's own allow rules on its own (the same nothing-new proof as the chain hook) | the only `PreToolUse` hook here that can **deny** — because for these shapes the operator's click IS the damage and a nag would speak after it (`command-shape.md` §Nag, limit 2). Never an ask; fails open. (SCC-415) |
+| `shape-block.py` | a **heredoc** (`python3 - <<'PY'`, `git commit -F - <<'MSG'`) → **deny**, with the reshape (Write the payload to a file; `python3 <file>` / `git commit -F <file>`); a leading run of `NAME=<literal>` → stripped, and the remainder **allowed** ONLY when it already matches one of the operator's own allow rules on its own (the same nothing-new proof as the chain hook) | one of the two `PreToolUse` hooks here that can **deny** — because for these shapes the operator's click IS the damage and a nag would speak after it (`command-shape.md` §Nag, limit 2). Never an ask; fails open. (SCC-415) |
+| `guard-branch-delete.py` | a `git branch` **delete** (`-d`, `-D`, `--delete`, or any cluster carrying `d`/`D`, **in any flag position**) whose TARGET LIST holds anything outside `chore/` `claude/` `epic/`, or holds a substitution, or is a remote-tracking delete (`-r`) → **deny** | the second `PreToolUse` **deny**, and the only fence that can read a target LIST. `git branch -d` takes a list and every permission grammar in this house matches from the LEFT, so a leading `chore/` target satisfies the rule and `main` rides free behind it — measured on real git 2.43, and reading `allow` on all three platforms. Never an ask; **fails open on "not a branch delete" and CLOSED on "a delete I cannot read"** — an unreadable target is refused, not waved through. (SCC-411) |
 
 ## The nag hooks — the ones that speak AFTER the call
 
@@ -82,6 +83,7 @@ reaches the model verbatim, while `systemMessage`, hook stderr, and a `PreToolUs
 - `allow-readonly-chain.py`
 - `allow-scratchpad.py`
 - `closeout-nag.py`
+- `guard-branch-delete.py`
 - `guard-cwd-escape.py`
 - `log-rule-load.sh`
 - `require-push-approval.py`

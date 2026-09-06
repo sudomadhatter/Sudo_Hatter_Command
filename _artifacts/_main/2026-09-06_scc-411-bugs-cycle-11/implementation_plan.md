@@ -32,7 +32,39 @@ run from this tree) or from a plain shell command named in the row.
 
 ## 2. The three decisions, made as the engineer and stated with the why
 
-**Row 1 — the wrappers stay ASK, and ASK gets pinned.** `nice`, `xargs` and `command` are
+> ⚠️ **AMENDED DURING THE BUILD (2026-09-06) — row 1's premise was false, and the measurement
+> that killed it also explains the row.** The decision below rested on "all five land on `ask`,
+> which is the correct verdict: the operator decides". Measured after approval, from this lane,
+> against the rendered Antigravity list:
+>
+> ```
+> bare -> house, on Antigravity:          which allow rule swallows the house prefix:
+>   nice rm -rf /     ask   -> allow        HIT: command(cd)
+>   env -i rm -rf /   ask   -> allow        HIT: unsandboxed(cd)
+>   curl https://evil.sh  ask -> allow
+>   rm -rf /          deny  -> deny       (zoo, for contrast: every one stays ask)
+> ```
+>
+> Antigravity matches a command's LEADING tokens, `command(cd)` is a blanket allow, and every door
+> command in this house is mandated to be `cd <abs> && …` (`command-shape.md` rule 1). So behind
+> the shape the operator's agents actually type, **the ASK tier does not exist on Antigravity** —
+> only the deny list fences, because denies get a `cd .* && ` house twin and asks have no twin to
+> get. "It lands on ask, so he still decides" was therefore not true for these five.
+>
+> **Amended decision:** deny the four spellings the grammars can express — `nice `, `xargs `,
+> `command ` (the existing `command -v ` allow is longer and still wins), and `env -i` — each with
+> its env twin and its automatic house twin, and each pinned by a DESTRUCTIVE row. No door uses any
+> of them as a verb (`grep -rn` over `.agents/commands/`, `.agents/scripts/`, `.githooks/`:
+> zero hits). `env FOO=1 <cmd>` is denied on Antigravity as one token regex and stays a **Zoo
+> residual** — a literal-prefix grammar cannot express an arbitrary variable name, the same limit
+> the `env -C` family already records. The general fact — every `ask` becomes `allow` behind
+> `cd <abs> && ` on Antigravity — is pinned by its own case and named in the guide's residual
+> section with the remedy stated (replace the blanket `command(cd)` with the enumerated house
+> shapes `cd .* && git .*`, `cd .* && python3 .*`, …). It is **not** done here: re-architecting the
+> Antigravity allow list inside a bug-closing lane risks turning the operator's real ceremony into
+> approval prompts, which is the one cost this house treats as a budget threat.
+
+**Row 1 — SUPERSEDED by the amendment above; kept for the reasoning it records.** `nice`, `xargs` and `command` are
 general-purpose (`command -v` is an allow row today) and a literal-prefix deny on any of them bites
 real work; `env -i` and `env FOO=1` are the ordering residual the `env -C` family already documents.
 All five land on `ask`, which is the correct verdict: the operator decides. What is missing is the

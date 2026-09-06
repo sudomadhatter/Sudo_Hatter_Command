@@ -238,6 +238,21 @@ here reads `origin/main` — a remote-tracking ref, true regardless of what any 
    depends on it. `merge_pull_request` (+ GitHub write tools) is gated in `.claude/settings.json`.
    It only ever sees the **agent's** Bash tool; the operator's own terminal is never affected.
 
+   ⭐ **Its sibling on the same seat: `guard-branch-delete.py` (SCC-411) — the fence on `git
+   branch`'s DELETE, and the only one anywhere that reads the TARGET LIST.** `git branch -d` takes
+   a list, and every permission grammar in this house matches from the LEFT (Zoo a literal prefix,
+   Antigravity a per-token regex over leading tokens, Claude a `Bash(<prefix>:*)`), so a leading
+   `chore/` target satisfies the rule and everything after it rides free. Measured on real git
+   2.43, `git branch -d worktree-agent-x main` deleted **both**; measured 2026-09-06 against the
+   rendered lists, that command plus `git branch -r -d origin/main` and `git branch -v -d main`
+   all read **allow on all three platforms** — the last two because `-r`/`-v`/`-vv` are granted as
+   READS and git accepts them alongside a delete. The hook denies any delete whose targets are not
+   `chore/`/`claude/`/`epic/`, any delete carrying a substitution, and every remote-tracking
+   delete. It is a **deny**, never an ask (an ask is an auto-deny in auto mode), and it fails open
+   on "not a branch delete" and **closed** on "a delete I cannot read". Claude-only, like its
+   sibling: Zoo and Antigravity carry deny rows for the spellings their grammars can express, and
+   the target-list escape is a documented residual there rather than a closed one.
+
 ⛔ **Why layer 1 refuses to depend on an interpreter.** Layer 2 was, for weeks, the *entire* claimed
 enforcement — and it had never executed once. `.claude/settings.json` invoked it as
 `powershell -NoProfile -Command "python ..."` and the Ubuntu side has **neither** binary (only `pwsh` and

@@ -241,6 +241,11 @@
           },
           {
             "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .agents/hooks/guard-branch-delete.py",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR/.agents/hooks/run-hook.sh\" .agents/hooks/guard-cwd-escape.py",
             "timeout": 10
           },

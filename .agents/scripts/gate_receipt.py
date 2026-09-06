@@ -40,6 +40,7 @@ import argparse
 import json
 import os
 import re
+import stat
 import subprocess
 import sys
 import time
@@ -191,6 +192,34 @@ def _own_output_rel(work: Path, out_dir: Path) -> str | None:
     return rel.as_posix().rstrip("/") + "/"
 
 
+def _is_char_device(work: Path, rel: str) -> bool:
+    """Is this working-tree path a CHARACTER DEVICE rather than a file? (SCC-411)
+
+    ⛔ WHY THIS EXISTS, measured 2026-09-06 from the lobby inside the Claude Code sandbox. The
+    sandbox mounts every denied `.claude/*` path (and `~/.bashrc`, `~/.gitconfig`) into the work
+    tree as a character device. `git status` has no way to see that and reports all twelve as
+    ordinary untracked entries:
+
+        ?? .bashrc   ?? .claude/agents   ?? .claude/loop.md   ?? .gitconfig   (+8 more)
+        $ stat -c '%F %n' .bashrc .claude/agents
+        character special file .bashrc
+        character special file .claude/agents
+
+    So a genuinely clean tree stamped DIRTY; `/smh-code-review` Step 3 and `task_preflight` refuse
+    to adopt a DIRTY receipt; and the whole enforcement suite got re-run sandbox-off purely to earn
+    a clean stamp. That is the same double gate run SCC-418 removed, arriving through another door.
+
+    ⛔ DELIBERATELY NARROW - it asks the FILESYSTEM, never the name. A name-shaped test (`.claude/`,
+    a dotfile prefix) would exempt real edits under those paths on a machine with no sandbox at
+    all. `lstat`, so a symlink is judged as a symlink and never followed to a device it points at.
+    A vanished path is not a device: False, and the entry stays dirt.
+    """
+    try:
+        return stat.S_ISCHR(os.lstat(work / rel).st_mode)
+    except OSError:
+        return False
+
+
 def _measure_dirt(work: Path, out_dir: Path) -> list[str]:
     """Tree dirt, MINUS the receipt this script is about to write (SCC-178).
 
@@ -208,6 +237,11 @@ def _measure_dirt(work: Path, out_dir: Path) -> list[str]:
     is one subtree, not the repo) and the file-level paths are filtered individually.
     """
     raw = _porcelain_z_paths(wf.git(["status", "--porcelain", "-z"], work).stdout)
+    # A sandbox bind mount is not an edit (SCC-411). The filter is `is a character device` and
+    # nothing wider: a real untracked file sitting beside the mounts is still dirt, and is still
+    # named, because `task_preflight` reads `dirty_paths` to decide whether a gate SKIP is
+    # authorized and anything wider hands out that skip over real changes.
+    raw = [x for x in raw if not _is_char_device(work, x)]
     own = _own_output_rel(work, out_dir)
     if not own:
         return raw

@@ -2244,21 +2244,78 @@
       ]
     },
     {
+      "id": "deny-wrapper-launder",
+      "cmd": "nice",
+      "why": "SCC-411 (cycle 11, 2026-09-06): the SIBLINGS of the `env -C` chdir wrapper. `nice <cmd>`, `xargs <cmd>`, the shell builtin `command <cmd>`, `env -i <cmd>` and `env VAR=v <cmd>` all run a command whose own verb no downstream rule ever sees, so each launders a destructive command past a fence written for the bare one - the same class SCC-410 closed for `env -C`. Cycle 10 left them deliberately, on the reasoning that they land on `ask` and the operator still decides. THAT REASONING WAS FALSIFIED, measured 2026-09-06 against this very rendered list: Antigravity matches a command's LEADING tokens, the fence carries a blanket `command(cd)` allow, and `command-shape.md` rule 1 MANDATES that every door command be `cd <abs> && ...` - so behind the shape an agent actually types, `cd <abs> && nice rm -rf /` reads ALLOW, not ask (as do `curl`, `ssh`, `docker run` and every other unknown; Zoo splits the chain and does hold the line). Denies survive it because the renderer writes a `cd .* && ` twin of every one; asks have no twin to get. So on Antigravity the ask tier is not a fence at all behind the house shape, and these four had to become denies. NO DOOR USES ANY OF THEM AS A VERB (grep -rn over .agents/commands/, .agents/scripts/, .githooks/: zero hits), and the `command -v ` READ stays approvable - it is the LONGER prefix, so Zoo's longest-prefix rule gives it the win, and Antigravity's row carries an explicit (?!-v) lookahead because that platform has no longest-prefix re-allow. ONE RESIDUAL, a grammar limit rather than an oversight: `env VAR=value <cmd>` is denied on Antigravity as one token regex but is INEXPRESSIBLE on Zoo, whose literal lowercased prefixes cannot carry an arbitrary variable name - it lands on ask there, never on a silent allow, and is KNOWN-pinned in test_permission_parity.py so the battery does not red over a limit. Same shape as the `env -iC` clustering residual this family's parent already records; `env -i` here happens to close that one too, since the cluster starts `-i`.",
+      "render": {
+        "zoo": [
+          "nice ",
+          "xargs ",
+          "command ",
+          "env -i"
+        ],
+        "antigravity": [
+          "command(nice .*)",
+          "unsandboxed(nice .*)",
+          "command(xargs .*)",
+          "unsandboxed(xargs .*)",
+          "command(command (?!-v).*)",
+          "unsandboxed(command (?!-v).*)",
+          "command(env -i.*)",
+          "unsandboxed(env -i.*)",
+          "command(env [A-Za-z_][A-Za-z0-9_]*=.*)",
+          "unsandboxed(env [A-Za-z_][A-Za-z0-9_]*=.*)"
+        ]
+      },
+      "only": [
+        "zoo",
+        "antigravity"
+      ]
+    },
+    {
       "id": "deny-git-branch",
       "cmd": "git branch",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | code review 2026-09-03: -Df / -Mf clusters and -d/-m spellings (Zoo folds case) slipped past the literal tokens; targets follow Zoo's re-allows",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | code review 2026-09-03: -Df / -Mf clusters and -d/-m spellings (Zoo folds case) slipped past the literal tokens; targets follow Zoo's re-allows | SCC-411 (cycle 11, 2026-09-06): THE DELETE FLAG IS NOT ALWAYS FIRST. Every row here named the FIRST flag - Zoo by literal prefix, Antigravity by a per-token regex in position three - so ANY option in front of the delete walked straight past the fence. Measured at aa408738 against these very lists, all reading ALLOW on Zoo: `git branch -rd origin/main`, `-r -d`, `-r --delete`, `--delete main`, `-f -d main`, `-f --delete main`, `-v -d main`, `-vv -d main`; on Antigravity all but the `-rd` cluster; on Claude the `-r`/`-v`/`-vv` forms too, because those flags are granted as READS and real git 2.43 accepts them alongside a delete (verified in a throwaway repo: `git branch -v -d victim` -> 'Deleted branch victim'). `--delete` is the long form no deny grammar named at all, and `-r` deletes a REMOTE-TRACKING ref, which is never a lane prune. Eight spellings + their env twins on Zoo; three token shapes on Antigravity (the long form, an option before the long form, an option before a d/D cluster) which cover all eight between them. TWO RESIDUALS STAY OPEN and both are grammar limits, not oversights: (1) the TARGET LIST - `git branch -d chore/x main` deletes both and neither a literal prefix nor a leading-token regex can say 'exactly one argument'; (2) an ARBITRARY option before the delete flag (`--format=%(refname) -d main`), unbounded on both. Claude closes both with `.agents/hooks/guard-branch-delete.py`, which reads the target list; on these two platforms they are documented in the guide s7 rather than claimed closed.",
       "render": {
         "zoo": [
           "git branch -D",
           "git branch -M",
+          "git branch --delete",
+          "git branch -rd",
+          "git branch -r -d",
+          "git branch -r --delete",
+          "git branch -f -d",
+          "git branch -f --delete",
+          "git branch -v -d",
+          "git branch -vv -d",
           "env -u GITHUB_TOKEN git branch -D",
-          "env -u GITHUB_TOKEN git branch -M"
+          "env -u GITHUB_TOKEN git branch -M",
+          "env -u GITHUB_TOKEN git branch --delete",
+          "env -u GITHUB_TOKEN git branch -rd",
+          "env -u GITHUB_TOKEN git branch -r -d",
+          "env -u GITHUB_TOKEN git branch -r --delete",
+          "env -u GITHUB_TOKEN git branch -f -d",
+          "env -u GITHUB_TOKEN git branch -f --delete",
+          "env -u GITHUB_TOKEN git branch -v -d",
+          "env -u GITHUB_TOKEN git branch -vv -d"
         ],
         "antigravity": [
           "command(git branch -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
           "unsandboxed(git branch -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
           "command(env -u GITHUB_TOKEN git branch -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
           "unsandboxed(env -u GITHUB_TOKEN git branch -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
+          "command(git branch --delete (?!\"?(chore|claude|epic)/).*)",
+          "unsandboxed(git branch --delete (?!\"?(chore|claude|epic)/).*)",
+          "command(env -u GITHUB_TOKEN git branch --delete (?!\"?(chore|claude|epic)/).*)",
+          "unsandboxed(env -u GITHUB_TOKEN git branch --delete (?!\"?(chore|claude|epic)/).*)",
+          "command(git branch -[a-zA-Z]+ --delete (?!\"?(chore|claude|epic)/).*)",
+          "unsandboxed(git branch -[a-zA-Z]+ --delete (?!\"?(chore|claude|epic)/).*)",
+          "command(env -u GITHUB_TOKEN git branch -[a-zA-Z]+ --delete (?!\"?(chore|claude|epic)/).*)",
+          "unsandboxed(env -u GITHUB_TOKEN git branch -[a-zA-Z]+ --delete (?!\"?(chore|claude|epic)/).*)",
+          "command(git branch -[a-zA-Z]+ -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
+          "unsandboxed(git branch -[a-zA-Z]+ -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
+          "command(env -u GITHUB_TOKEN git branch -[a-zA-Z]+ -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
+          "unsandboxed(env -u GITHUB_TOKEN git branch -[a-zA-Z]+ -[a-zA-Z]*[dD][a-zA-Z]* (?!\"?(chore|claude|epic)/).*)",
           "command(git branch -[a-zA-Z]*[mM][a-zA-Z]*)",
           "unsandboxed(git branch -[a-zA-Z]*[mM][a-zA-Z]*)",
           "command(env -u GITHUB_TOKEN git branch -[a-zA-Z]*[mM][a-zA-Z]*)",

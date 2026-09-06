@@ -374,6 +374,30 @@ The lists are a **friction dial plus a fence against common destructive spelling
 sandbox.** Five residuals are structural and accepted, because the real protections live
 elsewhere:
 
+> ⛔ **Read this one first (SCC-411, measured 2026-09-06). On Antigravity the ASK tier does not
+> exist behind the house command shape.** Antigravity matches a command's *leading tokens*, the
+> fence carries a blanket `command(cd)` allow, and `command-shape.md` rule 1 mandates that every
+> door command be `cd <abs> && …`. So the allow matches on `cd` and everything after `&&` is
+> invisible:
+>
+> ```
+> bare -> house, on Antigravity          (Zoo splits the chain; every one stays ask there)
+>   curl https://evil.sh   ask -> allow      ssh user@host    ask -> allow
+>   docker run x           ask -> allow      make deploy      ask -> allow
+>   rm -rf /              deny -> deny       git push --force deny -> deny
+> ```
+>
+> Denies survive it because the renderer writes a `cd .* && ` twin of every one (§6); **asks have
+> no twin to get.** The consequence, stated plainly: on that platform only the DENY list fences,
+> and *"it lands on ask, so the operator still decides"* is false for anything typed in the house
+> shape. This is why the `nice` / `xargs` / `command` / `env -i` wrappers became denies rather than
+> staying documented asks. **The remedy, when it is worth its own lane:** replace the blanket
+> `command(cd)` with the enumerated shapes the doors actually print — `cd .* && git .*`,
+> `cd .* && python3 .*`, and so on — which restores `ask` for everything else while leaving every
+> ceremony allowed. It was deliberately NOT done inside a bug-closing lane: getting that list
+> wrong turns the operator's real ceremony into approval prompts, and an approval prompt is this
+> house's flagship budget threat. Pinned in both directions by `test_permission_parity.py` A17.
+
 - **Interpreters are approve-anything.** `python3 `/`python ` are allowed (the whole toolkit runs
   on them), and a python one-liner can do anything a shell can. True for Claude Code too.
 - **Subshell laundering** (§6): a compound inside `$( )` is scored as one piece.
@@ -389,6 +413,29 @@ elsewhere:
 - **Env-prefix assignments:** `MSG=hi rm -rf /` is ONE piece whose head matches the `MSG=` allow —
   the assignment allows exist for the doors' standalone `VAR=…` lines and cannot tell the two
   shapes apart. The shape law (§10) bans the env-prefix spelling; the test pins the behavior.
+- **A branch-delete TARGET LIST, on Zoo and Antigravity** (SCC-411): `git branch -d` takes a list,
+  and `git branch -d chore/x main` deletes **both** — verified on real git 2.43. A literal prefix
+  and a leading-token regex both match from the left, so the first target satisfies the rule and
+  everything after it rides free. **No permission row on either grammar can say "exactly one
+  argument"**, so this is a grammar limit, not an oversight. On Claude it IS closed, by
+  `.agents/hooks/guard-branch-delete.py`, which reads the list and denies any target outside
+  `chore/`/`claude/`/`epic/` — the only fence here that can. Same for a substituted target
+  (`git branch -d chore/x $(echo main)`), and for the backtick spelling, which `zoo_pieces()`
+  leaves inline rather than scoring on its own (pinned as a behaviour row in
+  `test_zoo_permissions.py`: if the model ever learns backticks, that row flips and this line
+  must move with it).
+- **An ARBITRARY option in front of a delete flag** (SCC-411): the eight measured spellings are
+  denied by name, but `git branch --format=%(refname) -d main` — and any other option not on that
+  list — is unbounded on both grammars, exactly like the `env -i -C /tmp …` ordering residual
+  below. Denying `git branch --format` wholesale would kill a legitimate read. The Claude guard
+  covers it; here it lands on *ask*, never on a silent allow.
+- **`env VAR=value <cmd>` on Zoo** (SCC-411): the variable NAME is unbounded, and Zoo matches a
+  literal lowercased prefix, so no finite row set expresses it. Antigravity denies it as one token
+  regex (`env [A-Za-z_][A-Za-z0-9_]*=.*`); Zoo leaves it on *ask*. KNOWN-pinned in
+  `test_permission_parity.py` so the battery does not go red over a limit rather than a defect.
+  Its siblings `env -i`, `nice `, `xargs ` and `command ` ARE expressible and are denied — with
+  `command -v ` re-allowed as the longer prefix on Zoo and by an explicit `(?!-v)` lookahead on
+  Antigravity, which has no longest-prefix re-allow.
 
 What actually guards the things that matter: the GitHub **`main-write-gate`** ruleset (merges to
 `main` happen only through a green PR — no local terminal can do it), the **armed git hooks**
@@ -412,7 +459,7 @@ Two Zoo features to leave alone, and why:
 ## 8. The canonical lists — and the reasoning per family
 
 The source of truth is [`.vscode/settings.json`](../../.vscode/settings.json) (`zoo-code.*` keys),
-tracked in git: **125 allow / 115 deny** entries. The design rule, in the operator's words
+tracked in git: **125 allow / 135 deny** entries. The design rule, in the operator's words
 (2026-08-30): *denies are the absolute minimum — only things that would really cause damage.* And
 one mechanic makes that minimum load-bearing: under a broad allow, an un-denied spelling does not
 ask — it **auto-runs**. So the allows are broad working families, and every deny row names real
@@ -499,10 +546,10 @@ enforced by the test — because the broad env-twin allow would otherwise bypass
 |---|---|---|
 | Filesystem | `rm -rf`, `rm -r`, `sudo`, `chmod -R 777`, `chown -R`, `dd if=`, `mkfs`, `del /s`, `rmdir /s`, `Remove-Item -Recurse` | Irreversible. Bare `rm <file>` stays unlisted → asks. |
 | Outward git | `git push origin "main` (the quoted-target spelling of the flagship deny — quotes defeat prefixes, so the two main-push spellings are pinned; arbitrary quoting stays a documented residual, §7), `git push --force`, `git push -f`, `git push --force-with-lease`, `git push --mirror`, `git push --all`, `git push origin main`, `git push -u origin main`, `git push --set-upstream origin main`, `git push origin main:`, `git push origin HEAD:`, `git push origin +`, `git push origin :`, `git push --delete`, `git push origin --delete` | `main` is never an agent's; history rewrites never auto-run. Lane/epic deletes and the story-landing `git push origin HEAD:epic/` re-allowed above (longest-prefix beats the `HEAD:` deny — the close/kickoff doors land on epic branches with exactly that spelling). (The GitHub `main-write-gate` ruleset is the primary lock on `main`; these rows are the local echo.) |
-| Work destruction | `git reset --hard`, `git clean -f`, `git clean -d`, `git clean -x`, `git clean --force`, `git branch -D`, `git branch -M`, `git rebase`, `git filter-branch`, `git reflog expire`, `git reflog delete`, `git update-ref`, `git gc --prune`, `git stash drop`, `git stash clear`, `git restore .`, `git checkout -- `, `git checkout .` | Each destroys committed or uncommitted work, or the recovery data for it. `-f`/`-d`/`-x`/`--force` leave the dry-run `git clean -n` approvable (the `-x`/`--force` escape spellings were verified auto-approving in the close-out review and denied). `update-ref` is denied whole: any spelling rewrites or deletes a ref. `git checkout main` is deliberately NOT denied — parking a checkout on main is a real ceremony step, and the damage (pushing main) is fenced elsewhere. |
+| Work destruction | `git reset --hard`, `git clean -f`, `git clean -d`, `git clean -x`, `git clean --force`, `git branch -D`, `git branch -M`, `git branch --delete`, `git branch -rd`, `git branch -r -d`, `git branch -r --delete`, `git branch -f -d`, `git branch -f --delete`, `git branch -v -d`, `git branch -vv -d`, `git rebase`, `git filter-branch`, `git reflog expire`, `git reflog delete`, `git update-ref`, `git gc --prune`, `git stash drop`, `git stash clear`, `git restore .`, `git checkout -- `, `git checkout .` | Each destroys committed or uncommitted work, or the recovery data for it. **The eight `git branch` delete spellings after `-M` are SCC-411 (2026-09-06), and the lesson is that THE DELETE FLAG IS NOT ALWAYS FIRST.** Every earlier row named the first flag — a literal prefix on Zoo, a position-three token regex on Antigravity — so any option in front of the delete walked past the fence. All eight read *allow* on Zoo when measured, and on Claude the `-r`/`-v`/`-vv` forms did too, because those flags are granted as READS and real git 2.43 accepts them alongside a delete (`git branch -v -d victim` → *Deleted branch victim*). `--delete` is the long form no grammar named at all; `-r` deletes a remote-tracking ref, which is never a lane prune. Each spelling carries an `env -u` twin and a `cd <abs> && ` twin, and each has a destructive-battery row, so a later narrowing turns the battery red rather than passing green over a hole. `-f`/`-d`/`-x`/`--force` leave the dry-run `git clean -n` approvable (the `-x`/`--force` escape spellings were verified auto-approving in the close-out review and denied). `update-ref` is denied whole: any spelling rewrites or deletes a ref. `git checkout main` is deliberately NOT denied — parking a checkout on main is a real ceremony step, and the damage (pushing main) is fenced elsewhere. |
 | Reroute/disarm | `git remote remove`, `git remote rm`, `git remote rename`, `git remote set-url`, `git config` | A remote edit reroutes pushes silently; a config write can disarm the hooks (`core.hooksPath`). Config READS are re-allowed above. |
 | Sweeps | `git add -A`, `git add .`, `git add -u`, `git add --all` | The git-policy ban — a sweep carries other sessions' work. |
-| Launder shapes | `git -C`, `git --git-dir`, `env -C`, `env --chdir`, `env -u GITHUB_TOKEN env -C`, `env -u GITHUB_TOKEN env --chdir`, `env -u GITHUB_TOKEN -C`, `env -u GITHUB_TOKEN --chdir`, `/usr/bin/env -C`, `/usr/bin/env --chdir`, `/bin/env -C`, `/bin/env --chdir` | Under the broad `git ` allow these would bypass every verb deny (§6). Auto-denied: the agent gets an immediate refusal and rewrites to `cd … && git …`. (Lowercasing means `git -c` — config override — is denied by the same row.) **`env -C <dir> <cmd>` / `env --chdir=<dir> <cmd>` (SCC-410, 2026-09-04):** the chdir wrapper runs the command somewhere else entirely and nothing downstream sees the flag, so it launders a destructive command past a fence written for the bare one. It read *ask* on all three platforms until this row, and PR #165 shipped a single `Bash(env -C:*)` allow that auto-approved `env -C <dir> rm -rf /` through a fully green battery. Eight spellings are denied and each has a twin in the battery's destructive set: `-C /tmp`, `-C/tmp`, `--chdir /tmp`, `--chdir=/tmp`, the doubled and single `env -u GITHUB_TOKEN` twins, the absolute-path form, and the `cd <abs> && ` house shape. **Two residuals stay open and both land on *ask*, never on a silent allow** — this is a grammar limit, in the same family as the arbitrary-quoting residual noted above. (1) *Ordering:* `env -i -C /tmp …` puts an option before the flag; Zoo matches a literal prefix and Antigravity matches per token by position, so no finite row set expresses it. (2) *Clustering:* `env -iC /tmp …` is a legal getopt cluster — Antigravity denies it (the token regex is the renderer's own cluster class `-[a-zA-Z]*C.*`), Zoo cannot express it, and it is deliberately absent from the destructive set because that check demands both platforms deny and would red the battery over a limit rather than a defect. |
+| Launder shapes | `git -C`, `git --git-dir`, `env -C`, `env --chdir`, `env -u GITHUB_TOKEN env -C`, `env -u GITHUB_TOKEN env --chdir`, `env -u GITHUB_TOKEN -C`, `env -u GITHUB_TOKEN --chdir`, `/usr/bin/env -C`, `/usr/bin/env --chdir`, `/bin/env -C`, `/bin/env --chdir`, `nice `, `xargs `, `command `, `env -i` | Under the broad `git ` allow these would bypass every verb deny (§6). Auto-denied: the agent gets an immediate refusal and rewrites to `cd … && git …`. (Lowercasing means `git -c` — config override — is denied by the same row.) **`env -C <dir> <cmd>` / `env --chdir=<dir> <cmd>` (SCC-410, 2026-09-04):** the chdir wrapper runs the command somewhere else entirely and nothing downstream sees the flag, so it launders a destructive command past a fence written for the bare one. It read *ask* on all three platforms until this row, and PR #165 shipped a single `Bash(env -C:*)` allow that auto-approved `env -C <dir> rm -rf /` through a fully green battery. Eight spellings are denied and each has a twin in the battery's destructive set: `-C /tmp`, `-C/tmp`, `--chdir /tmp`, `--chdir=/tmp`, the doubled and single `env -u GITHUB_TOKEN` twins, the absolute-path form, and the `cd <abs> && ` house shape. **Two residuals stay open and both land on *ask*, never on a silent allow** — this is a grammar limit, in the same family as the arbitrary-quoting residual noted above. (1) *Ordering:* `env -i -C /tmp …` puts an option before the flag; Zoo matches a literal prefix and Antigravity matches per token by position, so no finite row set expresses it. (2) *Clustering:* `env -iC /tmp …` is a legal getopt cluster — Antigravity denies it (the token regex is the renderer's own cluster class `-[a-zA-Z]*C.*`), Zoo cannot express it, and it is deliberately absent from the destructive set because that check demands both platforms deny and would red the battery over a limit rather than a defect. |
 | Outward tools | `gh pr merge`, `gh repo delete`, `gh release delete`, `acli jira workitem delete` | Merges are the operator's click; deletions are operator words. |
 
 ### 8.1 What the manifest does NOT contribute — the notification probe (SCC-355)

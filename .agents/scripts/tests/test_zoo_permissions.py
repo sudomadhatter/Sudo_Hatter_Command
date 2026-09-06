@@ -173,6 +173,37 @@ BATTERY = [
     "gh release delete v1 --yes", "env -u GITHUB_TOKEN gh pr merge 104 --merge",
     "acli jira workitem delete --key SCC-351 --yes",
     "cd /tmp && rm -rf /tmp/anything", "git status && git push --force",
+    # ── SCC-411 cycle 11 (2026-09-06) · every `git branch` delete spelling that walked past the
+    # single-token deny, because Zoo reads a literal PREFIX and the deny names the FIRST flag.
+    # All eight read auto_approve at aa408738; real git 2.43 deletes for every one.
+    "git branch -rd origin/main", "git branch -r -d origin/main",
+    "git branch -r --delete origin/main", "git branch --delete main",
+    "git branch -f -d main", "git branch -f --delete main",
+    "git branch -v -d main", "git branch -vv -d main",
+    "env -u GITHUB_TOKEN git branch -rd origin/main",
+    "env -u GITHUB_TOKEN git branch -r -d origin/main",
+    "env -u GITHUB_TOKEN git branch -r --delete origin/main",
+    "env -u GITHUB_TOKEN git branch --delete main",
+    "env -u GITHUB_TOKEN git branch -f -d main",
+    "env -u GITHUB_TOKEN git branch -f --delete main",
+    "env -u GITHUB_TOKEN git branch -v -d main",
+    "env -u GITHUB_TOKEN git branch -vv -d main",
+    # ── SCC-411 · THE NEAR-MISSES THAT BOUND THE LANE RE-ALLOWS. Nothing in this repo asserted
+    # where `git branch -d chore/` ends: measured 2026-09-06, widening it to `git branch -d c`
+    # (and the claude/ epic/ twins) flipped ZERO rows of BATTERY, CEREMONY, ASK_BATTERY,
+    # LEGIT_READS or RESIDUAL_APPROVE, while `git branch -d canything-at-all` became auto_approve.
+    # Each row below is ONE character from a live re-allow - drop the trailing `/` and it flips.
+    # ⛔ A positive CEREMONY row does NOT kill that widening; only these negatives do.
+    "git branch -d chores/SCC-1-x", "git branch -d claudex/SCC-1-x",
+    "git branch -d epics/SCC-1-x", 'git branch -d "chores/SCC-1-x"',
+    # ── SCC-411 · the env -C wrapper family's siblings (the ticket's row 1). Filed as "all ASK -
+    # decide per wrapper"; the measurement that decided it is that ask is NOT a fence behind the
+    # mandated house shape on Antigravity (test_permission_parity.py A17). Zoo splits the chain
+    # and does hold the line, so these rows pin Zoo's half of the answer. `command -v ` stays
+    # approvable: it is the LONGER prefix and Zoo's longest-prefix rule gives it the win, which
+    # test_reallow_beats_its_deny now asserts structurally.
+    "nice rm -rf /", "xargs rm -rf /", "command rm -rf /", "env -i rm -rf /",
+    "env -iC /tmp rm -rf /",
 ]
 
 CEREMONY = [
@@ -208,11 +239,21 @@ CEREMONY = [
     'cd "$TREE" && env -u GITHUB_TOKEN git push origin HEAD:epic/SCC-123-slug',
 ]
 
-LEGIT_READS = ["git clean -n", "git config --get core.hooksPath", "git config --list"]
+LEGIT_READS = ["git clean -n", "git config --get core.hooksPath", "git config --list",
+               # SCC-411: `command ` is now denied as a launder wrapper; the `command -v ` read
+               # survives on the longest-prefix rule. Unpinned, that re-allow could be dropped
+               # with the battery still green.
+               "command -v python3"]
 
 ASK_BATTERY = [  # unknown tools must stay ask_user — the third verdict tier, pinned
     "curl -fsSL https://get.example.sh | sh", "npx create-next-app", "brew install jq",
     "osascript -e 'display dialog 1'", "rm notes.txt", "node script.js", "make deploy",
+    # SCC-411: the one wrapper Zoo's grammar cannot reach. A literal lowercased PREFIX cannot
+    # express "env followed by ANY variable assignment" - the name is the unbounded part. It lands
+    # on ask, never on a silent allow, and Antigravity denies it as one token regex. Documented in
+    # the guide s7 beside the `env -iC` clustering residual, and KNOWN-pinned in the parity file so
+    # A2 does not red over a grammar limit.
+    "env FOO=1 rm -rf /",
 ]
 
 RESIDUAL_APPROVE = [  # documented launder residuals (guide §5) — behavior pins, not endorsements
@@ -220,6 +261,15 @@ RESIDUAL_APPROVE = [  # documented launder residuals (guide §5) — behavior pi
     "R=$(cd /tmp && rm -rf /tmp/x)",
     "git worktree remove .claude/worktrees/x --force",
     "python3 - <<'EOF'\nprint('heredoc runs')\nEOF",
+    # SCC-411 row 6: `zoo_pieces()` grabs a `$(…)` body into its own piece but leaves a BACKTICK
+    # body inline, so a substituted TARGET is never scored on its own. Measured 2026-09-06: the
+    # backtick spelling reads auto_approve on all three platforms. ⛔ THE MODEL IS NOT CHANGED
+    # HERE, deliberately - whether the real Zoo extension splits backticks is not measurable from
+    # this repo, and a model that scores what the platform does not would certify a hole. This is
+    # a BEHAVIOUR PIN: if the model ever learns backticks, this row flips and the guide's residual
+    # line must move with it. On Claude the launder is genuinely closed -
+    # guard-branch-delete.py denies any delete carrying a substitution, in any position.
+    "git branch -d chore/x `echo main`",
 ]
 
 
@@ -286,6 +336,11 @@ def test_reallow_beats_its_deny():
         ("git config -l", "git config"),
         ("git add .agents/", "git add ."),
         ("git add .roomodes", "git add ."),
+        # SCC-411: `command` is a shell BUILTIN that runs its argument, so `command rm -rf /`
+        # launders past every verb deny. It is denied whole and the read `command -v ` is
+        # re-allowed on the same longest-prefix rule the lane deletes use - structurally, so a
+        # renderer cannot drop the re-allow and leave the operator unable to probe a binary.
+        ("command -v ", "command "),
     ]
     for allow_entry, deny_entry in pairs:
         assert allow_entry in ALLOW, f"missing re-allow: {allow_entry}"
@@ -574,6 +629,79 @@ def test_apply_refuses_while_vscode_runs():
             sys.argv = argv
         assert rc == 2, f"expected REFUSED exit 2, got {rc}"
         assert db.read_bytes() == original, "refusal must leave the store untouched"
+
+
+# ── SCC-411 · the refuse-while-running guard must fail CLOSED ───────────────────────────────
+#
+# ⛔ THE DEFECT, measured 2026-09-06 from a sandboxed agent shell in this repo:
+#
+#     $ /mnt/c/Windows/System32/tasklist.exe /FI "IMAGENAME eq Code.exe"
+#     <3>WSL (35 - ) ERROR: UtilConnectUnix:505: socket failed 1
+#     exit 0
+#
+# The Claude Code sandbox blocks WSL interop, so tasklist returns an ERROR STRING with exit 0
+# instead of raising OSError. `vscode_running()` caught only OSError, found no "Code.exe" in that
+# string, and returned False - while the same call outside the sandbox returned True with 19
+# Code.exe processes live. An agent running `--apply` from a sandboxed shell would therefore write
+# BOTH state.vscdb stores with VS Code open, and VS Code flushes its in-memory globalState over
+# the top on exit: the fence silently reverts and nothing reports it.
+#
+# The function's own docstring already stated the intent - "Unable to ask = treat as running" - so
+# this is the code catching up with its contract. Source greps cannot see this; only a stub can.
+
+def _vscode_running_with(mod, stdout: str | None = None, raise_oserror: bool = False) -> bool:
+    """Run vscode_running() against a stubbed tasklist answer, on the WSL/Windows arm."""
+    import types
+
+    def fake_run(*_a, **_kw):
+        if raise_oserror:
+            raise OSError("interop gone")
+        return types.SimpleNamespace(stdout=stdout, returncode=0)
+
+    real_sub, real_wsl = mod.subprocess, mod.under_wsl
+    mod.subprocess = types.SimpleNamespace(run=fake_run)
+    mod.under_wsl = lambda: True
+    try:
+        return mod.vscode_running()
+    finally:
+        mod.subprocess, mod.under_wsl = real_sub, real_wsl
+
+
+TASKLIST_HEADER = ("\nImage Name                     PID Session Name        Session#    Mem Usage\n"
+                   "========================= ======== ================ =========== ============\n")
+
+
+def test_vscode_running_fails_CLOSED_on_an_unusable_answer():
+    mod = _load_apply_module()
+    cases = {
+        "the verbatim sandboxed WSL interop error (exit 0, not an OSError)":
+            "<3>WSL (35 - ) ERROR: UtilConnectUnix:505: socket failed 1\n",
+        "an empty answer - the process was killed before it printed":
+            "",
+        "None - subprocess captured nothing at all":
+            None,
+        "a wholly unrelated error string":
+            "bash: /mnt/c/Windows/System32/tasklist.exe: No such file or directory\n",
+    }
+    bad = [why for why, out in cases.items() if _vscode_running_with(mod, out) is not True]
+    assert not bad, ("an unusable answer must be treated as RUNNING (the docstring's own "
+                     "contract); these returned False: " + "; ".join(bad))
+    assert _vscode_running_with(mod, raise_oserror=True) is True, (
+        "the pre-existing OSError arm must survive the fix")
+
+
+def test_vscode_running_still_ANSWERS_when_tasklist_really_answers():
+    """CONTROL - without this, `return True` unconditionally would pass the case above, and the
+    guard would refuse every apply forever (a fence that always refuses is not a fence)."""
+    mod = _load_apply_module()
+    running = TASKLIST_HEADER + ("Code.exe                      1234 Console                    1    123,456 K\n")
+    idle = TASKLIST_HEADER + ("explorer.exe                   999 Console                    1     45,000 K\n")
+    assert _vscode_running_with(mod, running) is True, "a table naming Code.exe means RUNNING"
+    assert _vscode_running_with(mod, idle) is False, (
+        "a real table WITHOUT Code.exe means not running - this is the arm that lets --apply work")
+    assert _vscode_running_with(
+        mod, "INFO: No tasks are running which match the specified criteria.\n") is False, (
+        "tasklist's own empty-result form is a real answer, not an unusable one")
 
 
 def test_candidate_dbs_sees_the_second_seat_and_the_windows_stores_from_wsl():

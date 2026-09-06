@@ -581,6 +581,70 @@ def main() -> int:
             c.check("W5 a --cwd outside any git repo refuses instead of silently using --project",
                     code != 0 and "loose-dir" in out, f"exit={code}\n{out[-300:]}")
 
+    # ══ SCC-411 · a SANDBOX BIND MOUNT is not dirt, and reading it as dirt costs a second suite run
+    #
+    # ⛔ THE DEFECT, measured 2026-09-06 from the lobby inside the Claude Code sandbox. The sandbox
+    # mounts the denied `.claude/*` paths (and `~/.bashrc`, `~/.gitconfig`) into the work tree as
+    # CHARACTER DEVICES. `git status --porcelain` cannot see that and lists all twelve as ordinary
+    # untracked entries:
+    #
+    #     ?? .bashrc          ?? .claude/agents      ?? .claude/loop.md   ?? .gitconfig   (+8 more)
+    #     $ stat -c '%F %n' .bashrc .claude/agents
+    #     character special file .bashrc
+    #     character special file .claude/agents
+    #
+    # `_measure_dirt` therefore stamps DIRTY on a tree that is genuinely clean, `/smh-code-review`
+    # Step 3 and `task_preflight` refuse to adopt a DIRTY receipt, and the whole suite gets re-run
+    # sandbox-off purely to earn a clean stamp. That is the SAME double run SCC-418 removed,
+    # arriving through a different door - which is why it is finished here rather than filed again.
+    #
+    # The exemption is EXACTLY "untracked AND a character device", and the control below is what
+    # keeps it that narrow: a real untracked file sitting beside the mounts must still read dirty,
+    # or this becomes "ignore every ?? entry", which would hand out the gate-SKIP over real dirt.
+    if c.block("gate_receipt · SCC-411: a sandbox bind mount is not a dirty tree"):
+        import importlib.util
+        _script = (Path(__file__).resolve().parents[1] / "gate_receipt.py")
+        _spec = importlib.util.spec_from_file_location("gate_receipt", _script)
+        gr_mod = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(gr_mod)
+
+        with TempDir() as tmp:
+            repo = tmp / "devrepo"
+            repo.mkdir()
+            git(repo, "init", "-q", "-b", "main")
+            git(repo, "config", "user.email", "t@t")
+            git(repo, "config", "user.name", "t")
+            (repo / "tracked.md").write_text("x\n", encoding="utf-8")
+            git(repo, "add", "tracked.md")
+            git(repo, "commit", "-qm", "seed")
+            # Two untracked entries, indistinguishable to `git status`: one stands for a mount.
+            (repo / "mounted.sock").write_text("", encoding="utf-8")
+            (repo / "real-edit.md").write_text("y\n", encoding="utf-8")
+            out_dir = repo / "gates"
+
+            base = gr_mod._measure_dirt(repo, out_dir)
+            c.check("M0 CONTROL both untracked entries are seen at all (an empty scan certifies "
+                    "nothing)",
+                    sorted(base) == ["mounted.sock", "real-edit.md"], f"{base!r}")
+
+            real_pred = gr_mod._is_char_device
+            gr_mod._is_char_device = lambda work, rel: rel == "mounted.sock"
+            try:
+                got = gr_mod._measure_dirt(repo, out_dir)
+            finally:
+                gr_mod._is_char_device = real_pred
+            c.check("M1 a character-device entry is NOT dirt - the sandbox's own mount cannot "
+                    "stamp a clean tree DIRTY",
+                    "mounted.sock" not in got, f"{got!r}")
+            c.check("M2 CONTROL a real untracked file beside it IS still dirt, and is still named "
+                    "(the exemption is devices, never every `??` row)",
+                    got == ["real-edit.md"], f"{got!r}")
+
+            c.check("M3 the predicate defaults to a real filesystem stat, not to a name pattern",
+                    real_pred(repo, "real-edit.md") is False
+                    and real_pred(repo, "does-not-exist-at-all.md") is False,
+                    "a plain file or a vanished path must never read as a device")
+
     return c.finish()
 
 
