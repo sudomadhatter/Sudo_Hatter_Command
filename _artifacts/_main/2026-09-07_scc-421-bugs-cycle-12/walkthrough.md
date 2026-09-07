@@ -81,17 +81,38 @@ Per the rolling ticket protocol and consolidation rules:
 | `test_rule_frontmatter.py` | 30/30 PASS | Frontmatter and tier-1/tier-2 integrity clean |
 | `test_check_maps.py` | 37/37 PASS | Depth-3 _artifacts INDEX clean with session row |
 | `test_git_hooks.py` | 163/163 PASS | Git hooks and commit-msg enforcement clean |
+| `run_all.py` | 81/81 PASS | Measured at `9556025a` via `gate_receipt.py` (`gates/suite.json`) |
 
 ---
 
-## 6. Code Review
+## Code Review
+
+Verdict: PASS @ 9556025a
+
+review_level: standard
+lens_isolation: worktree
+review-runtime: fan-out
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted: 5/5
+lenses_na: none
+findings: 0 decision · 0 patch · 0 defer
+dispositions: per-lens: blind-hunter=0/0/0 · edge-case-hunter=0/0/0 · literal-correctness-hunter=0/0/0 · acceptance-auditor=0/0/0 · test-adequacy-auditor=0/0/0
+drift: undeclared=0 · unimplemented=0 · incomplete=0
 
 - **Review Summary**:
   - `link-worktree-assets.py`: Reordering `is_link` above `find_assets` prevents `NameError`. Depth-2 search properly skips recursion into gitignored assets while allowing submodules and test directories (like `firebase/tests/node_modules`).
   - `smh-designer.md` and `frontend_UI_design_guide.md`: Follow house markdown conventions and cleanly encode the operator's mobile-first directives without breaking existing command shapes or workflows.
   - Tests include strong anti-vacuity assertions and negative controls.
 
-Verdict: PASS @ 9556025a
+### Step 0.7 — re-derivation
+1. What moved: `origin/main` is level with this lane; no concurrent landings.
+2. What it changes here: no conflicting changes to `link-worktree-assets.py` or `/smh-designer.md`.
+3. What was re-measured: full test suite re-verified clean via `gate_receipt.py` @ `9556025a`.
 
 ---
 
