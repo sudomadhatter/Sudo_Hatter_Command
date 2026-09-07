@@ -30,10 +30,10 @@ can actually be enforced is the runner's own.
 - [x] **Row E — the Autopilot SOP.** `docs/_scc_sops_prds/autopilot_SOP.md` with three validated `flowchart` diagrams; SOP §15 links to it, both atlas entries describe v3, one changelog line.
 - [x] **Row F — one real AGY ticket.** Operator chose **AVCH-138** (the 3MB pre-hydration splash) 2026-09-07. Three defects found and fixed before the first child launched, a fourth found BY the run. The work shipped: branch `chore/AVCH-138-splash-image-weight` @ `ee9442ae`, pushed.
 - [x] **Difficulty tiers.** `--tier easy|medium|hard`, ruled 2026-09-07 and amended twice by the operator (the Gnat exempt; Sonnet 5 at medium, not Haiku at low). The invariant the table is an instance of — *the reviewer never runs the model that wrote the code* — is asserted for every tier.
-- [x] **AVCH-138 closed out** — verified by hand, the 3MB PNG deleted, [PR #96](https://github.com/sudomadhatter/AGY_AVIATIONCHAT/pull/96) open, dev record on the ticket.
+- [x] **AVCH-138 closed out** — verified by hand, the 3MB PNG deleted, [PR #96](https://github.com/sudomadhatter/AGY_AVIATIONCHAT/pull/96) **merged 2026-09-07** (112/112 journeys green on CI; the quick fix renumbered 1.6 → 1.8 after a parallel lane claimed 1.6) and the ticket **Done**, dev record on the ticket.
 - [x] **Row G — the v2 lane retired.** Ruled 2026-09-07. Five doors, two launchers and the v2 reference page deleted; nineteen referencing files closed out; five things harvested first.
-- [ ] Row G — the five old doors deleted (**needs ruling 3**).
-- [ ] **Close-out — the Autopilot SOP** (operator direction, 2026-09-07): its own document with its own diagrams, linked from the main SOP, and the upkeep home for the autopilot workflows from then on. See *What close-out owes* below.
+- [x] Row G — the five old doors deleted. Ruling 3 given 2026-09-07 ("delete, but harvest first"); this line duplicates the Row G entry directly above it, written before the ruling landed.
+- [x] **Close-out — the Autopilot SOP** (operator direction, 2026-09-07): its own document with its own diagrams, linked from the main SOP, and the upkeep home for the autopilot workflows from then on. Delivered as [`autopilot_SOP.md`](../../../docs/_scc_sops_prds/autopilot_SOP.md) — the same work the Row E entry above records. See *What close-out owes* below.
 
 ## Evidence
 
