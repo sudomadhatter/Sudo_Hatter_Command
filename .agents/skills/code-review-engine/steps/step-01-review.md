@@ -531,7 +531,7 @@ in the other direction is an unbounded overnight spend nobody is watching.
 | `lens_budget` | Used by | The caps |
 |---|---|---|
 | `standard` | interactive callers | MANDATORY as written in that lens's Scope section; the lens may additionally **earn** ONE top-up past the file cap by naming the specific file and what it is looking for — never a sweep, and never "to be thorough" |
-| `capped` | `/cicd-code-review-AP` (autopilot), and any caller that names nothing | the same caps, MANDATORY, and **no top-up** — an overnight loop multiplies every token it spends, and nobody is watching it spend them |
+| `capped` | any caller that names nothing — including every unattended lane | the same caps, MANDATORY, and **no top-up** — an overnight loop multiplies every token it spends, and nobody is watching it spend them |
 
 **The top-up must REACH the lens, and it must reach ONLY the `standard` lens.** The table above is
 the definition, and a table cell is unquoted — orchestrator text, which the assembly convention
@@ -586,8 +586,8 @@ imagining its output.
 ⭐ **A caller may override that return, and one already does.** Handing prompts back assumes someone
 is there to run them; **in a headless pipeline nobody is, and returning unrun prompts is a review
 that silently never ran** while the caller reads it as clean. So a caller MAY instruct you to run
-the lenses INLINE and sequentially in your own context instead — `/cicd-code-review-AP` does
-exactly this — and that instruction wins over the paragraph above. Running a lens inline is not
+the lenses INLINE and sequentially in your own context instead — a headless caller with no
+subagent tool must — and that instruction wins over the paragraph above. Running a lens inline is not
 simulating one: you execute its real prompt and report its real output, losing the parallelism and
 the separate context, not the coverage. **Record in `notes` that the lenses ran inline**, and where
 a lens's value depends on context starvation, say what it was exposed to (→ the Blind Hunter
@@ -597,8 +597,8 @@ caveat, next).
 is defined as `DIFF`-only; run inline, it inherits whatever your context already holds. A caller
 mandating inline execution must therefore run the blind lens **first — on the diff alone, before
 any spec, plan, walkthrough or evidence pack is pulled into context.** Done in that order the lens
-is genuinely blind and scores `recovered-inline` like any other — `/cicd-code-review-AP` is built
-exactly this way, splitting its ingests so the blind lens lands between them.
+is genuinely blind and scores `recovered-inline` like any other: split the ingests so the blind
+lens lands between them.
 
 ### ⛔ When the order cannot protect the Blind Hunter, the lens is DROPPED — not faked (SCC-203)
 

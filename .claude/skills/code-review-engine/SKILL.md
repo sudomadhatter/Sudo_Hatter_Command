@@ -1,6 +1,6 @@
 ---
 name: code-review-engine
-description: The house review engine — runs the adversarial lens fan-out over a resolved diff, verifies findings, triages them into four buckets and records them, returning a severity summary its caller turns into a verdict. Invoked BY /cicd-code-review, /smh-code-review and /cicd-code-review-AP; it is not a standalone command and never resolves its own inputs.
+description: The house review engine — runs the adversarial lens fan-out over a resolved diff, verifies findings, triages them into four buckets and records them, returning a severity summary its caller turns into a verdict. Invoked BY /cicd-code-review, /smh-code-review and /cicd-quick-dev; it is not a standalone command and never resolves its own inputs.
 allowed-tools: Read, Write, Glob, Grep, Task
 ---
 
@@ -17,7 +17,7 @@ the gate and the verdict line. You own findings and their severity.
 Every platform that publishes skills makes this one visible as a menu entry, so a human can reach it
 directly. **If `REPO`, `WORKTREE`, `DIFF`, `HEAD_SHA` and `review_mode` were not supplied by a
 calling command, you were invoked from a menu.** Print the contract table below, say this engine
-runs only as a step of `/cicd-code-review`, `/smh-code-review` or `/cicd-code-review-AP`, and
+runs only as a step of `/cicd-code-review`, `/smh-code-review` or `/cicd-quick-dev`, and
 **return without reading the step files.** Do not resolve the inputs yourself and do not proceed.
 
 ## The caller contract — these arrive resolved, and the engine never resolves them itself

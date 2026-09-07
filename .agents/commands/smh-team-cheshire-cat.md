@@ -4,6 +4,9 @@ platforms: [zoo]
 mode-slug: code
 mode-name: "😼🔨 Cheshire Cat — ENGINEER"
 mode-groups: [read, edit, command]
+claude-model: claude-sonnet-5
+claude-effort: high
+claude-tools: [Read, Grep, Glob, WebSearch, WebFetch, Edit, Write, NotebookEdit, Bash, TodoWrite]
 ---
 
 # 😼🔨 Cheshire Cat — ENGINEER

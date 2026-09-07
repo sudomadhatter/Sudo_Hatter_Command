@@ -4378,6 +4378,81 @@ def main() -> int:
                 "### Responsive & Mobile-First Quality" in sec8 and "Zero Horizontal Overflow" in sec8,
                 "Section 8 does not include Responsive & Mobile-First Quality checklist")
 
+    # ── SCC-430 · the autopilot door carries its charter, or it has no scope ──
+    if c.block("SCC-430 the autopilot door's charter is IN the door"):
+        """The charter is the operator's approval made checkable, and it only works in ONE place.
+
+        ⛔ WHY THIS IS A TEST AND NOT A REVIEW HABIT. The lead reads the door at launch and nothing
+        else — not the SOP, not the design record. A charter that lives only on the SOP page is a
+        charter the robot never sees, and the failure is silent in the worst way: the lead would
+        improvise a scope, every step would look normal, and the first sign would be an unattended
+        run doing something the operator never approved. So the door either names every escalation
+        row or this suite is red.
+        """
+        door = (ROOT / ".agents" / "commands" / "cicd-autopilot-claude.md")
+        body = door.read_text(encoding="utf-8")
+
+        # A0 · ANTI-VACUITY, and it is not decoration: an empty or stub door makes every
+        # substring check below pass by asking nothing of a file with nothing in it.
+        c.check("AP0 anti-vacuity - the door has a body to check",
+                len(body) > 3000, f"{len(body)} chars")
+
+        # A1 · every row the operator ruled ESCALATE. Named individually rather than counted,
+        # because "the table has nine rows" survives someone rewriting a row's meaning.
+        for what, needle in (
+            ("a NO-GO audit verdict", "NO-GO"),
+            ("a new dependency", "dependency"),
+            ("a schema change", "schema"),
+            ("CI or environment config", "environment config"),
+            ("deleting a file", "Deleting a file"),
+            ("a second non-PASS review", "second non-PASS"),
+            ("a door's own PIPELINE_BLOCKER", "PIPELINE_BLOCKER"),
+        ):
+            c.check(f"AP1 the charter names {what}", needle in body, f"missing: {needle!r}")
+
+        # A2 · the two rows that are not escalations, and both are load-bearing. Without the
+        # `continue` row the lead stops every story; without "never" the ban on landing reads as
+        # advice.
+        c.check("AP2 the charter says the lead may pass Step 2's `continue`",
+                "Step 2 `continue`" in body and "**lead**" in body, "the pass rows are gone")
+        c.check("AP3 landing is marked NEVER, not merely discouraged",
+                "**never**" in body and "no verb" in body,
+                "the door does not say landing is impossible rather than forbidden")
+
+        # A3 · `workflow_lint.py` requires the code-standards pointer on any file containing the
+        # literal `NO-GO`. Pinned here so the reason is discoverable from the door's own suite
+        # rather than only from a lint failure.
+        c.check("AP4 the door cites code-standards.md (workflow_lint requires it for NO-GO)",
+                "code-standards.md" in body, "workflow_lint.py will exit 2")
+
+        # A4 · the door points at its manual, which is where the charter is explained rather
+        # than merely listed.
+        c.check("AP5 the door points at the Autopilot SOP",
+                "autopilot_SOP.md" in body, "the manual is unreachable from the door")
+
+        # A5 · the quick-fix route. Found by pointing the door at a REAL ticket (AVCH-138, row F):
+        # a project Task has no story file, no sprint row and no epic branch, so the ①②③ table
+        # cannot express it. Without this route the lead either refuses a legitimate ticket or
+        # improvises a door — and improvising a door is precisely how the pointer architecture
+        # (this lane owns no copy of any door) breaks.
+        # ⛔ Pin the dispatch ROW, not the door's name. The first cut of this check read
+        # `"/cicd-quick-dev" in body`, and the sweep killed it: deleting the table row left the
+        # prose two lines below still naming the door, so the case passed while the lead had
+        # nothing to launch. A route is a row — a door AND the seat that wears it.
+        route_rows = [ln for ln in body.splitlines()
+                      if ln.startswith("|") and "/cicd-quick-dev" in ln and "cheshire-cat" in ln]
+        c.check("AP6 the door carries a dispatchable quick-fix route row",
+                "quick-fix route" in body and len(route_rows) == 1,
+                f"table rows naming /cicd-quick-dev with its seat: {len(route_rows)}")
+
+        # A6 · and WHY that route's own review cannot be the verdict. Every seat pins
+        # `claude-tools` without `Task`, so a seated child runs the quick-dev gate inline and one
+        # lens short; the no-seat review child is the real gate. If the door stops saying this,
+        # the lead reports a first pass as the run's verdict and nobody can tell from the record.
+        c.check("AP7 the door says a seated child cannot fan out review lenses",
+                "fan out" in body and "no subagent" in body,
+                "the door does not explain why the no-seat review is the real gate")
+
     return c.finish()
 
 

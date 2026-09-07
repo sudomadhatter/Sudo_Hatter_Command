@@ -435,8 +435,8 @@ through each as needed:
   > ⚠️ **Credentials are the one step nobody can do for you.** They live in
   > `~/.local/share/opencode/auth.json`, are machine-local like every other login in this section, and
   > `opencode auth login` is a TUI — an agent cannot run it. Until it is done, `opencode models` lists
-  > only the free `opencode/*` tier and every pinned agent fails. The `.opencode/agent/opus-*` files and
-  > `/cicd-autopilot-opencode` pin **`openrouter/…`** models, so the provider to authenticate is **OpenRouter**
+  > only the free `opencode/*` tier and every pinned agent fails. The `.opencode/agent/opus-*` files
+  > pin **`openrouter/…`** models, so the provider to authenticate is **OpenRouter**
   > unless that pin changes. Verify with `opencode auth list`, then `opencode models | grep openrouter`.
   >
   > ⚠️ **opencode gets no MCP servers from this repo — on any platform.** It reads `mcp` out of

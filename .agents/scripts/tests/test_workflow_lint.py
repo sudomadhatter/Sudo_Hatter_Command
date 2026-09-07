@@ -264,22 +264,19 @@ def main() -> int:
         c.check("SCC-63 the vendor allowlist stays CLOSED (20 names)",
                 len(lint.VENDOR_COMMANDS) == 20, str(len(lint.VENDOR_COMMANDS)))
 
-        # ── SCC-209: the `-AP` twin freshness check is GONE ─────────────────
-        # The `_AP` autopilot lane is abandoned pending a rewrite (operator ruling,
-        # 2026-08-18), so the twin-freshness check and its frontmatter stamp were
-        # deleted rather than left armed - an armed gate on an abandoned file only buys
-        # restamps of a file nobody maintains. What survives is the one fact a reader
-        # of those files still needs: they are UNMAINTAINED, and three autopilot
-        # engines still invoke them by name, which is why they were kept, not deleted.
-        # ⛔ This assertion is what stops the marker being quietly dropped, and it is
-        #    the ONLY mechanical statement left about the trio.
+        # ── SCC-209 -> SCC-430: the `-AP` lane is GONE, not frozen ──────────
+        # The trio was frozen in 2026-08-18 pending a rewrite and KEPT only because three
+        # autopilot engines invoked them by name. SCC-430 delivered the rewrite and deleted
+        # the engines, so the last caller went with them and the files followed.
+        # ⛔ The assertion is INVERTED rather than deleted, and that is the point: a check
+        #    that simply disappears leaves nothing to notice the trio quietly coming back,
+        #    and a resurrected `-AP` door would be a second copy of workflow law - the exact
+        #    disease the v3 lane was built to end. Zero is now the number that must hold.
         # `real` is the live lobby root - the SCC-128 block below reuses it.
         real = Path(__file__).resolve().parents[3]
         ap_files = sorted((real / ".agents/commands").glob("*-AP.md"))
-        unmarked = [f.name for f in ap_files if "UNMAINTAINED" not in wf.read_text(f)]
-        c.check("SCC-209 every -AP command is marked UNMAINTAINED",
-                len(ap_files) == 3 and not unmarked,
-                f"found={[f.name for f in ap_files]} unmarked={unmarked}")
+        c.check("SCC-430 the -AP robot lane is retired - no -AP command exists",
+                not ap_files, f"found={[f.name for f in ap_files]}")
 
         # ── SCC-205: the WINDOWS-ONLY invocation ─────────────────────────────
         # The venv bin dir is the one path that differs on every tool call between the two

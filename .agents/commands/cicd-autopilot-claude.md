@@ -1,265 +1,255 @@
 ---
-description: Autopilot Dev-Story Loop (v2, CLAUDE) - autonomous dev/QA team across THREE sessions (Dev plans+implements in one continuous chat; QA audits then reviews+fixes in two separate one-shot chats - Stage 2 audit on Opus, Stage 4 final review on Fable, both at max effort). Resilient (retries transient errors), resumable (just re-run; finished stages auto-detect), human-in-the-loop (never crashes on agent output). CLAUDE-ONLY (needs the claude CLI). The /cicd-autopilot-opencode variant is a separate, opencode-native pipeline.
+description: Autopilot v3 (CLAUDE) - the lead session that drives ONE story through the EXISTING workflow doors, one headless child per step, each child a Wonderland seat, every step recorded on the ticket. Escalates to the operator's phone and parks at review-ready; it can never land.
 platforms: [claude]
 ---
 
-# /cicd-autopilot-claude - Autonomous Story Pipeline (v2: dev chat + split QA gates)
+# /cicd-autopilot-claude - the autopilot's lead session (v3)
 
 > **Rules in force for this command:**
-> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
-> - `.agents/rules/worktree-per-story.md` — one story, one worktree, one `claude/*` branch off the epic branch
+> - `.agents/rules/code-standards.md` §6.5 — **disposition**: when a review comes back with
+>   findings, you are the assessor, not the lens. All three YES to act — is it REAL (a concrete
+>   failure, not a *"may be"*) · does it change BEHAVIOUR · is it in THIS diff. "It's cheap" is not
+>   a reason, and a `NO-GO` from the audit is not yours to overrule
+> - `.agents/rules/000-PLAN-FIRST-GATE.md` — the operator's launch word is a **batch approval**
+>   scoped to the charter rows below and to this story only. It is not approval for anything else,
+>   and it does not travel to the next story
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push
+>   `main`, never force-push; landing is not yours at all (see the charter)
+> - `.agents/rules/worktree-per-story.md` — one story, one worktree, one `claude/*` branch
 > - `.agents/rules/smh-target-resolution.md` — bind ONE target, never operate on the lobby
+> - `.agents/rules/artifacts-always-first.md` — the run's ledger and walkthrough live in the story's
+>   own artifact folder, never here
+> - `.agents/rules/constitution.md` — its **Ask First** list is the escalation list. A dependency, a
+>   schema, security rules, CI or an environment config is the operator's call, always
 
-> **CLAUDE-ONLY.** This drives headless `claude -p` subprocesses with exact `--model` pinning and
-> session continuity (`--session-id` / `--resume`). It cannot run under Gemini/opencode and is
-> intentionally NOT mirrored there.
->
-> **TDAD/aider Integration Note:** This headless flow is being integrated with `aider` and `pytest-bdd`. 
-> For any exact setup syntax or flags regarding the sandbox or BDD physics, explicitly reference the 
-> official [aider-chat](https://github.com/Aider-AI/aider) and [pytest-bdd](https://github.com/pytest-dev/pytest-bdd) git repositories.
+> **The manual for this lane is [`docs/_scc_sops_prds/autopilot_SOP.md`](../../docs/_scc_sops_prds/autopilot_SOP.md)** —
+> the layers, the charter, the escalation round trip, the seat pins and the measured failure modes,
+> with the diagrams. Read it before changing anything here.
 
-Launch the autopilot pipeline for the story in `$ARGUMENTS` (a story id like `11.16`, or a path),
-optionally prefixed by a project name when run from the command center (e.g. `AGY_AVIATIONCHAT 11.16`).
+**What this is, in one paragraph.** You are the lead. You do not write code, run tests, or read
+transcripts. You call `.agents/scripts/autopilot_run.py` once per workflow step; it launches a fresh
+headless `claude -p` child wearing one Wonderland seat, running an **existing** door by name; the
+child answers with a small JSON result and the runner posts that result to the ticket as a comment.
+You read one paragraph per step and decide what happens next, inside the charter below. The doors,
+the rules and the seats are the same files a human session uses — this lane owns **no copy of any of
+them**, which is why an edit the operator makes is live on the next launch with no sync anywhere.
 
-## What to do
+Argument: the story, optionally prefixed by a project name — e.g. `AGY_AVIATIONCHAT 14.2`.
 
-### Step 0 - Resolve the target project (FIRST - before anything else)
-This command runs from the **command center (lobby)** and drives the autopilot inside exactly ONE child
-project under `Projects/`, never the lobby itself. Resolve the target now (same pattern as the `/cicd-*`
-commands):
-- **Self fast-path (check this FIRST):** if this repo has **no** `Projects/` subfolder, you ARE the project
-  - set `PROJECT_ROOT = .` and skip the rest of Step 0 (this is the autopilot run from *inside* a project).
-- **Inline override:** if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is the
-  target; **consume that first token** (the remainder is the real story id/path). Write the name alone into
-  `.agents/active-project.txt` (overwrite) so later commands inherit it.
-- **Active pointer:** else read `.agents/active-project.txt`; if it names a folder under `Projects/`, use it.
-- **Ask:** else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* - never
-  guess, never run the autopilot against the lobby.
+---
 
-Set `PROJECT_ROOT` (= `Projects/<name>`, or `.` via the fast-path) and **echo** `Target: <PROJECT_ROOT>`
-before any work. Call the story argument that remains after this step `<STORY>` (= `$ARGUMENTS` minus any
-consumed project token). **Binding rule:** the PowerShell script, every `_artifacts/...` path, the story
-lookup, and the debrief all resolve **under `PROJECT_ROOT`**. The `.ps1` self-anchors to its own project
-(it derives its repo root from its own location), so only the *paths you pass it* need the prefix - no
-script change is required. When `PROJECT_ROOT` is `.`, every `<PROJECT_ROOT>/...` path below reduces to the
-original in-project form.
+## Step 0 — Bind the target, and prove the machine can do this
 
-### Step 0.5 - The epic branch must be checked out (the worktree's base)
+**0.1 Resolve the project.** Same pattern as every `/cicd-*` door:
 
-The engine opens the story's own git worktree before Stage 1 — `.claude/worktrees/<story-slug>/` on
-`claude/<JIRA-KEY>-<story-slug>` — and cuts it from **the epic branch**, per `worktree-per-story.md`
-("NEVER branch a story worktree from `main`"). It takes that base from `PROJECT_ROOT`'s **current
-branch**, exactly as a human's flow leaves it.
+- **Self fast-path:** no `Projects/` subfolder here means you ARE the project — `PROJECT_ROOT = .`.
+- **Inline override:** if `$ARGUMENTS` begins with a folder name under `Projects/`, that is the
+  target; consume that token and write the name alone into `.agents/active-project.txt`.
+- **Active pointer:** else read `.agents/active-project.txt`.
+- **Ask:** else STOP and ask which project. Never guess, never run against the lobby.
 
-So before launching: run `cd <PROJECT_ROOT> && git rev-parse --abbrev-ref HEAD`.
-- An `epic/*` branch → good, that is the base.
-- Anything else → either check the epic branch out there first, or pass `-EpicBranch epic/<KEY>-<slug>`.
-  The script refuses to start otherwise rather than guess — a story cut from `main` cannot be landed.
+Echo `Target: <PROJECT_ROOT>` before any work. **Then read `PROJECT_ROOT/.agents/INDEX.md` and honor
+its `Load` column** — binding a project is loading its law (`project-law`). A thin project with no
+INDEX is a STOP, not a shrug.
 
-The epic branch is also where the **Jira key** comes from: BMAD's epic number and the Jira epic key do
-not track each other (BMAD epic 19 lives on `epic/AVCH-18-adk-2x-runtime`), so nothing about the story
-id can be arithmetic-ed into a key.
+**0.2 Prerequisites, each measured rather than assumed.** Refuse to launch if any fails, and say
+which one:
 
-1. Confirm a story identifier remains in `<STORY>` after Step 0. If empty, ask which story and stop.
+| Check | How | Why it is here |
+|---|---|---|
+| CLI version | `claude --version` ≥ 2.1.259 | `--permission-prompts none` lands there. Its default is `host`, and a headless child HAS no host — so below the floor a child that hits a prompt has nobody to answer it. ⛔ Check the binary on `PATH`, not this session: a stale launcher symlink can leave `claude` older than the CLI you are typing in |
+| the runner | `.agents/scripts/autopilot_run.py --help` exits 0 | A missing runner must fail here, not per step |
+| the work | a **story** is `ready-for-dev` with its failing tests on disk; a **quick-fix Task** already carries its acceptance criteria on the ticket | The autopilot implements; it does not invent the work |
+| the branch | the epic branch is checked out and **not behind `origin/main`** | An in-flight epic that has drifted is a merge conflict waiting to be discovered by a robot |
+| the ticket | the story's Jira key resolves | The ticket IS the handoff; without it there is no run record |
 
-2. **Create a live TodoWrite list mirroring the pipeline** so Daniel watches it advance in the panel.
-   Items (trim to match `-MaxStage`): `Stage 1 - Plan (Dev)`, `Stage 2 - Audit (QA)`,
-   `Stage 3 - Implement (Dev)`, `Stage 4 - Review+Fix (QA)`. Mark Stage 1 `in_progress`,
-   the rest `pending`.
+**0.3 Open the story's worktree** and bootstrap its assets (`link-worktree-assets.py` from the
+lobby; thin projects have no linker of their own). One story, one worktree, one lock.
 
-3. Run the orchestrator under the **Monitor** tool so each stage transition streams into the chat as
-   a live notification (Monitor avoids the foreground timeout AND drives the todo updates below).
-   Call Monitor with:
+**0.4 Name the tier.** One dial sets every model, every effort and both budgets for the run.
+**The operator names it; you judge it only when he does not** — and if you judge, say which and why
+in one line before the first child, because he is paying for the answer.
 
-   Substitute `<PROJECT_ROOT>` and `<STORY>` below with the values resolved in Step 0 before calling
-   Monitor (when `PROJECT_ROOT` is `.` the paths reduce to the original in-project form):
+| | easy | medium | hard |
+|---|---|---|---|
+| the seats that write code | their own pins (Sonnet 5) | Opus 5 · high | Opus 5 · **xhigh** |
+| `gnat` — read-only lookups | Sonnet 5 · medium | **unchanged** | **unchanged** |
+| `march-hare` — the lead | Opus 5 · high | Opus 5 · high | **Fable 5.1 · high** |
+| the reviewer | Opus 5 | **Fable 5.1 · high** | **Fable 5.1 · high** |
+| per child · per run | $6 · $25 | $12 · $60 | $20 · $120 |
 
-   - **command:** `LOG_SLUG=$(printf '%s' "<STORY>" | tr -c 'A-Za-z0-9' '-' | sed 's/--*/-/g; s/^-//; s/-$//'); LOG="<PROJECT_ROOT>/_artifacts/_autopilot-run-$LOG_SLUG.log"; powershell.exe -NoProfile -File "<PROJECT_ROOT>/scripts/autopilot-dev-story.ps1" -Story "<STORY>" > "$LOG" 2>&1 & APID=$!; tail --pid=$APID -f -n +1 "$LOG" | grep --line-buffered -E ">>> STAGE|TEST GATE|STORY STATUS|done in|PAUSED|AUTOPILOT|Total cost|CRASHED|retrying|MODEL MISMATCH|! WARNING|TESTS|COST CEILING|REVIEW INCOMPLETE"`
-   - **description:** `autopilot <STORY> - stage progress (per-story log <PROJECT_ROOT>/_artifacts/_autopilot-run-<story>.log)`
-   - **persistent:** `true`  (tail exits when the script PID dies)
+Pass it as `--tier easy|medium|hard` on **every** call in the run. `--model` / `--effort` still win
+at the call site when one step needs more than its tier gives it — raise the step, never the run.
 
-   This **tails a real log file** instead of piping the live PowerShell straight through `grep` (the old
-   way swallowed every startup error and could make a healthy run look dead). The global log is now
-   **per-story** — `_artifacts/_autopilot-run-<story>.log` (the `<story>` slug is derived from
-   `$ARGUMENTS`), so two autopilots running at once never cross-wire each other's stream into one file.
-   The FULL transcript is always at that per-story path — if the run errors before the first stage, read
-   that log to see exactly why. The `grep` here only filters what STREAMS into the chat; the log keeps
-   everything. Stage transitions still arrive as live notifications, so the TodoWrite updates below work
-   exactly as before. The filter now also streams the `>>> TEST GATE` heartbeat (so the ~100s gate phase
-   after Stage 4 isn't a silent gap that looks hung) and the `>>> STORY STATUS` flip; the `WARNING` token
-   is anchored to the script's own `! WARNING` prefix so it no longer false-fires on pytest's
-   `DeprecationWarning` noise during the gate. (The run folder ALSO keeps its own self-contained copy of
-   the transcript at `<run-folder>/_pipeline/run.log` — the per-story global log above is just the stable,
-   known-upfront path to tail live.)
+⭐ **The reviewer never runs the model that wrote the code.** Sonnet builds and Opus reviews; Opus
+builds and Fable reviews. A reviewer sharing the builder's model shares its blind spots, and a fresh
+session buys independence from the author's *context*, not from the author's *failure modes*. The
+suite asserts this for every tier, so do not "tidy" two rows onto one model.
 
-   For a cheap plan+audit trial, append `-MaxStage 2`. **Model overrides:** `-DevModel` (Stages 1+3),
-   `-AuditModel` (Stage 2), `-ReviewModel` (Stage 4) — defaults Dev `claude-opus-4-8`, audit
-   `claude-opus-4-8`, review `claude-fable-5`. **Effort overrides:** `-DevEffort`/`-AuditEffort`/
-   `-ReviewEffort` (defaults: `medium`/`max`/`max`; levels `low|medium|high|xhigh|max`).
-   See the ladder table below — effort, not the prompt wording, is the depth control on these models.
-   **Resume a crashed run:** `-ResumeFrom <N>` (1-4) (or just re-run with no flags - completed stages
-   are auto-skipped by artifact presence, and the saved session ids are reused). **Preview the resume
-   plan + session ids for $0:** `-DryRun`. **Retry budget:** `-MaxRetries` (default 3).
-   **Per-stage runaway cap:** `-MaxStageCost` (default $15, 0 disables) — enforced inside each CLI call
-   via `--max-budget-usd`, so one stuck stage halts itself (CRASHED-resumable) instead of burning far
-   past the run-level `-MaxCost` (default $40).
-   **Worktree + landing:** `-EpicBranch epic/<KEY>-<slug>` overrides the base branch (default: whatever
-   `PROJECT_ROOT` currently has checked out — see Step 0.5). `-JiraKey <KEY>` pins the story's work item
-   instead of looking it up. `-NoJira` skips the board update, `-NoCommit` skips the orchestrator's
-   commit, and `-NoWorktree` runs in the shared checkout (debugging only — see the escape hatch below).
+⛔ **The Gnat is EXEMPT from the dial, not held at the floor.** It runs **Sonnet 5 at medium** at
+every tier — the same setting on a trivial ticket and a hard one — because a lookup does not get
+harder when the work around it does. What it is *not* is cheap: its answer is what you use to
+settle a question **instead of asking the operator**, and the build proceeds on it, so a mis-read
+line becomes a wrong build decision nothing downstream can see. The saving is against Opus at
+extra-high, not against getting the answer right. If a lookup ever needs judgment rather than
+accuracy, escalate.
 
-4. **As each Monitor notification arrives, advance the TodoWrite list** so it updates live:
-   - On `>>> STAGE N/4 - ...` -> mark Stage N-1 `completed` and Stage N `in_progress`.
-   - On `>>> STAGE N/4 ... SKIPPED - artifact present` -> mark Stage N `completed` (resumed run; that
-     stage was already done on disk).
-   - On `done in Xs | cost $Y` -> note that stage's cost (the running total prints at the end).
-   - On `retrying` -> a transient API error; the stage is auto-retrying. Leave it `in_progress`.
-   - On `PAUSED - needs Daniel` -> a `PIPELINE_BLOCKER`; mark the current stage paused and stop advancing.
-     This is the team asking for a human decision, NOT a crash.
-   - On `CRASHED` -> a genuine error (e.g. the API failed after retries); mark the stage blocked, stop,
-     and tell Daniel to re-run with no flags (finished stages auto-detect from the folder and skip).
-   - On `>>> TEST GATE - baseline snapshot ...` -> BEFORE Stage 3 the orchestrator records the pre-existing
-     red tests (~100s, once) so the final gate can ignore already-broken tests and fail only on regressions
-     THIS run introduces. Heartbeat, not a hang.
-   - On `>>> TEST GATE - ...` -> after Stage 4, the orchestrator is independently re-running the suites
-     (pytest / vitest, ~100s). This is the heartbeat for that phase; the run is NOT hung. Leave Stage 4
-     `completed` and wait for the gate result.
-   - On `>>> TEST GATE - backend GREEN vs baseline (...)` -> the suite has pre-existing failures but the
-     story introduced ZERO new ones; this is a PASS. The run proceeds to the story flip.
-   - On `TESTS RED` -> the post-Stage-4 gate found NEW failures vs the pre-run baseline (true regressions
-     from this run, listed in the log); report them. The work is on disk; not a crash. Re-run `-ResumeFrom 4`.
-   - On `REVIEW INCOMPLETE` -> the gate was green but Stage 4 appended no `## Code Review` section to
-     `walkthrough.md` (the QA review leg no-op'd). The story was NOT flipped. Tell Daniel to re-run
-     `-ResumeFrom 4` to redo the review.
-   - On `>>> WORKTREE - opened for story ...` / `re-bound to the existing tree` -> the story's isolated
-     tree is open (or a resume found the existing one). Every path from here on is under it.
-   - On `>>> STORY STATUS - ... flipped to review` -> the gate was green AND the review artifact exists, so
-     the orchestrator advanced the story to `review` (story file + sprint-status). Daniel still owns review->done.
-   - On `>>> COMMIT - <sha> on claude/...` -> the orchestrator committed the tree on its own green gate.
-     Nothing was pushed. If instead you see `COMMIT REJECTED`, a git hook refused it and the work is left
-     **staged** in the tree — report the hook's message; nothing is lost.
-   - On `>>> JIRA - <KEY> moved to In Review` -> the board now matches the tree. `! JIRA - no work item
-     resolved` means the story has no ticket; the run is still fine, the board just was not touched.
+⛔ **`--tier hard` cannot change YOUR model** — you are the operator's session, not a child. At
+`hard` the lead should be on Fable 5.1; say so and let him switch, or note in the run record that
+the lead ran on something else. The runner pins children and nothing else.
 
-5. When the watch ends, mark the last stage `completed`, read the canonical artifact folder — which is
-   **inside the story worktree**, at
-   `<PROJECT_ROOT>/.claude/worktrees/<story-slug>/_artifacts/epic_<epic>/<date>_autopilot-<id>/` — and
-   give the final debrief: total cost, artifacts
-   written, and - most importantly - the **OUT-OF-SPEC DECISIONS** and **OPEN QUESTIONS FOR DANIEL**
-   sections at the top of `walkthrough.md` plus `decisions-log.md` (the choices the team made on
-   Daniel's behalf, and anything QA is asking him). State whether it finished all stages (**COMPLETE**),
-   **PAUSED** on a `PIPELINE_BLOCKER` (needs Daniel), or **CRASHED** on a genuine error (re-run with no
-   flags; finished stages auto-detect from the folder and skip). On a clean **COMPLETE**, also tell Daniel
-   the story was auto-advanced to **`review`** (story file + sprint-status) — he owns the `review -> done`
-   flip. The full transcript is at `<PROJECT_ROOT>/_artifacts/_autopilot-run-<story>.log` (and a self-contained copy in
-   `<run-folder>/_pipeline/run.log`), and `_RUN-STATUS.md` in the folder shows the final state.
+⛔ The per-child figure is a **soft** cap — the CLI stops the *next* turn, not the current one, and
+it has been measured overspending by 10x. The run ceiling is the one the runner enforces itself, off
+the ledger, before each launch. Say both numbers out loud before you start.
 
-> **On-demand status** also works anytime: while a run is going, just ask "status" and Claude reads
-> `_RUN-STATUS.md` - which is now re-stamped after every stage with the running cost + current stage, and
-> carries the **orchestrator PID** for a liveness check: if the headline still says `IN PROGRESS` /
-> `TEST GATE` but that PID is not a running process, the run died mid-flight (a hard kill / closed
-> terminal bypasses the `CRASHED` stamp) - treat it as crashed and re-run with no flags to resume.
+---
 
-## What this runs (for context)
+## Step 1 — The launch scope: what the operator's word covers
 
-A 4-stage chain across **three sessions**, handing off via artifacts in the one shared folder
-`_artifacts/epic_<epic>/<date>_autopilot-<id>/`. The Dev team does its codebase deep-dive once and **resumes
-its own chat** for Stage 3 (so it never re-researches); the two QA gates run on different models in their own
-one-shot sessions. Each stage runs a dedicated headless `_AP` command that carries its behavior (the script
-just points it at the shared folder):
+The operator's launch word is a **batch approval under `000-PLAN-FIRST-GATE`**, scoped to the rows
+marked **lead** below, for **this story only**. Say this back to him in one line before the first
+child, and have the runner write it into the ticket's first comment so the scope is on the record
+rather than in your context.
 
-| Stage | Session | Teammate | Model | Effort | Command -> artifact |
-|---|---|---|---|---|---|
-| 1 Plan | dev (new) | Amelia (Dev) | `claude-opus-4-8` | `medium` | `/cicd-dev-story-tests-AP plan` -> `implementation_plan.md` |
-| 2 Audit | audit (new) | Murat (QA) | `claude-opus-4-8` | **`max`** | `/cicd-self-audit-AP` -> appends `## Self-Audit` into `implementation_plan.md` |
-| 3 Implement | dev (resume) | Amelia (Dev) | `claude-opus-4-8` | `medium` | `/cicd-dev-story-tests-AP implement` (applies audit, develops, tests) -> `walkthrough.md` |
-| 4 Review+Fix | review (new) | Murat (QA) | `claude-fable-5` | **`max`** | `/cicd-code-review-AP` (reads plan incl. audit + walkthrough + diff, reviews, applies fixes, retests) -> appends `## Code Review` (Verdict line) into `walkthrough.md`, hands to Daniel |
+| Gate | Who | What you do |
+|---|---|---|
+| ② Step 2 `continue` | **lead** | Pass it. The audit ran as a Queen child in a fresh session — that is what the stop existed to guarantee |
+| ② Step 2.5 questions before code | **lead** | Answer from the story, the plan, and a Gnat lookup. **If you would have to guess, escalate instead** |
+| Audit verdict `NO-GO` | **escalate** | The plan-first gate re-arms and re-scoping is his call, not yours |
+| A new dependency, schema change, security rule, CI or environment config | **escalate** | The constitution's Ask First list wins. There is no "self-install and log it" in this lane |
+| Deleting a file | **escalate** | Ask First, always |
+| ③ verdict `PASS` | **lead** | Post review-ready and park. He still owns review-to-done |
+| ③ verdict `CONCERNS` or `FAIL` | **lead**, once | One fix child in the lane, then one **fresh** review child. A second non-PASS **escalates**. `CONCERNS` never ships by itself |
+| Landing on the epic branch or `main` | **never** | The runner has no verb for it. This is not a rule you could break |
+| Anything a door marks `PIPELINE_BLOCKER` | **escalate** | Whatever it is, the door already decided it is his |
 
-**Why this ladder:** both QA gates run at **maximum effort** — they're the last checks before the human —
-but they no longer share a model or a session. The pre-dev **audit runs Opus** (Fable is 2× Opus per token,
-and the audit's value lives in its written artifact, so it buys full depth at half the price), while the
-**final gate before the human stays Fable 5**. They're decoupled on purpose: a resumed session on a *different*
-model is a model-scoped cache **miss**, so Fable would re-read Opus's whole transcript at full price —
-continuity buys nothing once the models differ. Instead Stage 4 opens fresh and reads the distilled artifacts.
-Thinking is always-on, so `--effort` (not "think hard" keywords) is the depth control; three model flags now
-(`-DevModel`, `-AuditModel`, `-ReviewModel`), each with its own session.
+---
 
-## Guardrails (already built into the script - do not override)
+## Step 2 — The loop
 
-- **Never crashes on agent output (human-in-the-loop).** There are no verdict-token gates; a stage is
-  "done" iff its artifact lands in the shared folder. The run only **PAUSES** (gracefully, "needs
-  Daniel") on an explicit `PIPELINE_BLOCKER` (truly unresolvable: contradictory ACs, missing dependency,
-  human-only call). The audit's findings + fixes always flow into Stage 3.
-- **QA owns the loop close:** Stage 4 reviews AND applies fixes itself - no separate fix stage. As the
-  last agent before the human, it writes **OUT-OF-SPEC DECISIONS** + **OPEN QUESTIONS FOR DANIEL** at the
-  top of `walkthrough.md` (and may ask Daniel directly there), and appends a **`## Close-Out Handoff`** block
-  at the bottom — the pre-routed learnings (incl. memory candidates) that `/cicd-update-sprint-memory` lifts at close-out.
-- **Sessions:** three deterministic session ids (generated up front, saved to `_pipeline/sessions.json`,
-  labeled `autopilot-<story>-dev` / `-audit` / `-review`) so a crash is still resumable. The **dev**
-  session is reused across Stages 1+3 (`--session-id` then `--resume`, so the Dev team never re-researches);
-  the **audit** (Stage 2) and **review** (Stage 4) sessions are each one-shot `--session-id` calls on
-  different models. There is NO "do not research" instruction - the agents still investigate anything they
-  need, and Stage 4 grounds itself by reading the plan + audit + walkthrough + diff off disk.
-- **Resilience:** transient API errors (stream idle timeout, overloaded, 429/503/529) are retried
-  (`-MaxRetries`, default 3, with backoff) before a stage fails. A genuine hard failure (e.g. the API
-  dies after retries) stamps `CRASHED` in `_RUN-STATUS.md` (never leaves "IN PROGRESS"); recover by just
-  re-running with no flags - finished stages auto-detect from the folder and skip. `_RUN-STATUS.md` is
-  re-stamped after every stage with the running cost + current stage; its final state is one of
-  COMPLETE / PAUSED / TESTS-RED / CRASHED.
-- **New-dependency policy (A):** the team self-installs + pins a needed dependency, logs it in
-  `decisions-log.md`, and banners it under "NEW DEPENDENCIES" in the walkthrough - never silently.
-- All stages run `--permission-mode bypassPermissions` (full autonomy on this repo).
-- **Story-status flip (review only):** on a clean COMPLETE (all stages + a GREEN independent gate), the
-  orchestrator advances the story to **`review`** — in BOTH the story `.md` and `sprint-status.yaml`,
-  idempotently (only `ready-for-dev`/`in-progress` advance; `review`/`done` are left alone). This is the
-  BMAD "Dev finishes -> review" step. It **never** flips to `done` (the human owns `review -> done`), and
-  it is best-effort (a flip hiccup warns, never crashes a finished run). The agents themselves still never
-  touch status — the orchestrator owns the flip, gated on its own green test result.
-- **One story, one worktree.** Before Stage 1 the engine opens (or re-binds to) the story's own tree at
-  `.claude/worktrees/<story-slug>/` on `claude/<JIRA-KEY>-<story-slug>`, cut from the epic branch. Every
-  stage's cwd, both test suites, the `git diff` baseline reads, the story file, `sprint-status.yaml` and
-  the whole run folder live under it. Two things this buys, and they are the point:
-  **isolation** (concurrent stories can no longer see — or red-test against — each other's half-finished
-  edits; before this the only guard was a prompt line asking agents to ignore files they did not
-  recognise), and **a landable result** (`/cicd-close-story-merge-tree` Step 3 requires a `claude/*` HEAD,
-  so before this it would refuse to close an autopilot story at all). A resume re-binds to the SAME tree,
-  matched on the story slug — it never cuts a second one. Pruning stays `/cicd-prune-worktree`'s job.
-- **Gitignored assets do not travel into a worktree**, so the engine bootstraps them: `auth_keys/` and
-  the `.env` files are copied in, `frontend/node_modules` is junctioned at the shared checkout's copy,
-  and the test gate falls back to the shared checkout's `backend/.venv` interpreter. A venv and
-  `node_modules` are toolchain, not source — pytest still collects from the worktree's cwd.
-- **Concurrency-safe (run as many stories at once as you want).** Every run is keyed by its story id:
-  its own worktree, a per-story monitoring log (`_autopilot-run-<story>.log`) so concurrent runs never
-  cross-wire, and a per-story lockfile (`<run-folder>/_pipeline/.run.lock`) that refuses to start a
-  SECOND run of the SAME story while one is live. Different stories run fully in parallel; the same
-  story can't double-run.
-- A missing handoff artifact is a **hard stop** (CRASHED, resumable), never a silent "continue to the next
-  stage" — so a corrupted stage (e.g. Stage 1 producing no plan) halts immediately instead of burning
-  spend on empty downstream stages. Re-run with no flags to resume; finished stages auto-skip.
-- **The orchestrator commits; the agents never touch git.** On a clean COMPLETE the script stages
-  **explicit paths** (enumerated and printed — never `git add -A`/`.`/`-u`) and commits inside the
-  worktree with a Jira-keyed subject, so the armed `commit-msg` gate passes. It **never pushes**, never
-  touches `main`, and never marks a story `done` — landing and closing are `/cicd-close-story-merge-tree`'s.
-  A hook that rejects the commit leaves the work **staged**, and the hook's own message is printed.
-  `-NoCommit` skips it.
-- **The ticket moves too.** On green the orchestrator files the Dev Record through the command center's
-  `jira_feed.py` (rendered FROM `walkthrough.md`, read back to prove it landed) and moves the work item
-  to **In Review** — never to Done. It finds the ticket the way `jira_feed.py mint` dedupes: a summary
-  whose first token is this exact BMAD id. No ticket found → warns and skips; `-JiraKey <KEY>` forces it,
-  `-NoJira` turns it off.
+For each workflow step, in order, call the runner **once**:
 
-## After it completes - Daniel's close-out (not automated)
+```
+python3 .agents/scripts/autopilot_run.py run \
+  --door <the door, by name> --seat <seat> --cwd <the story worktree> \
+  --args "<what the door takes>" --key <JIRA-KEY> --stage <n> \
+  --budget-usd <per child> --run-cap-usd <the run's ceiling>
+```
 
-1. Review `walkthrough.md` - start with **OUT-OF-SPEC DECISIONS** + **OPEN QUESTIONS FOR DANIEL** at
-   the top - AND `decisions-log.md` (every choice the team made on your behalf). Both are in the run
-   folder **inside the story worktree**; so is the code. The ticket is at **In Review** with its Dev Record.
-2. Answer any open questions. The story is already at **`review`** and the work is already **committed**
-   on its `claude/*` branch. Run `/cicd-close-story-merge-tree` — it runs the `/cicd-update-sprint-memory`
-   save (which flips `review -> done`), lands the branch on the epic branch, and prunes the tree via
-   `/cicd-prune-worktree`.
-3. Nothing to commit by hand. If the run reported `COMMIT REJECTED`, the work is staged in the tree —
-   read the hook message, fix it, and commit there.
+⛔ **Pass the door's NAME, never its text.** You have not read the door and you do not need to. The
+child loads it through the same launcher skill your own session uses, at the moment of use.
 
-> **Escape hatch (debugging the engine, not stories):** `-NoWorktree` runs every stage in the shared
-> checkout, the pre-AVCH-50 behaviour. Isolation is gone, nothing is committed, and close-out will refuse
-> to land the result. Do not use it for real story work.
+⛔ **`--cwd` is where the CHILD stands, and that is where its door must live.** The child resolves
+its launcher skill from its own working directory — nothing is inherited from you. A `/cicd-*` door
+belongs to the command centre and targets a project *named in `--args`*, so for those the child
+stands in **the command centre**, not in the project: a thin project carries its tier-2 law but none
+of the lobby's doors or skills, and a child launched there would find no such command and improvise.
+Point `--cwd` at a project tree only for a door that tree actually owns. The runner refuses the
+mistake and says which one it was, but the refusal costs a step — get it right in the call.
+
+**The seats, and the order for a story.** ① writes the tests, ② plans and builds, ③ reviews:
+
+| Stage | Door | Seat | Note |
+|---|---|---|---|
+| 1 | `/cicd-dev-story-tests <story>` (to its Step 2 stop) | `white-rabbit` | Returns the plan path |
+| 2 | `/cicd-self-audit` on that plan | `queen-of-hearts` | Returns `GO` or `NO-GO` |
+| 3 | `/cicd-dev-story-tests <story>` (Step 2.5 → Step 5) | `cheshire-cat` | The build |
+| 4 | `/cicd-code-review <story>` | **`--review`, no seat** | Independence is the point |
+| 5 | the fix, only on CONCERNS/FAIL | `cheshire-cat` | One cycle, in the lane |
+| 6 | `/cicd-code-review <story>` again | **`--review`, no seat** | Fresh session at the new sha |
+
+**The quick-fix route — a ticket with no story file, no sprint row and no epic branch.** A
+project Task (a performance fix, an asset, a copy change) rides `/cicd-quick-dev`, which is ONE door
+holding both its own build and its own review gate:
+
+| Stage | Door | Seat | Note |
+|---|---|---|---|
+| 1 | `/cicd-quick-dev <KEY>` | `cheshire-cat` | The build, plus the door's own first-pass gate |
+| 2 | `/cicd-code-review <KEY>` | **`--review`, no seat** | The gate whose verdict counts |
+| 3 | the fix, only on CONCERNS/FAIL | `cheshire-cat` | One cycle, in the lane |
+| 4 | `/cicd-code-review <KEY>` again | **`--review`, no seat** | Fresh session at the new sha |
+
+⛔ **A seated child cannot fan out review lenses, and that is why stage 2 is not optional here.** No
+seat carries the `Task` tool, so `/cicd-quick-dev`'s own Step 3 gate probes `inline (no subagent
+tool)` and drops the Blind Hunter. It reports that rather than hiding it, and it is still worth
+running — but it is a first pass, never the run's verdict. The **no-seat** review child inherits the
+default tool set, fans out properly, and is the verdict you report. ⛔ Never read the quick-dev
+door's own verdict as the run's.
+
+**Choosing the route:** the story route when the work has a story file on disk and an epic branch;
+the quick-fix route when it has neither. If you cannot tell which, it is not a quick fix — escalate.
+
+A read-only lookup — "which does the epic's architecture note actually say?" — is a `gnat` child.
+It is cheap and it is the honest alternative to guessing at a Step 2.5 question.
+
+**Launch it in the BACKGROUND and watch it.** A step is a headless child that can work for many
+minutes and prints nothing until it returns, so a foreground call makes the whole run look like a
+hang — and the operator's only options are to wait blind or kill it. Start the step in the
+background, watch its worktree and its output, and say what it is doing as it goes. Keep a visible
+checklist of the stages so the panel advances while it works. ⛔ **Silence is not progress.** If you
+cannot say what the current child is doing, neither can he, and a run he cannot see is a run he
+cannot stop.
+
+**Read the exit code, not the prose:**
+
+| Exit | Meaning | You |
+|---|---|---|
+| `0` | `done` | Dispatch the next step |
+| `3` | `needs_human` | **Escalate** — see Step 2.5 |
+| `4` | `blocked` | Escalate. The child could not proceed and said why |
+| `1` | `failed` | The result could not be read, or the child errored. ⛔ **READ THE SUMMARY BEFORE RETRYING** — it carries the child's own words, and a child that did the whole job can still answer in prose instead of the schema. Check the worktree: if the work is there, the step is DONE and unverified, not undone. A blind retry pays twice. Retry **once** only when nothing was produced, then escalate. Never retry a budget cut — that is a deliberate halt |
+| `2` | the runner refused | A missing door, a bad review combination, or the run ceiling. Nothing was spent. Fix the call or stop |
+
+**Answering a child that asked a question.** The only `--resume` in a run is delivering an answer to
+the child that asked. Pass `--fork-of <that session id>` and the answer in `--args`. ⛔ Never resume
+to start a *new* step on an old context — a fresh session per step is what keeps stage 2 and stage 4
+honest, and the runner records every session id on the ticket so the count is checkable.
+
+### Step 2.5 — What an escalation looks like
+
+Two things, both of them, every time:
+
+1. **`AskUserQuestion`** with the real options and your recommendation first. He is deciding a
+   product question; do not hand him the engineering.
+2. **The ticket**, via the runner's `needs_human` status, so the comment leads with the literal
+   `Needs Mr. Hatter` line and carries the child's question. His phone reads the ticket; your chat
+   may not be in front of him.
+
+Then wait. An escalation you answered yourself is the failure this whole charter exists to prevent.
+
+---
+
+## Step 3 — Park
+
+**On `PASS`:** flip the story to `review`, move the ticket to In Review with its Dev Record, and post
+one line — *`<story>` review-ready, PASS at `<sha>`, N fresh sessions, $X.* Then **stop**. The
+operator runs `/cicd-close-story-merge-tree` when he chooses.
+
+**On anything else:** park with the reason and the evidence, and say plainly what is owed and by
+whom. A parked run that reports a clean stop is worth more than one that kept going.
+
+### What you decided on his behalf — post it before you park
+
+The charter says what you MAY pass without him. Nothing yet says what you DID. Close every run with
+one ticket comment listing each charter row you actually exercised and the call you made: the Step 2
+`continue` you passed, every question you answered from the repo rather than asking, each Gnat lookup
+and what it settled, and any finding you assessed as not-real under `code-standards.md` §6.5.
+
+⛔ **A soft "I would normally have checked this with him" is not an escalation — it is a decision,
+and it goes on this list.** That distinction is the one the retired lane got right and it is the
+whole accountability half of an unattended run: without the list, a charter is a permission slip
+nobody ever audits, and the first time a run does something surprising there is no way to tell
+whether the scope was wrong or the lead simply exceeded it.
+
+⛔ **Never land.** Not the epic branch, not `main`, not "it was green so I merged it". The runner has
+no verb for it and neither do you.
+
+---
+
+## What this lane owns, and what it borrows
+
+It owns five things and nothing else: how to launch a child, the result schema, the `jira_feed.py
+step` verb, the seat renderer, and the budget table. **Everything else is borrowed at the moment of
+use** — the doors from `.agents/commands/`, the law from `.agents/rules/`, the seats from the same
+six masters `.roomodes` renders for Zoo. When the workflow changes, nothing here changes. That is
+the whole design, and it is why there is no sync step in this document.

@@ -2494,7 +2494,7 @@ this sentence. What matters to you is *what they refuse to let happen.*
 | `main_write_gate.py` | **A merge made on GitHub itself reaching `main` with no gate having run.** Everything in the row above happens on your computer, at `git push`; a merge performed in the browser or through the API happens on GitHub's servers and never touches your computer, so that hook is not bypassed — it is **absent**. This is the half that runs *there*, as a required check called `main-write-gate`: the real enforcement suite, the toolkit lint, and a check that the merge came from an `epic/*` or `chore/*` branch with a key this repo answers to (and, for a pre-flighted local merge, that `main` advances by exactly one merge of a genuinely pushed branch). — *and the history behind it, below.* |
 | `check_links.py` | **A doc that cites a file which is no longer there.** The clean-code floor had a `Link + anchor` row that named **no command** — the only prose row on a floor of scripts — so every agent improvised a matcher, and an improvised matcher is worse than none: one reported **31 unresolved paths of which ~30 were false**, because it did not know this repo cites scripts short (`tests/test_twin_parity.py` for `.agents/scripts/tests/test_twin_parity.py`). A gate that cries wolf thirty times teaches the reader to skip the one real hit. This resolves the claims a diff's markdown makes, against **seven** house conventions, each of which is a measured false positive from one of its own drafts: short citations · relative `../..` links · the **branch's** index rather than `main`'s (or every file the lane ADDED reads as dead) · gitignored assets that live only in the main checkout · URLs, placeholders, fenced examples and directories, which are not claims · child-project paths that `cicd-*` commands cite correctly and the lobby cannot resolve · and the narrative ledgers, where a row naming a deleted file is history — which includes `_artifacts/_main/active-context.md`, on `check_maps.py`'s authority rather than a preference: it carries `PRUNE_KEEP_BLOCKS = 10`, so the house already models a continuity brief as a dated log whose old end is **pruned**, never repaired. The cost of that one is written into the code: 11 real dead paths in the lobby's brief stop being reported, every one inside a 2026-07 block. It does not excuse a stale pointer in the LIVE header — those are prose, which no version of this checker ever read. ⛔ Its second draft shipped `lstrip("./")`, which takes a character SET and ate the leading dot off every `.agents/…` path — 168 false findings, and the identical trap `sop_currency.py` already carried a comment about. That case is pinned in `tests/test_check_links.py`, which also proves the checker still BITES: a dead path, a plausible-looking dead path, an out-of-range `#L` anchor and a reversed range are each asserted to be reported. ⛔ **It is a LOBBY script, and every door that cites the floor row says so.** The `smh-*` doors name the command; `/cicd-quick-dev` deliberately keeps prose, because a thin project's `.agents/scripts/` carries only `git-hooks/` and `tests/` — naming the command there would cite a file that is not on the target. It also skips **generated blocks** — the `REPO-MAP:AUTO-*` and `DOC-GRAPH:AUTO-*` sentinels. Those hold machine output, and the doc graph's block is a *report* whose job is to LIST the dangling references it found; read as links, the graph's 40 findings became 40 findings of this checker's own, in a file no human wrote a link into. ⛔ **And it no longer narrows its own scope silently (SCC-303):** `--base` mode took its file list from `git diff --name-only`, which is tracked-only by construction — so the lane's own walkthrough, untracked at the exact moment the gate runs, was never scanned, and the run printed a clean count over a set missing the one file that held four dead paths. Untracked markdown under the diff's directories — the directories of **every** changed path, not just its markdown (the review reproduced a code-only diff re-opening the scar) — is now swept in and scanned like anything else; both git listings are NUL-split so a filename with a space survives; a failure to list untracked files degrades **loudly** (`[WARN]`) instead of silently narrowing; and every run prints the scanned file **names** (`[scanned]`, untracked sweeps marked, a diff-deleted file honestly `[absent]`), so "all clean" and "one file was invisible" stop looking identical. ⛔ **Three conventions grew when the upgraded gate first met files nobody had diffed (SCC-293):** an ALL-CAPS_UNDERSCORE segment used as a **directory** (`PROJECT_ROOT/.agents/INDEX.md`) is a variable, like `<KEY>` — the trailing slash keeps a real SHOUTY FILENAME (`.agent/skills/INDEX.md`) a claim; `relative/path` joins `path/to` as a shape placeholder; and `quick_fixes/` joins the child-project registers the lobby cannot resolve. All three were pre-existing prose that only became visible because an unrelated edit pulled their files into a diff — which is the gate working, not rot. *(SCC-285, SCC-288, SCC-303, SCC-293.)* |
 | `walkthrough_roster.py` | **A review that was narrated instead of run.** A walkthrough's `Verdict: PASS @ <sha>` was the *only* record a code review left behind — so a verdict written without a review looked exactly like one written after a thorough one, and merged just as cleanly. Found by SCC-163's own self-audit *while that lane was closing*, and nothing here could have caught it. Now the review must also record **which lenses ran and how they ended** (`ok` · `recovered-inline` · `dead`), and one parser reads that for both close-out paths — story lanes through `closeout_preflight.py`, Task lanes through `task_preflight.py`. Each caller hands it the verdict **its own** reader resolved, so the two gates cannot drift apart. ⛔ **It BLOCKS** (operator, 2026-08-15: *"I dont see a case in enterprise dev where a warn should make it to prod?"*). **Six** things stop a close: a verdict with **no roster at all** (that is UNKNOWN, not clean); a **PASS with a dead lens** (a lens that saw nothing cannot support a pass); a header declaring `review-runtime: inline` while a lens reports `ok` (the header and the data disagree); a Step 0.7 re-derivation shorter than its three lines; and **a lens recorded `n/a` under a declared `fan-out`** (SCC-203), or **an `n/a` with no reason**. **The last two close a hole the ruling itself opened.** Telling the engine to DROP a contaminated Blind Hunter rather than fake it was right, but a dropped lens is recorded on `lenses_na:` — a different field from the roster — so for a while the engine was writing a state nothing downstream could read, and a caller could drop the highest-value lens in the set and still gate green. A drop is legal only under `inline`, where the builder's own context is the reason; a fan-out hands every lens a clean context **by construction**, so "mine was contaminated" is not a claim that runtime can make. Run it, or declare the runtime honestly. **The exit is not a bypass — there is no `--force`.** It is the inline ladder: run the lenses inline, record `recovered-inline`, and take the **CONCERNS** floor. *CONCERNS + a dead lens is consistent and passes*, because that is the engine's own designed end state; if it blocked, a lane with one dead lens could never close and the gate would get routed around instead of used. Scope is a **fixed date, 2026-08-15** — 130 of 142 walkthroughs have no roster and are left alone, never backfilled. The date is literal rather than "today" on purpose: a moving cutoff would have exempted the very lane that built the check. **You can RUN it, and its refusal tells you which of three things happened (SCC-240).** `python3 .agents/scripts/walkthrough_roster.py <walkthrough.md>` *(PC: `python`)* prints everything it read — every lens and its state, `lenses_na`, the runtime header, `dispositions:`, `drift:`, the Step 0.7 line count. ⛔ **Bare, it answers ONE question — can the roster be READ?** — exit 0 yes, exit 1 naming which of the three things went wrong, exit 2 for a path it cannot read (missing, a directory, undecodable bytes; never a verdict about content). That narrowness is the point: both review commands run it at Step 4 **right after pasting the roster**, when `dispositions:`, `drift:`, Step 0.7 and the `Verdict:` line do not exist yet — so a full-gate run there would refuse on a missing `dispositions:` line and send the author hunting a fence that is not there, and with no stamp at all it would exit **0** on the fenced roster it exists to catch. Add **`--gate`** once the section is complete for the whole close-out judgement, with **`--verdict <V>`** when the stamp is not written. ⚠️ **A re-reviewed STORY lane must pass `--verdict`:** `--gate` reads the LAST `Verdict:` stamp, `closeout_preflight` reads the FIRST, so a FAIL-then-PASS file resolves differently in the two; Task lanes go through `task_preflight`, which reads the last and agrees. **The refusal used to be one sentence for three different failures**, and the other two are the ones that cost time: a roster **inside a code fence** (stripped before reading, SCC-154 — so the instruction's own example, copied verbatim, produced an invisible roster) and a header whose rows are **not contiguous** with it (a blank line ends the roster). Both now name themselves and say what to change; the genuinely-absent message is unchanged. Measured on SCC-210: two preflight round trips, ~12 minutes, on one lane that had done nothing wrong. *(SCC-173 + SCC-177 + SCC-240.)* |
-| `code-review-engine` → the review commands | **The roster the row above reads never getting written in the first place.** A gate that blocks on evidence is only worth what the surface upstream of it records — and until now the engine handed back `lenses_run: 5/5` as a single counted line, which is the engine's *claim* about itself in exactly the way `Verdict: PASS` is the caller's. Three changes close the loop. **(1)** The engine's return block is now the roster itself — one `- <lens> · ok | recovered-inline | dead` row per lens — and `/smh-code-review` and `/cicd-code-review` paste it into `## Code Review` **verbatim** at their Step 4. Summarising it back to "all lenses clean" deletes the only evidence that survives the chat. **(2)** Both review commands, and `/smh-quick-dev`, now **probe** at Step 0 whether this runtime can fan out to subagents and write `review-runtime: fan-out|inline` into the walkthrough header — probed, never assumed, because a headless pipeline or a platform with no subagent tool makes the answer `inline` and that is invisible until a lens fails to launch. ⛔ **The probe asks about CAPABILITY, never POLICY (SCC-203).** *Does a subagent tool exist here?* is the whole question; *am I allowed to use it?* is a different one, and answering it there is how a session directive — "Do not call the AgentTool unless the user requested it" — got read as "this runtime is inline", ran a whole review inside the builder's own context, and had the flow record that as legitimate. ⛔ **Quote that directive VERBATIM — it names the tool (SCC-285).** The real text is a constant compiled into the Claude Code binary and injected on Opus 5; five commands rebutted a paraphrase that did not name `AgentTool`, and an agent took the gap as an escape hatch and ran a whole review inline. There is no local lever to disable it. `.agents/scripts/tests/test_directive_quote.py` holds the line two ways: any QUOTATION that names a subagent/Agent-tool concept and carries an `unless` clause must be the verbatim directive (so a re-wording is caught without guessing at wording, and ordinary unquoted prose is never touched), and every rebutter must carry that quote **within the sentence that claims it is satisfied** — because presence-anywhere is satisfied by parking a copy in a comment while the rebuttal is deleted. **Subagents are the default and invoking the review command IS the request**, so you never have to ask for them — a `/` command **is** a user request, and that sentence is now in the law rather than left to be inferred. ⛔ **And there is a third door, because forbidding both moves left no legal one:** an agent that still believes it cannot launch a subagent may not record a bare `inline` — it writes `review-runtime: inline (blocked: <what blocked it>)`, which puts the belief where `walkthrough_roster.py` can see it instead of laundering it into a clean-looking `inline` (SCC-263, hit live on the lane that fixed it). ⛔ **Step 0, not Step 4:** recorded afterwards the header is read off the roster it exists to check, and the contradiction rule can never fire. **(3)** The engine reads that header — under `inline` the ladder runs **once**, blind lens first on the diff alone, every lens that ran recorded `recovered-inline`; ⛔ **and where that context is already contaminated — you are the builder, you hold the plan — the Blind Hunter is DROPPED rather than faked (SCC-203, operator ruling)**, recorded `n/a` with its reason and left out of the count, because a roster carrying a lens that ran without its defining property reports a review more independent than it was. It is the only lens that needs starvation; the other four are handed context on purpose. **The ladder** never tries the fan-out first "just in case" nor re-attempts it after, which would burn the budget twice and re-order the blind lens behind a loaded context. The blind lens *may* run concurrently with the suite, on one condition the walkthrough states: **the sha the lenses ran against and the sha on the receipt are the same value.** **(4)** `/cicd-code-review-AP` — the autopilot twin — runs the lenses inline **by design**, so it is the lane this header was written for: it now declares `review-runtime: inline` and records every lens as `recovered-inline`, which is what its own blind-lens-first ordering already required and never wrote down. *(SCC-173 + SCC-177.)* |
+| `code-review-engine` → the review commands | **The roster the row above reads never getting written in the first place.** A gate that blocks on evidence is only worth what the surface upstream of it records — and until now the engine handed back `lenses_run: 5/5` as a single counted line, which is the engine's *claim* about itself in exactly the way `Verdict: PASS` is the caller's. Three changes close the loop. **(1)** The engine's return block is now the roster itself — one `- <lens> · ok | recovered-inline | dead` row per lens — and `/smh-code-review` and `/cicd-code-review` paste it into `## Code Review` **verbatim** at their Step 4. Summarising it back to "all lenses clean" deletes the only evidence that survives the chat. **(2)** Both review commands, and `/smh-quick-dev`, now **probe** at Step 0 whether this runtime can fan out to subagents and write `review-runtime: fan-out|inline` into the walkthrough header — probed, never assumed, because a headless pipeline or a platform with no subagent tool makes the answer `inline` and that is invisible until a lens fails to launch. ⛔ **The probe asks about CAPABILITY, never POLICY (SCC-203).** *Does a subagent tool exist here?* is the whole question; *am I allowed to use it?* is a different one, and answering it there is how a session directive — "Do not call the AgentTool unless the user requested it" — got read as "this runtime is inline", ran a whole review inside the builder's own context, and had the flow record that as legitimate. ⛔ **Quote that directive VERBATIM — it names the tool (SCC-285).** The real text is a constant compiled into the Claude Code binary and injected on Opus 5; five commands rebutted a paraphrase that did not name `AgentTool`, and an agent took the gap as an escape hatch and ran a whole review inline. There is no local lever to disable it. `.agents/scripts/tests/test_directive_quote.py` holds the line two ways: any QUOTATION that names a subagent/Agent-tool concept and carries an `unless` clause must be the verbatim directive (so a re-wording is caught without guessing at wording, and ordinary unquoted prose is never touched), and every rebutter must carry that quote **within the sentence that claims it is satisfied** — because presence-anywhere is satisfied by parking a copy in a comment while the rebuttal is deleted. **Subagents are the default and invoking the review command IS the request**, so you never have to ask for them — a `/` command **is** a user request, and that sentence is now in the law rather than left to be inferred. ⛔ **And there is a third door, because forbidding both moves left no legal one:** an agent that still believes it cannot launch a subagent may not record a bare `inline` — it writes `review-runtime: inline (blocked: <what blocked it>)`, which puts the belief where `walkthrough_roster.py` can see it instead of laundering it into a clean-looking `inline` (SCC-263, hit live on the lane that fixed it). ⛔ **Step 0, not Step 4:** recorded afterwards the header is read off the roster it exists to check, and the contradiction rule can never fire. **(3)** The engine reads that header — under `inline` the ladder runs **once**, blind lens first on the diff alone, every lens that ran recorded `recovered-inline`; ⛔ **and where that context is already contaminated — you are the builder, you hold the plan — the Blind Hunter is DROPPED rather than faked (SCC-203, operator ruling)**, recorded `n/a` with its reason and left out of the count, because a roster carrying a lens that ran without its defining property reports a review more independent than it was. It is the only lens that needs starvation; the other four are handed context on purpose. **The ladder** never tries the fan-out first "just in case" nor re-attempts it after, which would burn the budget twice and re-order the blind lens behind a loaded context. The blind lens *may* run concurrently with the suite, on one condition the walkthrough states: **the sha the lenses ran against and the sha on the receipt are the same value.** **(4)** A headless lane runs the lenses inline **by design**, so it is what this header was written for: it declares `review-runtime: inline` and records every lens as `recovered-inline`, which is what blind-lens-first ordering already required and never wrote down. *(SCC-173 + SCC-177.)* |
 | `tests/test_main_ruleset_armed.py` | **The GitHub half being switched off without leaving a trace in any commit.** The ruleset lives on the server and can be deleted or disabled from a browser; no file in this repo would change. This asks GitHub directly, on every suite run, and **fails hard** if the ruleset is missing, disabled, or has picked up a bypass actor — a bypass for "repository admin" would re-open the whole hole while still *looking* armed, because the agent merges as you. When it cannot reach GitHub at all (offline, no `gh`, no credentials) it prints `[SIGNAL]` and passes: that is refusing to claim knowledge it does not have, not a soft gate. |
 | `hooks_armed.py` | **Every other check on this page reporting green while switched OFF.** **Five** ways a gate dies quietly, and it reports all five — the three below, plus the two SCC-140 added (an **orphaned flag**, tracked while the gate script it names is not; and an untracked **dispatcher**, so nothing calls the gate at all). — *and the history behind it, below.* |
 | `evidence_extract.py` | **Nothing — and it is on this list on purpose.** It is the one entry here that is *not* a gate: it refuses nothing, no hook calls it, and you never type it. It is the review engine's fact-fetcher (SCC-123), and what it prevents is a reviewer reasoning about only the files it happened to open — it reads the changed files and their callers *first* and hands the lens a dossier. It is listed because this table calls itself the live list, and a script in `.agents/scripts/` missing from it would make that sentence false. **Its caller snippets are RANKED, and you will see the tags in a review's evidence:** each one leads with `[importer]` (the calling file really imports the file the finding is on) or `[name-match]` (the identifier matched, nothing more). Importer hits are searched first and sorted first, so they survive the ten-snippet cap — but **nothing is filtered out**, because a name-match is weaker evidence rather than absent evidence, and dropping it would take attribute-dispatch call sites with it. ⛔ **The ten-snippet cap reserves a slot for the weaker class**, so a heavily-imported file cannot fill the whole dossier with importers and make attribute dispatch disappear — that regression was caught in review, not by a test, and now has one. ⚠ A third tag, `[unranked]`, means the importer walk hit its 10-second deadline: it could not finish, so *not* an importer is unknown rather than false. Read `[unranked]` as "nobody checked", never as `[name-match]`. ⚠ Only `--findings` mode runs today; `--pack` still has no caller, and the docstring says what must be fixed before anything wires it in. |
@@ -2924,84 +2924,113 @@ automated pipeline).
 
 ## 15. The autopilot lane
 
-*The robot running the same loop you'd run by hand — and how it picks back up if it dies halfway.*
+*The robot running the same doors you would type by hand — one story, one command, and it stops
+where it needs you.*
 
-▶ **Diagram:** [`/cicd-autopilot-claude` in the command atlas](#cicd-autopilot-claude-and-its-lanes) — every step, stop and refusal, checked against the live command.
+▶ **The manual for this lane is its own page: [the Autopilot SOP](autopilot_SOP.md)** — the layers,
+the charter, the escalation round trip, the seat pins and the failure modes, with the diagrams. It is
+also where the autopilot is kept current; this section is the short version.
 
 | Command | Runs on | Notes |
 | --- | --- | --- |
-| `/cicd-autopilot-claude` | the `claude` CLI | The canonical robot loop: Plan → Audit → Build → Review — four stages in **three** sessions (Build resumes the Dev chat on purpose). |
-| `/cicd-autopilot-opencode` | the `opencode` binary | Port of the same loop. |
-| `/cicd-autopilot-deepseek4` | `claude` CLI plus a flag | Runs the token-heavy building half on a cheaper model, keeps review on Claude. A *lane* of `/cicd-autopilot-claude`, not a third engine. |
+| `/cicd-autopilot-claude` | the `claude` CLI | The lead session. It drives ONE story through the existing doors, one headless child per step. |
 
-The two QA stages run in **fresh sessions** so neither inherits the builder's assumptions — the same
-reason ③ hunts blind in the human lane; the audit stage keeps the Dev model (a fresh *session*, not a
-different model), and Build resumes the Dev chat so the plan is still in its head. **Done means
-green (SCC-134, the spec's §6a):** a stage's gate is a script's exit code, never the agent's own
-say-so; retries are engine-owned and bounded; a red gate parks with a receipt for you rather than
-spawning a fix loop — that loop was *dropped, not deferred*, and reviving it would be a
-design reversal, not a tuning knob.
+**One dial for difficulty: `easy`, `medium`, `hard`.** You name it; the lead judges it only when you
+do not, and says which it chose before spending anything. The tier sets every model, every effort and
+both budgets at once — `easy` leaves each seat on its own pin (Sonnet 5) at $6 per child and $25 for
+the run; `medium` moves the code-writing seats to Opus 5 at high, $12 and $60; `hard` takes them to
+Opus 5 at extra-high, $20 and $120. Two seats never follow the dial: the read-only lookup seat sits on
+Sonnet 5 at medium whatever the tier, because looking a thing up does not get harder when the work
+around it does — exempt, though deliberately not cheap, since its answer is what the lead uses
+instead of asking you and a mis-cited line becomes a wrong build nothing downstream can see. And the
+reviewer runs a **different model from whatever wrote the code** — Sonnet builds and Opus reviews,
+Opus builds and Fable reviews. That last one is not a cost choice: a fresh session frees a reviewer
+from the author's context but never from the author's blind spots, and only a different model does
+that. Every step comment names its tier, so you can answer later why one ticket cost $8 and another
+$80.
 
-**Stage 4 runs the house review engine (SCC-126).** The robot's reviewer carries no review
-of its own: `/cicd-code-review-AP` resolves the inputs — the diff alone first, then one batched
-grounding pull — and hands them to `.agents/skills/code-review-engine/`, which runs its lenses in
-parallel. **It also re-derives the blast radius against `origin/$EPIC`
-before Ingest 1**, and echoes the branch and sha `rev-parse` returned rather than the ones the
-launch context implied — the same two additions the human lane got, ported because the hazard is
-*worse* unattended, not smaller: a sibling story lands on the epic branch and nobody is watching.
-It costs no read budget (git output is not an ingest), and the twin's ban on a full-repo sweep is
-about **reads**. The acceptance audit did **not** port as a step — the twin already runs that pass
-through the engine's Acceptance Auditor — only its two verdict-binding clauses did. Underneath, three things are worth knowing, and the first is the
-one that actually moves the bill:
+**How it works, in five lines.** You type one command. A lead session calls a small script once per
+workflow step; the script launches a fresh headless Claude wearing one Wonderland seat, running one
+of **your existing doors by name**. The child answers with a short structured result, and that result
+lands on the Jira ticket as a comment. The lead reads one paragraph per step and decides what happens
+next, inside a charter you approved.
 
-- **Stage 4 is an orchestrator plus five lenses.** Five independent lenses,
-  three of which are primed with the grounding pull — so the grounding material is read several
-  times over rather than once. That is the real cost, and it is the price of the
-  independence: lenses that cannot see each other cannot inherit each other's blind spots.
-- **A fifth lens hunts literal correctness** — for every changed line it opens the real definition of
-  each symbol that line leans on and checks the assumption actually holds. The other four lenses are
-  high-altitude by design and glide over exactly this, which is where most missed defects live.
-- **That fifth lens is the only one whose cost is unbounded by nature, so overnight it runs
-  `lens_budget: capped`**: diff-scoped, 20 changed files, patch material spilled to a file past
-  ~9,000 characters, and no top-up. Typed by hand it runs `standard` — the same caps, plus one
-  top-up it has to earn by naming the file it wants and why. ⚠️ **`lens_budget` is not
-  `review_mode`**: an autopilot review is normally `review_mode: full` *and* `lens_budget: capped`
-  at once, and reading the first as permission to relax the second is the expensive mistake. **The
-  caps live once, inside the engine's own step-01** — a caller names its budget and never restates
-  the numbers, because a cap each caller repeats is a cap that drifts.
+**It owns no copy of your workflow.** The autopilot passes door *names*, never door *text*. Edit a
+door, a rule or a seat in the morning and the robot runs the new one tonight — no sync step, nothing
+to regenerate, nothing to forget. That is the whole reason this lane can be trusted to stay in step
+with the way you actually work.
 
-**It's resumable.** Re-run the launcher and it works out which stages finished by looking for their
-*sections inside* those two documents, not for the files themselves. A half-written plan doesn't
-count as a finished plan.
+**Two routes, chosen by what the ticket IS.** A story with a file on disk and an epic branch runs the
+six-child story route (①②③). A project Task with none of those — a performance fix, an asset, a copy
+change — runs the four-child quick-fix route through `/cicd-quick-dev`. On that route the door's own
+review gate is a **first pass, never the verdict**: no seat carries the `Task` tool, so a seated
+child runs it inline a lens short, and the independent no-seat reviewer that follows is what counts.
+Both routes are drawn on [the Autopilot SOP](autopilot_SOP.md#31-the-quick-fix-route--a-ticket-that-is-not-a-story).
 
-**The robot works in its own copy of the repo.** Every run opens the story's own worktree first, so
-the robot is never typing into the same files as you or another lane. It looks like
-`.claude/worktrees/<story>/`, on a branch named `claude/<TICKET>-<story>`.
+**One prerequisite refuses more often than the rest: the CLI version.** The lane needs `claude`
+2.1.259 or newer, and Step 0 reads `claude --version` **from `PATH`** — not from the session you are
+typing in. Those can differ: an upgrade installs the new version but a stale launcher symlink can
+leave `claude` on `PATH` pointing at the old one, so the session says 2.1.263 while the binary the
+runner would launch says 2.1.258. The floor exists for `--permission-prompts none`, whose default
+hands permission prompts to a host that a headless child does not have — below the floor, a child
+that hits a prompt has nobody to answer it. Check with `claude --version` in a plain shell; if it is
+behind, `claude update` or point the launcher at the newest installed version.
 
-**You launch it from the epic branch.** The robot cuts the story's branch from whatever the project
-has checked out, and that has to be the epic branch — so switch to it first, or pass
-`-EpicBranch epic/<KEY>-<slug>`. It refuses to start rather than guess, because a story branched off
-`main` can't be landed.
+**The robot runs from the command centre, not from inside the project.** Each headless child
+resolves its `/` commands from its own working directory, and a project clone carries its own law
+but none of the centre's commands — so a child started inside `Projects/<name>` would find no
+`/cicd-…` command at all and improvise one. The autopilot therefore stands its children in the
+centre and names the project as an argument, exactly the way you would type it yourself. The runner
+refuses the other shape and tells you which mistake it was.
 
-**When it's green it commits, files the ticket, and stops.** It saves the work on the story branch
-with an explicit list of files and a Jira-keyed message, moves the ticket to **In Review**, and writes
-the Dev Record onto it. It still **never pushes**, never touches `main`, and never marks anything
-`done`. Your end of it: read the walkthrough, the plan, and the ticket — then run
+**The charter is what it may pass without you**, and it is scoped to one story at a time — your
+launch word does not travel to the next one. It passes the mid-story `continue` and questions it can
+answer from the repo; it escalates a `NO-GO` audit, any new dependency, schema, security rule, CI or
+environment change, any file deletion, and a second failed review. The full table is on
+[the Autopilot SOP](autopilot_SOP.md#4-the-charter--what-the-lead-may-pass-without-you).
+
+**When it needs you it does two things**, both of them: it asks in the chat with real options and a
+recommendation, and it posts a ticket comment whose first line reads `Needs Mr. Hatter`. Your phone
+reads the ticket, so the second one is the one that actually reaches you.
+
+**You can watch it work, and you can audit what it chose.** Each step runs in the background with its
+progress reported as it goes, so a working run never looks like a hang — and a run you can see is a
+run you can stop. When it parks, it posts one comment listing every charter row it actually
+exercised: the gate it passed, each question it answered from the repo instead of asking you, and
+anything it judged not worth acting on. A soft *"I'd normally have checked this with you"* is a
+decision and appears on that list, not an escalation.
+
+**A verdict it hands you always names the commit it was made at.** A review that comes back clean but
+without the sha it judged is treated as a failed step and re-run, not reported. That sounds pedantic
+until you picture the alternative: a reviewer that did the work correctly, found nothing to fix, and
+dropped the bookkeeping — leaving the lead to post *"PASS"* at a commit nobody recorded. The failure
+that follows is an invented sha, not a blank one. The happy path is exactly where a deliverable gets
+folded into prose, which is why this is a check that fails rather than a line in a checklist.
+
+⚠️ **A step reported as failed has NOT necessarily failed — read it before you re-run it.** A child
+can do the entire job correctly and still answer in sentences instead of the structured shape the
+runner needs, and the runner will not guess a status from prose. So the failure now quotes the
+child's own words back to you, and the lane's rule is to read those and look at the worktree first:
+if the work is there and the tests are green, the step is **done and unverified**, not undone. A
+blind re-run pays a second time for work that already exists.
+
+**Done means green, and green means a script said so** — never the agent's own say-so. A red gate
+parks with a receipt for you rather than spawning a fix loop.
+
+**The budget has two halves and only one of them is real.** The per-child cap is a suggestion the CLI
+does not honour precisely; the run ceiling is enforced by the runner itself, off its own ledger,
+before each launch. Set both, and expect the second to be the one that stops a runaway.
+
+**It works in its own copy of the repo** — the story's own worktree at `.claude/worktrees/<story>/`,
+on a `claude/<TICKET>-<story>` branch — so it is never typing into the same files as you or another
+lane. Launch from the epic branch; it refuses to start rather than guess, because a story branched
+off `main` cannot be landed.
+
+**⛔ It cannot land anything.** Not the epic branch, not `main`. There is no verb for it in the
+runner, so this is not a rule the robot is asked to keep. When the story is review-ready it flips the
+story to `review`, moves the ticket to In Review with its Dev Record, sends one line to your phone,
+and stops. Your end of it: read the walkthrough, the plan and the ticket — then run
 `/cicd-close-story-merge-tree`.
-
-> ✅ **Proven end to end.** The v2 engine has run a full four-stage pass on Story 14.2 (clean
-> APPROVE, backend 1723 / frontend 270 passed, about $9). It is still Windows-hosted; on a new
-> engine or a new project, start with `-DryRun`, then a small story with `-MaxStage 2`.
-
-The engines live **per-project** and have drifted between projects — a behavior fix has to land in
-each one. The claude and opencode engines are **twins by contract**: the worktree, commit and ticket
-blocks are kept identical on purpose, so a `diff` shows drift straight away.
-
-> The launchers are `/cicd-autopilot-claude`, `/cicd-autopilot-opencode` and
-> `/cicd-autopilot-deepseek4` — hyphens, per the command naming law. **There is no
-> separate mobile engine**: from your phone you drive the
-> desktop engines through Remote Control, which is strictly better — same code, same gates, one thing
-> to fix when the loop changes.
 
 > ⓘ **⛔ A green check can be telling you the truth about the wrong branch.** When
 > several lanes run at once, the checking scripts work out *which* repo and branch to look at by
@@ -3161,7 +3190,7 @@ it, and where the longer explanation lives.*
 | **Fast lane** | [`/cicd-quick-dev`](#cicd-quick-dev) |
 | **Task lane** | [`/smh-quick-fix`](#smh-quick-fix) · [`/smh-quick-dev`](#smh-quick-dev) · [`/smh-self-audit`](#smh-self-audit) · [`/smh-code-review`](#smh-code-review) |
 | **Landing & shipping** | [`/cicd-close-story-merge-tree`](#cicd-close-story-merge-tree) · [`/cicd-update-sprint-memory`](#cicd-update-sprint-memory) · [`/cicd-merge-epic-workingtrees`](#cicd-merge-epic-workingtrees) · [`/cicd-prune-worktree`](#cicd-prune-worktree) · [`/cicd-e2e`](#cicd-e2e) · [`/cicd-push-e2e`](#cicd-push-e2e) · [`/smh-close-task-merge-tree`](#smh-close-task-merge-tree) · [`/smh-merge-multiple-workingtrees`](#smh-merge-multiple-workingtrees) |
-| **Operations** | [`/cicd-park` + `/cicd-resume`](#cicd-park-and-cicd-resume) · [`/cicd-prune-context`](#cicd-prune-context) · [`/cicd-autopilot-claude` (and its lanes)](#cicd-autopilot-claude-and-its-lanes) · [`/cicd-live-testing-team`](#cicd-live-testing-team) · [`/cicd-mobile-error-team`](#cicd-mobile-error-team) |
+| **Operations** | [`/cicd-park` + `/cicd-resume`](#cicd-park-and-cicd-resume) · [`/cicd-prune-context`](#cicd-prune-context) · [`/cicd-autopilot-claude`](#cicd-autopilot-claude) · [`/cicd-live-testing-team`](#cicd-live-testing-team) · [`/cicd-mobile-error-team`](#cicd-mobile-error-team) |
 | **Toolkit upkeep** | [`/smh-sync-agents`](#smh-sync-agents) · [`/smh-sync-vscode`](#smh-sync-vscode) · [`/smh-memory-audit`](#smh-memory-audit) · [`/smh-update-maps-indexes`](#smh-update-maps-indexes) |
 
 ### Session and planning
@@ -3962,37 +3991,32 @@ and by `/cicd-merge-epic-workingtrees` Step 5 (automatically), or you.*
 | `R` | report the token line compacted · deleted · archived · STILL-OWED | (terminal / end) |
 
 
-#### /cicd-autopilot-claude (and its lanes)
+#### /cicd-autopilot-claude
 
-*The robot running the ①②③ loop for one story across four stages and three sessions: Dev plans
-(Stage 1) and later **resumes the same chat** to implement (Stage 3); QA audits the plan in a fresh
-session (Stage 2, same model) and reviews + fixes the finished code in another (Stage 4, the shared
-review engine). Done means a script's exit code was green — never the agent's say-so. Explained in
-[§15](#15-the-autopilot-lane). Lanes: `/cicd-autopilot-opencode` (opencode engine),
-`/cicd-autopilot-deepseek4` (cheaper Dev model, same QA).*
+*The lead session that walks ONE story through the **existing** doors, one fresh headless child per
+step, each child wearing one Wonderland seat. It passes door NAMES, never door text, so it owns no
+copy of your workflow. Every step lands on the ticket as a comment; escalations land on your phone.
+It parks at review-ready and cannot land anything. Explained in [§15](#15-the-autopilot-lane); the
+full manual, with the charter and the failure modes, is [the Autopilot SOP](autopilot_SOP.md).*
 
-> **Stage 2's twin inherits the phases rather than copying them.** `/cicd-self-audit-AP` names no
-> phases of its own — it runs *"the pre-dev adversarial audit defined in `@.agents/commands/`*
-> `cicd-self-audit.md`", overriding only its I/O, its lane boundaries and the blocker token. So the
-> cross-repo **port-checklist** paragraph added to the primary's Phase 1 (SCC-176) reaches the
-> autopilot lane through that reference, and was deliberately **not** copied into the twin: the AP
-> stamp exists to stop exactly that kind of second copy from drifting.
+> **Read the exit code, not the prose.** The runner answers `0` done · `3` needs you · `4` blocked ·
+> `1` failed (retry once, then escalate) · `2` refused before spending anything. A budget cut is a
+> deliberate halt and is never retried.
 
 | Stage / Step | Details / Action | Next Step / Transition |
 |---|---|---|
-| `L` | launch from the EPIC branch else it refuses to start | (terminal / end) |
-| `W` | open the story's own worktree claude/TICKET-story | → 1 · Plan — Dev session writes the plan |
-| `S1` | 1 · Plan — Dev session writes the plan | → 2 · Audit the plan — fresh QA session same model, no inherited assumptions appends INTO the plan |
-| `S2` | 2 · Audit the plan — fresh QA session same model, no inherited assumptions appends INTO the plan | → 3 · Build — RESUMES the Dev session leaves the walkthrough |
-| `S3` | 3 · Build — RESUMES the Dev session leaves the walkthrough | → baseline snapshot of the suite before any code |
-| `BASE` | baseline snapshot of the suite before any code | → 4 · Review + fix — fresh QA session /cicd-code-review-AP → the shared engine, capped budget appends INTO the walkthrough |
-| `S4` | 4 · Review + fix — fresh QA session /cicd-code-review-AP → the shared engine, capped budget appends INTO the walkthrough | → the orchestrator's OWN suite run green vs the baseline? |
-| `GATE` | the orchestrator's OWN suite run green vs the baseline? | **regression this run introduced** → TESTS RED — parks with a receipt no auto-fix loop, by design<br>**green, but no ## Code Review written** → REVIEW INCOMPLETE — story NOT flipped<br>**green + review present** → commit its own branch, explicit paths story → review · ticket → In Review · Dev Record |
-| `RED` | TESTS RED — parks with a receipt no auto-fix loop, by design | (terminal / end) |
-| `INC` | REVIEW INCOMPLETE — story NOT flipped | (terminal / end) |
-| `OK` | commit its own branch, explicit paths story → review · ticket → In Review · Dev Record | → `YOU` |
-| `STOPS` | parks for you on: PAUSED · CRASHED · COST CEILING · COMMIT REJECTED retries engine-owned, bounded · resume by (stage, sha) | (terminal / end) |
-
+| `L` | Step 0 - bind the project: CLI version, story ready-for-dev, epic branch not behind main | -> open the story's worktree |
+| `W` | open the story's worktree - one story, one worktree, one lock | -> child 1 |
+| `C1` | child 1 - WHITE RABBIT plans, returns the plan path | -> child 2 |
+| `C2` | child 2 - QUEEN OF HEARTS audits that plan in a fresh session | -> the audit verdict |
+| `V` | audit verdict | **NO-GO** -> ESCALATE, the plan gate re-arms<br>**GO** -> child 3 |
+| `C3` | child 3 - CHESHIRE CAT builds against the audited plan | -> did the child ask a question? |
+| `Q` | did the child ask a question? | **answerable from the repo** -> a GNAT child cites the line, then resumes child 3 (the only resume in a run)<br>**it would need a GUESS** -> ESCALATE<br>**no** -> child 4 |
+| `C4` | child 4 - THE REVIEWER: no seat, reviewing model, a session id never used before | -> the review verdict |
+| `R` | review verdict | **PASS** -> park<br>**CONCERNS or FAIL** -> child 5, one fix cycle in the lane, then child 6, a fresh reviewer at the new sha |
+| `R2` | the second verdict | **PASS** -> park<br>**anything else** -> ESCALATE |
+| `PARK` | story to review, ticket to In Review with its Dev Record, one line to your phone | -> you |
+| `ESC` | ESCALATE - the ticket leads with `Needs Mr. Hatter`, and the lead waits | (terminal / end) |
 
 #### /cicd-live-testing-team
 
@@ -4444,7 +4468,7 @@ This page is the how-to. Everything longer lives elsewhere.
 | The long-form testing field guide | [tea_testing_guide.md](tea_testing_guide.md) |
 | The incident system in full, with diagrams | [sentry_error_response_team.md](sentry_error_response_team.md) |
 | The Adviser Board in full | [smh-adviser-board-REFERENCE.md](smh-adviser-board-REFERENCE.md) |
-| The autopilot, stage by stage — and §6a, the law every engine must keep | [autopilot_bmad_dev_loop.md](autopilot_bmad_dev_loop.md) |
+| The autopilot — the layers, the charter, the escalation round trip, the seat pins | [autopilot_SOP.md](autopilot_SOP.md) |
 | Sharing keys and secrets without them ever touching a chat (Keyway) | [sharing_keys_secrets_secure.md](sharing_keys_secrets_secure.md) |
 | Jira by hand — everything *you* do on the board without an agent | [jira_manual.md](jira_manual.md) |
 | Why the board is built this way — the two channels, the type rule, the join | [jira_integration_guide.md](jira_integration_guide.md) |

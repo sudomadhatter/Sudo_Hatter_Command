@@ -30,7 +30,7 @@ file enforces, and why it is a test rather than a convention.
     T4  every command reference resolves to a real command master
     T5  sop_currency.py's SOP_DOC points at a file that exists
     T6  no procedural doc is left behind in _my_resources/
-    T7  autopilot_bmad_dev_loop.md exists exactly once in the repo
+    T7  autopilot_bmad_dev_loop.md is retired - no copy exists anywhere in the repo
     T8  the hook's shell guard and sop_currency.SOP_DOC name the SAME file
 
   -- WHY A TEST AND NOT JUST THE COMMIT GATE -----------------------------------------------
@@ -109,7 +109,7 @@ EXPECTED = {
     "jira_manual.md",
     "jira_integration_guide.md",
     "git_walkthrough_settings.md",
-    "autopilot_bmad_dev_loop.md",
+    "autopilot_SOP.md",                  # SCC-430 - the v3 autopilot lane, its charter and its diagrams
     "sentry_error_response_team.md",
     "file_folder_structure+maintaining.md",
     "tea_testing_guide.md",
@@ -1359,7 +1359,11 @@ def main() -> int:
             det(not left, f"{len(left)} left: " + "; ".join(left[:4])
                           + (" ..." if len(left) > 4 else "")))
 
-    # -- T7: one copy of the doc that existed twice with 508 differing lines.
+    # -- T7: the doc is RETIRED (SCC-430). It described the v2 four-stage autopilot relay,
+    #    which was deleted with its engines; `autopilot_SOP.md` is the manual now. The check
+    #    is INVERTED rather than removed: it originally existed because this file lived in
+    #    TWO places with 508 differing lines, and the way a retired doc comes back is a
+    #    clone or a migration guide restoring the copy nobody was watching.
     #    Filter the RELATIVE path, never p.parts -- this repo is checked out inside
     #    .claude/worktrees/<lane>/, so the absolute parts contain "worktrees" for every file
     #    and an absolute-path filter silently excludes the entire tree (found 0 of 2 copies).
@@ -1379,8 +1383,9 @@ def main() -> int:
         if "autopilot_bmad_dev_loop.md" in filenames:
             copies.append((Path(dirpath) / "autopilot_bmad_dev_loop.md")
                           .relative_to(ROOT).as_posix())
-    ok = len(copies) == 1
-    c.check("T7 exactly one autopilot_bmad_dev_loop.md", ok, det(ok, f"copies: {sorted(copies)}"))
+    ok = not copies
+    c.check("T7 autopilot_bmad_dev_loop.md is retired - no copy exists", ok,
+            det(ok, f"copies: {sorted(copies)}"))
 
     # -- T10: everything this file PRINTS must survive a cp1252 console. LAST, so it sees
     #    every row above -- and it checks the emitted strings rather than the source, so a

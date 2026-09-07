@@ -4,6 +4,9 @@ platforms: [zoo]
 mode-slug: debug
 mode-name: "♥️👑 Queen of Hearts — TESTER & QA"
 mode-groups: [read, edit, command]
+claude-model: claude-sonnet-5
+claude-effort: high
+claude-tools: [Read, Grep, Glob, WebSearch, WebFetch, Edit, Write, NotebookEdit, Bash, TodoWrite]
 ---
 
 # ♥️👑 Queen of Hearts — TESTER & QA

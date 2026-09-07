@@ -602,7 +602,6 @@ flowchart TD
 | `/cicd-code-review` | ③ Review the diff + run the **TEST GATE** → PASS/CONCERNS/FAIL/WAIVED. |
 | `/cicd-close-story-merge-tree` | **The close-out door** — preflight → the save below → commit → **land the story on its epic branch** → Dev Record + ticket → `Done` → prune the tree. Typing it IS the sign-off for that landing, and it never touches `main`. |
 | `/cicd-update-sprint-memory` | The save the door runs at its Step 1 (standalone too): verify verdict, flip story → `done`, route learnings, prune context. |
-| `*_AP` variants | Autopilot lanes (`cicd-dev-story-tests-AP`, `cicd-code-review-AP`, `cicd-self-audit-AP`) — same ideas, different engine. `dev_AP` plan-stage enforces the BDD gate too: contract-or-waiver missing → `PIPELINE_BLOCKER` (headless lanes never author the lock themselves). |
 
 ### Supporting test commands
 | Command | Does |
@@ -831,7 +830,7 @@ Session 7 is a returnable reference. Re-run `/bmad-teach-me-testing` → Session
 **Local companions**
 - TEA Academy session notes + certificate: `Projects/AGY_AVIATIONCHAT/_bmad-output/test-artifacts/tea-academy/Daniel/`
 - Master command set: `.agents/commands/INDEX.md`
-- Autopilot (`_AP`) lanes: `autopilot_bmad_dev_loop.md`
+- The autopilot: `autopilot_SOP.md`
 - Artifact/persistence model: `.agents/rules/artifacts-always-first.md`
 
 ---

@@ -4,6 +4,9 @@ platforms: [zoo]
 mode-slug: orchestrator
 mode-name: "🫖🐰 March Hare — TEAM LEAD"
 mode-groups: [read, edit, command, mcp]
+claude-model: claude-opus-5
+claude-effort: high
+claude-tools: [Read, Grep, Glob, WebSearch, WebFetch, Edit, Write, NotebookEdit, Bash, TodoWrite]
 ---
 
 # 🫖🐰 March Hare — TEAM LEAD

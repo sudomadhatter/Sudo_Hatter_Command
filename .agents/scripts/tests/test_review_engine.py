@@ -65,7 +65,6 @@ ENGINE_FILES = (SKILL,) + STEPS
 # they are not part of the `.claude/skills/` cache comparison. But they must be pinned HERE, because
 # a rule about a caller that lives only in the engine's own step file is a rule nothing enforces:
 # reverting the caller leaves every engine check green while the wiring is gone (SCC-126 review, F7).
-AP_CMD = ".agents/commands/cicd-code-review-AP.md"
 # The two INTERACTIVE callers (SCC-147). step-01 defines `lens_budget` and states that a caller
 # naming none gets `capped` — the safe default, chosen for the unwatched overnight loop. That
 # default is the WRONG budget for a review a human is sitting in front of, and neither of these
@@ -87,7 +86,7 @@ DEV_STORY_CMD = ".agents/commands/cicd-dev-story-tests.md"
 # derived from the tree, so wiring a new caller and forgetting to pin it goes red rather than
 # silently inheriting the autopilot's `capped` budget (SCC-147).
 QUICK_CMD = ".agents/commands/cicd-quick-dev.md"
-CALLER_FILES = (AP_CMD, CICD_CMD, SMH_CMD, QUICK_CMD)
+CALLER_FILES = (CICD_CMD, SMH_CMD, QUICK_CMD)
 
 # Vendor identifiers that must appear NOWHERE in the engine. `HALT` is deliberately the only
 # case-SENSITIVE one: lower-case "halt" is ordinary English and banning it generates false reds.
@@ -925,7 +924,7 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      "**A caller that names none gets `capped`**",
      "**A caller that names none gets `standard`**"),
     ("step-01: capped is the autopilot's, with the caps mandatory and no top-up", STEPS[0],
-     r"^\|\s*`capped`\s*\|\s*`/cicd-code-review-AP` \(autopilot\)[^|]*\|[^|]*MANDATORY[^|]*\*\*no top-up\*\*",
+     r"^\|\s*`capped`\s*\|\s*[^|]*names nothing[^|]*\|[^|]*MANDATORY[^|]*\*\*no top-up\*\*",
      re.M,
      "the same caps, MANDATORY, and **no top-up**", "the caps are advisory"),
     ("step-01: standard budget still binds the caps, and its top-up is earned", STEPS[0],

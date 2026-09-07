@@ -1,0 +1,6 @@
+arm	launch	cache_create	cache_read	input	output	cost_usd
+parent	1	11481	0	10	200	0.02397
+parent session_id: 30d258a3-b378-4e5b-a99a-a5417b43ce5f
+fork	1	PARSE-FAIL				Expecting value: line 1 column 1 (char 0)
+fork	2	PARSE-FAIL				Expecting value: line 1 column 1 (char 0)
+control	1	11476	0	10	827	0.0271

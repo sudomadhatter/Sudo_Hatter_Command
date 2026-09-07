@@ -3509,6 +3509,91 @@ def cmd_check(args) -> int:
     return rep.exit_code()
 
 
+# ── step: the autopilot's handoff between children (SCC-430) ───────────────────
+
+STEP_MARKER = "**Autopilot step**"
+NEEDS_HUMAN_MARKER = "Needs Mr. Hatter"
+STEP_STATUSES = ("done", "blocked", "needs_human", "failed")
+
+
+def cmd_step(args) -> int:
+    """One workflow step, recorded on the ticket. This IS the handoff.
+
+    Nothing passes between autopilot children in memory: each is a fresh headless process, and
+    the next one learns what happened by reading this ticket, exactly as the operator does. So a
+    comment that does not land is a step that did not happen, whatever the child achieved -
+    which is why this reads the comment back and exits 2 when the board did not keep it. An
+    `acli` call that silently no-ops looks identical to one that worked (`devrecord` learned
+    that the expensive way; this is the same guard).
+
+    ⛔ STEP COMMENTS STACK, ONE PER CHILD, AND THAT IS THE POINT. The design's acceptance item
+    is a COUNT on the ticket - so many children, so many comments, each carrying its own session
+    id - and a verb that updated one comment in place could not be counted. `devrecord` is the
+    opposite shape for the opposite reason: one record per ticket, always current.
+
+    ⛔ SELF-CONTAINED BY CONSTRUCTION. `test_jira_start_hook.py` copies only `jira_feed.py`,
+    `wf_common.py` and the two hook files into its fixture, so an import added for this verb
+    breaks `jira_feed.py start` inside that fixture - a failure with nothing to do with either.
+    Everything below uses helpers this file already had.
+    """
+    # ⛔ No status check here: `choices=STEP_STATUSES` on the parser is the gate, and it refuses
+    # with the usage line and exit 2 before this function is entered. A second check would be
+    # unreachable, which is worse than absent - the next reader trusts it and it never runs.
+    # The four words are a CONTRACT the runner's exit codes are keyed on, so a fifth arriving
+    # from a model's reply has to die at the door rather than become a state nobody branched on.
+    summary = Path(args.summary_file).read_text(encoding="utf-8").strip()
+    if not summary:
+        wf.die(f"{args.summary_file} is empty - a step with nothing to say is not a step")
+
+    lines: list[str] = []
+    # The marker goes FIRST and on its own line, because it is what the operator's eye and any
+    # future filter both search for. Buried in a body it is decoration.
+    if args.status == "needs_human":
+        lines += [NEEDS_HUMAN_MARKER, ""]
+    lines += [f"{STEP_MARKER} - stage {args.stage} - `{args.door}` - {args.seat} - "
+              f"**{args.status}**",
+              "",
+              f"session: `{args.session}`",
+              "",
+              summary]
+    if args.usage_file and Path(args.usage_file).is_file():
+        try:
+            u = json.loads(Path(args.usage_file).read_text(encoding="utf-8")) or {}
+        except (OSError, json.JSONDecodeError):
+            u = {}
+        if u:
+            lines += ["", (f"usage: {u.get('input_tokens', 0)} in / "
+                           f"{u.get('output_tokens', 0)} out / "
+                           f"{u.get('cache_read_input_tokens', 0)} cached")]
+    body = "\n".join(lines) + "\n"
+
+    if not args.apply:
+        say(f"jira-feed: DRY RUN - would post {len(body)} chars to {args.key}")
+        print(body)
+        return 0
+
+    binary = acli_bin(args.acli)
+    tmp = write_temp(body)
+    try:
+        r = acli(binary, ["jira", "workitem", "comment", "create", "--key", args.key,
+                          "--body-file", str(tmp)])
+        if r.returncode != 0:
+            wf.die(f"acli comment failed: {(r.stderr or r.stdout).strip()[:400]}")
+    finally:
+        tmp.unlink(missing_ok=True)
+
+    # The read-back keys on the SESSION ID, not on the marker: two steps of one run share
+    # everything else, so a marker-only check would find step 1 and report step 2 landed.
+    landed = [c for c in list_comments(binary, args.key)
+              if str(args.session) in field_text(c.get("body"))[:600]]
+    if not landed:
+        say(f"jira-feed: acli reported success but {args.key} carries no step comment for "
+            f"session {args.session} on read-back - NOT recorded")
+        return 2
+    say(f"jira-feed: {args.key} step {args.stage} posted ({args.status}, {len(body)} chars)")
+    return 0
+
+
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
 def main() -> int:
@@ -3694,6 +3779,19 @@ def main() -> int:
     p_ix.add_argument("--apply", action="store_true", help="without this, renders only")
     p_ix.add_argument("--timeout", type=int, default=90, metavar="SEC")
 
+    p_step = sub.add_parser("step", help="record ONE autopilot step on the ticket (SCC-430)")
+    common(p_step)
+    p_step.add_argument("--key", required=True)
+    p_step.add_argument("--stage", required=True)
+    p_step.add_argument("--door", required=True)
+    p_step.add_argument("--seat", required=True, help="the seat, or `none` for the reviewer")
+    p_step.add_argument("--status", required=True, choices=list(STEP_STATUSES))
+    p_step.add_argument("--summary-file", required=True,
+                        help="what the child reported; for needs_human, its question too")
+    p_step.add_argument("--session", required=True, help="the child's session id")
+    p_step.add_argument("--usage-file", help="the child's `usage` block, as JSON")
+    p_step.add_argument("--apply", action="store_true", help="without it, print and post nothing")
+
     p_chk = sub.add_parser("check", help="does this ticket carry outline + Dev Record?")
     common(p_chk)
     p_chk.add_argument("--key", required=True)
@@ -3718,7 +3816,7 @@ def main() -> int:
     return {"outline": cmd_outline, "mint": cmd_mint, "devrecord": cmd_devrecord,
             "audit": cmd_audit, "check": cmd_check, "trace": cmd_trace,
             "flag": cmd_flag, "start": cmd_start, "check-actions": cmd_check_actions,
-            "finish": cmd_finish, "index-row": cmd_index_row,
+            "finish": cmd_finish, "index-row": cmd_index_row, "step": cmd_step,
             "reconcile-actions": cmd_reconcile_actions}[args.verb](args)
 
 

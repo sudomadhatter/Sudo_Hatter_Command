@@ -152,8 +152,6 @@ NOT_PAIRED = {
     "cicd-live-testing-team.md": _ONE_SUBJECT + " (runs the product's servers)",
     "cicd-mobile-error-team.md": _ONE_SUBJECT + " (mobile runtime triage)",
     "cicd-autopilot-claude.md": _ONE_SUBJECT + " (autonomous story loop)",
-    "cicd-autopilot-deepseek4.md": _ONE_SUBJECT + " (autopilot, hybrid model lane)",
-    "cicd-autopilot-opencode.md": _ONE_SUBJECT + " (autopilot, opencode engine)",
     "cicd-park.md": _ONE_SUBJECT + " (parks a story mid-flight)",
     "cicd-resume.md": _ONE_SUBJECT + " (resumes a parked story)",
     "cicd-prune-context.md": _ONE_SUBJECT + " (trims a long story session)",
