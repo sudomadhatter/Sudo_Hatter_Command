@@ -1,0 +1,6 @@
+task_key: SCC-421
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-421-bugs-cycle-12
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: [SCC-425, SCC-427]
