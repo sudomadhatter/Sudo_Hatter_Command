@@ -29,6 +29,8 @@ can actually be enforced is the runner's own.
 - [x] **Row E — the lead's door.** Charter ruled 2026-09-07 (as proposed) and pasted into the door as its own table; `/cicd-autopilot-claude` rewritten from the v2 four-stage engine to the v3 lead session.
 - [x] **Row E — the Autopilot SOP.** `docs/_scc_sops_prds/autopilot_SOP.md` with three validated `flowchart` diagrams; SOP §15 links to it, both atlas entries describe v3, one changelog line.
 - [x] **Row F — one real AGY ticket.** Operator chose **AVCH-138** (the 3MB pre-hydration splash) 2026-09-07. Three defects found and fixed before the first child launched, a fourth found BY the run. The work shipped: branch `chore/AVCH-138-splash-image-weight` @ `ee9442ae`, pushed.
+- [x] **Difficulty tiers.** `--tier easy|medium|hard`, ruled 2026-09-07 and amended twice by the operator (the Gnat exempt; Sonnet 5 at medium, not Haiku at low). The invariant the table is an instance of — *the reviewer never runs the model that wrote the code* — is asserted for every tier.
+- [x] **AVCH-138 closed out** — verified by hand, the 3MB PNG deleted, [PR #96](https://github.com/sudomadhatter/AGY_AVIATIONCHAT/pull/96) open, dev record on the ticket.
 - [x] **Row G — the v2 lane retired.** Ruled 2026-09-07. Five doors, two launchers and the v2 reference page deleted; nineteen referencing files closed out; five things harvested first.
 - [ ] Row G — the five old doors deleted (**needs ruling 3**).
 - [ ] **Close-out — the Autopilot SOP** (operator direction, 2026-09-07): its own document with its own diagrams, linked from the main SOP, and the upkeep home for the autopilot workflows from then on. See *What close-out owes* below.
@@ -295,6 +297,36 @@ harvested into §7.5 of the SOP about an hour before the run reproduced it live.
 **What row F could NOT prove:** an escalation reaching the phone as a `needs_human` ticket comment.
 The child *did* escalate, correctly, but in prose — so it never became a structured `needs_human`
 step. That path stays unproven until a child returns the schema with `status: needs_human`.
+
+### Closing AVCH-138 — verifying a robot's work when the operator cannot see it
+
+The operator's instruction was the interesting part: *"if its fixed delete the huge file just verify
+this its work is good. I am blind of this one."* That is the real question this lane will keep
+facing — **how do you check an unattended agent's work in a domain the operator cannot inspect?**
+
+What a code review would have caught anyway: no surviving references (three hits, all comments
+recording the before-measurement), all nine consumers switched, `tsc` and `eslint` clean across the
+changed set while the repo's pre-existing errors sit in files this diff never touched.
+
+⭐ **What it would NOT have caught, and this is the one worth keeping.** The WebP **dropped the PNG's
+alpha channel**. Nothing in the diff says so, no test measures it, and the pixel difference was
+0.30% — everything looked fine. Had that channel carried real transparency, those pixels would have
+flattened to black on the splash of **every route in the product**, and the first person to know
+would have been a user. So it was checked rather than inferred: the original is **fully opaque** —
+minimum alpha 255, zero transparent and zero partially-transparent pixels across all 2,073,600. The
+channel carried no information and dropping it is pure saving.
+
+**The lesson for this lane:** when the operator cannot see the output, "the tests are green" is not
+verification — the tests only cover what someone thought to measure, and a re-encode's *shape* and
+*transparency* were not among them. Reach for the property the change could silently break and
+measure it directly.
+
+| | |
+|---|---|
+| ticket | AVCH-138, `chore/AVCH-138-splash-image-weight` @ `e804c03e` |
+| PR | [#96](https://github.com/sudomadhatter/AGY_AVIATIONCHAT/pull/96) |
+| shipped | 3,169,191 B → **150,356 B** (95%), favicon split out, 3MB PNG deleted |
+| board | no `In Review` state exists on this project — the ticket stays **In Progress** until the operator merges |
 
 ## What close-out owes
 
