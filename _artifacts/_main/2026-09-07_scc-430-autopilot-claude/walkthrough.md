@@ -28,7 +28,8 @@ can actually be enforced is the runner's own.
 - [x] **Row D — `jira_feed.py step`.** One comment per child, read back by session id, `needs_human` leading with the `Needs Mr. Hatter` line; self-contained, so `test_jira_start_hook.py`'s fixture still works.
 - [x] **Row E — the lead's door.** Charter ruled 2026-09-07 (as proposed) and pasted into the door as its own table; `/cicd-autopilot-claude` rewritten from the v2 four-stage engine to the v3 lead session.
 - [x] **Row E — the Autopilot SOP.** `docs/_scc_sops_prds/autopilot_SOP.md` with three validated `flowchart` diagrams; SOP §15 links to it, both atlas entries describe v3, one changelog line.
-- [~] **Row F — one real AGY ticket.** Operator chose **AVCH-138** (the 3MB pre-hydration splash) 2026-09-07. Three defects found and fixed BEFORE the first child launched; the run itself is in flight.
+- [x] **Row F — one real AGY ticket.** Operator chose **AVCH-138** (the 3MB pre-hydration splash) 2026-09-07. Three defects found and fixed before the first child launched, a fourth found BY the run. The work shipped: branch `chore/AVCH-138-splash-image-weight` @ `ee9442ae`, pushed.
+- [x] **Row G — the v2 lane retired.** Ruled 2026-09-07. Five doors, two launchers and the v2 reference page deleted; nineteen referencing files closed out; five things harvested first.
 - [ ] Row G — the five old doors deleted (**needs ruling 3**).
 - [ ] **Close-out — the Autopilot SOP** (operator direction, 2026-09-07): its own document with its own diagrams, linked from the main SOP, and the upkeep home for the autopilot workflows from then on. See *What close-out owes* below.
 
@@ -242,6 +243,58 @@ behaviour it claims to protect, and only a declared mutant found it.
 is installed beside it and is what the interactive session runs. The symlink never moved after the
 upgrade. Row F's first child is pinned with `--claude` by hand; the standing fix is `claude update`
 or repointing that symlink, after which the pin comes out of the call.
+
+### Row F — the real run, and the fourth defect it found
+
+One child, one door, one ticket.
+
+| | |
+|---|---|
+| door · seat · stage | `/cicd-quick-dev` · `cheshire-cat` · 1 |
+| session | `fe0d0248-58fc-409a-8786-a404068b24f0` |
+| wall clock | 22m 40s (`duration_api_ms: 1359765`) |
+| cost | **$5.82** against a $6 soft cap — it stopped itself rather than overrun |
+| result | `chore/AVCH-138-splash-image-weight` @ `ee9442ae`, committed **and pushed**, 16 files, +234/-29 |
+| ticket | comment **10477** — stage, door, seat, status and session id, posted by the runner |
+
+**What the child actually did.** `Dark Mode Earth.png` 3,169,191 bytes → WebP **150,356** bytes (95%
+smaller, under the ticket's own 200KB bar), applied across all nine consumers; the favicon split into
+its own 6.7KB file so `AviationChat.png` is fetched once rather than twice; two new tests written
+(W7 byte budget, W8 the favicon no longer shares a URL) and `investor-weight.spec.ts` run **9/9
+green**; a walkthrough and an acceptance-criteria file written.
+
+⭐ **The charter fired, unprompted and correctly.** The old 3MB PNG was left unreferenced by its own
+change, and the child **refused to delete it** — *"the constitution requires asking before any
+delete, so I left it and named the one-line fix"*. Nobody reminded it. That row of the charter was
+the one the operator was most entitled to be nervous about, and it held on the first real run.
+
+### The fourth defect — and it is the v2 war story happening to v3
+
+The step was recorded **`failed`**, and the ticket comment read:
+
+```
+no usable status in the reply: {'duration_api_ms': 1359765, 'stop_reason': 'end_turn', ...}
+```
+
+The child answered in prose rather than the JSON shape. `--json-schema` **shapes** a reply and does
+not guarantee one — design rule 3 already said so, which is why the status is correctly `failed`:
+nothing may guess a status, or a silent no-op is recorded as work.
+
+⛔ **But the runner then threw away the child's own words.** The prose arrives in `result` as a
+non-JSON string, so `inner` became `None` and the code fell back to the envelope — printing a
+duration in milliseconds as the sole record of a $5.82 run that had answered every question an
+operator would ask. **UNREADABLE and UNVERIFIED are different problems, and only the second was ever
+intended.** A failure now carries the child's report verbatim, and the door's exit-1 row says to read
+it and the worktree *before* retrying, because `failed` here meant *done but unverified* and a blind
+retry pays twice.
+
+This is precisely what the retired lane had already learned — *"a stage that did everything right but
+phrased its verdict in natural language got stamped CRASHED… trust the artifacts, not a token"* —
+harvested into §7.5 of the SOP about an hour before the run reproduced it live.
+
+**What row F could NOT prove:** an escalation reaching the phone as a `needs_human` ticket comment.
+The child *did* escalate, correctly, but in prose — so it never became a structured `needs_human`
+step. That path stays unproven until a child returns the schema with `status: needs_human`.
 
 ## What close-out owes
 
