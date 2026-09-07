@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 375,
+    "files": 378,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 762,
+    "edges": 764,
     "external": 35,
     "ambiguous": 171,
     "dangling": 265,
@@ -709,7 +709,7 @@
     {
       "path": ".agents/rules/INDEX.md",
       "in": 8,
-      "out": 30
+      "out": 31
     },
     {
       "path": ".agents/rules/agent-memory-is-long-term-only.md",
@@ -829,6 +829,11 @@
     {
       "path": ".agents/rules/tests-must-gate-for-real.md",
       "in": 13,
+      "out": 0
+    },
+    {
+      "path": ".agents/rules/tool-connections.md",
+      "in": 1,
       "out": 0
     },
     {
@@ -1657,6 +1662,11 @@
       "out": 0
     },
     {
+      "path": ".agents/skills/tool-connections/SKILL.md",
+      "in": 1,
+      "out": 0
+    },
+    {
       "path": ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
       "in": 0,
       "out": 0
@@ -1705,6 +1715,11 @@
       "path": ".agents/templates/project_overview_guide.md",
       "in": 10,
       "out": 4
+    },
+    {
+      "path": ".agents/tools/INDEX.md",
+      "in": 0,
+      "out": 1
     },
     {
       "path": "docs/AGENTS.md",
@@ -3597,6 +3612,11 @@
     },
     {
       "from": ".agents/rules/INDEX.md",
+      "to": ".agents/rules/tool-connections.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/INDEX.md",
       "to": ".agents/rules/work-consolidation.md",
       "kind": "ref"
     },
@@ -4583,6 +4603,11 @@
     {
       "from": ".agents/templates/project_overview_guide.md",
       "to": "docs/repo-map.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/tools/INDEX.md",
+      "to": ".agents/skills/tool-connections/SKILL.md",
       "kind": "ref"
     },
     {
@@ -6989,6 +7014,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -7013,6 +7039,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -7081,6 +7108,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -7114,6 +7142,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -7141,6 +7170,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -7159,6 +7189,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -7177,6 +7208,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -7240,6 +7272,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -7301,6 +7334,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -7319,6 +7353,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -7387,6 +7422,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -7470,6 +7506,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -7567,6 +7604,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -7629,6 +7667,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -7647,6 +7686,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -7665,6 +7705,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -7683,6 +7724,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -7878,6 +7920,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -7921,6 +7964,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -7948,6 +7992,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -8002,6 +8047,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -8020,6 +8066,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -8056,6 +8103,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -8074,6 +8122,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -8101,6 +8150,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -8119,6 +8169,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -8190,6 +8241,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -8208,6 +8260,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -8235,6 +8288,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -8253,6 +8307,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -8289,6 +8344,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -8375,6 +8431,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -8449,6 +8506,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -8523,6 +8581,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -8597,6 +8656,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -8671,6 +8731,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -8745,6 +8806,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -8819,6 +8881,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -8893,6 +8956,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -8967,6 +9031,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -9041,6 +9106,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -9115,6 +9181,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -9189,6 +9256,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -9263,6 +9331,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -9337,6 +9406,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -9411,6 +9481,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -9461,6 +9532,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -9537,6 +9609,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -9586,6 +9659,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -9614,6 +9688,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -9641,6 +9716,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -9703,6 +9779,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -9797,6 +9874,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -9867,6 +9945,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -9919,6 +9998,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -9997,6 +10077,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -10094,6 +10175,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -10112,6 +10194,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -10139,6 +10222,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -10157,6 +10241,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -10193,6 +10278,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -10261,6 +10347,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -10285,6 +10372,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]
@@ -10363,6 +10451,7 @@
         ".agents/skills/smh-sync-vscode/SKILL.md",
         ".agents/skills/smh-update-maps-indexes/SKILL.md",
         ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
@@ -10396,6 +10485,7 @@
         ".agents/scripts/INDEX.md",
         ".agents/skills/INDEX.md",
         ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
       ]

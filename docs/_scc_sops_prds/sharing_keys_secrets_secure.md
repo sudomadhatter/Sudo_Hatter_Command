@@ -567,7 +567,78 @@ secret management for deployed services becomes the problem, Secret Manager is t
 
 ---
 
-## 11. Quick reference
+## 11. Tool Connections, MCP Servers & Cross-Machine Sync
+
+Keyway is the backbone that enables **zero-credential git repos** while allowing agents and MCP servers
+to operate seamlessly across multiple platforms (Claude Code, OpenCode, Zoo Code in VS Code, Antigravity)
+and machines (Mac, PC/WSL2, Linux).
+
+### The Architecture: Vault → .env → Worktree → MCP Runtimes
+
+```
+┌──────────────────────────────────────┐
+│  Keyway Encrypted Cloud Vault        │  ← sudomadhatter/Sudo_Hatter_Command
+│  (SENTRY_AUTH_TOKEN, API keys, etc.) │
+└──────────────────┬───────────────────┘
+                   │  keyway pull -e development (once per machine)
+                   ▼
+┌──────────────────────────────────────┐
+│  Local Root `.env` (gitignored)      │  ← live secrets on disk, zero git tracking
+└──────────────────┬───────────────────┘
+                   │  link-worktree-assets.py <worktree>
+                   ▼
+┌──────────────────────────────────────┐
+│  Git Worktree Asset Symlinks         │  ← .env, auth_keys/, .venv linked into lane
+└──────────────────┬───────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────┐
+│  .agents/tools/connections.json      │  ← Single source of truth for tools & MCPs
+└──────────────────┬───────────────────┘
+                   │  python3 .agents/scripts/tool_sync.py --apply (or /smh-sync-agents)
+                   ├───────────────────────────────┬───────────────────────────────┐
+                   ▼                               ▼                               ▼
+       ┌──────────────────────┐        ┌──────────────────────┐        ┌──────────────────────┐
+       │ Claude Code          │        │ OpenCode             │        │ Antigravity & Zoo    │
+       │ `.mcp.json`          │        │ `opencode.json`      │        │ Machine-global JSON  │
+       │ (repo-relative args, │        │ (portable 'mcp'      │        │ (`mcp_config.json`,  │
+       │ `${VAR}` env links)  │        │  configuration)      │        │  `mcp_settings.json`)│
+       └──────────────────────┘        └──────────────────────┘        └──────────────────────┘
+```
+
+### 1. The Secrets Bridge (`.env` via Keyway)
+MCP servers like Sentry and Playwright or CLIs like Jira and Google Cloud require credentials.
+- **Never hardcode secrets** in `.mcp.json`, `opencode.json`, or `.agents/tools/connections.json`.
+- In `connections.json`, declare environment variables using uppercase keys (e.g. `{"SENTRY_AUTH_TOKEN": "${SENTRY_AUTH_TOKEN}"}`).
+- On a fresh machine or clone:
+  ```bash
+  keyway login
+  keyway pull -e development
+  ```
+  This creates the untracked `.env` containing necessary tokens (`SENTRY_AUTH_TOKEN`, etc.).
+
+### 2. Cross-Machine Portability: Zero Hardcoded Paths
+A fatal failure mode across Mac and PC/WSL2 is committing absolute machine paths (e.g. `/Users/username/...` vs `/home/username/...` vs `C:\...`).
+- The `connections.json` registry uses **dynamic tokens** like `{REPO_ROOT}` and relative arguments.
+- For MCP servers that operate on the current workspace (such as `md-feedback`), server arguments omit explicit workspace paths (`["-y", "md-feedback"]`) so the tool natively defaults to the active working directory without producing git diffs across checkouts.
+- Tracked project configs (`.mcp.json`, `opencode.json`) stay 100% clean and byte-identical across machines.
+
+### 3. Worktree Asset Linkage
+Agents work in isolated git worktrees (`.claude/worktrees/<branch>`). Git does not carry ignored files into worktrees.
+- Running `.agents/scripts/link-worktree-assets.py <worktree>` automatically symlinks `.env`, `auth_keys/`, `.venv`, and `node_modules` into the worktree.
+- MCP servers spawned within the worktree inherit the symlinked `.env` and authenticate without manual configuration.
+- Before worktree deletion, always run `link-worktree-assets.py --unlink <worktree>` to cleanly sever links.
+
+### 4. Machine-Global MCP Stores
+Certain platforms store their MCP configurations globally outside the repository:
+- **Zoo Code:** Stored in VS Code User `<user-data-dir>/globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json`.
+- **Antigravity:** Stored in `~/.gemini/config/mcp_config.json`.
+- Running `python3 .agents/scripts/tool_sync.py --apply` (or `/smh-sync-agents`) writes these global configs safely, preserving existing server definitions and backing up files before mutation.
+- Run `python3 .agents/scripts/tool_sync.py --check` anytime to detect configuration drift.
+
+---
+
+## 12. Quick reference
 
 ```bash
 # --- setup (once per machine, then once per repo) ---
@@ -575,6 +646,8 @@ brew install keywaysh/tap/keyway     # macOS
 npm install -g @keywaysh/cli         # Windows
 keyway login                         # GitHub OAuth, per machine
 keyway init                          # per repo, from the repo root
+keyway pull -e development           # restore .env secrets
+python3 .agents/scripts/tool_sync.py --apply  # generate platform MCP configs (Claude, OpenCode, Zoo, Antigravity)
 
 # --- daily ---
 keyway run -- npm run dev            # ★ secrets in RAM, nothing on disk
@@ -583,6 +656,7 @@ keyway set NEW_API_KEY               # add/rotate one secret, masked (never KEY=
 keyway diff development production   # what differs
 keyway scan                          # leak check  (--exclude, NOT -e, on this one)
 keyway doctor                        # health check: 5 passed / 1 warning is healthy here
+python3 .agents/scripts/tool_sync.py --check  # verify tool connections & MCP configs are in sync
 
 # --- occasionally ---
 keyway pull                          # only when a tool needs a real file

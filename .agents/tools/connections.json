@@ -1,0 +1,161 @@
+{
+  "$schema": "./connections.schema.json",
+  "version": "1.0.0",
+  "connections": {
+    "md-feedback": {
+      "name": "MD Feedback Reviewer",
+      "category": "document-review",
+      "mode": "mcp-only",
+      "preferred": "mcp",
+      "description": "Reads user memo annotations on markdown files. Mandatory for resolving user feedback to preserve document hashes.",
+      "mcp": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "md-feedback"
+        ],
+        "platforms": [
+          "claude",
+          "zoo",
+          "opencode",
+          "antigravity"
+        ]
+      },
+      "auth": "None (Local File Workspace)"
+    },
+    "gcloud": {
+      "name": "Google Cloud CLI",
+      "category": "cloud-infrastructure",
+      "mode": "cli-only",
+      "preferred": "cli",
+      "description": "Cloud Run, Cloud Storage, BigQuery, IAM, and project resource management.",
+      "cli": {
+        "binary": "gcloud",
+        "check": "gcloud auth list"
+      },
+      "auth": "gcloud auth login / Application Default Credentials (ADC) / Keyway GOOGLE_APPLICATION_CREDENTIALS",
+      "env_keys": [
+        "GCP_PROJECT",
+        "GCP_PROJECT_ID",
+        "GOOGLE_APPLICATION_CREDENTIALS"
+      ]
+    },
+    "jira": {
+      "name": "Jira Issue Tracker",
+      "category": "issue-tracking",
+      "mode": "cli-only",
+      "preferred": "cli",
+      "description": "Board management, ticket reading, transitions, and minting.",
+      "cli": {
+        "binary": "acli",
+        "check": "acli jira auth status",
+        "rule": ".agents/rules/jira.md"
+      },
+      "auth": "OS Keyring (Keychain / Credential Manager)"
+    },
+    "github": {
+      "name": "GitHub CLI",
+      "category": "version-control",
+      "mode": "cli-only",
+      "preferred": "cli",
+      "description": "PR creation, review checks, CI run status, and release management.",
+      "cli": {
+        "binary": "gh",
+        "check": "gh auth status"
+      },
+      "auth": "gh auth login / GitHub CLI Token / Keyway GITHUB_PAT_CLASSIC",
+      "env_keys": [
+        "GITHUB_PAT_CLASSIC",
+        "GITHUB_REPO"
+      ]
+    },
+    "firebase": {
+      "name": "Firebase CLI",
+      "category": "cloud-hosting",
+      "mode": "cli-only",
+      "preferred": "cli",
+      "description": "Deployments, Firestore emulation, security rules, and cloud functions.",
+      "cli": {
+        "binary": "firebase",
+        "check": "firebase projects:list"
+      },
+      "auth": "firebase login / Keyway FIREBASE credentials",
+      "env_keys": [
+        "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+        "NEXT_PUBLIC_FIREBASE_API_KEY"
+      ]
+    },
+    "keyway": {
+      "name": "Keyway Secrets Management",
+      "category": "secrets",
+      "mode": "cli-only",
+      "preferred": "cli",
+      "description": "Pull, push, and in-memory execution of environment variables without writing secrets to git.",
+      "cli": {
+        "binary": "keyway",
+        "check": "keyway doctor",
+        "skill": ".agents/skills/keyway-secrets/SKILL.md"
+      },
+      "auth": "GitHub OAuth / Keyway Organization Vault"
+    },
+    "sentry": {
+      "name": "Sentry Error Monitoring",
+      "category": "observability",
+      "mode": "hybrid",
+      "preferred": "mcp",
+      "description": "Triage runtime errors and incidents in production/staging.",
+      "mcp": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@sentry/mcp-server"
+        ],
+        "env": {
+          "SENTRY_ORG": "aviationchat"
+        },
+        "platforms": [
+          "claude",
+          "zoo",
+          "opencode",
+          "antigravity"
+        ]
+      },
+      "cli": {
+        "binary": "sentry-cli",
+        "check": "sentry-cli info"
+      },
+      "auth": "Keyway SENTRY_AUTH_TOKEN",
+      "env_keys": [
+        "SENTRY_AUTH_TOKEN",
+        "SENTRY_WEBHOOK_SECRET"
+      ]
+    },
+    "playwright": {
+      "name": "Playwright Browser Testing",
+      "category": "browser-testing",
+      "mode": "hybrid",
+      "preferred": "mcp",
+      "description": "Headless and visual browser automation, inspection, and E2E verification.",
+      "mcp": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@playwright/mcp@latest",
+          "--caps",
+          "vision,pdf,devtools"
+        ],
+        "platforms": [
+          "claude",
+          "zoo",
+          "opencode",
+          "antigravity"
+        ]
+      },
+      "cli": {
+        "binary": "npx vitest run",
+        "skill": ".agents/skills/playwright-frontend-check/SKILL.md"
+      },
+      "auth": "None (Local Browser Automation)"
+    }
+  }
+}

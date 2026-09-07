@@ -1,12 +1,12 @@
 # Skills INDEX — when to use which (family map)
 
-Router for the platform skill surfaces: **68** master directories in `.agents/skills/` (**42**
+Router for the platform skill surfaces: **69** master directories in `.agents/skills/` (**43**
 hand-authored skills + **26** generated command launchers). **This directory is a `/` MENU, not just a
 capability store:** Codex and Antigravity both read it natively and invoke any `SKILL.md` here as
 `/<name>`, so one launcher is the door for three platforms (Claude reaches the same file through the
 `.claude/skills/` tree copy). Antigravity retires its separate workflow surface on 2026-11-01 and enters
 here instead (SCC-394). Claude's cache exposes **69** non-BMAD
-skills plus the **56** `bmad-*` skills BMAD installs directly into `.claude/skills/` (**124** total).
+skills plus the **56** `bmad-*` skills BMAD installs directly into `.claude/skills/` (**125** total).
 This repo is the local skills' master — shared, project-agnostic ONLY; a
 product's domain packs live in that product's own `.agents/skills/`, per `project-law.md`. The BMAD families below live there, not here, so don't go
 looking for them in the master dir. Unlike rules, **skills already self-route**: each has a
@@ -27,7 +27,7 @@ skill's own description.
 | **Frontend / UI** | React, design systems, fluid motion & 3D/shaders | `react-best-practices` · `ui-ux-pro-max` (styles, palettes, charts, stacks) · `playwright-frontend-check` (**read a running frontend** — console, `pageerror`, failing network rows with bodies, screenshots; Node, and it carries the sandbox + project-dependency traps. The instrument `/cicd-live-testing-team` reaches for; NOT the E2E door, which is `/cicd-e2e`) · `webm-alpha-video` (green-screen MP4 → alpha-transparent WebM) · **Master Motion Engine:** `emil-design-eng` (consolidated Emil Kowalski craft, Apple springs, 4-gate opportunity filter, Before/After tables, recipes) · **WebGPU Shaders:** `vgpu` (Vercel Labs WebGPU typed WGSL shaders, fullscreen meshes & compute passes, headless CI mock) · **3D & Glass:** `visual-fx-3d` (React Three Fiber, Drei, Liquid Glass) · `animate-expo` (React Native) · `write-swift` (iOS native) · **Front Door:** `/smh-designer` (🦋 Caterpillar) · *PRD Guide:* `docs/_scc_sops_prds/frontend_UI_design_guide.md` |
 | **Prompting / diagrams / debug** | cross-cutting craft | `v3-prompt-architecture` · `mermaid-diagram-standards` · `systematic-debugging` |
 | **Code quality gates** | is the code clean, and can you prove it | `cicd-clean-code-audit` — the auditor for `.agents/rules/code-standards.md`: machine floor (ruff · eslint · pyrefly · tsc) that can FAIL + a judgment pass (comment contract, AI-drift bans) that caps at CONCERNS. Diff-scoped. Runs standalone and as `/cicd-code-review` Step 3.5. · `code-review-engine` — the house review engine (SCC-116): lens fan-out → verify → triage → record over a diff the CALLER resolved, returning a severity floor. Invoked by the review commands, never run standalone. · `code-review-graph` — the house contract for the local code graph (MIT, Tree-sitter + SQLite, 30 MCP tools): ask it who-calls-this, what-breaks, what-has-no-test and what-does-this-diff-risk before you grep. Carries the merge-base rule and the measured precision limit. |
-| **Workspace / system craft** | how the repo is organized, secrets, and Task work lands | `workspace-structure` (tier model · reading-order · AGENTS.md-vs-INDEX.md · naming — the decision layer over `docs/workspace-standard.md`) · `keyway-secrets` (cross-platform secrets sharing & in-memory execution via Keyway) · `smh-close-task-merge-tree` (gate · merge · Jira Dev Record · prune for a non-BMAD Task) |
+| **Workspace / system craft** | how the repo is organized, secrets, and Task work lands | `workspace-structure` (tier model · reading-order · AGENTS.md-vs-INDEX.md · naming — the decision layer over `docs/workspace-standard.md`) · `keyway-secrets` (cross-platform secrets sharing & in-memory execution via Keyway) · `tool-connections` (universal connection matrix, MCP vs CLI dispatch, Keyway .env credential flow & health checks) · `smh-close-task-merge-tree` (gate · merge · Jira Dev Record · prune for a non-BMAD Task) |
 
 **Naming (SCC-63):** skills carry **no family prefix** — `cicd-`/`smh-`/`sentry-` mark *commands*, and a
 prefix here would imply a slash command that does not exist. A **generated launcher** inherits its
