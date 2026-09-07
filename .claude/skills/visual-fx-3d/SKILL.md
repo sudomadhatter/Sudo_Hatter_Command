@@ -1,17 +1,17 @@
 ---
 name: visual-fx-3d
-description: Modern 3D scenes, WebGL shaders, refractive liquid glass, and fluid physical materials. Covers React Three Fiber (R3F), ShaderGradient, Liquid Glass, and Liquid Logo.
+description: Declarative 3D scenes, spatial models, and optical physical glass materials. Covers React Three Fiber (R3F), Drei, and Liquid Glass refraction. For 2D/compute shaders and ambient fluid meshes, see vgpu.
 ---
 
-# Visual FX & 3D Materials
+# Visual FX & 3D Materials (Spatial Models & Glass)
 
-The house engine for high-end modern visual craft: spatial 3D scenes, fluid animated gradient meshes, optical refractive glass, and organic liquid typography.
+The house engine for high-end modern 3D spatial craft: declarative 3D scene graphs, glTF product models, spatial lighting, and Apple VisionOS optical glass refraction.
 
-This skill integrates four foundational open-source toolkits:
-1. **React Three Fiber (R3F)** (`pmndrs/react-three-fiber`): Declarative 3D scene graphs in React.
+> **Architecture Note:** Ambient fluid mesh backgrounds, 2D canvas shaders, and plasma noise have migrated to [`.agents/skills/vgpu`](../vgpu/SKILL.md). `visual-fx-3d` is dedicated to spatial 3D models and optical refraction.
+
+This skill integrates two foundational open-source toolkits:
+1. **React Three Fiber (R3F)** (`pmndrs/react-three-fiber`): Declarative 3D scene graphs, camera rigs, and glTF models in React.
 2. **Liquid Glass** (`dashersw/liquid-glass-js`): Apple VisionOS-grade physical optical glass refraction with chromatic edge dispersion.
-3. **ShaderGradient** (`ruucm/shadergradient`): Fluid 3D animated gradient mesh backgrounds.
-4. **Liquid Logo** (`collidingScopes/liquid-logo`): Real-time liquid metal and plasma shaders for brand marks and typography.
 
 ---
 
@@ -107,100 +107,14 @@ export function LiquidGlassCard({ children, className = '' }) {
 
 ---
 
-## 3. ShaderGradient (`ruucm/shadergradient`)
+## 3. Shader Meshes & 2D Compute Shaders: Route to `vgpu`
 
-Fluid 3D animated gradient mesh backgrounds powered by Three.js and custom WebGL shaders.
-
-### Installation
-```bash
-npm i @shadergradient/react @react-three/fiber three three-stdlib camera-controls
-npm i -D @types/three
-```
-
-### Component Recipe: Atmospheric Background
-```tsx
-import React from 'react';
-import { ShaderGradientCanvas, ShaderGradient } from '@shadergradient/react';
-
-export function AmbientBackground() {
-  return (
-    <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none opacity-85">
-      <ShaderGradientCanvas dpr={[1, 1.5]}>
-        <ShaderGradient
-          control="props"
-          type="waterPlane"
-          color1="#1e1b4b"
-          color2="#312e81"
-          color3="#09090b"
-          uSpeed={0.2}
-          uStrength={1.2}
-          uDensity={1.1}
-          grain="on"
-          lightType="3d"
-          brightness={1.0}
-        />
-      </ShaderGradientCanvas>
-    </div>
-  );
-}
-```
-- **Performance Rule:** Keep `uSpeed` low ($\le 0.3$) for background ambiance. Fast animations distract users from reading content.
-
----
-
-## 4. Liquid Logo (`collidingScopes/liquid-logo`)
-
-Real-time liquid metal and plasma shaders that follow the contours of an uploaded SVG logo or icon mask.
-
-### Mechanics
-- Renders an organic plasma distortion shader into an HTML5 `<canvas>`.
-- Samples the alpha channel of the logo so fluid ripples and metallic specular highlights stay tightly contained within the brand mark's silhouette.
-
-### Component Recipe: Liquid Metal Brand Mark
-```tsx
-import React, { useEffect, useRef } from 'react';
-
-export function LiquidLogo({ maskSrc, width = 120, height = 40 }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let frameId: number;
-    let t = 0;
-    const img = new Image();
-    img.src = maskSrc;
-
-    img.onload = () => {
-      const render = () => {
-        t += 0.02;
-        // Plasma math inside canvas context
-        ctx.clearRect(0, 0, width, height);
-        // Draw fluid pattern masked to logo image
-        ctx.drawImage(img, 0, 0, width, height);
-        ctx.globalCompositeOperation = 'source-in';
-        const grad = ctx.createLinearGradient(0, 0, width * Math.cos(t), height * Math.sin(t));
-        grad.addColorStop(0, '#818cf8');
-        grad.addColorStop(0.5, '#c084fc');
-        grad.addColorStop(1, '#38bdf8');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, width, height);
-        ctx.globalCompositeOperation = 'source-over';
-
-        frameId = requestAnimationFrame(render);
-      };
-      render();
-    };
-
-    return () => cancelAnimationFrame(frameId);
-  }, [maskSrc, width, height]);
-
-  return <canvas ref={canvasRef} width={width} height={height} className="cursor-pointer" />;
-}
-```
+For 2D ambient fluid mesh backgrounds, dynamic plasma shaders, audio visualizers, or particle simulations, **do not load Three.js**:
+- Route directly to [`.agents/skills/vgpu`](../vgpu/SKILL.md).
+- Uses `vercel-labs/vgpu` (~25KB gzipped vs ~250KB Three.js).
+- Native typed WGSL shaders with zero CPU overhead.
+- Deterministic headless CI testing via `@vgpu/adapter-mock` (zero GPU hardware required in CI).
+- Mandatory mobile fallback: guards against missing `navigator.gpu` on older phones (iOS $\le 17$, older Android).
 
 ---
 
