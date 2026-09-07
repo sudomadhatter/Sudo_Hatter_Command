@@ -25,7 +25,7 @@ can actually be enforced is the runner's own.
 - [x] **Row B — `test_autopilot_run.py`**, 35 cases across 8 blocks, every one seen RED first.
 - [x] **Row B — the sandbox question closed** (spike Table 6): `CLAUDE_CONFIG_DIR` relocates the transcript store into a sandbox-writable path, so a sandboxed fork works and costs 92% less than its parent. No settings change, no escalation, no unsandboxed fallback.
 - [x] **Row C — the seat renderer.** `render_seat()` builds the `--agents` JSON in memory from the master's frontmatter; the six masters carry `claude-model`, `claude-effort` and `claude-tools`; no `.claude/agents/` file is written.
-- [ ] Row D — `jira_feed.py step`.
+- [x] **Row D — `jira_feed.py step`.** One comment per child, read back by session id, `needs_human` leading with the `Needs Mr. Hatter` line; self-contained, so `test_jira_start_hook.py`'s fixture still works.
 - [ ] Row E — the lead's door (**needs ruling 1**, the charter rows).
 - [ ] Row F — one real AGY story (**needs a story choice**).
 - [ ] Row G — the five old doors deleted (**needs ruling 3**).
@@ -70,6 +70,8 @@ Twenty-four failures, one per defect the suite exists to catch. `N1` fired on a 
 |---|---|---|
 | `tests/test_autopilot_run.py` | the new file, alone | **35/35 passed** |
 | `tests/test_autopilot_run.py` | after row C's seat cases | **87/87 passed** |
+| `tests/test_autopilot_run.py` | after row D's handoff cases | **106/106 passed** |
+| `tests/test_jira_feed.py --case "SCC-430 step"` | the new verb | **17/17 passed** |
 | `tests/run_all.py` | the whole workflow-script suite | **82/82 files passed** |
 | `mutation_sweep.py` | 9 declared mutants, code-derived | **9/9 killed**, restore verified |
 | `sync-agents.ps1 -Status` | is any launcher stale? | clean - every invocable file matches |
@@ -109,6 +111,24 @@ whole file exited 0.
 could not be attributed, and every case after that point went unscored. Reading it as a survivor
 would have bought a test for a hole that did not exist; reading it as a kill would have certified a
 file that silently stops scoring. Fixed at `c1610941` (`.get`, not `[]`), then re-swept 9/9.
+
+### Two defects the row-D cases found, both invisible to every other test
+
+**The failure message named the wrong thing.** `post_step` used `key` as a for-loop variable while
+folding the child's artifacts and denials into the comment body, which shadowed the ticket key the
+function had been handed. Everything worked — except the one path that matters when something is
+wrong, where the runner announced it could not record a step "on denials" instead of naming the
+ticket nobody could reach. Caught by `H10`, which asserts the ticket is named.
+
+**A check that could never run.** `cmd_step` carried its own `--status` guard that argparse's
+`choices` had already made unreachable. It is now gone: a check that cannot fire is worse than no
+check at all, because the next reader trusts it and never tests it. Caught by `R3`, whose evidence
+turned out to be argparse's usage line rather than the message the guard was written to print.
+
+Both sit in the HANDOFF block, which exists because neither file's own suite covered the seam:
+`test_autopilot_run` stubbed the ticket verb away with `--no-post`, `test_jira_feed` called `step`
+directly, and a signature drift between them would have left both suites green while every
+autopilot step went unrecorded on the board.
 
 ## Decisions taken in this step
 
