@@ -79,6 +79,45 @@ flowchart TD
 ⛔ **There is no arrow to `main`.** Landing is not a rule the lead is asked to keep — the runner has
 no verb for it at all, so it is not a thing an agent can talk itself into.
 
+### 3.1 The quick-fix route — a ticket that is not a story
+
+Not every ticket is a story. A project **Task** — a performance fix, an asset, a copy change — has no
+story file on disk, no sprint row and no epic branch, so the six-child run above has nothing to bind
+to. Its road is `/cicd-quick-dev`, which is **one door holding both the build and its own review
+gate**, and the run is four children rather than six.
+
+**Which route:** the story route when the work has a story file and an epic branch; the quick-fix
+route when it has neither. If you cannot tell which it is, it is not a quick fix — that is an
+escalation, not a coin flip.
+
+```mermaid
+flowchart TD
+    L["Step 0 - bind the project\nCLI version, ACs already on the ticket,\nno overlap with an in-flight epic"] --> W["open a chore worktree\ncut from origin/main"]
+    W --> C1["child 1 - CHESHIRE CAT\nruns /cicd-quick-dev end to end:\nthe build AND the door's own gate"]
+    C1 --> N["that in-door gate runs INLINE\nno seat carries Task, so it drops\nthe Blind Hunter - and reports it"]
+    N --> C2["child 2 - THE REVIEWER\nNO seat, so it CAN fan out\nTHIS is the run's verdict"]
+    C2 --> R{"review verdict"}
+    R -- "PASS" --> PARK["park: ticket to In Review,\none line to your phone"]
+    R -- "CONCERNS or FAIL" --> C3["child 3 - CHESHIRE CAT\nONE fix cycle, in the lane"]
+    C3 --> C4["child 4 - THE REVIEWER\nfresh session, new sha"]
+    C4 --> R2{"second verdict"}
+    R2 -- "PASS" --> PARK
+    R2 -- "anything else" --> ESC["ESCALATE\na second non-PASS is your call"]
+    PARK --> DONE(["you: read it, then merge the PR"])
+```
+
+⛔ **The quick-dev door's own verdict is NOT the run's verdict, and the reason is a seat pin.** Every
+seat's `claude-tools` list deliberately omits `Task`, so a seated child has no subagent tool. When
+`/cicd-quick-dev` reaches its review gate it probes the runtime honestly, finds none, records
+`review-runtime: inline (no subagent tool)` and **drops the Blind Hunter** rather than faking it —
+the behaviour the review engine was given in SCC-203. That is a real first pass and worth having. It
+is not independent, because the agent that wrote the code is the agent triaging the findings.
+
+The **no-seat** review child is what closes that. Passing `--review` sends no `--agents` at all, so
+the child inherits the default tool set, `Task` included, fans the lenses into clean contexts and
+returns a full roster. Net effect: an autopilot quick fix gets *more* review than a human running the
+same door by hand — one inline first pass, then one independent fan-out at the shipping sha.
+
 ---
 
 ## 4. The charter — what the lead may pass without you

@@ -4430,6 +4430,23 @@ def main() -> int:
         c.check("AP5 the door points at the Autopilot SOP",
                 "autopilot_SOP.md" in body, "the manual is unreachable from the door")
 
+        # A5 · the quick-fix route. Found by pointing the door at a REAL ticket (AVCH-138, row F):
+        # a project Task has no story file, no sprint row and no epic branch, so the ①②③ table
+        # cannot express it. Without this route the lead either refuses a legitimate ticket or
+        # improvises a door — and improvising a door is precisely how the pointer architecture
+        # (this lane owns no copy of any door) breaks.
+        c.check("AP6 the door carries a quick-fix route for a ticket with no story file",
+                "/cicd-quick-dev" in body and "quick-fix route" in body,
+                "a Task-shaped ticket has no route through this door")
+
+        # A6 · and WHY that route's own review cannot be the verdict. Every seat pins
+        # `claude-tools` without `Task`, so a seated child runs the quick-dev gate inline and one
+        # lens short; the no-seat review child is the real gate. If the door stops saying this,
+        # the lead reports a first pass as the run's verdict and nobody can tell from the record.
+        c.check("AP7 the door says a seated child cannot fan out review lenses",
+                "fan out" in body and "no subagent" in body,
+                "the door does not explain why the no-seat review is the real gate")
+
     return c.finish()
 
 

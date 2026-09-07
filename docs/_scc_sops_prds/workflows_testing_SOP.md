@@ -2948,6 +2948,13 @@ door, a rule or a seat in the morning and the robot runs the new one tonight —
 to regenerate, nothing to forget. That is the whole reason this lane can be trusted to stay in step
 with the way you actually work.
 
+**Two routes, chosen by what the ticket IS.** A story with a file on disk and an epic branch runs the
+six-child story route (①②③). A project Task with none of those — a performance fix, an asset, a copy
+change — runs the four-child quick-fix route through `/cicd-quick-dev`. On that route the door's own
+review gate is a **first pass, never the verdict**: no seat carries the `Task` tool, so a seated
+child runs it inline a lens short, and the independent no-seat reviewer that follows is what counts.
+Both routes are drawn on [the Autopilot SOP](autopilot_SOP.md#31-the-quick-fix-route--a-ticket-that-is-not-a-story).
+
 **The charter is what it may pass without you**, and it is scoped to one story at a time — your
 launch word does not travel to the next one. It passes the mid-story `continue` and questions it can
 answer from the repo; it escalates a `NO-GO` audit, any new dependency, schema, security rule, CI or
