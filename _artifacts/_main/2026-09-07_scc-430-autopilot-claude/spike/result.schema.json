@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["done", "blocked", "needs_human", "failed"]
+    },
+    "summary": { "type": "string" },
+    "artifacts": { "type": "array", "items": { "type": "string" } },
+    "question": { "type": "string" },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "sha": { "type": "string" },
+        "suite_totals": { "type": "string" }
+      }
+    },
+    "denials": { "type": "array", "items": { "type": "string" } }
+  },
+  "required": ["status", "summary"]
+}
