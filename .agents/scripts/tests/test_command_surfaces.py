@@ -4332,7 +4332,54 @@ def main() -> int:
                     bool(re.search(r"no sha|missing operand", body, re.I)),
                     f"{label} lost the no-sha tooth while the equality clause was relaxed")
 
+    if c.block("CS-25 · SCC-427 · /smh-designer and frontend guide hold persistent mobile-first invariant"):
+        cmds = ROOT / ".agents" / "commands"
+        designer_path = cmds / "smh-designer.md"
+        guide_path = ROOT / "docs" / "_scc_sops_prds" / "frontend_UI_design_guide.md"
+
+        c.check("CS-25 A0 smh-designer.md exists and is non-empty",
+                designer_path.is_file() and designer_path.stat().st_size > 500,
+                f"smh-designer.md missing or empty: {designer_path}")
+        c.check("CS-25 A1 frontend_UI_design_guide.md exists and is non-empty",
+                guide_path.is_file() and guide_path.stat().st_size > 500,
+                f"frontend_UI_design_guide.md missing or empty: {guide_path}")
+
+        designer_text = read(designer_path)
+        guide_text = read(guide_path)
+
+        activation = md_section(designer_text, r"##\s+On Activation\b")
+        c.check("CS-25 A2 anti-vacuity: '## On Activation' section found in smh-designer.md",
+                len(activation) > 300, f"activation section len: {len(activation)}")
+
+        step3_match = re.search(r"###\s+Step 3:\s+Load Persistent Rules.*?(?=###\s+Step|\Z)", activation, re.S | re.I)
+        step3 = step3_match.group(0) if step3_match else ""
+        c.check("CS-25 B0 anti-vacuity: Step 3 found within On Activation",
+                len(step3) > 100, f"step3 len: {len(step3)}")
+
+        c.check("CS-25 B1 smh-designer Step 3 mandates Mobile First invariant",
+                bool(re.search(r"Mobile First,\s+Always", step3, re.I)),
+                "Step 3 does not mandate 'Mobile First, Always'")
+
+        c.check("CS-25 B2 smh-designer Step 3 mandates Dual-Viewport verification",
+                bool(re.search(r"Dual-Viewport Layout Verification", step3, re.I)),
+                "Step 3 does not mandate 'Dual-Viewport Layout Verification'")
+
+        sec2 = md_section(guide_text, r"##\s+2\.\s+Mobile First,\s+Always\b")
+        c.check("CS-25 C0 anti-vacuity: Section 2 Mobile First found in frontend guide",
+                len(sec2) > 200, f"section 2 len: {len(sec2)}")
+        c.check("CS-25 C1 Section 2 mentions AVCH-133 case study",
+                "AVCH-133" in sec2,
+                "Section 2 does not reference AVCH-133 case study")
+
+        sec8 = md_section(guide_text, r"##\s+8\.\s+Pre-Delivery UI Quality Checklist\b")
+        c.check("CS-25 D0 anti-vacuity: Section 8 Checklist found in frontend guide",
+                len(sec8) > 200, f"section 8 len: {len(sec8)}")
+        c.check("CS-25 D1 Section 8 contains Responsive & Mobile-First Quality checklist",
+                "### Responsive & Mobile-First Quality" in sec8 and "Zero Horizontal Overflow" in sec8,
+                "Section 8 does not include Responsive & Mobile-First Quality checklist")
+
     return c.finish()
+
 
 
 if __name__ == "__main__":

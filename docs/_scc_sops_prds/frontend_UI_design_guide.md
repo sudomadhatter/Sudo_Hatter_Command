@@ -34,7 +34,28 @@ Front door: **`/smh-designer`** ([`.agents/commands/smh-designer.md`](../../.age
 
 ---
 
-## 2. Universal Animation & Motion Law
+## 2. Mobile First, Always (The House Foundation)
+
+> **Operator ruling 2026-09-06 (AVCH-133):** *"We always build mobile first then out to desktop... it looks bad on mobile and that's 90% of our users."* This is an absolute invariant across all projects.
+
+### The Invariant
+- **Design, build, and REVIEW the phone render before desktop.** Base CSS rule is the phone viewport (375px); `min-width` / Tailwind `sm:`, `md:`, `lg:` enhance OUT.
+- ⛔ **NEVER write `max-width` media queries** that subtract from a desktop baseline. Subtractive desktop CSS almost always introduces responsive glitches on intermediate mobile screens.
+- **Budget expensive effects for mobile hardware:** Mobile GPUs are thermally constrained and memory-bandwidth bound. Expensive CSS/GPU effects (e.g. `backdrop-filter: blur()`, `mix-blend-mode`, complex SVG filters like `feTurbulence`, or multiple layered canvas passes) must take a reduced count and lower values in the mobile base rule, enhanced only at desktop breakpoints.
+- **Screenshot mobile first:** Always present the mobile render first when handing work back for review.
+- **Dual-Viewport Layout Verification:** A layout suite that measures only one viewport has a blind spot. Any automated spec or manual QA asserting geometry, overflow, or element positioning must run at **BOTH** a phone (e.g. 375x667) and a desktop viewport.
+
+### Real-World Lesson: The AVCH-133 Breakdown
+On AVCH-133 the investor surface (/about) rebuild shipped three severe regressions caught by the operator on device because E2E tests only ran at one viewport:
+1. **Header Chip Collision:** A `CONFIDENTIAL ACCESS` badge wrapped to two lines in the mobile header, crushing the site logo against the hamburger menu.
+2. **Text Clamp Overflow:** A headline styled with unconstrained `clamp(52px, ...)` broke awkwardly as "The Self- / Learning / Tutor System" edge-to-edge at 375px with zero horizontal margin.
+3. **GPU Thermal Collapse:** A background light field of seven full-viewport layers rendered with 38px blur and `mix-blend-mode: screen` while panels simultaneously executed `backdrop-filter: blur(20px)` — compounding the two most expensive operations a mobile GPU can execute.
+
+Every assertion in the single-viewport test suite stayed green. Testing dual viewports and designing mobile-first eliminates these regressions before delivery.
+
+---
+
+## 3. Universal Animation & Motion Law
 
 Great animation is unseen correctness. In our systems, animation is not decoration tacked on after layout; it is the physical feedback layer that connects user intention to state change.
 
@@ -185,3 +206,12 @@ Before completing any frontend story, chore, or UI refactor, verify against this
 - [ ] **Animation Duration Budget:** All UI transitions complete in $\le 300\text{ms}$.
 - [ ] **Interruptibility:** Gesture-driven components (sheets, drawers, sliders) update 1:1 with pointer events and hand off velocity smoothly on release.
 - [ ] **Accessibility:** All animations respect `@media (prefers-reduced-motion: reduce)` by falling back to gentle crossfades or static states.
+
+### Responsive & Mobile-First Quality
+- [ ] **Mobile-First Layout:** Base styles (`default`) target mobile viewports (375px–390px); progressive enhancements use `md:` / `lg:` breakpoints. Never design desktop first and patch mobile after.
+- [ ] **Zero Horizontal Overflow:** No horizontal scrollbar on mobile viewports. All text containers use `break-words` or `truncate` with visible limits.
+- [ ] **Adaptive Wrap & Stacking:** Horizontal chips, filter pills, and button groups wrap cleanly (`flex-wrap`) or switch to vertical stacks / touch carousels on narrow screens without collision or truncation.
+- [ ] **Touch Target Geometry:** All interactive touch targets are at least $44 \times 44\text{px}$ with adequate touch spacing (minimum 8px gap).
+- [ ] **Performance Budget on Mobile:** Heavy backdrop-blur filters (`backdrop-blur-xl`), massive gradients, or complex SVG overlays are simplified or disabled on low-power mobile devices.
+- [ ] **Dual-Viewport Verification:** Explicitly tested and verified at both mobile (375×667 / 390×844) and desktop (1280×800 / 1440×900) resolutions before sign-off.
+
