@@ -2993,6 +2993,13 @@ dropped the bookkeeping — leaving the lead to post *"PASS"* at a commit nobody
 that follows is an invented sha, not a blank one. The happy path is exactly where a deliverable gets
 folded into prose, which is why this is a check that fails rather than a line in a checklist.
 
+⚠️ **A step reported as failed has NOT necessarily failed — read it before you re-run it.** A child
+can do the entire job correctly and still answer in sentences instead of the structured shape the
+runner needs, and the runner will not guess a status from prose. So the failure now quotes the
+child's own words back to you, and the lane's rule is to read those and look at the worktree first:
+if the work is there and the tests are green, the step is **done and unverified**, not undone. A
+blind re-run pays a second time for work that already exists.
+
 **Done means green, and green means a script said so** — never the agent's own say-so. A red gate
 parks with a receipt for you rather than spawning a fix loop.
 

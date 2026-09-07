@@ -189,7 +189,7 @@ steps: **$0.158 naive against $0.059 layered — 63% cheaper**, and 82% once the
 
 ---
 
-## 7. The six failure modes, all of them silent
+## 7. The seven failure modes, all of them silent
 
 Every one of these was measured against the real CLI, and **not one produces an error**. That is why
 they are written down: none is guessable from reading the code.
@@ -202,6 +202,7 @@ they are written down: none is guessable from reading the code.
 | The child's transcript store is **unwritable**, so nothing can be forked | "No conversation found" — which reads as *forking does not work* | The runner points `CLAUDE_CONFIG_DIR` somewhere writable and seeds it |
 | The workspace is **untrusted**, so every fork reads **zero** cached tokens | Nothing at all. Runs succeed; only the bill changes | The runner sets the trust flag in its own config directory |
 | The `claude` on `PATH` is **older than the CLI you are typing in** — a launcher symlink that never moved after an upgrade | Nothing, until a child hits a permission prompt and there is nobody to answer it | Step 0.2 reads `claude --version` from `PATH`, not from this session, and refuses below 2.1.259 |
+| A child does the **whole job** and answers in sentences instead of the result shape | The step reads `failed`. The work is committed, the tests are green, and the run record says it did not happen | The failure now carries the child's own words verbatim, and the door says to read them and the worktree **before** retrying |
 
 ⓘ **Why the floor is 2.1.259, since the obvious answer is wrong.** It is not `--agents` or
 `--json-schema` — both are present on 2.1.258, so a floor justified by them collapses the moment
@@ -212,6 +213,20 @@ to answer it. `none` turns the same moment into an explicit deny the child repor
 result. Measured 2026-09-07: absent on 2.1.258, present on 2.1.263, and this machine's
 `~/.local/bin/claude` symlink was still pointing at 2.1.258 while the session running the check was
 2.1.263.
+
+⭐ **The last row is the only one on this page measured on a REAL story rather than a probe**, and it
+is the one that would have cost the most. On AVCH-138 the child re-encoded the asset, updated nine
+consumers, wrote two new tests, went 9/9 green, committed, pushed, and correctly **escalated a file
+deletion** instead of doing it — then answered in prose, and the runner recorded
+`no usable status in the reply: {'duration_api_ms': 1359765, …}`. Every question you would have
+asked was answered in the child's final message, and the machine printed a duration in milliseconds
+instead, because the prose arrives as a non-JSON string and the code fell back to the envelope.
+
+⛔ **The status stays `failed` and that is correct** — nothing may guess a status, or a silent no-op
+gets recorded as work. But *unreadable* and *unverified* are different problems, and only the second
+one was ever intended. **`failed` here means "done but unverified" at least as often as it means
+"nothing happened", and only a human reading it can tell which** — so a blind retry pays twice for
+work that already exists.
 
 ---
 

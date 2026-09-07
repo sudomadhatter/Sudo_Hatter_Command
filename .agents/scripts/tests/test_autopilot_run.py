@@ -150,6 +150,55 @@ with TempDir() as tmp:
                 "exists at" in out3 and "cwd" in out3, out3.strip()[:300])
 
 
+# ── PROSE ─────────────────────────────────────────────────────────────────────
+# From the FIRST REAL RUN (AVCH-138, 2026-09-07). The child did the whole job - the asset
+# re-encoded, 9 consumers updated, 9/9 e2e green including two tests it wrote, work committed
+# and pushed - and correctly escalated a file deletion instead of doing it. Then it answered in
+# sentences rather than the schema, and the runner reported the envelope's METADATA:
+#     no usable status in the reply: {'duration_api_ms': 1359765, 'stop_reason': 'end_turn', ...}
+# $5.82 spent and the one artifact explaining the run was discarded for a duration in ms, because
+# the prose lives in `result` as a NON-JSON string so `inner` went None and the code fell back to
+# the envelope. ⛔ The STATUS must not change - nothing may guess a status, or a silent no-op
+# reads as work. What must change is that the failure is readable.
+with TempDir() as tmp:
+    if c.block("PROSE - a failure carries what the child actually said"):
+        ws = workspace(tmp / "ws")
+        said = ("Branch pushed with the fix and passing evidence; budget nearly exhausted so I am "
+                "stopping. One thing needs your call: the orphaned 3MB PNG is still on disk - the "
+                "constitution requires asking before any delete.")
+
+        log = tmp / "a.jsonl"
+        stub = claude_stub(tmp / "bin1", log,
+                           {"result": said, "stop_reason": "end_turn",
+                            "duration_api_ms": 1359765, "total_cost_usd": 5.818,
+                            "session_id": "fe0d0248-58fc-409a-8786-a404068b24f0"})
+        rc, out = run("run", "--door", "/cicd-dev-story-tests", "--seat", "gnat",
+                      "--cwd", str(ws), "--key", "AVCH-138", "--stage", "1", "--no-post",
+                      env=env_for(tmp, stub, bindir="bin1"))
+
+        c.check("P1 an unstructured answer is still FAILED - no status is ever guessed",
+                rc == 1, f"rc={rc}: {out.strip()[:200]}")
+        c.check("P2 ...and the child's own words survive, verbatim",
+                "the constitution requires asking before any delete" in out, out.strip()[:400])
+        c.check("P3 ...and the metadata does NOT displace them",
+                "duration_api_ms" not in out, out.strip()[:400])
+        # The operational half: this failure means "done but unverified" at least as often as it
+        # means "nothing happened", and only the reader can tell which. A blind retry pays twice.
+        c.check("P4 ...and it warns that a blind retry pays twice",
+                "before retrying" in out and "may well have done the work" in out,
+                out.strip()[:400])
+
+        # P5 · ANTI-VACUITY. A properly structured reply must still parse to done, or P1 passes
+        # because nothing can ever succeed.
+        log2 = tmp / "b.jsonl"
+        stub2 = claude_stub(tmp / "bin2", log2, {"status": "done", "summary": "ok"})
+        rc2, out2 = run("run", "--door", "/cicd-dev-story-tests", "--seat", "gnat",
+                        "--cwd", str(ws), "--key", "AVCH-138", "--stage", "2", "--no-post",
+                        env=env_for(tmp, stub2, bindir="bin2"))
+        c.check("P5 anti-vacuity - a schema-shaped reply still succeeds",
+                rc2 == 0, f"rc={rc2}: {out2.strip()[:200]}")
+
+
 # ── EVIDENCE ──────────────────────────────────────────────────────────────────
 # Harvested from the retired v2 reference's war stories (row G). Theirs: on a CLEAN pass the
 # reviewer did all the judgment work, found nothing to fix, and dropped the mechanical

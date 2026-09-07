@@ -166,7 +166,7 @@ cannot stop.
 | `0` | `done` | Dispatch the next step |
 | `3` | `needs_human` | **Escalate** — see Step 2.5 |
 | `4` | `blocked` | Escalate. The child could not proceed and said why |
-| `1` | `failed` | The result did not parse or the child errored. Retry **once**, then escalate. Never retry a budget cut — that is a deliberate halt |
+| `1` | `failed` | The result could not be read, or the child errored. ⛔ **READ THE SUMMARY BEFORE RETRYING** — it carries the child's own words, and a child that did the whole job can still answer in prose instead of the schema. Check the worktree: if the work is there, the step is DONE and unverified, not undone. A blind retry pays twice. Retry **once** only when nothing was produced, then escalate. Never retry a budget cut — that is a deliberate halt |
 | `2` | the runner refused | A missing door, a bad review combination, or the run ceiling. Nothing was spent. Fix the call or stop |
 
 **Answering a child that asked a question.** The only `--resume` in a run is delivering an answer to

@@ -333,6 +333,15 @@ def parse_result(stdout: str) -> dict:
         return {"status": "failed", "summary": f"stdout was not an object: {stdout[:200]}"}
 
     inner = envelope.get("result")
+    # ⛔ KEEP THE PROSE. `--json-schema` SHAPES a reply and does not guarantee one, so a child
+    # that did everything right can still answer in sentences - measured on the first real run
+    # (AVCH-138): the whole job done, tests green, work pushed, a file-deletion correctly
+    # escalated, and the runner reported `{'duration_api_ms': 1359765, ...}` because the prose
+    # lives in `result` as a NON-JSON string, so `inner` went None and this fell back to the
+    # envelope. The single artifact that explained a $5.82 run was thrown away for a duration
+    # in milliseconds. The status below is still `failed` - nothing here may guess a status -
+    # but a failure nobody can read is a failure nobody can act on.
+    prose = inner.strip() if isinstance(inner, str) else ""
     if isinstance(inner, str):
         try:
             inner = json.loads(inner)
@@ -342,8 +351,12 @@ def parse_result(stdout: str) -> dict:
 
     status = result.get("status")
     if status not in BY_STATUS:
+        said = prose or str(result)[:200]
         return {"status": "failed",
-                "summary": f"no usable status in the reply: {str(result)[:200]}",
+                "summary": ("the child answered without a usable status, so this step CANNOT be "
+                            "recorded as done - but it may well have done the work. Read this "
+                            "and the worktree before retrying; a blind retry pays twice. What "
+                            "the child said, verbatim:\n\n" + said[:2000]),
                 "session_id": envelope.get("session_id"),
                 "total_cost_usd": envelope.get("total_cost_usd")}
     out = dict(result)
