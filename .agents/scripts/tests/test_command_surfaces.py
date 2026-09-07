@@ -4435,9 +4435,15 @@ def main() -> int:
         # cannot express it. Without this route the lead either refuses a legitimate ticket or
         # improvises a door — and improvising a door is precisely how the pointer architecture
         # (this lane owns no copy of any door) breaks.
-        c.check("AP6 the door carries a quick-fix route for a ticket with no story file",
-                "/cicd-quick-dev" in body and "quick-fix route" in body,
-                "a Task-shaped ticket has no route through this door")
+        # ⛔ Pin the dispatch ROW, not the door's name. The first cut of this check read
+        # `"/cicd-quick-dev" in body`, and the sweep killed it: deleting the table row left the
+        # prose two lines below still naming the door, so the case passed while the lead had
+        # nothing to launch. A route is a row — a door AND the seat that wears it.
+        route_rows = [ln for ln in body.splitlines()
+                      if ln.startswith("|") and "/cicd-quick-dev" in ln and "cheshire-cat" in ln]
+        c.check("AP6 the door carries a dispatchable quick-fix route row",
+                "quick-fix route" in body and len(route_rows) == 1,
+                f"table rows naming /cicd-quick-dev with its seat: {len(route_rows)}")
 
         # A6 · and WHY that route's own review cannot be the verdict. Every seat pins
         # `claude-tools` without `Task`, so a seated child runs the quick-dev gate inline and one
