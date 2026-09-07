@@ -169,7 +169,7 @@ that seat in Zoo. Three frontmatter keys pin the Claude side.
 
 | Seat | Role | Model | Effort | Why |
 |---|---|---|---|---|
-| The Gnat | read-only research | haiku | low | Looks things up and cites lines. Cheap on purpose — it is called often |
+| The Gnat | read-only research | sonnet | low | Looks things up and cites lines. **Low effort, not a small model** — its answer feeds a decision the lead builds on, so a mis-cited line becomes a wrong build nothing downstream can see |
 | White Rabbit | PM / planning | sonnet | medium | Writes the plan; does not build |
 | Caterpillar | design / front end | sonnet | medium | |
 | Cheshire Cat | the builder | sonnet | high | Does the work that has to be right |
@@ -181,7 +181,7 @@ can launch more children is an unbounded bill with no ledger row.
 
 ⛔ **Never leave a child unpinned.** An unpinned child inherits the 1M-context Opus and costs six to
 twenty times more; measured, a one-word answer cost **$0.157–$0.496** unpinned against **$0.024** on
-haiku.
+a small pinned model.
 
 **Why forking is worth caring about.** A child launched fresh rebuilds ~12,600 tokens of prompt; a
 child *forked* from a warm parent builds ~340 and reads the rest from cache. Measured over five
@@ -197,7 +197,7 @@ it spends anything. One word sets every model, every effort and both budgets.
 | | easy | medium | hard |
 |---|---|---|---|
 | the seats that write code | their own pins — Sonnet 5 | Opus 5 · high | Opus 5 · **xhigh** |
-| the Gnat — read-only lookups | Haiku 4.5 · low | **unchanged** | **unchanged** |
+| the Gnat — read-only lookups | Sonnet 5 · low | **unchanged** | **unchanged** |
 | the March Hare — the lead | Opus 5 · high | Opus 5 · high | **Fable 5.1 · high** |
 | the reviewer | Opus 5 | **Fable 5.1 · high** | **Fable 5.1 · high** |
 | budget: per child · per run | $6 · $25 | $12 · $60 | $20 · $120 |
@@ -213,10 +213,14 @@ Hare is the lead. It reads results and decides what happens next; it never autho
 review. So at `hard` the two *judgment* roles get the model best at judgment, while every seat that
 touches code is on Opus at extra-high — which the reviewer is not.
 
-**Why the Gnat never moves.** Its job is a read-only lookup that cites its line. That does not get
-harder because the ticket did, and paying extra-high reasoning to open a file and quote it back is
-the one place a difficulty dial over-applies. If a lookup ever needs judgment, the charter already
-says escalate rather than guess.
+**Why the Gnat never moves — and why it is not the cheapest model either.** Its job is a read-only
+lookup that cites its line, and that does not get harder because the ticket did: paying extra-high
+reasoning to open a file and quote it back is where a difficulty dial over-applies. But it runs
+**Sonnet 5 at low effort, not a small model** (operator ruling), because the thing being bought is
+RELIABILITY, not thinking time. The Gnat's answer feeds a question the lead then builds on, so a
+mis-read line becomes a wrong build decision that nothing downstream can see — and a cheap wrong
+answer that gets trusted costs more than the saving. If a lookup ever needs judgment rather than
+accuracy, the charter already says escalate rather than guess.
 
 **Why each tier carries its own budget.** Otherwise the ceiling silently becomes the tier: `hard` is
 Opus at extra-high across six children, and an `easy` ceiling would halt it partway and report

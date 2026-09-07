@@ -4,7 +4,7 @@ platforms: [zoo]
 mode-slug: ask
 mode-name: "🦟🔍 The Gnat — LIBRARIAN"
 mode-groups: [read]
-claude-model: claude-haiku-4-5-20251001
+claude-model: claude-sonnet-5
 claude-effort: low
 claude-tools: [Read, Grep, Glob, WebSearch, WebFetch]
 ---

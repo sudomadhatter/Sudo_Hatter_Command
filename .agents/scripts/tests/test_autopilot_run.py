@@ -191,8 +191,8 @@ with TempDir() as tmp:
         # over-applied. If a lookup ever needs judgment the charter says escalate, not upgrade.
         for tier, n in (("medium", "d"), ("hard", "e")):
             g = launch("--tier", tier, seat="gnat", n=n)
-            c.check(f"T4 the Gnat is exempt at {tier} - still Haiku, still low",
-                    _pin(g, "--model") == "claude-haiku-4-5-20251001"
+            c.check(f"T4 the Gnat is exempt at {tier} - still Sonnet 5, still low",
+                    _pin(g, "--model") == "claude-sonnet-5"
                     and _pin(g, "--effort") == "low", " ".join(g)[:200])
 
         hare = launch("--tier", "hard", seat="march-hare", n="f")
@@ -533,7 +533,7 @@ if c.block("DRIFT - the runner carries no door, rule or seat text"):
 if c.block("FLAGS - never bare, never bypass, and stdin is closed"):
     seat = ar.render_seat(CENTRE / ".agents" / "commands" / "smh-team-gnat.md")
     argv = ar.build_argv(claude="claude", prompt="/cicd-dev-story-tests AGY 14.2",
-                         seat=seat, seat_name="gnat", model="claude-haiku-4-5-20251001",
+                         seat=seat, seat_name="gnat", model="claude-sonnet-5",
                          session_id="11111111-1111-1111-1111-111111111111",
                          fork_of=None, budget_usd=8.0, effort=None)
     flat = " ".join(argv)
@@ -565,7 +565,7 @@ if c.block("FLAGS - never bare, never bypass, and stdin is closed"):
 if c.block("FLAGS - two builds of one seat are byte-identical"):
     seat = ar.render_seat(CENTRE / ".agents" / "commands" / "smh-team-gnat.md")
     kw = dict(claude="claude", prompt="/cicd-dev-story-tests AGY 14.2", seat=seat,
-              seat_name="gnat", model="claude-haiku-4-5-20251001",
+              seat_name="gnat", model="claude-sonnet-5",
               session_id="11111111-1111-1111-1111-111111111111",
               fork_of=None, budget_usd=8.0, effort=None)
     a, b = ar.build_argv(**kw), ar.build_argv(**kw)
@@ -580,7 +580,7 @@ if c.block("FLAGS - two builds of one seat are byte-identical"):
 if c.block("FORK - a fork re-passes the seat (spike finding 1)"):
     seat = ar.render_seat(CENTRE / ".agents" / "commands" / "smh-team-gnat.md")
     argv = ar.build_argv(claude="claude", prompt="/cicd-dev-story-tests AGY 14.2",
-                         seat=seat, seat_name="gnat", model="claude-haiku-4-5-20251001",
+                         seat=seat, seat_name="gnat", model="claude-sonnet-5",
                          session_id=None, fork_of="parent-pack-id",
                          budget_usd=8.0, effort=None)
     flat = " ".join(argv)
