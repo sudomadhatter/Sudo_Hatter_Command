@@ -110,6 +110,7 @@ EXPECTED = {
     "jira_integration_guide.md",
     "git_walkthrough_settings.md",
     "autopilot_bmad_dev_loop.md",
+    "autopilot_SOP.md",                  # SCC-430 - the v3 autopilot lane, its charter and its diagrams
     "sentry_error_response_team.md",
     "file_folder_structure+maintaining.md",
     "tea_testing_guide.md",

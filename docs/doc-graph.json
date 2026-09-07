@@ -4,15 +4,15 @@
     "docs"
   ],
   "counts": {
-    "files": 380,
+    "files": 381,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 763,
+    "edges": 771,
     "external": 35,
-    "ambiguous": 171,
-    "dangling": 291,
+    "ambiguous": 172,
+    "dangling": 287,
     "broken_paths": 61,
-    "unresolved_names": 230,
+    "unresolved_names": 226,
     "unresolvable": 9
   },
   "nodes": [
@@ -309,7 +309,7 @@
     {
       "path": ".agents/commands/cicd-autopilot-claude.md",
       "in": 2,
-      "out": 4
+      "out": 9
     },
     {
       "path": ".agents/commands/cicd-autopilot-deepseek4.md",
@@ -433,7 +433,7 @@
     },
     {
       "path": ".agents/commands/cicd-self-audit.md",
-      "in": 5,
+      "in": 3,
       "out": 8
     },
     {
@@ -728,7 +728,7 @@
     },
     {
       "path": ".agents/rules/000-PLAN-FIRST-GATE.md",
-      "in": 18,
+      "in": 19,
       "out": 2
     },
     {
@@ -748,12 +748,12 @@
     },
     {
       "path": ".agents/rules/artifacts-always-first.md",
-      "in": 38,
+      "in": 39,
       "out": 7
     },
     {
       "path": ".agents/rules/code-standards.md",
-      "in": 16,
+      "in": 17,
       "out": 1
     },
     {
@@ -773,7 +773,7 @@
     },
     {
       "path": ".agents/rules/constitution.md",
-      "in": 32,
+      "in": 33,
       "out": 1
     },
     {
@@ -863,7 +863,7 @@
     },
     {
       "path": ".agents/rules/worktree-per-story.md",
-      "in": 31,
+      "in": 30,
       "out": 3
     },
     {
@@ -1749,7 +1749,12 @@
     {
       "path": "docs/_scc_sops_prds/INDEX.md",
       "in": 3,
-      "out": 20
+      "out": 21
+    },
+    {
+      "path": "docs/_scc_sops_prds/autopilot_SOP.md",
+      "in": 6,
+      "out": 1
     },
     {
       "path": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
@@ -1818,13 +1823,13 @@
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "in": 31,
+      "in": 32,
       "out": 67
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 20
+      "out": 21
     },
     {
       "path": "docs/code-review-graph.md",
@@ -2108,6 +2113,31 @@
     {
       "from": ".agents/commands/adviser-board/minds/ury.md",
       "to": ".agents/commands/adviser-board/THIRD-SIDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-autopilot-claude.md",
+      "to": "docs/_scc_sops_prds/autopilot_SOP.md",
+      "kind": "link"
+    },
+    {
+      "from": ".agents/commands/cicd-autopilot-claude.md",
+      "to": ".agents/rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-autopilot-claude.md",
+      "to": ".agents/rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-autopilot-claude.md",
+      "to": ".agents/rules/code-standards.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-autopilot-claude.md",
+      "to": ".agents/rules/constitution.md",
       "kind": "ref"
     },
     {
@@ -4692,6 +4722,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/INDEX.md",
+      "to": "docs/_scc_sops_prds/autopilot_SOP.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/INDEX.md",
       "to": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
       "kind": "link"
     },
@@ -4768,6 +4803,11 @@
     {
       "from": "docs/_scc_sops_prds/INDEX.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/autopilot_SOP.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "kind": "link"
     },
     {
@@ -4957,8 +4997,8 @@
     },
     {
       "from": "docs/_scc_sops_prds/operator_workflows_quickref.md",
-      "to": ".agents/commands/cicd-self-audit.md",
-      "kind": "ref"
+      "to": "docs/_scc_sops_prds/autopilot_SOP.md",
+      "kind": "link"
     },
     {
       "from": "docs/_scc_sops_prds/operator_workflows_quickref.md",
@@ -5207,13 +5247,13 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "to": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
+      "to": "docs/_scc_sops_prds/autopilot_SOP.md",
       "kind": "link"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "to": ".agents/commands/cicd-self-audit.md",
-      "kind": "ref"
+      "to": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
+      "kind": "link"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
@@ -5319,6 +5359,11 @@
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": ".agents/rules/artifacts-always-first.md",
       "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": "docs/_scc_sops_prds/autopilot_SOP.md",
+      "kind": "link"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
@@ -5760,22 +5805,6 @@
     },
     {
       "from": ".agents/commands/INDEX.md",
-      "target": "walkthrough.md"
-    },
-    {
-      "from": ".agents/commands/cicd-autopilot-claude.md",
-      "target": "_RUN-STATUS.md"
-    },
-    {
-      "from": ".agents/commands/cicd-autopilot-claude.md",
-      "target": "decisions-log.md"
-    },
-    {
-      "from": ".agents/commands/cicd-autopilot-claude.md",
-      "target": "implementation_plan.md"
-    },
-    {
-      "from": ".agents/commands/cicd-autopilot-claude.md",
       "target": "walkthrough.md"
     },
     {
@@ -7232,6 +7261,24 @@
         ".agents/AGENTS.md",
         ".agents/skills/react-best-practices/AGENTS.md",
         "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/cicd-autopilot-claude.md",
+      "target": "PROJECT_ROOT/.agents/INDEX.md",
+      "candidates": [
+        ".agents/INDEX.md",
+        ".agents/bmad",
+        ".agents/commands/INDEX.md",
+        ".agents/hooks/INDEX.md",
+        ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
+        ".agents/rules/INDEX.md",
+        ".agents/scripts/INDEX.md",
+        ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
+        "docs/_scc_sops_prds/INDEX.md",
+        "docs/migrations/INDEX.md"
       ]
     },
     {

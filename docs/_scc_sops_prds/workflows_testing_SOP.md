@@ -2924,84 +2924,57 @@ automated pipeline).
 
 ## 15. The autopilot lane
 
-*The robot running the same loop you'd run by hand — and how it picks back up if it dies halfway.*
+*The robot running the same doors you would type by hand — one story, one command, and it stops
+where it needs you.*
 
-▶ **Diagram:** [`/cicd-autopilot-claude` in the command atlas](#cicd-autopilot-claude-and-its-lanes) — every step, stop and refusal, checked against the live command.
+▶ **The manual for this lane is its own page: [the Autopilot SOP](autopilot_SOP.md)** — the layers,
+the charter, the escalation round trip, the seat pins and the failure modes, with the diagrams. It is
+also where the autopilot is kept current; this section is the short version.
 
 | Command | Runs on | Notes |
 | --- | --- | --- |
-| `/cicd-autopilot-claude` | the `claude` CLI | The canonical robot loop: Plan → Audit → Build → Review — four stages in **three** sessions (Build resumes the Dev chat on purpose). |
-| `/cicd-autopilot-opencode` | the `opencode` binary | Port of the same loop. |
-| `/cicd-autopilot-deepseek4` | `claude` CLI plus a flag | Runs the token-heavy building half on a cheaper model, keeps review on Claude. A *lane* of `/cicd-autopilot-claude`, not a third engine. |
+| `/cicd-autopilot-claude` | the `claude` CLI | The lead session. It drives ONE story through the existing doors, one headless child per step. |
+| `/cicd-autopilot-opencode` | the `opencode` binary | The previous engine, kept while the new lane is proved on a real story. |
+| `/cicd-autopilot-deepseek4` | `claude` CLI plus a flag | The previous engine's cheap-model lane. Its cost lever is now the runner's own per-seat model pin. |
 
-The two QA stages run in **fresh sessions** so neither inherits the builder's assumptions — the same
-reason ③ hunts blind in the human lane; the audit stage keeps the Dev model (a fresh *session*, not a
-different model), and Build resumes the Dev chat so the plan is still in its head. **Done means
-green (SCC-134, the spec's §6a):** a stage's gate is a script's exit code, never the agent's own
-say-so; retries are engine-owned and bounded; a red gate parks with a receipt for you rather than
-spawning a fix loop — that loop was *dropped, not deferred*, and reviving it would be a
-design reversal, not a tuning knob.
+**How it works, in five lines.** You type one command. A lead session calls a small script once per
+workflow step; the script launches a fresh headless Claude wearing one Wonderland seat, running one
+of **your existing doors by name**. The child answers with a short structured result, and that result
+lands on the Jira ticket as a comment. The lead reads one paragraph per step and decides what happens
+next, inside a charter you approved.
 
-**Stage 4 runs the house review engine (SCC-126).** The robot's reviewer carries no review
-of its own: `/cicd-code-review-AP` resolves the inputs — the diff alone first, then one batched
-grounding pull — and hands them to `.agents/skills/code-review-engine/`, which runs its lenses in
-parallel. **It also re-derives the blast radius against `origin/$EPIC`
-before Ingest 1**, and echoes the branch and sha `rev-parse` returned rather than the ones the
-launch context implied — the same two additions the human lane got, ported because the hazard is
-*worse* unattended, not smaller: a sibling story lands on the epic branch and nobody is watching.
-It costs no read budget (git output is not an ingest), and the twin's ban on a full-repo sweep is
-about **reads**. The acceptance audit did **not** port as a step — the twin already runs that pass
-through the engine's Acceptance Auditor — only its two verdict-binding clauses did. Underneath, three things are worth knowing, and the first is the
-one that actually moves the bill:
+**It owns no copy of your workflow.** The autopilot passes door *names*, never door *text*. Edit a
+door, a rule or a seat in the morning and the robot runs the new one tonight — no sync step, nothing
+to regenerate, nothing to forget. That is the whole reason this lane can be trusted to stay in step
+with the way you actually work.
 
-- **Stage 4 is an orchestrator plus five lenses.** Five independent lenses,
-  three of which are primed with the grounding pull — so the grounding material is read several
-  times over rather than once. That is the real cost, and it is the price of the
-  independence: lenses that cannot see each other cannot inherit each other's blind spots.
-- **A fifth lens hunts literal correctness** — for every changed line it opens the real definition of
-  each symbol that line leans on and checks the assumption actually holds. The other four lenses are
-  high-altitude by design and glide over exactly this, which is where most missed defects live.
-- **That fifth lens is the only one whose cost is unbounded by nature, so overnight it runs
-  `lens_budget: capped`**: diff-scoped, 20 changed files, patch material spilled to a file past
-  ~9,000 characters, and no top-up. Typed by hand it runs `standard` — the same caps, plus one
-  top-up it has to earn by naming the file it wants and why. ⚠️ **`lens_budget` is not
-  `review_mode`**: an autopilot review is normally `review_mode: full` *and* `lens_budget: capped`
-  at once, and reading the first as permission to relax the second is the expensive mistake. **The
-  caps live once, inside the engine's own step-01** — a caller names its budget and never restates
-  the numbers, because a cap each caller repeats is a cap that drifts.
+**The charter is what it may pass without you**, and it is scoped to one story at a time — your
+launch word does not travel to the next one. It passes the mid-story `continue` and questions it can
+answer from the repo; it escalates a `NO-GO` audit, any new dependency, schema, security rule, CI or
+environment change, any file deletion, and a second failed review. The full table is on
+[the Autopilot SOP](autopilot_SOP.md#4-the-charter--what-the-lead-may-pass-without-you).
 
-**It's resumable.** Re-run the launcher and it works out which stages finished by looking for their
-*sections inside* those two documents, not for the files themselves. A half-written plan doesn't
-count as a finished plan.
+**When it needs you it does two things**, both of them: it asks in the chat with real options and a
+recommendation, and it posts a ticket comment whose first line reads `Needs Mr. Hatter`. Your phone
+reads the ticket, so the second one is the one that actually reaches you.
 
-**The robot works in its own copy of the repo.** Every run opens the story's own worktree first, so
-the robot is never typing into the same files as you or another lane. It looks like
-`.claude/worktrees/<story>/`, on a branch named `claude/<TICKET>-<story>`.
+**Done means green, and green means a script said so** — never the agent's own say-so. A red gate
+parks with a receipt for you rather than spawning a fix loop.
 
-**You launch it from the epic branch.** The robot cuts the story's branch from whatever the project
-has checked out, and that has to be the epic branch — so switch to it first, or pass
-`-EpicBranch epic/<KEY>-<slug>`. It refuses to start rather than guess, because a story branched off
-`main` can't be landed.
+**The budget has two halves and only one of them is real.** The per-child cap is a suggestion the CLI
+does not honour precisely; the run ceiling is enforced by the runner itself, off its own ledger,
+before each launch. Set both, and expect the second to be the one that stops a runaway.
 
-**When it's green it commits, files the ticket, and stops.** It saves the work on the story branch
-with an explicit list of files and a Jira-keyed message, moves the ticket to **In Review**, and writes
-the Dev Record onto it. It still **never pushes**, never touches `main`, and never marks anything
-`done`. Your end of it: read the walkthrough, the plan, and the ticket — then run
+**It works in its own copy of the repo** — the story's own worktree at `.claude/worktrees/<story>/`,
+on a `claude/<TICKET>-<story>` branch — so it is never typing into the same files as you or another
+lane. Launch from the epic branch; it refuses to start rather than guess, because a story branched
+off `main` cannot be landed.
+
+**⛔ It cannot land anything.** Not the epic branch, not `main`. There is no verb for it in the
+runner, so this is not a rule the robot is asked to keep. When the story is review-ready it flips the
+story to `review`, moves the ticket to In Review with its Dev Record, sends one line to your phone,
+and stops. Your end of it: read the walkthrough, the plan and the ticket — then run
 `/cicd-close-story-merge-tree`.
-
-> ✅ **Proven end to end.** The v2 engine has run a full four-stage pass on Story 14.2 (clean
-> APPROVE, backend 1723 / frontend 270 passed, about $9). It is still Windows-hosted; on a new
-> engine or a new project, start with `-DryRun`, then a small story with `-MaxStage 2`.
-
-The engines live **per-project** and have drifted between projects — a behavior fix has to land in
-each one. The claude and opencode engines are **twins by contract**: the worktree, commit and ticket
-blocks are kept identical on purpose, so a `diff` shows drift straight away.
-
-> The launchers are `/cicd-autopilot-claude`, `/cicd-autopilot-opencode` and
-> `/cicd-autopilot-deepseek4` — hyphens, per the command naming law. **There is no
-> separate mobile engine**: from your phone you drive the
-> desktop engines through Remote Control, which is strictly better — same code, same gates, one thing
-> to fix when the loop changes.
 
 > ⓘ **⛔ A green check can be telling you the truth about the wrong branch.** When
 > several lanes run at once, the checking scripts work out *which* repo and branch to look at by
@@ -3161,7 +3134,7 @@ it, and where the longer explanation lives.*
 | **Fast lane** | [`/cicd-quick-dev`](#cicd-quick-dev) |
 | **Task lane** | [`/smh-quick-fix`](#smh-quick-fix) · [`/smh-quick-dev`](#smh-quick-dev) · [`/smh-self-audit`](#smh-self-audit) · [`/smh-code-review`](#smh-code-review) |
 | **Landing & shipping** | [`/cicd-close-story-merge-tree`](#cicd-close-story-merge-tree) · [`/cicd-update-sprint-memory`](#cicd-update-sprint-memory) · [`/cicd-merge-epic-workingtrees`](#cicd-merge-epic-workingtrees) · [`/cicd-prune-worktree`](#cicd-prune-worktree) · [`/cicd-e2e`](#cicd-e2e) · [`/cicd-push-e2e`](#cicd-push-e2e) · [`/smh-close-task-merge-tree`](#smh-close-task-merge-tree) · [`/smh-merge-multiple-workingtrees`](#smh-merge-multiple-workingtrees) |
-| **Operations** | [`/cicd-park` + `/cicd-resume`](#cicd-park-and-cicd-resume) · [`/cicd-prune-context`](#cicd-prune-context) · [`/cicd-autopilot-claude` (and its lanes)](#cicd-autopilot-claude-and-its-lanes) · [`/cicd-live-testing-team`](#cicd-live-testing-team) · [`/cicd-mobile-error-team`](#cicd-mobile-error-team) |
+| **Operations** | [`/cicd-park` + `/cicd-resume`](#cicd-park-and-cicd-resume) · [`/cicd-prune-context`](#cicd-prune-context) · [`/cicd-autopilot-claude`](#cicd-autopilot-claude) · [`/cicd-live-testing-team`](#cicd-live-testing-team) · [`/cicd-mobile-error-team`](#cicd-mobile-error-team) |
 | **Toolkit upkeep** | [`/smh-sync-agents`](#smh-sync-agents) · [`/smh-sync-vscode`](#smh-sync-vscode) · [`/smh-memory-audit`](#smh-memory-audit) · [`/smh-update-maps-indexes`](#smh-update-maps-indexes) |
 
 ### Session and planning
@@ -3962,37 +3935,32 @@ and by `/cicd-merge-epic-workingtrees` Step 5 (automatically), or you.*
 | `R` | report the token line compacted · deleted · archived · STILL-OWED | (terminal / end) |
 
 
-#### /cicd-autopilot-claude (and its lanes)
+#### /cicd-autopilot-claude
 
-*The robot running the ①②③ loop for one story across four stages and three sessions: Dev plans
-(Stage 1) and later **resumes the same chat** to implement (Stage 3); QA audits the plan in a fresh
-session (Stage 2, same model) and reviews + fixes the finished code in another (Stage 4, the shared
-review engine). Done means a script's exit code was green — never the agent's say-so. Explained in
-[§15](#15-the-autopilot-lane). Lanes: `/cicd-autopilot-opencode` (opencode engine),
-`/cicd-autopilot-deepseek4` (cheaper Dev model, same QA).*
+*The lead session that walks ONE story through the **existing** doors, one fresh headless child per
+step, each child wearing one Wonderland seat. It passes door NAMES, never door text, so it owns no
+copy of your workflow. Every step lands on the ticket as a comment; escalations land on your phone.
+It parks at review-ready and cannot land anything. Explained in [§15](#15-the-autopilot-lane); the
+full manual, with the charter and the failure modes, is [the Autopilot SOP](autopilot_SOP.md).*
 
-> **Stage 2's twin inherits the phases rather than copying them.** `/cicd-self-audit-AP` names no
-> phases of its own — it runs *"the pre-dev adversarial audit defined in `@.agents/commands/`*
-> `cicd-self-audit.md`", overriding only its I/O, its lane boundaries and the blocker token. So the
-> cross-repo **port-checklist** paragraph added to the primary's Phase 1 (SCC-176) reaches the
-> autopilot lane through that reference, and was deliberately **not** copied into the twin: the AP
-> stamp exists to stop exactly that kind of second copy from drifting.
+> **Read the exit code, not the prose.** The runner answers `0` done · `3` needs you · `4` blocked ·
+> `1` failed (retry once, then escalate) · `2` refused before spending anything. A budget cut is a
+> deliberate halt and is never retried.
 
 | Stage / Step | Details / Action | Next Step / Transition |
 |---|---|---|
-| `L` | launch from the EPIC branch else it refuses to start | (terminal / end) |
-| `W` | open the story's own worktree claude/TICKET-story | → 1 · Plan — Dev session writes the plan |
-| `S1` | 1 · Plan — Dev session writes the plan | → 2 · Audit the plan — fresh QA session same model, no inherited assumptions appends INTO the plan |
-| `S2` | 2 · Audit the plan — fresh QA session same model, no inherited assumptions appends INTO the plan | → 3 · Build — RESUMES the Dev session leaves the walkthrough |
-| `S3` | 3 · Build — RESUMES the Dev session leaves the walkthrough | → baseline snapshot of the suite before any code |
-| `BASE` | baseline snapshot of the suite before any code | → 4 · Review + fix — fresh QA session /cicd-code-review-AP → the shared engine, capped budget appends INTO the walkthrough |
-| `S4` | 4 · Review + fix — fresh QA session /cicd-code-review-AP → the shared engine, capped budget appends INTO the walkthrough | → the orchestrator's OWN suite run green vs the baseline? |
-| `GATE` | the orchestrator's OWN suite run green vs the baseline? | **regression this run introduced** → TESTS RED — parks with a receipt no auto-fix loop, by design<br>**green, but no ## Code Review written** → REVIEW INCOMPLETE — story NOT flipped<br>**green + review present** → commit its own branch, explicit paths story → review · ticket → In Review · Dev Record |
-| `RED` | TESTS RED — parks with a receipt no auto-fix loop, by design | (terminal / end) |
-| `INC` | REVIEW INCOMPLETE — story NOT flipped | (terminal / end) |
-| `OK` | commit its own branch, explicit paths story → review · ticket → In Review · Dev Record | → `YOU` |
-| `STOPS` | parks for you on: PAUSED · CRASHED · COST CEILING · COMMIT REJECTED retries engine-owned, bounded · resume by (stage, sha) | (terminal / end) |
-
+| `L` | Step 0 - bind the project: CLI version, story ready-for-dev, epic branch not behind main | -> open the story's worktree |
+| `W` | open the story's worktree - one story, one worktree, one lock | -> child 1 |
+| `C1` | child 1 - WHITE RABBIT plans, returns the plan path | -> child 2 |
+| `C2` | child 2 - QUEEN OF HEARTS audits that plan in a fresh session | -> the audit verdict |
+| `V` | audit verdict | **NO-GO** -> ESCALATE, the plan gate re-arms<br>**GO** -> child 3 |
+| `C3` | child 3 - CHESHIRE CAT builds against the audited plan | -> did the child ask a question? |
+| `Q` | did the child ask a question? | **answerable from the repo** -> a GNAT child cites the line, then resumes child 3 (the only resume in a run)<br>**it would need a GUESS** -> ESCALATE<br>**no** -> child 4 |
+| `C4` | child 4 - THE REVIEWER: no seat, reviewing model, a session id never used before | -> the review verdict |
+| `R` | review verdict | **PASS** -> park<br>**CONCERNS or FAIL** -> child 5, one fix cycle in the lane, then child 6, a fresh reviewer at the new sha |
+| `R2` | the second verdict | **PASS** -> park<br>**anything else** -> ESCALATE |
+| `PARK` | story to review, ticket to In Review with its Dev Record, one line to your phone | -> you |
+| `ESC` | ESCALATE - the ticket leads with `Needs Mr. Hatter`, and the lead waits | (terminal / end) |
 
 #### /cicd-live-testing-team
 

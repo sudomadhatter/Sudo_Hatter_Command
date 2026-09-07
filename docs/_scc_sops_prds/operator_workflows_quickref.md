@@ -97,7 +97,7 @@ flowchart TD
     QD["/cicd-quick-dev\nsmall, low-risk project work\nnever closes out"] -.->|"row → review"| CLOSE
     QD -.->|"ejects on risk"| ONE
     ADV["/smh-adviser-board\nhistorical minds in one-mind filters"] -.->|"seeds ideation/plan"| KICK
-    AP["/cicd-autopilot-claude + 2 lanes\nthe robot runs ①②③ for you"] -.->|"alternate lane for ①②③"| TWO
+    AP["/cicd-autopilot-claude\nthe robot runs ①②③ for you"] -.->|"alternate lane for ①②③"| TWO
     PT["/smh-plan-task\nplan a whole Task, subtasks and all\nONE approval stop"] --> SLABEL["/smh-label-tasks\nwhich subtasks run side by side"]
     SLABEL --> TASK["/smh-quick-dev → /smh-code-review\nwork on the SYSTEM: commands, rules, docs"]
     QF["/smh-quick-fix\nthe LIGHTWEIGHT lane: a guide, a reference,\na source-control tidy — nothing that can break\nno plan, no approval, no review"] --> TASKCLOSE
@@ -419,7 +419,7 @@ flowchart LR
     MEW --> CWT
     MEW -.->|"if promoting"| E2E
     PE --> E2E
-    AP["/cicd-autopilot-claude\nStage 4 = /cicd-code-review-AP"] --> CRE
+    AP["/cicd-autopilot-claude\nits review child runs the real /cicd-code-review"] --> CRE
 ```
 
 
@@ -461,7 +461,7 @@ it, and where the longer explanation lives.*
 | **Fast lane** | [`/cicd-quick-dev`](#cicd-quick-dev) |
 | **Task lane** | [`/smh-quick-fix`](#smh-quick-fix) · [`/smh-quick-dev`](#smh-quick-dev) · [`/smh-self-audit`](#smh-self-audit) · [`/smh-code-review`](#smh-code-review) |
 | **Landing & shipping** | [`/cicd-close-story-merge-tree`](#cicd-close-story-merge-tree) · [`/cicd-update-sprint-memory`](#cicd-update-sprint-memory) · [`/cicd-merge-epic-workingtrees`](#cicd-merge-epic-workingtrees) · [`/cicd-prune-worktree`](#cicd-prune-worktree) · [`/cicd-e2e`](#cicd-e2e) · [`/cicd-push-e2e`](#cicd-push-e2e) · [`/smh-close-task-merge-tree`](#smh-close-task-merge-tree) · [`/smh-merge-multiple-workingtrees`](#smh-merge-multiple-workingtrees) |
-| **Operations** | [`/cicd-park` + `/cicd-resume`](#cicd-park-and-cicd-resume) · [`/cicd-prune-context`](#cicd-prune-context) · [`/cicd-autopilot-claude` (and its lanes)](#cicd-autopilot-claude-and-its-lanes) · [`/cicd-live-testing-team`](#cicd-live-testing-team) · [`/cicd-mobile-error-team`](#cicd-mobile-error-team) |
+| **Operations** | [`/cicd-park` + `/cicd-resume`](#cicd-park-and-cicd-resume) · [`/cicd-prune-context`](#cicd-prune-context) · [`/cicd-autopilot-claude`](#cicd-autopilot-claude) · [`/cicd-live-testing-team`](#cicd-live-testing-team) · [`/cicd-mobile-error-team`](#cicd-mobile-error-team) |
 | **Toolkit upkeep** | [`/smh-sync-agents`](#smh-sync-agents) · [`/smh-sync-vscode`](#smh-sync-vscode) · [`/smh-memory-audit`](#smh-memory-audit) · [`/smh-update-maps-indexes`](#smh-update-maps-indexes) |
 
 ### Session and planning
@@ -736,7 +736,7 @@ flowchart TD
 #### code-review-engine (the shared reviewer)
 
 *A skill, not a command — you never type it. It is the one reviewer behind ③, `/smh-code-review`
-and the autopilot's Stage 4: five independent lenses in parallel, a verify wave, a triage that
+and the autopilot's review child: five independent lenses in parallel, a verify wave, a triage that
 decides what is actually worth doing, and a record. It never verdicts, never writes the board, never
 stops to ask; decisions come back as findings. Explained in [§6](#6-the-story-lane) (the
 "found ≠ owed" aside) and [§15](#15-the-autopilot-lane).*
@@ -1297,36 +1297,39 @@ flowchart LR
     A --> R["report the token line\ncompacted · deleted · archived · STILL-OWED"]
 ```
 
-#### /cicd-autopilot-claude (and its lanes)
+#### /cicd-autopilot-claude
 
-*The robot running the ①②③ loop for one story across four stages and three sessions: Dev plans
-(Stage 1) and later **resumes the same chat** to implement (Stage 3); QA audits the plan in a fresh
-session (Stage 2, same model) and reviews + fixes the finished code in another (Stage 4, the shared
-review engine). Done means a script's exit code was green — never the agent's say-so. Explained in
-[§15](#15-the-autopilot-lane). Lanes: `/cicd-autopilot-opencode` (opencode engine),
-`/cicd-autopilot-deepseek4` (cheaper Dev model, same QA).*
+*The lead session that walks ONE story through the **existing** doors, one fresh headless child per
+step, each child wearing one Wonderland seat. It passes door NAMES, never door text, so it owns no
+copy of your workflow. Every step lands on the ticket as a comment; escalations land on your phone.
+It parks at review-ready and cannot land anything. Explained in [§15](#15-the-autopilot-lane); the
+full manual, with the charter and the failure modes, is [the Autopilot SOP](autopilot_SOP.md).*
 
-> **Stage 2's twin inherits the phases rather than copying them.** `/cicd-self-audit-AP` names no
-> phases of its own — it runs *"the pre-dev adversarial audit defined in `@.agents/commands/`*
-> `cicd-self-audit.md`", overriding only its I/O, its lane boundaries and the blocker token. So the
-> cross-repo **port-checklist** paragraph added to the primary's Phase 1 (SCC-176) reaches the
-> autopilot lane through that reference, and was deliberately **not** copied into the twin: the AP
-> stamp exists to stop exactly that kind of second copy from drifting.
+> **Read the exit code, not the prose.** The runner answers `0` done · `3` needs you · `4` blocked ·
+> `1` failed (retry once, then escalate) · `2` refused before spending anything. A budget cut is a
+> deliberate halt and is never retried.
 
 ```mermaid
 flowchart TD
-    L["launch from the EPIC branch\nelse it refuses to start"] --> W["open the story's own worktree\nclaude/TICKET-story"]
-    W --> S1["1 · Plan — Dev session\nwrites the plan"]
-    S1 --> S2["2 · Audit the plan — fresh QA session\nsame model, no inherited assumptions\nappends INTO the plan"]
-    S2 --> S3["3 · Build — RESUMES the Dev session\nleaves the walkthrough"]
-    S3 --> BASE["baseline snapshot of the suite\nbefore any code"]
-    BASE --> S4["4 · Review + fix — fresh QA session\n/cicd-code-review-AP → the shared engine, capped budget\nappends INTO the walkthrough"]
-    S4 --> GATE{"the orchestrator's OWN suite run\ngreen vs the baseline?"}
-    GATE -- "regression this run introduced" --> RED["TESTS RED — parks with a receipt\nno auto-fix loop, by design"]
-    GATE -- "green, but no ## Code Review written" --> INC["REVIEW INCOMPLETE — story NOT flipped"]
-    GATE -- "green + review present" --> OK["commit its own branch, explicit paths\nstory → review · ticket → In Review · Dev Record"]
-    OK --> YOU(["you: read the plan, the walkthrough, the ticket\nthen /cicd-close-story-merge-tree"])
-    STOPS["parks for you on:\nPAUSED · CRASHED · COST CEILING · COMMIT REJECTED\nretries engine-owned, bounded · resume by (stage, sha)"] -.-> S1
+    L["Step 0 - bind the project\nCLI version, story ready-for-dev,\nepic branch not behind main"] --> W["open the story's worktree\none story, one worktree, one lock"]
+    W --> C1["child 1 - WHITE RABBIT\nplans, returns the plan path"]
+    C1 --> C2["child 2 - QUEEN OF HEARTS\naudits that plan, fresh session"]
+    C2 --> V{"audit verdict"}
+    V -- "NO-GO" --> ESC["ESCALATE - the plan gate re-arms"]
+    V -- "GO" --> C3["child 3 - CHESHIRE CAT\nbuilds against the audited plan"]
+    C3 --> Q{"did the child ask\na question?"}
+    Q -- "answerable from the repo" --> GNAT["a GNAT child\nread-only, cites the line"]
+    GNAT -->|"the only resume in a run"| C3
+    Q -- "it would need a GUESS" --> ESC
+    Q -- "no" --> C4["child 4 - THE REVIEWER\nNO seat, unused session id"]
+    C4 --> R{"review verdict"}
+    R -- "PASS" --> PARK["park: story to review, ticket to In Review,\none line to your phone"]
+    R -- "CONCERNS or FAIL" --> C5["child 5 - CHESHIRE CAT\nONE fix cycle, in the lane"]
+    C5 --> C6["child 6 - THE REVIEWER\nfresh session, new sha"]
+    C6 --> R2{"second verdict"}
+    R2 -- "PASS" --> PARK
+    R2 -- "anything else" --> ESC
+    PARK --> DONE(["you: read it, then\n/cicd-close-story-merge-tree"])
 ```
 
 #### /cicd-live-testing-team

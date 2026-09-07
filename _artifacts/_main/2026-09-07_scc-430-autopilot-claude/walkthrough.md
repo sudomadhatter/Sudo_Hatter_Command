@@ -29,6 +29,7 @@ can actually be enforced is the runner's own.
 - [ ] Row E — the lead's door (**needs ruling 1**, the charter rows).
 - [ ] Row F — one real AGY story (**needs a story choice**).
 - [ ] Row G — the five old doors deleted (**needs ruling 3**).
+- [ ] **Close-out — the Autopilot SOP** (operator direction, 2026-09-07): its own document with its own diagrams, linked from the main SOP, and the upkeep home for the autopilot workflows from then on. See *What close-out owes* below.
 
 ## Evidence
 
@@ -151,6 +152,33 @@ author's model" is not something a caller can cause by forgetting a flag.
 **`--run-cap-usd` exists because `--max-budget-usd` cannot be trusted.** The CLI's cap stops the
 next turn, not the current one: probes capped at $0.05 spent $0.496 and $0.296. The runner sums its
 ledger before launching and refuses over the ceiling, which is the only ceiling that holds.
+
+## What close-out owes
+
+**A dedicated Autopilot SOP, with diagrams** — the operator's direction on 2026-09-07, in his words:
+a new SOP document *"for the Auto Pilot SOP with its own mermaid diagrams and stuff so I can
+visualize this"*, linked from the main SOP, and *"the one we use to upkeep the AutoPilot
+workflows"* from then on.
+
+`docs/_scc_sops_prds/autopilot_SOP.md`, and the main
+[`workflows_testing_SOP.md`](../../../docs/_scc_sops_prds/workflows_testing_SOP.md) links to it from
+§15 rather than growing a second copy of the same prose — the same retire-don't-accrete habit the
+`sop-currency` rule already demands of that page. What it has to carry: the three layers and who
+launches whom; the charter as a table (what the lead passes, what escalates, what is impossible);
+the escalation round trip from a child's `needs_human` to the phone and back; the per-seat model and
+tool pins with the cost reasoning behind them; and the failure modes the spike measured, because
+every one of them is silent and none is guessable from the code.
+
+⛔ **`flowchart TD` / `LR`, never `sequenceDiagram`** — a standing preference
+(`mermaid-diagram-preferences`, ruled 2026-06-21): the participant-lane layout reads as noise to him,
+which defeats the entire purpose of a document he asked for in order to *see* this.
+
+**Sequencing, and why it is not simply "at close-out".** Row E has to edit the main SOP in its own
+commit regardless — the armed `sop_currency.py` gate refuses a `.agents/commands/*.md` change
+without it, and the rule's stated reason is that the context making the edit correct exists only
+while the change is being made. So row E creates `autopilot_SOP.md` and links it, carrying the
+charter and the door's flow; close-out then adds the diagrams and whatever row F's real story taught,
+which is exactly the half that cannot honestly be drawn before the thing has run once.
 
 ## Deferred, and where it goes
 
