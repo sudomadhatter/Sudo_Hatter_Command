@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import inspect
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -124,8 +125,12 @@ def main() -> int:
         # label with the active filter makes the substring match certain, so a crash under
         # `--case T1` is reported and scoreable rather than vanishing into a traceback.
         if c.block(f"{c.filter or 'T0'} · a block escaped with an unexpected error"):
+            import traceback
+            tb = traceback.extract_tb(exc.__traceback__)
+            last = tb[-1] if tb else None
+            loc = f" at {Path(last.filename).name}:{last.lineno}" if last else ""
             c.check("no unexpected error escaped a block", False,
-                    f"{exc!r} — a defect has to become a red ROW; a file that dies prints no "
+                    f"{type(exc).__name__}: {exc}{loc} — a defect has to become a red ROW; a file that dies prints no "
                     f"FAILED: line, and a sweep cannot tell that from a survivor")
     return c.finish()
 
@@ -136,6 +141,8 @@ def _run(c: Cases) -> None:
         c.check("the module imports", rt is not None, RT_ERR)
 
         if rt is not None:
+            c.check("the shared template root exists on disk", rt.shared_root().is_dir(),
+                    f"{rt.shared_root()} does not exist")
             with TempDir() as t:
                 builds = []
                 key = ("t1", "build-once")
@@ -559,6 +566,30 @@ def _run(c: Cases) -> None:
                 after = {q.name for q in rt.shared_root().iterdir()}
                 c.check("a failed build leaves NO template directory behind",
                         after == before, f"leaked: {sorted(after - before)}")
+
+            # When a cached template directory is deleted from disk, _verify_sealed must refuse
+            # with TemplateCorrupted rather than letting clone() crash with bare FileNotFoundError (SCC-424)
+            with TempDir() as t:
+                key = ("t5", "deleted-template-dir")
+                dest_a = t / "a"
+                rt.clone(key, build_repo, dest_a)
+                cached_tpl = rt._CACHE[key]
+                shutil.rmtree(cached_tpl)
+                err = None
+                try:
+                    rt.clone(key, build_repo, t / "b")
+                except Exception as exc:                       # noqa: BLE001
+                    err = exc
+                c.check("a cached template deleted from disk is REFUSED with TemplateCorrupted",
+                        isinstance(err, rt.TemplateCorrupted),
+                        f"raised {err!r} — expected TemplateCorrupted")
+
+            # When shared_root is deleted on disk, shared_root() must heal and create a new directory (SCC-424)
+            sroot = rt.shared_root()
+            shutil.rmtree(sroot)
+            new_sroot = rt.shared_root()
+            c.check("shared_root() heals and returns an existing directory if deleted",
+                    new_sroot.is_dir(), f"{new_sroot} is not a directory")
 
     if c.block("T4 · a build that raises caches NOTHING"):
         if rt is not None:
