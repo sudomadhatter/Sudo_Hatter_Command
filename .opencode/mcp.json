@@ -4,8 +4,26 @@
       "command": "npx",
       "args": [
         "-y",
-        "md-feedback",
-        "--workspace=/Users/sudohatter/Sudo_Hatter_Command"
+        "md-feedback"
+      ]
+    },
+    "sentry": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@sentry/mcp-server"
+      ],
+      "env": {
+        "SENTRY_ORG": "aviationchat"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--caps",
+        "vision,pdf,devtools"
       ]
     }
   }

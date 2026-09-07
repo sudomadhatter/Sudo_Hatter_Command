@@ -8,7 +8,9 @@
     ".agents/rules/karpathy-guidelines.md"
   ],
   "skills": {
-    "paths": [".agents/skills"]
+    "paths": [
+      ".agents/skills"
+    ]
   },
   "permission": {
     "edit": {
@@ -25,6 +27,40 @@
       "rm *": "ask",
       "Remove-Item *": "ask",
       "del *": "ask"
+    }
+  },
+  "mcp": {
+    "md-feedback": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "md-feedback"
+      ],
+      "enabled": true
+    },
+    "sentry": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@sentry/mcp-server"
+      ],
+      "enabled": true,
+      "environment": {
+        "SENTRY_ORG": "aviationchat"
+      }
+    },
+    "playwright": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@playwright/mcp@latest",
+        "--caps",
+        "vision,pdf,devtools"
+      ],
+      "enabled": true
     }
   }
 }
