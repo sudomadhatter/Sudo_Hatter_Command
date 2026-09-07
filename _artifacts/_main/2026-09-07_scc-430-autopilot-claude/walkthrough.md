@@ -26,7 +26,8 @@ can actually be enforced is the runner's own.
 - [x] **Row B — the sandbox question closed** (spike Table 6): `CLAUDE_CONFIG_DIR` relocates the transcript store into a sandbox-writable path, so a sandboxed fork works and costs 92% less than its parent. No settings change, no escalation, no unsandboxed fallback.
 - [x] **Row C — the seat renderer.** `render_seat()` builds the `--agents` JSON in memory from the master's frontmatter; the six masters carry `claude-model`, `claude-effort` and `claude-tools`; no `.claude/agents/` file is written.
 - [x] **Row D — `jira_feed.py step`.** One comment per child, read back by session id, `needs_human` leading with the `Needs Mr. Hatter` line; self-contained, so `test_jira_start_hook.py`'s fixture still works.
-- [ ] Row E — the lead's door (**needs ruling 1**, the charter rows).
+- [x] **Row E — the lead's door.** Charter ruled 2026-09-07 (as proposed) and pasted into the door as its own table; `/cicd-autopilot-claude` rewritten from the v2 four-stage engine to the v3 lead session.
+- [x] **Row E — the Autopilot SOP.** `docs/_scc_sops_prds/autopilot_SOP.md` with three validated `flowchart` diagrams; SOP §15 links to it, both atlas entries describe v3, one changelog line.
 - [ ] Row F — one real AGY story (**needs a story choice**).
 - [ ] Row G — the five old doors deleted (**needs ruling 3**).
 - [ ] **Close-out — the Autopilot SOP** (operator direction, 2026-09-07): its own document with its own diagrams, linked from the main SOP, and the upkeep home for the autopilot workflows from then on. See *What close-out owes* below.
@@ -74,7 +75,9 @@ Twenty-four failures, one per defect the suite exists to catch. `N1` fired on a 
 | `tests/test_autopilot_run.py` | after row D's handoff cases | **106/106 passed** |
 | `tests/test_jira_feed.py --case "SCC-430 step"` | the new verb | **17/17 passed** |
 | `tests/run_all.py` | the whole workflow-script suite | **82/82 files passed** |
-| `mutation_sweep.py` | 9 declared mutants, code-derived | **9/9 killed**, restore verified |
+| `mutation_sweep.py` | 9 mutants (rows B–D) | **9/9 killed**, restore verified |
+| `mutation_sweep.py` | 5 mutants (row E's charter) | **5/5 killed**, restore verified |
+| `workflow_lint.py --toolkit-only` | the door's rule pointers | **0 errors** |
 | `sync-agents.ps1 -Status` | is any launcher stale? | clean - every invocable file matches |
 | `check_maps.py` | drift | all maps & INDEXes agree with disk |
 
@@ -152,6 +155,41 @@ author's model" is not something a caller can cause by forgetting a flag.
 **`--run-cap-usd` exists because `--max-budget-usd` cannot be trusted.** The CLI's cap stops the
 next turn, not the current one: probes capped at $0.05 spent $0.496 and $0.296. The runner sums its
 ledger before launching and refuses over the ceiling, which is the only ceiling that holds.
+
+### Row E — what the charter case is actually for
+
+The plan asks for the charter to be pinned by a test rather than by review, and the reason is worth
+stating because it is not obvious: **the lead reads the door and nothing else.** Not the SOP page,
+not the design record — the door is its whole context at launch. A charter that lived only on the SOP
+would be a charter the robot never sees; it would improvise a scope, every step would look entirely
+normal, and the first sign of trouble would be an unattended overnight run doing something that was
+never approved.
+
+Five mutants, each drawn from a row of the charter, all killed by their declared case:
+
+| # | mutant | must kill | outcome |
+|---|---|---|---|
+| E1 | the file-deletion escalation row is dropped | `AP1 …names deleting a file` | KILLED |
+| E2 | landing becomes something the lead may do | `AP3 landing is marked NEVER` | KILLED |
+| E3 | the `code-standards.md` citation is removed | `AP4 the door cites code-standards.md` | KILLED |
+| E4 | the door stops pointing at its own manual | `AP5 the door points at the Autopilot SOP` | KILLED |
+| E5 | the second-non-PASS row loses its limit | `AP1 …a second non-PASS review` | KILLED |
+
+Restore verified byte-identical against the pre-sweep sha; the closing unfiltered run of the whole
+file exited 0.
+
+### Two gates that caught real gaps in row E
+
+**The reverse door check refused the commit**, and it was right to. Rewriting §15 dropped the rows
+for `/cicd-autopilot-opencode` and `/cicd-autopilot-deepseek4` — but those files still exist, so the
+operator would have had two commands he could type and no page describing either. They keep their
+rows until row G actually deletes them.
+
+**`check_maps.py` and `refresh_maps.py` appeared to disagree**, each making the other stale. They do
+not: `check_maps` counts `.md` files from disk, `refresh_maps` counts them from git's index, and the
+new SOP page was still untracked — a one-line difference in a folder's file count. Staging it settled
+both. Worth writing down because the symptom (two repair commands undoing each other) points nowhere
+near the cause.
 
 ## What close-out owes
 
