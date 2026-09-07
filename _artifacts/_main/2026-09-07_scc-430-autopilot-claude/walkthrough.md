@@ -35,6 +35,14 @@ can actually be enforced is the runner's own.
 - [x] Row G — the five old doors deleted. Ruling 3 given 2026-09-07 ("delete, but harvest first"); this line duplicates the Row G entry directly above it, written before the ruling landed.
 - [x] **Close-out — the Autopilot SOP** (operator direction, 2026-09-07): its own document with its own diagrams, linked from the main SOP, and the upkeep home for the autopilot workflows from then on. Delivered as [`autopilot_SOP.md`](../../../docs/_scc_sops_prds/autopilot_SOP.md) — the same work the Row E entry above records. See *What close-out owes* below.
 
+## Your Actions
+
+Three, and only the first is required to land this lane.
+
+- [ ] **The merge itself — lands via [PR #192](https://github.com/sudomadhatter/Sudo_Hatter_Command/pull/192).** It is still marked **draft**, so it needs *Ready for review* before the Merge button appears. Gates are green: suite 83/83, runner 136/136, `main-write-gate` passing once this receipt lands.
+- [ ] **Repoint the CLI launcher before the next autopilot run.** `2.1.263` is installed at `~/.local/share/claude/versions/2.1.263`, but `~/.local/bin/claude` still points at `2.1.258` — which has no `--permission-prompts` flag at all, so a child would die at launch. The door's preflight checks this (floor ≥ 2.1.259), but it costs a run to find out. Fix: `ln -sfn ~/.local/share/claude/versions/2.1.263 ~/.local/bin/claude`. Check any second machine the same way — `claude --version` reads the binary on `PATH`, not the session you are typing in.
+- [ ] **Then the wave order:** SCC-431 (the Zoo half) is locked behind this lane landing, and **SCC-429 closes last**.
+
 ## Evidence
 
 ### The RED run — every case failed against a naive stub first
