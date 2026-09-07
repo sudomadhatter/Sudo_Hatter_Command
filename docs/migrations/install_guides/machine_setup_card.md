@@ -68,6 +68,7 @@ python3 .agents/scripts/tests/run_all.py     # PC: python .agents/scripts/tests/
 | | Where it comes from |
 |---|---|
 | `.env` · `auth_keys/` · service accounts | The master bundle (`docs/migrations/auth_keys/_secrets/master.env`) → restore via `python docs/migrations/scripts/env_master.py --restore` (or `Restore-EnvMaster.ps1` / `restore-env-master.sh`). Gitignored. |
+| Tool & MCP configs | Rendered from `.agents/tools/connections.json` via `python3 .agents/scripts/tool_sync.py --apply` (PC: `python`) after pulling secrets with `keyway pull -e development`. Writes portable configs for Claude Code (`.mcp.json`), OpenCode (`opencode.json`), Zoo Code (`mcp_settings.json`), and Antigravity (`~/.gemini/config/mcp_config.json`). Inside worktrees, credentials and auth keys are symlinked automatically via `python3 .agents/scripts/link-worktree-assets.py <worktree>`. |
 | Python venvs | Rebuilt per project — never cloned. AGY's is `backend/.venv` on **3.11**; follow the companion guide, don't wing it. |
 | CLI logins | `acli`, `gcloud`, `gh`, `firebase`, `keyway` — each is a per-machine login. **Two of them have their own page, because both can look installed while being unusable:** `acli` is the whole Jira integration, and with no credential an agent reports "no Jira integration" and silently stops writing the board — [`jira-api-token-setup.md`](jira-api-token-setup.md), one token, also the only way to attach a file. **`keyway` is the live secrets vault, and its install and its login are separate acts** — [`keyway-setup.md`](keyway-setup.md), which also covers adding and removing teammates. Verify it with `keyway doctor`: `5 passed, 1 warning` is the finished state. `gcloud`, `gh` and `firebase` are ordinary logins. |
 | Shell env (macOS) | Anything a *script* needs goes in `~/.zshenv`, **not** `.zshrc` — `.zshrc` is read only by interactive shells, so agents and hooks can't see it. |
@@ -76,9 +77,10 @@ python3 .agents/scripts/tests/run_all.py     # PC: python .agents/scripts/tests/
 
 ## 4. Then pick the work back up
 
-```
-/cicd-resume                 # pulls everything down, rebuilds your working setup
-/cicd-boot-sprint-memory     # loads the sprint, tells you the next move
+```bash
+/cicd-resume                                  # pulls everything down, rebuilds your working setup
+/cicd-boot-sprint-memory                      # loads the sprint, tells you the next move
+python3 .agents/scripts/tool_sync.py --check  # confirms tool connections & MCP servers are in sync
 ```
 
 ---

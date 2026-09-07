@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ToolConnectionsRegistry",
+  "description": "Schema for universal software connections, CLI tools, and MCP servers in Sudo_Hatter_Command",
+  "type": "object",
+  "required": ["$schema", "version", "connections"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "type": "string" },
+    "connections": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["name", "category", "mode", "preferred", "description", "auth"],
+        "properties": {
+          "name": { "type": "string" },
+          "category": {
+            "type": "string",
+            "enum": [
+              "cloud-infrastructure",
+              "cloud-hosting",
+              "issue-tracking",
+              "version-control",
+              "observability",
+              "browser-testing",
+              "document-review",
+              "secrets"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["cli-only", "mcp-only", "hybrid"]
+          },
+          "preferred": {
+            "type": "string",
+            "enum": ["cli", "mcp"]
+          },
+          "description": { "type": "string" },
+          "auth": { "type": "string" },
+          "env_keys": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "cli": {
+            "type": "object",
+            "required": ["binary", "check"],
+            "properties": {
+              "binary": { "type": "string" },
+              "check": { "type": "string" },
+              "rule": { "type": "string" },
+              "skill": { "type": "string" }
+            }
+          },
+          "mcp": {
+            "type": "object",
+            "required": ["command", "args"],
+            "properties": {
+              "command": { "type": "string" },
+              "args": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "env": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              },
+              "platforms": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["claude", "zoo", "opencode", "antigravity", "codex"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
