@@ -24,7 +24,7 @@ can actually be enforced is the runner's own.
 - [x] **Row B — `autopilot_run.py`**, stdlib only, verb `run`, plus the seat renderer's pointer half.
 - [x] **Row B — `test_autopilot_run.py`**, 35 cases across 8 blocks, every one seen RED first.
 - [x] **Row B — the sandbox question closed** (spike Table 6): `CLAUDE_CONFIG_DIR` relocates the transcript store into a sandbox-writable path, so a sandboxed fork works and costs 92% less than its parent. No settings change, no escalation, no unsandboxed fallback.
-- [ ] Row C — the seat renderer's `claude-*` frontmatter keys and the six-master parity test.
+- [x] **Row C — the seat renderer.** `render_seat()` builds the `--agents` JSON in memory from the master's frontmatter; the six masters carry `claude-model`, `claude-effort` and `claude-tools`; no `.claude/agents/` file is written.
 - [ ] Row D — `jira_feed.py step`.
 - [ ] Row E — the lead's door (**needs ruling 1**, the charter rows).
 - [ ] Row F — one real AGY story (**needs a story choice**).
@@ -69,7 +69,11 @@ Twenty-four failures, one per defect the suite exists to catch. `N1` fired on a 
 | Suite | Scope | Result |
 |---|---|---|
 | `tests/test_autopilot_run.py` | the new file, alone | **35/35 passed** |
+| `tests/test_autopilot_run.py` | after row C's seat cases | **87/87 passed** |
 | `tests/run_all.py` | the whole workflow-script suite | **82/82 files passed** |
+| `mutation_sweep.py` | 9 declared mutants, code-derived | **9/9 killed**, restore verified |
+| `sync-agents.ps1 -Status` | is any launcher stale? | clean - every invocable file matches |
+| `check_maps.py` | drift | all maps & INDEXes agree with disk |
 
 ### Anti-vacuity, deliberately
 
@@ -77,6 +81,34 @@ Four cases exist only to stop their neighbours passing for the wrong reason: `D4
 exists really does launch), `R6` (a clean review really does run), `C4` (under the ceiling it
 launches) and `N0` (the drift corpus really holds 12,413 fragments to check against). Without them,
 a runner that launched nothing at all would score green on the DOOR, REVIEW and CAP blocks.
+
+### The mutation sweep — nine mutants, all code-derived
+
+A test that has never failed is a claim. The row-B cases were seen red against the naive stub; the
+row-C cases were not, so they were swept. Every mutant is drawn from a decision in
+`autopilot_run.py`, never from reading the cases and asking what would break them.
+
+| # | mutant | must kill | outcome |
+|---|---|---|---|
+| M1 | the seat's tools are never emitted | `T4 gnat: tools are the master's claude-tools` | KILLED |
+| M2 | the prompt stops naming the master file | `T5 gnat: the prompt names the master file` | KILLED |
+| M3 | every seat renders under one constant name | `T1 gnat: rendered under its own name` | KILLED |
+| M4 | the seat's model is not carried | `T3 gnat: model is the master's claude-model` | KILLED |
+| M5 | a missing door no longer stops the launch | `D2 ...and claude was NEVER launched` | KILLED |
+| M6 | the reviewer may fork the author's session | `R3 a review that forks another session exits 2` | KILLED |
+| M7 | the run-level ceiling never trips | `C2 ...before launching anything` | KILLED |
+| M8 | a reply with no status defaults to done | `S1 a result with no status exits non-zero` | KILLED |
+| M9 | a fork stops re-passing the seat | `K2 ...and STILL carries --agents` | KILLED |
+
+`-- restore verified: bytes match, nothing was committed -- ` and the closing unfiltered run of the
+whole file exited 0.
+
+**The first pass was 8 killed and one SWEEP ERROR, and the error was the finding.** M3 makes
+`render_seat` return `{"seat": ...}`; the parity cases indexed `rendered[seat_name]`, raised
+`KeyError`, and the test **file** died mid-run — so the harness printed no `FAILED:` line, the kill
+could not be attributed, and every case after that point went unscored. Reading it as a survivor
+would have bought a test for a hole that did not exist; reading it as a kill would have certified a
+file that silently stops scoring. Fixed at `c1610941` (`.get`, not `[]`), then re-swept 9/9.
 
 ## Decisions taken in this step
 
@@ -102,9 +134,20 @@ ledger before launching and refuses over the ceiling, which is the only ceiling 
 
 ## Deferred, and where it goes
 
-`render_seat()` currently emits the seat's description and its pointer prompt, and reads
-`claude-tools` / `claude-model` if a master already carries them. Row C adds those keys to the six
-masters and the parity test across all of them — that is the next step, not an omission here.
+**`claude-skills` is read but written on no master, deliberately.** Three keys is the whole
+budget — `sync-agents.ps1` reads the header with `Get-Content -TotalCount 12` and a fourth and fifth
+key push the closing `---` out of the window, at which point the seat vanishes from `.roomodes` with
+no error anywhere. Skills lost the tie-break because the spike measured `skills:` having no effect
+on a child's prefix (11,466 against 11,467 tokens) while accepting a made-up skill name in silence:
+a populated list buys nothing measurable and could, if the key ever does restrict, cut a seat off
+from the very door it was launched to run. The renderer still reads the key, so a master that grows
+one needs no code change.
+
+**The per-seat tool lists are the one thing row F will confirm or amend.** They mirror the Zoo
+seat's `mode-groups` — read maps to Read/Grep/Glob plus the web pair, edit to Edit/Write/
+NotebookEdit, command to Bash/TodoWrite — and `Task` is on no seat, because a headless child that
+can spawn its own subagents is an unbounded bill with no ledger row. If a real door needs a tool no
+seat carries, it will show up as a child that cannot finish, and the fix is a key on the master.
 
 Whether a leading `/door-name` in a `-p` prompt expands to the door's launcher skill is proved by
 row F's real story, where the plan places it.
