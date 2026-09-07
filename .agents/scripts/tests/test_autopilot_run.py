@@ -336,4 +336,75 @@ with TempDir() as tmp:
                 len(launches(log)) == 1, f"{len(launches(log))} launch(es): {out.strip()[:200]}")
 
 
+# ── SEAT ──────────────────────────────────────────────────────────────────────
+if c.block("SEAT - the rendered JSON matches the master's own frontmatter, all six"):
+    masters = sorted((CENTRE / ".agents" / "commands").glob("smh-team-*.md"))
+
+    def header(p: Path) -> dict:
+        """The master's frontmatter, parsed HERE and not by the code under test.
+
+        ⛔ Calling `ar._frontmatter` would make every case below a tautology: a renderer that
+        misread its input would be compared against the same misreading. Twelve lines of
+        duplicated parsing is the price of the test measuring anything at all.
+        """
+        fm, body = {}, p.read_text(encoding="utf-8").splitlines()
+        if not body or body[0].strip() != "---":
+            return fm
+        for line in body[1:]:
+            if line.strip() == "---":
+                break
+            k, sep, v = line.partition(":")
+            if sep:
+                fm[k.strip()] = v.strip().strip('"').strip("'")
+        return fm
+
+    # N0 · ANTI-VACUITY, twice over: six masters must exist, and they must NOT all say the same
+    # thing - a renderer that returned one constant would otherwise pass every case below.
+    c.check("T0 all six Wonderland masters are present", len(masters) == 6,
+            f"{[m.stem for m in masters]}")
+    models = {header(m).get("claude-model") for m in masters}
+    c.check("T0b ...and the seats do not all carry one model", len(models) > 1, f"{sorted(models)}")
+
+    for m in masters:
+        fm, seat_name = header(m), m.stem.replace("smh-team-", "")
+        rendered = ar.render_seat(m)
+        c.check(f"T1 {seat_name}: rendered under its own name", list(rendered) == [seat_name],
+                f"{list(rendered)}")
+        got = rendered[seat_name]
+        c.check(f"T2 {seat_name}: description is the master's, verbatim",
+                got["description"] == fm.get("description"))
+        c.check(f"T3 {seat_name}: model is the master's `claude-model`",
+                got.get("model") == fm.get("claude-model"), f"{got.get('model')}")
+        c.check(f"T4 {seat_name}: tools are the master's `claude-tools`",
+                got.get("tools") == [t.strip() for t in fm.get("claude-tools", "").strip("[]").split(",") if t.strip()],
+                f"{got.get('tools')}")
+        # T5 · the prompt is a POINTER: it must name the master and carry no character of its own.
+        c.check(f"T5 {seat_name}: the prompt names the master file",
+                m.name in got["prompt"], got["prompt"][:120])
+        c.check(f"T6 {seat_name}: ...and names the seat by its mode-name",
+                fm.get("mode-name", "") in got["prompt"], got["prompt"][:120])
+        c.check(f"T7 {seat_name}: ...and carries nothing else - it is a pointer, not a persona",
+                len(got["prompt"]) < 260, f"{len(got['prompt'])} chars")
+
+    # T8 · the header must stay inside the window `sync-agents.ps1` reads, or the seat silently
+    # vanishes from `.roomodes` with no error anywhere.
+    for m in masters:
+        head = m.read_text(encoding="utf-8").splitlines()[:12]
+        c.check(f"T8 {m.stem}: the frontmatter still closes inside 12 lines",
+                any(ln.strip() == "---" for ln in head[1:]), f"{len(head)} lines read")
+
+if c.block("SEAT - no agent file is ever written"):
+    agents_dir = CENTRE / ".claude" / "agents"
+    before = sorted(p.name for p in agents_dir.glob("*")) if agents_dir.exists() else None
+    for m in sorted((CENTRE / ".agents" / "commands").glob("smh-team-*.md")):
+        ar.render_seat(m)
+    after = sorted(p.name for p in agents_dir.glob("*")) if agents_dir.exists() else None
+    c.check("W1 rendering six seats creates no .claude/agents/ projection", before == after,
+            f"before={before} after={after}")
+    c.check("W2 ...and the renderer contains no write verb at all",
+            not any(v in RUNNER.read_text(encoding="utf-8").split("def render_seat")[-1]
+                    .split("\ndef ")[0] for v in ("write_text", "mkdir", "open(")),
+            "render_seat writes to disk; the seat is built in memory and passed on argv")
+
+
 raise SystemExit(c.finish())

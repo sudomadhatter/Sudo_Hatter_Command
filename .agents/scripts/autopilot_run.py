@@ -145,29 +145,40 @@ def _frontmatter(master: Path) -> dict:
     return out
 
 
+def _list(value: str) -> list[str]:
+    return [v.strip() for v in value.strip().strip("[]").split(",") if v.strip()]
+
+
 def render_seat(master: Path) -> dict:
-    """The master's frontmatter as the JSON `--agents` wants. Deterministic, no clock, no id.
+    """The master's frontmatter as the JSON `--agents` wants. Deterministic: no clock, no id.
 
     ⛔ WHAT IS NOT IN HERE: a word of the seat's character. The `prompt` is a POINTER - it names
-    the master and says to follow it. Everything the seat IS lives in that file, is read at the
-    moment of use, and changes the next launch after the operator edits it. A rendered
-    personality would be a second copy nobody remembers to update.
+    the master and says to follow it, and it is the SAME SENTENCE `.roomodes` gives the Zoo
+    seat, so the two platforms cannot describe one seat differently. Everything the seat IS
+    lives in that file, is read at the moment of use, and changes on the next launch after the
+    operator edits it. A rendered personality would be a second copy nobody remembers to update.
 
     ⛔ AND NO FILE IS WRITTEN. The seat is built in memory and handed to `--agents` on the
-    command line. `.claude/agents/<seat>.md` was in an early draft and is withdrawn: a
-    projection on disk is a copy that drifts, and the Zoo half already proved the pointer shape
-    works (`.roomodes` roleDefinitions have always been pointers).
+    command line. A `.claude/agents/<seat>.md` projection was in an early draft and is withdrawn:
+    a copy on disk is a copy that drifts, and the Zoo half already proved the pointer shape works.
+
+    Reads five optional keys, all of which the master may simply not carry: `claude-model`,
+    `claude-effort`, `claude-tools`, `claude-disallowed-tools`, `claude-skills`.
     """
     fm = _frontmatter(master)
     name = master.stem.replace("smh-team-", "")
     seat: dict = {
         "description": fm.get("description", name),
-        "prompt": (f"Read {master.name} at .agents/commands/ from the repository root and do "
-                   f"what it says, all of it - identity, doors, refusals. Team law: "
-                   f".roo/rules/zoo-team.md. Front door: AGENTS.md. Do not invent the part."),
+        "prompt": (f"You are {fm.get('mode-name', name)}. Read `.agents/commands/{master.name}` "
+                   f"(repo root) and follow it END TO END - it is this seat: its identity, its "
+                   f"doors and its refusals."),
     }
     if fm.get("claude-tools"):
-        seat["tools"] = [t.strip() for t in fm["claude-tools"].strip("[]").split(",") if t.strip()]
+        seat["tools"] = _list(fm["claude-tools"])
+    if fm.get("claude-disallowed-tools"):
+        seat["disallowedTools"] = _list(fm["claude-disallowed-tools"])
+    if fm.get("claude-skills"):
+        seat["skills"] = _list(fm["claude-skills"])
     if fm.get("claude-model"):
         seat["model"] = fm["claude-model"]
     return {name: seat}
@@ -347,14 +358,27 @@ def append_ledger(path: Path, row: dict) -> None:
 
 # ── The step comment ──────────────────────────────────────────────────────────
 
-def post_step(key: str, stage: str, result: dict, cwd: Path) -> bool:
-    """Hand the step to `jira_feed.py step`. The ticket IS the handoff between children."""
-    body = cwd / "_artifacts" / f"autopilot-step-{stage}.md"
-    body.parent.mkdir(parents=True, exist_ok=True)
-    body.write_text(json.dumps(result, indent=2), encoding="utf-8")
+def post_step(key: str, stage: str, result: dict, cwd: Path, *, door: str,
+              seat: str | None) -> bool:
+    """Hand the step to `jira_feed.py step`. The ticket IS the handoff between children.
+
+    Nothing is passed between steps in memory: each child is a fresh process, and the next one
+    learns what happened by reading the ticket, exactly as the operator does. That is why a
+    failure to post is a failure of the STEP - the work may have happened, but the handoff did
+    not, and the next child would start blind.
+    """
+    summary = cwd / "_artifacts" / f"autopilot-step-{stage}.md"
+    usage = cwd / "_artifacts" / f"autopilot-step-{stage}-usage.json"
+    summary.parent.mkdir(parents=True, exist_ok=True)
+    summary.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    usage.write_text(json.dumps(result.get("usage") or {}, indent=2), encoding="utf-8")
     feed = Path(os.environ.get("AUTOPILOT_JIRA_FEED") or JIRA_FEED)
     r = subprocess.run([sys.executable, str(feed), "step", "--key", key, "--stage", str(stage),
-                        "--body-file", str(body), "--status", result.get("status", "failed")],
+                        "--door", door, "--seat", seat or "none",
+                        "--status", str(result.get("status", "failed")),
+                        "--summary-file", str(summary),
+                        "--session", str(result.get("session_id") or ""),
+                        "--usage-file", str(usage), "--apply"],
                        capture_output=True, text=True, errors="replace", encoding="utf-8")
     if r.returncode != 0:
         print(f"[FAIL] the step could not be recorded on {key}: "
@@ -421,6 +445,7 @@ def main(argv: list[str] | None = None) -> int:
                        f"in a session this runner has never issued.")
         seat, seat_name = None, None
         model = a.model or REVIEW_MODEL
+        effort = a.effort
     else:
         if not a.seat:
             return die("--seat is required unless --review")
@@ -430,7 +455,9 @@ def main(argv: list[str] | None = None) -> int:
         rendered = render_seat(master)
         seat_name = next(iter(rendered))
         seat = rendered
-        model = a.model or _frontmatter(master).get("claude-model") or DEFAULT_MODEL
+        fm = _frontmatter(master)
+        model = a.model or fm.get("claude-model") or DEFAULT_MODEL
+        effort = a.effort or fm.get("claude-effort") or None
 
     if not a.fork_of and not session_id:
         session_id = str(uuid.uuid4())
@@ -445,7 +472,7 @@ def main(argv: list[str] | None = None) -> int:
     argv_child = build_argv(claude=binary, prompt=f"{a.door} {a.args}".strip(),
                             seat=seat, seat_name=seat_name, model=model,
                             session_id=session_id, fork_of=a.fork_of,
-                            budget_usd=a.budget_usd, effort=a.effort)
+                            budget_usd=a.budget_usd, effort=effort)
 
     # ⛔ stdout and stderr SEPARATELY. The CLI puts warnings on stderr - including the one that
     # says a seat was dropped - and a merged stream turns every one of them into a parse error
@@ -467,7 +494,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print(json.dumps(result, indent=2))
     code = BY_STATUS.get(str(result.get("status")), FAILED)
-    if a.key and not a.no_post and not post_step(a.key, a.stage, result, cwd):
+    if a.key and not a.no_post and not post_step(a.key, a.stage, result, cwd,
+                                                 door=a.door, seat=seat_name):
         return FAILED
     return code
 

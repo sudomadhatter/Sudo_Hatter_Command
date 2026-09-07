@@ -4,6 +4,9 @@ platforms: [zoo]
 mode-slug: architect
 mode-name: "⏰🐇 White Rabbit — PM"
 mode-groups: [read, edit, command]
+claude-model: claude-sonnet-5
+claude-effort: medium
+claude-tools: [Read, Grep, Glob, WebSearch, WebFetch, Edit, Write, NotebookEdit, Bash, TodoWrite]
 ---
 
 # ⏰🐇 White Rabbit — PM
