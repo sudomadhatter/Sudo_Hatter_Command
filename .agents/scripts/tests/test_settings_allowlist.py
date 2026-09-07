@@ -188,13 +188,6 @@ if c.block("E · zoo is sync-agents platform 5 (SCC-349)"):
         return bool(d) and "zoo" in d
     not_zoo = [p for p in PERSONAS if not _declares_zoo(f"{p}.md")]
     c.check("E6 the six persona masters declare zoo", not not_zoo, f"missing={not_zoo}")
-    # An EXPLICIT non-zoo list, not merely "does not say zoo": if the frontmatter line were
-    # deleted, the absent-key=universal rule would grow this door a zoo launcher while a
-    # does-not-declare check stayed green.
-    ap_platforms = _declared("cicd-autopilot-opencode.md")
-    c.check("E7 cicd-autopilot-opencode explicitly declares a zoo-free platform list",
-            ap_platforms is not None and "zoo" not in ap_platforms and "opencode" in ap_platforms,
-            f"declared={ap_platforms}")
     # Door parity, both directions (the CS-02 contract applied to the zoo surface): every
     # zoo-eligible master has its launcher, and every GENERATED launcher points at a live master.
     masters_dir = ROOT / ".agents" / "commands"

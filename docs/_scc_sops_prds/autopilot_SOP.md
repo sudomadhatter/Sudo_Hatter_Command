@@ -217,8 +217,8 @@ result. Measured 2026-09-07: absent on 2.1.258, present on 2.1.263, and this mac
 
 ## 7.5 What the retired engines were mined for
 
-The v2 lane — `/cicd-autopilot-opencode`, `/cicd-autopilot-deepseek4` and the three `_AP` twins they
-called — was read end to end before it was deleted, and four things in it were worth keeping. Each is
+The v2 lane — the opencode and deepseek4 engines and the three `_AP` twins they called — was read
+end to end before it was deleted, and four things in it were worth keeping. Each is
 **lead behaviour or runner mechanics**, never another document to keep in step: that filter is why
 the old lane needed a nineteen-file edit to change one rule and this one does not.
 

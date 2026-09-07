@@ -4,15 +4,15 @@
     "docs"
   ],
   "counts": {
-    "files": 381,
+    "files": 375,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 771,
+    "edges": 762,
     "external": 35,
-    "ambiguous": 172,
-    "dangling": 288,
+    "ambiguous": 171,
+    "dangling": 265,
     "broken_paths": 61,
-    "unresolved_names": 227,
+    "unresolved_names": 204,
     "unresolvable": 9
   },
   "nodes": [
@@ -39,7 +39,7 @@
     {
       "path": ".agents/commands/INDEX.md",
       "in": 9,
-      "out": 5
+      "out": 7
     },
     {
       "path": ".agents/commands/adviser-board/CARD.md",
@@ -308,18 +308,8 @@
     },
     {
       "path": ".agents/commands/cicd-autopilot-claude.md",
-      "in": 2,
+      "in": 0,
       "out": 10
-    },
-    {
-      "path": ".agents/commands/cicd-autopilot-deepseek4.md",
-      "in": 0,
-      "out": 1
-    },
-    {
-      "path": ".agents/commands/cicd-autopilot-opencode.md",
-      "in": 0,
-      "out": 3
     },
     {
       "path": ".agents/commands/cicd-bdd-tests.md",
@@ -342,11 +332,6 @@
       "out": 10
     },
     {
-      "path": ".agents/commands/cicd-code-review-AP.md",
-      "in": 0,
-      "out": 1
-    },
-    {
       "path": ".agents/commands/cicd-code-review.md",
       "in": 1,
       "out": 6
@@ -355,11 +340,6 @@
       "path": ".agents/commands/cicd-create-epic-sprint.md",
       "in": 1,
       "out": 11
-    },
-    {
-      "path": ".agents/commands/cicd-dev-story-tests-AP.md",
-      "in": 0,
-      "out": 1
     },
     {
       "path": ".agents/commands/cicd-dev-story-tests.md",
@@ -427,13 +407,8 @@
       "out": 3
     },
     {
-      "path": ".agents/commands/cicd-self-audit-AP.md",
-      "in": 0,
-      "out": 1
-    },
-    {
       "path": ".agents/commands/cicd-self-audit.md",
-      "in": 3,
+      "in": 2,
       "out": 8
     },
     {
@@ -783,7 +758,7 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 61,
+      "in": 58,
       "out": 4
     },
     {
@@ -843,7 +818,7 @@
     },
     {
       "path": ".agents/rules/smh-target-resolution.md",
-      "in": 37,
+      "in": 36,
       "out": 3
     },
     {
@@ -863,7 +838,7 @@
     },
     {
       "path": ".agents/rules/worktree-per-story.md",
-      "in": 30,
+      "in": 29,
       "out": 3
     },
     {
@@ -1749,17 +1724,12 @@
     {
       "path": "docs/_scc_sops_prds/INDEX.md",
       "in": 3,
-      "out": 21
+      "out": 20
     },
     {
       "path": "docs/_scc_sops_prds/autopilot_SOP.md",
-      "in": 6,
+      "in": 9,
       "out": 1
-    },
-    {
-      "path": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
-      "in": 4,
-      "out": 2
     },
     {
       "path": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
@@ -1824,7 +1794,7 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 32,
-      "out": 67
+      "out": 66
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
@@ -2032,6 +2002,11 @@
     },
     {
       "from": ".agents/commands/INDEX.md",
+      "to": "docs/_scc_sops_prds/autopilot_SOP.md",
+      "kind": "link"
+    },
+    {
+      "from": ".agents/commands/INDEX.md",
       "to": ".agents/rules/zoo-team.md",
       "kind": "ref"
     },
@@ -2156,26 +2131,6 @@
       "kind": "ref"
     },
     {
-      "from": ".agents/commands/cicd-autopilot-deepseek4.md",
-      "to": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/cicd-autopilot-opencode.md",
-      "to": ".agents/rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/cicd-autopilot-opencode.md",
-      "to": ".agents/rules/smh-target-resolution.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/cicd-autopilot-opencode.md",
-      "to": ".agents/rules/worktree-per-story.md",
-      "kind": "ref"
-    },
-    {
       "from": ".agents/commands/cicd-bdd-tests.md",
       "to": ".agents/rules/smh-target-resolution.md",
       "kind": "ref"
@@ -2251,11 +2206,6 @@
       "kind": "ref"
     },
     {
-      "from": ".agents/commands/cicd-code-review-AP.md",
-      "to": ".agents/rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
       "from": ".agents/commands/cicd-code-review.md",
       "to": ".agents/rules/artifacts-always-first.md",
       "kind": "ref"
@@ -2318,11 +2268,6 @@
     {
       "from": ".agents/commands/cicd-create-epic-sprint.md",
       "to": ".agents/rules/worktree-per-story.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/cicd-dev-story-tests-AP.md",
-      "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
     {
@@ -2618,11 +2563,6 @@
     {
       "from": ".agents/commands/cicd-resume.md",
       "to": ".agents/rules/worktree-per-story.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/cicd-self-audit-AP.md",
-      "to": ".agents/commands/cicd-self-audit.md",
       "kind": "ref"
     },
     {
@@ -4727,11 +4667,6 @@
     },
     {
       "from": "docs/_scc_sops_prds/INDEX.md",
-      "to": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
-      "kind": "link"
-    },
-    {
-      "from": "docs/_scc_sops_prds/INDEX.md",
       "to": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
       "kind": "link"
     },
@@ -4808,11 +4743,6 @@
     {
       "from": "docs/_scc_sops_prds/autopilot_SOP.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "kind": "link"
-    },
-    {
-      "from": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
-      "to": ".agents/commands/cicd-autopilot-claude.md",
       "kind": "link"
     },
     {
@@ -5087,7 +5017,7 @@
     },
     {
       "from": "docs/_scc_sops_prds/tea_deep_reference.md",
-      "to": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
+      "to": "docs/_scc_sops_prds/autopilot_SOP.md",
       "kind": "ref"
     },
     {
@@ -5248,11 +5178,6 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": "docs/_scc_sops_prds/autopilot_SOP.md",
-      "kind": "link"
-    },
-    {
-      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "to": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
       "kind": "link"
     },
     {
@@ -5808,22 +5733,6 @@
       "target": "walkthrough.md"
     },
     {
-      "from": ".agents/commands/cicd-autopilot-opencode.md",
-      "target": "_RUN-STATUS.md"
-    },
-    {
-      "from": ".agents/commands/cicd-autopilot-opencode.md",
-      "target": "decisions-log.md"
-    },
-    {
-      "from": ".agents/commands/cicd-autopilot-opencode.md",
-      "target": "implementation_plan.md"
-    },
-    {
-      "from": ".agents/commands/cicd-autopilot-opencode.md",
-      "target": "walkthrough.md"
-    },
-    {
       "from": ".agents/commands/cicd-boot-sprint-memory.md",
       "target": "/_artifacts/_memory/MEMORY.md"
     },
@@ -5852,34 +5761,6 @@
       "target": "active-context.md"
     },
     {
-      "from": ".agents/commands/cicd-code-review-AP.md",
-      "target": "active-context.md"
-    },
-    {
-      "from": ".agents/commands/cicd-code-review-AP.md",
-      "target": "code-review.md"
-    },
-    {
-      "from": ".agents/commands/cicd-code-review-AP.md",
-      "target": "decisions-log.md"
-    },
-    {
-      "from": ".agents/commands/cicd-code-review-AP.md",
-      "target": "deferred-work.md"
-    },
-    {
-      "from": ".agents/commands/cicd-code-review-AP.md",
-      "target": "implementation_plan.md"
-    },
-    {
-      "from": ".agents/commands/cicd-code-review-AP.md",
-      "target": "project-context.md"
-    },
-    {
-      "from": ".agents/commands/cicd-code-review-AP.md",
-      "target": "walkthrough.md"
-    },
-    {
       "from": ".agents/commands/cicd-code-review.md",
       "target": "/walkthrough.md"
     },
@@ -5898,18 +5779,6 @@
     {
       "from": ".agents/commands/cicd-create-epic-sprint.md",
       "target": "epics.md"
-    },
-    {
-      "from": ".agents/commands/cicd-dev-story-tests-AP.md",
-      "target": "decisions-log.md"
-    },
-    {
-      "from": ".agents/commands/cicd-dev-story-tests-AP.md",
-      "target": "implementation_plan.md"
-    },
-    {
-      "from": ".agents/commands/cicd-dev-story-tests-AP.md",
-      "target": "walkthrough.md"
     },
     {
       "from": ".agents/commands/cicd-dev-story-tests.md",
@@ -6013,22 +5882,6 @@
     },
     {
       "from": ".agents/commands/cicd-resume.md",
-      "target": "walkthrough.md"
-    },
-    {
-      "from": ".agents/commands/cicd-self-audit-AP.md",
-      "target": "decisions-log.md"
-    },
-    {
-      "from": ".agents/commands/cicd-self-audit-AP.md",
-      "target": "implementation_plan.md"
-    },
-    {
-      "from": ".agents/commands/cicd-self-audit-AP.md",
-      "target": "self-audit-stress-test.md"
-    },
-    {
-      "from": ".agents/commands/cicd-self-audit-AP.md",
       "target": "walkthrough.md"
     },
     {
@@ -6564,30 +6417,6 @@
       "target": "_RUN-STATUS.md"
     },
     {
-      "from": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
-      "target": "_RUN-STATUS.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
-      "target": "code-review.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
-      "target": "decisions-log.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
-      "target": "implementation_plan.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
-      "target": "self-audit-stress-test.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
-      "target": "walkthrough.md"
-    },
-    {
       "from": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
       "target": "INDEX-archive.md"
     },
@@ -6826,6 +6655,10 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "target": "MEMORY.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "autopilot_bmad_dev_loop.md"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
@@ -7292,14 +7125,6 @@
         ".agents/AGENTS.md",
         ".agents/skills/react-best-practices/AGENTS.md",
         "docs/AGENTS.md"
-      ]
-    },
-    {
-      "from": ".agents/commands/cicd-dev-story-tests-AP.md",
-      "target": "CLAUDE.md",
-      "candidates": [
-        ".agents/CLAUDE.md",
-        "docs/CLAUDE.md"
       ]
     },
     {
