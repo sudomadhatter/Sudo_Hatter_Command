@@ -204,10 +204,20 @@ def build_argv(*, claude: str, prompt: str, seat: dict | None, seat_name: str | 
     ⛔ NEVER `bypassPermissions` - a headless child is exactly the process that should not have
     it. `auto` denies instead of asking, the child reports the denial, and the harvest turns it
     into a permission row a human approves once.
+
+    ⛔ `--permission-prompts none` IS WHAT MAKES THAT TRUE, and it is why the door sets a CLI
+    floor at 2.1.259. The flag's default is `host` - "the SDK host or `--permission-prompt-tool`
+    answers" - and a child launched from here has NEITHER. Left at the default, a child that hits
+    a prompt has nobody to answer it: the exact unattended stall this lane exists to prevent.
+    `none` turns it into an explicit deny the child reports back. Measured 2026-09-07 (row F):
+    absent on 2.1.258, present on 2.1.263. ⛔ The floor is about THIS flag - `--agents` and
+    `--json-schema` are both present on 2.1.258, so a floor justified by them is a floor the
+    first inconvenienced reader correctly ignores.
     """
     argv = [claude, "-p", prompt,
             "--model", model,
             "--permission-mode", "auto",
+            "--permission-prompts", "none",
             "--exclude-dynamic-system-prompt-sections",
             "--output-format", "json",
             "--json-schema", json.dumps(RESULT_SCHEMA, sort_keys=True)]

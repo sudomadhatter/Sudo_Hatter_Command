@@ -57,7 +57,7 @@ which one:
 
 | Check | How | Why it is here |
 |---|---|---|
-| CLI version | `claude --version` ≥ 2.1.259 | Below it `--agents` and `--json-schema` are absent and every child would run seatless |
+| CLI version | `claude --version` ≥ 2.1.259 | `--permission-prompts none` lands there. Its default is `host`, and a headless child HAS no host — so below the floor a child that hits a prompt has nobody to answer it. ⛔ Check the binary on `PATH`, not this session: a stale launcher symlink can leave `claude` older than the CLI you are typing in |
 | the runner | `.agents/scripts/autopilot_run.py --help` exits 0 | A missing runner must fail here, not per step |
 | the work | a **story** is `ready-for-dev` with its failing tests on disk; a **quick-fix Task** already carries its acceptance criteria on the ticket | The autopilot implements; it does not invent the work |
 | the branch | the epic branch is checked out and **not behind `origin/main`** | An in-flight epic that has drifted is a merge conflict waiting to be discovered by a robot |

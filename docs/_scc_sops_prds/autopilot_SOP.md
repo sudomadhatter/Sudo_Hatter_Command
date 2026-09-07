@@ -189,7 +189,7 @@ steps: **$0.158 naive against $0.059 layered — 63% cheaper**, and 82% once the
 
 ---
 
-## 7. The five failure modes, all of them silent
+## 7. The six failure modes, all of them silent
 
 Every one of these was measured against the real CLI, and **not one produces an error**. That is why
 they are written down: none is guessable from reading the code.
@@ -201,6 +201,17 @@ they are written down: none is guessable from reading the code.
 | A reply that **parses but carries no status** | A no-op recorded as success | Anything without a status is `failed`, never `done` |
 | The child's transcript store is **unwritable**, so nothing can be forked | "No conversation found" — which reads as *forking does not work* | The runner points `CLAUDE_CONFIG_DIR` somewhere writable and seeds it |
 | The workspace is **untrusted**, so every fork reads **zero** cached tokens | Nothing at all. Runs succeed; only the bill changes | The runner sets the trust flag in its own config directory |
+| The `claude` on `PATH` is **older than the CLI you are typing in** — a launcher symlink that never moved after an upgrade | Nothing, until a child hits a permission prompt and there is nobody to answer it | Step 0.2 reads `claude --version` from `PATH`, not from this session, and refuses below 2.1.259 |
+
+ⓘ **Why the floor is 2.1.259, since the obvious answer is wrong.** It is not `--agents` or
+`--json-schema` — both are present on 2.1.258, so a floor justified by them collapses the moment
+anyone checks. It is **`--permission-prompts none`**, which lands in 2.1.259. That flag's default is
+`host`, meaning *the SDK host or a `--permission-prompt-tool` answers* — and a child launched by this
+runner has neither. Left at the default, an unattended child that hits a permission prompt has nobody
+to answer it. `none` turns the same moment into an explicit deny the child reports back in its
+result. Measured 2026-09-07: absent on 2.1.258, present on 2.1.263, and this machine's
+`~/.local/bin/claude` symlink was still pointing at 2.1.258 while the session running the check was
+2.1.263.
 
 ---
 

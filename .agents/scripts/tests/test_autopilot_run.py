@@ -269,6 +269,14 @@ if c.block("FLAGS - never bare, never bypass, and stdin is closed"):
             flat[:300])
     c.check("F4 the result comes back as JSON",
             "--output-format" in argv and argv[argv.index("--output-format") + 1] == "json", flat[:300])
+    # ⛔ The one that makes F3 mean anything. `--permission-mode auto` decides what needs asking;
+    # this decides who is asked, and the DEFAULT is `host` - an SDK host or a
+    # --permission-prompt-tool, neither of which exists here. Without it an unattended child that
+    # hits a prompt has nobody to answer it. Measured absent on CLI 2.1.258, present on 2.1.263 -
+    # which is the real reason the door floors the CLI at 2.1.259 (row F, AVCH-138).
+    c.check("F3b nobody is left to answer a prompt - it becomes an explicit deny",
+            "--permission-prompts" in argv
+            and argv[argv.index("--permission-prompts") + 1] == "none", flat[:300])
     c.check("F5 the seat is delivered by --agents + --agent (spike table 1, 42% cheaper)",
             "--agents" in argv and "--agent" in argv, flat[:300])
     c.check("F6 the model is pinned (spike finding 4: unpinned children inherit opus-5[1m])",

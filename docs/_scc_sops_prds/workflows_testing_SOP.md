@@ -2955,6 +2955,15 @@ review gate is a **first pass, never the verdict**: no seat carries the `Task` t
 child runs it inline a lens short, and the independent no-seat reviewer that follows is what counts.
 Both routes are drawn on [the Autopilot SOP](autopilot_SOP.md#31-the-quick-fix-route--a-ticket-that-is-not-a-story).
 
+**One prerequisite refuses more often than the rest: the CLI version.** The lane needs `claude`
+2.1.259 or newer, and Step 0 reads `claude --version` **from `PATH`** — not from the session you are
+typing in. Those can differ: an upgrade installs the new version but a stale launcher symlink can
+leave `claude` on `PATH` pointing at the old one, so the session says 2.1.263 while the binary the
+runner would launch says 2.1.258. The floor exists for `--permission-prompts none`, whose default
+hands permission prompts to a host that a headless child does not have — below the floor, a child
+that hits a prompt has nobody to answer it. Check with `claude --version` in a plain shell; if it is
+behind, `claude update` or point the launcher at the newest installed version.
+
 **The charter is what it may pass without you**, and it is scoped to one story at a time — your
 launch word does not travel to the next one. It passes the mid-story `continue` and questions it can
 answer from the repo; it escalates a `NO-GO` audit, any new dependency, schema, security rule, CI or
