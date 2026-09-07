@@ -911,6 +911,25 @@ function Invoke-PermissionRender {
   if ($LASTEXITCODE) { Write-Host "sync-agents: permission render FAILED (rc=$LASTEXITCODE) - the three lists were NOT re-rendered" }
 }
 
+# --- tool connections & MCP sync (SCC-432) --------------------------------------------------
+# The master registry .agents/tools/connections.json is rendered across platform MCP configs
+# (.mcp.json, opencode.json, Zoo Code mcp_settings.json, Antigravity mcp_config.json) by tool_sync.py.
+# A sync renders/applies; -Status runs --check.
+function Invoke-ToolSync {
+  param([switch]$Check, [switch]$WhatIf)
+  $py = @('python3', 'python', 'py') | Where-Object { Get-Command $_ -ErrorAction SilentlyContinue } | Select-Object -First 1
+  if (-not $py) { Write-Host "sync-agents: tool sync SKIPPED - no python3/python/py on PATH"; return }
+  $script = Join-Path $Master 'scripts/tool_sync.py'
+  if (-not (Test-Path $script)) { Write-Host "sync-agents: tool sync SKIPPED - $script not found"; return }
+  if ($Check) {
+    & $py $script --check --root $HomeRoot
+    return
+  }
+  if ($WhatIf) { Write-Host "sync-agents: [whatif] would run tool_sync.py"; return }
+  & $py $script --apply --root $HomeRoot
+  if ($LASTEXITCODE) { Write-Host "sync-agents: tool sync FAILED (rc=$LASTEXITCODE) - platform tool configs were NOT synchronized" }
+}
+
 # --- -Status: read-only reconciliation report, then stop (writes NOTHING) -----
 if ($Status) {
   $rows = @(Get-SurfaceState $Target $Master)
@@ -933,6 +952,7 @@ if ($Status) {
     if ($o) { Write-Host "  resolve with: -Reconcile (stages a keep-list first; never deletes unreviewed)" }
   }
   Invoke-PermissionRender -Check
+  Invoke-ToolSync -Check
   exit 0
 }
 
@@ -947,6 +967,9 @@ Write-Host "sync-agents: zoo surfaces -> $($zooCmds.Count) launchers in .roo/com
 
 # Permission fence: render the three lists from the one source (SCC-378). Renders only; never applies.
 Invoke-PermissionRender -WhatIf:$WhatIf
+
+# Tool connections & MCP configs: render from connections.json across all platforms (SCC-432).
+Invoke-ToolSync -WhatIf:$WhatIf
 
 # --- local tool dirs ----------------------------------------------------------
 if (-not $GlobalsOnly) {

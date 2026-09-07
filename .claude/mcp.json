@@ -5,7 +5,26 @@
       "args": [
         "-y",
         "md-feedback",
-        "--workspace=/Users/sudohatter/Sudo_Hatter_Command"
+        "--workspace=/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-432-universal-tools-mcp"
+      ]
+    },
+    "sentry": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@sentry/mcp-server"
+      ],
+      "env": {
+        "SENTRY_ORG": "aviationchat"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--caps",
+        "vision,pdf,devtools"
       ]
     }
   }
