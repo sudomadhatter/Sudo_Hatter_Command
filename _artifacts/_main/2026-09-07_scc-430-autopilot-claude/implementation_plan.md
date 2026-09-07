@@ -459,3 +459,13 @@ SCC-431 is by declaration, not by diff: `smh-team-march-hare.md` (frontmatter he
 plus SCC-431's import of `jira_feed.py step`. **This lane lands first**, which is also the operator's stated order.
 
 Audit verdict: GO
+
+**Batch approval (2026-09-07):** "approved scc-430" — covers the plans listed in `/smh-plan-task SCC-429`
+Step 5: **SCC-430**, and only that one. SCC-431 was deliberately left out of the operator's words; its gate
+stays armed and that lane stops for its own approval. This plan as it stood at `001d6e78`, carrying
+`Audit verdict: GO` at that commit — recorded at `<pending>`.
+
+**Ask-First item 1 answered (2026-09-07):** "yes for the cli upgrade" — the operator's word for the Claude
+CLI upgrade to >= 2.1.259. Measured on PATH before asking: `2.1.258`, with `--max-turns` and
+`--append-system-prompt-file` absent from `--help`. Step 1 item 1 re-probes both after the upgrade and
+drops any flag that still does not print.
