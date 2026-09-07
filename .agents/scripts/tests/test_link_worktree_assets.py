@@ -425,6 +425,34 @@ def main() -> int:
                     and "link-worktree-assets" not in text,
                     f"exit={code} exclude:\n{text}")
 
+    if c.block("SCC-425 B5 · depth-2 assets (firebase/tests/node_modules) are linked and warn on Turbopack"):
+        with TempDir() as tmp:
+            repo = seed(tmp / "repo")
+            (repo / "firebase" / "tests").mkdir(parents=True)
+            (repo / "firebase" / "tests" / "node_modules").mkdir()
+            (repo / "firebase" / "tests" / "node_modules" / "fake-pkg").mkdir()
+            # Nested dir inside node_modules: prove find_assets never descends into asset dirs
+            (repo / "firebase" / "tests" / "node_modules" / "sub_dir").mkdir()
+
+            lane = tmp / "lane"
+            (lane / "firebase" / "tests").mkdir(parents=True)
+            code, out = link(str(lane), "--repo", str(repo))
+
+            target = lane / "firebase" / "tests" / "node_modules"
+            c.check("B5 links firebase/tests/node_modules at depth 2",
+                    linked_dir(target), f"exit={code}\n{out}")
+            c.check("B5 warns about Turbopack refusal for shared node_modules",
+                    "Turbopack refuses" in out and "HTTP 500" in out, out)
+            c.check("B5 does not scan inside node_modules (skip rules intact)",
+                    not (lane / "firebase" / "tests" / "node_modules" / "sub_dir").is_symlink()
+                    and "sub_dir" not in out, out)
+
+            code, un_out = link("--unlink", str(lane))
+            c.check("B5 --unlink removes the depth-2 link",
+                    code == 0 and not target.exists(), f"exit={code}\n{un_out}")
+            c.check("B5 --unlink leaves target in repo intact",
+                    (repo / "firebase" / "tests" / "node_modules").is_dir())
+
     return c.finish()
 
 

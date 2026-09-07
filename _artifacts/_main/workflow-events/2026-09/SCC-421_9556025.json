@@ -1,0 +1,34 @@
+{
+  "v": 1,
+  "task": "SCC-421",
+  "sha": "9556025acd0cf7f51a4e3b07acd5ec599cf1c321",
+  "tip": "dd7860ad209e2cdc9c104738fa5711aa4ceec21f",
+  "trigger": "close-out",
+  "when": "2026-09-07T11:50:55-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/smh-designer.md",
+    ".agents/scripts/link-worktree-assets.py",
+    ".agents/scripts/tests/test_command_surfaces.py",
+    ".agents/scripts/tests/test_link_worktree_assets.py",
+    ".opencode/commands/smh-designer.md",
+    "docs/_scc_sops_prds/frontend_UI_design_guide.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-07_scc-421-bugs-cycle-12/walkthrough.md",
+    "verdict": "PASS @ 9556025",
+    "gates": {
+      "suite": "pass@9556025"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}

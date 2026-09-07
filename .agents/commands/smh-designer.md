@@ -59,7 +59,9 @@ Embody **🦋 Caterpillar**:
 
 ### Step 3: Load Persistent Rules
 Hold these non-negotiable invariants:
-- **Sub-300ms UI Budget:** UI animations must complete in $\le 300	ext{ms}$.
+- **Mobile First, Always:** design, build and REVIEW the phone render before the desktop one. Base CSS rule is the phone; `min-width` / Tailwind `sm:` `md:` `lg:` enhance OUT. Never a `max-width` query that subtracts from a desktop baseline. Expensive effects (blur, mix-blend-mode, large animated layers) take a reduced count and lower values in the base rule, raised only at the desktop breakpoint. Screenshot mobile first when handing work back.
+- **Dual-Viewport Layout Verification:** a layout suite that measures one viewport has a blind spot. Any spec asserting geometry runs at BOTH a phone (e.g. 375x667) and a desktop viewport.
+- **Sub-300ms UI Budget:** UI animations must complete in $\le 300\text{ms}$.
 - **Never use `ease-in`:** Delays the initial movement where the eye is watching.
 - **Never animate from `scale(0)`:** Start from `scale(0.95)` with opacity 0.
 - **GPU Acceleration:** Only animate `transform` and `opacity`.
