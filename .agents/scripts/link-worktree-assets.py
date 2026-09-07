@@ -12,18 +12,20 @@ We link rather than copy, so opening a tree costs seconds instead of gigabytes:
     auth_keys/      Mac: symlink   PC: junction   (directory, read-only in practice)
     .env            Mac: symlink   PC: COPY       (Windows file-symlinks need admin/Developer Mode)
 
-Assets are discovered at the repo ROOT and ONE directory down — `backend/.env`, `backend/.venv`,
-`frontend/node_modules` is AGY's real layout, and a root-only scan finds none of them (SCC-62
-follow-on). Depth-1 is deliberate, not lazy: an unbounded walk would descend into the very
-node_modules trees being linked.
+Assets are discovered at the repo ROOT and up to TWO directories down — `backend/.env`,
+`backend/.venv`, `frontend/node_modules`, and nested package assets like
+`firebase/tests/node_modules` (SCC-425). Depth-2 is deliberate, not lazy: an unbounded walk
+would descend into the very node_modules trees being linked, but a bounded depth-2 walk finds
+nested package assets while keeping skip rules intact.
 
 Two things worth holding, both reported at runtime:
   - A symlinked `.env` is SHARED STATE. Edit it in one lane and every lane sees it. That is usually
     what you want (key rotation propagates), but it is one collision surface re-introduced. Anything
     a lane MUTATES should be copied, not linked — which is why `.env` is copied on Windows and why
     --copy-env exists everywhere.
-  - Shared `node_modules` is fine for dev, NOT for E2E: two lanes on different installs will fight.
-    The E2E tier keeps its own `npm ci`.
+  - Shared `node_modules` is fine for dev, NOT for E2E: Next.js Turbopack refuses a symlink pointing
+    outside the filesystem root and returns HTTP 500 for every route. The E2E tier keeps its own
+    `npm ci`.
 
     link-worktree-assets <worktree-path> [--repo <path>] [--copy-env] [--require-assets]
     link-worktree-assets --unlink <worktree-path>
@@ -235,19 +237,43 @@ def link_file(src: Path, dst: Path, force_copy: bool) -> str:
     return "symlink"
 
 
-def find_assets(repo: Path) -> list[tuple[Path, str]]:
-    """Assets at the repo root AND one directory down (backend/.env, frontend/node_modules).
+def is_link(p: Path) -> bool:
+    """True for a POSIX symlink OR a Windows junction.
 
-    Depth-1 is deliberate, not lazy: AGY keeps every runtime asset in a top-level package dir,
-    and an unbounded walk would descend into the very node_modules trees being linked.
+    os.path.islink() returns False for junctions, so Windows needs the reparse tag.
+    """
+    if p.is_symlink():
+        return True
+    if not IS_WINDOWS:
+        return False
+    if hasattr(os.path, "isjunction"):  # Python 3.12+
+        return os.path.isjunction(p)
+    try:
+        return bool(getattr(os.lstat(p), "st_reparse_tag", 0))
+    except OSError:
+        return False
+
+
+def find_assets(repo: Path) -> list[tuple[Path, str]]:
+    """Assets at the repo root AND up to two directories down (backend/.env, frontend/node_modules,
+    firebase/tests/node_modules).
+
+    Depth-2 is deliberate, not lazy: an unbounded walk would descend into the very
+    node_modules trees being linked, but a bounded depth-2 walk finds nested package
+    assets (such as firebase/tests/node_modules) while preserving skip rules for asset
+    directories, .git, and symlinks/junctions (SCC-425).
     """
     asset_names = {name for name, _ in ASSETS}
     parents = [repo]
     for child in sorted(p for p in repo.iterdir() if p.is_dir()):
         # Never treat an asset (or a link) as a parent to scan inside.
-        if child.name in asset_names or child.name == ".git" or child.is_symlink():
+        if child.name in asset_names or child.name == ".git" or is_link(child):
             continue
         parents.append(child)
+        for grandchild in sorted(p for p in child.iterdir() if p.is_dir()):
+            if grandchild.name in asset_names or grandchild.name == ".git" or is_link(grandchild):
+                continue
+            parents.append(grandchild)
     found: list[tuple[Path, str]] = []
     for name, kind in ASSETS:
         for parent in parents:
@@ -332,27 +358,11 @@ def do_link(worktree: Path, repo: Path, copy_env: bool, require_assets: bool = F
     if shared_node_modules:
         print(
             "⚠ node_modules is shared — fine for dev, NOT for E2E.\n"
+            "  Next.js Turbopack refuses symlinked node_modules pointing outside the filesystem root (HTTP 500).\n"
             "  The E2E tier must run its own `npm ci` in this tree."
         )
     print("\n⛔ Run `--unlink` BEFORE `git worktree remove`, or the delete eats the shared targets.")
     return 0
-
-
-def is_link(p: Path) -> bool:
-    """True for a POSIX symlink OR a Windows junction.
-
-    os.path.islink() returns False for junctions, so Windows needs the reparse tag.
-    """
-    if p.is_symlink():
-        return True
-    if not IS_WINDOWS:
-        return False
-    if hasattr(os.path, "isjunction"):  # Python 3.12+
-        return os.path.isjunction(p)
-    try:
-        return bool(getattr(os.lstat(p), "st_reparse_tag", 0))
-    except OSError:
-        return False
 
 
 def find_links(root: Path) -> list[Path]:
