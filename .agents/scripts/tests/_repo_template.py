@@ -94,8 +94,9 @@ def shared_root() -> Path:
     under TMPDIR; `run_all.stop_running` sends SIGINT first, which unwinds normally.
     """
     global _ROOT
-    if _ROOT is None:
+    if _ROOT is None or not _ROOT.is_dir():
         _ROOT = Path(tempfile.mkdtemp(prefix=TEMPLATE_PREFIX))
+        _CACHE.clear()
         import atexit
         atexit.register(_cleanup)
     return _ROOT
@@ -191,6 +192,10 @@ def _verify_sealed(root: Path) -> None:
     not an invariant. One `stat()` per executable per clone, and a write is impossible without
     the chmod this catches — so catching the chmod catches the write.
     """
+    if not root.is_dir():
+        raise TemplateCorrupted(
+            f"cached template {root} no longer exists on disk - "
+            f"a scenario or sibling cleanup removed the template root (SCC-424)")
     for p in sorted(root.rglob("*")):
         if _is_executable_asset(p) and not _is_frozen(p):
             mode = p.stat().st_mode & 0o777
@@ -250,6 +255,9 @@ def clone(key: Hashable, build: Callable[[Path], object], dest: Path) -> Path:
     this module existed.
     """
     tpl = _template(key, build)
+    if not tpl.is_dir():
+        raise TemplateCorrupted(
+            f"template directory {tpl} for {key!r} does not exist on disk before clone (SCC-424)")
     dest = Path(dest)
     if dest.exists():
         clash = [e.name for e in sorted(tpl.iterdir()) if (dest / e.name).exists()]

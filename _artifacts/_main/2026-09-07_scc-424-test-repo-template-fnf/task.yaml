@@ -1,0 +1,6 @@
+task_key: SCC-424
+primary_repo: .
+branch: chore/SCC-424-test-repo-template-fnf
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: []
