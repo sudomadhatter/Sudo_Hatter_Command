@@ -370,21 +370,28 @@ if c.block("SEAT - the rendered JSON matches the master's own frontmatter, all s
         rendered = ar.render_seat(m)
         c.check(f"T1 {seat_name}: rendered under its own name", list(rendered) == [seat_name],
                 f"{list(rendered)}")
-        got = rendered[seat_name]
+        # ⛔ `.get`, NEVER `rendered[seat_name]`. A renderer that keys the seat wrongly would
+        # raise KeyError here, the FILE would die mid-run, and the harness prints no `FAILED:`
+        # line at all - so the mutation sweep cannot attribute the kill and every case after
+        # this point is never scored. Found by mutant M3 (`return {"seat": seat}`), which came
+        # back "SWEEP ERROR" rather than a kill. An empty dict makes T2-T7 FAIL, which is what
+        # a test is for.
+        got = rendered.get(seat_name) or {}
         c.check(f"T2 {seat_name}: description is the master's, verbatim",
-                got["description"] == fm.get("description"))
+                got.get("description") == fm.get("description"))
         c.check(f"T3 {seat_name}: model is the master's `claude-model`",
                 got.get("model") == fm.get("claude-model"), f"{got.get('model')}")
         c.check(f"T4 {seat_name}: tools are the master's `claude-tools`",
                 got.get("tools") == [t.strip() for t in fm.get("claude-tools", "").strip("[]").split(",") if t.strip()],
                 f"{got.get('tools')}")
         # T5 · the prompt is a POINTER: it must name the master and carry no character of its own.
+        prompt = got.get("prompt", "")
         c.check(f"T5 {seat_name}: the prompt names the master file",
-                m.name in got["prompt"], got["prompt"][:120])
+                m.name in prompt, prompt[:120])
         c.check(f"T6 {seat_name}: ...and names the seat by its mode-name",
-                fm.get("mode-name", "") in got["prompt"], got["prompt"][:120])
+                bool(fm.get("mode-name")) and fm["mode-name"] in prompt, prompt[:120])
         c.check(f"T7 {seat_name}: ...and carries nothing else - it is a pointer, not a persona",
-                len(got["prompt"]) < 260, f"{len(got['prompt'])} chars")
+                0 < len(prompt) < 260, f"{len(prompt)} chars")
 
     # T8 · the header must stay inside the window `sync-agents.ps1` reads, or the seat silently
     # vanishes from `.roomodes` with no error anywhere.
