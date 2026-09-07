@@ -66,10 +66,36 @@ which one:
 **0.3 Open the story's worktree** and bootstrap its assets (`link-worktree-assets.py` from the
 lobby; thin projects have no linker of their own). One story, one worktree, one lock.
 
-**0.4 Set the budget.** `--budget-usd` per child and `--run-cap-usd` for the whole run. ⛔ The
-per-child figure is a **soft** cap — the CLI stops the *next* turn, not the current one, and it has
-been measured overspending its cap by 10x. `--run-cap-usd` is the one the runner enforces itself,
-off the ledger, before each launch. Say both numbers out loud before you start.
+**0.4 Name the tier.** One dial sets every model, every effort and both budgets for the run.
+**The operator names it; you judge it only when he does not** — and if you judge, say which and why
+in one line before the first child, because he is paying for the answer.
+
+| | easy | medium | hard |
+|---|---|---|---|
+| the seats that write code | their own pins (Sonnet 5) | Opus 5 · high | Opus 5 · **xhigh** |
+| `gnat` — read-only lookups | Haiku 4.5 · low | **unchanged** | **unchanged** |
+| `march-hare` — the lead | Opus 5 · high | Opus 5 · high | **Fable 5.1 · high** |
+| the reviewer | Opus 5 | **Fable 5.1 · high** | **Fable 5.1 · high** |
+| per child · per run | $6 · $25 | $12 · $60 | $20 · $120 |
+
+Pass it as `--tier easy|medium|hard` on **every** call in the run. `--model` / `--effort` still win
+at the call site when one step needs more than its tier gives it — raise the step, never the run.
+
+⭐ **The reviewer never runs the model that wrote the code.** Sonnet builds and Opus reviews; Opus
+builds and Fable reviews. A reviewer sharing the builder's model shares its blind spots, and a fresh
+session buys independence from the author's *context*, not from the author's *failure modes*. The
+suite asserts this for every tier, so do not "tidy" two rows onto one model.
+
+⛔ **The Gnat does not move.** A read-only lookup does not get harder because the ticket did, and if
+one ever needs judgment the charter already says escalate rather than guess.
+
+⛔ **`--tier hard` cannot change YOUR model** — you are the operator's session, not a child. At
+`hard` the lead should be on Fable 5.1; say so and let him switch, or note in the run record that
+the lead ran on something else. The runner pins children and nothing else.
+
+⛔ The per-child figure is a **soft** cap — the CLI stops the *next* turn, not the current one, and
+it has been measured overspending by 10x. The run ceiling is the one the runner enforces itself, off
+the ledger, before each launch. Say both numbers out loud before you start.
 
 ---
 

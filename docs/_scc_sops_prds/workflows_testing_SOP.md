@@ -2935,6 +2935,18 @@ also where the autopilot is kept current; this section is the short version.
 | --- | --- | --- |
 | `/cicd-autopilot-claude` | the `claude` CLI | The lead session. It drives ONE story through the existing doors, one headless child per step. |
 
+**One dial for difficulty: `easy`, `medium`, `hard`.** You name it; the lead judges it only when you
+do not, and says which it chose before spending anything. The tier sets every model, every effort and
+both budgets at once — `easy` leaves each seat on its own pin (Sonnet 5) at $6 per child and $25 for
+the run; `medium` moves the code-writing seats to Opus 5 at high, $12 and $60; `hard` takes them to
+Opus 5 at extra-high, $20 and $120. Two seats never follow the dial: the read-only lookup seat stays
+on Haiku at every tier, because looking a thing up does not get harder when the ticket does, and the
+reviewer runs a **different model from whatever wrote the code** — Sonnet builds and Opus reviews,
+Opus builds and Fable reviews. That last one is not a cost choice: a fresh session frees a reviewer
+from the author's context but never from the author's blind spots, and only a different model does
+that. Every step comment names its tier, so you can answer later why one ticket cost $8 and another
+$80.
+
 **How it works, in five lines.** You type one command. A lead session calls a small script once per
 workflow step; the script launches a fresh headless Claude wearing one Wonderland seat, running one
 of **your existing doors by name**. The child answers with a short structured result, and that result

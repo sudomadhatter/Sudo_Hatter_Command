@@ -189,6 +189,48 @@ steps: **$0.158 naive against $0.059 layered — 63% cheaper**, and 82% once the
 
 ---
 
+## 6.5 Difficulty tiers — the one dial
+
+You name the tier. The lead judges it only when you do not, and says which it chose and why before
+it spends anything. One word sets every model, every effort and both budgets.
+
+| | easy | medium | hard |
+|---|---|---|---|
+| the seats that write code | their own pins — Sonnet 5 | Opus 5 · high | Opus 5 · **xhigh** |
+| the Gnat — read-only lookups | Haiku 4.5 · low | **unchanged** | **unchanged** |
+| the March Hare — the lead | Opus 5 · high | Opus 5 · high | **Fable 5.1 · high** |
+| the reviewer | Opus 5 | **Fable 5.1 · high** | **Fable 5.1 · high** |
+| budget: per child · per run | $6 · $25 | $12 · $60 | $20 · $120 |
+
+⭐ **The rule underneath the table: the reviewer never runs the model that wrote the code.** That is
+not a cost decision, it is the only kind of independence a fresh session cannot buy — a new session
+frees a reviewer from the author's *context*, never from the author's *blind spots*. Sonnet builds
+and Opus reviews; Opus builds and Fable reviews. The suite asserts it for every tier, because
+collapsing two rows onto one model would look like tidying up.
+
+**Why the Hare and the reviewer share Fable at `hard`, and why that is not a violation.** The March
+Hare is the lead. It reads results and decides what happens next; it never authors the diff under
+review. So at `hard` the two *judgment* roles get the model best at judgment, while every seat that
+touches code is on Opus at extra-high — which the reviewer is not.
+
+**Why the Gnat never moves.** Its job is a read-only lookup that cites its line. That does not get
+harder because the ticket did, and paying extra-high reasoning to open a file and quote it back is
+the one place a difficulty dial over-applies. If a lookup ever needs judgment, the charter already
+says escalate rather than guess.
+
+**Why each tier carries its own budget.** Otherwise the ceiling silently becomes the tier: `hard` is
+Opus at extra-high across six children, and an `easy` ceiling would halt it partway and report
+hitting a limit — which reads as the work failing rather than as a number set too low. Measured for
+scale: one Sonnet-5-high child on a small ticket cost **$5.82** in 22 minutes.
+
+⛔ **The tier cannot set the lead's own model.** The lead is your session, not a child — only you can
+change it. At `hard` it should be on Fable 5.1; the door tells the lead to say so and let you switch.
+
+**Every step comment names its tier and model**, so three weeks later you can answer why one ticket
+cost $8 and another $80 without reconstructing anything.
+
+---
+
 ## 7. The seven failure modes, all of them silent
 
 Every one of these was measured against the real CLI, and **not one produces an error**. That is why

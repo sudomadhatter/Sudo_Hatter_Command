@@ -90,6 +90,72 @@ RESULT_SCHEMA: dict = {
 # model" is not something a caller can bring about by forgetting a flag.
 REVIEW_MODEL = "claude-opus-5"
 DEFAULT_MODEL = "claude-sonnet-5"
+FABLE = "claude-fable-5-1"
+
+# ── Difficulty tiers ──────────────────────────────────────────────────────────
+# The operator names the tier; the lead judges it when he does not. `easy` is the seat's own pin,
+# so the seat masters remain the single source for the common case and this table states only
+# what CHANGES - which is also why adding a tier never touches six files.
+#
+# ⭐ THE INVARIANT, NOT THE TABLE: **the reviewer never runs the builder's model.** A reviewer
+# sharing the builder's model shares its blind spots, and no amount of "fresh session, no seat"
+# reaches that - it is the one kind of independence a new session cannot buy. Sonnet builds and
+# Opus reviews; Opus builds and Fable reviews. `test_autopilot_run.py` asserts it for every tier,
+# because a future edit that collapses two rows onto one model would look like tidying.
+#
+# ⭐ BUILDER means the seats that WRITE CODE - white-rabbit, caterpillar, cheshire-cat,
+# queen-of-hearts. The March Hare is the lead: it decides what happens next and never authors the
+# diff under review, so `hard` putting the Hare and the reviewer both on Fable is deliberate -
+# the two judgment roles share the model best at judgment while every code-writing seat is on
+# Opus at xhigh, which the reviewer is not.
+#
+# ⛔ THIS TABLE LIVES HERE AND NOT IN THE SEAT MASTERS. `sync-agents.ps1:774` reads seat
+# frontmatter with `Get-Content -TotalCount 12` and the Cheshire Cat's header already closes on
+# line 10. Per-tier keys would run past that window and drop the seat from `.roomodes` SILENTLY -
+# Zoo falls back to a stock mode and nothing fails anywhere. Tier pins are runner mechanics; they
+# are the budget table this lane already owns, with two more columns.
+#
+# ⛔ `lead` is ADVISORY and the runner cannot enforce it. The lead is the operator's own session,
+# not a child - only he can change its model. The door tells him; nothing here can.
+TIER_EXEMPT = ("gnat",)          # a lookup does not get harder when the ticket does
+
+TIERS: dict[str, dict] = {
+    "easy": {
+        "seat": None,                          # keep each seat's own pin
+        "review": (REVIEW_MODEL, None),
+        "lead": "claude-opus-5",
+        "budget_usd": 6.0, "run_cap_usd": 25.0,
+    },
+    "medium": {
+        "seat": ("claude-opus-5", "high"),
+        "review": (FABLE, "high"),
+        "lead": "claude-opus-5",
+        "budget_usd": 12.0, "run_cap_usd": 60.0,
+    },
+    "hard": {
+        "seat": ("claude-opus-5", "xhigh"),
+        "per_seat": {"march-hare": (FABLE, "high")},
+        "review": (FABLE, "high"),
+        "lead": FABLE,
+        "budget_usd": 20.0, "run_cap_usd": 120.0,
+    },
+}
+
+
+def tier_pins(tier: str, seat: str | None) -> tuple[str | None, str | None]:
+    """What this tier imposes on `seat`, or (None, None) to keep the seat's own pin.
+
+    ⛔ A tier NARROWS nothing by itself - an explicit `--model`/`--effort` still wins at the call
+    site. The order is: what the caller asked for, then the tier, then the seat file, then the
+    default. Any other order makes one of the three impossible to use.
+    """
+    spec = TIERS[tier]
+    if seat in TIER_EXEMPT:
+        return None, None
+    over = (spec.get("per_seat") or {}).get(seat)
+    if over:
+        return over
+    return spec["seat"] or (None, None)
 
 DEFAULT_HOME = Path.home() / ".local" / "share" / "autopilot-claude-home"
 
@@ -451,7 +517,8 @@ def append_ledger(path: Path, row: dict) -> None:
 # ── The step comment ──────────────────────────────────────────────────────────
 
 def post_step(key: str, stage: str, result: dict, cwd: Path, *, door: str,
-              seat: str | None) -> bool:
+              seat: str | None, tier: str = "easy", model: str = "",
+              effort: str | None = None) -> bool:
     """Hand the step to `jira_feed.py step`. The ticket IS the handoff between children.
 
     Nothing is passed between steps in memory: each child is a fresh process, and the next one
@@ -464,7 +531,12 @@ def post_step(key: str, stage: str, result: dict, cwd: Path, *, door: str,
     summary.parent.mkdir(parents=True, exist_ok=True)
     # The comment carries PROSE, not the raw envelope: the next child and the operator read the
     # same words. Artifacts and denials ride along because both change what the next step does.
-    text = [str(result.get("summary") or "").strip() or "(the child returned no summary)"]
+    # ⛔ The provenance line answers "why did this ticket cost $80 and that one $8?" three weeks
+    # later, when nobody remembers which tier was chosen. Without it the ledger holds the answer
+    # and the ticket - the thing the operator actually reads - does not.
+    spent_line = f"tier `{tier}` - {model}" + (f" - effort `{effort}`" if effort else "")
+    text = [spent_line, "",
+            str(result.get("summary") or "").strip() or "(the child returned no summary)"]
     if result.get("question"):
         text += ["", f"Question: {result['question']}"]
     # ⛔ NOT `key` as the loop variable - it shadows the ticket key this function was handed,
@@ -504,6 +576,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--stage", default="0")
     ap.add_argument("--model")
     ap.add_argument("--effort", choices=["low", "medium", "high", "xhigh", "max"])
+    ap.add_argument("--tier", choices=sorted(TIERS), default="easy",
+                    help="ticket difficulty: sets every model, effort and budget for the run")
     ap.add_argument("--budget-usd", type=float, help="per-child cap. SOFT - see --run-cap-usd")
     ap.add_argument("--run-cap-usd", type=float, help="the ceiling this runner does enforce")
     ap.add_argument("--session-id")
@@ -536,11 +610,19 @@ def main(argv: list[str] | None = None) -> int:
     ledger = ledger_path(cwd, a.ledger)
     book = read_ledger(ledger)
 
+    # 1.5 · the tier, BEFORE the ceiling - the ceiling is one of the things it sets. A tier
+    # without its own budget would be a tier the cap silently overrules: `hard` is Opus at
+    # xhigh across six children, and an `easy` ceiling would halt it mid-run and report hitting
+    # a limit, which reads as the work failing rather than as a number set too low.
+    spec = TIERS[a.tier]
+    budget_usd = a.budget_usd if a.budget_usd is not None else spec["budget_usd"]
+    run_cap_usd = a.run_cap_usd if a.run_cap_usd is not None else spec["run_cap_usd"]
+
     # 2 · the ceiling this runner can actually hold (the CLI's is soft).
     already = spent(book)
-    if a.run_cap_usd is not None and already >= a.run_cap_usd:
-        return die(f"this run has spent ${already:.2f} of its ${a.run_cap_usd:.2f} ceiling. "
-                   f"Nothing was launched.")
+    if already >= run_cap_usd:
+        return die(f"this run has spent ${already:.2f} of its ${run_cap_usd:.2f} ceiling "
+                   f"(tier {a.tier}). Nothing was launched.")
 
     # 3 · the reviewer's independence.
     session_id = a.session_id
@@ -554,8 +636,9 @@ def main(argv: list[str] | None = None) -> int:
             return die(f"session {session_id} is already in this run's ledger; a reviewer runs "
                        f"in a session this runner has never issued.")
         seat, seat_name = None, None
-        model = a.model or REVIEW_MODEL
-        effort = a.effort
+        rev_model, rev_effort = spec["review"]
+        model = a.model or rev_model
+        effort = a.effort or rev_effort
     else:
         if not a.seat:
             return die("--seat is required unless --review")
@@ -566,8 +649,9 @@ def main(argv: list[str] | None = None) -> int:
         seat_name = next(iter(rendered))
         seat = rendered
         fm = _frontmatter(master)
-        model = a.model or fm.get("claude-model") or DEFAULT_MODEL
-        effort = a.effort or fm.get("claude-effort") or None
+        t_model, t_effort = tier_pins(a.tier, a.seat)
+        model = a.model or t_model or fm.get("claude-model") or DEFAULT_MODEL
+        effort = a.effort or t_effort or fm.get("claude-effort") or None
 
     if not a.fork_of and not session_id:
         session_id = str(uuid.uuid4())
@@ -592,7 +676,7 @@ def main(argv: list[str] | None = None) -> int:
     argv_child = build_argv(claude=binary, prompt=f"{a.door} {a.args}".strip(),
                             seat=seat, seat_name=seat_name, model=model,
                             session_id=session_id, fork_of=a.fork_of,
-                            budget_usd=a.budget_usd, effort=effort)
+                            budget_usd=budget_usd, effort=effort)
 
     # ⛔ stdout and stderr SEPARATELY. The CLI puts warnings on stderr - including the one that
     # says a seat was dropped - and a merged stream turns every one of them into a parse error
@@ -632,6 +716,7 @@ def main(argv: list[str] | None = None) -> int:
 
     append_ledger(ledger, {
         "stage": a.stage, "door": a.door, "seat": seat_name, "review": bool(a.review),
+        "tier": a.tier, "model": model, "effort": effort,
         "session_id": result.get("session_id") or session_id,
         "status": result.get("status"), "total_cost_usd": result.get("total_cost_usd"),
         "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -640,7 +725,8 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps(result, indent=2))
     code = BY_STATUS.get(str(result.get("status")), FAILED)
     if a.key and not a.no_post and not post_step(a.key, a.stage, result, cwd,
-                                                 door=a.door, seat=seat_name):
+                                                 door=a.door, seat=seat_name,
+                                                 tier=a.tier, model=model, effort=effort):
         return FAILED
     return code
 

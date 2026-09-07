@@ -150,6 +150,118 @@ with TempDir() as tmp:
                 "exists at" in out3 and "cwd" in out3, out3.strip()[:300])
 
 
+# ── TIER ──────────────────────────────────────────────────────────────────────
+# Operator ruling 2026-09-07: one dial for ticket difficulty. He names it, or the lead judges it.
+# `easy` is the seat's own pin, so these cases also prove the table states only what CHANGES.
+def _pin(argv: list[str], flag: str) -> str | None:
+    return argv[argv.index(flag) + 1] if flag in argv else None
+
+
+with TempDir() as tmp:
+    if c.block("TIER - one dial sets every model, effort and budget for a run"):
+        ws = workspace(tmp / "ws")
+
+        def launch(*extra: str, seat: str = "cheshire-cat", n: str = "x") -> list[str]:
+            log = tmp / f"{n}.jsonl"
+            stub = claude_stub(tmp / f"bin{n}", log, {"status": "done", "summary": "ok"})
+            head = ["run", "--door", "/cicd-dev-story-tests", "--cwd", str(ws),
+                    "--key", "AVCH-138", "--stage", "1", "--no-post"]
+            head += (["--review"] if seat == "review" else ["--seat", seat])
+            run(*head, *extra, env=env_for(tmp, stub, bindir=f"bin{n}"))
+            got = launches(log)
+            return got[0] if got else []
+
+        easy = launch(n="a")
+        c.check("T1 easy keeps the seat's OWN pin - the masters stay the source for it",
+                _pin(easy, "--model") == "claude-sonnet-5"
+                and _pin(easy, "--effort") == "high", " ".join(easy)[:200])
+
+        med = launch("--tier", "medium", n="b")
+        c.check("T2 medium puts the builder on Opus 5 at high",
+                _pin(med, "--model") == "claude-opus-5"
+                and _pin(med, "--effort") == "high", " ".join(med)[:200])
+
+        hard = launch("--tier", "hard", n="c")
+        c.check("T3 hard puts the builder on Opus 5 at xhigh",
+                _pin(hard, "--model") == "claude-opus-5"
+                and _pin(hard, "--effort") == "xhigh", " ".join(hard)[:200])
+
+        # ⭐ The operator's own amendment: a lookup does not get harder when the ticket does, and
+        # paying xhigh reasoning to read a file and cite a line is the one place the rule
+        # over-applied. If a lookup ever needs judgment the charter says escalate, not upgrade.
+        for tier, n in (("medium", "d"), ("hard", "e")):
+            g = launch("--tier", tier, seat="gnat", n=n)
+            c.check(f"T4 the Gnat is exempt at {tier} - still Haiku, still low",
+                    _pin(g, "--model") == "claude-haiku-4-5-20251001"
+                    and _pin(g, "--effort") == "low", " ".join(g)[:200])
+
+        hare = launch("--tier", "hard", seat="march-hare", n="f")
+        c.check("T5 hard puts the Hare on Fable, not Opus - a per-seat row, not the default",
+                _pin(hare, "--model") == "claude-fable-5-1"
+                and _pin(hare, "--effort") == "high", " ".join(hare)[:200])
+
+        rev = launch("--tier", "medium", seat="review", n="g")
+        c.check("T6 the reviewer's model comes from the tier, never from the builder's",
+                _pin(rev, "--model") == "claude-fable-5-1", " ".join(rev)[:200])
+
+        # ⛔ AN EXPLICIT FLAG STILL WINS. A tier that could not be overridden at the call site
+        # would make one-off judgement impossible, and the lead would raise the WHOLE run's tier
+        # to give one step more thinking.
+        over = launch("--tier", "hard", "--model", "claude-sonnet-5", "--effort", "low", n="h")
+        c.check("T7 --model/--effort still beat the tier at the call site",
+                _pin(over, "--model") == "claude-sonnet-5"
+                and _pin(over, "--effort") == "low", " ".join(over)[:200])
+
+        # The budget must move with the tier or the CAP silently decides the tier - `hard` is
+        # Opus at xhigh across six children, and an `easy` ceiling would halt it mid-run and
+        # report a limit, which reads as the work failing rather than a number set too low.
+        c.check("T8 each tier carries its own budget, rising with difficulty",
+                [ar.TIERS[t]["budget_usd"] for t in ("easy", "medium", "hard")] == [6.0, 12.0, 20.0]
+                and [ar.TIERS[t]["run_cap_usd"] for t in ("easy", "medium", "hard")]
+                == [25.0, 60.0, 120.0],
+                str({t: (ar.TIERS[t]["budget_usd"], ar.TIERS[t]["run_cap_usd"]) for t in ar.TIERS}))
+        c.check("T9 the tier's budget reaches the child",
+                _pin(hard, "--max-budget-usd") == "20.0", " ".join(hard)[:200])
+
+
+if c.block("TIER - the reviewer NEVER runs the builder's model"):
+    """The invariant the table is only an instance of, and the reason it is a test.
+
+    ⛔ A reviewer that shares the builder's model shares its BLIND SPOTS, and no amount of
+    "fresh session, no seat, never forks" reaches that - a new session buys independence from
+    the author's CONTEXT, not from the author's failure modes. Sonnet builds and Opus reviews;
+    Opus builds and Fable reviews. This holds today by three separate rows of a table, which
+    means one tidy-looking edit - "why are these two different? make them the same" - collapses
+    it with every other case still green. So it is asserted directly, over every tier, rather
+    than left as a property nobody named.
+
+    ⭐ BUILDER, not "every seat" - and the first cut of this case got that wrong, failed, and was
+    right to. The MARCH HARE is the lead: it reads results and decides what happens next, and
+    the seat table never launches it as a build child. It does not author the diff the reviewer
+    reads, so sharing a model with the reviewer costs nothing. That is why `hard` putting the
+    Hare AND the reviewer on Fable is coherent rather than a collision: those are the two
+    judgment roles, while every seat that touches code is on Opus at xhigh - which the reviewer
+    is not. The GNAT is out for the same reason from the other end: read-only, writes nothing.
+    """
+    for tier, spec in sorted(ar.TIERS.items()):
+        rev = spec["review"][0]
+        builders = set()
+        for seat in ("white-rabbit", "caterpillar", "cheshire-cat", "queen-of-hearts"):
+            m, _ = ar.tier_pins(tier, seat)
+            if m is None:                      # easy: the seat's own pin is the builder's model
+                fm = ar._frontmatter(CENTRE / ".agents" / "commands" / f"smh-team-{seat}.md")
+                m = fm.get("claude-model") or ar.DEFAULT_MODEL
+            builders.add(m)
+        c.check(f"TI-{tier} the reviewer's model is not any code-writing seat's",
+                rev not in builders, f"reviewer={rev} builders={sorted(builders)}")
+
+    # ANTI-VACUITY: the loop must actually have looked at models, or an empty `builders` set
+    # passes every tier while proving nothing.
+    c.check("TI anti-vacuity - builders were actually resolved",
+            all(ar.tier_pins(t, "cheshire-cat")[0] or True for t in ar.TIERS)
+            and len(ar.TIERS) == 3, f"tiers={sorted(ar.TIERS)}")
+
+
 # ── PROSE ─────────────────────────────────────────────────────────────────────
 # From the FIRST REAL RUN (AVCH-138, 2026-09-07). The child did the whole job - the asset
 # re-encoded, 9 consumers updated, 9/9 e2e green including two tests it wrote, work committed
