@@ -6,7 +6,7 @@
 
 ---
 
-## 🎯 What Was Built
+## What Was Built
 
 External tools and MCP connections were previously fragmented across five agent platforms (Claude Code, OpenCode, Zoo Code, Antigravity, and Codex). OpenCode ignored `.opencode/mcp.json` because it requires an `mcp` stanza in `opencode.json`; Zoo Code had empty MCP settings; Claude Code carried machine-specific hardcoded macOS paths in `.mcp.json`; and agents had no universal registry or clear dispatch decision rules for CLI vs. MCP tools.
 
@@ -25,7 +25,7 @@ Under **SCC-432**, we established a unified architecture:
 
 ---
 
-## 📋 Task Checklist
+## Task Checklist
 
 - [x] Create master connection registry [`.agents/tools/connections.json`](file:///home/dlohn/Sudo_Hatter_Command/.agents/tools/connections.json) with JSON schema [`.agents/tools/connections.schema.json`](file:///home/dlohn/Sudo_Hatter_Command/.agents/tools/connections.schema.json).
 - [x] Build [`.agents/scripts/tool_sync.py`](file:///home/dlohn/Sudo_Hatter_Command/.agents/scripts/tool_sync.py) supporting Claude Code, OpenCode, Zoo Code, and Antigravity.
@@ -40,7 +40,7 @@ Under **SCC-432**, we established a unified architecture:
 
 ---
 
-## 🔍 Evidence
+## Evidence
 
 ### 1. Tool Sync Status & Drift Verification
 ```
@@ -111,7 +111,7 @@ tool_sync: ALL PLATFORM CONFIGS IN SYNC.
 
 ---
 
-## 📊 Suite Ledger
+## Suite Ledger
 
 ```
 ============================================================
@@ -127,7 +127,7 @@ Key individual suites verified:
 
 ---
 
-## 👤 Your Actions
+## Your Actions
 
 No manual configuration or credential typing is required.
 1. All tool configurations are in sync across Claude Code, OpenCode, Zoo Code, and Antigravity.
