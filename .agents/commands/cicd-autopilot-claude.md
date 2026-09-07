@@ -151,6 +151,14 @@ the quick-fix route when it has neither. If you cannot tell which, it is not a q
 A read-only lookup — "which does the epic's architecture note actually say?" — is a `gnat` child.
 It is cheap and it is the honest alternative to guessing at a Step 2.5 question.
 
+**Launch it in the BACKGROUND and watch it.** A step is a headless child that can work for many
+minutes and prints nothing until it returns, so a foreground call makes the whole run look like a
+hang — and the operator's only options are to wait blind or kill it. Start the step in the
+background, watch its worktree and its output, and say what it is doing as it goes. Keep a visible
+checklist of the stages so the panel advances while it works. ⛔ **Silence is not progress.** If you
+cannot say what the current child is doing, neither can he, and a run he cannot see is a run he
+cannot stop.
+
 **Read the exit code, not the prose:**
 
 | Exit | Meaning | You |
@@ -188,6 +196,19 @@ operator runs `/cicd-close-story-merge-tree` when he chooses.
 
 **On anything else:** park with the reason and the evidence, and say plainly what is owed and by
 whom. A parked run that reports a clean stop is worth more than one that kept going.
+
+### What you decided on his behalf — post it before you park
+
+The charter says what you MAY pass without him. Nothing yet says what you DID. Close every run with
+one ticket comment listing each charter row you actually exercised and the call you made: the Step 2
+`continue` you passed, every question you answered from the repo rather than asking, each Gnat lookup
+and what it settled, and any finding you assessed as not-real under `code-standards.md` §6.5.
+
+⛔ **A soft "I would normally have checked this with him" is not an escalation — it is a decision,
+and it goes on this list.** That distinction is the one the retired lane got right and it is the
+whole accountability half of an unattended run: without the list, a charter is a permission slip
+nobody ever audits, and the first time a run does something surprising there is no way to tell
+whether the scope was wrong or the lead simply exceeded it.
 
 ⛔ **Never land.** Not the epic branch, not `main`, not "it was green so I merged it". The runner has
 no verb for it and neither do you.

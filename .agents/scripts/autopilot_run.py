@@ -360,6 +360,58 @@ def ledger_path(cwd: Path, explicit: str | None) -> Path:
     return Path(explicit) if explicit else cwd / "_artifacts" / "autopilot-ledger.json"
 
 
+def lock_path(ledger: Path, key: str | None) -> Path:
+    """One lock per TICKET, beside that run's ledger."""
+    return ledger.parent / f".autopilot-{(key or 'nokey').lower()}.lock"
+
+
+def _alive(pid: int) -> bool:
+    """Is that process still there? A dead holder's lock is stale, not a refusal.
+
+    ⛔ Without this a crashed runner locks the ticket FOREVER and the only cure is a human
+    deleting a dotfile they have never heard of. Signal 0 checks existence without signalling;
+    EPERM means it exists and belongs to someone else, which still counts as alive.
+    """
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except (OSError, OverflowError, ValueError):
+        return True
+    return True
+
+
+def acquire_lock(lock: Path) -> tuple[bool, str]:
+    """Take the ticket, or say who holds it. Returns (got_it, holder-description).
+
+    ⛔ `O_CREAT | O_EXCL` because "check then create" is not atomic and two runners launched in
+    the same second would both pass the check. This is the one place a race is actually likely -
+    an operator and a lead can start a step at the same moment.
+    """
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    for _ in range(2):
+        try:
+            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            try:
+                held = json.loads(lock.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                held = {}
+            pid = held.get("pid")
+            if isinstance(pid, int) and not _alive(pid):
+                # Stale: the holder died. Steal it and retry the create.
+                lock.unlink(missing_ok=True)
+                continue
+            return False, f"pid {pid} since {held.get('at', 'an unknown time')}"
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump({"pid": os.getpid(),
+                       "at": datetime.now(timezone.utc).isoformat(timespec="seconds")}, fh)
+        return True, ""
+    return False, "the lock could not be taken after clearing a stale holder"
+
+
 def read_ledger(path: Path) -> dict:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -511,6 +563,16 @@ def main(argv: list[str] | None = None) -> int:
     if not binary:
         return die("claude not found. Pass --claude, set CLAUDE_BIN, or put it on PATH.")
 
+    # 4 · one child per ticket at a time. Two children in one worktree interleave their edits
+    # and both report success, which is the failure the retired engine recorded and never fixed
+    # until late. Taken here - after every refusal, before anything is spent.
+    lock = lock_path(ledger, a.key)
+    got, holder = acquire_lock(lock)
+    if not got:
+        return die(f"another autopilot child is already running for {a.key or 'this run'} "
+                   f"({holder}). Two children in one worktree interleave their edits and both "
+                   f"report success. Nothing was launched.")
+
     home = child_home(a.child_home)
     seed_home(home, [cwd, CENTRE])
 
@@ -523,9 +585,16 @@ def main(argv: list[str] | None = None) -> int:
     # says a seat was dropped - and a merged stream turns every one of them into a parse error
     # that reads as "the child failed", hiding what actually happened.
     # ⛔ stdin CLOSED. Otherwise every launch waits three seconds for input nobody is sending.
-    proc = subprocess.run(argv_child, capture_output=True, text=True, errors="replace",
-                          encoding="utf-8", cwd=str(cwd), stdin=subprocess.DEVNULL,
-                          env=child_env(home, dev_model=a.dev_model, dev_base_url=a.dev_base_url))
+    try:
+        proc = subprocess.run(argv_child, capture_output=True, text=True, errors="replace",
+                              encoding="utf-8", cwd=str(cwd), stdin=subprocess.DEVNULL,
+                              env=child_env(home, dev_model=a.dev_model,
+                                            dev_base_url=a.dev_base_url))
+    finally:
+        # ⛔ `finally`, not a trailing unlink. A Ctrl-C or a crash here would otherwise leave the
+        # ticket locked against its own next step - the `_alive` steal covers a killed process,
+        # but only this covers an exception on the way out.
+        lock.unlink(missing_ok=True)
     result = parse_result(proc.stdout)
     if proc.stderr and proc.stderr.strip():
         print(proc.stderr.strip()[:2000], file=sys.stderr)

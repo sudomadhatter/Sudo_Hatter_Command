@@ -150,6 +150,52 @@ with TempDir() as tmp:
                 "exists at" in out3 and "cwd" in out3, out3.strip()[:300])
 
 
+# ── LOCK ──────────────────────────────────────────────────────────────────────
+# Harvested from the retired opencode engine (row G), whose own notes record the gap: "nothing
+# used to stop a double-run of the SAME story". Two children in one worktree interleave their
+# edits and BOTH report success - there is no error anywhere, which is why a lock and not a
+# convention. The stale case matters just as much: a lock that outlives its holder locks a
+# ticket forever, and the cure would be a human deleting a dotfile they have never heard of.
+with TempDir() as tmp:
+    if c.block("LOCK - one child per ticket, and a dead holder does not jam it"):
+        ws = workspace(tmp / "ws")
+        log = tmp / "launches.jsonl"
+        stub = claude_stub(tmp / "bin", log, {"status": "done", "summary": "ok"})
+        env = env_for(tmp, stub)
+        lock = ws / "_artifacts" / ".autopilot-avch-140.lock"
+
+        def go() -> tuple[int, str]:
+            return run("run", "--door", "/cicd-dev-story-tests", "--seat", "gnat",
+                       "--cwd", str(ws), "--key", "AVCH-140", "--stage", "1",
+                       "--no-post", env=env)
+
+        # L1 · a LIVE holder is a refusal, and nothing is spent proving it.
+        lock.parent.mkdir(parents=True, exist_ok=True)
+        lock.write_text(json.dumps({"pid": os.getpid(), "at": "2026-09-07T00:00:00+00:00"}),
+                        encoding="utf-8")
+        rc, out = go()
+        c.check("L1 a ticket already being worked is refused, with nothing launched",
+                rc == 2 and launches(log) == [],
+                f"rc={rc}, launches={len(launches(log))}: {out.strip()[:200]}")
+        c.check("L2 ...and the refusal names the holder rather than blaming the door",
+                "already running" in out and str(os.getpid()) in out, out.strip()[:200])
+
+        # L3 · a STALE holder (the process is gone) is stolen, not obeyed. Take a real pid and
+        # let it exit - inventing a "probably dead" number is a guess that can collide.
+        dead = subprocess.Popen([sys.executable, "-c", "pass"])
+        dead.wait()
+        lock.write_text(json.dumps({"pid": dead.pid, "at": "2026-09-07T00:00:00+00:00"}),
+                        encoding="utf-8")
+        rc2, out2 = go()
+        c.check("L3 a dead holder's lock is stale - the ticket is not locked forever",
+                rc2 == 0 and len(launches(log)) == 1,
+                f"rc={rc2}, launches={len(launches(log))}: {out2.strip()[:200]}")
+
+        # L4 · and a completed run leaves nothing behind for its own next step to trip on.
+        c.check("L4 the lock is released when the child returns",
+                not lock.exists(), f"{lock} still on disk after a clean run")
+
+
 # ── STATUS ────────────────────────────────────────────────────────────────────
 with TempDir() as tmp:
     if c.block("STATUS - a result without `status` is failed, never done"):

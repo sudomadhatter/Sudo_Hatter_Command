@@ -10,9 +10,9 @@
     "edges": 771,
     "external": 35,
     "ambiguous": 172,
-    "dangling": 287,
+    "dangling": 288,
     "broken_paths": 61,
-    "unresolved_names": 226,
+    "unresolved_names": 227,
     "unresolvable": 9
   },
   "nodes": [
@@ -309,7 +309,7 @@
     {
       "path": ".agents/commands/cicd-autopilot-claude.md",
       "in": 2,
-      "out": 9
+      "out": 10
     },
     {
       "path": ".agents/commands/cicd-autopilot-deepseek4.md",
@@ -753,7 +753,7 @@
     },
     {
       "path": ".agents/rules/code-standards.md",
-      "in": 17,
+      "in": 18,
       "out": 1
     },
     {
@@ -6558,6 +6558,10 @@
     {
       "from": "docs/_scc_sops_prds/INDEX.md",
       "target": "maintaining.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/autopilot_SOP.md",
+      "target": "_RUN-STATUS.md"
     },
     {
       "from": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",

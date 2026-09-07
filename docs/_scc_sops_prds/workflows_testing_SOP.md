@@ -2981,6 +2981,13 @@ environment change, any file deletion, and a second failed review. The full tabl
 recommendation, and it posts a ticket comment whose first line reads `Needs Mr. Hatter`. Your phone
 reads the ticket, so the second one is the one that actually reaches you.
 
+**You can watch it work, and you can audit what it chose.** Each step runs in the background with its
+progress reported as it goes, so a working run never looks like a hang — and a run you can see is a
+run you can stop. When it parks, it posts one comment listing every charter row it actually
+exercised: the gate it passed, each question it answered from the repo instead of asking you, and
+anything it judged not worth acting on. A soft *"I'd normally have checked this with you"* is a
+decision and appears on that list, not an escalation.
+
 **Done means green, and green means a script said so** — never the agent's own say-so. A red gate
 parks with a receipt for you rather than spawning a fix loop.
 

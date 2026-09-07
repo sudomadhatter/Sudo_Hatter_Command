@@ -215,6 +215,28 @@ result. Measured 2026-09-07: absent on 2.1.258, present on 2.1.263, and this mac
 
 ---
 
+## 7.5 What the retired engines were mined for
+
+The v2 lane — `/cicd-autopilot-opencode`, `/cicd-autopilot-deepseek4` and the three `_AP` twins they
+called — was read end to end before it was deleted, and four things in it were worth keeping. Each is
+**lead behaviour or runner mechanics**, never another document to keep in step: that filter is why
+the old lane needed a nineteen-file edit to change one rule and this one does not.
+
+| Kept | Why it earned its place | Where it lives now |
+|---|---|---|
+| **A run lock, one child per ticket** | The old engine's own notes record the hole: *"nothing used to stop a double-run of the SAME story"*. Two children in one worktree interleave their edits and **both report success** — there is no error anywhere | `autopilot_run.py`, taken after every refusal and released in a `finally`. A dead holder's lock is stolen, so a crash cannot lock a ticket forever |
+| **The run is watched, not awaited** | A step prints nothing until it returns, so a foreground call makes a working run look like a hang and the only choices are wait blind or kill it | The door: launch each step in the background, watch it, keep a visible checklist |
+| **What the lead decided on your behalf** | The charter says what it MAY pass. Nothing said what it DID — and a permission slip nobody audits is not a control | The door's park step: one ticket comment listing every charter row actually exercised |
+| **A soft "I'd normally check this with him" is a DECISION, not an escalation** | The retired lane got this exactly right. Left unwritten, a lead either escalates everything or quietly defaults and records nothing | The same list — that is the line it exists to catch |
+
+**What was deliberately NOT carried over.** The old lane's per-stage test-gate baseline and its
+`_RUN-STATUS.md` both belong to somebody else now: the **door** owns its own gate, and the **ticket**
+is the status surface. Re-implementing either here would have given this lane a second copy of
+something that already exists — which is the exact disease the v2 engines died of.
+
+
+---
+
 ## 8. Keeping this current
 
 | If you change… | Do this |
