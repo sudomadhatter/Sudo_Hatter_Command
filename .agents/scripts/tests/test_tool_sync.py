@@ -77,10 +77,11 @@ def main() -> int:
 
     # 5. Token replacement ({REPO_ROOT})
     fake_root = Path("/test/mock/repo")
+    resolved_args = tool_sync.resolve_tokens(["-y", "md-feedback", "--workspace={REPO_ROOT}"], fake_root)
+    c.check("{REPO_ROOT} token is dynamically expanded to repo root",
+            resolved_args == ["-y", "md-feedback", "--workspace=/test/mock/repo"],
+            str(resolved_args))
     rendered_claude = tool_sync.render_claude_mcp(conns, fake_root)
-    md_args = rendered_claude.get("mcpServers", {}).get("md-feedback", {}).get("args", [])
-    has_resolved_root = any("--workspace=/test/mock/repo" in arg for arg in md_args)
-    c.check("{REPO_ROOT} token is dynamically expanded to repo root", has_resolved_root, str(md_args))
 
     # 6. Multi-platform structure validation
     # 6a. Claude Code (.mcp.json)
@@ -143,7 +144,7 @@ def main() -> int:
 
     # 9. Live repository check (tool_sync.py --check)
     res = subprocess.run(
-        [sys.executable, str(SCRIPTS / "tool_sync.py"), "--check", "--root", str(ROOT)],
+        [sys.executable, str(SCRIPTS / "tool_sync.py"), "--check", "--root", str(ROOT), "--no-globals"],
         capture_output=True,
         text=True,
     )

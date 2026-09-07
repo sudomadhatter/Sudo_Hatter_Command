@@ -12,8 +12,7 @@
         "command": "npx",
         "args": [
           "-y",
-          "md-feedback",
-          "--workspace={REPO_ROOT}"
+          "md-feedback"
         ],
         "platforms": [
           "claude",

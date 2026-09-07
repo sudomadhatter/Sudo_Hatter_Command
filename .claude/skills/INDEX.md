@@ -1,12 +1,12 @@
 # Skills INDEX — when to use which (family map)
 
-Router for the platform skill surfaces: **68** master directories in `.agents/skills/` (**42**
+Router for the platform skill surfaces: **69** master directories in `.agents/skills/` (**43**
 hand-authored skills + **26** generated command launchers). **This directory is a `/` MENU, not just a
 capability store:** Codex and Antigravity both read it natively and invoke any `SKILL.md` here as
 `/<name>`, so one launcher is the door for three platforms (Claude reaches the same file through the
 `.claude/skills/` tree copy). Antigravity retires its separate workflow surface on 2026-11-01 and enters
-here instead (SCC-394). Claude's cache exposes **69** non-BMAD
-skills plus the **56** `bmad-*` skills BMAD installs directly into `.claude/skills/` (**125** total).
+here instead (SCC-394). Claude's cache exposes **70** non-BMAD
+skills plus the **56** `bmad-*` skills BMAD installs directly into `.claude/skills/` (**126** total).
 This repo is the local skills' master — shared, project-agnostic ONLY; a
 product's domain packs live in that product's own `.agents/skills/`, per `project-law.md`. The BMAD families below live there, not here, so don't go
 looking for them in the master dir. Unlike rules, **skills already self-route**: each has a

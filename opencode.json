@@ -35,8 +35,7 @@
       "command": [
         "npx",
         "-y",
-        "md-feedback",
-        "--workspace=/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-432-universal-tools-mcp"
+        "md-feedback"
       ],
       "enabled": true
     },
