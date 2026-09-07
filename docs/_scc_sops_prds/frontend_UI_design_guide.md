@@ -2,34 +2,33 @@
 
 **The house standard for world-class, fluid, production-ready interfaces.** This procedural guide establishes how agents and operators design, build, animate, and audit user interfaces across all projects in the command center.
 
-Consolidates the four pillars of house UI craft:
+Consolidates the five pillars of house UI craft:
 1. **Design System & Visual Intelligence**: [`.agents/skills/ui-ux-pro-max`](../../.agents/skills/ui-ux-pro-max/SKILL.md) — 67 styles, 96 color palettes, 57 font pairings, 99 UX heuristics, and stack guidelines via `search.py`.
 2. **Master Motion Engine & Fluid Interactions**: [`.agents/skills/emil-design-eng`](../../.agents/skills/emil-design-eng/SKILL.md) — Consolidated Emil Kowalski motion craft, Apple 2-parameter spring physics, 4-gate opportunity filter, sub-300ms budget, and Before/After review tables.
-3. **3D, WebGL Shaders & Physical Materials**: [`.agents/skills/visual-fx-3d`](../../.agents/skills/visual-fx-3d/SKILL.md) — React Three Fiber (R3F), ShaderGradient fluid meshes, Liquid Glass optical refraction, and Liquid Logo plasma shaders.
-4. **Rich Media & Platform Specialists**: [`.agents/skills/webm-alpha-video`](../../.agents/skills/webm-alpha-video/SKILL.md) (green-screen to alpha WebM), [`.agents/skills/animate-expo`](../../.agents/skills/animate-expo/SKILL.md) (React Native / Expo), [`.agents/skills/write-swift`](../../.agents/skills/write-swift/SKILL.md) (iOS native).
+3. **WebGPU Shader Engine**: [`.agents/skills/vgpu`](../../.agents/skills/vgpu/SKILL.md) — `vercel-labs/vgpu`, typed WGSL shaders, fullscreen fluid meshes, interactive plasma backdrops, particle compute, ~25KB bundle, and zero-GPU headless CI test adapters.
+4. **3D Spatial Models & Physical Materials**: [`.agents/skills/visual-fx-3d`](../../.agents/skills/visual-fx-3d/SKILL.md) — React Three Fiber (R3F), Drei, glTF product models, spatial lighting, and Liquid Glass optical refraction.
+5. **Rich Media & Platform Specialists**: [`.agents/skills/webm-alpha-video`](../../.agents/skills/webm-alpha-video/SKILL.md) (green-screen to alpha WebM), [`.agents/skills/animate-expo`](../../.agents/skills/animate-expo/SKILL.md) (React Native / Expo), [`.agents/skills/write-swift`](../../.agents/skills/write-swift/SKILL.md) (iOS native).
 
 Front door: **`/smh-designer`** ([`.agents/commands/smh-designer.md`](../../.agents/commands/smh-designer.md)) — activates **🦋 Caterpillar** with the Two-Phase Creative Vision Lock lifecycle.
 
 ---
 
-## 1. The Four Pillars of UI Excellence
+## 1. The Five Pillars of UI Excellence
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                       HOUSE FRONTEND DESIGN ARCHITECTURE                     │
 ├──────────────────────────────┬──────────────────────────────┬───────────────┤
-│ 1. VISUAL SYSTEM & TOKENS    │ 2. FLUID MOTION & CRAFT      │ 3. 3D & FX    │
-│ • ui-ux-pro-max              │ • emil-design-eng (Merged)   │ • visual-fx-3d│
-│   (67 styles, 96 palettes,   │   (Philosophy, Apple springs,│   (R3F 3D,    │
-│    57 font pairings, search) │    recipes, review audit,    │    Shaders,   │
-│                              │    opportunity gate)         │    Glass,     │
-│                              │                              │    Logo)      │
-├──────────────────────────────┴──────────────────────────────┼───────────────┤
-│ 4. SPECIALIZED COMPANIONS                                   │ 5. MAESTRO    │
-│ • webm-alpha-video (Green screen MP4 → Alpha WebM)          │ • /smh-designer
-│ • animate-expo (React Native / Expo Reanimated)             │   (Two-phase  │
-│ • write-swift (Native iOS Swift UI)                         │    vision lock│
-└─────────────────────────────────────────────────────────────┴───────────────┘
+│ 1. VISUAL SYSTEM & TOKENS    │ 2. FLUID MOTION & CRAFT      │ 3. WEBGPU     │
+│ • ui-ux-pro-max              │ • emil-design-eng            │ • vgpu        │
+│   (styles, palettes, fonts,  │   (Apple springs, sub-300ms, │   (WGSL, 25KB,│
+│    heuristics, search)       │    review audit tables)      │    fluid mesh)│
+├──────────────────────────────┼──────────────────────────────┼───────────────┤
+│ 4. 3D & PHYSICAL MATERIALS   │ 5. PLATFORM SPECIALISTS      │ 6. MAESTRO    │
+│ • visual-fx-3d               │ • webm-alpha-video (WebM)    │ •/smh-designer│
+│   (R3F 3D spatial models,    │ • animate-expo (RN Reanimated│   (Two-phase  │
+│    glTF scenes, Liquid Glass)│ • write-swift (Native Swift) │    vision lock│
+└──────────────────────────────┴──────────────────────────────┴───────────────┘
 ```
 
 ---
@@ -127,17 +126,19 @@ Before writing any animation code, walk these four questions in order:
 
 ---
 
-## 4. 3D, WebGL Shaders & Physical Materials ([`visual-fx-3d`](../../.agents/skills/visual-fx-3d/SKILL.md))
+## 4. WebGPU Shaders (`vgpu`) & 3D Spatial Models (`visual-fx-3d`)
 
-Modern interfaces incorporate physical depth, optical light refraction, and GPU-accelerated fluid shaders. We support four standard engines:
+Modern interfaces incorporate physical depth, optical light refraction, and GPU-accelerated fluid shaders. We enforce a clean two-tier engine separation:
 
-1. **React Three Fiber (R3F) (`pmndrs/react-three-fiber`):** Declarative 3D canvas for spatial cards, product models, and interactive geometric accents.
-   - **Constraint:** Always use `frameloop="demand"` and cap `dpr={[1, 1.5]}` so the GPU completely idles when static.
-2. **Liquid Glass (`dashersw/liquid-glass-js`):** Apple VisionOS-style realistic optical glass refraction with chromatic edge dispersion and specular highlights.
-   - **Constraint:** Never stack two refractive layers directly over each other. Provide a clean `backdrop-filter: blur(20px)` fallback.
-3. **ShaderGradient (`ruucm/shadergradient`):** High-performance 3D fluid animated gradient mesh backgrounds.
-   - **Constraint:** Keep ambient wave speeds low ($\le 0.3$) and pause via `IntersectionObserver` when scrolled off-screen.
-4. **Liquid Logo (`collidingScopes/liquid-logo`):** Real-time liquid metal and plasma fragment shaders mapped to SVG brand marks and typography.
+### A. WebGPU Shader & Compute Engine ([`vgpu`](../../.agents/skills/vgpu/SKILL.md))
+- **Primary Use:** Fullscreen ambient fluid meshes, interactive plasma backdrops, audio-reactive ripples, and particle compute simulations.
+- **Bundle Efficiency:** ~25KB gzipped (10x smaller than Three.js).
+- **Headless CI Testing:** Deterministic execution without physical GPU hardware using `@vgpu/adapter-mock` and `@vgpu/adapter-node`.
+- **Mandatory Mobile Guard:** WebGPU is unsupported on iOS $\le 17$, older Android, and default Linux Firefox. Always verify `navigator.gpu` and provide a graceful CSS gradient or SVG backdrop.
+
+### B. 3D Spatial Models & Physical Materials ([`visual-fx-3d`](../../.agents/skills/visual-fx-3d/SKILL.md))
+- **Primary Use:** Declarative 3D scene graphs, glTF/GLB product models, camera orbits, spatial lighting (`react-three-fiber` + `@react-three/drei`), and Apple VisionOS optical glass refraction (`liquid-glass-js`).
+- **Constraints:** Always use `frameloop="demand"` and cap `dpr={[1, 1.5]}` so the GPU completely idles when static. Never stack two refractive layers directly over each other.
 
 ---
 
@@ -181,7 +182,8 @@ When an agent needs to perform UI/UX work, route to the appropriate consolidated
 |---|---|---|
 | Complete design systems, color palettes, font pairings, styles | [`.agents/skills/ui-ux-pro-max`](../../.agents/skills/ui-ux-pro-max/SKILL.md) | `search.py --design-system` |
 | Motion craft, animations, easings, spring physics, review tables, toasts | [`.agents/skills/emil-design-eng`](../../.agents/skills/emil-design-eng/SKILL.md) | `RECIPES.md` · Apple 2-parameter springs · Before/After tables |
-| 3D scenes, WebGL shaders, liquid glass refraction, liquid logos | [`.agents/skills/visual-fx-3d`](../../.agents/skills/visual-fx-3d/SKILL.md) | R3F · ShaderGradient · Liquid Glass · Liquid Logo |
+| WebGPU shaders, fullscreen ambient fluid meshes, interactive plasma, particle compute | [`.agents/skills/vgpu`](../../.agents/skills/vgpu/SKILL.md) | typed WGSL · @vgpu/adapter-mock · mobile CSS fallback |
+| 3D spatial scenes, glTF models, geometric cards, liquid glass optical refraction | [`.agents/skills/visual-fx-3d`](../../.agents/skills/visual-fx-3d/SKILL.md) | R3F · Drei · Liquid Glass |
 | Mobile gestures & animations (React Native / Expo Reanimated) | [`.agents/skills/animate-expo`](../../.agents/skills/animate-expo/SKILL.md) | Worklets & reanimated recipes |
 | Apple platform UI & native Swift motion | [`.agents/skills/write-swift`](../../.agents/skills/write-swift/SKILL.md) | Native SwiftUI springs & gestures |
 | Converting green-screen assets to transparent WebM video overlays | [`.agents/skills/webm-alpha-video`](../../.agents/skills/webm-alpha-video/SKILL.md) | ffmpeg colorkey scripts |
@@ -214,4 +216,5 @@ Before completing any frontend story, chore, or UI refactor, verify against this
 - [ ] **Touch Target Geometry:** All interactive touch targets are at least $44 \times 44\text{px}$ with adequate touch spacing (minimum 8px gap).
 - [ ] **Performance Budget on Mobile:** Heavy backdrop-blur filters (`backdrop-blur-xl`), massive gradients, or complex SVG overlays are simplified or disabled on low-power mobile devices.
 - [ ] **Dual-Viewport Verification:** Explicitly tested and verified at both mobile (375×667 / 390×844) and desktop (1280×800 / 1440×900) resolutions before sign-off.
+- [ ] **WebGPU Fallback Guard:** Any component utilizing `vgpu` verifies `navigator.gpu` and renders a CSS gradient or SVG fallback on unsupported devices (iOS $\le 17$, legacy Android).
 

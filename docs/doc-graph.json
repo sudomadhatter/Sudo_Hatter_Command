@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 379,
+    "files": 380,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 761,
+    "edges": 763,
     "external": 35,
     "ambiguous": 171,
     "dangling": 291,
@@ -1697,9 +1697,14 @@
       "out": 0
     },
     {
+      "path": ".agents/skills/vgpu/SKILL.md",
+      "in": 2,
+      "out": 0
+    },
+    {
       "path": ".agents/skills/visual-fx-3d/SKILL.md",
       "in": 1,
-      "out": 0
+      "out": 1
     },
     {
       "path": ".agents/skills/webm-alpha-video/SKILL.md",
@@ -1759,7 +1764,7 @@
     {
       "path": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
       "in": 6,
-      "out": 8
+      "out": 9
     },
     {
       "path": "docs/_scc_sops_prds/git_walkthrough_settings.md",
@@ -4576,6 +4581,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/skills/visual-fx-3d/SKILL.md",
+      "to": ".agents/skills/vgpu/SKILL.md",
+      "kind": "link"
+    },
+    {
       "from": ".agents/skills/workspace-structure/SKILL.md",
       "to": "docs/code-review-graph.md",
       "kind": "ref"
@@ -4843,6 +4853,11 @@
     {
       "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
       "to": ".agents/skills/ui-ux-pro-max/SKILL.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
+      "to": ".agents/skills/vgpu/SKILL.md",
       "kind": "link"
     },
     {
@@ -7111,6 +7126,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -7202,6 +7218,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -7497,6 +7514,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -7579,6 +7597,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -7986,6 +8005,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -8482,6 +8502,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -8555,6 +8576,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -8628,6 +8650,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -8701,6 +8724,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -8774,6 +8798,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -8847,6 +8872,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -8920,6 +8946,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -8993,6 +9020,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -9066,6 +9094,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -9139,6 +9168,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -9212,6 +9242,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -9285,6 +9316,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -9358,6 +9390,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -9431,6 +9464,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -9504,6 +9538,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -9629,6 +9664,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -9888,6 +9924,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -10087,6 +10124,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -10350,6 +10388,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
@@ -10451,6 +10490,7 @@
         ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
         ".agents/skills/ui-ux-pro-max/SKILL.md",
         ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
         ".agents/skills/visual-fx-3d/SKILL.md",
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
