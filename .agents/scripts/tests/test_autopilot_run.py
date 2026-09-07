@@ -133,6 +133,22 @@ with TempDir() as tmp:
         c.check("D4 anti-vacuity - a door that EXISTS does launch claude",
                 len(launches(log)) == 1, f"{len(launches(log))} launch(es): {out2.strip()[:200]}")
 
+        # D5 · THE FALLBACK THAT DEFEATED THE REFUSAL (row F, AVCH-138). `resolve_door` used to
+        # accept a door found in the RUNNER's own repo root. But the child loads its door through
+        # a launcher skill resolved from ITS cwd, so a door in the command centre is invisible to
+        # a child running in a thin project - and the check passed anyway, launching exactly the
+        # nothing-above-it child rule 1 exists to prevent. `--cwd` here owns no `.agents` at all,
+        # while the real centre one directory up owns every door in this repo.
+        bare = tmp / "thin-project"
+        (bare / ".agents").mkdir(parents=True, exist_ok=True)   # tier-2 law, no commands/
+        rc3, out3 = run("run", "--door", "/cicd-code-review", "--seat", "gnat",
+                        "--cwd", str(bare), "--key", "AVCH-140", "--stage", "1", env=env)
+        c.check("D5 a door the CHILD cannot reach is refused, not launched from the centre",
+                rc3 == 2 and len(launches(log)) == 1,
+                f"rc={rc3}, launches={len(launches(log))}: {out3.strip()[:200]}")
+        c.check("D6 ...and the refusal says WHICH mistake it was",
+                "exists at" in out3 and "cwd" in out3, out3.strip()[:300])
+
 
 # ── STATUS ────────────────────────────────────────────────────────────────────
 with TempDir() as tmp:

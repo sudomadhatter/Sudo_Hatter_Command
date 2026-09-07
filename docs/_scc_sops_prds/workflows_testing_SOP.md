@@ -2964,6 +2964,13 @@ hands permission prompts to a host that a headless child does not have — below
 that hits a prompt has nobody to answer it. Check with `claude --version` in a plain shell; if it is
 behind, `claude update` or point the launcher at the newest installed version.
 
+**The robot runs from the command centre, not from inside the project.** Each headless child
+resolves its `/` commands from its own working directory, and a project clone carries its own law
+but none of the centre's commands — so a child started inside `Projects/<name>` would find no
+`/cicd-…` command at all and improvise one. The autopilot therefore stands its children in the
+centre and names the project as an argument, exactly the way you would type it yourself. The runner
+refuses the other shape and tells you which mistake it was.
+
 **The charter is what it may pass without you**, and it is scoped to one story at a time — your
 launch word does not travel to the next one. It passes the mid-story `continue` and questions it can
 answer from the repo; it escalates a `NO-GO` audit, any new dependency, schema, security rule, CI or

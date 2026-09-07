@@ -109,18 +109,35 @@ def resolve_door(name: str, cwd: Path, centre: Path = CENTRE) -> Path | None:
     cannot be misunderstood", and from then on the autopilot is running a private copy of a
     door the operator thinks he is editing. Its own test greps this function for a read.
 
-    The story's own tree wins over the centre: a project that ships its own version of a door
-    is running that one in chat, and the child has to agree with the chat or the autopilot is
-    testing something nobody else uses.
+    ⛔ THE CHILD'S TREE, AND ONLY THE CHILD'S TREE. This used to fall back to the runner's own
+    repo root, and that fallback defeated the refusal it lives inside. The child loads its door
+    through a launcher skill resolved from ITS cwd; a door sitting in the command centre is
+    invisible to a child running somewhere else. So the fallback green-lit exactly the launch
+    this function exists to stop - a child with nothing above it, improvising a workflow and
+    reporting success, which is SCC-70 verbatim. Measured 2026-09-07 (row F): a thin project
+    carries tier-2 law but no `cicd-*` door and zero skills, and `~/.claude/skills` is empty,
+    so nothing would have loaded. The centre is now a DIAGNOSTIC only - see `door_elsewhere`.
     """
     stem = name.strip().lstrip("/")
     if not stem:
         return None
-    for base in (cwd, centre):
-        p = base / ".agents" / "commands" / f"{stem}.md"
-        if p.is_file():
-            return p
-    return None
+    p = cwd / ".agents" / "commands" / f"{stem}.md"
+    return p if p.is_file() else None
+
+
+def door_elsewhere(name: str, centre: Path = CENTRE) -> Path | None:
+    """The door the child could not reach, if the command centre has one by that name.
+
+    Purely so the refusal can say WHICH mistake was made. "No such door" and "that door exists,
+    but not where you pointed the child" have completely different fixes, and the second is the
+    one an operator hits: a thin project is a perfectly good --cwd for a project-local door and a
+    useless one for a lobby door, which must run in the centre with the project named in --args.
+    """
+    stem = name.strip().lstrip("/")
+    if not stem:
+        return None
+    p = centre / ".agents" / "commands" / f"{stem}.md"
+    return p if p.is_file() else None
 
 
 # ── The seat ──────────────────────────────────────────────────────────────────
@@ -442,7 +459,13 @@ def main(argv: list[str] | None = None) -> int:
     # 1 · the door, before anything is spent.
     door = resolve_door(a.door, cwd)
     if door is None:
-        return die(f"no door named '{a.door}' under .agents/commands/ in {cwd} or {CENTRE}. "
+        stray = door_elsewhere(a.door)
+        if stray is not None:
+            return die(f"the door '{a.door}' exists at {stray}, but NOT in {cwd} - and the child "
+                       f"loads its door from ITS cwd, so a child launched there would find no such "
+                       f"command and improvise. Run it in the command centre and name the project "
+                       f"in --args. Nothing was launched.")
+        return die(f"no door named '{a.door}' under .agents/commands/ in {cwd}. "
                    f"Nothing was launched.")
 
     ledger = ledger_path(cwd, a.ledger)

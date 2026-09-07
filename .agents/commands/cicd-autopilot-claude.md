@@ -108,6 +108,14 @@ python3 .agents/scripts/autopilot_run.py run \
 ⛔ **Pass the door's NAME, never its text.** You have not read the door and you do not need to. The
 child loads it through the same launcher skill your own session uses, at the moment of use.
 
+⛔ **`--cwd` is where the CHILD stands, and that is where its door must live.** The child resolves
+its launcher skill from its own working directory — nothing is inherited from you. A `/cicd-*` door
+belongs to the command centre and targets a project *named in `--args`*, so for those the child
+stands in **the command centre**, not in the project: a thin project carries its tier-2 law but none
+of the lobby's doors or skills, and a child launched there would find no such command and improvise.
+Point `--cwd` at a project tree only for a door that tree actually owns. The runner refuses the
+mistake and says which one it was, but the refusal costs a step — get it right in the call.
+
 **The seats, and the order for a story.** ① writes the tests, ② plans and builds, ③ reviews:
 
 | Stage | Door | Seat | Note |
