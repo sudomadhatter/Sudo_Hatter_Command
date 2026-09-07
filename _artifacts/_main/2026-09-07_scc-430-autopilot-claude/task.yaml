@@ -1,0 +1,5 @@
+task_key: SCC-430
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-430-autopilot-claude
+close_command: smh-close-task-merge-tree
+secondary_repos: []
