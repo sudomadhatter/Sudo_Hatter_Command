@@ -1,0 +1,339 @@
+"""The autopilot runner's negative control (SCC-430, acceptance row B).
+
+`autopilot_run.py` launches one headless `claude -p` child per workflow step. It is the piece
+of the autopilot that holds the rules **an LLM must not be trusted with** - so every case here
+is a refusal, and every one of them was seen RED against a naive stub that did the plausible
+thing instead. A runner whose tests only prove the happy path is a runner that will one day
+launch a child with no instructions and bill for it.
+
+  -- WHERE EACH CASE COMES FROM ------------------------------------------------------------
+  DOOR   design 2.3 rule 1, and SCC-70's actual failure: the retired engine built a prompt
+         saying "your instructions live in the command above" and ran with NOTHING above it.
+         The child burned a full context answering from improvisation and reported success.
+         The test is therefore not "exit 2" - it is **zero `claude` invocations**. An exit 2
+         printed after the money is spent is the bug, not the fix.
+  STATUS design 2.3 rule 3. The S0 spike measured `--json-schema` SHAPING the reply without
+         guaranteeing it: with the schema applied, `result` came back as a bare string, not
+         an object. So "it parsed" is not "it conformed", and anything without a `status` is
+         `failed` - never `done` by default, which is how a silent no-op reads as success.
+  REVIEW design 2.3 rule 5. The review child is the one place the robot could mark its own
+         homework: resume the session that wrote the code, and the reviewer inherits the
+         author's context and its conclusions. `zoo-team.md`'s review gate says a reviewer is
+         independent; this is that gate carried into the runner instead of waived by it.
+  DRIFT  design 11.3. The autopilot owns NO copy of any door, rule or seat. The moment a
+         sentence of workflow law is pasted into this script, the operator edits the master
+         and the robot keeps running the old one - silently, because both files still exist.
+  FLAGS  the S0 spike's own measurements. `--bare` skips hooks and plugins (so the door's
+         launcher skill never loads); `bypassPermissions` hands a headless child the keys.
+         Byte-stability is what makes a cost regression READABLE - if two builds of the same
+         seat differ, the prompt cache cannot be reasoned about at all.
+  FORK   spike finding 1, and it is the nastiest of them: a resumed child whose `--agents` is
+         not re-passed prints "agent 'X' ... is no longer available ... Continuing with the
+         default" and **keeps going**. Nothing fails. Every later step looks normal and runs
+         with the wrong identity, the wrong model and the wrong tool restrictions.
+  CAP    spike finding 2: `--max-budget-usd` is a SOFT cap - it stops the next turn, not the
+         current one. Probes capped at $0.05 spent $0.496 and $0.296 (10x, 6x). The only
+         ceiling the runner can actually enforce is its own, read off the ledger BEFORE it
+         launches anything.
+"""
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+from _harness import SCRIPTS, Cases, TempDir, fake_exe, path_entry, utf8_env
+
+sys.path.insert(0, str(SCRIPTS))
+import autopilot_run as ar  # noqa: E402
+
+RUNNER = SCRIPTS / "autopilot_run.py"
+CENTRE = SCRIPTS.parent.parent          # the repo root this test file lives in
+
+
+def run(*args: str, env: dict | None = None) -> tuple[int, str]:
+    r = subprocess.run([sys.executable, str(RUNNER), *args], capture_output=True, text=True,
+                       errors="replace", encoding="utf-8", env=env or utf8_env())
+    return r.returncode, (r.stdout or "") + (r.stderr or "")
+
+
+def claude_stub(bindir: Path, log: Path, reply: dict) -> str:
+    """A REAL executable standing in for `claude`, recording every invocation.
+
+    ⛔ It APPENDS one line per launch rather than overwriting. The whole point of the DOOR
+    case is counting launches, and a stub that overwrites cannot tell "never ran" from "ran
+    once and was overwritten by the second". `fake_exe` handles the Windows half (a shebang
+    script is not an executable there - SCC-321).
+    """
+    body = (
+        "import json, sys, pathlib\n"
+        f"log = pathlib.Path({str(log)!r})\n"
+        "with log.open('a', encoding='utf-8') as fh:\n"
+        "    fh.write(json.dumps(sys.argv[1:]) + '\\n')\n"
+        f"print({json.dumps(json.dumps(reply))})\n"
+    )
+    return fake_exe(bindir, "claude", body)
+
+
+def env_for(tmp: Path, stub: str, bindir: str = "bin") -> dict:
+    """The runner's environment with the stub in front and its config dir INSIDE the temp tree.
+
+    ⛔ `AUTOPILOT_CLAUDE_HOME` is not decoration. The runner seeds a child config dir (that is
+    what makes a sandboxed fork possible at all) and its default is `~/.local/share/...`. A
+    suite that leaves it alone writes into the operator's home on every run, which is both a
+    side effect no test should have and a way for one case to see another's leftovers.
+    """
+    return utf8_env(CLAUDE_BIN=stub,
+                    AUTOPILOT_CLAUDE_HOME=str(tmp / "child-home"),
+                    PATH=path_entry(tmp / bindir) + os.pathsep + os.environ.get("PATH", ""))
+
+
+def launches(log: Path) -> list[list[str]]:
+    if not log.exists():
+        return []
+    return [json.loads(ln) for ln in log.read_text(encoding="utf-8").splitlines() if ln.strip()]
+
+
+def workspace(root: Path, *, doors: tuple[str, ...] = ("cicd-dev-story-tests",)) -> Path:
+    """A story worktree shaped like the real thing: it owns doors and an `_artifacts` tree."""
+    cmds = root / ".agents" / "commands"
+    cmds.mkdir(parents=True, exist_ok=True)
+    for d in doors:
+        (cmds / f"{d}.md").write_text(f"---\ndescription: {d}\n---\n\n# {d}\n", encoding="utf-8")
+    (root / "_artifacts").mkdir(exist_ok=True)
+    return root
+
+
+c = Cases("autopilot_run - the runner's negative control")
+
+
+# ── DOOR ──────────────────────────────────────────────────────────────────────
+with TempDir() as tmp:
+    if c.block("DOOR - a missing door exits BEFORE any claude call"):
+        ws = workspace(tmp / "ws")
+        log = tmp / "launches.jsonl"
+        stub = claude_stub(tmp / "bin", log, {"status": "done", "summary": "ok"})
+        env = env_for(tmp, stub)
+
+        rc, out = run("run", "--door", "/no-such-door", "--seat", "gnat",
+                      "--cwd", str(ws), "--key", "AVCH-140", "--stage", "2", env=env)
+        c.check("D1 a missing door exits 2", rc == 2, f"rc={rc}: {out.strip()[:200]}")
+        c.check("D2 ...and claude was NEVER launched", launches(log) == [],
+                f"{len(launches(log))} launch(es) - the money is already spent")
+        c.check("D3 ...and the refusal names the door it could not find",
+                "no-such-door" in out, out.strip()[:200])
+
+        # ANTI-VACUITY: the same call with a door that EXISTS must reach the stub, or D2
+        # passes because nothing works at all.
+        rc2, out2 = run("run", "--door", "/cicd-dev-story-tests", "--seat", "gnat",
+                        "--cwd", str(ws), "--key", "AVCH-140", "--stage", "2",
+                        "--no-post", env=env)
+        c.check("D4 anti-vacuity - a door that EXISTS does launch claude",
+                len(launches(log)) == 1, f"{len(launches(log))} launch(es): {out2.strip()[:200]}")
+
+
+# ── STATUS ────────────────────────────────────────────────────────────────────
+with TempDir() as tmp:
+    if c.block("STATUS - a result without `status` is failed, never done"):
+        ws = workspace(tmp / "ws")
+        log = tmp / "launches.jsonl"
+        # A well-formed CLI envelope whose `result` carries no status - exactly the shape the
+        # spike measured coming back from a schema'd launch.
+        stub = claude_stub(tmp / "bin", log,
+                           {"session_id": "s-1", "total_cost_usd": 0.01,
+                            "result": "I had a look and it seems fine.", "is_error": False})
+        env = env_for(tmp, stub)
+        rc, out = run("run", "--door", "/cicd-dev-story-tests", "--seat", "gnat",
+                      "--cwd", str(ws), "--key", "AVCH-140", "--stage", "2",
+                      "--no-post", env=env)
+        c.check("S1 a result with no status exits non-zero", rc != 0, f"rc={rc}")
+        c.check("S2 ...and the runner reports it as failed",
+                '"status": "failed"' in out or "'status': 'failed'" in out, out.strip()[:300])
+
+    if c.block("STATUS - unparseable stdout is failed"):
+        ws = workspace(tmp / "ws2")
+        log2 = tmp / "launches2.jsonl"
+        garbage = fake_exe(tmp / "bin2", "claude",
+                           "import sys, pathlib, json\n"
+                           f"pathlib.Path({str(log2)!r}).open('a').write('[]\\n')\n"
+                           "print('Warning: something happened')\n"
+                           "print('not json at all')\n")
+        env2 = env_for(tmp, garbage, bindir="bin2")
+        rc, out = run("run", "--door", "/cicd-dev-story-tests", "--seat", "gnat",
+                      "--cwd", str(ws), "--key", "AVCH-140", "--stage", "2",
+                      "--no-post", env=env2)
+        c.check("S3 stdout that is not JSON is failed, not a traceback",
+                rc != 0 and "failed" in out, f"rc={rc}: {out.strip()[:300]}")
+        c.check("S4 ...and it does not die with a stack trace",
+                "Traceback" not in out, out.strip()[:300])
+
+
+# ── REVIEW ────────────────────────────────────────────────────────────────────
+with TempDir() as tmp:
+    if c.block("REVIEW - the reviewer refuses a session the runner has already issued"):
+        ws = workspace(tmp / "ws")
+        log = tmp / "launches.jsonl"
+        stub = claude_stub(tmp / "bin", log, {"status": "done", "summary": "ok"})
+        env = env_for(tmp, stub)
+        ledger = ws / "_artifacts" / "autopilot-ledger.json"
+        ledger.write_text(json.dumps(
+            {"steps": [{"stage": 1, "session_id": "seen-abc", "total_cost_usd": 0.02}]}),
+            encoding="utf-8")
+
+        rc, out = run("run", "--door", "/cicd-dev-story-tests", "--cwd", str(ws),
+                      "--key", "AVCH-140", "--stage", "3", "--review",
+                      "--session-id", "seen-abc", "--no-post", env=env)
+        c.check("R1 a review on a session id in the ledger exits 2", rc == 2, f"rc={rc}")
+        c.check("R2 ...before launching anything", launches(log) == [],
+                f"{len(launches(log))} launch(es)")
+
+        rc, out = run("run", "--door", "/cicd-dev-story-tests", "--cwd", str(ws),
+                      "--key", "AVCH-140", "--stage", "3", "--review",
+                      "--fork-of", "seen-abc", "--no-post", env=env)
+        c.check("R3 a review that forks another session exits 2", rc == 2, f"rc={rc}")
+        c.check("R4 ...before launching anything", launches(log) == [],
+                f"{len(launches(log))} launch(es)")
+
+        rc, out = run("run", "--door", "/cicd-dev-story-tests", "--cwd", str(ws),
+                      "--key", "AVCH-140", "--stage", "3", "--review",
+                      "--seat", "gnat", "--no-post", env=env)
+        c.check("R5 a review wearing a seat exits 2", rc == 2, f"rc={rc}: {out.strip()[:200]}")
+
+        # ANTI-VACUITY: a clean review must actually run, or R1/R3/R5 pass on a broken flag.
+        rc, out = run("run", "--door", "/cicd-dev-story-tests", "--cwd", str(ws),
+                      "--key", "AVCH-140", "--stage", "3", "--review",
+                      "--session-id", "fresh-xyz", "--no-post", env=env)
+        c.check("R6 anti-vacuity - an unseen, unforked, seatless review DOES launch",
+                rc == 0 and len(launches(log)) == 1,
+                f"rc={rc}, {len(launches(log))} launch(es): {out.strip()[:200]}")
+        if launches(log):
+            argv = launches(log)[0]
+            c.check("R7 ...and it carries no seat", "--agents" not in argv and "--agent" not in argv,
+                    " ".join(argv)[:300])
+
+
+# ── DRIFT ─────────────────────────────────────────────────────────────────────
+if c.block("DRIFT - the runner carries no door, rule or seat text"):
+    src = RUNNER.read_text(encoding="utf-8")
+    src_flat = " ".join(src.split())
+
+    def fragments(paths) -> list[str]:
+        """Headings and sentences over 40 characters, normalised to single spaces.
+
+        Long enough that shared vocabulary ("the operator", "exit 2") cannot match by
+        accident; short enough that a pasted paragraph cannot hide by being trimmed.
+        """
+        out: list[str] = []
+        for p in paths:
+            try:
+                body = p.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                continue
+            for line in body.splitlines():
+                line = line.strip().lstrip("#>-*| ").strip()
+                for frag in line.split(". "):
+                    frag = " ".join(frag.split()).strip()
+                    if len(frag) > 40:
+                        out.append(frag)
+        return out
+
+    corpus = fragments(sorted((CENTRE / ".agents" / "commands").glob("*.md")))
+    corpus += fragments(sorted((CENTRE / ".agents" / "rules").glob("*.md")))
+
+    # N0 · ANTI-VACUITY. An empty corpus makes N1 pass by asking nothing at all.
+    c.check("N0 the corpus really has workflow prose to check against",
+            len(corpus) >= 500, f"{len(corpus)} fragments")
+    stolen = sorted({f for f in corpus if f in src_flat})
+    c.check("N1 no door or rule sentence appears in the runner",
+            not stolen, f"{len(stolen)} pasted fragment(s), first: {stolen[:2]}")
+
+    # N2 · the runner passes the door's NAME, never its body - the mechanism behind N1.
+    c.check("N2 the runner never reads a door's body - it checks only that the file is there",
+            "read_text" not in src.split("def resolve_door")[-1].split("\ndef ")[0])
+
+
+# ── FLAGS ─────────────────────────────────────────────────────────────────────
+if c.block("FLAGS - never bare, never bypass, and stdin is closed"):
+    seat = ar.render_seat(CENTRE / ".agents" / "commands" / "smh-team-gnat.md")
+    argv = ar.build_argv(claude="claude", prompt="/cicd-dev-story-tests AGY 14.2",
+                         seat=seat, seat_name="gnat", model="claude-haiku-4-5-20251001",
+                         session_id="11111111-1111-1111-1111-111111111111",
+                         fork_of=None, budget_usd=8.0, effort=None)
+    flat = " ".join(argv)
+    c.check("F1 --bare is never passed", "--bare" not in argv, flat[:300])
+    c.check("F2 bypassPermissions is never passed", "bypassPermissions" not in flat, flat[:300])
+    c.check("F3 --permission-mode is auto",
+            "--permission-mode" in argv and argv[argv.index("--permission-mode") + 1] == "auto",
+            flat[:300])
+    c.check("F4 the result comes back as JSON",
+            "--output-format" in argv and argv[argv.index("--output-format") + 1] == "json", flat[:300])
+    c.check("F5 the seat is delivered by --agents + --agent (spike table 1, 42% cheaper)",
+            "--agents" in argv and "--agent" in argv, flat[:300])
+    c.check("F6 the model is pinned (spike finding 4: unpinned children inherit opus-5[1m])",
+            "--model" in argv, flat[:300])
+    c.check("F7 the door reaches the child as a NAME, not a body",
+            "/cicd-dev-story-tests AGY 14.2" in argv, flat[:300])
+    # Spike finding 5: without this every launch stalls three seconds on stdin.
+    c.check("F8 stdin is closed at the launch site (else every child waits 3s for input)",
+            "stdin=subprocess.DEVNULL" in RUNNER.read_text(encoding="utf-8"))
+
+if c.block("FLAGS - two builds of one seat are byte-identical"):
+    seat = ar.render_seat(CENTRE / ".agents" / "commands" / "smh-team-gnat.md")
+    kw = dict(claude="claude", prompt="/cicd-dev-story-tests AGY 14.2", seat=seat,
+              seat_name="gnat", model="claude-haiku-4-5-20251001",
+              session_id="11111111-1111-1111-1111-111111111111",
+              fork_of=None, budget_usd=8.0, effort=None)
+    a, b = ar.build_argv(**kw), ar.build_argv(**kw)
+    c.check("B1 two builds are identical", a == b,
+            f"first difference at {next((i for i, (x, y) in enumerate(zip(a, b)) if x != y), '?')}")
+    seat2 = ar.render_seat(CENTRE / ".agents" / "commands" / "smh-team-gnat.md")
+    c.check("B2 ...and so is the seat JSON, across two renders",
+            json.dumps(seat, sort_keys=True) == json.dumps(seat2, sort_keys=True), "")
+
+
+# ── FORK ──────────────────────────────────────────────────────────────────────
+if c.block("FORK - a fork re-passes the seat (spike finding 1)"):
+    seat = ar.render_seat(CENTRE / ".agents" / "commands" / "smh-team-gnat.md")
+    argv = ar.build_argv(claude="claude", prompt="/cicd-dev-story-tests AGY 14.2",
+                         seat=seat, seat_name="gnat", model="claude-haiku-4-5-20251001",
+                         session_id=None, fork_of="parent-pack-id",
+                         budget_usd=8.0, effort=None)
+    flat = " ".join(argv)
+    c.check("K1 a fork resumes its parent", "--resume" in argv and "--fork-session" in argv, flat[:300])
+    c.check("K2 ...and STILL carries --agents, or the seat is silently dropped",
+            "--agents" in argv and "--agent" in argv, flat[:300])
+    c.check("K3 a fork never also pins a fresh session id",
+            "--session-id" not in argv, flat[:300])
+
+
+# ── CAP ───────────────────────────────────────────────────────────────────────
+with TempDir() as tmp:
+    if c.block("CAP - the run-level ceiling is checked before launching"):
+        ws = workspace(tmp / "ws")
+        log = tmp / "launches.jsonl"
+        stub = claude_stub(tmp / "bin", log, {"status": "done", "summary": "ok"})
+        env = env_for(tmp, stub)
+        ledger = ws / "_artifacts" / "autopilot-ledger.json"
+        ledger.write_text(json.dumps({"steps": [
+            {"stage": 1, "session_id": "a", "total_cost_usd": 4.0},
+            {"stage": 2, "session_id": "b", "total_cost_usd": 4.5}]}), encoding="utf-8")
+
+        rc, out = run("run", "--door", "/cicd-dev-story-tests", "--seat", "gnat",
+                      "--cwd", str(ws), "--key", "AVCH-140", "--stage", "3",
+                      "--run-cap-usd", "8", "--no-post", env=env)
+        c.check("C1 a run already over its ceiling exits 2", rc == 2, f"rc={rc}: {out.strip()[:200]}")
+        c.check("C2 ...before launching anything (the CLI cap is soft - spike finding 2)",
+                launches(log) == [], f"{len(launches(log))} launch(es)")
+        c.check("C3 ...and the refusal prints what has been spent",
+                "8.5" in out, out.strip()[:200])
+
+        rc, out = run("run", "--door", "/cicd-dev-story-tests", "--seat", "gnat",
+                      "--cwd", str(ws), "--key", "AVCH-140", "--stage", "3",
+                      "--run-cap-usd", "20", "--no-post", env=env)
+        c.check("C4 anti-vacuity - under the ceiling it launches",
+                len(launches(log)) == 1, f"{len(launches(log))} launch(es): {out.strip()[:200]}")
+
+
+raise SystemExit(c.finish())

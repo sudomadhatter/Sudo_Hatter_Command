@@ -187,6 +187,42 @@ text) - it applies only to the default system prompt, so the runner must never c
 ⚠️ **`--system-prompt-snapshot` is turned OFF by passing `--system-prompt` or `--append-system-prompt`**,
 which is a second reason arm A (a seat) beats arm B (an appended prompt).
 
+## Table 6 - Step 2's first question, answered: the sandboxed child CAN fork
+
+Table 5 left one thing open - whether `~/.claude/projects` could be granted as a sandbox
+allowWrite path, or the runner had to run unsandboxed. **Neither, and the answer is better than
+both.** `CLAUDE_CONFIG_DIR` moves the whole config directory, transcript store included, and
+`~/.local/share` is already on the sandbox's allowWrite list. Two things have to be seeded there
+once or every child dies at `Not logged in`: the OAuth credential (SYMLINKED, never copied - one
+secret, one file on disk) and the workspace trust flag.
+
+| arm (all launches SANDBOXED, `claude-haiku-4-5-20251001`) | cache_create | cache_read | cost |
+|---|---|---|---|
+| relocated store, no credential | - | - | `Not logged in - please run /login` |
+| + credential symlinked, workspace UNTRUSTED | 9,895 | **0** | $0.0201 |
+| + workspace trusted - parent | 10,425 | 9,623 | $0.0250 |
+| + workspace trusted - **fork** | **399** | **10,425** | **$0.0020** |
+
+**A fork is 92% cheaper than its parent, inside the sandbox, with no settings change and no
+escalation.** Better than the 83% Table 2 measured unsandboxed.
+
+⚠️ **The trust flag is load-bearing for COST, not just for warnings.** Untrusted, the child logs
+`Ignoring 217 permissions.allow entries ... this workspace has not been trusted` and reads **zero**
+cached tokens on every fork - so the entire layered saving disappears while every launch still
+succeeds. Isolated by running the same chain unsandboxed, where it also read zero: the sandbox was
+never the cause. Nothing about that failure looks like a cost failure; the bill is the only tell.
+
+ⓘ **What the trust flag actually grants**, since it is a permission surface: the repo's OWN tracked
+`.claude/settings.json` allow rows - the ones already in git, already the operator's. It widens
+nothing beyond them, and it is written into the autopilot's own config dir, never into
+`~/.claude/settings.json` or the repo's (both barred to agents).
+
+**So the runner owns this**: `autopilot_run.py` seeds that home and sets `CLAUDE_CONFIG_DIR` on
+every child. `~/.claude/projects` needs no grant, `claude_permissions_apply.py` needs no edit, and
+the unsandboxed fallback is not needed.
+
+---
+
 ## What Step 2 inherits
 
 The runner's flag set, byte for byte:
