@@ -336,6 +336,82 @@ with TempDir() as tmp:
                 len(launches(log)) == 1, f"{len(launches(log))} launch(es): {out.strip()[:200]}")
 
 
+# ── HANDOFF ───────────────────────────────────────────────────────────────────
+with TempDir() as tmp:
+    if c.block("HANDOFF - the runner really does hand the step to jira_feed"):
+        # The seam between the runner and the ticket verb, which neither file's own tests
+        # cover: `test_autopilot_run` stubs the feed away with --no-post and
+        # `test_jira_feed` calls `step` directly. A signature drift between them would leave
+        # both suites green and every autopilot step unrecorded on the board - and the ticket
+        # IS the handoff, so an unrecorded step is a step the next child never learns about.
+        ws = workspace(tmp / "ws")
+        log = tmp / "launches.jsonl"
+        feedlog = tmp / "feed.jsonl"
+        stub = claude_stub(tmp / "bin", log,
+                           {"session_id": "sess-xyz", "total_cost_usd": 0.03,
+                            "usage": {"input_tokens": 9},
+                            "result": json.dumps({"status": "needs_human",
+                                                  "summary": "the epic branch moved",
+                                                  "question": "rebase or hold?",
+                                                  "artifacts": ["walkthrough.md"]})})
+        feed = fake_exe(tmp / "bin", "feed_stub",
+                        "import json, sys, pathlib\n"
+                        f"pathlib.Path({str(feedlog)!r}).open('a', encoding='utf-8').write("
+                        "json.dumps(sys.argv[1:]) + '\\n')\n"
+                        "sys.exit(0)\n")
+        env = utf8_env(CLAUDE_BIN=stub, AUTOPILOT_JIRA_FEED=feed,
+                       AUTOPILOT_CLAUDE_HOME=str(tmp / "child-home"),
+                       PATH=path_entry(tmp / "bin") + os.pathsep + os.environ.get("PATH", ""))
+
+        rc, out = run("run", "--door", "/cicd-dev-story-tests", "--seat", "gnat",
+                      "--cwd", str(ws), "--key", "AVCH-140", "--stage", "2", env=env)
+        called = launches(feedlog)
+        c.check("H1 the feed was called exactly once", len(called) == 1, f"{called}")
+        argv = called[0] if called else []
+        c.check("H2 ...with the `step` verb", argv[:1] == ["step"], f"{argv[:3]}")
+        for flag in ("--key", "--stage", "--door", "--seat", "--status",
+                     "--summary-file", "--session", "--usage-file", "--apply"):
+            c.check(f"H3 ...carrying {flag}", flag in argv, f"{argv}")
+        c.check("H4 ...the child's real status, not a default",
+                "needs_human" in argv, f"{argv}")
+        c.check("H5 ...and the child's real session id", "sess-xyz" in argv, f"{argv}")
+        if "--summary-file" in argv:
+            body = Path(argv[argv.index("--summary-file") + 1]).read_text(encoding="utf-8")
+            c.check("H6 the summary file carries the child's words and its question",
+                    "the epic branch moved" in body and "rebase or hold?" in body, body[:200])
+            c.check("H7 ...and its artifacts, which change what the next step does",
+                    "walkthrough.md" in body, body[:200])
+        c.check("H8 needs_human exits 3, distinct from done(0) and failed(1)",
+                rc == 3, f"rc={rc}: {out.strip()[:200]}")
+
+    if c.block("HANDOFF - a step that could not be recorded is a FAILED step"):
+        # The work may well have happened. The handoff did not, so the next child would start
+        # blind - and a runner that shrugs at that is how a run silently loses a step.
+        ws = workspace(tmp / "ws2")
+        log2 = tmp / "launches2.jsonl"
+        stub = claude_stub(tmp / "bin2", log2, {"status": "done", "summary": "all green"})
+        deadfeed = fake_exe(tmp / "bin2", "feed_dead",
+                            "import sys\n"
+                            "print('jira-feed: NOT recorded', file=sys.stderr)\n"
+                            "sys.exit(2)\n")
+        env2 = utf8_env(CLAUDE_BIN=stub, AUTOPILOT_JIRA_FEED=deadfeed,
+                        AUTOPILOT_CLAUDE_HOME=str(tmp / "child-home2"),
+                        PATH=path_entry(tmp / "bin2") + os.pathsep + os.environ.get("PATH", ""))
+        rc, out = run("run", "--door", "/cicd-dev-story-tests", "--seat", "gnat",
+                      "--cwd", str(ws2 := ws), "--key", "AVCH-140", "--stage", "2", env=env2)
+        c.check("H9 a child that succeeded but was not recorded exits 1 (failed)",
+                rc == 1, f"rc={rc}: {out.strip()[:200]}")
+        c.check("H10 ...and says which ticket it could not reach",
+                "AVCH-140" in out, out.strip()[:300])
+        # ANTI-VACUITY: the SAME call with --no-post must succeed, or H9 passes because the
+        # runner is broken rather than because the record failed.
+        rc, out = run("run", "--door", "/cicd-dev-story-tests", "--seat", "gnat",
+                      "--cwd", str(ws2), "--key", "AVCH-140", "--stage", "2",
+                      "--no-post", env=env2)
+        c.check("H11 anti-vacuity - the same run with --no-post is done(0)",
+                rc == 0, f"rc={rc}: {out.strip()[:200]}")
+
+
 # ── SEAT ──────────────────────────────────────────────────────────────────────
 if c.block("SEAT - the rendered JSON matches the master's own frontmatter, all six"):
     masters = sorted((CENTRE / ".agents" / "commands").glob("smh-team-*.md"))

@@ -370,7 +370,19 @@ def post_step(key: str, stage: str, result: dict, cwd: Path, *, door: str,
     summary = cwd / "_artifacts" / f"autopilot-step-{stage}.md"
     usage = cwd / "_artifacts" / f"autopilot-step-{stage}-usage.json"
     summary.parent.mkdir(parents=True, exist_ok=True)
-    summary.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    # The comment carries PROSE, not the raw envelope: the next child and the operator read the
+    # same words. Artifacts and denials ride along because both change what the next step does.
+    text = [str(result.get("summary") or "").strip() or "(the child returned no summary)"]
+    if result.get("question"):
+        text += ["", f"Question: {result['question']}"]
+    # ⛔ NOT `key` as the loop variable - it shadows the ticket key this function was handed,
+    # and the only place that shows is the FAILURE message, which then names `denials` instead
+    # of the ticket nobody could reach. Found by H10, which asserts the ticket is named.
+    for label, field in (("Artifacts", "artifacts"), ("Denied", "denials")):
+        rows = result.get(field) or []
+        if rows:
+            text += ["", f"{label}: " + ", ".join(f"`{r}`" for r in rows)]
+    summary.write_text("\n".join(text) + "\n", encoding="utf-8")
     usage.write_text(json.dumps(result.get("usage") or {}, indent=2), encoding="utf-8")
     feed = Path(os.environ.get("AUTOPILOT_JIRA_FEED") or JIRA_FEED)
     r = subprocess.run([sys.executable, str(feed), "step", "--key", key, "--stage", str(stage),

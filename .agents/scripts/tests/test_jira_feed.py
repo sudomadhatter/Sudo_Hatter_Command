@@ -622,6 +622,124 @@ def main() -> int:
 
             set_state(state, description="", lossy_drop=None, comments=[])
 
+        # ── SCC-430 · step: the autopilot's handoff between children ──────────
+        if c.block("SCC-430 step: one comment per child, read back, and the escalation marker"):
+            # Nothing passes between autopilot children in memory - each is a fresh headless
+            # process, and the next one learns what happened by reading the ticket. So a
+            # comment that does not land is a STEP THAT DID NOT HAPPEN, whatever the child
+            # achieved, and `swallow` (the board accepts the comment and loses it) is exactly
+            # the shape that looks like success from the caller's side.
+            summary = tmp / "step-summary.md"
+            usage = tmp / "step-usage.json"
+            summary.write_text("Wrote the failing tests and saw them red.\n", encoding="utf-8")
+            usage.write_text('{"input_tokens": 120, "output_tokens": 40, '
+                             '"cache_read_input_tokens": 11000}', encoding="utf-8")
+
+            set_state(state, comments=[])
+            code, out = jf("step", "--key", "TEST-1", "--stage", "2",
+                           "--door", "/cicd-dev-story-tests", "--seat", "cheshire-cat",
+                           "--status", "done", "--summary-file", str(summary),
+                           "--session", "sess-aaa", "--usage-file", str(usage), "--apply")
+            st = get_state(state)
+            body = st["comments"][0]["body"] if st["comments"] else ""
+            c.check("SCC-430 P1 step posts and exits 0", code == 0, out.strip()[:300])
+            c.check("SCC-430 P2 exactly ONE comment per child (the count IS the acceptance)",
+                    len(st["comments"]) == 1, f"{len(st['comments'])} comment(s)")
+            c.check("SCC-430 P3 the comment carries the session id, or two steps look alike",
+                    "sess-aaa" in body, body[:200])
+            c.check("SCC-430 P4 ...the stage, the door and the seat",
+                    "stage 2" in body and "cicd-dev-story-tests" in body
+                    and "cheshire-cat" in body, body[:300])
+            c.check("SCC-430 P5 ...the child's own words", "saw them red" in body, body[:300])
+            c.check("SCC-430 P6 ...and the usage line", "11000 cached" in body, body[:300])
+
+            # A SECOND step stacks rather than replacing - this is the opposite shape to
+            # `devrecord` (one record, always current) and it is deliberate: the design's
+            # acceptance item is a COUNT of children on the ticket, and a verb that updated one
+            # comment in place could never be counted.
+            code, out = jf("step", "--key", "TEST-1", "--stage", "3",
+                           "--door", "/cicd-code-review", "--seat", "none",
+                           "--status", "done", "--summary-file", str(summary),
+                           "--session", "sess-bbb", "--apply")
+            st = get_state(state)
+            c.check("SCC-430 P7 a second step STACKS, it does not overwrite the first",
+                    len(st["comments"]) == 2 and code == 0, f"{len(st['comments'])}")
+
+            # ⛔ THE READ-BACK, and it keys on the SESSION ID rather than the marker. Two steps
+            # of one run share the marker, the door and the seat; only the session tells them
+            # apart, so a marker-only check would find step 2 and report step 3 landed.
+            set_state(state, comments=[], swallow=True)
+            code, out = jf("step", "--key", "TEST-1", "--stage", "4",
+                           "--door", "/cicd-dev-story-tests", "--seat", "cheshire-cat",
+                           "--status", "done", "--summary-file", str(summary),
+                           "--session", "sess-ccc", "--apply")
+            c.check("SCC-430 P8 a swallowed comment is exit 2, not a success",
+                    code == 2, f"rc={code}: {out.strip()[:300]}")
+            c.check("SCC-430 P9 ...and it says so in words that name the session",
+                    "sess-ccc" in out and "NOT recorded" in out, out.strip()[:300])
+
+        if c.block("SCC-430 step: needs_human leads with the marker the operator looks for"):
+            summary = tmp / "step-question.md"
+            summary.write_text("Blocked on a product call.\n\n"
+                               "Question: ship at CONCERNS or fix the macro first?\n",
+                               encoding="utf-8")
+            set_state(state, comments=[])
+            code, out = jf("step", "--key", "TEST-1", "--stage", "5",
+                           "--door", "/cicd-dev-story-tests", "--seat", "cheshire-cat",
+                           "--status", "needs_human", "--summary-file", str(summary),
+                           "--session", "sess-ddd", "--apply")
+            body = get_state(state)["comments"][0]["body"]
+            c.check("SCC-430 Q1 needs_human posts and exits 0", code == 0, out.strip()[:200])
+            # FIRST LINE, not merely present. Buried in a body the marker is decoration; it is
+            # what the operator's eye and any future filter both search for.
+            c.check("SCC-430 Q2 `Needs Mr. Hatter` is the FIRST line",
+                    body.splitlines()[0].strip() == "Needs Mr. Hatter",
+                    repr(body.splitlines()[:2]))
+            c.check("SCC-430 Q3 ...and the child's question rides with it",
+                    "ship at CONCERNS" in body, body[:300])
+
+            # ANTI-VACUITY: a `done` step must NOT carry the marker, or Q2 passes on a verb
+            # that stamps every comment with it.
+            set_state(state, comments=[])
+            jf("step", "--key", "TEST-1", "--stage", "6", "--door", "/cicd-dev-story-tests",
+               "--seat", "cheshire-cat", "--status", "done", "--summary-file", str(summary),
+               "--session", "sess-eee", "--apply")
+            body = get_state(state)["comments"][0]["body"]
+            c.check("SCC-430 Q4 anti-vacuity - a `done` step carries NO escalation marker",
+                    "Needs Mr. Hatter" not in body, body[:200])
+
+        if c.block("SCC-430 step: an unknown status is refused before anything is posted"):
+            summary = tmp / "step-summary.md"
+            summary.write_text("something happened\n", encoding="utf-8")
+            set_state(state, comments=[])
+            code, out = jf("step", "--key", "TEST-1", "--stage", "7",
+                           "--door", "/cicd-dev-story-tests", "--seat", "cheshire-cat",
+                           "--status", "probably-fine", "--summary-file", str(summary),
+                           "--session", "sess-fff", "--apply")
+            c.check("SCC-430 R1 an unknown status exits non-zero", code != 0, f"rc={code}")
+            c.check("SCC-430 R2 ...and NOTHING was posted",
+                    not get_state(state)["comments"],
+                    f"{len(get_state(state)['comments'])} comment(s)")
+            # The four statuses are a CONTRACT the runner's exit codes are keyed on. A fifth
+            # word arriving from a model's reply must die here, not become a new state nobody
+            # wrote a branch for.
+            c.check("SCC-430 R3 ...naming the four the contract allows",
+                    all(w in out for w in ("done", "blocked", "needs_human", "failed")),
+                    out.strip()[:300])
+
+            # ANTI-VACUITY: an empty summary is refused too - an empty comment on the ticket
+            # is a handoff that says nothing, which is worse than no comment at all.
+            empty = tmp / "step-empty.md"
+            empty.write_text("   \n", encoding="utf-8")
+            code, out = jf("step", "--key", "TEST-1", "--stage", "8",
+                           "--door", "/cicd-dev-story-tests", "--seat", "cheshire-cat",
+                           "--status", "done", "--summary-file", str(empty),
+                           "--session", "sess-ggg", "--apply")
+            c.check("SCC-430 R4 an empty summary is refused, not posted blank",
+                    code != 0 and not get_state(state)["comments"], f"rc={code}")
+
+            set_state(state, description="", lossy_drop=None, comments=[])
+
         # ── SCC-271 B · --append-new cannot manufacture two records for one id ─
         if c.block("SCC-271 devrecord: --append-new cannot forge two records for one id"):
             # `find_devrecord` already filters by story id, so `prior` is non-None ONLY when
