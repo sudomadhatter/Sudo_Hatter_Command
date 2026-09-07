@@ -150,6 +150,53 @@ with TempDir() as tmp:
                 "exists at" in out3 and "cwd" in out3, out3.strip()[:300])
 
 
+# ── EVIDENCE ──────────────────────────────────────────────────────────────────
+# Harvested from the retired v2 reference's war stories (row G). Theirs: on a CLEAN pass the
+# reviewer did all the judgment work, found nothing to fix, and dropped the mechanical
+# deliverable - because it was buried among the instructions. The lesson they drew is the one
+# that transfers: separate the judgment WORK from the DELIVERABLE and make the deliverable
+# un-collapsible. v3's exposure is the same shape - the schema requires only status+summary, so
+# a reviewer could answer `done` with no sha while the door tells the lead to post "PASS at <sha>".
+with TempDir() as tmp:
+    if c.block("EVIDENCE - a review verdict without its sha is not a verdict"):
+        ws = workspace(tmp / "ws")
+        sid = "22222222-2222-2222-2222-222222222222"
+
+        # V1 · the collapse: a clean-looking `done` carrying no evidence at all.
+        log1 = tmp / "a.jsonl"
+        stub1 = claude_stub(tmp / "bin1", log1, {"status": "done", "summary": "PASS, all clean"})
+        rc, out = run("run", "--door", "/cicd-dev-story-tests", "--review",
+                      "--cwd", str(ws), "--key", "AVCH-140", "--stage", "4",
+                      "--session-id", sid, "--no-post",
+                      env=env_for(tmp, stub1, bindir="bin1"))
+        c.check("V1 a reviewer's `done` with no evidence.sha is FAILED, not accepted",
+                rc == 1, f"rc={rc}: {out.strip()[:200]}")
+        c.check("V2 ...and it says why, so the lead does not invent a sha",
+                "evidence.sha" in out and "ONE tree" in out, out.strip()[:300])
+
+        # V3 · ANTI-VACUITY. The same reviewer WITH a sha must pass, or V1 is just "reviews
+        # always fail" and proves nothing about the missing field.
+        log2 = tmp / "b.jsonl"
+        stub2 = claude_stub(tmp / "bin2", log2,
+                            {"status": "done", "summary": "PASS", "evidence": {"sha": "abc1234"}})
+        rc2, out2 = run("run", "--door", "/cicd-dev-story-tests", "--review",
+                        "--cwd", str(ws), "--key", "AVCH-140", "--stage", "4",
+                        "--session-id", "33333333-3333-3333-3333-333333333333", "--no-post",
+                        env=env_for(tmp, stub2, bindir="bin2"))
+        c.check("V3 anti-vacuity - the same verdict WITH a sha is accepted",
+                rc2 == 0, f"rc={rc2}: {out2.strip()[:200]}")
+
+        # V4 · and the requirement is NARROW. A seated Gnat lookup owes no sha and must not be
+        # failed for lacking one - a universal rule here would break every read-only child.
+        log3 = tmp / "c.jsonl"
+        stub3 = claude_stub(tmp / "bin3", log3, {"status": "done", "summary": "the note says X"})
+        rc3, out3 = run("run", "--door", "/cicd-dev-story-tests", "--seat", "gnat",
+                        "--cwd", str(ws), "--key", "AVCH-140", "--stage", "1", "--no-post",
+                        env=env_for(tmp, stub3, bindir="bin3"))
+        c.check("V4 a non-review child owes no sha - the rule does not leak",
+                rc3 == 0, f"rc={rc3}: {out3.strip()[:200]}")
+
+
 # ── LOCK ──────────────────────────────────────────────────────────────────────
 # Harvested from the retired opencode engine (row G), whose own notes record the gap: "nothing
 # used to stop a double-run of the SAME story". Two children in one worktree interleave their
@@ -237,7 +284,12 @@ with TempDir() as tmp:
     if c.block("REVIEW - the reviewer refuses a session the runner has already issued"):
         ws = workspace(tmp / "ws")
         log = tmp / "launches.jsonl"
-        stub = claude_stub(tmp / "bin", log, {"status": "done", "summary": "ok"})
+        # ⛔ A reviewer's reply carries the sha it judged. A bare `done` here is the deliverable
+        # collapsing (see the EVIDENCE block), and this stub used to answer exactly that - which
+        # is what turned R6 red when that rule landed. A stub that cannot answer legally is a
+        # stub that tests the wrong thing.
+        stub = claude_stub(tmp / "bin", log,
+                           {"status": "done", "summary": "ok", "evidence": {"sha": "deadbee"}})
         env = env_for(tmp, stub)
         ledger = ws / "_artifacts" / "autopilot-ledger.json"
         ledger.write_text(json.dumps(

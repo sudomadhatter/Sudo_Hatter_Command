@@ -228,6 +228,14 @@ the old lane needed a nineteen-file edit to change one rule and this one does no
 | **The run is watched, not awaited** | A step prints nothing until it returns, so a foreground call makes a working run look like a hang and the only choices are wait blind or kill it | The door: launch each step in the background, watch it, keep a visible checklist |
 | **What the lead decided on your behalf** | The charter says what it MAY pass. Nothing said what it DID — and a permission slip nobody audits is not a control | The door's park step: one ticket comment listing every charter row actually exercised |
 | **A soft "I'd normally check this with him" is a DECISION, not an escalation** | The retired lane got this exactly right. Left unwritten, a lead either escalates everything or quietly defaults and records nothing | The same list — that is the line it exists to catch |
+| **A verdict must carry the sha it was made at** | Their reviewer, on a CLEAN pass, did every bit of the judgment work and then dropped the mechanical deliverable — because it was buried among the instructions. **The happy path is where a deliverable collapses** | `autopilot_run.py`: a review answering `done` with no `evidence.sha` is `failed`. Narrow on purpose — a Gnat lookup owes no sha |
+
+⭐ **The lesson under the last row is the one worth carrying into anything built here:** separate
+the judgment WORK from the mechanical DELIVERABLE, and make the deliverable un-collapsible. An agent
+that finds nothing wrong is the *most* likely to fold its bookkeeping into prose, because on a clean
+pass the bookkeeping feels like ceremony. Their reviewer was not lazy and it was not confused — it
+was correct about the code and quietly wrong about the record, which is the hardest failure to spot
+afterwards. A checklist item cannot fix that; only a check that fails can.
 
 **What was deliberately NOT carried over.** The old lane's per-stage test-gate baseline and its
 `_RUN-STATUS.md` both belong to somebody else now: the **door** owns its own gate, and the **ticket**

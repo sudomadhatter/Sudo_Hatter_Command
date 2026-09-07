@@ -599,6 +599,24 @@ def main(argv: list[str] | None = None) -> int:
     if proc.stderr and proc.stderr.strip():
         print(proc.stderr.strip()[:2000], file=sys.stderr)
 
+    # 5 · A REVIEW VERDICT WITHOUT ITS SHA IS NOT A VERDICT.
+    # ⛔ The v2 lane's own war story, and the reason this check is mechanical rather than a line
+    # in the door: on a CLEAN pass its reviewer did every bit of the judgment work right, found
+    # nothing to fix, and quietly folded the bookkeeping into its prose - because the deliverable
+    # was buried among the instructions. The happy path is exactly where a deliverable collapses.
+    # Here the lead is told to post "PASS at <sha>"; a `done` carrying no sha leaves it with
+    # nothing to put there, and the shape of THAT failure is an invented sha, not a blank one.
+    # Narrow by design: only a review. A Gnat lookup has no sha and owes none.
+    if a.review and result.get("status") == "done":
+        sha = (result.get("evidence") or {}).get("sha")
+        if not sha:
+            result = {**result, "status": "failed",
+                      "summary": ("the reviewer returned a verdict with no `evidence.sha`. A "
+                                  "verdict is a claim about ONE tree; without the sha it was "
+                                  "made at, nothing can be re-checked and the lead has no sha "
+                                  "to report. Re-run the review. Original summary: "
+                                  + str(result.get("summary", ""))[:300])}
+
     append_ledger(ledger, {
         "stage": a.stage, "door": a.door, "seat": seat_name, "review": bool(a.review),
         "session_id": result.get("session_id") or session_id,

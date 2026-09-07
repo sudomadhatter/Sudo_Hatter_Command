@@ -2988,6 +2988,13 @@ exercised: the gate it passed, each question it answered from the repo instead o
 anything it judged not worth acting on. A soft *"I'd normally have checked this with you"* is a
 decision and appears on that list, not an escalation.
 
+**A verdict it hands you always names the commit it was made at.** A review that comes back clean but
+without the sha it judged is treated as a failed step and re-run, not reported. That sounds pedantic
+until you picture the alternative: a reviewer that did the work correctly, found nothing to fix, and
+dropped the bookkeeping — leaving the lead to post *"PASS"* at a commit nobody recorded. The failure
+that follows is an invented sha, not a blank one. The happy path is exactly where a deliverable gets
+folded into prose, which is why this is a check that fails rather than a line in a checklist.
+
 **Done means green, and green means a script said so** — never the agent's own say-so. A red gate
 parks with a receipt for you rather than spawning a fix loop.
 
