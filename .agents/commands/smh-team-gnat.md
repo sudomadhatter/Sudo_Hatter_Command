@@ -5,7 +5,7 @@ mode-slug: ask
 mode-name: "🦟🔍 The Gnat — LIBRARIAN"
 mode-groups: [read]
 claude-model: claude-sonnet-5
-claude-effort: low
+claude-effort: medium
 claude-tools: [Read, Grep, Glob, WebSearch, WebFetch]
 ---
 

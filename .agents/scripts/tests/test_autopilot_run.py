@@ -191,9 +191,9 @@ with TempDir() as tmp:
         # over-applied. If a lookup ever needs judgment the charter says escalate, not upgrade.
         for tier, n in (("medium", "d"), ("hard", "e")):
             g = launch("--tier", tier, seat="gnat", n=n)
-            c.check(f"T4 the Gnat is exempt at {tier} - still Sonnet 5, still low",
+            c.check(f"T4 the Gnat is exempt at {tier} - still Sonnet 5 at medium",
                     _pin(g, "--model") == "claude-sonnet-5"
-                    and _pin(g, "--effort") == "low", " ".join(g)[:200])
+                    and _pin(g, "--effort") == "medium", " ".join(g)[:200])
 
         hare = launch("--tier", "hard", seat="march-hare", n="f")
         c.check("T5 hard puts the Hare on Fable, not Opus - a per-seat row, not the default",

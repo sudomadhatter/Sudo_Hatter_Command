@@ -169,7 +169,7 @@ that seat in Zoo. Three frontmatter keys pin the Claude side.
 
 | Seat | Role | Model | Effort | Why |
 |---|---|---|---|---|
-| The Gnat | read-only research | sonnet | low | Looks things up and cites lines. **Low effort, not a small model** — its answer feeds a decision the lead builds on, so a mis-cited line becomes a wrong build nothing downstream can see |
+| The Gnat | read-only research | sonnet | medium | Looks things up and cites lines. Its answer is what the lead uses **instead of asking you**, so a mis-cited line becomes a wrong build nothing downstream can see |
 | White Rabbit | PM / planning | sonnet | medium | Writes the plan; does not build |
 | Caterpillar | design / front end | sonnet | medium | |
 | Cheshire Cat | the builder | sonnet | high | Does the work that has to be right |
@@ -197,7 +197,7 @@ it spends anything. One word sets every model, every effort and both budgets.
 | | easy | medium | hard |
 |---|---|---|---|
 | the seats that write code | their own pins — Sonnet 5 | Opus 5 · high | Opus 5 · **xhigh** |
-| the Gnat — read-only lookups | Sonnet 5 · low | **unchanged** | **unchanged** |
+| the Gnat — read-only lookups | Sonnet 5 · medium | **unchanged** | **unchanged** |
 | the March Hare — the lead | Opus 5 · high | Opus 5 · high | **Fable 5.1 · high** |
 | the reviewer | Opus 5 | **Fable 5.1 · high** | **Fable 5.1 · high** |
 | budget: per child · per run | $6 · $25 | $12 · $60 | $20 · $120 |
@@ -213,14 +213,18 @@ Hare is the lead. It reads results and decides what happens next; it never autho
 review. So at `hard` the two *judgment* roles get the model best at judgment, while every seat that
 touches code is on Opus at extra-high — which the reviewer is not.
 
-**Why the Gnat never moves — and why it is not the cheapest model either.** Its job is a read-only
-lookup that cites its line, and that does not get harder because the ticket did: paying extra-high
-reasoning to open a file and quote it back is where a difficulty dial over-applies. But it runs
-**Sonnet 5 at low effort, not a small model** (operator ruling), because the thing being bought is
-RELIABILITY, not thinking time. The Gnat's answer feeds a question the lead then builds on, so a
-mis-read line becomes a wrong build decision that nothing downstream can see — and a cheap wrong
-answer that gets trusted costs more than the saving. If a lookup ever needs judgment rather than
-accuracy, the charter already says escalate rather than guess.
+**Why the Gnat never moves.** It runs **Sonnet 5 at medium** at every tier — the same setting on a
+trivial ticket and a hard one — because looking something up does not get harder when the work
+around it does. Paying extra-high reasoning to open a file and quote a line back is where a
+difficulty dial over-applies.
+
+⛔ **Exempt is not the same as cheap, and that distinction is the whole ruling.** The Gnat's answer
+is what the lead uses to settle a question **instead of asking you**, and the build then proceeds on
+it — so a mis-read line does not surface as a bad lookup. It surfaces days later as a wrong build
+decision, with nothing downstream able to see that the premise was false. A cheap wrong answer that
+gets trusted costs more than the saving, and the saving here is against Opus at extra-high, not
+against getting the answer right. If a lookup ever needs judgment rather than accuracy, the charter
+already says escalate rather than guess.
 
 **Why each tier carries its own budget.** Otherwise the ceiling silently becomes the tier: `hard` is
 Opus at extra-high across six children, and an `easy` ceiling would halt it partway and report

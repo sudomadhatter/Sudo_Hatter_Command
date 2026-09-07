@@ -73,7 +73,7 @@ in one line before the first child, because he is paying for the answer.
 | | easy | medium | hard |
 |---|---|---|---|
 | the seats that write code | their own pins (Sonnet 5) | Opus 5 · high | Opus 5 · **xhigh** |
-| `gnat` — read-only lookups | Sonnet 5 · low | **unchanged** | **unchanged** |
+| `gnat` — read-only lookups | Sonnet 5 · medium | **unchanged** | **unchanged** |
 | `march-hare` — the lead | Opus 5 · high | Opus 5 · high | **Fable 5.1 · high** |
 | the reviewer | Opus 5 | **Fable 5.1 · high** | **Fable 5.1 · high** |
 | per child · per run | $6 · $25 | $12 · $60 | $20 · $120 |
@@ -86,11 +86,13 @@ builds and Fable reviews. A reviewer sharing the builder's model shares its blin
 session buys independence from the author's *context*, not from the author's *failure modes*. The
 suite asserts this for every tier, so do not "tidy" two rows onto one model.
 
-⛔ **The Gnat does not move — and it is not on a small model.** A read-only lookup does not get harder
-because the ticket did, so it stays at **low effort** at every tier. It runs **Sonnet 5**, not a
-cheaper model, because its answer feeds a question you then build on: a mis-cited line becomes a
-wrong build nothing downstream can see. Low effort buys the saving; the model buys the accuracy. If
-a lookup ever needs judgment rather than accuracy, escalate.
+⛔ **The Gnat is EXEMPT from the dial, not held at the floor.** It runs **Sonnet 5 at medium** at
+every tier — the same setting on a trivial ticket and a hard one — because a lookup does not get
+harder when the work around it does. What it is *not* is cheap: its answer is what you use to
+settle a question **instead of asking the operator**, and the build proceeds on it, so a mis-read
+line becomes a wrong build decision nothing downstream can see. The saving is against Opus at
+extra-high, not against getting the answer right. If a lookup ever needs judgment rather than
+accuracy, escalate.
 
 ⛔ **`--tier hard` cannot change YOUR model** — you are the operator's session, not a child. At
 `hard` the lead should be on Fable 5.1; say so and let him switch, or note in the run record that

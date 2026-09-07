@@ -2939,9 +2939,10 @@ also where the autopilot is kept current; this section is the short version.
 do not, and says which it chose before spending anything. The tier sets every model, every effort and
 both budgets at once — `easy` leaves each seat on its own pin (Sonnet 5) at $6 per child and $25 for
 the run; `medium` moves the code-writing seats to Opus 5 at high, $12 and $60; `hard` takes them to
-Opus 5 at extra-high, $20 and $120. Two seats never follow the dial: the read-only lookup seat stays
-at low effort at every tier, because looking a thing up does not get harder when the ticket does
-(it runs Sonnet 5 rather than a smaller model, because its answer feeds a decision you build on), and the
+Opus 5 at extra-high, $20 and $120. Two seats never follow the dial: the read-only lookup seat sits on
+Sonnet 5 at medium whatever the tier, because looking a thing up does not get harder when the work
+around it does — exempt, though deliberately not cheap, since its answer is what the lead uses
+instead of asking you and a mis-cited line becomes a wrong build nothing downstream can see. And the
 reviewer runs a **different model from whatever wrote the code** — Sonnet builds and Opus reviews,
 Opus builds and Fable reviews. That last one is not a cost choice: a fresh session frees a reviewer
 from the author's context but never from the author's blind spots, and only a different model does
