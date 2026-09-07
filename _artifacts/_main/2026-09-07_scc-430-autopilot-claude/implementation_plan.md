@@ -463,7 +463,7 @@ Audit verdict: GO
 **Batch approval (2026-09-07):** "approved scc-430" — covers the plans listed in `/smh-plan-task SCC-429`
 Step 5: **SCC-430**, and only that one. SCC-431 was deliberately left out of the operator's words; its gate
 stays armed and that lane stops for its own approval. This plan as it stood at `001d6e78`, carrying
-`Audit verdict: GO` at that commit — recorded at `<pending>`.
+`Audit verdict: GO` at that commit — recorded at `dbb9c4b0`.
 
 **Ask-First item 1 answered (2026-09-07):** "yes for the cli upgrade" — the operator's word for the Claude
 CLI upgrade to >= 2.1.259. Measured on PATH before asking: `2.1.258`, with `--max-turns` and
