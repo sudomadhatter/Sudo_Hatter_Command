@@ -28,7 +28,7 @@ can actually be enforced is the runner's own.
 - [x] **Row D — `jira_feed.py step`.** One comment per child, read back by session id, `needs_human` leading with the `Needs Mr. Hatter` line; self-contained, so `test_jira_start_hook.py`'s fixture still works.
 - [x] **Row E — the lead's door.** Charter ruled 2026-09-07 (as proposed) and pasted into the door as its own table; `/cicd-autopilot-claude` rewritten from the v2 four-stage engine to the v3 lead session.
 - [x] **Row E — the Autopilot SOP.** `docs/_scc_sops_prds/autopilot_SOP.md` with three validated `flowchart` diagrams; SOP §15 links to it, both atlas entries describe v3, one changelog line.
-- [ ] Row F — one real AGY story (**needs a story choice**).
+- [~] **Row F — one real AGY ticket.** Operator chose **AVCH-138** (the 3MB pre-hydration splash) 2026-09-07. Three defects found and fixed BEFORE the first child launched; the run itself is in flight.
 - [ ] Row G — the five old doors deleted (**needs ruling 3**).
 - [ ] **Close-out — the Autopilot SOP** (operator direction, 2026-09-07): its own document with its own diagrams, linked from the main SOP, and the upkeep home for the autopilot workflows from then on. See *What close-out owes* below.
 
@@ -77,6 +77,7 @@ Twenty-four failures, one per defect the suite exists to catch. `N1` fired on a 
 | `tests/run_all.py` | the whole workflow-script suite | **82/82 files passed** |
 | `mutation_sweep.py` | 9 mutants (rows B–D) | **9/9 killed**, restore verified |
 | `mutation_sweep.py` | 5 mutants (row E's charter) | **5/5 killed**, restore verified |
+| `mutation_sweep.py` | 2 mutants (row F's routes) | **2/2 killed**, restore verified — after the first pass caught AP6 being vacuous |
 | `workflow_lint.py --toolkit-only` | the door's rule pointers | **0 errors** |
 | `sync-agents.ps1 -Status` | is any launcher stale? | clean - every invocable file matches |
 | `check_maps.py` | drift | all maps & INDEXes agree with disk |
@@ -190,6 +191,57 @@ not: `check_maps` counts `.md` files from disk, `refresh_maps` counts them from 
 new SOP page was still untracked — a one-line difference in a folder's file count. Staging it settled
 both. Worth writing down because the symptom (two repair commands undoing each other) points nowhere
 near the cause.
+
+### Row F — three defects found by aiming the door at a real ticket
+
+The plan asks row F to run the door on one real story, and the value showed up before a single child
+launched. **All three defects live in the gap between what the runner CHECKS and what the child
+EXPERIENCES**, which is exactly the gap no unit test can see, because every test in this lane
+launches a stub rather than a child.
+
+| # | What was wrong | Why no test could see it | Fixed by |
+|---|---|---|---|
+| F-a | The door knew only the ①②③ story route. AVCH-138 is a project **Task** — no story file, no sprint row, no epic branch | The suite checks the charter's rows, not whether a real ticket fits one | The quick-fix route, `AP6` |
+| F-b | The CLI floor's stated reason was **false**, and the flag it existed for was never passed | The floor is prose in a door; nothing executed it | `--permission-prompts none`, `F3b` |
+| F-c | `resolve_door` fell back to the RUNNER's repo, green-lighting a door the **child** cannot load | Every test passes a cwd that owns its door, so the fallback never fired | cwd-only resolution, `D5`/`D6` |
+
+**F-b is the one worth reading twice.** The door refuses below CLI 2.1.259 and told you the reason
+was that `--agents` and `--json-schema` are absent below it. Measured on this box: both are present
+on 2.1.258. A floor whose stated reason is false is a floor the first inconvenienced reader correctly
+talks themselves past — and the real constraint goes with it. The genuine reason is
+`--permission-prompts none`, whose default is `host` ("the SDK host or `--permission-prompt-tool`
+answers"). A child launched by this runner has **neither**, so an unattended child that hit a
+permission prompt had nobody to answer it. The runner never passed the flag, so the floor was buying
+nothing at all.
+
+**F-c is SCC-70 reappearing inside the function written to prevent it.** Rule 1 of the runner says a
+door is a file, resolve it and refuse before spending anything. Its implementation then fell back to
+the runner's own repo root — so pointing a child at a thin project PASSED (the runner could see the
+door in its own tree) and launched a child with no such slash command at all: nothing above it,
+improvising a workflow, reporting success. Measured: `Projects/AGY_AVIATIONCHAT` carries tier-2 law,
+no `cicd-*` door and **0** skills, and `~/.claude/skills` is empty, so nothing would have loaded.
+The centre is now a diagnostic only, and the refusal distinguishes *"no such door"* from *"that door
+exists, but not where you pointed the child"* — completely different fixes.
+
+### The sweep caught one of my own tests being vacuous
+
+`AP6` first read `"/cicd-quick-dev" in body`. Mutant F1 deleted the route's dispatch row and the case
+stayed **green**, because the paragraph two lines below the table still names the door. A route is a
+ROW — a door and the seat that wears it — so that is what it counts now. Worth recording because it
+is the failure `tests-must-gate-for-real` names: a check that passes for a reason unrelated to the
+behaviour it claims to protect, and only a declared mutant found it.
+
+| # | mutant | must kill | outcome |
+|---|---|---|---|
+| F1 | the quick-fix route's dispatch row is dropped | `AP6 …dispatchable quick-fix route row` | KILLED (after AP6 was tightened) |
+| F2 | the door stops explaining why a seated child's review is a first pass | `AP7 …cannot fan out review lenses` | KILLED |
+
+### One environment fact the operator needs
+
+`~/.local/bin/claude` still points at **2.1.258** — below this lane's own floor — while **2.1.263**
+is installed beside it and is what the interactive session runs. The symlink never moved after the
+upgrade. Row F's first child is pinned with `--claude` by hand; the standing fix is `claude update`
+or repointing that symlink, after which the pin comes out of the call.
 
 ## What close-out owes
 
