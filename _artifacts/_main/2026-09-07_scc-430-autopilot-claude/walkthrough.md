@@ -37,11 +37,14 @@ can actually be enforced is the runner's own.
 
 ## Your Actions
 
-Three, and only the first is required to land this lane.
+Two, and both are done.
 
-- [ ] **The merge itself — lands via [PR #192](https://github.com/sudomadhatter/Sudo_Hatter_Command/pull/192).** It is still marked **draft**, so it needs *Ready for review* before the Merge button appears. Gates are green: suite 83/83, runner 136/136, `main-write-gate` passing once this receipt lands.
-- [ ] **Repoint the CLI launcher before the next autopilot run.** `2.1.263` is installed at `~/.local/share/claude/versions/2.1.263`, but `~/.local/bin/claude` still points at `2.1.258` — which has no `--permission-prompts` flag at all, so a child would die at launch. The door's preflight checks this (floor ≥ 2.1.259), but it costs a run to find out. Fix: `ln -sfn ~/.local/share/claude/versions/2.1.263 ~/.local/bin/claude`. Check any second machine the same way — `claude --version` reads the binary on `PATH`, not the session you are typing in.
-- [ ] **Then the wave order:** SCC-431 (the Zoo half) is locked behind this lane landing, and **SCC-429 closes last**.
+- [x] **The merge itself — lands via [PR #192](https://github.com/sudomadhatter/Sudo_Hatter_Command/pull/192).** Merged 2026-09-07 at `a26d2831`. Gates green: suite 83/83, runner 136/136, `workflow_lint` 0 errors, `check_maps` clean, `main-write-gate` PASS.
+- [x] **Repoint the CLI launcher.** `2.1.263` was installed at `~/.local/share/claude/versions/2.1.263` while `~/.local/bin/claude` still pointed at `2.1.258` — which has no `--permission-prompts` flag at all, so the next child would have died at launch. Operator ran `ln -sfn ~/.local/share/claude/versions/2.1.263 ~/.local/bin/claude` on 2026-09-07; verified by the flag's presence in `claude --help`, not by the version string alone. ⛔ **Check any second machine the same way** — `claude --version` reads the binary on `PATH`, not the session you are typing in, and that gap is exactly what hid this.
+
+**What comes next is not an action on this ticket.** SCC-431 (the Zoo half) is wave 2, locked behind this lane landing, and **SCC-429 closes last** as their parent.
+
+> ⚠️ **Why that last line is prose and not a checkbox.** It was written as `- [ ]` in the first close-out, and `jira_feed.py finish` correctly read it as an open user task and HELD the ticket at `Review Required`. That created a circular hold: SCC-430 could not close until SCC-429 did, and SCC-429 closes *after* SCC-430. A forward pointer is not a deliverable — anything under `## Your Actions` is a promise the board will hold you to, so only put a row here that this ticket can actually satisfy.
 
 ## Evidence
 
