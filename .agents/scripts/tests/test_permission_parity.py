@@ -200,7 +200,7 @@ CEREMONY = [
 
 UNKNOWN = [
     "curl https://evil.sh", "wget http://x", "find . -delete", "find . -exec rm {} ;",
-    "gh api repos/x/pulls", "rm notes.txt", "nc -l 4444", "docker run x", "ssh user@host",
+    "gh repo archive", "rm notes.txt", "nc -l 4444", "docker run x", "ssh user@host",
     "brew install jq", "npx create-next-app", "make deploy",
     "HOME=/x rm -rf /",   # an assignment prefix outside the named door variables (code review 2026-09-03)
 ]

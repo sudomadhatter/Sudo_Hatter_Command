@@ -189,7 +189,9 @@
     "git branch --delete epic/",
     "env -u GITHUB_TOKEN git branch --delete chore/",
     "env -u GITHUB_TOKEN git branch --delete claude/",
-    "env -u GITHUB_TOKEN git branch --delete epic/"
+    "env -u GITHUB_TOKEN git branch --delete epic/",
+    "gh api ",
+    "gcloud run services describe "
   ],
   "zoo-code.deniedCommands": [
     "rm -rf",

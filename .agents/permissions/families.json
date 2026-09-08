@@ -83,7 +83,7 @@
     {
       "id": "allow-gh-run",
       "cmd": "gh run",
-      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes",
+      "why": "seeded 2026-09-03 from the pre-SCC-378 tracked lists (SCC-378); refine the family as it changes | widened 2026-09-07 via /smh-llm-approvals to include `gh run rerun` (operator said 'all')",
       "render": {
         "zoo": [
           "gh run ",
@@ -93,9 +93,11 @@
           "Bash(gh run view:*)",
           "Bash(gh run list:*)",
           "Bash(gh run watch:*)",
+          "Bash(gh run rerun:*)",
           "Bash(env -u GITHUB_TOKEN gh run view:*)",
           "Bash(env -u GITHUB_TOKEN gh run list:*)",
-          "Bash(env -u GITHUB_TOKEN gh run watch:*)"
+          "Bash(env -u GITHUB_TOKEN gh run watch:*)",
+          "Bash(env -u GITHUB_TOKEN gh run rerun:*)"
         ],
         "antigravity": [
           "command(gh run)",
@@ -2030,6 +2032,52 @@
       },
       "only": [
         "zoo"
+      ]
+    },
+    {
+      "id": "allow-gh-api",
+      "cmd": "gh api",
+      "why": "harvested 2026-09-07 via /smh-llm-approvals (operator said 'all'); read-only GitHub API calls - the stopped command was `gh api` with 23s wall-clock stall",
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-gcloud-run-describe",
+      "cmd": "gcloud run services describe",
+      "why": "harvested 2026-09-07 via /smh-llm-approvals (operator said 'all'); read-only GCP Cloud Run inspection - the stopped command was `gcloud run services describe` with 21s wall-clock stall",
+      "only": [
+        "zoo",
+        "claude",
+        "antigravity"
+      ]
+    },
+    {
+      "id": "allow-npx-next",
+      "cmd": "npx next",
+      "why": "harvested 2026-09-07 via /smh-llm-approvals (operator said 'all'); Claude-scoped because that is the platform it stopped on - the stopped command was `npx next build` with 70s wall-clock stall",
+      "render": {
+        "claude": [
+          "Bash(npx next:*)"
+        ]
+      },
+      "only": [
+        "claude"
+      ]
+    },
+    {
+      "id": "allow-npx-tsc",
+      "cmd": "npx tsc",
+      "why": "harvested 2026-09-07 via /smh-llm-approvals (operator said 'all'); Claude-scoped because that is the platform it stopped on - the stopped command was `npx tsc` with 25s wall-clock stall",
+      "render": {
+        "claude": [
+          "Bash(npx tsc:*)"
+        ]
+      },
+      "only": [
+        "claude"
       ]
     }
   ],

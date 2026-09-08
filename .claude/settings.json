@@ -21,9 +21,11 @@
       "Bash(gh run view:*)",
       "Bash(gh run list:*)",
       "Bash(gh run watch:*)",
+      "Bash(gh run rerun:*)",
       "Bash(env -u GITHUB_TOKEN gh run view:*)",
       "Bash(env -u GITHUB_TOKEN gh run list:*)",
       "Bash(env -u GITHUB_TOKEN gh run watch:*)",
+      "Bash(env -u GITHUB_TOKEN gh run rerun:*)",
       "Bash(python3 .agents/scripts/jira_feed.py *)",
       "Bash(python3 .agents/scripts/*)",
       "Bash(python3 -m py_compile:*)",
@@ -223,7 +225,11 @@
       "Bash(/home/dlohn/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT/backend/.venv/bin/*)",
       "Bash(/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/*)",
       "Bash(firebase hosting:disable:*)",
-      "Bash(unlink:*)"
+      "Bash(unlink:*)",
+      "Bash(gh api:*)",
+      "Bash(gcloud run services describe:*)",
+      "Bash(npx next:*)",
+      "Bash(npx tsc:*)"
     ],
     "additionalDirectories": [
       "/tmp",
