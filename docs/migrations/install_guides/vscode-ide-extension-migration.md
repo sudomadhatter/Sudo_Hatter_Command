@@ -211,6 +211,19 @@ they become functional.
    Source Control show-all-repos keybinding from Antigravity's `keybindings.json`; repoint
    `cmd+o cmd+o` from `roo-cline.openInNewTab` to `zoo-code.openInNewTab`.
 7. Uninstall Roo Code and (when ready) Antigravity IDE.
+8. **Suppress title bar search bar / Command Center during agent prompts (Antigravity in VS Code):**
+   When running the Antigravity agent in VS Code, prompt/approval requests trigger VS Code's experimental
+   Agent Status widget in the title bar, causing the Command Center search bar to pop open or steal focus.
+   Add to user `settings.json`:
+   ```json
+   "window.commandCenter": false,
+   "chat.agentsControl.enabled": "hidden",
+   "chat.unifiedAgentsBar.enabled": false,
+   "antigravity.autoOpenFiles": false
+   ```
+   **Important:** Updating `window.commandCenter` and `chat.agentsControl.enabled` requires a **Window Reload**
+   (`Cmd+Shift+P` / `Ctrl+Shift+P` → `Developer: Reload Window`) or restarting VS Code for the title bar
+   DOM to unmount and remove the active search bar listeners.
 
 ## Expected exceptions
 
