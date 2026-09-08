@@ -2965,7 +2965,7 @@ six-child story route (①②③). A project Task with none of those — a perfo
 change — runs the four-child quick-fix route through `/cicd-quick-dev`. On that route the door's own
 review gate is a **first pass, never the verdict**: no seat carries the `Task` tool, so a seated
 child runs it inline a lens short, and the independent no-seat reviewer that follows is what counts.
-Both routes are drawn on [the Autopilot SOP](autopilot_SOP.md#31-the-quick-fix-route--a-ticket-that-is-not-a-story).
+Both routes are drawn on [the Autopilot SOP](autopilot_SOP.md#5-the-quick-fix-run--four-children-for-a-ticket-that-is-not-a-story).
 
 **One prerequisite refuses more often than the rest: the CLI version.** The lane needs `claude`
 2.1.259 or newer, and Step 0 reads `claude --version` **from `PATH`** — not from the session you are
@@ -2987,7 +2987,7 @@ refuses the other shape and tells you which mistake it was.
 launch word does not travel to the next one. It passes the mid-story `continue` and questions it can
 answer from the repo; it escalates a `NO-GO` audit, any new dependency, schema, security rule, CI or
 environment change, any file deletion, and a second failed review. The full table is on
-[the Autopilot SOP](autopilot_SOP.md#4-the-charter--what-the-lead-may-pass-without-you).
+[the Autopilot SOP](autopilot_SOP.md#6-the-charter--what-the-lead-decides-without-you).
 
 **When it needs you it does two things**, both of them: it asks in the chat with real options and a
 recommendation, and it posts a ticket comment whose first line reads `Needs Mr. Hatter`. Your phone

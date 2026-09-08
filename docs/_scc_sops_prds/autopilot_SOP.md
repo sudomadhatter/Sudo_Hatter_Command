@@ -1,38 +1,47 @@
 # The Autopilot SOP
 
-*The robot that runs your own workflow for you. This page is where the autopilot is explained and
-where it is kept current — the main [`workflows_testing_SOP.md`](workflows_testing_SOP.md) links
-here rather than carrying a second copy.*
+*The robot that runs your own workflow for you. This is the complete guide to the lane: what each
+step is, **who runs it**, what it costs, and where to look when it goes wrong. The whole run happens
+without you watching, so this page is the only place the mechanism is written down — the main
+[`workflows_testing_SOP.md`](workflows_testing_SOP.md) links here rather than carrying a second copy.*
 
 ---
 
 ## 1. What it is, in one paragraph
 
 You type one command and go to bed. A **lead** session — an ordinary Claude chat running
-`/cicd-autopilot-claude` — walks one story through the **same doors you would type by hand**, calling
-a small script once per step. Each call launches a fresh headless Claude process, a **child**, wearing
-one of the six Wonderland seats, running one door **by name**. The child answers with a short
-structured result; the script writes that result onto the Jira ticket as a comment and the lead reads
-one paragraph, not a transcript. When something needs you, it lands on your phone as a ticket comment
-that begins `Needs Mr. Hatter`. When the story is review-ready it stops. It cannot merge anything.
+`/cicd-autopilot-claude` — walks one ticket through the **same doors you would type by hand**,
+calling a small script once per step. Each call launches a fresh headless Claude process, a **child**,
+wearing one of the six Wonderland seats and running one door **by name**. The child answers with a
+short structured result; the script writes that result onto the Jira ticket as a comment, and the
+lead reads one paragraph rather than a transcript. When something needs you it lands on your phone
+as a ticket comment beginning `Needs Mr. Hatter`. When the ticket is review-ready the run stops. It
+cannot merge anything.
 
 **The one design decision everything else follows from:** the autopilot owns **no copy** of any door,
 rule or seat. It passes names, never text. Edit a door in the morning and the robot runs the new one
-that night, with no sync step, no regeneration and nothing to forget.
+that night — no sync step, nothing to regenerate, nothing to forget.
 
 ---
 
-## 2. The three layers
+## 2. The cast — who does what, and what each one cannot do
 
-**A door** is a slash command you type today. **A seat** is one Wonderland team member. **A child** is
-one headless process running one step. **The runner** is the script that launches children and holds
-the rules an agent must not be trusted with.
+Five actors, and the limits matter as much as the jobs. Every "can never" below is enforced by the
+runner or by a tool list, not by an instruction a model could talk itself past.
+
+| Who | What it is | What it does | What it can never do |
+|---|---|---|---|
+| **You** | the operator | Name the ticket and the tier, answer escalations, run close-out | — |
+| **The lead** | your own chat session running `/cicd-autopilot-claude` | Calls the runner once per step, reads one paragraph back, decides the next step inside the charter (§6) | Write code, run tests, read transcripts, land anything |
+| **The runner** | `.agents/scripts/autopilot_run.py`, a plain script | Launches each child, holds the run ceiling, takes the ticket lock, writes the ledger, posts each step to Jira | Read a door's body, invent a status, land anything |
+| **A seated child** | one fresh `claude -p` process wearing one Wonderland seat | Runs ONE door by name, end to end, and returns a small JSON result | Spawn subagents (`Task` is on no seat's tool list), write a review verdict |
+| **The review child** | one fresh process wearing **no seat** | Runs `/cicd-code-review` with the default tool set, fans the review lenses into clean contexts, returns the verdict and the sha it was made at | Wear a seat, fork from anything, reuse a session this run already issued |
 
 ```mermaid
 flowchart TD
-    YOU(["you\nyour chat, or your phone"]) -->|"one command"| LEAD["THE LEAD\nan ordinary Claude session\nrunning /cicd-autopilot-claude"]
-    LEAD -->|"one call per step\ndoor NAME + seat + budget"| RUN["THE RUNNER\n.agents/scripts/autopilot_run.py\nholds what a prompt cannot"]
-    RUN -->|"claude -p, fresh session\nwearing one seat"| KID["A CHILD\nruns the EXISTING door\nby name, not by text"]
+    YOU(["YOU\nyour chat, or your phone"]) -->|"one command plus a tier"| LEAD["THE LEAD\nan ordinary Claude session\nrunning /cicd-autopilot-claude"]
+    LEAD -->|"one call per step\ndoor NAME plus seat plus budget"| RUN["THE RUNNER\n.agents/scripts/autopilot_run.py\nholds what a prompt cannot"]
+    RUN -->|"claude -p, fresh session\nwearing one seat"| KID["A CHILD\nruns the EXISTING door\nby name, never by text"]
     KID -->|"reads at the moment of use"| SRC[".agents/commands/ the doors\n.agents/rules/ the law\nthe six seat masters"]
     KID -->|"a small JSON result"| RUN
     RUN -->|"jira_feed.py step\none comment per child"| TICKET["THE TICKET\nthe handoff between children\nand the record you read"]
@@ -41,106 +50,159 @@ flowchart TD
     PHONE -.->|"your answer"| LEAD
 ```
 
-**Why the ticket and not memory.** Nothing passes between children in process memory — each is a fresh
-session. The next child learns what happened by reading the ticket, exactly as you do. That is not a
-limitation worked around; it is what makes the run auditable after the fact, and it is why a comment
-that fails to post is treated as a step that did not happen.
+**Why the ticket and not memory.** Nothing passes between children in process memory — each is a
+fresh session. The next child learns what happened by reading the ticket, exactly as you do. That is
+what makes a run auditable after the fact, and it is why a comment that fails to post is treated as
+a step that did not happen.
 
 ---
 
-## 3. One story, end to end
+## 3. Before you launch — what must already be true
 
-Six children for a clean run. Every one is a fresh session with a new id, and the ids are on the
-ticket, so "did the reviewer really start clean?" is a thing you can check rather than trust.
+The autopilot implements work; it never invents it. Step 0 of the door measures each of these and
+refuses to launch if one fails, naming which.
+
+| Check | How it is measured | Why it is there |
+|---|---|---|
+| The CLI | `claude --version` on `PATH` is ≥ **2.1.259** | `--permission-prompts none` lands at that version. Its default is `host`, and a headless child has no host — so below the floor, an unattended child that hits a permission prompt has nobody to answer it. ⛔ Read the binary on `PATH`, not the session you are typing in: a launcher symlink that never moved after an upgrade leaves the two on different versions |
+| The runner | `autopilot_run.py --help` exits 0 | A missing runner fails here, not halfway through a run |
+| The work | a **story** is `ready-for-dev` with its failing tests already on disk; a **quick-fix Task** already carries its acceptance criteria on the ticket | ① is not the autopilot's — `/cicd-write-story-tests` runs on your reviewing model before you launch |
+| The branch | the epic branch is checked out and **not behind `origin/main`** | A drifted epic is a merge conflict waiting to be found by a robot |
+| The ticket | the story's Jira key resolves | The ticket IS the handoff; without it there is no run record |
+| The tier | you named it, or the lead says which it chose and why before spending anything | One word sets every model, every effort and both budgets (§8) |
+
+Then the lead opens the story's worktree and links its gitignored assets. **One story, one worktree,
+one lock.**
+
+---
+
+## 4. The story run — six children, step by step
+
+Six children for a clean run, each a fresh session with a new id, and every id lands on the ticket —
+so "did the reviewer really start clean?" is something you can check rather than trust.
+
+| # | Who runs it | The door it runs | What it returns | What the lead does with it |
+|---|---|---|---|---|
+| 1 | ⏰🐇 **White Rabbit** | `/cicd-dev-story-tests <story>`, to its Step 2 stop | the plan path | Passes the plan to stage 2 |
+| 2 | ♥️👑 **Queen of Hearts** | `/cicd-self-audit` on that plan | `GO` or `NO-GO` | `GO` → build. `NO-GO` → **escalate**; re-scoping is your call |
+| 3 | 😼🔨 **Cheshire Cat** | `/cicd-dev-story-tests <story>`, Step 2.5 → Step 5 | the build, committed and pushed on the lane's `claude/*` branch | Reads the status, never the diff |
+| — | 🦟🔍 **The Gnat** | a read-only lookup, whenever a child asks something the repo can answer | the answer, cited to file and line | Forks the asking child with `--fork-of` and the answer — the only `--resume` in a run |
+| 4 | **no seat** | `/cicd-code-review <story>` | `PASS` / `CONCERNS` / `FAIL`, plus `evidence.sha` | `PASS` → park. Anything else → one fix cycle |
+| 5 | 😼🔨 **Cheshire Cat** | the fix, in the lane — only on `CONCERNS` or `FAIL` | the fixed tree at a new sha | One cycle, never two |
+| 6 | **no seat** | `/cicd-code-review <story>` again | the second verdict at the new sha | `PASS` → park. Anything else → **escalate** |
+
+⛔ **The Queen audits; she never reviews.** Stage 2 is the pre-dev audit in a fresh session, which is
+exactly what the ② Step 2 stop existed to guarantee — so the lead may pass that stop itself. The ③
+verdict is not hers and not any seat's: it belongs to a no-seat child on the reviewing model, which
+is the same independence your model switch buys when you run ③ by hand. Two things enforce it — the
+runner refuses `--review` together with `--seat`, and no seat carries the `Task` tool, so a seated
+child could not fan the lenses out even if it tried.
 
 ```mermaid
 flowchart TD
-    L["Step 0 - bind the project\nCLI version, story ready-for-dev,\nepic branch not behind main"] --> W["open the story's worktree\none story, one worktree, one lock"]
-    W --> C1["child 1 - WHITE RABBIT\nruns the plan half of the story door\nreturns the plan path"]
-    C1 --> C2["child 2 - QUEEN OF HEARTS\nruns the pre-dev audit on that plan\nfresh session, no inherited assumptions"]
+    L["Step 0 - the lead binds the project\nCLI floor, story ready-for-dev,\nepic branch not behind main"] --> W["the lead opens the worktree\none story, one worktree, one lock"]
+    W --> C1["1 - WHITE RABBIT\nplans the story\nreturns the plan path"]
+    C1 --> C2["2 - QUEEN OF HEARTS\naudits that plan, fresh session,\nno inherited assumptions"]
     C2 --> V{"audit verdict"}
-    V -- "NO-GO" --> ESC["ESCALATE\nthe plan gate re-arms - his call"]
-    V -- "GO" --> C3["child 3 - CHESHIRE CAT\nbuilds against the audited plan"]
-    C3 --> Q{"did the child ask\na question?"}
-    Q -- "yes, answerable from the repo" --> GNAT["child - THE GNAT\nread-only lookup, cites the line"]
+    V -- "NO-GO" --> ESC["ESCALATE\nthe plan gate re-arms - your call"]
+    V -- "GO" --> C3["3 - CHESHIRE CAT\nbuilds against the audited plan"]
+    C3 --> Q{"did the child\nask a question?"}
+    Q -- "yes, the repo can answer it" --> GNAT["THE GNAT\nread-only lookup, cites the line"]
     GNAT -->|"the only resume in a run"| C3
     Q -- "yes, but it would need a GUESS" --> ESC
-    Q -- "no" --> C4["child 4 - THE REVIEWER\nNO seat, reviewing model,\na session id never used before"]
+    Q -- "no" --> C4["4 - THE REVIEWER\nNO seat, reviewing model,\na session id never used before"]
     C4 --> R{"review verdict"}
-    R -- "PASS" --> PARK["park: story to review,\nticket to In Review, one line to your phone"]
-    R -- "CONCERNS or FAIL" --> C5["child 5 - CHESHIRE CAT\nONE fix cycle, in the lane"]
-    C5 --> C6["child 6 - THE REVIEWER\nfresh session, new sha"]
+    R -- "PASS" --> PARK["PARK - story to review,\nticket to In Review,\none line to your phone"]
+    R -- "CONCERNS or FAIL" --> C5["5 - CHESHIRE CAT\nONE fix cycle, in the lane"]
+    C5 --> C6["6 - THE REVIEWER\nfresh session, new sha"]
     C6 --> R2{"second verdict"}
     R2 -- "PASS" --> PARK
     R2 -- "anything else" --> ESC
-    PARK --> DONE(["you: read it, then\n/cicd-close-story-merge-tree"])
+    PARK --> DONE(["YOU - read it, then\n/cicd-close-story-merge-tree"])
 ```
 
 ⛔ **There is no arrow to `main`.** Landing is not a rule the lead is asked to keep — the runner has
-no verb for it at all, so it is not a thing an agent can talk itself into.
+no verb for it at all, so it is not something an agent can talk itself into.
 
-### 3.1 The quick-fix route — a ticket that is not a story
+---
+
+## 5. The quick-fix run — four children, for a ticket that is not a story
 
 Not every ticket is a story. A project **Task** — a performance fix, an asset, a copy change — has no
-story file on disk, no sprint row and no epic branch, so the six-child run above has nothing to bind
-to. Its road is `/cicd-quick-dev`, which is **one door holding both the build and its own review
-gate**, and the run is four children rather than six.
+story file on disk, no sprint row and no epic branch, so the six-child route has nothing to bind to.
+Its road is `/cicd-quick-dev`, **one door holding both the build and its own review gate**, and the
+run is four children.
 
 **Which route:** the story route when the work has a story file and an epic branch; the quick-fix
 route when it has neither. If you cannot tell which it is, it is not a quick fix — that is an
 escalation, not a coin flip.
 
+| # | Who runs it | The door it runs | What it returns | What the lead does with it |
+|---|---|---|---|---|
+| 1 | 😼🔨 **Cheshire Cat** | `/cicd-quick-dev <KEY>` end to end | the build, plus the door's own inline first-pass gate | ⛔ that gate's verdict is **not** the run's |
+| 2 | **no seat** | `/cicd-code-review <KEY>` | the verdict, plus `evidence.sha` | `PASS` → park. Anything else → one fix cycle |
+| 3 | 😼🔨 **Cheshire Cat** | the fix, in the lane | the fixed tree at a new sha | One cycle, never two |
+| 4 | **no seat** | `/cicd-code-review <KEY>` again | the second verdict at the new sha | `PASS` → park. Anything else → **escalate** |
+
 ```mermaid
 flowchart TD
-    L["Step 0 - bind the project\nCLI version, ACs already on the ticket,\nno overlap with an in-flight epic"] --> W["open a chore worktree\ncut from origin/main"]
-    W --> C1["child 1 - CHESHIRE CAT\nruns /cicd-quick-dev end to end:\nthe build AND the door's own gate"]
-    C1 --> N["that in-door gate runs INLINE\nno seat carries Task, so it drops\nthe Blind Hunter - and reports it"]
-    N --> C2["child 2 - THE REVIEWER\nNO seat, so it CAN fan out\nTHIS is the run's verdict"]
+    L["Step 0 - the lead binds the project\nCLI floor, ACs already on the ticket,\nno overlap with an in-flight epic"] --> W["the lead opens a chore worktree\ncut from origin/main"]
+    W --> C1["1 - CHESHIRE CAT\nruns /cicd-quick-dev end to end:\nthe build AND the door's own gate"]
+    C1 --> N["that in-door gate runs INLINE -\nno seat carries Task, so it drops\nthe Blind Hunter and REPORTS that"]
+    N --> C2["2 - THE REVIEWER\nNO seat, so it CAN fan out.\nTHIS is the run's verdict"]
     C2 --> R{"review verdict"}
-    R -- "PASS" --> PARK["park: ticket to In Review,\none line to your phone"]
-    R -- "CONCERNS or FAIL" --> C3["child 3 - CHESHIRE CAT\nONE fix cycle, in the lane"]
-    C3 --> C4["child 4 - THE REVIEWER\nfresh session, new sha"]
+    R -- "PASS" --> PARK["PARK - ticket to In Review,\none line to your phone"]
+    R -- "CONCERNS or FAIL" --> C3["3 - CHESHIRE CAT\nONE fix cycle, in the lane"]
+    C3 --> C4["4 - THE REVIEWER\nfresh session, new sha"]
     C4 --> R2{"second verdict"}
     R2 -- "PASS" --> PARK
     R2 -- "anything else" --> ESC["ESCALATE\na second non-PASS is your call"]
-    PARK --> DONE(["you: read it, then merge the PR"])
+    PARK --> DONE(["YOU - read it, then merge the PR"])
 ```
 
-⛔ **The quick-dev door's own verdict is NOT the run's verdict, and the reason is a seat pin.** Every
-seat's `claude-tools` list deliberately omits `Task`, so a seated child has no subagent tool. When
+⛔ **The quick-dev door's own verdict is not the run's verdict, and the reason is a seat pin.** Every
+seat's tool list deliberately omits `Task`, so a seated child has no subagent tool. When
 `/cicd-quick-dev` reaches its review gate it probes the runtime honestly, finds none, records
-`review-runtime: inline (no subagent tool)` and **drops the Blind Hunter** rather than faking it —
-the behaviour the review engine was given in SCC-203. That is a real first pass and worth having. It
-is not independent, because the agent that wrote the code is the agent triaging the findings.
+`review-runtime: inline (no subagent tool)` and **drops the Blind Hunter** rather than faking it.
+That is a real first pass and worth having. It is not independent, because the agent that wrote the
+code is the agent triaging the findings.
 
-The **no-seat** review child is what closes that. Passing `--review` sends no `--agents` at all, so
-the child inherits the default tool set, `Task` included, fans the lenses into clean contexts and
-returns a full roster. Net effect: an autopilot quick fix gets *more* review than a human running the
-same door by hand — one inline first pass, then one independent fan-out at the shipping sha.
+The **no-seat** review child closes that gap. Passing `--review` sends no seat at all, so the child
+inherits the default tool set, `Task` included, fans the lenses into clean contexts and returns a
+full roster. Net effect: an autopilot quick fix gets *more* review than a human running the same
+door by hand — one inline first pass, then one independent fan-out at the shipping sha.
 
 ---
 
-## 4. The charter — what the lead may pass without you
+## 6. The charter — what the lead decides without you
 
-Approved 2026-09-07. Your launch word is a **batch approval** scoped to these rows and to **one
-story**; it does not travel to the next one. The runner writes the scope into the ticket's first
-comment, so what was in force is on the record rather than in someone's context.
+Your launch word is a **batch approval** scoped to these rows and to **one ticket**; it does not
+travel to the next one. The runner writes the scope into the ticket's first comment, so what was in
+force is on the record rather than in someone's context.
 
 | Gate | Who decides | Why it sits there |
 |---|---|---|
 | ② Step 2 `continue` | **the lead** | The audit already ran as a Queen child in a fresh session — which is the thing that stop existed to guarantee |
 | ② Step 2.5 questions before code | **the lead** | Answered from the story, the plan and a Gnat lookup. **If it would need a guess, it escalates instead** |
 | Audit verdict `NO-GO` | **you** | The plan-first gate re-arms; re-scoping is a judgment about what to build |
-| New dependency, schema, security rule, CI or environment config | **you** | The constitution's Ask First list wins. The old engine's "self-install and log it" is dropped |
+| New dependency, schema, security rule, CI or environment config | **you** | The constitution's Ask First list wins. There is no "self-install and log it" in this lane |
 | Deleting a file | **you** | Ask First, always |
 | ③ verdict `PASS` | **the lead** | It posts review-ready and parks. You still own review-to-done |
 | ③ verdict `CONCERNS` or `FAIL` | **the lead**, once | One fix child, then one fresh reviewer. A second non-PASS escalates. `CONCERNS` never ships by itself |
 | Landing on the epic branch or `main` | **nobody** | No runner verb exists |
 | Anything a door marks `PIPELINE_BLOCKER` | **you** | The door already decided it is yours |
 
+**And what it actually used.** Before it parks, the lead posts one ticket comment listing every
+charter row it exercised and the call it made — the Step 2 `continue` it passed, each question it
+answered from the repo rather than asking, each Gnat lookup and what that settled, each review
+finding it assessed as not-real. ⛔ A soft *"I would normally have checked this with him"* is a
+**decision**, and it belongs on that list. Without it a charter is a permission slip nobody audits,
+and the first time a run surprises you there is no way to tell whether the scope was wrong or the
+lead simply exceeded it.
+
 ---
 
-## 5. When it needs you
+## 7. When it stops for you
 
 An escalation is **two things, both of them, every time**: a question in the chat with real options
 and a recommendation, and a ticket comment whose first line is the literal marker. Your phone reads
@@ -148,10 +210,10 @@ the ticket; the chat may not be in front of you.
 
 ```mermaid
 flowchart LR
-    KID["a child returns\nneeds_human + its question"] --> RUN["the runner exits 3\nand posts the comment"]
-    RUN --> T["the ticket\nfirst line: Needs Mr. Hatter\nthen the child's question"]
-    RUN --> CHAT["the lead asks you in chat\noptions + its recommendation"]
-    T --> YOU(["you, wherever you are"])
+    KID["a child returns\nneeds_human plus its question"] --> RUN["the runner exits 3\nand posts the comment"]
+    RUN --> T["THE TICKET\nfirst line: Needs Mr. Hatter\nthen the child's question"]
+    RUN --> CHAT["THE LEAD asks you in chat\noptions plus its recommendation"]
+    T --> YOU(["YOU, wherever you are"])
     CHAT --> YOU
     YOU -->|"your word"| RESUME["the lead resumes THAT child\n--fork-of its session id"]
     RESUME --> ON["the run continues,\nand the ticket shows who decided"]
@@ -162,163 +224,164 @@ prevent, and it would be invisible — the run would look normal and be wrong.
 
 ---
 
-## 6. The seats, and what each one costs
+## 8. The dial — every model, every effort, every dollar
 
-Each seat is one file, `.agents/commands/smh-team-<seat>.md`, and it is the **same file** that defines
-that seat in Zoo. Three frontmatter keys pin the Claude side.
+You name the tier; the lead judges it only when you do not, and says which it chose and why before
+it spends anything. One word sets the whole run. This table is the only place a cost is stated —
+`--tier easy|medium|hard` goes on **every** call in the run.
 
-| Seat | Role | Model | Effort | Why |
-|---|---|---|---|---|
-| The Gnat | read-only research | sonnet | medium | Looks things up and cites lines. Its answer is what the lead uses **instead of asking you**, so a mis-cited line becomes a wrong build nothing downstream can see |
-| White Rabbit | PM / planning | sonnet | medium | Writes the plan; does not build |
-| Caterpillar | design / front end | sonnet | medium | |
-| Cheshire Cat | the builder | sonnet | high | Does the work that has to be right |
-| Queen of Hearts | tests & QA | sonnet | high | Writes the failing tests and audits the plan |
-| March Hare | the lead | opus | high | Decides; almost never a child |
-
-⛔ **No seat can spawn its own subagents.** `Task` is on nobody's tool list — a headless child that
-can launch more children is an unbounded bill with no ledger row.
-
-⛔ **Never leave a child unpinned.** An unpinned child inherits the 1M-context Opus and costs six to
-twenty times more; measured, a one-word answer cost **$0.157–$0.496** unpinned against **$0.024** on
-a small pinned model.
-
-**Why forking is worth caring about.** A child launched fresh rebuilds ~12,600 tokens of prompt; a
-child *forked* from a warm parent builds ~340 and reads the rest from cache. Measured over five
-steps: **$0.158 naive against $0.059 layered — 63% cheaper**, and 82% once the parent amortises.
-
----
-
-## 6.5 Difficulty tiers — the one dial
-
-You name the tier. The lead judges it only when you do not, and says which it chose and why before
-it spends anything. One word sets every model, every effort and both budgets.
-
-| | easy | medium | hard |
+| Who | `easy` | `medium` | `hard` |
 |---|---|---|---|
-| the seats that write code | their own pins — Sonnet 5 | Opus 5 · high | Opus 5 · **xhigh** |
-| the Gnat — read-only lookups | Sonnet 5 · medium | **unchanged** | **unchanged** |
-| the March Hare — the lead | Opus 5 · high | Opus 5 · high | **Fable 5.1 · high** |
-| the reviewer | Opus 5 | **Fable 5.1 · high** | **Fable 5.1 · high** |
-| budget: per child · per run | $6 · $25 | $12 · $60 | $20 · $120 |
+| ⏰🐇 White Rabbit — plans | Sonnet 5 · medium | Opus 5 · high | Opus 5 · **xhigh** |
+| ♥️👑 Queen of Hearts — tests and the audit | Sonnet 5 · high | Opus 5 · high | Opus 5 · **xhigh** |
+| 😼🔨 Cheshire Cat — builds | Sonnet 5 · high | Opus 5 · high | Opus 5 · **xhigh** |
+| 🦋 Caterpillar — front end | Sonnet 5 · medium | Opus 5 · high | Opus 5 · **xhigh** |
+| 🦟🔍 The Gnat — read-only lookups | Sonnet 5 · medium | **unchanged** | **unchanged** |
+| 🫖🐰 March Hare — when it runs as a child | Opus 5 · high | Opus 5 · high | Fable 5.1 · high |
+| **The reviewer** — no seat | Opus 5 | Fable 5.1 · high | Fable 5.1 · high |
+| Your own lead session — advisory, you switch it | Opus 5 | Opus 5 | Fable 5.1 |
+| **Budget: per child · per run** | **$6 · $25** | **$12 · $60** | **$20 · $120** |
 
-⭐ **The rule underneath the table: the reviewer never runs the model that wrote the code.** That is
-not a cost decision, it is the only kind of independence a fresh session cannot buy — a new session
-frees a reviewer from the author's *context*, never from the author's *blind spots*. Sonnet builds
-and Opus reviews; Opus builds and Fable reviews. The suite asserts it for every tier, because
-collapsing two rows onto one model would look like tidying up.
+**What wins when two things disagree.** In order: an explicit `--model` / `--effort` at the call
+site, then the tier, then the seat's own frontmatter pin, then Sonnet 5. Raise a single step when
+one step needs more than its tier gives it — raise the step, never the run.
 
-**Why the Hare and the reviewer share Fable at `hard`, and why that is not a violation.** The March
-Hare is the lead. It reads results and decides what happens next; it never authors the diff under
-review. So at `hard` the two *judgment* roles get the model best at judgment, while every seat that
-touches code is on Opus at extra-high — which the reviewer is not.
+⛔ **An omitted `--tier` is not "no tier" — it is `easy`.** The runner defaults to it, so a call that
+forgets the flag runs that child on easy pins against an easy ceiling, silently. Pass it every time.
 
-**Why the Gnat never moves.** It runs **Sonnet 5 at medium** at every tier — the same setting on a
-trivial ticket and a hard one — because looking something up does not get harder when the work
-around it does. Paying extra-high reasoning to open a file and quote a line back is where a
-difficulty dial over-applies.
+⭐ **The reviewer never runs the model that wrote the code.** Sonnet builds and Opus reviews; Opus
+builds and Fable reviews. That is not a cost decision — it is the only kind of independence a fresh
+session cannot buy, because a new session frees a reviewer from the author's *context* and never
+from the author's *blind spots*. The suite asserts it for every tier, because collapsing two rows
+onto one model would look like tidying up.
 
-⛔ **Exempt is not the same as cheap, and that distinction is the whole ruling.** The Gnat's answer
+**Why the Hare and the reviewer share Fable at `hard`.** The March Hare is the lead: it reads results
+and decides what happens next, and never authors the diff under review. So at `hard` the two
+*judgment* roles get the model best at judgment, while every seat that touches code sits on Opus at
+extra-high — which the reviewer does not.
+
+**Why the Gnat never moves.** It runs Sonnet 5 at medium at every tier, because looking something up
+does not get harder when the work around it does. ⛔ **Exempt is not the same as cheap.** Its answer
 is what the lead uses to settle a question **instead of asking you**, and the build then proceeds on
-it — so a mis-read line does not surface as a bad lookup. It surfaces days later as a wrong build
-decision, with nothing downstream able to see that the premise was false. A cheap wrong answer that
-gets trusted costs more than the saving, and the saving here is against Opus at extra-high, not
-against getting the answer right. If a lookup ever needs judgment rather than accuracy, the charter
-already says escalate rather than guess.
+it — so a mis-read line never surfaces as a bad lookup. It surfaces days later as a wrong build
+decision, with nothing downstream able to see that the premise was false. If a lookup ever needs
+judgment rather than accuracy, the charter already says escalate.
 
-**Why each tier carries its own budget.** Otherwise the ceiling silently becomes the tier: `hard` is
+**How the two money numbers actually behave, because only one of them is real.** The per-child figure
+is the CLI's own cap and it is **soft** — it stops the *next* turn, not the current one; capped at
+$0.05, measured single children have spent $0.296 and $0.496. The run ceiling is the enforceable one:
+the runner sums the ledger before every launch and refuses to start a child that would cross it,
+having spent nothing. Say both numbers out loud before you start. For scale, one Sonnet-5-at-high
+child on a small ticket cost **$5.82** and ran 22 minutes.
+
+**Why each tier carries its own ceiling.** Otherwise the ceiling silently becomes the tier: `hard` is
 Opus at extra-high across six children, and an `easy` ceiling would halt it partway and report
-hitting a limit — which reads as the work failing rather than as a number set too low. Measured for
-scale: one Sonnet-5-high child on a small ticket cost **$5.82** in 22 minutes.
+hitting a limit — which reads as the work failing rather than as a number set too low.
+
+**Forking, and why it is worth caring about.** A child launched fresh rebuilds roughly 12,600 tokens
+of prompt; a child forked from a warm parent builds about 340 and reads the rest from cache —
+measured, $0.0020 against $0.0250, a 92% saving. The lane uses it in exactly one place: delivering
+your answer, or a Gnat's, to the child that asked the question. ⛔ Never fork to start a *new* step.
+A fresh session per step is what keeps the audit and the review honest, and the ticket carries every
+session id so the count is checkable.
 
 ⛔ **The tier cannot set the lead's own model.** The lead is your session, not a child — only you can
 change it. At `hard` it should be on Fable 5.1; the door tells the lead to say so and let you switch.
 
-**Every step comment names its tier and model**, so three weeks later you can answer why one ticket
-cost $8 and another $80 without reconstructing anything.
+**Every step comment names its tier, model and effort**, so three weeks later you can answer why one
+ticket cost $8 and another $80 without reconstructing anything.
 
 ---
 
-## 7. The seven failure modes, all of them silent
+## 9. Where the run is written down
 
-Every one of these was measured against the real CLI, and **not one produces an error**. That is why
+The run happens while you are not watching, so every part of it lands somewhere you can open
+afterwards. `<worktree>` is the story's own worktree, the one the lead opened at Step 0.
+
+| Where | Path | What is in it |
+|---|---|---|
+| **The ticket** | the Jira issue, one comment per step | The provenance line (`tier · model · effort`), the child's own summary, its question, artifacts, denials, and the session id |
+| **The ledger** | `<worktree>/_artifacts/autopilot-ledger.json` | One row per step: stage, door, seat, whether it was a review, tier, model, effort, session id, status, `total_cost_usd`, timestamp. **This is the file the run ceiling is summed from** |
+| **The step summary** | `<worktree>/_artifacts/autopilot-step-<n>.md` | Exactly the prose that was posted to the ticket |
+| **The step usage** | `<worktree>/_artifacts/autopilot-step-<n>-usage.json` | That child's raw token counts |
+| **The lock** | `<worktree>/_artifacts/.autopilot-<key>.lock` | The pid holding the ticket. One child per ticket at a time; a dead holder's lock is stolen automatically, so a crash cannot lock a ticket forever |
+| **The children's home** | `~/.local/share/autopilot-claude-home`, or `$AUTOPILOT_CLAUDE_HOME` | Every child's transcript, the symlinked credential, and the workspace trust flag. Forking reads from here |
+
+**Watch a run, do not await it.** A step prints nothing until it returns and can work for many
+minutes, so a foreground call makes a working run look like a hang and the only choices are to wait
+blind or kill it. The lead launches each step in the background, watches the worktree and the output,
+and keeps a visible checklist advancing. ⛔ Silence is not progress: a run you cannot see is a run
+you cannot stop.
+
+---
+
+## 10. When a step comes back bad
+
+**The exit code is the answer; the prose is context.**
+
+| Exit | Meaning | What it means for the run |
+|---|---|---|
+| `0` | `done` | Dispatch the next step |
+| `1` | `failed` | The result could not be read, or the child errored. ⛔ **Read the summary before retrying** — it carries the child's own words. If the work is in the worktree, the step is *done and unverified*, not undone, and a blind retry pays twice. Retry once only when nothing was produced, then escalate. Never retry a budget cut — that is a deliberate halt |
+| `2` | the runner refused | Nothing was launched and nothing was spent. Fix the call — see below |
+| `3` | `needs_human` | Escalate (§7) |
+| `4` | `blocked` | Escalate. The child could not proceed and said why |
+
+**The ten refusals, all exit 2, all before a cent is spent.** Each one names itself, so the message
+is the fix: `--cwd` is not a directory · no door by that name under the child's own
+`.agents/commands/` · that door exists in the command centre but not where the child was pointed ·
+the run has already spent its ceiling · a review child was given `--fork-of` · a review child was
+given `--seat` · a review child was given a session id already in the ledger · a non-review call
+carries no `--seat` · no seat master exists by that name · another child already holds this ticket's
+lock.
+
+⛔ **`--cwd` is where the child stands, and that is where its door must live.** A child resolves its
+launcher skill from its own working directory and inherits nothing from the lead. A `/cicd-*` door
+belongs to the command centre and names its project in `--args`, so for those the child stands in
+**the command centre**, not in the project — a thin project carries its own tier-2 law but none of
+the lobby's doors, and a child launched there would find no such command and improvise.
+
+---
+
+## 11. The silent failure modes, and what holds each one
+
+Every one of these is measured against the real CLI, and **not one produces an error**. That is why
 they are written down: none is guessable from reading the code.
 
 | What breaks | What you would see | What holds it |
 |---|---|---|
 | A resumed child **loses its seat** — identity, model and tool limits — and keeps going | Nothing. Later steps look normal and run wrong | The runner re-sends the seat on every launch, forks included |
-| `--max-budget-usd` is a **suggestion**: it stops the *next* turn, not the current one. Capped at $0.05, measured spends of **$0.496** and **$0.296** | A bill 10x the cap, reported as "budget exhausted" | `--run-cap-usd`, summed off the run's own ledger before each launch |
+| `--max-budget-usd` is a **suggestion**: it stops the *next* turn, not the current one | A bill many times the cap, reported as "budget exhausted" | `--run-cap-usd`, summed off the run's own ledger before each launch |
 | A reply that **parses but carries no status** | A no-op recorded as success | Anything without a status is `failed`, never `done` |
 | The child's transcript store is **unwritable**, so nothing can be forked | "No conversation found" — which reads as *forking does not work* | The runner points `CLAUDE_CONFIG_DIR` somewhere writable and seeds it |
 | The workspace is **untrusted**, so every fork reads **zero** cached tokens | Nothing at all. Runs succeed; only the bill changes | The runner sets the trust flag in its own config directory |
-| The `claude` on `PATH` is **older than the CLI you are typing in** — a launcher symlink that never moved after an upgrade | Nothing, until a child hits a permission prompt and there is nobody to answer it | Step 0.2 reads `claude --version` from `PATH`, not from this session, and refuses below 2.1.259 |
-| A child does the **whole job** and answers in sentences instead of the result shape | The step reads `failed`. The work is committed, the tests are green, and the run record says it did not happen | The failure now carries the child's own words verbatim, and the door says to read them and the worktree **before** retrying |
+| The `claude` on `PATH` is **older than the CLI you are typing in** — a launcher symlink that never moved after an upgrade | Nothing, until a child hits a permission prompt and there is nobody to answer it | Step 0 reads `claude --version` from `PATH`, not from the session, and refuses below 2.1.259 |
+| A reviewer returns a clean verdict and **drops the sha** | A `PASS` that names no tree, so nothing can be re-checked | A review answering `done` with no `evidence.sha` is turned into `failed`. Narrow on purpose — a Gnat lookup owes no sha |
+| A child does the **whole job** and answers in sentences instead of the result shape | The step reads `failed`. The work is committed, the tests are green, and the run record says it did not happen | The failure carries the child's own words verbatim, and the door says to read them and the worktree **before** retrying |
 
-ⓘ **Why the floor is 2.1.259, since the obvious answer is wrong.** It is not `--agents` or
-`--json-schema` — both are present on 2.1.258, so a floor justified by them collapses the moment
-anyone checks. It is **`--permission-prompts none`**, which lands in 2.1.259. That flag's default is
-`host`, meaning *the SDK host or a `--permission-prompt-tool` answers* — and a child launched by this
-runner has neither. Left at the default, an unattended child that hits a permission prompt has nobody
-to answer it. `none` turns the same moment into an explicit deny the child reports back in its
-result. Measured 2026-09-07: absent on 2.1.258, present on 2.1.263, and this machine's
-`~/.local/bin/claude` symlink was still pointing at 2.1.258 while the session running the check was
-2.1.263.
+⛔ **A `failed` status stays `failed`, and that is correct** — nothing may guess a status, or a silent
+no-op gets recorded as work. But *unreadable* and *unverified* are different problems, and only the
+second one was ever intended: **`failed` means "done but unverified" at least as often as it means
+"nothing happened", and only a person reading it can tell which.**
 
-⭐ **The last row is the only one on this page measured on a REAL story rather than a probe**, and it
-is the one that would have cost the most. On AVCH-138 the child re-encoded the asset, updated nine
-consumers, wrote two new tests, went 9/9 green, committed, pushed, and correctly **escalated a file
-deletion** instead of doing it — then answered in prose, and the runner recorded
-`no usable status in the reply: {'duration_api_ms': 1359765, …}`. Every question you would have
-asked was answered in the child's final message, and the machine printed a duration in milliseconds
-instead, because the prose arrives as a non-JSON string and the code fell back to the envelope.
-
-⛔ **The status stays `failed` and that is correct** — nothing may guess a status, or a silent no-op
-gets recorded as work. But *unreadable* and *unverified* are different problems, and only the second
-one was ever intended. **`failed` here means "done but unverified" at least as often as it means
-"nothing happened", and only a human reading it can tell which** — so a blind retry pays twice for
-work that already exists.
+⭐ **The lesson worth carrying into anything built here:** separate the judgment WORK from the
+mechanical DELIVERABLE, and make the deliverable un-collapsible. An agent that finds nothing wrong is
+the *most* likely to fold its bookkeeping into prose, because on a clean pass the bookkeeping feels
+like ceremony. A checklist item cannot fix that; only a check that fails can — which is why the
+missing-sha rule is code and not a line in a door.
 
 ---
 
-## 7.5 What the retired engines were mined for
-
-The v2 lane — the opencode and deepseek4 engines and the three `_AP` twins they called — was read
-end to end before it was deleted, and four things in it were worth keeping. Each is
-**lead behaviour or runner mechanics**, never another document to keep in step: that filter is why
-the old lane needed a nineteen-file edit to change one rule and this one does not.
-
-| Kept | Why it earned its place | Where it lives now |
-|---|---|---|
-| **A run lock, one child per ticket** | The old engine's own notes record the hole: *"nothing used to stop a double-run of the SAME story"*. Two children in one worktree interleave their edits and **both report success** — there is no error anywhere | `autopilot_run.py`, taken after every refusal and released in a `finally`. A dead holder's lock is stolen, so a crash cannot lock a ticket forever |
-| **The run is watched, not awaited** | A step prints nothing until it returns, so a foreground call makes a working run look like a hang and the only choices are wait blind or kill it | The door: launch each step in the background, watch it, keep a visible checklist |
-| **What the lead decided on your behalf** | The charter says what it MAY pass. Nothing said what it DID — and a permission slip nobody audits is not a control | The door's park step: one ticket comment listing every charter row actually exercised |
-| **A soft "I'd normally check this with him" is a DECISION, not an escalation** | The retired lane got this exactly right. Left unwritten, a lead either escalates everything or quietly defaults and records nothing | The same list — that is the line it exists to catch |
-| **A verdict must carry the sha it was made at** | Their reviewer, on a CLEAN pass, did every bit of the judgment work and then dropped the mechanical deliverable — because it was buried among the instructions. **The happy path is where a deliverable collapses** | `autopilot_run.py`: a review answering `done` with no `evidence.sha` is `failed`. Narrow on purpose — a Gnat lookup owes no sha |
-
-⭐ **The lesson under the last row is the one worth carrying into anything built here:** separate
-the judgment WORK from the mechanical DELIVERABLE, and make the deliverable un-collapsible. An agent
-that finds nothing wrong is the *most* likely to fold its bookkeeping into prose, because on a clean
-pass the bookkeeping feels like ceremony. Their reviewer was not lazy and it was not confused — it
-was correct about the code and quietly wrong about the record, which is the hardest failure to spot
-afterwards. A checklist item cannot fix that; only a check that fails can.
-
-**What was deliberately NOT carried over.** The old lane's per-stage test-gate baseline and its
-`_RUN-STATUS.md` both belong to somebody else now: the **door** owns its own gate, and the **ticket**
-is the status surface. Re-implementing either here would have given this lane a second copy of
-something that already exists — which is the exact disease the v2 engines died of.
-
-
----
-
-## 8. Keeping this current
+## 12. Keeping this current
 
 | If you change… | Do this |
 |---|---|
 | a door, a rule, or a skill | **Nothing.** The children read the file at the moment of use |
-| a seat's character, model, tools or effort | Edit `.agents/commands/smh-team-<seat>.md`. ⛔ At most three `claude-*` keys, below `mode-groups`, one line each — the sync reads only the first 12 lines and a seat that falls outside that window is dropped from Zoo silently |
-| how a child is launched, or the result contract | `.agents/scripts/autopilot_run.py`, and its tests in `.agents/scripts/tests/test_autopilot_run.py` |
+| a seat's character, model, tools or effort | Edit `.agents/commands/smh-team-<seat>.md`. ⛔ At most three `claude-*` keys, below `mode-groups`, one line each — the sync reads only the first 12 lines, and a seat that falls outside that window is dropped from Zoo silently |
+| a tier's models, efforts or budgets | The `TIERS` table in `.agents/scripts/autopilot_run.py`, its tests, and §8 here. ⛔ Not the seat masters — per-tier keys there would run past the 12-line sync window |
+| how a child is launched, or the result contract | `.agents/scripts/autopilot_run.py`, and `.agents/scripts/tests/test_autopilot_run.py` |
 | how a step reaches the ticket | `jira_feed.py step`, and `test_jira_feed.py` |
-| the charter | Here, and in the door's own Step 1 table. Both, in the same commit — they are read by different people |
+| the charter | §6 here **and** the door's own Step 1 table, in the same commit — they are read by different people |
 
 **The five things this lane owns**, and the reason the list is short: how to launch a child, the
 result contract, the `step` verb, the seat renderer, and the budget table. Everything else is
