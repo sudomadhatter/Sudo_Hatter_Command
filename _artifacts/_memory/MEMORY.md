@@ -82,6 +82,9 @@ Settled project-only facts live in the project's own store (SCC-73). Working in 
 - [⛔ GitNexus is GONE — code-review-graph replaced it, PROJECTS-ONLY](gitnexus-index-not-actually-live.md) — never call impact(); no lobby graph is CORRECT; MCP registration is per-machine and fails silently.
 - **Search blind spots** — [grep skips gitignored projects](grep-skips-gitignored-projects.md) (blind to Projects/ from lobby) · [⭐ grep reads parked branch](grep-reads-the-branch-you-are-parked-on.md) (stale checkout fakes scope) · [relocated links are mis-pathed](relocated-doc-links-are-mispathed-not-dead.md).
 
+## Media encoding
+- [⭐⛔ HEVC-alpha (transparent video for iOS) is a MAC-ONLY encode](hevc-alpha-encode-recipe.md) — `premultiply=inplace=1` is REQUIRED: omit it and iOS paints a solid GREEN background, and an SSIM test of ffmpeg's own decode CANNOT see that; `alpha_quality` is the free-bytes dial and its `-12902` error is a lie, but its default 0 mushes the mask; serve `.mov`/`video/quicktime` listed BEFORE the WebM; verify under-alpha RGB is BLACK via AVFoundation, not ffmpeg.
+
 ## Toolkit & sync
 - [⭐ Zoo Code replaces Roo; Antigravity lives on as the extension](zoo-code-replaces-roo-code.md) — .roo/* paths kept; Zoo is sync-agents platform 5 (SCC-349); Zoo, Claude and Antigravity fences render from ONE source (SCC-378).
 - [Zoo team: Wonderland roster](zoo-team-wonderland-roster.md) — March Hare = lead; 6 seats; no seat writes a Verdict.

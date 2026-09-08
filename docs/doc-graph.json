@@ -10,9 +10,9 @@
     "edges": 764,
     "external": 35,
     "ambiguous": 171,
-    "dangling": 265,
+    "dangling": 264,
     "broken_paths": 61,
-    "unresolved_names": 204,
+    "unresolved_names": 203,
     "unresolvable": 9
   },
   "nodes": [
@@ -6436,10 +6436,6 @@
     {
       "from": "docs/_scc_sops_prds/INDEX.md",
       "target": "maintaining.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/autopilot_SOP.md",
-      "target": "_RUN-STATUS.md"
     },
     {
       "from": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
