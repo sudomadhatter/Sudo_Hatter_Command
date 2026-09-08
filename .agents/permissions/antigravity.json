@@ -124,7 +124,11 @@
         "unsandboxed(uname)",
         "read_file(/home/dlohn/.claude/projects/-home-dlohn-Sudo-Hatter-Command/memory)",
         "command(code)",
-        "unsandboxed(code)"
+        "unsandboxed(code)",
+        "command(gh api)",
+        "unsandboxed(gh api)",
+        "command(gcloud run services describe)",
+        "unsandboxed(gcloud run services describe)"
       ],
       "deny": [
         "command(rm -[a-zA-Z]*[rR][a-zA-Z]*)",
