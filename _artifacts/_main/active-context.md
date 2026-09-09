@@ -1,8 +1,16 @@
 # ACTIVE CONTEXT — _main  (you own this, not a vendor)
 
 ## 1. PRIME STATE
-Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-09-05
-**2026-09-06 (latest): EPIC 24 PHASE 1 IS SHIPPED AND LIVE, and AviationChat now runs TRUNK MODE — no epic branch.**
+Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-09-09
+**2026-09-09 (latest): SCC-435 SHIPPED AND CLOSED — full React Three Fiber and Drei 3D suite in /smh-designer.**
+Merged to `main` at `f4700885` (PR #201). Subbed out synthetic SVG displacement filter (`liquid-glass-js`) for
+`pmndrs/react-three-fiber` + `@react-three/drei`'s `MeshTransmissionMaterial` (authentic Apple VisionOS physical optical
+glass refraction with chromatic edge dispersion). Added tactile 3D Spring Tilt Cards (`PresentationControls`), `gltfjsx`
+model compilation workflow, and DOM-in-3D pinning (`<Html>`). Capped `dpr={[1, 1.5]}` and `frameloop="demand"`
+invariants enforced. All test suites green (343/343 command surfaces, 102/102 parity, 28/28 allowlist, check_maps green).
+Worktree pruned, Dev Record filed, ticket Done. Record: `_artifacts/_main/2026-09-09_scc-435-r3f-drei-suite/walkthrough.md`.
+
+**2026-09-06: EPIC 24 PHASE 1 IS SHIPPED AND LIVE, and AviationChat now runs TRUNK MODE — no epic branch.**
 Merged to `main` at `77f0cfaa` (PR #87) on the operator's direction to ship now and build the rest from `main`.
 Gate on the shipped tree: backend 3569P/46S/0F (cov 67.50%) · frontend build clean · **E2E GREEN 44/44** ·
 main-write-gate pass (146 keyed commits) · enforcement 5/5. **Deploy VERIFIED, not assumed:** Cloud Run
