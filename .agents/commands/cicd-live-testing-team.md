@@ -15,6 +15,11 @@ override (remainder = the area under test) → `.agents/active-project.txt` → 
 guess, never operate on the lobby. Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>`
 before any work.
 
+Initialize or bind the session artifact directory and running bug list:
+`PROJECT_ROOT/_artifacts/debugging/<YYYY-MM-DD>_live-testing/bug-list.md`
+(Always project-local: e.g. `Projects/AGY_AVIATIONCHAT/_artifacts/debugging/...` for AviationChat, or the
+target project's own `_artifacts/` store. Never drop in the lobby root).
+
 ## Step 1 — Boot the dev environment
 1. Load `PROJECT_ROOT/_bmad-output/active-context/active-context.md` and give a 3-line context summary.
 2. Reap stale dev processes (node / python / uvicorn). `taskkill` is prompt-gated per call — that is
@@ -29,6 +34,14 @@ before any work.
 4. Health-check both (backend `/health`, frontend root), then hand over the URL: **you fly, I watch.**
 
 ## Step 2 — The co-pilot loop (repeat until the human ends the session)
+- **Maintain the Running Bug List in Chat AND Artifact every turn**:
+  - Whenever the operator reports a finding/symptom or a defect is captured in logs/Playwright:
+    1. **In-Artifact**: Immediately append or update the item in
+       `PROJECT_ROOT/_artifacts/debugging/<YYYY-MM-DD>_live-testing/bug-list.md`.
+    2. **In-Chat**: Print the updated running bug list table directly in the conversation chat stream so
+       the operator has the live state in view at all times without opening files.
+    3. Number each finding monotonically (`Finding 1`, `Finding 2`, etc.) and track status (`Reported`,
+       `Diagnosing`, `Triaged`, `Fixed`).
 - **Re-read the captured backend output every turn.** Proactively flag tracebacks, 4xx/5xx, and silent
   anomalies even when unprompted; deep-dive reactively the moment the human reports a symptom.
 - **Read the browser yourself — load the `playwright-frontend-check` skill.** Playwright is installed
@@ -46,10 +59,10 @@ before any work.
   temporary debug logs (reload picks them up; remove at close) → Cloud Run / `gcloud` (ask first).
   Always ask before reaching outside the local box.
 
-## Step 3 — Recon every confirmed symptom into a bug doc
-For each distinct bug, research the ROOT cause: read the code path, correlate the log evidence, and
+## Step 3 — Recon confirmed symptoms into bug docs
+For distinct or complex bugs, research the ROOT cause: read the code path, correlate the log evidence, and
 check claims against the docs — mark every finding **verified** (evidence in hand) vs **docs-say**
-(plausible, needs confirmation). Then file one doc per bug at
+(plausible, needs confirmation). Detailed docs sit beside `bug-list.md` at
 `PROJECT_ROOT/_artifacts/debugging/<YYYY-MM-DD>_live-testing/<n>-<slug>.md` containing:
 - **Symptom** — what the human saw, in their words
 - **Evidence** — exact log lines / network rows / console output captured. **Attach the artifacts
@@ -62,7 +75,9 @@ check claims against the docs — mark every finding **verified** (evidence in h
 - **Proposed fix direction** — where the fix lives, NOT the fix itself
 - **Suggested lane** — `/cicd-quick-dev` (small/contained) or the full ①②③ story loop (risky/cross-cutting)
 
-## Step 3.5 — Trace each bug back to the ticket that shipped it (SCC-54)
+Link each detailed bug doc back to its row in `bug-list.md`.
+
+## Step 3.5 — Trace each bug back to the ticket that shipped it (SCC-54) & Mint/Link Jira tickets
 This is the one command that flies the running app, so it is the one that finds bugs nobody has
 noticed yet — and the board should say so. For each bug doc, take the paths from its **Proposed fix
 direction** (a `file:LINE` gives the far stronger signal) and run:
@@ -84,13 +99,19 @@ python3 .agents/scripts/jira_feed.py flag --key <KEY> --reason "<one sentence>" 
 ```
 
 That flips `Story|Task -> Bug`, brings it back out of `Done`, and posts the reason. Close-out clears
-it later — see `.agents/rules/jira.md`. If no candidate is proposed, say so and move on; a bug with
-no traceable ticket is new work, not a reopen.
+it later — see `.agents/rules/jira.md`.
+
+**When minting a new bug ticket in Jira**:
+If the defect is net-new work rather than a reopen, link the project's running `bug-list.md` (and any
+attached Playwright screenshots/logs) directly in the ticket description or comment so the live testing
+context and full findings list are anchored on the Jira board.
 
 ## Step 4 — Close out
-Post a session summary table (bug → doc link → **traced ticket, if any** → suggested lane). Ask whether to keep or kill the
-servers. Remove every temporary debug log you added, close any browser the capture skill opened, and
-delete scratch capture scripts and one-off screenshots you did not attach to a bug doc. The fixes
-themselves happen in the sudo dev flow — never in this chat.
+Post the finalized session summary table (bug → doc link → **traced ticket, if any** → suggested lane).
+Ensure `PROJECT_ROOT/_artifacts/debugging/<YYYY-MM-DD>_live-testing/bug-list.md` is updated and indexed
+in `PROJECT_ROOT/_artifacts/debugging/INDEX.md` and `PROJECT_ROOT/_artifacts/INDEX.md`.
+Ask whether to keep or kill the servers. Remove every temporary debug log you added, close any browser the
+capture skill opened, and delete scratch capture scripts and one-off screenshots you did not attach to a
+bug doc. The fixes themselves happen in the sudo dev flow — never in this chat.
 
 Optional additional input (area under test / known-flaky route): $ARGUMENTS
