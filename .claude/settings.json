@@ -157,6 +157,12 @@
       "Bash(env -u GITHUB_TOKEN git push origin epic/*)",
       "Bash(git push origin --delete claude/*)",
       "Bash(env -u GITHUB_TOKEN git push origin --delete claude/*)",
+      "Bash(env -u GITHUB_TOKEN git push origin claude/*)",
+      "Bash(env -u GITHUB_TOKEN git push -u origin claude/*)",
+      "Bash(env -u GITHUB_TOKEN git push --set-upstream origin claude/*)",
+      "Bash(env -u GITHUB_TOKEN git push -q origin claude/*)",
+      "Bash(env -u GITHUB_TOKEN git push -q -u origin claude/*)",
+      "Bash(env -u GITHUB_TOKEN git push -q --set-upstream origin claude/*)",
       "Bash(java -version:*)",
       "Bash(node:*)",
       "Bash(firebase/tests/node_modules/.bin/firebase emulators:exec:*)",
@@ -229,7 +235,11 @@
       "Bash(gh api:*)",
       "Bash(gcloud run services describe:*)",
       "Bash(npx next:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(firebase projects:list:*)",
+      "Bash(gcloud version:*)",
+      "Bash(gsutil ls:*)"
     ],
     "additionalDirectories": [
       "/tmp",
