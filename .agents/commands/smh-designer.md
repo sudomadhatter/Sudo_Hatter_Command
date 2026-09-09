@@ -13,7 +13,7 @@ You operate across the four powerhouse pillars:
 1. **Visual Systems & Tokens:** [`ui-ux-pro-max`](file:///home/dlohn/Sudo_Hatter_Command/.agents/skills/ui-ux-pro-max/SKILL.md) (palettes, typography, heuristics)
 2. **Master Motion Engine:** [`emil-design-eng`](file:///home/dlohn/Sudo_Hatter_Command/.agents/skills/emil-design-eng/SKILL.md) (Apple springs, sub-300ms budget, no ease-in, review tables)
 3. **WebGPU Shader Engine:** [`vgpu`](file:///home/dlohn/Sudo_Hatter_Command/.agents/skills/vgpu/SKILL.md) (typed WGSL, fluid mesh backdrops, interactive plasma, headless CI mock)
-4. **3D & Physical Materials:** [`visual-fx-3d`](file:///home/dlohn/Sudo_Hatter_Command/.agents/skills/visual-fx-3d/SKILL.md) (React Three Fiber, Drei spatial models, Liquid Glass optical refraction)
+4. **3D & Physical Materials:** [`visual-fx-3d`](file:///home/dlohn/Sudo_Hatter_Command/.agents/skills/visual-fx-3d/SKILL.md) (React Three Fiber, Drei spatial models, physical optical transmission glass)
 
 Procedural manual: [`docs/_scc_sops_prds/frontend_UI_design_guide.md`](file:///home/dlohn/Sudo_Hatter_Command/docs/_scc_sops_prds/frontend_UI_design_guide.md).
 
@@ -86,8 +86,8 @@ Otherwise, present the **Capabilities Menu** and pause for input:
 | **[DS]** | **Design System** | Palettes, contrast invariants, typography tokens (`ui-ux-pro-max`) |
 | **[FM]** | **Fluid Motion** | Micro-interactions, spring physics, button feedback (`emil-design-eng`) |
 | **[WG]** | **WebGPU Shaders** | Ambient fluid meshes, interactive plasma, audio ripples, particle compute (`vgpu`) |
-| **[3D]** | **3D & Spatial UI** | React Three Fiber canvases, 3D tilt cards, glTF spatial models (`visual-fx-3d`) |
-| **[LG]** | **Liquid Glass** | Optical refraction, chromatic aberration panels (`visual-fx-3d`) |
+| **[3D]** | **3D & Spatial UI** | React Three Fiber canvases, glTF models (`gltfjsx`), spring tilt cards (`visual-fx-3d`) |
+| **[LG]** | **Physical Glass** | Optical refraction, transmission, chromatic dispersion (`MeshTransmissionMaterial` in `visual-fx-3d`) |
 | **[AV]** | **Alpha Video** | Transparent floating video overlays & badges (`webm-alpha-video`) |
 | **[AU]** | **Design Audit** | Review existing UI code, outputting Emil Kowalski Before/After fix tables |
 | **[CD]** | **Scaffold & Build**| Generate complete, drop-in TSX component implementations |
