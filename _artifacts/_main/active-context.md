@@ -2,7 +2,16 @@
 
 ## 1. PRIME STATE
 Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-09-09
-**2026-09-09 (latest): SCC-435 SHIPPED AND CLOSED — full React Three Fiber and Drei 3D suite in /smh-designer.**
+**2026-09-09 (latest): SCC-436 SHIPPED AND CLOSED — full Poimandres 3D toolset, component catalog and recipes.**
+Merged to `main` at `1c541916` (PR #203). Equipped Caterpillar and `.agents/skills/visual-fx-3d/` with the complete
+Poimandres (`pmndrs`) 3D creative suite (`pmndrs/react-three-fiber`, `pmndrs/drei`, `pmndrs/postprocessing`,
+`pmndrs/react-three-rapier`, `pmndrs/gltfjsx`, `pmndrs/leva`). Authored `CATALOG.md` detailing 100+ components across
+8 domains with exact imports and props. Authored `RECIPES.md` with 8 copy-pasteable production component examples.
+Updated `/smh-designer`, `frontend_UI_design_guide.md`, and `workflows_testing_SOP.md` with direct repo links.
+All 83 test suites passed. Dev Record filed, ticket transitioned to Done, worktree pruned.
+Record: `_artifacts/_main/2026-09-09_scc-436-r3f-repo-link/walkthrough.md`.
+
+**2026-09-09: SCC-435 SHIPPED AND CLOSED — full React Three Fiber and Drei 3D suite in /smh-designer.**
 Merged to `main` at `f4700885` (PR #201). Subbed out synthetic SVG displacement filter (`liquid-glass-js`) for
 `pmndrs/react-three-fiber` + `@react-three/drei`'s `MeshTransmissionMaterial` (authentic Apple VisionOS physical optical
 glass refraction with chromatic edge dispersion). Added tactile 3D Spring Tilt Cards (`PresentationControls`), `gltfjsx`

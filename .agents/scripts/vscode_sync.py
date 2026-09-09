@@ -31,6 +31,11 @@ def find_repo_root(start: Path | None = None) -> Path:
     return cur
 
 
+def under_wsl() -> bool:
+    """True inside a WSL distro: the user settings live on the Windows side."""
+    return bool(os.environ.get("WSL_DISTRO_NAME")) or Path("/proc/sys/fs/binfmt_misc/WSLInterop").exists()
+
+
 def get_vscode_user_dir() -> Path:
     system = platform.system()
     if system == "Darwin":
@@ -41,7 +46,20 @@ def get_vscode_user_dir() -> Path:
             return Path(appdata) / "Code/User"
         return Path.home() / "AppData/Roaming/Code/User"
     else:
-        # Linux
+        # Linux / WSL
+        if under_wsl():
+            windows_users = Path("/mnt/c/Users")
+            if windows_users.is_dir():
+                try:
+                    for u in windows_users.iterdir():
+                        target = u / "AppData" / "Roaming" / "Code" / "User"
+                        try:
+                            if target.is_dir():
+                                return target
+                        except OSError:
+                            continue
+                except OSError:
+                    pass
         config = os.environ.get("XDG_CONFIG_HOME")
         if config:
             return Path(config) / "Code/User"
