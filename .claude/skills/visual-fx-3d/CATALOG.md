@@ -273,3 +273,4 @@ Interactive browser GUI for live visual parameter tweaking.
     ior: { value: 1.2, min: 1.0, max: 2.5, step: 0.05 },
   });
   ```
+
