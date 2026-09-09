@@ -1,13 +1,17 @@
 ---
 name: visual-fx-3d
-description: Declarative 3D scenes, spatial models, gltfjsx pipeline, interactive spring tilt cards, and physical optical transmission glass. Covers React Three Fiber (R3F), Drei, and MeshTransmissionMaterial. For 2D/compute shaders and ambient fluid meshes, see vgpu.
+description: Declarative 3D scenes, spatial models, gltfjsx pipeline, interactive spring tilt cards, physical optical glass, and real-time physics. Complete Poimandres (pmndrs) suite covering React Three Fiber (R3F), Drei, Postprocessing, and Rapier. For 2D/compute shaders and ambient fluid meshes, see vgpu.
 ---
 
-# Visual FX & 3D Spatial Materials (`pmndrs/react-three-fiber` + `@react-three/drei`)
+# Visual FX & 3D Spatial Materials ([`pmndrs/react-three-fiber`](https://github.com/pmndrs/react-three-fiber) Suite)
 
-The house engine for high-end modern 3D spatial craft: declarative 3D scene graphs, glTF/GLB product models, tactile spring-damped tilt physics, and Apple VisionOS-grade physical optical glass refraction.
+The house engine for high-end modern 3D spatial craft: declarative 3D scene graphs, glTF/GLB product models, tactile spring-damped tilt physics, Apple VisionOS-grade physical optical glass refraction, cinematic post-processing, and real-time rigid body physics.
 
-> **Architecture Note:** Ambient fluid mesh backgrounds, 2D canvas shaders, and plasma noise have migrated to [`.agents/skills/vgpu`](../vgpu/SKILL.md). `visual-fx-3d` is dedicated to spatial 3D geometry, interactive 3D models, and physical transmission materials.
+> **Architecture Note:** Ambient fluid mesh backgrounds, 2D canvas shaders, and plasma noise have migrated to [`.agents/skills/vgpu`](../vgpu/SKILL.md). `visual-fx-3d` is dedicated to spatial 3D geometry, interactive 3D models, physical transmission materials, and real-time physics.
+
+### Deep Reference Documentation
+* **Component & Tool Encyclopedia:** [`CATALOG.md`](./CATALOG.md) (All 8 domains, 100+ components, imports, and props)
+* **Working Implementation Recipes:** [`RECIPES.md`](./RECIPES.md) (Copy-pasteable code examples for each tool category)
 
 ---
 
@@ -24,21 +28,32 @@ The house engine for high-end modern 3D spatial craft: declarative 3D scene grap
 │ • Audio-reactive visualizers            │ • Spatial lighting & camera rigs  │
 │ • GPU particle simulations              │ • Optical physical glass (Drei)   │
 │ • ~25KB gzipped bundle (typed WGSL)     │ • Interactive spring tilt cards   │
-│ • Zero-GPU headless CI testable         │ • React Three Fiber + Drei (~300K)│
+│ • Zero-GPU headless CI testable         │ • Cinematic post-processing passes│
+│                                         │ • Real-time physics (Rapier)      │
+│                                         │ • Full Poimandres Creative Suite  │
 └─────────────────────────────────────────┴───────────────────────────────────┘
 ```
 
-> **House Rule:** Use `vgpu` for 2D surface shaders, fluid backdrops, and compute passes. Use `visual-fx-3d` strictly when rendering actual 3D spatial geometry, glTF models, or physical optical transmission glass.
+> **House Rule:** Use `vgpu` for 2D surface shaders, fluid backdrops, and compute passes. Use `visual-fx-3d` strictly when rendering actual 3D spatial geometry, glTF models, optical glass, or 3D physics.
 
 ---
 
 ## 2. Installation & Ecosystem Stack
 
 Integrate the official **Poimandres (`pmndrs`)** toolkit:
+* [`pmndrs/react-three-fiber`](https://github.com/pmndrs/react-three-fiber) — Core React Three.js renderer
+* [`pmndrs/drei`](https://github.com/pmndrs/drei) — Abstractions, controls, staging, and shaders
+* [`pmndrs/postprocessing`](https://github.com/pmndrs/postprocessing) — Cinematic bloom, DoF, and chromatic aberration
+* [`pmndrs/react-three-rapier`](https://github.com/pmndrs/react-three-rapier) — Real-time WebAssembly physics
+* [`pmndrs/gltfjsx`](https://github.com/pmndrs/gltfjsx) — JSX asset pipeline for 3D `.glb` models
+* [`pmndrs/leva`](https://github.com/pmndrs/leva) — Live in-browser parameter tweak GUI
 
 ```bash
 # Core 3D engine and production helpers
 npm i three @react-three/fiber @react-three/drei
+
+# Optional cinematic post-processing & physics
+npm i @react-three/postprocessing postprocessing @react-three/rapier leva
 
 # TypeScript definitions and glTF JSX compiler
 npm i -D @types/three gltfjsx

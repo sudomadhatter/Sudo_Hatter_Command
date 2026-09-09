@@ -4,12 +4,12 @@
     "docs"
   ],
   "counts": {
-    "files": 378,
+    "files": 380,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 764,
+    "edges": 769,
     "external": 35,
-    "ambiguous": 171,
+    "ambiguous": 172,
     "dangling": 264,
     "broken_paths": 61,
     "unresolved_names": 203,
@@ -469,7 +469,7 @@
     {
       "path": ".agents/commands/smh-designer.md",
       "in": 3,
-      "out": 2
+      "out": 3
     },
     {
       "path": ".agents/commands/smh-label-tasks.md",
@@ -1687,9 +1687,19 @@
       "out": 0
     },
     {
+      "path": ".agents/skills/visual-fx-3d/CATALOG.md",
+      "in": 4,
+      "out": 0
+    },
+    {
+      "path": ".agents/skills/visual-fx-3d/RECIPES.md",
+      "in": 2,
+      "out": 0
+    },
+    {
       "path": ".agents/skills/visual-fx-3d/SKILL.md",
       "in": 1,
-      "out": 1
+      "out": 3
     },
     {
       "path": ".agents/skills/webm-alpha-video/SKILL.md",
@@ -1754,7 +1764,7 @@
     {
       "path": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
       "in": 6,
-      "out": 9
+      "out": 12
     },
     {
       "path": "docs/_scc_sops_prds/git_walkthrough_settings.md",
@@ -2823,6 +2833,11 @@
     {
       "from": ".agents/commands/smh-code-review.md",
       "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-designer.md",
+      "to": ".agents/skills/visual-fx-3d/CATALOG.md",
       "kind": "ref"
     },
     {
@@ -4576,6 +4591,16 @@
       "kind": "link"
     },
     {
+      "from": ".agents/skills/visual-fx-3d/SKILL.md",
+      "to": ".agents/skills/visual-fx-3d/CATALOG.md",
+      "kind": "link"
+    },
+    {
+      "from": ".agents/skills/visual-fx-3d/SKILL.md",
+      "to": ".agents/skills/visual-fx-3d/RECIPES.md",
+      "kind": "link"
+    },
+    {
       "from": ".agents/skills/workspace-structure/SKILL.md",
       "to": "docs/code-review-graph.md",
       "kind": "ref"
@@ -4853,6 +4878,16 @@
     {
       "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
       "to": ".agents/skills/vgpu/SKILL.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
+      "to": ".agents/skills/visual-fx-3d/CATALOG.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
+      "to": ".agents/skills/visual-fx-3d/RECIPES.md",
       "kind": "link"
     },
     {
@@ -7234,6 +7269,15 @@
         ".agents/AGENTS.md",
         ".agents/skills/react-best-practices/AGENTS.md",
         "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-designer.md",
+      "target": "RECIPES.md",
+      "candidates": [
+        ".agents/skills/animate-expo/RECIPES.md",
+        ".agents/skills/emil-design-eng/RECIPES.md",
+        ".agents/skills/visual-fx-3d/RECIPES.md"
       ]
     },
     {
@@ -9794,7 +9838,8 @@
       "target": "RECIPES.md",
       "candidates": [
         ".agents/skills/animate-expo/RECIPES.md",
-        ".agents/skills/emil-design-eng/RECIPES.md"
+        ".agents/skills/emil-design-eng/RECIPES.md",
+        ".agents/skills/visual-fx-3d/RECIPES.md"
       ]
     },
     {
