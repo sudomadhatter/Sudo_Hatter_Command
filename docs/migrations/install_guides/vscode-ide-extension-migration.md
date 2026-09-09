@@ -214,8 +214,16 @@ they become functional.
 8. **Suppress title bar search bar / Command Center during agent prompts (Antigravity in VS Code):**
    When running the Antigravity agent in VS Code, prompt/approval requests trigger VS Code's experimental
    Agent Status widget in the title bar, causing the Command Center search bar to pop open or steal focus.
-   Add to user `settings.json`:
+   These settings are tracked at workspace level in `.vscode/settings.json` so they travel via Git across
+   Mac, Windows, and Linux and cannot be rolled back by Microsoft Cloud Settings Sync.
+   In user `settings.json`, add them and protect them against cloud sync rollback:
    ```json
+   "settingsSync.ignoredSettings": [
+       "window.commandCenter",
+       "chat.agentsControl.enabled",
+       "chat.unifiedAgentsBar.enabled",
+       "antigravity.autoOpenFiles"
+   ],
    "window.commandCenter": false,
    "chat.agentsControl.enabled": "hidden",
    "chat.unifiedAgentsBar.enabled": false,
