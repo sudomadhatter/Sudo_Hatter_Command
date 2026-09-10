@@ -49,7 +49,15 @@ carries 'token count'
 -- 16/16 passed --
 ```
 
-Full suite: see `gates/suite.json` and the totals pasted below.
+**Full enforcement suite, clean tree, through the receipt writer:**
+
+```
+84/84 files passed
+[PASS] suite exit=0 31.0s @ ed5dd627
+```
+
+Receipt: [gates/suite.json](gates/suite.json) — `"result": "pass"`, `"dirty_tree": false`,
+`"sha": "ed5dd627e3a05d3ee6843a700f6987f42d92d17a"`. The file count is the AC D observable: 83 → 84.
 
 ## The three things that would have gone wrong
 
