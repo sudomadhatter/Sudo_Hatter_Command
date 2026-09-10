@@ -90,6 +90,42 @@ lane no longer depends on AVCH-149 landing.
 reader's experience, not asking to be waited out. Reaching for "this will resolve after the merge"
 was the expensive answer to a question whose cheap answer was "then write the reference correctly."
 
+## Code Review (2026-09-10)
+
+Docs-only lane, reviewed against the command-centre gate rather than a code gate: there is no venv,
+no ruff and no tsc here, and nothing in the diff is executable. Three findings, all mine, all fixed
+before this verdict.
+
+**F1 · Two cross-repo citations resolved nowhere — REAL, fixed.** `.github/scripts/classify_changes.py`
+and `backend/tests/test_classify_changes.py` were written as bare repo-relative paths in a lobby
+document. They are AviationChat files; that form resolves for neither the link checker nor a reader
+holding this manual. Rewritten as repository links (5 occurrences). ⛔ **The process error is the part
+worth keeping:** I first read T9's "resolves nowhere" as a landing-order dependency on AVCH-149 and
+held the operator's documents behind an unrelated merge. A link checker reporting an unresolvable
+path is describing the reader's experience, not asking to be waited out.
+
+**F2 · Missing `_artifacts/_main/INDEX.md` row — REAL, fixed.** `check_maps` F2 refused the new
+session folder. Row added; `test_check_maps.py` 37/37.
+
+**F3 · Missing preflight receipt — REAL, fixed.** `main-write-gate` failed PR #207 on
+`close-out receipts: SCC-440: no preflight-receipt.json in this PR`. I had skipped `task_preflight.py`
+entirely. Run, verdict `clear to close out and merge`, receipt committed here.
+
+**Assessed and not changed:** the 2026-06-29 audit body of `tea_testing_guide.md` is left as written.
+It is wrong about today's gate in a dozen places, but it is a dated audit whose walkthroughs still
+teach the sequence, and rewriting it is a different piece of work from the one asked for. §6.0 is
+declared the state of record and the staleness note now says so at the top, which is the fix that
+was in scope.
+
+| gate | result |
+|---|---|
+| `tests/run_all.py` | **83/83** (clean tree) |
+| `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, 8 info (pre-existing BOMs) |
+| `check_maps.py --depth3-only --strict` | clean |
+| `task_preflight.py --expect-key SCC-440` | 0 errors, 1 warning (the worktree note), **clear to close out and merge** |
+
+Verdict: PASS @ d5ce8c32
+
 ## Your Actions
 
 - [ ] Merge this lane's PR. It is independent — nothing in it waits on AVCH-149 any more.

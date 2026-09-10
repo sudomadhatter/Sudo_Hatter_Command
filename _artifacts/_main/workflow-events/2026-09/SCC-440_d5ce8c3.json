@@ -1,0 +1,32 @@
+{
+  "v": 1,
+  "task": "SCC-440",
+  "sha": "d5ce8c320dc83bf10aa3b16bd80dfb007bb067cc",
+  "tip": "d5ce8c320dc83bf10aa3b16bd80dfb007bb067cc",
+  "trigger": "close-out",
+  "when": "2026-09-10T15:10:32-04:00",
+  "changes": [
+    "_artifacts/_main/2026-09-10_scc-440-tea-docs-ci-gate/task.yaml",
+    "_artifacts/_main/2026-09-10_scc-440-tea-docs-ci-gate/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/tea_deep_reference.md",
+    "docs/_scc_sops_prds/tea_testing_guide.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-10_scc-440-tea-docs-ci-gate/walkthrough.md",
+    "verdict": "PASS @ d5ce8c3",
+    "gates": {}
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
