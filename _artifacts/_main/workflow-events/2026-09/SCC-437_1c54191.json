@@ -1,0 +1,24 @@
+{
+  "v": 1,
+  "task": "SCC-437",
+  "sha": "1c541916cd76be4ca2fb1c2cb3b8d8587cdc3f48",
+  "tip": "a79180c4f9a2aa100b1ec0cef67c5a210e687468",
+  "trigger": "close-out",
+  "when": "2026-09-09T11:49:17-04:00",
+  "changes": [],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-09_scc-437-llm-approvals/walkthrough.md",
+    "verdict": "PASS @ 1c54191",
+    "gates": {}
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
