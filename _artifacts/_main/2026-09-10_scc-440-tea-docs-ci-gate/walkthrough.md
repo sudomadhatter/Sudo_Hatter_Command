@@ -124,7 +124,12 @@ was in scope.
 | `check_maps.py --depth3-only --strict` | clean |
 | `task_preflight.py --expect-key SCC-440` | 0 errors, 1 warning (the worktree note), **clear to close out and merge** |
 
-Verdict: PASS @ d5ce8c32
+**No `Verdict:` stamp on this lane, deliberately.** That line is the lens engine's conclusion and
+it pulls in the roster gate — a `lenses_run:` roster, per-lens dispositions, a drift line. This lane
+never ran the engine: it is two documentation files with no executable surface, where the machine
+floor above IS the substantive check and a link checker is what caught two of the three findings.
+Writing a roster here would record a review that did not happen. Without the stamp `task_preflight`
+runs the full gate instead, which is what the table above reports.
 
 ## Your Actions
 
