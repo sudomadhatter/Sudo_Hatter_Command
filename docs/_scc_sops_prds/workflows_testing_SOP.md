@@ -1647,6 +1647,15 @@ pipeline.
 **Accuracy over speed.** What it drops is the *pipeline* — the ATDD red phase, the full suite, the
 three-reviewer panel. It does **not** drop the rigour.
 
+**Scope is judged by ONE question, and it is not about size.** The lane asks whether the work is
+two or more independently shippable deliverables — that halt stays, because that is a product
+question you own. It does **not** measure a spec's tokens, does **not** show you a token count, and
+never halts, splits or warns on how long a spec is. BMAD ships a 900–1600 token guideline and a
+Split/Keep halt built on it; both are retired here, in the vendor skill on disk and in
+`_bmad/custom/bmad-quick-dev.toml`, which survives a BMAD update. ⚠️ **A `bmad` update reinstalls
+the vendor skill and turns `test_bmad_token_gate_retired.py` red** — that is the guard working, not
+a lane breaking. Re-apply the three edits per door; the override file is untouched by the update.
+
 ▶ **Diagram:** [`/cicd-quick-dev` in the command atlas](#cicd-quick-dev) — every step, stop and refusal, checked against the live command.
 
 **It never closes out.** On a story it advances the row to `review` on the way out and stops there.
