@@ -133,7 +133,7 @@ runs the full gate instead, which is what the table above reports.
 
 ## Your Actions
 
-- [ ] Merge this lane's PR. It is independent — nothing in it waits on AVCH-149 any more.
+- [x] The merge itself — landed via this branch's PR [#207](https://github.com/sudomadhatter/Sudo_Hatter_Command/pull/207) at `134cdd17`.
 
 **Reading order once both are merged:** §6.0 of the guide is the state of record for CI. The rest of
 that document is a 2026-06-29 audit kept for its walkthroughs, and it is now labelled as such at the
