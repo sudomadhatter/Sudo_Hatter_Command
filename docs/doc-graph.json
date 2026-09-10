@@ -7,12 +7,12 @@
     "files": 380,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 769,
+    "edges": 770,
     "external": 35,
     "ambiguous": 172,
-    "dangling": 264,
+    "dangling": 265,
     "broken_paths": 61,
-    "unresolved_names": 203,
+    "unresolved_names": 204,
     "unresolvable": 9
   },
   "nodes": [
@@ -1809,11 +1809,11 @@
     {
       "path": "docs/_scc_sops_prds/tea_deep_reference.md",
       "in": 3,
-      "out": 6
+      "out": 7
     },
     {
       "path": "docs/_scc_sops_prds/tea_testing_guide.md",
-      "in": 2,
+      "in": 3,
       "out": 1
     },
     {
@@ -5087,6 +5087,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/tea_deep_reference.md",
+      "to": "docs/_scc_sops_prds/tea_testing_guide.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/tea_deep_reference.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "kind": "link"
     },
@@ -6719,6 +6724,10 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "target": "prose-formatting.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "step-02-plan.md"
     },
     {
       "from": "docs/code-review-graph.md",
