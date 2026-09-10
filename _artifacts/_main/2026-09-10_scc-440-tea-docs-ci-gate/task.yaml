@@ -1,0 +1,5 @@
+task_key: SCC-440
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-440-tea-docs-ci-gate
+close_command: smh-close-task-merge-tree
+secondary_repos: []

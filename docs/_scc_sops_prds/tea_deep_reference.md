@@ -749,6 +749,25 @@ flowchart TD
 | L3 judge | authored via `atdd`/`automate`; scored in `testarch-trace` / `nfr` (③) | agent-bearing stories |
 | L4 human | `cicd-close-story-merge-tree` close-out + live-test gate | close-out |
 
+### Where each tier actually executes on a PR (AVCH-149)
+
+The tiers above say *what kind* of test. This says *which CI job runs it, and when*. Since AVCH-149
+the PR gate is one workflow whose four gating jobs are routed per stack by a `changes` job — full
+description in [`tea_testing_guide.md` §6.0](tea_testing_guide.md#60--the-pr-gate-as-it-stands-today-avch-149).
+
+| Tier | CI job (a required context on `main`) | Runs when |
+|---|---|---|
+| L1 backend | `Backend (Python)` — full pytest, `--cov-fail-under=54` | the diff touches the backend stack |
+| L1 frontend | `Frontend (Node.js)` — vitest + production build | the diff touches `frontend/**` |
+| L2 / emulator | `Backend E2E (Firestore emulator)` — `pytest -m emulator` **plus** the TEA-12 rules suite | the diff touches the backend stack |
+| E2E journey | `Frontend E2E (Playwright)` — real browser, seeded emulators | the diff touches `frontend/**`, after `Frontend` goes green |
+| L3 judge | **no CI job, by design** — costs tokens, needs a live key | manually / advisory |
+| L4 human | the operator's merge click on a fully green PR | close-out |
+
+⛔ **A job skipped by routing reports Success.** That is what lets a docs-only PR satisfy four
+required contexts in seconds — and it is why every routing condition is written to run the job when
+the classifier itself failed. On the PR page, "skipped" and "passed" look identical.
+
 ---
 
 ## 13. Lead code-review checklist (consolidated)
@@ -787,7 +806,7 @@ Print this. It's the whole curriculum compressed into the questions you ask on a
 | [test_grading_event_dataset_api.py](../../Projects/AGY_AVIATIONCHAT/backend/tests/routers/test_grading_event_dataset_api.py) | E2E | `client_and_svc` fixture (auto-cleanup); `GOV_QUERY` **use-site** patch; `TestClient` API pattern |
 | [test_tenancy_gate.py](../../Projects/AGY_AVIATIONCHAT/backend/tests/routers/test_tenancy_gate.py) | E2E | P0 Trace artifact; CI merge-blocker; RED gate if removed |
 | [test_faa_grounding_guard.py](../../Projects/AGY_AVIATIONCHAT/backend/tests/agents/specialist/test_faa_grounding_guard.py) | — | Live ATDD example (TEA-4): test written red before `agent.py` green |
-| [firestore.rules.test.js](../../Projects/AGY_AVIATIONCHAT/firebase/tests/firestore.rules.test.js) | Integration (emulator) | Security-rules testing (TEA-12): `@firebase/rules-unit-testing` `assertFails`/`assertSucceeds` deny/allow matrix against the real Firestore emulator; **local-only, out of the PR gate** (needs Java 17 — set `JAVA_HOME` per shell); non-vacuity via the emulator's own `PERMISSION_DENIED` logs |
+| [firestore.rules.test.js](../../Projects/AGY_AVIATIONCHAT/firebase/tests/firestore.rules.test.js) | Integration (emulator) | Security-rules testing (TEA-12): `@firebase/rules-unit-testing` `assertFails`/`assertSucceeds` deny/allow matrix against the real Firestore emulator; **IN the PR gate since AVCH-119** — it runs as `npm test` in `firebase/tests` inside the `Backend E2E (Firestore emulator)` job, which is a required context on `main`. Before that it was local-only, so a rules change could open a document to the wrong user and still merge green. Locally it needs Java 17 (set `JAVA_HOME` per shell); non-vacuity via the emulator's own `PERMISSION_DENIED` logs |
 
 > Paths in this section are relative to this guide's location. Inside the project repo, they are `backend/tests/...` (or `firebase/tests/...` for the rules suite).
 
