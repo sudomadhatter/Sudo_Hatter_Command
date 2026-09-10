@@ -4050,15 +4050,15 @@ end-to-end test suite is still `/cicd-e2e`.
 
 | Stage / Step | Details / Action | Next Step / Transition |
 |---|---|---|
-| `S0` | Step 0 — resolve the project | (terminal / end) |
-| `S1` | Step 1 — boot the dev env reap stale processes (each kill prompt-gated) both servers in the background | → Step 2 — the co-pilot loop, until you end it re-read the backend log every turn read the frontend with Playwright: console, errors, network, screenshot ask you only for what a script cannot reach |
-| `S2` | Step 2 — the co-pilot loop, until you end it re-read the backend log every turn read the frontend with Playwright: console, errors, network, screenshot ask you only for what a script cannot reach | → Step 3 — per confirmed symptom, a bug doc symptom · evidence · ranked causes (verified vs docs-say) fix direction · suggested lane |
-| `S3` | Step 3 — per confirmed symptom, a bug doc symptom · evidence · ranked causes (verified vs docs-say) fix direction · suggested lane | → Step 3.5 — jira_feed.py trace git history only — proposes the shipping ticket |
-| `S35` | Step 3.5 — jira_feed.py trace git history only — proposes the shipping ticket | → 🛑 STOP — show you the ranked candidates never pass a traced key to flag itself |
-| `STOP` | 🛑 STOP — show you the ranked candidates never pass a traced key to flag itself | **you say yes** → jira_feed.py flag --apply Story or Task → Bug, out of Done, reason posted<br>**no ticket proposed** → new work, not a reopen |
-| `FLAG` | jira_feed.py flag --apply Story or Task → Bug, out of Done, reason posted | → Step 4 — close out summary table · keep or kill the servers? remove every temp debug log |
-| `NEW` | new work, not a reopen | → Step 4 — close out summary table · keep or kill the servers? remove every temp debug log |
-| `S4` | Step 4 — close out summary table · keep or kill the servers? remove every temp debug log | → fixes happen in /cicd-quick-dev or the ①②③ loop — never here |
+| `S0` | Step 0 — resolve project & bind session artifact store `PROJECT_ROOT/_artifacts/debugging/<date>_live-testing/bug-list.md` | (terminal / end) |
+| `S1` | Step 1 — boot the dev env reap stale processes (each kill prompt-gated) both servers in the background | → Step 2 — the co-pilot loop, until you end it: maintain running bug list in chat + project artifact every turn; re-read backend log; read frontend with Playwright (console, errors, network, screenshot); ask you only for what a script cannot reach |
+| `S2` | Step 2 — the co-pilot loop, until you end it: maintain running bug list in chat + project artifact every turn; re-read backend log; read frontend with Playwright (console, errors, network, screenshot); ask you only for what a script cannot reach | → Step 3 — per confirmed symptom, detailed bug doc (`<n>-<slug>.md`) beside `bug-list.md`: symptom · evidence · ranked causes (verified vs docs-say) · fix direction · suggested lane |
+| `S3` | Step 3 — per confirmed symptom, detailed bug doc (`<n>-<slug>.md`) beside `bug-list.md`: symptom · evidence · ranked causes (verified vs docs-say) · fix direction · suggested lane | → Step 3.5 — jira_feed.py trace (git history only) / link running `bug-list.md` to Jira tickets |
+| `S35` | Step 3.5 — jira_feed.py trace (git history only) / link running `bug-list.md` to Jira tickets | → 🛑 STOP — show you the ranked candidates; link running bug list when minting Jira ticket; never pass a traced key to flag itself |
+| `STOP` | 🛑 STOP — show you the ranked candidates; link running bug list when minting Jira ticket; never pass a traced key to flag itself | **you say yes** → jira_feed.py flag --apply Story or Task → Bug, out of Done, reason posted<br>**no ticket proposed** → new work, link `bug-list.md` in new Jira ticket |
+| `FLAG` | jira_feed.py flag --apply Story or Task → Bug, out of Done, reason posted | → Step 4 — close out summary table · index `bug-list.md` · keep or kill the servers? remove every temp debug log |
+| `NEW` | new work, link `bug-list.md` in new Jira ticket | → Step 4 — close out summary table · index `bug-list.md` · keep or kill the servers? remove every temp debug log |
+| `S4` | Step 4 — close out summary table · index `bug-list.md` · keep or kill the servers? remove every temp debug log | → fixes happen in /cicd-quick-dev or the ①②③ loop — never here |
 | `FIX` | fixes happen in /cicd-quick-dev or the ①②③ loop — never here | (terminal / end) |
 
 

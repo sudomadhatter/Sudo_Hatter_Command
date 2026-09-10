@@ -9,10 +9,10 @@
     "pack_docs": 2,
     "edges": 770,
     "external": 35,
-    "ambiguous": 172,
-    "dangling": 265,
-    "broken_paths": 61,
-    "unresolved_names": 204,
+    "ambiguous": 174,
+    "dangling": 269,
+    "broken_paths": 63,
+    "unresolved_names": 206,
     "unresolvable": 9
   },
   "nodes": [
@@ -5866,6 +5866,14 @@
       "target": "PROJECT_ROOT/_bmad-output/active-context/active-context.md"
     },
     {
+      "from": ".agents/commands/cicd-live-testing-team.md",
+      "target": "_live-testing/bug-list.md"
+    },
+    {
+      "from": ".agents/commands/cicd-live-testing-team.md",
+      "target": "bug-list.md"
+    },
+    {
       "from": ".agents/commands/cicd-merge-epic-workingtrees.md",
       "target": "/walkthrough.md"
     },
@@ -6679,11 +6687,19 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "target": "_live-testing/bug-list.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "active-context.md"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "agent.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "target": "bug-list.md"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
@@ -7194,6 +7210,44 @@
         ".agents/AGENTS.md",
         ".agents/skills/react-best-practices/AGENTS.md",
         "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/cicd-live-testing-team.md",
+      "target": "PROJECT_ROOT/_artifacts/INDEX.md",
+      "candidates": [
+        ".agents/INDEX.md",
+        ".agents/bmad",
+        ".agents/commands/INDEX.md",
+        ".agents/hooks/INDEX.md",
+        ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
+        ".agents/rules/INDEX.md",
+        ".agents/scripts/INDEX.md",
+        ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
+        "docs/_scc_sops_prds/INDEX.md",
+        "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/cicd-live-testing-team.md",
+      "target": "PROJECT_ROOT/_artifacts/debugging/INDEX.md",
+      "candidates": [
+        ".agents/INDEX.md",
+        ".agents/bmad",
+        ".agents/commands/INDEX.md",
+        ".agents/hooks/INDEX.md",
+        ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
+        ".agents/rules/INDEX.md",
+        ".agents/scripts/INDEX.md",
+        ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
+        "docs/_scc_sops_prds/INDEX.md",
+        "docs/migrations/INDEX.md"
       ]
     },
     {
