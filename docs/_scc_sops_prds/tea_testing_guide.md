@@ -101,12 +101,25 @@ Read it top to bottom once, then live in the **Coverage Scorecard** (§1) and th
 
 ### Three facts that anchor everything
 
-> **2026-07-02 staleness note:** facts 2 and 3 below (and the §1 scorecard) are **historical — written 2026-06-29 before the TEA stories ran**. Today: coverage IS measured (54.02% branch baseline on specialist+routers, CI `--cov-fail-under=54`, `l1_coverage_min: 0.54` — TEA-5) and a **local** nightly eval-drift runner exists (`run_nightly.ps1` + `drift.py`, TEA-7; still no GitHub nightly, by design/B5). Fact 1 is still true and stronger — the TEA-2 determinism guard now *enforces* zero-live-LLM at L1. Current state of record = the §0 audit matrix.
--->
+> **Staleness note (updated 2026-09-10, AVCH-149).** Facts 2 and 3 below, and the whole §1 scorecard,
+> are **historical — written 2026-06-29 before the TEA stories ran.** They are kept because the
+> walkthroughs downstream of them read as a sequence, not because they describe today.
+>
+> What is true now: coverage IS measured (54.02% branch baseline on specialist+routers, CI
+> `--cov-fail-under=54`, `l1_coverage_min: 0.54` — TEA-5); a **local** nightly eval-drift runner
+> exists (`run_nightly.ps1` + `drift.py`, TEA-7; still no GitHub nightly, by design/B5); fact 1 is
+> still true and stronger, since the TEA-2 determinism guard now *enforces* zero-live-LLM at L1; and
+> the PR gate itself was rebuilt twice — AVCH-119 (story 24.12) and **AVCH-149**.
+>
+> ⭐ **For the gate as it actually runs today, read [§6.0](#60--the-pr-gate-as-it-stands-today-avch-149)
+> first.** It is the current state of record for CI; the §0 audit matrix remains the record for the
+> P1–P10 retrofit.
 
 1. **The gate is already armed.** `_bmad-output/sudo-tests.yaml` exists and `waive: false`, so `/cicd-code-review` enforces for real on every story. Required tiers are `[L1, L2]`; L3 (LLM-as-judge) is intentionally *not* required in the gate.
 2. **Branch coverage is currently UNMEASURED.** Backend has zero coverage tooling (no `pytest-cov`, no `.coveragerc`, no `[tool.coverage]`). Frontend has `@vitest/coverage-v8` installed but **not wired** (no `coverage` key in `vitest.config.ts`, no `--coverage` in any command). That is why `l1_coverage_min` is `0.0` — a deliberate grandfather setting, not an oversight.
+   *(Closed by TEA-5 — see the staleness note above.)*
 3. **There is no Test Impact Analysis and no nightly test/eval job.** The PR gate (`pr-check.yml`) runs the **full** `pytest backend/tests/` suite on every qualifying PR. The only scheduled workflow in the repo is `firestore-backup.yml` (a data backup, not tests).
+   *(Half closed. Still no nightly eval job on GitHub, by design. But "qualifying PR" no longer means what it meant here: AVCH-149 replaced the workflow-level `paths:` filter with a per-job classifier, so the suite that runs is chosen per stack — §6.0.)*
 
 ---
 
@@ -120,7 +133,7 @@ Read it top to bottom once, then live in the **Coverage Scorecard** (§1) and th
 | **P4** — Variance control (integration LLM at temperature 0.0) | Not yet | `generate_with_fallback` accepts `temperature=`, but Sully runs `0.6`, eval Igor `0.3`; no test pins temp 0.0 on a real call. No L2 live tier exists. | §P4 — stand up an L2 temp-0 harness, kept out of the PR gate |
 | **P5** — Schema-contract enforcement (strict Pydantic; deviation = hard fail) | Partial | Generic schema-validation tests exist (`test_schemas_lesson_plan.py`); the real reasoning-log+response contracts `SocraticExecutorResponse` / `SullyResponse` are UNTESTED. | §P5 — hard-fail `ValidationError` tests for the two real contracts |
 | **P6** — Adversarial / negative testing (wrong-FAA-query + hallucination/citation) | Partial | An L3 citation-fidelity suite exists (`evals/scenarios/citation_fidelity.json`, manual-only). No deterministic in-gate L2 layer, no bad-FAA-*query* input set. | §P6 — author input-adversarial fixtures + a mocked in-gate guard |
-| **P7** — Test Impact Analysis (PR gate runs only impacted tests) | Not yet | `pr-check.yml` runs full `pytest backend/tests/ -v` — no `-k`/`--testmon`/changed-file selection. A code-graph impact engine is documented but was not wired to CI. | §P7 — `bmad-testarch-ci` scaffolds TIA selection; resolve the engine (human lane) |
+| **P7** — Test Impact Analysis (PR gate runs only impacted tests) | Not yet — but **stack-level** selection landed (AVCH-149) | Then: `pr-check.yml` ran full `pytest backend/tests/ -v`, no changed-file selection. Now: a `changes` job routes the diff per stack via [`classify_changes.py`](https://github.com/sudomadhatter/AGY_AVIATIONCHAT/blob/main/.github/scripts/classify_changes.py), so a backend-only PR skips both frontend jobs. WITHIN a stack it is still the whole suite. | §6.0 for what shipped · §P7 for the remaining gap (resolve the impact engine — human lane) |
 | **P8** — Semantic-eval separation (L3 judge decoupled, nightly) | Not yet | L3 correctly absent from the PR gate by policy, but there is no nightly/scheduled eval job (only `firestore-backup` cron). | §P8 — `bmad-testarch-ci` adds a scheduled nightly L3 job |
 | **P9** — Machine-enforced standards (ruleset bans string-match on LLM output) | Partial | `agent_bearing: true` arms the Test-Adequacy auditor and "no string-match on generative output"; `prompt-tdd.md` codifies it *scoped to `prompts.py` only*. No single Always-On rule, no blocking linter. | §P9 — consolidate into one named `testing-standards.md`; sync scope is Daniel's call |
 | **P10** — Test-first for agentic code (new workflows ship L1 mock + L2 schema by default) | Partial | `/cicd-write-story-tests` writes failing ATDD tests before code; gate requires `[L1, L2]`; baseline `at-opt-in`. But `l1_coverage_min: 0.0` makes the tier a presence-check, not a real floor; "by default" is convention, not a hard stop. | §P10 — the per-story loop IS this; ratchet the floor (human lane) |
@@ -298,7 +311,7 @@ flowchart TD
    ```
    Open `htmlcov/index.html`, find the uncovered branches in `SpecialistOrchestrator`, and **write the headline branch-% down.** Say it comes back 61%.
 4. **Set the floor at the baseline.** In `_bmad-output/sudo-tests.yaml`, change `l1_coverage_min: 0.0` → `l1_coverage_min: 0.61`. The gate (`bmad-testarch-trace` inside `/cicd-code-review`) now fails any story that drops below 61%. **THE key rule:** the floor "must only ever go UP." Record 85% as the *destination* in the `tier_map` doc (`_bmad-output/test-artifacts/ai-test-tiers.md`), not as today's gate value.
-5. **Wire `--cov` into CI.** The backend job in `.github/workflows/pr-check.yml` runs `pytest backend/tests/ -v --tb=short` with no `--cov`. Change it to `... --cov --cov-branch --cov-fail-under=61`. Keep `--cov-fail-under` and `l1_coverage_min` in sync — ratchet both in the same commit.
+5. **Wire `--cov` into CI.** ✅ **DONE (TEA-5).** The backend job in `.github/workflows/pr-check.yml` now runs `pytest backend/tests/ -n auto --dist loadfile --tb=short --cov --cov-branch --cov-report=term-missing --cov-fail-under=54`. The floor landed at **54**, not the 61 sketched here. Keep `--cov-fail-under` and `l1_coverage_min` in sync — ratchet both in the same commit, and only ever upward.
 
 ```mermaid
 flowchart TD
@@ -489,11 +502,112 @@ flowchart TD
 
 ## 6. Directive D3 — CI Architecture (P7, P8)
 
+### 6.0 — The PR gate as it stands today (AVCH-149)
+
+> **This subsection is the current state of record for CI.** Everything below it in §6 is the
+> 2026-06-29 retrofit analysis, kept for its reasoning. Where the two disagree, this one is right.
+
+**Three gates, three different questions.** Confusing them is what let a red merge to `main` on
+2026-09-08 (PR #99), and the distinction is the thing to hold onto:
+
+| Gate | Where it runs | The question it answers | What it cannot answer |
+|---|---|---|---|
+| `/cicd-code-review` | your machine, in the lane | **are the right tests written?** — risk allocation (P0–P3), tiers `[L1, L2]`, and the trace matrix proving each P0/P1 AC has a test | whether they pass on a clean machine |
+| `pr-check.yml` | GitHub, on an open PR | **does this pass on a clean machine, in the real stack?** | whether the tests were the right ones |
+| ruleset `21963341` | GitHub, on `main` | **is the merge button allowed to be clickable?** | anything about quality — it only reads the other two |
+
+**The CI gate is one workflow with five jobs.** A first job, `changes`, runs alone: it resolves the
+PR base, refuses to continue if it cannot (`git cat-file -e … || exit 1`), diffs, and feeds the
+changed paths to [`classify_changes.py`](https://github.com/sudomadhatter/AGY_AVIATIONCHAT/blob/main/.github/scripts/classify_changes.py). That script prints two flags, `run_backend`
+and `run_frontend`. Every other job reads them from a job-level `if:`.
+
+| Job (`name:` = the required context) | What it runs | Typical |
+|---|---|---|
+| `Backend (Python)` | ruff on changed files (HARD) · pyrefly on changed files (HARD) · full `pytest backend/tests/ -n auto --dist loadfile` · `--cov-fail-under=54` | ~5 min |
+| `Frontend (Node.js)` | eslint on changed files (HARD) · Next.js production build · vitest | ~5 min |
+| `Frontend E2E (Playwright)` | `npm run test:e2e` — the real journey pack in a real browser against seeded auth+firestore emulators | ~16 min |
+| `Backend E2E (Firestore emulator)` | the TEA-12 security-rules suite (`npm test` in `firebase/tests`) **plus** `pytest -m emulator` against a real Firestore client | ~14 min |
+
+Two steps inside those jobs are deliberately soft — the full-repo ruff pass and the full-repo eslint
+pass. Both are legacy-debt reports carrying the named owner and tracked expiry
+`tests-must-gate-for-real` §3 demands, and the hard changed-files gates beside them protect every
+new line. Nothing else in the gate may be soft.
+
+`main-write-gate` is a **separate** workflow (the house enforcement suite — commit keying, preflight
+receipt), ~35 s.
+
+**What routes what.** The rule is unchanged from AVCH-119: *a path routes to a stack if and only if a
+break in it can turn that stack's job red.*
+
+| PR touches | Backend | Frontend | Playwright | Backend E2E |
+|---|---|---|---|---|
+| `backend/**`, `relay/**`, `scripts/**`, `pyproject.toml`, `conftest.py`, `pyrefly.toml` | ✅ | — | — | ✅ |
+| `frontend/**` | — | ✅ | ✅ | — |
+| `firebase/**`, `firebase.json` | ✅ | ✅ | ✅ | ✅ |
+| `.github/**` | ✅ | ✅ | ✅ | ✅ |
+| docs / `_artifacts/` only | — | — | — | — |
+| **the classifier job itself failed** | ✅ | ✅ | ✅ | ✅ |
+
+`relay/` and `scripts/` are in the backend row because the backend suite **imports** them
+(`backend/tests/relay/` does `from relay.app import …`). They were missing from the old `paths:`
+list for months, so a PR touching only `relay/app.py` ran no gate at all — found and closed in
+AVCH-149's own review, and now pinned by a test that reads the repo's top-level tree, so a new
+top-level directory goes red until somebody decides which row it belongs in.
+
+⛔ **The one thing to understand about this design.** A job skipped by an `if:` reports **Success**
+to GitHub. That is the property that makes it work — a docs-only PR reports all four contexts green
+in about twenty seconds instead of stranding them Pending forever, which is what finally made those
+contexts safe to *require*. It is also the hazard: on the PR page, *"skipped because the classifier
+said so"* is indistinguishable from *"ran and passed"*. So **every `if:` is written to fail toward
+running** — `needs.changes.result != 'success'` runs the job — and a broken classifier costs a full
+suite rather than four green contexts on a PR that tested nothing.
+
+**What blocks a merge.** Ruleset `21963341` on `refs/heads/main`, armed 2026-09-10, requires
+`main-write-gate` plus all four contexts above (strict / up-to-date), adds a `pull_request` rule
+with zero required approvals, keeps `deletion` and `non_fast_forward`, and has **no bypass actors**.
+There is no local escape: `--no-verify` clears only the client-side hook. The merge button on a green
+PR is the only road.
+
+```mermaid
+flowchart TD
+    PR["PR opened or pushed"] --> CH["job: changes — resolve base, diff,\nclassify_changes.py"]
+    CH -->|"base unresolvable"| FAILOPEN["job FAILS"]
+    CH -->|"flags published"| FLAGS["run_backend / run_frontend"]
+    FAILOPEN -->|"every if: sees result != success"| ALL["ALL FOUR gate jobs run"]
+    FLAGS --> BE["Backend (Python)\nif run_backend"]
+    FLAGS --> FE["Frontend (Node.js)\nif run_frontend"]
+    FLAGS --> BEE["Backend E2E\nif run_backend"]
+    FE -->|"needs frontend == success"| FEE["Frontend E2E (Playwright)\nif run_frontend"]
+    BE --> RULE["ruleset 21963341:\n5 required contexts + required PR"]
+    BEE --> RULE
+    FEE --> RULE
+    ALL --> RULE
+    RULE --> MERGE["merge button enabled ONLY when all five are green"]
+```
+
+**Where the pieces live:** `.github/workflows/pr-check.yml` · [`classify_changes.py`](https://github.com/sudomadhatter/AGY_AVIATIONCHAT/blob/main/.github/scripts/classify_changes.py)
+· routing rules pinned in [`test_classify_changes.py`](https://github.com/sudomadhatter/AGY_AVIATIONCHAT/blob/main/backend/tests/test_classify_changes.py) · workflow wiring pinned in
+`backend/tests/test_story_24_12_gate_recovery.py`.
+
+**Still true, and deliberate:** there is no Test Impact Analysis inside a stack. Once a stack is
+selected it runs its **whole** suite. The classifier chooses *which stacks*, never *which tests* —
+that distinction is what the rest of §6 (P7) is about, and it remains open.
+
+---
+
 ### P7 — Test Impact Analysis (PR gate runs only impacted tests)
 
 > **Definition:** the PR gate runs only the L1/L2 tests that the changed code can break, not the whole suite.
 
-**Covered? — NO (gate exists, but has no TIA).** `.github/workflows/pr-check.yml` (Story 7.1) triggers `on: pull_request, branches:[main]`, paths `['backend/**','frontend/**']`. The backend gate is the literal line `pytest backend/tests/ -v --tb=short` — **all 148 files, every PR**, with no `-k`/`--lf`/`--testmon`/changed-file selection. Frontend is the same (`npm run test -- --run` runs all 44 unit files; `npx playwright test` runs both e2e specs). The natural TIA engine is the code graph's `detect-changes`, which now exists and is installed per machine, but it is **not wired to CI**: a fresh runner has no index until it builds one.
+**Covered? — NO, and still no, but the question has moved (see §6.0).**
+
+*As assessed 2026-06-29:* `.github/workflows/pr-check.yml` (Story 7.1) triggered `on: pull_request, branches:[main]`, paths `['backend/**','frontend/**']`. The backend gate was the literal line `pytest backend/tests/ -v --tb=short` — **all 148 files, every PR** — with no `-k`/`--lf`/`--testmon`/changed-file selection. Frontend was the same (`npm run test -- --run` for all 44 unit files; `npx playwright test` for both e2e specs).
+
+*What has changed since:* two rebuilds landed **stack-level** selection, which is not TIA but solves the bill TIA was being asked to solve. AVCH-119 widened the trigger to the gate-governing set and put the security-rules suite in-gate. **AVCH-149** then removed the workflow-level `paths:` filter entirely and moved routing to a per-job `if:` fed by [`classify_changes.py`](https://github.com/sudomadhatter/AGY_AVIATIONCHAT/blob/main/.github/scripts/classify_changes.py), so a backend-only PR no longer pays ~16 min of Playwright against a journey pack that mocks `/api/**` and cannot fail because of it. Coverage is wired (`--cov-fail-under=54`), the backend suite runs `-n auto --dist loadfile`, and the four job names are **required contexts** on the `main` ruleset.
+
+*What is still open — the actual P7:* **once a stack is selected it runs its whole suite.** The classifier chooses *which stacks*, never *which tests*. The natural TIA engine is the code graph's `detect-changes`, which exists and is installed per machine, but it is **not wired to CI**: a fresh runner has no index until it builds one.
+
+> **Worth asking before building it.** Stack-level routing already took the common cases from ~21 min to ~5. TIA inside a stack would shave the backend job's ~5 min — against the risk of an under-inclusive selection, which is the one failure mode this whole area keeps producing. Measure the remaining saving before paying for it.
 
 > **Decide with Daniel:** before TIA can run in CI you must decide **how `impact()` executes in a fresh GitHub Actions runner** — build the graph in-CI (`code-review-graph build`), cache the `.code-review-graph/` index, or run it as an MCP call. The runner is **not in this checkout**; treat the index step below as a placeholder to confirm.
 
@@ -507,7 +621,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    subgraph TODAY ["pr-check.yml TODAY (NO TIA)"]
+    subgraph TODAY ["pr-check.yml AS ASSESSED 2026-06-29 (superseded — see 6.0)"]
         T1["PR touches backend/** or frontend/**"]
         T2["pytest backend/tests/ -v (ALL 148 files)"]
         T3["vitest run (ALL 44) and playwright (both specs)"]
@@ -556,8 +670,8 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    subgraph PRGATE ["pr-check.yml (event: pull_request)"]
-        P1["PR touches backend/** or frontend/**"]
+    subgraph PRGATE ["pr-check.yml (event: pull_request; routing per 6.0)"]
+        P1["changes job routes the diff to a stack"]
         P2["L1 unit tests (mocked LLM)"]
         P3["L2 schema and temp-0 integration tests"]
         P4["required_tiers [L1, L2] -> PASS or FAIL blocks merge"]
