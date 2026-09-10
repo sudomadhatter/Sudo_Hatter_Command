@@ -10,9 +10,9 @@
     "edges": 769,
     "external": 35,
     "ambiguous": 172,
-    "dangling": 264,
+    "dangling": 265,
     "broken_paths": 61,
-    "unresolved_names": 203,
+    "unresolved_names": 204,
     "unresolvable": 9
   },
   "nodes": [
@@ -6719,6 +6719,10 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "target": "prose-formatting.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "step-02-plan.md"
     },
     {
       "from": "docs/code-review-graph.md",
