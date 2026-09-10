@@ -4,8 +4,8 @@ Why: The epic ruleset (22247932) requires all four PR Quality Gate checks on eve
 - [ ] `pr-check.yml`: the two E2E jobs add `!contains(github.event.pull_request.base.ref, '-light-epic-')` to their `if:`, fail-toward-running preserved; the classifier and the two unit jobs untouched
 - [ ] Ruleset split, each GitHub write stopping for the operator first: `epic/**` minus the light pattern keeps four required checks; a new ruleset on `refs/heads/epic/*-light-epic-*` requires `Backend (Python)` and `Frontend (Node.js)` only; both carry a `pull_request` rule, strict, zero bypass actors
 - [ ] `test_story_24_12_gate_recovery.py` pins the `if:`; a ruleset-shape test reads both rulesets through `gh api` and pins the required contexts and the patterns
-- [ ] AviationChat `.agents/INDEX.md` and the TEA testing guide §6.0 mode table updated in the same commit; one worked light-epic example
-- [ ] Skeleton (`Projects/sudo-project-skeleton`, committed under the SCC-441 key that repo accepts): `pr-check.yml` with the classifier and the light `if:`, `.github/scripts/classify_changes.py`, the ruleset recipe as a checked-in script the new-project door runs, an `AGENTS.md` GATES row naming both toggles, so every future project clones both on day one
+- [ ] The recipe checked in (`.github/rulesets/*.json`, `arm_rulesets.py`); AviationChat `.agents/INDEX.md` and `.github/workflows/INDEX.md` rows; `.agents/critical-surfaces.json` (the SCC-443 format, the P0 paths); the `bmad-quick-dev.toml` port from SCC-444 (the TEA guide §6.0 is a lobby file and moves on SCC-441's close-out)
+- [ ] Skeleton (`Projects/sudo-project-skeleton`, committed under the SCC-441 key that repo accepts): `pr-check.yml` with the classifier, the four jobs and the light `if:` (placeholder steps that fail loudly), `.github/scripts/classify_changes.py` and its test, the rulesets recipe, an `AGENTS.md` GATES bullet naming both toggles, the toml and the map placeholder, so every future project clones both on day one; a fresh clone passes `check_maps.py --root`
 
 ## Done
 (filled at close-out)

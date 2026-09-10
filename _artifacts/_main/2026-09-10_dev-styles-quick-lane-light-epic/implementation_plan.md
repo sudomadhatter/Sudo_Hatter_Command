@@ -102,9 +102,21 @@ each wave lands.
 
 ## What this lane itself changes
 
-Nothing outside this folder. It is the design record every child cites, the seven ticket outlines
-that were rendered onto the board, and at the end the parent's walkthrough. Every rule, door,
-script, workflow and ruleset moves in its own child lane behind its own `approved`.
+Now: nothing outside this folder. It is the design record every child cites, the seven ticket
+outlines that were rendered onto the board, and at the end the parent's walkthrough. Every rule,
+door, script, workflow and ruleset moves in its own child lane behind its own `approved`.
+
+At close-out, after every child and AVCH-152 have landed, this lane carries the three lobby edits
+that describe the finished state and could not ride a child without crossing a repo key:
+
+- `docs/_scc_sops_prds/tea_testing_guide.md` § 6.0: the mode table gains the LIGHT row (which
+  checks run per landing, where E2E runs), the "What blocks a merge" paragraph names the two epic
+  rulesets beside `main`'s, and one worked light-epic example.
+- `docs/_scc_sops_prds/workflows_testing_SOP.md` § 6 (the CI gate as it stands): the same three
+  facts in the SOP's words; one dated `SCC-441` changelog row.
+- `.agents/commands/smh-new-project.md`: one follow-up line after the clone, "arm the rulesets:
+  `python3 .agents/scripts/arm_rulesets.py --repo <owner/name>`, then `--apply` on the operator's
+  word", pointing at the recipe the skeleton ships from AVCH-152.
 
 ## Acceptance
 
@@ -135,6 +147,12 @@ commands wait on `main-write-gate` alone) stays where it is.
 - NEW `_artifacts/_main/2026-09-10_dev-styles-quick-lane-light-epic/tickets/AVCH-152.md` - outline → B
 - NEW `_artifacts/_main/2026-09-10_dev-styles-quick-lane-light-epic/walkthrough.md` - the closing record, written at close-out → E
 - EDIT `_artifacts/_main/INDEX.md` - the depth-3 row → E
+- EDIT `docs/_scc_sops_prds/tea_testing_guide.md` - § 6.0 LIGHT row, the two epic rulesets, one worked example; at close-out → E
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` - § 6 the CI gate as it stands; at close-out → E
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` - one dated `SCC-441` row; at close-out → E
+- EDIT `.agents/commands/smh-new-project.md` - the arm-the-rulesets follow-up line; at close-out → E
+- EDIT `docs/doc-graph.json` - HOOK-GENERATED, never hand-merged
+- EDIT `docs/doc-graph.md` - HOOK-GENERATED, never hand-merged
 
 ## Self-Audit (2026-09-10)
 
@@ -159,3 +177,10 @@ close-out record row E requires. No artefact lacks an acceptance row. Lane fit: 
   Files rows are re-pointed at the branch link in Step 3.5 of the plan-task door.
 
 Audit verdict: GO
+
+**Amended 2026-09-10, same day:** four close-out edits added to the change set (the TEA guide § 6.0,
+the SOP § 6 and its changelog row, one follow-up line in `smh-new-project.md`). They are written
+only after every child and AVCH-152 have landed, so the level at close-out is LEDGER+BLAST (a
+command file and the SOP, same commit per `sop-currency`); Lens 2 re-runs then against the landed
+`main`. The verdict stands: every added path exists on disk today, none is deployable, and each
+maps to row E.
