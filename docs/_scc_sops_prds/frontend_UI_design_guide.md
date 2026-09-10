@@ -6,7 +6,7 @@ Consolidates the five pillars of house UI craft:
 1. **Design System & Visual Intelligence**: [`.agents/skills/ui-ux-pro-max`](../../.agents/skills/ui-ux-pro-max/SKILL.md) — 67 styles, 96 color palettes, 57 font pairings, 99 UX heuristics, and stack guidelines via `search.py`.
 2. **Master Motion Engine & Fluid Interactions**: [`.agents/skills/emil-design-eng`](../../.agents/skills/emil-design-eng/SKILL.md) — Consolidated Emil Kowalski motion craft, Apple 2-parameter spring physics, 4-gate opportunity filter, sub-300ms budget, and Before/After review tables.
 3. **WebGPU Shader Engine**: [`.agents/skills/vgpu`](../../.agents/skills/vgpu/SKILL.md) — `vercel-labs/vgpu`, typed WGSL shaders, fullscreen fluid meshes, interactive plasma backdrops, particle compute, ~25KB bundle, and zero-GPU headless CI test adapters.
-4. **3D Spatial Models & Physical Materials**: [`.agents/skills/visual-fx-3d`](../../.agents/skills/visual-fx-3d/SKILL.md) — React Three Fiber (R3F), Drei, glTF product models, spatial lighting, and Liquid Glass optical refraction.
+4. **3D Spatial Models & Physical Materials**: [`.agents/skills/visual-fx-3d`](../../.agents/skills/visual-fx-3d/SKILL.md) — Complete Poimandres suite ([`pmndrs/react-three-fiber`](https://github.com/pmndrs/react-three-fiber), Drei, Postprocessing, Rapier), glTF product models (`gltfjsx`), and physical optical transmission glass (`MeshTransmissionMaterial`).
 5. **Rich Media & Platform Specialists**: [`.agents/skills/webm-alpha-video`](../../.agents/skills/webm-alpha-video/SKILL.md) (green-screen to alpha WebM), [`.agents/skills/animate-expo`](../../.agents/skills/animate-expo/SKILL.md) (React Native / Expo), [`.agents/skills/write-swift`](../../.agents/skills/write-swift/SKILL.md) (iOS native).
 
 Front door: **`/smh-designer`** ([`.agents/commands/smh-designer.md`](../../.agents/commands/smh-designer.md)) — activates **🦋 Caterpillar** with the Two-Phase Creative Vision Lock lifecycle.
@@ -27,7 +27,7 @@ Front door: **`/smh-designer`** ([`.agents/commands/smh-designer.md`](../../.age
 │ 4. 3D & PHYSICAL MATERIALS   │ 5. PLATFORM SPECIALISTS      │ 6. MAESTRO    │
 │ • visual-fx-3d               │ • webm-alpha-video (WebM)    │ •/smh-designer│
 │   (R3F 3D spatial models,    │ • animate-expo (RN Reanimated│   (Two-phase  │
-│    glTF scenes, Liquid Glass)│ • write-swift (Native Swift) │    vision lock│
+│    glTF scenes, Drei glass)  │ • write-swift (Native Swift) │    vision lock│
 └──────────────────────────────┴──────────────────────────────┴───────────────┘
 ```
 
@@ -137,8 +137,8 @@ Modern interfaces incorporate physical depth, optical light refraction, and GPU-
 - **Mandatory Mobile Guard:** WebGPU is unsupported on iOS $\le 17$, older Android, and default Linux Firefox. Always verify `navigator.gpu` and provide a graceful CSS gradient or SVG backdrop.
 
 ### B. 3D Spatial Models & Physical Materials ([`visual-fx-3d`](../../.agents/skills/visual-fx-3d/SKILL.md))
-- **Primary Use:** Declarative 3D scene graphs, glTF/GLB product models, camera orbits, spatial lighting (`react-three-fiber` + `@react-three/drei`), and Apple VisionOS optical glass refraction (`liquid-glass-js`).
-- **Constraints:** Always use `frameloop="demand"` and cap `dpr={[1, 1.5]}` so the GPU completely idles when static. Never stack two refractive layers directly over each other.
+- **Primary Use:** Complete Poimandres suite ([`pmndrs/react-three-fiber`](https://github.com/pmndrs/react-three-fiber), `@react-three/drei`, `@react-three/postprocessing`, `@react-three/rapier`), glTF/GLB product models compiled via `gltfjsx`, tactile spring-damped tilt cards (`PresentationControls`), spatial lighting, and Apple VisionOS physical optical glass (`MeshTransmissionMaterial`). See [`CATALOG.md`](../../.agents/skills/visual-fx-3d/CATALOG.md) and [`RECIPES.md`](../../.agents/skills/visual-fx-3d/RECIPES.md).
+- **Constraints:** Always use `frameloop="demand"` and cap `dpr={[1, 1.5]}` so the GPU completely idles when static. Halt rendering when off-screen via `IntersectionObserver`. Never stack two refractive layers directly over each other.
 
 ---
 
@@ -183,7 +183,7 @@ When an agent needs to perform UI/UX work, route to the appropriate consolidated
 | Complete design systems, color palettes, font pairings, styles | [`.agents/skills/ui-ux-pro-max`](../../.agents/skills/ui-ux-pro-max/SKILL.md) | `search.py --design-system` |
 | Motion craft, animations, easings, spring physics, review tables, toasts | [`.agents/skills/emil-design-eng`](../../.agents/skills/emil-design-eng/SKILL.md) | `RECIPES.md` · Apple 2-parameter springs · Before/After tables |
 | WebGPU shaders, fullscreen ambient fluid meshes, interactive plasma, particle compute | [`.agents/skills/vgpu`](../../.agents/skills/vgpu/SKILL.md) | typed WGSL · @vgpu/adapter-mock · mobile CSS fallback |
-| 3D spatial scenes, glTF models, geometric cards, liquid glass optical refraction | [`.agents/skills/visual-fx-3d`](../../.agents/skills/visual-fx-3d/SKILL.md) | R3F · Drei · Liquid Glass |
+| 3D spatial scenes, glTF models, geometric cards, physical optical glass | [`.agents/skills/visual-fx-3d`](../../.agents/skills/visual-fx-3d/SKILL.md) | [`pmndrs/react-three-fiber`](https://github.com/pmndrs/react-three-fiber) · Drei · Postprocessing · Rapier |
 | Mobile gestures & animations (React Native / Expo Reanimated) | [`.agents/skills/animate-expo`](../../.agents/skills/animate-expo/SKILL.md) | Worklets & reanimated recipes |
 | Apple platform UI & native Swift motion | [`.agents/skills/write-swift`](../../.agents/skills/write-swift/SKILL.md) | Native SwiftUI springs & gestures |
 | Converting green-screen assets to transparent WebM video overlays | [`.agents/skills/webm-alpha-video`](../../.agents/skills/webm-alpha-video/SKILL.md) | ffmpeg colorkey scripts |

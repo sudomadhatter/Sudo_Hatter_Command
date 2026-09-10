@@ -1647,6 +1647,15 @@ pipeline.
 **Accuracy over speed.** What it drops is the *pipeline* — the ATDD red phase, the full suite, the
 three-reviewer panel. It does **not** drop the rigour.
 
+**Scope is judged by ONE question, and it is not about size.** The lane asks whether the work is
+two or more independently shippable deliverables — that halt stays, because that is a product
+question you own. It does **not** measure a spec's tokens, does **not** show you a token count, and
+never halts, splits or warns on how long a spec is. BMAD ships a 900–1600 token guideline and a
+Split/Keep halt built on it; both are retired here, in the vendor skill on disk and in
+`_bmad/custom/bmad-quick-dev.toml`, which survives a BMAD update. ⚠️ **A `bmad` update reinstalls
+the vendor skill and turns `test_bmad_token_gate_retired.py` red** — that is the guard working, not
+a lane breaking. Re-apply the three edits per door; the override file is untouched by the update.
+
 ▶ **Diagram:** [`/cicd-quick-dev` in the command atlas](#cicd-quick-dev) — every step, stop and refusal, checked against the live command.
 
 **It never closes out.** On a story it advances the row to `review` on the way out and stops there.
@@ -2965,7 +2974,7 @@ six-child story route (①②③). A project Task with none of those — a perfo
 change — runs the four-child quick-fix route through `/cicd-quick-dev`. On that route the door's own
 review gate is a **first pass, never the verdict**: no seat carries the `Task` tool, so a seated
 child runs it inline a lens short, and the independent no-seat reviewer that follows is what counts.
-Both routes are drawn on [the Autopilot SOP](autopilot_SOP.md#31-the-quick-fix-route--a-ticket-that-is-not-a-story).
+Both routes are drawn on [the Autopilot SOP](autopilot_SOP.md#5-the-quick-fix-run--four-children-for-a-ticket-that-is-not-a-story).
 
 **One prerequisite refuses more often than the rest: the CLI version.** The lane needs `claude`
 2.1.259 or newer, and Step 0 reads `claude --version` **from `PATH`** — not from the session you are
@@ -2987,7 +2996,7 @@ refuses the other shape and tells you which mistake it was.
 launch word does not travel to the next one. It passes the mid-story `continue` and questions it can
 answer from the repo; it escalates a `NO-GO` audit, any new dependency, schema, security rule, CI or
 environment change, any file deletion, and a second failed review. The full table is on
-[the Autopilot SOP](autopilot_SOP.md#4-the-charter--what-the-lead-may-pass-without-you).
+[the Autopilot SOP](autopilot_SOP.md#6-the-charter--what-the-lead-decides-without-you).
 
 **When it needs you it does two things**, both of them: it asks in the chat with real options and a
 recommendation, and it posts a ticket comment whose first line reads `Needs Mr. Hatter`. Your phone
@@ -4322,7 +4331,7 @@ that repo after you commit: `code-review-graph update`.
 | `/smh-plan-task <TASK-KEY>` | Plans a **whole** Task in one pass — proposes the subtask breakdown and stops; on your go mints the Subtasks, and per lane writes the plan, audits it, cuts and pushes the worktree, points the ticket at the plan; labels the set; then **one** approval stop for everything. |
 | `/smh-label-tasks <TASK-KEY>` | The Task-lane twin of `/cicd-label-tasks`: which **Subtasks** of one Task can run side by side (`parallel-ok`) and which are quick-lane sized (`quick-dev`). States, never starts; a stale answer says "re-run me". |
 | `/smh-quick-dev` | The Task lane's build step. Fixes a checkable acceptance list before anything is written, plans, audits, waits for `approved`, then builds — with something failing first, always. Ends at the review gate and **stops**; it never merges. |
-| `/smh-designer` | **The front-end & UI/UX design maestro** ([`docs/_scc_sops_prds/frontend_UI_design_guide.md`](frontend_UI_design_guide.md)). Activates 🦋 Caterpillar across all platforms with the Two-Phase Creative Vision Lock lifecycle: Phase 1 explores aesthetics, layout moods, and physical materials (React Three Fiber, Liquid Glass, vgpu WebGPU shaders, Emil Kowalski springs) and stops for vision approval; Phase 2 translates into an approved `implementation_plan.md` and Jira ticket; Phase 3 hands off to `/smh-quick-dev` or `/cicd-dev-story-tests`. |
+| `/smh-designer` | **The front-end & UI/UX design maestro** ([`docs/_scc_sops_prds/frontend_UI_design_guide.md`](frontend_UI_design_guide.md)). Activates 🦋 Caterpillar across all platforms with the Two-Phase Creative Vision Lock lifecycle: Phase 1 explores aesthetics, layout moods, and physical materials (complete Poimandres suite: React Three Fiber, Drei optical glass, Postprocessing, Rapier physics; vgpu WebGPU shaders; Emil Kowalski springs) and stops for vision approval; Phase 2 translates into an approved `implementation_plan.md` and Jira ticket; Phase 3 hands off to `/smh-quick-dev` or `/cicd-dev-story-tests`. |
 | `/smh-quick-fix` | **The lightweight lane** ([§9a](#the-lightweight-lane--smh-quick-fix)). One specific thing that touches nothing which can break — a guide, a reference fix, a source-control tidy. Mints the ticket, cuts the lane, does it, runs the gates, pushes, hands back. No plan, no `approved`, no self-audit, no failing-check-first, no review verdict — and it **does not ask whether to start**. Qualification is `lane_qualify.py`, not a judgement, and it runs again on the real diff at the end: stop qualifying and the lane ejects to `/smh-quick-dev` with the plan gate re-armed. Lands through `/smh-close-task-merge-tree` like everything else. |
 | `/smh-non-crit-pr-push` | **The standing push lane** ([§9a](#the-standing-push-lane--smh-non-crit-pr-push-scc-186)). Routine non-critical command center changes (docs, memory, notes, quick references). Operates on standing ticket `SCC-186` + standing branch `chore/SCC-186-standing-push` directly to PR with `main-write-gate` check. |
 | `/smh-self-audit` | Pressure-tests the plan before anyone writes anything, pointed at the blast radius toolkit work actually has. Also **reads the other live lanes** and tells you which should land first. Ends in `GO` or `NO-GO`. Has a **retroactive mode** for when the work already exists and no plan was written — it audits the ticket's ACCEPTANCE block instead and stamps the result `retroactive`, so the record never reads as though a gate ran in time when it did not. |

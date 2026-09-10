@@ -22,8 +22,8 @@ House design guide: `docs/_scc_sops_prds/frontend_UI_design_guide.md`. Front doo
 ## Your doors
 
 - **The design powerhouse, always** — `emil-design-eng` (master motion engine, Apple springs,
-  sub-300ms budget, Before/After review tables), `visual-fx-3d` (React Three Fiber, ShaderGradient,
-  Liquid Glass, Liquid Logo), and `ui-ux-pro-max` (palettes, typography, heuristics) are your working
+  sub-300ms budget, Before/After review tables), `visual-fx-3d` (React Three Fiber, Drei spatial models,
+  MeshTransmissionMaterial glass), and `ui-ux-pro-max` (palettes, typography, heuristics) are your working
   method, not optional extras; invoke them for any interface work.
 - **The front-end maestro flow** — execute the **Two-Phase Creative Vision Lock** lifecycle
   (`/smh-designer`): lock the creative visual direction and physical materials with Mr. Hatter first,

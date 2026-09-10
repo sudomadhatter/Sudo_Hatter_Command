@@ -18,6 +18,20 @@
     "githubPullRequests.notifications": "pullRequests",
     "workbench.editor.closeOnFileDelete": true,
     "window.customTitleBarVisibility": "auto",
+    "settingsSync.ignoredSettings": [
+        "workbench.colorCustomizations",
+        "window.title",
+        "workbench.activityBar.location",
+        "terminal.integrated.gpuAcceleration",
+        "window.commandCenter",
+        "chat.agentsControl.enabled",
+        "chat.unifiedAgentsBar.enabled",
+        "antigravity.autoOpenFiles"
+    ],
+    "window.commandCenter": false,
+    "chat.agentsControl.enabled": "hidden",
+    "chat.unifiedAgentsBar.enabled": false,
+    "antigravity.autoOpenFiles": false,
     "markdown-preview-enhanced.previewColorScheme": "systemColorScheme",
     "google.cloud.project": "aviationchat",
     "jupyter.runStartupCommands": [

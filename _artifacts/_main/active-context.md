@@ -1,7 +1,24 @@
 # ACTIVE CONTEXT — _main  (you own this, not a vendor)
 
 ## 1. PRIME STATE
-Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-09-07
+Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-09-09
+**2026-09-09 (latest): SCC-436 SHIPPED AND CLOSED — full Poimandres 3D toolset, component catalog and recipes.**
+Merged to `main` at `1c541916` (PR #203). Equipped Caterpillar and `.agents/skills/visual-fx-3d/` with the complete
+Poimandres (`pmndrs`) 3D creative suite (`pmndrs/react-three-fiber`, `pmndrs/drei`, `pmndrs/postprocessing`,
+`pmndrs/react-three-rapier`, `pmndrs/gltfjsx`, `pmndrs/leva`). Authored `CATALOG.md` detailing 100+ components across
+8 domains with exact imports and props. Authored `RECIPES.md` with 8 copy-pasteable production component examples.
+Updated `/smh-designer`, `frontend_UI_design_guide.md`, and `workflows_testing_SOP.md` with direct repo links.
+All 83 test suites passed. Dev Record filed, ticket transitioned to Done, worktree pruned.
+Record: `_artifacts/_main/2026-09-09_scc-436-r3f-repo-link/walkthrough.md`.
+
+**2026-09-09: SCC-435 SHIPPED AND CLOSED — full React Three Fiber and Drei 3D suite in /smh-designer.**
+Merged to `main` at `f4700885` (PR #201). Subbed out synthetic SVG displacement filter (`liquid-glass-js`) for
+`pmndrs/react-three-fiber` + `@react-three/drei`'s `MeshTransmissionMaterial` (authentic Apple VisionOS physical optical
+glass refraction with chromatic edge dispersion). Added tactile 3D Spring Tilt Cards (`PresentationControls`), `gltfjsx`
+model compilation workflow, and DOM-in-3D pinning (`<Html>`). Capped `dpr={[1, 1.5]}` and `frameloop="demand"`
+invariants enforced. All test suites green (343/343 command surfaces, 102/102 parity, 28/28 allowlist, check_maps green).
+Worktree pruned, Dev Record filed, ticket Done. Record: `_artifacts/_main/2026-09-09_scc-435-r3f-drei-suite/walkthrough.md`.
+
 **2026-09-07 (late night): /smh-llm-approvals (SCC-434) — MERGED and CLOSED (PR #197 @ 3db331d1).**
 5 new approval families harvested across platforms into `families.json` (`allow-gh-api`, `allow-gh-run` rerun, `allow-gcloud-run-describe`, `allow-npx-next`, `allow-npx-tsc`). Uncovered stops dropped from 14 to 7 (~1.5h wait saved). Antigravity store updated (`allow=275, deny=500`, keeping 148 store-only clicks); Claude user scope apply command printed for operator; PR #197 merged, ticket SCC-434 Done. Worktree pruned.
 

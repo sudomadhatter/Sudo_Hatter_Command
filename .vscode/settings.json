@@ -11,6 +11,13 @@
   "workbench.editor.centeredLayoutFixedWidth": true,
   "workbench.editor.closeOnFileDelete": true,
   "workbench.editor.enablePreviewFromQuickOpen": true,
+  // Suppress title bar search bar / Command Center during agent prompts (Antigravity in VS Code).
+  // Tracked at workspace level so it travels via git across Mac and PC and cannot be rolled back
+  // by Microsoft Cloud Settings Sync. Requires Developer: Reload Window after first load.
+  "window.commandCenter": false,
+  "chat.agentsControl.enabled": "hidden",
+  "chat.unifiedAgentsBar.enabled": false,
+  "antigravity.autoOpenFiles": false,
   "python.defaultInterpreterPath": "${workspaceFolder}/Projects/AGY_AVIATIONCHAT/backend/.venv/bin/python",
   "claudeCode.preferredLocation": "panel",
   "claudeCode.useTerminal": false,
