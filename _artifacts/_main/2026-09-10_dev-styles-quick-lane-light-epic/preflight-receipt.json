@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-441-dev-styles-quick-lane-light-epic",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-441",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "85454a491e446b2c59adbbe5d33bd91cb82d6d50",
+  "warnings": 6,
+  "when": "2026-09-10T22:34:50-04:00"
+}
