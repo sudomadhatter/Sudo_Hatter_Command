@@ -330,3 +330,5 @@ plans were copied here; `git worktree list` shows this tree and the lobby only. 
 `000-PLAN-FIRST-GATE` applies: one recorded approval covers this plan and its five part files.
 
 Audit verdict: GO
+
+**Batch approval (2026-09-10):** "Approved. Let’s start on the first task" — covers the plans listed in `/smh-plan-task SCC-441` Step 5: SCC-442, SCC-443, SCC-444, SCC-445, SCC-446 (this consolidated plan and its five part files) — recorded at <pending>
