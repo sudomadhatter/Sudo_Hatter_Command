@@ -478,19 +478,21 @@ open Epic** and says in one line what it looked at — a re-run after a stall is
 second Epic row for one BMAD epic is a row nothing will ever move again.
 
 **It asks you one question before it cuts the branch, and the answer lives in the branch name — or in
-there being no branch at all.** Is this epic an **extension of main**, a **quick-dev branch**, or does
-this project run **trunk**? An extension of main is treated like
-production while it lives: every story lands by pull request into the epic under the full gate — the
-E2E suites run on every landing — and the epic is kept current with `main`. A quick-dev branch is the
-cheap shape: stories land by direct push after the local light gate, nothing is spent on CI per story,
-and E2E runs once, at the end, when the epic goes to `main`. Quick-dev epics carry a `-quickdev` suffix
-on the slug (`epic/AVCH-131-epic-25-tool-menu-quickdev`); an extension of main carries none. Every door
-reads the mode from that name, so it cannot drift from what the server enforces. In **both** of those
-modes, while the epic is live, `main` is frozen for everything the epic changes — a chore lane that
-touches a file the epic is also changing is epic work, and the pre-flights send it to the epic, not
-to `main`.
+there being no branch at all.** Is this epic **FULL**, **LIGHT**, or does this project run **TRUNK**?
+A FULL epic is treated like production while it lives: every story lands by pull request into the
+epic under the full gate — all four checks, the E2E suites on every landing — and the epic is kept
+current with `main`. A LIGHT epic is the cheap shape, for a project not yet in production or an epic
+whose landings are UI and docs: every story still lands by pull request into the epic, but only the
+two fast checks run on it (Backend (Python), Frontend (Node.js)); the two E2E jobs skip on the
+server, and E2E runs once, at the end, when the epic goes to `main` — or whenever you ask for it with
+`/cicd-e2e`. The mode is the third token of the branch name, right after the ticket key: a FULL epic
+is `epic/AVCH-131-epic-25-tool-menu`, a LIGHT one is `epic/AVCH-131-light-epic-25-tool-menu`. Every
+door reads the mode from that name, so it cannot drift from what the server enforces, and you choose
+it once, here — no door ever offers to cut a light epic mid-flight. In **both** of those modes, while
+the epic is live, `main` is frozen for everything the epic changes — a chore lane that touches a file
+the epic is also changing is epic work, and the pre-flights send it to the epic, not to `main`.
 
-**Trunk is the third answer, and it means this step cuts nothing** (SCC-423; AviationChat moved to it
+**TRUNK is the third answer, and it means this step cuts nothing** (SCC-423; AviationChat moved to it
 on 2026-09-06). There is no epic branch and no integration branch: every story lane is cut straight
 from `origin/main`, and it lands on `main` through a pull request you merge, under whatever checks
 that repo's `main` ruleset requires. **Every merge is a deploy** — that is the trade you are making
@@ -502,8 +504,8 @@ there is nothing to keep in sync and nothing to freeze, because there is no seco
 **An epic branch carries two numbers, and `epic/` always comes first.** Its ticket key and its
 sprint number are different numbers that drift apart — `AVCH-18` is the ticket, `epic-19` is what
 the board, the story files and `_artifacts/epic_19/` are named after — so the branch shows both:
-`epic/AVCH-18-epic-19-adk-2x-runtime`. Put the sprint number in the slug, never in front of the
-prefix. Everything that finds an epic branch looks for something starting with `epic/`, including
+`epic/AVCH-18-epic-19-adk-2x-runtime` (a LIGHT epic: `epic/AVCH-18-light-epic-19-adk-2x-runtime`).
+Put the sprint number in the slug, never in front of the prefix. Everything that finds an epic branch looks for something starting with `epic/`, including
 the hook that guards `main`; a branch called `epic-19/...` is invisible to all of it and quietly
 gets treated as if it were `main`.
 

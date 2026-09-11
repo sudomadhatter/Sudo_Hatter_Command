@@ -10,9 +10,9 @@
     "edges": 770,
     "external": 35,
     "ambiguous": 174,
-    "dangling": 269,
+    "dangling": 271,
     "broken_paths": 63,
-    "unresolved_names": 206,
+    "unresolved_names": 208,
     "unresolvable": 9
   },
   "nodes": [
@@ -6359,7 +6359,15 @@
     },
     {
       "from": ".agents/rules/git-policy.md",
+      "target": "critical-surfaces.md"
+    },
+    {
+      "from": ".agents/rules/git-policy.md",
       "target": "epics.md"
+    },
+    {
+      "from": ".agents/rules/git-policy.md",
+      "target": "implementation_plan.md"
     },
     {
       "from": ".agents/rules/git-policy.md",

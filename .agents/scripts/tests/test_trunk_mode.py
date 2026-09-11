@@ -4,10 +4,11 @@ AviationChat moved to trunk-based development on the operator's direction of 202
 phase 1 ships to `main`, and everything after it is built **from `main`** — story lanes cut from
 `origin/main`, landing on `main` through a pull request the operator merges. No epic branch.
 
-SCC-416 gave this system TWO epic modes and made the switch mechanical — a `-quickdev` suffix on
-the branch name, read by every door, impossible to drift from what the server enforces. This is
-the third, and its switch is the same shape read one level up: **there is no `origin/epic/<KEY>-*`
-at all.** An agent never chooses the mode and never infers it from prose.
+SCC-416 gave this system TWO epic modes and made the switch mechanical; SCC-441 named them FULL
+and LIGHT, read from the third token of the branch name (`-epic-` or `-light-epic-`, right after
+the key) by every door, impossible to drift from what the server enforces. This is the third, and
+its switch is the same shape read one level up: **there is no `origin/epic/<KEY>-*` at all.** An
+agent never chooses the mode and never infers it from prose.
 
   ── WHY A THIRD MODE AND NOT A REWRITE ─────────────────────────────────────────────────────
 The two existing modes are still correct and still in use by every other project here. A rewrite
@@ -81,6 +82,21 @@ def fenced(text: str) -> str:
     return "\n".join(out)
 
 
+def fences(text: str) -> list[str]:
+    """Each ``` fence as its own block, so a check can ask for two things in the SAME fence."""
+    out, cur, inside = [], [], False
+    for line in text.splitlines():
+        if line.lstrip().startswith("```"):
+            if inside:
+                out.append("\n".join(cur))
+                cur = []
+            inside = not inside
+            continue
+        if inside:
+            cur.append(line)
+    return out
+
+
 def names_trunk_mode(text: str) -> bool:
     """The mode is NAMED and its switch is MECHANICAL — both, or it is not a mode."""
     return bool(TRUNK.search(text)) and bool(SWITCH.search(text))
@@ -95,11 +111,31 @@ def main() -> int:
     if c.block("A · the LAW names three modes and the switch is mechanical"):
         c.check("git-policy.md exists and was read (an empty file is a FAIL, not a pass)",
                 len(policy) > 2000, f"{len(policy)} bytes")
-        for mode in ("extension of main", "quick-dev", "trunk"):
-            c.check(f"git-policy.md names the mode: {mode!r}",
-                    mode.lower() in policy.lower(), "the three modes are the whole switch")
+        # SCC-441: the modes are FULL / LIGHT / TRUNK — the words themselves, in capitals, the way
+        # the kickoff names them. "full gate" inside a sentence is not the mode.
+        for mode in ("FULL", "LIGHT", "TRUNK"):
+            c.check(f"git-policy.md names the mode: {mode}",
+                    re.search(rf"\b{mode}\b", policy) is not None,
+                    "the three modes are the whole switch")
+        for shape in ("epic/<KEY>-epic-<N>-<slug>", "epic/<KEY>-light-epic-<N>-<slug>"):
+            c.check(f"git-policy.md names the branch shape: {shape}",
+                    shape in policy, "the mode is the third token, right after the key")
+        policy_fenced = fenced(policy)
+        c.check("the mode token `-light-epic-` sits INSIDE the switch fence, beside `origin/epic/`",
+                any(SWITCH.search(f) and "-light-epic-" in f for f in fences(policy)),
+                "the switch is a git query plus the token it reads, never prose to interpret")
         c.check("the trunk switch is stated as a git ref query, not as prose to interpret",
                 names_trunk_mode(policy), "expected `origin/epic/` near the trunk bullet")
+        # SCC-441 retired the `-quickdev` direct-push mode: it was never cut, nothing read its
+        # suffix, and the epic ruleset would refuse the push it described.
+        for label, path in (("git-policy.md", GIT_POLICY), ("worktree-per-story.md", WORKTREE),
+                            ("constitution.md", CONSTITUTION), ("AGENTS.md", AGENTS)):
+            c.check(f"⛔ `quickdev` appears nowhere in {label} (the direct-push mode is retired)",
+                    re.search(r"quickdev", read(path), re.I) is None,
+                    "a retired mode named in the law is a mode an agent will try to select")
+        c.check("⛔ no fence in git-policy.md pushes `HEAD:epic/` — the landing is a pull request",
+                "HEAD:epic/" not in policy_fenced,
+                "FULL and LIGHT alike land by PR into the epic; the direct push is gone")
         # ⭐ The freeze is SCC-416's whole point and trunk mode must not read as deleting it.
         c.check("⭐ the live-epic freeze on `main` SURVIVES the third mode",
                 "freeze" in policy.lower() or "frozen" in policy.lower(),

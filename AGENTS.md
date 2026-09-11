@@ -148,9 +148,10 @@ files, per §3); full model →
   out what kind of work this is** (SCC-62, 2026-08-09: the trigger is **concurrency, not work type** — a
   chore lane beside a story lane collides exactly as hard). What differs by lane is the **branch and its
   base, never whether you isolate**: a story lane takes `claude/<KEY>-<slug>` off **the story's epic
-  branch** (`epic/<KEY>-<slug>`, never `main`) — **or off `origin/main` in a `trunk`-mode project, which
-  has no epic branch at all** (SCC-423; `git for-each-ref 'refs/remotes/origin/epic/*'` empty IS the
-  mode, never a guess) — ad-hoc/Task work takes `chore/<KEY>-<slug>` off `main`.
+  branch** (full `epic/<KEY>-epic-<N>-<slug>` or light `epic/<KEY>-light-epic-<N>-<slug>`, read by the
+  git query, never `main`) — **or off `origin/main` in a `trunk`-mode project, which has no epic branch
+  at all** (SCC-423; `git for-each-ref 'refs/remotes/origin/epic/*'` empty IS the mode, never a
+  guess) — ad-hoc/Task work takes `chore/<KEY>-<slug>` off `main`.
   Each is pruned by its own close-out — `/cicd-close-story-merge-tree` for a story, `/smh-close-task-merge-tree`
   Step 5 for a Task. Commits stay explicit-path (`git add -A`/`.`/`-u` banned). Read-only sessions and a
   single trivial edit the operator is watching are exempt. A fresh tree does not inherit gitignored
@@ -163,9 +164,9 @@ files, per §3); full model →
   landing together go through `/cicd-merge-epic-workingtrees`, never one-by-one. Full lifecycle →
   `.agents/rules/worktree-per-story.md`.
 - **GIT WRITE APPROVAL — the gate is WHERE a write lands.** FREE: your own `claude/*` or `chore/*`
-  branch — commits **and** pushes. SIGN-OFF (per-action, never carries): landing on **the epic branch** —
-  Mr. Hatter's in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (its Step 3 does the
-  landing; invoking it IS the sign-off). OWNER-ONLY: **`main`** — only via `/cicd-push-e2e` (epic merge,
+  branch — commits **and** pushes. SIGN-OFF (per-action, never carries): landing on **the epic branch**,
+  full or light, **by a pull request into it** — Mr. Hatter's in-the-moment "approved", or invoking
+  `/cicd-close-story-merge-tree` (its Step 3 opens and merges that PR; invoking it IS the sign-off). OWNER-ONLY: **`main`** — only via `/cicd-push-e2e` (epic merge,
   full gate), **`/cicd-close-story-merge-tree`'s trunk arm, which opens the PR and STOPS** (SCC-423),
   or Mr. Hatter's direct ask. No door merges `main`; his click does. Full branch model + enforcement → `.agents/rules/git-policy.md`
   (web/mobile → `mobile-mode.md`).
