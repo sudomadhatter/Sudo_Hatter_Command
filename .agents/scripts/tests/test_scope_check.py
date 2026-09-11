@@ -83,6 +83,18 @@ def main() -> int:
                 and any(p.endswith("task_preflight.py")
                         for p in surfaces.get("ci", {}).get("paths", [])),
                 str(surfaces.get("ci", {}).get("paths")))
+        # ⛔ THE FIVE BARE-RUN GATE SCRIPTS WERE OFF THE LINE (SCC-441 review row 7, reproduced).
+        # The lobby's Step 3 floor runs workflow_lint, check_links and check_maps bare, the
+        # sweep is what proves a test can fail, and epic_mode routes every door's Step 0 - all
+        # five answered CLEAR, so a quick lane could edit the linter and then report its green.
+        # Run against the REAL lobby map: the worktree root is the repo.
+        for name in ("workflow_lint.py", "check_links.py", "check_maps.py",
+                     "mutation_sweep.py", "epic_mode.py"):
+            rc, lines = run(ROOT, "--paths", f".agents/scripts/{name}")
+            c.check(f"SCC-441 row 7 · the real lobby map: .agents/scripts/{name} is OVERLAP under `ci`",
+                    first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith(f".agents/scripts/{name}") and "ci:" in ln for ln in lines),
+                    f"rc={rc} {lines}")
 
     if c.block("B · the check reads a repo map: one RED per surface, then CLEAR"):
         with TempDir() as t:
@@ -134,6 +146,21 @@ def main() -> int:
             c.check("exact means exact: `backend/billing.py.bak` is not `backend/billing.py`, "
                     "`backend/auth-notes/` is not `backend/auth/`",
                     first(lines) == "CLEAR" and rc == 0, f"rc={rc} lines={lines}")
+            # ⛔ AN ABSOLUTE PATH DEFEATED A MAPPED REPO'S CHECK (SCC-441 review row 3, reproduced).
+            # `--repo` is absolute by contract, so the same command line silently required the
+            # others to be relative: `<repo>/app/login.py` was compared to `app/login.py` as a
+            # string and printed CLEAR - the pass word - exactly where the map is the authority.
+            rc, lines = run(repo, "--paths", str(repo / "app" / "login.py"))
+            c.check("SCC-441 row 3 · an ABSOLUTE path inside the repo is rebased and judged: OVERLAP "
+                    "on the repo-relative line",
+                    first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith("app/login.py") for ln in lines), f"rc={rc} lines={lines}")
+            outside = str(t / "elsewhere" / "login.py")
+            rc, lines = run(repo, "--paths", outside)
+            c.check("SCC-441 row 3 · an absolute path OUTSIDE the repo is ERROR, exit 2, and line 2 "
+                    "names which path",
+                    first(lines) == "ERROR" and rc == 2 and len(lines) > 1 and outside in lines[1],
+                    f"rc={rc} lines={lines}")
 
     if c.block("C · no map: the generic set, and it is LOUD"):
         with TempDir() as t:
@@ -158,6 +185,18 @@ def main() -> int:
                 rc, lines = run(repo, "--paths", path)
                 c.check(f"⛔ a SUBSTRING is not a hit: {path} is CLEAR",
                         first(lines) == "CLEAR" and rc == 0, f"rc={rc} {lines}")
+            # ⛔ THE GENERIC SET DID NOT PROTECT THE LINE ITSELF (SCC-441 review row 21,
+            # reproduced). In an unmapped repo - today every project - a quick lane could write
+            # the repo's first map, edit this script or rewrite the rule without tripping the
+            # line. The lobby's map row says why ("a line that can widen itself is not a line");
+            # a map row cannot say it where there is no map.
+            for path in (".agents/critical-surfaces.json", ".agents/scripts/scope_check.py",
+                         ".agents/rules/critical-surfaces.md"):
+                rc, lines = run(repo, "--paths", path)
+                c.check(f"SCC-441 row 21 · generic · {path} overlaps `ci` (an exact file)",
+                        first(lines) == "OVERLAP" and rc == 3
+                        and any(ln.startswith(path) and "ci:" in ln for ln in lines),
+                        f"rc={rc} {lines}")
 
     if c.block("D · silence and breakage are ERRORS, never CLEAR"):
         with TempDir() as t:
@@ -193,6 +232,45 @@ def main() -> int:
                 c.check("   ...and line 2 names the map so the author can find it",
                         len(lines) > 1 and ".agents/critical-surfaces.json" in lines[1],
                         str(lines))
+            # ⛔ A BARE WORD IN A REPO'S OWN MAP WAS A SILENTLY DEAD PATTERN (SCC-441 review
+            # row 6, reproduced). With fragments off it fell to `path == pattern`, so
+            # `"paths": ["auth"]` matched only a root file literally named `auth` and answered
+            # CLEAR for `backend/auth/token.py` - the likeliest authoring mistake, because the
+            # rule publishes `auth`/`session`/`billing` as the generic fragment list one page
+            # above the map format, and the exact class the `null`-entry guard above refuses.
+            write_map(repo, {"auth": {"why": "accounts", "paths": ["auth"]}})
+            rc, lines = run(repo, "--paths", "backend/auth/token.py")
+            c.check("SCC-441 row 6 · a bare word naming NO root file is ERROR, exit 2 - never a "
+                    "quiet CLEAR", rc == 2 and first(lines) == "ERROR", f"rc={rc} {lines}")
+            c.check("   ...and line 2 names the entry and both remedies (a trailing `/` for a "
+                    "directory; the generic set for a fragment)",
+                    len(lines) > 1 and "`auth`" in lines[1] and "trailing `/`" in lines[1]
+                    and "generic set" in lines[1], str(lines))
+            (repo / "auth").mkdir()
+            rc, lines = run(repo, "--paths", "auth/token.py")
+            c.check("SCC-441 row 6 · a bare word naming a root DIRECTORY is the same ERROR (it "
+                    "wanted `auth/`)", rc == 2 and first(lines) == "ERROR", f"rc={rc} {lines}")
+            (repo / "auth").rmdir()
+            (repo / "auth").write_text("#!/bin/sh\n", encoding="utf-8")
+            (repo / "Dockerfile").write_text("FROM scratch\n", encoding="utf-8")
+            write_map(repo, {"auth": {"why": "accounts", "paths": ["auth"]},
+                             "ci": {"why": "the image", "paths": ["Dockerfile"]}})
+            rc, lines = run(repo, "--paths", "auth")
+            c.check("SCC-441 row 6 · a bare word naming an EXISTING root file stays legal and "
+                    "matches it exactly: `auth` is OVERLAP",
+                    first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith("auth ") for ln in lines), f"rc={rc} {lines}")
+            rc, lines = run(repo, "--paths", "Dockerfile")
+            c.check("   ...and a `Dockerfile`-style root file is exactly that case: OVERLAP",
+                    first(lines) == "OVERLAP" and rc == 3, f"rc={rc} {lines}")
+            # ⛔ THE `fragments and` GUARD WAS DEAD TO THIS FILE (SCC-441 review row 18,
+            # reproduced): every map path in block B carries a `/` or a `.`, so no case ever
+            # reached the branch and dropping the guard survived 80/80. A declared root file is
+            # exact, never a segment fragment - `backend/auth/token.py` must stay CLEAR.
+            rc, lines = run(repo, "--paths", "backend/auth/token.py", "backend/Dockerfile")
+            c.check("SCC-441 row 18 · a declared root file is EXACT, never a segment fragment: "
+                    "`backend/auth/token.py` and `backend/Dockerfile` are CLEAR",
+                    first(lines) == "CLEAR" and rc == 0, f"rc={rc} {lines}")
             (repo / ".agents" / "critical-surfaces.json").unlink()
             # ⛔ AN EMPTY `--repo` IS THE CWD, AND THE CWD IS THE LOBBY (SCC-446 review,
             # reproduced). `cd ""` exits 0 without moving, so an unbound `$REPO` arrives as ""
@@ -205,6 +283,11 @@ def main() -> int:
             c.check("   ...and the reason names the unbound variable, not just 'bad input'",
                     any("empty" in ln.lower() and "cwd" in ln.lower() for ln in elines[1:]),
                     str(elines))
+            # §5 nitpick (SCC-441 review): only `""` was ever tested, so `.strip()` was dead.
+            rc, out = run_script("scope_check.py", "--repo", "  ", "--paths", "backend/auth/x.py")
+            elines = out.splitlines()
+            c.check("SCC-441 §5 nitpick · a WHITESPACE-only --repo is refused the same way: exit 2, "
+                    "line 1 is ERROR", rc == 2 and first(elines) == "ERROR", f"rc={rc} {elines}")
             rc, out = run_script("scope_check.py", "--paths", "docs/x.md")
             c.check("--repo is required, and the refusal names it (a MISSING script also exits 2)",
                     rc == 2 and "--repo" in out, f"rc={rc} {out[:200]!r}")
@@ -212,9 +295,27 @@ def main() -> int:
             c.check("the script never prompts (no input( call) and never writes (no write_text/open(..., 'w'))",
                     bool(src) and "input(" not in src and "write_text" not in src
                     and re.search(r"open\([^)]*['\"]w", src) is None, "it reads and prints")
-            c.check("the script has no override flag - the only override is the operator's quoted word",
-                    bool(src) and "override" not in src.lower().replace("no override", "")
-                    .replace("no agent override", ""), "grep -c override")
+            # ⛔ THE NO-BYPASS CLAIM WAS A SOURCE GREP FOR ONE WORD (SCC-441 review row 4,
+            # reproduced): a real `--force` flag and a `SCOPE_CHECK_SKIP` env check both printed
+            # CLEAR and left this file 80/80. Three behavioural pins replace it - the parser's
+            # option set is exactly the four, each named bypass flag is refused by argparse with
+            # no verdict word on line 1, and the source reads no environment at all.
+            rc, out = run_script("scope_check.py", "--help")
+            opts = re.split(r"^(?:options|optional arguments):", out, maxsplit=1, flags=re.M)[-1]
+            flags = set(re.findall(r"^  (-{1,2}[\w-]+)", opts, re.M))
+            c.check("SCC-441 row 4 · the parser's option set is exactly {-h, --repo, --paths, --diff}",
+                    rc == 0 and flags == {"-h", "--repo", "--paths", "--diff"},
+                    f"rc={rc} flags={sorted(flags)}")
+            for flag in ("--force", "--yes", "--skip", "--no-check"):
+                rc, out = run_script("scope_check.py", "--repo", str(repo), "--paths",
+                                     "backend/auth/x.py", flag)
+                flines = out.splitlines()
+                c.check(f"SCC-441 row 4 · `{flag}` is refused by argparse: exit 2, no verdict word "
+                        "on line 1",
+                        rc == 2 and first(flines) not in ("CLEAR", "OVERLAP") and "unrecognized" in out,
+                        f"rc={rc} line1={first(flines)!r}")
+            c.check("SCC-441 row 4 · the source never reads the environment (no os.environ, no getenv)",
+                    bool(src) and "os.environ" not in src and "getenv" not in src, "grep -c environ")
 
     if c.block("E · --diff reads the MERGE-BASE diff of the real branch"):
         with TempDir() as t:
@@ -232,6 +333,31 @@ def main() -> int:
             rc, lines = run(repo, "--diff", "main")
             c.check("a branch that touched only docs/ is CLEAR against --diff main",
                     first(lines) == "CLEAR" and rc == 0, f"rc={rc} {lines}")
+            # ⛔ THE MERGE-BASE IS THE WHOLE POINT OF --diff AND NO CASE TOLD IT FROM THE TWO-DOT
+            # DIFF (SCC-441 review row 5, reproduced): this block never moved `main` after the
+            # fork, so the two spellings were identical here and the mutant survived 80/80.
+            # `main` moving under a lane is the house's normal state, and the two-dot diff makes
+            # the eject tripwire fire on a `.github/` file the lane never touched.
+            pf.git(repo, "checkout", "-q", "main")
+            pf.write(repo, ".github/workflows/ci.yml", "name: ci\n")
+            pf.commit(repo, "SCC-11 ci: main moves under the lane")
+            pf.git(repo, "checkout", "-q", "chore/SCC-11-docs")
+            rc, lines = run(repo, "--diff", "main")
+            c.check("SCC-441 row 5 · main landed .github/ AFTER the fork: the docs lane is still "
+                    "CLEAR (the merge-base diff, never the two-dot one)",
+                    first(lines) == "CLEAR" and rc == 0, f"rc={rc} {lines}")
+            c.check("   ...and it compared exactly the lane's ONE file (DIFF: 1 file(s) vs main)",
+                    any(re.match(r"DIFF: 1 file\(s\) vs main", ln) for ln in lines), str(lines))
+            # ⛔ ZERO CHANGED FILES PRINTED THE PASS WORD (SCC-441 review row 20, reproduced).
+            # The `--paths` arm refuses empty as UNKNOWN scope; this arm sat in the other branch
+            # of the same `if` and said `CLEAR` over `DIFF: 0` - reachable on uncommitted-only
+            # work, or a --repo standing on the base itself.
+            pf.git(repo, "checkout", "-q", "main")
+            rc, lines = run(repo, "--diff", "main")
+            c.check("SCC-441 row 20 · --diff with ZERO changed files is ERROR, exit 2 - never CLEAR",
+                    first(lines) == "ERROR" and rc == 2, f"rc={rc} {lines}")
+            c.check("   ...and the reason says the lane has no committed diff vs the base",
+                    any("no committed diff" in ln and "main" in ln for ln in lines[1:]), str(lines))
             rc, lines = run(repo, "--diff", "no-such-ref")
             c.check("a --diff base git cannot resolve exits 2 with ERROR on line 1, never CLEAR",
                     rc == 2 and first(lines) == "ERROR", f"rc={rc} {lines}")

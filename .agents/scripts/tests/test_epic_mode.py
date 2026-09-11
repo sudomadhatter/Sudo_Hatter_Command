@@ -200,6 +200,49 @@ def main() -> int:
                     second(lines))
             c.check("   ...and the discount itself still prints either way",
                     "two checks" in second(lines), second(lines))
+            # ⛔ THE QUOTE TRACKING WAS DEAD TO THIS FILE (SCC-441 review row 17, reproduced):
+            # deleting it survived 30/30, because the one real-read case above puts its `#`
+            # AFTER the token, so a naive first-`#` cut still keeps it. A `#` inside a quoted
+            # scalar BEFORE the token flips a genuinely armed repo to NOT ARMED under that cut.
+            wf.write_text("name: x\non: push\njobs:\n  e2e:\n    steps:\n"
+                          "      - run: echo \"build #4 targets -light-epic-\"\n",
+                          encoding="utf-8")
+            rc, lines = run(repo)
+            c.check("SCC-441 row 17 · a `#` INSIDE a quoted scalar before the token is not a "
+                    "comment: ARMED",
+                    first(lines).startswith("LIGHT") and "NOT ARMED" not in second(lines),
+                    second(lines))
+            # ⛔ TWO SHAPES OVER-REPORTED ARMED (SCC-441 review row 15, reproduced). An unmatched
+            # apostrophe opened a quote nothing closed, so the `#` after it counted as "inside a
+            # scalar" and the comment was never stripped; and `\"` inside a double-quoted scalar
+            # closed the quote early, so the NEXT quote re-opened one that swallowed the `#`.
+            # Both kept a token that lives only in a comment, suppressed the caveat, and
+            # promised the discount in a repo still running four checks.
+            wf.write_text("name: x\non: push\njobs:\n  e2e:\n    steps:\n"
+                          "      - run: echo it's fine   # TODO: skip on -light-epic-\n",
+                          encoding="utf-8")
+            rc, lines = run(repo)
+            c.check("SCC-441 row 15 · an unmatched apostrophe before a trailing comment: still "
+                    "NOT ARMED",
+                    first(lines).startswith("LIGHT") and "NOT ARMED" in second(lines),
+                    second(lines))
+            wf.write_text("name: x\non: push\njobs:\n  e2e:\n    steps:\n"
+                          "      - run: echo \"a \\\" b\" # -light-epic- is only a comment\n",
+                          encoding="utf-8")
+            rc, lines = run(repo)
+            c.check("SCC-441 row 15 · an escaped `\\\"` inside a double-quoted scalar, token only "
+                    "in the comment after it: still NOT ARMED",
+                    first(lines).startswith("LIGHT") and "NOT ARMED" in second(lines),
+                    second(lines))
+            # §5 nitpick (SCC-441 review): `.yaml` is accepted beside `.yml` and no fixture
+            # ever wrote one, so narrowing to `.yml` survived 30/30.
+            wf.write_text("name: x\non: push\njobs:\n  e2e:\n"
+                          "    if: \"!contains(github.ref, '-light-epic-')\"\n", encoding="utf-8")
+            wf.rename(wf.with_suffix(".yaml"))
+            rc, lines = run(repo)
+            c.check("SCC-441 §5 nitpick · a `pr-check.yaml` (the .yaml spelling) arms too",
+                    first(lines).startswith("LIGHT") and "NOT ARMED" not in second(lines),
+                    second(lines))
         with TempDir() as t:
             repo = pf.make_repo(t)
             pf.branch(repo, "epic/SCC-1-epic-2-x", {"docs/a.md": "a\n"}, push=True)

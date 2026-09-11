@@ -28,7 +28,7 @@ import sys
 from pathlib import Path
 
 from _harness import Cases, TempDir
-from _pf_fixtures import (MANIFEST, WALKTHROUGH, WALKTHROUGH_NO_ACTIONS, board, branch,
+from _pf_fixtures import (ADIR, MANIFEST, WALKTHROUGH, WALKTHROUGH_NO_ACTIONS, board, branch,
                           commit, git, make_repo, preflight, write)
 
 
@@ -546,6 +546,49 @@ def main() -> int:
             code, out = preflight(repo)
             c.check("a worktree/dir NAMED with the key does not make every walkthrough a hit",
                     code == 0 and "scc-99-other" not in out, out.strip()[-300:])
+
+    if c.block("SCC-441 row 13 · the quick lane's approval sha is dereferenced HERE too"):
+        # ⛔ The project close-out reads `Review: none - quick lane; walkthrough approved by the
+        # operator @ <sha>` and dereferences the sha; this gate read only `VERDICT_RE`, found no
+        # `Verdict:`, and returned benign - so the operator approved the lobby walkthrough at
+        # sha X, the agent committed more files, the full gate ran green and he merged work he
+        # never saw. The `@ <sha>` on the record line was decorative (reproduced).
+        RECORD = "Review: none - quick lane; walkthrough approved by the operator @ {sha}"
+        WT_REL = f"{ADIR}/walkthrough.md"
+        with TempDir() as t:
+            repo = make_repo(t, walkthrough=False)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+            write(repo, WT_REL, WALKTHROUGH + "\n## Evidence\n\n" + RECORD.format(sha=sha) + "\n")
+            commit(repo, "SCC-11 docs: the record line (artifacts only)")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            code, out = preflight(repo)
+            c.check("SCC-441 row 13 · CONTROL approved at HEAD with only the artifacts commit "
+                    "after it: exit 0, no STALE",
+                    code == 0 and "STALE, re-approve" not in out, f"exit {code}: " + out.strip()[-300:])
+            c.check("   ...and the gate says it READ the record line (names the quick lane and "
+                    "the sha)", "quick lane" in out and sha[:8] in out, out.strip()[-300:])
+            write(repo, "docs/after.md", "work the operator never saw\n")
+            commit(repo, "SCC-11 chore: a tracked file AFTER the approval")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            code, out = preflight(repo)
+            c.check("SCC-441 row 13 · a tracked file committed AFTER the approved sha: ERROR, the "
+                    "approval is STALE, exit 2",
+                    code == 2 and "[ERROR]" in out and "STALE, re-approve" in out,
+                    f"exit {code}: " + out.strip()[-300:])
+            c.check("   ...measured on the lobby's no-product-dir fallback (every tracked file), "
+                    "and it says so", "tracked file(s)" in out, out.strip()[-300:])
+        with TempDir() as t:
+            repo = make_repo(t, walkthrough=False)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            write(repo, WT_REL, WALKTHROUGH + "\n## Evidence\n\n" + RECORD.format(sha="64098847") + "\n")
+            commit(repo, "SCC-11 docs: a record line pointing at no commit")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            code, out = preflight(repo)
+            c.check("SCC-441 row 13 · an approval sha that is not a commit here: ERROR (never a "
+                    "warn), exit 2",
+                    code == 2 and "[ERROR]" in out and "64098847" in out and "not in this repo" in out,
+                    f"exit {code}: " + out.strip()[-300:])
 
     # ── Regression: the MAIN checkout is not "a worktree holding your branch" ──
     if c.block("Regression: the MAIN checkout is not 'a worktree holding your br"):

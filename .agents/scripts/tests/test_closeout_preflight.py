@@ -16,6 +16,7 @@ from pathlib import Path
 from _harness import Cases, TempDir
 
 import closeout_preflight as cp   # noqa: E402
+import task_preflight as tp       # noqa: E402
 import wf_common as wf            # noqa: E402
 
 POSITIVE = [
@@ -1477,6 +1478,90 @@ def main() -> int:
                 c.check(f"QL16 CONTROL · {label} is NOT the record line - the error stands",
                         bool([m for m in rows(out, "artifacts", "ERROR") if NO_VERDICT in m]),
                         f"artifacts={rows(out, 'artifacts')}")
+
+    if c.block("SCC-441 row 14 · the record line's WRITER (the doors) and READER agree"):
+        # ⛔ Writer and reader were never checked against each other: changing the verb in every
+        # writer left the suite 86/86, and the reader's own QL16 control shows the cost - a lane
+        # that did exactly what the door said reads "the review step has not run", and the
+        # natural repair is a `Verdict:` stamp for lenses that never launched (SCC-173). The
+        # doors are READ, never edited; the template's `<sha>` gets a real 40-hex sha.
+        sha40 = "d77b8a4d" + "0" * 32
+        doors = CP_SCRIPT.parents[2] / ".agents" / "commands"
+        for door in ("cicd-quick-dev.md", "smh-quick-dev.md"):
+            body = (doors / door).read_text(encoding="utf-8")
+            templates = [ln for ln in body.splitlines() if "Review: none" in ln and "<sha>" in ln]
+            c.check(f"SCC-441 row 14 · {door} carries the record-line template (with `<sha>`)",
+                    bool(templates), f"{len(templates)} template line(s)")
+            for tpl in templates:
+                line = tpl.replace("<sha>", sha40)
+                m = cp._QUICK_LANE_RE.search(line)
+                c.check(f"SCC-441 row 14 · {door}: closeout_preflight's reader accepts the door's "
+                        f"own template line, sha captured whole",
+                        m is not None and m.group(1) == sha40, repr(tpl.strip()))
+                m2 = tp._QUICK_LANE_RE.search(line)
+                c.check(f"SCC-441 row 14 · {door}: task_preflight's reader (row 13) accepts it too",
+                        m2 is not None and m2.group(1) == sha40, repr(tpl.strip()))
+        c.check("SCC-441 row 14 · the two close-outs read the record line with the SAME regex "
+                "object - one reader, never two to drift",
+                tp._QUICK_LANE_RE is cp._QUICK_LANE_RE, "closeout imports it from task_preflight")
+
+    if c.block("SCC-441 row 19 · _stale_against_sha's three unexecuted decisions"):
+        # Three load-bearing decisions no case executed (each mutant survived 115/115): the
+        # verdict arm's WARN (only the approved arm's ERROR was pinned, QL9), the `_bmad-output/`
+        # half of the fallback pathspec (QL19 pins `_artifacts/` only), and the derivation from
+        # PRODUCT_DIRS rather than DEPLOY_DIRS (`.github/` is not product code, SCC-118).
+        WT = "_artifacts/2026-08-01_epic_30/story-30-1-fresh/walkthrough.md"
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, verdict=None, gates_id=None)
+            (repo / WT).write_text("## Code Review\n\n**Verdict: PASS @ 64098847**\n",
+                                   encoding="utf-8")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            c.check("SCC-441 row 19a · a VERDICT sha that is not a commit here is a WARN naming it",
+                    any("64098847" in m and "not in this repo" in m
+                        for m in rows(out, "artifacts", "WARN")),
+                    f"artifacts={rows(out, 'artifacts')}")
+            c.check("SCC-441 row 19a · ...and NOT an ERROR: the roster is the verdict arm's proof "
+                    "the review ran, so the sha is a second opinion (the approved arm errs, QL9)",
+                    not any("64098847" in m for m in rows(out, "artifacts", "ERROR")),
+                    f"errors={rows(out, 'artifacts', 'ERROR')}")
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, verdict=None, gates_id=None, product_dirs=False)
+            seed = git(repo, "rev-parse", "HEAD").stdout.strip()
+            (repo / WT).write_text(
+                "## Evidence\n\nReview: none - quick lane; walkthrough approved by the "
+                f"operator @ {seed}\n", encoding="utf-8")
+            (repo / "_bmad-output/planning.md").write_text("# plan\n", encoding="utf-8")
+            git(repo, "add", "_bmad-output/planning.md")
+            git(repo, "commit", "-qm", "SCC-11 docs: planning after the approval")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            c.check("SCC-441 row 19b · fallback arm: a post-approval commit under `_bmad-output/` "
+                    "ONLY is not stale - the planning surface stays excluded",
+                    not [m for m in rows(out, "artifacts", "ERROR") if "STALE" in m],
+                    f"rc={rc} artifacts={rows(out, 'artifacts')}")
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, verdict=None, gates_id=None, product_dirs=False)
+            (repo / ".github/workflows").mkdir(parents=True)
+            (repo / ".github/workflows/gate.yml").write_text("name: gate\n", encoding="utf-8")
+            git(repo, "add", ".github")
+            git(repo, "commit", "-qm", "SCC-11 ci: a workflow, before the approval")
+            seed = git(repo, "rev-parse", "HEAD").stdout.strip()
+            (repo / WT).write_text(
+                "## Evidence\n\nReview: none - quick lane; walkthrough approved by the "
+                f"operator @ {seed}\n", encoding="utf-8")
+            (repo / "docs/runbook.md").write_text("# runbook\n\nchanged after the approval\n",
+                                                  encoding="utf-8")
+            git(repo, "add", "docs/runbook.md")
+            git(repo, "commit", "-qm", "SCC-11 docs: after the approval")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            stale = [m for m in rows(out, "artifacts", "ERROR") if "STALE" in m]
+            c.check("SCC-441 row 19c · fallback arm with a `.github/` dir present: a post-approval "
+                    "`docs/` commit is STILL stale - `.github/` was not claimed as a product dir, "
+                    "the pathspec fell back to the whole tree",
+                    len(stale) == 1 and "tracked file" in stale[0],
+                    f"rc={rc} artifacts={rows(out, 'artifacts')}")
 
     return c.finish()
 
