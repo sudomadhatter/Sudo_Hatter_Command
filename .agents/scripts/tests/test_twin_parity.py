@@ -139,8 +139,10 @@ NOT_PAIRED = {
     # share no fenced region at all. Promoting them to PAIRS is a design of its own (fence
     # the preflight, the sign-off and the prune, then hold each identical), and SCC-210
     # deliberately did not do it: it only rebalanced which cicd command owns which step.
-    "cicd-close-story-merge-tree.md": "the story DOOR - it lands on the EPIC branch "
-                                      "while smh-close-task-merge-tree opens a PR "
+    "cicd-close-story-merge-tree.md": "the story DOOR - it lands on the EPIC branch by a "
+                                      "PR it merges itself (FULL or LIGHT; TRUNK opens a "
+                                      "PR into main and stops, SCC-446) while "
+                                      "smh-close-task-merge-tree opens a PR "
                                       "against main, so their bodies share no law "
                                       "fence today; pairing them would mean "
                                       "fence-by-fence law parity (SCC-210)",

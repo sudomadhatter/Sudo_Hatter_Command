@@ -50,11 +50,11 @@ REQUIRED: tuple[tuple[str, re.Pattern[str], str, str], ...] = (
     ("epic-read", ANCHOR, _SECTION,
      "a `git show <epic-ref>:…/sprint-status.yaml` — close-out writes the YAML INSIDE the "
      "story worktree, so the landed truth is on the epic branch, not in the checkout"),
-    ("ref-discovery", re.compile(r"""['"]refs/remotes/origin/epic/\*['"]"""), _SECTION,
-     "`git for-each-ref … 'refs/remotes/origin/epic/*'` — the epic ref is DISCOVERED, and "
-     "`origin/` first because a local epic head is only as fresh as the last pull. The STAR "
-     "and the QUOTES are both load-bearing: without the star it discovers nothing, and "
-     "unquoted, zsh globs it against the filesystem and the command exits 1 with no output"),
+    ("ref-discovery", re.compile(r"epic_mode\.py\s+--repo\s+\S"), _SECTION,
+     "`python3 .agents/scripts/epic_mode.py --repo \"$PROJECT_ROOT\"` — the epic ref is "
+     "DISCOVERED by the one query every door shares (SCC-446), which reads ORIGIN only "
+     "(a local epic head is only as fresh as the last pull) and prints the mode word first. "
+     "A door that re-types its own `for-each-ref` glob is the drift this script retired"),
     ("no-epic-fallback", re.compile(r"no epic branch|between epics", re.I), _AFTER,
      "the project that has NO epic branch — there the checkout copy is the authority, and a "
      "boot that errors out instead of saying so is a worse boot than the stale one"),
@@ -152,7 +152,7 @@ GOOD = """
 Read `_bmad-output/implementation-artifacts/sprint-status.yaml` — it is ~62 KB of bare rows.
 Read it off the EPIC BRANCH, not off the checkout:
 ```bash
-git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'
+python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"
 git show origin/epic/<KEY>-<slug>:_bmad-output/implementation-artifacts/sprint-status.yaml
 ```
 No epic branch (a project between epics) → the checkout copy IS the authority; say so and move on.
@@ -168,11 +168,13 @@ MUTANTS: tuple[tuple[str, str, str], ...] = (
                   "sprint-status.yaml", "cat sprint-status.yaml"),
     # git: `fatal: ambiguous argument` — a path is not an objectspec.
     ("epic-read", "epic/<KEY>-<slug>:_bmad", "epic/<KEY>-<slug>/_bmad"),
-    ("ref-discovery", "'refs/remotes/origin/epic/*'", "'refs/heads/*'"),
-    # zsh: `no matches found: refs/remotes/origin/epic/*`, exit 1, nothing on stdout.
-    ("ref-discovery", "'refs/remotes/origin/epic/*'", "refs/remotes/origin/epic/*"),
-    # discovers nothing: for-each-ref wants a pattern, and this one matches only an exact ref.
-    ("ref-discovery", "origin/epic/*'", "origin/epic/'"),
+    # the door re-types its own glob instead of the shared query (the drift SCC-446 retired)
+    ("ref-discovery", 'python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"',
+     "git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'"),
+    # cwd is not intent: the script REQUIRES --repo, and a call without it exits 2
+    ("ref-discovery", 'epic_mode.py --repo "$PROJECT_ROOT"', "epic_mode.py"),
+    # the line dropped altogether: a boot that never asks which epic it is on
+    ("ref-discovery", 'python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"\n', ""),
     ("no-epic-fallback", "No epic branch (a project between epics) → the checkout copy IS "
                          "the authority; say so and move on.", "Otherwise carry on."),
     ("disagreement", "When the two disagree, report both", "When the two differ, report both"),

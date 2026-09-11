@@ -27,6 +27,18 @@ needed path missing there → STOP and say so.
 > card with `/smh-close-task-merge-tree` named as its close-out. Do **not** bind a project to work around
 > this, and do **not** silently retarget to a project he didn't ask for.
 
+**Then the epic mode — from the git query, never from belief** (`git-policy` § The epic's mode,
+SCC-446):
+
+```bash
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune
+python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"          # PC: python
+```
+
+**Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
+**they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one
+live epic on origin) is a STOP: name the one you mean or prune the other before anything else runs.
+
 ## Step 1 — Read active context
 Read `_bmad-output/active-context/active-context.md` and output a `<context>` block summarizing:
 - **Sprint Objective** — what are we working on?
@@ -67,8 +79,8 @@ on `main`, which only moves when the whole epic ships — so its copy is behind 
 has landed since**. Read both:
 ```bash
 cd "$PROJECT_ROOT" && git fetch origin --quiet
-# origin/ FIRST: a local epic head is only as fresh as the last pull
-cd "$PROJECT_ROOT" && git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'   # ⛔ QUOTE the refspec — zsh globs it against the filesystem and exits 1 with no output
+# origin/ FIRST: a local epic head is only as fresh as the last pull - the shared query reads origin only
+python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"          # PC: python - FULL/LIGHT names the epic, TRUNK means none
 cd "$PROJECT_ROOT" && git show origin/epic/<JIRA-KEY>-<slug>:_bmad-output/implementation-artifacts/sprint-status.yaml
 ```
 No epic branch — a project between epics — → the checkout copy **is** the authority; say so in one

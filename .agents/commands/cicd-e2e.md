@@ -1,17 +1,35 @@
 ---
-description: Run the project's real end-to-end suite (Firebase-emulator-backed, seeded users, hermetic — no live backend needed) and report a clear GREEN/RED verdict. The gate /cicd-push-e2e requires before anything lands on main; also runnable solo any time.
+description: Run the project's real end-to-end suite (Firebase-emulator-backed, seeded users, hermetic — no live backend needed) and report a clear GREEN/RED verdict on the branch under test — the epic in FULL or LIGHT mode, the story lane in TRUNK. The gate /cicd-push-e2e requires before anything lands on main; on a LIGHT epic also the on-demand mid-epic run; runnable solo any time.
 ---
 
 # /cicd-e2e — End-to-End Test Gate
 
-Runs the project's **hermetic E2E harness** and turns the result into a promotion verdict. Green
-here is the evidence that the EPIC BRANCH is safe to merge into `main` (`/cicd-push-e2e` calls
-this and refuses to proceed on red). Run it solo whenever you want end-to-end confidence.
+Runs the project's **hermetic E2E harness** and turns the result into a promotion verdict on **the
+branch under test** — the epic branch in FULL or LIGHT mode, the story lane in TRUNK mode. Green here
+is the evidence that branch is safe to merge (`/cicd-push-e2e` calls this and refuses to proceed on
+red). Run it solo whenever you want end-to-end confidence.
+
+**On a LIGHT epic this is also the on-demand mid-epic run.** A LIGHT epic's landings skip the two E2E
+checks by design, so when a landing touched something Playwright covers — a route, a flow, an auth
+wall — the operator calls this door from any story worktree, on his call, before the next landing;
+`/cicd-push-e2e` runs it once more at the end regardless.
 
 ## Step 0 — Resolve the target project (FIRST — before anything else)
 Bind the target per `.agents/rules/smh-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
 override → `.agents/active-project.txt` → else **STOP and ask** — never guess, never operate on the
 lobby. Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>`.
+
+**Then the epic mode — from the git query, never from belief** (`git-policy` § The epic's mode,
+SCC-446):
+
+```bash
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune
+python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"          # PC: python
+```
+
+**Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
+**they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one
+live epic on origin) is a STOP: name the one you mean or prune the other before anything else runs.
 
 ## Step 1 — Confirm the harness exists
 Check `PROJECT_ROOT/frontend/e2e/run-e2e.mjs`. If missing, STOP: this project has no E2E harness
@@ -41,7 +59,8 @@ Pass-through args after `--` (e.g. one spec, headed): `npm run test:e2e -- journ
 ## Step 3 — Report the verdict
 Parse the run and post exactly one of:
 - **`E2E GATE: GREEN`** — N/N journeys passed. Link the HTML report if written
-  (`frontend/playwright-report/`). The epic branch is safe to merge into `main`.
+  (`frontend/playwright-report/`). The branch under test — the epic in FULL or LIGHT, the story lane
+  in TRUNK — is safe to merge.
 - **`E2E GATE: RED`** — list each failing spec + the one-line reason (assertion vs timeout vs
   harness/env). A harness/env failure is still RED — fix the env and re-run; never wave it through.
 

@@ -813,9 +813,13 @@ moves at Step 4, *after* the push returns 0.
   session that produced nothing to route.
 - **A `claude/incident-*` branch is a STOP, not a landing.** That is the incident
   pipeline's lane; it lands through `/cicd-mobile-error-team`, never through a story close-out.
-- **⛔ Do not push the `claude/*` branch to origin.** The landing pushes `HEAD:epic/...` only. A
-  story branch reaches origin **only** via `/cicd-park` — that is park's whole purpose, and
-  `/cicd-resume` reads the origin `claude/*` list to find in-flight work on a cold machine.
+- **⛔ The landing is a pull request, in every mode.** On a FULL or LIGHT epic the door pushes the
+  story branch as the head of a PR into the epic, watches the epic's checks (on LIGHT the two E2E
+  checks show as skipped — by design) and merges it; on TRUNK it opens the PR into `main` and stops
+  for your click. There is no direct `HEAD:epic/` push any more — the epic ruleset refuses it. A
+  story branch otherwise reaches origin **only** via `/cicd-park` — that is park's whole purpose, and
+  `/cicd-resume` reads the origin `claude/*` list to find in-flight work on a cold machine; Step 5
+  prunes the landed branch.
 
 ### `/cicd-merge-epic-workingtrees` — close out ALL of an epic's lanes at once
 
@@ -3690,11 +3694,11 @@ touches `main`. Explained in [§7](#7-landing-and-shipping--the-close-out-family
 | `INC` | ⛔ STOP — that is the incident lane /cicd-mobile-error-team | (terminal / end) |
 | `NOLAND` | ⛔ not worked in a worktree do NOT land it — report and stop | (terminal / end) |
 | `MG` | ⭐ MERGE GATE — did the epic branch move CODE since ③'s verdict sha? | **no** → inherit ③'s green<br>**yes** → the merged tree has NEVER been tested run the full suite NOW |
-| `INH` | inherit ③'s green | → git push origin HEAD:epic/KEY-slug THE landing · main untouched |
+| `INH` | inherit ③'s green | → THE landing, by the mode word Step 0 printed: FULL or LIGHT → push claude/KEY-slug · gh pr create --base epic/… · gh pr checks --watch · gh pr merge --merge (main untouched) · TRUNK → gh pr create --base main and STOP |
 | `RERUN` | the merged tree has NEVER been tested run the full suite NOW | → green? |
 | `RED` | green? | **no** → ⛔ STOP — no push, nothing lands the board flips ride this branch, and Step 4 never runs, so the ticket never moves<br>**yes** → inherit ③'s green |
 | `STOPALL` | ⛔ STOP — no push, nothing lands the board flips ride this branch, and Step 4 never runs, so the ticket never moves | (terminal / end) |
-| `PUSH` | git push origin HEAD:epic/KEY-slug THE landing · main untouched | → did the push return 0? |
+| `PUSH` | THE landing, by the mode word Step 0 printed: FULL or LIGHT → push claude/KEY-slug · gh pr create --base epic/… · gh pr checks --watch · gh pr merge --merge (main untouched) · TRUNK → gh pr create --base main and STOP | → did the push return 0? |
 | `P0` | did the push return 0? | **no — the remote moved** → ⛔ STOP and report · re-sync and re-land, never force the ticket does NOT move<br>**yes** → ⭐ Step 4, and only now — the one REMOTE write a. Dev Record filed, then READ BACK b. ticket → Done · a Bug flag is cleared c. check scoped AND unscoped — the fork arm |
 | `REJ` | ⛔ STOP and report · re-sync and re-land, never force the ticket does NOT move | (terminal / end) |
 | `S4` | ⭐ Step 4, and only now — the one REMOTE write a. Dev Record filed, then READ BACK b. ticket → Done · a Bug flag is cleared c. check scoped AND unscoped — the fork arm | → Step 5 — /cicd-prune-worktree AUTOMATIC · --repo and --branch passed through |

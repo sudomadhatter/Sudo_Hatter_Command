@@ -37,6 +37,18 @@ because the tree "looks empty" — every incident below started with a tree that
 
 Echo `Target: Projects/<name> | Story: <story-slug> | <id> | <JIRA-KEY>` before proceeding.
 
+**Then the epic mode — from the git query, never from belief** (`git-policy` § The epic's mode,
+SCC-446):
+
+```bash
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune
+python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"          # PC: python
+```
+
+**Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
+**they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one
+live epic on origin) is a STOP: name the one you mean or prune the other before anything else runs.
+
 ## Step 0.6 — Preflight first (fast pre-check — it does NOT replace the gates below)
 
 ```bash
@@ -73,11 +85,11 @@ In `PROJECT_ROOT`:
 # 1 · Fetch latest remote refs
 Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; git fetch origin
 
-# 2 · Resolve the story's epic branch (exactly one live epic/* is the normal case)
-git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'
+# 2 · The story's landing ref is the branch Step 0's mode line printed (FULL or LIGHT: origin/epic/<JIRA-KEY>-<slug>;
+#     TRUNK: origin/main) - never re-discovered here
 
-# 3 · Verification check: confirm story branch has landed on origin/epic/<JIRA-KEY>-<slug>
-git merge-base --is-ancestor claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>
+# 3 · Verification check: confirm story branch has landed on that ref
+git merge-base --is-ancestor claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>   # TRUNK: origin/main
 ```
 
 - **Exit code 0**: the branch is fully merged into `origin/epic/<JIRA-KEY>-<slug>`. Proceed to Step 1.6.

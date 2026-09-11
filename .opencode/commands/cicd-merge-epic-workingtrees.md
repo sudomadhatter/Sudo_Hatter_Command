@@ -36,6 +36,22 @@ Bind per `.agents/rules/smh-target-resolution.md` §STD + §BIND: self fast-path
 override (remainder = epic id / lane list) → `.agents/active-project.txt` → else **STOP and ask**.
 Echo exactly `Target: Projects/<name>` before any work.
 
+**Then the epic mode — from the git query, never from belief** (`git-policy` § The epic's mode,
+SCC-446):
+
+```bash
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune
+python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"          # PC: python
+```
+
+**Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
+**they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one
+live epic on origin) is a STOP: name the one you mean or prune the other before anything else runs.
+
+⛔ **`TRUNK` → this door REFUSES, in one sentence: there is no epic branch to merge the lanes into.**
+Trunk lanes land one at a time through `/cicd-close-story-merge-tree`'s Arm B, each its own PR into
+`main`; a batch landing has nothing to batch onto. Say so and stop.
+
 ## Step 1 — Read ALL the trees: inventory & confirm the set
 1. `git fetch origin`, then **both** listings — trees AND branches, they disagree after prunes and
    machine switches: `git worktree list` + `git branch -a --list "*claude/*"`. A branch alive on

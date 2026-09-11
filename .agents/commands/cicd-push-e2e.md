@@ -46,6 +46,18 @@ override → `.agents/active-project.txt` → else **STOP and ask** — never gu
 lobby. Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>`. All git/test commands below run
 inside `PROJECT_ROOT`.
 
+**Then the epic mode — from the git query, never from belief** (`git-policy` § The epic's mode,
+SCC-446):
+
+```bash
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune
+python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"          # PC: python
+```
+
+**Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
+**they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one
+live epic on origin) is a STOP: name the one you mean or prune the other before anything else runs.
+
 ## Step 0.6 — Pin the ticket you MEAN (before any tool has answered anything)
 ```bash
 EXPECTED_KEY=<the epic's Jira key>     # the ticket you MEAN, never one read back off a branch
@@ -54,14 +66,12 @@ A key derived from the branch you are about to resolve cannot disagree with it �
 is what makes Step 1.5's match a real comparison. No ticket → **STOP and ask.**
 
 ## Step 1 — Resolve the epic branch
-From `$ARGUMENTS` (an `epic/<JIRA-KEY>-<slug>` name) or by discovery:
-```bash
-git fetch origin
-git branch -a --list '*epic/*'          # live epic branches, local + origin
-```
-- **Exactly one live epic branch** → that's the candidate; Step 1.5 confirms it mechanically.
-- **Several** → show them with `git log --oneline origin/main..<branch> | head` each and decide together.
-- **None** → ⭐ **first ask whether that is TRUNK mode, not an accident** (SCC-423). A project with no
+From `$ARGUMENTS` (an `epic/<JIRA-KEY>-<slug>` name) or from Step 0's mode line — `FULL <branch>` or
+`LIGHT <branch>` names the candidate; Step 1.5 confirms it mechanically.
+- **`FULL` or `LIGHT`** → that branch is the candidate. On **LIGHT** this door's full gate (Step 3,
+  item 4) is the epic's **first and only** E2E run — say so in the ledger row.
+- **`AMBIGUOUS`** → show each with `git log --oneline origin/main..<branch> | head` and decide together.
+- **`TRUNK`** → ⭐ **first ask whether that is TRUNK mode, not an accident** (SCC-423). A project with no
   `origin/epic/*` at all is not mid-epic with a missing branch: it develops on `main`, its stories land
   one at a time through `/cicd-close-story-merge-tree`'s trunk arm, and **there is no epic for this door
   to ship — that is the design, not a gap.** Say so and stop; do not cut an epic branch to give this
@@ -123,7 +133,8 @@ below runs on the post-merge tree — that is the point.
 
 **Full gate (any epic merge):**
 4. Run **`/cicd-e2e`** — it must finish **green**. Its report is the promotion evidence; link it in the
-   ledger row (Step 3.5).
+   ledger row (Step 3.5). **On a LIGHT epic this is the first and only E2E run for the whole epic**
+   (its landings skipped the two E2E checks by design): it is not optional and it is not shortened.
 
 Any failure → **STOP**. Summarize the failures, file/link the evidence, and suggest the lane
 (`/cicd-quick-dev` or the ①②③ story loop). Do not proceed.

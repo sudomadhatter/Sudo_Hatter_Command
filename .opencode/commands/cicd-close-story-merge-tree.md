@@ -57,6 +57,18 @@ before any work; every bare path below resolves under `PROJECT_ROOT`, and a need
 there → STOP and say so. ONE exception to §BIND: Step 1's Claude auto-memory write always targets Daniel's
 global memory dir.
 
+**Then the epic mode — from the git query, never from belief** (`git-policy` § The epic's mode,
+SCC-446):
+
+```bash
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune
+python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"          # PC: python
+```
+
+**Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
+**they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one
+live epic on origin) is a STOP: name the one you mean or prune the other before anything else runs.
+
 **Echo the story and the branch you MEAN, before any script has answered anything.** Everything below binds to
 these two strings, and Step 0.6 checks the preflight resolved the same ones:
 
@@ -283,43 +295,31 @@ counterpart of `/cicd-merge-epic-workingtrees` Step 5's combined gate): run
   never moves.** Report the failing tests + which epic-branch commits collided
   (`git log <suite-SHA>..origin/epic/<JIRA-KEY>-<slug> --oneline`); the fix is a follow-on
   on the branch, then re-gate.
-Then THE landing — **three arms, keyed on the epic branch's NAME and nothing else** (`git-policy` § The
-epic's mode, SCC-416 + SCC-423). Read the name you resolved at Step 0: a `-quickdev` suffix is a
-quick-dev epic; its absence is an extension of main; **no epic branch at all is TRUNK mode.**
+Then THE landing — **two arms, keyed on the WORD Step 0's mode line printed and nothing else**
+(`git-policy` § The epic's mode and § The landing, SCC-416 + SCC-423 + SCC-446). `FULL` or `LIGHT` →
+Arm A, a pull request into the epic. `TRUNK` → Arm B, a pull request into `main`. There is no
+third arm: the direct `HEAD:epic/` push is retired — the epic ruleset refuses it in both modes.
 
-⛔ **Resolve that third case mechanically, before you pick an arm** — "there was no epic" is exactly
-the belief a wrong `cd` manufactures, and picking the trunk arm on a project that HAS a live epic
-lands a story straight onto production:
+⛔ **Read the word off Step 0's output, never off belief** — "there was no epic" is exactly the
+belief a wrong `cd` manufactures, and picking the trunk arm on a project that HAS a live epic lands a
+story straight onto production. If Step 0 did not run in this session, run its two lines again now.
 
-```bash
-cd "$PROJECT_ROOT" && git fetch origin
-cd "$PROJECT_ROOT" && git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'
-```
-
-A line comes back → this is an epic project; use one of the two arms below and NEVER the trunk arm.
-Nothing comes back → trunk mode.
-
-**Quick-dev (`…-quickdev`)** — the direct push, after the merge gate above; no CI per story:
-
-```bash
-cd "<the story worktree>" && git push origin HEAD:epic/<JIRA-KEY>-<slug>
-```
-
-**Extension of main (no suffix)** — a pull request into the epic, the full four-check gate, then the
-merge. The epic's ruleset requires those checks on every push to `epic/**`, so a direct push is refused
-by the server; the PR is the only road:
+**Arm A — FULL or LIGHT: a pull request into the epic, then the merge.** The epic's ruleset requires
+its checks on every change to `epic/**`, so the PR is the only road. Which checks is the mode's: on
+FULL all four run, E2E included; on LIGHT only the two fast checks run and **the two E2E checks
+show as skipped — that is the design, not a red** (E2E runs once, at `/cicd-push-e2e`).
 
 ```bash
 cd "<the story worktree>" && git push origin claude/<JIRA-KEY>-<story-slug>
-cd "<the story worktree>" && gh pr create --base epic/<JIRA-KEY>-<slug> --head claude/<JIRA-KEY>-<story-slug> --fill
+cd "<the story worktree>" && gh pr create --base epic/<JIRA-KEY>-<mode>-<N>-<slug> --head claude/<JIRA-KEY>-<story-slug> --fill
 cd "<the story worktree>" && gh pr checks --watch     # red -> STOP and report, exactly as for a conflict
 cd "<the story worktree>" && gh pr merge --merge      # the door's invocation IS the sign-off; the ruleset's
                                                       # bypass list governs rules, not who merges a green PR
 ```
 
-**Trunk (no epic branch at all)** — the story lands on **`main`**, and `main` is production. This arm
-is the ONLY one where this door is a `main` door, so it ends the way every `main` door in this system
-ends: **it opens the pull request and STOPS.** The operator's click is how the sign-off reaches GitHub
+**Arm B — TRUNK (no epic branch at all)** — the story lands on **`main`**, and `main` is production.
+This arm is the ONLY one where this door is a `main` door, so it ends the way every `main` door in
+this system ends: **it opens the pull request and STOPS.** The operator's click is how the sign-off reaches GitHub
 (`git-policy` § The road to `main`), and the merge is a deploy.
 
 ```bash
@@ -329,8 +329,8 @@ cd "<the story worktree>" && env -u GITHUB_TOKEN git push origin claude/<JIRA-KE
 cd "<the story worktree>" && gh pr create --base main --head claude/<JIRA-KEY>-<story-slug> --fill
 ```
 
-⛔ **STOP there. Do NOT `gh pr merge` on this arm.** The two arms above merge their own PR because
-they land on an *epic* branch, which the operator's invocation of this door authorises. `main` is not
+⛔ **STOP there. Do NOT `gh pr merge` on this arm.** Arm A merges its own PR because it lands on an
+*epic* branch, which the operator's invocation of this door authorises. `main` is not
 that: it is reached only through a pull request the operator merges himself, in every repo (SCC-347),
 and no invocation of any door has ever bought that click. Hand back the PR URL.
 
@@ -354,14 +354,17 @@ story WAS parked, its branch is already on origin and Step 5 deletes it there.
 - **`main` is untouched.** Only Daniel, directly or via `/cicd-push-e2e`.
 - **Report** the branch, the commit range that landed, and the epic-branch sha — same into the walkthrough's
   `## Your Actions` (Step 1 wrote the section; this is the line it was waiting for).
-- ⛔ **Then COMMIT that write, and push it to the epic branch too — a second, tiny landing.** Everything Step 3
-  puts in the walkthrough (the merge-gate totals above, this landing line) is written **after** Step 2's
-  commit, so without this the walkthrough that actually lands carries neither, and the tree is left dirty:
+- ⛔ **The walkthrough rides the PR — commit it on the story branch BEFORE the PR opens.** Everything
+  Step 3 puts in the walkthrough (the merge-gate totals above, the landing line) is written **after**
+  Step 2's commit, so write those lines, commit them on the story branch, and only then run Arm A's
+  fence. If the walkthrough must change after the PR is open (a landing line with the merge sha), commit
+  it and push the story branch again — the PR picks the commit up and the checks re-run; there is no
+  second landing and never a `HEAD:epic/` push:
 
   ```bash
   cd "<the story worktree>" && git add <the story walkthrough>
   cd "<the story worktree>" && git commit -m "<KEY> docs(walkthrough): record the landing"
-  cd "<the story worktree>" && git push origin HEAD:epic/<EPIC-KEY>-<slug>
+  cd "<the story worktree>" && git push origin claude/<JIRA-KEY>-<story-slug>    # the PR head moves; re-watch the checks
   ```
 
   **A dirty tree here is not cosmetic — it reverses two of this command's own rules.** Step 5's

@@ -1607,7 +1607,11 @@ def main() -> int:
         RETIRED = "cicd-close-" + "workingtree"
         CMDS = ROOT / ".agents/commands"
         SOP_PATH = ROOT / "docs/_scc_sops_prds/workflows_testing_SOP.md"
-        PUSH = "git push origin HEAD:epic/"
+        # SCC-446: the landing is a PULL REQUEST into the epic (FULL or LIGHT) that the door
+        # merges itself - `gh pr merge --merge` is the act that lands code; the direct
+        # `HEAD:epic/` push is retired (the epic ruleset refuses it). The ordering law below is
+        # unchanged: the ticket moves only AFTER the landing act.
+        PUSH = "gh pr merge --merge"
         # ⛔ ASSEMBLED, for the same reason `RETIRED` is — and this one was caught by the gate
         # rather than by review. `test_jira_feed.py`'s yes-guard sweeps every `.md`/`.py`/`.sh`
         # under `.agents/` for an `acli … workitem transition` call missing `--yes`, exempting
@@ -1854,7 +1858,7 @@ def main() -> int:
         # ⛔ CONTROLS, over synthetic bodies, running the SAME predicate the live check runs.
         # "No violations found" is what a broken predicate reports too.
         BAD_ORDER = [f"`{TRANS} --key <KEY> --status \"Done\" --yes`.",
-                     f"Then `{PUSH}<JIRA-KEY>-<slug>` — THE landing."]
+                     f"Then `{PUSH}` — THE landing."]
         c.check("CS-13 C4 CONTROL: a transition BEFORE the push is caught",
                 board_lies(BAD_ORDER) == [1], str(board_lies(BAD_ORDER)))
         c.check("CS-13 C5 CONTROL: a transition AFTER the push is not reported",
@@ -1864,7 +1868,7 @@ def main() -> int:
         # widened for C2's benefit and never consulted by the ORDER check — the door would be
         # free to close the ticket before the landing push, through the new verb, unseen.
         BAD_FINISH = [f"`python3 .agents/scripts/{FINISH} --key <KEY> --apply`.",
-                      f"Then `{PUSH}<JIRA-KEY>-<slug>` — THE landing."]
+                      f"Then `{PUSH}` — THE landing."]
         c.check("CS-13 C6 CONTROL: a CLOSER call before the push is caught too",
                 board_lies(BAD_FINISH) == [1],
                 f"the order guard must read both verbs, not just acli: {board_lies(BAD_FINISH)}")
@@ -1877,7 +1881,7 @@ def main() -> int:
         # from the story door. Without them, documenting the mechanism indicts the door.
         MENTIONS = ["Step 4b runs `jira_feed.py finish`, which reads `## Your Actions` again.",
                     f"Once, `{TRANS}` was called here by hand; it no longer is.",
-                    f"Then `{PUSH}<JIRA-KEY>-<slug>` — THE landing."]
+                    f"Then `{PUSH}` — THE landing."]
         c.check("CS-13 C7 CONTROL: PROSE naming either verb is not a transition",
                 not board_lies(MENTIONS)
                 and not [ln for ln in MENTIONS if moves_ticket(ln)],

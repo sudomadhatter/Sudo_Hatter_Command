@@ -1008,7 +1008,7 @@ flowchart TD
     RERUN --> RED{"green?"}
     RED -- "no" --> STOPALL["⛔ STOP — no push, nothing lands\nthe board flips ride this branch, and Step 4\nnever runs, so the ticket never moves"]
     RED -- "yes" --> INH
-    INH --> PUSH["git push origin HEAD:epic/KEY-slug\nTHE landing · main untouched"]
+    INH --> PUSH["THE landing, by the mode word Step 0 printed\nFULL or LIGHT → push claude/KEY-slug · gh pr create --base epic/…\n· gh pr checks --watch · gh pr merge --merge (main untouched)\nTRUNK → gh pr create --base main and STOP"]
     PUSH --> P0{"did the push return 0?"}
     P0 -- "no — the remote moved" --> REJ["⛔ STOP and report · re-sync and re-land, never force\nthe ticket does NOT move"]
     P0 -- "yes" --> S4["⭐ Step 4, and only now — the one REMOTE write\na. Dev Record filed, then READ BACK\nb. ticket → Done · a Bug flag is cleared\nc. check scoped AND unscoped — the fork arm"]

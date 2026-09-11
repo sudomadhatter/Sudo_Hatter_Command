@@ -37,6 +37,18 @@ and ask** — never guess, never operate on the lobby. Set `PROJECT_ROOT` and **
 `bmad-*`/`1_*` skills bind their `{project-root}` to it); a needed path missing under `PROJECT_ROOT` →
 STOP and say so, never fall back to the lobby.
 
+**Then the epic mode — from the git query, never from belief** (`git-policy` § The epic's mode,
+SCC-446):
+
+```bash
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune
+python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"          # PC: python
+```
+
+**Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
+**they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one
+live epic on origin) is a STOP: name the one you mean or prune the other before anything else runs.
+
 ## Step 0.5 — Resolve & create the artifact folder (BEFORE any sub-skill writes a file)
 Per `artifacts-always-first` §2, everything this flow produces lands in ONE story-scoped folder — set it
 now: numeric `E.S` → `ARTIFACT_DIR = PROJECT_ROOT/_artifacts/epic_<E>/story-<E>-<S>-<short-title>/`
@@ -59,11 +71,11 @@ EPIC branch. Echo the case (`Worktree: reused <path>` / `none yet — opens at f
    ```bash
    cd "$PROJECT_ROOT" && git fetch origin && git rev-list --count origin/epic/<JIRA-KEY>-<slug>..origin/main
    ```
-   ⭐ **TRUNK mode short-circuits this check, and only this one** (SCC-423). If
-   `git for-each-ref 'refs/remotes/origin/epic/*'` returns nothing for this project, there is no epic
-   to be behind: the ref above does not exist and the command errors rather than answering. Say
-   `Epic: none — trunk mode` and go straight to item 2, where **`origin/main` is what you absorb**.
-   Everything else in this step is unchanged.
+   ⭐ **TRUNK mode short-circuits this check, and only this one** (SCC-423). If Step 0's mode line
+   printed `TRUNK`, there is no epic to be behind: the ref above does not exist and the command
+   errors rather than answering. Say `Epic: none — trunk mode` and go straight to item 2, where
+   **`origin/main` is what you absorb**. On `FULL` or `LIGHT` the epic branch is the one Step 0
+   printed. Everything else in this step is unchanged.
 
    **`0` → carry on.** Anything else → **STOP and report the count.** Do NOT merge `main` yourself:
    that write lands on the epic branch and takes Mr. Hatter's sign-off (`git-policy` write gate), and

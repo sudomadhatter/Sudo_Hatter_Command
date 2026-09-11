@@ -12,6 +12,8 @@ a CHILD project under `Projects/`, never the lobby.
 **Execute now:** read `.agents/commands/cicd-create-epic-sprint.md` (relative to the repo root) and
 follow it END TO END. Its **Step 0** resolves which child to target — a leading `$ARGUMENTS` project name,
 else the `.agents/active-project.txt` pointer, else it asks Daniel — then binds every path under that
-project's root. Its **Step 3 is an interactive hard stop**: risk-score each story P0–P3 with Daniel, one at a
-time. Pass `$ARGUMENTS` through verbatim; the leading token may name the project, e.g.
+project's root. Its **Step 1 asks Daniel the epic's MODE once — FULL, LIGHT, or TRUNK** (`git-policy`
+§ The epic's mode) — and cuts `epic/<KEY>-epic-<N>-<slug>` or `epic/<KEY>-light-epic-<N>-<slug>`, or
+nothing at all on TRUNK. Its **Step 4 is an interactive hard stop**: risk-score each story P0–P3 with
+Daniel, one at a time. Pass `$ARGUMENTS` through verbatim; the leading token may name the project, e.g.
 `AGY_AVIATIONCHAT _my_resources/open_tasks/fix_list_admin_sudoadmin.md`.

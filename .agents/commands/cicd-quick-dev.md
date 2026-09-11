@@ -47,19 +47,18 @@ override → `.agents/active-project.txt` → else **STOP and ask** — never gu
 lobby. Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>` before any work; every path and
 child tool call resolves under `PROJECT_ROOT`.
 
-Then **one mode line, from the git query, never from belief** (`git-policy.md` § The epic's mode):
+Then **the epic mode, from the git query, never from belief** (`git-policy.md` § The epic's mode,
+SCC-446):
 
 ```bash
-cd "$PROJECT_ROOT" && git fetch origin --quiet
-cd "$PROJECT_ROOT" && git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'
-# epic/<KEY>-epic-<N>-<slug>        -> Epic mode: FULL <branch>
-# epic/<KEY>-light-epic-<N>-<slug>  -> Epic mode: LIGHT <branch>
-# NOTHING                            -> Epic mode: TRUNK
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune
+python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"          # PC: python
 ```
 
-Echo `Epic mode: TRUNK` / `Epic mode: FULL <branch>` / `Epic mode: LIGHT <branch>`. The mode decides
-Step 0.5's base and Step 5's tripwire base; the lane never changes it and **never proposes cutting a
-light epic** — the mode is the operator's, chosen once at kickoff.
+**Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost.
+The mode decides Step 0.5's base and Step 5's tripwire base; the lane never changes it and **never
+proposes cutting a light epic** — the mode is the operator's, chosen once at kickoff. `AMBIGUOUS`
+(more than one live epic on origin) is a STOP.
 
 ## Step 0.5 — Key, worktree, branch, ticket (before the first edit)
 

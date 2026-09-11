@@ -14,8 +14,10 @@ agent never chooses the mode and never infers it from prose.
 The two existing modes are still correct and still in use by every other project here. A rewrite
 of the branch model to "stories land on main" would have silently re-pointed AviationChat's
 siblings, and the epic-mode doctrine is load-bearing for them. So `trunk` is ADDITIVE: the doors
-grow a third arm, the law grows a third bullet, and the two existing arms are untouched. The
-control for that claim is D1 below.
+grow a third arm and the law grows a third bullet. (SCC-441 later folded the two epic arms into
+ONE - FULL and LIGHT both land by a PR into the epic, and the direct-push arm is retired - so
+the close-out door has two arms today, not three; block B pins that shape.) The control for the
+guard claim is D1 below.
 
   ── ⛔ THE CONTROL THAT MATTERS MOST IS D1, AND IT ASSERTS ABSENCE OF CHANGE ────────────────
 `merge-target-guard.sh` is an ARMED `commit-msg` hook that refuses known-bad merge topologies,
@@ -146,11 +148,14 @@ def main() -> int:
         c.check("close-out door: a fenced `gh pr create --base main` — the trunk landing",
                 re.search(r"gh pr create[^\n]*--base main", close_fenced) is not None,
                 "the trunk arm lands on main by PR, like the epic arm lands on the epic")
-        c.check("close-out door: the two OLDER arms are untouched "
-                "(direct push + PR into the epic)",
-                re.search(r"HEAD:epic/", close_fenced) is not None
-                and re.search(r"gh pr create[^\n]*--base epic/", close_fenced) is not None,
-                "additive, never a rewrite")
+        # SCC-441/SCC-446: the epic arm is ONE arm for FULL and LIGHT alike - a PR into the epic
+        # whose ruleset decides which checks run - and the direct-push arm (`-quickdev`) is gone.
+        # No fence in the door may push `HEAD:epic/` any more: the epic ruleset refuses it.
+        c.check("close-out door: the epic arm is a fenced `gh pr create --base epic/` and NO "
+                "fence pushes `HEAD:epic/` (the direct-push arm is retired)",
+                re.search(r"gh pr create[^\n]*--base epic/", close_fenced) is not None
+                and "HEAD:epic/" not in close_fenced,
+                "FULL and LIGHT land by PR into the epic; a HEAD:epic/ push is refused server-side")
         c.check("close-out door: names the trunk mode in prose so the arm can be SELECTED",
                 names_trunk_mode(read(CLOSE_STORY)), "the arm is keyed on the mode")
 
