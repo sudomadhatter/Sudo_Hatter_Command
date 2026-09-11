@@ -44,15 +44,15 @@ sha is the commit the run described.
 | D | the rename itself: the pinned tests would red on a missing `smh-quick-dev.md` body; **not run before the sweep** — the re-pointing was applied in the same pass, so Part D has no separate RED transcript | `test_command_surfaces` 343/343, `test_twin_parity` 68/68, `test_review_engine` 867/867, `test_lane_qualify` 46/46, `test_sops_prds_folder` 61/61 | 85/85 files @ `49dc82ed` |
 | E | `test_epic_mode.py` 1/16 with the script absent; `test_trunk_mode.py` block B 29/30; `test_boot_epic_branch_read.py` 26/27 | 16/16 · 30/30 · 27/27 | see the receipt below (`gates/suite.json`) |
 
-**Gates at the fix tip** (`fb2639ac`, 2026-09-11, after the review's thirty rows were applied — § Code
-Review (2026-09-11) → Changes applied): `run_all.py` **87/87 files**, exit 0, clean tree, receipt
-`gates/suite.json` (84 → 87 across the lane: `test_scope_check.py`, `test_epic_mode.py`,
+**Gates at the second-pass fix tip** (`14b59913`, 2026-09-11, after the re-review's thirty rows were applied — § Code
+Review (2026-09-11, second pass) → Changes applied; the first pass's fix tip was `fb2639ac`): `run_all.py` **87/87 files**, exit 0, clean tree, receipt
+`gates/suite.json` @ `14b59913` (84 → 87 across the lane: `test_scope_check.py`, `test_epic_mode.py`,
 `test_approved_word_is_the_operators.py`) · `workflow_lint.py --toolkit-only` 0 errors, 0 warnings, 8
 info · `check_maps.py --depth3-only --strict` clean · `check_links.py --base origin/main` clean ·
-`test_command_surfaces.py` 343/343. The per-file closing runs: `test_scope_check` 106/106 ·
-`test_epic_mode` 34/34 · `test_task_preflight` 124/124 · `test_closeout_preflight` 126/126 ·
+`test_command_surfaces.py` 343/343. The per-file closing runs: `test_scope_check` 141/141 ·
+`test_epic_mode` 38/38 · `test_task_preflight` 139/139 · `test_closeout_preflight` 135/135 ·
 `test_boot_epic_branch_read` 51/51 · `test_trunk_mode` 37/37 · `test_approved_word_is_the_operators`
-122/122. (The earlier gate line at `85454a49` — 86/86, lint 0/0/8, maps and links clean — is
+130/130. (The earlier gate line at `85454a49` — 86/86, lint 0/0/8, maps and links clean — is
 superseded by this one.)
 
 ⚠️ **Correcting this record — three claims above were written before they were true.** They are
@@ -269,3 +269,138 @@ Prose-only rows that can carry no test, said as the rule asks: 10, 12, 16, 22, 2
 **The pattern under the thirty, in one line each, for the next lane:** a `$L` pinned once at Step 0 and used in a later fence (the mechanism behind row 1, reachable in any door that binds a variable in one fence and reads it in another); a test that greps its own source for a word instead of running the behaviour (rows 4, 14); a fixture that never exercises the branch the code was written for (rows 5, 17, 18, 19); and prose written beside a fix that no test held (rows 15, 16, 25).
 
 Whole suite at the fix tip: `run_all.py` **87/87 files** @ `fb2639ac`, clean tree, receipt `gates/suite.json` — 87 because `test_approved_word_is_the_operators.py` joined. `workflow_lint.py --toolkit-only` 0 errors 0 warnings 8 info · `check_maps.py --depth3-only --strict` clean · `check_links.py --base origin/main` clean (three fixture paths in `review-lenses.md` marked `<fixture>/`) · `test_command_surfaces.py` 343/343.
+
+## Code Review (2026-09-11, second pass — after the thirty-row fix batch)
+
+Verdict: CONCERNS @ 14b59913
+Suite evidence measured on 14b59913 — run_all.py 87/87 files (exit 0, clean tree, receipt `gates/suite.json`), workflow_lint --toolkit-only 0 errors 0 warnings 8 info, check_links --base origin/main clean, check_maps --depth3-only --strict clean, sop_currency clean, test_command_surfaces 343/343, py_compile green on every changed .py file.
+
+review-runtime: fan-out
+
+lens_isolation:  worktree — every repo-reading lens ran in its own worktree copy of this repo, each verified from inside its copy (`git rev-parse --show-toplevel` naming the copy, HEAD `ffca21c7`): edge-case-hunter `agent-aff4d76ed7e987b69`, literal-correctness-hunter `agent-a62ee26c2c510809b`, acceptance-auditor `agent-a266bab402b1eb5e7`, test-adequacy-auditor `agent-a070c52f4e3277d56`. The Blind Hunter got no tree: prompt-enforced starvation, stated rather than recorded as isolation.
+
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted:  5/5
+lenses_na:       none
+
+findings:        0 decision · 30 patch · 0 defer   (0 noise-dismissed · 8 relevance kills)
+dispositions:    per-lens: blind-hunter=8/0/1 · edge-case-hunter=9/0/0 · literal-correctness-hunter=1/0/1 · acceptance-auditor=6/0/1 · test-adequacy-auditor=6/0/4 · compound=5/0/1
+drift:           undeclared=12 · unimplemented=2 · incomplete=0 — the 12 are consequences of declared work (the review-1 pins and fixes, the norm_path hoist, four generated launchers, the path-scoped rule mirror, the retirement entry, and `cicd-label-tasks.md` with its mirror from this pass's row 24), each named under § Acceptance matrix; the 2 are Part F's closure lane after AVCH-152, deferred by design
+
+37 raw findings from five lenses, verified one by one (Evidence Verifier: all 37 `verified: true`, severities re-graded from evidence), plus 6 compound findings (Compound Synthesis, each with named parents). Same-claim groups {1, 6, 19} · {7, 15} · {5, 21} · {13, 29} were verified once and expanded, so the unique claims are 32 + 6 compound. **30 assessed real and fixed in this lane; 8 dismissed at the relevance gate, one line each below.** Nothing was deferred.
+
+**Calibration — where the assessment disagreed with a lens's label:** the unset-upstream fatal (three lenses, self-rated important / suggestion / nitpick) is a suggestion on its own and important in company — the Compound role showed it trains a reader to ignore the one `fatal` that matters, a failed fetch before the mode query — so both were fixed together. The staleness check's blindness to `.github/` in a repo with product dirs (blind, important) is real and dismissed: the Step 5 tripwire overlaps `.github/` first, and the residual needs a commit after the tripwire the door forbids.
+
+### Why CONCERNS, and not PASS
+
+The engine's floor binds the verdict and it is CONCERNS: seven findings graded **important** by the Verifier survived triage into the patch bucket — every one applied and pinned in this lane before this stamp, none open. No FAIL trigger fired: no acceptance item undelivered (33 of 37 rows satisfied by a named assertion, 6 divergences recorded below, 2 deferred by design), every gate green at the tip, no gate left that cannot fail. A fresh review at the fixed tip is what turns this record into a PASS; the fixes are unreviewed edits until then, which is the reason the floor does not move with them.
+
+### Step 0.7 — re-derivation
+
+- Nothing this diff references moved: `origin/main` is `cf1544f9`, the merge-base is the same commit, 0 commits landed on the trunk while the lane was built; nothing to absorb and no absorb was faked.
+- The true overlap is EMPTY — 0 of 152 files; `git merge-tree --write-tree --messages HEAD origin/main` wrote tree `952acb16` with no conflict messages.
+- No sibling lanes are live: `git worktree list` shows the shared checkout on `main` and this lane only, so there is no landing-order dependency. `risk_seam.py classify --repo <this tree>` returns `unclassified` with this tree's root echoed — the permanent answer for a markdown repo with no code graph (SCC-289).
+
+`review_level: standard`, derived: the radius holds gate scripts, rules and hooks, and the re-taken diff is 152 files.
+
+### Scope and method
+
+**Scope:** `origin/main...HEAD` at `ffca21c7`, 152 committed files, 15,576 diff lines, frozen to a patch file the lenses read. **Method:** `/smh-code-review` Steps 0 through 3.5, invoking the `code-review-engine` skill at Step 1 as a five-lens fan-out (`lens_budget: standard`; the literal-correctness lens received the 20-file cap in diff order with all 132 withheld paths named to it, took its one top-up on `closeout_preflight.py` and declared the truncation as its first line), then the engine's Step 2 verification wave — an Evidence Verifier over all 37 findings and a Compound Synthesis role, both on a dossier built by `evidence_extract.py` (37 packages) — then Step 3 triage by the assessor under `code-standards` §6.5 and the relevance gate. The raw lens reports, the verifier's table and the compound findings are in [review-lenses.md](review-lenses.md) § Second pass.
+
+### Findings
+
+| # | file:line | Sev | Lens | Failure scenario | Disposition |
+|---|---|---|---|---|---|
+| 1 | `cicd-quick-dev.md:103` · `smh-quick-dev.md:117` | suggestion | literal · blind · edge | `git worktree add --no-track` then `git branch --unset-upstream`: rc 128 `fatal: no upstream information` on every quick-lane open, reproduced by three lenses. In company with row 18 it is the line that teaches a reader to ignore a `fatal`. | applied @ c75d713a — both lines deleted |
+| 2 | `smh-dev-task-tests.md:514` | nitpick | literal | "the task.yaml you wrote in Step 0" — Step 5 writes it. Inherited from the renamed file. | dismissed — relevance: no path fires, the agent finds the manifest eleven lines up |
+| 3 | `git-policy.md:190` | suggestion | blind | Row 5 of § Two toggles says the close-out door re-runs the scope check; `critical-surfaces.md` and the code say only the quick-dev doors' Step 5 does. A reader of the hub rule treats Step 5 as courtesy. | applied @ c75d713a — row 5 rewritten: the tripwire is the door's Step 5, the close-out runs none |
+| 4 | `smh-quick-dev.md:259-264` · `cicd-quick-dev.md` Step 3 | important | blind | The floor fence is four bare script lines with no tree pin; cwd persists between calls, so a floor run from the shared checkout measures `main` and prints a green the walkthrough pastes. | applied @ c75d713a — every floor line pinned `cd "<the tree>" &&`; the project door says so in prose |
+| 5 | `handoff.md` | important | blind · acceptance | The hand-off says the freeze is not lifted, rows 1/8/9 are open and the receipt is @ dd5a5c42 — four commits stale; a next agent re-does or refuses done work. | applied @ c75d713a — SUPERSEDED banner at the top pointing at the walkthrough's last section |
+| 7 | `scope_check.py` `load_map` | suggestion | blind · edge | A directory row without its trailing `/`, a leading-`/` row, or an exact-file row naming nothing is a dead row that reads as protected (`backend/auth` → CLEAR for `backend/auth/token.py`). | applied @ c75d713a — one rule for every non-prefix row: leading `/` is ERROR, an existing directory is ERROR (needs `/`), a row naming no file and not gitignored is ERROR; `.claude/settings.local.json` stays legal through the gitignore arm |
+| 8 | `cicd-quick-dev.md` Step 4 · `smh-quick-dev.md` Step 4 | suggestion | blind | The record line `walkthrough approved by the operator @ <sha>` is written before the stop that obtains the word, and neither door says which sha. | applied @ c75d713a — written after the word, as a plain line naming the code tip he saw; a `STALE` means the word again, never a sha bumped by hand (compound 4) |
+| 9 | `smh-non-crit-pr-push.md:34` · `lane_qualify.py:20,92` | suggestion | blind | `TASK-LIGHT` routes a small toolkit edit to the full lane citing a right-sizing licence this diff deleted; the quick lane built for that case is not offered. | applied @ c75d713a — the row and both docstrings name the quick lane |
+| 10 | `task_preflight.py:1424` | suggestion | blind | In a repo with product dirs the staleness pathspec omits `.github/` and `firebase.json`. | dismissed — relevance: the Step 5 tripwire overlaps `.github/` (verified in the same fixture); the residual needs a commit after the tripwire, which the door forbids |
+| 11 | `cicd-prune-worktree.md:363` | nitpick | blind | Fence comment still says "i.e. it was PARKED" under prose this lane rewrote. | applied @ c75d713a |
+| 12 | `task_preflight.py` `_stale_against_sha` | important | edge | Absorbing `origin/main` after the approval — the preflight's own remedy — flips the approval STALE, because `<sha>..HEAD` is a two-endpoint tree diff. Reproduced. | applied @ c75d713a — the lane's own post-approval changes are listed with `git log --cc --name-only <sha>..HEAD ^<base>` (measured: names a conflict resolution, ignores a clean absorb); fallback to the tree diff, said aloud, when the base ref is unavailable |
+| 13 | `task_preflight.py:1507` · `closeout_preflight.py:348` | important | edge · test-adequacy | A fenced record line or a literal `<sha>` reads in the lobby as "no review Verdict line — the full gate runs" (exit 0, no dereference); the project reader scans raw text, so the two disagree. Reproduced. | applied @ c75d713a — both readers scan stripped text and both refuse an unreadable record line (fenced or placeholder) as an ERROR; the cicd door names the reader the ad-hoc lane meets (compound 2) |
+| 14 | `scope_check.py:172` | important | edge | The Step 5 tripwire reads the map from the lane's own tree; a lane that prunes the self rows (or writes a repo's first one-row map) reads CLEAR. Reproduced. | applied @ c75d713a — on `--diff` the map at the merge-base is unioned with HEAD's (generic set when the base has none); the `MAP:` line names what was used |
+| 16 | `scope_check.py:230` | important | edge | A lobby-relative planned path (`Projects/X/backend/auth.py`, as typed from the lobby) or a `..` path compares as a string and answers CLEAR in a mapped repo. Reproduced. | applied @ c75d713a — a path that exists under the cwd is rebased onto the repo; outside is ERROR; `..` is ERROR; a planned new repo-relative file stays legal |
+| 17 | `scope_check.py:98` | suggestion | edge | A planned set at directory granularity (`backend/`, `.`) is CLEAR over a critical child; the eject fires after the build. Reproduced. | applied @ c75d713a — a planned directory is judged as a prefix |
+| 18 | twelve `cicd-*` Step 0 fences | suggestion | edge | The fetch and the mode query are independent lines; a failed fetch leaves cached refs and `epic_mode.py` prints `FULL <dead epic>` exit 0. Reproduced. | applied @ c75d713a — chained with `&&` in all twelve doors and their mirrors; a named STOP paragraph follows each fence (compound 6) |
+| 20 | `smh-quick-dev.md:159` | nitpick | edge | The pin comment claims the fence is self-contained while the same line reads `$REPO` from Step 0. | applied @ c75d713a — the comment separates the PIN (bound here) from the FILLS (carried) in all five fences |
+| 22 | `preflight-receipt.json` | suggestion | acceptance | Names the retracted `46bc4267` stamp. | applied at close-out — `task_preflight.py` rewrites it at the tip once this stamp exists (review-1 row 30) |
+| 23 | `smh-quick-dev.md` Step 0.5 | suggestion | acceptance | The "reusing a tree `/smh-plan-task` cut? absorb `main` FIRST" block was dropped while `/smh-plan-task` routes its ⚡ lanes here; the first absorb then lands after the approval (row 12). | applied @ c75d713a — the block restored, with the reason (compound 3) |
+| 24 | `cicd-label-tasks.md:44` · `smh-label-tasks.md:226` · `smh-close-task-merge-tree.md:331` | nitpick | acceptance | Three "light lane" survivors of Part D's re-point sweep, ambiguous now that LIGHT names an epic mode. | applied @ c75d713a — the three bodies say "quick lane"; `smh-label-tasks.md`'s frontmatter phrase stays (changing a description regenerates four launchers for one word — dismissed half) |
+| 25 | `parts/SCC-446.md` row C | nitpick | acceptance | The literal `grep -l epic_mode.py` now lists 13 (the row-25 prose mention), not 12. | applied — recorded under § Acceptance matrix; the 12 call lines are pinned |
+| 26 | `smh-dev-task-tests.md:27-28` | nitpick | acceptance | The rename carries a fourth edit (the intro paragraph) the plan did not enumerate. | applied — recorded under § Acceptance matrix |
+| 27 | `parts/SCC-446.md` §3 | nitpick | acceptance | The stated reason for leaving `cicd-park.md` untouched overstates; park's epic push is a no-op under the PR landing. | dismissed — relevance: a plan aside, no failure follows |
+| 28 | `task_preflight.py:1545` | important | test-adequacy | `if foreign_stamped: … elif quick:` — a stamped sibling walkthrough that merely mentions the key silences the lane's own approval-sha dereference. Reproduced. | applied @ c75d713a — the dereference runs whenever the lane's record line exists |
+| 30 | `epic_mode.py:59` | suggestion | test-adequacy | The "git failed" branch had no case; with it removed a broken linked worktree prints TRUNK. | applied @ 6fc36dfa — pinned (`.git` file naming a missing gitdir → ERROR exit 2) |
+| 31 | `scope_check.py` `--paths ""` | suggestion | test-adequacy | The empty-string guard had no case; the mutant prints CLEAR on a quoted unset variable. | applied @ 6fc36dfa — pinned |
+| 32 | `wf_common.norm_path` | suggestion | test-adequacy | The backslash normalisation had no case; the mutant prints CLEAR on the PC spelling. | applied @ 6fc36dfa — pinned through scope_check |
+| 33 | `test_approved_word_is_the_operators.py` | suggestion | test-adequacy | The grant scan matched five possessives; the same grant re-worded (a seat name, a verb form) passed. | applied @ 6fc36dfa — the seat roster and verb forms fire, the negation control stays quiet |
+| 34 | `epic_mode.py:106` | nitpick | test-adequacy | Whitespace-before-`#` rule dead to the suite. | dismissed — relevance: fails toward the loud side; coverage for symmetry |
+| 35 | `epic_mode.py:76` | nitpick | test-adequacy | The escape-only-in-double-quotes distinction is dead to the suite. | dismissed — relevance: contrived input |
+| 36 | `scope_check.py` `overlaps` | nitpick | test-adequacy | "One line per path" unpinned. | dismissed — relevance: output shape, the word and exit unchanged (ruled the same in review 1) |
+| 37 | `scope_check.py` `load_map` | nitpick | test-adequacy | The `why` default unpinned. | dismissed — relevance: cosmetic |
+| C1 | lobby close-out | important | compound | The critical-surfaces line has no enforcement point outside the agent's hands and the hub rule claimed one. Parents: 3, 14, 16, 17. | dismissed — relevance: the line is a soft stop run by the agent by the operator's design (`critical-surfaces.md`); the text contradiction is fixed (3) and the base-map union (14) makes Step 5 honest |
+| C2 | `cicd-quick-dev.md:355` | important | compound | The door promised a refusal (`closeout_preflight`) the ad-hoc lane never meets (it closes through `task_preflight`). Parents: 13, 29, 8. | applied @ c75d713a + c75d713a — the reader named per lane; the near-miss guard in both readers |
+| C3 | `smh-quick-dev.md` Step 0.5 | important | compound | The dropped absorb-first block makes row 12's false STALE certain for every `/smh-plan-task` lane. Parents: 23, 12. | applied — under 23 and 12 |
+| C4 | both Step 4s | important | compound | The STALE remedy is agent self-service: nothing distinguishes a re-approval from a sha bumped by hand. Parents: 8, 12, 33. | applied — under 8: the line is written on the word, a `STALE` means the word again; the runtime cannot tell, the door now says so |
+| C5 | `scope_check.py` · `task_preflight.py` | important | compound | Both gate scripts resolved unrecognised input to the permissive word, patched one shape at a time. Parents: 7, 15, 16, 17, 13, 28. | applied — one rule per script under 7, 16, 17 and 13, 28 |
+| C6 | `cicd-quick-dev.md:103` · twelve Step 0 fences | important | compound | The unconditional `fatal` masks the one `fatal` that matters, a failed fetch. Parents: 1, 18. | applied — under 1 and 18 |
+
+Rows 6, 15, 19, 21 and 29 are the expanded members of the four same-claim groups and carry their group's disposition.
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| Enforcement suite | `run_all.py` **87/87 files passed**, exit 0, clean tree — receipt `gates/suite.json` stamped @ `14b59913` by `gate_receipt.py` |
+| Toolkit lint | `workflow_lint.py --toolkit-only` — **0 errors, 0 warnings, 8 info** |
+| Assertion evidence | the lane's RED assertions and both fix batches' pins, re-run green: `test_scope_check` 141/141 · `test_epic_mode` 38/38 · `test_task_preflight` 139/139 · `test_closeout_preflight` 135/135 · `test_approved_word_is_the_operators` 130/130 · `test_boot_epic_branch_read` 51/51 · `test_trunk_mode` 37/37 |
+| SOP currency | `sop_currency.py --paths <changed> --message "<subject>"` — clean, no output |
+| Link + anchor | `check_links.py --base origin/main` — **clean** |
+| Door parity | `test_command_surfaces.py` — **343/343 passed**; every edited door byte-copied to its `.opencode/` twin |
+
+### Acceptance matrix
+
+Imported from the Acceptance Auditor (Step 2, no double audit): all 37 rows of the plan and its five parts walked in an isolated copy, running wherever a row was runnable — **33 satisfied with a named proving assertion, 0 not satisfied, 6 diverging literally, 2 deferred by design.** The divergences, each with the truth beside the literal:
+
+| Row | The plan's literal | What HEAD reports | Why |
+|---|---|---|---|
+| B·D | `run_all.py` 85/85 | 87/87 | `test_epic_mode.py` and `test_approved_word_is_the_operators.py` joined |
+| C·C | `grep -c scope_check.py cicd-quick-dev.md` = 2 | 4 | one prose reference plus three call lines (recorded in review 1) |
+| D·A | a rename with ≤ 6 changed lines | git reports `A`; 5 changed lines | git cannot pair the rename; the fourth changed line pair is the intro paragraph at 27-28, which the plan did not enumerate (finding 26) |
+| D·B | `grep -c scope_check.py smh-quick-dev.md` = 2 | 3 | one prose reference plus two call lines (recorded in review 1) |
+| D·C | no live `smh-quick-fix` reference outside history | 7 retirement notices remain | each says the door is retired; none invokes it |
+| E·C | twelve doors call `epic_mode.py` | `grep -l` lists 13 | the thirteenth is the row-25 prose mention in the kickoff door; the 12 call lines are pinned by `test_epic_mode.py` F (finding 25) |
+
+Plan row H (one gate at the tip, one review, the riders flip and the parent stays open) is satisfied by this section and the receipt; Plan row F is Part F's closure lane after AVCH-152.
+
+**Declared-set reconciliation** (`declared_change_set.py diff` at `14b59913`, 154 paths). Block present, 0 rejected bullets, 12 undeclared, 2 unimplemented. The 12 stay, each a consequence of declared work: `reproduce-before-you-fix.md` (one phrase re-pointing at the rebuilt door), `test_sops_prds_folder.py` (the retirement entry), `wf_common.py` (the `norm_path` hoist), four generated launchers whose descriptions followed their commands, `.claude/rules/living-template-sync.md` (the path-scoped mirror), the two review-1 additions `test_approved_word_is_the_operators.py` and `test_task_preflight.py`, and `cicd-label-tasks.md` with its `.opencode/` mirror (this pass's row 24, one phrase). The 2 are Part F, deferred by design.
+
+### Clean-Code Gate
+
+Run nested per Step 3.5, importing Step 3's receipts and runs. `py_compile` on every changed `.py`: green. §2A comment contract on the added hunks: every non-obvious block carries its `SCC-441` provenance; no `AIDEV-*` note exists in the touched scripts to invalidate; no unowned TODO (the one `TODO` string is a test fixture); no comment restating code. §2C convention table on added lines: no Python line over 120 chars (the two long added lines are JSON prose strings), full annotations on every added `def`, no bare `python`, no `C:/` path, no `;` separator, no leftover debug print (the `print("ERROR")` lines are the script's verdict word), no bare `except`. ⛔ The four machine-floor commands of `code-standards` §6 do not exist in this repo (no venv, no `backend/`, no `frontend/`); the enforcement suite plus `workflow_lint --toolkit-only` and `py_compile` are the objective floor here, and they are green. Findings folded from Step 1: rows 11 and 20 (stale and self-contradicting comments), both applied.
+
+### Changes applied
+
+**All 30 patches, on 2026-09-11, in three commits in the reproduce-before-you-fix shape:**
+
+| Commit | What | Seen red on its tree |
+|---|---|---|
+| `6fc36dfa` | the pins: `test_task_preflight.py` (absorb-then-not-stale, lane-commit-stale, hand-resolved-conflict-stale, the helper's three base arms, fenced/placeholder line refused, foreign stamp does not shield), `test_closeout_preflight.py` (the project caller's absorb and own-commit arms, both shapes refused, reader agreement on a fenced line), `test_scope_check.py` (fork-map union and unmapped-base variant, dead rows ×3 + gitignored arm + symlink, lobby-relative and `..` paths, planned directories, `--paths ""`, backslash and `./` spellings), `test_epic_mode.py` (a `.git` file naming a missing gitdir → ERROR; the fetch chained on every caller's call line), `test_approved_word_is_the_operators.py` (seat names, verb forms, the passive; three negation controls) | each block red by behaviour before its fix; the two that bind to names the fix commit introduces red by import as well |
+| `c75d713a` | rows 1, 3, 4, 5, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 20, 23, 24 and compound 2–6: `task_preflight._stale_against_sha` takes the base ref and lists the lane's own post-approval changes with `git log --cc --name-only <sha>..HEAD ^<base>` (falls back to the tree diff, said aloud); both close-outs scan stripped text and refuse an unreadable record line; the lane's dereference runs beside a foreign stamp; `scope_check.py` unions the fork's map on `--diff`, resolves planned paths (cwd rebase, `..` ERROR, planned directory as prefix) and refuses a row that can never match (gitignore-aware); `lane_qualify.py` names the quick lane; the twelve Step 0 fences chained with a named STOP; the two dead `--unset-upstream` lines gone; the lobby floor pinned to the tree; the absorb-first block restored; the record line written after the word in both doors; git-policy row 5; the TASK-LIGHT row; three "light lane" phrases; the prune fence comment; five pin comments; every edited door byte-copied to `.opencode/`; SOP tables and rows, one changelog row, the map-row rule and the fork-map union in `critical-surfaces.md` | each fix hunk reverted by hand → its pin red → restored byte-identical → green (the agent's per-row proofs are quoted in review-lenses.md § Second pass); closing runs: `test_scope_check` 141/141 · `test_epic_mode` 38/38 · `test_task_preflight` 139/139 · `test_closeout_preflight` 135/135 · `test_approved_word_is_the_operators` 130/130 · `test_boot_epic_branch_read` 51/51 · `test_trunk_mode` 37/37 · `test_command_surfaces` 343/343 |
+| `14b59913` | rows 5/21 (the hand-off's SUPERSEDED banner) and the second pass's raw reports appended to review-lenses.md | records; no pin owed |
+
+Rows 25 and 26 are applied in this section's acceptance matrix; row 22 is applied at close-out, after this stamp, by `task_preflight.py` rewriting the receipt. The eight relevance kills (2, 10, 27, 34, 35, 36, 37, compound 1) carry their one-line reason in the table. One deliberate deviation from a lens's remedy, said aloud: a planned path that exists under the cwd but resolves OUTSIDE the repo is kept as a planned repo-relative file rather than refused — the doors run from the lobby, which holds a `README.md` and a `critical-surfaces.json` a project lane may legitimately be planning; only a `..` spelling, which can never be repo-relative, is refused (`scope_check.py` main, the comment says why).
+
+**The pattern under the thirty, for the next lane:** a gate that compares strings it was handed instead of resolving them against the tree it judges (rows 7, 14, 16, 17), two readers of one record line fed different text (13), a precedence that let foreign evidence shield the lane's own (28), and a measure that compared trees where it meant to measure a lane (12). Each is now one rule in one place, pinned on both sides.
+
+Whole suite at the fix tip: `run_all.py` **87/87 files** @ `14b59913`, clean tree, receipt `gates/suite.json`. `workflow_lint.py --toolkit-only` 0 errors 0 warnings 8 info · `check_maps.py --depth3-only --strict` clean · `check_links.py --base origin/main` clean · `sop_currency.py` over the 154 changed paths clean · `test_command_surfaces.py` 343/343 · `py_compile` on all nine changed Python files green.
