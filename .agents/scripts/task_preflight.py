@@ -1365,7 +1365,16 @@ def check_artifacts(repo: Path, key: str | None, rep: wf.Report) -> list[Path]:
 NEAR_MISS_LINE = re.compile(r"^[#*_]{0,4} ?verdict\b[^\n]*?\b(?:pass|concerns|fail|waived)"
                             r"\b[^\n]*@", re.IGNORECASE)
 
-
+# SCC-444 — THE QUICK LANE'S RECORD LINE. `/cicd-quick-dev` and `/smh-quick-dev` (git-policy
+# § Two toggles) run a review only when the operator asks; when none ran, the walkthrough
+# carries this ONE line and no `Verdict:` at all — a stamp would pull `walkthrough_roster` in
+# for lenses that never launched (SCC-173). The sha is REQUIRED: without it the line is a
+# sentence, not a record. ONE reader for both close-outs: `closeout_preflight` imports it from
+# here (SCC-441 review), and `test_closeout_preflight.py` binds it to the doors' own template.
+_QUICK_LANE_RE = re.compile(
+    r"^[>\-*\s]*\**\s*Review:\**\s*none\s*[-—–]\s*quick lane;\s*walkthrough approved by "
+    r"the operator\s*@\s*`?([0-9a-f]{7,40})",
+    re.MULTILINE | re.IGNORECASE)
 
 
 def nonartifact_moved(repo: Path, sha: str) -> list[str] | None:
@@ -1387,6 +1396,66 @@ def nonartifact_moved(repo: Path, sha: str) -> list[str] | None:
             if p.strip() and not p.strip().startswith("_artifacts/")]
 
 
+def _stale_against_sha(rep: "wf.Report", project: Path, rel: Path, sha: str, what: str) -> None:
+    """Did code move since the tree this approval was given on? ONE implementation, three
+    callers — `closeout_preflight`'s `Verdict: … @ <sha>` path and its quick-lane record line,
+    and `check_gate` below reading the same record line in the lobby.
+
+    ⛔ It lives HERE, not in `closeout_preflight`, because that module imports this one for
+    `PRODUCT_DIRS` - the list this helper derives its pathspec from - and the lobby's gate needed
+    it too (SCC-441 review, reproduced): an import the other way is circular, and a second copy
+    is how two gates drift.
+
+    ⛔ SCC-446 review: the quick-lane branch captured its sha, printed eight characters of it
+    and dropped it, so a walkthrough the operator approved at one tree read clean after later
+    `backend/` commits — the exact question the sha was made REQUIRED to answer. Written as a
+    helper rather than a second copy because the two branches asking the same question of the
+    same value is precisely how the verdict path and `task_preflight` are already kept from
+    drifting.
+
+    ⛔ THE PATHSPEC IS DERIVED, NEVER TWO HARDCODED NAMES (SCC-446 review, reproduced). This
+    check read `backend/ frontend/` only, so a post-approval commit to `firebase/`, `functions/`,
+    `mobile/` or a root `Dockerfile` moved nothing it could see — and a project with NEITHER of
+    those two directories (RAG_Pipeline_AC, OpenChat-Openrouter) had a check that could not fail
+    at all: git exits 0 with empty output on a pathspec matching nothing, which reads exactly
+    like "no code moved". `PRODUCT_DIRS` is the house's single definition; a repo carrying none
+    of them falls back to the whole tree minus the planning surfaces, so the question is always
+    asked of something."""
+    have = [d for d in PRODUCT_DIRS if (project / d).is_dir()]
+    pathspec = have or [":(exclude)_artifacts/", ":(exclude)_bmad-output/"]
+    diff = wf.git(["diff", "--name-only", f"{sha}..HEAD", "--", *pathspec], project)
+    changed = [ln for ln in diff.stdout.splitlines() if ln.strip()]
+    # ⛔ SAY WHAT WAS ACTUALLY MEASURED. On the fallback the word "code" is a claim this check
+    # cannot support: with no PRODUCT_DIRS to aim at, every tracked file outside the two
+    # planning surfaces counts, so a `docs/` typo reports as a changed "code file" and the
+    # operator re-gates over a comma (SCC-441 review, reproduced).
+    #
+    # ⛔ AND THE FIX IS THE WORDING, NOT AN `*.md` EXCLUSION. Excluding markdown was the
+    # obvious-looking repair and it is wrong HERE above all: the lobby carries none of the five
+    # product dirs, so the lobby takes this very branch — and the lobby's product IS markdown,
+    # every door under `.agents/commands/` and every rule under `.agents/rules/`. That
+    # exclusion would blind the staleness check to the whole of what this repo ships. Staying
+    # conservative and naming the scope honestly is the correct trade: re-gating after an
+    # unclassifiable change is cheap, missing a real one is not.
+    noun = "code file(s)" if have else "tracked file(s) (no product dir here, so all of them)"
+    if diff.returncode != 0:
+        # ⛔ ASYMMETRIC ON PURPOSE, and the asymmetry is the whole point (SCC-446 review). On the
+        # verdict path an unresolvable sha is survivable because `roster.judge` independently
+        # proves the review ran, so the warn is a second opinion on a record that has one. The
+        # quick lane has NO roster by design: that single line is the entire evidence of the
+        # operator's approval, and a hex string pointing at nothing is not evidence. A warn
+        # leaves exit 1, which this door's own text calls non-blocking.
+        say = rep.warn if what == "reviewed" else rep.err
+        say("artifacts", f"{rel}: {what} SHA {sha[:8]} not in this repo"
+                         + ("" if what == "reviewed" else
+                            " - the quick lane's only record of approval points at no commit"))
+    elif changed:
+        remedy = ("the verdict is STALE, re-gate" if what == "reviewed"
+                  else "the approval is STALE, re-approve")
+        rep.err("artifacts", f"{rel}: {len(changed)} {noun} changed since the "
+                             f"{what} SHA - {remedy}")
+
+
 def check_gate(repo: Path, hits: list[Path], lane: str, expect: str, branch: str,
                rep: wf.Report) -> str | None:
     """Read the review's `Verdict: ... @ <sha>` and decide the close-out gate's fate:
@@ -1397,6 +1466,9 @@ def check_gate(repo: Path, hits: list[Path], lane: str, expect: str, branch: str
       anything else (no governing verdict, WAIVED,
       ambiguous, moved, upstream errors,
       missing/invalid receipts)                     -> return None: the plan prints as today
+      the quick lane's record line, no `Verdict:`   -> its `@ <sha>` is dereferenced first
+                                                       (rep.err when unresolvable or stale),
+                                                       then None: the full gate runs
 
     ⭐ GOVERNING means the walkthrough sits in this task's OWN session dir — beside a
     `task.yaml` declaring `task_key: <expect>`. check_artifacts matches by SUBSTRING
@@ -1427,6 +1499,7 @@ def check_gate(repo: Path, hits: list[Path], lane: str, expect: str, branch: str
         return None
     ref = base_ref(repo)
     stamped: list[tuple[Path, list[tuple[str, str]]]] = []
+    quick: list[tuple[Path, str]] = []     # governing walkthroughs carrying the record line
     foreign_stamped = 0
     for p in hits:
         man = p.parent / "task.yaml"
@@ -1465,11 +1538,30 @@ def check_gate(repo: Path, hits: list[Path], lane: str, expect: str, branch: str
             ok_roster, why = roster.judge(text, p, found[-1][0])
             for line in why:
                 (rep.info if ok_roster else rep.err)("gate", f"{rel_or_abs(p, repo)}: {line}")
+        else:
+            q = _QUICK_LANE_RE.search(text)
+            if q:
+                quick.append((p, q.group(1)))
     if not stamped:
         if foreign_stamped:
             rep.info("gate", f"verdict stamp(s) exist only in {foreign_stamped} "
                              f"walkthrough(s) whose task.yaml does not declare {expect} - "
                              f"foreign evidence never gates this lane; the full gate runs")
+        elif quick:
+            # ⛔ THE LOBBY'S APPROVAL SHA WAS DECORATIVE (SCC-441 review, reproduced). The
+            # project close-out dereferences the quick lane's `@ <sha>`; this gate read only
+            # `VERDICT_RE`, found no `Verdict:` and returned benign - so the operator approved
+            # at sha X, the agent committed more files, the full gate ran green and he merged
+            # work he never saw. Same helper, same question, asked of the same value: an ERROR
+            # when the sha is not here, an ERROR when tracked files moved after it (the lobby
+            # carries no PRODUCT_DIR, so the fallback measures every tracked file). The full
+            # gate still runs - this never grants a SKIP.
+            for p, qsha in quick:
+                rel = Path(rel_or_abs(p, repo))
+                rep.info("gate", f"{rel}: no `Verdict:` line - quick lane, no review was asked "
+                                 f"for; walkthrough approved by the operator @ {qsha[:8]} - "
+                                 f"the full gate runs")
+                _stale_against_sha(rep, repo, rel, qsha, "approved")
         else:
             rep.info("gate", "no review Verdict line in this task's own walkthrough - "
                              "the full gate runs")

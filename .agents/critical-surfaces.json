@@ -18,7 +18,7 @@
       "paths": []
     },
     "ci": {
-      "why": "the gates: a workflow, hook, preflight, receipt, permission fence or gate test changes what green means for every lane in every repo - and the line itself, because a line that can widen itself is not a line",
+      "why": "the gates: a workflow, hook, preflight, receipt, permission fence, gate test or Step 3 floor check (lint, links, maps, the sweep, the mode query) changes what green means for every lane in every repo - and the line itself, because a line that can widen itself is not a line",
       "paths": [
         ".github/",
         ".githooks/",
@@ -42,6 +42,11 @@
         ".agents/scripts/claude_permissions_apply.py",
         ".agents/scripts/antigravity_permissions_apply.py",
         ".agents/scripts/zoo_permissions_apply.py",
+        ".agents/scripts/workflow_lint.py",
+        ".agents/scripts/check_links.py",
+        ".agents/scripts/check_maps.py",
+        ".agents/scripts/mutation_sweep.py",
+        ".agents/scripts/epic_mode.py",
         ".claude/settings.json",
         ".claude/settings.local.json",
         ".agents/critical-surfaces.json",

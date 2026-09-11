@@ -29,10 +29,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gate_receipt as gr
 import walkthrough_roster as roster
 import wf_common as wf
-# ONE definition of "the product" in this repo, never re-typed here. Import-safe: that module's
-# work is guarded by `if __name__ == "__main__"`. ⛔ PRODUCT_DIRS, never DEPLOY_DIRS — the
-# difference is a shipped incident (SCC-118); `.github/` is not product code.
-from task_preflight import PRODUCT_DIRS
+# ONE reader of the quick lane's record line and ONE staleness helper, shared with the lobby's
+# close-out and living THERE because this module already imports that one (SCC-441 review): the
+# helper derives its pathspec from `task_preflight.PRODUCT_DIRS` - never DEPLOY_DIRS, the
+# difference is a shipped incident (SCC-118); `.github/` is not product code. Import-safe: that
+# module's work is guarded by `if __name__ == "__main__"`.
+from task_preflight import _QUICK_LANE_RE, _stale_against_sha
 
 def integration_branch(project: Path) -> str:
     """The landing target for a story: its epic branch (`epic/*`), falling back to `main`.
@@ -282,69 +284,8 @@ _VERDICT_RE = re.compile(
     r"(?:[^\n]*?@\s*`?([0-9a-f]{7,40}))?",
     re.MULTILINE | re.IGNORECASE)
 
-# SCC-444 — THE QUICK LANE'S RECORD LINE. `/cicd-quick-dev` (git-policy § Two toggles) runs a
-# review only when the operator asks; when none ran, the walkthrough carries this ONE line and
-# no `Verdict:` at all — a stamp would pull `walkthrough_roster` in for lenses that never
-# launched (SCC-173). The sha is REQUIRED: without it the line is a sentence, not a record, and
-# the `no Verdict:` error below stands exactly as it does for a walkthrough carrying neither.
-_QUICK_LANE_RE = re.compile(
-    r"^[>\-*\s]*\**\s*Review:\**\s*none\s*[-—–]\s*quick lane;\s*walkthrough approved by "
-    r"the operator\s*@\s*`?([0-9a-f]{7,40})",
-    re.MULTILINE | re.IGNORECASE)
-
-
-def _stale_against_sha(rep: "wf.Report", project: Path, rel: Path, sha: str, what: str) -> None:
-    """Did code move since the tree this approval was given on? ONE implementation, two
-    callers — the `Verdict: … @ <sha>` path and the quick lane's record line.
-
-    ⛔ SCC-446 review: the quick-lane branch captured its sha, printed eight characters of it
-    and dropped it, so a walkthrough the operator approved at one tree read clean after later
-    `backend/` commits — the exact question the sha was made REQUIRED to answer. Written as a
-    helper rather than a second copy because the two branches asking the same question of the
-    same value is precisely how the verdict path and `task_preflight` are already kept from
-    drifting.
-
-    ⛔ THE PATHSPEC IS DERIVED, NEVER TWO HARDCODED NAMES (SCC-446 review, reproduced). This
-    check read `backend/ frontend/` only, so a post-approval commit to `firebase/`, `functions/`,
-    `mobile/` or a root `Dockerfile` moved nothing it could see — and a project with NEITHER of
-    those two directories (RAG_Pipeline_AC, OpenChat-Openrouter) had a check that could not fail
-    at all: git exits 0 with empty output on a pathspec matching nothing, which reads exactly
-    like "no code moved". `PRODUCT_DIRS` is the house's single definition; a repo carrying none
-    of them falls back to the whole tree minus the planning surfaces, so the question is always
-    asked of something."""
-    have = [d for d in PRODUCT_DIRS if (project / d).is_dir()]
-    pathspec = have or [":(exclude)_artifacts/", ":(exclude)_bmad-output/"]
-    diff = wf.git(["diff", "--name-only", f"{sha}..HEAD", "--", *pathspec], project)
-    changed = [ln for ln in diff.stdout.splitlines() if ln.strip()]
-    # ⛔ SAY WHAT WAS ACTUALLY MEASURED. On the fallback the word "code" is a claim this check
-    # cannot support: with no PRODUCT_DIRS to aim at, every tracked file outside the two
-    # planning surfaces counts, so a `docs/` typo reports as a changed "code file" and the
-    # operator re-gates over a comma (SCC-441 review, reproduced).
-    #
-    # ⛔ AND THE FIX IS THE WORDING, NOT AN `*.md` EXCLUSION. Excluding markdown was the
-    # obvious-looking repair and it is wrong HERE above all: the lobby carries none of the five
-    # product dirs, so the lobby takes this very branch — and the lobby's product IS markdown,
-    # every door under `.agents/commands/` and every rule under `.agents/rules/`. That
-    # exclusion would blind the staleness check to the whole of what this repo ships. Staying
-    # conservative and naming the scope honestly is the correct trade: re-gating after an
-    # unclassifiable change is cheap, missing a real one is not.
-    noun = "code file(s)" if have else "tracked file(s) (no product dir here, so all of them)"
-    if diff.returncode != 0:
-        # ⛔ ASYMMETRIC ON PURPOSE, and the asymmetry is the whole point (SCC-446 review). On the
-        # verdict path an unresolvable sha is survivable because `roster.judge` independently
-        # proves the review ran, so the warn is a second opinion on a record that has one. The
-        # quick lane has NO roster by design: that single line is the entire evidence of the
-        # operator's approval, and a hex string pointing at nothing is not evidence. A warn
-        # leaves exit 1, which this door's own text calls non-blocking.
-        say = rep.warn if what == "reviewed" else rep.err
-        say("artifacts", f"{rel}: {what} SHA {sha[:8]} not in this repo"
-                         + ("" if what == "reviewed" else
-                            " - the quick lane's only record of approval points at no commit"))
-    elif changed:
-        remedy = ("the verdict is STALE, re-gate" if what == "reviewed"
-                  else "the approval is STALE, re-approve")
-        rep.err("artifacts", f"{rel}: {len(changed)} {noun} changed since the "
-                             f"{what} SHA - {remedy}")
+# The quick lane's record line (`_QUICK_LANE_RE`) and the staleness helper both callers below
+# share (`_stale_against_sha`) are imported from `task_preflight` at the top of this file.
 
 
 _LEGACY_REL = "_bmad-output/implementation-artifacts"

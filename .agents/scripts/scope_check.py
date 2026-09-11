@@ -9,8 +9,9 @@ answers one question from PATHS: does the planned set — or the real diff — t
 
     CLEAR      nothing named touches a critical surface                              (exit 0)
     OVERLAP    one line per hit follows: `<path>  <surface>: <why>` — the agent STOPS  (exit 3)
-    ERROR      the check could not run: empty --paths, an unreadable map, a --diff    (exit 2)
-               base git cannot resolve. Silence is UNKNOWN scope, never clear.
+    ERROR      the check could not run: empty --paths, a --diff with nothing committed (exit 2)
+               past the fork, a path outside the repo, an unreadable map, a --diff base
+               git cannot resolve. Silence is UNKNOWN scope, never clear.
 
   ── READ THE WORD, NOT THE EXIT CODE ───────────────────────────────────────────────────────
 The verdict is a bare word on the first line, because a piped gate reports the PIPE's status,
@@ -27,7 +28,9 @@ not. The script never prompts, never reads an answer, never writes anything.
 `<repo>/.agents/critical-surfaces.json` — each repo declares its own paths (project law stays
 in the project). A path ending in `/` is a prefix; anything else is an exact repo-relative file.
 That is `classify_changes.py`'s convention in AviationChat and `sop_currency._SURFACES`'s, and
-it is what keeps `backend-notes/` from matching `backend/`. A repo with no map gets the generic
+it is what keeps `backend-notes/` from matching `backend/`. A bare word (`Dockerfile`) is that
+exact file at the repo root, and it must EXIST there or the map is an ERROR: `auth` with no such
+file is a dead entry, never a fragment. A repo with no map gets the generic
 set below and a LOUD line (`MAP: none for <repo> - generic surfaces only`), so an unmapped repo
 is never silently clear. A map that exists and does not parse is an ERROR, never a fallback.
 
@@ -41,7 +44,8 @@ fragment matches a whole path segment, or a segment prefix followed by `_`, `-` 
 `--diff <base>` reads what THIS branch changed since it forked from `<base>` — the two-argument
 form `wf_common.changed_since_fork` uses, never the two-dot range (`risk_seam.py` names the
 two-dot mistake as the expensive one). It counts committed changes only and prints how many it
-compared (`DIFF: <n> file(s) vs <base>`); the eject tripwire runs it after the lane's last commit.
+compared (`DIFF: <n> file(s) vs <base>`), refusing a zero as ERROR; the eject tripwire runs it
+after the lane's last commit.
 """
 from __future__ import annotations
 
@@ -64,6 +68,13 @@ GENERIC: tuple[tuple[str, str, str], ...] = (
     ("ci", ".agents/hooks/", "a hook edit changes what every session is allowed to do"),
     ("ci", ".agents/scripts/git-hooks/", "a commit gate: arming or re-scoping it is a usage change for everyone"),
     ("ci", ".githooks/", "the hook dispatchers: a silent exit 0 here switches a gate off"),
+    # ⛔ THE LINE PROTECTS ITSELF, EVEN WHERE NO MAP EXISTS (SCC-441 review, reproduced). In an
+    # unmapped repo a quick lane could write the repo's first map, edit this script or rewrite
+    # the rule without tripping the line; the lobby's map row says why, and a map row cannot
+    # say it where there is no map. Exact files, so nothing else under `.agents/` widens.
+    ("ci", ".agents/critical-surfaces.json", "the line itself: a line that can widen itself is not a line"),
+    ("ci", ".agents/scripts/scope_check.py", "the line itself: a line that can widen itself is not a line"),
+    ("ci", ".agents/rules/critical-surfaces.md", "the line itself: a line that can widen itself is not a line"),
     ("rules", "*.rules", "Firestore and Storage rules are the last wall; the constitution says ask first"),
     ("rules", "firebase.json", "the deploy topology: which rules file guards which store"),
     ("auth", "auth", "a wrong line here is every user's account"),
@@ -126,7 +137,18 @@ def load_map(repo: Path) -> tuple[list[tuple[str, str, str]] | None, str | None]
             if not isinstance(p, str) or not p.strip():
                 return None, (f"{MAP_REL}: surface `{name}` has a non-string or empty path "
                               f"entry ({p!r}) - a dead pattern reads as a protected surface")
-            rows.append((str(name), norm(p), why))
+            pat = norm(p)
+            # ⛔ A BARE WORD IS EXACT HERE, SO IT MUST NAME A REAL ROOT FILE (SCC-441 review,
+            # reproduced). `fragments` is off for a repo's own map, so `"auth"` matched only a
+            # root file literally named `auth` and answered CLEAR for `backend/auth/token.py` -
+            # the same dead entry as `None`, and the likelier one: the rule publishes `auth`
+            # as a generic fragment one page above the map format. `Dockerfile` stays legal.
+            if "/" not in pat and "." not in pat and not (repo / pat).is_file():
+                return None, (f"{MAP_REL}: surface `{name}` path `{pat}` names no file at the "
+                              f"repo root - a bare word is an exact root file here, never a "
+                              f"fragment: a directory needs a trailing `/`; a fragment belongs "
+                              f"to the generic set")
+            rows.append((str(name), pat, why))
     return rows, None
 
 
@@ -183,9 +205,37 @@ def main(argv: list[str] | None = None) -> int:
             print("ERROR")
             print(err)
             return EXIT["ERROR"]
+        # ⛔ ZERO CHANGED FILES IS UNKNOWN SCOPE, NOT CLEAR SCOPE (SCC-441 review, reproduced).
+        # The `--paths` arm below refuses empty on exactly that reasoning; this arm sat in the
+        # other branch of the same `if` and printed the pass word over `DIFF: 0` - reachable
+        # on uncommitted-only work, or a --repo standing on the base itself.
+        if not paths:
+            print("ERROR")
+            print(f"no committed diff vs {args.diff} - the lane has nothing committed past its "
+                  f"fork (uncommitted work, or a tree standing on the base itself); that is "
+                  f"UNKNOWN scope, not empty scope")
+            return EXIT["ERROR"]
         info.append(f"DIFF: {len(paths)} file(s) vs {args.diff}")
     else:
-        paths = [norm(p) for p in (args.paths or []) if norm(p)]
+        paths = []
+        for raw in args.paths:
+            p = norm(raw)
+            if not p:
+                continue
+            # ⛔ AN ABSOLUTE PATH DEFEATED A MAPPED REPO'S CHECK (SCC-441 review, reproduced).
+            # `--repo` is absolute by contract, so `<repo>/app/login.py` arrived here, was
+            # compared to `app/login.py` as a string and printed CLEAR exactly where the map
+            # is the authority. Rebase it onto the repo; one that lies outside is a path the
+            # map cannot judge, and that is an ERROR.
+            if Path(p).is_absolute():
+                try:
+                    p = Path(p).resolve().relative_to(repo).as_posix()
+                except ValueError:
+                    print("ERROR")
+                    print(f"{p} lies outside {repo} - a path the map cannot judge is UNKNOWN "
+                          f"scope, never clear")
+                    return EXIT["ERROR"]
+            paths.append(p)
         if not paths:
             print("ERROR")
             print("no paths given - that is UNKNOWN scope, not empty scope; silence is never clear")

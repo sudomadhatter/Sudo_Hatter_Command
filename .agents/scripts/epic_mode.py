@@ -22,7 +22,9 @@ and a stale one must not turn a trunk project back into an epic project. The cal
 
   ── THE TOKEN ──────────────────────────────────────────────────────────────────────────────
 `-light-epic-` after the key is the whole switch - the same substring the epic ruleset globs and
-`pr-check.yml` reads with `contains()`. The word `light` anywhere else in the slug is not it.
+the one a repo's `pr-check.yml` will read with `contains()` once that repo arms it (AVCH-152 for
+AviationChat; today no repo does, and `light_armed` below derives that from the repo and says so
+on the cost line). The word `light` anywhere else in the slug is not it.
 """
 from __future__ import annotations
 
@@ -58,23 +60,45 @@ def live_epics(repo: Path) -> tuple[list[str] | None, str]:
     return sorted(names), ""
 
 
+def _closing_quote(line: str, start: int) -> int:
+    """Index of the quote that closes the one opened at `start`, or -1 when nothing does.
+    Inside a double-quoted scalar a backslash escapes the next character."""
+    quote = line[start]
+    i = start + 1
+    while i < len(line):
+        if quote == '"' and line[i] == "\\":
+            i += 2
+            continue
+        if line[i] == quote:
+            return i
+        i += 1
+    return -1
+
+
 def uncommented(line: str) -> str:
     """`line` with its YAML comment removed, or unchanged when it has none.
 
     A `#` opens a comment only when it starts the line or follows whitespace, and only outside
-    a quoted scalar — so `foo#bar` stays whole and the `#` in `if: "a # b"` is not a comment.
-    An escaped `\\"` inside a double-quoted scalar ends the quote early here; that can only make
-    the scan strip MORE, which under-reports armed, and under-reporting prints a caveat that is
-    merely redundant while over-reporting hides a live E2E. It fails toward the loud answer."""
-    quote = ""
-    for i, ch in enumerate(line):
-        if quote:
-            if ch == quote:
-                quote = ""
-        elif ch in "\"'":
-            quote = ch
+    a quoted scalar - the `#` in `"build #4 targets -light-epic-"` is not a comment. Inside a
+    double-quoted scalar a backslash escapes the next character, so `"a \\" b"` closes at its
+    second bare quote, not its first. A quote nothing closes is an apostrophe, not a scalar
+    (`echo it's fine   # ...`): it is plain text, and the scan keeps looking for the marker.
+
+    ⛔ THE ESCAPE AND THE APOSTROPHE BOTH OVER-REPORTED ARMED (SCC-441 review, reproduced): the
+    first cut ended a quote at any matching character and never closed an unmatched one, so a
+    token living only in a trailing comment survived either shape, the NOT-ARMED caveat went
+    quiet, and the cost line promised the discount in a repo still running four checks."""
+    i = 0
+    while i < len(line):
+        ch = line[i]
+        if ch in "\"'":
+            end = _closing_quote(line, i)
+            if end != -1:
+                i = end + 1
+                continue
         elif ch == "#" and (i == 0 or line[i - 1] in " \t"):
             return line[:i]
+        i += 1
     return line
 
 
