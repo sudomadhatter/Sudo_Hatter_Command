@@ -31,8 +31,9 @@ needed path missing there → STOP and say so.
 SCC-446):
 
 ```bash
+L=$(pwd)                                                             # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
 cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune
-python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"          # PC: python
+cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
 ```
 
 **Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
@@ -80,7 +81,7 @@ has landed since**. Read both:
 ```bash
 cd "$PROJECT_ROOT" && git fetch origin --quiet
 # origin/ FIRST: a local epic head is only as fresh as the last pull - the shared query reads origin only
-python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"          # PC: python - FULL/LIGHT names the epic, TRUNK means none
+cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python` - the script lives in the LOBBY ($L, pinned at Step 0); FULL/LIGHT names the epic, TRUNK means none
 cd "$PROJECT_ROOT" && git show origin/epic/<JIRA-KEY>-<slug>:_bmad-output/implementation-artifacts/sprint-status.yaml
 ```
 No epic branch — a project between epics — → the checkout copy **is** the authority; say so in one

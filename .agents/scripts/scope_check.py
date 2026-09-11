@@ -122,7 +122,13 @@ def load_map(repo: Path) -> tuple[list[tuple[str, str, str]] | None, str | None]
             return None, f"{MAP_REL}: surface `{name}` needs a `paths` list"
         why = str(spec.get("why", "")).strip() or "declared critical by this repo's map"
         for p in spec["paths"]:
-            rows.append((str(name), norm(str(p)), why))
+            # ⛔ A NON-STRING ENTRY IS AN ERROR, NOT A PATTERN (SCC-446 review). `str(None)` is
+            # the literal `"None"`, which matches no path and reads as a declared-and-safe row —
+            # a dead entry the author believes is protecting something.
+            if not isinstance(p, str) or not p.strip():
+                return None, (f"{MAP_REL}: surface `{name}` has a non-string or empty path "
+                              f"entry ({p!r}) - a dead pattern reads as a protected surface")
+            rows.append((str(name), norm(p), why))
     return rows, None
 
 
@@ -155,6 +161,16 @@ def main(argv: list[str] | None = None) -> int:
                      help="the real diff: what HEAD changed since it forked from BASE (the tripwire)")
     args = ap.parse_args(argv)
 
+    # ⛔ AN EMPTY --repo IS THE CWD (SCC-446 review, reproduced). `cd ""` exits 0 without moving,
+    # so an unbound `$REPO`/`$PROJECT_ROOT` arrives here as `""` and `Path("").resolve()` is the
+    # working directory — the LOBBY. The check then reads the lobby's map against project paths
+    # and prints a bare `CLEAR` with no `MAP:` line to say anything was wrong, so the soft stop
+    # never fires on the very surfaces it exists for.
+    if not args.repo.strip():
+        print("ERROR")
+        print("--repo was empty - an unbound $REPO reaches here as \"\", and an empty path "
+              "resolves to the CWD. Bind it and re-run.")
+        return EXIT["ERROR"]
     repo = Path(args.repo).resolve()
     info: list[str] = []
     if args.diff is not None:
@@ -178,6 +194,16 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT["ERROR"]
     if rows is None:
         info.insert(0, f"MAP: none for {repo} - generic surfaces only")
+        rows, fragments = list(GENERIC), True
+    elif not rows:
+        # ⛔ A MAP THAT DECLARES NOTHING IS WEAKER THAN NO MAP, so it must not be quieter
+        # (SCC-446 review). The rule sanctions an empty `paths` per surface ("a surface that
+        # does not apply says so"), and the skeleton ships a placeholder with all five empty —
+        # so a new project's first lane would have matched nothing at all AND lost the loud
+        # fallback line, printing a bare `CLEAR` where a repo with no map prints `MAP: none`
+        # and still checks the generic set. Fall back exactly as if the file were absent, and
+        # say which of the two happened.
+        info.insert(0, f"MAP: {MAP_REL} declares no paths for {repo} - generic surfaces only")
         rows, fragments = list(GENERIC), True
     else:
         fragments = False

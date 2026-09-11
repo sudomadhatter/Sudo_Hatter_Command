@@ -1075,7 +1075,7 @@ flowchart TD
     S4 --> L1["a. merge the epic branch INTO the lane\nit carries every landed sibling"]
     L1 --> L2["b. post-merge gate, still in the worktree\nsuites SEQUENTIALLY, never several at once"]
     L2 --> L3["c. close the story out IN the worktree\nits board edits ride its own landing"]
-    L3 --> L4["d. push HEAD:epic/KEY-slug"]
+    L3 --> L4["d. a PR into the epic, watch its checks, merge\none lane, one pull request"]
     L4 --> MORE{"more lanes?"}
     MORE -- "yes" --> L1
     MORE -- "no" --> S5["Step 5 — ⭐ COMBINED GATE on the epic branch\nthe union of every landed story's tests"]

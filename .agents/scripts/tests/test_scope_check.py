@@ -119,6 +119,16 @@ def main() -> int:
             rc, lines = run(repo, "--paths", "frontend/auth/theme.css")
             c.check("a repo map WINS: a generic fragment hit outside the map is CLEAR",
                     first(lines) == "CLEAR" and rc == 0, f"rc={rc} lines={lines}")
+            # ⛔ AND THE SAME PATH MUST OVERLAP WHERE NO MAP EXISTS, or the case above proves
+            # only that something printed CLEAR (SCC-446 review). The pair is the claim: the
+            # generic `auth` fragment is live, and the map is what suppressed it.
+            with TempDir() as t2:
+                bare = t2 / "unmapped"
+                bare.mkdir()
+                rc2, lines2 = run(bare, "--paths", "frontend/auth/theme.css")
+            c.check("   ...and the SAME path is OVERLAP in an unmapped repo - the map suppressed "
+                    "a live fragment, it did not merely fail to match",
+                    first(lines2) == "OVERLAP" and rc2 == 3, f"rc={rc2} lines={lines2}")
             # A trailing slash is a prefix; anything else is exact.
             rc, lines = run(repo, "--paths", "backend/billing.py.bak", "backend/auth-notes/x.md")
             c.check("exact means exact: `backend/billing.py.bak` is not `backend/billing.py`, "
@@ -163,6 +173,41 @@ def main() -> int:
             rc, lines = run(repo, "--paths", "docs/x.md")
             c.check("a map that does not parse exits 2 with ERROR on line 1, never CLEAR",
                     rc == 2 and first(lines) == "ERROR", f"rc={rc} {lines}")
+            # ⛔ A WRONG-SHAPE MAP IS AN ERROR, NOT AN EMPTY ONE. Each of these parses as JSON
+            # and would otherwise reach `rows == []`, which now falls back to the generic set —
+            # so without these rows a malformed map is indistinguishable from a deliberate
+            # "nothing applies here", and the author's mistake reads as a decision.
+            for label, blob in (
+                    ("a top-level list, no `surfaces` object", "[]"),
+                    ("`surfaces` is a string, not an object", '{"surfaces": "all of them"}'),
+                    ("a surface with no `paths` key", '{"surfaces": {"ci": {"why": "x"}}}'),
+                    ("`paths` is a string, not a list", '{"surfaces": {"ci": {"paths": ".github/"}}}'),
+                    ("a null path entry - `str(None)` is the dead pattern \"None\"",
+                     '{"surfaces": {"ci": {"paths": [null]}}}'),
+                    ("an empty-string path entry - it would match nothing and read as protection",
+                     '{"surfaces": {"ci": {"paths": ["  "]}}}')):
+                (repo / ".agents" / "critical-surfaces.json").write_text(blob, encoding="utf-8")
+                rc, lines = run(repo, "--paths", "docs/x.md")
+                c.check(f"wrong-shape map · {label}: exit 2, line 1 is ERROR",
+                        rc == 2 and first(lines) == "ERROR", f"rc={rc} {lines}")
+                c.check(f"   ...and line 2 names the map so the author can find it",
+                        len(lines) > 1 and ".agents/critical-surfaces.json" in lines[1],
+                        str(lines))
+            (repo / ".agents" / "critical-surfaces.json").unlink()
+            # ⛔ AN EMPTY `--repo` IS THE CWD, AND THE CWD IS THE LOBBY (SCC-446 review,
+            # reproduced). `cd ""` exits 0 without moving, so an unbound `$REPO` arrives as ""
+            # and `Path("").resolve()` is a real git repo: every check passes and the script
+            # answers confidently about the wrong tree.
+            rc, out = run_script("scope_check.py", "--repo", "", "--paths", "backend/auth/x.py")
+            elines = out.splitlines()
+            c.check("⛔ an EMPTY --repo is refused: exit 2, line 1 is ERROR",
+                    rc == 2 and first(elines) == "ERROR", f"rc={rc} {elines}")
+            c.check("   ...and the reason names the unbound variable, not just 'bad input'",
+                    any("empty" in ln.lower() and "cwd" in ln.lower() for ln in elines[1:]),
+                    str(elines))
+            rc, out = run_script("scope_check.py", "--paths", "docs/x.md")
+            c.check("--repo is required, and the refusal names it (a MISSING script also exits 2)",
+                    rc == 2 and "--repo" in out, f"rc={rc} {out[:200]!r}")
             src = SCRIPT.read_text(encoding="utf-8") if SCRIPT.exists() else ""
             c.check("the script never prompts (no input( call) and never writes (no write_text/open(..., 'w'))",
                     bool(src) and "input(" not in src and "write_text" not in src
@@ -191,7 +236,48 @@ def main() -> int:
             c.check("a --diff base git cannot resolve exits 2 with ERROR on line 1, never CLEAR",
                     rc == 2 and first(lines) == "ERROR", f"rc={rc} {lines}")
 
-    if c.block("F · registered where the house looks"):
+    if c.block("F · a map that declares NOTHING is treated as no map, and says which"):
+        # ⛔ The skeleton ships a placeholder with all five surfaces empty, and the rule
+        # sanctions an empty `paths` per surface. A map matching nothing while ALSO suppressing
+        # the generic fallback is strictly weaker than having no file at all — it would print a
+        # bare CLEAR where an unmapped repo prints `MAP: none` and still checks the generic set.
+        with TempDir() as t:
+            repo = t / "repo"
+            write_map(repo, {s: {"why": f"{s} does not apply here", "paths": []} for s in FIVE})
+            rc, lines = run(repo, "--paths", "backend/auth/token.py")
+            c.check("all-empty map: the generic set still fires - OVERLAP, exit 3",
+                    first(lines) == "OVERLAP" and rc == 3, f"rc={rc} {lines}")
+            c.check("   ...and the MAP: line says DECLARES NO PATHS, not `none` - the two "
+                    "situations are different and the author needs to know which one this is",
+                    any(ln.startswith("MAP: ") and "declares no paths" in ln for ln in lines),
+                    str(lines))
+            rc, lines = run(repo, "--paths", "docs/readme.md")
+            c.check("...and an ordinary docs path is still CLEAR under the fallback",
+                    first(lines) == "CLEAR" and rc == 0, f"rc={rc} {lines}")
+            # One surface with a path is a real map: no fallback, no MAP: line.
+            write_map(repo, {**{s: {"why": "n/a", "paths": []} for s in FIVE},
+                             "ci": {"why": "the gates", "paths": [".github/"]}})
+            rc, lines = run(repo, "--paths", "backend/auth/token.py")
+            c.check("⛔ ONE declared path is a real map: the generic `auth` fragment is OFF again",
+                    first(lines) == "CLEAR" and rc == 0 and not any(ln.startswith("MAP:") for ln in lines),
+                    f"rc={rc} {lines}")
+
+    if c.block("G · the doors actually call it - Step 1 on the plan, the tripwire on the diff"):
+        # A checker nothing invokes is a checker that never fires. Both quick lanes must carry
+        # BOTH calls: `--paths` at Step 1 (the planned set) and `--diff` at the eject tripwire
+        # (the real branch), because an under-declared Step 1 is caught only by the diff.
+        for door in ("smh-quick-dev.md", "cicd-quick-dev.md"):
+            body = (ROOT / ".agents" / "commands" / door).read_text(encoding="utf-8")
+            c.check(f"{door} calls scope_check.py with --paths (Step 1, the planned set)",
+                    re.search(r"scope_check\.py[^\n]*--paths", body) is not None, door)
+            c.check(f"{door} calls scope_check.py with --diff (the eject tripwire, the real branch)",
+                    re.search(r"scope_check\.py[^\n]*--diff", body) is not None, door)
+            calls = [ln.strip() for ln in body.splitlines()
+                     if "scope_check.py" in ln and "--" in ln]
+            c.check(f"{door} passes an explicit --repo on every call (never the cwd)",
+                    bool(calls) and all(re.search(r'--repo\s+"?\S', ln) for ln in calls), calls)
+
+    if c.block("H · registered where the house looks"):
         sidx = (ROOT / ".agents" / "scripts" / "INDEX.md").read_text(encoding="utf-8")
         ridx = (ROOT / ".agents" / "rules" / "INDEX.md").read_text(encoding="utf-8")
         c.check(".agents/scripts/INDEX.md carries a row for scope_check.py",

@@ -27,8 +27,9 @@ exactly `Resuming: lobby + Projects/<name>` before any git command.
 SCC-446):
 
 ```bash
+L=$(pwd)                                                             # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
 cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune
-python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"          # PC: python
+cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
 ```
 
 **Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —

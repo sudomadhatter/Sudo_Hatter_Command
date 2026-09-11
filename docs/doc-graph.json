@@ -7,7 +7,7 @@
     "files": 381,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 782,
+    "edges": 792,
     "external": 36,
     "ambiguous": 174,
     "dangling": 268,
@@ -319,22 +319,22 @@
     {
       "path": ".agents/commands/cicd-boot-sprint-memory.md",
       "in": 1,
-      "out": 2
+      "out": 3
     },
     {
       "path": ".agents/commands/cicd-clean-code-audit.md",
       "in": 1,
-      "out": 5
+      "out": 6
     },
     {
       "path": ".agents/commands/cicd-close-story-merge-tree.md",
       "in": 1,
-      "out": 10
+      "out": 11
     },
     {
       "path": ".agents/commands/cicd-code-review.md",
       "in": 1,
-      "out": 6
+      "out": 7
     },
     {
       "path": ".agents/commands/cicd-create-epic-sprint.md",
@@ -344,12 +344,12 @@
     {
       "path": ".agents/commands/cicd-dev-story-tests.md",
       "in": 1,
-      "out": 12
+      "out": 13
     },
     {
       "path": ".agents/commands/cicd-e2e.md",
       "in": 1,
-      "out": 1
+      "out": 2
     },
     {
       "path": ".agents/commands/cicd-label-tasks.md",
@@ -389,12 +389,12 @@
     {
       "path": ".agents/commands/cicd-prune-worktree.md",
       "in": 1,
-      "out": 3
+      "out": 4
     },
     {
       "path": ".agents/commands/cicd-push-e2e.md",
       "in": 3,
-      "out": 5
+      "out": 6
     },
     {
       "path": ".agents/commands/cicd-quick-dev.md",
@@ -404,7 +404,7 @@
     {
       "path": ".agents/commands/cicd-resume.md",
       "in": 1,
-      "out": 3
+      "out": 4
     },
     {
       "path": ".agents/commands/cicd-self-audit.md",
@@ -419,7 +419,7 @@
     {
       "path": ".agents/commands/cicd-write-story-tests.md",
       "in": 1,
-      "out": 5
+      "out": 6
     },
     {
       "path": ".agents/commands/dev.md",
@@ -738,7 +738,7 @@
     },
     {
       "path": ".agents/rules/command-shape.md",
-      "in": 16,
+      "in": 26,
       "out": 4
     },
     {
@@ -2176,6 +2176,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/commands/cicd-boot-sprint-memory.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/commands/cicd-clean-code-audit.md",
       "to": ".agents/rules/code-standards.md",
       "kind": "ref"
@@ -2193,6 +2198,11 @@
     {
       "from": ".agents/commands/cicd-clean-code-audit.md",
       "to": ".agents/rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-clean-code-audit.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -2232,6 +2242,11 @@
     },
     {
       "from": ".agents/commands/cicd-close-story-merge-tree.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-close-story-merge-tree.md",
       "to": ".agents/templates/project_overview_guide.md",
       "kind": "ref"
     },
@@ -2263,6 +2278,11 @@
     {
       "from": ".agents/commands/cicd-code-review.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-code-review.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -2347,12 +2367,22 @@
     },
     {
       "from": ".agents/commands/cicd-dev-story-tests.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-dev-story-tests.md",
       "to": ".agents/rules/jira.md",
       "kind": "ref"
     },
     {
       "from": ".agents/commands/cicd-e2e.md",
       "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-e2e.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -2487,6 +2517,11 @@
     },
     {
       "from": ".agents/commands/cicd-prune-worktree.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-prune-worktree.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
@@ -2513,6 +2548,11 @@
     {
       "from": ".agents/commands/cicd-push-e2e.md",
       "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-push-e2e.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -2593,6 +2633,11 @@
     {
       "from": ".agents/commands/cicd-resume.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-resume.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -2688,6 +2733,11 @@
     {
       "from": ".agents/commands/cicd-write-story-tests.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-write-story-tests.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {

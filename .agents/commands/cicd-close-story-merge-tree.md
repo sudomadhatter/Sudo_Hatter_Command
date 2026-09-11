@@ -61,8 +61,9 @@ global memory dir.
 SCC-446):
 
 ```bash
+L=$(pwd)                                                             # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
 cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune
-python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"          # PC: python
+cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
 ```
 
 **Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
@@ -352,20 +353,23 @@ for any other reason made park redundant and filled that listing with landed-and
 story WAS parked, its branch is already on origin and Step 5 deletes it there.
 
 - **`main` is untouched.** Only Daniel, directly or via `/cicd-push-e2e`.
-- **Report** the branch, the commit range that landed, and the epic-branch sha — same into the walkthrough's
-  `## Your Actions` (Step 1 wrote the section; this is the line it was waiting for).
-- ⛔ **The walkthrough rides the PR — commit it on the story branch BEFORE the PR opens.** Everything
-  Step 3 puts in the walkthrough (the merge-gate totals above, the landing line) is written **after**
-  Step 2's commit, so write those lines, commit them on the story branch, and only then run Arm A's
-  fence. If the walkthrough must change after the PR is open (a landing line with the merge sha), commit
-  it and push the story branch again — the PR picks the commit up and the checks re-run; there is no
-  second landing and never a `HEAD:epic/` push:
+- **Report** the branch, the commit range that landed, and the merge sha — **in chat and in Step 4's
+  Dev Record, not in the walkthrough.** The walkthrough's landing line is written before the PR opens
+  and carries only what is knowable then: the branch, the range, and the PR URL. The merge row in
+  `## Your Actions` (Step 1 wrote it) needs no sha typed into it at all — `finish` computes whether it
+  holds from the repo's own ancestry (SCC-175), off `HEAD`, so the row is satisfied by the landing
+  having happened, never by a line an agent wrote about it.
+- ⛔ **The walkthrough rides the PR — commit it on the story branch BEFORE the PR opens, and it does
+  not change after.** Everything Step 3 puts in the walkthrough (the merge-gate totals above, the
+  landing line) is written **after** Step 2's commit, so write those lines, commit them on the story
+  branch, and only then run Arm A's fence.
 
-  ```bash
-  cd "<the story worktree>" && git add <the story walkthrough>
-  cd "<the story worktree>" && git commit -m "<KEY> docs(walkthrough): record the landing"
-  cd "<the story worktree>" && git push origin claude/<JIRA-KEY>-<story-slug>    # the PR head moves; re-watch the checks
-  ```
+  ⛔ **There is no post-merge walkthrough edit, because there is no road for one.** Once the PR is
+  merged its head branch is closed to further landings: another commit pushed to `claude/*` moves a
+  dead PR head, reaches the epic through nothing, re-runs checks on a branch Step 5 is about to
+  delete, and leaves the tree dirty for the prune. So a fact that only exists after the merge —
+  the merge sha above all — belongs in **Step 4's Dev Record**, which is filed after the landing
+  precisely so it can hold one. Never a second landing, and never a `HEAD:epic/` push.
 
   **A dirty tree here is not cosmetic — it reverses two of this command's own rules.** Step 5's
   `/cicd-prune-worktree` treats uncommitted work as data to preserve: it commits the tree and runs
@@ -400,6 +404,11 @@ python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <id> --projec
        --followon "<what is still owed, or the deferral>" \
        --evidence "<suite totals @ sha>" --closing --apply
 ```
+
+⛔ **`--outcome`'s `@ <sha>` is the merge sha, and this is its ONLY home.** It does not exist until
+Arm A's `gh pr merge` returns, by which time the walkthrough has already ridden the PR and cannot be
+amended (Step 3). Read it now — `cd "<the story worktree>" && git rev-parse origin/epic/<JIRA-KEY>-<slug>`
+after a `git fetch origin` — and put it here, where the record is filed after the landing on purpose.
 
 `--closing` also **clears a `Bug` flag**. A ticket arrives here typed `Bug` when something found it
 broken and pulled it back out of `Done` — an audit that traced a live bug to it, or the operator by

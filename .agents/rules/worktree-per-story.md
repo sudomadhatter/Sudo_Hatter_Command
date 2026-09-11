@@ -242,7 +242,8 @@ Close-out runs **inside the worktree**, so its `sprint-status.yaml`, `active-con
 edits ride the story branch and land with the story — instead of sitting in the shared tree waiting to
 be hunk-picked out of somebody else's diff. The landing sequence itself is in `git-policy.md`
 ("The landing"): merge `origin/epic/<JIRA-KEY>-<slug>` into the story branch *inside the worktree*, then
-`git push origin HEAD:epic/<JIRA-KEY>-<slug>`. Never check out the epic branch in the shared checkout to merge.
+push the story branch as the head of a pull request **into** the epic. Never check out the epic branch
+in the shared checkout to merge, and never push `HEAD:epic/…` — the epic's ruleset refuses it.
 
 The shared checkout needs **no reconcile after a landing** — it stands on `main`, which only moves when
 the epic merges via `/cicd-push-e2e`. (Under the retired `main_debug` model the shared checkout fell one

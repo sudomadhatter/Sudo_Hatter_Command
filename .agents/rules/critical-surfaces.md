@@ -44,10 +44,17 @@ to that repo says so in its `why` and lists nothing, so a reader sees the decisi
     "billing": {"why": "…", "paths": ["backend/routers/entitlement.py", "backend/services/cost_meter.py"]},
     "rules":   {"why": "…", "paths": ["firebase/firestore.rules", "firebase/storage.rules", "firebase.json"]},
     "answers": {"why": "…", "paths": ["backend/agents/specialist/", "backend/tools/librarian.py"]},
-    "ci":      {"why": "…", "paths": [".github/"]}
+    "ci":      {"why": "…", "paths": [".github/", ".agents/critical-surfaces.json",
+                                      ".agents/scripts/scope_check.py",
+                                      ".agents/rules/critical-surfaces.md"]}
   }
 }
 ```
+
+⛔ **The `ci` surface of every map lists the LINE ITSELF** — the map, `scope_check.py`, and this
+rule. Without those three rows a quick lane can edit or empty the surface list, the checker, or this
+page and still read `CLEAR`, which is the one thing § Adding a surface forbids. A line that can
+widen itself is not a line, and the enforcement is a row, not a sentence.
 
 **A path ending in `/` is a prefix; anything else is an exact repo-relative file.** That is the
 convention AviationChat's `classify_changes.py` and the lobby's `sop_currency.py` already use, and
@@ -56,6 +63,11 @@ it is what keeps `backend-notes/` from matching `backend/`.
 **Project law stays in the project** (`project-law.md`). The lobby's script reads the map; it does
 not carry AviationChat's paths. The lobby's own map lists its gates under `ci` and says the other
 four do not apply. AviationChat's map and the skeleton's placeholder map are rows on AVCH-152.
+
+**A map that declares no paths at all is treated as no map, and says so** — the skeleton's
+placeholder ships all five surfaces empty, and a map matching nothing while suppressing the
+fallback would be strictly weaker than having no file. It prints
+`MAP: <path> declares no paths for <repo> - generic surfaces only`.
 
 **A repo with no map is loud, not silent.** The script falls back to a generic set — `.github/`,
 `.githooks/`, `.agents/hooks/`, `.agents/scripts/git-hooks/`, `*.rules`, `firebase.json`, and the
@@ -101,9 +113,10 @@ only the operator can write.
 
 - **Step 1 of both quick lanes** (`/smh-quick-dev`, `/cicd-quick-dev`): the `--paths` call on the
   planned set. `CLEAR` → print the line and continue. `OVERLAP` → the stop above.
-- **The eject tripwire** (the close-out's pre-landing check: `/smh-close-task-merge-tree` in the
-  lobby, `/cicd-close-story-merge-tree` in a project): the `--diff` call on the real branch —
-  `--diff origin/main` for a Task lane, `--diff origin/epic/<KEY>-…` for a story lane. An `OVERLAP`
+- **The eject tripwire — Step 5 of the same two doors, before the hand-off** (not the close-out:
+  the close-out doors do not call this script, and saying they did sent a reader to the wrong
+  door): the `--diff` call on the real branch — `--diff origin/main` for a Task lane or a TRUNK
+  story lane, `--diff origin/epic/<KEY>-…` for a story lane on a FULL or LIGHT epic. An `OVERLAP`
   the plan carries no `Scope override` for **ejects** the lane to the full ceremony and re-arms the
   plan-first gate. An overlap the plan does carry an override for is printed and passed. An
   under-declared Step 1 is caught by the diff, not by the agent's memory.

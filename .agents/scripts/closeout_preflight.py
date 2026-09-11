@@ -29,6 +29,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gate_receipt as gr
 import walkthrough_roster as roster
 import wf_common as wf
+# ONE definition of "the product" in this repo, never re-typed here. Import-safe: that module's
+# work is guarded by `if __name__ == "__main__"`. ⛔ PRODUCT_DIRS, never DEPLOY_DIRS — the
+# difference is a shipped incident (SCC-118); `.github/` is not product code.
+from task_preflight import PRODUCT_DIRS
 
 def integration_branch(project: Path) -> str:
     """The landing target for a story: its epic branch (`epic/*`), falling back to `main`.
@@ -298,12 +302,31 @@ def _stale_against_sha(rep, project: Path, rel, sha: str, what: str) -> None:
     `backend/` commits — the exact question the sha was made REQUIRED to answer. Written as a
     helper rather than a second copy because the two branches asking the same question of the
     same value is precisely how the verdict path and `task_preflight` are already kept from
-    drifting."""
-    diff = wf.git(["diff", "--name-only", f"{sha}..HEAD", "--",
-                   "backend/", "frontend/"], project)
+    drifting.
+
+    ⛔ THE PATHSPEC IS DERIVED, NEVER TWO HARDCODED NAMES (SCC-446 review, reproduced). This
+    check read `backend/ frontend/` only, so a post-approval commit to `firebase/`, `functions/`,
+    `mobile/` or a root `Dockerfile` moved nothing it could see — and a project with NEITHER of
+    those two directories (RAG_Pipeline_AC, OpenChat-Openrouter) had a check that could not fail
+    at all: git exits 0 with empty output on a pathspec matching nothing, which reads exactly
+    like "no code moved". `PRODUCT_DIRS` is the house's single definition; a repo carrying none
+    of them falls back to the whole tree minus the planning surfaces, so the question is always
+    asked of something."""
+    have = [d for d in PRODUCT_DIRS if (project / d).is_dir()]
+    pathspec = have or [":(exclude)_artifacts/", ":(exclude)_bmad-output/"]
+    diff = wf.git(["diff", "--name-only", f"{sha}..HEAD", "--", *pathspec], project)
     changed = [ln for ln in diff.stdout.splitlines() if ln.strip()]
     if diff.returncode != 0:
-        rep.warn("artifacts", f"{rel}: {what} SHA {sha[:8]} not in this repo")
+        # ⛔ ASYMMETRIC ON PURPOSE, and the asymmetry is the whole point (SCC-446 review). On the
+        # verdict path an unresolvable sha is survivable because `roster.judge` independently
+        # proves the review ran, so the warn is a second opinion on a record that has one. The
+        # quick lane has NO roster by design: that single line is the entire evidence of the
+        # operator's approval, and a hex string pointing at nothing is not evidence. A warn
+        # leaves exit 1, which this door's own text calls non-blocking.
+        say = rep.warn if what == "reviewed" else rep.err
+        say("artifacts", f"{rel}: {what} SHA {sha[:8]} not in this repo"
+                         + ("" if what == "reviewed" else
+                            " - the quick lane's only record of approval points at no commit"))
     elif changed:
         rep.err("artifacts", f"{rel}: {len(changed)} code file(s) changed since the "
                              f"{what} SHA - {'the verdict is STALE, re-gate' if what == 'reviewed' else 'the approval is STALE, re-approve'}")

@@ -51,8 +51,9 @@ Then **the epic mode, from the git query, never from belief** (`git-policy.md` �
 SCC-446):
 
 ```bash
+L=$(pwd)                                                             # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
 cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune
-python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"          # PC: python
+cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
 ```
 
 **Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost.
@@ -332,7 +333,9 @@ everything written, discard nothing.
 - Write a **thin `walkthrough.md`** beside the plan. It carries `review-runtime:` (the Step 0.7
   header, one line, above everything else) → `## Task Checklist` → `## Evidence` (the assertion:
   the red line, then the green totals, the lint totals, the sha; the scope-check line; any
-  landing-order dependency from Step 0.5) → `## Your Actions` (errands only, never a decision).
+  landing-order dependency from Step 0.5) → `## Your Actions` (**required even when empty** — an
+  unchecked `- [ ]` is something only the operator can DECIDE and holds the ticket out of `Done`;
+  ⛔ never the ceremony's own steps, SCC-193, which `jira_feed.py check-actions` hard-refuses).
   Post clickable Markdown links to the plan and the walkthrough in the chat.
 - **`/cicd-code-review` runs only if the operator asks.** When it runs, it appends `## Code Review
   (<date>)` with its roster and its `Verdict: … @ <sha>` line exactly as on the full lane, and the

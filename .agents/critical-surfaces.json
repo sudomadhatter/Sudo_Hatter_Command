@@ -18,18 +18,35 @@
       "paths": []
     },
     "ci": {
-      "why": "the gates: a workflow, hook, preflight or permission edit changes what green means for every lane in every repo",
+      "why": "the gates: a workflow, hook, preflight, receipt, permission fence or gate test changes what green means for every lane in every repo - and the line itself, because a line that can widen itself is not a line",
       "paths": [
         ".github/",
         ".githooks/",
         ".agents/hooks/",
         ".agents/scripts/git-hooks/",
+        ".agents/scripts/tests/",
+        ".agents/permissions/",
         ".agents/scripts/main_write_gate.py",
         ".agents/scripts/task_preflight.py",
         ".agents/scripts/ship_preflight.py",
         ".agents/scripts/closeout_preflight.py",
-        ".agents/permissions/",
-        ".claude/settings.json"
+        ".agents/scripts/walkthrough_roster.py",
+        ".agents/scripts/verdict_receipt.py",
+        ".agents/scripts/gate_receipt.py",
+        ".agents/scripts/flight_recorder.py",
+        ".agents/scripts/sop_currency.py",
+        ".agents/scripts/hooks_armed.py",
+        ".agents/scripts/wf_common.py",
+        ".agents/scripts/permission_matchers.py",
+        ".agents/scripts/permission_render.py",
+        ".agents/scripts/claude_permissions_apply.py",
+        ".agents/scripts/antigravity_permissions_apply.py",
+        ".agents/scripts/zoo_permissions_apply.py",
+        ".claude/settings.json",
+        ".claude/settings.local.json",
+        ".agents/critical-surfaces.json",
+        ".agents/scripts/scope_check.py",
+        ".agents/rules/critical-surfaces.md"
       ]
     }
   }
