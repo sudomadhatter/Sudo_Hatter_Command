@@ -4,15 +4,15 @@
     "docs"
   ],
   "counts": {
-    "files": 380,
+    "files": 381,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 770,
+    "edges": 776,
     "external": 35,
     "ambiguous": 174,
-    "dangling": 271,
+    "dangling": 272,
     "broken_paths": 63,
-    "unresolved_names": 208,
+    "unresolved_names": 209,
     "unresolvable": 9
   },
   "nodes": [
@@ -709,7 +709,7 @@
     {
       "path": ".agents/rules/INDEX.md",
       "in": 8,
-      "out": 31
+      "out": 32
     },
     {
       "path": ".agents/rules/agent-memory-is-long-term-only.md",
@@ -752,6 +752,11 @@
       "out": 1
     },
     {
+      "path": ".agents/rules/critical-surfaces.md",
+      "in": 5,
+      "out": 1
+    },
+    {
       "path": ".agents/rules/dependency-awareness.md",
       "in": 1,
       "out": 0
@@ -759,7 +764,7 @@
     {
       "path": ".agents/rules/git-policy.md",
       "in": 58,
-      "out": 4
+      "out": 5
     },
     {
       "path": ".agents/rules/jira.md",
@@ -808,7 +813,7 @@
     },
     {
       "path": ".agents/rules/project-law.md",
-      "in": 14,
+      "in": 15,
       "out": 4
     },
     {
@@ -854,7 +859,7 @@
     {
       "path": ".agents/scripts/INDEX.md",
       "in": 3,
-      "out": 6
+      "out": 7
     },
     {
       "path": ".agents/scripts/tests/fixtures/avch58_your_actions.md",
@@ -1819,12 +1824,12 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 32,
-      "out": 66
+      "out": 67
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 21
+      "out": 22
     },
     {
       "path": "docs/code-review-graph.md",
@@ -3542,6 +3547,11 @@
     },
     {
       "from": ".agents/rules/INDEX.md",
+      "to": ".agents/rules/critical-surfaces.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/INDEX.md",
       "to": ".agents/rules/dependency-awareness.md",
       "kind": "ref"
     },
@@ -3726,6 +3736,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/rules/critical-surfaces.md",
+      "to": ".agents/rules/project-law.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/rules/git-policy.md",
       "to": ".agents/rules/jira.md",
       "kind": "ref"
@@ -3738,6 +3753,11 @@
     {
       "from": ".agents/rules/git-policy.md",
       "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/git-policy.md",
+      "to": ".agents/rules/critical-surfaces.md",
       "kind": "ref"
     },
     {
@@ -3928,6 +3948,11 @@
     {
       "from": ".agents/rules/zoo-team.md",
       "to": ".agents/rules/operator-profile.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/scripts/INDEX.md",
+      "to": ".agents/rules/critical-surfaces.md",
       "kind": "ref"
     },
     {
@@ -5212,6 +5237,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/critical-surfaces.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
@@ -5363,6 +5393,11 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/critical-surfaces.md",
       "kind": "ref"
     },
     {
@@ -6354,12 +6389,12 @@
       "target": "walkthrough.md"
     },
     {
-      "from": ".agents/rules/git-policy.md",
-      "target": "active-context.md"
+      "from": ".agents/rules/critical-surfaces.md",
+      "target": "author-guide.md"
     },
     {
       "from": ".agents/rules/git-policy.md",
-      "target": "critical-surfaces.md"
+      "target": "active-context.md"
     },
     {
       "from": ".agents/rules/git-policy.md",
@@ -6412,6 +6447,10 @@
     {
       "from": ".agents/scripts/INDEX.md",
       "target": "CHANGELOG.md"
+    },
+    {
+      "from": ".agents/scripts/INDEX.md",
+      "target": "author-guide.md"
     },
     {
       "from": ".agents/scripts/INDEX.md",

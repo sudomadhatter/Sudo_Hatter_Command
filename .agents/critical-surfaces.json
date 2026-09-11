@@ -1,0 +1,36 @@
+{
+  "_comment": "The lobby's critical surfaces, read by .agents/scripts/scope_check.py (SCC-443). A path ending in / is a prefix; anything else is an exact repo-relative file. Five keys are always present; a surface that does not apply here says so in its why and lists nothing.",
+  "surfaces": {
+    "auth": {
+      "why": "the lobby has no auth or session code - nothing to list",
+      "paths": []
+    },
+    "billing": {
+      "why": "the lobby bills nothing - nothing to list",
+      "paths": []
+    },
+    "rules": {
+      "why": "the lobby has no Firestore or Storage rules and no data topology - nothing to list",
+      "paths": []
+    },
+    "answers": {
+      "why": "the lobby serves no FAA-facing answers - nothing to list",
+      "paths": []
+    },
+    "ci": {
+      "why": "the gates: a workflow, hook, preflight or permission edit changes what green means for every lane in every repo",
+      "paths": [
+        ".github/",
+        ".githooks/",
+        ".agents/hooks/",
+        ".agents/scripts/git-hooks/",
+        ".agents/scripts/main_write_gate.py",
+        ".agents/scripts/task_preflight.py",
+        ".agents/scripts/ship_preflight.py",
+        ".agents/scripts/closeout_preflight.py",
+        ".agents/permissions/",
+        ".claude/settings.json"
+      ]
+    }
+  }
+}
