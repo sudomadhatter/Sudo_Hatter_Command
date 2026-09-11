@@ -264,8 +264,9 @@ is pruned later, by `/cicd-push-e2e`, after the epic merges to `main`.
 - NEVER branch a story worktree from `main` — stories branch from the epic branch, FULL or LIGHT.
   ⭐ **The one exception is a project in TRUNK mode, where no epic branch exists and `origin/main` IS
   the base** (SCC-423, `git-policy` § The epic's mode). It is not a judgement call: `git for-each-ref
-  'refs/remotes/origin/epic/*'` returning a name IS a live epic (its third token, `-epic-` or
-  `-light-epic-`, says FULL or LIGHT); returning nothing for this project IS trunk mode. In every
+  'refs/remotes/origin/epic/*'` returning a name IS a live epic (that name CONTAINING
+  `-light-epic-` says LIGHT, not containing it says FULL); returning nothing for this project IS
+  trunk mode. In every
   project that has a live epic branch, this hard stop binds exactly as written.
 - NEVER `git add -A` / `.` / `-u`, inside a worktree or out.
 - NEVER check out the epic branch in the shared checkout to merge a story — land from inside the

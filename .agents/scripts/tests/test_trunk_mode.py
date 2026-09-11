@@ -5,8 +5,9 @@ phase 1 ships to `main`, and everything after it is built **from `main`** — st
 `origin/main`, landing on `main` through a pull request the operator merges. No epic branch.
 
 SCC-416 gave this system TWO epic modes and made the switch mechanical; SCC-441 named them FULL
-and LIGHT, read from the third token of the branch name (`-epic-` or `-light-epic-`, right after
-the key) by every door, impossible to drift from what the server enforces. This is the third, and
+and LIGHT, read by every door from whether the branch NAME CONTAINS `-light-epic-` — a substring,
+not a token position, because that is the same test the server's `contains()` runs, which is what
+makes it impossible to drift from what the server enforces. This is the third, and
 its switch is the same shape read one level up: **there is no `origin/epic/<KEY>-*` at all.** An
 agent never chooses the mode and never infers it from prose.
 
@@ -121,7 +122,21 @@ def main() -> int:
                     "the three modes are the whole switch")
         for shape in ("epic/<KEY>-epic-<N>-<slug>", "epic/<KEY>-light-epic-<N>-<slug>"):
             c.check(f"git-policy.md names the branch shape: {shape}",
-                    shape in policy, "the mode is the third token, right after the key")
+                    shape in policy, "the mode is carried in the branch NAME")
+        # ⛔ THE TEST IS A SUBSTRING SEARCH, SO THE LAW MUST SAY SUBSTRING (SCC-441 review).
+        # `classify()` and CI's `contains()` both ask whether the name CONTAINS `-light-epic-`.
+        # The law said "the third token of the branch name" — and that is false even of its own
+        # canonical example: split `SCC-441-light-epic-2-x` on `-` and the third token is
+        # `light`, not `light-epic`. A reader applying the positional rule to
+        # `epic/SCC-9-epic-2-light-epic-migration` answers FULL while every door answers LIGHT.
+        # Nothing held the wording, so this does.
+        c.check("⛔ git-policy.md states the switch as CONTAINMENT, matching classify() and "
+                "the server's contains() - never as a token POSITION",
+                re.search(r"CONTAINS?\s+`-light-epic-`", policy, re.I) is not None,
+                "expected the law to say the name CONTAINS `-light-epic-`")
+        c.check("⛔ ...and the retired positional claim is gone from the law",
+                re.search(r"third token", policy, re.I) is None,
+                "`third token` is wrong about its own canonical LIGHT name")
         policy_fenced = fenced(policy)
         c.check("the mode token `-light-epic-` sits INSIDE the switch fence, beside `origin/epic/`",
                 any(SWITCH.search(f) and "-light-epic-" in f for f in fences(policy)),

@@ -75,8 +75,9 @@ trigger: model_decision
 ### The epic's mode is decided at kickoff, and a live epic freezes `main` for its scope (SCC-416, SCC-423, SCC-441)
 
 When the epic branch is cut, the operator decides once — **FULL**, **LIGHT**, or **TRUNK** — and the
-answer is readable from git, never from prose: the third token of the branch name, right after the
-key (`-epic-` or `-light-epic-`), or **no epic branch at all**. Every door reads it from there; an
+answer is readable from git, never from prose: **the branch name CONTAINS `-light-epic-`** and the
+epic is LIGHT, it does not and the epic is FULL, or there is **no epic branch at all** and the
+project is TRUNK. Every door reads it from there; an
 agent never chooses it and never changes it. The mode is chosen once, by the operator, at kickoff
 (`/cicd-create-epic-sprint` asks); no door prompts to cut a light epic mid-flight.
 

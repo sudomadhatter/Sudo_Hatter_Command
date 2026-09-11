@@ -488,8 +488,11 @@ current with `main`. A LIGHT epic is the cheap shape, for a project not yet in p
 whose landings are UI and docs: every story still lands by pull request into the epic, but only the
 two fast checks run on it (Backend (Python), Frontend (Node.js)); the two E2E jobs skip on the
 server, and E2E runs once, at the end, when the epic goes to `main` — or whenever you ask for it with
-`/cicd-e2e`. The mode is the third token of the branch name, right after the ticket key: a FULL epic
-is `epic/AVCH-131-epic-25-tool-menu`, a LIGHT one is `epic/AVCH-131-light-epic-25-tool-menu`. Every
+`/cicd-e2e`. The mode is in the branch name: a name **containing `-light-epic-`** is LIGHT, one
+without it is FULL. A FULL epic is `epic/AVCH-131-epic-25-tool-menu`, a LIGHT one is
+`epic/AVCH-131-light-epic-25-tool-menu`. It is a substring, not a position, because that is exactly
+what the server's own `contains()` check reads — so the name cannot mean one thing here and another
+on GitHub. Every
 door reads the mode from that name, so it cannot drift from what the server enforces, and you choose
 it once, here — no door ever offers to cut a light epic mid-flight. In **both** of those modes, while
 the epic is live, `main` is frozen for everything the epic changes — a chore lane that touches a file
