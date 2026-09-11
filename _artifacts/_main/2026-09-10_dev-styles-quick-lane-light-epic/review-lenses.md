@@ -10,6 +10,8 @@ Each repo-reading lens ran in its own isolated worktree copy cut at `dd5a5c42`; 
 
 ---
 
+> Editorial note (2026-09-11, the fix lane): three paths the lenses quoted are TEMP-REPO FIXTURES or hypotheticals, not files in this tree - a test named test_foo (§1), a docs file named mine and a temp repo's CI workflow (§5). They are prefixed `<fixture>/` in place so `check_links.py` reads them as shapes rather than claims. No other character of the reports changed.
+
 ## 1. Blind Hunter (diff only, no repo access)
 
 I have read the full diff (all 13,998 lines) plus run two mechanical cross-checks over it. Here is my report.
@@ -38,7 +40,7 @@ Corroborating: the unrenamed twin `smh-dev-task-tests.md` (diff line 1541 of the
 **severity: important** · **confidence: 0.8** · `.agents/critical-surfaces.json` (diff line 3075) × `.agents/commands/smh-quick-dev.md` Step 3 (diff line 2569) — *the lobby quick lane's mandatory RED file lives on a surface the lane's own scope check refuses*
 
 1. The lobby's map declares `".agents/scripts/tests/"` under the `ci` surface.
-2. `scope_check.pattern_hit` treats a trailing `/` as a prefix (diff 4367‑4373), so `.agents/scripts/tests/test_foo.py` matches → `OVERLAP`, exit 3.
+2. `scope_check.pattern_hit` treats a trailing `/` as a prefix (diff 4367‑4373), so `<fixture>/.agents/scripts/tests/test_foo.py` matches → `OVERLAP`, exit 3.
 3. `/smh-quick-dev` **Step 3** requires, for any work on a script: *"a real test in `.agents/scripts/tests/test_<name>.py`, run via `run_all.py`"*.
 4. Therefore Step 1 (`--paths <the planned set>`, which must include that test file) returns `OVERLAP` for **every** script-shaped quick-lane task — a soft stop only an operator sentence lifts. If the agent omits the test from the planned set, Step 5's `--diff origin/main` sees the committed test file and **ejects** the finished lane to `/smh-dev-task-tests`.
 5. The door's own Step 1 prose lists the lobby surface as *"`.github/`, the hooks, the preflights, the permission fence"* (diff 2449‑2450) and never mentions the test directory, so the agent is surprised either at Step 1 or after the work is done.
@@ -400,7 +402,7 @@ Missing tier: a behavioural unit case, not a source grep. The check is `"overrid
 Either is a real, agent-passable way to make the quick lane's only line over auth/billing/CI print `CLEAR`. Suggested test: run the script with `--force`, `--yes`, `--skip`, `--no-check` and an env-var sweep against a path that must OVERLAP, and assert every invocation still exits 3 with `OVERLAP` on line 1 (behavioural, so it cannot be evaded by naming the flag something other than "override").
 
 **severity: important** · `.agents/scripts/scope_check.py:180` (`diff_paths`) · **The merge-base is the whole point of `--diff` and no test distinguishes it from the two-dot diff**
-Missing tier: a unit case whose fixture advances `main` after the fork. The module docstring says "never the two-dot range (`risk_seam.py` names the two-dot mistake as the expensive one)", but `test_scope_check.py` block E builds the branch and never moves `main`, so the two spellings are identical there. **Mutation:** `changed_since_fork(repo, "HEAD", fork)` → `changed_since_fork(repo, "HEAD", base)` — **SURVIVED** `test_scope_check.py` (80/80) and the full suite (86/86). **Reproduced behaviour difference** in a repo where the lane touched only `docs/mine.md` and `main` then landed `.github/workflows/ci.yml`:
+Missing tier: a unit case whose fixture advances `main` after the fork. The module docstring says "never the two-dot range (`risk_seam.py` names the two-dot mistake as the expensive one)", but `test_scope_check.py` block E builds the branch and never moves `main`, so the two spellings are identical there. **Mutation:** `changed_since_fork(repo, "HEAD", fork)` → `changed_since_fork(repo, "HEAD", base)` — **SURVIVED** `test_scope_check.py` (80/80) and the full suite (86/86). **Reproduced behaviour difference** in a repo where the lane touched only `<fixture>/docs/mine.md` and `main` then landed `<fixture>/.github/workflows/ci.yml`:
 - HEAD: `CLEAR` / `DIFF: 1 file(s) vs main`, exit 0
 - mutant: `OVERLAP` / `DIFF: 2 file(s) vs main` / `.github/workflows/ci.yml  ci: …`, exit 3
 
