@@ -92,13 +92,15 @@ local ref is a cache a sibling lane has already moved past — and **the base is
 L=$(pwd)                                                     # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
 cd "$PROJECT_ROOT" && git worktree list                      # reuse this fix's tree if it exists
 cd "$PROJECT_ROOT" && git fetch origin                       # ⛔ the base is origin/…, never a bare local ref
-# story lane, FULL or LIGHT epic — off the story's EPIC branch (the name Step 0 printed):
-cd "$PROJECT_ROOT" && git worktree add .claude/worktrees/<slug> -b claude/<KEY>-<slug> origin/epic/<KEY>-<mode>-<N>-<epic-slug>
+# story lane, FULL or LIGHT epic — off the story's EPIC branch (the name Step 0 printed). ⛔ `--no-track`: an
+# origin/… start-point would set the lane's upstream to the EPIC, and a bare `git push` then suggests the
+# banned `HEAD:epic/` push (worktree-per-story G3):
+cd "$PROJECT_ROOT" && git worktree add --no-track .claude/worktrees/<slug> -b claude/<KEY>-<slug> origin/epic/<KEY>-<mode>-<N>-<epic-slug>
 # story lane, TRUNK — no epic branch exists; the story lane is cut from origin/main and lands on main by PR (SCC-423):
-cd "$PROJECT_ROOT" && git worktree add .claude/worktrees/<slug> -b claude/<KEY>-<slug> origin/main
+cd "$PROJECT_ROOT" && git worktree add --no-track .claude/worktrees/<slug> -b claude/<KEY>-<slug> origin/main
 # ad-hoc lane — no story applies (a truly ad-hoc fix outside any sprint): git-policy.md's chore lane, off main:
-cd "$PROJECT_ROOT" && git worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
-cd "$PROJECT_ROOT"/.claude/worktrees/<slug> && git branch --unset-upstream   # an origin/… start-point sets upstream to the BASE branch
+cd "$PROJECT_ROOT" && git worktree add --no-track .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
+cd "$PROJECT_ROOT"/.claude/worktrees/<slug> && git branch --unset-upstream   # belt and braces: no upstream until the lane's own first push
 cd "$L" && python3 .agents/scripts/link-worktree-assets.py "$PROJECT_ROOT"/.claude/worktrees/<slug>   # PC: `python`  ⛔ the script lives in the LOBBY — the cd "$L" is what finds it after the cds above
 BRANCH=$(cd "$PROJECT_ROOT"/.claude/worktrees/<slug> && git rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
