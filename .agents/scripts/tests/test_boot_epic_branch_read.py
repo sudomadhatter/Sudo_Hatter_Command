@@ -50,11 +50,15 @@ REQUIRED: tuple[tuple[str, re.Pattern[str], str, str], ...] = (
     ("epic-read", ANCHOR, _SECTION,
      "a `git show <epic-ref>:…/sprint-status.yaml` — close-out writes the YAML INSIDE the "
      "story worktree, so the landed truth is on the epic branch, not in the checkout"),
-    ("ref-discovery", re.compile(r"epic_mode\.py\s+--repo\s+\S"), _SECTION,
+    ("ref-discovery", re.compile(r"""epic_mode\.py\s+--repo\s+["']\S"""), _SECTION,
      "`python3 .agents/scripts/epic_mode.py --repo \"$PROJECT_ROOT\"` — the epic ref is "
      "DISCOVERED by the one query every door shares (SCC-446), which reads ORIGIN only "
      "(a local epic head is only as fresh as the last pull) and prints the mode word first. "
-     "A door that re-types its own `for-each-ref` glob is the drift this script retired"),
+     "A door that re-types its own `for-each-ref` glob is the drift this script retired. "
+     "⛔ The QUOTES are load-bearing and pinned, exactly as the retired `for-each-ref` "
+     "refspec's were: unquoted, a `PROJECT_ROOT` holding a space word-splits and argparse "
+     "answers `unrecognized arguments` on stderr with exit 2, so the door's mode line "
+     "becomes a usage message and no mode is ever printed (SCC-446 review)"),
     ("no-epic-fallback", re.compile(r"no epic branch|between epics", re.I), _AFTER,
      "the project that has NO epic branch — there the checkout copy is the authority, and a "
      "boot that errors out instead of saying so is a worse boot than the stale one"),
@@ -173,6 +177,8 @@ MUTANTS: tuple[tuple[str, str, str], ...] = (
      "git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'"),
     # cwd is not intent: the script REQUIRES --repo, and a call without it exits 2
     ("ref-discovery", 'epic_mode.py --repo "$PROJECT_ROOT"', "epic_mode.py"),
+    # the QUOTES alone: a path with a space word-splits and argparse exits 2 on stderr
+    ("ref-discovery", '--repo "$PROJECT_ROOT"', "--repo $PROJECT_ROOT"),
     # the line dropped altogether: a boot that never asks which epic it is on
     ("ref-discovery", 'python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"\n', ""),
     ("no-epic-fallback", "No epic branch (a project between epics) → the checkout copy IS "

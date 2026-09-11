@@ -289,6 +289,26 @@ _QUICK_LANE_RE = re.compile(
     re.MULTILINE | re.IGNORECASE)
 
 
+def _stale_against_sha(rep, project: Path, rel, sha: str, what: str) -> None:
+    """Did code move since the tree this approval was given on? ONE implementation, two
+    callers — the `Verdict: … @ <sha>` path and the quick lane's record line.
+
+    ⛔ SCC-446 review: the quick-lane branch captured its sha, printed eight characters of it
+    and dropped it, so a walkthrough the operator approved at one tree read clean after later
+    `backend/` commits — the exact question the sha was made REQUIRED to answer. Written as a
+    helper rather than a second copy because the two branches asking the same question of the
+    same value is precisely how the verdict path and `task_preflight` are already kept from
+    drifting."""
+    diff = wf.git(["diff", "--name-only", f"{sha}..HEAD", "--",
+                   "backend/", "frontend/"], project)
+    changed = [ln for ln in diff.stdout.splitlines() if ln.strip()]
+    if diff.returncode != 0:
+        rep.warn("artifacts", f"{rel}: {what} SHA {sha[:8]} not in this repo")
+    elif changed:
+        rep.err("artifacts", f"{rel}: {len(changed)} code file(s) changed since the "
+                             f"{what} SHA - {'the verdict is STALE, re-gate' if what == 'reviewed' else 'the approval is STALE, re-approve'}")
+
+
 _LEGACY_REL = "_bmad-output/implementation-artifacts"
 
 
@@ -360,6 +380,11 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> set[str]:
                 rep.info("artifacts", f"{rel}: no `Verdict:` line - quick lane, no review was "
                                       f"asked for; walkthrough approved by the operator @ "
                                       f"{q.group(1)[:8]} (SCC-444)")
+                # ⛔ The operator's `approved` IS this lane's verdict, so it is evidence about
+                # exactly ONE tree — the same staleness question the verdict path asks below,
+                # asked of the same value. Skipping it let a quick lane land code the operator
+                # never saw (SCC-446 review).
+                _stale_against_sha(rep, project, rel, q.group(1), "approved")
                 continue
             rep.err("artifacts", f"{rel}: no `Verdict:` line - "
                                  f"the review step has not run (or did not record it)")
@@ -387,14 +412,7 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> set[str]:
                                   f"CANNOT be checked; re-record as `Verdict: {verdict} @ <sha>`")
         if sha:
             # A verdict is only evidence about the tree it was taken on.
-            diff = wf.git(["diff", "--name-only", f"{sha}..HEAD", "--",
-                           "backend/", "frontend/"], project)
-            changed = [ln for ln in diff.stdout.splitlines() if ln.strip()]
-            if diff.returncode != 0:
-                rep.warn("artifacts", f"{rel}: reviewed SHA {sha[:8]} not in this repo")
-            elif changed:
-                rep.err("artifacts", f"{rel}: {len(changed)} code file(s) changed since the "
-                                     f"reviewed SHA - the verdict is STALE, re-gate")
+            _stale_against_sha(rep, project, rel, sha, "reviewed")
     return claimed
 
 

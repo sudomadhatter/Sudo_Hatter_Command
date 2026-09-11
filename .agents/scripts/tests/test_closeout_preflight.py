@@ -1234,6 +1234,48 @@ def main() -> int:
             c.check("QL6 ...and it claims no verdict, so the receipt demand stays off (no gates "
                     "ERROR)", not rows(out, "gates", "ERROR"), f"gates={rows(out, 'gates')}")
 
+        # ── QL7-QL9 · SCC-446 review · THE APPROVAL SHA IS DEREFERENCED, not just printed ──
+        # The first cut captured the sha, printed eight characters of it and dropped it, so a
+        # walkthrough the operator approved at one tree read CLEAN after later `backend/`
+        # commits — while the `Verdict: … @ <sha>` path two branches down refused exactly that.
+        # The operator's `approved` IS this lane's verdict; it is evidence about ONE tree.
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, verdict=None, gates_id=None)
+            seed = git(repo, "rev-parse", "HEAD").stdout.strip()
+            (repo / WT).write_text(
+                "## Evidence\n\nReview: none - quick lane; walkthrough approved by the "
+                f"operator @ {seed}\n", encoding="utf-8")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            c.check("QL7 CONTROL approved at HEAD with no code moved since: no staleness ERROR",
+                    not [m for m in rows(out, "artifacts", "ERROR") if "STALE" in m],
+                    f"rc={rc} artifacts={rows(out, 'artifacts')}")
+
+            # ⛔ THE DEFECT ITSELF: code lands after the approval.
+            (repo / "backend/real.py").write_text("x = 2\n", encoding="utf-8")
+            git(repo, "add", "backend/real.py")
+            git(repo, "commit", "-qm", "SCC-11 feat: code the operator never approved")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            stale = [m for m in rows(out, "artifacts", "ERROR")
+                     if "STALE" in m and "approved" in m]
+            c.check("QL8 a code file changed since the approved SHA is a STALE ERROR - the "
+                    "quick lane's approval is checked exactly as a verdict is",
+                    len(stale) == 1, f"rc={rc} artifacts={rows(out, 'artifacts')}")
+
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, verdict=None, gates_id=None)
+            (repo / WT).write_text(
+                "## Evidence\n\nReview: none - quick lane; walkthrough approved by the "
+                "operator @ 64098847\n", encoding="utf-8")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            c.check("QL9 an approval SHA that is not a commit here is reported, never silently "
+                    "accepted (the verdict path's own warn, same words)",
+                    any("64098847" in m and "not in this repo" in m
+                        for m in rows(out, "artifacts", "WARN")),
+                    f"rc={rc} artifacts={rows(out, 'artifacts')}")
+
     return c.finish()
 
 
