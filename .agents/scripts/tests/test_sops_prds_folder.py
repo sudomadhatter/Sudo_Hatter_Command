@@ -159,6 +159,11 @@ DISCUSSED_AS_RETIRED = {
     # and why the flag is now the only way to run that pass. It was a thin alias for exactly
     # that flag, and its own body already told the operator to prefer the command that remains.
     "smh-slash-command-updating",  # retired by SCC-367 (marker on THIS line: CS-22 B is line-scoped)
+    # SCC-445 retired this on 2026-09-10: the lightweight lane (no plan, size verdicts) is replaced
+    # by the quick lane `/smh-quick-dev`. workflows_testing_SOP.md §9a names it once to say what
+    # replaced it and why (risk, not size), and the changelog's SCC-162 / SCC-302 / SCC-445 rows
+    # are the history of the door. Nothing tells the operator to RUN it.
+    "smh-quick-fix",  # retired by SCC-445
 }
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s#]+)")

@@ -1038,7 +1038,7 @@ def main() -> int:
             # `find_devrecord` filters by story id ON PURPOSE - its docstring: "so a ticket that
             # legitimately carries records for two ids does not have one overwrite the other" - and
             # both Task surfaces pass `--story <branch-slug>` (smh-close-task-merge-tree.md:236,
-            # smh-quick-dev.md:246), which changes per lane. A follow-on lane rides the ticket it
+            # smh-dev-task-tests.md:246), which changes per lane. A follow-on lane rides the ticket it
             # came from rather than minting a key, so N lanes -> N records is NORMAL.
             #
             # Counting records cannot tell "one lane posted twice" (the real defect, pinned by the
@@ -1564,7 +1564,7 @@ def main() -> int:
             # ⭐ "the board said no" and "I could not reach the board" are OPPOSITE instructions
             # - fix your key, versus try again later - and they shared exit 2 until the second
             # review pass. Worse, a missing binary escaped as an uncaught traceback (exit 1,
-            # which is not a documented code at all), while /smh-quick-dev's table read exit 2
+            # which is not a documented code at all), while /smh-dev-task-tests's table read exit 2
             # as "the key is wrong, mint a new ticket": a dead uplink instructed a DUPLICATE.
             set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"})
             code, out = run_script("jira_feed.py", "start", "--key", "TEST-7", "--apply",
@@ -2074,7 +2074,7 @@ Write the hand-off like this:
                     f"exit={code} {st.get('statuses')} {out.strip()[:160]}")
 
             # ── ⛔ REVIEW FINDING: the published contract says continuations ride ────
-            # smh-quick-dev.md declares as a MACHINE CONTRACT: "Continuation lines indented under
+            # smh-dev-task-tests.md declares as a MACHINE CONTRACT: "Continuation lines indented under
             # it ride along." They did not - only the bullet line was collected, so the half of
             # the instruction that says WHY reached nobody. Either the reader honours the
             # contract or the contract is a lie; this pins the reader.
@@ -2571,7 +2571,7 @@ Nothing is actually owed.
         # under two slugs is exactly how a ticket GETS two ids. `check` used to read two ids as
         # self-evidently two lanes and exit 0 - blind precisely when the bug happens (the slugs
         # differ) and loud only once it has been fixed (the slugs match). AVCH-59 on 2026-08-15
-        # is the live instance: /smh-quick-dev filed under `main-write-gate`, the close-out
+        # is the live instance: /smh-dev-task-tests filed under `main-write-gate`, the close-out
         # passed `avch-59-main-write-gate` - the ceremony's own wording - and the gate blessed
         # the pair. The id string cannot settle it. The repo can.
         if c.block("SCC-174 check: a forked Dev Record is not 'the designed state'"):
@@ -2685,7 +2685,7 @@ Nothing is actually owed.
             c.check("an UNCOMMITTED manifest does not claim a lane either (check reads --cached)",
                     code == 1 and "`test-7-roster-filter`" in out,
                     f"exit={code} {out.strip()[:400]}")
-            # /smh-quick-fix writes its task.yaml in the same breath as the Dev Record, so a
+            # /smh-quick-dev writes its task.yaml in the same breath as the Dev Record, so a
             # default that demanded a commit first would be dead on the one lane that needs it.
             fresh = make_lane_repo(tmp, "lane_fresh", manifests=(("2026-08-15_widget", WIDGET),),
                                    branches=(WIDGET, ROSTER), on=ROSTER)
@@ -3278,7 +3278,7 @@ Nothing is actually owed.
                     f"a read-modify-write regression is invisible in the end state: {sent}")
 
         # ⛔ A2 · THE CONTROL THAT IS THE WHOLE POINT. Every OTHER ticket in the system goes
-        # through this seam - `/smh-quick-fix`, `/smh-quick-dev`, `/smh-plan-task` and the
+        # through this seam - `/smh-quick-dev`, `/smh-dev-task-tests`, `/smh-plan-task` and the
         # post-commit recorder, which fires on EVERY commit. A trigger that leaked here would
         # clone a rolling ticket on ordinary work.
         with TempDir() as tmp:
@@ -3770,7 +3770,7 @@ Nothing is actually owed.
 
         # ⛔ K · THE CONTROL THAT FORBIDS THE LAZY FIX. Deleting the fold entirely makes I, J
         # and J2 green in one edit - and truncates every genuine multi-line instruction to its
-        # first line, which is the half that never says WHY. `smh-quick-dev.md` publishes
+        # first line, which is the half that never says WHY. `smh-dev-task-tests.md` publishes
         # ride-along as a MACHINE CONTRACT. This row is green today and must stay green.
         RIDES = sect(
             "- [ ] **Install the board column**",

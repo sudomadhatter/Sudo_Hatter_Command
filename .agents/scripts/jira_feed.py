@@ -145,7 +145,7 @@ def acli(binary: str, args: list[str], timeout: int = 90) -> subprocess.Complete
         # A hung uplink and a missing/unresolvable binary both used to escape as an UNCAUGHT
         # traceback - process exit 1, which is not one of the documented codes. The hook
         # swallows any non-zero, so it never showed there; the agent lane is where it bit.
-        # `/smh-quick-dev` reads this code, and its table says exit 2 means "the key is
+        # `/smh-dev-task-tests` reads this code, and its table says exit 2 means "the key is
         # wrong, mint a new ticket" - so a dead uplink was instructing a DUPLICATE ticket.
         return subprocess.CompletedProcess([binary, *args], ACLI_UNREACHABLE, "",
                                            f"acli unreachable: {e}")
@@ -706,7 +706,7 @@ def manifest_branches(repo: Path, include_new: bool = False) -> list[str]:
     `include_new` adds untracked-but-not-ignored manifests, and ONLY `lane_slug_here` may ask
     for it. The difference is what anchors the answer: that function intersects the manifests
     with the branch you are standing on, so a manifest git has not seen yet can only ever name
-    YOUR lane - and /smh-quick-fix writes its `task.yaml` in the same breath as the Dev Record,
+    YOUR lane - and /smh-quick-dev writes its `task.yaml` in the same breath as the Dev Record,
     so demanding a commit first would make the default useless exactly where it is needed. The
     fork verdict has no such anchor, so it trusts nothing git is not tracking."""
     spec = ["ls-files", "-z", "--exclude-standard"]
@@ -1016,7 +1016,7 @@ def cmd_devrecord(args) -> int:
 
     # ── SCC-174 F3 · ONE slug source, and the lane already wrote it down ──────
     # `devrecord` decides update-vs-create from the SLUG, never from --key, so a free-text
-    # slug is a fork waiting to happen. It happened on AVCH-59 (2026-08-15): /smh-quick-dev
+    # slug is a fork waiting to happen. It happened on AVCH-59 (2026-08-15): /smh-dev-task-tests
     # filed under `main-write-gate`, the close-out passed `avch-59-main-write-gate` - the
     # BRANCH slug, which is what the ceremony's own text literally asks for - and the ticket
     # ended up carrying two records that `check` then blessed as "two lanes".
@@ -1063,7 +1063,7 @@ def cmd_devrecord(args) -> int:
     # flag at all: `prior` is None there and the create path runs anyway.
     #
     # SEVEN command bodies plus the SOP already say "never --append-new" (smh-close-task-merge-
-    # tree, smh-quick-dev, smh-merge-multiple-workingtrees, cicd-close-story-merge-tree,
+    # tree, smh-dev-task-tests, smh-merge-multiple-workingtrees, cicd-close-story-merge-tree,
     # cicd-quick-dev, cicd-merge-epic-workingtrees, workflows_testing_SOP). A ban repeated by
     # hand in seven places and enforced in none is a mechanism waiting to be written down once.
     if prior and args.append_new:
@@ -1880,7 +1880,7 @@ def _collect(live: list[tuple[int, str]], start: int,
             # previous item's window - that is the whole of SCC-206.
             open_window = False
         elif open_window and items and s and ln[:1].isspace():
-            # A continuation line indented under the item it belongs to. `smh-quick-dev.md`
+            # A continuation line indented under the item it belongs to. `smh-dev-task-tests.md`
             # publishes this as a MACHINE CONTRACT ("Continuation lines indented under it
             # ride along"), and dropping them truncated the operator's own instructions to
             # their first line - the half that says WHY reached nobody. It must NOT become a

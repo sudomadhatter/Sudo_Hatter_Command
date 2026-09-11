@@ -1500,22 +1500,25 @@ def main() -> int:
                 else "the pre-SCC-173 shape still parses as a roster, so the round-trip is vacuous")
 
     # ── 6. The dev-side recording point (SCC-177 step 6, F24) ─────────────────────────────
-    # `/smh-quick-dev` is NOT an engine caller — it never invokes the skill, so it is correctly
-    # absent from CALLER_FILES and from the discovery check above. It is pinned here anyway,
-    # because it owns the Task lane's walkthrough header: if it does not write `review-runtime:`
-    # at Step 0, the Task lane's review is judged against a header nobody recorded.
-    qd = ROOT / ".agents/commands/smh-quick-dev.md"
-    qd_txt = read(qd) if qd.is_file() else ""
-    c.check("/smh-quick-dev exists with a body", len(qd_txt.strip()) > 200,
-            "" if qd_txt else "absent")
-    step0 = re.search(r"^## Step 0 —[\s\S]*?^## Step 0\.5 ", qd_txt, re.M)
-    c.check("/smh-quick-dev records review-runtime inside Step 0, before the worktree exists",
-            step0 is not None and "review-runtime:" in step0.group(0),
-            "" if step0 else "Step 0 / Step 0.5 headings not found — the anchor moved")
-    named = re.search(r"`review-runtime:`[^\n]*header", qd_txt) is not None
-    c.check("/smh-quick-dev's walkthrough contents name the header it must carry", named,
-            "" if named else "Step 5 lists the walkthrough's sections; a header no section "
-                             "names is a header nobody writes")
+    # Neither lobby dev door is an engine caller — `/smh-dev-task-tests` (the full Task lane) and
+    # `/smh-quick-dev` (the quick lane, SCC-445) never invoke the skill, so both are correctly
+    # absent from CALLER_FILES and from the discovery check above. They are pinned here anyway,
+    # because each owns its lane's walkthrough header: if it does not write `review-runtime:`
+    # at Step 0, that lane's review (on the quick lane: the one the operator asks for) is judged
+    # against a header nobody recorded.
+    for door in ("smh-dev-task-tests", "smh-quick-dev"):
+        qd = ROOT / f".agents/commands/{door}.md"
+        qd_txt = read(qd) if qd.is_file() else ""
+        c.check(f"/{door} exists with a body", len(qd_txt.strip()) > 200,
+                "" if qd_txt else "absent")
+        step0 = re.search(r"^## Step 0 —[\s\S]*?^## Step 0\.5 ", qd_txt, re.M)
+        c.check(f"/{door} records review-runtime inside Step 0, before the worktree exists",
+                step0 is not None and "review-runtime:" in step0.group(0),
+                "" if step0 else "Step 0 / Step 0.5 headings not found — the anchor moved")
+        named = re.search(r"`review-runtime:`[^\n]*header", qd_txt) is not None
+        c.check(f"/{door}'s walkthrough contents name the header it must carry", named,
+                "" if named else "the walkthrough step lists its sections; a header no section "
+                                 "names is a header nobody writes")
 
     return c.finish()
 

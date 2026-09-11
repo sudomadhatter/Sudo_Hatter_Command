@@ -15,7 +15,7 @@ qualification it can want its way through; a path list it must run is a fact.
 
     LIGHT               the lightweight lane - do it, push it, hand back        (exit 0)
     LIGHT-VCS           a DECLARED git-hygiene action that changes no files      (exit 0)
-    TASK                the full /smh-quick-dev lane: plan, audit, RED, review   (exit 1)
+    TASK                the full /smh-dev-task-tests lane: plan, audit, RED, review   (exit 1)
     TASK-LIGHT          the same road, small measured blast radius (--lines 1-10,
                         <=2 files) - the lane may right-size its ceremony (SCC-302) (exit 1)
     HANDOFF             a deployable path - /cicd-push-e2e's road, never a Task  (exit 2)

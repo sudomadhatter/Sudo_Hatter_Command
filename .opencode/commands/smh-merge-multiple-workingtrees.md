@@ -29,7 +29,7 @@ SCC-71 is the written record of one invocation riding six merges. So this comman
 every merge and hands back**. It automates the analysis, the reconcile, the gate and the prune —
 never the authorisation.
 
-> Flow position: N × (`/smh-quick-dev` → `/smh-code-review`) → **`/smh-merge-multiple-workingtrees`**.
+> Flow position: N × (`/smh-dev-task-tests` → `/smh-code-review`) → **`/smh-merge-multiple-workingtrees`**.
 > One finished lane does not need this — that is `/smh-close-task-merge-tree`.
 
 ---
@@ -252,7 +252,7 @@ the fix genuinely changes nothing an operator types — that token stays in the 
 the call.
 
 **The re-measurement stamp — append it, never edit the old verdict away.** The shape, from the
-2026-08-13 landing (`_artifacts/_main/2026-08-13_scc-127-verify-wave/walkthrough.md`):
+2026-08-13 landing (`_artifacts/_main/2026/08/2026-08-13_scc-127-verify-wave/walkthrough.md`):
 
 ```markdown
 ## Post-absorb re-measurement (<date>, landing set <keys in order>)

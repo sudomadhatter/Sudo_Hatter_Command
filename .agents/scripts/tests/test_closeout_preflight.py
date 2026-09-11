@@ -662,7 +662,7 @@ def main() -> int:
                     str(sections(rep, "file-list"))[:110])
 
     # ── wf.same_tree — the predicate two commands trust to SKIP a 25-file gate (SCC-156 #9)
-    # `/smh-quick-dev` 4b and `/smh-code-review` accept a receipt across an absorb when
+    # `/smh-dev-task-tests` 4b and `/smh-code-review` accept a receipt across an absorb when
     # `same_tree(receipt_sha, HEAD)` says the trees are byte-identical. It was untested while
     # authorizing that skip. Three states, measured on a real repo: a merge commit with an
     # IDENTICAL tree (the case SHA-equality gets wrong) -> True; a real content change ->

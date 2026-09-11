@@ -482,7 +482,7 @@ def check_manifest(repo: Path, branch: str, expect: str,
 
 # ── 1d. The cross-repo half this repo's `git status` CANNOT see ────────────────
 #
-# `secondary_repos` was in MANIFEST_SCHEMA, in smh-quick-dev.md and in the close-out command, and
+# `secondary_repos` was in MANIFEST_SCHEMA, in smh-dev-task-tests.md and in the close-out command, and
 # was read by nothing: check_manifest() validated task_key and branch only. So a task could
 # declare "this also lands in Projects/X under KEY-00" and close out green while that key was one
 # X's commit-msg hook rejects, its branch was never pushed, or X was not even checked out.

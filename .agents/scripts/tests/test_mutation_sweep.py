@@ -1,6 +1,6 @@
 """mutation_sweep.py — the sweep's own end-state check, made mechanical (SCC-179).
 
-The doctrine was prose in two files (`smh-quick-dev.md`, `tests-must-gate-for-real.md`) and
+The doctrine was prose in two files (`smh-dev-task-tests.md`, `tests-must-gate-for-real.md`) and
 every clause of it was self-reported. It failed live twice: SCC-144's timeout-killed sweep
 left residue, and 8681d83 shipped a LIVE MUTANT into the gate because the scoped `--case`
 re-runs never exercised the mutated pattern. Both are things a script can check and a

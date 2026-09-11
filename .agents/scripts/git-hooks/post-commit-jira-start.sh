@@ -8,7 +8,7 @@
 # while it was built, then teleported to `Done` at merge.
 #
 # ─── WHY THE TRIGGER IS A COMMIT, NOT A COMMAND ────────────────────────────────────────────
-# /smh-quick-dev is not always run, and a fix that depends on remembering to run it re-creates
+# /smh-dev-task-tests is not always run, and a fix that depends on remembering to run it re-creates
 # the defect. Work provably starts when the first commit lands on a keyed branch — whatever
 # path got there, including a bare `git commit` with no workflow at all. The command body
 # calls `jira_feed.py start` too; neither layer is load-bearing alone, which is the point.

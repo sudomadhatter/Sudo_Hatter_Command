@@ -36,7 +36,7 @@ unattended; 🦟🔍 The Gnat answers lookups for any seat at any point.
 them.** The operator's chartered split of the dev flow: **① and ③ run on his reviewing model**
 (today, Fable) — `/cicd-create-epic-sprint` and `/cicd-write-story-tests` at the front,
 `/cicd-code-review` or `/smh-code-review` at the back. **The Zoo seats own ②**: they carry a build
-(`/cicd-dev-story-tests` or `/cicd-quick-dev` on project work, `/smh-quick-dev` on the command
+(`/cicd-dev-story-tests` or `/cicd-quick-dev` on project work, `/smh-dev-task-tests` or `/smh-quick-dev` on the command
 center) **to review-ready, and stop there**. The operator then switches the model and runs ③
 himself — the verdict never comes from a seat that built, tested, or orchestrated the work.
 Concretely, for every seat: never run a ① or ③ door, never write a `## Code Review` section, and

@@ -205,7 +205,7 @@ def main() -> int:
         # carries a plan at Step 2 and teaches the block there, and its Step 5 tripwire still
         # re-arms the plan-first gate on an uncovered overlap. The old "plan-exempt" drift line
         # is gone with the review gate it belonged to.
-        EMITTERS = ("smh-quick-dev.md", "smh-plan-task.md", "cicd-dev-story-tests.md",
+        EMITTERS = ("smh-quick-dev.md", "smh-plan-task.md", "cicd-dev-story-tests.md", "smh-dev-task-tests.md",
                     "cicd-quick-dev.md")
         for fname in EMITTERS:
             body = (root / ".agents/commands" / fname).read_text(encoding="utf-8")

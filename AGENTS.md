@@ -84,23 +84,25 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 > too — not only inside projects.** Full protocol → `.agents/rules/artifacts-always-first.md`; the
 > priority-zero kill-chain that enforces it (and the `_bmad/custom/` guard tomls that load it into every
 > dev-story / quick-dev run) → `.agents/rules/000-PLAN-FIRST-GATE.md`. (Skip only for
-> read-only/investigatory asks, trivial one-liners, and **the lightweight lane
-> `/smh-quick-fix`** — that exemption list lives in `artifacts-always-first.md` § "When to Skip" and
-> nowhere else. The quick lane, `/cicd-quick-dev`, carries a plan of its own — `git-policy.md`
-> § Two toggles.)
+> read-only/investigatory asks, trivial one-liners, and the harvest lane `/smh-llm-approvals` — that
+> exemption list lives in `artifacts-always-first.md` § "When to Skip" and nowhere else. The quick
+> lanes, `/smh-quick-dev` here and `/cicd-quick-dev` in a project, carry a plan of their own —
+> `git-policy.md` § Two toggles.)
 >
-> **⭐ The lightweight lane, because its trigger is a sentence rather than a file (SCC-162, operator
-> ruling 2026-08-15).** *"Not everything is a full quick dev. sometimes I just want an agent to do
-> something specific… this does not touch anything that can break."* Command-centre work only —
-> *"only for the smh / commands, not normal cicd work"* — and the test is his own sentence: **things
-> that do not affect our development system.** Writing a guide, fixing a reference, tidying a messy
-> source-control state. Invoking **`/smh-quick-fix`** IS the "skip the plan" instruction, and so is
-> saying *"skip the plan, just do it"*. ⛔ **Do not ask whether to mint a ticket or open a lane** —
-> asking is the over-engineering the ruling names. **Qualification is a script, never a judgement:**
-> `python3 .agents/scripts/lane_qualify.py --paths <paths>` — `LIGHT`/`LIGHT-VCS` qualify (`TASK-LIGHT` does NOT — it right-sizes `/smh-quick-dev`, SCC-302), and **no
-> paths at all is `TASK`**, because silence is unknown scope. The lane still takes a Jira key, a
-> `chore/*` worktree, the gates, a lean walkthrough, and `/smh-close-task-merge-tree` — there is no
-> lighter door to `main`.
+> **⭐ The quick lane, because "not everything is a full dev cycle" (SCC-162, operator ruling
+> 2026-08-15; SCC-441, 2026-09-10).** *"Sometimes I just want an agent to do something specific… this
+> does not touch anything that can break."* Writing a guide, fixing a reference, a small rule edit.
+> Say *"quick dev this"* or type **`/smh-quick-dev`** (the command centre) / **`/cicd-quick-dev`** (a
+> project): the same five steps at both levels — a **scope check** against the repo's
+> `.agents/critical-surfaces.json` (`scope_check.py`; an overlap is a soft stop only Mr. Hatter's
+> quoted word lifts), a short plan and the literal `approved`, RED then GREEN, a walkthrough and the
+> literal `approved`, the same scope check on the real diff at the door. Self-audit and code review
+> run **only when he asks**; with no review the walkthrough carries `Review: none - quick lane; …`
+> and no `Verdict:`. ⛔ **Do not ask whether to mint a ticket or open a lane** — asking is the
+> over-engineering the ruling names. **The line is a file, not a feeling, and not a size:** the
+> critical surfaces (auth, billing, security rules, FAA-facing answers, CI and the gates) are
+> `/smh-dev-task-tests` / ①②③ work. The lane still takes a Jira key, a `chore/*` worktree, the gates,
+> and `/smh-close-task-merge-tree` — there is no lighter door to `main`.
 
 ## 4. WHAT LIVES WHERE  (home-base infrastructure)
 | Area | Path | Purpose |

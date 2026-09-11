@@ -678,7 +678,7 @@ happened to be in, and the message never names the repo it read (`preflight-reso
 
 ⛔ **No `--story` here, and that is the fix (SCC-174).** `devrecord` picks update-vs-create off the
 **slug**, never off `--key`, so the same lane spelled two ways posts a **second** Dev Record — and
-this ceremony asking for `<branch-slug>` while `/smh-quick-dev` filed under something shorter is
+this ceremony asking for `<branch-slug>` while `/smh-dev-task-tests` filed under something shorter is
 exactly how AVCH-59 ended up with two. The slug now comes from **one** place, the lane's `task.yaml`
 `branch:`, and the script reads it. Pass `--story` only to file under a lane you are **not** standing
 on. If `check` reports a **FORKED Dev Record**, an id on the ticket is claimed by no manifest and no

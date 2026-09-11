@@ -27,7 +27,7 @@ story on disk before the set can be compared; the Task lane had no equivalent, s
 planned one at a time and `/smh-label-tasks` had nothing to ground. This command is that missing
 step: it plans the **whole** Task at once and leaves every lane grounded, cut, pushed and labelled.
 
-> Flow position: **`/smh-plan-task`** → *(per lane)* `/smh-quick-dev` → `/smh-code-review` →
+> Flow position: **`/smh-plan-task`** → *(per lane)* `/smh-dev-task-tests` → `/smh-code-review` →
 > **[STOP]** → `/smh-close-task-merge-tree`. The parent closes LAST.
 
 ## 🛑 MANDATORY RULES
@@ -164,7 +164,7 @@ riders: [<SUBKEY-1>, <SUBKEY-2>, …]        # one line, flow form — a block l
 
 **Build order is Step 4's output, not a preference.** Run the labeller first if the set is large: parts
 that share a file are sequenced, and whichever part makes the *rest of this lane* cheaper goes first.
-Then run `/smh-quick-dev` once per part **inside that one tree**, and close the whole thing with a
+Then run `/smh-dev-task-tests` once per part **inside that one tree**, and close the whole thing with a
 single `/smh-close-task-merge-tree --expect-key <PARENT-KEY>`.
 
 **If the lane must ship before every part is built:** write `landing_mode: partial` into `task.yaml` and
@@ -192,7 +192,7 @@ Then, in that tree:
 
 1. **Write `implementation_plan.md`** into `_artifacts/_main/<YYYY-MM-DD>_<slug>/`, right-sized.
    Each acceptance item maps to a step, and **each step names the assertion that will prove it** —
-   `/smh-quick-dev` Step 2 turns those into the checks it writes RED. Include the
+   `/smh-dev-task-tests` Step 2 turns those into the checks it writes RED. Include the
    **`## Declared Change Set` block** (SCC-226: `NEW`/`EDIT`/`DELETE` + path + `→ <acceptance row>`
    per bullet) — the review's drift check reconciles the diff against it.
 2. **Write `task.yaml` beside it** — this is what grounds the lane for the labeller, so it is not
@@ -249,7 +249,7 @@ Then, in that tree:
 
 Every lane is now grounded by a **committed plan on a pushed branch**, which is the strongest
 evidence short of code. Print its table unedited: the 🟢 set can run side by side, 🔒 rows name
-what they wait on, ⚡ marks the lanes small enough for one light `/smh-quick-dev` pass.
+what they wait on, ⚡ marks the lanes small enough for one quick-lane `/smh-quick-dev` pass.
 
 ## Step 5 — ⭐ ONE approval stop, for the whole set
 
@@ -275,7 +275,7 @@ listed in `/smh-plan-task <PARENT-KEY>` Step 5: <SUBKEY-1>, <SUBKEY-2>, …
 line, as `— recorded at <sha>`.** Three things about that sentence are load-bearing, and all three
 were missing (SCC-155 review #17/#18):
 
-- **The sha, or the downstream check has nothing to compare against.** `/smh-quick-dev` Step 1.5
+- **The sha, or the downstream check has nothing to compare against.** `/smh-dev-task-tests` Step 1.5
   says the plan must be unchanged *since the commit that recorded the approval* — with only a date
   and a quote on the page, an agent has one computed value and no second operand, and an agent that
   wants to proceed will call it unchanged. Write the sha and the comparison becomes real. **No sha
@@ -285,7 +285,7 @@ were missing (SCC-155 review #17/#18):
   you must write is the sha of the commit that records the approval, which cannot be known until
   that commit exists. So: write the line with `<pending>`, commit, then replace `<pending>` with the
   resulting sha and commit **that**. ⛔ **The second commit must change the approval line and
-  nothing else** — that is precisely what `/smh-quick-dev` Step 1.5 allows through, by diffing the
+  nothing else** — that is precisely what `/smh-dev-task-tests` Step 1.5 allows through, by diffing the
   recorded sha against the plan's last touch. Fold any other edit into it and you have changed the
   plan after approval, which re-arms that lane's gate and stops it. (Before this was written down,
   Step 1.5 demanded bare equality with the recorded sha and the stamp commit made that impossible
@@ -300,7 +300,7 @@ uses for merges (SCC-37), and for the same reason: an agent can write a plan, so
 word "approved"; it cannot manufacture the operator's sentence.
 
 ⚠️ **The batch approval covers those plans as they stand.** Edit a plan afterwards and its gate
-re-arms — that lane stops for its own approval at `/smh-quick-dev` Step 1.5.
+re-arms — that lane stops for its own approval at `/smh-dev-task-tests` Step 1.5.
 
 ## Report
 
@@ -308,7 +308,7 @@ re-arms — that lane stops for its own approval at `/smh-quick-dev` Step 1.5.
 - one row per lane: `<SUBKEY> · chore/<SUBKEY>-<slug> · plan @ <path> · Audit verdict: GO · pushed`
 - `Parallel: <the 🟢 set> · Locked: <rows> · Quick-dev: <keys>`
 - `Batch approval recorded: <yes, quoting> | STOPPED, awaiting the operator`
-- `Next: /smh-quick-dev in each 🟢 lane; the parent closes LAST`
+- `Next: /smh-dev-task-tests in each 🟢 lane; the parent closes LAST`
 
 ⛔ Never end by starting one of the lanes. The next move is the operator's.
 

@@ -246,7 +246,7 @@ label is not cosmetic:**
 
 | Label | Means | Written by |
 |---|---|---|
-| `quick-dev` | ships via one light lane (`/cicd-quick-dev`, or `/smh-quick-dev` for Task work) instead of the full ①②③ loop | ① `/cicd-write-story-tests` at pickup, **and** the labelling pass — see below |
+| `quick-dev` | ships via one quick-lane pass (`/cicd-quick-dev`, or `/smh-quick-dev` for Task work — scope check, plan, RED, GREEN, walkthrough; audit and review only on request) instead of the full ①②③ loop | ① `/cicd-write-story-tests` at pickup, **and** the labelling pass — see below |
 | `blocked` | waiting on a linked blocker (the `Blocks` link names WHAT; pair with the `Blocking` status where the board has it) | ① `/cicd-write-story-tests`, at pickup |
 | **`parallel-ok`** | in the approved set the last check computed — safe to run beside **every other** 🟢 under that parent | ⭐ **the labelling pass, and nothing else** |
 | **`user-tasks`** | merged, but the walkthrough leaves something only the operator can decide — read the "User tasks" comment | ⭐ **`jira_feed.py finish`, at close-out** (SCC-155) |
@@ -550,7 +550,7 @@ in the summary, the board row / spec pointer in the description — so nothing l
 - **Stories** → `/cicd-write-story-tests` ① Step 1.6, at pickup: child of the epic ticket, bare,
   labels from ①'s lane/parallel/blocked ruling, `jira_key:` stamped into the story frontmatter.
 - **Toolkit/chore work** → mint the repo's chore ticket before cutting `chore/<KEY>-<slug>`.
-- ⭐ **Subtasks** → `/smh-quick-dev`, **after** the plan is approved: the agent proposes the set and
+- ⭐ **Subtasks** → `/smh-dev-task-tests`, **after** the plan is approved: the agent proposes the set and
   **stops**; the operator's go is what writes it. Raw `acli`, parented to the Task. See §Subtasks.
 
 Outside these seams: status + comments only. Never mint speculative work — a ticket asserts a
@@ -609,7 +609,7 @@ ticket made every story thats an endless loop that never finishes").
    | When | What moves it | To |
    |---|---|---|
    | **first commit on `chore/ · claude/ · epic/`** | **the `post-commit` recorder** → `jira_feed.py start` | **`In Progress`** |
-   | worktree-open, Task lane | `/smh-quick-dev` Step 0.5 → `jira_feed.py start` | `In Progress` |
+   | worktree-open, Task lane | `/smh-dev-task-tests` or `/smh-quick-dev` Step 0.5 → `jira_feed.py start` | `In Progress` |
    | story pickup, ① | `/cicd-write-story-tests` Step 1.6.4 → `jira_feed.py start` | `In Progress` |
    | story close-out | `/cicd-close-story-merge-tree` Step 4 | `Done` |
    | task close-out | `/smh-close-task-merge-tree` Step 4 | `Done` |

@@ -1,6 +1,6 @@
 """mutation_sweep.py — run a declared mutant table, and PROVE the tree came back (SCC-179).
 
-The sweep was prose in two places (`smh-quick-dev.md`, `.agents/rules/tests-must-gate-for-real.md`)
+The sweep was prose in two places (`smh-dev-task-tests.md`, `.agents/rules/tests-must-gate-for-real.md`)
 and every clause of it was self-reported. It failed live twice:
 
   * SCC-144 — a timeout killed the sweep mid-mutant and left residue in the tree, where it is

@@ -13,10 +13,12 @@ trigger: model_decision
 
 > This rule OVERRIDES every skill, workflow, and slash command — including BMAD dev-story, create-story, and any future skill that has its own "execute" steps. If a skill says "mark in-progress" or "implement now," STOP — that instruction is subordinate to this gate.
 >
-> **The one carve-out lives in the exemption list, not here** (see "When to Skip" below): `/cicd-quick-dev`
-> is operator-invoked, and invoking it IS the "skip the plan" instruction. Naming it inline here as
-> *overridden* is what put this rule and that command in direct contradiction — two copies of a gate's
-> scope drift apart, and each one reads authoritative.
+> **The carve-outs live in the exemption list, not here** (see "When to Skip" below): the close-out
+> doors, whose invocation IS the sign-off, and `/smh-llm-approvals`, whose invocation IS the "skip
+> the plan" instruction. Naming one inline here as *overridden* is what once put this rule and a
+> command in direct contradiction — two copies of a gate's scope drift apart, and each one reads
+> authoritative. The quick lanes (`/cicd-quick-dev`, `/smh-quick-dev`) are **not** carve-outs: they
+> carry a plan and the literal `approved` like every other lane (`git-policy` § Two toggles).
 
 ## The Kill-Chain
 
@@ -80,7 +82,7 @@ is only an approval at all when all four hold:
 2. Every covered plan carried `Audit verdict: GO` **at the moment of the stop**. A NO-GO lane is
    never in a batch.
 3. It covers **those plans as they stood**, and that is **mechanically checkable** because the
-   approval line ends `— recorded at <sha>`. `/smh-quick-dev` Step 1.5 compares
+   approval line ends `— recorded at <sha>`. `/smh-dev-task-tests` Step 1.5 compares
    `git log -1 --format=%h -- <the plan>` against that sha; equal means untouched. A batch cannot
    approve text the operator never saw.
    ⭐ **The one legal inequality is the `stamp-only successor` (SCC-359).** Recording the sha of
@@ -91,7 +93,7 @@ is only an approval at all when all four hold:
    **nothing else**, it passes. Anything else means **that lane's gate re-arms** and it stops for
    its own approval. Bare equality was the original wording and it could never hold for a
    conforming lane — measured on SCC-347, SCC-358 and SCC-318.
-   ⛔ **And that comparison is a COUNT, not a reading of the hunk.** `/smh-quick-dev` Step 1.5
+   ⛔ **And that comparison is a COUNT, not a reading of the hunk.** `/smh-dev-task-tests` Step 1.5
    carries the command; it counts the changed lines that are not the approval line and passes on
    zero. Printing a diff and asking an agent "does this touch only that line?" replaces a boolean
    with a prose judgment, which is the shape `cheap-models-rationalize-past-prose` says gets
@@ -110,8 +112,8 @@ to each item inside the batch.
 
 ### The carve-outs are a CLOSED list
 
-There is a real rule that invoking a command IS the sign-off — `/cicd-quick-dev`, and the close-out
-commands. That list lives in `artifacts-always-first.md` § "When to Skip" and nowhere else. It does
+There is a real rule that invoking a command IS the sign-off — the close-out commands, and
+`/smh-llm-approvals` for the plan. That list lives in `artifacts-always-first.md` § "When to Skip" and nowhere else. It does
 **not** generalize from *"the operator told me to do the work"* to *"the gate is open."* If you are
 reasoning your way toward an exemption that is not written in that list, you are bypassing the gate.
 
@@ -128,11 +130,12 @@ Present key points inline in the chat AND link the artifact. Mr. Hatter reviews 
 
 BMAD skills (`bmad-dev-story`, `bmad-quick-dev`, etc.) have execution steps that mutate project files — updating story status, sprint-status.yaml, writing code. **Those steps are subordinate to this gate.** The correct execution order when a BMAD skill is invoked:
 
-> **Read this together with the carve-out at the top.** `bmad-quick-dev` appears in that list because a
-> **bare** invocation of it is gated like any other skill. It is NOT gated when it runs as the engine of
-> `/cicd-quick-dev` — that command's invocation IS the skip instruction, and its EJECT tripwire re-arms
-> the gate. Same skill, two callers, two answers; the caller decides, never the skill and never the size
-> of the change.
+> **Read this together with the carve-outs at the top.** `bmad-quick-dev` appears in that list because a
+> **bare** invocation of it is gated like any other skill — and since SCC-444 every invocation of it is a
+> bare one: no house door drives it. The quick lane (`/cicd-quick-dev`, `/smh-quick-dev`) is the door's
+> own five steps, carrying its own plan and its own literal `approved`; its Step 5 tripwire re-arms this
+> gate in full when an uncovered overlap ejects the work to the full lane. The caller decides, never
+> the skill and never the size of the change.
 
 1. Run the skill's research/discovery steps (read-only)
 2. Use the skill's context to write `implementation_plan.md` (artifact only)

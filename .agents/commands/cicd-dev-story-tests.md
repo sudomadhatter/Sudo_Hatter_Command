@@ -237,7 +237,7 @@ never delete-to-force-green.
 ## Step 3.5 — ⛔ EJECT TRIPWIRE (check here, and again as you go)
 **STOP and hand the work over if any of these is true:**
 - **The work is Task-shaped** — no story id, no board row, no epic branch (toolkit, rules, docs, config).
-  Hand it to `/smh-quick-dev` (it acts on the repo you are standing in).
+  Hand it to `/smh-dev-task-tests` (it acts on the repo you are standing in).
 - **The audit returned `NO-GO` and the plan cannot be fixed without re-scoping** (Step 2), or **the
   built scope has diverged from the story's ACs** — they no longer describe what can be built. Route to
   `bmad-correct-course`; never re-scope silently inside the story.

@@ -89,6 +89,7 @@ REBUTTERS = [
     "cicd-dev-story-tests.md",
     "cicd-quick-dev.md",
     "smh-quick-dev.md",
+    "smh-dev-task-tests.md",
 ]
 """The commands that argue the directive is satisfied. Each MUST carry `DIRECTIVE` at that claim."""
 

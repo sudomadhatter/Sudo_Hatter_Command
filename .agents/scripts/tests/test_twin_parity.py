@@ -83,8 +83,9 @@ CMDS = ROOT / ".agents" / "commands"
 # Names differ where the SUBJECT differs, which is why this cannot be derived by string
 # substitution alone: `cicd-merge-epic-workingtrees` lands story lanes on an epic branch,
 # `smh-merge-multiple-workingtrees` lands task lanes on main - same job, different subject,
-# different name. `cicd-quick-dev` pairs with `smh-quick-dev`; `smh-quick-fix` is a THIRD
-# lane below both and is deliberately unpaired (recorded in NOT_PAIRED).
+# different name. `cicd-quick-dev` pairs with `smh-quick-dev` (the quick lane at both levels,
+# SCC-441); `smh-dev-task-tests` is the full Task lane, whose story-side counterpart binds BMAD
+# and is deliberately unpaired (recorded in NOT_PAIRED).
 PAIRS = [
     ("cicd-quick-dev.md", "smh-quick-dev.md"),
     ("cicd-self-audit.md", "smh-self-audit.md"),
@@ -110,8 +111,10 @@ PAIRS = [
 # dead set it was, where its one entry could never appear in the derived set anyway.
 _ONE_SUBJECT = "single-subject: the other family has no equivalent and should not"
 NOT_PAIRED = {
-    "smh-quick-fix.md": "a THIRD lane, below both quick-devs - it ejects INTO smh-quick-dev; "
-                        "the cicd side has no such lane and that gap is recorded, not faked",
+    "smh-dev-task-tests.md": "the full Task lane (plan, audit, approved, RED, GREEN, mutant sweep, "
+                             "review) - its story-side counterpart is cicd-dev-story-tests, which "
+                             "binds BMAD (a story file, a board, an epic branch) and so cannot be "
+                             "held byte-identical; the quick lane pair above is the twin (SCC-445)",
     # ── smh-only: the Wonderland team seats (SCC-350) — Zoo Code MODE brains, not workflows.
     # Each is the identity/doors/refusals of one mode in the picker; the cicd side has no mode
     # surface at all, so there is nothing to hold in parity. They route INTO the cicd doors.
