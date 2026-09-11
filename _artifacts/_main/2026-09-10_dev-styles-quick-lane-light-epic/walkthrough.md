@@ -125,8 +125,8 @@ The next `/smh-sync-agents` run on either machine should print nothing to change
 
 ## Code Review (2026-09-10)
 
-Verdict: CONCERNS @ 85454a491e446b2c59adbbe5d33bd91cb82d6d50
-Suite evidence measured on 85454a491e446b2c59adbbe5d33bd91cb82d6d50 — run_all.py 86/86 files, workflow_lint --toolkit-only 0/0, check_maps --depth3-only --strict clean, check_links --base origin/main clean.
+Verdict: PASS @ 46bc4267ffda04ffce24933dab0ed77fa5154c27
+Suite evidence measured on 46bc4267ffda04ffce24933dab0ed77fa5154c27 — run_all.py 86/86 files, workflow_lint --toolkit-only 0 errors 0 warnings, check_maps --depth3-only --strict clean, check_links --base origin/main clean, py_compile green on all 28 changed .py files, 19/19 mutants killed across four declared tables.
 
 review-runtime: fan-out
 
@@ -139,33 +139,56 @@ lenses_run:
 lenses_counted:  5/5
 lenses_na:       none
 
-dispositions:    per-lens: blind-hunter=7/0/0 · edge-case-hunter=7/0/0 · acceptance-auditor=8/0/0 · literal-correctness-hunter=2/0/0 · test-adequacy-auditor=9/0/0
+dispositions:    per-lens: blind-hunter=7/0/0 · edge-case-hunter=7/0/0 · acceptance-auditor=8/0/0 · literal-correctness-hunter=2/0/0 · test-adequacy-auditor=9/0/0 · clean-code-audit=8/0/0 · applied-claim-verification=3/0/0
 drift:           undeclared=7 · unimplemented=2 · incomplete=0 — the 7 are dispositioned above, the 2 are Part F's closure lane after AVCH-152
 
 ### Step 0.7 — re-derivation
 
 - Nothing moved under this lane: `origin/main` is `cf1544f9`, the merge-base is the same commit, and 0 commits landed on the trunk while the lane was built.
 - It changes nothing here, because true overlap with the trunk is EMPTY — no path this lane touches was touched on `origin/main` since the fork.
-- Re-measured at the shipping tip `85454a49` after the fix batch: `run_all.py` 86/86 files, `check_links --base origin/main` clean (111 files, 1108 claims), `check_maps --depth3-only --strict` clean, `workflow_lint --toolkit-only` 0 errors 0 warnings, and two mutant tables 10/10 killed with the restore verified.
+- Re-measured at the shipping tip `46bc4267` after BOTH fix batches: `run_all.py` 86/86 files, `check_links --base origin/main` clean (111 files, 1108 claims), `check_maps --depth3-only --strict` clean, `workflow_lint --toolkit-only` 0 errors 0 warnings, and two mutant tables 10/10 killed with the restore verified.
 
-**Why CONCERNS and not PASS.** Every lens reported, so the floor is not degradation, and nothing is
-open — all 33 findings are applied and in the diff below. It is that the review falsified the
-central deliverable of Part E and three of the plan's own acceptance rows, and had to correct three
-false statements in this very record. **The mode line that twelve doors print at the top of Step 0
-could not execute in any project**: the line above it `cd`s into the project, and no project ships
-`epic_mode.py`, so every one of those doors would have died on `No such file or directory` at its
-first step. That shipped through a build, a self-audit and a full suite. A review that has to
-correct that much of its own subject does not read PASS.
+**Why PASS.** Under §7 the three triggers are properties of the shipped diff, and all three are
+clear: no machine check errors on changed lines (the floor here is `run_all.py`, `workflow_lint`,
+`check_maps` and `check_links`, plus `py_compile` on all 28 changed scripts — there is no
+`backend/`, no `frontend/` and no repo venv, so ruff, pyrefly and tsc do not apply), no §2 banned
+pattern, no secret, and zero unresolved §1 comment-contract gaps or §2 judgment calls. All 44 raw
+findings are applied. Nineteen mutants across four declared tables are killed, restores verified.
 
-**Why not FAIL.** No §6 machine check errors on changed lines, no §2 banned pattern, no secret.
-Every blocking and important finding is fixed in lane at `85454a49`, proven by test, and nothing
-described below is still present in what ships.
+**This verdict first read CONCERNS, and that was wrong.** Recorded here because the correction is
+the more useful fact. The first stamp reasoned that "a review which had to correct this much of
+its own subject does not read PASS" — a judgement about the lane's *process*, borrowed from the
+SCC-412 precedent, which §7 does not authorise. §7's CONCERNS row lists unresolved comment-contract
+gaps and unresolved judgment calls; nothing was unresolved. The operator refused the verdict on the
+standing ruling that CONCERNS does not ship, and the refusal was correct on the law.
 
-**Calibration.** No finding's assessment disagreed with its label in either direction, and nothing
-was dismissed — unusual, and worth naming rather than hiding. The subject is law text and two small
-scripts, where "is it REAL?" is answerable by running the line, so the lenses had little room to
-report something merely arguable. The one label I would move is the edge-case hunter's `critical`
-on the mode line: it is the right severity, and it is the finding the build should have caught.
+**What it was NOT corrected by is a re-label.** Re-stamping on that argument alone would have been
+the same failure wearing the other sign. Instead every row in the table below marked `applied` was
+re-verified against the shipped tree rather than trusted, and a clean-code audit ran the §1/§2/§3
+pass the first stamp had skipped. Together they found **eight more real defects**, rows 25–32, and
+three of them are the same shape as the finding the review called critical:
+
+- The two gates that guard the Step 0 mode line did not guard the half that broke. Worse, one of
+  them **prints its requirement text to the author on a miss**, and that text asked for the
+  unpinned form by name — so the gate would have instructed the defect back in.
+- The law described the mode switch as "the third token of the branch name". The code, like the
+  server's own `contains()`, tests for a substring. The positional rule is false even of its own
+  canonical example, and nothing pinned the wording.
+- The headline fix of Part E's review — the derived pathspec — had no failing case. Reverting it
+  left the file 106/106 green, because every fixture builds `backend/` and the fallback arm is the
+  one the lobby itself takes.
+
+One of the audit's own proposed fixes was **rejected on the merits**: excluding `*.md` from the
+staleness check would have blinded it to the lobby's entire product, since the lobby carries none
+of the five product directories and its doors and rules are markdown. The wording was fixed
+instead, and a mutant now pins that the exclusion stays out.
+
+**Calibration.** 44 findings, 44 applied, none dismissed — and that is the number worth arguing
+with, so: each one was re-tested against §6.5's three questions, and what carried them was that the
+subject is law text and small scripts, where "is it REAL?" is answerable by running the line. None
+was fixed because it was cheap. The two that came closest to taste — a duplicated five-line
+normaliser and an unreachable default argument — are named §2 bans, not preferences, and both were
+introduced by this lane.
 
 ### Findings
 
@@ -203,3 +226,28 @@ collapsed into one lens's credit.
 | 22 | five part plans | suggestion | Five per-part `walkthrough.md` paths were declared NEW and never built — the per-part folders were retired when the five lanes became one. | **applied @ 85454a49** — re-pointed at this consolidated record |
 | 23 | six plan files | nitpick | The two `docs/doc-graph.*` bullets carried no `→ row`, so the parser counted them as neither declared nor incomplete and the drift check listed nine undeclared paths. | **applied @ 85454a49** — both carry the row their SOP bullet carries; 0 incomplete in all six |
 | 24 | this record | nitpick | Three counts and one gate result were wrong. | **applied @ 85454a49** — corrected in place, with the original claim shown |
+
+### Findings 25–32 — the second pass, after the CONCERNS verdict was refused
+
+Rows 1–24 came from the five lenses. These came from verifying those rows' `applied` claims
+against the shipped tree, and from the clean-code audit that should have preceded any verdict.
+
+| # | file:line | severity | failure scenario | disposition |
+|---|---|---|---|---|
+| 25 | `test_boot_epic_branch_read.py:53` | important | The `ref-discovery` gate accepted the bare `python3 .agents/scripts/epic_mode.py` — the exact shape finding 1 proved cannot run — and its requirement text, which the gate PRINTS to an author on a miss, asked for that shape by name. The gate would have reinstated the defect it exists to catch. | **applied @ 46bc4267** — the regex requires `cd "$L" &&` on the call line, the requirement text says why, the GOOD fixture carries the pinned form; mutants G1 (unpinned) and G2 (pinned at the project) killed |
+| 26 | `test_epic_mode.py` block F | important | It counted twelve callers of `epic_mode.py` and never asked whether any could execute. It reported twelve happy callers throughout the entire period when all twelve were broken. | **applied @ 46bc4267** — every call line must carry the lobby pin, and `L=$(pwd)` must appear BEFORE it, since a pin bound after a `cd` points wherever the shell was left; mutant G3 killed |
+| 27 | `git-policy.md:78`, `worktree-per-story.md:267`, the SOP's LIGHT section, `test_trunk_mode.py:8,124` | important | The law said the mode is "the third token of the branch name". `classify()` and CI's `contains()` both test for a substring. The positional rule is false even of its own canonical example — split `SCC-441-light-epic-2-x` on `-` and the third token is `light` — and on `epic/SCC-9-epic-2-light-epic-migration` a reader answers FULL while every door answers LIGHT. | **applied @ 479ae450** — all four sites state containment, and `test_trunk_mode.py` now requires the law to say so and refuses the phrase `third token`, because every other assertion in that block is a substring search the wrong description satisfied equally well |
+| 28 | `closeout_preflight.py:315` | important | In a repo with none of the five product directories — **the lobby is one** — the fallback counts every tracked file, so a `docs/` typo after an approval reported as `1 code file(s) changed … STALE, re-gate`. The identical commit in a repo with `backend/` reported nothing. | **applied @ 46bc4267** — the block stays (this arm genuinely cannot tell code from prose, and re-gating is the cheaper error) but the message says what was measured; mutants A5/A6 pin both halves of the derivation |
+| 29 | `test_closeout_preflight.py` | important | The headline SCC-446 fix had no failing case. Reverting the derived pathspec to the pre-fix `["backend/", "frontend/"]` left the file **106/106 green**, because every fixture builds `backend/` and the fallback arm was never executed. A gate never seen red is a description of intent (`tests-must-gate-for-real` §5). | **applied @ 46bc4267** — `lane_repo(product_dirs=False)` plus QL17–QL20c; the audit's surviving mutant A1 is now KILLED, and A2/A3 pin the fallback's width and its two exclusions |
+| 30 | `scope_check.py:77` | suggestion | A third byte-identical copy of `lane_qualify.norm` (§2, re-implementing what exists). | **applied @ 46bc4267** — hoisted to `wf_common.norm_path`. Importing the sibling, as the audit suggested, would couple the RISK checker to the SIZE checker, which the rule says answer different questions; the two pre-existing copies are out of this diff and left alone |
+| 31 | `epic_mode.py:85,94` | suggestion | `classify(names, repo=None)` forced a `repo is not None` guard that can never be False: `main()` is the only caller and always passes one (§2, dead branches; flexibility nobody asked for). | **applied @ 46bc4267** — `repo` is required, the guard is gone |
+| 32 | `closeout_preflight.py:296,332`, `scope_check.py:96,106`, `test_scope_check.py:106,193` | nitpick | §3 contract gaps in new code: two unhinted parameters on a new signature, a 142-char line over the 120 limit, two public undocumented functions where `pattern_hit` is where the match semantics live, two `f`-strings with no placeholders. | **applied @ 46bc4267** |
+
+**Mutation tables — 19 mutants, 19 killed, every restore verified byte-identical.**
+
+| Table | Mutants | Killed | What it certifies |
+|---|---|---|---|
+| `sweep_review` | 3 | 3/3 | the staleness gate's verdict arm, its two distinct remedies, its asymmetric warn/err |
+| `sweep_scripts` | 7 | 7/7 | the linked-worktree `.git` file, both empty-`--repo` refusals, the `light_armed` probe in both directions, the empty-map fallback, the dead-pattern guard |
+| `sweep_gate` | 3 | 3/3 | the lobby pin on a door's mode line, the project-pinned spelling, `L` bound after a `cd` |
+| `sweep_audit` | 6 | 6/6 | the audit's own survivor, the fallback's width, its two exclusions, **the `*.md` exclusion staying out**, and both arms of the derived wording |
