@@ -28,6 +28,7 @@ The review engine has no stop condition an agent can reach on its own. Its lense
 | **E** | `cicd-autopilot-claude.md` (+ mirror), `autopilot_SOP.md`, and the SOP §15 table row: a non-PASS verdict escalates; no fix child, no fresh reviewer; "never ships by itself" gone | `test_review_disposition.py` block E |
 | **F** | `work-consolidation.md` Rule 2 and `smh-plan-task.md` (+ mirror): parts are built AND reviewed in sequence, each review on its own commits; the enforcement suite is the integration check; a plan-time size warning when a part's declared set exceeds 40 files | `test_review_disposition.py` block F |
 | **G** | `workflows_testing_SOP.md` and its changelog updated in the same commits as the surfaces they describe; `workflow_lint.py --toolkit-only` 0 errors; `run_all.py` N/N through the receipt writer on a clean tree | pasted output + `gates/suite.json` |
+| **H** | Both self-audit twins: POST-DEV mode resolves its change set through `review_scope.py` (the same resolved set the review reads), and Lens 2 states the scope asymmetry — the parity lens reads the mirrors a review strips. `review_scope.py --audit` emits the parity-inclusive set. The twin-law fences stay byte-identical | `test_review_disposition.py` block H; `test_review_scope.py` audit-mode case; `test_twin_parity.py` green |
 
 ## Design — the mechanisms, stated once
 
@@ -89,6 +90,20 @@ Writes `<root>/gates/repro/<id>.json`: `{id, command, cwd, exit_code, output_tai
 
 Blind Hunter, Literal-Correctness, the two levels, `lens_budget` (it governed only the Literal lens), the verify wave and the compound role are retired. `lenses_counted: 3/3`. The `dispositions:` line keeps its shape with three lenses.
 
+### D6a. The self-audit — what shares, what must NOT, and why it is not the problem child
+
+**Assessed 2026-09-11, from the commands themselves:** neither self-audit twin carries a subagent, launch, fan-out, parallel or isolation instruction. Its three lenses are **sections one reader works through**, so there is exactly one read of the plan and one of the repo. The phase-2 fork saves nothing here because there is nothing duplicated to share, and **pre-work has no diff at all** — its input is the plan's `## Declared Change Set`, which is a path list.
+
+**It already holds the stop condition the review lacked**, and it has since 2026-08: *"No anchor, no finding — deleted, not demoted"* is the same shape as reproduce-or-drop one notch weaker (an anchor is literal text read from a real file); the roster is fixed at three with an amendment rule forbidding a fourth; caps and minute budgets were considered and rejected as unscalable, with the anchor rule named as what replaced them; and Lens 3 **cannot originate a finding**. That is why the audit never produced a SCC-441. It needs no new discipline — only the two shares below.
+
+**⛔ The scope asymmetry, stated because sharing naively would break it.** A review strips the byte-copy mirrors (`.opencode/`, `.roo/`, `.claude/`, generated launchers): a defect in a copy is a defect in its master, so reading both is paying twice for one finding. A **parity** audit is the exact opposite — the mirrors ARE its subject, because its question is *do the copies agree*. Pointing Lens 2 at a review-scoped diff would blind the one lens that exists to catch a drifted twin. So `review_scope.py` grows one flag, `--audit`, which applies the commit selection and the record stripping but **keeps every mirror**, and its docstring carries this paragraph.
+
+**What lands (row H):**
+1. **POST-DEV mode shares the resolved set.** Both twins' `## After the work is built` section — outside every `twin-law` fence, verified — gains: resolve the change set with `python3 .agents/scripts/review_scope.py --repo <tree> --base <ref> --audit [--key <PART-KEY>]`, so a retroactive audit and the review that follows measure the same commits and the same part rather than each deriving its own.
+2. **Lens 2 states the asymmetry**, in one sentence, in both twins, so the next agent cannot "helpfully" hand the parity lens a mirror-stripped diff.
+
+**What does NOT land, and why:** no declared-set cross-check inside `review_scope.py` — `/smh-code-review` Step 2 already diffs declared-vs-actual through `declared_change_set.py`, and a second reader of the same block is the two-callers-one-rule defect this house keeps paying for. Pre-work mode is untouched: it has no diff to share.
+
 ### D7. Parts in sequence (work-consolidation Rule 2, completed)
 
 Rule 2 already sequences the BUILD by the overlap map. The added sentence: **each part is reviewed on its own commits before the next part starts**, the scope script selects the part by key, and the enforcement suite at each part's close and at the tip is the integration check across parts — no lens is. `/smh-plan-task` and `/smh-dev-task-tests` Step 1.5 warn when `declared_change_set.py parse` counts more than 40 paths for one part: split it at plan time, when splitting is free.
@@ -118,9 +133,9 @@ None proposed. Every piece below is the same lane class in the same repo and sha
 
 ### Part 2 — the scope script (row D) — `SCC-447 scope: …`
 
-**RED:** `test_review_scope.py` against a temp git repo built in the test: (1) mirrors, generated launchers and records withheld, masters kept, bytes reported; (2) commits grouped by key, rider key wins over lane key; (3) a two-key range with no selector exits 2 naming both keys; (4) `--key` selects one part's files only; (5) `--range` selects explicit commits; (6) `--out` writes the patch and prints kept/withheld counts; (7) an empty selection exits 2, never a clean patch. Paste the red.
+**RED:** `test_review_scope.py` against a temp git repo built in the test: (1) mirrors, generated launchers and records withheld, masters kept, bytes reported; (2) commits grouped by key, rider key wins over lane key; (3) a two-key range with no selector exits 2 naming both keys; (4) `--key` selects one part's files only; (5) `--range` selects explicit commits; (6) `--out` writes the patch and prints kept/withheld counts; (7) an empty selection exits 2, never a clean patch; (8) **`--audit` keeps every mirror and still strips records** — the D6a asymmetry, proved by the same fixture returning a mirror path under `--audit` and not without it. Paste the red.
 
-**Edits:** `.agents/scripts/review_scope.py` (new, stdlib, docstring carries the SCC-441 measurement); `.agents/scripts/INDEX.md` row; SOP §11 paragraph + changelog row.
+**Edits:** `.agents/scripts/review_scope.py` (new, stdlib; the docstring carries the SCC-441 measurement AND the D6a asymmetry paragraph, because the flag is meaningless without the reason); `.agents/scripts/INDEX.md` row; SOP §11 paragraph + changelog row.
 
 ### Part 3 — receipts and the roster gate (row D) — `SCC-447 gates: …`
 
@@ -136,9 +151,9 @@ None proposed. Every piece below is the same lane class in the same repo and sha
 
 **Edits:** `.agents/commands/smh-code-review.md` and `cicd-code-review.md`: Step 0.7 loses the level-derivation fence; Step 1's input table drops `lens_budget`, `DIFF` becomes the `review_scope.py` output (with the command shown), a `## Reproduce` sub-step follows the engine's return (run every critical/important's command through `repro_receipt.py`; drop the rest), the "Then fix in thread" paragraph becomes D1; Step 3.5 nested: "run the machine floor (Step 1 of the audit door) only — the judgment pass is not run inside a review"; Step 4: the findings table header is fixed to `| # | file:line | sev | lens | failure scenario | disposition |`, the disposition vocabulary from D1, the re-stamp block D2, the end-of-review message D3, the verdict rules (FAIL = an open reproduced critical or a red machine floor; CONCERNS = an open reproduced important or a dead lens; PASS = nothing open), and "any code/test diff between that sha and HEAD invalidates the **suite evidence** — re-run the pins and the suite and re-stamp; never the lenses". `smh-clean-code-audit.md` and `cicd-clean-code-audit.md`: one line under Step 2 — "nested inside a review, this pass does not run (SCC-447)". `smh-close-task-merge-tree.md` §2 tail: the severity-triage sentence narrowed to the D1 policy. All five `.opencode/` mirrors byte-copied. SOP §③ and §`/smh-code-review` rewritten in present tense; changelog row.
 
-### Part 5 — consolidation, planner, autopilot (rows E, F) — `SCC-447 lanes: …`
+### Part 5 — consolidation, planner, autopilot, self-audit (rows E, F, H) — `SCC-447 lanes: …`
 
-**RED:** `test_review_disposition.py` blocks E and F: the autopilot's step-3 row for CONCERNS/FAIL contains `escalate` and neither `fix child` nor `fresh`; `never ships by itself` absent from the door, `autopilot_SOP.md` and the SOP §15 row; Rule 2 carries "reviewed on its own commits" and "the enforcement suite is the integration check"; `smh-plan-task.md` and `smh-dev-task-tests.md` Step 1.5 carry the 40-path warning.
+**RED:** `test_review_disposition.py` blocks E, F and H: the autopilot's step-3 row for CONCERNS/FAIL contains `escalate` and neither `fix child` nor `fresh`; `never ships by itself` absent from the door, `autopilot_SOP.md` and the SOP §15 row; Rule 2 carries "reviewed on its own commits" and "the enforcement suite is the integration check"; `smh-plan-task.md` and `smh-dev-task-tests.md` Step 1.5 carry the 40-path warning; **both self-audit twins' post-dev section names `review_scope.py … --audit` and Lens 2 carries the asymmetry sentence, stated identically in both** (a twin drift check of its own, since the sentence sits outside the fences and `test_twin_parity` therefore does not compare it).
 
 **Edits:** `.agents/commands/cicd-autopilot-claude.md:122` row → "**escalate** — post the D3 message on the ticket via `needs_human`; no fix child, no second reviewer; the operator's word moves it" (⚠️ AUDIT FINDING 1: `platforms: [claude]` — no `.opencode/` mirror exists for this door, so none is touched); `docs/_scc_sops_prds/autopilot_SOP.md:192` and the SOP §15 table row to match; `.agents/rules/work-consolidation.md` Rule 2 (D7 sentences); `.agents/commands/smh-plan-task.md` Step 2.5 and `smh-dev-task-tests.md` Step 1.5 (the size warning); the `.opencode/` mirrors of those two; changelog row.
 
@@ -188,6 +203,10 @@ None proposed. Every piece below is the same lane class in the same repo and sha
 - EDIT `.agents/commands/cicd-autopilot-claude.md` — step-3 row: escalate (⚠️ AUDIT FINDING 1: `platforms: [claude]`, so it has NO `.opencode/` mirror — none declared) → E
 - EDIT `docs/_scc_sops_prds/autopilot_SOP.md` — the matching row → E
 - EDIT `.agents/scripts/workflow_lint.py` — ⚠️ AUDIT FINDING 2: the `code-standards` finding-producer trigger learns the new disposition vocabulary (`fixed` / `escalated` / `dropped` / `recorded`) beside the old, with one lint case → C
+- EDIT `.agents/commands/smh-self-audit.md` — post-dev resolves through `review_scope.py --audit`; Lens 2 states the scope asymmetry → H
+- EDIT `.opencode/commands/smh-self-audit.md` — byte mirror → H
+- EDIT `.agents/commands/cicd-self-audit.md` — the same, story-lane twin (both edits sit OUTSIDE every `twin-law` fence — verified) → H
+- EDIT `.opencode/commands/cicd-self-audit.md` — byte mirror → H
 - EDIT `.agents/rules/work-consolidation.md` — Rule 2: review per part, suite is the integration check → F
 - EDIT `.agents/commands/smh-plan-task.md` — plan-time size warning → F
 - EDIT `.opencode/commands/smh-plan-task.md` — byte mirror → F
