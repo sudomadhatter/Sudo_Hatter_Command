@@ -75,10 +75,11 @@ trigger: model_decision
 ### The epic's mode is decided at kickoff, and a live epic freezes `main` for its scope (SCC-416, SCC-423, SCC-441)
 
 When the epic branch is cut, the operator decides once — **FULL**, **LIGHT**, or **TRUNK** — and the
-answer is readable from git, never from prose: **the branch name CONTAINS `-light-epic-`** and the
-epic is LIGHT, it does not and the epic is FULL, or there is **no epic branch at all** and the
-project is TRUNK. Every door reads it from there; an
-agent never chooses it and never changes it. The mode is chosen once, by the operator, at kickoff
+answer is readable from git, never from prose. A branch name that **CONTAINS `-light-epic-`** is a
+LIGHT epic. One that does not is a FULL epic. No epic branch at all is TRUNK. It is a substring
+test and not a token position, because `contains()` is exactly what the epic's own ruleset runs on
+the server, and the two cannot disagree about a name when they ask it the same question. Every door
+reads it from there; an agent never chooses it and never changes it. The mode is chosen once, by the operator, at kickoff
 (`/cicd-create-epic-sprint` asks); no door prompts to cut a light epic mid-flight.
 
 - **FULL** (`epic/<KEY>-epic-<N>-<slug>`): every story lands by **pull request into the epic** under
