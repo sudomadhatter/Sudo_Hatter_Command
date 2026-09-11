@@ -160,7 +160,37 @@ def main() -> int:
             rc, lines = run(repo)
             c.check("a workflow that does NOT read the token: still NOT ARMED",
                     first(lines).startswith("LIGHT") and "NOT ARMED" in second(lines), second(lines))
-            (repo / ".github" / "workflows" / "pr-check.yml").write_text(
+            # ⛔ A COMMENT IS NOT AN IMPLEMENTATION (SCC-441 review, reproduced 2026-09-11).
+            # The probe read the raw bytes, so a `# TODO: skip E2E on -light-epic-` in a repo
+            # still running all four checks reported ARMED and the cost line printed the
+            # discount with no caveat. The TODO is the LIKELIEST way the token first appears
+            # in a workflow - someone writes the intent before the code - so the probe was at
+            # its most confident exactly when it was most wrong. AVCH-152 is that TODO today.
+            wf = repo / ".github" / "workflows" / "pr-check.yml"
+            wf.write_text("name: x\non: push\n"
+                          "# TODO(AVCH-152): skip the E2E tiers on `-light-epic-`\n"
+                          "jobs:\n  e2e:\n    steps: [{run: npx playwright test}]\n",
+                          encoding="utf-8")
+            rc, lines = run(repo)
+            c.check("a full-line `#` comment naming the token: still NOT ARMED",
+                    first(lines).startswith("LIGHT") and "NOT ARMED" in second(lines),
+                    second(lines))
+            wf.write_text("name: x\non: push\njobs:\n  e2e:\n"
+                          "    runs-on: ubuntu-latest   # later: gate on -light-epic-\n",
+                          encoding="utf-8")
+            rc, lines = run(repo)
+            c.check("an INLINE trailing comment naming the token: still NOT ARMED",
+                    first(lines).startswith("LIGHT") and "NOT ARMED" in second(lines),
+                    second(lines))
+            wf.write_text("name: x\non: push\njobs:\n  e2e:\n"
+                          "    if: \"!contains(github.ref, '-light-epic-')\"   # skips on light\n",
+                          encoding="utf-8")
+            rc, lines = run(repo)
+            c.check("⛔ a REAL read on a line that ALSO carries a comment is ARMED - the "
+                    "comment strip must not eat the code beside it",
+                    first(lines).startswith("LIGHT") and "NOT ARMED" not in second(lines),
+                    second(lines))
+            wf.write_text(
                 "name: x\non: push\njobs:\n  e2e:\n    if: \"!contains(github.ref, '-light-epic-')\"\n",
                 encoding="utf-8")
             rc, lines = run(repo)

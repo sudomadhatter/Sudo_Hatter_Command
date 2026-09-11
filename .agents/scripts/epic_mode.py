@@ -58,6 +58,26 @@ def live_epics(repo: Path) -> tuple[list[str] | None, str]:
     return sorted(names), ""
 
 
+def uncommented(line: str) -> str:
+    """`line` with its YAML comment removed, or unchanged when it has none.
+
+    A `#` opens a comment only when it starts the line or follows whitespace, and only outside
+    a quoted scalar — so `foo#bar` stays whole and the `#` in `if: "a # b"` is not a comment.
+    An escaped `\\"` inside a double-quoted scalar ends the quote early here; that can only make
+    the scan strip MORE, which under-reports armed, and under-reporting prints a caveat that is
+    merely redundant while over-reporting hides a live E2E. It fails toward the loud answer."""
+    quote = ""
+    for i, ch in enumerate(line):
+        if quote:
+            if ch == quote:
+                quote = ""
+        elif ch in "\"'":
+            quote = ch
+        elif ch == "#" and (i == 0 or line[i - 1] in " \t"):
+            return line[:i]
+    return line
+
+
 def light_armed(repo: Path) -> bool:
     """Does THIS repo's CI actually read the `-light-epic-` token yet?
 
@@ -75,10 +95,15 @@ def light_armed(repo: Path) -> bool:
     for p in sorted(wf_dir.iterdir()):
         if p.suffix in (".yml", ".yaml") and p.is_file():
             try:
-                if LIGHT_TOKEN in p.read_text(encoding="utf-8", errors="replace"):
-                    return True
+                text = p.read_text(encoding="utf-8", errors="replace")
             except OSError:
                 continue
+            # ⛔ A COMMENT IS NOT AN IMPLEMENTATION (SCC-441 review, reproduced). A raw-bytes
+            # search called a repo armed on `# TODO: skip E2E on -light-epic-` while it still
+            # ran all four checks — and a TODO is the likeliest way the token first appears,
+            # because the intent gets written before the code. AVCH-152 is that TODO today.
+            if any(LIGHT_TOKEN in uncommented(ln) for ln in text.splitlines()):
+                return True
     return False
 
 

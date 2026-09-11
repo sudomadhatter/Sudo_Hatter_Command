@@ -498,6 +498,18 @@ it once, here — no door ever offers to cut a light epic mid-flight. In **both*
 the epic is live, `main` is frozen for everything the epic changes — a chore lane that touches a file
 the epic is also changing is epic work, and the pre-flights send it to the epic, not to `main`.
 
+**The LIGHT discount is a promise the repo has to keep, and the mode line tells you when it does
+not.** Skipping the two E2E jobs is something that repo's own `pr-check.yml` has to do; until a
+workflow there actually reads `-light-epic-`, every landing still pays all four checks. So the mode
+line adds `⛔ NOT ARMED HERE` whenever it finds no workflow that reads the token. That caveat matters
+more than it sounds: the close-out door tells the agent that a skipped E2E is the design rather than
+a red, so in an unarmed repo a genuinely failing E2E reads as the expected skip and you ship on it.
+The check reads the workflow files themselves, so the caveat disappears on its own the moment the
+job lands — nobody has to remember to remove it. **A comment naming the token is not an
+implementation:** a `# TODO` about skipping E2E leaves the caveat exactly where it was, which is the
+point, because writing the intent before the code is the normal order and is when the wrong answer
+would do the most damage.
+
 **TRUNK is the third answer, and it means this step cuts nothing** (SCC-423; AviationChat moved to it
 on 2026-09-06). There is no epic branch and no integration branch: every story lane is cut straight
 from `origin/main`, and it lands on `main` through a pull request you merge, under whatever checks

@@ -79,9 +79,10 @@ writes rides `claude/<JIRA-KEY>-<story-slug>` and lands on the epic branch. The 
 on `main`, which only moves when the whole epic ships — so its copy is behind by **every story that
 has landed since**. Read both:
 ```bash
+L=$(pwd)                                                             # this fence is its OWN shell - Step 0's L does not reach here (command-shape.md §Absolute fills)
 cd "$PROJECT_ROOT" && git fetch origin --quiet
 # origin/ FIRST: a local epic head is only as fresh as the last pull - the shared query reads origin only
-cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python` - the script lives in the LOBBY ($L, pinned at Step 0); FULL/LIGHT names the epic, TRUNK means none
+cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python` - the script lives in the LOBBY ($L, pinned on the line above); FULL/LIGHT names the epic, TRUNK means none
 cd "$PROJECT_ROOT" && git show origin/epic/<JIRA-KEY>-<slug>:_bmad-output/implementation-artifacts/sprint-status.yaml
 ```
 No epic branch — a project between epics — → the checkout copy **is** the authority; say so in one

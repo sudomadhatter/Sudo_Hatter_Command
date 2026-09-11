@@ -159,6 +159,39 @@ def report(rows: list[tuple[str, str]]) -> str:
     return "\n      " + "\n      ".join(f"MISSING [{n}] — {w}" for n, w in rows)
 
 
+# ⛔ `$L` MUST BE BOUND IN THE FENCE THAT USES IT — every fence, not just Step 2b's.
+# A ```bash fence is its OWN SHELL: nothing a previous fence assigned survives into it. So the
+# `ref-discovery` row above, which pins the shape `cd "$L" && python3 …`, is satisfied by a line
+# whose `$L` is empty — and `cd ""` exits 0 WITHOUT MOVING. The door then runs the lobby's script
+# from inside `$PROJECT_ROOT` (the line above it `cd`s there to fetch) and dies `No such file or
+# directory`, which is the exact death the pin was added to prevent. Reproduced 2026-09-11 on
+# Step 2b: cwd stayed at the project, the mode line exited 2, no mode was ever printed.
+#
+# Why this is file-wide and not another `REQUIRED` row: `missing()` measures ONE section and
+# takes the FIRST match per pattern, so a second door-step that repeats the call unbound stays
+# invisible to it. The binding is a property of each fence, so it is measured per fence.
+L_USE = re.compile(r"\$L\b|\$\{L\}")
+L_BIND = re.compile(r"(?:^|[\s;&|(])L=")
+
+
+def unbound_L(text: str) -> list[tuple[int, str]]:
+    """-> [(line number, the offending line)] for every `$L` used before `L=` in ITS OWN fence."""
+    out: list[tuple[int, str]] = []
+    bound, fenced = False, False
+    for n, ln in enumerate(text.splitlines(), 1):
+        if ln.lstrip().startswith("```"):
+            fenced = not fenced
+            bound = False  # a new fence is a new shell; the old binding does not cross
+            continue
+        if not fenced:
+            continue
+        if L_BIND.search(ln):
+            bound = True
+        if L_USE.search(ln) and not bound:
+            out.append((n, ln.strip()))
+    return out
+
+
 # A Step 2b that satisfies every requirement, used to prove each check can FAIL.
 GOOD = """
 Read `_bmad-output/implementation-artifacts/sprint-status.yaml` — it is ~62 KB of bare rows.
@@ -299,6 +332,31 @@ def main() -> int:
             c.check("an anchor at the very end yields an empty window, not the lines before it",
                     after_anchor("filler\n" * 5 + "git show origin/epic/x:sprint-status.yaml") == "",
                     "window must never read BACKWARDS")
+
+    if c.block("A6 · every `$L` is bound in the fence that uses it"):
+        loose = unbound_L(BOOT.read_text(encoding="utf-8")) if BOOT.is_file() else [(0, "absent")]
+        c.check(f"{BOOT.name}: no fence uses `$L` before binding it", not loose,
+                "; ".join(f"line {n}: {ln}" for n, ln in loose) or "clean")
+
+        # The two shapes, proved to fail. A fence is its own shell, so the binding must be IN it.
+        crosses = ('```bash\nL=$(pwd)\ncd "$PROJECT_ROOT" && git fetch\n```\n'
+                   'prose between the fences\n'
+                   '```bash\ncd "$PROJECT_ROOT" && git fetch\ncd "$L" && python3 x.py\n```\n')
+        c.check("a binding in an EARLIER fence does not carry into a later one",
+                [n for n, _ in unbound_L(crosses)] == [8], f"{unbound_L(crosses)}")
+        after = '```bash\ncd "$L" && python3 x.py\nL=$(pwd)\n```\n'
+        c.check("...and a binding placed AFTER the use is still unbound at the use",
+                len(unbound_L(after)) == 1, f"{unbound_L(after)}")
+        ok = '```bash\nL=$(pwd)\ncd "$PROJECT_ROOT" && git fetch\ncd "$L" && python3 x.py\n```\n'
+        c.check("the fixed shape — bind first, in the same fence — passes", not unbound_L(ok),
+                f"{unbound_L(ok)}")
+        c.check("`$LOBBY` is not a use of `$L`", not unbound_L('```bash\ncd "$LOBBY"\n```\n'),
+                "a prefix match here would fire on every unrelated variable")
+        c.check("`${L}` IS a use of `$L`", len(unbound_L('```bash\ncd "${L}"\n```\n')) == 1,
+                "the braced spelling is the same variable")
+        c.check("prose outside a fence is not scanned",
+                not unbound_L('the door pins `$L` at Step 0\n'),
+                "the requirement text names `$L` constantly and is not a shell")
 
     return c.finish()
 
