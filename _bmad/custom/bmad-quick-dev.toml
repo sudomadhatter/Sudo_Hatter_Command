@@ -19,6 +19,14 @@
 #      hook, which requires the repo's Jira key.
 #   3. The artifact shape is the current one (quick-fix bucket + thin
 #      walkthrough), replacing the pre-2026-08-02 narrative shape.
+#
+# FIX (2026-09-10, SCC-444): /cicd-quick-dev no longer drives this skill. The
+# house quick lane is the door's own five steps (scope check, plan + approved,
+# RED then GREEN, walkthrough + approved, tripwire - git-policy § Two toggles),
+# so the door-launched carve-out (a) below is RETIRED. A run of this skill is
+# now always a bare run: the plan-first gate has exactly ONE satisfaction here,
+# the plan-code-review route's CHECKPOINT 1. on_complete stays as the vendor
+# skill's own backstop for that bare run.
 
 [workflow]
 
@@ -27,19 +35,15 @@ activation_steps_prepend = [
 Before modifying ANY project file (source, story files, sprint-status.yaml, configs) you normally must
 write an implementation_plan.md, present it inline, and HALT until the human says 'approved'.
 
-There are exactly TWO ways that gate is satisfied in this workflow — no others, and never by your own
+There is exactly ONE way that gate is satisfied in this workflow — no other, and never by your own
 judgement that the change is small:
 
-  (a) This run was launched by /cicd-quick-dev. That command is operator-invoked, and invoking it IS the
-      'skip the plan' instruction (artifacts-always-first.md, When to Skip). You will know: it echoes
-      `Target: <project>`, opens a worktree or chore branch BEFORE any edit, and fixes an explicit
-      acceptance-criteria list in its Step 1. Proceed under its guards — and its EJECT tripwire re-arms
-      this gate the moment the work stops being small.
+  You are on the plan-code-review route and the human answered [A] Approve at CHECKPOINT 1. That
+  checkpoint IS the approval; do not ask for a second one.
 
-  (b) You are on the plan-code-review route and the human answered [A] Approve at CHECKPOINT 1. That
-      checkpoint IS the approval; do not ask for a second one.
-
-Otherwise: HALT and get an approved plan first.""",
+No house door launches this skill (the quick lane, /cicd-quick-dev, carries its own plan and its own
+literal 'approved' - git-policy.md § Two toggles), so there is no launched-by carve-out: a run of this
+skill is a bare run, gated like any other skill. Otherwise: HALT and get an approved plan first.""",
 ]
 
 persistent_facts = [
@@ -57,7 +61,9 @@ persistent_facts = [
 ]
 
 # Fires at the very end of the workflow — the last thing executed.
-# BACKSTOP ONLY: /cicd-quick-dev Step 3 owns the review gate. This fires it if that step did not run.
+# BACKSTOP for a bare run of this vendor skill (no house door drives it since SCC-444): the skill's
+# own one-shot route writes its spec after the code, so this is where its review and its closing
+# record are demanded. The house quick lane, /cicd-quick-dev, never reaches this text.
 on_complete = """STOP. Do not write your final chat message yet — two things must be true first.
 
 1. THE REVIEW GATE RAN. An independent adversarial reviewer (bmad-review-adversarial-general) must have

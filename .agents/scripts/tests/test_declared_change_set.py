@@ -200,25 +200,27 @@ def main() -> int:
     if c.block("S7 · the PRODUCER side: every plan-emitting command teaches the block"):
         root = Path(__file__).resolve().parents[3]   # re-derived, not borrowed from S6
         # ── the PRODUCER side: every plan-emitting command teaches the block ──────
-        # Part A's promised structure check, landed by the review wave. cicd-quick-dev is
-        # a NON-emitter by design (the fast lane skips plans; its eject defers to the full
-        # lane's plan machinery) - that ground truth is PINNED here so the next reader gets
-        # a red, not an archaeology project, if the lane ever grows a plan template.
-        EMITTERS = ("smh-quick-dev.md", "smh-plan-task.md", "cicd-dev-story-tests.md")
+        # Part A's promised structure check, landed by the review wave. cicd-quick-dev was a
+        # NON-emitter until SCC-444 made it the quick lane (git-policy § Two toggles): it now
+        # carries a plan at Step 2 and teaches the block there, and its Step 5 tripwire still
+        # re-arms the plan-first gate on an uncovered overlap. The old "plan-exempt" drift line
+        # is gone with the review gate it belonged to.
+        EMITTERS = ("smh-quick-dev.md", "smh-plan-task.md", "cicd-dev-story-tests.md",
+                    "cicd-quick-dev.md")
         for fname in EMITTERS:
             body = (root / ".agents/commands" / fname).read_text(encoding="utf-8")
             c.check(f"emitter {fname}: its plan template names the `## Declared Change "
                     f"Set` block",
                     "Declared Change Set" in body, "block not taught at the source")
         quick = (root / ".agents/commands/cicd-quick-dev.md").read_text(encoding="utf-8")
-        c.check("cicd-quick-dev stays a NON-emitter: it never teaches the `## Declared "
-                "Change Set` template, and its eject re-arms the plan-first gate (where "
-                "the block then applies); its drift line says plan-exempt, not silence",
-                "## Declared Change Set" not in quick
+        c.check("cicd-quick-dev is an EMITTER (SCC-444): its Step 2 template carries the "
+                "`## Declared Change Set` heading, its eject re-arms the plan-first gate, and "
+                "the plan-exempt drift line is gone",
+                "## Declared Change Set" in quick
                 and "RE-ARMS the plan-first gate" in quick
-                and "no Declared Change Set — plan-exempt lane" in quick,
-                "the fast lane grew plan machinery, or its drift-line answer went silent - "
-                "either teach the block or re-ground this pin")
+                and "plan-exempt lane" not in quick,
+                "the quick lane lost its plan template, its re-arm, or grew the old "
+                "plan-exempt drift line back")
 
     if c.block("S8 · the CLI itself, subprocess tier - verbs, exit codes, the carry"):
         # ── the CLI itself, subprocess tier - verbs, exit codes, the carry ────────

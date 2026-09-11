@@ -84,9 +84,10 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 > too — not only inside projects.** Full protocol → `.agents/rules/artifacts-always-first.md`; the
 > priority-zero kill-chain that enforces it (and the `_bmad/custom/` guard tomls that load it into every
 > dev-story / quick-dev run) → `.agents/rules/000-PLAN-FIRST-GATE.md`. (Skip only for
-> read-only/investigatory asks, trivial one-liners, `/cicd-quick-dev`, and **the lightweight lane
+> read-only/investigatory asks, trivial one-liners, and **the lightweight lane
 > `/smh-quick-fix`** — that exemption list lives in `artifacts-always-first.md` § "When to Skip" and
-> nowhere else.)
+> nowhere else. The quick lane, `/cicd-quick-dev`, carries a plan of its own — `git-policy.md`
+> § Two toggles.)
 >
 > **⭐ The lightweight lane, because its trigger is a sentence rather than a file (SCC-162, operator
 > ruling 2026-08-15).** *"Not everything is a full quick dev. sometimes I just want an agent to do

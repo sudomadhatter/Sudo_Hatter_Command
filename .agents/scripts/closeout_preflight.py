@@ -278,6 +278,16 @@ _VERDICT_RE = re.compile(
     r"(?:[^\n]*?@\s*`?([0-9a-f]{7,40}))?",
     re.MULTILINE | re.IGNORECASE)
 
+# SCC-444 — THE QUICK LANE'S RECORD LINE. `/cicd-quick-dev` (git-policy § Two toggles) runs a
+# review only when the operator asks; when none ran, the walkthrough carries this ONE line and
+# no `Verdict:` at all — a stamp would pull `walkthrough_roster` in for lenses that never
+# launched (SCC-173). The sha is REQUIRED: without it the line is a sentence, not a record, and
+# the `no Verdict:` error below stands exactly as it does for a walkthrough carrying neither.
+_QUICK_LANE_RE = re.compile(
+    r"^[>\-*\s]*\**\s*Review:\**\s*none\s*[-—–]\s*quick lane;\s*walkthrough approved by "
+    r"the operator\s*@\s*`?([0-9a-f]{7,40})",
+    re.MULTILINE | re.IGNORECASE)
+
 
 _LEGACY_REL = "_bmad-output/implementation-artifacts"
 
@@ -344,6 +354,12 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> set[str]:
             if legacy:
                 rep.info("artifacts", f"{rel}: no `Verdict:` line, but the pre-08-02 standalone "
                                       f"{legacy.name} holds it (legacy fallback)")
+                continue
+            q = _QUICK_LANE_RE.search(text)
+            if q:
+                rep.info("artifacts", f"{rel}: no `Verdict:` line - quick lane, no review was "
+                                      f"asked for; walkthrough approved by the operator @ "
+                                      f"{q.group(1)[:8]} (SCC-444)")
                 continue
             rep.err("artifacts", f"{rel}: no `Verdict:` line - "
                                  f"the review step has not run (or did not record it)")

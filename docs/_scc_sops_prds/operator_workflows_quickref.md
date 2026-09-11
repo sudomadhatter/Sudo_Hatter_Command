@@ -809,36 +809,34 @@ flowchart TD
 
 #### /cicd-quick-dev
 
-*Small, low-risk project work: fix the acceptance criteria before any code, build in one shot, then a
-mandatory review gate. It never closes out — on a story it advances the row to `review` and stops.
-Explained in [§8](#8-the-fast-lane--cicd-quick-dev). Calls: `bmad-quick-dev`, an independent
-reviewer, `/cicd-clean-code-audit`, `jira_feed.py devrecord`. Ejects to: ①.*
+*The quick lane in a project (`git-policy` § Two toggles): small, non-critical work with TDD kept and
+the ceremony cut. A scope check against the repo's critical surfaces, a plan and `approved`, RED then
+GREEN, a walkthrough and `approved`, the same scope check on the real diff at the door. Self-audit
+and review only when you ask; no `Verdict:` unless a review ran. It never closes out — on a story it
+advances the row to `review` and stops. Explained in [§8](#8-the-fast-lane--cicd-quick-dev). Calls:
+`scope_check.py`, `link-worktree-assets.py`, `jira_feed.py start`, `jira_feed.py devrecord`; on
+request `/cicd-self-audit`, `/cicd-code-review`. Ejects to: ①.*
 
 ```mermaid
 flowchart TD
-    S0["Step 0 — resolve project"] --> S05{"Step 0.5 — which lane?"}
-    S05 -- "a story id" --> WT["worktree on claude/KEY-slug\noff the epic branch"]
-    S05 -- "ad-hoc, no epic" --> CH["chore/KEY-slug off main\nno story file — ever"]
-    WT --> S1["Step 1 — bmad-quick-dev clarifies and routes"]
-    CH --> S1
-    S1 --> AC["⊕ FIX 2–6 CHECKABLE ACs\nechoed in chat BEFORE any code\nSTOP until they are agreed"]
-    AC --> S15{"Step 1.5 — ⛔ EJECT tripwire"}
-    S15 -- "router says plan-code-review" --> EJ["STOP. Hand to ① /cicd-write-story-tests\nkeep the worktree, discard nothing"]
-    S15 -- "auth · payments · PII · schema\nsecurity rules · cross-boundary contract" --> EJ
-    S15 -- "the intent will not reduce to ACs" --> EJ
-    S15 -- "a bug fix that will not reproduce" --> EJ
-    S15 -- "clear" --> S2["Step 2 — one-shot implementation\ncommits in the worktree, explicit paths\na bug fix carries ONE pinning regression test"]
-    S2 --> S3["Step 3 — ⭐ REVIEW GATE, mandatory"]
-    S3 --> R1["every lane: an independent adversarial\nreviewer with NO conversation context"]
-    S3 --> R2["code touched: acceptance auditor\n+ /cicd-clean-code-audit\n+ scoped tests, whole suite if a shared handler moved"]
-    S3 --> R3["docs only: link + anchor check\n+ SOP-currency check"]
-    R1 --> F{"any finding bigger\nthan a trivial patch?"}
-    R2 --> F
-    R3 --> F
-    F -- "yes" --> EJ
-    F -- "no — patches applied NOW; a defer names\nONE structural blocker, never a parking lot" --> S4["Step 4 — thin walkthrough with the Verdict line\nstory: advance the row to 'review'"]
-    S4 --> S45["Step 4.5 — file the Dev Record now\nthis lane may END here"]
-    S45 --> STOP2["⛔ STOP. No close-out. Never land on the epic\nbranch. 'done' is yours — /cicd-close-story-merge-tree"]
+    S0["Step 0 — resolve project\nprint the epic mode from the git query: FULL / LIGHT / TRUNK"] --> S05{"Step 0.5 — which lane?"}
+    S05 -- "a story id" --> WT["worktree on claude/KEY-slug off the epic branch\n(FULL or LIGHT), or off origin/main in TRUNK mode"]
+    S05 -- "ad-hoc, no story" --> CH["chore/KEY-slug off main\nno story file — ever"]
+    WT --> S07["Step 0.7 — probe the review runtime"]
+    CH --> S07
+    S07 --> S1{"Step 1 — scope check\nscope_check.py on the planned files"}
+    S1 -- "CLEAR" --> S2["Step 2 — implementation_plan.md\ngoal · the assertion · the change set"]
+    S1 -- "OVERLAP" --> HOLD["⛔ STOP — say what overlaps and why\nonly your word lifts it (Scope override)\nnever a lighter road"]
+    HOLD -- "your word" --> S2
+    HOLD -- "no" --> EJ["hand to ① /cicd-write-story-tests\nkeep the worktree, discard nothing"]
+    S2 --> A1["STOP for the literal approved\n/cicd-self-audit only if you ask"]
+    A1 --> S3["Step 3 — RED then GREEN\nthe assertion seen red · the change\nscoped suite + lint on the changed files, bare"]
+    S3 --> S4["Step 4 — thin walkthrough\nreview-runtime · Task Checklist · Evidence · Your Actions\nstory → review"]
+    S4 --> A2["STOP for the literal approved\n/cicd-code-review only if you ask —\nelse 'Review: none - quick lane' and no Verdict:"]
+    A2 --> S45["Step 4.5 — file the Dev Record"]
+    S45 --> S5{"Step 5 — the tripwire\nscope_check.py --diff on the REAL diff"}
+    S5 -- "CLEAR, or covered by a Scope override" --> STOP2["⛔ STOP. No close-out. Never land on the epic branch,\nnever touch main. Your door: /cicd-close-story-merge-tree ·\n/cicd-push-e2e · /smh-close-task-merge-tree Projects/name"]
+    S5 -- "OVERLAP, uncovered" --> EJ
 ```
 
 ### The Task lane

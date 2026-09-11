@@ -386,7 +386,7 @@ question the system will not answer for you at the end.
 | Condition | Qualified Lane | Entry Command | Enforcement / Eject Rules |
 |---|---|---|---|
 | Touches deployable code (`backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/`, `.github/`) with story ID | **The Story Lane** | ① `/cicd-write-story-tests` | Full ①②③ cycle. Epic-branch isolation — **or, in a `trunk`-mode project, no epic branch at all: the lane is cut from `origin/main` and lands on `main` by a PR he merges** (SCC-423). |
-| Touches deployable code, small and low-risk, no story ID | **The Fast Lane** | `/cicd-quick-dev` | **Ejects to Story Lane** if touching auth, PII, DB schema, or cross-service contracts. |
+| Touches deployable code, small and low-risk, no story ID | **The Fast Lane** | `/cicd-quick-dev` | Step 1 scope check against the repo's critical-surfaces map (auth, billing, security rules, FAA-facing answers, CI): an overlap is a **soft stop** only your word lifts. Step 5 re-runs it on the real diff; an overlap with no override **ejects to the Story Lane**. |
 | System/toolkit work (`.agents/`, `.githooks/`, `AGENTS.md`) qualifying `TASK` | **The Task Lane** | `/smh-quick-dev` | Worktree off `main`, closes via `/smh-close-task-merge-tree`. **Ejects to Story Lane** if deployable code touched. |
 | System/toolkit work qualifying `LIGHT` or `LIGHT-VCS` | **The Lightweight Lane** | `/smh-quick-fix` | No plan, no review, direct chore execution. **Ejects to Task Lane** if real diff expands. |
 
@@ -394,8 +394,11 @@ question the system will not answer for you at the end.
 **Read the arrows, they matter more than the boxes.** Both dotted lines are **ejects** — tripwires
 that fire mid-build and send the work back to the full loop. You do not get to argue with either one:
 
-- The fast lane ejects on **risk, not size**. Login, permissions, payments, user data, DB schema, or
-  a cross-service contract goes to the full loop no matter how small the change looks.
+- The fast lane stops on **risk, not size**, and the risk is a file, not a feeling: Step 1 runs
+  `scope_check.py` on the planned files against the repo's `.agents/critical-surfaces.json` — auth and
+  session, billing, security rules, FAA-facing answers, CI and the gates. An overlap is a soft stop
+  that only your word lifts; Step 5 runs the same check on the real diff, and an overlap you never
+  overrode goes to the full loop no matter how small the change looks.
 - The Task lane ejects the moment a **deployable path** appears in the diff. That is a product
   change whatever the ticket says, and the product has exactly one road to `main`. **There is no
   override flag, deliberately** — see [`task_preflight.py`](#the-checks-and-what-each-one-refuses).
@@ -409,8 +412,8 @@ that fire mid-build and send the work back to the full loop. You do not get to a
 | --- | --- | --- | --- | --- |
 | **For** | sprint features, bug stories | a small project fix, a docs/config change | the toolkit, rules, `/` commands, gates, docs | a guide, a reference fix, tidying source control — **nothing that can break** |
 | **Build with** | ① `/cicd-write-story-tests` → ② `/cicd-dev-story-tests` | `/cicd-quick-dev` | `/smh-quick-dev` | `/smh-quick-fix` |
-| **Review with** | ③ `/cicd-code-review` | built into `/cicd-quick-dev` Step 3 | `/smh-code-review` | **none** — the gates run, no verdict |
-| **Plan + `approved`?** | yes | no — invoking it IS the skip | yes | **no** — invoking it IS the skip |
+| **Review with** | ③ `/cicd-code-review` | ③ `/cicd-code-review` **only when you ask**; otherwise `Review: none - quick lane` and no verdict | `/smh-code-review` | **none** — the gates run, no verdict |
+| **Plan + `approved`?** | yes | **yes** — the plan, then the walkthrough; self-audit only when you ask | yes | **no** — invoking it IS the skip |
 | **Branch** | `claude/<KEY>-<slug>`, off the epic branch | same, or `chore/<KEY>-<slug>` off `main` if ad-hoc | `chore/<KEY>-<slug>`, off `main` | `chore/<KEY>-<slug>`, off `main` |
 | **Close with** | `/cicd-close-story-merge-tree` (or `/cicd-merge-epic-workingtrees`) | **it does not close** — hands back to you | `/smh-close-task-merge-tree` | `/smh-close-task-merge-tree` — the same door, unchanged |
 | **Code lands on** | the epic branch → `main` via `/cicd-push-e2e` | epic branch, via close-out | `main`, directly | `main`, directly |
@@ -1643,20 +1646,20 @@ that correctly have none.
 
 ## 8. The fast lane — `/cicd-quick-dev`
 
-For genuinely small project work: a fix, a docs/config change, a task that does not earn the full
-pipeline.
+The quick lane, for genuinely small, non-critical project work: a UI fix, a document or file
+update, a task that does not earn the full ①②③ pipeline. It is the same five steps as
+`/smh-quick-dev` in the lobby, defined once in `git-policy` § Two toggles, and the epic you are on
+(FULL, LIGHT or TRUNK) does not change them.
 
-**Accuracy over speed.** What it drops is the *pipeline* — the ATDD red phase, the full suite, the
-three-reviewer panel. It does **not** drop the rigour.
+**TDD stays; what it cuts is ceremony you did not ask for.** Five steps, two of them yours:
 
-**Scope is judged by ONE question, and it is not about size.** The lane asks whether the work is
-two or more independently shippable deliverables — that halt stays, because that is a product
-question you own. It does **not** measure a spec's tokens, does **not** show you a token count, and
-never halts, splits or warns on how long a spec is. BMAD ships a 900–1600 token guideline and a
-Split/Keep halt built on it; both are retired here, in the vendor skill on disk and in
-`_bmad/custom/bmad-quick-dev.toml`, which survives a BMAD update. ⚠️ **A `bmad` update reinstalls
-the vendor skill and turns `test_bmad_token_gate_retired.py` red** — that is the guard working, not
-a lane breaking. Re-apply the three edits per door; the override file is untouched by the update.
+| Step | What happens | Who moves it |
+|---|---|---|
+| 1. Scope check | `scope_check.py` runs the planned files against the repo's `.agents/critical-surfaces.json` — auth and session, billing, security rules, FAA-facing answers, CI and the gates. `CLEAR` continues. `OVERLAP` **stops**: the agent prints what overlaps and why and waits. | Only your word lifts it, quoted into the plan as `Scope override`. There is no agent override, and the lane never offers a lighter road. |
+| 2. Plan | `implementation_plan.md` — goal, the assertion that will prove it, the change set — then the literal `approved`. `/cicd-self-audit` runs **only if you ask**. | you |
+| 3. RED then GREEN | the assertion seen red, then made green; the scoped suite and the project's lint gate on the changed files, run bare | the agent |
+| 4. Walkthrough | `walkthrough.md`, then the literal `approved`. `/cicd-code-review` runs **only if you ask**; when it does not, the walkthrough carries `Review: none - quick lane; walkthrough approved by the operator @ <sha>` and **no `Verdict:` line** (a stamp would pull in the roster gate for a review that never ran). | you |
+| 5. Tripwire, then stop | the same scope check on the **real diff**. An overlap the plan carries no override for **ejects** to ① and re-arms the plan gate. Otherwise the lane stops and hands you the door. | the agent |
 
 ▶ **Diagram:** [`/cicd-quick-dev` in the command atlas](#cicd-quick-dev) — every step, stop and refusal, checked against the live command.
 
@@ -1664,6 +1667,12 @@ a lane breaking. Re-apply the three edits per door; the override file is untouch
 On ad-hoc work with no epic it takes a `chore/<KEY>-<slug>` branch off `main` and **never creates a
 story file** — hanging one off a finished epic silently reopens it. ① and `/cicd-label-tasks` mark
 eligible stories with the `quick-dev` label, so the fast-lane pile is one board filter away.
+
+**The vendor `bmad-quick-dev` skill is not this lane.** It stays installed and reachable on its own,
+gated like any other skill by `_bmad/custom/bmad-quick-dev.toml`; no house door drives it. Its
+900–1600 token guideline and the Split/Keep halt stay retired there (⚠️ a `bmad` update reinstalls
+the vendor text and turns `test_bmad_token_gate_retired.py` red — the guard working, not a lane
+breaking; re-apply the three edits per door, the override file is untouched).
 
 ### 8a. The project standing push lane — `/cicd-non-crit-pr-push`
 
@@ -2974,9 +2983,9 @@ with the way you actually work.
 
 **Two routes, chosen by what the ticket IS.** A story with a file on disk and an epic branch runs the
 six-child story route (①②③). A project Task with none of those — a performance fix, an asset, a copy
-change — runs the four-child quick-fix route through `/cicd-quick-dev`. On that route the door's own
-review gate is a **first pass, never the verdict**: no seat carries the `Task` tool, so a seated
-child runs it inline a lens short, and the independent no-seat reviewer that follows is what counts.
+change — runs the four-child quick-fix route through `/cicd-quick-dev`. On that route the quick lane
+**produces no verdict of its own** — it reviews only when asked, and the lead is the one asking: the
+independent no-seat reviewer that follows as stage 2 is that request, and its verdict is the run's.
 Both routes are drawn on [the Autopilot SOP](autopilot_SOP.md#5-the-quick-fix-run--four-children-for-a-ticket-that-is-not-a-story).
 
 **One prerequisite refuses more often than the rest: the CLI version.** The lane needs `claude`
@@ -3169,7 +3178,7 @@ speak; "refuses" means it will not proceed at all and names the fix.*
 | ① `/cicd-write-story-tests` | Step 2 until the behavior contract is locked or waived | a "red" that is fiction (asserts something that does not exist) |
 | ② `/cicd-dev-story-tests` | Step 2 (plan written — `continue` / `changed` / audit path); Step 2.5 only on real questions | no BDD lock and no waiver |
 | ③ `/cicd-code-review` | never — it verdicts | an empty diff |
-| `/cicd-quick-dev` | Step 1 (the acceptance list) and the end — it never closes out | the eject tripwire (risk, or ACs that will not fix) |
+| `/cicd-quick-dev` | Step 1 on an `OVERLAP` (your word, or the full lane), Step 2 (`approved` on the plan), Step 4 (`approved` on the walkthrough), and the end — it never closes out | Step 5's tripwire: an overlap on the real diff with no `Scope override` in the plan ejects to ① |
 | `/smh-quick-dev` | Step 1 (the checkable list), Step 1.5 (`approved`), Step 1.6 (proposed subtasks), the end | a NO-GO audit; the eject tripwire (a deployable path) |
 | `/smh-quick-fix` | **the end only** — and never to ask whether to mint a ticket or open a lane; a `LIGHT-VCS` tidy still shows you what it will delete first | Step 0 qualification is not `LIGHT`: a project repo, a deployable path, a toolkit path, **or no paths declared at all**; Step 3.5 re-checks the real diff and ejects to `/smh-quick-dev` |
 | `/smh-code-review` | never — it verdicts | an empty diff |
@@ -3541,31 +3550,32 @@ findings can FAIL; the judgment pass caps at CONCERNS. Explained in
 
 #### /cicd-quick-dev
 
-*Small, low-risk project work: fix the acceptance criteria before any code, build in one shot, then a
-mandatory review gate. It never closes out — on a story it advances the row to `review` and stops.
-Explained in [§8](#8-the-fast-lane--cicd-quick-dev). Calls: `bmad-quick-dev`, an independent
-reviewer, `/cicd-clean-code-audit`, `jira_feed.py devrecord`. Ejects to: ①.*
+*The quick lane in a project (`git-policy` § Two toggles): small, non-critical work with TDD kept and
+the ceremony cut. A scope check against the repo's critical surfaces, a plan and `approved`, RED then
+GREEN, a walkthrough and `approved`, the same scope check on the real diff at the door. Self-audit
+and review only when you ask; no `Verdict:` unless a review ran. It never closes out — on a story it
+advances the row to `review` and stops. Explained in [§8](#8-the-fast-lane--cicd-quick-dev). Calls:
+`scope_check.py`, `link-worktree-assets.py`, `jira_feed.py start`, `jira_feed.py devrecord`; on
+request `/cicd-self-audit`, `/cicd-code-review`. Ejects to: ①.*
 
 | Stage / Step | Details / Action | Next Step / Transition |
 |---|---|---|
-| `S0` | Step 0 — resolve project | (terminal / end) |
-| `S05` | Step 0.5 — which lane? | **a story id** → worktree on claude/KEY-slug off the epic branch<br>**ad-hoc, no epic** → chore/KEY-slug off main no story file — ever |
-| `WT` | worktree on claude/KEY-slug off the epic branch | → Step 1 — bmad-quick-dev clarifies and routes |
-| `CH` | chore/KEY-slug off main no story file — ever | → Step 1 — bmad-quick-dev clarifies and routes |
-| `S1` | Step 1 — bmad-quick-dev clarifies and routes | → ⊕ FIX 2–6 CHECKABLE ACs echoed in chat BEFORE any code STOP until they are agreed |
-| `AC` | ⊕ FIX 2–6 CHECKABLE ACs echoed in chat BEFORE any code STOP until they are agreed | → Step 1.5 — ⛔ EJECT tripwire |
-| `S15` | Step 1.5 — ⛔ EJECT tripwire | **router says plan-code-review** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**auth · payments · PII · schema security rules · cross-boundary contract** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**the intent will not reduce to ACs** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**a bug fix that will not reproduce** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**clear** → Step 2 — one-shot implementation commits in the worktree, explicit paths a bug fix carries ONE pinning regression test |
-| `EJ` | STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing | (terminal / end) |
-| `S2` | Step 2 — one-shot implementation commits in the worktree, explicit paths a bug fix carries ONE pinning regression test | → Step 3 — ⭐ REVIEW GATE, mandatory |
-| `S3` | Step 3 — ⭐ REVIEW GATE, mandatory | → every lane: an independent adversarial reviewer with NO conversation context<br>→ code touched: acceptance auditor + /cicd-clean-code-audit + scoped tests, whole suite if a shared handler moved<br>→ docs only: link + anchor check + SOP-currency check |
-| `R1` | every lane: an independent adversarial reviewer with NO conversation context | → any finding bigger than a trivial patch? |
-| `R2` | code touched: acceptance auditor + /cicd-clean-code-audit + scoped tests, whole suite if a shared handler moved | → any finding bigger than a trivial patch? |
-| `R3` | docs only: link + anchor check + SOP-currency check | → any finding bigger than a trivial patch? |
-| `F` | any finding bigger than a trivial patch? | **yes** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**no — patches applied NOW; a defer names ONE structural blocker, never a parking lot** → Step 4 — thin walkthrough with the Verdict line story: advance the row to 'review' |
-| `S4` | Step 4 — thin walkthrough with the Verdict line story: advance the row to 'review' | → Step 4.5 — file the Dev Record now this lane may END here |
-| `S45` | Step 4.5 — file the Dev Record now this lane may END here | → ⛔ STOP. No close-out. Never land on the epic branch. 'done' is yours — /cicd-close-story-merge-tree |
-| `STOP2` | ⛔ STOP. No close-out. Never land on the epic branch. 'done' is yours — /cicd-close-story-merge-tree | (terminal / end) |
-
+| `S0` | Step 0 — resolve project · print the epic mode from the git query: FULL / LIGHT / TRUNK | → Step 0.5 — which lane? |
+| `S05` | Step 0.5 — which lane? | **a story id** → worktree on claude/KEY-slug off the epic branch (FULL or LIGHT), or off origin/main in TRUNK mode<br>**ad-hoc, no story** → chore/KEY-slug off main no story file — ever |
+| `WT` | worktree on claude/KEY-slug off the epic branch (FULL or LIGHT), or off origin/main in TRUNK mode | → Step 0.7 — probe the review runtime |
+| `CH` | chore/KEY-slug off main no story file — ever | → Step 0.7 — probe the review runtime |
+| `S07` | Step 0.7 — probe the review runtime | → Step 1 — scope check scope_check.py on the planned files |
+| `S1` | Step 1 — scope check scope_check.py on the planned files | **CLEAR** → Step 2 — implementation_plan.md goal · the assertion · the change set<br>**OVERLAP** → ⛔ STOP — say what overlaps and why only your word lifts it (Scope override) never a lighter road |
+| `HOLD` | ⛔ STOP — say what overlaps and why only your word lifts it (Scope override) never a lighter road | **your word** → Step 2 — implementation_plan.md goal · the assertion · the change set<br>**no** → hand to ① /cicd-write-story-tests keep the worktree, discard nothing |
+| `EJ` | hand to ① /cicd-write-story-tests keep the worktree, discard nothing | (terminal / end) |
+| `S2` | Step 2 — implementation_plan.md goal · the assertion · the change set | → STOP for the literal approved /cicd-self-audit only if you ask |
+| `A1` | STOP for the literal approved /cicd-self-audit only if you ask | → Step 3 — RED then GREEN the assertion seen red · the change scoped suite + lint on the changed files, bare |
+| `S3` | Step 3 — RED then GREEN the assertion seen red · the change scoped suite + lint on the changed files, bare | → Step 4 — thin walkthrough review-runtime · Task Checklist · Evidence · Your Actions story → review |
+| `S4` | Step 4 — thin walkthrough review-runtime · Task Checklist · Evidence · Your Actions story → review | → STOP for the literal approved /cicd-code-review only if you ask — else 'Review: none - quick lane' and no Verdict: |
+| `A2` | STOP for the literal approved /cicd-code-review only if you ask — else 'Review: none - quick lane' and no Verdict: | → Step 4.5 — file the Dev Record |
+| `S45` | Step 4.5 — file the Dev Record | → Step 5 — the tripwire scope_check.py --diff on the REAL diff |
+| `S5` | Step 5 — the tripwire scope_check.py --diff on the REAL diff | **CLEAR, or covered by a Scope override** → ⛔ STOP. No close-out. Never land on the epic branch, never touch main. Your door: /cicd-close-story-merge-tree · /cicd-push-e2e · /smh-close-task-merge-tree Projects/name<br>**OVERLAP, uncovered** → hand to ① /cicd-write-story-tests keep the worktree, discard nothing |
+| `STOP2` | ⛔ STOP. No close-out. Never land on the epic branch, never touch main. Your door: /cicd-close-story-merge-tree · /cicd-push-e2e · /smh-close-task-merge-tree Projects/name | (terminal / end) |
 
 ### The Task lane
 
@@ -4324,7 +4334,7 @@ that repo after you commit: `code-review-graph update`.
 
 | Command | What it does for you |
 | --- | --- |
-| `/cicd-quick-dev` | Fast lane for genuinely small project work. Drops the *pipeline*, never the rigour: a worktree, ACs fixed before any code, an eject tripwire, and a mandatory review gate. **Low-risk only.** On a story it advances the row to `review` and **stops there — it never closes out**. |
+| `/cicd-quick-dev` | The quick lane for genuinely small, non-critical project work. TDD kept, ceremony cut: a scope check against the repo's critical surfaces (an overlap stops for your word), a plan and `approved`, RED then GREEN, a walkthrough and `approved`, the tripwire on the real diff. Self-audit and review only when you ask. On a story it advances the row to `review` and **stops there — it never closes out**. |
 | `/cicd-non-crit-pr-push` | **Standing push lane for child projects** ([§8a](#8a-the-project-standing-push-lane--cicd-non-crit-pr-push)). Routine non-critical project changes (docs, memory, notes, quick references). Operates on the project's Standing Push Ticket + persistent `chore/<KEY>-standing-push` branch directly to PR with `main-write-gate` check. |
 
 **The Task lane** — [§9](#9-the-task-lane--work-on-the-system-itself)

@@ -159,22 +159,24 @@ mistake and says which one it was, but the refusal costs a step — get it right
 | 6 | `/cicd-code-review <story>` again | **`--review`, no seat** | Fresh session at the new sha |
 
 **The quick-fix route — a ticket with no story file, no sprint row and no epic branch.** A
-project Task (a performance fix, an asset, a copy change) rides `/cicd-quick-dev`, which is ONE door
-holding both its own build and its own review gate:
+project Task (a performance fix, an asset, a copy change) rides `/cicd-quick-dev`, the quick lane
+(`git-policy` § Two toggles): scope check, plan, RED then GREEN, walkthrough — and **no review of its
+own unless asked**. On this route the lead is the one asking: stage 2 IS the request.
 
 | Stage | Door | Seat | Note |
 |---|---|---|---|
-| 1 | `/cicd-quick-dev <KEY>` | `cheshire-cat` | The build, plus the door's own first-pass gate |
-| 2 | `/cicd-code-review <KEY>` | **`--review`, no seat** | The gate whose verdict counts |
+| 1 | `/cicd-quick-dev <KEY>` | `cheshire-cat` | The build: scope check, plan, RED, GREEN, walkthrough (both `approved` stops are the lead's) |
+| 2 | `/cicd-code-review <KEY>` | **`--review`, no seat** | The review the quick lane runs only on request — this is the request, and its verdict is the run's |
 | 3 | the fix, only on CONCERNS/FAIL | `cheshire-cat` | One cycle, in the lane |
 | 4 | `/cicd-code-review <KEY>` again | **`--review`, no seat** | Fresh session at the new sha |
 
-⛔ **A seated child cannot fan out review lenses, and that is why stage 2 is not optional here.** No
-seat carries the `Task` tool, so `/cicd-quick-dev`'s own Step 3 gate probes `inline (no subagent
-tool)` and drops the Blind Hunter. It reports that rather than hiding it, and it is still worth
-running — but it is a first pass, never the run's verdict. The **no-seat** review child inherits the
-default tool set, fans out properly, and is the verdict you report. ⛔ Never read the quick-dev
-door's own verdict as the run's.
+⛔ **The quick lane produces no verdict; stage 2 does.** `/cicd-quick-dev` writes the record line
+`Review: none - quick lane; walkthrough approved by the operator @ <sha>` and no `Verdict:` stamp,
+so there is nothing in stage 1's output to mistake for a verdict. Stage 2 is the on-request review
+applied by a caller: the **no-seat** review child inherits the default tool set, fans out properly,
+and is the verdict you report. ⛔ A seated child could not fan out review lenses anyway — no seat
+carries the `Task` tool, so a seated child has no subagent tool and would probe `inline (no subagent
+tool)` — which is the second reason the review is a separate, no-seat child.
 
 **Choosing the route:** the story route when the work has a story file on disk and an epic branch;
 the quick-fix route when it has neither. If you cannot tell which, it is not a quick fix — escalate.

@@ -1194,6 +1194,46 @@ def main() -> int:
                     and any("pass @" in m for m in rows(out_h, "gates")),
                     f"rc={rc_h} gates={rows(out_h, 'gates')}")
 
+    if c.block("QL · SCC-444 · the quick lane's review line is a record, not a missing verdict"):
+        # The quick lane (`/cicd-quick-dev`, git-policy § Two toggles) runs a review only when the
+        # operator asks. When none ran, the walkthrough carries ONE record line instead of a
+        # `Verdict:` stamp - a stamp would pull the roster gate in for lenses that never launched
+        # (SCC-173). The close-out reads that line as a record (INFO), keeps erring on a walkthrough
+        # that carries NEITHER, and reads a real verdict exactly as before.
+        QUICK = "Review: none - quick lane; walkthrough approved by the operator @ 64098847"
+        WT = "_artifacts/2026-08-01_epic_30/story-30-1-fresh/walkthrough.md"
+        NO_VERDICT = "no `Verdict:` line"
+        for label, body, want_err in (
+            ("QL1 the record line and no `Verdict:` -> no `no Verdict` error",
+             "## Evidence\n\ntotals here\n\n" + QUICK + "\n\n## Your Actions\n\n- none\n", False),
+            ("QL2 CONTROL a real `Verdict:` still reads as a verdict (no `no Verdict` error)",
+             "## Code Review\n\n**Verdict: PASS @ 64098847**\n", False),
+            ("QL3 CONTROL neither line -> the `no Verdict` error STANDS",
+             "## Code Review\n\nThe review ran; nothing to report.\n", True),
+            ("QL4 CONTROL the record line without its sha is NOT the record -> the error stands",
+             "## Evidence\n\nReview: none - quick lane; walkthrough approved by the operator\n", True),
+        ):
+            with TempDir() as tmp:
+                repo = lane_repo(tmp, verdict=None, gates_id=None)
+                (repo / WT).write_text(body, encoding="utf-8")
+                rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                 "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+                errs = [m for m in rows(out, "artifacts", "ERROR") if NO_VERDICT in m]
+                c.check(label, bool(errs) == want_err,
+                        f"rc={rc} artifacts={rows(out, 'artifacts')}")
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, verdict=None, gates_id=None)
+            (repo / WT).write_text("## Evidence\n\n" + QUICK + "\n", encoding="utf-8")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            c.check("QL5 the record line is READ, not merely tolerated: an INFO row names the "
+                    "quick lane and its sha",
+                    any("quick lane" in m and "64098847" in m
+                        for m in rows(out, "artifacts", "INFO")),
+                    f"artifacts={rows(out, 'artifacts')}")
+            c.check("QL6 ...and it claims no verdict, so the receipt demand stays off (no gates "
+                    "ERROR)", not rows(out, "gates", "ERROR"), f"gates={rows(out, 'gates')}")
+
     return c.finish()
 
 

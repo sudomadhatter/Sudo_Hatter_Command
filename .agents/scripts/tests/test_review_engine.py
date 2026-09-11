@@ -77,16 +77,13 @@ SMH_CMD = ".agents/commands/smh-code-review.md"
 # having no twin, so nothing else in the suite reaches it — delete its `blocked:`
 # clause and every gate stayed green (SCC-263 review, Acceptance Auditor).
 DEV_STORY_CMD = ".agents/commands/cicd-dev-story-tests.md"
-# SCC-205: the FAST lane became a caller. `/cicd-quick-dev` used to invoke
-# `bmad-review-adversarial-general` bare - one lens, no roster, no verification, no triage - so it
-# was the only dev lane in either family whose review produced no `lenses_run` block, which is
-# exactly the evidence `walkthrough_roster.py` reads at close-out. Routing it through the engine is
-# MORE BMAD, not less: the engine runs those lenses under a hunter contract with triage on top.
-# ⭐ This line was added because the completeness row below CAUGHT the omission - the caller set is
-# derived from the tree, so wiring a new caller and forgetting to pin it goes red rather than
-# silently inheriting the autopilot's `capped` budget (SCC-147).
-QUICK_CMD = ".agents/commands/cicd-quick-dev.md"
-CALLER_FILES = (CICD_CMD, SMH_CMD, QUICK_CMD)
+# SCC-205 made the FAST lane a caller; SCC-444 took it back out. `/cicd-quick-dev` is now the quick
+# lane (git-policy § Two toggles): a review runs ONLY when the operator asks, and when he asks it is
+# `/cicd-code-review` - already a caller here - not a gate inside the door. The door no longer
+# names the engine, so the completeness row below (the caller set is derived from the tree) would
+# red on a stale pin. A quick lane with no review writes `Review: none - quick lane; …` and no
+# `Verdict:`, which is what keeps `walkthrough_roster.py` out of a lane that ran no lenses.
+CALLER_FILES = (CICD_CMD, SMH_CMD)
 
 # Vendor identifiers that must appear NOWHERE in the engine. `HALT` is deliberately the only
 # case-SENSITIVE one: lower-case "halt" is ordinary English and banning it generates false reds.
