@@ -103,7 +103,7 @@ def main() -> int:
                 hit = [ln for ln in lines if ln.startswith(path)]
                 c.check(f"RED · {path} overlaps `{surface}`: OVERLAP on line 1, exit 3",
                         first(lines) == "OVERLAP" and rc == 3, f"rc={rc} line1={first(lines)!r}")
-                c.check(f"   ...and the overlap line carries the surface and its why",
+                c.check("   ...and the overlap line carries the surface and its why",
                         len(hit) == 1 and f"{surface}:" in hit[0] and
                         (path != "backend/billing.py" or "revenue" in hit[0]),
                         str(hit))
@@ -190,7 +190,7 @@ def main() -> int:
                 rc, lines = run(repo, "--paths", "docs/x.md")
                 c.check(f"wrong-shape map · {label}: exit 2, line 1 is ERROR",
                         rc == 2 and first(lines) == "ERROR", f"rc={rc} {lines}")
-                c.check(f"   ...and line 2 names the map so the author can find it",
+                c.check("   ...and line 2 names the map so the author can find it",
                         len(lines) > 1 and ".agents/critical-surfaces.json" in lines[1],
                         str(lines))
             (repo / ".agents" / "critical-surfaces.json").unlink()

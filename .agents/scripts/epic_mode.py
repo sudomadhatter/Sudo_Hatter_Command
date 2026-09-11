@@ -82,8 +82,13 @@ def light_armed(repo: Path) -> bool:
     return False
 
 
-def classify(names: list[str], repo: Path | None = None) -> tuple[str, str]:
-    """(word line, cost line) for a live-epic list."""
+def classify(names: list[str], repo: Path) -> tuple[str, str]:
+    """(word line, cost line) for a live-epic list, as read in `repo`.
+
+    `repo` is REQUIRED. It was optional-with-a-None-default for one revision, and the
+    `repo is not None` guard that default forced was unreachable: `main()` is the only caller
+    and always passes one (SCC-441 review). An optional parameter nobody omits is flexibility
+    nobody asked for, and the dead branch it creates reads as a case someone meant to handle."""
     if not names:
         return "TRUNK", COST["TRUNK"]
     if len(names) > 1:
@@ -91,7 +96,7 @@ def classify(names: list[str], repo: Path | None = None) -> tuple[str, str]:
     branch = names[0]
     mode = "LIGHT" if LIGHT_TOKEN in branch else "FULL"
     cost = COST[mode].format(branch=branch)
-    if mode == "LIGHT" and repo is not None and not light_armed(repo):
+    if mode == "LIGHT" and not light_armed(repo):
         cost += ("  ⛔ NOT ARMED HERE: no workflow under .github/workflows/ reads `-light-epic-`, "
                  "so every landing still pays the FULL checks and a red E2E is a red, not the "
                  "designed skip")

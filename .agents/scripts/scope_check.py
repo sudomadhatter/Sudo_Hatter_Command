@@ -51,7 +51,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from wf_common import changed_since_fork, git  # noqa: E402
+from wf_common import changed_since_fork, git, norm_path as norm  # noqa: E402
 
 MAP_REL = ".agents/critical-surfaces.json"
 EXIT = {"CLEAR": 0, "OVERLAP": 3, "ERROR": 2}
@@ -74,15 +74,6 @@ GENERIC: tuple[tuple[str, str, str], ...] = (
 )
 
 
-def norm(path: str) -> str:
-    """Normalize for prefix comparison. NOT `lstrip("./")` — that is a character SET and eats
-    the leading dot off every `.agents/...` path (`sop_currency._norm`, `lane_qualify.norm`)."""
-    p = path.replace("\\", "/").strip()
-    while p.startswith("./"):
-        p = p[2:]
-    return p
-
-
 def segment_hit(path: str, fragment: str) -> bool:
     """A fragment matches a whole path segment, or a segment prefix followed by `_` `-` `.`."""
     for seg in path.lower().split("/"):
@@ -94,6 +85,13 @@ def segment_hit(path: str, fragment: str) -> bool:
 
 
 def pattern_hit(path: str, pattern: str, *, fragments: bool) -> bool:
+    """Does `path` match `pattern`? This is where the match semantics live.
+
+    Four shapes, checked in this order: a trailing `/` is a PREFIX, a leading `*.` is a
+    suffix, a bare word is a path-SEGMENT fragment but only when `fragments` is on (the
+    generic fallback set), and anything else is an EXACT repo-relative file. `fragments` is
+    off for a repo's own map, so a declared path is never widened into a substring search.
+    """
     if pattern.endswith("/"):
         return path.startswith(pattern)
     if pattern.startswith("*."):
@@ -134,6 +132,12 @@ def load_map(repo: Path) -> tuple[list[tuple[str, str, str]] | None, str | None]
 
 def overlaps(paths: list[str], rows: list[tuple[str, str, str]], *,
              fragments: bool) -> list[tuple[str, str, str]]:
+    """Every `(path, surface, why)` hit, at most ONE line per path.
+
+    The `break` is the contract: a path sitting on two surfaces is reported once, under the
+    first that claims it, because the agent's next move is the same either way and two lines
+    about one file read as two problems.
+    """
     hits: list[tuple[str, str, str]] = []
     for path in paths:
         for surface, pattern, why in rows:

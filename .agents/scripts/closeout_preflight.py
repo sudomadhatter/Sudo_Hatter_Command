@@ -293,7 +293,7 @@ _QUICK_LANE_RE = re.compile(
     re.MULTILINE | re.IGNORECASE)
 
 
-def _stale_against_sha(rep, project: Path, rel, sha: str, what: str) -> None:
+def _stale_against_sha(rep: "wf.Report", project: Path, rel: Path, sha: str, what: str) -> None:
     """Did code move since the tree this approval was given on? ONE implementation, two
     callers — the `Verdict: … @ <sha>` path and the quick lane's record line.
 
@@ -316,6 +316,19 @@ def _stale_against_sha(rep, project: Path, rel, sha: str, what: str) -> None:
     pathspec = have or [":(exclude)_artifacts/", ":(exclude)_bmad-output/"]
     diff = wf.git(["diff", "--name-only", f"{sha}..HEAD", "--", *pathspec], project)
     changed = [ln for ln in diff.stdout.splitlines() if ln.strip()]
+    # ⛔ SAY WHAT WAS ACTUALLY MEASURED. On the fallback the word "code" is a claim this check
+    # cannot support: with no PRODUCT_DIRS to aim at, every tracked file outside the two
+    # planning surfaces counts, so a `docs/` typo reports as a changed "code file" and the
+    # operator re-gates over a comma (SCC-441 review, reproduced).
+    #
+    # ⛔ AND THE FIX IS THE WORDING, NOT AN `*.md` EXCLUSION. Excluding markdown was the
+    # obvious-looking repair and it is wrong HERE above all: the lobby carries none of the five
+    # product dirs, so the lobby takes this very branch — and the lobby's product IS markdown,
+    # every door under `.agents/commands/` and every rule under `.agents/rules/`. That
+    # exclusion would blind the staleness check to the whole of what this repo ships. Staying
+    # conservative and naming the scope honestly is the correct trade: re-gating after an
+    # unclassifiable change is cheap, missing a real one is not.
+    noun = "code file(s)" if have else "tracked file(s) (no product dir here, so all of them)"
     if diff.returncode != 0:
         # ⛔ ASYMMETRIC ON PURPOSE, and the asymmetry is the whole point (SCC-446 review). On the
         # verdict path an unresolvable sha is survivable because `roster.judge` independently
@@ -328,8 +341,10 @@ def _stale_against_sha(rep, project: Path, rel, sha: str, what: str) -> None:
                          + ("" if what == "reviewed" else
                             " - the quick lane's only record of approval points at no commit"))
     elif changed:
-        rep.err("artifacts", f"{rel}: {len(changed)} code file(s) changed since the "
-                             f"{what} SHA - {'the verdict is STALE, re-gate' if what == 'reviewed' else 'the approval is STALE, re-approve'}")
+        remedy = ("the verdict is STALE, re-gate" if what == "reviewed"
+                  else "the approval is STALE, re-approve")
+        rep.err("artifacts", f"{rel}: {len(changed)} {noun} changed since the "
+                             f"{what} SHA - {remedy}")
 
 
 _LEGACY_REL = "_bmad-output/implementation-artifacts"

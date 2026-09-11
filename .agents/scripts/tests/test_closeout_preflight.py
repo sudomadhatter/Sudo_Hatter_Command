@@ -153,7 +153,7 @@ def verdict_line(out: str) -> str:
 
 
 def lane_repo(root: Path, status: str = "review", verdict: str | None = "PASS",
-              gates_id: str | None = "30-1") -> Path:
+              gates_id: str | None = "30-1", product_dirs: bool = True) -> Path:
     """A close-out lane with NOTHING wrong with it - the only fixture whose verdict line
     is readable evidence.
 
@@ -213,8 +213,19 @@ def lane_repo(root: Path, status: str = "review", verdict: str | None = "PASS",
     (repo / "_artifacts/_memory/index.md").write_text("# memory index\n", encoding="utf-8")
     (repo / "notes").mkdir()
     (repo / "notes/ordinary.md").write_text("one\n", encoding="utf-8")
-    (repo / "backend").mkdir()
-    (repo / "backend/real.py").write_text("x = 1\n", encoding="utf-8")
+    # ⛔ `product_dirs=False` IS THE LOBBY'S OWN SHAPE, AND IT HAD NO FIXTURE (SCC-441 review).
+    # Every default lane here carries `backend/`, so `_stale_against_sha`'s derived pathspec
+    # always found a PRODUCT_DIR and the fallback arm was never executed by any case: reverting
+    # the derivation to the pre-fix `["backend/", "frontend/"]` left this file 106/106 green.
+    # That is the arm the lobby, RAG_Pipeline_AC and OpenChat-Openrouter all take.
+    if product_dirs:
+        (repo / "backend").mkdir()
+        (repo / "backend/real.py").write_text("x = 1\n", encoding="utf-8")
+    else:
+        (repo / "scripts").mkdir()
+        (repo / "scripts/tool.py").write_text("x = 1\n", encoding="utf-8")
+        (repo / "docs").mkdir()
+        (repo / "docs/runbook.md").write_text("# runbook\n", encoding="utf-8")
 
     git(repo, "init", "-q", "-b", "main")
     git(repo, "config", "user.email", "t@t.t")
@@ -1353,6 +1364,82 @@ def main() -> int:
                     "the staleness check reads commits, the sync arm reads the tree",
                     any("uncommitted" in m for m in rows(out, "sync", "ERROR")),
                     f"rc={rc} sync={rows(out, 'sync')}")
+
+        # ── QL17-QL19 · the arm a repo with NO product directory takes ────────────────────
+        # ⛔ THE HEADLINE SCC-446 FIX HAD NO TEST. Every fixture above builds `backend/`, so
+        # the derived pathspec always matched a PRODUCT_DIR and the fallback was dead code to
+        # this file: reverting the derivation to the pre-fix `["backend/", "frontend/"]` left
+        # it 106/106 green. The lobby itself takes this arm — it has none of the five — and so
+        # do RAG_Pipeline_AC and OpenChat-Openrouter, the two repos the fix was written for.
+        for label, rel, body, want_stale in (
+                ("QL17 a real code file outside every PRODUCT_DIR is still caught",
+                 "scripts/tool.py", "x = 2\n", True),
+                ("QL18 a file under a NEW top-level dir is caught too - the fallback is the "
+                 "whole tree, not a second hardcoded list",
+                 "lib/thing.py", "y = 1\n", True),
+                ("QL19 and the two planning surfaces stay excluded on this arm as well",
+                 "_artifacts/scratch.md", "note\n", False)):
+            with TempDir() as tmp:
+                repo = lane_repo(tmp, verdict=None, gates_id=None, product_dirs=False)
+                c.check(f"{label} · fixture really has NO product dir",
+                        not any((repo / d).is_dir()
+                                for d in ("backend", "frontend", "firebase", "functions", "mobile")),
+                        "the premise of the whole block")
+                seed = git(repo, "rev-parse", "HEAD").stdout.strip()
+                (repo / WT).write_text(
+                    "## Evidence\n\nReview: none - quick lane; walkthrough approved by the "
+                    f"operator @ {seed}\n", encoding="utf-8")
+                (repo / rel).parent.mkdir(parents=True, exist_ok=True)
+                (repo / rel).write_text(body, encoding="utf-8")
+                git(repo, "add", rel)
+                git(repo, "commit", "-qm", f"SCC-11 chore: touch {rel}")
+                rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                 "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+                stale = [m for m in rows(out, "artifacts", "ERROR") if "STALE" in m]
+                c.check(label, bool(stale) == want_stale,
+                        f"rc={rc} artifacts={rows(out, 'artifacts')}")
+
+        # ── QL20 · the message must not call a docs typo a CODE file ─────────────────────
+        # ⛔ AND THE FIX IS THE WORDING, NOT AN `*.md` EXCLUSION. Excluding markdown is the
+        # obvious repair and it is wrong here above all: the LOBBY takes this arm, and the
+        # lobby's product IS markdown — every door under `.agents/commands/`, every rule under
+        # `.agents/rules/`. That exclusion would blind this check to everything this repo
+        # ships. So the behaviour stays conservative and the sentence stops overclaiming.
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, verdict=None, gates_id=None, product_dirs=False)
+            seed = git(repo, "rev-parse", "HEAD").stdout.strip()
+            (repo / WT).write_text(
+                "## Evidence\n\nReview: none - quick lane; walkthrough approved by the "
+                f"operator @ {seed}\n", encoding="utf-8")
+            (repo / "docs/runbook.md").write_text("# runbook\n\ntypo fixed\n", encoding="utf-8")
+            git(repo, "add", "docs/runbook.md")
+            git(repo, "commit", "-qm", "SCC-11 docs: fix a comma")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            stale = [m for m in rows(out, "artifacts", "ERROR") if "STALE" in m]
+            c.check("QL20 a docs-only change on the fallback arm still blocks (conservative "
+                    "by design - this arm cannot tell code from prose)",
+                    len(stale) == 1, f"rc={rc} artifacts={rows(out, 'artifacts')}")
+            c.check("QL20b ...but it does NOT call it a `code file` - it says what was really "
+                    "measured, so the operator is not hunting for code that never changed",
+                    stale and "code file" not in stale[0] and "tracked file" in stale[0],
+                    str(stale))
+        # CONTROL: a repo that HAS a product dir keeps the precise word.
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, verdict=None, gates_id=None)
+            seed = git(repo, "rev-parse", "HEAD").stdout.strip()
+            (repo / WT).write_text(
+                "## Evidence\n\nReview: none - quick lane; walkthrough approved by the "
+                f"operator @ {seed}\n", encoding="utf-8")
+            (repo / "backend/real.py").write_text("x = 9\n", encoding="utf-8")
+            git(repo, "add", "backend/real.py")
+            git(repo, "commit", "-qm", "SCC-11 feat: real code")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            stale = [m for m in rows(out, "artifacts", "ERROR") if "STALE" in m]
+            c.check("QL20c CONTROL · with a PRODUCT_DIR present it still says `code file(s)` - "
+                    "the wording is derived, not softened everywhere",
+                    stale and "code file" in stale[0], str(stale))
 
         # ── QL16 · the record line is read LENIENTLY, because humans write markdown ────────
         # ⛔ A strict `^Review:` anchor reads a recorded approval as "no review ran", which is
