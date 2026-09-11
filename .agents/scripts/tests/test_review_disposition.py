@@ -185,8 +185,14 @@ CHECKS_B: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("step-01: Test-Adequacy Auditor runs ALWAYS and owes a reproduction field", S1,
      r"^\|\s*\*\*Test-Adequacy Auditor\*\*\s*\|[^|]*\|[^|]*\|\s*always\s*\|[^|]*\|"
      r"\s*required on every `critical`/`important`\s*\|", re.M,
-     "| **Test-Adequacy Auditor** | `DIFF` + read access to `REPO` |",
-     "| **Test-Adequacy Auditor** | `DIFF` only |"),
+     # ⛔ The mutation must hit a cell the regex READS. The first cut of this counter-example
+     # rewrote the `Gets` cell, which the regex spans with `[^|]*` — so the check survived it and
+     # the anti-vacuity row is what said so. The binding here is lens → `always`, so that is the
+     # cell the counter has to move.
+     "| **Test-Adequacy Auditor** | `DIFF` + read access to `REPO` | own worktree copy "
+     "(`isolation: \"worktree\"`) | always |",
+     "| **Test-Adequacy Auditor** | `DIFF` + read access to `REPO` | own worktree copy "
+     "(`isolation: \"worktree\"`) | `review_mode: full` only |"),
     ("step-01: the roster is CLOSED at three, and the retirement is measured", S1,
      r"\*\*Three lenses, and the roster is closed \(SCC-447\)\.\*\*", 0,
      "**Three lenses, and the roster is closed (SCC-447).**",
@@ -226,17 +232,22 @@ CHECKS_B: tuple[tuple[str, str, str, int, str, str], ...] = (
      "> - **RUN IT YOURSELF, in your own copy, before you report it.**",
      "> - **The assessor will run your command for you.**"),
     ("step-01 hunter contract: a command that does not fail as predicted DELETES the finding", S1,
-     r"If it does not fail the way you\n> {2}predicted, you have not found a defect — delete the "
+     r"If it does not fail the way you\n> +predicted, you have not found a defect — delete the "
      r"finding", 0,
      "you have not found a defect — delete the finding",
      "report it anyway and let the assessor decide"),
+    # ⛔ Anchored to the HUNTER's bullet, not to the bare phrase. The auditor rubric owes the same
+    # field, so `reproduced: yes` appears twice in this file — and a counter-example that replaces
+    # only the first occurrence left the second one satisfying a bare-phrase regex. The check could
+    # not fail on content until it bound the bullet it is actually about.
     ("step-01 hunter contract: the lens reports what its own run showed", S1,
-     r"`reproduced: yes` \+ the output you actually saw", 0,
-     "`reproduced: yes` + the output you actually saw",
-     "`confidence: high`"),
+     r"^> - \*\*Report what your own run showed\.\*\* Add `reproduced: yes` \+ the output you "
+     r"actually saw", re.M,
+     "**Report what your own run showed.** Add `reproduced: yes` + the output you actually saw",
+     "**Report your confidence.** Add `confidence: high` when you are sure"),
     ("step-01 auditor rubric: the same requirement, adapted to an ABSENCE", S1,
      r"^> - \*\*A `critical` or `important` MUST carry a runnable reproduction\*\*, adapted to "
-     r"your\n> {2}subject", re.M,
+     r"your\n> +subject", re.M,
      "> - **A `critical` or `important` MUST carry a runnable reproduction**, adapted to your",
      "> - **An auditor is exempt from the reproduction requirement**, unlike your"),
     ("step-01: the roster count is 3/3", S1,

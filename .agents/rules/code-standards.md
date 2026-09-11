@@ -160,12 +160,16 @@ the FastAPI + Next.js house shape.
 
 ---
 
-## 6.5 Disposition — the ASSESSOR decides what is REAL, not the lens
+## 6.5 Disposition — reproduce or drop, fix or escalate
 
 > Hoisted here by SCC-205 because it is **disposition law, not review-engine law**: it governs every
 > command that produces findings — both clean-code audits, both code reviews, both self-audits — and
 > it lived in exactly one place, `code-review-engine/steps/step-01-review.md`, owned by no rule.
 > This rule already owns the FAIL-vs-CONCERNS split (§7), so it is the one place all four audits bind.
+>
+> **Rewritten by SCC-447 (2026-09-11).** The 2026-08-17 ruling below still stands. What changed is
+> that "real" stopped being a judgment call and became a receipt on disk, and that a finding the
+> lane is not fixing now has somewhere to go other than back into the queue.
 
 **The ruling, in the operator's words (2026-08-17): *"the agent's job is to find things so it always
 will — this is how we end up in this loop. The agent who assesses the finds has to decide what's real
@@ -177,25 +181,72 @@ measured by what it returns, so it will always return something, and it grades i
 finds more, each fix is a new unreviewed edit, and the lane never closes. **The orchestrator running
 the audit is the assessor. Nobody else is.**
 
-**Assess every finding against three questions, in order. All three must be YES to fix.**
+### Gate 0 — the reproduction gate, which runs before the three questions
 
-1. **Is it REAL?** Can you state the concrete failure — *this input, this state, this wrong output*? A
-   finding phrased as *"may be"*, *"could lead to"*, *"consider"* or *"is not covered"* has not
-   established that anything is broken. **Reproduce it, or drop it.**
+⛔ **A `critical` or `important` that did not reproduce does not exist.** Not "is downgraded", not
+"is worth a note in the record" — it is dropped, and only its count survives. Gate 0 runs first
+because the three questions below it are judgment, and this one is not.
+
+**Reproduction is three layers, and each layer is cheaper than the one after it.**
+
+| Layer | Who | What it does |
+|---|---|---|
+| 1 | the **lens** that found it | writes `reproduce:` and `expected_wrong_output:`, **runs that command in its own copy**, and deletes the finding if it does not fail the way it predicted |
+| 2 | the **engine** | checks that both fields and `reproduced: yes` are present. It cannot execute anything — the skill grants it no Bash, by design — so the floor it returns is **provisional** |
+| 3 | the **caller** (the door that ran the review) | runs the command again on the REAL tree and writes the receipt. **That receipt is what binds** |
+
+Layer 1 is where the cost deliberately lands. A lens that must run its own command discovers it has
+nothing while the file is still open and the reasoning is still in context, which is the cheapest
+place in the whole system to find out. The tax is also severity-gated: a `suggestion` costs nothing
+and can never block, so the only move this prices out is inflating a nitpick to be heard.
+
+Layer 3 is not optional, because a lens works in its own worktree copy. SCC-295 measured three of
+five lenses editing that copy mid-review, and one reporting a RED result no version of the real code
+could produce. A lens proves a defect exists **in the lens's tree**. Only the caller proves it exists
+in shipping code.
+
+The caller's receipt is written by one script, once per finding id:
+
+```bash
+python3 .agents/scripts/repro_receipt.py run --root <artifacts> --id <finding-id> -- <command>
+```
+
+There is no `--result` flag — a receipt implies execution. The script runs the command, records the
+true exit code and the tail of its output, and notes whether the tree was dirty. A finding whose
+command does not fail when it is run, is **dropped and counted**.
+
+### The three questions, on what survives Gate 0
+
+1. **Is it REAL?** The receipt answers this now. What is left for judgment is whether the failure the
+   command produced is the failure the finding described.
 2. **Does it change BEHAVIOUR?** A gate that fails open, a wrong answer, a crash, a refusal of
    something legitimate, lost data. Naming, structure, wording, a missing test for a branch that is
    already correct — these do not.
 3. **Is it in THIS lane's diff?** Pre-existing debt in an untouched file is not this task's work.
 
-**Fix what passes all three. Dismiss the rest — including anything a lens called `critical`.** The
-label neither promotes nor protects a finding; the assessment does.
+### The action policy — what the agent does, and what it records
+
+| The finding | What the agent does | The disposition it records |
+|---|---|---|
+| reproduced `critical` | fixes it, in this lane, with a pin seen red then green | `fixed @<sha> · pin <test>[:<case>] · repro <id>` |
+| reproduced `important` | does **not** fix it — it escalates to the operator, in the same thread | `escalated · repro <id> · default: ships as recorded` |
+| `critical` or `important` that did not reproduce | dropped, counted, and never written up on its own | `dropped — no reproduction` |
+| `suggestion` or `nitpick` | nothing at all; a count | `recorded` |
+| reproduced, and this lane structurally cannot hold the fix | `defer` against ONE named blocker | `deferred — <blocker>` |
+
+**The agent fixes a reproduced `critical` and nothing else.** An `important` is real and it is not
+urgent, and fixing it is a new unreviewed edit at the end of a lane, which is the loop this section
+exists to end — one turn later, with a fresh finding attached. Escalation is not a soft refusal: the
+operator sees it, with its receipt and a one-line recommendation, and the default is that it ships as
+recorded.
 
 ⛔ **"It's cheap" is not a reason.** Twenty cheap fixes is not cheap — it is the audit that never ends,
 and every one of them lands *after* the checks ran, unreviewed.
 
-⛔ **Record the tail in ONE line**: how many findings came back, how many were assessed real and fixed,
-and that the rest were dismissed under this ruling. Not one line each. Name individually only a finding
-whose ASSESSMENT disagreed with its label, in either direction — that is the calibration signal.
+⛔ **Record the tail in ONE line**: how many were fixed, escalated and deferred, and how many were
+dropped for want of a reproduction. Not one line each. Name individually only a finding whose
+reproduction disagreed with its label, in either direction — that is the calibration signal, and it
+is the only thing in the tail worth a sentence.
 
 ---
 
@@ -203,8 +254,27 @@ whose ASSESSMENT disagreed with its label, in either direction — that is the c
 
 | Verdict | Trigger |
 |---|---|
-| **FAIL** | A §6 machine check errors on **changed lines**. A §2 banned pattern (bare `except:`, `any`, dead abstraction shipped). A committed secret. |
-| **CONCERNS** | §1 comment-contract gaps (missing story provenance, a comment restating code, an unowned TODO). §2 judgment calls — bloat, duplication, unnecessary structure. |
-| **PASS** | Machine floor green on changed lines, no judgment findings above noise. |
+| **FAIL** | An **open reproduced** `critical`, with its receipt on disk. Or: a §6 machine check errors on **changed lines**; a §2 banned pattern (bare `except:`, `any`, dead abstraction shipped); a committed secret. |
+| **CONCERNS** | An **open reproduced** `important` — escalated to the operator, or deferred behind a named blocker. Also a dead lens, §1 comment-contract gaps, and §2 judgment calls (bloat, duplication, unnecessary structure). |
+| **PASS** | Machine floor green on changed lines, no judgment findings above noise, and no open reproduced finding. |
 
 Objective things block. Taste does not — it gets recorded, argued, and fixed on its merits.
+
+**The floor is computed AT THE STAMP, on the rows that are still OPEN (SCC-447)** — never at triage,
+from whatever the lenses first returned. That is the one change that gives the floor a way down, and
+is why the loop ended: the floor moves as the work closes rows. A row closed by a
+fix and a green pin is not a reason to hold a lane; it is the lane working as designed. There are
+exactly two ways down and both are evidence: a receipt showing the command does **not** fail, or a
+fix with a pin seen red then green. Any other downgrade is the caller overruling the review.
+
+**CONCERNS is a shippable verdict, and the go/no-go is the operator's word.** It means the review
+found something real that this lane is not fixing — an escalated `important`, or a defer behind a
+named blocker — and the operator decides. FAIL is the blocker; CONCERNS is information, and
+no command, door or agent may treat it as a blocker on its own authority.
+
+**One review per lane.** The lenses run ONCE. When the fixes land, the retest is the pins
+named in the `fixed` rows plus the enforcement suite once through the receipt writer — never a second
+fan-out over the same diff. Measured over 138 reviews on disk, a re-review converted a non-PASS to
+PASS one time in seven and cost a full roster every time.
+A second full roster needs the operator's written word, and `walkthrough_roster.py` refuses a
+walkthrough carrying two roster headers without it.

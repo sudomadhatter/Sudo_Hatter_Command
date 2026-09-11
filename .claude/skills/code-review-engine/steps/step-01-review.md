@@ -71,16 +71,26 @@ discarded unread, and the roster must not record it `ok`.
 
 ## The lenses
 
-| Lens | Gets | Tree | Runs when | How | Primed with `EVIDENCE_PACK` |
+| Lens | Gets | Tree | Runs when | How | Reproduction |
 |---|---|---|---|---|---|
-| **Blind Hunter** | `DIFF` only — no spec, no repo access, no context docs | **no tree** — repo access is withheld by design | standard level (quick skips it) | the `bmad-review-adversarial-general` skill + the hunter contract | **never** — starved by design |
-| **Edge Case Hunter** | `DIFF` + read access to `REPO` | own worktree copy (`isolation: "worktree"`) | standard level (quick skips it) | the `bmad-review-edge-case-hunter` skill + the hunter contract | yes |
-| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | own worktree copy (`isolation: "worktree"`) | standard level (quick skips it) | the literal-correctness discipline + the hunter contract | yes |
-| **Acceptance Auditor** | `DIFF` + `STORY_FILE` + any context docs | own worktree copy (`isolation: "worktree"`) | `review_mode: full` only | the auditor rubric | **never** — cannot verify it |
-| **Test-Adequacy Auditor** | `DIFF` + read access to `REPO` | own worktree copy (`isolation: "worktree"`) | always | the auditor rubric | yes |
+| **Edge Case Hunter** | `DIFF` + read access to `REPO` | own worktree copy (`isolation: "worktree"`) | always | the `bmad-review-edge-case-hunter` skill + the hunter contract | required on every `critical`/`important` |
+| **Acceptance Auditor** | `DIFF` + `STORY_FILE` + any context docs | own worktree copy (`isolation: "worktree"`) | `review_mode: full` only | the auditor rubric | required on every `critical`/`important` |
+| **Test-Adequacy Auditor** | `DIFF` + read access to `REPO` | own worktree copy (`isolation: "worktree"`) | always | the auditor rubric | required on every `critical`/`important` |
 
-**The `Runs when` column defers to § The two levels (SCC-232)** — `standard level` cells are
-skipped-by-mode at `quick` and recorded on `lenses_na`, never dead; `always` means both levels.
+**Three lenses, and the roster is closed (SCC-447).** The `Runs when` column now has exactly two
+values: `always`, and the Acceptance Auditor's `review_mode: full` only — which is skipped-by-mode
+on a spec-less review and recorded on `lenses_na`, never dead. A full-mode review therefore reports
+`lenses_counted: 3/3` and a spec-less one `2/2`.
+
+⛔ **What was retired, and what it was measured at.** The Blind Hunter, the Literal-Correctness
+Hunter, the two `review_level` levels, `lens_budget`, the `EVIDENCE_PACK` priming and the step-2 verify
+wave are **retired** (SCC-447). Across the 138 reviews on disk carrying a verdict and the 88 carrying
+per-lens ledgers, the engine produced 17.9 fixes per review with 52% of them on severities that can
+never gate, and the verify wave refuted 2 findings in 18 reviews. The roster did not need more
+readers; it needed every reader to prove what it reported.
+**A lens is added back by measurement, never by argument.** The bar is per-lens ledger data
+showing findings it alone reproduced — an
+argument that a lens *might* catch something is what built the roster this one replaces.
 
 **How to read the `How` column: every lens gets the block it names, and no lens gets the other's.**
 A hunter lens is assembled as its skill plus the hunter contract; an auditor as the auditor rubric.
@@ -114,15 +124,24 @@ about itself, and a blockquote left out drops a rule the lens was supposed to be
 >   finding the assessor will drop, so spend the effort proving it instead.
 > - **Prefer executing to reasoning.** A finding you reproduced outranks one you inferred, and
 >   saying which you did is part of the finding.
+> - **A `critical` or `important` MUST carry a runnable reproduction.** Two fields, in the finding:
+>   `reproduce: <command>` — run from the repo root — and
+>   `expected_wrong_output: <what it prints or does that is wrong>`.
+>   Anything arriving without both fields is **dropped unread**; it is not downgraded to a
+>   `suggestion`, and it is not read for its argument.
+> - **RUN IT YOURSELF, in your own copy, before you report it.** You hold a worktree copy and full
+>   tools, so run the command you just wrote. If it does not fail the way you
+>   predicted, you have not found a defect — delete the finding and move on. This is the cheapest
+>   moment in the system to discover you had nothing: the file is still open and the reasoning is
+>   still in your head. A reader downstream has neither.
+> - **Report what your own run showed.** Add `reproduced: yes` + the output you actually saw, so the
+>   caller can re-run the same command on the real tree and compare the two.
 
-
-
-Append to the prompt of every lens whose `How` cell names this contract — today the Blind Hunter,
-the Edge Case Hunter and the Literal-Correctness Hunter. **The table is the authority, not this
+Append to the prompt of every lens whose `How` cell names this contract — today the Edge Case
+Hunter. **The table is the authority, not this
 sentence:** a hunter lens added to that table is bound by this section whether or not anyone
 remembered to name it here, because adding its row is what routes it —
-so **the `How` cell is the wiring and is not optional.** (The Literal-Correctness Hunter carries one stated adaptation to
-Gate 1, written in its own section above; everything else here binds it unchanged.)
+so **the `How` cell is the wiring and is not optional.**
 
 > **Before reporting ANY finding, you MUST pass these three gates.**
 >
@@ -154,115 +173,8 @@ Gate 1, written in its own section above; everything else here binds it unchange
 > **Zero tolerance for speculative findings.** Three well-proven findings are worth more than ten
 > speculative ones. **When in doubt, DROP the finding.**
 >
-> **If you were given no repo access**, run both traceable gates inside the diff you were handed:
-> Gate 1 starts from the entry points the diff itself shows, and Gate 2 cites diff lines rather
-> than repo files. The bar does not move. Where the caller side is outside what you can see, say
-> so and report what you can prove about the change — never guess at it, and never lower the bar
-> because your view is narrower.
-
-**The Blind Hunter passes these gates inside the diff.** That is what the last paragraph above is
-for: it has no repo access by design, so its trace runs on the diff text, and
-**it never downgrades the bar to compensate** for the narrower view. The starvation is deliberate —
-this lens exists to find what a fully-informed reader rationalizes away — so do not "help" it by
-handing it the repo or the pack.
-
-## The literal-correctness lens — deliberately line-level
-
-**What per-lens cost is actually MEASURED (Arm A means, 3 runs/arm —
-`_artifacts/_main/2026-08-12_scc-124-baseline-trial/scoring.md`):** Edge Case Hunter 220.5 s (the
-slowest lens in 5 of 6 runs) · Blind Hunter 180.9 s · Acceptance Auditor 127.4 s · Test-Adequacy
-75.3 s. **This lens is unmeasured by that trial — it postdates it (SCC-126)**; its own measurement ran
-later under SCC-232 (Arm A, n=1: 1,082.0 s — § The two levels), which is what routes it to
-`standard`. And cost is not the whole ledger: the Edge Case
-Hunter is the most expensive lens measured AND produced the SCC-129 trial's one unseeded true
-positive (NaN/Infinity bypassing an `amount < 0` guard, because `nan < 0` is False).
-
-The other four lenses are high-altitude: topology, lifecycle, acceptance criteria, test tiers.
-This one is deliberately not, and the gap it closes is one the harness this discipline is ported
-from measured against a benchmark and then confessed in its own docstring: a multi-agent
-architectural review reliably surfaces the high-level findings and **systematically glides over
-the meticulous line-level check** — is the code, *as literally written*, correct against the actual
-definitions of the symbols it depends on? Almost every defect such a review misses is one
-symbol-level assumption violation: a called method that does not exist, an argument that is the
-wrong variable, a type that is not the assumed subclass, a value dereferenced that can be nil, a
-comparison whose invariant does not hold, code that will not compile.
-
-The prompt text that carries the discipline to the lens:
-
-> You are a Literal-Correctness Hunter. For each changed line, identify every external thing the
-> code DEPENDS ON and RELIES ON being true — every call, argument, assignment, condition and type
-> assumption — then open the actual definition and verify the assumption holds. Where the ground
-> truth contradicts what the code assumes, that is a finding.
->
-> **Be EXHAUSTIVE, not selective.** Walk EVERY changed call, argument, assignment, condition and
-> type assumption, one at a time. Emit a finding for EVERY violation you confirm.
->
-> This is a reasoning DISCIPLINE, not a bug checklist. The violation kinds named above are
-> illustrative of what a symbol-level assumption failure looks like — they are not an enumeration
-> to pattern-match, and a violation that resembles none of them is still a finding.
-
-### Scope — four rules, and they are what keep this lens affordable
-
-⛔ **Two of these you enforce as the orchestrator, by choosing what you hand over. Two must reach
-the lens itself** — so they are blockquoted below and appended to its prompt like every other rule.
-Per the assembly convention above, unquoted text never reaches a lens, and **a cap the lens is
-never told about is a cap it can neither honour nor report.**
-
-**Orchestrator-enforced, before the lens is launched:**
-
-**A 20-file cap.** Hand over at most **20** changed files' patches, taken in the diff's own order.
-When the diff changed more, you MUST tell the lens WHICH files it did not receive — the paths,
-never just a count — because the blockquote below orders the lens to NAME what it did not get, and
-the `standard` top-up is earned by naming a specific withheld file: neither is possible from a
-number (SCC-147). Carry the truncation into the engine's returned `notes` yourself as well. A
-truncated pass that says so is evidence; one that stays quiet is a false all-clear over every file
-nobody opened.
-
-**Spill above ~9,000 chars.** Past that, write the patch material to a context file in
-`ARTIFACT_DIR` and hand the lens the path instead of the text. When no `ARTIFACT_DIR` was supplied,
-say so and reduce the file count rather than inlining an oversized prompt.
-
-**An empty patch set → the lens early-exits.** No changed patches means there is nothing to verify,
-so do not launch it at all: record **`ok` with zero findings**, never `dead` and never `n/a`. A lens
-correctly given nothing to do has not degraded anything, and the other two scorings both corrupt
-the record — `dead` would raise `severity_floor` to CONCERNS on every clean diff forever, and `n/a`
-would report a fully-run review as partially skipped.
-
-**Appended to the lens's prompt, verbatim:**
-
-> **Your subject is the diff, never the repository — diff-scoped, never whole-repo.** Repo access
-> exists for exactly one purpose: opening the real definition of a symbol that the changed lines
-> lean on. It is **not a licence to sweep.** Do not survey files the diff did not change looking
-> for other work, and do not widen into "related" code. Every file you open must be traceable to a
-> specific symbol on a specific changed line.
->
-> **If you were told you received fewer files than the diff changed, say so as the FIRST line of
-> your output**, naming what you got and what you did not. A reader must never mistake a truncated
-> pass for a clean one, and you are the only one in a position to say which this was.
-
-**Its cost axis `lens_budget` is defined ONCE, inside THE LENS-ROSTER CONTRACT below**
-(SCC-229 moved it there with the other lens-state law; the caps above are what that axis
-governs, and nothing about them changed).
-
-### Gate 1, adapted for this lens — and the adaptation is load-bearing
-
-**This lens is bound by the hunter contract, with one stated adaptation to Gate 1.** Its charter
-names violation kinds with *no runtime entry point at all* — code that will not compile, a called
-method that does not exist, a type that cannot bind. Demanding a production reachability trace for
-those would silence the lens on precisely the defects it was added to catch, which is the same trap
-the auditors' exemption already documents one section below.
-
-The prompt text that carries the adaptation:
-
-> **Gate 1 is adapted for you, and only for you.** Where the violation is one the compiler or the
-> runtime raises *whenever the changed line executes at all* — a symbol that does not exist, a
-> signature that cannot bind, a type that cannot hold — **the changed line IS the reachability
-> proof** and you owe no further trace. Name the definition you opened and quote what it actually
-> says.
->
-> Where the violation instead depends on a *particular value or state* reaching that line — a nil
-> that is only sometimes nil, an invariant that holds on most inputs — **Gate 1 binds in full** and
-> you owe the ordinary trace. Gates 2 and 3 bind unchanged in both cases.
+> **Where the caller side is outside what you can see**, say so and report what you can prove about
+> the change — never guess at it, and never lower the bar because your view is narrower.
 
 ## The auditor rubric — Acceptance Auditor and Test-Adequacy Auditor
 
@@ -283,8 +195,13 @@ The prompt text that carries the adaptation:
 >   finding the assessor will drop, so spend the effort proving it instead.
 > - **Prefer executing to reasoning.** A finding you reproduced outranks one you inferred, and
 >   saying which you did is part of the finding.
-
-
+> - **A `critical` or `important` MUST carry a runnable reproduction**, adapted to your
+>   subject — which is usually an ABSENCE, so the command is one that shows the gap rather than
+>   triggering a crash: the suite command that comes back green over a behaviour nothing exercises,
+>   the acceptance item no test names. Two fields, in the finding: `reproduce: <command>` and
+>   `expected_wrong_output: <what it shows, and why that is the gap>`. **Run it yourself, in your
+>   own copy, before you report it**, and add `reproduced: yes` + the output you actually saw.
+>   Anything arriving without both fields is dropped unread.
 
 **Both auditors are EXEMPT from Gate 1 and Gate 3, and the exemption is deliberate.** A
 reachability proof is unwritable for a finding whose subject is *absent*: there is no call path to
@@ -298,6 +215,12 @@ says it is unsure, rather than dropping it.
 
 **Gate 2 still binds, adapted:** the chain cites the acceptance item and the code that fails to
 satisfy it (Acceptance), or the behavior and the test tier that does not cover it (Test-Adequacy).
+
+⛔ **The reproduction requirement is NOT part of the exemption.** Gates 1 and 3 are waived because
+absence has no call path and no confidence score; reproduction is waived for nobody. An auditor's
+command shows the gap instead of triggering a failure — `python3 <suite>` coming back green over a
+behaviour nothing covers is a reproduction, and it is runnable by the caller on the real tree,
+which is the whole point.
 
 The prompt text that carries all three of those to the lens:
 
@@ -438,28 +361,6 @@ prompt, every time — an unresolved collision is resolved by the model at rando
 | return only a fixed JSON shape, nothing else | every finding needs severity, confidence and an evidence chain | *"Keep the required output shape. Carry the severity, the confidence and the evidence chain INSIDE its free-text field, beginning with `severity: <level>` and `confidence: <n>`."* |
 | do not editorialize, never judge code good or bad | classify every finding on the four-word severity rubric | *"A severity label is a required classification, not an opinion. Apply it."* |
 
-## The evidence pack — repo-access lenses only
-
-**If `EVIDENCE_PACK` was supplied**, prime the lenses the table marks *yes* with it, and tell each
-one, in its own prompt, that **the pack is a starting point, not the search space**: the live files
-in `REPO` are the authority, and a lens that reads only the pack finds only what the pack
-anticipated. The pack is a head start on reading, never a boundary on looking.
-
-That instruction is why the rule is *repo-access lenses only*, and why the two lenses without repo
-access are excluded for two different reasons:
-
-⛔ **The Blind Hunter is never primed with the pack.** Priming it contradicts the one property that
-lens exists for — it is starved of context so that it cannot inherit anyone's assumptions, and a
-pack is context. It is also the expensive mistake: in the SCC-124 baseline trial the Blind Hunter
-alone ran **+38.6 s** slower while reading a pack it should never have received, against a +33.0 s
-wall-clock delta for the whole review. Slower *and* less blind, for nothing.
-
-⛔ **The Acceptance Auditor is not primed either** — for the opposite reason. It has no repo access,
-so it cannot do the one thing the pack instruction demands: check the pack against the live files.
-A pack it cannot verify is exactly the shared-anchor bias the instruction exists to prevent, and it
-would arrive as authority rather than as a starting point. It audits the diff against the spec,
-which is the pair of documents it can actually hold to account.
-
 ## No noise filter — at this layer or any other
 
 ⛔ **Never gate findings on "worthiness", and never add a filter that drops low-value findings
@@ -476,75 +377,17 @@ figure that used to sit here carried neither and is gone.
 
 **Every lens in the roster ends the run in exactly one declared state — `ok` ·
 `recovered-inline` · skipped-by-mode (on `lenses_na`, with its reason) · `dead` — and never in no
-state at all.** Everything below is that sentence applied: the budget axis says what a lens may
-spend, the runtime says how lenses launch, the failure ladder says what a death becomes, the drop
-rule says when the Blind Hunter's only honest state is `n/a`, and the mode-skip rule says which
+state at all.** Everything below is that sentence applied: the runtime says how lenses launch, the
+failure ladder says what a death becomes, and the mode-skip rule says which
 absences are health, not damage. Each subsection carries the ticket that paid for it. A future
 miss **amends one of these lists — it never adds a section**: five separate sections bolted on by
 five separate tickets is exactly the accretion SCC-229 collapsed.
 
 **The measured runtime expectation (SCC-177 · scoring.md, 2026-08-12, 6 runs):** orchestration is
 at parity everywhere — pack build 0.19–0.36 s, lens-wave overhead 35–65 s, triage+record 22–44 s.
-**A slow run means a lens, never the harness** — the slowest measured lenses were Edge Case at
-220.5 s and the Blind Hunter at 180.9 s (Arm A means), an order of magnitude past everything the
+**A slow run means a lens, never the harness** — the slowest measured lens was Edge Case at
+220.5 s (Arm A mean), an order of magnitude past everything the
 orchestration does. Investigate the lens before touching the harness.
-
-### The two levels — `quick` and `standard`, derived from the caller's measured radius (SCC-232)
-
-The roster is not flat-rate. The caller's Step 0.7 re-derives the diff's blast radius against the
-current integration ref, and the LEVEL is a fixed reading of that measurement — **derived there,
-never a flag the caller chooses**: a caller-chosen level would be a hard-coded budget wearing a
-different hat. The engine therefore requires the level to arrive WITH the three written Step 0.7
-answers that ground it.
-
-| `review_level` | Lens set | The fixed rule, applied by the caller at its Step 0.7 |
-|---|---|---|
-| `quick` | **Test-Adequacy + Acceptance** Auditor | every 0.7 answer came back contained: nothing this diff references moved · no gate, hook, rule, or contract surface in the radius · ≤3 source files in the re-taken diff |
-| `standard` | the full roster — adds Edge Case, the Blind Hunter, and Literal-Correctness | anything else, and the default whenever the level did not arrive with its radius evidence |
-
-**Membership is data-gated, not preference (the pre-registered SCC-232 rule):** quick keeps the
-two cheapest measured lenses — Acceptance 127.4 s, Test-Adequacy 75.3 s (scoring.md, Arm A means)
-— and standard carries the expensive three. Literal-Correctness measured **1,082.0 s** on the same
-fixture (2026-08-20, Arm A, n=1; the 3-round mean is lower-bounded at 360.7 s —
-`_artifacts/_main/2026-08-20_scc-225-review-surface/lc-cost-measurement.md`), 8.5× the 127.4 s
-threshold, so it sits in standard.
-
-A lens excluded by level ends the run **skipped-by-mode**: recorded on `lenses_na` as
-`<lens> · n/a — skipped-by-mode (level: quick)`, never `dead`, never inside the
-`<n>/<applicable>` count — a quick review reports `2/2`, exactly the mode-skip contract below.
-No minute budget and no finding cap exists on either level, and `lens_budget` (below) stays the
-independent cost axis it is — neither re-declares the other.
-
-### `lens_budget` — the literal-correctness lens's cost axis, defined here, once (SCC-147)
-
-⛔ **`lens_budget` is NOT `review_mode`, and the two are independent.** `review_mode`
-(`full` | `no-spec`) says whether a spec exists, and gates the Acceptance Auditor. `lens_budget`
-(`standard` | `capped`) governs only the literal-correctness lens's cost. **A review is routinely `review_mode: full`
-and `lens_budget: capped` at the same time** — that is the autopilot's normal state, and reading
-`review_mode: full` as permission to relax these caps is the expensive mistake this paragraph
-exists to prevent.
-
-A caller **names** its `lens_budget`; it never re-defines the caps. Cost governance lives in ONE place, because a cap each caller restates is a cap that drifts per caller.
-**A caller that names none gets `capped`** — the safe default, because the cost of guessing wrong
-in the other direction is an unbounded overnight spend nobody is watching.
-
-| `lens_budget` | Used by | The caps |
-|---|---|---|
-| `standard` | interactive callers | MANDATORY as written in that lens's Scope section; the lens may additionally **earn** ONE top-up past the file cap by naming the specific file and what it is looking for — never a sweep, and never "to be thorough" |
-| `capped` | any caller that names nothing — including every unattended lane | the same caps, MANDATORY, and **no top-up** — an overnight loop multiplies every token it spends, and nobody is watching it spend them |
-
-**The top-up must REACH the lens, and it must reach ONLY the `standard` lens.** The table above is
-the definition, and a table cell is unquoted — orchestrator text, which the assembly convention
-says never enters a prompt. Left at that, `standard` and `capped` are behaviourally identical
-(SCC-147). So the clause is blockquoted below, and you append
-it **only when the caller passed `lens_budget: standard`**. Under `capped` you append nothing —
-the same convention that caused the defect is the enforcement, because a lens that was never handed
-the clause has no top-up to spend.
-
-> **You may earn ONE top-up past the file cap.** If a withheld file becomes necessary — you can
-> name the file and the specific symbol or assumption you must verify inside it — open that one
-> file from the repo, and say in your output that you did, naming the file and why. ONE means one:
-> never a second file, never a sweep, and never "to be thorough".
 
 ### `review_runtime` — the caller already answered "can this runtime fan out?", so do not re-ask (SCC-177)
 
@@ -554,7 +397,7 @@ The caller probes for subagent availability at its Step 0 and passes the answer 
 | `review_runtime` | What you do | What the roster says |
 |---|---|---|
 | `fan-out` | the parallel fan-out above, and the failure ladder below when a lens dies | `ok`, or `recovered-inline` for a lens that took the ladder |
-| `inline` | **the ladder runs ONCE**: every lens executes inline and sequentially in this context, blind lens FIRST on the diff alone — and where this context is already contaminated, **the Blind Hunter is DROPPED** rather than faked (§ below) | `recovered-inline` for every lens that RAN — `ok` is not a legal state here |
+| `inline` | **the ladder runs ONCE**: every lens executes inline and sequentially in this context | `recovered-inline` for every lens that RAN — `ok` is not a legal state here |
 | absent | probe it yourself, act on what you find, and **report which one you got** in `notes` | as above, per what the probe returned |
 
 ⛔ **Under `inline`, never attempt the fan-out first "just in case", and never re-attempt it after
@@ -589,42 +432,12 @@ that silently never ran** while the caller reads it as clean. So a caller MAY in
 the lenses INLINE and sequentially in your own context instead — a headless caller with no
 subagent tool must — and that instruction wins over the paragraph above. Running a lens inline is not
 simulating one: you execute its real prompt and report its real output, losing the parallelism and
-the separate context, not the coverage. **Record in `notes` that the lenses ran inline**, and where
-a lens's value depends on context starvation, say what it was exposed to (→ the Blind Hunter
-caveat, next).
+the separate context, not the coverage. **Record in `notes` that the lenses ran inline.**
 
-⛔ **Inline execution costs the Blind Hunter its blindness unless the ORDER protects it.** That lens
-is defined as `DIFF`-only; run inline, it inherits whatever your context already holds. A caller
-mandating inline execution must therefore run the blind lens **first — on the diff alone, before
-any spec, plan, walkthrough or evidence pack is pulled into context.** Done in that order the lens
-is genuinely blind and scores `recovered-inline` like any other: split the ingests so the blind
-lens lands between them.
-
-### ⛔ When the order cannot protect the Blind Hunter, the lens is DROPPED — not faked (SCC-203)
-
-**Operator ruling, 2026-08-17, after a review on this engine's own lane degraded silently:**
-
-> *"subagents as the default, and when they're genuinely unavailable, drop the blind lens rather
-> than fake it. Running it inline and counting it in the roster is the worst of the three — it
-> costs tokens and produces a record that says the review was **more independent than it was**."*
-
-**The condition is CONTEXT CONTAMINATION, not the runtime.** Inline is fine when the context is
-clean and the blind lens goes first. What is never fine is running that lens in a context that
-**already holds the plan, the walkthrough, or the builder's own reasoning** — which is the normal
-state of the agent that just built the diff. There the lens can only confirm what the builder
-already believes: real tokens, zero independent signal.
-
-So when you cannot get it a clean context — the order was impossible, or you ARE the builder and
-your context is already contaminated — **do not run it.** Record it on `lenses_na` as
-`blind-hunter · n/a — context contaminated (<what it held>)`, **never as `ok`, never as
-`recovered-inline`, and never inside the count.** The previous rule allowed
-`ok (not blind — context held <what>)`; that state is **retired**, because a roster carrying a lens
-that ran without its defining property reports a review that was more independent than it was.
-
-⭐ **And it costs less than it looks.** The Blind Hunter is the ONLY lens whose value depends on
-starvation. Edge-Case and Literal-Correctness are handed repo access on purpose, the Acceptance
-Auditor needs the spec, and Test-Adequacy needs the test files — being informed is their design.
-Dropping one lens is a smaller review; faking it is a false one.
+⛔ **An inline lens still owes its reproduction.** Running in your context does not exempt it from
+the hunter contract: it writes `reproduce:` and `expected_wrong_output:`, runs the command, and
+deletes the finding when the command does not fail as predicted. An inline run is where that is
+easiest to skip and where skipping it is least visible.
 
 ⛔ **First, the distinction this whole section turns on: a lens that ran and found nothing is NOT
 a dead lens.** "Zero findings" is a valid, reportable result that every lens is explicitly allowed
@@ -640,7 +453,7 @@ returns no usable output:
 2. **Still failing → run that lens INLINE yourself, here, in this context.** A lens is a prompt,
    not a privileged tool; losing the parallelism costs time, not coverage.
 3. **Record the degradation** in the returned summary — name the lens, the failure, the recovery.
-   "5 lenses ran" and "4 ran plus 1 rerun inline" are different evidence and must read differently.
+   "3 lenses ran" and "2 ran plus 1 rerun inline" are different evidence and must read differently.
 4. **Only a lens that is still dead after BOTH the retry and the inline rerun raises the floor.**
 
 The three end states, and the one that costs you:
@@ -660,7 +473,7 @@ The Acceptance Auditor **does not run** in `review_mode: no-spec`, because there
 to audit against. That is the mode working correctly, not a lens dying.
 
 - Record it on `lenses_na`, **not** as a failure, and **not** inside the `<n>/<applicable>` count —
-  a spec-less review reports `4/4`, never `4/5`, because `4/5` reads as degraded.
+  a spec-less review reports `2/2`, never `2/3`, because `2/3` reads as degraded.
 - **A lens skipped by mode never raises `severity_floor`.** Only a `dead` lens does that.
 
 Conflating the two is how a correctly-configured spec-less review gets reported as degraded

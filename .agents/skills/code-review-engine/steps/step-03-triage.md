@@ -1,4 +1,4 @@
-# Step 3 — Normalize, dedupe, bucket, score
+# Step 3 — Normalize, dedupe, gate on reproduction, bucket, score
 
 Be precise. When uncertain between two categories, take the more conservative one.
 
@@ -14,11 +14,14 @@ Each finding becomes:
 | field | meaning |
 |---|---|
 | `id` | sequential integer |
-| `source` | `blind` · `edge` · `literal` · `acceptance` · `test-adequacy` · `compound`, or merged (`blind+edge`) |
+| `source` | `edge` · `acceptance` · `test-adequacy`, or merged (`edge+test-adequacy`) |
 | `title` | one line |
 | `detail` | the full description, plus any evidence |
 | `location` | `file:line` when available |
 | `severity` | normalized per §2 |
+| `reproduce` | the command the lens ran, from the repo root — required on `critical` / `important` |
+| `expected_wrong_output` | what that command prints or does that is wrong — required with it |
+| `reproduced` | `yes` + the output the lens actually saw when it ran the command itself |
 
 ## 2. Severity — normalize the aliases FIRST
 
@@ -35,79 +38,68 @@ the four house levels before anything downstream looks at severity:
 Case-insensitive. The unrecognized-falls-to-`suggestion` rule is deliberate: an unknown word must
 never be *promoted* into something that gates a merge.
 
-**A revised severity outranks the hunter's.** When step 2 has supplied a `revised_severity` for a
-finding — evidence in hand — that value replaces the hunter's assertion outright. Hunters assert;
-verification is what makes a severity load-bearing.
-
-⚠ **A finding with no revised severity keeps the hunter's** — step 2's self-gate skipped the wave,
-or its verifier died. The table in §5 is applied to that severity anyway, deliberately, because an
-unverified finding is not a softer finding: this engine
-gates exactly as hard as the path it replaces, no harder and no softer.
+The severity a lens wrote is the severity that is used. There is no revised severity any more — the
+step-2 wave that produced one is retired (SCC-447), and what makes a severity load-bearing now is
+§4's reproduction gate, not a second reader's opinion.
 
 ## 3. Deduplicate
 
 Two findings describing the same issue merge into one: keep the most specific as the base (prefer
 the one carrying a `location`), fold every unique detail and reference from the others into its
 `detail`, and set `source` to the merged sources. Do not merge two findings that share a file but
-describe different failures — that hides one of them.
+describe different failures — that hides one of them. Keep the surviving base's `reproduce:` — if
+only the folded-away finding carried one, keep that one instead.
 
-## 4. Bucket — exactly one per finding
+## 4. The reproduction gate, then the bucket — exactly one per finding
 
-- **decision_needed** — an ambiguous choice needing human input; the code cannot be correctly
-  patched without knowing intent. Walked with the operator in-thread by the caller (see the
-  decision leg under `defer`); in `no-spec` mode it exists too — the operator is the spec.
-- **patch** — a real issue whose correct fix is unambiguous — and worth making (the gate below).
-  **The caller applies it in this lane, before its verdict.** Pre-existing is not an exemption: a
-  survivor found in a file this lane touched is fixed where it was found.
-- **defer** — real, worth fixing, **and this lane structurally cannot hold the fix** — one of
-  exactly three blockers, named in the bullet: the file is owned by another LIVE lane (the fix
-  lands there; name it), the fix lives in another repo (which needs its own ticket key — `jira.md`
-  §The map: each repo declares its own key), or it waits on a `decision_needed` the operator has
-  not taken. "Pre-existing and not caused by this change" is NOT a defer reason (operator ruling
-  2026-08-15, second): that reading turned the ledger into a parking lot. No blocker → it is
-  `patch`. **The decision leg, precisely:** the caller walks every `decision_needed` with the
-  operator in-thread and it becomes a patch or a dismiss on their word; one the operator does not
-  take in-thread (or a headless run, which has no operator) stays an open DECISION row in the
-  walkthrough's `## Your Actions` — a decision is theirs and may hold the ticket; it is not a
-  ticket — and the `defer` bullet points at that row as its blocker.
-- **dismiss** — noise, false positive, already handled elsewhere — **or true but not worth
-  implementing.** That last class is a judgment this step OWNS, and it is recorded in one line,
-  never hidden.
+### 4a. The gate — presence first, and it is not a judgment
 
-In `review_mode: no-spec`, a finding that would be `decision_needed` becomes `patch` if the fix is
-unambiguous; otherwise it is STILL `decision_needed` — there is no spec to resolve the ambiguity
-against, but there is an operator, and the caller walks it with them in-thread like any other
-(headless: an open decision row). What it never becomes is a `defer` with no blocker.
+Read every `critical` and `important`. It must carry `reproduce:` and `expected_wrong_output:`. Missing either → **drop**, counted.
 
-### The relevance gate — TRUE is not the same as WORTH DOING (operator ruling 2026-08-15)
+The same is true of the lens's own run. A lens that did
+not run its own command has not met the hunter contract → **drop**, counted. Step 1 tells every lens
+to run its command in its own copy and delete the finding when it does not fail as predicted, so a
+finding arriving without `reproduced: yes` is a finding its own author did not stand behind.
 
-Step 2 settles whether a finding is true. This gate settles whether it is worth implementing —
-different questions, and conflating them is the flaw the ruling closed:
+**This engine cannot run it, by design** — the `allowed-tools` grant in `SKILL.md` includes
+no Bash, so nothing here executes. The gate at this step is a **presence** check and nothing more,
+and the floor this step scores in §5 is therefore **provisional**.
 
-> "the agents who review this have the goals of finding things, this doesnt mean they are all
-> actually relivant to impliment" — the operator, retiring the residue-ticket practice.
+**The CALLER runs the command again, on the REAL
+tree, through `repro_receipt.py`**, and that receipt is what binds. The named reason is SCC-295,
+which measured a lens's own copy becoming a mutant of the code being shipped: three of five lenses
+edited the builder's working tree mid-review, and one reported a RED result no version of the real
+code could produce. A lens proves a defect exists in its own copy; only the caller proves it exists
+in shipping code.
 
-The hunters are pointed at finding; volume is their success metric. A triage that treats every
-verified finding as owed work converts that metric into a work queue. So before a true finding
-may enter `decision_needed`, `patch`, or `defer`, it must pass at least ONE of:
+A `suggestion` or a `nitpick` is never reproduced and never bucketed. It is a count in the summary
+and nothing else — which is the point: the reproduction tax is severity-gated, so the only move it
+prices out is inflating a nitpick to be heard.
 
-1. **A realistic path fires today** — from this defect to a wrong merge, false evidence, lost
-   work, or a blocked real flow. Realistic means you can name the actor and the moment; a chain
-   of hypotheticals ("if someone hand-edits X during Y while Z is down") fails this leg.
-2. **It undermines evidence the house already cites as proof** — gate verdicts, receipts,
-   mutation-kill attribution, suite totals. Evidence integrity is bought at full price.
-3. **The operator asked for it** — an acceptance item, a standing ruling, a named request.
+### 4b. The bucket — one per surviving finding
 
-Fails all three → `dismiss`, one line: title + which leg it failed and why. Severity does not
-bypass the gate — an `important` with no realistic path is still dead, and §5 reads only the
-findings that survive here. Classes that default to dead: doc symmetry, coverage added for
-symmetry rather than for a suspected hole, style preference, and pins on prose — the last is
-vacuous by the house's own measurement (SCC-125).
+- **fix** — a reproduced `critical`. **The caller fixes it in this lane, before its verdict**, under
+  `reproduce-before-you-fix` G1–G5: a pin seen red, the minimal fix, then green. Pre-existing is not
+  an exemption — a reproduced critical in a file this lane touched is fixed where it was found.
+- **escalate** — a reproduced `important`. **The caller does NOT fix it.** It goes to the OPERATOR,
+  in the same thread, with its receipt and a one-line recommendation, and its default is
+  *ships as recorded*. Fixing an `important` at the end of a lane is a new unreviewed edit — the
+  loop, one turn later — which is why this bucket exists at all.
+- **defer** — reproduced, worth fixing, **and this lane structurally cannot hold the fix** — one of
+  exactly three blockers, named in the bullet: the file is owned by another LIVE lane (the fix lands
+  there; name it), the fix lives in another repo (which needs its own ticket key — `jira.md`
+  §The map: each repo declares its own key), or the operator has ruled it out of this lane.
+  "Pre-existing and not caused by this change" is NOT a defer reason (operator ruling 2026-08-15,
+  second): that reading turned the ledger into a parking lot. No structural blocker → it is `fix`
+  or `escalate` on its severity.
+- **drop** — did not reproduce, arrived without a command, or is noise (false positive, misparse,
+  duplicate of handled work). Counted in ONE line in the summary, never written up individually.
 
-⛔ **The residue class is RETIRED.** No pile of unfixed findings is ever "owed to a follow-on
-ticket" — that phrase and its variants are banned from walkthroughs. **A finding that survives
-this gate is fixed in this lane, in this thread, before the verdict — full stop.** The only
-other place it may go is a `defer` bullet naming one of the three structural blockers above.
+**There is no `decision_needed` bucket any more.** An open decision holds a ticket forever at
+`finish`, which is the loop. `jira_feed.py finish` decides `Done` from the open `- [ ]` rows under
+`## Your Actions`, so a decision row parked there is a ticket that can never close on its own. What
+used to be a decision is now an **escalate**: the operator sees it with its receipt, and the default
+is that the lane ships as recorded rather than waiting.
 
 ⛔ **A review never produces a ticket.** Not a residue ticket, not a "proposed" ticket, not a
 "decided" ticket the operator is asked to rule on, not a ticket-ruling row in `## Your Actions`.
@@ -116,36 +108,37 @@ decided chore ticket" and its own close-out ended in a `Rule on Ticket A and Tic
 operator ruled that the same loop under a new name: "we need the fixes made in thread not a
 ticket made every story thats an endless loop that never finishes." A ticket asserts a decision
 already made (`jira.md` §Who mints tickets); a review is where the work gets done, not where the
-next ticket gets born.
+next ticket gets born. **A finding that survives the
+gate is fixed or escalated in this thread, never a ticket.**
 
-**`dismiss` is counted — and a relevance kill is counted AND named.** Pure noise (false
-positive, misparse, duplicate of handled work) leaves the record as a number in the summary. A
-relevance kill — true, but not worth implementing — leaves ONE line in the walkthrough findings
-table: `dismissed — <failed leg + reason>`. A deferred finding is written down in full by
-step 4, blocker named. The count is never omitted — a review that silently drops what it rejected is a summary
-of its own conclusion.
+**The drop count is never omitted.** A review that silently discards what it rejected is a summary
+of its own conclusion. Name individually only a finding whose reproduction disagreed with its label,
+in either direction — that is the calibration signal.
 
-## 5. Score the severity floor — the one place severity becomes a verdict
+## 5. Score the severity floor — on the rows that are still OPEN at the stamp
 
-This table is the single definition; every caller reads it rather than inventing its own:
+⛔ **This is the change SCC-447 exists for.** The floor used to be computed here, from everything the
+lenses returned, and it never moved again — so fixing a finding did not lower it, and
+the only road from CONCERNS to PASS was a second full fan-out over the same diff. Across 138 reviews that
+road worked one time in seven and cost a full roster every time. The floor this step returns is
+therefore **provisional**: the caller resolves it at the stamp, against the rows that are still open
+*then*.
 
-| Surviving finding | Effect on `severity_floor` |
+| Row still OPEN at the stamp | Effect on `severity_floor` |
 |---|---|
-| `critical`, in `decision_needed` or `patch` | **FAIL** |
-| `important`, in `decision_needed` or `patch` | **CONCERNS** |
-| `suggestion` or `nitpick`, any bucket | **never gate** — recorded, never raising the floor |
-| anything in `defer` | **never gate** — this lane structurally cannot hold the fix (its blocker is named), and a gate cannot block a lane on work it cannot do |
+| a reproduced `critical` in `fix` that is not yet fixed and pinned | **FAIL** |
+| a reproduced `important` in `escalate` | **CONCERNS** |
+| anything in `defer`, at any severity | **CONCERNS** — the blocker is named, and a gate cannot block a lane on work it cannot do |
+| a `suggestion` or `nitpick`, any bucket | **never gates** — recorded, never raising the floor |
 | a lens still `dead` after retry AND inline rerun | **CONCERNS** |
-| a step-2 role still `dead` after retry AND inline rerun | **CONCERNS** |
 
 The floor is the **most severe** applicable row, on the axis `none` < `CONCERNS` < `FAIL`. A lens
-recorded `recovered-inline` is not a dead lens and does not appear here at all, and neither does a
-step-2 role that recovered inline — including one recorded `cold (no dossier)`, which is a lost head
-start, not a lost surface. A role the step-2 self-gate never launched is likewise not dead.
+recorded `recovered-inline` is not a dead lens and does not appear here at all. A row closed by a fix and a green pin
+does not appear here.
 
-⛔ **A `dismiss` never gates and a `defer` never gates** — but a `defer` is still written into the
-record. Suppressing a finding from the record because it did not gate is how a review becomes a
-summary of its own conclusion.
+**CONCERNS is not a stop.** `code-standards.md` §7 is the law: it is a shippable verdict, the
+go/no-go is the operator's word, and no command, door or agent may treat it as a blocker on its own
+authority. FAIL is the blocker.
 
 ## 6. Nothing left
 

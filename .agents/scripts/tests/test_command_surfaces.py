@@ -3928,9 +3928,9 @@ def main() -> int:
 
             ⓘ This is a RESULT filter, not a walk prune: `rglob` has already entered the
             directory by the time this rejects a path (measured from the lobby: 27,770 entries
-            enumerated, 10,185 of them inside `.claude/worktrees/` and discarded). Two siblings
-            prune instead — `evidence_extract.py`'s `_SKIP_DIR_PAIRS` with `dirnames[:] = …`,
-            and the note in `test_sops_prds_folder.py` recording that a result filter over
+            enumerated, 10,185 of them inside `.claude/worktrees/` and discarded). A sibling
+            prunes instead —
+            the note in `test_sops_prds_folder.py` recording that a result filter over
             `ROOT.rglob` once crashed that file on Windows with WinError 3 by descending into a
             lane. Left as a filter deliberately: the deepest path measured here is 187 chars
             (~221 on Windows against MAX_PATH 260), so that crash is not reachable today, and

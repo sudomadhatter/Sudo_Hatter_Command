@@ -274,12 +274,14 @@ Presenting findings only inline in the chat is NOT sufficient, and a standalone 
 longer the home. The section carries:
 - the canonical verdict line — **`Verdict: PASS|CONCERNS|FAIL|WAIVED @ <reviewed-sha>`** — plus the
   SHA the suite evidence was measured on. This line is what `/cicd-update-sprint-memory` reads before
-  flipping a story to `done`; any code/test diff between that SHA and HEAD invalidates the verdict.
+  flipping a story to `done`; any code/test diff between that SHA and HEAD invalidates the **suite
+  evidence** — re-run the named pins and the suite and re-stamp. The lenses are NOT re-run: one
+  review per lane (`code-standards.md` §7), and a second full roster needs the operator's written word.
 - scope (files/diff reviewed) and method/effort — one line each,
 - **ONE findings table** (the only copy anywhere — the story file links here, never restates):
-  `file:line` · severity · failure scenario · disposition (applied @ sha / deferred — blocked by
-  another live lane · another repo · an open decision / dismissed — a relevance kill carries its
-  one-line reason, noise is count-only; a review never produces a ticket),
+  `file:line` · severity · failure scenario · repro id · disposition (`fixed @<sha> · pin <test>` /
+  `escalated · repro <id>` / `deferred — <blocker>` / `dropped — no reproduction`, count-only /
+  `recorded`, count-only; a review never produces a ticket),
 - each gate check's result in one line, with the actual suite totals (rows also go to
   `## Suite Ledger`).
 

@@ -560,12 +560,13 @@ and the operator purges unrecognized tickets on sight.
 
 ⭐ **Review findings are the canonical speculative case — and a review never produces a ticket**
 (operator rulings 2026-08-15, both). The review's own triage decides which findings are actually
-relevant to implement (`code-review-engine` step-03, the relevance gate) and most little ones die
-there with a one-line reason — the hunters have finding-goals, so their volume is a success
-metric, never a work queue. **Every survivor is fixed in the same lane, in the same thread,
-before the verdict.** The only other disposition is a `defer` naming one structural blocker
-(another live lane owns the file · another repo · an open decision) in the deferred ledger —
-never a ticket. Banned in every form: a residue ticket carrying the unfixed pile, a "proposed"
+relevant to implement (`code-review-engine` step-03, the reproduction gate) and anything that does
+not reproduce dies there as a count — the hunters have finding-goals, so their volume is a success
+metric, never a work queue. **A reproduced `critical` is fixed in the same lane, before the verdict,
+and a reproduced `important` is escalated to the operator in the same thread** — never fixed at the
+end of a lane, because that is a new unreviewed edit. The only other disposition is a `defer` naming
+one structural blocker (another live lane owns the file · another repo · an operator ruling) in the
+deferred ledger — never a ticket. Banned in every form: a residue ticket carrying the unfixed pile, a "proposed"
 or "decided" ticket the operator is asked to rule on, and a walkthrough action row assigning
 either to the operator. The first cut of this rule allowed the "proposed decided ticket" leg;
 the operator ruled it the same loop under a new name ("we need the fixes made in thread not a

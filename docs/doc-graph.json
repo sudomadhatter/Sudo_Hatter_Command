@@ -7,11 +7,11 @@
     "files": 381,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 792,
+    "edges": 795,
     "external": 36,
-    "ambiguous": 174,
-    "dangling": 268,
-    "broken_paths": 61,
+    "ambiguous": 175,
+    "dangling": 266,
+    "broken_paths": 59,
     "unresolved_names": 207,
     "unresolvable": 9
   },
@@ -724,11 +724,11 @@
     {
       "path": ".agents/rules/artifacts-always-first.md",
       "in": 38,
-      "out": 8
+      "out": 9
     },
     {
       "path": ".agents/rules/code-standards.md",
-      "in": 19,
+      "in": 22,
       "out": 1
     },
     {
@@ -1084,12 +1084,12 @@
     {
       "path": ".agents/skills/code-review-engine/steps/step-03-triage.md",
       "in": 3,
-      "out": 2
+      "out": 3
     },
     {
       "path": ".agents/skills/code-review-engine/steps/step-04-record.md",
       "in": 2,
-      "out": 0
+      "out": 1
     },
     {
       "path": ".agents/skills/code-review-graph/SKILL.md",
@@ -3752,6 +3752,11 @@
     },
     {
       "from": ".agents/rules/artifacts-always-first.md",
+      "to": ".agents/rules/code-standards.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/artifacts-always-first.md",
       "to": ".agents/rules/constitution.md",
       "kind": "ref"
     },
@@ -4392,12 +4397,22 @@
     },
     {
       "from": ".agents/skills/code-review-engine/steps/step-03-triage.md",
+      "to": ".agents/rules/code-standards.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/skills/code-review-engine/steps/step-03-triage.md",
       "to": ".agents/rules/jira.md",
       "kind": "ref"
     },
     {
       "from": ".agents/skills/code-review-engine/steps/step-03-triage.md",
       "to": ".agents/skills/code-review-engine/steps/step-04-record.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/skills/code-review-engine/steps/step-04-record.md",
+      "to": ".agents/rules/code-standards.md",
       "kind": "ref"
     },
     {
@@ -6555,14 +6570,6 @@
     {
       "from": ".agents/skills/code-review-engine/SKILL.md",
       "target": "deferred-work.md"
-    },
-    {
-      "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
-      "target": "_artifacts/_main/2026-08-12_scc-124-baseline-trial/scoring.md"
-    },
-    {
-      "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
-      "target": "_artifacts/_main/2026-08-20_scc-225-review-surface/lc-cost-measurement.md"
     },
     {
       "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
@@ -9562,6 +9569,81 @@
     },
     {
       "from": ".agents/skills/backend-dev-guidelines/resources/validation-patterns.md",
+      "target": "SKILL.md",
+      "candidates": [
+        ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/backend-dev-guidelines/SKILL.md",
+        ".agents/skills/cicd-bdd-tests/SKILL.md",
+        ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
+        ".agents/skills/cicd-clean-code-audit/SKILL.md",
+        ".agents/skills/cicd-close-story-merge-tree/SKILL.md",
+        ".agents/skills/cicd-code-review/SKILL.md",
+        ".agents/skills/cicd-create-epic-sprint/SKILL.md",
+        ".agents/skills/cicd-deploy-backend/SKILL.md",
+        ".agents/skills/cicd-dev-story-tests/SKILL.md",
+        ".agents/skills/cicd-e2e/SKILL.md",
+        ".agents/skills/cicd-label-tasks/SKILL.md",
+        ".agents/skills/cicd-live-testing-team/SKILL.md",
+        ".agents/skills/cicd-merge-epic-workingtrees/SKILL.md",
+        ".agents/skills/cicd-non-crit-pr-push/SKILL.md",
+        ".agents/skills/cicd-park/SKILL.md",
+        ".agents/skills/cicd-prune-context/SKILL.md",
+        ".agents/skills/cicd-prune-worktree/SKILL.md",
+        ".agents/skills/cicd-push-e2e/SKILL.md",
+        ".agents/skills/cicd-quick-dev/SKILL.md",
+        ".agents/skills/cicd-resume/SKILL.md",
+        ".agents/skills/cicd-self-audit/SKILL.md",
+        ".agents/skills/cicd-update-sprint-memory/SKILL.md",
+        ".agents/skills/cicd-write-story-tests/SKILL.md",
+        ".agents/skills/code-review-engine/SKILL.md",
+        ".agents/skills/code-review-graph/SKILL.md",
+        ".agents/skills/emil-design-eng/SKILL.md",
+        ".agents/skills/firebase-ai-logic-basics/SKILL.md",
+        ".agents/skills/firebase-app-hosting-basics/SKILL.md",
+        ".agents/skills/firebase-auth-basics/SKILL.md",
+        ".agents/skills/firebase-basics/SKILL.md",
+        ".agents/skills/firebase-data-connect-basics/SKILL.md",
+        ".agents/skills/firebase-firestore-basics/SKILL.md",
+        ".agents/skills/firebase-hosting-basics/SKILL.md",
+        ".agents/skills/keyway-secrets/SKILL.md",
+        ".agents/skills/mermaid-diagram-standards/SKILL.md",
+        ".agents/skills/playwright-frontend-check/SKILL.md",
+        ".agents/skills/python-patterns/SKILL.md",
+        ".agents/skills/react-best-practices/SKILL.md",
+        ".agents/skills/sentry-security-team-avch/SKILL.md",
+        ".agents/skills/smh-adviser-board/SKILL.md",
+        ".agents/skills/smh-clean-code-audit/SKILL.md",
+        ".agents/skills/smh-close-task-merge-tree/SKILL.md",
+        ".agents/skills/smh-code-review/SKILL.md",
+        ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
+        ".agents/skills/smh-label-tasks/SKILL.md",
+        ".agents/skills/smh-llm-approvals/SKILL.md",
+        ".agents/skills/smh-memory-audit/SKILL.md",
+        ".agents/skills/smh-merge-multiple-workingtrees/SKILL.md",
+        ".agents/skills/smh-new-project/SKILL.md",
+        ".agents/skills/smh-non-crit-pr-push/SKILL.md",
+        ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-quick-dev/SKILL.md",
+        ".agents/skills/smh-review/SKILL.md",
+        ".agents/skills/smh-self-audit/SKILL.md",
+        ".agents/skills/smh-sync-agents/SKILL.md",
+        ".agents/skills/smh-sync-vscode/SKILL.md",
+        ".agents/skills/smh-update-maps-indexes/SKILL.md",
+        ".agents/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/tool-connections/SKILL.md",
+        ".agents/skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        ".agents/skills/ui-ux-pro-max/SKILL.md",
+        ".agents/skills/v3-prompt-architecture/SKILL.md",
+        ".agents/skills/vgpu/SKILL.md",
+        ".agents/skills/visual-fx-3d/SKILL.md",
+        ".agents/skills/webm-alpha-video/SKILL.md",
+        ".agents/skills/workspace-structure/SKILL.md",
+        ".agents/skills/write-swift/SKILL.md"
+      ]
+    },
+    {
+      "from": ".agents/skills/code-review-engine/steps/step-03-triage.md",
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",

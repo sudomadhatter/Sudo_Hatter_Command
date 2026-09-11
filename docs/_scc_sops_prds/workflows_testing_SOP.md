@@ -656,12 +656,12 @@ so the blast radius `/cicd-self-audit` traced that morning can describe a tree t
 exists — every gate green, and a reference an epic-mate moved out from under you. Step 0.7
 re-derives the radius and makes the reviewer answer three questions in writing (*did anything this
 diff references move · what is the true overlap and does `merge-tree` conflict · which sibling
-lanes must land first*); **"nothing moved" is a reportable result**, not a reason to skip it. The
-measured radius also **resolves the review level** — `quick` (Test-Adequacy + Acceptance only, when
-nothing referenced moved, no gate/hook/rule/contract surface is in the radius, and the re-taken
-diff stays ≤3 source files) or `standard` (the full roster) — derived from the measurement, never a
-flag you or the agent chooses. A level arriving without its radius evidence defaults to `standard`,
-and level-excluded lenses report `skipped-by-mode (level: quick)`, never dead.
+lanes must land first*); **"nothing moved" is a reportable result**, not a reason to skip it.
+
+**There is no review level any more (SCC-447).** The roster is three lenses on every review — the
+Edge Case Hunter, the Test-Adequacy Auditor, and the Acceptance Auditor when a spec exists. What
+scales with the size of a change is the **scope of the diff** the reviewer is handed, not the
+number of readers looking at it.
 
 **Step 1.5 — the acceptance audit.** The diff is audited against the story's checkable list — an
 item with no evidence is **not satisfied**, and anything in the diff *beyond* the list is
@@ -676,8 +676,17 @@ with no block at all is itself an *important* finding, never a silent pass. Plan
 checks reconcile the same way as files: an assertion the plan promised that shipped weaker is drift
 too. No drift row auto-fails; each takes the same cut-it-or-name-why-it-stays disposition.
 
+**Reproduce or drop, and the finder reproduces first (SCC-447).** A `critical` or `important` that
+did not reproduce does not exist. Each lens writes `reproduce:` and `expected_wrong_output:`, runs
+that command **in its own copy**, and deletes the finding if it does not fail as predicted; the
+engine checks the claim is present (it holds no Bash and cannot run anything, by design) and hands
+back a **provisional** floor; and the door re-runs the command on the real tree through
+`repro_receipt.py`, which is the receipt that actually binds. A reproduced `critical` is fixed in
+the lane with a pin; a reproduced `important` is **escalated to the operator**, never fixed at the
+end of a lane, because that is a new unreviewed edit. Everything else is a count.
+
 **The record is machine-read.** The walkthrough's `## Code Review` section must carry the engine's
-`dispositions:` line (per-lens survived/dismissed/relevance-killed) and a one-line `drift:` result;
+`dispositions:` line (per-lens reproduced/dropped/recorded) and a one-line `drift:` result;
 `walkthrough_roster.py` blocks a lane dated 2026-08-20 or later that is missing either.
 
 **And the runtime header owes a REASON when it says `inline` (SCC-285).** `review-runtime:
@@ -695,16 +704,14 @@ merged.
 > A story lane merges into `epic/<JIRA-KEY>-<slug>` — pasting the Task step verbatim would re-derive
 > against a branch the story never meets, reporting "nothing moved" while the epic-mate that *did*
 > move the file lands anyway. `tests/test_command_surfaces.py` pins it both ways: the cicd step must
-> name `origin/$EPIC` **and must not name `origin/main`**. The `quick` level's lens membership was
-> data-gated by measurement, not taste (the Literal-Correctness lens cost 8.5× the Acceptance
-> Auditor on the same fixture).
+> name `origin/$EPIC` **and must not name `origin/main`**.
 
 **The four verdicts, and what each one means for you:**
 
 | Verdict | Means | Does close-out land it? |
 | --- | --- | --- |
-| **PASS** | every required tier green, and the clean-code floor green on changed lines | yes |
-| **CONCERNS** | soft issues only — bloat, duplication, an unowned TODO, a stale note, a review lens that never ran | yes, and they get recorded |
+| **PASS** | every required tier green, the clean-code floor green on changed lines, and no open reproduced finding | yes |
+| **CONCERNS** | an **escalated** reproduced `important`, a `defer` behind a named blocker, a review lens that never ran, or soft issues — bloat, duplication, an unowned TODO, a stale note | **yes — CONCERNS ships on your word**, and no command, door or agent may hold the lane on its own authority |
 | **FAIL** | a new test regression, a required tier missing, a machine-floor error on a changed line, or a banned pattern shipped | **no — this is the only thing that blocks** |
 | **WAIVED** | the project has no test baseline at all | yes |
 
@@ -713,22 +720,26 @@ merged.
 
 > ⓘ **Where to read the findings — the engine runs the review (SCC-128).** The
 > `## Code Review` table in the **walkthrough** is authoritative — it is the one with dispositions
-> (`applied` / `deferred` / `dismissed`), and it is what close-out reads. The engine may *also* leave
+> (`fixed @<sha> · pin` / `escalated · repro` / `deferred — <blocker>` / `dropped — no reproduction`
+> / `recorded`), and it is what close-out reads. The engine may *also* leave
 > `[ ] [Review]…` checkboxes in the story file (or, on a Task, the plan) so the builder sees open work
 > where they are already looking. That is a **worklist, not a second record**: it carries no
 > dispositions, and where the two disagree the walkthrough table is right.
 
-> ⓘ **Found ≠ owed — the triage decides what is actually worth implementing (SCC-160).** The
-> review's hunter agents are *pointed* at finding; volume is their success metric — left alone,
-> every verified-true-but-unfixed finding became a "deferred residue" ticket you were asked to
-> commission. So the triage step owns a **relevance gate**: a true finding must show a realistic
-> path to real damage, or undermine evidence the house cites as proof, or be something you asked
-> for — otherwise it dies with a one-line reason in the findings table. **What survives is fixed in
-> the lane, right there, before the verdict.** A review **never produces a ticket** — not residue,
-> not proposed, not decided; your ruling: *"we need the fixes made in thread not a ticket made every
-> story thats an endless loop that never finishes."* The only thing that may leave a lane unfixed is
-> a `defer` that names a structural blocker (another live lane owns the file · another repo · a
-> decision only you can take), and it lives in `deferred-work.md`, not on the board.
+> ⓘ **Found ≠ owed — reproduction decides what is real, and severity decides who acts (SCC-160,
+> rebuilt SCC-447).** The review's hunter agents are *pointed* at finding; volume is their success
+> metric — left alone, every true-but-unfixed finding became a "deferred residue" ticket you were
+> asked to commission, and the ones that were not even true still cost a paragraph each. So the
+> triage step now opens with a **reproduction gate**: a `critical` or `important` arrives with a
+> command and the output its own lens saw when it ran it, or it does not arrive. Everything that
+> fails that gate is a number in the summary — no write-up, no argument, no ticket. **What survives
+> splits by severity:** a reproduced `critical` is fixed in the lane, right there, with a pin seen
+> red then green; a reproduced `important` is **escalated to you** with its receipt and a one-line
+> recommendation, and ships as recorded unless you say otherwise. A review **never produces a
+> ticket** — not residue, not proposed, not decided; your ruling: *"we need the fixes made in thread
+> not a ticket made every story thats an endless loop that never finishes."* The only other place
+> anything may go is a `defer` that names a structural blocker (another live lane owns the file ·
+> another repo · a ruling only you can make), and it lives in `deferred-work.md`, not on the board.
 
 **Where the verdict lives:** a `## Code Review` section in the story's `walkthrough.md`. Stories
 closed before 2026-08-02 keep it in the old standalone `sudo-code-review-<story>.md` file instead,
@@ -1313,8 +1324,8 @@ the whole ladder; a `record` failure never blocks a merge.
 recall-first with no noise filter by design, so re-running it — on anything, including its own
 fixes — always surfaces new findings, and "review until zero findings" is a loop that never ends.
 New findings at close-out anyway? Triage by severity: `suggestion`/`nitpick` → record and merge
-(a `defer` still names its blocker); only a `critical`/`important` in `decision_needed` or `patch`
-stops it — and it gets fixed right there, never carried out of the lane.
+(a `defer` still names its blocker); an `important` is escalated to you and ships as recorded; only
+a **reproduced `critical`** stops it — and it gets fixed right there, never carried out of the lane.
 
 **A cross-repo task can be blocked by the *other* repo's state.** If your `task.yaml`
 declares `secondary_repos`, the preflight does not treat it as a note — it goes and looks. It
@@ -2496,7 +2507,6 @@ this sentence. What matters to you is *what they refuse to let happen.*
 | `code-review-engine` → the review commands | **The roster the row above reads never getting written in the first place.** A gate that blocks on evidence is only worth what the surface upstream of it records — and until now the engine handed back `lenses_run: 5/5` as a single counted line, which is the engine's *claim* about itself in exactly the way `Verdict: PASS` is the caller's. Three changes close the loop. **(1)** The engine's return block is now the roster itself — one `- <lens> · ok | recovered-inline | dead` row per lens — and `/smh-code-review` and `/cicd-code-review` paste it into `## Code Review` **verbatim** at their Step 4. Summarising it back to "all lenses clean" deletes the only evidence that survives the chat. **(2)** Both review commands, and `/smh-quick-dev`, now **probe** at Step 0 whether this runtime can fan out to subagents and write `review-runtime: fan-out|inline` into the walkthrough header — probed, never assumed, because a headless pipeline or a platform with no subagent tool makes the answer `inline` and that is invisible until a lens fails to launch. ⛔ **The probe asks about CAPABILITY, never POLICY (SCC-203).** *Does a subagent tool exist here?* is the whole question; *am I allowed to use it?* is a different one, and answering it there is how a session directive — "Do not call the AgentTool unless the user requested it" — got read as "this runtime is inline", ran a whole review inside the builder's own context, and had the flow record that as legitimate. ⛔ **Quote that directive VERBATIM — it names the tool (SCC-285).** The real text is a constant compiled into the Claude Code binary and injected on Opus 5; five commands rebutted a paraphrase that did not name `AgentTool`, and an agent took the gap as an escape hatch and ran a whole review inline. There is no local lever to disable it. `.agents/scripts/tests/test_directive_quote.py` holds the line two ways: any QUOTATION that names a subagent/Agent-tool concept and carries an `unless` clause must be the verbatim directive (so a re-wording is caught without guessing at wording, and ordinary unquoted prose is never touched), and every rebutter must carry that quote **within the sentence that claims it is satisfied** — because presence-anywhere is satisfied by parking a copy in a comment while the rebuttal is deleted. **Subagents are the default and invoking the review command IS the request**, so you never have to ask for them — a `/` command **is** a user request, and that sentence is now in the law rather than left to be inferred. ⛔ **And there is a third door, because forbidding both moves left no legal one:** an agent that still believes it cannot launch a subagent may not record a bare `inline` — it writes `review-runtime: inline (blocked: <what blocked it>)`, which puts the belief where `walkthrough_roster.py` can see it instead of laundering it into a clean-looking `inline` (SCC-263, hit live on the lane that fixed it). ⛔ **Step 0, not Step 4:** recorded afterwards the header is read off the roster it exists to check, and the contradiction rule can never fire. **(3)** The engine reads that header — under `inline` the ladder runs **once**, blind lens first on the diff alone, every lens that ran recorded `recovered-inline`; ⛔ **and where that context is already contaminated — you are the builder, you hold the plan — the Blind Hunter is DROPPED rather than faked (SCC-203, operator ruling)**, recorded `n/a` with its reason and left out of the count, because a roster carrying a lens that ran without its defining property reports a review more independent than it was. It is the only lens that needs starvation; the other four are handed context on purpose. **The ladder** never tries the fan-out first "just in case" nor re-attempts it after, which would burn the budget twice and re-order the blind lens behind a loaded context. The blind lens *may* run concurrently with the suite, on one condition the walkthrough states: **the sha the lenses ran against and the sha on the receipt are the same value.** **(4)** A headless lane runs the lenses inline **by design**, so it is what this header was written for: it declares `review-runtime: inline` and records every lens as `recovered-inline`, which is what blind-lens-first ordering already required and never wrote down. *(SCC-173 + SCC-177.)* |
 | `tests/test_main_ruleset_armed.py` | **The GitHub half being switched off without leaving a trace in any commit.** The ruleset lives on the server and can be deleted or disabled from a browser; no file in this repo would change. This asks GitHub directly, on every suite run, and **fails hard** if the ruleset is missing, disabled, or has picked up a bypass actor — a bypass for "repository admin" would re-open the whole hole while still *looking* armed, because the agent merges as you. When it cannot reach GitHub at all (offline, no `gh`, no credentials) it prints `[SIGNAL]` and passes: that is refusing to claim knowledge it does not have, not a soft gate. |
 | `hooks_armed.py` | **Every other check on this page reporting green while switched OFF.** **Five** ways a gate dies quietly, and it reports all five — the three below, plus the two SCC-140 added (an **orphaned flag**, tracked while the gate script it names is not; and an untracked **dispatcher**, so nothing calls the gate at all). — *and the history behind it, below.* |
-| `evidence_extract.py` | **Nothing — and it is on this list on purpose.** It is the one entry here that is *not* a gate: it refuses nothing, no hook calls it, and you never type it. It is the review engine's fact-fetcher (SCC-123), and what it prevents is a reviewer reasoning about only the files it happened to open — it reads the changed files and their callers *first* and hands the lens a dossier. It is listed because this table calls itself the live list, and a script in `.agents/scripts/` missing from it would make that sentence false. **Its caller snippets are RANKED, and you will see the tags in a review's evidence:** each one leads with `[importer]` (the calling file really imports the file the finding is on) or `[name-match]` (the identifier matched, nothing more). Importer hits are searched first and sorted first, so they survive the ten-snippet cap — but **nothing is filtered out**, because a name-match is weaker evidence rather than absent evidence, and dropping it would take attribute-dispatch call sites with it. ⛔ **The ten-snippet cap reserves a slot for the weaker class**, so a heavily-imported file cannot fill the whole dossier with importers and make attribute dispatch disappear — that regression was caught in review, not by a test, and now has one. ⚠ A third tag, `[unranked]`, means the importer walk hit its 10-second deadline: it could not finish, so *not* an importer is unknown rather than false. Read `[unranked]` as "nobody checked", never as `[name-match]`. ⚠ Only `--findings` mode runs today; `--pack` still has no caller, and the docstring says what must be fixed before anything wires it in. |
 | `split_sprint_status.py` | The one-time migration that shrank the board. |
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
