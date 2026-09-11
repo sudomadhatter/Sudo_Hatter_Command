@@ -25,7 +25,7 @@ test-priorities matrix (P0 100% · P1 80% · P2 50% · P3 20%; P0+P1 need E2E).
 
 ## Your doors
 
-- **The red phase** — on a command-center lane it rides `/smh-quick-dev`'s tests-first build
+- **The red phase** — on a command-center lane it rides `/smh-dev-task-tests`'s tests-first build
   step (there is no separate smh test door); inside ② on project work you keep the ①-written
   failing tests honest and add the adequacy traps the build exposes. The ① door itself
   (`/cicd-write-story-tests`) is the operator's model-switch gate, like ③ — not this seat's to

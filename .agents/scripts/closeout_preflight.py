@@ -29,6 +29,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gate_receipt as gr
 import walkthrough_roster as roster
 import wf_common as wf
+# ONE reader of the quick lane's record line and ONE staleness helper, shared with the lobby's
+# close-out and living THERE because this module already imports that one (SCC-441 review): the
+# helper derives its pathspec from `task_preflight.PRODUCT_DIRS` - never DEPLOY_DIRS, the
+# difference is a shipped incident (SCC-118); `.github/` is not product code. Import-safe: that
+# module's work is guarded by `if __name__ == "__main__"`.
+from task_preflight import (_QUICK_LANE_RE, _QUICK_LANE_UNREADABLE, _stale_against_sha,
+                            quick_lane_unreadable)
 
 def integration_branch(project: Path) -> str:
     """The landing target for a story: its epic branch (`epic/*`), falling back to `main`.
@@ -37,10 +44,25 @@ def integration_branch(project: Path) -> str:
     to main via /cicd-push-e2e. With exactly one live epic branch the target is unambiguous;
     with zero or several, `main` is the only branch every landing eventually reaches, so the
     ancestor check stays meaningful (a story merged via its epic IS an ancestor of main once
-    the epic ships — before that, several-epics ambiguity must be resolved with --branch)."""
-    r = wf.git(["branch", "--list", "--format=%(refname:short)", "epic/*"], project)
-    branches = [b.strip() for b in r.stdout.splitlines() if b.strip()]
-    return branches[0] if len(branches) == 1 else "main"
+    the epic ships — before that, several-epics ambiguity must be resolved with --branch).
+
+    ⛔ READ ORIGIN TOO (SCC-441 review 2, reproduced). A story worktree is cut `--no-track` off
+    `origin/epic/<…>` and never creates a LOCAL epic head, so a local-only scan returned `main`,
+    the staleness base fell to `origin/main`, and a clean absorb of the epic then read STALE for
+    every sibling file the epic carried that main did not. `epic_mode.py` reads origin for the
+    same reason (a local head outlives the epic it belonged to). Union local + remote, dedup by
+    short name."""
+    names: set[str] = set()
+    local = wf.git(["branch", "--list", "--format=%(refname:short)", "epic/*"], project)
+    names.update(b.strip() for b in local.stdout.splitlines() if b.strip())
+    remote = wf.git(["for-each-ref", "--format=%(refname:short)",
+                     "refs/remotes/origin/epic/*"], project)
+    for ln in remote.stdout.splitlines():
+        ref = ln.strip()
+        ref = ref[len("origin/"):] if ref.startswith("origin/") else ref
+        if ref:
+            names.add(ref)
+    return next(iter(names)) if len(names) == 1 else "main"
 
 
 # ── 1. Did the code actually land? ─────────────────────────────────────────────
@@ -278,6 +300,9 @@ _VERDICT_RE = re.compile(
     r"(?:[^\n]*?@\s*`?([0-9a-f]{7,40}))?",
     re.MULTILINE | re.IGNORECASE)
 
+# The quick lane's record line (`_QUICK_LANE_RE`) and the staleness helper both callers below
+# share (`_stale_against_sha`) are imported from `task_preflight` at the top of this file.
+
 
 _LEGACY_REL = "_bmad-output/implementation-artifacts"
 
@@ -335,8 +360,18 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> set[str]:
         rep.err("artifacts", f"no walkthrough.md found for '{wf.norm_id(key)}' - "
                              f"code review never recorded a verdict")
         return claimed
+    # The staleness helper excludes what the INTEGRATION branch absorbed (SCC-441 review 2): the
+    # remote-tracking ref when it resolves, else None and the helper measures the whole delta.
+    target = f"origin/{integration_branch(project)}"
+    have_base = wf.git(["rev-parse", "--verify", "--quiet", target], project)
+    base = target if have_base.returncode == 0 and have_base.stdout.strip() else None
     for path in hits:
-        text = wf.read_text(path)
+        # ⛔ ONE READER WITH THE LOBBY (SCC-441 review 2, reproduced): this searched the RAW text
+        # while `task_preflight.check_gate` searches `strip_fenced` text, so the same fenced
+        # record line read STALE here and "no review Verdict line" there. A fenced stamp is a
+        # paste, not a record (SCC-154) - for the verdict AND for the record line.
+        raw = wf.read_text(path)
+        text = wf.strip_fenced(raw)
         m = _VERDICT_RE.search(text)
         rel = path.relative_to(project)
         if not m:
@@ -344,6 +379,20 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> set[str]:
             if legacy:
                 rep.info("artifacts", f"{rel}: no `Verdict:` line, but the pre-08-02 standalone "
                                       f"{legacy.name} holds it (legacy fallback)")
+                continue
+            q = _QUICK_LANE_RE.search(text)
+            if q:
+                rep.info("artifacts", f"{rel}: no `Verdict:` line - quick lane, no review was "
+                                      f"asked for; walkthrough approved by the operator @ "
+                                      f"{q.group(1)[:8]} (SCC-444)")
+                # ⛔ The operator's `approved` IS this lane's verdict, so it is evidence about
+                # exactly ONE tree — the same staleness question the verdict path asks below,
+                # asked of the same value. Skipping it let a quick lane land code the operator
+                # never saw (SCC-446 review).
+                _stale_against_sha(rep, project, rel, q.group(1), "approved", base=base)
+                continue
+            if quick_lane_unreadable(raw, text):
+                rep.err("artifacts", f"{rel}: {_QUICK_LANE_UNREADABLE}")
                 continue
             rep.err("artifacts", f"{rel}: no `Verdict:` line - "
                                  f"the review step has not run (or did not record it)")
@@ -371,14 +420,7 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> set[str]:
                                   f"CANNOT be checked; re-record as `Verdict: {verdict} @ <sha>`")
         if sha:
             # A verdict is only evidence about the tree it was taken on.
-            diff = wf.git(["diff", "--name-only", f"{sha}..HEAD", "--",
-                           "backend/", "frontend/"], project)
-            changed = [ln for ln in diff.stdout.splitlines() if ln.strip()]
-            if diff.returncode != 0:
-                rep.warn("artifacts", f"{rel}: reviewed SHA {sha[:8]} not in this repo")
-            elif changed:
-                rep.err("artifacts", f"{rel}: {len(changed)} code file(s) changed since the "
-                                     f"reviewed SHA - the verdict is STALE, re-gate")
+            _stale_against_sha(rep, project, rel, sha, "reviewed", base=base)
     return claimed
 
 

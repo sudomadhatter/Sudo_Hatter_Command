@@ -30,7 +30,7 @@ unattended; 🦟🔍 The Gnat answers lookups for any seat at any point.
 them.** The operator's chartered split of the dev flow: **① and ③ run on his reviewing model**
 (today, Fable) — `/cicd-create-epic-sprint` and `/cicd-write-story-tests` at the front,
 `/cicd-code-review` or `/smh-code-review` at the back. **The Zoo seats own ②**: they carry a build
-(`/cicd-dev-story-tests` or `/cicd-quick-dev` on project work, `/smh-quick-dev` on the command
+(`/cicd-dev-story-tests` or `/cicd-quick-dev` on project work, `/smh-dev-task-tests` or `/smh-quick-dev` on the command
 center) **to review-ready, and stop there**. The operator then switches the model and runs ③
 himself — the verdict never comes from a seat that built, tested, or orchestrated the work.
 Concretely, for every seat: never run a ① or ③ door, never write a `## Code Review` section, and
@@ -38,15 +38,16 @@ never write a `Verdict:` stamp — a seat that reaches review-ready parks and re
 it parks at merge-ready.
 
 ⛔ **Where that stop falls inside a quick-dev door — read this before you start one.** The two
-quick-dev doors END in a review step that is marked *mandatory* and that issues the verdict:
-`/smh-quick-dev` **Step 4** and `/cicd-quick-dev`'s review gate both invoke a ③ door and write
-`Verdict: … @ <sha>`. That step is **not yours** — it is the ③ half, and it is where the operator
-switches the model. So a seat running either door works it **up to that step, then STOPS and
-reports review-ready**, leaving the review gate un-run for the operator. Do not run it, and do not
-treat the word *mandatory* as overriding this rule: the step is mandatory **for the lane**, not for
-you, and the operator's next invocation is what satisfies it. (`/cicd-dev-story-tests` carries no
-verdict step at all, so it has no such stop — it is review-ready when it ends.) A seat that reads
-"never skipped" and stamps anyway has reinstated the exact regression SCC-362 removed. (Why this is structural and not distrust: the review is where
+quick-dev doors (`/smh-quick-dev` in the lobby, `/cicd-quick-dev` in a project) are the quick lane
+(`git-policy` § Two toggles): they END at the walkthrough and the operator's literal `approved`, and
+a review runs **only when the operator asks** — it is never part of the lane, and the lane writes
+`Review: none - quick lane; walkthrough approved by the operator @ <sha>` with **no `Verdict:`**
+when none ran. So a seat running either door works it **to the walkthrough, then STOPS and reports
+review-ready**. The review, when the operator asks for it, is the ③ half and it is where the
+operator switches the model: a seat never runs it, never writes a `## Code Review` section, and
+never stamps a `Verdict:` in its place. (`/cicd-dev-story-tests` carries no verdict step at all, so
+it has no such stop — it is review-ready when it ends.) A seat that stamps anyway has reinstated
+the exact regression SCC-362 removed. (Why this is structural and not distrust: the review is where
 judgment-shaped prose gets rationalized past, so the judgment step runs on the operator's chosen
 reviewing model. SCC-362.)
 

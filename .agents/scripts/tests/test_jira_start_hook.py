@@ -4,7 +4,7 @@ Four seams wrote `Done`; exactly one wrote `In Progress`, and it was the BMAD st
 a board where every non-epic ticket is a Task, that meant nothing was ever visible as in
 flight - work sat in `To Do` while it was built and teleported to `Done` at merge.
 
-The trigger deliberately does NOT hang on a command. `/smh-quick-dev` is not always run, and a
+The trigger deliberately does NOT hang on a command. `/smh-dev-task-tests` is not always run, and a
 fix that depends on remembering to run it re-creates the defect it closes. Work provably starts
 when the first commit lands on a keyed branch - whatever path got there, including a bare
 `git commit` with no workflow at all.

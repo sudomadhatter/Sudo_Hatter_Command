@@ -169,7 +169,7 @@ Phase 2: Technical Translation & Ticket Minting
   ↳ ⛔ STOP FOR APPROVAL: Mr. Hatter confirms "Approved"
 
 Phase 3: Development Hand-off
-  ↳ Launch /smh-quick-dev or /cicd-dev-story-tests
+  ↳ Launch /smh-dev-task-tests or /cicd-dev-story-tests
 ```
 
 ---

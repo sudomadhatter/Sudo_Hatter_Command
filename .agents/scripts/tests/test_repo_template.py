@@ -42,7 +42,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 # ⛔ A MISSING MODULE IS A FAILING ROW, NEVER A SETUP DEATH. Before `_repo_template.py` exists this
 # file must come up and fail where it ASSERTS — a test that dies on import looks identical to one
-# that failed its assertion, and only one of those is a real red (`smh-quick-dev` Step 2).
+# that failed its assertion, and only one of those is a real red (`smh-dev-task-tests` Step 2).
 # ⛔ ALL THREE IMPORTS IN ONE GUARD, and that is the whole point. Guarding only
 # `_repo_template` was theatre: `_pf_fixtures` and `test_git_hooks` BOTH import it at module
 # scope, so the guarded failure re-raised, unguarded, on the very next line — no title, no

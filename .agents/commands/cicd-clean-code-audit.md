@@ -41,6 +41,20 @@ Every bare path and every command below resolves **under `PROJECT_ROOT`** (per
 `.agents/rules/smh-target-resolution.md` §STD + §BIND); a needed path missing under `PROJECT_ROOT` →
 STOP, never fall back to the lobby.
 
+**Then the epic mode — from the git query, never from belief** (`git-policy` § The epic's mode,
+SCC-446):
+
+```bash
+L=$(pwd)                                                             # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune && cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
+```
+
+⛔ **A failed fetch is a STOP.** The mode query is chained behind the fetch, so a `fatal:` from the fetch means no mode line prints — and the cached `origin/epic/*` refs may name an epic origin no longer has. Fix the fetch, then read the mode; never read a mode off refs a fetch did not refresh.
+
+**Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
+**they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one
+live epic on origin) is a STOP: name the one you mean or prune the other before anything else runs.
+
 ## Step 0.5 — Resolve the diff (worktree-aware)
 
 Story work lives in its own worktree (`worktree-per-story`), and the code under audit commonly exists
@@ -57,10 +71,10 @@ case); otherwise fall back to `main`:
 # below would measure the shared checkout instead (SCC-351 review). Fetch works from any
 # tree of the repo — refs are shared.
 env -u GITHUB_TOKEN git fetch origin
-# origin/ FIRST: a local epic head is only as fresh as the last pull, and a story lane's real
-# base is what the epic branch looks like NOW - sibling stories land there while you audit.
-BASE=$(git for-each-ref --format='%(refname:short)' \
-         'refs/remotes/origin/epic/*' 'refs/heads/epic/*' | head -1); BASE=${BASE:-origin/main}
+# the base is the branch Step 0's mode line printed - origin/epic/<...> on FULL or LIGHT (a story
+# lane's real base is what the epic branch looks like NOW; sibling stories land there while you
+# audit), origin/main on TRUNK. Never re-discovered here.
+BASE=<origin/epic/<JIRA-KEY>-<mode>-<N>-<slug> from Step 0, or origin/main in TRUNK mode>
 git diff --name-only "${BASE}...HEAD"           # story branch vs the branch it forked from
 git diff --name-only                            # STANDALONE ONLY - saved edits nobody staged yet
 git diff --name-only --cached                   # STANDALONE ONLY - staged, if mid-work

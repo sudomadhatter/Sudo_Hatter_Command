@@ -50,11 +50,23 @@ REQUIRED: tuple[tuple[str, re.Pattern[str], str, str], ...] = (
     ("epic-read", ANCHOR, _SECTION,
      "a `git show <epic-ref>:…/sprint-status.yaml` — close-out writes the YAML INSIDE the "
      "story worktree, so the landed truth is on the epic branch, not in the checkout"),
-    ("ref-discovery", re.compile(r"""['"]refs/remotes/origin/epic/\*['"]"""), _SECTION,
-     "`git for-each-ref … 'refs/remotes/origin/epic/*'` — the epic ref is DISCOVERED, and "
-     "`origin/` first because a local epic head is only as fresh as the last pull. The STAR "
-     "and the QUOTES are both load-bearing: without the star it discovers nothing, and "
-     "unquoted, zsh globs it against the filesystem and the command exits 1 with no output"),
+    ("ref-discovery", re.compile(r"""cd\s+["']\$L["']\s*&&\s*\S*python3?\s+[^\n]*?"""
+                                 r"""epic_mode\.py\s+--repo\s+["']\S"""), _SECTION,
+     "`cd \"$L\" && python3 .agents/scripts/epic_mode.py --repo \"$PROJECT_ROOT\"` — the epic ref is "
+     "DISCOVERED by the one query every door shares (SCC-446), which reads ORIGIN only "
+     "(a local epic head is only as fresh as the last pull) and prints the mode word first. "
+     "A door that re-types its own `for-each-ref` glob is the drift this script retired. "
+     "⛔ The QUOTES are load-bearing and pinned, exactly as the retired `for-each-ref` "
+     "refspec's were: unquoted, a `PROJECT_ROOT` holding a space word-splits and argparse "
+     "answers `unrecognized arguments` on stderr with exit 2, so the door's mode line "
+     "becomes a usage message and no mode is ever printed (SCC-446 review). "
+     "⛔ AND THE `cd \"$L\"` PIN IS PART OF THE REQUIREMENT, not decoration. `epic_mode.py` "
+     "lives in the LOBBY and no project ships it, while the line above this one `cd`s into "
+     "`$PROJECT_ROOT` to fetch — so the bare `python3 .agents/scripts/epic_mode.py` this row "
+     "used to ask for resolves against the PROJECT and dies `No such file or directory` in "
+     "every repo. That is not hypothetical: it is what shipped, and this row is what told the "
+     "author to write it. `$L` is pinned at Step 0 with `L=$(pwd)` BEFORE any `cd` "
+     "(`command-shape.md` §Absolute fills)"),
     ("no-epic-fallback", re.compile(r"no epic branch|between epics", re.I), _AFTER,
      "the project that has NO epic branch — there the checkout copy is the authority, and a "
      "boot that errors out instead of saying so is a worse boot than the stale one"),
@@ -147,12 +159,57 @@ def report(rows: list[tuple[str, str]]) -> str:
     return "\n      " + "\n      ".join(f"MISSING [{n}] — {w}" for n, w in rows)
 
 
+# ⛔ `$L` MUST BE BOUND IN THE FENCE THAT USES IT — every fence, not just Step 2b's.
+# A ```bash fence is its OWN SHELL: nothing a previous fence assigned survives into it. So the
+# `ref-discovery` row above, which pins the shape `cd "$L" && python3 …`, is satisfied by a line
+# whose `$L` is empty — and `cd ""` exits 0 WITHOUT MOVING. The door then runs the lobby's script
+# from inside `$PROJECT_ROOT` (the line above it `cd`s there to fetch) and dies `No such file or
+# directory`, which is the exact death the pin was added to prevent. Reproduced 2026-09-11 on
+# Step 2b: cwd stayed at the project, the mode line exited 2, no mode was ever printed.
+#
+# Why this is file-wide and not another `REQUIRED` row: `missing()` measures ONE section and
+# takes the FIRST match per pattern, so a second door-step that repeats the call unbound stays
+# invisible to it. The binding is a property of each fence, so it is measured per fence.
+L_USE = re.compile(r"\$L\b|\$\{L\}")
+L_BIND = re.compile(r"(?:^|[\s;&|(])L=")
+
+
+def fenced_L_uses(text: str) -> int:
+    """How many fenced lines use `$L` at all — the vacuity guard for the per-door scan."""
+    n, fenced = 0, False
+    for ln in text.splitlines():
+        if ln.lstrip().startswith("```"):
+            fenced = not fenced
+            continue
+        if fenced and L_USE.search(ln):
+            n += 1
+    return n
+
+
+def unbound_L(text: str) -> list[tuple[int, str]]:
+    """-> [(line number, the offending line)] for every `$L` used before `L=` in ITS OWN fence."""
+    out: list[tuple[int, str]] = []
+    bound, fenced = False, False
+    for n, ln in enumerate(text.splitlines(), 1):
+        if ln.lstrip().startswith("```"):
+            fenced = not fenced
+            bound = False  # a new fence is a new shell; the old binding does not cross
+            continue
+        if not fenced:
+            continue
+        if L_BIND.search(ln):
+            bound = True
+        if L_USE.search(ln) and not bound:
+            out.append((n, ln.strip()))
+    return out
+
+
 # A Step 2b that satisfies every requirement, used to prove each check can FAIL.
 GOOD = """
 Read `_bmad-output/implementation-artifacts/sprint-status.yaml` — it is ~62 KB of bare rows.
 Read it off the EPIC BRANCH, not off the checkout:
 ```bash
-git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'
+cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"
 git show origin/epic/<KEY>-<slug>:_bmad-output/implementation-artifacts/sprint-status.yaml
 ```
 No epic branch (a project between epics) → the checkout copy IS the authority; say so and move on.
@@ -168,11 +225,24 @@ MUTANTS: tuple[tuple[str, str, str], ...] = (
                   "sprint-status.yaml", "cat sprint-status.yaml"),
     # git: `fatal: ambiguous argument` — a path is not an objectspec.
     ("epic-read", "epic/<KEY>-<slug>:_bmad", "epic/<KEY>-<slug>/_bmad"),
-    ("ref-discovery", "'refs/remotes/origin/epic/*'", "'refs/heads/*'"),
-    # zsh: `no matches found: refs/remotes/origin/epic/*`, exit 1, nothing on stdout.
-    ("ref-discovery", "'refs/remotes/origin/epic/*'", "refs/remotes/origin/epic/*"),
-    # discovers nothing: for-each-ref wants a pattern, and this one matches only an exact ref.
-    ("ref-discovery", "origin/epic/*'", "origin/epic/'"),
+    # the door re-types its own glob instead of the shared query (the drift SCC-446 retired)
+    ("ref-discovery", 'python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"',
+     "git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'"),
+    # cwd is not intent: the script REQUIRES --repo, and a call without it exits 2
+    ("ref-discovery", 'epic_mode.py --repo "$PROJECT_ROOT"', "epic_mode.py"),
+    # the QUOTES alone: a path with a space word-splits and argparse exits 2 on stderr
+    ("ref-discovery", '--repo "$PROJECT_ROOT"', "--repo $PROJECT_ROOT"),
+    # ⛔ THE LOBBY PIN ALONE, AND THIS IS THE SHAPE THAT ACTUALLY SHIPPED (SCC-441 review).
+    # `epic_mode.py` lives in the lobby; the line above this one `cd`s into `$PROJECT_ROOT`,
+    # and no project carries the script. So the unpinned call resolves against the PROJECT and
+    # dies `No such file or directory` at the door's first step, in every repo. The regex used
+    # to accept it and the requirement text used to ASK for it.
+    ("ref-discovery", 'cd "$L" && python3 .agents/scripts/epic_mode.py',
+     "python3 .agents/scripts/epic_mode.py"),
+    # the pin present but aimed at the project: the same death, spelled the other way
+    ("ref-discovery", 'cd "$L" &&', 'cd "$PROJECT_ROOT" &&'),
+    # the line dropped altogether: a boot that never asks which epic it is on
+    ("ref-discovery", 'cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"\n', ""),
     ("no-epic-fallback", "No epic branch (a project between epics) → the checkout copy IS "
                          "the authority; say so and move on.", "Otherwise carry on."),
     ("disagreement", "When the two disagree, report both", "When the two differ, report both"),
@@ -274,6 +344,40 @@ def main() -> int:
             c.check("an anchor at the very end yields an empty window, not the lines before it",
                     after_anchor("filler\n" * 5 + "git show origin/epic/x:sprint-status.yaml") == "",
                     "window must never read BACKWARDS")
+
+    if c.block("A6 · every `$L` is bound in the fence that uses it — in EVERY door"):
+        # ⛔ SCC-441 review row 1: this checker said "every fence, not just Step 2b's" and was
+        # wired to ONE door, while six fences in the two quick-lane doors used `$L` unbound —
+        # so the quick lane's only gate, the scope check, never ran. Measured per door now.
+        doors = sorted(COMMANDS.glob("*.md"))
+        using = [(d, fenced_L_uses(d.read_text(encoding="utf-8"))) for d in doors]
+        using = [(d, n) for d, n in using if n]
+        c.check("the scan reads at least 8 doors that use `$L` inside a fence (never vacuous)",
+                len(using) >= 8, f"{len(using)} door(s): {[d.name for d, _ in using]}")
+        for door, n in using:
+            loose = unbound_L(door.read_text(encoding="utf-8"))
+            c.check(f"{door.name}: no fence uses `$L` before binding it ({n} use(s))", not loose,
+                    "; ".join(f"line {ln_no}: {ln}" for ln_no, ln in loose) or "clean")
+
+        # The two shapes, proved to fail. A fence is its own shell, so the binding must be IN it.
+        crosses = ('```bash\nL=$(pwd)\ncd "$PROJECT_ROOT" && git fetch\n```\n'
+                   'prose between the fences\n'
+                   '```bash\ncd "$PROJECT_ROOT" && git fetch\ncd "$L" && python3 x.py\n```\n')
+        c.check("a binding in an EARLIER fence does not carry into a later one",
+                [n for n, _ in unbound_L(crosses)] == [8], f"{unbound_L(crosses)}")
+        after = '```bash\ncd "$L" && python3 x.py\nL=$(pwd)\n```\n'
+        c.check("...and a binding placed AFTER the use is still unbound at the use",
+                len(unbound_L(after)) == 1, f"{unbound_L(after)}")
+        ok = '```bash\nL=$(pwd)\ncd "$PROJECT_ROOT" && git fetch\ncd "$L" && python3 x.py\n```\n'
+        c.check("the fixed shape — bind first, in the same fence — passes", not unbound_L(ok),
+                f"{unbound_L(ok)}")
+        c.check("`$LOBBY` is not a use of `$L`", not unbound_L('```bash\ncd "$LOBBY"\n```\n'),
+                "a prefix match here would fire on every unrelated variable")
+        c.check("`${L}` IS a use of `$L`", len(unbound_L('```bash\ncd "${L}"\n```\n')) == 1,
+                "the braced spelling is the same variable")
+        c.check("prose outside a fence is not scanned",
+                not unbound_L('the door pins `$L` at Step 0\n'),
+                "the requirement text names `$L` constantly and is not a shell")
 
     return c.finish()
 

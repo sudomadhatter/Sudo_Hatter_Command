@@ -4,17 +4,21 @@ AviationChat moved to trunk-based development on the operator's direction of 202
 phase 1 ships to `main`, and everything after it is built **from `main`** — story lanes cut from
 `origin/main`, landing on `main` through a pull request the operator merges. No epic branch.
 
-SCC-416 gave this system TWO epic modes and made the switch mechanical — a `-quickdev` suffix on
-the branch name, read by every door, impossible to drift from what the server enforces. This is
-the third, and its switch is the same shape read one level up: **there is no `origin/epic/<KEY>-*`
-at all.** An agent never chooses the mode and never infers it from prose.
+SCC-416 gave this system TWO epic modes and made the switch mechanical; SCC-441 named them FULL
+and LIGHT, read by every door from whether the branch NAME CONTAINS `-light-epic-` — a substring,
+not a token position, because that is the same test the server's `contains()` runs, which is what
+makes it impossible to drift from what the server enforces. This is the third, and
+its switch is the same shape read one level up: **there is no `origin/epic/<KEY>-*` at all.** An
+agent never chooses the mode and never infers it from prose.
 
   ── WHY A THIRD MODE AND NOT A REWRITE ─────────────────────────────────────────────────────
 The two existing modes are still correct and still in use by every other project here. A rewrite
 of the branch model to "stories land on main" would have silently re-pointed AviationChat's
 siblings, and the epic-mode doctrine is load-bearing for them. So `trunk` is ADDITIVE: the doors
-grow a third arm, the law grows a third bullet, and the two existing arms are untouched. The
-control for that claim is D1 below.
+grow a third arm and the law grows a third bullet. (SCC-441 later folded the two epic arms into
+ONE - FULL and LIGHT both land by a PR into the epic, and the direct-push arm is retired - so
+the close-out door has two arms today, not three; block B pins that shape.) The control for the
+guard claim is D1 below.
 
   ── ⛔ THE CONTROL THAT MATTERS MOST IS D1, AND IT ASSERTS ABSENCE OF CHANGE ────────────────
 `merge-target-guard.sh` is an ARMED `commit-msg` hook that refuses known-bad merge topologies,
@@ -81,6 +85,21 @@ def fenced(text: str) -> str:
     return "\n".join(out)
 
 
+def fences(text: str) -> list[str]:
+    """Each ``` fence as its own block, so a check can ask for two things in the SAME fence."""
+    out, cur, inside = [], [], False
+    for line in text.splitlines():
+        if line.lstrip().startswith("```"):
+            if inside:
+                out.append("\n".join(cur))
+                cur = []
+            inside = not inside
+            continue
+        if inside:
+            cur.append(line)
+    return out
+
+
 def names_trunk_mode(text: str) -> bool:
     """The mode is NAMED and its switch is MECHANICAL — both, or it is not a mode."""
     return bool(TRUNK.search(text)) and bool(SWITCH.search(text))
@@ -95,11 +114,45 @@ def main() -> int:
     if c.block("A · the LAW names three modes and the switch is mechanical"):
         c.check("git-policy.md exists and was read (an empty file is a FAIL, not a pass)",
                 len(policy) > 2000, f"{len(policy)} bytes")
-        for mode in ("extension of main", "quick-dev", "trunk"):
-            c.check(f"git-policy.md names the mode: {mode!r}",
-                    mode.lower() in policy.lower(), "the three modes are the whole switch")
+        # SCC-441: the modes are FULL / LIGHT / TRUNK — the words themselves, in capitals, the way
+        # the kickoff names them. "full gate" inside a sentence is not the mode.
+        for mode in ("FULL", "LIGHT", "TRUNK"):
+            c.check(f"git-policy.md names the mode: {mode}",
+                    re.search(rf"\b{mode}\b", policy) is not None,
+                    "the three modes are the whole switch")
+        for shape in ("epic/<KEY>-epic-<N>-<slug>", "epic/<KEY>-light-epic-<N>-<slug>"):
+            c.check(f"git-policy.md names the branch shape: {shape}",
+                    shape in policy, "the mode is carried in the branch NAME")
+        # ⛔ THE TEST IS A SUBSTRING SEARCH, SO THE LAW MUST SAY SUBSTRING (SCC-441 review).
+        # `classify()` and CI's `contains()` both ask whether the name CONTAINS `-light-epic-`.
+        # The law said "the third token of the branch name" — and that is false even of its own
+        # canonical example: split `SCC-441-light-epic-2-x` on `-` and the third token is
+        # `light`, not `light-epic`. A reader applying the positional rule to
+        # `epic/SCC-9-epic-2-light-epic-migration` answers FULL while every door answers LIGHT.
+        # Nothing held the wording, so this does.
+        c.check("⛔ git-policy.md states the switch as CONTAINMENT, matching classify() and "
+                "the server's contains() - never as a token POSITION",
+                re.search(r"CONTAINS?\s+`-light-epic-`", policy, re.I) is not None,
+                "expected the law to say the name CONTAINS `-light-epic-`")
+        c.check("⛔ ...and the retired positional claim is gone from the law",
+                re.search(r"third token", policy, re.I) is None,
+                "`third token` is wrong about its own canonical LIGHT name")
+        policy_fenced = fenced(policy)
+        c.check("the mode token `-light-epic-` sits INSIDE the switch fence, beside `origin/epic/`",
+                any(SWITCH.search(f) and "-light-epic-" in f for f in fences(policy)),
+                "the switch is a git query plus the token it reads, never prose to interpret")
         c.check("the trunk switch is stated as a git ref query, not as prose to interpret",
                 names_trunk_mode(policy), "expected `origin/epic/` near the trunk bullet")
+        # SCC-441 retired the `-quickdev` direct-push mode: it was never cut, nothing read its
+        # suffix, and the epic ruleset would refuse the push it described.
+        for label, path in (("git-policy.md", GIT_POLICY), ("worktree-per-story.md", WORKTREE),
+                            ("constitution.md", CONSTITUTION), ("AGENTS.md", AGENTS)):
+            c.check(f"⛔ `quickdev` appears nowhere in {label} (the direct-push mode is retired)",
+                    re.search(r"quickdev", read(path), re.I) is None,
+                    "a retired mode named in the law is a mode an agent will try to select")
+        c.check("⛔ no fence in git-policy.md pushes `HEAD:epic/` — the landing is a pull request",
+                "HEAD:epic/" not in policy_fenced,
+                "FULL and LIGHT alike land by PR into the epic; the direct push is gone")
         # ⭐ The freeze is SCC-416's whole point and trunk mode must not read as deleting it.
         c.check("⭐ the live-epic freeze on `main` SURVIVES the third mode",
                 "freeze" in policy.lower() or "frozen" in policy.lower(),
@@ -110,16 +163,58 @@ def main() -> int:
         c.check("close-out door: a fenced `gh pr create --base main` — the trunk landing",
                 re.search(r"gh pr create[^\n]*--base main", close_fenced) is not None,
                 "the trunk arm lands on main by PR, like the epic arm lands on the epic")
-        c.check("close-out door: the two OLDER arms are untouched "
-                "(direct push + PR into the epic)",
-                re.search(r"HEAD:epic/", close_fenced) is not None
-                and re.search(r"gh pr create[^\n]*--base epic/", close_fenced) is not None,
-                "additive, never a rewrite")
+        # SCC-441/SCC-446: the epic arm is ONE arm for FULL and LIGHT alike - a PR into the epic
+        # whose ruleset decides which checks run - and the direct-push arm (`-quickdev`) is gone.
+        # No fence in the door may push `HEAD:epic/` any more: the epic ruleset refuses it.
+        c.check("close-out door: the epic arm is a fenced `gh pr create --base epic/` and NO "
+                "fence pushes `HEAD:epic/` (the direct-push arm is retired)",
+                re.search(r"gh pr create[^\n]*--base epic/", close_fenced) is not None
+                and "HEAD:epic/" not in close_fenced,
+                "FULL and LIGHT land by PR into the epic; a HEAD:epic/ push is refused server-side")
         c.check("close-out door: names the trunk mode in prose so the arm can be SELECTED",
                 names_trunk_mode(read(CLOSE_STORY)), "the arm is keyed on the mode")
 
         c.check("kickoff door: offers trunk as a third answer",
                 names_trunk_mode(read(CREATE_EPIC)), "the mode is decided once, at kickoff")
+        # ⛔ SCC-441 review rows 9, 25, 26 — the kickoff door cut `-light-epic-` and then told
+        # the agent to STOP unless the echo read `-epic-`, so every LIGHT kickoff halted itself;
+        # it also claimed a token POSITION the substring read does not enforce, and put the
+        # banner instruction inside the TRUNK bullet only.
+        create = read(CREATE_EPIC)
+        c.check("kickoff door: the post-cut assertion admits BOTH shapes, FULL and LIGHT (row 9)",
+                re.search(r"(?s)must read\s+`Epic branch: epic/<JIRA-KEY>-epic-<N>-<slug>`"
+                          r".{0,160}`Epic branch: epic/<JIRA-KEY>-light-epic-<N>-<slug>`",
+                          create) is not None,
+                "a LIGHT branch that the same door just cut must not be a STOP")
+        c.check("kickoff door: states the switch as CONTAINMENT and makes no positional claim "
+                "(row 25)",
+                re.search(r"CONTAINS?\s+`-light-epic-`", create) is not None
+                and re.search(r"sits between the key and the sprint number|third token",
+                              create) is None,
+                "classify() is an unanchored substring test; the door must say so")
+        step3 = re.search(r"(?s)^## Step 3 .*?(?=^## Step 4)", create, re.M)
+        c.check("kickoff door: Step 3's board write records the MODE word in the epic banner "
+                "(row 26)",
+                step3 is not None and re.search(r"banner", step3.group(0), re.I) is not None
+                and re.search(r"\b(FULL|LIGHT|TRUNK)\b", step3.group(0)) is not None,
+                "the TRUNK bullet said FULL/LIGHT 'record theirs the same way' at a step that "
+                "never mentioned the mode")
+        # ⛔ SCC-441 review rows 11 and 24 — the close-out's Dev Record read the merge sha off
+        # `origin/epic/…` unconditionally (TRUNK has no such ref: `fatal: ambiguous argument`),
+        # and called a skipped E2E "the design" at the landing moment without the NOT-ARMED
+        # caveat Step 0 prints in every repo that has not armed LIGHT yet.
+        close = read(CLOSE_STORY)
+        step4 = re.search(r"(?s)^## Step 4 .*?(?=^## Step 5)", close, re.M)
+        c.check("close-out door: Step 4's merge-sha read has a TRUNK arm — `rev-parse "
+                "origin/main` beside `rev-parse origin/epic/` (row 11)",
+                step4 is not None and "rev-parse origin/epic/" in step4.group(0)
+                and "rev-parse origin/main" in step4.group(0),
+                "on TRUNK there is no origin/epic ref to read; the merge sha is main's tip")
+        step3c = re.search(r"(?s)^## Step 3 .*?(?=^## Step 4)", close, re.M)
+        c.check("close-out door: Arm A's skipped-E2E sentence carries the NOT ARMED caveat "
+                "(row 24)",
+                step3c is not None and "NOT ARMED" in step3c.group(0),
+                "in an unarmed repo a red E2E is a red, not the designed skip")
         c.check("dev-story door: Step 0.6's epic-behind-main stop knows the trunk case",
                 names_trunk_mode(read(DEV_STORY)),
                 "there is no epic to be behind; the lane absorbs origin/main instead")

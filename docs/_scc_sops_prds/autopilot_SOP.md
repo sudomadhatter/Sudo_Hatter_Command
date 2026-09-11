@@ -130,8 +130,8 @@ no verb for it at all, so it is not something an agent can talk itself into.
 
 Not every ticket is a story. A project **Task** — a performance fix, an asset, a copy change — has no
 story file on disk, no sprint row and no epic branch, so the six-child route has nothing to bind to.
-Its road is `/cicd-quick-dev`, **one door holding both the build and its own review gate**, and the
-run is four children.
+Its road is `/cicd-quick-dev`, **the quick lane** — scope check, plan, RED then GREEN, walkthrough,
+and a review **only when asked** — and the run is four children, because the lead is the one asking.
 
 **Which route:** the story route when the work has a story file and an epic branch; the quick-fix
 route when it has neither. If you cannot tell which it is, it is not a quick fix — that is an
@@ -139,17 +139,17 @@ escalation, not a coin flip.
 
 | # | Who runs it | The door it runs | What it returns | What the lead does with it |
 |---|---|---|---|---|
-| 1 | 😼🔨 **Cheshire Cat** | `/cicd-quick-dev <KEY>` end to end | the build, plus the door's own inline first-pass gate | ⛔ that gate's verdict is **not** the run's |
-| 2 | **no seat** | `/cicd-code-review <KEY>` | the verdict, plus `evidence.sha` | `PASS` → park. Anything else → one fix cycle |
+| 1 | 😼🔨 **Cheshire Cat** | `/cicd-quick-dev <KEY>` end to end | the build and its walkthrough; the lane writes `Review: none - quick lane …` and no `Verdict:` | both `approved` stops are yours: the plan's is your launch word (a batch approval scoped to this ticket), the walkthrough's comes to your phone (§7) — the lead never supplies either; ⛔ there is no verdict here to read |
+| 2 | **no seat** | `/cicd-code-review <KEY>` | the verdict, plus `evidence.sha` | this is the on-request review; `PASS` → park. Anything else → one fix cycle |
 | 3 | 😼🔨 **Cheshire Cat** | the fix, in the lane | the fixed tree at a new sha | One cycle, never two |
 | 4 | **no seat** | `/cicd-code-review <KEY>` again | the second verdict at the new sha | `PASS` → park. Anything else → **escalate** |
 
 ```mermaid
 flowchart TD
     L["Step 0 - the lead binds the project\nCLI floor, ACs already on the ticket,\nno overlap with an in-flight epic"] --> W["the lead opens a chore worktree\ncut from origin/main"]
-    W --> C1["1 - CHESHIRE CAT\nruns /cicd-quick-dev end to end:\nthe build AND the door's own gate"]
-    C1 --> N["that in-door gate runs INLINE -\nno seat carries Task, so it drops\nthe Blind Hunter and REPORTS that"]
-    N --> C2["2 - THE REVIEWER\nNO seat, so it CAN fan out.\nTHIS is the run's verdict"]
+    W --> C1["1 - CHESHIRE CAT\nruns /cicd-quick-dev end to end:\nscope check, plan, RED, GREEN, walkthrough"]
+    C1 --> N["the quick lane runs NO review of its own -\nit writes 'Review: none - quick lane'\nand no Verdict: stamp"]
+    N --> C2["2 - THE REVIEWER\nthe on-request review, NO seat, so it CAN fan out.\nTHIS is the run's verdict"]
     C2 --> R{"review verdict"}
     R -- "PASS" --> PARK["PARK - ticket to In Review,\none line to your phone"]
     R -- "CONCERNS or FAIL" --> C3["3 - CHESHIRE CAT\nONE fix cycle, in the lane"]
@@ -160,12 +160,13 @@ flowchart TD
     PARK --> DONE(["YOU - read it, then merge the PR"])
 ```
 
-⛔ **The quick-dev door's own verdict is not the run's verdict, and the reason is a seat pin.** Every
-seat's tool list deliberately omits `Task`, so a seated child has no subagent tool. When
-`/cicd-quick-dev` reaches its review gate it probes the runtime honestly, finds none, records
-`review-runtime: inline (no subagent tool)` and **drops the Blind Hunter** rather than faking it.
-That is a real first pass and worth having. It is not independent, because the agent that wrote the
-code is the agent triaging the findings.
+⛔ **The quick lane has no verdict of its own, and the review is a separate child for two reasons.**
+First, the lane runs a review only when asked (`git-policy` § Two toggles) — on this route the lead
+is the one asking, and stage 2 is that request. Second, every seat's tool list deliberately omits
+`Task`, so a seated child has no subagent tool and could not fan the lenses out even if it tried;
+stage 1 records its `review-runtime:` probe honestly and stops at the walkthrough. Nothing the
+builder writes is independent, because the agent that wrote the code would be the agent triaging
+the findings.
 
 The **no-seat** review child closes that gap. Passing `--review` sends no seat at all, so the child
 inherits the default tool set, `Task` included, fans the lenses into clean contexts and returns a

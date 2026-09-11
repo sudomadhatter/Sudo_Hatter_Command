@@ -37,6 +37,20 @@ because the tree "looks empty" — every incident below started with a tree that
 
 Echo `Target: Projects/<name> | Story: <story-slug> | <id> | <JIRA-KEY>` before proceeding.
 
+**Then the epic mode — from the git query, never from belief** (`git-policy` § The epic's mode,
+SCC-446):
+
+```bash
+L=$(pwd)                                                             # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune && cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
+```
+
+⛔ **A failed fetch is a STOP.** The mode query is chained behind the fetch, so a `fatal:` from the fetch means no mode line prints — and the cached `origin/epic/*` refs may name an epic origin no longer has. Fix the fetch, then read the mode; never read a mode off refs a fetch did not refresh.
+
+**Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
+**they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one
+live epic on origin) is a STOP: name the one you mean or prune the other before anything else runs.
+
 ## Step 0.6 — Preflight first (fast pre-check — it does NOT replace the gates below)
 
 ```bash
@@ -73,11 +87,11 @@ In `PROJECT_ROOT`:
 # 1 · Fetch latest remote refs
 Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; git fetch origin
 
-# 2 · Resolve the story's epic branch (exactly one live epic/* is the normal case)
-git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'
+# 2 · The story's landing ref is the branch Step 0's mode line printed (FULL or LIGHT: origin/epic/<JIRA-KEY>-<slug>;
+#     TRUNK: origin/main) - never re-discovered here
 
-# 3 · Verification check: confirm story branch has landed on origin/epic/<JIRA-KEY>-<slug>
-git merge-base --is-ancestor claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>
+# 3 · Verification check: confirm story branch has landed on that ref
+git merge-base --is-ancestor claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>   # TRUNK: origin/main
 ```
 
 - **Exit code 0**: the branch is fully merged into `origin/epic/<JIRA-KEY>-<slug>`. Proceed to Step 1.6.
@@ -328,15 +342,25 @@ machine, and it is recoverable only if someone knows it happened.
 
 ## Step 5 — Delete branches — ONLY those that passed Steps 1 AND 1.7
 
-**Order is REMOTE first, local second — the reverse fails.** A landed branch's close-out commits are
-never pushed to `claude/*` (the landing pushes `HEAD:epic/<JIRA-KEY>-<slug>` only), so a PARKED branch's local tip
-is ahead of its upstream. `git branch -d` checks merged-into-**upstream** when an upstream exists — and
-refuses. Deleting the remote first removes the upstream, so `-d` falls back to the merged-into-HEAD
-check and succeeds honestly (observed 2026-08-01: all three set-close-out `-d`s failed remote-last,
-all three succeeded remote-first).
+**Order is REMOTE first, local second — and under the PR landing the reverse is worse than it was.**
+`git branch -d` checks merged-into-**upstream** when an upstream exists, and merged-into-**HEAD** when
+one does not. An upstream is set by `/cicd-park` (`push -u`) and by this door's own Step 2 push that
+preserves uncommitted work (also `-u`); the landing pushes the branch as its PR's head with no `-u`.
+So the remote-last order asks one of two questions, and neither is the one that matters:
+
+- **Parked branch (or one Step 2 preserved).** Its upstream is set, and the landing push moved that same remote ref to the tip —
+  so local equals upstream and `-d` passes **vacuously**. It has proved the two copies match, not that
+  the work reached the epic. (Before the PR landing this was merely unhelpful: the landing never touched
+  `claude/*`, so the parked upstream lagged the tip and `-d` refused instead — observed 2026-08-01, all
+  three set-close-out `-d`s failed remote-last, all three succeeded remote-first.)
+- **Never-parked branch.** No upstream, so `-d` already uses merged-into-HEAD and the order changes
+  nothing.
+
+Deleting the remote first removes the upstream in both cases, which forces `-d` onto merged-into-HEAD —
+a real ancestry question — and the HEAD-is-`main` caveat below says exactly what to do when it refuses.
 
 ```bash
-# Remote FIRST: ONLY if the branch is actually on origin — i.e. it was PARKED.
+# Remote FIRST: ONLY if the branch is actually on origin — normally it is, as the PR head the landing pushed (or parked).
 git ls-remote --heads origin claude/<JIRA-KEY>-<story-slug>                    # empty → nothing to delete, say so
 Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; git push origin --delete claude/<JIRA-KEY>-<story-slug>
 
@@ -363,11 +387,17 @@ stories; those branches have not been checked and must **not** be deleted.
   the cited proof) or the branch genuinely never landed — go back to Step 1. (If you ran it remote-last,
   the refusal is probably just the upstream check — delete the remote and retry `-d` once.)
 
-**Most story branches will not exist on origin at all, and that is correct.** Per `git-policy.md` → "The
-landing", the landing pushes `HEAD:epic/<JIRA-KEY>-<slug>` and **not** the branch; a story branch reaches origin only
-via `/cicd-park`. So an absent remote branch is the normal case — report it as *"never pushed (not
-parked) — nothing to delete"*, not as a failure. A remote branch that IS present means this story was
-parked, and deleting it here is what stops `/cicd-resume` from later offering a story that is already done.
+**A landed story branch NORMALLY exists on origin, and deleting it here is the point.** Per
+`git-policy.md` → "The landing", the story lands by a pull request into the epic, and that PR's **head
+is the story branch** — so the landing itself put it on origin. `/cicd-park` is the only other road
+there. Either way the remote copy is now dead weight: `/cicd-resume` reads the origin `claude/*`
+listing to find in-flight work, so leaving it offers the operator a story the board already reads
+`done`. That is what this deletion prevents.
+
+An **absent** remote branch is still fine and still not a failure — GitHub's "automatically delete head
+branches" setting removes it the moment the PR merges, and a lane that never landed never pushed.
+Report it as *"not on origin — already deleted on merge, or never pushed"* and move to the local
+delete. Run the `ls-remote` above and report what it actually returned; never assume either case.
 
 ⛔ **Never sweep `claude/*` on origin wholesale.** `claude/incident-*` branches come from the Epic-16
 incident pipeline, not story flow — they MATCH the `claude/*` glob and are outside this command

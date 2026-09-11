@@ -339,7 +339,7 @@ def main() -> int:
     #   2. `--mode pr` only. Road 2 (`gate/**`) is the local door's road and is untouched.
     #   3. it triggers ONLY on a `task.yaml` naming this door. A PR without one owes nothing
     #      (A5) — and a LIGHTWEIGHT lane, which has a manifest but no review verdict, owes a
-    #      receipt and NOT an event (A5b): `/smh-quick-fix` writes no `Verdict:` line, and
+    #      receipt and NOT an event (A5b): `/smh-quick-dev` writes no `Verdict:` line, and
     #      `flight_recorder record` REFUSES without one, so demanding it would make the
     #      lightweight lane unlandable. Measured: 10 landed lobby lanes have a door manifest
     #      and no stamp.
@@ -668,7 +668,7 @@ def main() -> int:
 
         with TempDir() as tmp:
             # A5b · ⭐ THE LIGHTWEIGHT LANE. A manifest, a receipt, and NO review verdict —
-            # `/smh-quick-fix`'s exact shape. It must pass: the recorder cannot record a lane
+            # `/smh-quick-dev`'s exact shape. It must pass: the recorder cannot record a lane
             # that has no stamp, so demanding an event here would make the lane unlandable.
             work, branch = close_out_pr(tmp, verdict=False, event=False)
             rc, out = pr_rc(work, branch)

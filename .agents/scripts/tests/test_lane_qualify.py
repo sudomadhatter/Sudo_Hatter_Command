@@ -52,7 +52,7 @@ def centre(root: Path) -> Path:
     A hard-coded folder name would be wrong the first time the repo is cloned elsewhere.
     """
     (root / ".agents" / "commands").mkdir(parents=True, exist_ok=True)
-    (root / ".agents" / "commands" / "smh-quick-fix.md").write_text("---\n---\n", encoding="utf-8")
+    (root / ".agents" / "commands" / "smh-quick-dev.md").write_text("---\n---\n", encoding="utf-8")
     return root
 
 
@@ -105,7 +105,7 @@ with TempDir() as tmp:
 
     if c.block("TASK - the toolkit is never LIGHT"):
         for p in (".agents/scripts/task_preflight.py", ".agents/rules/git-policy.md",
-                  ".agents/commands/smh-quick-dev.md", ".githooks/pre-push", "AGENTS.md"):
+                  ".agents/commands/smh-dev-task-tests.md", ".githooks/pre-push", "AGENTS.md"):
             rc, out = run_script("lane_qualify.py", "--repo", str(root), "--paths", p)
             c.check(f"{p} is TASK", verdict(out) == "TASK", out.strip()[:160])
 
@@ -141,7 +141,7 @@ with TempDir() as tmp:
     if c.block("SCC-302 · size draws the lane - a one-liner and a rewrite are different work"):
         # ⛔ THE SCAR: classify() decided by PATH PREFIX alone, so a one-character fix and a
         # forty-file rewrite were indistinguishable - SCC-295 was one line in one function,
-        # the operator asked for /smh-quick-fix, and the qualifier ejected it into a lane
+        # the operator asked for /smh-quick-dev, and the qualifier ejected it into a lane
         # that consumed a whole session. There was also nowhere to eject TO: the verdict set
         # had nothing between LIGHT and TASK.
         rc, out = run_script("lane_qualify.py", "--repo", str(root),
@@ -275,8 +275,10 @@ if c.block("SCC-243 · every caller's verdict table lists every verdict the scri
 
     # P0 · ANTI-VACUITY, both ends. An empty caller list makes P1 pass by having nothing to
     # check, and an empty verdict set makes every table "complete". Neither is evidence.
+    # SCC-445 retired the third caller (`/smh-quick-fix`); the two standing-push doors are the
+    # whole caller set now, and two real callers are still a non-vacuous sweep.
     c.check("P0 the sweep found real callers, by invocation",
-            len(callers) >= 3, f"found {len(callers)}: {[f.name for f in callers]}")
+            len(callers) >= 2, f"found {len(callers)}: {[f.name for f in callers]}")
     c.check("P0 ...and the script really exposes a verdict set to compare against",
             len(known) >= 3, f"VERDICTS={known}")
 

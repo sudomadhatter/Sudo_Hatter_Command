@@ -12,7 +12,10 @@ Command-center (lobby) entry point for closing ONE story out. It saves into a CH
 branch, so a landing that stops publishes nothing — while the Jira ticket write rides no branch and cannot be taken
 back, which is why it happens only after the landing push returns 0 (SCC-210).
 
-⛔ It lands on the **epic branch** and stops. `main` is reached only via `/cicd-push-e2e`.
+⛔ On a **FULL or LIGHT** epic it lands by a pull request into the **epic branch** (which it merges itself —
+the epic's ruleset decides which checks run) and stops. On **TRUNK** it opens the pull request into `main`
+and STOPS — `main` is reached only through a PR the operator merges, here or via `/cicd-push-e2e`. It reads the
+mode from `epic_mode.py` at Step 0, never from belief.
 
 **Execute now:** read `.agents/commands/cicd-close-story-merge-tree.md` (relative to the repo root) and
 follow it END TO END. Its **Step 0** resolves which child to target — a leading `$ARGUMENTS` project name,

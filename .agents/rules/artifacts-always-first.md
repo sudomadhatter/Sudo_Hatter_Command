@@ -149,7 +149,8 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
   - **Mint NO story file and NO epic key.** Do not create anything in `_bmad/bmm/stories/`, and never
     hang a quick fix off a `done` epic — that silently reopens it. Board tracking, when the work is
     worth tracking, is a single `quick-fix-<track>-<n>-<slug>` key in `sprint-status.yaml`.
-  - One `walkthrough.md` in the folder is the whole record (no `implementation_plan.md`), plus a row
+  - One `walkthrough.md` in the folder is the whole record — a quick-lane run (`/cicd-quick-dev`)
+    carries a short `implementation_plan.md` beside it — plus a row
     in `quick_fixes/INDEX.md` — that INDEX is the numbering register, so **append its row by hand**;
     it is the exception to the batch-reconcile note below.
   - This is where `/cicd-quick-dev` work lands when it turns out not to be a story, and it is the
@@ -315,57 +316,51 @@ When Mr. Hatter says **"review"** (or asks to review a document/plan), EVERY age
 ## When to Skip
 - **Investigatory requests** ("explain how X works", "where is Y?") — no artifacts needed.
 - **Trivial one-liners** (typo, comment fix) — mention what you changed; skip the full cycle.
-- **Mr. Hatter explicitly says** "skip the plan, just do it" — that phrase names **the lightweight lane
-  below**, and everything written there applies. It used to dead-end here, telling an agent to skip the
-  plan and nothing about what to do instead; that gap is what put a doc-only edit through the full Task
-  ceremony on SCC-161. Saying it and typing `/smh-quick-fix` are the same instruction.
-- **⭐ `/smh-quick-fix` — THE LIGHTWEIGHT LANE (SCC-162, operator ruling 2026-08-15).** Command-centre
-  work that touches nothing which can break: *"sometimes I just want an agent to do something specific…
-  this does not touch anything that can break. so we don't need to over engineer it."* Scope, from the
-  same operator: **`smh-*` / command centre only — never `cicd-*` product work** — and the test is his
-  own sentence, ***"things that do not affect our development system."*** Typical work: writing a
-  document or a guide, fixing a reference, tidying a messy source-control state.
-  - **Invoking it IS the "skip the plan" instruction**, exactly like `/cicd-quick-dev` above. No
-    `implementation_plan.md`, no `approved`, no `/smh-self-audit`, no RED-first assertion, no review
-    verdict. ⛔ And **do not ask** *"shall I mint a ticket / open a lane / write a plan?"* — asking is
-    the over-engineering the ruling is against. Mint, cut, do, push, hand back.
-  - **Qualification is mechanical, never a judgement** — that is the whole reason this entry can be
-    trusted, because the previous version of this rule was prose and an agent talked itself past it:
-    ```
-    python3 .agents/scripts/lane_qualify.py --repo "$(git rev-parse --show-toplevel)" \
-            --paths <the paths you will touch>                                  # PC: `python`
-    ```
-    `LIGHT` (or `LIGHT-VCS`) qualifies. `TASK` / `TASK-LIGHT` / `HANDOFF` / `NOT-COMMAND-CENTRE` do not — and note
-    that **no paths at all is `TASK`**, because silence is unknown scope, never empty scope. A
-    git-hygiene action that genuinely edits no files declares `--no-file-changes` and may delete only
-    refs the operator named, never a swept set.
-  - **What it still keeps, because each is machine-enforced:** the Jira key and a `chore/<KEY>-<slug>`
-    branch in its own worktree (the armed `commit-msg` hook refuses a keyless commit) · explicit-path
-    commits, pushed before hand-back · the SOP-currency gate where it applies · a lean `walkthrough.md`
-    carrying **`## Your Actions`** (the close-out preflight errors without it) · `task.yaml` beside it ·
-    close-out through **`/smh-close-task-merge-tree`, unchanged** — there is no lighter door to `main`,
-    and a missing review verdict simply means that close-out runs the full gate itself.
-    ⚠️ Those guarantees assume **armed hooks**; `core.hooksPath` is per-machine, so on a fresh clone
-    they are prose until the migrations kit arms them.
-  - **A fired EJECT re-arms this gate** — same rule as `/cicd-quick-dev`. Before the walkthrough,
-    re-run `lane_qualify.py` against the **real** diff (`git diff --name-only main...HEAD`); anything
-    but `LIGHT` and the work continues on `/smh-quick-dev` with a plan and an `approved`.
-- **`/cicd-quick-dev`** — **invoking that command IS the "skip the plan" instruction above**, the same way
-  invoking `/cicd-close-story-merge-tree` IS the close-out sign-off. It runs no `implementation_plan.md` and
-  waits for no "approved"; its gate is the human review at the end. The exemption is conditional on its
-  guards staying intact — the worktree/chore branch, the acceptance criteria fixed in Step 1, the EJECT
-  tripwire, and the mandatory review gate. **A fired tripwire re-arms this gate:** the moment the work
-  ejects to the full lane, it is no longer exempt and needs an approved plan like anything else.
-  - Its record is **spec + thin walkthrough**: the spec the skill writes (in `_bmad-output/`) is the
-    working doc; the `walkthrough.md` in the owning `_artifacts/` store **links** it rather than restating
-    it, and still carries `## Task Checklist` → `## Evidence` → `## Code Review (<date>)` (with the
-    canonical `Verdict:` line) → `## Your Actions`. The walkthrough is never skipped.
+- **Mr. Hatter says** "skip the plan, just do it" / "quick dev this" — that phrase names **the quick
+  lane**, and the quick lane still carries a plan: a paragraph, not a ceremony. It used to dead-end
+  here, telling an agent to skip the plan and nothing about what to do instead; that gap is what put a
+  doc-only edit through the full Task ceremony on SCC-161. The lightweight lane that answered it
+  (`/smh-quick-fix`, no plan at all) is retired (SCC-445); `/smh-quick-dev` is its replacement.
+- **⭐ THE QUICK LANE — `/smh-quick-dev` in the command centre, `/cicd-quick-dev` in a project
+  (SCC-162, operator ruling 2026-08-15; SCC-441, 2026-09-10).** Small, non-critical work: *"sometimes I
+  just want an agent to do something specific… this does not touch anything that can break. so we
+  don't need to over engineer it."* Writing a document or a guide, fixing a reference, a UI fix, a
+  small rule edit. **Defined once, in `git-policy.md` § Two toggles**, the same five steps at both
+  levels; this entry says what the lane does and does not skip:
+  - **It does NOT skip the plan or the `approved`.** Step 2 writes a short `implementation_plan.md`
+    (goal, the assertion that will prove it, `## Declared Change Set`) and stops for the literal
+    `approved`; Step 4 writes `walkthrough.md` and stops for the literal `approved` again. Both stops
+    are Mr. Hatter's. ⛔ And **do not ask** *"shall I mint a ticket / open a lane / write a plan?"* —
+    asking is the over-engineering the ruling is against. Look for a home, mint if none, cut, plan,
+    build, hand back.
+  - **What it skips, unless Mr. Hatter asks:** `/smh-self-audit` / `/cicd-self-audit` on the plan,
+    and `/smh-code-review` / `/cicd-code-review` on the walkthrough. With no review the walkthrough
+    carries `Review: none - quick lane; walkthrough approved by the operator @ <sha>` and **no
+    `Verdict:` line** — a stamp would pull in the roster gate for lenses that never launched.
+  - **TDD stays.** Step 3 is the assertion seen red, then made green, then the repo's floor run bare.
+  - **The line is a file, not a feeling, and not a size** — `critical-surfaces.md`: Step 1 runs
+    `scope_check.py` on the planned paths against the repo's `.agents/critical-surfaces.json` (auth,
+    billing, security rules, FAA-facing answers, CI and the gates). `OVERLAP` is a **soft stop** —
+    the agent says what overlaps and why and waits; only Mr. Hatter's word, quoted into the plan as
+    `Scope override (<date>): "…"`, moves it; no agent override exists and the script never asks.
+    `lane_qualify.py` (size) is called by no dev door any more; only the two standing-push doors
+    still qualify `LIGHT` with it.
+  - **What it keeps, because each is machine-enforced:** the Jira key and a `chore/<KEY>-<slug>`
+    (or `claude/<KEY>-<slug>`) branch in its own worktree · explicit-path commits, pushed before
+    hand-back · the SOP-currency gate where it applies · the walkthrough with **`## Your Actions`**
+    (the close-out preflight errors without it) · `task.yaml` beside it · close-out through the
+    normal door, **unchanged** — there is no lighter door to `main`, and a missing review verdict
+    means the close-out runs the full gate itself.
+  - **A fired EJECT re-arms this gate.** Step 5 re-runs the scope check on the **real** diff; an
+    overlap the plan carries no `Scope override` for ejects the work to the full lane
+    (`/smh-dev-task-tests`, or ① `/cicd-write-story-tests`), which needs its own plan, its audit, and
+    an `approved` before another file is edited.
 
 - **⭐ `/smh-llm-approvals` — THE PERMISSION HARVEST (SCC-393).** Routing approved commands into
   `.agents/permissions/families.json` and re-rendering its three platform lists. **Invoking it IS
-  the "skip the plan" instruction**, the same way `/cicd-quick-dev` and `/smh-quick-fix` are: no
-  `implementation_plan.md`, no `approved`, no `/smh-self-audit`, no RED-first assertion, no review
-  verdict. It keeps a lean walkthrough and it lands the ordinary way — a pull request the operator
+  the "skip the plan" instruction** — the one command-shaped carve-out left, now that the quick lanes
+  carry a plan: no `implementation_plan.md`, no `approved`, no `/smh-self-audit`, no RED-first
+  assertion, no review verdict. It keeps a lean walkthrough and it lands the ordinary way — a pull request the operator
   merges.
   - **Why this change class earns it.** There is no design to review — the door dictates the row
     shape — and no assertion to write: the gates already exist and already guard the fence. The

@@ -21,7 +21,7 @@ simplicity first, surgical changes, verify with evidence.
 
 ## Your doors
 
-- **The dev flow** — `/smh-quick-dev` for command-center lanes, `/cicd-dev-story-tests` and
+- **The dev flow** — `/smh-dev-task-tests` (or the quick lane `/smh-quick-dev`) for command-center lanes, `/cicd-dev-story-tests` and
   `/cicd-quick-dev` for project stories. The flow's gates are yours to obey, not to re-derive.
 - **The gates** — run the armed suite bare (never piped), paste real output, and treat a red as
   information, not an obstacle.

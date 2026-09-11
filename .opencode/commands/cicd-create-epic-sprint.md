@@ -100,17 +100,19 @@ Then take exactly one arm, and say in one line which and why:
 - **neither** → decide the epic's MODE, then cut it. ⛔ **The mode is Mr. Hatter's call, asked once,
   here, never defaulted** (`git-policy` § The epic's mode, SCC-416):
 
-  > **Is this epic an EXTENSION OF MAIN, a QUICK-DEV branch, or does this project run TRUNK?**
-  > *extension of main* — every story lands by PR into the epic under the full four-check gate (E2E on
-  > every landing); the epic is kept current with `main`. *quick-dev* — stories land by direct push after
-  > the local light gate; no CI per story; E2E once, at `/cicd-push-e2e`. *trunk* — **no epic branch is
-  > cut at all**: every story lane is cut from `origin/main` and lands on `main` by a PR he merges, and
-  > each merge is a deploy.
+  > **Is this epic FULL, LIGHT, or does this project run TRUNK?**
+  > *FULL* — every story lands by PR into the epic under the four-check gate, E2E on every landing;
+  > the epic is kept current with `main`. *LIGHT* — every story lands by PR into the epic under the
+  > two fast checks (Backend (Python), Frontend (Node.js)); E2E once, at `/cicd-push-e2e`, or on
+  > demand through `/cicd-e2e`. For a project not in production, or an epic of UI and docs. *TRUNK* —
+  > **no epic branch is cut at all**: every story lane is cut from `origin/main` and lands on `main`
+  > by a PR he merges, and each merge is a deploy.
 
   ⭐ **The trunk answer means this step cuts NOTHING** (SCC-423). Skip 1b entirely — no `git checkout -b`,
   no `git push -u`. The absence of `origin/epic/<KEY>-*` IS the mode, so cutting a branch "just to have
   one" silently converts the project back to an epic project and every door downstream reads it that
-  way. Record the mode in the epic's banner on `sprint-status.yaml` instead, and commit the kickoff's
+  way. Record the mode word (`TRUNK`) in the epic's banner on `sprint-status.yaml` instead (Step 3
+  writes the banner; FULL and LIGHT record their word there too, beside the branch name) and commit the kickoff's
   artifacts on a `chore/<JIRA-KEY>-<slug>` lane off `origin/main` through its own PR — there is no epic
   branch for them to ride.
 
@@ -118,10 +120,10 @@ Then take exactly one arm, and say in one line which and why:
   read without opening a file:
 
 ```bash
-# extension of main — the default shape:
+# FULL — the default shape:
 cd "$PROJECT_ROOT" && git checkout -b epic/<JIRA-KEY>-epic-<N>-<slug> origin/main
-# quick-dev — the -quickdev suffix IS the switch:
-cd "$PROJECT_ROOT" && git checkout -b epic/<JIRA-KEY>-epic-<N>-<slug>-quickdev origin/main
+# LIGHT — the -light-epic- token IS the switch (the same substring the ruleset and CI read):
+cd "$PROJECT_ROOT" && git checkout -b epic/<JIRA-KEY>-light-epic-<N>-<slug> origin/main
 cd "$PROJECT_ROOT" && git push -u origin <the branch you just cut>
 ```
 
@@ -130,7 +132,11 @@ cd "$PROJECT_ROOT" && git push -u origin <the branch you just cut>
 board key, `sprint-status.yaml`, `epics.md` and `_artifacts/epic_<N>/` are filed under. They are
 different numbers that do not track each other, and a branch naming only one makes every reader hold
 the mapping: `epic/AVCH-18-…` beside artifacts at `epic_19/` reads as drift every time.
-The `epic/` **prefix stays in front** — never `epic-19/AVCH-18-…`. Every `$EPIC` resolution in this
+The `epic/` **prefix stays in front** — never `epic-19/AVCH-18-…` — which is why nothing that globs
+`epic/*` moves. The mode token follows the key (`-epic-` for FULL, `-light-epic-` for LIGHT), and
+every door reads it the way CI does: a name that CONTAINS `-light-epic-` anywhere is LIGHT
+(`epic_mode.py` is an unanchored substring test), so a FULL epic's slug must never carry that
+token. Every `$EPIC` resolution in this
 system globs `epic/*`, and `merge-target-guard.sh` matches a `case` arm literally spelled `epic/*)`;
 moving the number ahead of the prefix silently sends all of them to `origin/main` (SCC-165) and makes
 the armed guard classify the branch `unknown`.
@@ -139,7 +145,9 @@ the armed guard classify the branch `unknown`.
 BRANCH=$(cd "$PROJECT_ROOT" && git rev-parse --abbrev-ref HEAD); echo "Epic branch: $BRANCH"
 ```
 
-The echoed line must read `Epic branch: epic/<JIRA-KEY>-epic-<N>-<slug>` — anything else → STOP. Story worktrees
+The echoed line must read `Epic branch: epic/<JIRA-KEY>-epic-<N>-<slug>` on FULL, or
+`Epic branch: epic/<JIRA-KEY>-light-epic-<N>-<slug>` on LIGHT — the mode the operator chose above —
+anything else → STOP. Story worktrees
 (`/cicd-write-story-tests` ①) branch FROM this branch — it must exist, with the kickoff's output pushed
 onto it, before the first one opens. The epic reaches `main` only via `/cicd-push-e2e`, which deletes
 the branch after the merge.
@@ -209,7 +217,9 @@ files** rather than for emptiness.
 Land the new epic + story keys in `_bmad-output/implementation-artifacts/sprint-status.yaml` as **`backlog`**
 — NOT `ready-for-dev` (the board's state machine: a story flips to `ready-for-dev` only when
 `/cicd-write-story-tests` ① creates its story file). Follow house style: the epic's
-comment block (STATUS · Source · order/deps), one commented line per story key (P-levels appended after
+comment block (STATUS · Source · order/deps) **carrying the mode word Step 1 decided — `FULL` or
+`LIGHT` beside the branch name, or `TRUNK` with `no epic branch`** — the banner is where the
+operator and every later door read which mode this epic runs; one commented line per story key (P-levels appended after
 Step 4), `epic-<N>-retrospective: optional`, and a dated entry PREPENDED to the `# last_updated:` journal
 line. For a single-epic append, edit the YAML directly per house style — invoking the full
 `bmad-sprint-planning` skill is only warranted when regenerating the whole board. Confirm the keys appear,

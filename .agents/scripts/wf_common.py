@@ -171,6 +171,24 @@ def norm_id(s: str) -> str:
     return s.lower().replace(".", "-").strip()
 
 
+def norm_path(path: str) -> str:
+    """A repo-relative path, normalised for prefix comparison.
+
+    ⛔ NOT `lstrip("./")`. That argument is a character SET, not a prefix, so it eats the
+    leading dot off every `.agents/...` path and `.github/workflows/x.yml` silently stops
+    matching a `.github/` rule. The loop strips whole `./` segments and nothing else.
+
+    Hoisted here by SCC-441's review: `lane_qualify.norm` and `sop_currency._norm` are the
+    same function, and `scope_check.py` was about to make it three. The two older copies are
+    pre-existing and out of that lane's diff, so they were left alone; this is the home the
+    next edit to either one should collapse into.
+    """
+    p = path.replace("\\", "/").strip()
+    while p.startswith("./"):
+        p = p[2:]
+    return p
+
+
 def slug_matches(want: str, have: str) -> bool:
     """Story-id containment WITH a separator guard.
 

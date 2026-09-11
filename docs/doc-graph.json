@@ -4,15 +4,15 @@
     "docs"
   ],
   "counts": {
-    "files": 380,
+    "files": 381,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 770,
-    "external": 35,
+    "edges": 792,
+    "external": 36,
     "ambiguous": 174,
-    "dangling": 269,
-    "broken_paths": 63,
-    "unresolved_names": 206,
+    "dangling": 268,
+    "broken_paths": 61,
+    "unresolved_names": 207,
     "unresolvable": 9
   },
   "nodes": [
@@ -319,22 +319,22 @@
     {
       "path": ".agents/commands/cicd-boot-sprint-memory.md",
       "in": 1,
-      "out": 2
+      "out": 3
     },
     {
       "path": ".agents/commands/cicd-clean-code-audit.md",
       "in": 1,
-      "out": 5
+      "out": 6
     },
     {
       "path": ".agents/commands/cicd-close-story-merge-tree.md",
       "in": 1,
-      "out": 10
+      "out": 11
     },
     {
       "path": ".agents/commands/cicd-code-review.md",
       "in": 1,
-      "out": 6
+      "out": 7
     },
     {
       "path": ".agents/commands/cicd-create-epic-sprint.md",
@@ -344,12 +344,12 @@
     {
       "path": ".agents/commands/cicd-dev-story-tests.md",
       "in": 1,
-      "out": 12
+      "out": 13
     },
     {
       "path": ".agents/commands/cicd-e2e.md",
       "in": 1,
-      "out": 1
+      "out": 2
     },
     {
       "path": ".agents/commands/cicd-label-tasks.md",
@@ -389,12 +389,12 @@
     {
       "path": ".agents/commands/cicd-prune-worktree.md",
       "in": 1,
-      "out": 3
+      "out": 4
     },
     {
       "path": ".agents/commands/cicd-push-e2e.md",
       "in": 3,
-      "out": 5
+      "out": 6
     },
     {
       "path": ".agents/commands/cicd-quick-dev.md",
@@ -404,7 +404,7 @@
     {
       "path": ".agents/commands/cicd-resume.md",
       "in": 1,
-      "out": 3
+      "out": 4
     },
     {
       "path": ".agents/commands/cicd-self-audit.md",
@@ -419,7 +419,7 @@
     {
       "path": ".agents/commands/cicd-write-story-tests.md",
       "in": 1,
-      "out": 5
+      "out": 6
     },
     {
       "path": ".agents/commands/dev.md",
@@ -472,6 +472,11 @@
       "out": 3
     },
     {
+      "path": ".agents/commands/smh-dev-task-tests.md",
+      "in": 1,
+      "out": 11
+    },
+    {
       "path": ".agents/commands/smh-label-tasks.md",
       "in": 1,
       "out": 5
@@ -509,12 +514,7 @@
     {
       "path": ".agents/commands/smh-quick-dev.md",
       "in": 1,
-      "out": 11
-    },
-    {
-      "path": ".agents/commands/smh-quick-fix.md",
-      "in": 1,
-      "out": 6
+      "out": 15
     },
     {
       "path": ".agents/commands/smh-review.md",
@@ -703,13 +703,13 @@
     },
     {
       "path": ".agents/rules/000-PLAN-FIRST-GATE.md",
-      "in": 19,
+      "in": 20,
       "out": 2
     },
     {
       "path": ".agents/rules/INDEX.md",
       "in": 8,
-      "out": 31
+      "out": 32
     },
     {
       "path": ".agents/rules/agent-memory-is-long-term-only.md",
@@ -723,12 +723,12 @@
     },
     {
       "path": ".agents/rules/artifacts-always-first.md",
-      "in": 39,
-      "out": 7
+      "in": 38,
+      "out": 8
     },
     {
       "path": ".agents/rules/code-standards.md",
-      "in": 18,
+      "in": 19,
       "out": 1
     },
     {
@@ -738,7 +738,7 @@
     },
     {
       "path": ".agents/rules/command-shape.md",
-      "in": 15,
+      "in": 26,
       "out": 4
     },
     {
@@ -752,14 +752,19 @@
       "out": 1
     },
     {
+      "path": ".agents/rules/critical-surfaces.md",
+      "in": 10,
+      "out": 1
+    },
+    {
       "path": ".agents/rules/dependency-awareness.md",
       "in": 1,
       "out": 0
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 58,
-      "out": 4
+      "in": 59,
+      "out": 5
     },
     {
       "path": ".agents/rules/jira.md",
@@ -808,12 +813,12 @@
     },
     {
       "path": ".agents/rules/project-law.md",
-      "in": 14,
+      "in": 15,
       "out": 4
     },
     {
       "path": ".agents/rules/reproduce-before-you-fix.md",
-      "in": 7,
+      "in": 8,
       "out": 0
     },
     {
@@ -828,7 +833,7 @@
     },
     {
       "path": ".agents/rules/tests-must-gate-for-real.md",
-      "in": 13,
+      "in": 14,
       "out": 0
     },
     {
@@ -838,7 +843,7 @@
     },
     {
       "path": ".agents/rules/work-consolidation.md",
-      "in": 15,
+      "in": 16,
       "out": 2
     },
     {
@@ -854,7 +859,7 @@
     {
       "path": ".agents/scripts/INDEX.md",
       "in": 3,
-      "out": 6
+      "out": 7
     },
     {
       "path": ".agents/scripts/tests/fixtures/avch58_your_actions.md",
@@ -1547,6 +1552,11 @@
       "out": 1
     },
     {
+      "path": ".agents/skills/smh-dev-task-tests/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": ".agents/skills/smh-label-tasks/SKILL.md",
       "in": 0,
       "out": 1
@@ -1583,11 +1593,6 @@
     },
     {
       "path": ".agents/skills/smh-quick-dev/SKILL.md",
-      "in": 0,
-      "out": 1
-    },
-    {
-      "path": ".agents/skills/smh-quick-fix/SKILL.md",
       "in": 0,
       "out": 1
     },
@@ -1818,13 +1823,13 @@
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "in": 32,
-      "out": 66
+      "in": 31,
+      "out": 67
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 21
+      "out": 22
     },
     {
       "path": "docs/code-review-graph.md",
@@ -2171,6 +2176,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/commands/cicd-boot-sprint-memory.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/commands/cicd-clean-code-audit.md",
       "to": ".agents/rules/code-standards.md",
       "kind": "ref"
@@ -2188,6 +2198,11 @@
     {
       "from": ".agents/commands/cicd-clean-code-audit.md",
       "to": ".agents/rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-clean-code-audit.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -2227,6 +2242,11 @@
     },
     {
       "from": ".agents/commands/cicd-close-story-merge-tree.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-close-story-merge-tree.md",
       "to": ".agents/templates/project_overview_guide.md",
       "kind": "ref"
     },
@@ -2258,6 +2278,11 @@
     {
       "from": ".agents/commands/cicd-code-review.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-code-review.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -2342,12 +2367,22 @@
     },
     {
       "from": ".agents/commands/cicd-dev-story-tests.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-dev-story-tests.md",
       "to": ".agents/rules/jira.md",
       "kind": "ref"
     },
     {
       "from": ".agents/commands/cicd-e2e.md",
       "to": ".agents/rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-e2e.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -2482,6 +2517,11 @@
     },
     {
       "from": ".agents/commands/cicd-prune-worktree.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-prune-worktree.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
@@ -2512,6 +2552,11 @@
     },
     {
       "from": ".agents/commands/cicd-push-e2e.md",
+      "to": ".agents/rules/command-shape.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-push-e2e.md",
       "to": ".agents/templates/project_overview_guide.md",
       "kind": "ref"
     },
@@ -2528,6 +2573,11 @@
     {
       "from": ".agents/commands/cicd-quick-dev.md",
       "to": ".agents/rules/code-standards.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-quick-dev.md",
+      "to": ".agents/rules/critical-surfaces.md",
       "kind": "ref"
     },
     {
@@ -2576,11 +2626,6 @@
       "kind": "ref"
     },
     {
-      "from": ".agents/commands/cicd-quick-dev.md",
-      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "kind": "ref"
-    },
-    {
       "from": ".agents/commands/cicd-resume.md",
       "to": ".agents/rules/smh-target-resolution.md",
       "kind": "ref"
@@ -2588,6 +2633,11 @@
     {
       "from": ".agents/commands/cicd-resume.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-resume.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -2683,6 +2733,11 @@
     {
       "from": ".agents/commands/cicd-write-story-tests.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/cicd-write-story-tests.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
@@ -2848,6 +2903,51 @@
     {
       "from": ".agents/commands/smh-designer.md",
       "to": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "to": ".agents/rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "to": ".agents/rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "to": ".agents/rules/code-standards.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "to": ".agents/rules/reproduce-before-you-fix.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "to": ".agents/rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "to": ".agents/rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "to": ".agents/rules/work-consolidation.md",
       "kind": "ref"
     },
     {
@@ -3017,6 +3117,11 @@
     },
     {
       "from": ".agents/commands/smh-quick-dev.md",
+      "to": ".agents/rules/critical-surfaces.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-quick-dev.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
@@ -3032,47 +3137,22 @@
     },
     {
       "from": ".agents/commands/smh-quick-dev.md",
+      "to": ".agents/rules/work-consolidation.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-quick-dev.md",
       "to": ".agents/rules/worktree-per-story.md",
       "kind": "ref"
     },
     {
       "from": ".agents/commands/smh-quick-dev.md",
-      "to": ".agents/rules/jira.md",
+      "to": ".agents/rules/command-shape.md",
       "kind": "ref"
     },
     {
       "from": ".agents/commands/smh-quick-dev.md",
-      "to": ".agents/rules/work-consolidation.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/smh-quick-fix.md",
-      "to": ".agents/rules/000-PLAN-FIRST-GATE.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/smh-quick-fix.md",
-      "to": ".agents/rules/artifacts-always-first.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/smh-quick-fix.md",
-      "to": ".agents/rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/smh-quick-fix.md",
-      "to": ".agents/rules/worktree-per-story.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/smh-quick-fix.md",
       "to": ".agents/rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/smh-quick-fix.md",
-      "to": ".agents/rules/work-consolidation.md",
       "kind": "ref"
     },
     {
@@ -3542,6 +3622,11 @@
     },
     {
       "from": ".agents/rules/INDEX.md",
+      "to": ".agents/rules/critical-surfaces.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/INDEX.md",
       "to": ".agents/rules/dependency-awareness.md",
       "kind": "ref"
     },
@@ -3672,6 +3757,11 @@
     },
     {
       "from": ".agents/rules/artifacts-always-first.md",
+      "to": ".agents/rules/critical-surfaces.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/artifacts-always-first.md",
       "to": "docs/workspace-standard.md",
       "kind": "ref"
     },
@@ -3726,6 +3816,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/rules/critical-surfaces.md",
+      "to": ".agents/rules/project-law.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/rules/git-policy.md",
       "to": ".agents/rules/jira.md",
       "kind": "ref"
@@ -3738,6 +3833,11 @@
     {
       "from": ".agents/rules/git-policy.md",
       "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/git-policy.md",
+      "to": ".agents/rules/critical-surfaces.md",
       "kind": "ref"
     },
     {
@@ -3928,6 +4028,11 @@
     {
       "from": ".agents/rules/zoo-team.md",
       "to": ".agents/rules/operator-profile.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/scripts/INDEX.md",
+      "to": ".agents/rules/critical-surfaces.md",
       "kind": "ref"
     },
     {
@@ -4501,6 +4606,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/skills/smh-dev-task-tests/SKILL.md",
+      "to": ".agents/commands/smh-dev-task-tests.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/skills/smh-label-tasks/SKILL.md",
       "to": ".agents/commands/smh-label-tasks.md",
       "kind": "ref"
@@ -4538,11 +4648,6 @@
     {
       "from": ".agents/skills/smh-quick-dev/SKILL.md",
       "to": ".agents/commands/smh-quick-dev.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/skills/smh-quick-fix/SKILL.md",
-      "to": ".agents/commands/smh-quick-fix.md",
       "kind": "ref"
     },
     {
@@ -5212,6 +5317,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/critical-surfaces.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
     },
@@ -5363,6 +5473,11 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/critical-surfaces.md",
       "kind": "ref"
     },
     {
@@ -5794,10 +5909,6 @@
       "target": "sprint_scrum_board_map.md"
     },
     {
-      "from": ".agents/commands/INDEX.md",
-      "target": "walkthrough.md"
-    },
-    {
       "from": ".agents/commands/cicd-boot-sprint-memory.md",
       "target": "/_artifacts/_memory/MEMORY.md"
     },
@@ -5935,15 +6046,7 @@
     },
     {
       "from": ".agents/commands/cicd-quick-dev.md",
-      "target": "deferred-work.md"
-    },
-    {
-      "from": ".agents/commands/cicd-quick-dev.md",
       "target": "implementation_plan.md"
-    },
-    {
-      "from": ".agents/commands/cicd-quick-dev.md",
-      "target": "step-oneshot.md"
     },
     {
       "from": ".agents/commands/cicd-quick-dev.md",
@@ -6046,6 +6149,22 @@
       "target": "implementation_plan.md"
     },
     {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "target": "/walkthrough.md"
+    },
+    {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "target": "docs/_scc_sops_prds/x.md"
+    },
+    {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "target": "implementation_plan.md"
+    },
+    {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "target": "walkthrough.md"
+    },
+    {
       "from": ".agents/commands/smh-label-tasks.md",
       "target": "implementation_plan.md"
     },
@@ -6067,10 +6186,6 @@
     },
     {
       "from": ".agents/commands/smh-merge-multiple-workingtrees.md",
-      "target": "_artifacts/_main/2026-08-13_scc-127-verify-wave/walkthrough.md"
-    },
-    {
-      "from": ".agents/commands/smh-merge-multiple-workingtrees.md",
       "target": "walkthrough.md"
     },
     {
@@ -6087,23 +6202,11 @@
     },
     {
       "from": ".agents/commands/smh-quick-dev.md",
-      "target": "/walkthrough.md"
-    },
-    {
-      "from": ".agents/commands/smh-quick-dev.md",
-      "target": "docs/_scc_sops_prds/x.md"
-    },
-    {
-      "from": ".agents/commands/smh-quick-dev.md",
       "target": "implementation_plan.md"
     },
     {
       "from": ".agents/commands/smh-quick-dev.md",
       "target": "walkthrough.md"
-    },
-    {
-      "from": ".agents/commands/smh-quick-fix.md",
-      "target": "/walkthrough.md"
     },
     {
       "from": ".agents/commands/smh-team-cheshire-cat.md",
@@ -6354,12 +6457,20 @@
       "target": "walkthrough.md"
     },
     {
+      "from": ".agents/rules/critical-surfaces.md",
+      "target": "author-guide.md"
+    },
+    {
       "from": ".agents/rules/git-policy.md",
       "target": "active-context.md"
     },
     {
       "from": ".agents/rules/git-policy.md",
       "target": "epics.md"
+    },
+    {
+      "from": ".agents/rules/git-policy.md",
+      "target": "implementation_plan.md"
     },
     {
       "from": ".agents/rules/git-policy.md",
@@ -6404,6 +6515,10 @@
     {
       "from": ".agents/scripts/INDEX.md",
       "target": "CHANGELOG.md"
+    },
+    {
+      "from": ".agents/scripts/INDEX.md",
+      "target": "author-guide.md"
     },
     {
       "from": ".agents/scripts/INDEX.md",
@@ -6707,10 +6822,6 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "target": "docs/notes.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "epics.md"
     },
     {
@@ -6870,6 +6981,10 @@
     {
       "from": ".agents/commands/smh-memory-audit.md",
       "target": "_artifacts/_memory/MEMORY.md"
+    },
+    {
+      "from": ".agents/commands/smh-merge-multiple-workingtrees.md",
+      "target": "_artifacts/_main/2026/08/2026-08-13_scc-127-verify-wave/walkthrough.md"
     },
     {
       "from": ".agents/commands/smh-new-project.md",
@@ -7055,6 +7170,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -7063,7 +7179,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -7149,6 +7264,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -7157,7 +7273,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -7309,7 +7424,7 @@
     },
     {
       "from": ".agents/commands/cicd-quick-dev.md",
-      "target": "AGENTS.md",
+      "target": "_artifacts/AGENTS.md",
       "candidates": [
         ".agents/AGENTS.md",
         ".agents/skills/react-best-practices/AGENTS.md",
@@ -7341,6 +7456,15 @@
         ".agents/skills/animate-expo/RECIPES.md",
         ".agents/skills/emil-design-eng/RECIPES.md",
         ".agents/skills/visual-fx-3d/RECIPES.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
       ]
     },
     {
@@ -7403,15 +7527,6 @@
       "candidates": [
         ".agents/GEMINI.md",
         "docs/GEMINI.md"
-      ]
-    },
-    {
-      "from": ".agents/commands/smh-quick-dev.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        ".agents/AGENTS.md",
-        ".agents/skills/react-best-practices/AGENTS.md",
-        "docs/AGENTS.md"
       ]
     },
     {
@@ -7510,6 +7625,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -7518,7 +7634,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -7594,6 +7709,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -7602,7 +7718,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -8008,6 +8123,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -8016,7 +8132,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -8519,6 +8634,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -8527,7 +8643,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -8594,6 +8709,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -8602,7 +8718,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -8669,6 +8784,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -8677,7 +8793,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -8744,6 +8859,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -8752,7 +8868,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -8819,6 +8934,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -8827,7 +8943,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -8894,6 +9009,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -8902,7 +9018,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -8969,6 +9084,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -8977,7 +9093,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -9044,6 +9159,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9052,7 +9168,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -9119,6 +9234,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9127,7 +9243,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -9194,6 +9309,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9202,7 +9318,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -9269,6 +9384,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9277,7 +9393,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -9344,6 +9459,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9352,7 +9468,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -9419,6 +9534,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9427,7 +9543,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -9494,6 +9609,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9502,7 +9618,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -9569,6 +9684,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9577,7 +9693,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -9697,6 +9812,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9705,7 +9821,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -9963,6 +10078,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -9971,7 +10087,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -10166,6 +10281,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -10174,7 +10290,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -10436,6 +10551,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -10444,7 +10560,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",
@@ -10540,6 +10655,7 @@
         ".agents/skills/smh-close-task-merge-tree/SKILL.md",
         ".agents/skills/smh-code-review/SKILL.md",
         ".agents/skills/smh-designer/SKILL.md",
+        ".agents/skills/smh-dev-task-tests/SKILL.md",
         ".agents/skills/smh-label-tasks/SKILL.md",
         ".agents/skills/smh-llm-approvals/SKILL.md",
         ".agents/skills/smh-memory-audit/SKILL.md",
@@ -10548,7 +10664,6 @@
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
-        ".agents/skills/smh-quick-fix/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
         ".agents/skills/smh-sync-agents/SKILL.md",

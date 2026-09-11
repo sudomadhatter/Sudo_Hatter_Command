@@ -328,7 +328,7 @@ fi
 # ⛔ `[ -f … ] && PATHS+=(…)` returns 1 when the file is absent, which ABORTS the snippet under
 # `set -e` - so the guard meant to survive a missing path became the thing that killed the step.
 # The events dir is conditional too: it is tracked in this repo, but on first adoption of this
-# door (or a lightweight lane that recorded none) it does not exist, and `git add` 128s on a
+# door (or a quick lane that recorded none) it does not exist, and `git add` 128s on a
 # pathspec that matches nothing - staging NOTHING, so the flight event is lost with it.
 CHANGED=""
 if [ ${#PATHS[@]} -gt 0 ]; then
@@ -678,7 +678,7 @@ happened to be in, and the message never names the repo it read (`preflight-reso
 
 ⛔ **No `--story` here, and that is the fix (SCC-174).** `devrecord` picks update-vs-create off the
 **slug**, never off `--key`, so the same lane spelled two ways posts a **second** Dev Record — and
-this ceremony asking for `<branch-slug>` while `/smh-quick-dev` filed under something shorter is
+this ceremony asking for `<branch-slug>` while `/smh-dev-task-tests` filed under something shorter is
 exactly how AVCH-59 ended up with two. The slug now comes from **one** place, the lane's `task.yaml`
 `branch:`, and the script reads it. Pass `--story` only to file under a lane you are **not** standing
 on. If `check` reports a **FORKED Dev Record**, an id on the ticket is claimed by no manifest and no

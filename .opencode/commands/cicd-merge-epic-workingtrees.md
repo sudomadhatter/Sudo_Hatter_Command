@@ -36,6 +36,24 @@ Bind per `.agents/rules/smh-target-resolution.md` §STD + §BIND: self fast-path
 override (remainder = epic id / lane list) → `.agents/active-project.txt` → else **STOP and ask**.
 Echo exactly `Target: Projects/<name>` before any work.
 
+**Then the epic mode — from the git query, never from belief** (`git-policy` § The epic's mode,
+SCC-446):
+
+```bash
+L=$(pwd)                                                             # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune && cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
+```
+
+⛔ **A failed fetch is a STOP.** The mode query is chained behind the fetch, so a `fatal:` from the fetch means no mode line prints — and the cached `origin/epic/*` refs may name an epic origin no longer has. Fix the fetch, then read the mode; never read a mode off refs a fetch did not refresh.
+
+**Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
+**they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one
+live epic on origin) is a STOP: name the one you mean or prune the other before anything else runs.
+
+⛔ **`TRUNK` → this door REFUSES, in one sentence: there is no epic branch to merge the lanes into.**
+Trunk lanes land one at a time through `/cicd-close-story-merge-tree`'s Arm B, each its own PR into
+`main`; a batch landing has nothing to batch onto. Say so and stop.
+
 ## Step 1 — Read ALL the trees: inventory & confirm the set
 1. `git fetch origin`, then **both** listings — trees AND branches, they disagree after prunes and
    machine switches: `git worktree list` + `git branch -a --list "*claude/*"`. A branch alive on
@@ -256,24 +274,36 @@ exact state §4 exists to forbid, and this is the one window where avoiding it c
    only fix is a commit on a branch that has already landed. Commit with `cd "$TREE" && git add <paths>`
    and `cd "$TREE" && git commit -F <msg-file>` — EXPLICIT PATHS ONLY, `cd "$TREE" && git diff --cached
    --stat` shows only this story's files.
-4. **Land — assert the tree, then push, then prove the remote moved:**
+4. **Land — assert the tree, then a pull request into the epic, then prove the remote moved:**
 
    ```bash
    test "$(cd "$TREE" && git rev-parse --abbrev-ref HEAD)" = "claude/<JIRA-KEY>-<slug>" || { echo 'WRONG TREE — STOP'; exit 1; }
-   cd "$TREE" && git push origin HEAD:epic/<JIRA-KEY>-<slug>
-   cd "$TREE" && git log --oneline -1 origin/epic/<JIRA-KEY>-<slug>     # must be THIS lane's merge sha
    cd "$TREE" && git rev-parse HEAD                                     # ⛔ RECORD this sha — Step 7 verifies it
+   cd "$TREE" && git push origin claude/<JIRA-KEY>-<slug>               # the PR's head — the one sanctioned push
+   cd "$TREE" && gh pr create --base epic/<JIRA-KEY>-<slug> --head claude/<JIRA-KEY>-<slug> --fill
+   cd "$TREE" && gh pr checks --watch                                   # red → STOP; 4.5 does not run
+   cd "$TREE" && gh pr merge --merge                                    # the door's invocation IS the sign-off
+   cd "$TREE" && git fetch origin epic/<JIRA-KEY>-<slug>
+   cd "$TREE" && git log --oneline -1 origin/epic/<JIRA-KEY>-<slug>     # must be THIS lane's merge commit
    ```
 
-   ⛔ **Write that sha down, per lane, now.** Step 6 deletes `claude/<JIRA-KEY>-<slug>` local **and**
-   remote, so by the time Step 7 runs the branch NAME resolves to nothing: `merge-base --is-ancestor
-   claude/<…>` returns `fatal: Not a valid object name`, the `&&` short-circuits, no `landed` prints,
-   and the report reads as though the lane never landed. A sha captured here still resolves after the
-   branch is gone, because the epic branch contains it.
+   ⛔ **One lane, one pull request into the epic — the direct `HEAD:epic/` push is retired**
+   (`git-policy` → "The landing"). The epic's ruleset requires its mode's checks on every change to
+   `epic/**`, so it refuses the direct push outright; a batch is still N separate landings, each
+   through its own PR, and the serialisation this step already imposes is what keeps them from
+   racing. Which checks run is the epic's mode (FULL: all four, E2E included; LIGHT: the two fast
+   ones, the E2E pair skipped by design).
 
-   Rejected (remote moved again) → re-merge, re-gate, re-land — never force. ⛔ Do NOT push the
-   `claude/*` branch itself; it is the rollback point until Step 6 deletes it. ⛔ A push that did not
-   return 0 means 4.5 does not run — the ticket never moves ahead of the landing.
+   ⛔ **Write the lane's own sha down BEFORE the push, per lane.** Step 6 deletes
+   `claude/<JIRA-KEY>-<slug>` local **and** remote, so by the time Step 7 runs the branch NAME resolves
+   to nothing: `merge-base --is-ancestor claude/<…>` returns `fatal: Not a valid object name`, the
+   `&&` short-circuits, no `landed` prints, and the report reads as though the lane never landed. A
+   sha captured here still resolves after the branch is gone, because the epic branch contains it.
+
+   Rejected (remote moved again) → re-merge, re-gate, re-land — never force. ⛔ The PR head is the
+   **only** reason to push `claude/*`; the local branch stays the rollback point until Step 6 deletes
+   both copies. ⛔ A merge that did not return 0 means 4.5 does not run — the ticket never moves ahead
+   of the landing.
 5. **Dev Record, then the ticket — per lane, at ITS landing, never batched** (the order the solo
    door's Step 4 runs: a ticket reading `Done` over a stopped landing is a lie on the board; a
    landing whose record lags is one command from correct). Read `jira_key:` from the story frontmatter:

@@ -763,7 +763,7 @@ def main() -> int:
         # `grep -rn "mutant\|mutation" .agents/commands/` returned two hits, one of them a biologist
         # in the adviser board. The whole procedure was ONE sub-bullet under Rule 4 of
         # `tests-must-gate-for-real.md`, and the two TASK-lane commands that write the assertions
-        # (`/smh-quick-dev`, `/smh-self-audit`) did not load that rule at all — so on a task lane the
+        # (`/smh-dev-task-tests`, `/smh-self-audit`) did not load that rule at all — so on a task lane the
         # doctrine arrived at REVIEW, one step after the mutants were designed.
         #
         # It was measured twice, in unrelated lanes, as the same wasted work: SCC-144 aimed a mutant
@@ -788,7 +788,7 @@ def main() -> int:
         # commands (`cicd-write-story-tests`, `cicd-code-review`, both clean-code audits) bake the
         # rule into the STEP BODIES that route the work - the stronger form per
         # `restate-alwayson-obligations-in-command-bodies` - and widening those is its own ticket.
-        LOADERS = ("smh-quick-dev.md", "smh-self-audit.md", "smh-code-review.md",
+        LOADERS = ("smh-dev-task-tests.md", "smh-self-audit.md", "smh-code-review.md",
                    "cicd-dev-story-tests.md")
         unloaded = [n for n in LOADERS
                     if RULE_STEM not in rif_block(read(ROOT / ".agents/commands" / n))]
@@ -814,7 +814,7 @@ def main() -> int:
                 "an empty search space must never read as a pass")
         # ⛔ THE ONE THAT PINS `break` RATHER THAN `continue`. The control above uses plain prose, which
         # a degenerate `rif_block` collecting EVERY blockquote in the file would also pass. These
-        # commands are full of later `> **Note:**` asides (`smh-quick-dev.md` has two within 20 lines
+        # commands are full of later `> **Note:**` asides (`smh-dev-task-tests.md` has two within 20 lines
         # of the block), so "any blockquote anywhere" is not a theoretical degeneration - it is what
         # the file actually looks like. Mutating `break` to `continue` left all four call sites green.
         c.check("rules-in-force CONTROL: a LATER blockquote is not part of the block",
@@ -827,7 +827,7 @@ def main() -> int:
         # mutants get run); Step 3.5 is the eject tripwire and Step 2 is RED - a bullet that drifts
         # into either fires at the wrong moment, and file-wide pinning cannot see the difference.
         STEP3_RX = r"^## Step 3(?![\d.])"
-        step3 = md_section(read(ROOT / ".agents/commands/smh-quick-dev.md"), STEP3_RX)
+        step3 = md_section(read(ROOT / ".agents/commands/smh-dev-task-tests.md"), STEP3_RX)
 
         # Each row is ONE obligation and the phrasings that satisfy it - **alternatives, never a single
         # literal**. The rule and the SOP name the technique `CODE-DERIVED` where the command says
@@ -846,7 +846,7 @@ def main() -> int:
         )
         missing_terms = [n for n, alts in STEP3_OBLIGATIONS
                          if not any(a in step3.lower() for a in alts)]
-        c.check("/smh-quick-dev Step 3 carries the mutant-table obligation, in the step that "
+        c.check("/smh-dev-task-tests Step 3 carries the mutant-table obligation, in the step that "
             "actually routes the mutating",
                 step3 != "" and not missing_terms,
                 f"missing from `## Step 3`: {missing_terms}" if step3 else
@@ -932,9 +932,9 @@ def main() -> int:
         # above are spelled out rather than derived.
         c.check("the LOADERS sweep still covers BOTH dev lanes and the plan audit (its scope "
             "cannot be narrowed silently)",
-                {"smh-quick-dev.md", "smh-self-audit.md",
+                {"smh-dev-task-tests.md", "smh-self-audit.md",
                  "cicd-dev-story-tests.md"} <= set(LOADERS),
-                f"LOADERS={LOADERS} - `/smh-quick-dev` and `/cicd-dev-story-tests` WRITE the "
+                f"LOADERS={LOADERS} - `/smh-dev-task-tests` and `/cicd-dev-story-tests` WRITE the "
             f"assertions (one per family) and `/smh-self-audit` judges the plan that picks them. "
             f"Dropping any restores the exact gap this section exists to close, with every other "
             f"case here still green - and the row above cannot catch it, because it LOOPS over "
@@ -1296,8 +1296,8 @@ def main() -> int:
         # The rule is restated in four places. A stale restatement is a second source of law,
         # and this system has already paid for that once (the retired scrum board).
         for rel in (".agents/skills/code-review-engine/steps/step-01-review.md",
-                    ".agents/commands/smh-quick-dev.md",
-                    ".agents/commands/smh-quick-fix.md"):
+                    ".agents/commands/smh-dev-task-tests.md",
+                    ".agents/commands/smh-quick-dev.md"):
             body_ = read(ROOT / rel).lower()
             if "rule 1" not in body_ and "work-consolidation" not in body_:
                 continue
@@ -1607,7 +1607,11 @@ def main() -> int:
         RETIRED = "cicd-close-" + "workingtree"
         CMDS = ROOT / ".agents/commands"
         SOP_PATH = ROOT / "docs/_scc_sops_prds/workflows_testing_SOP.md"
-        PUSH = "git push origin HEAD:epic/"
+        # SCC-446: the landing is a PULL REQUEST into the epic (FULL or LIGHT) that the door
+        # merges itself - `gh pr merge --merge` is the act that lands code; the direct
+        # `HEAD:epic/` push is retired (the epic ruleset refuses it). The ordering law below is
+        # unchanged: the ticket moves only AFTER the landing act.
+        PUSH = "gh pr merge --merge"
         # ⛔ ASSEMBLED, for the same reason `RETIRED` is — and this one was caught by the gate
         # rather than by review. `test_jira_feed.py`'s yes-guard sweeps every `.md`/`.py`/`.sh`
         # under `.agents/` for an `acli … workitem transition` call missing `--yes`, exempting
@@ -1854,7 +1858,7 @@ def main() -> int:
         # ⛔ CONTROLS, over synthetic bodies, running the SAME predicate the live check runs.
         # "No violations found" is what a broken predicate reports too.
         BAD_ORDER = [f"`{TRANS} --key <KEY> --status \"Done\" --yes`.",
-                     f"Then `{PUSH}<JIRA-KEY>-<slug>` — THE landing."]
+                     f"Then `{PUSH}` — THE landing."]
         c.check("CS-13 C4 CONTROL: a transition BEFORE the push is caught",
                 board_lies(BAD_ORDER) == [1], str(board_lies(BAD_ORDER)))
         c.check("CS-13 C5 CONTROL: a transition AFTER the push is not reported",
@@ -1864,7 +1868,7 @@ def main() -> int:
         # widened for C2's benefit and never consulted by the ORDER check — the door would be
         # free to close the ticket before the landing push, through the new verb, unseen.
         BAD_FINISH = [f"`python3 .agents/scripts/{FINISH} --key <KEY> --apply`.",
-                      f"Then `{PUSH}<JIRA-KEY>-<slug>` — THE landing."]
+                      f"Then `{PUSH}` — THE landing."]
         c.check("CS-13 C6 CONTROL: a CLOSER call before the push is caught too",
                 board_lies(BAD_FINISH) == [1],
                 f"the order guard must read both verbs, not just acli: {board_lies(BAD_FINISH)}")
@@ -1877,7 +1881,7 @@ def main() -> int:
         # from the story door. Without them, documenting the mechanism indicts the door.
         MENTIONS = ["Step 4b runs `jira_feed.py finish`, which reads `## Your Actions` again.",
                     f"Once, `{TRANS}` was called here by hand; it no longer is.",
-                    f"Then `{PUSH}<JIRA-KEY>-<slug>` — THE landing."]
+                    f"Then `{PUSH}` — THE landing."]
         c.check("CS-13 C7 CONTROL: PROSE naming either verb is not a transition",
                 not board_lies(MENTIONS)
                 and not [ln for ln in MENTIONS if moves_ticket(ln)],
@@ -4230,7 +4234,7 @@ def main() -> int:
 
     if c.block("CS-24 · SCC-359 · the approval-sha WRITER and READER agree about the stamp "
                "commit"):
-        # ⛔ THE DEFECT: A GATE CONDITION THAT CAN NEVER PASS. `/smh-quick-dev` Step 1.5
+        # ⛔ THE DEFECT: A GATE CONDITION THAT CAN NEVER PASS. `/smh-dev-task-tests` Step 1.5
         # condition 3 says the plan must be unchanged since the approval, checked as
         # `git log -1 --format=%h -- <plan>` MUST EQUAL the sha on the `— recorded at <sha>`
         # line. But `/smh-plan-task` Step 5 requires that line to carry the sha of the commit
@@ -4255,7 +4259,7 @@ def main() -> int:
         # it. Delete the mandate and these rows go quiet on their own; keep it and no amount
         # of rewording gets past them.
         cmds = ROOT / ".agents" / "commands"
-        quick = (cmds / "smh-quick-dev.md").read_text(encoding="utf-8")
+        quick = (cmds / "smh-dev-task-tests.md").read_text(encoding="utf-8")
         plan = (cmds / "smh-plan-task.md").read_text(encoding="utf-8")
         law = (ROOT / ".agents" / "rules" / "000-PLAN-FIRST-GATE.md").read_text(encoding="utf-8")
 

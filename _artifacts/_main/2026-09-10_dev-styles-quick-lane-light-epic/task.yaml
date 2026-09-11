@@ -1,0 +1,7 @@
+task_key: SCC-441
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-441-dev-styles-quick-lane-light-epic
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: [SCC-442, SCC-443, SCC-444, SCC-445, SCC-446]
+landing_mode: partial   # the riders flip at this lane's close-out; the parent stays open for AVCH-152 and Part F

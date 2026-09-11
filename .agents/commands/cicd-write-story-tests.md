@@ -19,18 +19,36 @@ override (remainder = the real argument — story id, focus, …) → `.agents/a
 `bmad-*`/`1_*` skills bind their `{project-root}` to it); a needed path missing under `PROJECT_ROOT` →
 STOP and say so, never fall back to the lobby.
 
+**Then the epic mode — from the git query, never from belief** (`git-policy` § The epic's mode,
+SCC-446):
+
+```bash
+L=$(pwd)                                                             # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune && cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
+```
+
+⛔ **A failed fetch is a STOP.** The mode query is chained behind the fetch, so a `fatal:` from the fetch means no mode line prints — and the cached `origin/epic/*` refs may name an epic origin no longer has. Fix the fetch, then read the mode; never read a mode off refs a fetch did not refresh.
+
+**Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
+**they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one
+live epic on origin) is a STOP: name the one you mean or prune the other before anything else runs.
+
 ## Step 0.5 — Open the story worktree (BEFORE the first project file is written)
 ① writes the story file and its red tests, so `worktree-per-story` applies in full. Under `PROJECT_ROOT`:
 1. **`git worktree list`** — if a `claude/<JIRA-KEY>-<story-slug>` tree already exists (a re-run, or ② started),
    **re-enter it**; never open a second for the same slug.
-2. Else confirm the story's EPIC branch exists (`epic/<JIRA-KEY>-<slug>`, cut by
-   `/cicd-create-epic-sprint` — missing → go back and run it), then open
-   `.claude/worktrees/<story-slug>` on `claude/<JIRA-KEY>-<story-slug>` **off the epic ref by name** —
-   slug `story-<id-dashed>-<short-name>`, e.g. `story-21-3-student-archive`:
+2. Else open `.claude/worktrees/<story-slug>` on `claude/<JIRA-KEY>-<story-slug>` **off the base
+   Step 0's mode line named** — the FULL or LIGHT epic branch by name (cut by
+   `/cicd-create-epic-sprint`; `TRUNK` when you expected an epic → go back and run it), or
+   `origin/main` in TRUNK mode. Slug `story-<id-dashed>-<short-name>`, e.g. `story-21-3-student-archive`:
 ```bash
-cd "$PROJECT_ROOT" && git fetch origin epic/<JIRA-KEY>-<slug>
+# FULL or LIGHT — the epic branch Step 0 printed:
+cd "$PROJECT_ROOT" && git fetch origin epic/<JIRA-KEY>-<mode>-<N>-<slug>
 cd "$PROJECT_ROOT" && git worktree add --no-track .claude/worktrees/<story-slug> \
-    -b claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>
+    -b claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<mode>-<N>-<slug>
+# TRUNK — no epic branch exists; the lane is cut from production and lands on main by PR (SCC-423):
+cd "$PROJECT_ROOT" && git worktree add --no-track .claude/worktrees/<story-slug> \
+    -b claude/<JIRA-KEY>-<story-slug> origin/main
 ```
 
    ⛔ **`--no-track` is not optional, and it is the price of naming the base as an operand.** A

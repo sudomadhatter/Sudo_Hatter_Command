@@ -23,6 +23,20 @@ Per `.agents/rules/smh-target-resolution.md` **§DUAL**: BOTH repos must be refr
 active project (pointer missing → ASK, never guess; fast path: no `Projects/` subfolder → one repo). Echo
 exactly `Resuming: lobby + Projects/<name>` before any git command.
 
+**Then the epic mode — from the git query, never from belief** (`git-policy` § The epic's mode,
+SCC-446):
+
+```bash
+L=$(pwd)                                                             # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune && cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
+```
+
+⛔ **A failed fetch is a STOP.** The mode query is chained behind the fetch, so a `fatal:` from the fetch means no mode line prints — and the cached `origin/epic/*` refs may name an epic origin no longer has. Fix the fetch, then read the mode; never read a mode off refs a fetch did not refresh.
+
+**Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
+**they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one
+live epic on origin) is a STOP: name the one you mean or prune the other before anything else runs.
+
 ## Step 1 — Fetch both repos
 In the lobby AND in `PROJECT_ROOT`:
 
@@ -53,6 +67,8 @@ git ls-remote --heads origin 'refs/heads/claude/*'    # parked story branches
 ```
 An `epic/*` branch on origin is the sprint's integration line — check it out locally so the story
 worktrees below have their base (`git checkout --track origin/epic/<JIRA-KEY>-<slug>`, then back to `main`).
+**Step 0's mode line said `TRUNK`?** Then there is no integration line to check out: every story lane
+resumes onto a `claude/<JIRA-KEY>-<slug>` branch cut from `origin/main`, and lands on `main` by PR.
 Every `claude/*` branch listed is **in-flight story work**, parked from another machine — **except
 `claude/incident-*`**, which the incident pipeline pushes (`/cicd-mobile-error-team`; it lands on `main`
 via a GitHub PR, never through story flow). **Skip those rows: never resume one as a story lane, never

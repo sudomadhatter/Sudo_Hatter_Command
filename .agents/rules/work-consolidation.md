@@ -205,7 +205,7 @@ is empty. A non-zero exit means the write did **not** land: report that, never s
 ## Where this rule is cited
 
 `/smh-plan-task` (consolidated mode at cut time) · `/smh-close-task-merge-tree` (riders + partial
-landing) · `/smh-quick-dev` (discovery → a lettered part) · `/smh-quick-fix` (same) ·
+landing) · `/smh-dev-task-tests` (discovery → a lettered part) · `/smh-quick-dev` (same) ·
 `code-review-engine` triage (a finding looks for a home before it becomes a ticket).
 
 Pairs with `worktree-per-story.md` (a consolidated lane is still ONE worktree, opened before the first

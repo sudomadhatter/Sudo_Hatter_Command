@@ -51,6 +51,20 @@ sibling story lanes live the shared checkout is the wrong tree more often than n
 printed *another* lane's branch as clear to merge and was believed
 (`preflight-resolves-repo-from-cwd`).
 
+**Then the epic mode — from the git query, never from belief** (`git-policy` § The epic's mode,
+SCC-446):
+
+```bash
+L=$(pwd)                                                             # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune && cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
+```
+
+⛔ **A failed fetch is a STOP.** The mode query is chained behind the fetch, so a `fatal:` from the fetch means no mode line prints — and the cached `origin/epic/*` refs may name an epic origin no longer has. Fix the fetch, then read the mode; never read a mode off refs a fetch did not refresh.
+
+**Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
+**they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one
+live epic on origin) is a STOP: name the one you mean or prune the other before anything else runs.
+
 ## Step 0.5 — Re-enter the story worktree if one already exists (fresh-chat resume)
 Before Step 1: `git worktree list` under `PROJECT_ROOT` (`worktree-per-story` → "Resuming"). A
 `claude/<JIRA-KEY>-<story-slug>` tree exists → **cd into it and bind the diff, story file, tests, and suite commands
@@ -65,7 +79,7 @@ Bind the two strings every step below reads — from command output, before anyt
 
 ```bash
 WORKTREE=<the story tree Step 0.5 resolved, or "$PROJECT_ROOT" when none exists>
-EPIC=<epic/JIRA-KEY-slug>      # from `cd "$PROJECT_ROOT" && git branch -a --list '*epic/*'`, or the story's epic in the plan
+EPIC=<epic/JIRA-KEY-slug>      # the branch Step 0's mode line printed (FULL or LIGHT); in TRUNK mode there is no epic - set EPIC to the trunk branch's name so the origin/$EPIC reads below resolve to production
 cd "$WORKTREE" && env -u GITHUB_TOKEN git fetch origin "$EPIC"        # a bare `$EPIC` is this checkout's LAST PULL
 cd "$WORKTREE" && git diff --name-only "origin/$EPIC"...HEAD          # the story's committed work
 cd "$WORKTREE" && git diff --name-only "origin/$EPIC"...HEAD | wc -l  # echo this count
@@ -94,14 +108,16 @@ can be green while a landed story has moved a file this one depends on** — a g
 code runs, not that your references still resolve.
 
 ⛔ **The ref is the EPIC branch, never the trunk.** A story lane merges into `epic/<JIRA-KEY>-<slug>`;
-that branch is the tree this work will actually meet, and the trunk is one merge further out.
+that branch is the tree this work will actually meet, and the trunk is one merge further out. (In
+TRUNK mode there is no epic and the lane's base IS production's own branch — the one case the trunk
+is the ref, and Step 0's mode line is what says so.)
 Re-deriving against the trunk answers a question nobody asked: it reports "nothing moved" while the
 epic-mate that *did* move the file lands anyway. That substitution is the stale-ref defect SCC-165
 swept out of this command family — do not re-plant it here.
 
 ```bash
 cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin
-cd "$PROJECT_ROOT" && git branch -a --list '*epic/*'        # normally exactly one live epic branch
+# the epic is the one Step 0's mode line printed (FULL or LIGHT) - never re-discovered here
 # ⛔ RE-BIND $WORKTREE and $EPIC here, to the SAME strings Step 0.6 echoed. Each ```bash block is
 # its own shell: a variable set in Step 0.6 is GONE by the time this one runs, and `cd ""` && git does
 # not error — it silently reads whatever tree the shell is standing in.

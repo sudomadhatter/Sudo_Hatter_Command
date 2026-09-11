@@ -1,6 +1,6 @@
 ---
 name: git-policy
-description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<JIRA-KEY>-epic-<N>-<slug>` branch off main (BOTH numbers: ticket AND sprint); story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Mr. Hatter's in-the-moment 'approved' or via /cicd-close-story-merge-tree. The epic reaches `main` only through /cicd-push-e2e — full gate + E2E green + Mr. Hatter's sign-off."
+description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived branch off main — FULL (`epic/<JIRA-KEY>-epic-<N>-<slug>`) or LIGHT (`epic/<JIRA-KEY>-light-epic-<N>-<slug>`), BOTH numbers ticket AND sprint — or none at all (TRUNK); story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch by a pull request into it, on Mr. Hatter's in-the-moment 'approved' or via /cicd-close-story-merge-tree. The epic reaches `main` only through /cicd-push-e2e — full gate + E2E green + Mr. Hatter's sign-off. Also: the two toggles (the lane you call, the epic you are on) and the rails that never move."
 trigger: model_decision
 # Protocol tier (rules/INDEX.md): conditional, not floor. Every gate it carries is ALSO
 # stated inline in AGENTS.md and constitution.md, so the stop binds even in a session
@@ -28,9 +28,11 @@ trigger: model_decision
 - **`main` is LIVE PRODUCTION and the ONLY long-lived branch — never work on it directly, never
   auto-target it, never branch a worktree straight from it for story work.** It stays deployable;
   on projects with CI/CD, a push to `main` IS a deploy.
-- **Each epic gets one short-lived branch: `epic/<JIRA-KEY>-epic-<N>-<slug>`, cut from `main`** at
-  epic kickoff (`/cicd-create-epic-sprint`). All of the epic's stories integrate there. This is the
-  "one place to send everything" — scoped to the epic, not eternal.
+- **Each epic gets one short-lived branch, cut from `main`** at epic kickoff
+  (`/cicd-create-epic-sprint`): `epic/<JIRA-KEY>-epic-<N>-<slug>` for a **FULL** epic, or
+  `epic/<JIRA-KEY>-light-epic-<N>-<slug>` for a **LIGHT** one (the mode section below says which is
+  which). All of the epic's stories integrate there. This is the "one place to send everything" —
+  scoped to the epic, not eternal.
 
   ⭐ **The name carries BOTH numbers, because they are different numbers and they do not track
   each other.** `<JIRA-KEY>` is the epic's **ticket** (`AVCH-18`); `epic-<N>` is its **sprint /
@@ -40,8 +42,9 @@ trigger: model_decision
   `epic/AVCH-18-…` sitting under artifacts filed at `epic_19/` reads as drift on every glance.
 
   ```text
-  epic/AVCH-18-epic-19-adk-2x-runtime
-       └ ticket  └ sprint  └ slug
+  epic/AVCH-18-epic-19-adk-2x-runtime            FULL  (four checks per landing)
+  epic/AVCH-18-light-epic-19-adk-2x-runtime      LIGHT (two checks per landing, E2E once)
+       └ ticket  └ mode  └ sprint  └ slug
   ```
 
   ⛔ **The `epic/` prefix is load-bearing — the sprint number goes in the SLUG, never in front of
@@ -69,20 +72,27 @@ trigger: model_decision
   is a product change no matter what its ticket is called. `ship_preflight.py` refuses the mirror
   case from the other side, so a lane cannot slip through both.
 
-### The epic's mode is decided at kickoff, and a live epic freezes `main` for its scope (SCC-416, SCC-423)
+### The epic's mode is decided at kickoff, and a live epic freezes `main` for its scope (SCC-416, SCC-423, SCC-441)
 
-When the epic branch is cut, the operator decides once — **extension of main**, **quick-dev**, or
-**trunk** — and the answer is readable from git, never from prose: the `-quickdev` suffix on the slug,
-its absence, or **no epic branch at all**. Every door reads it from there; an agent never chooses it
-and never changes it.
+When the epic branch is cut, the operator decides once — **FULL**, **LIGHT**, or **TRUNK** — and the
+answer is readable from git, never from prose. A branch name that **CONTAINS `-light-epic-`** is a
+LIGHT epic. One that does not is a FULL epic. No epic branch at all is TRUNK. It is a substring
+test and not a token position, because `contains()` is exactly what the epic's own ruleset runs on
+the server, and the two cannot disagree about a name when they ask it the same question. Every door
+reads it from there; an agent never chooses it and never changes it. The mode is chosen once, by the operator, at kickoff
+(`/cicd-create-epic-sprint` asks); no door prompts to cut a light epic mid-flight.
 
-- **Extension of main** (`epic/<KEY>-epic-<N>-<slug>`): every story lands by **pull request into the
-  epic** under the full gate — E2E on every landing — and the epic is kept current with `main`
-  (`/cicd-dev-story-tests` Step 0.6 stops a story when it is behind). It reaches `main` once, at the
-  end, through `/cicd-push-e2e`, on the operator's decision.
-- **Quick-dev** (`epic/<KEY>-epic-<N>-<slug>-quickdev`): stories land by **direct push** after the local
-  light gate (suite + build); nothing is spent on CI per story; E2E runs once, at `/cicd-push-e2e`.
-- **Trunk** — *no epic branch exists.* Story lanes are cut from **`origin/main`** and land on **`main`**
+- **FULL** (`epic/<KEY>-epic-<N>-<slug>`): every story lands by **pull request into the epic** under
+  the full gate — the four checks (Backend (Python), Frontend (Node.js), Backend E2E, Frontend E2E),
+  E2E on every landing — and the epic is kept current with `main` (`/cicd-dev-story-tests` Step 0.6
+  stops a story when it is behind). It reaches `main` once, at the end, through `/cicd-push-e2e`, on
+  the operator's decision.
+- **LIGHT** (`epic/<KEY>-light-epic-<N>-<slug>`): every story lands by **pull request into the epic**
+  under the two fast checks (Backend (Python), Frontend (Node.js)); the two E2E jobs skip on the
+  server because the PR base carries `-light-epic-`. E2E runs once, at `/cicd-push-e2e`, or on
+  demand through `/cicd-e2e`. For a project not yet in production, or an epic whose landings are UI
+  and docs.
+- **TRUNK** — *no epic branch exists.* Story lanes are cut from **`origin/main`** and land on **`main`**
   by a **pull request the operator merges**, under whatever checks that repo's `main` ruleset requires.
   There is no integration branch, no epic ship step, and **every merge is a deploy**. The ①②③ story
   ceremony is unchanged; only the base and the destination differ.
@@ -91,8 +101,9 @@ and never changes it.
 
   ```bash
   cd "$PROJECT_ROOT" && git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/epic/*'
-  # a line for this project's epic -> extension-of-main or quick-dev, read the suffix
-  # NOTHING                       -> trunk: cut from origin/main, land on main by PR
+  # epic/<KEY>-epic-<N>-<slug>        -> FULL:  PR into the epic, four checks, E2E every landing
+  # epic/<KEY>-light-epic-<N>-<slug>  -> LIGHT: PR into the epic, two checks, E2E once at /cicd-push-e2e
+  # NOTHING                            -> TRUNK: cut from origin/main, land on main by PR
   ```
 
   ⛔ **Trunk mode does not repeal one line of the write gate.** `main` is still reached only through a
@@ -113,12 +124,12 @@ and never changes it.
   modes, one branch shorter. The shared checkout still stands on `main`, and now genuinely moves each
   time a lane lands.
 
-  ⛔ **The `claude/*`-on-origin invariant is unchanged, because trunk inherits the extension-of-main
+  ⛔ **The `claude/*`-on-origin invariant is unchanged, because trunk inherits the FULL and LIGHT
   carve-out**: a story branch reaches origin as the **head of its own PR**, and the close-out prunes
   it. It is still never pushed for any other reason, so `/cicd-resume`'s reading of the origin
   `claude/*` list — *parked, in-flight, on another machine* — stays true.
 
-**In the two epic modes, while the epic is live, `main` is frozen for everything the epic changes.**
+**In FULL and LIGHT mode, while the epic is live, `main` is frozen for everything the epic changes.**
 (A trunk project has no epic, so nothing to freeze — and no lane can be misrouted past one.) Scope is
 the epic's diff (`git diff --name-only origin/main...origin/epic/<KEY>-<slug>`), not its ticket tree. A
 main-bound lane sharing a **product file** with it is epic work: it lands on the epic via
@@ -152,6 +163,46 @@ was on the epic branch.*
   `main` on its own initiative. Re-invoked as `--after-merge <KEY>` it verifies the landing with
   plain git and finishes the ceremony. The epic branch is deleted then: branches are short-lived by
   design; nothing accumulates.
+
+## Two toggles, and the rails that never move
+
+Two switches shape how a piece of work moves, and they never depend on each other. **The lane you
+call** is read from the command name. **The epic you are on** is read from the branch name. Everything
+else is a rail, and a rail holds in every lane and every mode. (Agreed with the operator 2026-09-10,
+SCC-441.)
+
+### The lane you call — the quick lane, defined once for both levels
+
+`/smh-quick-dev` in the lobby, `/cicd-quick-dev` in a project: the same five steps at both levels.
+TDD stays in every lane; what the quick lane cuts is the ceremony the operator did not ask for.
+
+| Step | What happens | Who moves it |
+|---|---|---|
+| 1. Scope check | `scope_check.py` runs the planned file set against the critical-surfaces rule (`critical-surfaces.md`, beside this file: auth, billing, security rules, FAA-facing answers, CI). An overlap means the agent **stops**, states what overlaps and why it matters. A soft stop, not a wall. | Only the operator's word overrides. No agent override exists. |
+| 2. Plan | `implementation_plan.md`, then the literal `approved`. `/smh-self-audit` or `/cicd-self-audit` runs **only if asked**. | operator |
+| 3. RED then GREEN | the same TDD as the full lane: the assertion seen red, then made green | agent |
+| 4. Walkthrough | `walkthrough.md`, then the literal `approved`. `/smh-code-review` or `/cicd-code-review` runs **only if asked**. No `Verdict:` stamp unless a review actually ran — the stamp pulls in the roster gate. | operator |
+| 5. Tripwire, then close | Step 5 of the quick-dev door re-runs the scope check on the **real diff** — the eject tripwire, judged against the map as it stood at the fork as well as the lane's own; an overlap the operator has not overridden ejects the lane to the full ceremony. Only then the normal close-out door for the level, which runs no scope check of its own (`critical-surfaces.md` § The wire-in). | agent |
+
+What the quick lane is for: a UI fix, a document or file update, anything off the critical-surfaces
+list. What it is not for: the surfaces on that list. The line is a file, not a feeling.
+
+### The epic you are on
+
+Read from the branch name by the git query in § The epic's mode above: FULL, LIGHT, or TRUNK. The
+lane and the mode are independent — a quick lane on a FULL epic still lands by PR under the four
+checks; a full story lane on a LIGHT epic still lands by PR under two.
+
+### The rails
+
+| Rail | Holds in every lane and every mode |
+|---|---|
+| Worktree per lane | every commit-producing lane has its own tree (`worktree-per-story`) |
+| Key on the branch | `chore/<KEY>-<slug>` or `claude/<KEY>-<slug>`; the hook refuses the rest |
+| Explicit paths | never `git add -A` / `.` / `-u` |
+| `main` is the operator's | reached only by a PR the operator merges |
+| Plan then `approved` | in the quick lane too |
+| The walkthrough | never skipped |
 
 ## The write gate — keyed on WHERE a write lands, not on the act
 
@@ -365,32 +416,39 @@ git rev-list --left-right --count <branch>...origin/<branch>   # must be "0 0"
 "pushed" is how this hides.
 
 ⛔ The only exception is a story branch mid-flight, which is governed by "The landing" below: its commits
-stay local until the landing pushes `HEAD:epic/<JIRA-KEY>-<slug>`. That is about *which ref* receives the push, never
-a licence to leave work uncommitted or a landing unpushed.
+stay local until the landing pushes the branch as the head of its pull request into the epic (or
+`/cicd-park` pushes it). That is about *which ref* receives the push, never a licence to leave work
+uncommitted or a landing unpushed.
 
-## The landing — one story, one clean push
+## The landing — one story, one pull request into the epic
 
 The story lands on its **epic branch** at close-out (`/cicd-close-story-merge-tree` Step 3) or on
-Mr. Hatter's in-the-moment "approved". It merges **from inside the worktree**, never by checking out the
-epic branch in the shared checkout:
+Mr. Hatter's in-the-moment "approved" — **by a pull request into the epic, in FULL and LIGHT mode
+alike**; the epic's ruleset runs that mode's required checks on it. The epic is absorbed **from inside
+the worktree**, never by checking out the epic branch in the shared checkout:
 
 ```bash
 git fetch origin epic/<JIRA-KEY>-<slug>
-git merge origin/epic/<JIRA-KEY>-<slug>        # absorb it INSIDE the worktree — conflicts surface here, isolated
-git push origin HEAD:epic/<JIRA-KEY>-<slug>    # THE landing
+git merge origin/epic/<JIRA-KEY>-<slug>          # absorb it INSIDE the worktree — conflicts surface here, isolated
+git push origin claude/<JIRA-KEY>-<story-slug>   # the PR's head — the one sanctioned push of it
+gh pr create --base epic/<JIRA-KEY>-<slug> --head claude/<JIRA-KEY>-<story-slug> --fill
+gh pr checks --watch                             # the epic's required checks, per its mode
+gh pr merge --merge                              # the door's invocation IS the sign-off for an EPIC landing
 ```
 
-⛔ **Do NOT push the story branch itself.** The **local** branch is the rollback point, and it survives
-a failed landing push completely untouched. Pushing story branches on every landing is what left 10
-stale `claude/*` on origin by 2026-07-27.
+**The story branch reaches origin as the head of its own landing PR, or through `/cicd-park`** — and
+the close-out prunes it. It is never pushed for any other reason: the **local** branch is the rollback
+point, and it survives a refused landing completely untouched. Pushing story branches on every commit
+is what left 10 stale `claude/*` on origin by 2026-07-27.
 
-**A story branch reaches origin exactly one way: `/cicd-park`.** That is the entire point of park —
-*"the ONLY thing that makes the work portable"* — and `/cicd-resume` reads `git ls-remote --heads origin
-'refs/heads/claude/*'` to find in-flight work. The epic branch, by contrast, LIVES on origin — park
-pushes it too, and resume checks it out on the new machine.
+**`/cicd-park` is what makes the work portable** — *"the ONLY thing that makes the work portable"* —
+and `/cicd-resume` reads `git ls-remote --heads origin 'refs/heads/claude/*'` to find in-flight work.
+The epic branch, by contrast, LIVES on origin — park pushes it too, and resume checks it out on the
+new machine.
 
-**The invariant this buys: a `claude/*` branch on origin means "parked, in-flight, on another machine."**
-Nothing else. Keep it true — it is what makes `/cicd-resume` trustworthy on a cold machine.
+**The invariant this buys: a `claude/*` branch on origin means "parked, in-flight, on another
+machine" — or the head of an open landing PR.** Nothing else. Keep it true — it is what makes
+`/cicd-resume` trustworthy on a cold machine.
 (`claude/incident-*` branches come from the Epic-16 incident pipeline, not story flow; they are outside
 this rule and must not be swept by it — they match the `claude/*` glob, so a resume reading that listing
 must skip the `incident-` infix rather than treat it as parked story work.)

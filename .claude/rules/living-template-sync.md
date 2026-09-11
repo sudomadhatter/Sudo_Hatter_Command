@@ -1,12 +1,13 @@
 ---
 name: living-template-sync
-description: "The clone source for new projects is the sudo-project-skeleton REPO (thin — no vendored toolkit). Fires when you change the front-door pattern, the folder layout, the enforcement set, or the thin-project floor at the home base: those are per-workspace and do NOT propagate by any automatic mechanism, so they must be hand-mirrored into the skeleton or every new project starts stale. Toolkit/rule edits do NOT need mirroring — projects read them from the center."
+description: "The clone source for new projects is the sudo-project-skeleton REPO (thin — no vendored toolkit). Fires when you change the front-door pattern, the folder layout, the enforcement set, the PR gate's shape, or the thin-project floor at the home base: those are per-workspace and do NOT propagate by any automatic mechanism, so they must be hand-mirrored into the skeleton or every new project starts stale. Toolkit/rule edits do NOT need mirroring — projects read them from the center."
 trigger: glob
-globs: [AGENTS.md, ".agents/templates/**", "_bmad/custom/**"]
+globs: [AGENTS.md, ".agents/templates/**", "_bmad/custom/**", ".github/**"]
 paths:
   - "AGENTS.md"
   - ".agents/templates/**"
   - "_bmad/custom/**"
+  - ".github/**"
 # Path-scoped. `globs:` is Antigravity's field; `paths:` is Claude Code's, and Claude
 # loads this file ONLY when it reads a file matching one of them. Both lists are the
 # same set on purpose — one classification, two readers (test_rule_frontmatter.py).
@@ -32,6 +33,7 @@ project starts stale — and unlike the old model, **nothing detects that for yo
 | Front door: root `AGENTS.md`, `CLAUDE.md`/`GEMINI.md`, `README.md` | **Hand-mirror into the skeleton.** Per-workspace content; keep it generic — `<PROJECT_NAME>` / `{{PLACEHOLDER}}` where a real project fills in. |
 | Folder layout, the thin-project floor, `.gitignore` | **Hand-mirror.** If `check_maps.py`'s floor gains a required file, the skeleton must ship it or every clone lints red on day one. |
 | The enforcement set — `.githooks/`, `.agents/scripts/git-hooks/`, `jira.conf.example` | **Hand-mirror.** These are repo-local by design and never synced. A fix to a hook script at the center does not reach the skeleton on its own. |
+| The PR gate and its classifier — a project's `pr-check.yml` under `.github/workflows/`, its `.github/scripts/`, the ruleset recipes under `.github/rulesets/` | **Hand-mirror.** CI is repo-local and never synced. When a project changes the shape of the gate (the diff classifier, a per-job `if:`, a ruleset), the skeleton gets the same shape by hand, with placeholders where the project's names go. The lobby's own `main-write-gate.yml` is not part of this row — the skeleton does not ship the lobby's gate. |
 | `.agents/INDEX.md` template stub, the BMAD `_bmad/custom/*.toml` (incl. the INLINED plan-first gate) | **Hand-mirror.** The gate text lives inline in the tomls; edit the canonical rule first, then mirror it into the skeleton's two tomls. |
 
 ## The obligation

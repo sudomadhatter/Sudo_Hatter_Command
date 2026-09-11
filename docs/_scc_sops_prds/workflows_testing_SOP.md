@@ -28,10 +28,10 @@
 | If you need to know / do... | Jump to Section | Core File / Rule Pointer |
 |---|---|---|
 | **Human visual flight deck / diagrams** | — | [`operator_workflows_quickref.md`](operator_workflows_quickref.md) |
-| **Which lane to pick** (Story vs Fast vs Task vs Quick-fix) | [§5 Which lane am I in?](#5-which-lane-am-i-in) | `.agents/scripts/lane_qualify.py` |
+| **Which lane to pick** (Story vs Fast vs Task vs Quick) | [§5 Which lane am I in?](#5-which-lane-am-i-in) | `.agents/scripts/lane_qualify.py` |
 | **All system hooks & nags** (Hard Gates vs Nags vs Probes) | [§10 The Complete Hooks & Nags Architecture](#the-complete-hooks--nags-architecture) | `.agents/rules/constitution.md` |
 | **Story development loop** (① -> ② -> ③) | [§6 The story lane](#6-the-story-lane) | `.agents/rules/artifacts-always-first.md` |
-| **Task & Chore loop** (`/smh-plan-task`, `/smh-quick-dev`) | [§9 The Task lane](#9-the-task-lane--work-on-the-system-itself) | `.agents/rules/work-consolidation.md` |
+| **Task & Chore loop** (`/smh-plan-task`, `/smh-dev-task-tests`) | [§9 The Task lane](#9-the-task-lane--work-on-the-system-itself) | `.agents/rules/work-consolidation.md` |
 | **Landing & close-out procedures** (single vs batch) | [§7 Landing and shipping](#7-landing-and-shipping--the-close-out-family) | `.agents/rules/git-policy.md` · `/smh-close-task-merge-tree` · `/cicd-close-story-merge-tree` · `closeout-nag.py` |
 | **Command reference & execution specs** | [Part VI — The command atlas](#18-every-command-one-diagram) | `.agents/commands/<command>.md` |
 | **Jira board queries & queue priority** | [§12 The board — what runs next](#12-the-board--what-runs-next) | `.agents/rules/jira.md` |
@@ -112,10 +112,10 @@ the twin is an AVCH ticket of its own, not something a lobby lane may do.
 | fix something small in a project | `/cicd-quick-dev <slug>` — **low-risk work only** ([§8](#8-the-fast-lane--cicd-quick-dev)) |
 | **push routine project docs/notes to PR** | `/cicd-non-crit-pr-push` — **standing ticket & branch directly to PR** ([§8a](#8a-the-project-standing-push-lane--cicd-non-crit-pr-push)) |
 | **plan** a big Task — subtasks, lanes, the parallel table | `/smh-plan-task <TASK-KEY>`, then `/smh-label-tasks <TASK-KEY>` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
-| **build** a Task — a command, a rule, a gate, the docs | `/smh-quick-dev <KEY>` → `/smh-code-review` → `/smh-close-task-merge-tree` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
-| **just get one specific thing done** — write me a guide, fix a reference, tidy a branch mess | `/smh-quick-fix "<the ask>"` — **no plan, no `approved`, no review**; it does not stop to ask whether to start ([§9a](#the-lightweight-lane--smh-quick-fix)) |
+| **build** a Task — a command, a rule, a gate, the docs | `/smh-dev-task-tests <KEY>` → `/smh-code-review` → `/smh-close-task-merge-tree` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
+| **just get one specific thing done** — write me a guide, fix a reference, a small rule edit | `/smh-quick-dev "<the ask>"` — **the quick lane**: scope check, a short plan and your `approved`, RED then GREEN, a walkthrough and your `approved`; audit and review only if you ask; it does not stop to ask whether to start ([§9a](#the-quick-lane--smh-quick-dev)) |
 | **tired of approving the same terminal commands** (or the same file reads) — **every prompt re-bills your whole context, so this is budget, not tidiness** | `/smh-llm-approvals` — lists what you had to approve across Claude, Zoo and Antigravity — **and the rules you already approved in a terminal chat, which live on one machine only** — then adds the ones you name to the ONE permission source, which renders all three allow lists for you ([§13](#what-does-not-travel-between-the-machines)) |
-| **push routine docs/notes to PR** — the standing ticket `SCC-186` | `/smh-non-crit-pr-push` — **qualifies `LIGHT`, stages, commits `SCC-186`, pushes, opens PR** ([§9a](#the-lightweight-lane--smh-quick-fix)) |
+| **push routine docs/notes to PR** — the standing ticket `SCC-186` | `/smh-non-crit-pr-push` — **qualifies `LIGHT`, stages, commits `SCC-186`, pushes, opens PR** ([§9a](#the-quick-lane--smh-quick-dev)) |
 | land **several** finished Tasks at once | `/smh-merge-multiple-workingtrees` — one sign-off per lane ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | see what a command will do before typing it | [Part VI — the command atlas](#18-every-command-one-diagram) |
 | know whether a review still counts | [§11 — the decision tree](#11-is-this-review-still-valid) |
@@ -165,7 +165,7 @@ you like; agents do not read it, and it is never quoted as "what's next".
 [7 Landing and shipping](#7-landing-and-shipping--the-close-out-family) ·
 [8 The fast lane](#8-the-fast-lane--cicd-quick-dev) ·
 [9 The Task lane](#9-the-task-lane--work-on-the-system-itself) ·
-[9a The lightweight lane](#the-lightweight-lane--smh-quick-fix)
+[9a The quick lane](#the-quick-lane--smh-quick-dev)
 
 **Part IV — The machinery**
 [10 The safety net](#10-the-safety-net--what-checks-your-work) ·
@@ -304,7 +304,7 @@ gate only means something if it's one specific word.
 > `— recorded at <sha>`, so a later lane can prove the plan is the one you actually read. That sha
 > cannot be known until the commit exists, so the planner writes `<pending>`, commits, then stamps
 > the real sha in a **second** commit — which means the plan's last touch is always that stamp, not
-> the recorded sha. `/smh-quick-dev` used to demand the two be *equal*, a condition no conforming
+> the recorded sha. `/smh-dev-task-tests` used to demand the two be *equal*, a condition no conforming
 > lane could ever satisfy, and it stopped lanes you had already approved (seen on SCC-347, SCC-358
 > and SCC-318). It now falls through to the diff: **a commit that changes the approval line and
 > nothing else passes; anything else re-arms that lane's gate.** ⛔ **The tooth is unchanged** — a
@@ -357,10 +357,10 @@ are the on-ramps.*
 | **Shipping to Production** | `/cicd-push-e2e` | Requires green E2E test suite → lands epic branch onto `main`. |
 | **Task Planning** | `/smh-plan-task` | Decomposes task into subtasks, maps dependencies with ONE approval stop. |
 | **Task Sequencing** | `/smh-label-tasks` | Establishes execution order and parallel-ok labels for subtasks. |
-| **Task Development** | `/smh-quick-dev` → `/smh-code-review` | Assert-first development and code review for command center/system work. |
+| **Task Development** | `/smh-dev-task-tests` → `/smh-code-review` | Assert-first development and code review for command center/system work. |
 | **Task Close-Out** | `/smh-close-task-merge-tree` | Verifies clean tests → lands chore branch directly on `main` → prunes tree. |
 | **Task Batch Merge** | `/smh-merge-multiple-workingtrees` | Lands batch of passing chore lanes onto `main` with one sign-off per lane. |
-| **Lightweight Lane** | `/smh-quick-fix "<the ask>"` | Non-breaking guides, references, or tidying. No plan, no review, direct to close. |
+| **Quick Lane** | `/smh-quick-dev "<the ask>"` | Small, non-critical toolkit work: scope check, short plan + `approved`, RED then GREEN, walkthrough + `approved`; audit and review only on request. |
 | **Incident Pipeline** | Sentry alert → `/cicd-mobile-error-team` | Evaluates rollback vs fix, becomes an expedited story in story lane. |
 | **Machine Switching** | `/cicd-park` <-> `/cicd-resume` | Safe cross-machine handoff via git sync. |
 
@@ -386,37 +386,40 @@ question the system will not answer for you at the end.
 | Condition | Qualified Lane | Entry Command | Enforcement / Eject Rules |
 |---|---|---|---|
 | Touches deployable code (`backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/`, `.github/`) with story ID | **The Story Lane** | ① `/cicd-write-story-tests` | Full ①②③ cycle. Epic-branch isolation — **or, in a `trunk`-mode project, no epic branch at all: the lane is cut from `origin/main` and lands on `main` by a PR he merges** (SCC-423). |
-| Touches deployable code, small and low-risk, no story ID | **The Fast Lane** | `/cicd-quick-dev` | **Ejects to Story Lane** if touching auth, PII, DB schema, or cross-service contracts. |
-| System/toolkit work (`.agents/`, `.githooks/`, `AGENTS.md`) qualifying `TASK` | **The Task Lane** | `/smh-quick-dev` | Worktree off `main`, closes via `/smh-close-task-merge-tree`. **Ejects to Story Lane** if deployable code touched. |
-| System/toolkit work qualifying `LIGHT` or `LIGHT-VCS` | **The Lightweight Lane** | `/smh-quick-fix` | No plan, no review, direct chore execution. **Ejects to Task Lane** if real diff expands. |
+| Touches deployable code, small and low-risk, no story ID | **The Fast Lane** | `/cicd-quick-dev` | Step 1 scope check against the repo's critical-surfaces map (auth, billing, security rules, FAA-facing answers, CI): an overlap is a **soft stop** only your word lifts. Step 5 re-runs it on the real diff; an overlap with no override **ejects to the Story Lane**. |
+| System/toolkit work on a critical surface (the gates: `.github/`, the hooks, the preflights), or needing the full cycle | **The Task Lane** | `/smh-dev-task-tests` | Worktree off `main`, closes via `/smh-close-task-merge-tree`. **Ejects to Story Lane** if deployable code touched. |
+| System/toolkit work off the critical-surfaces list — a guide, a reference, a small rule edit | **The Quick Lane** | `/smh-quick-dev` | Step 1 scope check against the lobby's `.agents/critical-surfaces.json` (its gates): an overlap is a **soft stop** only your word lifts. Step 5 re-runs it on the real diff; an uncovered overlap **ejects to the Task Lane**. |
 
 
 **Read the arrows, they matter more than the boxes.** Both dotted lines are **ejects** — tripwires
 that fire mid-build and send the work back to the full loop. You do not get to argue with either one:
 
-- The fast lane ejects on **risk, not size**. Login, permissions, payments, user data, DB schema, or
-  a cross-service contract goes to the full loop no matter how small the change looks.
+- The fast lane stops on **risk, not size**, and the risk is a file, not a feeling: Step 1 runs
+  `scope_check.py` on the planned files against the repo's `.agents/critical-surfaces.json` — auth and
+  session, billing, security rules, FAA-facing answers, CI and the gates. An overlap is a soft stop
+  that only your word lifts; Step 5 runs the same check on the real diff, and an overlap you never
+  overrode goes to the full loop no matter how small the change looks.
 - The Task lane ejects the moment a **deployable path** appears in the diff. That is a product
   change whatever the ticket says, and the product has exactly one road to `main`. **There is no
   override flag, deliberately** — see [`task_preflight.py`](#the-checks-and-what-each-one-refuses).
-- The lightweight lane ejects when the **real diff** stops qualifying. Step 0 judges what you said
-  you would touch; Step 3.5 judges what you actually touched, so an under-declared scope is caught by
+- The quick lane ejects when the **real diff** touches a critical surface the plan carries no `Scope override` for. Step 1 judges what you said
+  you would touch; Step 5 judges what you actually touched, so an under-declared scope is caught by
   `git diff` rather than by an agent's honesty.
 
 ### The four lanes side by side
 
-| | Story lane | Fast lane | Task lane | Lightweight lane |
+| | Story lane | Fast lane | Task lane | Quick lane (lobby) |
 | --- | --- | --- | --- | --- |
-| **For** | sprint features, bug stories | a small project fix, a docs/config change | the toolkit, rules, `/` commands, gates, docs | a guide, a reference fix, tidying source control — **nothing that can break** |
-| **Build with** | ① `/cicd-write-story-tests` → ② `/cicd-dev-story-tests` | `/cicd-quick-dev` | `/smh-quick-dev` | `/smh-quick-fix` |
-| **Review with** | ③ `/cicd-code-review` | built into `/cicd-quick-dev` Step 3 | `/smh-code-review` | **none** — the gates run, no verdict |
-| **Plan + `approved`?** | yes | no — invoking it IS the skip | yes | **no** — invoking it IS the skip |
+| **For** | sprint features, bug stories | a small project fix, a docs/config change | the toolkit, rules, `/` commands, gates, docs | a guide, a reference fix, a small rule edit — nothing on the critical-surfaces list |
+| **Build with** | ① `/cicd-write-story-tests` → ② `/cicd-dev-story-tests` | `/cicd-quick-dev` | `/smh-dev-task-tests` | `/smh-quick-dev` |
+| **Review with** | ③ `/cicd-code-review` | ③ `/cicd-code-review` **only when you ask**; otherwise `Review: none - quick lane` and no verdict | `/smh-code-review` | `/smh-code-review` **only when you ask**; otherwise `Review: none - quick lane` and no verdict |
+| **Plan + `approved`?** | yes | **yes** — the plan, then the walkthrough; self-audit only when you ask | yes | **yes** — a short plan, then the walkthrough; self-audit only when you ask |
 | **Branch** | `claude/<KEY>-<slug>`, off the epic branch | same, or `chore/<KEY>-<slug>` off `main` if ad-hoc | `chore/<KEY>-<slug>`, off `main` | `chore/<KEY>-<slug>`, off `main` |
 | **Close with** | `/cicd-close-story-merge-tree` (or `/cicd-merge-epic-workingtrees`) | **it does not close** — hands back to you | `/smh-close-task-merge-tree` | `/smh-close-task-merge-tree` — the same door, unchanged |
 | **Code lands on** | the epic branch → `main` via `/cicd-push-e2e` | epic branch, via close-out | `main`, directly | `main`, directly |
 | **Story file?** | yes | only on the story lane; never on the ad-hoc lane | no | no |
 
-> ⓘ **Why the lightweight lane exists (SCC-162).** Your ruling: *"not everything is a full quick
+> ⓘ **Why the quick lane exists (SCC-162, reshaped by SCC-441/SCC-445 — the lightweight lane it replaced skipped the plan entirely and judged size, not risk).** Your ruling: *"not everything is a full quick
 > dev. sometimes I just want an agent to do something specific… this does not touch anything that can
 > break. so we don't need to over engineer it."* The proof was a doc-only edit that got a plan-first
 > stop, a worktree, a self-audit and a failing assertion before you said *"we are editing a doc thats
@@ -478,19 +481,36 @@ open Epic** and says in one line what it looked at — a re-run after a stall is
 second Epic row for one BMAD epic is a row nothing will ever move again.
 
 **It asks you one question before it cuts the branch, and the answer lives in the branch name — or in
-there being no branch at all.** Is this epic an **extension of main**, a **quick-dev branch**, or does
-this project run **trunk**? An extension of main is treated like
-production while it lives: every story lands by pull request into the epic under the full gate — the
-E2E suites run on every landing — and the epic is kept current with `main`. A quick-dev branch is the
-cheap shape: stories land by direct push after the local light gate, nothing is spent on CI per story,
-and E2E runs once, at the end, when the epic goes to `main`. Quick-dev epics carry a `-quickdev` suffix
-on the slug (`epic/AVCH-131-epic-25-tool-menu-quickdev`); an extension of main carries none. Every door
-reads the mode from that name, so it cannot drift from what the server enforces. In **both** of those
-modes, while the epic is live, `main` is frozen for everything the epic changes — a chore lane that
-touches a file the epic is also changing is epic work, and the pre-flights send it to the epic, not
-to `main`.
+there being no branch at all.** Is this epic **FULL**, **LIGHT**, or does this project run **TRUNK**?
+A FULL epic is treated like production while it lives: every story lands by pull request into the
+epic under the full gate — all four checks, the E2E suites on every landing — and the epic is kept
+current with `main`. A LIGHT epic is the cheap shape, for a project not yet in production or an epic
+whose landings are UI and docs: every story still lands by pull request into the epic, but only the
+two fast checks run on it (Backend (Python), Frontend (Node.js)); the two E2E jobs skip on the
+server, and E2E runs once, at the end, when the epic goes to `main` — or whenever you ask for it with
+`/cicd-e2e`. The mode is in the branch name: a name **containing `-light-epic-`** is LIGHT, one
+without it is FULL. A FULL epic is `epic/AVCH-131-epic-25-tool-menu`, a LIGHT one is
+`epic/AVCH-131-light-epic-25-tool-menu`. It is a substring, not a position, because that is exactly
+what the server's own `contains()` check reads — so the name cannot mean one thing here and another
+on GitHub. Every
+door reads the mode from that name, so it cannot drift from what the server enforces, and you choose
+it once, here — no door ever offers to cut a light epic mid-flight. In **both** of those modes, while
+the epic is live, `main` is frozen for everything the epic changes — a chore lane that touches a file
+the epic is also changing is epic work, and the pre-flights send it to the epic, not to `main`.
 
-**Trunk is the third answer, and it means this step cuts nothing** (SCC-423; AviationChat moved to it
+**The LIGHT discount is a promise the repo has to keep, and the mode line tells you when it does
+not.** Skipping the two E2E jobs is something that repo's own `pr-check.yml` has to do; until a
+workflow there actually reads `-light-epic-`, every landing still pays all four checks. So the mode
+line adds `⛔ NOT ARMED HERE` whenever it finds no workflow that reads the token. That caveat matters
+more than it sounds: the close-out door tells the agent that a skipped E2E is the design rather than
+a red, so in an unarmed repo a genuinely failing E2E reads as the expected skip and you ship on it.
+The check reads the workflow files themselves, so the caveat disappears on its own the moment the
+job lands — nobody has to remember to remove it. **A comment naming the token is not an
+implementation:** a `# TODO` about skipping E2E leaves the caveat exactly where it was, which is the
+point, because writing the intent before the code is the normal order and is when the wrong answer
+would do the most damage.
+
+**TRUNK is the third answer, and it means this step cuts nothing** (SCC-423; AviationChat moved to it
 on 2026-09-06). There is no epic branch and no integration branch: every story lane is cut straight
 from `origin/main`, and it lands on `main` through a pull request you merge, under whatever checks
 that repo's `main` ruleset requires. **Every merge is a deploy** — that is the trade you are making
@@ -502,8 +522,8 @@ there is nothing to keep in sync and nothing to freeze, because there is no seco
 **An epic branch carries two numbers, and `epic/` always comes first.** Its ticket key and its
 sprint number are different numbers that drift apart — `AVCH-18` is the ticket, `epic-19` is what
 the board, the story files and `_artifacts/epic_19/` are named after — so the branch shows both:
-`epic/AVCH-18-epic-19-adk-2x-runtime`. Put the sprint number in the slug, never in front of the
-prefix. Everything that finds an epic branch looks for something starting with `epic/`, including
+`epic/AVCH-18-epic-19-adk-2x-runtime` (a LIGHT epic: `epic/AVCH-18-light-epic-19-adk-2x-runtime`).
+Put the sprint number in the slug, never in front of the prefix. Everything that finds an epic branch looks for something starting with `epic/`, including
 the hook that guards `main`; a branch called `epic-19/...` is invisible to all of it and quietly
 gets treated as if it were `main`.
 
@@ -808,9 +828,14 @@ moves at Step 4, *after* the push returns 0.
   session that produced nothing to route.
 - **A `claude/incident-*` branch is a STOP, not a landing.** That is the incident
   pipeline's lane; it lands through `/cicd-mobile-error-team`, never through a story close-out.
-- **⛔ Do not push the `claude/*` branch to origin.** The landing pushes `HEAD:epic/...` only. A
-  story branch reaches origin **only** via `/cicd-park` — that is park's whole purpose, and
-  `/cicd-resume` reads the origin `claude/*` list to find in-flight work on a cold machine.
+- **⛔ The landing is a pull request, in every mode.** On a FULL or LIGHT epic the door pushes the
+  story branch as the head of a PR into the epic, watches the epic's checks (on LIGHT the two E2E
+  checks show as skipped — by design, in a repo whose CI reads the token; where Step 0's cost line
+  said `NOT ARMED HERE`, all four still run and a red E2E is a red) and merges it; on TRUNK it opens the PR into `main` and stops
+  for your click. There is no direct `HEAD:epic/` push any more — the epic ruleset refuses it. A
+  story branch otherwise reaches origin **only** via `/cicd-park` — that is park's whole purpose, and
+  `/cicd-resume` reads the origin `claude/*` list to find in-flight work on a cold machine; Step 5
+  prunes the landed branch.
 
 ### `/cicd-merge-epic-workingtrees` — close out ALL of an epic's lanes at once
 
@@ -1641,20 +1666,20 @@ that correctly have none.
 
 ## 8. The fast lane — `/cicd-quick-dev`
 
-For genuinely small project work: a fix, a docs/config change, a task that does not earn the full
-pipeline.
+The quick lane, for genuinely small, non-critical project work: a UI fix, a document or file
+update, a task that does not earn the full ①②③ pipeline. It is the same five steps as
+`/smh-quick-dev` in the lobby, defined once in `git-policy` § Two toggles, and the epic you are on
+(FULL, LIGHT or TRUNK) does not change them.
 
-**Accuracy over speed.** What it drops is the *pipeline* — the ATDD red phase, the full suite, the
-three-reviewer panel. It does **not** drop the rigour.
+**TDD stays; what it cuts is ceremony you did not ask for.** Five steps, two of them yours:
 
-**Scope is judged by ONE question, and it is not about size.** The lane asks whether the work is
-two or more independently shippable deliverables — that halt stays, because that is a product
-question you own. It does **not** measure a spec's tokens, does **not** show you a token count, and
-never halts, splits or warns on how long a spec is. BMAD ships a 900–1600 token guideline and a
-Split/Keep halt built on it; both are retired here, in the vendor skill on disk and in
-`_bmad/custom/bmad-quick-dev.toml`, which survives a BMAD update. ⚠️ **A `bmad` update reinstalls
-the vendor skill and turns `test_bmad_token_gate_retired.py` red** — that is the guard working, not
-a lane breaking. Re-apply the three edits per door; the override file is untouched by the update.
+| Step | What happens | Who moves it |
+|---|---|---|
+| 1. Scope check | `scope_check.py` runs the planned files against the repo's `.agents/critical-surfaces.json` — auth and session, billing, security rules, FAA-facing answers, CI and the gates. `CLEAR` continues. `OVERLAP` **stops**: the agent prints what overlaps and why and waits. | Only your word lifts it, quoted into the plan as `Scope override`. There is no agent override, and the lane never offers a lighter road. |
+| 2. Plan | `implementation_plan.md` — goal, the assertion that will prove it, the change set — then the literal `approved`. `/cicd-self-audit` runs **only if you ask**. | you |
+| 3. RED then GREEN | the assertion seen red, then made green; the scoped suite and the project's lint gate on the changed files, run bare | the agent |
+| 4. Walkthrough | `walkthrough.md`, then the literal `approved`. `/cicd-code-review` runs **only if you ask**; when it does not, the walkthrough carries `Review: none - quick lane; walkthrough approved by the operator @ <sha>` and **no `Verdict:` line** (a stamp would pull in the roster gate for a review that never ran). The line is written **after** your word, as a plain line naming the code tip you saw; a fenced or placeholder line is refused by the close-out as unreadable, and a later `STALE, re-approve` means your word again on the new tree, never a sha bumped by hand. | you |
+| 5. Tripwire, then stop | the same scope check on the **real diff**. An overlap the plan carries no override for **ejects** to ① and re-arms the plan gate. Otherwise the lane stops and hands you the door. | the agent |
 
 ▶ **Diagram:** [`/cicd-quick-dev` in the command atlas](#cicd-quick-dev) — every step, stop and refusal, checked against the live command.
 
@@ -1662,6 +1687,12 @@ a lane breaking. Re-apply the three edits per door; the override file is untouch
 On ad-hoc work with no epic it takes a `chore/<KEY>-<slug>` branch off `main` and **never creates a
 story file** — hanging one off a finished epic silently reopens it. ① and `/cicd-label-tasks` mark
 eligible stories with the `quick-dev` label, so the fast-lane pile is one board filter away.
+
+**The vendor `bmad-quick-dev` skill is not this lane.** It stays installed and reachable on its own,
+gated like any other skill by `_bmad/custom/bmad-quick-dev.toml`; no house door drives it. Its
+900–1600 token guideline and the Split/Keep halt stay retired there (⚠️ a `bmad` update reinstalls
+the vendor text and turns `test_bmad_token_gate_retired.py` red — the guard working, not a lane
+breaking; re-apply the three edits per door, the override file is untouched).
 
 ### 8a. The project standing push lane — `/cicd-non-crit-pr-push`
 
@@ -1931,7 +1962,7 @@ is the family allowed to act on the repo you are standing in.
 |---|---|---|
 | **1. Plan** | `/smh-plan-task <TASK-KEY>` | Decomposes task into subtasks, maps dependencies with ONE plan approval stop. |
 | **2. Order** | `/smh-label-tasks <TASK-KEY>` | Assesses dependency waves and applies `parallel-ok` labels. |
-| **3. Build** | `/smh-quick-dev <KEY>` | Assert-first development: write assertions/tests first, then implement. |
+| **3. Build** | `/smh-dev-task-tests <KEY>` | Assert-first development: write assertions/tests first, then implement. |
 | **4. Review** | `/smh-code-review <KEY>` | Audit against toolkit standards and constitutional gates. |
 | **5. Close** | `/smh-close-task-merge-tree` | Verifies clean tests, fast-forwards/rebases chore branch to `main`, prunes tree. |
 
@@ -2095,86 +2126,44 @@ section. ⛔ **A description with
 no `INDEX` section is left exactly as before** — most tickets are not rolling tickets, and a command
 whose job is to file one row must not reshape a description it does not understand.
 
-### The lightweight lane — /smh-quick-fix
+### The quick lane — /smh-quick-dev
 
 **Not everything on this side of the fence is a full Task.** Sometimes you want one specific thing
-done — write me a guide, fix that reference, tidy this branch mess — and it touches nothing that can
-break. Without this lane an agent has two settings for that: the whole ceremony above, or improvisation.
+done — write me a guide, fix that reference, a small rule edit — and it touches nothing critical.
+The quick lane is the same five steps as `/cicd-quick-dev` ([§8](#8-the-fast-lane--cicd-quick-dev)),
+defined once in `git-policy` § Two toggles, turned inward on the command centre.
 
-▶ **Diagram:** [`/smh-quick-fix` in the command atlas](#smh-quick-fix) — every step, refusal and eject.
+▶ **Diagram:** [`/smh-quick-dev` in the command atlas](#smh-quick-dev) — every step, stop and eject.
 
-**What you type.** Either the command, or just say it — *"skip the plan, just do it"* names the same
-lane, and the rule points both at one definition.
+**What you type.** Either the command, or just say it — *"quick dev this"* and *"skip the plan, just
+do it"* both name this lane; its plan is a paragraph, not a ceremony.
 
-**What it does:** mints the ticket, cuts the `chore/<KEY>-<slug>` worktree, does the work, runs the
-gates, pushes, writes a short walkthrough, hands back. **What it skips:** the plan, your `approved`,
-the self-audit, the RED-first assertion, and the review verdict.
+**What it does.** Looks for a home for the work (an open parent, else the rolling ticket, else
+mints), cuts the `chore/<KEY>-<slug>` worktree, then:
+
+| Step | What happens | Who moves it |
+|---|---|---|
+| 1. Scope check | `scope_check.py` runs the planned files against `.agents/critical-surfaces.json` — in the lobby that is the gates: `.github/`, the hooks, the preflights, the permission fence, the gate scripts and `.agents/scripts/tests/` (so script work that owes a test overlaps here, at Step 1, and is said out loud before the build). `CLEAR` continues. `OVERLAP` **stops**: the agent prints what overlaps and why and waits. | Only your word lifts it, quoted into the plan as `Scope override`. No agent override, and the lane never offers a lighter road. |
+| 2. Plan | a short `implementation_plan.md` — goal, the assertion that will prove it, the change set — with `task.yaml` beside it, then the literal `approved`. `/smh-self-audit` runs **only if you ask**. | you |
+| 3. RED then GREEN | the assertion seen red, then made green; `run_all.py`, `workflow_lint.py --toolkit-only`, `check_maps.py`, `check_links.py` run bare, each pinned to the lane's tree (`cd "<the tree>" && …`) so the floor measures the lane and not wherever the shell was left | the agent |
+| 4. Walkthrough | `walkthrough.md`, then the literal `approved`. `/smh-code-review` runs **only if you ask**; when it does not, the walkthrough carries `Review: none - quick lane; walkthrough approved by the operator @ <sha>` and **no `Verdict:` line**. The line is written **after** your word, as a plain line naming the code tip you saw; `task_preflight.py` refuses a fenced or placeholder line as unreadable, and a later `STALE, re-approve` means your word again on the new tree, never a sha bumped by hand. | you |
+| 5. Tripwire, then stop | the same scope check on the **real diff**. An overlap the plan carries no override for **ejects** to `/smh-dev-task-tests` and re-arms the plan gate. Otherwise the lane stops and hands you `/smh-close-task-merge-tree`. | the agent |
 
 **What it will not do is ask your permission to start.** *"Shall I mint a ticket? Shall I open a
-lane? Shall I write a plan?"* — that questioning is the over-engineering the ruling was against, and
-it is banned in the command body itself.
+lane?"* — that questioning is the over-engineering the ruling was against, and it is banned in the
+command body itself.
 
-**The one thing it checks first is not a judgement.**
-
-```bash
-python3 .agents/scripts/lane_qualify.py --repo "$(git rev-parse --show-toplevel)" \
-        --paths <the paths it will touch>                                   # PC: drop the 3
-```
-
-| It says | Meaning |
-| --- | --- |
-| `LIGHT` | do it |
-| `LIGHT-VCS` | a declared source-control tidy that changes no files |
-| `TASK` | it touches the development system → `/smh-quick-dev`, with a plan |
-| `TASK-LIGHT` | the development system, but a **small, measured** edit (`--lines` 1–10, ≤ 2 files; zero or negative is a contradiction and stays `TASK`) → still `/smh-quick-dev`, right-sized: assertion-first, gates and sweep stay; the plan may be a paragraph and the review fan-out may collapse to one inline pass *(SCC-302)* |
-| `HANDOFF` | a deployable path → `/cicd-push-e2e` |
-| `NOT-COMMAND-CENTRE` | you are in a project repo → the `cicd-*` lanes |
-
-**What you type does not change with `TASK-LIGHT`** — the road is still `/smh-quick-dev`; the
-verdict's job is to license that lane to right-size itself, and it fires only on **evidence**: the
-caller passes `--lines` (e.g. `git diff --numstat` summed), and no `--lines` means no evidence
-means `TASK` — size silence is not smallness, exactly as path silence is not empty scope. SCC-295
-is why the door exists: one line in one function drew the full plan-audit-RED-sweep-five-lens
-train, a whole session for a change the operator said they should have made by hand.
-
-Two of those answers are there because of how this check could be gamed. **Naming no paths is
-`TASK`, not "nothing to see"** — silence is unknown scope, and an agent that declares nothing would
-otherwise be handed the lane. And the check is deliberately **blunter than the commit gate**: the
-commit gate exempts the test suite (correctly — editing a test changes nothing *you* type), but
-"needs a doc update" and "can break something" are different questions, and reusing one for the
-other would have let this lane rewrite the enforcement suite.
-
-**Every command that runs this script lists every answer it can give.** Three
-commands call it — `/smh-quick-fix`, `/smh-non-crit-pr-push`, `/cicd-non-crit-pr-push`. A verdict a
-command does not list is a verdict it has no instruction for, so
-the agent answers by judgement — the exact thing putting the question in a script prevents.
-`tests/test_lane_qualify.py` **discovers the callers by invocation** and fails if any table is
-missing a verdict, so a new verdict cannot be added without every caller learning it — `TASK-LIGHT`
-(SCC-302) landed through exactly that gate.
-
-⛔ **And `NOT-COMMAND-CENTRE` means opposite things in the two non-crit twins, on purpose.** In
-`/smh-non-crit-pr-push` it is a STOP — you are in a child project, use the other lane. In
-`/cicd-non-crit-pr-push` it is the **EXPECTED** answer, because a child project is exactly where that
-lane runs and a thin project carries no `.agents/commands/`. The asymmetry is declared with the
-repo's own auditable marker (`<!-- twin-divergence: … -->`), which `test_twin_parity.py` counts and
-prints. ⛔ **The centre-only scope is a settled operator ruling** (`.agents/scripts/INDEX.md:57`) —
-the qualifier is not given a project arm.
-
-⛔ **What the centre-only scope costs:** `NOT-COMMAND-CENTRE` is returned *before any path is
-read*, so inside a child project `--paths backend/api.py` and `--paths docs/notes.md` produce the
-**identical** answer — the `TASK` and `HANDOFF` rows can never fire in
-the repo `/cicd-non-crit-pr-push` runs in. That lane therefore carries its own deployable-
-path check immediately after, importing `PRODUCT_DIRS` and `CI_DIR` from `task_preflight` rather
-than re-typing them, and the test fails if the body stops naming any member.
+**The line is a file, not a feeling — and not a size.** The lightweight lane this replaced
+(`/smh-quick-fix`) judged *size* with `lane_qualify.py` and skipped the plan entirely; a one-line
+edit to a gate qualified, a forty-line guide did not. The quick lane judges *risk*: a small edit to
+`.githooks/` is `/smh-dev-task-tests` work unless you say otherwise, a long guide that touches
+nothing critical is this lane's. `lane_qualify.py` stays on disk for `main_write_gate.py` and
+`jira_feed.py` (the `TASK-LIGHT` classification) and is called by no dev door — only the two
+standing-push doors, `/smh-non-crit-pr-push` and `/cicd-non-crit-pr-push`, for their `LIGHT` check.
 
 **It still lands the normal way.** `/smh-close-task-merge-tree`, unchanged — there is no lighter door
 to `main`, and there was never going to be one. A lane with no review verdict simply means that
 close-out runs the whole gate itself instead of inheriting a green, which is the safe direction.
-
-**And it can lose the lane it started in.** Step 3.5 re-runs the same check against the *real* diff
-before the walkthrough is written. Anything but `LIGHT` and the work stops being lightweight then and
-there: it continues on `/smh-quick-dev`, with a plan and your `approved`, keeping every commit
-already made.
 
 #### The standing push lane — /smh-non-crit-pr-push (SCC-186)
 
@@ -2223,14 +2212,14 @@ answer carries the set it was computed against, so a stale one reads *"re-run me
 quietly lying. **It states, it never starts.** Point it at an epic and it refuses and sends you to
 `/cicd-label-tasks`; point that one at a Task and it sends you back here.
 
-### `/smh-quick-dev` — assert-first development
+### `/smh-dev-task-tests` — assert-first development
 
 **Its core discipline: something must be failing before anything is edited.** For a script that
 means a real test. For a *document or a folder move* — which is most Task work — it means a
 machine-verifiable assertion written first. That is as close to test-first as prose gets, and it is
 the difference between "I moved the files" and "I can prove nothing broke."
 
-▶ **Diagram:** [`/smh-quick-dev` in the command atlas](#smh-quick-dev) — every step, stop and refusal, checked against the live command.
+▶ **Diagram:** [`/smh-dev-task-tests` in the command atlas](#smh-dev-task-tests) — every step, stop and refusal, checked against the live command.
 
 ### Mutation — how you prove the check you just wrote can actually fail
 
@@ -2469,10 +2458,11 @@ this sentence. What matters to you is *what they refuse to let happen.*
 
 | The check | What it refuses to let happen |
 | --- | --- |
+| `scope_check.py` | **The quick lane quietly touching a critical surface.** The quick lane (`/smh-quick-dev` here, `/cicd-quick-dev` in a project) cuts ceremony, not tests, and it needs a line or it becomes the default because it is faster. The line is five surfaces — auth and session · billing, entitlement and cost caps · security rules and data topology · FAA-facing answers · CI and the gates — written as law in `.agents/rules/critical-surfaces.md`, with each repo's paths in its own `.agents/critical-surfaces.json` (a path ending `/` is a prefix, anything else exact). Step 1 of the quick lane runs it on the planned paths; the lane's own Step 5 runs it again on the real diff before it hands back (`--diff origin/main`, the merge-base diff, never a two-dot range). Line 1 is the word: `CLEAR` and the lane continues; `OVERLAP` and the agent **stops**, prints each overlapping path with its surface and reason, and waits. The stop is soft, but only **your** word lifts it — quoted verbatim into the plan as `Scope override (<date>): "…"`; "ok" and "continue" are not it, and neither is the plan's own `approved`. There is no override flag (its option set is exactly `--repo`, `--paths`, `--diff`, and it reads no environment variable), the script never prompts, and it never writes. Six things it refuses to be quiet about: no paths is `ERROR` (silence is unknown scope, never clear), and so is a `--diff` that finds nothing committed past the fork; an absolute path is rebased onto the repo before it is judged, and one outside the repo is `ERROR`; a bare word in a repo's own map must name a file that exists at the repo root, or the map is `ERROR` (a directory needs its trailing `/`, a fragment belongs to the generic set); a repo with no map is loud (`MAP: none`) and gets a generic set whose bare words match a path segment, never a substring, so a docs lane does not trip it — and that set protects the line itself (the map, this script, the rule), so a lane cannot widen the line in a repo that has not drawn one; and a map that does not parse is `ERROR`, never a fallback. Two more things it will not let you get wrong: a planned path is resolved before it is judged (one that exists under the directory you stand in is rebased onto the repo, a `..` path outside the repo is `ERROR`, and a planned directory — `backend/`, or `.` for the whole repo — is judged as a prefix over every row under it), and the tripwire on the real diff judges against the map **as it stood at the fork** as well as the lane's own, so a lane cannot prune the line's self-protecting rows and read `CLEAR` (the `MAP:` line says which maps were used). A map row that can never match — a leading `/`, a directory without its `/`, a file that neither exists nor is gitignored — is `ERROR`, because a dead row reads as a protected surface. An overlap the plan carries no override for at close-out **ejects** the lane to the full ceremony. `lane_qualify.py` keeps answering size; this answers risk. |
 | `memory_store_check.py` | **Silent memory-store damage.** The memory store (`_artifacts/_memory/`) is the live, symlinked asset every session reads, and ordinary git commands that move the working tree (`reset`, `checkout`, `merge`, `rebase`) can remove or revert its files with no error and no diff — a store missing three files looks identical to one that never had them. This checker verifies the MEMORY.md contract (every row resolves to a file) and keeps a per-worktree baseline of the store's file names, SHOUTING any file present at the last check and gone now. In the **lobby repo**, the `post-checkout`, `post-merge` and `post-rewrite` hooks run it after every working-tree move — advisory-loud, never blocking (a post-hook cannot veto what already happened; the value is that you SEE the regression within one command). A project repo's store is covered only once that repo's own `.githooks/` carries the same three shims — until then, run the checker by hand there. By hand, any repo: `python3 .agents/scripts/memory_store_check.py --delta` (PC: `python`). The shout repeats every run until the files are restored; after a DELIBERATE removal (a memory-audit retirement), acknowledge it with `--delta --rebaseline`. Like every hook, inert on a fresh clone until `python3 docs/migrations/scripts/arm_hooks_include.py .` (PC: `python`). |
 | `memory_probe.py` | **A memory that stopped being true and still reads as fact.** Every session on every platform loads `_artifacts/_memory/` and treats it as ground truth, and nothing could tell a memory that is still true from one that went false in August. So a memory whose claim is *measurable* carries its own falsifier: a `probe:` line in its frontmatter — one plain shell command, exit 0 meaning the claim still holds. This runs them all and `test_memory_store.py` goes **red and names the file** when one fails. By hand, any repo: `python3 .agents/scripts/memory_probe.py` (PC: `python`). Three things it refuses, each because the alternative is a gate that lies. A probe must be **read-only** — it is a string out of a text file being handed to a shell on every machine, so mutating and network shapes are refused and reported as failures rather than run. It must be **stable** — a count or a timestamp reds the suite for a reason no author can fix, and a gate that cries wolf is one people learn to skip. And it must be **able to fail**: `test -e <a path git tracks>` cannot, because every checkout has it, and a probe must name something the memory's own body names. A memory may carry **several** probes — repeat the key, one per checkable fact, and the runner numbers the rows so a failure names which claim went false. A probe is judged **on the machine it describes**, so the run that counts is the local one: CI executes none of them and prints a `[SKIP]` line naming the count instead, because a runner is not this PC and a machine probe there goes red or green for the wrong reason — what CI still checks, from the text, is that every probe is falsifiable, anchored and read-only. Write the probe in **single quotes** — the reader strips outer quotes and does no YAML unescaping. Most memories are rulings and need no probe at all; a decorative one is worse than none. |
 | `gate_receipt.py` | **A claimed test result that never ran.** It *executes* the gate and writes down the real exit code. There is deliberately **no way to hand it a verdict** — a receipt existing means the thing actually ran. It also separates *"the tool is missing"* from *"the tests failed"*, because a missing tool is a finding, not a free pass. It records whether the tree was **dirty** at the time, and **it does not count its own receipt as that dirt (SCC-178)** — the `<root>/gates/` directory it writes into is excluded from the measurement, so the second gate of a lane stops reading DIRTY off the first one's receipt and no lane pays a second full suite run to clear it. The exemption is that one directory: a sibling file, another lane's artifacts, and any code path all still record DIRTY. In a story worktree, `--project` + `--cwd <worktree>` writes and reads the receipt **inside the worktree** — it rides the lane's branch, and the shared checkout stays clean; a `--cwd` that belongs to a *different repo* than `--project` is **refused with both trees named**, never silently resolved. And a linked lane stamps **clean**: `link-worktree-assets.py` records its links in the repo's shared `info/exclude` (removed again when the last lane unlinks), so the symlinks it creates no longer read as dirt in every receipt. **A sandbox bind mount is not dirt either, and all four tree gates agree** — `gate_receipt.py`, `task_preflight.py`, `ship_preflight.py` and `closeout_preflight.py` share one predicate, so the denied `.claude/*` paths the sandbox mounts into your tree (which `git status` reports as ordinary untracked files, in either of two shapes: a character device, or a zero-byte read-only file) never stamp a clean tree DIRTY and never block a close-out. They are **named** in the output rather than silently dropped, and the exemption is that shape alone: a real untracked file beside them still counts, because a filter any wider would hand out a gate skip over real work. |
-| `closeout_preflight.py` | **Closing out a story that didn't really land.** One command answers: did the code merge · is every repo clean and in sync · does the review verdict exist and does it still apply · do the files the story claims it changed actually exist. **`--expect-key` is required** — the resolved branch must carry the key you named, or it errors (`cwd` is not intent). Fetching is **on by default**; a verdict carrying **STALE** was computed against the last fetch and names its own remedy. **Exit 2 means blocked — except the `landed` row, which is expected before the landing** (the door's Step 3 is what lands it), so read the rows rather than the exit code. A warning that says *"landing was NOT verified"* means exactly that — it is not a pass. **A verdict must show the suite that backed it.** A walkthrough recording `PASS` or `CONCERNS` on a story still at `ready-for-dev` / `in-progress` / `review` is a claim that a gate was green, so the `suite` receipt is required — you get that check even if you forget `--require-gates`, because the claim is what raises the demand, not the flag. **Closed and parked stories are exempt** (`done`, `descoped`, `deferred`, `optional`, and anything still in `backlog`): their lanes are pruned, so "re-run the suite" is not a remedy anyone can perform, and `/cicd-prune-worktree` stays usable on history. A gate you name on `--require-gates` whose receipt is missing is an **error**, and it names both the directory it searched and the `gate_receipt.py run` line that fills it. **Name only gates this project really stamps** — the review step writes `suite` and nothing else, so asking for `ruff` or `pyrefly` blocks every close-out on receipts nothing has ever written. |
+| `closeout_preflight.py` | **Closing out a story that didn't really land.** One command answers: did the code merge · is every repo clean and in sync · does the review verdict exist and does it still apply · do the files the story claims it changed actually exist. **On a quick lane that ran no review, your `approved` on the walkthrough is what "the verdict" means here, and it is checked the same way:** the record line's sha is dereferenced, so code that landed after you approved is refused as `STALE, re-approve`, and a sha that is not a commit in the repo is reported rather than accepted. The lobby's close-out, `task_preflight.py`, asks the same question of the same line with the same helper, so a lobby walkthrough you approved at one sha refuses after later commits too — and the two readers are bound to the doors' own template line by a suite check, so the writer and the reader cannot drift apart. Three things that question gets right: it measures **the lane's own** changes since your sha, so absorbing `main` after your word (which the same preflight demands) is not a stale approval while a conflict the agent resolved by hand still is; a record line that is present but unreadable — copied inside a code fence, or with the `<sha>` placeholder left in — is refused as an error rather than read as "no review, carry on"; and a reviewed sibling walkthrough that merely mentions this lane's key never shields the lane's own line from the check. **What counts as "code" is derived from the repo, and in a repo with none of the five product directories (`backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/`) — the lobby is one — it is EVERY tracked file except `_artifacts/` and `_bmad-output/`.** So a `docs/` edit after your approval does block, and the message says `tracked file(s)` rather than `code file(s)` so you are not hunting for code that never changed. That breadth is deliberate: markdown is not excluded, because in the lobby the doors and the rules ARE the product, and excluding it would blind the check to everything this repo ships. **`--expect-key` is required** — the resolved branch must carry the key you named, or it errors (`cwd` is not intent). Fetching is **on by default**; a verdict carrying **STALE** was computed against the last fetch and names its own remedy. **Exit 2 means blocked — except the `landed` row, which is expected before the landing** (the door's Step 3 is what lands it), so read the rows rather than the exit code. A warning that says *"landing was NOT verified"* means exactly that — it is not a pass. **A verdict must show the suite that backed it.** A walkthrough recording `PASS` or `CONCERNS` on a story still at `ready-for-dev` / `in-progress` / `review` is a claim that a gate was green, so the `suite` receipt is required — you get that check even if you forget `--require-gates`, because the claim is what raises the demand, not the flag. **Closed and parked stories are exempt** (`done`, `descoped`, `deferred`, `optional`, and anything still in `backlog`): their lanes are pruned, so "re-run the suite" is not a remedy anyone can perform, and `/cicd-prune-worktree` stays usable on history. A gate you name on `--require-gates` whose receipt is missing is an **error**, and it names both the directory it searched and the `gate_receipt.py run` line that fills it. **Name only gates this project really stamps** — the review step writes `suite` and nothing else, so asking for `ruff` or `pyrefly` blocks every close-out on receipts nothing has ever written. |
 | `story_status.py` | **A story marked done in one place and not the other.** Status lives in two files; this flips both together or neither. It refuses a downgrade, refuses an unknown status, and refuses outright if the two surfaces already disagree — that case needs `--reconcile`, which is a decision, not a default. |
 | `workflow_lint.py` | **Broken characters quietly entering a document** — the `—` that turns into `â€"`. Runs on every commit, staged files only, so it stays fast enough that nobody disables it. Its `--toolkit-only` half also checks the toolkit against its own conventions, and **since 2026-08-11 (SCC-82) a clean run is `0 errors, 0 warnings` — exit 0.** |
 | ⤷ `ap_reconciled:` | **RETIRED (SCC-209, 2026-08-18).** The `*-AP.md` robot-lane commands are abandoned pending a rewrite, so the linter no longer compares them to their primaries and the frontmatter stamp is gone. Each `*-AP.md` now carries an `UNMAINTAINED` marker instead — do not diff, port to, or restamp them. The twin relationship the toolkit still maintains is `cicd-*` ↔ `smh-*`. |
@@ -2522,7 +2512,7 @@ this sentence. What matters to you is *what they refuse to let happen.*
 >
 > ⓘ **The fetch is the DEFAULT, and the VERDICT line carries freshness (SCC-193).** It fetches unless you say `--no-fetch`, an omitted fetch and a **failed** one are the same severity (never trying does not outrank trying), and when the comparison is not fresh the verdict itself reads *`clear - but vs the LAST fetch (STALE) … re-run with the fetch`* with a non-zero exit — never an `INFO` line buried under a verdict reading *clear*. Offline on a plane: `--no-fetch` still works and says so on the record.
 >
-> ⓘ **`main-write-gate --mode pr` REFUSES a close-out PR whose receipts are missing (SCC-192).** When the PR's diff carries a `task.yaml` naming `close_command: smh-close-task-merge-tree`, the check requires — in the PR's own head tree — a **preflight receipt** for that key and branch, recording a *fresh* comparison and a *clear* verdict, and (only when the walkthrough carries a `Verdict:` stamp, i.e. the lane was reviewed) a **flight event** at that verdict sha. Missing either → the check is red and the merge button stays off. **What this does NOT gate:** a PR with no `task.yaml` (a lightweight docs fix owes nothing), a manifest naming another door, `gate/**` pushes, and the **lightweight lane** — `/smh-quick-fix` writes a manifest but no verdict, so it owes a receipt and never an event. Break-glass is unchanged: disable the ruleset. **What you will notice:** if you ever hand-run the close-out, the PR goes red and tells you which step you skipped.
+> ⓘ **`main-write-gate --mode pr` REFUSES a close-out PR whose receipts are missing (SCC-192).** When the PR's diff carries a `task.yaml` naming `close_command: smh-close-task-merge-tree`, the check requires — in the PR's own head tree — a **preflight receipt** for that key and branch, recording a *fresh* comparison and a *clear* verdict, and (only when the walkthrough carries a `Verdict:` stamp, i.e. the lane was reviewed) a **flight event** at that verdict sha. Missing either → the check is red and the merge button stays off. **What this does NOT gate:** a PR with no `task.yaml` (a lightweight docs fix owes nothing), a manifest naming another door, `gate/**` pushes, and the **quick lane** — `/smh-quick-dev` writes a manifest and, when no review was asked for, no verdict, so it owes a receipt and never an event. Break-glass is unchanged: disable the ruleset. **What you will notice:** if you ever hand-run the close-out, the PR goes red and tells you which step you skipped.
 >
 > ⓘ **The preflight leaves a RECEIPT, and the PR gate requires it (SCC-192).** Every run writes `preflight-receipt.json` beside the lane's `task.yaml` — the key, the branch, **the flags it actually ran with**, the verdict and its exit. It is keyed on the walkthrough's `Verdict: … @ <sha>`, never on `HEAD` (a receipt that must equal HEAD can never pass, because committing it moves HEAD), and it is byte-identical on a re-run, so a resumed close-out makes no churn commit. The close-out commits it alongside the flight event at Step 2.5; **`main-write-gate --mode pr` refuses a PR whose `task.yaml` names this door and whose receipts are missing or stale.** That is the only thing in the system that can see a ceremony that was hand-run instead of invoked. `--no-receipt` exists for probes and harnesses; the close-out never passes it.
 >
@@ -2701,11 +2691,11 @@ that rule to be corrected under its own ticket.
 | When | What moves it | To |
 | --- | --- | --- |
 | **your first commit on a `chore/ · claude/ · epic/` branch** | the `post-commit` hook | **`In Progress`** |
-| you run `/smh-quick-dev` (Task lane) | its Step 0.5, at worktree-open | `In Progress` |
+| you run `/smh-dev-task-tests` or `/smh-quick-dev` (the Task lanes) | its Step 0.5, at worktree-open | `In Progress` |
 | you run `/cicd-write-story-tests` ① (story lane) | its Step 1.6 | `In Progress` |
 | you close a story / task / epic out | `/cicd-close-story-merge-tree` · `/smh-close-task-merge-tree` · `/cicd-push-e2e` | `Done` |
 
-**The commit is the trigger, and that is the point.** You don't always run `/smh-quick-dev`, so
+**The commit is the trigger, and that is the point.** You don't always run `/smh-dev-task-tests`, so
 hanging it on the command would have meant the board is only honest when you remember. Commit on a
 keyed branch by any route — the command, a bare `git commit`, another agent — and the ticket moves.
 
@@ -2721,7 +2711,7 @@ capped at 10 seconds — three calls per move, so a dead uplink costs you at mos
 commit, not a hang.
 
 > ⚠️ **On the PC (or any fresh clone) this is OFF until you run `python docs/migrations/scripts/arm_hooks_include.py .`**
-> — the same one-time arming every other hook here needs. That is exactly why `/smh-quick-dev` moves
+> — the same one-time arming every other hook here needs. That is exactly why `/smh-dev-task-tests` moves
 > the ticket too: when the hook is dead, the command still works.
 
 > ⛔ **If an agent tells you the board is unreachable, ask it to re-run outside its
@@ -2751,7 +2741,7 @@ seams, machinery only ever touches status.
 **⛔ On a Task lane you never type the Dev Record's slug.** `jira_feed.py devrecord`
 decides *update this record* vs *post a new one* from the **slug**, not from `--key` — so two
 spellings of one lane are two records on one ticket. The three
-Task surfaces — `/smh-quick-dev`, `/smh-quick-fix`, `/smh-close-task-merge-tree` — omit `--story`
+Task surfaces — `/smh-dev-task-tests`, `/smh-quick-dev`, `/smh-close-task-merge-tree` — omit `--story`
 entirely and the script reads the `branch:` out of the lane's `task.yaml`. One source, so there is
 nothing left to disagree about. Pass `--story` only to file under a lane you are *not* standing on;
 a BMAD story lane still passes its story id, which is its own single source.
@@ -2886,7 +2876,7 @@ and every item below has already cost a debug cycle.
 | **The Jira login** | `acli`'s API token lives in your **OS credential store**, not in the repo — and the binary isn't at the same path on both boxes either. An agent that trips over this concludes *"I have no Jira integration"* and starts improvising: inventing a key, or borrowing a closed ticket's. | `acli jira auth login`, once per machine. Then **any** agent can confirm it with `acli jira auth status`. Never hardcode the binary's path into a doc. |
 | **The memory link** | The agent memory store lives **in the repo** (`_artifacts/_memory/`) — that part travels, and every model on every machine reads it at session start. What does **not** travel is the link that lets Claude's harness write into it: without it, Claude quietly writes memory to a machine-local folder and the shared store **stops growing** — no error, just lessons that never reach the other box or the other models. | `link-memory.ps1` (Windows side) / `link-memory.sh` (Ubuntu side) — migrations kit §1, step 8. `/smh-memory-audit` checks the link on whatever machine it runs on and flags a missing one. |
 
-| **Zoo Code's approval lists** | The lists Zoo *decides* with live in VS Code's per-machine state database, not in the tracked settings file — the file seeds that store **once on a fresh machine and never again** (denies never seed at all), so an edited allowlist changes the settings *display* while Zoo keeps prompting for everything. This is why "I updated the list and it still asks" happens. | After any list edit (and once on a new machine, after turning the Auto-Approve master + tiles on): quit VS Code fully, run `python3 .agents/scripts/zoo_permissions_apply.py --apply` (on the PC: from Ubuntu - Zoo keeps its state in the WINDOWS user-data-dirs, both of them, reached through `/mnt/c`; add `--enable-auto-approve` to switch on a seat whose master toggles are off, because a seat with them off consults no list at all), reopen, and `--apply`'s closing `--status` must read *in sync with tracked file*. The read-only verb families are POSIX only since SCC-376 (`ls`, `cat`, `grep`, ...): the PC works inside WSL2 / Ubuntu, so the PowerShell and cmd rows could never match a command either machine runs and came out - 22 rows by exact match, never by prefix, because `dir` is the head of `dirname `. What auto-runs vs what still asks, and why: [terminal-permissions-guide.md](../migrations/terminal-permissions-guide.md) - the ONE permissions guide since SCC-376 Phase 7 merged the three. Since the close-out review: `PROJECT_ROOT` binds ABSOLUTE, every door line pins its tree in the same compound line, and a lobby script called after any `cd` is reached via the lobby pin (`command-shape.md` §Absolute fills); story landings ride the `git push origin HEAD:epic/` re-allow, and the quoted-target main-push spellings are denied. |
+| **Zoo Code's approval lists** | The lists Zoo *decides* with live in VS Code's per-machine state database, not in the tracked settings file — the file seeds that store **once on a fresh machine and never again** (denies never seed at all), so an edited allowlist changes the settings *display* while Zoo keeps prompting for everything. This is why "I updated the list and it still asks" happens. | After any list edit (and once on a new machine, after turning the Auto-Approve master + tiles on): quit VS Code fully, run `python3 .agents/scripts/zoo_permissions_apply.py --apply` (on the PC: from Ubuntu - Zoo keeps its state in the WINDOWS user-data-dirs, both of them, reached through `/mnt/c`; add `--enable-auto-approve` to switch on a seat whose master toggles are off, because a seat with them off consults no list at all), reopen, and `--apply`'s closing `--status` must read *in sync with tracked file*. The read-only verb families are POSIX only since SCC-376 (`ls`, `cat`, `grep`, ...): the PC works inside WSL2 / Ubuntu, so the PowerShell and cmd rows could never match a command either machine runs and came out - 22 rows by exact match, never by prefix, because `dir` is the head of `dirname `. What auto-runs vs what still asks, and why: [terminal-permissions-guide.md](../migrations/terminal-permissions-guide.md) - the ONE permissions guide since SCC-376 Phase 7 merged the three. Since the close-out review: `PROJECT_ROOT` binds ABSOLUTE, every door line pins its tree in the same compound line, and a lobby script called after any `cd` is reached via the lobby pin (`command-shape.md` §Absolute fills); the epic kickoff's own `git push origin HEAD:epic/` rides that re-allow (a story landing is a pull request and never pushes that ref), and the quoted-target main-push spellings are denied. |
 | **Antigravity's approval list** | The Antigravity extension decides from `~/.gemini/config/config.json` → `globalPermissionGrants`, per machine, with strict Deny > Ask > Allow and one anchored regex per token — and its own "always allow" click writes only the sandbox-escape rule type (`unsandboxed(...)`), never the execution one (`command(...)`), which is why a fresh install asks for everything however many times you click. Sandbox mode does **not** auto-approve there (it does in Claude). | The list is rendered, never hand-built: the source is `.agents/permissions/families.json`, `/smh-sync-agents` (or `python3 .agents/scripts/permission_render.py`) writes `.agents/permissions/antigravity.json`, and per machine `python3 .agents/scripts/antigravity_permissions_apply.py --apply` pushes it into the store (one-time `.scc-backup` beside it), then reload the VS Code window; `--status` must read *in sync with tracked file*. The same battery proves Zoo, Claude and Antigravity give the same verdict on the same command (`tests/test_permission_parity.py`). Deep dive: [terminal-permissions-guide.md §3A](../migrations/terminal-permissions-guide.md). |
 | **Claude Code's approval lists** | Claude merges its permissions from several files, and two of them never leave the machine they were written on: `~/.claude/settings.json` (user scope, outside every repo) and a gitignored `<repo>/.claude/settings.local.json` (project scope). Every rule you approve from a terminal chat lands in one of those, so the command runs silently here while the other machine goes on stopping to ask — and nothing in the tracked repo shows the difference. Measured 2026-09-04: 82 user-scope rows, **17** of them absent from the tracked list. | Run `/smh-llm-approvals` — it reads both machine-local files, shows what exists only here under its own heading, and routes the ones you name into `.agents/permissions/families.json`, which renders `<repo>/.claude/settings.json` for both sides. There is **no apply** on this side and there must never be one: Claude reads the tracked file directly, so a rendered row is live the moment it is saved, nothing is pushed into a store and nothing can be lost. To see the difference without changing anything: `python3 .agents/scripts/claude_permissions_status.py` (PC: `python`) — read-only, and it never reports a deny row. |
 | **Tool & MCP connections** | MCP servers (`md-feedback`, `sentry`, `playwright`) or CLI tool paths (`gcloud`, `jira`/`acli`, `github`/`gh`, `firebase`, `keyway`) drift across platforms or point to obsolete paths. | Centralized in `.agents/tools/connections.json`. Render with `python3 .agents/scripts/tool_sync.py --apply` (or `/smh-sync-agents`), which updates Claude (`.mcp.json`), OpenCode (`opencode.json`), Zoo Code (`mcp_settings.json`), and Antigravity (`~/.gemini/config/mcp_config.json`). Credentials travel via Keyway (`keyway pull -e development`) into `.env` and are linked into worktrees via `link-worktree-assets.py`. Run `--check` to detect drift. |
@@ -2971,9 +2961,9 @@ with the way you actually work.
 
 **Two routes, chosen by what the ticket IS.** A story with a file on disk and an epic branch runs the
 six-child story route (①②③). A project Task with none of those — a performance fix, an asset, a copy
-change — runs the four-child quick-fix route through `/cicd-quick-dev`. On that route the door's own
-review gate is a **first pass, never the verdict**: no seat carries the `Task` tool, so a seated
-child runs it inline a lens short, and the independent no-seat reviewer that follows is what counts.
+change — runs the four-child quick-fix route through `/cicd-quick-dev`. On that route the quick lane
+**produces no verdict of its own** — it reviews only when asked, and the lead is the one asking: the
+independent no-seat reviewer that follows as stage 2 is that request, and its verdict is the run's.
 Both routes are drawn on [the Autopilot SOP](autopilot_SOP.md#5-the-quick-fix-run--four-children-for-a-ticket-that-is-not-a-story).
 
 **One prerequisite refuses more often than the rest: the CLI version.** The lane needs `claude`
@@ -3146,7 +3136,7 @@ else on the board is a comment.*
 | **Epic Created** | `/cicd-create-epic-sprint` | `jira_feed.py mint --type Epic` |
 | **Story Minted** | `/cicd-write-story-tests` | `jira_feed.py mint --type Story` |
 | **Task Minted** | `/smh-plan-task` | Raw `acli jira workitem create --type Task` |
-| **Subtask Minted** | `/smh-quick-dev` (after plan approval) | Raw `acli jira workitem create --type Subtask` |
+| **Subtask Minted** | `/smh-dev-task-tests` (after plan approval) | Raw `acli jira workitem create --type Subtask` |
 | **In Progress** | First commit on branch | `post-commit-jira-start.sh` → `jira_feed.py start` |
 | **Flagged as Bug** | Audit or live testing finding | `jira_feed.py flag` |
 | **Done / Closed** | Close-out merge | `jira_feed.py finish` / `jira_feed.py devrecord --closing` |
@@ -3166,9 +3156,9 @@ speak; "refuses" means it will not proceed at all and names the fix.*
 | ① `/cicd-write-story-tests` | Step 2 until the behavior contract is locked or waived | a "red" that is fiction (asserts something that does not exist) |
 | ② `/cicd-dev-story-tests` | Step 2 (plan written — `continue` / `changed` / audit path); Step 2.5 only on real questions | no BDD lock and no waiver |
 | ③ `/cicd-code-review` | never — it verdicts | an empty diff |
-| `/cicd-quick-dev` | Step 1 (the acceptance list) and the end — it never closes out | the eject tripwire (risk, or ACs that will not fix) |
-| `/smh-quick-dev` | Step 1 (the checkable list), Step 1.5 (`approved`), Step 1.6 (proposed subtasks), the end | a NO-GO audit; the eject tripwire (a deployable path) |
-| `/smh-quick-fix` | **the end only** — and never to ask whether to mint a ticket or open a lane; a `LIGHT-VCS` tidy still shows you what it will delete first | Step 0 qualification is not `LIGHT`: a project repo, a deployable path, a toolkit path, **or no paths declared at all**; Step 3.5 re-checks the real diff and ejects to `/smh-quick-dev` |
+| `/cicd-quick-dev` | Step 1 on an `OVERLAP` (your word, or the full lane), Step 2 (`approved` on the plan), Step 4 (`approved` on the walkthrough), and the end — it never closes out | Step 5's tripwire: an overlap on the real diff with no `Scope override` in the plan ejects to ① |
+| `/smh-dev-task-tests` | Step 1 (the checkable list), Step 1.5 (`approved`), Step 1.6 (proposed subtasks), the end | a NO-GO audit; the eject tripwire (a deployable path) |
+| `/smh-quick-dev` | Step 1 on an `OVERLAP` (your word, or `/smh-dev-task-tests`), Step 2 (`approved` on the plan), Step 4 (`approved` on the walkthrough), and the end — never to ask whether to mint a ticket or open a lane | Step 5's tripwire: an overlap on the real diff with no `Scope override` in the plan ejects to `/smh-dev-task-tests` |
 | `/smh-code-review` | never — it verdicts | an empty diff |
 | `/cicd-close-story-merge-tree` | never — typing it *is* the sign-off; Step 3 hands the set over to `/cicd-merge-epic-workingtrees` when siblings are live | preflight exit 2 on anything but the expected `landed` row; a `## Your Actions` row `check-actions` refuses; a `FAIL` verdict (via the save it invokes, which refuses the flip); a red merge gate after absorbing the epic; an incident branch; a HEAD that is not `claude/*`; a failed ticket transition |
 | `/cicd-update-sprint-memory` | Step 6 for learnings, only if none were auto-routed | a `FAIL` verdict blocks the flip; run standalone, a preflight exit 2 |
@@ -3197,7 +3187,7 @@ it, and where the longer explanation lives.*
 | **Session & planning** | [`/cicd-boot-sprint-memory`](#cicd-boot-sprint-memory) · [`/cicd-create-epic-sprint`](#cicd-create-epic-sprint) · [`/cicd-label-tasks` + `/smh-label-tasks`](#cicd-label-tasks-and-smh-label-tasks) · [`/smh-plan-task`](#smh-plan-task) |
 | **Story lane** | [`/cicd-write-story-tests`](#cicd-write-story-tests) · [`/cicd-bdd-tests`](#cicd-bdd-tests) · [`/cicd-dev-story-tests`](#cicd-dev-story-tests) · [`/cicd-self-audit`](#cicd-self-audit) · [`/cicd-code-review`](#cicd-code-review) · [`code-review-engine`](#code-review-engine-the-shared-reviewer) · [`/cicd-clean-code-audit` + `/smh-clean-code-audit`](#cicd-clean-code-audit-and-smh-clean-code-audit) |
 | **Fast lane** | [`/cicd-quick-dev`](#cicd-quick-dev) |
-| **Task lane** | [`/smh-quick-fix`](#smh-quick-fix) · [`/smh-quick-dev`](#smh-quick-dev) · [`/smh-self-audit`](#smh-self-audit) · [`/smh-code-review`](#smh-code-review) |
+| **Task lane** | [`/smh-quick-dev`](#smh-quick-dev) · [`/smh-dev-task-tests`](#smh-dev-task-tests) · [`/smh-self-audit`](#smh-self-audit) · [`/smh-code-review`](#smh-code-review) |
 | **Landing & shipping** | [`/cicd-close-story-merge-tree`](#cicd-close-story-merge-tree) · [`/cicd-update-sprint-memory`](#cicd-update-sprint-memory) · [`/cicd-merge-epic-workingtrees`](#cicd-merge-epic-workingtrees) · [`/cicd-prune-worktree`](#cicd-prune-worktree) · [`/cicd-e2e`](#cicd-e2e) · [`/cicd-push-e2e`](#cicd-push-e2e) · [`/smh-close-task-merge-tree`](#smh-close-task-merge-tree) · [`/smh-merge-multiple-workingtrees`](#smh-merge-multiple-workingtrees) |
 | **Operations** | [`/cicd-park` + `/cicd-resume`](#cicd-park-and-cicd-resume) · [`/cicd-prune-context`](#cicd-prune-context) · [`/cicd-autopilot-claude`](#cicd-autopilot-claude) · [`/cicd-live-testing-team`](#cicd-live-testing-team) · [`/cicd-mobile-error-team`](#cicd-mobile-error-team) |
 | **Toolkit upkeep** | [`/smh-sync-agents`](#smh-sync-agents) · [`/smh-sync-vscode`](#smh-sync-vscode) · [`/smh-memory-audit`](#smh-memory-audit) · [`/smh-update-maps-indexes`](#smh-update-maps-indexes) |
@@ -3318,7 +3308,7 @@ lane starts. Proposes the breakdown and stops; on your go, mints the Subtasks an
 the plan, audits it, cuts and pushes the worktree, points the ticket at the plan; labels the set;
 then **one** approval stop for everything. Explained in
 [§9](#9-the-task-lane--work-on-the-system-itself). Calls: `/smh-self-audit`, `/smh-label-tasks`,
-`jira_feed.py`. Hands to: `/smh-quick-dev` per lane, which skips its own approval stop for a lane
+`jira_feed.py`. Hands to: `/smh-dev-task-tests` per lane, which skips its own approval stop for a lane
 that came through this batch.*
 
 | Stage / Step | Details / Action | Next Step / Transition |
@@ -3341,8 +3331,8 @@ that came through this batch.*
 | `MORE` | more subtasks? | **yes** → cut worktree + chore/KEY-slug<br>**no** → Step 4 — /smh-label-tasks the parallel table, printed unedited |
 | `S4` | Step 4 — /smh-label-tasks the parallel table, printed unedited | → Step 5 — ONE approval stop every plan · every audit verdict · the table |
 | `S5` | Step 5 — ONE approval stop every plan · every audit verdict · the table | → STOP — your words, quoted into each plan 'ok' / 'continue' / a correction are NOT approval |
-| `STOP2` | STOP — your words, quoted into each plan 'ok' / 'continue' / a correction are NOT approval | → /smh-quick-dev per lane starts at its RED step |
-| `QD` | /smh-quick-dev per lane starts at its RED step | (terminal / end) |
+| `STOP2` | STOP — your words, quoted into each plan 'ok' / 'continue' / a correction are NOT approval | → /smh-dev-task-tests per lane starts at its RED step |
+| `QD` | /smh-dev-task-tests per lane starts at its RED step | (terminal / end) |
 
 
 ### The story lane
@@ -3538,68 +3528,66 @@ findings can FAIL; the judgment pass caps at CONCERNS. Explained in
 
 #### /cicd-quick-dev
 
-*Small, low-risk project work: fix the acceptance criteria before any code, build in one shot, then a
-mandatory review gate. It never closes out — on a story it advances the row to `review` and stops.
-Explained in [§8](#8-the-fast-lane--cicd-quick-dev). Calls: `bmad-quick-dev`, an independent
-reviewer, `/cicd-clean-code-audit`, `jira_feed.py devrecord`. Ejects to: ①.*
+*The quick lane in a project (`git-policy` § Two toggles): small, non-critical work with TDD kept and
+the ceremony cut. A scope check against the repo's critical surfaces, a plan and `approved`, RED then
+GREEN, a walkthrough and `approved`, the same scope check on the real diff at the door. Self-audit
+and review only when you ask; no `Verdict:` unless a review ran. It never closes out — on a story it
+advances the row to `review` and stops. Explained in [§8](#8-the-fast-lane--cicd-quick-dev). Calls:
+`scope_check.py`, `link-worktree-assets.py`, `jira_feed.py start`, `jira_feed.py devrecord`; on
+request `/cicd-self-audit`, `/cicd-code-review`. Ejects to: ①.*
 
 | Stage / Step | Details / Action | Next Step / Transition |
 |---|---|---|
-| `S0` | Step 0 — resolve project | (terminal / end) |
-| `S05` | Step 0.5 — which lane? | **a story id** → worktree on claude/KEY-slug off the epic branch<br>**ad-hoc, no epic** → chore/KEY-slug off main no story file — ever |
-| `WT` | worktree on claude/KEY-slug off the epic branch | → Step 1 — bmad-quick-dev clarifies and routes |
-| `CH` | chore/KEY-slug off main no story file — ever | → Step 1 — bmad-quick-dev clarifies and routes |
-| `S1` | Step 1 — bmad-quick-dev clarifies and routes | → ⊕ FIX 2–6 CHECKABLE ACs echoed in chat BEFORE any code STOP until they are agreed |
-| `AC` | ⊕ FIX 2–6 CHECKABLE ACs echoed in chat BEFORE any code STOP until they are agreed | → Step 1.5 — ⛔ EJECT tripwire |
-| `S15` | Step 1.5 — ⛔ EJECT tripwire | **router says plan-code-review** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**auth · payments · PII · schema security rules · cross-boundary contract** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**the intent will not reduce to ACs** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**a bug fix that will not reproduce** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**clear** → Step 2 — one-shot implementation commits in the worktree, explicit paths a bug fix carries ONE pinning regression test |
-| `EJ` | STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing | (terminal / end) |
-| `S2` | Step 2 — one-shot implementation commits in the worktree, explicit paths a bug fix carries ONE pinning regression test | → Step 3 — ⭐ REVIEW GATE, mandatory |
-| `S3` | Step 3 — ⭐ REVIEW GATE, mandatory | → every lane: an independent adversarial reviewer with NO conversation context<br>→ code touched: acceptance auditor + /cicd-clean-code-audit + scoped tests, whole suite if a shared handler moved<br>→ docs only: link + anchor check + SOP-currency check |
-| `R1` | every lane: an independent adversarial reviewer with NO conversation context | → any finding bigger than a trivial patch? |
-| `R2` | code touched: acceptance auditor + /cicd-clean-code-audit + scoped tests, whole suite if a shared handler moved | → any finding bigger than a trivial patch? |
-| `R3` | docs only: link + anchor check + SOP-currency check | → any finding bigger than a trivial patch? |
-| `F` | any finding bigger than a trivial patch? | **yes** → STOP. Hand to ① /cicd-write-story-tests keep the worktree, discard nothing<br>**no — patches applied NOW; a defer names ONE structural blocker, never a parking lot** → Step 4 — thin walkthrough with the Verdict line story: advance the row to 'review' |
-| `S4` | Step 4 — thin walkthrough with the Verdict line story: advance the row to 'review' | → Step 4.5 — file the Dev Record now this lane may END here |
-| `S45` | Step 4.5 — file the Dev Record now this lane may END here | → ⛔ STOP. No close-out. Never land on the epic branch. 'done' is yours — /cicd-close-story-merge-tree |
-| `STOP2` | ⛔ STOP. No close-out. Never land on the epic branch. 'done' is yours — /cicd-close-story-merge-tree | (terminal / end) |
-
+| `S0` | Step 0 — resolve project · print the epic mode from the git query: FULL / LIGHT / TRUNK | → Step 0.5 — which lane? |
+| `S05` | Step 0.5 — which lane? | **a story id** → worktree on claude/KEY-slug off the epic branch (FULL or LIGHT), or off origin/main in TRUNK mode<br>**ad-hoc, no story** → chore/KEY-slug off main no story file — ever |
+| `WT` | worktree on claude/KEY-slug off the epic branch (FULL or LIGHT), or off origin/main in TRUNK mode | → Step 0.7 — probe the review runtime |
+| `CH` | chore/KEY-slug off main no story file — ever | → Step 0.7 — probe the review runtime |
+| `S07` | Step 0.7 — probe the review runtime | → Step 1 — scope check scope_check.py on the planned files |
+| `S1` | Step 1 — scope check scope_check.py on the planned files | **CLEAR** → Step 2 — implementation_plan.md goal · the assertion · the change set<br>**OVERLAP** → ⛔ STOP — say what overlaps and why only your word lifts it (Scope override) never a lighter road |
+| `HOLD` | ⛔ STOP — say what overlaps and why only your word lifts it (Scope override) never a lighter road | **your word** → Step 2 — implementation_plan.md goal · the assertion · the change set<br>**no** → hand to ① /cicd-write-story-tests keep the worktree, discard nothing |
+| `EJ` | hand to ① /cicd-write-story-tests keep the worktree, discard nothing | (terminal / end) |
+| `S2` | Step 2 — implementation_plan.md goal · the assertion · the change set | → STOP for the literal approved /cicd-self-audit only if you ask |
+| `A1` | STOP for the literal approved /cicd-self-audit only if you ask | → Step 3 — RED then GREEN the assertion seen red · the change scoped suite + lint on the changed files, bare |
+| `S3` | Step 3 — RED then GREEN the assertion seen red · the change scoped suite + lint on the changed files, bare | → Step 4 — thin walkthrough review-runtime · Task Checklist · Evidence · Your Actions story → review |
+| `S4` | Step 4 — thin walkthrough review-runtime · Task Checklist · Evidence · Your Actions story → review | → STOP for the literal approved /cicd-code-review only if you ask — else 'Review: none - quick lane' and no Verdict: |
+| `A2` | STOP for the literal approved /cicd-code-review only if you ask — else 'Review: none - quick lane' and no Verdict: | → Step 4.5 — file the Dev Record |
+| `S45` | Step 4.5 — file the Dev Record | → Step 5 — the tripwire scope_check.py --diff on the REAL diff |
+| `S5` | Step 5 — the tripwire scope_check.py --diff on the REAL diff | **CLEAR, or covered by a Scope override** → ⛔ STOP. No close-out. Never land on the epic branch, never touch main. Your door: /cicd-close-story-merge-tree · /cicd-push-e2e · /smh-close-task-merge-tree Projects/name<br>**OVERLAP, uncovered** → hand to ① /cicd-write-story-tests keep the worktree, discard nothing |
+| `STOP2` | ⛔ STOP. No close-out. Never land on the epic branch, never touch main. Your door: /cicd-close-story-merge-tree · /cicd-push-e2e · /smh-close-task-merge-tree Projects/name | (terminal / end) |
 
 ### The Task lane
 
-#### /smh-quick-fix
+#### /smh-quick-dev
 
-*The lightweight lane (SCC-162): command-centre work that touches nothing which can break. Invoking
-it IS the "skip the plan" instruction, so there is no plan, no `approved`, no self-audit, no RED-first
-assertion and no review verdict — but qualification is a script and it runs TWICE, on what you
-intended and again on what you actually changed. Explained in
-[§9a](#the-lightweight-lane--smh-quick-fix). Calls: `lane_qualify.py`, `link-worktree-assets.py`,
-`jira_feed.py start`, `jira_feed.py devrecord`. Hands to: `/smh-close-task-merge-tree` on your word —
-or to `/smh-quick-dev` if it ejects.*
+*The quick lane in the command centre (`git-policy` § Two toggles): small, non-critical toolkit work
+with TDD kept and the ceremony cut. A scope check against the lobby's critical surfaces, a short
+plan and `approved`, RED then GREEN with the lobby floor bare, a walkthrough and `approved`, the
+same scope check on the real diff at the door. Self-audit and review only when you ask; no
+`Verdict:` unless a review ran. Explained in [§9a](#the-quick-lane--smh-quick-dev). Calls:
+`scope_check.py`, `link-worktree-assets.py`, `jira_feed.py start`, `jira_feed.py devrecord`; on
+request `/smh-self-audit`, `/smh-code-review`. Hands to: `/smh-close-task-merge-tree` on your word —
+or to `/smh-dev-task-tests` if it ejects.*
 
 | Stage / Step | Details / Action | Next Step / Transition |
 |---|---|---|
-| `S0` | Step 0 — lane_qualify.py --paths BEFORE minting anything | (terminal / end) |
-| `Q` | verdict? | **NOT-COMMAND-CENTRE** → ⛔ a project repo → the cicd-* lanes<br>**HANDOFF** → ⛔ a deployable path → /cicd-push-e2e<br>**TASK — incl. NO paths given** → ⛔ touches the dev system, or scope is unknown → /smh-quick-dev, with a plan<br>**LIGHT / LIGHT-VCS** → Step 1 — mint the ticket, cut chore/KEY-slug off main, link assets ticket → In Progress |
-| `OUTP` | ⛔ a project repo → the cicd-* lanes | (terminal / end) |
-| `OUTD` | ⛔ a deployable path → /cicd-push-e2e | (terminal / end) |
-| `OUTT` | ⛔ touches the dev system, or scope is unknown → /smh-quick-dev, with a plan | (terminal / end) |
-| `S1` | Step 1 — mint the ticket, cut chore/KEY-slug off main, link assets ticket → In Progress | → ⛔ never ask 'shall I mint / open a lane / write a plan?' asking IS the over-engineering |
-| `NOASK` | ⛔ never ask 'shall I mint / open a lane / write a plan?' asking IS the over-engineering | → Step 2 — do the work explicit-path commits · push |
-| `S2` | Step 2 — do the work explicit-path commits · push | → Step 3 — the gates that apply run_all · workflow_lint --toolkit-only check_maps · the SOP folder test run them BARE, never piped |
-| `S3` | Step 3 — the gates that apply run_all · workflow_lint --toolkit-only check_maps · the SOP folder test run them BARE, never piped | → LIGHT-VCS? |
-| `VCS` | LIGHT-VCS? | **yes** → delete only the refs the operator NAMED never a swept set · -C on every call show it, get the word, then delete<br>**no** → Step 3.5 — ⛔ EJECT lane_qualify.py against the REAL diff git diff --name-only main...HEAD |
-| `RISK` | delete only the refs the operator NAMED never a swept set · -C on every call show it, get the word, then delete | → Step 3.5 — ⛔ EJECT lane_qualify.py against the REAL diff git diff --name-only main...HEAD |
-| `S35` | Step 3.5 — ⛔ EJECT lane_qualify.py against the REAL diff git diff --name-only main...HEAD | → still LIGHT? |
-| `EJ` | still LIGHT? | **no** → ⛔ the lane is over — keep every commit, the plan-first gate RE-ARMS → /smh-quick-dev<br>**yes** → Step 4 — lean walkthrough ## What changed · ## Evidence ## Your Actions (required, even if empty) task.yaml · Dev Record |
-| `EJECT` | ⛔ the lane is over — keep every commit, the plan-first gate RE-ARMS → /smh-quick-dev | (terminal / end) |
-| `S4` | Step 4 — lean walkthrough ## What changed · ## Evidence ## Your Actions (required, even if empty) task.yaml · Dev Record | → STOP — hand back never merges, never closes its own ticket |
+| `S0` | Step 0 — resolve the repo FROM git output · pin EXPECTED_KEY (look for a home before minting) · probe the review runtime | → Step 0.5 — worktree + chore/KEY-slug off main link assets · ticket → In Progress |
+| `S05` | Step 0.5 — worktree + chore/KEY-slug off main link assets · ticket → In Progress | → Step 1 — scope check scope_check.py on the planned files |
+| `S1` | Step 1 — scope check scope_check.py on the planned files | **CLEAR** → Step 2 — a short implementation_plan.md + task.yaml goal · the assertion · the change set<br>**OVERLAP** → ⛔ STOP — say what overlaps and why only your word lifts it (Scope override) never a lighter road |
+| `HOLD` | ⛔ STOP — say what overlaps and why only your word lifts it (Scope override) never a lighter road | **your word** → Step 2 — a short implementation_plan.md + task.yaml goal · the assertion · the change set<br>**no** → hand to /smh-dev-task-tests keep the worktree, discard nothing |
+| `EJ` | hand to /smh-dev-task-tests keep the worktree, discard nothing | (terminal / end) |
+| `S2` | Step 2 — a short implementation_plan.md + task.yaml goal · the assertion · the change set | → STOP for the literal approved /smh-self-audit only if you ask |
+| `A1` | STOP for the literal approved /smh-self-audit only if you ask | → Step 3 — RED then GREEN the assertion seen red · the change run_all · workflow_lint · check_maps · check_links, bare |
+| `S3` | Step 3 — RED then GREEN the assertion seen red · the change run_all · workflow_lint · check_maps · check_links, bare | → Step 4 — thin walkthrough review-runtime · Task Checklist · Evidence · Your Actions |
+| `S4` | Step 4 — thin walkthrough review-runtime · Task Checklist · Evidence · Your Actions | → STOP for the literal approved /smh-code-review only if you ask — else 'Review: none - quick lane' and no Verdict: |
+| `A2` | STOP for the literal approved /smh-code-review only if you ask — else 'Review: none - quick lane' and no Verdict: | → Step 4.5 — file the Dev Record |
+| `S45` | Step 4.5 — file the Dev Record | → Step 5 — the tripwire scope_check.py --diff origin/main on the REAL diff |
+| `S5` | Step 5 — the tripwire scope_check.py --diff origin/main on the REAL diff | **CLEAR, or covered by a Scope override** → STOP — hand back never merges, never closes its own ticket<br>**OVERLAP, uncovered** → hand to /smh-dev-task-tests keep the worktree, discard nothing |
 | `STOP` | STOP — hand back never merges, never closes its own ticket | **your sign-off** → /smh-close-task-merge-tree no verdict to inherit, so the FULL gate runs |
 | `CLOSE` | /smh-close-task-merge-tree no verdict to inherit, so the FULL gate runs | (terminal / end) |
 
+#### /smh-dev-task-tests
 
-#### /smh-quick-dev
-
-*The Task lane's build step: fix a checkable list, plan, audit, wait for `approved`, then something
+*The full Task lane's build step (`/smh-dev-task-tests`, renamed from `/smh-quick-dev` in SCC-445): fix a checkable list, plan, audit, wait for `approved`, then something
 must be RED before anything is edited, then make it green with the mutant table declared first.
 Explained in [§9](#9-the-task-lane--work-on-the-system-itself) — the mutation and subtask rules
 live there. Calls: `/smh-self-audit`, `gate_receipt.py` (stamp-first), `link-worktree-assets.py`,
@@ -3641,7 +3629,7 @@ only as the Scope Ledger (created artefact × the acceptance row requiring it). 
 at the top of the file forbids ever adding a fourth lens — a miss amends the marker lists, the
 anchor definitions, or the Ledger rules instead. Two modes: PRE-WORK (default — no plan means
 STOP) and POST-DEV / retroactive. Explained in
-[§9](#9-the-task-lane--work-on-the-system-itself). Called by: `/smh-quick-dev` Step 1.5,
+[§9](#9-the-task-lane--work-on-the-system-itself). Called by: `/smh-dev-task-tests` Step 1.5,
 `/smh-plan-task` Step 3, or you. Its stale half (Lens 2) re-runs by itself as `/smh-code-review`
 Step 0.7.*
 
@@ -3722,11 +3710,11 @@ touches `main`. Explained in [§7](#7-landing-and-shipping--the-close-out-family
 | `INC` | ⛔ STOP — that is the incident lane /cicd-mobile-error-team | (terminal / end) |
 | `NOLAND` | ⛔ not worked in a worktree do NOT land it — report and stop | (terminal / end) |
 | `MG` | ⭐ MERGE GATE — did the epic branch move CODE since ③'s verdict sha? | **no** → inherit ③'s green<br>**yes** → the merged tree has NEVER been tested run the full suite NOW |
-| `INH` | inherit ③'s green | → git push origin HEAD:epic/KEY-slug THE landing · main untouched |
+| `INH` | inherit ③'s green | → THE landing, by the mode word Step 0 printed: FULL or LIGHT → push claude/KEY-slug · gh pr create --base epic/… · gh pr checks --watch · gh pr merge --merge (main untouched) · TRUNK → gh pr create --base main and STOP |
 | `RERUN` | the merged tree has NEVER been tested run the full suite NOW | → green? |
 | `RED` | green? | **no** → ⛔ STOP — no push, nothing lands the board flips ride this branch, and Step 4 never runs, so the ticket never moves<br>**yes** → inherit ③'s green |
 | `STOPALL` | ⛔ STOP — no push, nothing lands the board flips ride this branch, and Step 4 never runs, so the ticket never moves | (terminal / end) |
-| `PUSH` | git push origin HEAD:epic/KEY-slug THE landing · main untouched | → did the push return 0? |
+| `PUSH` | THE landing, by the mode word Step 0 printed: FULL or LIGHT → push claude/KEY-slug · gh pr create --base epic/… · gh pr checks --watch · gh pr merge --merge (main untouched) · TRUNK → gh pr create --base main and STOP | → did the push return 0? |
 | `P0` | did the push return 0? | **no — the remote moved** → ⛔ STOP and report · re-sync and re-land, never force the ticket does NOT move<br>**yes** → ⭐ Step 4, and only now — the one REMOTE write a. Dev Record filed, then READ BACK b. ticket → Done · a Bug flag is cleared c. check scoped AND unscoped — the fork arm |
 | `REJ` | ⛔ STOP and report · re-sync and re-land, never force the ticket does NOT move | (terminal / end) |
 | `S4` | ⭐ Step 4, and only now — the one REMOTE write a. Dev Record filed, then READ BACK b. ticket → Done · a Bug flag is cleared c. check scoped AND unscoped — the fork arm | → Step 5 — /cicd-prune-worktree AUTOMATIC · --repo and --branch passed through |
@@ -3790,8 +3778,8 @@ Invoked by: you, or `/cicd-close-story-merge-tree` Step 3's hand-over.*
 | `S4` | Step 4 — per lane, IN ORDER, inside its worktree | → a. merge the epic branch INTO the lane it carries every landed sibling |
 | `L1` | a. merge the epic branch INTO the lane it carries every landed sibling | → b. post-merge gate, still in the worktree suites SEQUENTIALLY, never several at once |
 | `L2` | b. post-merge gate, still in the worktree suites SEQUENTIALLY, never several at once | → c. close the story out IN the worktree its board edits ride its own landing |
-| `L3` | c. close the story out IN the worktree its board edits ride its own landing | → d. push HEAD:epic/KEY-slug |
-| `L4` | d. push HEAD:epic/KEY-slug | → more lanes? |
+| `L3` | c. close the story out IN the worktree its board edits ride its own landing | → d. a PR into the epic, watch its checks, merge one lane, one pull request |
+| `L4` | d. a PR into the epic, watch its checks, merge one lane, one pull request | → more lanes? |
 | `MORE` | more lanes? | **yes** → a. merge the epic branch INTO the lane it carries every landed sibling<br>**no** → Step 5 — ⭐ COMBINED GATE on the epic branch the union of every landed story's tests |
 | `S5` | Step 5 — ⭐ COMBINED GATE on the epic branch the union of every landed story's tests | → an integration break no single lane caused? |
 | `INT` | an integration break no single lane caused? | **yes** → fix it HERE on the epic branch no new story, no new worktree<br>**no** → /cicd-prune-context ONCE for the set learnings question only if none were routed |
@@ -4321,7 +4309,7 @@ that repo after you commit: `code-review-graph update`.
 
 | Command | What it does for you |
 | --- | --- |
-| `/cicd-quick-dev` | Fast lane for genuinely small project work. Drops the *pipeline*, never the rigour: a worktree, ACs fixed before any code, an eject tripwire, and a mandatory review gate. **Low-risk only.** On a story it advances the row to `review` and **stops there — it never closes out**. |
+| `/cicd-quick-dev` | The quick lane for genuinely small, non-critical project work. TDD kept, ceremony cut: a scope check against the repo's critical surfaces (an overlap stops for your word), a plan and `approved`, RED then GREEN, a walkthrough and `approved`, the tripwire on the real diff. Self-audit and review only when you ask. On a story it advances the row to `review` and **stops there — it never closes out**. |
 | `/cicd-non-crit-pr-push` | **Standing push lane for child projects** ([§8a](#8a-the-project-standing-push-lane--cicd-non-crit-pr-push)). Routine non-critical project changes (docs, memory, notes, quick references). Operates on the project's Standing Push Ticket + persistent `chore/<KEY>-standing-push` branch directly to PR with `main-write-gate` check. |
 
 **The Task lane** — [§9](#9-the-task-lane--work-on-the-system-itself)
@@ -4330,9 +4318,9 @@ that repo after you commit: `code-review-graph update`.
 | --- | --- |
 | `/smh-plan-task <TASK-KEY>` | Plans a **whole** Task in one pass — proposes the subtask breakdown and stops; on your go mints the Subtasks, and per lane writes the plan, audits it, cuts and pushes the worktree, points the ticket at the plan; labels the set; then **one** approval stop for everything. |
 | `/smh-label-tasks <TASK-KEY>` | The Task-lane twin of `/cicd-label-tasks`: which **Subtasks** of one Task can run side by side (`parallel-ok`) and which are quick-lane sized (`quick-dev`). States, never starts; a stale answer says "re-run me". |
-| `/smh-quick-dev` | The Task lane's build step. Fixes a checkable acceptance list before anything is written, plans, audits, waits for `approved`, then builds — with something failing first, always. Ends at the review gate and **stops**; it never merges. |
+| `/smh-dev-task-tests` | The full Task lane's build step (renamed from `/smh-quick-dev`, SCC-445). Fixes a checkable acceptance list before anything is written, plans, audits, waits for `approved`, then builds — with something failing first, always. Ends at the review gate and **stops**; it never merges. |
 | `/smh-designer` | **The front-end & UI/UX design maestro** ([`docs/_scc_sops_prds/frontend_UI_design_guide.md`](frontend_UI_design_guide.md)). Activates 🦋 Caterpillar across all platforms with the Two-Phase Creative Vision Lock lifecycle: Phase 1 explores aesthetics, layout moods, and physical materials (complete Poimandres suite: React Three Fiber, Drei optical glass, Postprocessing, Rapier physics; vgpu WebGPU shaders; Emil Kowalski springs) and stops for vision approval; Phase 2 translates into an approved `implementation_plan.md` and Jira ticket; Phase 3 hands off to `/smh-quick-dev` or `/cicd-dev-story-tests`. |
-| `/smh-quick-fix` | **The lightweight lane** ([§9a](#the-lightweight-lane--smh-quick-fix)). One specific thing that touches nothing which can break — a guide, a reference fix, a source-control tidy. Mints the ticket, cuts the lane, does it, runs the gates, pushes, hands back. No plan, no `approved`, no self-audit, no failing-check-first, no review verdict — and it **does not ask whether to start**. Qualification is `lane_qualify.py`, not a judgement, and it runs again on the real diff at the end: stop qualifying and the lane ejects to `/smh-quick-dev` with the plan gate re-armed. Lands through `/smh-close-task-merge-tree` like everything else. |
+| `/smh-quick-dev` | **The quick lane** ([§9a](#the-quick-lane--smh-quick-dev)) — small, non-critical toolkit work, the lobby twin of `/cicd-quick-dev`. A scope check against the lobby's critical surfaces (an overlap stops for your word), a short plan and `approved`, RED then GREEN with the lobby floor bare, a walkthrough and `approved`, the same scope check on the real diff at the door — an uncovered overlap ejects to `/smh-dev-task-tests` with the plan gate re-armed. Self-audit and review only when you ask; it **does not ask whether to start**. Lands through `/smh-close-task-merge-tree` like everything else. |
 | `/smh-non-crit-pr-push` | **The standing push lane** ([§9a](#the-standing-push-lane--smh-non-crit-pr-push-scc-186)). Routine non-critical command center changes (docs, memory, notes, quick references). Operates on standing ticket `SCC-186` + standing branch `chore/SCC-186-standing-push` directly to PR with `main-write-gate` check. |
 | `/smh-self-audit` | Pressure-tests the plan before anyone writes anything, pointed at the blast radius toolkit work actually has. Also **reads the other live lanes** and tells you which should land first. Ends in `GO` or `NO-GO`. Has a **retroactive mode** for when the work already exists and no plan was written — it audits the ticket's ACCEPTANCE block instead and stamps the result `retroactive`, so the record never reads as though a gate ran in time when it did not. |
 | `/smh-code-review` | The Task lane's verdict. Re-checks `main` (Step 0.7), hunts the diff cold, audits against the acceptance list, runs the command-centre gate, folds in the clean-code gate, and writes the one `Verdict:` line `/smh-close-task-merge-tree` reads before it will merge. |

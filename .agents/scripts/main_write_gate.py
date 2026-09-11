@@ -217,7 +217,7 @@ def check_merge_shape(repo: Path, head: str, keys: list[str]) -> list[str]:
 #   3. Everything becomes a close-out. → it triggers ONLY on a `task.yaml` in the diff naming
 #      `close_command: smh-close-task-merge-tree`. A PR without one owes nothing.
 #
-# ⭐ AND THE FOURTH, WHICH THE TICKET DID NOT SEE. A `/smh-quick-fix` lane writes that same
+# ⭐ AND THE FOURTH, WHICH THE TICKET DID NOT SEE. A `/smh-quick-dev` lane writes that same
 # manifest and has NO review verdict — the lightweight lane (SCC-162) has no review step, and
 # `flight_recorder record` REFUSES a walkthrough with no `Verdict:` stamp. Demanding an event
 # from every door-manifest would therefore make the entire lightweight lane unlandable. Measured

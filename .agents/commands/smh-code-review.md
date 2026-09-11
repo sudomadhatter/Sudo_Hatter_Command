@@ -20,7 +20,7 @@ Thin orchestrator. Runs the adversarial review, the acceptance audit, the comman
 clean-code gate, then appends ONE `## Code Review (<date>)` section to the task's `walkthrough.md` —
 the section `/smh-close-task-merge-tree` reads before it will merge anything.
 
-> Flow position: `/smh-quick-dev` → **`/smh-code-review`** → **[STOP]** → `/smh-close-task-merge-tree`.
+> Flow position: `/smh-dev-task-tests` → **`/smh-code-review`** → **[STOP]** → `/smh-close-task-merge-tree`.
 
 **Why this is not `/cicd-code-review`.** That command binds `smh-target-resolution.md` (*"exactly ONE
 project, never the lobby"*), reads `_bmad-output/sudo-tests.yaml` for its opt-in, inherits a
@@ -255,7 +255,7 @@ asserting its own result, which is the defect SCC-173 exists to close.
 
 ## Step 2 — Acceptance audit  *(against the checkable list, not against the code)*
 
-Recover the task's acceptance list — `/smh-quick-dev` Step 1 echoed it, the plan carries it, and the
+Recover the task's acceptance list — `/smh-dev-task-tests` Step 1 echoed it, the plan carries it, and the
 ticket's own `ACCEPTANCE` block is the authority behind both (`acli jira workitem view <KEY>`).
 
 **No double audit.** In `full` mode the engine's Acceptance Auditor lens already walked the diff
@@ -322,7 +322,7 @@ exit code, which is how a red gate reads as green.
 | **Link + anchor** | `python3 .agents/scripts/check_links.py --base origin/main` | any `.md` in the diff |
 | **Door parity** | every added/renamed command has exactly the doors its `platforms:` claims | a command was added, renamed or deleted |
 
-**Receipts ride this lane too (SCC-146).** `/smh-quick-dev` Step 3 stamps the suite run at
+**Receipts ride this lane too (SCC-146).** `/smh-dev-task-tests` Step 3 stamps the suite run at
 `_artifacts/_main/<date>_<slug>/gates/` via `gate_receipt.py run --task <KEY> --gate suite --root
 <task-artifacts> --cwd <worktree>`. Inherit it the way `/cicd-code-review` inherits a certification:
 **receipt result `pass` or `warn` (advisory findings — read them before adopting; the preflight

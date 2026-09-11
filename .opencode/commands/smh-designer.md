@@ -36,11 +36,11 @@ Front-end design is **sensory**, not merely functional. Therefore, `/smh-designe
 │ 4. Agent translates approved vision into formal implementation_plan.md      │
 │ 5. Agent shapes or mints the Jira ticket / subtask (via acli CLI)           │
 │ 6. ⛔ STOP FOR PLAN APPROVAL — Mr. Hatter approves technical implementation  │
-│ 7. Hand-off into Dev Lane (/smh-quick-dev or /cicd-dev-story-tests)         │
+│ 7. Hand-off into Dev Lane (/smh-dev-task-tests or /cicd-dev-story-tests)    │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-> **Express Lane Exception:** For trivial one-line styling fixes (e.g. changing an icon color or updating a border radius), skip Phase 1 and route immediately to `/smh-quick-fix`.
+> **Express Lane Exception:** For trivial one-line styling fixes (e.g. changing an icon color or updating a border radius), skip Phase 1 and route immediately to `/smh-quick-dev`.
 
 ---
 
@@ -122,7 +122,7 @@ Otherwise, present the **Capabilities Menu** and pause for input:
 
 ### Phase 3: Hand-off to Development Lane
 Once the technical implementation plan is approved:
-- If standalone command-center task: hand off to `/smh-quick-dev`.
+- If standalone command-center task: hand off to `/smh-dev-task-tests`.
 - If project sprint story: hand off to `/cicd-dev-story-tests` or `/cicd-quick-dev`.
 
 User input: $ARGUMENTS

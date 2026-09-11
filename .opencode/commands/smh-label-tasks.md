@@ -45,7 +45,7 @@ wave 4  SCC-312
 |---|---|---|
 | **`wave-N`** | **every** grounded child | run it in wave N; the schedule, on the card |
 | **`parallel-ok`** | only a child whose wave holds **two or more** | run it beside the others in its wave |
-| `quick-dev` | a child the light lane fits | ships via `/smh-quick-dev` |
+| `quick-dev` | a child the quick lane fits | ships via `/smh-quick-dev` |
 
 A `Subtask` is grounded by its plan, so a chained Task produces exactly the same shape as
 a chained epic — one lane, then the next, with the occasional pair.
@@ -186,7 +186,7 @@ absent touch-set would silently read as "touches nothing", a manufactured 🟢.
 
 ## Step 2.5 — Rule `quick-dev` in the same pass
 
-**`quick-dev` means: small enough for ONE light `/smh-quick-dev` lane.** Judge each grounded child:
+**`quick-dev` means: small enough for ONE quick-lane `/smh-quick-dev` pass.** Judge each grounded child:
 
 | Eligible when… | Not eligible when… |
 |---|---|
@@ -223,7 +223,7 @@ Print the table the script renders, unedited — approved list first, then one v
 | 📝 no plan | ungrounded — `/smh-plan-task <PARENT-KEY>` unlocks it |
 | **Wave `N`** | which wave the lane runs in (a column, not a verdict) |
 | **🧵** | in a wave of **two or more** — carries `parallel-ok` |
-| ⚡ quick-dev | small enough for one light lane (a separate column, not a verdict) |
+| ⚡ quick-dev | small enough for one quick-lane pass (a separate column, not a verdict) |
 
 ## Step 5 — Stamp the board
 

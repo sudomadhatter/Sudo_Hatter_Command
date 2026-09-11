@@ -31,8 +31,8 @@
 |---|---|---|
 | **Plan Task** | `/smh-plan-task <TASK-KEY>` | Breaks task into subtasks, maps dependencies, **ONE approval stop**. |
 | **Order Subtasks** | `/smh-label-tasks <TASK-KEY>` | Determines subtask execution waves and parallel eligibility. |
-| **Assert-First Build** | `/smh-quick-dev <KEY>` | Tests/assertions first → minimal implementation → mutation proof. |
-| **Ad-Hoc Quick Fix** | `/smh-quick-fix "<the ask>"` | **Lightweight lane**: guides, references, repo tidying. No plan, no review. |
+| **Assert-First Build** | `/smh-dev-task-tests <KEY>` | Tests/assertions first → minimal implementation → mutation proof. |
+| **Quick Lane** | `/smh-quick-dev "<the ask>"` | **The quick lane**: small, non-critical toolkit work — scope check, short plan + `approved`, RED then GREEN, walkthrough + `approved`; audit and review only if you ask. |
 | **Review Task** | `/smh-code-review <KEY>` | Reviews task changes against toolkit and constitutional rules. |
 | **Close & Merge Task** | `/smh-close-task-merge-tree` | Verifies clean tests → lands chore branch directly on `main` → prunes tree. |
 | **Merge Multiple Tasks** | `/smh-merge-multiple-workingtrees` | Lands batch of passing chore lanes onto `main` with one sign-off per lane. |
@@ -60,12 +60,12 @@ flowchart TD
     P -- "yes" --> LOOP["THE STORY LANE\n① ② ③ then close-out\n§6 and §7"]
     P -- "no, and it is small\nand low-risk" --> FAST["THE FAST LANE\n/cicd-quick-dev\n§8"]
     T -- "yes" --> LOOP
-    T -- "no" --> Q{"lane_qualify.py\ndoes it touch the development system?\n.agents/ .githooks/ AGENTS.md"}
-    Q -- "TASK — yes, or scope unknown" --> TASK["THE TASK LANE\n/smh-quick-dev\n§9"]
-    Q -- "LIGHT — no" --> LIGHT["THE LIGHTWEIGHT LANE\n/smh-quick-fix\n§9a"]
-    FAST -.->|"touches auth, payments, PII,\nDB schema, a cross-service contract,\nor the router says it needs planning"| LOOP
+    T -- "no" --> Q{"scope_check.py\ndoes it touch a critical surface?\n.github/ the hooks, the preflights, the permission fence"}
+    Q -- "OVERLAP — yes, or the work needs the full cycle" --> TASK["THE TASK LANE\n/smh-dev-task-tests\n§9"]
+    Q -- "CLEAR — no" --> LIGHT["THE QUICK LANE\n/smh-quick-dev\n§9a"]
+    FAST -.->|"touches auth, payments, PII,\nDB schema, a cross-service contract,\nor the scope check on the real diff overlaps a critical surface"| LOOP
     TASK -.->|"a deployable path shows up\nin the diff mid-build"| LOOP
-    LIGHT -.->|"the REAL diff stops qualifying\nStep 3.5 re-runs the check"| TASK
+    LIGHT -.->|"an uncovered overlap on the REAL diff\nStep 5 re-runs the check"| TASK
 ```
 
 
@@ -99,9 +99,9 @@ flowchart TD
     ADV["/smh-adviser-board\nhistorical minds in one-mind filters"] -.->|"seeds ideation/plan"| KICK
     AP["/cicd-autopilot-claude\nthe robot runs ①②③ for you"] -.->|"alternate lane for ①②③"| TWO
     PT["/smh-plan-task\nplan a whole Task, subtasks and all\nONE approval stop"] --> SLABEL["/smh-label-tasks\nwhich subtasks run side by side"]
-    SLABEL --> TASK["/smh-quick-dev → /smh-code-review\nwork on the SYSTEM: commands, rules, docs"]
-    QF["/smh-quick-fix\nthe LIGHTWEIGHT lane: a guide, a reference,\na source-control tidy — nothing that can break\nno plan, no approval, no review"] --> TASKCLOSE
-    QF -.->|"the real diff stops qualifying"| TASK
+    SLABEL --> TASK["/smh-dev-task-tests → /smh-code-review\nwork on the SYSTEM: commands, rules, docs"]
+    QF["/smh-quick-dev\nthe QUICK lane: a guide, a reference,\na small rule edit — nothing critical\nshort plan + approved · RED then GREEN · walkthrough + approved"] --> TASKCLOSE
+    QF -.->|"an uncovered overlap on the real diff"| TASK
     TASK --> TASKCLOSE["/smh-close-task-merge-tree\nONE chore branch → main DIRECTLY"]
     TASK --> TASKMULTI["/smh-merge-multiple-workingtrees\nSEVERAL chore branches → main\none sign-off per lane"]
     TASKCLOSE --> PROD
@@ -204,7 +204,7 @@ flowchart TD
 flowchart LR
     TICK["a Task ticket\nno story · no board · no epic"] --> PT["/smh-plan-task\nwhole Task, subtasks and all\nONE approval stop"]
     PT --> LT["/smh-label-tasks\nwhich subtasks run side by side"]
-    LT --> QD["/smh-quick-dev\nworktree · checkable list · plan → approved"]
+    LT --> QD["/smh-dev-task-tests\nworktree · checkable list · plan → approved"]
     TICK -.->|"a single lane"| QD
     QD --> SA["/smh-self-audit\nGO or NO-GO before a file is touched"]
     SA --> RED["write the assertion RED\na test, or a check a doc must pass"]
@@ -378,7 +378,7 @@ flowchart LR
     end
     subgraph TASK ["the Task lane"]
         PT["/smh-plan-task"]
-        SQD["/smh-quick-dev"]
+        SQD["/smh-dev-task-tests"]
         SCR["/smh-code-review"]
     end
     subgraph LAND ["landing and shipping"]
@@ -428,7 +428,7 @@ flowchart LR
 flowchart LR
     subgraph MOVE ["status moves"]
         A["first commit on a keyed branch\npost-commit hook"] -->|"In Progress"| B["the ticket"]
-        C["/smh-quick-dev Step 0.5\n/smh-plan-task Step 0"] -->|"In Progress"| B
+        C["/smh-dev-task-tests or /smh-quick-dev Step 0.5\n/smh-plan-task Step 0"] -->|"In Progress"| B
         D["① Step 1.6"] -->|"In Progress, or Blocking"| B
         E["/cicd-close-story-merge-tree\n/smh-close-task-merge-tree\n/smh-merge-multiple-workingtrees\n/cicd-push-e2e"] -->|"Done — or HELD by open user tasks"| B
         F["/cicd-live-testing-team\nonly on your word"] -->|"Story or Task → Bug, out of Done"| B
@@ -459,7 +459,7 @@ it, and where the longer explanation lives.*
 | **Session & planning** | [`/cicd-boot-sprint-memory`](#cicd-boot-sprint-memory) · [`/cicd-create-epic-sprint`](#cicd-create-epic-sprint) · [`/cicd-label-tasks` + `/smh-label-tasks`](#cicd-label-tasks-and-smh-label-tasks) · [`/smh-plan-task`](#smh-plan-task) |
 | **Story lane** | [`/cicd-write-story-tests`](#cicd-write-story-tests) · [`/cicd-bdd-tests`](#cicd-bdd-tests) · [`/cicd-dev-story-tests`](#cicd-dev-story-tests) · [`/cicd-self-audit`](#cicd-self-audit) · [`/cicd-code-review`](#cicd-code-review) · [`code-review-engine`](#code-review-engine-the-shared-reviewer) · [`/cicd-clean-code-audit` + `/smh-clean-code-audit`](#cicd-clean-code-audit-and-smh-clean-code-audit) |
 | **Fast lane** | [`/cicd-quick-dev`](#cicd-quick-dev) |
-| **Task lane** | [`/smh-quick-fix`](#smh-quick-fix) · [`/smh-quick-dev`](#smh-quick-dev) · [`/smh-self-audit`](#smh-self-audit) · [`/smh-code-review`](#smh-code-review) |
+| **Task lane** | [`/smh-quick-dev`](#smh-quick-dev) · [`/smh-dev-task-tests`](#smh-dev-task-tests) · [`/smh-self-audit`](#smh-self-audit) · [`/smh-code-review`](#smh-code-review) |
 | **Landing & shipping** | [`/cicd-close-story-merge-tree`](#cicd-close-story-merge-tree) · [`/cicd-update-sprint-memory`](#cicd-update-sprint-memory) · [`/cicd-merge-epic-workingtrees`](#cicd-merge-epic-workingtrees) · [`/cicd-prune-worktree`](#cicd-prune-worktree) · [`/cicd-e2e`](#cicd-e2e) · [`/cicd-push-e2e`](#cicd-push-e2e) · [`/smh-close-task-merge-tree`](#smh-close-task-merge-tree) · [`/smh-merge-multiple-workingtrees`](#smh-merge-multiple-workingtrees) |
 | **Operations** | [`/cicd-park` + `/cicd-resume`](#cicd-park-and-cicd-resume) · [`/cicd-prune-context`](#cicd-prune-context) · [`/cicd-autopilot-claude`](#cicd-autopilot-claude) · [`/cicd-live-testing-team`](#cicd-live-testing-team) · [`/cicd-mobile-error-team`](#cicd-mobile-error-team) |
 | **Toolkit upkeep** | [`/smh-sync-agents`](#smh-sync-agents) · [`/smh-sync-vscode`](#smh-sync-vscode) · [`/smh-memory-audit`](#smh-memory-audit) · [`/smh-update-maps-indexes`](#smh-update-maps-indexes) |
@@ -581,7 +581,7 @@ lane starts. Proposes the breakdown and stops; on your go, mints the Subtasks an
 the plan, audits it, cuts and pushes the worktree, points the ticket at the plan; labels the set;
 then **one** approval stop for everything. Explained in
 [§9](#9-the-task-lane--work-on-the-system-itself). Calls: `/smh-self-audit`, `/smh-label-tasks`,
-`jira_feed.py`. Hands to: `/smh-quick-dev` per lane, which skips its own approval stop for a lane
+`jira_feed.py`. Hands to: `/smh-dev-task-tests` per lane, which skips its own approval stop for a lane
 that came through this batch.*
 
 ```mermaid
@@ -606,7 +606,7 @@ flowchart TD
     MORE -- "no" --> S4["Step 4 — /smh-label-tasks\nthe parallel table, printed unedited"]
     S4 --> S5["Step 5 — ONE approval stop\nevery plan · every audit verdict · the table"]
     S5 --> STOP2["STOP — your words, quoted into each plan\n'ok' / 'continue' / a correction are NOT approval"]
-    STOP2 -.-> QD["/smh-quick-dev per lane\nstarts at its RED step"]
+    STOP2 -.-> QD["/smh-dev-task-tests per lane\nstarts at its RED step"]
 ```
 
 ### The story lane
@@ -809,74 +809,71 @@ flowchart TD
 
 #### /cicd-quick-dev
 
-*Small, low-risk project work: fix the acceptance criteria before any code, build in one shot, then a
-mandatory review gate. It never closes out — on a story it advances the row to `review` and stops.
-Explained in [§8](#8-the-fast-lane--cicd-quick-dev). Calls: `bmad-quick-dev`, an independent
-reviewer, `/cicd-clean-code-audit`, `jira_feed.py devrecord`. Ejects to: ①.*
+*The quick lane in a project (`git-policy` § Two toggles): small, non-critical work with TDD kept and
+the ceremony cut. A scope check against the repo's critical surfaces, a plan and `approved`, RED then
+GREEN, a walkthrough and `approved`, the same scope check on the real diff at the door. Self-audit
+and review only when you ask; no `Verdict:` unless a review ran. It never closes out — on a story it
+advances the row to `review` and stops. Explained in [§8](#8-the-fast-lane--cicd-quick-dev). Calls:
+`scope_check.py`, `link-worktree-assets.py`, `jira_feed.py start`, `jira_feed.py devrecord`; on
+request `/cicd-self-audit`, `/cicd-code-review`. Ejects to: ①.*
 
 ```mermaid
 flowchart TD
-    S0["Step 0 — resolve project"] --> S05{"Step 0.5 — which lane?"}
-    S05 -- "a story id" --> WT["worktree on claude/KEY-slug\noff the epic branch"]
-    S05 -- "ad-hoc, no epic" --> CH["chore/KEY-slug off main\nno story file — ever"]
-    WT --> S1["Step 1 — bmad-quick-dev clarifies and routes"]
-    CH --> S1
-    S1 --> AC["⊕ FIX 2–6 CHECKABLE ACs\nechoed in chat BEFORE any code\nSTOP until they are agreed"]
-    AC --> S15{"Step 1.5 — ⛔ EJECT tripwire"}
-    S15 -- "router says plan-code-review" --> EJ["STOP. Hand to ① /cicd-write-story-tests\nkeep the worktree, discard nothing"]
-    S15 -- "auth · payments · PII · schema\nsecurity rules · cross-boundary contract" --> EJ
-    S15 -- "the intent will not reduce to ACs" --> EJ
-    S15 -- "a bug fix that will not reproduce" --> EJ
-    S15 -- "clear" --> S2["Step 2 — one-shot implementation\ncommits in the worktree, explicit paths\na bug fix carries ONE pinning regression test"]
-    S2 --> S3["Step 3 — ⭐ REVIEW GATE, mandatory"]
-    S3 --> R1["every lane: an independent adversarial\nreviewer with NO conversation context"]
-    S3 --> R2["code touched: acceptance auditor\n+ /cicd-clean-code-audit\n+ scoped tests, whole suite if a shared handler moved"]
-    S3 --> R3["docs only: link + anchor check\n+ SOP-currency check"]
-    R1 --> F{"any finding bigger\nthan a trivial patch?"}
-    R2 --> F
-    R3 --> F
-    F -- "yes" --> EJ
-    F -- "no — patches applied NOW; a defer names\nONE structural blocker, never a parking lot" --> S4["Step 4 — thin walkthrough with the Verdict line\nstory: advance the row to 'review'"]
-    S4 --> S45["Step 4.5 — file the Dev Record now\nthis lane may END here"]
-    S45 --> STOP2["⛔ STOP. No close-out. Never land on the epic\nbranch. 'done' is yours — /cicd-close-story-merge-tree"]
+    S0["Step 0 — resolve project\nprint the epic mode from the git query: FULL / LIGHT / TRUNK"] --> S05{"Step 0.5 — which lane?"}
+    S05 -- "a story id" --> WT["worktree on claude/KEY-slug off the epic branch\n(FULL or LIGHT), or off origin/main in TRUNK mode"]
+    S05 -- "ad-hoc, no story" --> CH["chore/KEY-slug off main\nno story file — ever"]
+    WT --> S07["Step 0.7 — probe the review runtime"]
+    CH --> S07
+    S07 --> S1{"Step 1 — scope check\nscope_check.py on the planned files"}
+    S1 -- "CLEAR" --> S2["Step 2 — implementation_plan.md\ngoal · the assertion · the change set"]
+    S1 -- "OVERLAP" --> HOLD["⛔ STOP — say what overlaps and why\nonly your word lifts it (Scope override)\nnever a lighter road"]
+    HOLD -- "your word" --> S2
+    HOLD -- "no" --> EJ["hand to ① /cicd-write-story-tests\nkeep the worktree, discard nothing"]
+    S2 --> A1["STOP for the literal approved\n/cicd-self-audit only if you ask"]
+    A1 --> S3["Step 3 — RED then GREEN\nthe assertion seen red · the change\nscoped suite + lint on the changed files, bare"]
+    S3 --> S4["Step 4 — thin walkthrough\nreview-runtime · Task Checklist · Evidence · Your Actions\nstory → review"]
+    S4 --> A2["STOP for the literal approved\n/cicd-code-review only if you ask —\nelse 'Review: none - quick lane' and no Verdict:"]
+    A2 --> S45["Step 4.5 — file the Dev Record"]
+    S45 --> S5{"Step 5 — the tripwire\nscope_check.py --diff on the REAL diff"}
+    S5 -- "CLEAR, or covered by a Scope override" --> STOP2["⛔ STOP. No close-out. Never land on the epic branch,\nnever touch main. Your door: /cicd-close-story-merge-tree ·\n/cicd-push-e2e · /smh-close-task-merge-tree Projects/name"]
+    S5 -- "OVERLAP, uncovered" --> EJ
 ```
 
 ### The Task lane
 
-#### /smh-quick-fix
+#### /smh-quick-dev
 
-*The lightweight lane (SCC-162): command-centre work that touches nothing which can break. Invoking
-it IS the "skip the plan" instruction, so there is no plan, no `approved`, no self-audit, no RED-first
-assertion and no review verdict — but qualification is a script and it runs TWICE, on what you
-intended and again on what you actually changed. Explained in
-[§9a](#the-lightweight-lane--smh-quick-fix). Calls: `lane_qualify.py`, `link-worktree-assets.py`,
-`jira_feed.py start`, `jira_feed.py devrecord`. Hands to: `/smh-close-task-merge-tree` on your word —
-or to `/smh-quick-dev` if it ejects.*
+*The quick lane in the command centre (`git-policy` § Two toggles): small, non-critical toolkit work
+with TDD kept and the ceremony cut. A scope check against the lobby's critical surfaces, a short
+plan and `approved`, RED then GREEN with the lobby floor bare, a walkthrough and `approved`, the
+same scope check on the real diff at the door. Self-audit and review only when you ask; no
+`Verdict:` unless a review ran. Explained in [§9a](#the-quick-lane--smh-quick-dev). Calls:
+`scope_check.py`, `link-worktree-assets.py`, `jira_feed.py start`, `jira_feed.py devrecord`; on
+request `/smh-self-audit`, `/smh-code-review`. Hands to: `/smh-close-task-merge-tree` on your word —
+or to `/smh-dev-task-tests` if it ejects.*
 
 ```mermaid
 flowchart TD
-    S0["Step 0 — lane_qualify.py --paths\nBEFORE minting anything"] --> Q{"verdict?"}
-    Q -- "NOT-COMMAND-CENTRE" --> OUTP["⛔ a project repo\n→ the cicd-* lanes"]
-    Q -- "HANDOFF" --> OUTD["⛔ a deployable path\n→ /cicd-push-e2e"]
-    Q -- "TASK — incl. NO paths given" --> OUTT["⛔ touches the dev system,\nor scope is unknown\n→ /smh-quick-dev, with a plan"]
-    Q -- "LIGHT / LIGHT-VCS" --> S1["Step 1 — mint the ticket, cut\nchore/KEY-slug off main, link assets\nticket → In Progress"]
-    S1 --> NOASK["⛔ never ask 'shall I mint /\nopen a lane / write a plan?'\nasking IS the over-engineering"]
-    NOASK --> S2["Step 2 — do the work\nexplicit-path commits · push"]
-    S2 --> S3["Step 3 — the gates that apply\nrun_all · workflow_lint --toolkit-only\ncheck_maps · the SOP folder test\nrun them BARE, never piped"]
-    S3 --> VCS{"LIGHT-VCS?"}
-    VCS -- "yes" --> RISK["delete only the refs the operator NAMED\nnever a swept set · -C on every call\nshow it, get the word, then delete"]
-    VCS -- "no" --> S35
-    RISK --> S35["Step 3.5 — ⛔ EJECT\nlane_qualify.py against the REAL diff\ngit diff --name-only main...HEAD"]
-    S35 --> EJ{"still LIGHT?"}
-    EJ -- "no" --> EJECT["⛔ the lane is over — keep every commit,\nthe plan-first gate RE-ARMS\n→ /smh-quick-dev"]
-    EJ -- "yes" --> S4["Step 4 — lean walkthrough\n## What changed · ## Evidence\n## Your Actions (required, even if empty)\ntask.yaml · Dev Record"]
-    S4 --> STOP["STOP — hand back\nnever merges, never closes its own ticket"]
-    STOP -.->|"your sign-off"| CLOSE["/smh-close-task-merge-tree\nno verdict to inherit, so the FULL gate runs"]
+    S0["Step 0 — resolve the repo FROM git output\npin EXPECTED_KEY (look for a home before minting)\nprobe the review runtime"] --> S05["Step 0.5 — worktree + chore/KEY-slug off main\nlink assets · ticket → In Progress"]
+    S05 --> S1{"Step 1 — scope check\nscope_check.py on the planned files"}
+    S1 -- "CLEAR" --> S2["Step 2 — a short implementation_plan.md + task.yaml\ngoal · the assertion · the change set"]
+    S1 -- "OVERLAP" --> HOLD["⛔ STOP — say what overlaps and why\nonly your word lifts it (Scope override)\nnever a lighter road"]
+    HOLD -- "your word" --> S2
+    HOLD -- "no" --> EJ["hand to /smh-dev-task-tests\nkeep the worktree, discard nothing"]
+    S2 --> A1["STOP for the literal approved\n/smh-self-audit only if you ask"]
+    A1 --> S3["Step 3 — RED then GREEN\nthe assertion seen red · the change\nrun_all · workflow_lint · check_maps · check_links, bare"]
+    S3 --> S4["Step 4 — thin walkthrough\nreview-runtime · Task Checklist · Evidence · Your Actions"]
+    S4 --> A2["STOP for the literal approved\n/smh-code-review only if you ask —\nelse 'Review: none - quick lane' and no Verdict:"]
+    A2 --> S45["Step 4.5 — file the Dev Record"]
+    S45 --> S5{"Step 5 — the tripwire\nscope_check.py --diff origin/main on the REAL diff"}
+    S5 -- "CLEAR, or covered by a Scope override" --> STOP["STOP — hand back\nnever merges, never closes its own ticket"]
+    S5 -- "OVERLAP, uncovered" --> EJ
+    STOP -- "your sign-off" --> CLOSE["/smh-close-task-merge-tree\nno verdict to inherit, so the FULL gate runs"]
 ```
 
-#### /smh-quick-dev
+#### /smh-dev-task-tests
 
-*The Task lane's build step: fix a checkable list, plan, audit, wait for `approved`, then something
+*The full Task lane's build step (`/smh-dev-task-tests`, renamed from `/smh-quick-dev` in SCC-445): fix a checkable list, plan, audit, wait for `approved`, then something
 must be RED before anything is edited, then make it green with the mutant table declared first.
 Explained in [§9](#9-the-task-lane--work-on-the-system-itself) — the mutation and subtask rules
 live there. Calls: `/smh-self-audit`, `gate_receipt.py` (stamp-first), `link-worktree-assets.py`,
@@ -919,7 +916,7 @@ only as the Scope Ledger (created artefact × the acceptance row requiring it). 
 at the top of the file forbids ever adding a fourth lens — a miss amends the marker lists, the
 anchor definitions, or the Ledger rules instead. Two modes: PRE-WORK (default — no plan means
 STOP) and POST-DEV / retroactive. Explained in
-[§9](#9-the-task-lane--work-on-the-system-itself). Called by: `/smh-quick-dev` Step 1.5,
+[§9](#9-the-task-lane--work-on-the-system-itself). Called by: `/smh-dev-task-tests` Step 1.5,
 `/smh-plan-task` Step 3, or you. Its stale half (Lens 2) re-runs by itself as `/smh-code-review`
 Step 0.7.*
 
@@ -1011,7 +1008,7 @@ flowchart TD
     RERUN --> RED{"green?"}
     RED -- "no" --> STOPALL["⛔ STOP — no push, nothing lands\nthe board flips ride this branch, and Step 4\nnever runs, so the ticket never moves"]
     RED -- "yes" --> INH
-    INH --> PUSH["git push origin HEAD:epic/KEY-slug\nTHE landing · main untouched"]
+    INH --> PUSH["THE landing, by the mode word Step 0 printed\nFULL or LIGHT → push claude/KEY-slug · gh pr create --base epic/…\n· gh pr checks --watch · gh pr merge --merge (main untouched)\nTRUNK → gh pr create --base main and STOP"]
     PUSH --> P0{"did the push return 0?"}
     P0 -- "no — the remote moved" --> REJ["⛔ STOP and report · re-sync and re-land, never force\nthe ticket does NOT move"]
     P0 -- "yes" --> S4["⭐ Step 4, and only now — the one REMOTE write\na. Dev Record filed, then READ BACK\nb. ticket → Done · a Bug flag is cleared\nc. check scoped AND unscoped — the fork arm"]
@@ -1078,7 +1075,7 @@ flowchart TD
     S4 --> L1["a. merge the epic branch INTO the lane\nit carries every landed sibling"]
     L1 --> L2["b. post-merge gate, still in the worktree\nsuites SEQUENTIALLY, never several at once"]
     L2 --> L3["c. close the story out IN the worktree\nits board edits ride its own landing"]
-    L3 --> L4["d. push HEAD:epic/KEY-slug"]
+    L3 --> L4["d. a PR into the epic, watch its checks, merge\none lane, one pull request"]
     L4 --> MORE{"more lanes?"}
     MORE -- "yes" --> L1
     MORE -- "no" --> S5["Step 5 — ⭐ COMBINED GATE on the epic branch\nthe union of every landed story's tests"]

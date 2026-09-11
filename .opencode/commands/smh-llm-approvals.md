@@ -443,7 +443,7 @@ correct** — it classifies by path and cannot see this door's guards, so a hand
 
 ⛔ **Write the receipt before you commit.** The exemption drops the plan, the audit, the RED-first
 assertion and the review verdict — it does NOT drop the record, for the same reason
-`/smh-quick-fix` keeps one: without it, an agent that hand-edited `families.json` and *decided* its
+`/smh-quick-dev` keeps one: without it, an agent that hand-edited `families.json` and *decided* its
 work was a harvest is indistinguishable from a real run, and every gate it does run still passes.
 A lean `walkthrough.md` under `_artifacts/_main/<YYYY-MM-DD>_<slug>/` carrying the picks, **the
 operator's words verbatim**, each pick the fence refused with the deny row that refused it, and a

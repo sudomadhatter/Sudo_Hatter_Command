@@ -48,7 +48,7 @@ SOP_TEXT = (
     "# Workflows + testing SOP\n\n"
     "## The doors\n\n"
     "- `/cicd-code-review` - review a story.\n"
-    "- `/smh-quick-dev` - the task lane's dev cycle.\n"
+    "- `/smh-quick-dev` - the quick lane.\n"
 )
 
 REPO_MAP_SCAFFOLD = (

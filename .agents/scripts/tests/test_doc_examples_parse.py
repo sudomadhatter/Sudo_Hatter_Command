@@ -184,7 +184,7 @@ def declared_examples(text: str) -> list[dict]:
                 region.append(ln2)
         # ⛔ THE SAME TEMPLATE CARVE-OUT THE ROSTER HALF HAS (SCC-240 review, Blind Hunter).
         # Without it, the first plan TEMPLATE added to a plan-emitting command - and
-        # `smh-plan-task.md` / `smh-quick-dev.md` / `cicd-dev-story-tests.md` are pinned
+        # `smh-plan-task.md` / `smh-dev-task-tests.md` / `smh-quick-dev.md` / `cicd-dev-story-tests.md` are pinned
         # elsewhere as exactly the files that teach this block - goes RED on a document that
         # is correct by this file's own stated taxonomy: `- <OP> \`<path>\` — <why> → <row>`
         # cannot parse, and is not meant to.
