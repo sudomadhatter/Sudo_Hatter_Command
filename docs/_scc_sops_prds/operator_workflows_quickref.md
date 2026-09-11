@@ -63,7 +63,7 @@ flowchart TD
     T -- "no" --> Q{"scope_check.py\ndoes it touch a critical surface?\n.github/ the hooks, the preflights, the permission fence"}
     Q -- "OVERLAP — yes, or the work needs the full cycle" --> TASK["THE TASK LANE\n/smh-dev-task-tests\n§9"]
     Q -- "CLEAR — no" --> LIGHT["THE QUICK LANE\n/smh-quick-dev\n§9a"]
-    FAST -.->|"touches auth, payments, PII,\nDB schema, a cross-service contract,\nor the router says it needs planning"| LOOP
+    FAST -.->|"touches auth, payments, PII,\nDB schema, a cross-service contract,\nor the scope check on the real diff overlaps a critical surface"| LOOP
     TASK -.->|"a deployable path shows up\nin the diff mid-build"| LOOP
     LIGHT -.->|"an uncovered overlap on the REAL diff\nStep 5 re-runs the check"| TASK
 ```

@@ -28,7 +28,7 @@
 | If you need to know / do... | Jump to Section | Core File / Rule Pointer |
 |---|---|---|
 | **Human visual flight deck / diagrams** | — | [`operator_workflows_quickref.md`](operator_workflows_quickref.md) |
-| **Which lane to pick** (Story vs Fast vs Task vs Quick-fix) | [§5 Which lane am I in?](#5-which-lane-am-i-in) | `.agents/scripts/lane_qualify.py` |
+| **Which lane to pick** (Story vs Fast vs Task vs Quick) | [§5 Which lane am I in?](#5-which-lane-am-i-in) | `.agents/scripts/lane_qualify.py` |
 | **All system hooks & nags** (Hard Gates vs Nags vs Probes) | [§10 The Complete Hooks & Nags Architecture](#the-complete-hooks--nags-architecture) | `.agents/rules/constitution.md` |
 | **Story development loop** (① -> ② -> ③) | [§6 The story lane](#6-the-story-lane) | `.agents/rules/artifacts-always-first.md` |
 | **Task & Chore loop** (`/smh-plan-task`, `/smh-dev-task-tests`) | [§9 The Task lane](#9-the-task-lane--work-on-the-system-itself) | `.agents/rules/work-consolidation.md` |

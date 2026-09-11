@@ -44,10 +44,25 @@ def integration_branch(project: Path) -> str:
     to main via /cicd-push-e2e. With exactly one live epic branch the target is unambiguous;
     with zero or several, `main` is the only branch every landing eventually reaches, so the
     ancestor check stays meaningful (a story merged via its epic IS an ancestor of main once
-    the epic ships — before that, several-epics ambiguity must be resolved with --branch)."""
-    r = wf.git(["branch", "--list", "--format=%(refname:short)", "epic/*"], project)
-    branches = [b.strip() for b in r.stdout.splitlines() if b.strip()]
-    return branches[0] if len(branches) == 1 else "main"
+    the epic ships — before that, several-epics ambiguity must be resolved with --branch).
+
+    ⛔ READ ORIGIN TOO (SCC-441 review 2, reproduced). A story worktree is cut `--no-track` off
+    `origin/epic/<…>` and never creates a LOCAL epic head, so a local-only scan returned `main`,
+    the staleness base fell to `origin/main`, and a clean absorb of the epic then read STALE for
+    every sibling file the epic carried that main did not. `epic_mode.py` reads origin for the
+    same reason (a local head outlives the epic it belonged to). Union local + remote, dedup by
+    short name."""
+    names: set[str] = set()
+    local = wf.git(["branch", "--list", "--format=%(refname:short)", "epic/*"], project)
+    names.update(b.strip() for b in local.stdout.splitlines() if b.strip())
+    remote = wf.git(["for-each-ref", "--format=%(refname:short)",
+                     "refs/remotes/origin/epic/*"], project)
+    for ln in remote.stdout.splitlines():
+        ref = ln.strip()
+        ref = ref[len("origin/"):] if ref.startswith("origin/") else ref
+        if ref:
+            names.add(ref)
+    return next(iter(names)) if len(names) == 1 else "main"
 
 
 # ── 1. Did the code actually land? ─────────────────────────────────────────────

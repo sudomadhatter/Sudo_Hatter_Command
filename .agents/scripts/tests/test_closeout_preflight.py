@@ -1687,6 +1687,34 @@ def main() -> int:
                 decided_cp == decided_tp == "unreadable" and rc_cp == 2 and rc_tp == 2,
                 f"closeout={decided_cp} rc={rc_cp} · lobby={decided_tp} rc={rc_tp}")
 
+    if c.block("SCC-441 review-3 · integration_branch reads ORIGIN, not just local heads"):
+        # ⛔ A --no-track story lane has NO local epic head, so a local-only scan returned `main`
+        # and the staleness base fell to `origin/main` — a clean absorb of the epic then read
+        # STALE for every sibling file the epic carried. Reproduced: build a repo whose only epic
+        # ref is remote-tracking, and integration_branch must still name the epic.
+        with TempDir() as tmp:
+            def gg(*a: str, cwd: Path) -> None:
+                subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *a],
+                               cwd=str(cwd), capture_output=True, text=True, check=True)
+            repo = tmp / "r"
+            repo.mkdir()
+            gg("init", "-q", cwd=repo)
+            (repo / "f").write_text("x\n", encoding="utf-8")
+            gg("add", "f", cwd=repo)
+            gg("commit", "-q", "-m", "init", cwd=repo)
+            (tmp / "o.git").mkdir()
+            gg("init", "-q", "--bare", cwd=tmp / "o.git")
+            gg("remote", "add", "origin", str(tmp / "o.git"), cwd=repo)
+            gg("push", "-q", "origin", "HEAD:refs/heads/epic/SCC-9-epic-2-x", cwd=repo)
+            gg("fetch", "-q", "origin", cwd=repo)
+            local = subprocess.run(["git", "branch", "--list", "--format=%(refname:short)",
+                                    "epic/*"], cwd=str(repo), capture_output=True,
+                                   text=True).stdout.strip()
+            got = cp.integration_branch(repo)
+            c.check("no local epic head, yet the remote epic ref is the integration branch",
+                    got == "epic/SCC-9-epic-2-x" and local == "",
+                    f"integration_branch={got!r}, local heads={local!r}")
+
     return c.finish()
 
 
