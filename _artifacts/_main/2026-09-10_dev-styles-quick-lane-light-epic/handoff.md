@@ -1,5 +1,13 @@
 # SCC-441 — Hand-off (2026-09-11)
 
+> ⛔ **SUPERSEDED the same day — this file is history, not instructions.** Everything below describes
+> the branch at `d77b8a4d`. Later that day the operator lifted the freeze on rules, gates and tests
+> for this lane (*"approved to fix this"*), all thirty rows of the review below were applied
+> (`fe5d7845` → `fb2639ac`, then the re-review's own fixes), and the lane was re-reviewed at the new
+> tip. **Read [walkthrough.md](walkthrough.md) — its LAST `## Code Review` section governs — and its
+> § Changes applied.** "It is not lifted now" below was true when written and is false now; the
+> "What is broken" rows below are closed. Nothing in the "How to continue" list is owed.
+
 Written for the next agent. Every claim here is checkable against the tree. Check it; do not take
 it on trust. The previous agent produced one fabricated review record on this branch and one
 partially improvised one, both described below.
