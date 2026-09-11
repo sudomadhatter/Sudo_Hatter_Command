@@ -1,6 +1,6 @@
 ---
 name: code-review-engine
-description: The house review engine — three adversarial lenses over a resolved diff, and the fan-out reproduces what they find before reporting it; triages the survivors into four buckets, records them, and returns a PROVISIONAL severity floor its caller resolves at the stamp. Invoked BY /cicd-code-review, /smh-code-review and /cicd-quick-dev; it is not a standalone command and never resolves its own inputs.
+description: The house review engine — three adversarial lenses over a resolved diff, and the fan-out reproduces what they find before reporting it; triages the survivors into two buckets — fix or drop — records them, and returns a PROVISIONAL severity floor its caller resolves at the stamp. Invoked BY /cicd-code-review, /smh-code-review and /cicd-quick-dev; it is not a standalone command and never resolves its own inputs.
 allowed-tools: Read, Write, Glob, Grep, Task
 ---
 
@@ -34,7 +34,6 @@ runs only as a step of `/cicd-code-review`, `/smh-code-review` or `/cicd-quick-d
 | `STORY_FILE` | story or task acceptance source; present in `full` mode | optional |
 | `FINDINGS_SINK` | file the findings are written to | optional |
 | `ARTIFACT_DIR` | folder for lens prompt files when subagents are unavailable | optional |
-| `DEFERRED_WORK` | the caller's `deferred-work.md` | optional |
 
 ⛔ **A missing required input is a stop, not a guess.** If the caller did not supply one, say which
 and return — resolving it yourself is how a review ends up describing a different diff than the one
@@ -62,8 +61,9 @@ These belong to the caller and to the human close-out:
   on them.
 - **It never produces a ticket** — no residue ticket, no "proposed" or "decided" ticket, no
   ticket-ruling row. A finding that survives step-03's reproduction gate is **fixed** by the caller
-  in the same lane before its verdict, **escalated** to the operator in the same thread, or deferred
-  against ONE named structural blocker (operator rulings 2026-08-15, both).
+  in the same lane before its verdict; a fix the caller may not apply alone is written as a patch
+  and `held` for the operator's word, never proposed as a ticket (operator rulings 2026-08-15, both,
+  and 2026-09-11: no escalate bucket, no defer bucket).
 
 ## Flow
 
@@ -84,7 +84,7 @@ lenses_run:
 - <one row per lens that was applicable — the ROSTER, not a summary of it>
 lenses_counted:  <n>/<applicable>
 lenses_na:       <lenses not applicable in this mode, or "none">
-findings:        <f> fix · <e> escalate · <w> defer   (<d> dropped — no reproduction · <r> recorded)
+findings:        <f> fix   (<d> dropped — no reproduction · <r> recorded)
 dispositions:    per-lens: <lens>=<reproduced>/<dropped>/<recorded> · … (SCC-233; a multi-lens finding counts once per contributing lens)
 severity_floor:  none | CONCERNS | FAIL
 notes:           <degradations, absent optional inputs, verification state>

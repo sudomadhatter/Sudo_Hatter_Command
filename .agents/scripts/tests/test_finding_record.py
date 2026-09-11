@@ -6,8 +6,10 @@ the builder), and the summary emits those counts so a lens's hit rate is computa
 record rather than argued.
 
 ⛔ WHAT SCC-447 CHANGED HERE, and why the file did not shrink. The vocabulary moved — the
-`Decision` and `Patch` boxes became `Fix` and `Escalate`, each carrying the `repro <id>` its
-receipt is keyed on, and the death counts became `reproduced`/`dropped`/`recorded`. The reason
+`Decision` and `Patch` boxes became one `Fix` box carrying the `repro <id>` its receipt is
+keyed on (an `Escalate` box lived for a day and was struck together with `Defer` on the
+operator's ruling, 2026-09-11 — both put a reproduced defect in front of him to read), and the
+death counts became `reproduced`/`dropped`/`recorded`. The reason
 for the counts inverted, which is the part worth reading: they existed to make the open Blind
 Hunter question ANSWERABLE after N runs. SCC-447 answered it by retiring that lens on the
 measurement already on disk, so the counts now serve the rule that replaced the question —
@@ -38,13 +40,16 @@ def main() -> int:
     c.check("the Fix box template line carries src=<lens> and its repro id",
             "- [ ] [Review][Fix] <title> [<file>:<line>] src=<lens> · repro <id>" in t,
             "template line lost its attribution or its receipt key")
-    c.check("the Escalate box template line carries src=<lens>, its repro id and a recommendation",
-            "- [ ] [Review][Escalate] <title> [<file>:<line>] src=<lens> · repro <id> · "
-            "recommend: <one line>" in t,
-            "template line lost its attribution, its receipt key or its recommendation")
-    c.check("the Defer box template line carries src=<lens> and repro before its blocker",
-            "- [ ] [Review][Defer] <title> [<file>:<line>] src=<lens> · repro <id> — " in t,
-            "template line lost its attribution")
+    # ⛔ Operator ruling 2026-09-11: the `Escalate` box SCC-447's first cut added, and the `Defer`
+    # box it kept, both put a reproduced defect in front of him to read. Neither template may
+    # come back — and the retirement is pinned POSITIVELY too, so an empty file cannot satisfy
+    # the absence (the anti-vacuity check at the bottom covers the rest).
+    c.check("the Fix box is the ONLY record box — no Escalate, no Defer template",
+            "[Review][Escalate]" not in t and "[Review][Defer]" not in t,
+            "a retired box template is back")
+    c.check("the retirement of both boxes is stated, with its ruling",
+            "**There is no `Escalate` box and no `Defer` box (SCC-447, operator ruling 2026-09-11).**"
+            in t, "the retirement is unstated — the next agent can argue a box back")
     c.check("multi-lens attribution uses the trial's joined form",
             "edge+test-adequacy" in t, "multi-lens form absent")
     c.check("dropped findings keep their attribution in the summary",

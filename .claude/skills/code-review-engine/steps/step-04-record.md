@@ -14,12 +14,10 @@ written as a completed box**:
 
 ```
 - [ ] [Review][Fix] <title> [<file>:<line>] src=<lens> · repro <id>
-- [ ] [Review][Escalate] <title> [<file>:<line>] src=<lens> · repro <id> · recommend: <one line>
-- [ ] [Review][Defer] <title> [<file>:<line>] src=<lens> · repro <id> — <why it is worth fixing> · blocked by <other live lane <branch> | other repo <name> | operator ruling>
 ```
 
 **`repro <id>` is the finding's reproduction id**, and it is what the caller's `repro_receipt.py`
-run is keyed on. A `Fix`, `Escalate` or `Defer` box without one is a box whose finding never passed
+run is keyed on. A `Fix` box without one is a box whose finding never passed
 step 3's gate and should not have been written.
 
 **`src=` is the finding's originating lens (SCC-233)** — the column the SCC-124 trial recorded by
@@ -30,21 +28,13 @@ in step 3 on the shared anchor, so a joined src is measured corroboration, not a
 Every `fix` box above is the caller's to close **in this lane, before its verdict** — the record is
 the worklist for the fixes that happen now, not a list of things somebody else will do.
 
-Every `escalate` box is carried to the OPERATOR, in the same thread, with its receipt and its
-one-line recommendation. **The caller does not fix it and does not open a ticket for it.** Its
-default is that the lane ships as recorded; the operator's word is what changes that. This is the
-bucket that keeps a real-but-not-urgent finding from becoming a new unreviewed edit at the end of a
-lane, which is the loop SCC-447 closed.
-
-Every `defer` also gets a bullet in `DEFERRED_WORK`, under a heading naming this review and its
-date; when the caller supplied no such path, the same bullets come back in the summary instead.
-Deferred work that lives only inside one review's record is deferred to nowhere. **And a `defer`
-bullet is a JUDGED item, never a bare title** — it carries why it matters and the ONE structural
-blocker step 3 allows (another live lane owns the file · another repo · an operator ruling), because
-it reproduced and the only reason it is not fixed here is that it cannot be. The ledger is not a
-ticket queue and not a proposal source (operator rulings 2026-08-15): nothing in it is owed, no
-close-out mints a ticket from it as a pile, and no review proposes one from it either — an entry is
-picked up by the lane its blocker names, or deleted when its reason dies.
+**There is no `Escalate` box and no `Defer` box (SCC-447, operator ruling 2026-09-11).** Every
+reproduced finding is a `Fix` box. What the caller cannot apply alone becomes `held` in the caller's
+own record with its patch, and what is outside this lane's files becomes `out-of-lane` there — both
+are the CALLER's dispositions, written at fix time, and this engine never writes either
+(`code-standards.md` §6.5 owns them). Nothing is deferred anywhere: a ledger of reproduced defects
+nobody is fixing is the queue this ticket closed, and a finding handed to the operator with a
+recommendation is the review he asked to be designed out of.
 
 Dropped findings are **not** written here — builders must never see dead boxes. They are counted
 only, in the summary below. **But a finding that dies keeps its lens (SCC-233):** the per-lens
@@ -62,7 +52,7 @@ lenses_run:
 - <one row per lens that was applicable — the ROSTER, not a summary of it>
 lenses_counted:  <n>/<applicable>
 lenses_na:       <lenses not applicable in this mode, or "none">
-findings:        <f> fix · <e> escalate · <w> defer   (<d> dropped — no reproduction · <r> recorded)
+findings:        <f> fix   (<d> dropped — no reproduction · <r> recorded)
 dispositions:    per-lens: <lens>=<reproduced>/<dropped>/<recorded> · … (a multi-lens finding counts once per contributing lens)
 severity_floor:  none | CONCERNS | FAIL
 notes:           <degradations, absent optional inputs, verify wave: retired (SCC-447)>
@@ -102,7 +92,7 @@ default:
   engine's job ends at handing the worklist back.
 - **It never merges, pushes, or transitions a ticket.** Those are the operator's sign-off, reached
   through the close-out command and nowhere else.
-- **It never pauses the caller's flow.** An `escalate` finding is handed back written down, for the
-  caller to put in front of the operator; the engine does not wait on the answer.
+- **It never pauses the caller's flow.** Findings are handed back written down; the engine does not
+  wait on anything, and nothing it returns is a question for the operator.
 
 An engine that quietly does any of these is indistinguishable from one that was asked to.

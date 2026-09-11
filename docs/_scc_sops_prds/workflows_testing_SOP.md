@@ -681,9 +681,9 @@ did not reproduce does not exist. Each lens writes `reproduce:` and `expected_wr
 that command **in its own copy**, and deletes the finding if it does not fail as predicted; the
 engine checks the claim is present (it holds no Bash and cannot run anything, by design) and hands
 back a **provisional** floor; and the door re-runs the command on the real tree through
-`repro_receipt.py`, which is the receipt that actually binds. A reproduced `critical` is fixed in
-the lane with a pin; a reproduced `important` is **escalated to the operator**, never fixed at the
-end of a lane, because that is a new unreviewed edit. Everything else is a count.
+`repro_receipt.py`, which is the receipt that actually binds. A reproduced `critical` or `important`
+is fixed in the lane with a pin; a fix the agent may not apply alone (the constitution's Ask First
+list, or a spec conflict) is written as a patch and **held for your word**. Everything else is a count.
 
 **The record is machine-read.** The walkthrough's `## Code Review` section must carry the engine's
 `dispositions:` line (per-lens reproduced/dropped/recorded) and a one-line `drift:` result;
@@ -710,9 +710,9 @@ merged.
 
 | Verdict | Means | Does close-out land it? |
 | --- | --- | --- |
-| **PASS** | every required tier green, the clean-code floor green on changed lines, and no open reproduced finding | yes |
-| **CONCERNS** | an **escalated** reproduced `important`, a `defer` behind a named blocker, a review lens that never ran, or soft issues — bloat, duplication, an unowned TODO, a stale note | **yes — CONCERNS ships on your word**, and no command, door or agent may hold the lane on its own authority |
-| **FAIL** | a new test regression, a required tier missing, a machine-floor error on a changed line, or a banned pattern shipped | **no — this is the only thing that blocks** |
+| **PASS** | every required tier green, the clean-code floor green on changed lines, every lens ran, and no open reproduced finding | yes |
+| **CONCERNS** | exactly two grounds — a review lens that never ran (the review did not look everywhere), or a written fix the agent is not allowed to apply without you (the constitution's Ask First list, or it contradicts the spec), patch attached. Taste — bloat, duplication, an unowned TODO, a stale note — is a count, never a verdict | **yes — CONCERNS ships on your word**, and no command, door or agent may hold the lane on its own authority |
+| **FAIL** | a new test regression, a required tier missing, a machine-floor error on a changed line, a banned pattern shipped, or an open reproduced `critical` — unfixed, or held for your word | **no — this is the only thing that blocks** |
 | **WAIVED** | the project has no test baseline at all | yes |
 
 > ⓘ **The split is deliberate: objective checks block a story, taste does not.** Taste gets recorded,
@@ -720,8 +720,8 @@ merged.
 
 > ⓘ **Where to read the findings — the engine runs the review (SCC-128).** The
 > `## Code Review` table in the **walkthrough** is authoritative — it is the one with dispositions
-> (`fixed @<sha> · pin` / `escalated · repro` / `deferred — <blocker>` / `dropped — no reproduction`
-> / `recorded`), and it is what close-out reads. The engine may *also* leave
+> (`fixed @<sha> · pin` / `held — <reason> · repro · patch` / `out-of-lane — <where>` /
+> `dropped — no reproduction` / `recorded`), and it is what close-out reads. The engine may *also* leave
 > `[ ] [Review]…` checkboxes in the story file (or, on a Task, the plan) so the builder sees open work
 > where they are already looking. That is a **worklist, not a second record**: it carries no
 > dispositions, and where the two disagree the walkthrough table is right.
@@ -733,13 +733,17 @@ merged.
 > triage step now opens with a **reproduction gate**: a `critical` or `important` arrives with a
 > command and the output its own lens saw when it ran it, or it does not arrive. Everything that
 > fails that gate is a number in the summary — no write-up, no argument, no ticket. **What survives
-> splits by severity:** a reproduced `critical` is fixed in the lane, right there, with a pin seen
-> red then green; a reproduced `important` is **escalated to you** with its receipt and a one-line
-> recommendation, and ships as recorded unless you say otherwise. A review **never produces a
+> is fixed:** a reproduced `critical` or `important` is fixed in the lane, right there, with a pin
+> seen red then green. The first cut of this rule escalated an `important` to you with a
+> recommendation and kept a `defer` for fixes "the lane could not hold"; you struck both the same
+> day — the lenses reproduce so that you never read a finding. The one thing that reaches you is a
+> fix the agent may not apply alone — a schema, a security rule, CI, a dependency, a file deletion,
+> or a change the spec contradicts — and it reaches you **written**, as a patch beside its receipt,
+> with the verdict: `apply <id>` lands it, `approved` ships without it. A review **never produces a
 > ticket** — not residue, not proposed, not decided; your ruling: *"we need the fixes made in thread
-> not a ticket made every story thats an endless loop that never finishes."* The only other place
-> anything may go is a `defer` that names a structural blocker (another live lane owns the file ·
-> another repo · a ruling only you can make), and it lives in `deferred-work.md`, not on the board.
+> not a ticket made every story thats an endless loop that never finishes."* A reproduced defect in a
+> file the lane did not touch is out-of-lane work and goes down the `work-consolidation` ladder with
+> its receipt — your rolling-ticket rule, not a review minting a ticket.
 
 **Where the verdict lives:** a `## Code Review` section in the story's `walkthrough.md`. Stories
 closed before 2026-08-02 keep it in the old standalone `sudo-code-review-<story>.md` file instead,
@@ -1323,9 +1327,9 @@ the whole ladder; a `record` failure never blocks a merge.
 `Verdict: … @ <sha>` stands, and Step 2's gate is the *mechanical* suite only. The review engine is
 recall-first with no noise filter by design, so re-running it — on anything, including its own
 fixes — always surfaces new findings, and "review until zero findings" is a loop that never ends.
-New findings at close-out anyway? Triage by severity: `suggestion`/`nitpick` → record and merge
-(a `defer` still names its blocker); an `important` is escalated to you and ships as recorded; only
-a **reproduced `critical`** stops it — and it gets fixed right there, never carried out of the lane.
+New findings at close-out anyway? Triage by severity: `suggestion`/`nitpick` → record and merge; a
+**reproduced** `important` or `critical` gets fixed right there with a pin, never carried out of the
+lane; only an open reproduced `critical` — or a held fix waiting on your word — stops the merge.
 
 **A cross-repo task can be blocked by the *other* repo's state.** If your `task.yaml`
 declares `secondary_repos`, the preflight does not treat it as a note — it goes and looks. It

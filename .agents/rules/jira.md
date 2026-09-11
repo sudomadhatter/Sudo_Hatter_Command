@@ -554,19 +554,22 @@ in the summary, the board row / spec pointer in the description — so nothing l
   **stops**; the operator's go is what writes it. Raw `acli`, parented to the Task. See §Subtasks.
 
 Outside these seams: status + comments only. Never mint speculative work — a ticket asserts a
-decision already made. There is no "maybe" bucket anywhere: a finding is fixed in its lane,
-dismissed with a reason, or deferred against a NAMED structural blocker in the deferred ledger —
-and the operator purges unrecognized tickets on sight.
+decision already made. There is no "maybe" bucket anywhere: a finding is fixed in its lane, dropped
+for want of a reproduction, or — only when it sits outside the lane's own files — consolidated down
+the `work-consolidation` ladder with its receipt — and the operator purges unrecognized tickets on
+sight.
 
 ⭐ **Review findings are the canonical speculative case — and a review never produces a ticket**
 (operator rulings 2026-08-15, both). The review's own triage decides which findings are actually
 relevant to implement (`code-review-engine` step-03, the reproduction gate) and anything that does
 not reproduce dies there as a count — the hunters have finding-goals, so their volume is a success
-metric, never a work queue. **A reproduced `critical` is fixed in the same lane, before the verdict,
-and a reproduced `important` is escalated to the operator in the same thread** — never fixed at the
-end of a lane, because that is a new unreviewed edit. The only other disposition is a `defer` naming
-one structural blocker (another live lane owns the file · another repo · an operator ruling) in the
-deferred ledger — never a ticket. Banned in every form: a residue ticket carrying the unfixed pile, a "proposed"
+metric, never a work queue. **A reproduced `critical` or `important` is fixed in the same lane,
+before the verdict** — the lenses reproduce so that nobody has to read a finding, and a fix the agent
+may not apply alone (the constitution's Ask First list, or a spec conflict) is written as a patch and
+`held` for the operator's word with the verdict, never proposed as a ticket (no escalate bucket, no
+defer bucket — operator ruling 2026-09-11). A reproduced defect in a file the lane did not touch is
+out-of-lane work and takes the `work-consolidation` ladder with its receipt — consolidation, not a
+review minting a ticket. Banned in every form: a residue ticket carrying the unfixed pile, a "proposed"
 or "decided" ticket the operator is asked to rule on, and a walkthrough action row assigning
 either to the operator. The first cut of this rule allowed the "proposed decided ticket" leg;
 the operator ruled it the same loop under a new name ("we need the fixes made in thread not a

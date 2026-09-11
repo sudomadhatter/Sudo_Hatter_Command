@@ -280,8 +280,8 @@ longer the home. The section carries:
 - scope (files/diff reviewed) and method/effort — one line each,
 - **ONE findings table** (the only copy anywhere — the story file links here, never restates):
   `file:line` · severity · failure scenario · repro id · disposition (`fixed @<sha> · pin <test>` /
-  `escalated · repro <id>` / `deferred — <blocker>` / `dropped — no reproduction`, count-only /
-  `recorded`, count-only; a review never produces a ticket),
+  `held — <reason> · repro <id> · patch <path>` / `out-of-lane — <where>` /
+  `dropped — no reproduction`, count-only / `recorded`, count-only; a review never produces a ticket),
 - each gate check's result in one line, with the actual suite totals (rows also go to
   `## Suite Ledger`).
 

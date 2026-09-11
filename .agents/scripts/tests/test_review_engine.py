@@ -165,11 +165,12 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     # the contract's own fixture through the real parser. What stays here is the COUNT, which moved
     # to its own line when the roster became a block: a count is a summary and the rows are the
     # evidence, and the two must not share a line again.
-    # ⛔ The ESCALATE half of the severity axis, re-pinned after SCC-447 made the floor
+    # ⛔ The RAISE half of the severity axis, re-pinned after SCC-447 made the floor
     # provisional. `test_review_disposition.py` holds the SOFTEN half (exactly two evidence-backed
     # ways down, and any other downgrade refused); this row holds the half that never changed —
-    # a caller's own gates may always add severity the lenses never saw.
-    ("skill: caller may escalate, never soften", SKILL,
+    # a caller's own gates may always add severity the lenses never saw. (Named "raise", not
+    # "escalate": the finding-level `escalate` bucket was struck 2026-09-11 and this is unrelated.)
+    ("skill: caller may raise severity, never soften", SKILL,
      r"The caller may report\nanything MORE severe", 0,
      "anything MORE severe", "anything LESS severe"),
     # ⛔ POSITIVE assertion, per this file's own §3: a stub cannot simultaneously carry the
@@ -666,14 +667,14 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
 
 
     # ── step-03: buckets, alias map, and the severity-to-verdict table ──────────────────────
-    # ⛔ Binds the RELATIONSHIP, not the word: a `defer` is a bucket for work this lane cannot
-    # structurally hold, which is what separates it from "we decided not to". The bare
-    # `^- \*\*defer\*\* —` this replaced was satisfied by any bullet starting with the word.
-    ("step-03: defer bucket is defined, and only for a structural blocker", STEPS[2],
-     r"^- \*\*defer\*\* — reproduced, worth fixing, \*\*and this lane structurally cannot hold "
-     r"the fix\*\*", re.M,
-     "- **defer** — reproduced, worth fixing, **and this lane structurally cannot hold the fix**",
-     "- **defer** — reproduced, worth fixing, and not a priority right now"),
+    # ⛔ The `defer` bucket this row once bound is GONE (operator ruling 2026-09-11, together with
+    # `escalate`): a bucket for work "this lane cannot hold" was a parking lot with a nicer name,
+    # and every entry in it was a reproduced defect nobody fixed. What the row holds now is the
+    # closed set — two buckets, no third — stated positively so a stub cannot add one back quietly.
+    ("step-03: two buckets, and the sentence that closes the set", STEPS[2],
+     r"^\*\*There are two buckets, and there is no third\.\*\*", re.M,
+     "**There are two buckets, and there is no third.**",
+     "**There are two buckets, and a third may be added when a lane needs one.**"),
     ("step-03: critical accepts high and blocker", STEPS[2],
      r"^\|\s*`critical`\s*\|\s*critical, high, blocker\s*\|", re.M,
      "| `critical` | critical, high, blocker |", "| `critical` | trivial, info |"),
@@ -713,12 +714,18 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     # ── step-04: the record, and the boundary held positively ───────────────────────────────
     ("step-04: an absent sink is reported, never guessed", STEPS[3],
      r"do not pick a file", 0, "do not pick a file", "pick any file you like"),
-    ("step-04: deferred findings are written unresolved", STEPS[3],
-     r"^- \[ \] \[Review\]\[Defer\]", re.M,
-     "- [ ] [Review][Defer]", "- [x] [Review][Defer]"),
-    ("step-04: deferred work is routed out of the review", STEPS[3],
-     r"Every `defer` also gets a bullet in `DEFERRED_WORK`", 0,
-     "also gets a bullet in `DEFERRED_WORK`", "is dropped after the review"),
+    # The two rows this replaces pinned the `Defer` box and the `DEFERRED_WORK` bullet — both
+    # retired 2026-09-11 on the operator's ruling. Their coverage moved to the retirement itself:
+    # nothing is deferred anywhere, and the engine writes neither of the caller's two dispositions.
+    ("step-04: nothing is deferred anywhere — the ledger was the queue", STEPS[3],
+     r"Nothing is deferred anywhere: a ledger of reproduced defects\s+nobody is fixing is the queue"
+     r"\s+this ticket closed", 0,
+     "Nothing is deferred anywhere",
+     "Deferred work goes to the ledger"),
+    ("step-04: held and out-of-lane are the CALLER's, and the engine writes neither", STEPS[3],
+     r"this engine never writes either", 0,
+     "this engine never writes either",
+     "this engine writes both"),
     ("step-04: the summary carries a severity floor", STEPS[3],
      r"^severity_floor:\s+none \| CONCERNS \| FAIL$", re.M,
      "severity_floor:  none | CONCERNS | FAIL", "verdict:  PASS | CONCERNS | FAIL"),

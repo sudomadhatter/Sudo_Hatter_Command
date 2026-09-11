@@ -10,9 +10,9 @@
     "edges": 795,
     "external": 36,
     "ambiguous": 175,
-    "dangling": 266,
+    "dangling": 264,
     "broken_paths": 59,
-    "unresolved_names": 207,
+    "unresolved_names": 205,
     "unresolvable": 9
   },
   "nodes": [
@@ -6568,10 +6568,6 @@
       "target": "implementation_plan.md"
     },
     {
-      "from": ".agents/skills/code-review-engine/SKILL.md",
-      "target": "deferred-work.md"
-    },
-    {
       "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
       "target": "scoring.md"
     },
@@ -6822,10 +6818,6 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "target": "bug-list.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "target": "deferred-work.md"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",

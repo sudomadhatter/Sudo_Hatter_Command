@@ -78,28 +78,32 @@ prices out is inflating a nitpick to be heard.
 
 ### 4b. The bucket — one per surviving finding
 
-- **fix** — a reproduced `critical`. **The caller fixes it in this lane, before its verdict**, under
-  `reproduce-before-you-fix` G1–G5: a pin seen red, the minimal fix, then green. Pre-existing is not
-  an exemption — a reproduced critical in a file this lane touched is fixed where it was found.
-- **escalate** — a reproduced `important`. **The caller does NOT fix it.** It goes to the OPERATOR,
-  in the same thread, with its receipt and a one-line recommendation, and its default is
-  *ships as recorded*. Fixing an `important` at the end of a lane is a new unreviewed edit — the
-  loop, one turn later — which is why this bucket exists at all.
-- **defer** — reproduced, worth fixing, **and this lane structurally cannot hold the fix** — one of
-  exactly three blockers, named in the bullet: the file is owned by another LIVE lane (the fix lands
-  there; name it), the fix lives in another repo (which needs its own ticket key — `jira.md`
-  §The map: each repo declares its own key), or the operator has ruled it out of this lane.
-  "Pre-existing and not caused by this change" is NOT a defer reason (operator ruling 2026-08-15,
-  second): that reading turned the ledger into a parking lot. No structural blocker → it is `fix`
-  or `escalate` on its severity.
+- **fix** — a reproduced `critical` or `important`. **The caller fixes it in this lane, before its
+  verdict**, under `reproduce-before-you-fix` G1–G5: a pin seen red, the minimal fix, then green.
+  Pre-existing is not an exemption — a reproduced finding in a file this lane touched is fixed where
+  it was found. Two things the caller may meet at fix time are dispositions of the CALLER, not
+  buckets of this engine, and `code-standards.md` §6.5 owns both: a fix the agent may not apply
+  alone (the constitution's Ask First list, or a spec conflict) is written as a patch beside its
+  receipt and `held` for the operator's word; a defect in a file this lane did not touch is
+  `out-of-lane` and takes the `work-consolidation` ladder with its receipt.
 - **drop** — did not reproduce, arrived without a command, or is noise (false positive, misparse,
   duplicate of handled work). Counted in ONE line in the summary, never written up individually.
+
+**There are two buckets, and there is no third.** Three have been struck, each for putting work in
+front of the operator that the review was built to settle itself.
 
 **There is no `decision_needed` bucket any more.** An open decision holds a ticket forever at
 `finish`, which is the loop. `jira_feed.py finish` decides `Done` from the open `- [ ]` rows under
 `## Your Actions`, so a decision row parked there is a ticket that can never close on its own. What
-used to be a decision is now an **escalate**: the operator sees it with its receipt, and the default
-is that the lane ships as recorded rather than waiting.
+used to be a decision either reproduces — and is fixed, or held as a written patch when the fix
+needs the operator's permission — or it is dropped.
+
+**There is no `escalate` bucket and no `defer` bucket** (operator ruling 2026-09-11). The first
+cut of SCC-447 handed a reproduced `important` to the operator with a recommendation and parked a
+fix "this lane structurally cannot hold" behind a named blocker; both put a reproduced defect in
+front of him to read, and the lenses were made to reproduce precisely so that nobody has to. A
+finding that reproduced is fixed. What needs his permission reaches him as a written patch with the
+verdict, never as a question; what is outside this lane's files takes the consolidation ladder.
 
 ⛔ **A review never produces a ticket.** Not a residue ticket, not a "proposed" ticket, not a
 "decided" ticket the operator is asked to rule on, not a ticket-ruling row in `## Your Actions`.
@@ -109,7 +113,10 @@ operator ruled that the same loop under a new name: "we need the fixes made in t
 ticket made every story thats an endless loop that never finishes." A ticket asserts a decision
 already made (`jira.md` §Who mints tickets); a review is where the work gets done, not where the
 next ticket gets born. **A finding that survives the
-gate is fixed or escalated in this thread, never a ticket.**
+gate is fixed in this thread, never a ticket.** The one ticket-shaped exit is a reproduced defect in a
+file this lane did not touch, which takes the `work-consolidation` ladder the operator himself ruled
+(2026-08-16) — with its receipt, so the next lane starts from a proven bug and a command — and that
+is consolidation, not a review minting a ticket.
 
 **The drop count is never omitted.** A review that silently discards what it rejected is a summary
 of its own conclusion. Name individually only a finding whose reproduction disagreed with its label,
@@ -126,15 +133,17 @@ therefore **provisional**: the caller resolves it at the stamp, against the rows
 
 | Row still OPEN at the stamp | Effect on `severity_floor` |
 |---|---|
-| a reproduced `critical` in `fix` that is not yet fixed and pinned | **FAIL** |
-| a reproduced `important` in `escalate` | **CONCERNS** |
-| anything in `defer`, at any severity | **CONCERNS** — the blocker is named, and a gate cannot block a lane on work it cannot do |
+| a reproduced `critical` in `fix` that is not yet fixed and pinned — or `held` for the operator's word | **FAIL** |
+| a reproduced `important` `held` for the operator's word (Ask First, or a spec conflict), its patch written | **CONCERNS** — authority |
+| a reproduced `important` in `fix` that is neither fixed nor held | **CONCERNS** provisionally, at this step — at the stamp it is not a verdict at all: the stamp is refused (`walkthrough_roster.py`, SCC-447 Part 3) and the caller finishes the fix |
 | a `suggestion` or `nitpick`, any bucket | **never gates** — recorded, never raising the floor |
 | a lens still `dead` after retry AND inline rerun | **CONCERNS** |
 
 The floor is the **most severe** applicable row, on the axis `none` < `CONCERNS` < `FAIL`. A lens
 recorded `recovered-inline` is not a dead lens and does not appear here at all. A row closed by a fix and a green pin
-does not appear here.
+does not appear here. The two CONCERNS rows that can stand at the stamp are `code-standards.md` §7's
+two grounds — the held row is *authority*, the dead-lens row is *coverage* — and a still-open
+`important` is neither: it is unfinished work, and the stamp waits for it.
 
 **CONCERNS is not a stop.** `code-standards.md` §7 is the law: it is a shippable verdict, the
 go/no-go is the operator's word, and no command, door or agent may treat it as a blocker on its own

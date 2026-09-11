@@ -160,7 +160,7 @@ the FastAPI + Next.js house shape.
 
 ---
 
-## 6.5 Disposition — reproduce or drop, fix or escalate
+## 6.5 Disposition — reproduce or drop, then fix
 
 > Hoisted here by SCC-205 because it is **disposition law, not review-engine law**: it governs every
 > command that produces findings — both clean-code audits, both code reviews, both self-audits — and
@@ -168,8 +168,8 @@ the FastAPI + Next.js house shape.
 > This rule already owns the FAIL-vs-CONCERNS split (§7), so it is the one place all four audits bind.
 >
 > **Rewritten by SCC-447 (2026-09-11).** The 2026-08-17 ruling below still stands. What changed is
-> that "real" stopped being a judgment call and became a receipt on disk, and that a finding the
-> lane is not fixing now has somewhere to go other than back into the queue.
+> that "real" stopped being a judgment call and became a receipt on disk, and that a finding which
+> reproduced has exactly one destination: fixed, here, by the agent that reviewed it.
 
 **The ruling, in the operator's words (2026-08-17): *"the agent's job is to find things so it always
 will — this is how we end up in this loop. The agent who assesses the finds has to decide what's real
@@ -228,22 +228,34 @@ command does not fail when it is run, is **dropped and counted**.
 
 | The finding | What the agent does | The disposition it records |
 |---|---|---|
-| reproduced `critical` | fixes it, in this lane, with a pin seen red then green | `fixed @<sha> · pin <test>[:<case>] · repro <id>` |
-| reproduced `important` | does **not** fix it — it escalates to the operator, in the same thread | `escalated · repro <id> · default: ships as recorded` |
+| reproduced `critical` or `important` | fixes it, in this lane, with a pin seen red then green | `fixed @<sha> · pin <test>[:<case>] · repro <id>` |
+| reproduced, and the fix needs the operator's permission — the constitution's **Ask First** list, or it contradicts the spec | writes the fix and its pin as a patch beside the receipt, does **not** apply it, and stamps — the verdict carries it to the operator | `held — <reason> · repro <id> · patch <path>` |
+| reproduced, in a file this lane did not touch (another repo, or a file another LIVE lane owns, is the same case) | not this lane's work — it takes the `work-consolidation` ladder with its receipt attached | `out-of-lane — <where it went>` |
 | `critical` or `important` that did not reproduce | dropped, counted, and never written up on its own | `dropped — no reproduction` |
 | `suggestion` or `nitpick` | nothing at all; a count | `recorded` |
-| reproduced, and this lane structurally cannot hold the fix | `defer` against ONE named blocker | `deferred — <blocker>` |
 
-**The agent fixes a reproduced `critical` and nothing else.** An `important` is real and it is not
-urgent, and fixing it is a new unreviewed edit at the end of a lane, which is the loop this section
-exists to end — one turn later, with a fresh finding attached. Escalation is not a soft refusal: the
-operator sees it, with its receipt and a one-line recommendation, and the default is that it ships as
-recorded.
+**A reproduced finding is fixed. There is no third bucket.** SCC-447's first cut kept two — an
+`escalate` bucket that handed a reproduced `important` to the operator with a recommendation, and a
+`defer` bucket for a fix "this lane structurally cannot hold" — and the operator struck both the
+same day (2026-09-11): each one put a reproduced defect in front of him to read, and the lenses were
+made to reproduce precisely so that nobody has to. The lens proved it; the agent fixes it. "It is a
+new unreviewed edit" is answered by the pin, not by a queue. What used to be a defer was never one: a
+defect outside this lane's files is out-of-lane work with the ladder it always had, and a defect the
+operator has ruled out is a drop with his ruling as its reason.
+
+**`held` is the one row the operator sees, and it is never a question.** It exists only where the
+agent may not act alone — the constitution's Ask First list (a schema, a security rule, CI or
+environment config, a dependency, an architectural change across a boundary, a file deletion, a
+cross-boundary contract) or a fix the spec contradicts, where "correct" is a product call. `<reason>`
+is `ask-first: <the row>` or `spec-conflict`. The fix is already written: the patch carries the
+change and its pin, `git apply --check` passes on the lane tip, and the operator's `apply <id>` lands
+it with the pin seen red then green. His `approved` ships the lane without it, and the row closes as
+`ruled — <his word>`. Nothing is held for any other reason, and nothing held is ever a ticket.
 
 ⛔ **"It's cheap" is not a reason.** Twenty cheap fixes is not cheap — it is the audit that never ends,
 and every one of them lands *after* the checks ran, unreviewed.
 
-⛔ **Record the tail in ONE line**: how many were fixed, escalated and deferred, and how many were
+⛔ **Record the tail in ONE line**: how many were fixed, held and sent out of lane, and how many were
 dropped for want of a reproduction. Not one line each. Name individually only a finding whose
 reproduction disagreed with its label, in either direction — that is the calibration signal, and it
 is the only thing in the tail worth a sentence.
@@ -254,11 +266,13 @@ is the only thing in the tail worth a sentence.
 
 | Verdict | Trigger |
 |---|---|
-| **FAIL** | An **open reproduced** `critical`, with its receipt on disk. Or: a §6 machine check errors on **changed lines**; a §2 banned pattern (bare `except:`, `any`, dead abstraction shipped); a committed secret. |
-| **CONCERNS** | An **open reproduced** `important` — escalated to the operator, or deferred behind a named blocker. Also a dead lens, §1 comment-contract gaps, and §2 judgment calls (bloat, duplication, unnecessary structure). |
-| **PASS** | Machine floor green on changed lines, no judgment findings above noise, and no open reproduced finding. |
+| **FAIL** | An **open reproduced** `critical` at the stamp, whatever the reason — unfixed, or `held` for the operator's word — with its receipt on disk. Or: a §6 machine check errors on **changed lines**; a §2 banned pattern (bare `except:`, `any`, dead abstraction shipped); a committed secret. |
+| **CONCERNS** | Exactly two grounds, both evidence. **Coverage:** a lens still `dead` after the retry and the inline rerun — the review did not look everywhere. **Authority:** an **open reproduced** `important` `held` because its fix needs the operator's word (Ask First, or a spec conflict), with the patch written beside its receipt. Nothing else. |
+| **PASS** | Machine floor green on changed lines, every applicable lens ran, and no open reproduced finding. |
 
-Objective things block. Taste does not — it gets recorded, argued, and fixed on its merits.
+Objective things block. Taste does not — it is recorded, never a verdict: §1 comment-contract gaps and §2 judgment calls
+(bloat, duplication, unnecessary structure) are counts in the record and no longer raise the floor
+(SCC-447 — they gated at CONCERNS, and a CONCERNS made of taste is a file the operator has to open).
 
 **The floor is computed AT THE STAMP, on the rows that are still OPEN (SCC-447)** — never at triage,
 from whatever the lenses first returned. That is the one change that gives the floor a way down, and
@@ -267,9 +281,10 @@ fix and a green pin is not a reason to hold a lane; it is the lane working as de
 exactly two ways down and both are evidence: a receipt showing the command does **not** fail, or a
 fix with a pin seen red then green. Any other downgrade is the caller overruling the review.
 
-**CONCERNS is a shippable verdict, and the go/no-go is the operator's word.** It means the review
-found something real that this lane is not fixing — an escalated `important`, or a defer behind a
-named blocker — and the operator decides. FAIL is the blocker; CONCERNS is information, and
+**CONCERNS is a shippable verdict, and the go/no-go is the operator's word.** It means the review is
+telling him one of exactly two things it cannot settle itself — a surface it could not examine, or a
+written fix it is not allowed to apply — and he decides with the receipt and the patch in front of
+him, never with a file to read. FAIL is the blocker; CONCERNS is information, and
 no command, door or agent may treat it as a blocker on its own authority.
 
 **One review per lane.** The lenses run ONCE. When the fixes land, the retest is the pins

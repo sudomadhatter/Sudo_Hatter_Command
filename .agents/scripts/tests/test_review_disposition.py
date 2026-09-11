@@ -1,4 +1,4 @@
-"""SCC-447 — the disposition doctrine: reproduce or drop, fix or escalate, one review per lane.
+"""SCC-447 — the disposition doctrine: reproduce or drop, then fix, one review per lane.
 
 ⛔ WHAT THIS FILE EXISTS FOR, measured. The review engine had no stop condition an agent could
 reach on its own. Its lenses are instructed to be exhaustive and are judged by what they return,
@@ -12,10 +12,13 @@ over a 155-file diff and burned a week of credit without closing.
 The doctrine that replaces it is four sentences, and this file is what holds each of them:
 
   1. **Reproduce or drop.** A `critical` or `important` with no receipt on disk does not exist.
-  2. **Fix a reproduced `critical`; ESCALATE a reproduced `important`.** Fixing an `important` at
-     the end of a lane is a new unreviewed edit — the loop, one turn later.
+  2. **Fix what reproduced.** A reproduced `critical` or `important` is fixed in the lane with a
+     pin. A fix the agent may not apply alone is written as a patch and `held`; nothing is
+     escalated and nothing is deferred (operator ruling 2026-09-11 — both buckets struck the day
+     the first cut of this doctrine landed, because each put a reproduced defect in front of him).
   3. **The floor is computed AT THE STAMP, on rows still OPEN.** A row closed by a fix and a green
-     pin does not gate. CONCERNS ships on the operator's word; FAIL is the blocker.
+     pin does not gate. CONCERNS has exactly two grounds — coverage (a dead lens) and authority (a
+     held fix) — and ships on the operator's word; FAIL is the blocker.
   4. **One review per lane.** The retest is the pins plus the suite, never a second fan-out.
 
   ── WHY THIS FILE IS SHAPED THE WAY IT IS (the SCC-122 pattern, inherited) ───────────────────
@@ -23,7 +26,7 @@ A keyword grep is not a guard: five keyword-stuffed stubs instructing the exact 
 engine's rules once scored 80/80 on the first version of `test_review_engine.py`. So every content
 check here obeys the same three disciplines that repair proved:
 
-  1. **Checks bind a RELATIONSHIP, not a vocabulary.** `important` and `escalate` both appearing
+  1. **Checks bind a RELATIONSHIP, not a vocabulary.** `important` and `fixed` both appearing
      somewhere proves nothing; a table row mapping the one to the other proves the mapping.
   2. **Every check ships a COUNTER-EXAMPLE and is proven to reject it.** The harness applies the
      mutation in memory and requires the check to go red. A check that survives its own
@@ -88,16 +91,21 @@ CHECKS_A: tuple[tuple[str, str, str, int, str, str], ...] = (
      "does not fail when it is run, is **dropped and counted**",
      "does not fail when it is run, is still worth reporting"),
     # The action policy — one row per severity, each binding severity to ACTION
-    ("§6.5 policy: a reproduced CRITICAL is FIXED in this lane, with a pin", RULE,
-     r"^\|\s*reproduced `critical`\s*\|[^|]*fixes it, in this lane, with a pin[^|]*\|"
-     r"[^|]*`fixed @<sha> · pin <test>\[:<case>\] · repro <id>`", re.M,
-     "| reproduced `critical` | fixes it, in this lane, with a pin",
-     "| reproduced `critical` | hands it to the operator"),
-    ("§6.5 policy: a reproduced IMPORTANT is ESCALATED, never fixed by the agent", RULE,
-     r"^\|\s*reproduced `important`\s*\|[^|]*does \*\*not\*\* fix it[^|]*\|"
-     r"\s*`escalated · repro <id> · default: ships as recorded`", re.M,
-     "| reproduced `important` | does **not** fix it",
-     "| reproduced `important` | fixes it too, while it is cheap"),
+    ("§6.5 policy: a reproduced CRITICAL or IMPORTANT is FIXED in this lane, with a pin", RULE,
+     r"^\|\s*reproduced `critical` or `important`\s*\|[^|]*fixes it, in this lane, with a pin"
+     r"[^|]*\|[^|]*`fixed @<sha> · pin <test>\[:<case>\] · repro <id>`", re.M,
+     "| reproduced `critical` or `important` | fixes it, in this lane, with a pin",
+     "| reproduced `critical` or `important` | hands it to the operator"),
+    # ⛔ Operator ruling 2026-09-11: the ESCALATE row this replaces handed a reproduced `important`
+    # to him with a recommendation — a finding to read, which is the review he asked to be designed
+    # out of. The one row that reaches him now is a fix the agent may not APPLY alone, and it
+    # reaches him written, never as a question.
+    ("§6.5 policy: a fix the agent may not apply alone is HELD as a written patch, never asked", RULE,
+     r"^\|\s*reproduced, and the fix needs the operator's permission[^|]*\|[^|]*writes the fix "
+     r"and its pin as a patch[^|]*does \*\*not\*\* apply it[^|]*\|"
+     r"\s*`held — <reason> · repro <id> · patch <path>`", re.M,
+     "writes the fix and its pin as a patch",
+     "asks the operator what to do"),
     ("§6.5 policy: no reproduction → dropped, counted, never written up individually", RULE,
      r"^\|\s*`critical` or `important` that did not reproduce\s*\|[^|]*dropped, counted[^|]*\|"
      r"\s*`dropped — no reproduction`", re.M,
@@ -107,30 +115,44 @@ CHECKS_A: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"^\|\s*`suggestion` or `nitpick`\s*\|\s*nothing at all; a count\s*\|\s*`recorded`", re.M,
      "| `suggestion` or `nitpick` | nothing at all; a count | `recorded` |",
      "| `suggestion` or `nitpick` | fix the cheap ones | `fixed` |"),
-    ("§6.5 policy: a structural blocker is the ONLY defer, and it is named", RULE,
-     r"^\|\s*reproduced, and this lane structurally cannot hold the fix\s*\|"
-     r"[^|]*`defer` against ONE named blocker\s*\|\s*`deferred — <blocker>`", re.M,
-     "| reproduced, and this lane structurally cannot hold the fix | `defer` against ONE named blocker",
-     "| reproduced, and this lane structurally cannot hold the fix | opens a follow-on ticket"),
-    ("§6.5: the agent fixes a reproduced critical AND NOTHING ELSE", RULE,
-     r"\*\*The agent fixes a reproduced `critical` and nothing else\.\*\*", 0,
-     "The agent fixes a reproduced `critical` and nothing else.",
-     "The agent fixes whatever it reproduced."),
-    ("§6.5: fixing an important is a new unreviewed edit — the loop, named", RULE,
-     r"fixing it is a new unreviewed edit at the end of a lane, which is the loop", 0,
-     "fixing it is a new unreviewed edit at the end of a lane, which is the loop",
-     "fixing it is usually the fastest way to close the lane"),
+    # The DEFER row this replaces was a parking lot with a nicer name: "this lane structurally
+    # cannot hold the fix" was the excuse that filled it. A defect outside the lane's files was
+    # never a disposition of the review — it is out-of-lane work with the ladder it always had.
+    ("§6.5 policy: a defect outside this lane's files is OUT-OF-LANE, down the consolidation ladder", RULE,
+     r"^\|\s*reproduced, in a file this lane did not touch[^|]*\|[^|]*`work-consolidation` ladder "
+     r"with its receipt attached\s*\|\s*`out-of-lane — <where it went>`", re.M,
+     "`work-consolidation` ladder with its receipt attached",
+     "deferred ledger, against a named blocker"),
+    ("§6.5: a reproduced finding is FIXED — no third bucket, and both retired ones are named", RULE,
+     r"\*\*A reproduced finding is fixed\. There is no third bucket\.\*\*[\s\S]{0,400}?"
+     r"`escalate` bucket[\s\S]{0,300}?`defer` bucket", 0,
+     "There is no third bucket.",
+     "The agent chooses a bucket."),
+    ("§6.5: `held` is never a question — the patch is written and applies on the tip", RULE,
+     r"\*\*`held` is the one row the operator sees, and it is never a question\.\*\*"
+     r"[\s\S]{0,900}?`git apply --check` passes on the lane tip", 0,
+     "and it is never a question",
+     "and it is his question to answer"),
     # §7 — the floor, the verdict meanings, and the one-review rule
-    ("§7: FAIL is an OPEN REPRODUCED critical, receipt on disk", RULE,
-     r"^\|\s*\*\*FAIL\*\*\s*\|\s*An \*\*open reproduced\*\* `critical`, with its receipt on disk",
-     re.M,
-     "| **FAIL** | An **open reproduced** `critical`, with its receipt on disk",
+    ("§7: FAIL is an OPEN REPRODUCED critical at the stamp, whatever the reason", RULE,
+     r"^\|\s*\*\*FAIL\*\*\s*\|\s*An \*\*open reproduced\*\* `critical` at the stamp, "
+     r"whatever the reason[^|]*with its receipt on disk", re.M,
+     "| **FAIL** | An **open reproduced** `critical` at the stamp, whatever the reason",
      "| **FAIL** | Anything a lens labelled `critical`"),
-    ("§7: CONCERNS is an OPEN REPRODUCED important — escalated or deferred", RULE,
-     r"^\|\s*\*\*CONCERNS\*\*\s*\|\s*An \*\*open reproduced\*\* `important`"
-     r"[^|]*escalated to the operator, or deferred behind a named blocker", re.M,
-     "| **CONCERNS** | An **open reproduced** `important`",
-     "| **CONCERNS** | Any judgment call a lens raised"),
+    # ⛔ THE GROUNDS FOR CONCERNS, defined (operator, 2026-09-11: "What would be fair grounds
+    # based off previous evidence to flag the CONCERNS, instead of PASS ... we have to define that
+    # now"). Two, both evidence, and the row says "Nothing else" so a third cannot drift in.
+    ("§7: CONCERNS has exactly TWO grounds — coverage (a dead lens) and authority (a held fix)", RULE,
+     r"^\|\s*\*\*CONCERNS\*\*\s*\|\s*Exactly two grounds, both evidence\. \*\*Coverage:\*\* "
+     r"a lens still `dead`[^|]*\*\*Authority:\*\* an \*\*open reproduced\*\* `important` `held`"
+     r"[^|]*Nothing else\.", re.M,
+     "Nothing else.",
+     "Also any judgment call a lens raised."),
+    ("§7: taste never raises the floor — §1/§2 judgment calls are counts, not a verdict", RULE,
+     r"Taste does not — it is recorded, never a verdict: §1 comment-contract gaps and §2 judgment "
+     r"calls[\s\S]{0,200}?no longer raise the floor", 0,
+     "no longer raise the floor",
+     "raise the floor to CONCERNS"),
     ("§7: PASS needs no OPEN reproduced finding (not zero findings)", RULE,
      r"^\|\s*\*\*PASS\*\*\s*\|[^|]*no open reproduced finding", re.M,
      "and no open reproduced finding.",
@@ -312,19 +334,21 @@ CHECKS_B: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"A `suggestion` or a `nitpick` is never reproduced and never bucketed", 0,
      "A `suggestion` or a `nitpick` is never reproduced and never bucketed",
      "A `suggestion` or a `nitpick` is bucketed like anything else"),
-    ("step-03 bucket: FIX is a reproduced critical, pinned with a test seen red", S3,
-     r"^- \*\*fix\*\* — a reproduced `critical`\.[^\n]*\n[^\n]*reproduce-before-you-fix` G1–G5",
-     re.M,
-     "- **fix** — a reproduced `critical`.",
+    ("step-03 bucket: FIX is a reproduced critical OR important, pinned with a test seen red", S3,
+     r"^- \*\*fix\*\* — a reproduced `critical` or `important`\.[^\n]*\n[^\n]*"
+     r"reproduce-before-you-fix` G1–G5", re.M,
+     "- **fix** — a reproduced `critical` or `important`.",
      "- **fix** — anything the assessor judges worth fixing."),
-    ("step-03 bucket: ESCALATE is a reproduced important the caller does NOT fix", S3,
-     r"^- \*\*escalate\*\* — a reproduced `important`\. \*\*The caller does NOT fix it\.\*\*", re.M,
-     "- **escalate** — a reproduced `important`. **The caller does NOT fix it.**",
-     "- **escalate** — a reproduced `important`. **The caller fixes it first.**"),
-    ("step-03 bucket: an escalated row's default is SHIPS AS RECORDED", S3,
-     r"its default is\n\s*\*ships as recorded\*", 0,
-     "*ships as recorded*",
-     "*holds the lane until ruled on*"),
+    ("step-03: TWO buckets, and the two struck ones are named with the ruling", S3,
+     r"\*\*There are two buckets, and there is no third\.\*\*[\s\S]{0,900}?`escalate` bucket"
+     r"[\s\S]{0,300}?`defer` bucket[\s\S]{0,400}?2026-09-11", 0,
+     "There are two buckets, and there is no third.",
+     "There are two buckets, and a third may be added when a lane needs one."),
+    ("step-03: held and out-of-lane are the CALLER's dispositions, not engine buckets", S3,
+     r"dispositions of the CALLER, not\s+buckets of this engine[\s\S]{0,400}?`held`"
+     r"[\s\S]{0,300}?`out-of-lane`", 0,
+     "dispositions of the CALLER, not",
+     "two more buckets this engine assigns, not"),
     ("step-03 bucket: DROP covers no-reproduction, no-command and noise, counted in one line", S3,
      r"^- \*\*drop\*\* — did not reproduce, arrived without a command, or is noise", re.M,
      "- **drop** — did not reproduce, arrived without a command, or is noise",
@@ -334,10 +358,9 @@ CHECKS_B: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"forever at\n`finish`, which is the loop\.", 0,
      "**There is no `decision_needed` bucket any more.**",
      "**The `decision_needed` bucket is unchanged.**"),
-    ("step-03: a survivor is fixed or escalated IN THIS THREAD, never a ticket", S3,
-     r"\*\*A finding that survives the\ngate is fixed or escalated in this thread, never a ticket"
-     r"\.\*\*", 0,
-     "gate is fixed or escalated in this thread, never a ticket.**",
+    ("step-03: a survivor is fixed IN THIS THREAD, never a ticket", S3,
+     r"\*\*A finding that survives the\ngate is fixed in this thread, never a ticket\.\*\*", 0,
+     "gate is fixed in this thread, never a ticket.**",
      "gate is owed to a follow-on ticket.**"),
     ("step-03 §5: the floor is read at the STAMP, on rows still OPEN", S3,
      r"^## 5\. Score the severity floor — on the rows that are still OPEN at the stamp$", re.M,
@@ -347,21 +370,24 @@ CHECKS_B: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"the only road from CONCERNS to PASS was a second full fan-out", 0,
      "the only road from CONCERNS to PASS was a second full fan-out",
      "the floor was simply conservative"),
-    ("step-03 §5: an UNFIXED reproduced critical is the only FAIL", S3,
-     r"^\|\s*a reproduced `critical` in `fix` that is not yet fixed and pinned\s*\|\s*\*\*FAIL\*\*",
-     re.M,
-     "| a reproduced `critical` in `fix` that is not yet fixed and pinned | **FAIL** |",
-     "| any `critical` a lens reported | **FAIL** |"),
-    ("step-03 §5: an escalated reproduced important is CONCERNS", S3,
-     r"^\|\s*a reproduced `important` in `escalate`\s*\|\s*\*\*CONCERNS\*\*", re.M,
-     "| a reproduced `important` in `escalate` | **CONCERNS** |",
-     "| a reproduced `important` in `escalate` | **FAIL** |"),
-    ("step-03 §5: a defer gates at CONCERNS at ANY severity — a gate cannot block on work "
-     "the lane cannot do", S3,
-     r"^\|\s*anything in `defer`, at any severity\s*\|\s*\*\*CONCERNS\*\*[^|]*a gate cannot block "
-     r"a lane on work it cannot do", re.M,
-     "| anything in `defer`, at any severity | **CONCERNS**",
-     "| anything in `defer`, at any severity | **never gates**"),
+    ("step-03 §5: an OPEN reproduced critical is FAIL — unfixed, or held", S3,
+     r"^\|\s*a reproduced `critical` in `fix` that is not yet fixed and pinned — or `held`[^|]*\|"
+     r"\s*\*\*FAIL\*\*", re.M,
+     "| a reproduced `critical` in `fix` that is not yet fixed and pinned — or `held`",
+     "| any `critical` a lens reported"),
+    ("step-03 §5: a HELD reproduced important is CONCERNS — authority", S3,
+     r"^\|\s*a reproduced `important` `held` for the operator's word[^|]*\|\s*\*\*CONCERNS\*\* "
+     r"— authority", re.M,
+     "**CONCERNS** — authority",
+     "**FAIL** — authority"),
+    # ⛔ An `important` that is neither fixed nor held is not a verdict of any kind: the stamp is
+    # refused and the caller finishes. This is what replaced "escalate → CONCERNS": the old row
+    # let an unfixed reproduced defect ship with a label; this one lets it ship only fixed.
+    ("step-03 §5: an important neither fixed nor held is NOT a verdict — the stamp is refused", S3,
+     r"^\|\s*a reproduced `important` in `fix` that is neither fixed nor held\s*\|[^|]*"
+     r"the stamp is refused", re.M,
+     "the stamp is refused",
+     "the lane ships as CONCERNS"),
     ("step-03 §5: a fixed-and-pinned row does not appear in the table at all", S3,
      r"A row closed by a fix and a green pin\ndoes not appear here\.", 0,
      "A row closed by a fix and a green pin\ndoes not appear here.",
@@ -375,39 +401,35 @@ CHECKS_B: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"^- \[ \] \[Review\]\[Fix\] <title> \[<file>:<line>\] src=<lens> · repro <id>$", re.M,
      "- [ ] [Review][Fix] <title> [<file>:<line>] src=<lens> · repro <id>",
      "- [ ] [Review][Patch] <title> [<file>:<line>] src=<lens>"),
-    ("step-04: the ESCALATE box carries its repro id and a one-line recommendation", S4,
-     r"^- \[ \] \[Review\]\[Escalate\] <title> \[<file>:<line>\] src=<lens> · repro <id> · "
-     r"recommend: <one line>$", re.M,
-     "- [ ] [Review][Escalate] <title> [<file>:<line>] src=<lens> · repro <id> · "
-     "recommend: <one line>",
-     "- [ ] [Review][Decision] <title> — <detail> src=<lens>"),
+    ("step-04: there is NO Escalate box and NO Defer box, and the ruling is named", S4,
+     r"\*\*There is no `Escalate` box and no `Defer` box \(SCC-447, operator ruling 2026-09-11\)"
+     r"\.\*\*", 0,
+     "There is no `Escalate` box and no `Defer` box",
+     "The `Escalate` box and the `Defer` box are written below"),
     ("step-04: src= is one of the THREE surviving lens short names", S4,
      r"One lens by its short name \(`edge`, `acceptance`, `test-adequacy`\)", 0,
      "One lens by its short name (`edge`, `acceptance`, `test-adequacy`)",
      "One lens by its short name (`blind`, `edge`, `literal`, `acceptance`, `test-adequacy`)"),
-    ("step-04: the summary counts fix · escalate · defer, then dropped and recorded", S4,
-     r"^findings: {8}<f> fix · <e> escalate · <w> defer {3}"
-     r"\(<d> dropped — no reproduction · <r> recorded\)$", re.M,
+    ("step-04: the summary counts fix, then dropped and recorded — nothing else", S4,
+     r"^findings: {8}<f> fix {3}\(<d> dropped — no reproduction · <r> recorded\)$", re.M,
+     "findings:        <f> fix   (<d> dropped — no reproduction · <r> recorded)",
      "findings:        <f> fix · <e> escalate · <w> defer   "
-     "(<d> dropped — no reproduction · <r> recorded)",
-     "findings:        <d> decision · <p> patch · <w> defer   "
-     "(<n> noise-dismissed · <k> relevance kills)"),
-    ("step-04: the ESCALATE box is the caller's to carry to the operator, not to fix", S4,
-     r"Every `escalate` box is carried to the OPERATOR", 0,
-     "Every `escalate` box is carried to the OPERATOR",
-     "Every `escalate` box is the caller's to close"),
+     "(<d> dropped — no reproduction · <r> recorded)"),
+    ("step-04: held and out-of-lane are written by the CALLER at fix time, never by the engine", S4,
+     r"both\s+are the CALLER's dispositions, written at fix time, and this engine never writes either",
+     0,
+     "this engine never writes either",
+     "this engine writes both"),
     # SKILL.md: the caller contract matches
     ("SKILL: the description says it reproduces, not that it verifies", SKILL,
      r"^description:[^\n]*reproduces what they find", re.M,
      "reproduces what they find",
      "verifies findings"),
     ("SKILL: the return block matches step-04's counts", SKILL,
-     r"^findings: {8}<f> fix · <e> escalate · <w> defer {3}"
-     r"\(<d> dropped — no reproduction · <r> recorded\)$", re.M,
+     r"^findings: {8}<f> fix {3}\(<d> dropped — no reproduction · <r> recorded\)$", re.M,
+     "findings:        <f> fix   (<d> dropped — no reproduction · <r> recorded)",
      "findings:        <f> fix · <e> escalate · <w> defer   "
-     "(<d> dropped — no reproduction · <r> recorded)",
-     "findings:        <d> decision · <p> patch · <w> defer   "
-     "(<n> noise-dismissed · <k> relevance kills)"),
+     "(<d> dropped — no reproduction · <r> recorded)"),
     ("SKILL: step 2 is declared a pass-through in the flow list", SKILL,
      r"^2\. `steps/step-02-verify\.md` — pass-through \(the verify wave is retired, SCC-447\)$",
      re.M,
@@ -451,6 +473,11 @@ BANS: tuple[tuple[str, str], ...] = (
     ("a live EVIDENCE_PACK priming instruction", r"prime the lenses[^\n]*with it"),
     ("the retired decision_needed bucket as a live bucket", r"^- \*\*decision_needed\*\*"),
     ("the retired patch bucket as a live bucket", r"^- \*\*patch\*\* —"),
+    # Struck 2026-09-11 (operator ruling) — the two buckets SCC-447's own first cut shipped.
+    ("the retired escalate bucket as a live bucket", r"^- \*\*escalate\*\* —"),
+    ("the retired defer bucket as a live bucket", r"^- \*\*defer\*\* —"),
+    ("a live DEFERRED_WORK input row", r"^\| `DEFERRED_WORK` \|"),
+    ("a live Escalate or Defer record box", r"^- \[ \] \[Review\]\[(Escalate|Defer)\]"),
 )
 
 
