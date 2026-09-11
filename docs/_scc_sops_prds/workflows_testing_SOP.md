@@ -830,7 +830,8 @@ moves at Step 4, *after* the push returns 0.
   pipeline's lane; it lands through `/cicd-mobile-error-team`, never through a story close-out.
 - **⛔ The landing is a pull request, in every mode.** On a FULL or LIGHT epic the door pushes the
   story branch as the head of a PR into the epic, watches the epic's checks (on LIGHT the two E2E
-  checks show as skipped — by design) and merges it; on TRUNK it opens the PR into `main` and stops
+  checks show as skipped — by design, in a repo whose CI reads the token; where Step 0's cost line
+  said `NOT ARMED HERE`, all four still run and a red E2E is a red) and merges it; on TRUNK it opens the PR into `main` and stops
   for your click. There is no direct `HEAD:epic/` push any more — the epic ruleset refuses it. A
   story branch otherwise reaches origin **only** via `/cicd-park` — that is park's whole purpose, and
   `/cicd-resume` reads the origin `claude/*` list to find in-flight work on a cold machine; Step 5
@@ -2142,7 +2143,7 @@ mints), cuts the `chore/<KEY>-<slug>` worktree, then:
 
 | Step | What happens | Who moves it |
 |---|---|---|
-| 1. Scope check | `scope_check.py` runs the planned files against `.agents/critical-surfaces.json` — in the lobby that is the gates: `.github/`, the hooks, the preflights, the permission fence. `CLEAR` continues. `OVERLAP` **stops**: the agent prints what overlaps and why and waits. | Only your word lifts it, quoted into the plan as `Scope override`. No agent override, and the lane never offers a lighter road. |
+| 1. Scope check | `scope_check.py` runs the planned files against `.agents/critical-surfaces.json` — in the lobby that is the gates: `.github/`, the hooks, the preflights, the permission fence, the gate scripts and `.agents/scripts/tests/` (so script work that owes a test overlaps here, at Step 1, and is said out loud before the build). `CLEAR` continues. `OVERLAP` **stops**: the agent prints what overlaps and why and waits. | Only your word lifts it, quoted into the plan as `Scope override`. No agent override, and the lane never offers a lighter road. |
 | 2. Plan | a short `implementation_plan.md` — goal, the assertion that will prove it, the change set — with `task.yaml` beside it, then the literal `approved`. `/smh-self-audit` runs **only if you ask**. | you |
 | 3. RED then GREEN | the assertion seen red, then made green; `run_all.py`, `workflow_lint.py --toolkit-only`, `check_maps.py`, `check_links.py` run bare | the agent |
 | 4. Walkthrough | `walkthrough.md`, then the literal `approved`. `/smh-code-review` runs **only if you ask**; when it does not, the walkthrough carries `Review: none - quick lane; walkthrough approved by the operator @ <sha>` and **no `Verdict:` line**. | you |

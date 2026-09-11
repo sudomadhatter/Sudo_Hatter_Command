@@ -165,7 +165,7 @@ own unless asked**. On this route the lead is the one asking: stage 2 IS the req
 
 | Stage | Door | Seat | Note |
 |---|---|---|---|
-| 1 | `/cicd-quick-dev <KEY>` | `cheshire-cat` | The build: scope check, plan, RED, GREEN, walkthrough (both `approved` stops are the lead's) |
+| 1 | `/cicd-quick-dev <KEY>` | `cheshire-cat` | The build: scope check, plan, RED, GREEN, walkthrough. Both `approved` stops are the operator's: the plan's is his launch word (a batch approval scoped to this ticket, `000-PLAN-FIRST-GATE`), the walkthrough's is escalated to him (Step 2.5) — the lead never supplies either |
 | 2 | `/cicd-code-review <KEY>` | **`--review`, no seat** | The review the quick lane runs only on request — this is the request, and its verdict is the run's |
 | 3 | the fix, only on CONCERNS/FAIL | `cheshire-cat` | One cycle, in the lane |
 | 4 | `/cicd-code-review <KEY>` again | **`--review`, no seat** | Fresh session at the new sha |

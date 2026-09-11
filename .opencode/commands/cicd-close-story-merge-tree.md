@@ -308,7 +308,10 @@ story straight onto production. If Step 0 did not run in this session, run its t
 **Arm A — FULL or LIGHT: a pull request into the epic, then the merge.** The epic's ruleset requires
 its checks on every change to `epic/**`, so the PR is the only road. Which checks is the mode's: on
 FULL all four run, E2E included; on LIGHT only the two fast checks run and **the two E2E checks
-show as skipped — that is the design, not a red** (E2E runs once, at `/cicd-push-e2e`).
+show as skipped — that is the design, not a red** (E2E runs once, at `/cicd-push-e2e`) — **in a repo
+that has armed LIGHT.** If Step 0's cost line carried the `⛔ NOT ARMED HERE` caveat, this repo's CI
+does not read the token yet: every landing still runs all four, and a red E2E is a red — STOP and
+report it exactly as on FULL.
 
 ```bash
 cd "<the story worktree>" && git push origin claude/<JIRA-KEY>-<story-slug>
@@ -355,7 +358,9 @@ story WAS parked, its branch is already on origin and Step 5 deletes it there.
 - **`main` is untouched.** Only Daniel, directly or via `/cicd-push-e2e`.
 - **Report** the branch, the commit range that landed, and the merge sha — **in chat and in Step 4's
   Dev Record, not in the walkthrough.** The walkthrough's landing line is written before the PR opens
-  and carries only what is knowable then: the branch, the range, and the PR URL. The merge row in
+  and carries only what is knowable then: the branch and the range. The PR URL exists only once
+  `gh pr create` returns and the merge sha only after the merge, so both go in chat and in Step 4's
+  Dev Record — never back into a walkthrough that has already ridden the PR. The merge row in
   `## Your Actions` (Step 1 wrote it) needs no sha typed into it at all — `finish` computes whether it
   holds from the repo's own ancestry (SCC-175), off `HEAD`, so the row is satisfied by the landing
   having happened, never by a line an agent wrote about it.
@@ -398,7 +403,7 @@ them in; the walkthrough scrape underneath is a safety net, never the source:
 
 ```bash
 python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <id> --project <PROJECT> \
-       --outcome "review -> done, landed on epic/<JIRA-KEY>-<slug> @ <sha>" \
+       --outcome "review -> done, landed on <epic/<JIRA-KEY>-<mode>-<N>-<slug>, or main on TRUNK> @ <sha>" \
        --decision "<a ruling made while building, and why>" \
        --pitfall  "<a failure mode the next agent would hit>" \
        --followon "<what is still owed, or the deferral>" \
@@ -407,8 +412,11 @@ python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <id> --projec
 
 ⛔ **`--outcome`'s `@ <sha>` is the merge sha, and this is its ONLY home.** It does not exist until
 Arm A's `gh pr merge` returns, by which time the walkthrough has already ridden the PR and cannot be
-amended (Step 3). Read it now — `cd "<the story worktree>" && git rev-parse origin/epic/<JIRA-KEY>-<slug>`
-after a `git fetch origin` — and put it here, where the record is filed after the landing on purpose.
+amended (Step 3). Read it now, after a `git fetch origin`, off the ref the mode landed on — Arm A
+(FULL or LIGHT): `cd "<the story worktree>" && git rev-parse origin/epic/<JIRA-KEY>-<mode>-<N>-<slug>`;
+Arm B (TRUNK, reached through `--after-merge`): `cd "<the story worktree>" && git rev-parse origin/main`,
+because a TRUNK project has no `origin/epic/*` ref at all and reading one is `fatal: ambiguous
+argument` — and put it here, where the record is filed after the landing on purpose.
 
 `--closing` also **clears a `Bug` flag**. A ticket arrives here typed `Bug` when something found it
 broken and pulled it back out of `Done` — an audit that traced a live bug to it, or the operator by

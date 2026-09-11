@@ -234,6 +234,7 @@ reading of the code — and run the check **from the lobby** (the script lives t
 `link-worktree-assets.py`):
 
 ```bash
+L=$(pwd)                                                             # the lobby — bind it in THIS fence: a fence is its own shell, nothing an earlier one set survives (command-shape.md §Absolute fills)
 cd "$L" && python3 .agents/scripts/scope_check.py --repo "$PROJECT_ROOT" --paths <the planned set>   # PC: `python`
 ```
 
@@ -327,9 +328,11 @@ everything written, discard nothing.
   against the deployable-path list in Step 0.5's door table, and **rewrite the `TBD`** —
   `cicd-push-e2e` if anything deployable is in the set, `smh-close-task-merge-tree` if not. The
   close-out reads that field; leaving it `TBD` sends the operator to a door the preflight will refuse.
-- **Story lane only:** advance the story to **`review`** on the way out (`story_status.py`, the
-  normal dev→review flip — `story-status-flip-contract`); `done` stays the operator's. On the ad-hoc
-  lane there is no story key, so nothing flips.
+- **Story lane only:** advance the story to **`review`** on the way out — the normal dev→review flip
+  (`story-status-flip-contract`), run **from the lobby**, because `story_status.py` lives there and
+  no project carries it: `cd "$L" && python3 .agents/scripts/story_status.py set <id> review --project <PROJECT>`,
+  with `L=$(pwd)` bound first in that same fence; `done` stays the operator's. On the ad-hoc lane
+  there is no story key, so nothing flips.
 - Write a **thin `walkthrough.md`** beside the plan. It carries `review-runtime:` (the Step 0.7
   header, one line, above everything else) → `## Task Checklist` → `## Evidence` (the assertion:
   the red line, then the green totals, the lint totals, the sha; the scope-check line; any
@@ -398,6 +401,7 @@ The same check as Step 1, on what you **actually** changed — committed, after 
 — against the base the Step 0 mode gave the lane:
 
 ```bash
+L=$(pwd)                                                             # the lobby — bind it in THIS fence: a fence is its own shell (command-shape.md §Absolute fills)
 cd "$L" && python3 .agents/scripts/scope_check.py --repo "<the tree>" --diff origin/epic/<KEY>-<mode>-<N>-<epic-slug>   # story lane, FULL or LIGHT
 cd "$L" && python3 .agents/scripts/scope_check.py --repo "<the tree>" --diff origin/main                                # chore lane, or a TRUNK story lane
 ```

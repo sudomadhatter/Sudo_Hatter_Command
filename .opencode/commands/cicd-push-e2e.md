@@ -57,7 +57,8 @@ cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `
 
 **Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
 **they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one
-live epic on origin) is a STOP: name the one you mean or prune the other before anything else runs.
+live epic on origin) is a STOP for everything past Step 1: Step 1 shows each candidate and the
+operator names the one he means, or prunes the other — nothing below it runs until one name stands.
 
 ## Step 0.6 — Pin the ticket you MEAN (before any tool has answered anything)
 ```bash

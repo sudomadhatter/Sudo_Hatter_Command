@@ -139,7 +139,7 @@ escalation, not a coin flip.
 
 | # | Who runs it | The door it runs | What it returns | What the lead does with it |
 |---|---|---|---|---|
-| 1 | 😼🔨 **Cheshire Cat** | `/cicd-quick-dev <KEY>` end to end | the build and its walkthrough; the lane writes `Review: none - quick lane …` and no `Verdict:` | the two `approved` stops (plan, walkthrough) are the lead's; ⛔ there is no verdict here to read |
+| 1 | 😼🔨 **Cheshire Cat** | `/cicd-quick-dev <KEY>` end to end | the build and its walkthrough; the lane writes `Review: none - quick lane …` and no `Verdict:` | both `approved` stops are yours: the plan's is your launch word (a batch approval scoped to this ticket), the walkthrough's comes to your phone (§7) — the lead never supplies either; ⛔ there is no verdict here to read |
 | 2 | **no seat** | `/cicd-code-review <KEY>` | the verdict, plus `evidence.sha` | this is the on-request review; `PASS` → park. Anything else → one fix cycle |
 | 3 | 😼🔨 **Cheshire Cat** | the fix, in the lane | the fixed tree at a new sha | One cycle, never two |
 | 4 | **no seat** | `/cicd-code-review <KEY>` again | the second verdict at the new sha | `PASS` → park. Anything else → **escalate** |

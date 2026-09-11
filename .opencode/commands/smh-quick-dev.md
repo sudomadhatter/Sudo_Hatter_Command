@@ -110,6 +110,7 @@ tree is a rail, not ceremony (`git-policy.md` § The rails). `/smh-close-task-me
 prunes it.
 
 ```bash
+L=$(pwd)                                                          # the lobby — bind it in THIS fence: a fence is its own shell (command-shape.md §Absolute fills)
 cd "$REPO" && git worktree list                                   # reuse this task's tree if it exists
 cd "$REPO" && git fetch origin                                    # ⛔ the base is origin/main, never a bare `main`
 cd "$REPO" && git worktree add --no-track .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
@@ -155,6 +156,7 @@ Name the files you intend to touch — the planned set, from the ticket's `ACCEP
 operator's ask — and run the check from the lobby:
 
 ```bash
+L=$(pwd)                                                          # the lobby — bind it in THIS fence: a fence is its own shell (command-shape.md §Absolute fills)
 cd "$L" && python3 .agents/scripts/scope_check.py --repo "$REPO" --paths <the planned set>   # PC: `python`
 ```
 
@@ -171,7 +173,10 @@ quoted verbatim into Step 2's plan** as `**Scope override (<date>):** "<his exac
 NOT approval), and the plan's own `approved` is not it either — an approval of a plan is not an
 approval of the surface it touches. There is no agent override and no `--force`; the script never
 asks. In the lobby the critical surface is the gates: `.github/`, the hooks, the preflights, the
-permission fence — a change there is `/smh-dev-task-tests` work unless the operator says otherwise.
+permission fence, the gate scripts, and **`.agents/scripts/tests/`** — the map lists the test
+directory on purpose, so any script work that owes a test (Step 3 mandates one) overlaps HERE, at
+Step 1, and is said out loud now rather than ejected at Step 5 after the build. A change on any of
+them is `/smh-dev-task-tests` work unless the operator says otherwise.
 
 ⛔ **This step never proposes a lighter road.** There is no lighter road: the lightweight lane
 (`/smh-quick-fix`, no plan, no `approved`) is retired — this lane is what replaced it, and its plan
@@ -312,6 +317,7 @@ means the record did **not** land — report that, not success.
 The same check as Step 1, on what you **actually** changed — committed, after the lane's last commit:
 
 ```bash
+L=$(pwd)                                                          # the lobby — bind it in THIS fence: a fence is its own shell (command-shape.md §Absolute fills)
 cd "$L" && python3 .agents/scripts/scope_check.py --repo "<the tree>" --diff origin/main
 ```
 

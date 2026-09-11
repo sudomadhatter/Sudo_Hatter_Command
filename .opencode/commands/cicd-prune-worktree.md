@@ -343,11 +343,11 @@ machine, and it is recoverable only if someone knows it happened.
 
 **Order is REMOTE first, local second — and under the PR landing the reverse is worse than it was.**
 `git branch -d` checks merged-into-**upstream** when an upstream exists, and merged-into-**HEAD** when
-one does not. Only `/cicd-park` sets an upstream (`push -u`); the landing pushes the branch as its PR's
-head with no `-u`. So the remote-last order asks one of two questions, and neither is the one that
-matters:
+one does not. An upstream is set by `/cicd-park` (`push -u`) and by this door's own Step 2 push that
+preserves uncommitted work (also `-u`); the landing pushes the branch as its PR's head with no `-u`.
+So the remote-last order asks one of two questions, and neither is the one that matters:
 
-- **Parked branch.** Its upstream is set, and the landing push moved that same remote ref to the tip —
+- **Parked branch (or one Step 2 preserved).** Its upstream is set, and the landing push moved that same remote ref to the tip —
   so local equals upstream and `-d` passes **vacuously**. It has proved the two copies match, not that
   the work reached the epic. (Before the PR landing this was merely unhelpful: the landing never touched
   `claude/*`, so the parked upstream lagged the tip and `-d` refused instead — observed 2026-08-01, all
