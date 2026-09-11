@@ -404,3 +404,33 @@ Rows 25 and 26 are applied in this section's acceptance matrix; row 22 is applie
 **The pattern under the thirty, for the next lane:** a gate that compares strings it was handed instead of resolving them against the tree it judges (rows 7, 14, 16, 17), two readers of one record line fed different text (13), a precedence that let foreign evidence shield the lane's own (28), and a measure that compared trees where it meant to measure a lane (12). Each is now one rule in one place, pinned on both sides.
 
 Whole suite at the fix tip: `run_all.py` **87/87 files** @ `14b59913`, clean tree, receipt `gates/suite.json`. `workflow_lint.py --toolkit-only` 0 errors 0 warnings 8 info · `check_maps.py --depth3-only --strict` clean · `check_links.py --base origin/main` clean · `sop_currency.py` over the 154 changed paths clean · `test_command_surfaces.py` 343/343 · `py_compile` on all nine changed Python files green.
+
+## Pass 3 (2026-09-11) — dispositioned under the operator's new rule, no fourth review
+
+The verdict of record for this lane stays the pass-2 **CONCERNS** section above. A third review pass
+was run and it surfaced regressions from the pass-2 fixes; midway through it the operator ruled that
+the fix -> full-re-review loop had wasted the day's credit and must never run again. The new rule
+(memory `concerns-does-not-ship-fix-the-macro-in-lane`, 2026-09-11): the agent auto-fixes only
+REPRODUCED FAILs; CONCERNS and sub-medium findings go to the operator, his call; the retest runs only
+the pins that caught the fixed issues, never a fresh lens fan-out.
+
+**Fixed here (`0a8faf85`), the one reproduced regression I introduced in pass 2 plus stale wording:**
+`closeout_preflight.integration_branch` now reads the epic off `origin/epic/*` as well as local heads,
+so a `--no-track` story lane no longer falls back to `origin/main` and reads a clean epic absorb as
+STALE (pinned, `test_closeout_preflight.py` review-3, 136/136); the SOP index row and the quickref
+FAST-eject arrow name the current mechanism instead of the retired quick-fix lane and router.
+
+**Escalated to the operator, not fixed (his call):**
+- The **project** quick lane serving a STORY lane cannot close: `/cicd-close-story-merge-tree` demands a
+  `suite` receipt the quick lane never stamps (BLOCKED) and `finish` needs a tip it never writes (HELD).
+  This is a design question — is the quick lane meant for story lanes, or only ad-hoc task lanes? It does
+  not affect this lobby lane, whose `task_preflight` reports clear.
+- The approval-staleness net in a repo **with** product dirs (`backend/`, `frontend/`, …) is blind to a
+  post-approval commit to a root deployable (`Dockerfile`, `firebase.json`). Widening the net is a
+  tradeoff (it re-gates on docs typos), so it is the operator's call, not a silent patch.
+- The project quick lane's later fences bind `$L=$(pwd)`, which captures the project tree by Step 5, so
+  the lobby-only tripwire is looked for in a thin project. Inferred, non-blocking; the fix is to carry the
+  Step-0 lobby absolute as a literal rather than re-run `pwd`. Left for the operator's go.
+
+This lane (`chore/SCC-441-...`) closes through `/smh-close-task-merge-tree` -> `task_preflight`, which
+reports `clear to close out and merge` at this tip. None of the three escalated items touches it.
