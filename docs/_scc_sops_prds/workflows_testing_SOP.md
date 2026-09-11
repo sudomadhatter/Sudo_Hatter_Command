@@ -2633,6 +2633,18 @@ something that no longer exists. So every verdict is stamped with the exact vers
 | Epic branch moved ahead | Rebase required | Merge `origin/epic` into story branch; if code changed or conflicts occurred, re-review. |
 
 
+**And a review reads ONE PART, masters only.** Before the lenses run, the door resolves the diff
+through `review_scope.py`, which answers a question the old flow never asked: *what should a lens
+actually read?* It groups the lane's commits by part (a rider key in the subject beats the lane key)
+and refuses rather than guesses when a range holds more than one part. Then it withholds three
+classes of file, each a different way of reading the same thing twice: **mirrors**, which are byte
+copies of a master already in the diff, so a lens finds the same defect twice and reports it twice;
+**generated launchers**, which are output rather than authorship; and **records**, which are the
+lane describing itself, so a lens reviews the walkthrough instead of the code. Every withheld path
+is printed with its class. There is no size cap and that is deliberate: a cap truncates the diff at
+an arbitrary line and the lens never learns what it did not see. Measured on SCC-441's own merge,
+155 files and 1.46 MB became 82 files and 618 KB.
+
 > ⓘ **Why this exists.** For a while the boot command answered "is this ready?" from the status file
 > alone — which reads `review` whether the review passed, failed, or never happened. It cheerfully
 > pointed at close-out for work nobody had reviewed. It now reads the actual verdict and checks the
