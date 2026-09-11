@@ -17,7 +17,8 @@ qualification it can want its way through; a path list it must run is a fact.
     LIGHT-VCS           a DECLARED git-hygiene action that changes no files      (exit 0)
     TASK                the full /smh-dev-task-tests lane: plan, audit, RED, review   (exit 1)
     TASK-LIGHT          the same road, small measured blast radius (--lines 1-10,
-                        <=2 files) - the lane may right-size its ceremony (SCC-302) (exit 1)
+                        <=2 files) - off the critical surfaces it is the QUICK LANE's
+                        work (/smh-quick-dev, git-policy § Two toggles)               (exit 1)
     HANDOFF             a deployable path - /cicd-push-e2e's road, never a Task  (exit 2)
     NOT-COMMAND-CENTRE  a project repo - use the cicd-* lanes                    (exit 3)
 
@@ -89,9 +90,10 @@ VERDICTS = {"LIGHT": 0, "LIGHT-VCS": 0, "TASK": 1, "TASK-LIGHT": 1, "HANDOFF": 2
 # to be indistinguishable - the toolkit branch decided by path prefix alone, with no size input,
 # and the verdict set had nothing between LIGHT and TASK, so SCC-295 (one line, one function)
 # consumed a full session's lane. TASK-LIGHT is the middle door: still the TASK family (exit 1,
-# never the light lane - the drift case below stays intact), but the caller may right-size the
-# ceremony - assertion-first and the gates stay, the five-lens review fan-out may collapse to a
-# single inline pass. Size is EVIDENCE the caller supplies (--lines, e.g. git diff --numstat);
+# never the retired lightweight lane - the drift case below stays intact), and since SCC-441 the
+# home for it is the QUICK LANE (/smh-quick-dev: scope check, plan, RED then GREEN, walkthrough;
+# review only when asked) when the edit is off the critical surfaces - the old "right-size the
+# ceremony" licence died with the lane it belonged to. Size is EVIDENCE the caller supplies (--lines, e.g. git diff --numstat);
 # no --lines means no evidence, and no evidence means TASK - size silence is not smallness,
 # exactly as path silence is not empty scope (F2).
 SMALL_TOOLKIT_LINES = 10

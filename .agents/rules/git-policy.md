@@ -182,7 +182,7 @@ TDD stays in every lane; what the quick lane cuts is the ceremony the operator d
 | 2. Plan | `implementation_plan.md`, then the literal `approved`. `/smh-self-audit` or `/cicd-self-audit` runs **only if asked**. | operator |
 | 3. RED then GREEN | the same TDD as the full lane: the assertion seen red, then made green | agent |
 | 4. Walkthrough | `walkthrough.md`, then the literal `approved`. `/smh-code-review` or `/cicd-code-review` runs **only if asked**. No `Verdict:` stamp unless a review actually ran — the stamp pulls in the roster gate. | operator |
-| 5. Close | the normal close-out door for the level. Its eject tripwire re-runs the scope check on the **real diff**; an overlap the operator has not overridden ejects the lane to the full ceremony. | agent |
+| 5. Tripwire, then close | Step 5 of the quick-dev door re-runs the scope check on the **real diff** — the eject tripwire, judged against the map as it stood at the fork as well as the lane's own; an overlap the operator has not overridden ejects the lane to the full ceremony. Only then the normal close-out door for the level, which runs no scope check of its own (`critical-surfaces.md` § The wire-in). | agent |
 
 What the quick lane is for: a UI fix, a document or file update, anything off the critical-surfaces
 list. What it is not for: the surfaces on that list. The line is a file, not a feeling.

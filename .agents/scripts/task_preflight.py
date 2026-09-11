@@ -1376,6 +1376,27 @@ _QUICK_LANE_RE = re.compile(
     r"the operator\s*@\s*`?([0-9a-f]{7,40})",
     re.MULTILINE | re.IGNORECASE)
 
+# ⛔ A RECORD LINE THAT IS PRESENT BUT UNREADABLE MUST NOT READ AS "NO RECORD" (SCC-441 review 2,
+# reproduced). Both doors display the line inside a ``` fence and with a literal `<sha>`; copied
+# either way it failed `_QUICK_LANE_RE` (a fence is stripped before the search, `<sha>` is not hex)
+# and the lobby printed "no review Verdict line - the full gate runs", exit 0, over a post-approval
+# commit - the likeliest copy mistake defeated the very check the sha was made REQUIRED for. Same
+# shape as `NEAR_MISS_LINE` for verdicts: the phrase in the RAW text, no parse in the stripped
+# text, is an ERROR in a walkthrough that carries no `Verdict:`. It is asked only where the record
+# line is looked for - beside a canonical stamp the phrase is prose (this lane's own walkthrough
+# quotes the template next to its verdict) and the verdict governs.
+_QUICK_LANE_NEAR_MISS_RE = re.compile(
+    r"walkthrough approved by the operator|^[>\-*\s]*\**\s*Review:\**\s*none\b",
+    re.MULTILINE | re.IGNORECASE)
+_QUICK_LANE_UNREADABLE = ("the quick-lane record line is present but unreadable - it is inside a "
+                          "code fence or its sha is a placeholder; write it as a plain line with "
+                          "the full sha of the tree the operator approved")
+
+
+def quick_lane_unreadable(raw: str, stripped: str) -> bool:
+    """The record line is PRESENT in `raw` but does not parse from `stripped` (= strip_fenced(raw))."""
+    return bool(_QUICK_LANE_NEAR_MISS_RE.search(raw)) and not _QUICK_LANE_RE.search(stripped)
+
 
 def nonartifact_moved(repo: Path, sha: str) -> list[str] | None:
     """Paths changed between `sha` and HEAD that are NOT under `_artifacts/`.
@@ -1396,10 +1417,21 @@ def nonartifact_moved(repo: Path, sha: str) -> list[str] | None:
             if p.strip() and not p.strip().startswith("_artifacts/")]
 
 
-def _stale_against_sha(rep: "wf.Report", project: Path, rel: Path, sha: str, what: str) -> None:
+def _stale_against_sha(rep: "wf.Report", project: Path, rel: Path, sha: str, what: str,
+                       base: str | None = None) -> None:
     """Did code move since the tree this approval was given on? ONE implementation, three
     callers — `closeout_preflight`'s `Verdict: … @ <sha>` path and its quick-lane record line,
     and `check_gate` below reading the same record line in the lobby.
+
+    ⛔ `base` IS WHAT KEEPS AN ABSORB FROM READING AS A LANE CHANGE (SCC-441 review 2, reproduced).
+    The two-endpoint diff `<sha>..HEAD` compares TREES, so the one step this preflight's own
+    `check_base` demands - merge the base into the lane - flipped the approval STALE every time
+    main had moved, over files the lane never touched. With a base ref, `git log --cc --name-only
+    <sha>..HEAD ^<base>` lists what the LANE's own commits changed after the approval, and for a
+    merge commit only the files that differ from EVERY parent - a conflict resolved by hand, which
+    is an edit the operator never saw. A clean absorb lists nothing (measured). `--first-parent
+    --no-merges` was the remedy that reads right and is wrong: it names nothing in that resolution.
+    With no base, or one git cannot resolve, the old two-endpoint measure runs and SAYS so.
 
     ⛔ It lives HERE, not in `closeout_preflight`, because that module imports this one for
     `PRODUCT_DIRS` - the list this helper derives its pathspec from - and the lobby's gate needed
@@ -1423,8 +1455,15 @@ def _stale_against_sha(rep: "wf.Report", project: Path, rel: Path, sha: str, wha
     asked of something."""
     have = [d for d in PRODUCT_DIRS if (project / d).is_dir()]
     pathspec = have or [":(exclude)_artifacts/", ":(exclude)_bmad-output/"]
-    diff = wf.git(["diff", "--name-only", f"{sha}..HEAD", "--", *pathspec], project)
-    changed = [ln for ln in diff.stdout.splitlines() if ln.strip()]
+    diff = wf.git(["log", "--cc", "--name-only", "--format=", f"{sha}..HEAD", f"^{base}",
+                   "--", *pathspec], project) if base else None
+    if diff is None or diff.returncode != 0:
+        diff = wf.git(["diff", "--name-only", f"{sha}..HEAD", "--", *pathspec], project)
+        if diff.returncode == 0:
+            rep.info("artifacts", f"{rel}: base ref {base or '(none given)'} unavailable - the "
+                                  f"whole delta since {sha[:8]} was measured, absorbed base "
+                                  f"commits included")
+    changed = sorted({ln.strip() for ln in diff.stdout.splitlines() if ln.strip()})
     # ⛔ SAY WHAT WAS ACTUALLY MEASURED. On the fallback the word "code" is a claim this check
     # cannot support: with no PRODUCT_DIRS to aim at, every tracked file outside the two
     # planning surfaces counts, so a `docs/` typo reports as a changed "code file" and the
@@ -1453,7 +1492,7 @@ def _stale_against_sha(rep: "wf.Report", project: Path, rel: Path, sha: str, wha
         remedy = ("the verdict is STALE, re-gate" if what == "reviewed"
                   else "the approval is STALE, re-approve")
         rep.err("artifacts", f"{rel}: {len(changed)} {noun} changed since the "
-                             f"{what} SHA - {remedy}")
+                             f"{what} SHA (e.g. {changed[0]}) - {remedy}")
 
 
 def check_gate(repo: Path, hits: list[Path], lane: str, expect: str, branch: str,
@@ -1501,10 +1540,12 @@ def check_gate(repo: Path, hits: list[Path], lane: str, expect: str, branch: str
     stamped: list[tuple[Path, list[tuple[str, str]]]] = []
     quick: list[tuple[Path, str]] = []     # governing walkthroughs carrying the record line
     foreign_stamped = 0
+    unreadable = 0                          # governing walkthroughs whose record line failed to parse
     for p in hits:
         man = p.parent / "task.yaml"
         man_text = wf.read_text(man) if man.is_file() else ""
-        text = strip_fenced(wf.read_text(p))
+        raw = wf.read_text(p)
+        text = strip_fenced(raw)
         found = [(m.group(1).upper(), m.group(2)) for m in VERDICT_RE.finditer(text)]
         if not (man_text and manifest_field(man_text, "task_key") == expect):
             foreign_stamped += 1 if found else 0
@@ -1542,12 +1583,19 @@ def check_gate(repo: Path, hits: list[Path], lane: str, expect: str, branch: str
             q = _QUICK_LANE_RE.search(text)
             if q:
                 quick.append((p, q.group(1)))
+            elif quick_lane_unreadable(raw, text):
+                unreadable += 1
+                rep.err("gate", f"{rel_or_abs(p, repo)}: {_QUICK_LANE_UNREADABLE}")
     if not stamped:
         if foreign_stamped:
             rep.info("gate", f"verdict stamp(s) exist only in {foreign_stamped} "
                              f"walkthrough(s) whose task.yaml does not declare {expect} - "
                              f"foreign evidence never gates this lane; the full gate runs")
-        elif quick:
+        # ⛔ NOT `elif` (SCC-441 review 2, reproduced). check_artifacts collects by substring AND
+        # content mention, so a reviewed sibling whose prose cites this key put a stamp in the
+        # pool, took the branch above, and the lane's own record line was never dereferenced:
+        # a post-approval commit closed exit 0. Foreign evidence neither gates nor SHIELDS.
+        if quick:
             # ⛔ THE LOBBY'S APPROVAL SHA WAS DECORATIVE (SCC-441 review, reproduced). The
             # project close-out dereferences the quick lane's `@ <sha>`; this gate read only
             # `VERDICT_RE`, found no `Verdict:` and returned benign - so the operator approved
@@ -1561,8 +1609,8 @@ def check_gate(repo: Path, hits: list[Path], lane: str, expect: str, branch: str
                 rep.info("gate", f"{rel}: no `Verdict:` line - quick lane, no review was asked "
                                  f"for; walkthrough approved by the operator @ {qsha[:8]} - "
                                  f"the full gate runs")
-                _stale_against_sha(rep, repo, rel, qsha, "approved")
-        else:
+                _stale_against_sha(rep, repo, rel, qsha, "approved", base=ref)
+        if not foreign_stamped and not quick and not unreadable:
             rep.info("gate", "no review Verdict line in this task's own walkthrough - "
                              "the full gate runs")
         return None

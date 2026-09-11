@@ -223,7 +223,7 @@ Print the table the script renders, unedited — approved list first, then one v
 | 📝 no plan | ungrounded — `/smh-plan-task <PARENT-KEY>` unlocks it |
 | **Wave `N`** | which wave the lane runs in (a column, not a verdict) |
 | **🧵** | in a wave of **two or more** — carries `parallel-ok` |
-| ⚡ quick-dev | small enough for one light lane (a separate column, not a verdict) |
+| ⚡ quick-dev | small enough for one quick-lane pass (a separate column, not a verdict) |
 
 ## Step 5 — Stamp the board
 

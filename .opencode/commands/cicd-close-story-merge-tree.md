@@ -62,9 +62,10 @@ SCC-446):
 
 ```bash
 L=$(pwd)                                                             # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
-cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune
-cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune && cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
 ```
+
+⛔ **A failed fetch is a STOP.** The mode query is chained behind the fetch, so a `fatal:` from the fetch means no mode line prints — and the cached `origin/epic/*` refs may name an epic origin no longer has. Fix the fetch, then read the mode; never read a mode off refs a fetch did not refresh.
 
 **Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost —
 **they govern the base, the landing and the gate for every step below.** `AMBIGUOUS` (more than one

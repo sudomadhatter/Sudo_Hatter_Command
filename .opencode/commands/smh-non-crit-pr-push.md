@@ -31,7 +31,7 @@ python3 .agents/scripts/lane_qualify.py --repo "$REPO" --paths <every path you w
 | `LIGHT` | carry on |
 | `LIGHT-VCS` | carry on — a **declared** git-hygiene action (`--no-file-changes`) that edits no files |
 | `TASK` | **stop.** This touches toolkit/code paths (`.agents/**`, `tests/**`) — use `/smh-dev-task-tests`, the Task lane |
-| `TASK-LIGHT` | **stop.** Same road as `TASK` — `/smh-dev-task-tests` — but the measured blast radius is small, so that lane may right-size its ceremony (SCC-302) |
+| `TASK-LIGHT` | **stop.** A small toolkit edit: off the critical surfaces it is **the quick lane's** work — `/smh-quick-dev` (scope check, plan, RED then GREEN, walkthrough; review only when you ask); on a critical surface it is `/smh-dev-task-tests`, the full lane |
 | `HANDOFF` | **stop.** Deployable code — route to product lane (`/cicd-push-e2e`) |
 | `NOT-COMMAND-CENTRE` | **stop.** You are in a child project — use `/cicd-non-crit-pr-push` |
 

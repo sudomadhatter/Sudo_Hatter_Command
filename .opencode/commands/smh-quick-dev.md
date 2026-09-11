@@ -110,15 +110,25 @@ tree is a rail, not ceremony (`git-policy.md` § The rails). `/smh-close-task-me
 prunes it.
 
 ```bash
-L=$(pwd)                                                          # the lobby — bind it in THIS fence: a fence is its own shell (command-shape.md §Absolute fills)
+L=$(pwd)                                                          # the lobby PIN, bound in THIS fence (a fence is its own shell); `$REPO`/`$PROJECT_ROOT`/`<…>` are Step 0 FILLS you carry (command-shape.md §Absolute fills)
 cd "$REPO" && git worktree list                                   # reuse this task's tree if it exists
 cd "$REPO" && git fetch origin                                    # ⛔ the base is origin/main, never a bare `main`
 cd "$REPO" && git worktree add --no-track .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
-cd "<the new tree>" && git branch --unset-upstream                # belt and braces: no upstream until the lane's own first push
 cd "$L" && python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`  ⛔ the script lives in the LOBBY
 BRANCH=$(cd "<the new tree>" && git rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
 ```
+
+**⭐ Reusing a tree `/smh-plan-task` cut? Absorb `main` FIRST (SCC-155).** That command cuts every
+lane's worktree at planning time, so a ⚡ lane picked up days later is branched from a `main` its
+siblings have since moved. Absorb before the first edit, never at the merge — and never after the
+operator's `approved`, because the close-out then measures the absorbed files as changes he never saw:
+
+```bash
+cd "<the tree>" && git fetch origin && cd "<the tree>" && git merge --no-edit origin/main
+```
+
+Conflicts here are cheap and yours; the same conflicts at close-out are on `main`'s doorstep.
 
 Echo the branch **from `rev-parse`, never from memory.** Every path and command from here binds to that
 tree. **Move the ticket to `In Progress` — now, at the tree, not at the merge (SCC-113):**
@@ -156,7 +166,7 @@ Name the files you intend to touch — the planned set, from the ticket's `ACCEP
 operator's ask — and run the check from the lobby:
 
 ```bash
-L=$(pwd)                                                          # the lobby — bind it in THIS fence: a fence is its own shell (command-shape.md §Absolute fills)
+L=$(pwd)                                                          # the lobby PIN, bound in THIS fence (a fence is its own shell); `$REPO`/`$PROJECT_ROOT`/`<…>` are Step 0 FILLS you carry (command-shape.md §Absolute fills)
 cd "$L" && python3 .agents/scripts/scope_check.py --repo "$REPO" --paths <the planned set>   # PC: `python`
 ```
 
@@ -257,10 +267,10 @@ the command, run `/smh-sync-agents`. Push before you hand back: unpushed is stra
 **Then the lobby floor, bare** — the same gates every lane runs:
 
 ```bash
-python3 .agents/scripts/tests/run_all.py                        # the enforcement suite
-python3 .agents/scripts/workflow_lint.py --toolkit-only
-python3 .agents/scripts/check_maps.py --depth3-only --strict     # if you moved or added docs
-python3 .agents/scripts/check_links.py --base origin/main         # every path claim the diff touched
+cd "<the tree>" && python3 .agents/scripts/tests/run_all.py                        # the enforcement suite
+cd "<the tree>" && python3 .agents/scripts/workflow_lint.py --toolkit-only
+cd "<the tree>" && python3 .agents/scripts/check_maps.py --depth3-only --strict     # if you moved or added docs
+cd "<the tree>" && python3 .agents/scripts/check_links.py --base origin/main         # every path claim the diff touched
 ```
 
 Paste the **actual** totals. **An empty diff is a STOP, not a pass** (`tests-must-gate-for-real`).
@@ -281,20 +291,30 @@ own steps, SCC-193). Post clickable Markdown links to the plan and the walkthrou
 **`/smh-code-review` runs only if the operator asks.** When it runs, it appends `## Code Review
 (<date>)` with its roster and its `Verdict: … @ <sha>` line exactly as on `/smh-dev-task-tests`, and
 the close-out reads that verdict. **When it does not run, the walkthrough carries ONE record line
-instead, in `## Evidence`, and no `Verdict:` line at all:**
+instead, in `## Evidence`, and no `Verdict:` line at all — written AFTER the word arrives, never
+before:**
 
 ```
 Review: none - quick lane; walkthrough approved by the operator @ <sha>
 ```
 
+⛔ **The line records an event, so it is written when the event happens.** STOP first (below); when
+the literal `approved` arrives, add the line with `<sha>` = the code tip the operator saw
+(`git rev-parse HEAD` at the moment of the stop), as a PLAIN line — never inside a code fence, never
+with the placeholder left in: `task_preflight.py` refuses a fenced or placeholder line as unreadable
+rather than reading it as "no review". Commit it as an artifacts-only commit; the sha stays valid
+because the staleness check excludes `_artifacts/`. A later `STALE, re-approve` at close-out means
+the word again on the new tree — never a sha bumped by hand.
+
 ⛔ Never write a `Verdict:` stamp to stand in for a review that did not run: the stamp pulls in the
 roster gate (`walkthrough_roster.py`, SCC-173) for lenses that never launched. A lane with no
 verdict is read as benign by `task_preflight.py` (it runs the full machine gate itself, the
-stronger check for a small diff), and `closeout_preflight.py` reads the record line as "no review,
-by design".
+stronger check for a small diff) — and it dereferences the record line's sha, so a tracked file
+committed after the approval is `STALE, re-approve`.
 
-Then **STOP and wait for the literal word `approved`** on the walkthrough. That word is the
-operator's acceptance of the work as shown; it is not the merge (`/smh-close-task-merge-tree` is).
+Then **STOP and wait for the literal word `approved`** on the walkthrough — and only then write the
+record line above. That word is the operator's acceptance of the work as shown; it is not the merge
+(`/smh-close-task-merge-tree` is).
 
 ## Step 4.5 — File the Dev Record on the ticket (AUTOMATIC, never ask)
 
@@ -317,7 +337,7 @@ means the record did **not** land — report that, not success.
 The same check as Step 1, on what you **actually** changed — committed, after the lane's last commit:
 
 ```bash
-L=$(pwd)                                                          # the lobby — bind it in THIS fence: a fence is its own shell (command-shape.md §Absolute fills)
+L=$(pwd)                                                          # the lobby PIN, bound in THIS fence (a fence is its own shell); `$REPO`/`$PROJECT_ROOT`/`<…>` are Step 0 FILLS you carry (command-shape.md §Absolute fills)
 cd "$L" && python3 .agents/scripts/scope_check.py --repo "<the tree>" --diff origin/main
 ```
 

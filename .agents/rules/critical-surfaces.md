@@ -58,7 +58,12 @@ widen itself is not a line, and the enforcement is a row, not a sentence.
 
 **A path ending in `/` is a prefix; anything else is an exact repo-relative file.** That is the
 convention AviationChat's `classify_changes.py` and the lobby's `sop_currency.py` already use, and
-it is what keeps `backend-notes/` from matching `backend/`.
+it is what keeps `backend-notes/` from matching `backend/`. **And an exact row must be able to
+match something:** the script refuses the map as `ERROR` when a row starts with `/`, names a
+directory without its trailing `/`, or names a file that does not exist and is not gitignored —
+a row that can never match reads as a protected surface, which is the one lie a line must not
+tell. (A gitignored file may be absent in a fresh clone and still be a real surface; a bare
+fragment like `auth` belongs to the generic set, never to a repo's map.)
 
 **Project law stays in the project** (`project-law.md`). The lobby's script reads the map; it does
 not carry AviationChat's paths. The lobby's own map lists its gates under `ci` and says the other
@@ -116,7 +121,10 @@ only the operator can write.
 - **The eject tripwire — Step 5 of the same two doors, before the hand-off** (not the close-out:
   the close-out doors do not call this script, and saying they did sent a reader to the wrong
   door): the `--diff` call on the real branch — `--diff origin/main` for a Task lane or a TRUNK
-  story lane, `--diff origin/epic/<KEY>-…` for a story lane on a FULL or LIGHT epic. An `OVERLAP`
+  story lane, `--diff origin/epic/<KEY>-…` for a story lane on a FULL or LIGHT epic — judged
+  against the map **as it stood at the fork** as well as the lane's own (the generic set where
+  the fork had none), so a lane cannot prune the line's self-protecting rows and read `CLEAR`;
+  the `MAP:` line names which maps were used. An `OVERLAP`
   the plan carries no `Scope override` for **ejects** the lane to the full ceremony and re-arms the
   plan-first gate. An overlap the plan does carry an override for is printed and passed. An
   under-declared Step 1 is caught by the diff, not by the agent's memory.

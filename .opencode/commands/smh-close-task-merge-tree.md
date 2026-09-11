@@ -328,7 +328,7 @@ fi
 # ⛔ `[ -f … ] && PATHS+=(…)` returns 1 when the file is absent, which ABORTS the snippet under
 # `set -e` - so the guard meant to survive a missing path became the thing that killed the step.
 # The events dir is conditional too: it is tracked in this repo, but on first adoption of this
-# door (or a lightweight lane that recorded none) it does not exist, and `git add` 128s on a
+# door (or a quick lane that recorded none) it does not exist, and `git add` 128s on a
 # pathspec that matches nothing - staging NOTHING, so the flight event is lost with it.
 CHANGED=""
 if [ ${#PATHS[@]} -gt 0 ]; then

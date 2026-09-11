@@ -52,9 +52,10 @@ SCC-446):
 
 ```bash
 L=$(pwd)                                                             # the lobby — pin it BEFORE any cd (command-shape.md §Absolute fills)
-cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune
-cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
+cd "$PROJECT_ROOT" && env -u GITHUB_TOKEN git fetch origin --prune && cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
 ```
+
+⛔ **A failed fetch is a STOP.** The mode query is chained behind the fetch, so a `fatal:` from the fetch means no mode line prints — and the cached `origin/epic/*` refs may name an epic origin no longer has. Fix the fetch, then read the mode; never read a mode off refs a fetch did not refresh.
 
 **Echo both lines it prints** — `TRUNK` / `FULL <branch>` / `LIGHT <branch>`, then the landing cost.
 The mode decides Step 0.5's base and Step 5's tripwire base; the lane never changes it and **never
@@ -100,7 +101,6 @@ cd "$PROJECT_ROOT" && git worktree add --no-track .claude/worktrees/<slug> -b cl
 cd "$PROJECT_ROOT" && git worktree add --no-track .claude/worktrees/<slug> -b claude/<KEY>-<slug> origin/main
 # ad-hoc lane — no story applies (a truly ad-hoc fix outside any sprint): git-policy.md's chore lane, off main:
 cd "$PROJECT_ROOT" && git worktree add --no-track .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
-cd "$PROJECT_ROOT"/.claude/worktrees/<slug> && git branch --unset-upstream   # belt and braces: no upstream until the lane's own first push
 cd "$L" && python3 .agents/scripts/link-worktree-assets.py "$PROJECT_ROOT"/.claude/worktrees/<slug>   # PC: `python`  ⛔ the script lives in the LOBBY — the cd "$L" is what finds it after the cds above
 BRANCH=$(cd "$PROJECT_ROOT"/.claude/worktrees/<slug> && git rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
@@ -234,7 +234,7 @@ reading of the code — and run the check **from the lobby** (the script lives t
 `link-worktree-assets.py`):
 
 ```bash
-L=$(pwd)                                                             # the lobby — bind it in THIS fence: a fence is its own shell, nothing an earlier one set survives (command-shape.md §Absolute fills)
+L=$(pwd)                                                             # the lobby PIN, bound in THIS fence (a fence is its own shell); `$REPO`/`$PROJECT_ROOT`/`<…>` are Step 0 FILLS you carry, nothing an earlier one set survives (command-shape.md §Absolute fills)
 cd "$L" && python3 .agents/scripts/scope_check.py --repo "$PROJECT_ROOT" --paths <the planned set>   # PC: `python`
 ```
 
@@ -309,7 +309,10 @@ or the armed `commit-msg` hook refuses it. ⛔ **Backticks in `-m "…"` EXECUTE
 shell command runs it. Use `git commit -F <file>` whenever the message contains a backtick. Never
 push `main`.
 
-**Then the same floor CI will run**, on the changed files, bare: the scoped suite for the touched
+**Then the same floor CI will run**, on the changed files, bare — and **from the lane's tree**:
+`cd "<the tree>" && …` on every floor line, because a floor run from wherever the last `cd` left the
+shell measures another tree and prints a green that is not yours (`command-shape.md` rule 1). The
+scoped suite for the touched
 module (the **WHOLE** endpoint/module suite when a shared handler changed — a new read on a shared
 endpoint silently breaks sibling tests), and the project's lint gate on the changed files (`ruff`,
 `pyrefly`, `eslint`, `tsc` — whichever the project's PR gate lists). Paste the **actual** totals.
@@ -343,19 +346,31 @@ everything written, discard nothing.
 - **`/cicd-code-review` runs only if the operator asks.** When it runs, it appends `## Code Review
   (<date>)` with its roster and its `Verdict: … @ <sha>` line exactly as on the full lane, and the
   close-out reads that verdict. **When it does not run, the walkthrough carries ONE record line
-  instead, in `## Evidence`, and no `Verdict:` line at all:**
+  instead, in `## Evidence`, and no `Verdict:` line at all — written AFTER the word arrives, never
+  before:**
 
   ```
   Review: none - quick lane; walkthrough approved by the operator @ <sha>
   ```
 
+  ⛔ **The line records an event, so it is written when the event happens.** STOP first (below);
+  when the literal `approved` arrives, add the line with `<sha>` = the code tip the operator saw
+  (`git rev-parse HEAD` at the moment of the stop), as a PLAIN line — never inside a code fence,
+  never with the placeholder left in: both close-out readers refuse a fenced or placeholder line as
+  unreadable rather than reading it as "no review". Commit it as an artifacts-only commit; the sha
+  stays valid because the staleness check excludes `_artifacts/`. A later `STALE, re-approve` at
+  close-out means the word again on the new tree — never a sha bumped by hand.
   ⛔ Never write a `Verdict:` stamp to stand in for a review that did not run: the stamp pulls in
   the roster gate (`walkthrough_roster.py`, SCC-173) for lenses that never launched, and the
-  close-out blocks on the contradiction. The record line is what `closeout_preflight.py` reads
-  as "no review, by design"; a walkthrough with neither line is still refused there.
+  close-out blocks on the contradiction. The record line is what the close-out reads as "no
+  review, by design" and dereferences: on the story lane that reader is `closeout_preflight.py`,
+  which refuses a walkthrough with neither line; the ad-hoc chore lane closes through
+  `/smh-close-task-merge-tree Projects/<name>`, whose reader `task_preflight.py` runs the full gate
+  on a walkthrough with neither line — the same conservative direction, a different message.
 
-Then **STOP and wait for the literal word `approved`** on the walkthrough. That word is the
-operator's acceptance of the work as shown; it is not the landing (Step 5's door is).
+Then **STOP and wait for the literal word `approved`** on the walkthrough — and only then write the
+record line above. That word is the operator's acceptance of the work as shown; it is not the
+landing (Step 5's door is).
 
 ## Step 4.5 — File the Dev Record on the ticket (AUTOMATIC, never ask)
 This lane hands its branch to a door, and the ad-hoc chore lane never reaches
@@ -401,7 +416,7 @@ The same check as Step 1, on what you **actually** changed — committed, after 
 — against the base the Step 0 mode gave the lane:
 
 ```bash
-L=$(pwd)                                                             # the lobby — bind it in THIS fence: a fence is its own shell (command-shape.md §Absolute fills)
+L=$(pwd)                                                             # the lobby PIN, bound in THIS fence (a fence is its own shell); `$REPO`/`$PROJECT_ROOT`/`<…>` are Step 0 FILLS you carry (command-shape.md §Absolute fills)
 cd "$L" && python3 .agents/scripts/scope_check.py --repo "<the tree>" --diff origin/epic/<KEY>-<mode>-<N>-<epic-slug>   # story lane, FULL or LIGHT
 cd "$L" && python3 .agents/scripts/scope_check.py --repo "<the tree>" --diff origin/main                                # chore lane, or a TRUNK story lane
 ```

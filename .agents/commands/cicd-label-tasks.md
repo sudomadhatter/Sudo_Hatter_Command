@@ -41,7 +41,7 @@ wave 4  NVS-21
 |---|---|---|
 | **`wave-N`** | **every** grounded child | run it in wave N; the schedule, on the card |
 | **`parallel-ok`** | only a child whose wave holds **two or more** | run it beside the others in its wave |
-| `quick-dev` | a child the light lane fits | ships via `/cicd-quick-dev` |
+| `quick-dev` | a child the quick lane fits | ships via `/cicd-quick-dev` |
 
 Measured on NVS-10: NVS-19 came back the sole approved child wearing `parallel-ok`, and
 the operator correctly read the board as nonsense. That is the defect the rule below closes.

@@ -34,7 +34,8 @@ import wf_common as wf
 # helper derives its pathspec from `task_preflight.PRODUCT_DIRS` - never DEPLOY_DIRS, the
 # difference is a shipped incident (SCC-118); `.github/` is not product code. Import-safe: that
 # module's work is guarded by `if __name__ == "__main__"`.
-from task_preflight import _QUICK_LANE_RE, _stale_against_sha
+from task_preflight import (_QUICK_LANE_RE, _QUICK_LANE_UNREADABLE, _stale_against_sha,
+                            quick_lane_unreadable)
 
 def integration_branch(project: Path) -> str:
     """The landing target for a story: its epic branch (`epic/*`), falling back to `main`.
@@ -344,8 +345,18 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> set[str]:
         rep.err("artifacts", f"no walkthrough.md found for '{wf.norm_id(key)}' - "
                              f"code review never recorded a verdict")
         return claimed
+    # The staleness helper excludes what the INTEGRATION branch absorbed (SCC-441 review 2): the
+    # remote-tracking ref when it resolves, else None and the helper measures the whole delta.
+    target = f"origin/{integration_branch(project)}"
+    have_base = wf.git(["rev-parse", "--verify", "--quiet", target], project)
+    base = target if have_base.returncode == 0 and have_base.stdout.strip() else None
     for path in hits:
-        text = wf.read_text(path)
+        # ⛔ ONE READER WITH THE LOBBY (SCC-441 review 2, reproduced): this searched the RAW text
+        # while `task_preflight.check_gate` searches `strip_fenced` text, so the same fenced
+        # record line read STALE here and "no review Verdict line" there. A fenced stamp is a
+        # paste, not a record (SCC-154) - for the verdict AND for the record line.
+        raw = wf.read_text(path)
+        text = wf.strip_fenced(raw)
         m = _VERDICT_RE.search(text)
         rel = path.relative_to(project)
         if not m:
@@ -363,7 +374,10 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> set[str]:
                 # exactly ONE tree — the same staleness question the verdict path asks below,
                 # asked of the same value. Skipping it let a quick lane land code the operator
                 # never saw (SCC-446 review).
-                _stale_against_sha(rep, project, rel, q.group(1), "approved")
+                _stale_against_sha(rep, project, rel, q.group(1), "approved", base=base)
+                continue
+            if quick_lane_unreadable(raw, text):
+                rep.err("artifacts", f"{rel}: {_QUICK_LANE_UNREADABLE}")
                 continue
             rep.err("artifacts", f"{rel}: no `Verdict:` line - "
                                  f"the review step has not run (or did not record it)")
@@ -391,7 +405,7 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> set[str]:
                                   f"CANNOT be checked; re-record as `Verdict: {verdict} @ <sha>`")
         if sha:
             # A verdict is only evidence about the tree it was taken on.
-            _stale_against_sha(rep, project, rel, sha, "reviewed")
+            _stale_against_sha(rep, project, rel, sha, "reviewed", base=base)
     return claimed
 
 
