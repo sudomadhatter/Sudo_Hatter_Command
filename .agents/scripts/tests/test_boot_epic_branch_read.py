@@ -174,6 +174,18 @@ L_USE = re.compile(r"\$L\b|\$\{L\}")
 L_BIND = re.compile(r"(?:^|[\s;&|(])L=")
 
 
+def fenced_L_uses(text: str) -> int:
+    """How many fenced lines use `$L` at all — the vacuity guard for the per-door scan."""
+    n, fenced = 0, False
+    for ln in text.splitlines():
+        if ln.lstrip().startswith("```"):
+            fenced = not fenced
+            continue
+        if fenced and L_USE.search(ln):
+            n += 1
+    return n
+
+
 def unbound_L(text: str) -> list[tuple[int, str]]:
     """-> [(line number, the offending line)] for every `$L` used before `L=` in ITS OWN fence."""
     out: list[tuple[int, str]] = []
@@ -333,10 +345,19 @@ def main() -> int:
                     after_anchor("filler\n" * 5 + "git show origin/epic/x:sprint-status.yaml") == "",
                     "window must never read BACKWARDS")
 
-    if c.block("A6 · every `$L` is bound in the fence that uses it"):
-        loose = unbound_L(BOOT.read_text(encoding="utf-8")) if BOOT.is_file() else [(0, "absent")]
-        c.check(f"{BOOT.name}: no fence uses `$L` before binding it", not loose,
-                "; ".join(f"line {n}: {ln}" for n, ln in loose) or "clean")
+    if c.block("A6 · every `$L` is bound in the fence that uses it — in EVERY door"):
+        # ⛔ SCC-441 review row 1: this checker said "every fence, not just Step 2b's" and was
+        # wired to ONE door, while six fences in the two quick-lane doors used `$L` unbound —
+        # so the quick lane's only gate, the scope check, never ran. Measured per door now.
+        doors = sorted(COMMANDS.glob("*.md"))
+        using = [(d, fenced_L_uses(d.read_text(encoding="utf-8"))) for d in doors]
+        using = [(d, n) for d, n in using if n]
+        c.check("the scan reads at least 8 doors that use `$L` inside a fence (never vacuous)",
+                len(using) >= 8, f"{len(using)} door(s): {[d.name for d, _ in using]}")
+        for door, n in using:
+            loose = unbound_L(door.read_text(encoding="utf-8"))
+            c.check(f"{door.name}: no fence uses `$L` before binding it ({n} use(s))", not loose,
+                    "; ".join(f"line {ln_no}: {ln}" for ln_no, ln in loose) or "clean")
 
         # The two shapes, proved to fail. A fence is its own shell, so the binding must be IN it.
         crosses = ('```bash\nL=$(pwd)\ncd "$PROJECT_ROOT" && git fetch\n```\n'

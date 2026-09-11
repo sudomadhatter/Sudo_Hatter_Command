@@ -176,6 +176,45 @@ def main() -> int:
 
         c.check("kickoff door: offers trunk as a third answer",
                 names_trunk_mode(read(CREATE_EPIC)), "the mode is decided once, at kickoff")
+        # ⛔ SCC-441 review rows 9, 25, 26 — the kickoff door cut `-light-epic-` and then told
+        # the agent to STOP unless the echo read `-epic-`, so every LIGHT kickoff halted itself;
+        # it also claimed a token POSITION the substring read does not enforce, and put the
+        # banner instruction inside the TRUNK bullet only.
+        create = read(CREATE_EPIC)
+        c.check("kickoff door: the post-cut assertion admits BOTH shapes, FULL and LIGHT (row 9)",
+                re.search(r"(?s)must read\s+`Epic branch: epic/<JIRA-KEY>-epic-<N>-<slug>`"
+                          r".{0,160}`Epic branch: epic/<JIRA-KEY>-light-epic-<N>-<slug>`",
+                          create) is not None,
+                "a LIGHT branch that the same door just cut must not be a STOP")
+        c.check("kickoff door: states the switch as CONTAINMENT and makes no positional claim "
+                "(row 25)",
+                re.search(r"CONTAINS?\s+`-light-epic-`", create) is not None
+                and re.search(r"sits between the key and the sprint number|third token",
+                              create) is None,
+                "classify() is an unanchored substring test; the door must say so")
+        step3 = re.search(r"(?s)^## Step 3 .*?(?=^## Step 4)", create, re.M)
+        c.check("kickoff door: Step 3's board write records the MODE word in the epic banner "
+                "(row 26)",
+                step3 is not None and re.search(r"banner", step3.group(0), re.I) is not None
+                and re.search(r"\b(FULL|LIGHT|TRUNK)\b", step3.group(0)) is not None,
+                "the TRUNK bullet said FULL/LIGHT 'record theirs the same way' at a step that "
+                "never mentioned the mode")
+        # ⛔ SCC-441 review rows 11 and 24 — the close-out's Dev Record read the merge sha off
+        # `origin/epic/…` unconditionally (TRUNK has no such ref: `fatal: ambiguous argument`),
+        # and called a skipped E2E "the design" at the landing moment without the NOT-ARMED
+        # caveat Step 0 prints in every repo that has not armed LIGHT yet.
+        close = read(CLOSE_STORY)
+        step4 = re.search(r"(?s)^## Step 4 .*?(?=^## Step 5)", close, re.M)
+        c.check("close-out door: Step 4's merge-sha read has a TRUNK arm — `rev-parse "
+                "origin/main` beside `rev-parse origin/epic/` (row 11)",
+                step4 is not None and "rev-parse origin/epic/" in step4.group(0)
+                and "rev-parse origin/main" in step4.group(0),
+                "on TRUNK there is no origin/epic ref to read; the merge sha is main's tip")
+        step3c = re.search(r"(?s)^## Step 3 .*?(?=^## Step 4)", close, re.M)
+        c.check("close-out door: Arm A's skipped-E2E sentence carries the NOT ARMED caveat "
+                "(row 24)",
+                step3c is not None and "NOT ARMED" in step3c.group(0),
+                "in an unarmed repo a red E2E is a red, not the designed skip")
         c.check("dev-story door: Step 0.6's epic-behind-main stop knows the trunk case",
                 names_trunk_mode(read(DEV_STORY)),
                 "there is no epic to be behind; the lane absorbs origin/main instead")
