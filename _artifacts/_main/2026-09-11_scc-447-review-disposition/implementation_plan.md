@@ -1,53 +1,94 @@
 ---
 IsArtifact: true
 ArtifactMetadata:
-  title: SCC-447 — Review disposition doctrine: one review per lane, reproduce or drop, three lenses, no cap
+  title: SCC-447 — Review disposition doctrine: reproduce or drop, fix or escalate, one review per lane
   type: implementation_plan
   date: 2026-09-11
+  version: 2
+  supersedes: v1 @ 47b3c4aa
 ---
 
-# SCC-447 — implementation plan
+# SCC-447 — implementation plan (v2)
 
 **Ticket:** [SCC-447](https://sudo-command.atlassian.net/browse/SCC-447) · **Decisions of record:** ticket comment 10508 (2026-09-11), which governs over the description where they differ
-**Lane:** `chore/SCC-447-review-disposition` · worktree `.claude/worktrees/scc-447-review-disposition` · cut from `origin/main` @ `03778605`
+**Lane:** `chore/SCC-447-review-disposition` · worktree `.claude/worktrees/scc-447-review-disposition` · cut from `origin/main` @ `03778605` · draft PR #210
 **Door:** `/smh-dev-task-tests` (the full lane — the work touches gate scripts and the tests directory, which the quick lane may not)
-**Sibling lanes:** none live. `.claude/worktrees/SCC-439-retire-bmad-token-gate` is a dead stub (its `.git/worktrees` entry is gone) and `.claude/worktrees/scc-386-memory-long-term-only` is an empty stub on `main`. Neither carries a diff; no landing-order dependency. Both need a sandbox-off prune — out of scope, one line here so it is on the record.
+**Sibling lanes:** none live (`git worktree list` → the lobby on `main` @ `03778605` and this lane only; the two stale stubs v1 named have since been pruned)
+**State at v2:** nothing built. `test_review_disposition.py` exists on disk, unrun and uncommitted — it is Part 1's RED pin and is reconciled to this version below.
+
+## Why a v2, and why it is a full rewrite
+
+Two things happened after v1 was approved, and each one changed the design rather than a paragraph of it.
+
+**The operator asked who reproduces.** v1 had the *assessor* running a finding's reproduction command. His question — *"we are also making the agents who are claiming they found it recreate, correct? This way they will discover if it's real or not"* — is the stronger design, and checking it against the tool grants turned it into a three-layer contract (D1) that runs through every part: the lens proves it, the engine cannot execute and only checks the claim is there, the door re-proves it on the real tree. That is not an amendment to the assessor's table; it is what the table sits on.
+
+**The self-audit of v1 was too narrow.** It verified the paths v1 declared and stopped. Grepping the repo for the machinery this lane retires found six undeclared files that go red or go stale the moment Part 1 lands, one latent gate defect that the retirement would turn into a false refusal on every spec-less review, and one sizing fact v1 glossed (half of `test_review_engine.py` retires). All ten findings of the v2 audit are baked in below; none is carried as an open item.
 
 ## The problem, in one paragraph
 
-The review engine has no stop condition an agent can reach on its own. Its lenses are told to be exhaustive and are measured by what they return, the assessor was told to fix everything that survived, the verdict floor was computed before the fixes and never moved with them, and the preflight's remedy for FAIL said "re-run the review". Measured over every review on disk (138 with a verdict, 88 with per-lens ledgers): FAIL on the first stamp 3 of 138, 17.9 fixes per review, 52% of those fixes on findings that can never block, re-review converting a non-PASS to PASS 1 time in 7, the verifier wave refuting 2 findings in 18 reviews. SCC-441 ran that machine three times over a 155-file, 1.46 MB diff (48 files were byte-copy mirrors, 26 the lane's own records) and consumed a week of credit without closing.
+The review engine has no stop condition an agent can reach on its own. Its lenses are told to be exhaustive and are measured by what they return; the assessor was told to fix everything that survived triage; the verdict floor was computed *before* the fixes and never moved with them; and the preflight's remedy for FAIL said "re-run the review". Measured over every review on disk (138 with a verdict, 88 with per-lens ledgers): 17.9 fixes per review, 52% of them on severities that can never block, re-review converting a non-PASS to PASS 1 time in 7, the verify wave refuting 2 findings in 18 reviews. SCC-441 ran that machine three times over a 155-file, 1.46 MB diff (48 files were byte-copy mirrors, 26 the lane's own records) and consumed a week of credit without closing. Underneath all of it is one price: a finding costs the lens a paragraph, so thirty come back.
+
+## The fix, in four sentences
+
+1. **Reproduce or drop.** A `critical` or `important` that no one can make fail does not exist — the lens runs its own command before it reports, and the door runs it again on the real tree before anyone acts.
+2. **Fix a reproduced `critical`; escalate a reproduced `important`.** Fixing an `important` at the end of a lane is a new unreviewed edit, which is the loop one turn later. It goes to the operator with its receipt; his word moves it.
+3. **The floor is computed at the stamp, on rows still open.** A row closed by a fix and a green pin no longer gates. CONCERNS ships on the operator's word; FAIL is the only blocker.
+4. **One review per lane.** The retest is the pins plus the suite through the receipt writer — never a second fan-out.
 
 ## Acceptance — checkable, in the ticket's revised order
 
 | Row | Statement | Proved by |
 |---|---|---|
-| **A** | `code-standards.md` §6.5 and §7 (and the byte twin `.claude/rules/code-standards.md`) carry reproduce-or-drop, the action policy by severity, "CONCERNS ships on the operator's word", "one review per lane", and "the floor is computed on what is still OPEN at the stamp" | `test_review_disposition.py` block A: relationship regexes with in-memory counter-examples; twin byte-equality |
-| **B** | Engine: step-01's lens table has exactly three rows (Edge Case, Acceptance, Test-Adequacy) and no levels; the hunter contract and the auditor rubric require a runnable reproduction command on every critical/important; step-02 is a pass-through; step-03 §4/§5 carry the action policy with the floor on open rows; step-04's record vocabulary matches; the `.claude/skills/code-review-engine/` cache is byte-identical | `test_review_disposition.py` block B; `test_review_engine.py` and `test_lens_roster_contract.py` updated and green |
-| **C** | Both review doors and their `.opencode/` byte mirrors: Step 1 runs `review_scope.py` and passes its output as `DIFF`; the fix paragraph is the action policy; Step 3.5 nested runs the machine floor only; Step 4 carries the re-stamp block and the revised verdict rules; NO door instructs a full re-review on a fix batch; no level derivation, no `lens_budget` row | `test_review_disposition.py` block C; `test_command_surfaces.py` 343/343; `test_twin_parity.py` green |
-| **D** | Scripts, each seen red first: `review_scope.py` strips mirrors/records/generated launchers, groups commits by key, refuses a range spanning two keys; `repro_receipt.py` records command, exit and output per finding id; `walkthrough_roster.py` refuses a second full roster without the operator's line, a fixed suggestion/nitpick, a fixed row without a pin, a fixed/escalated critical/important without a receipt on disk, and a PASS/CONCERNS with an open critical; `task_preflight.py`'s FAIL message says "re-run the pins and the suite, re-stamp" | `test_review_scope.py`, `test_repro_receipt.py`, `test_walkthrough_roster_dispositions.py`, `test_task_preflight.py` (one new case) — all with a mutation sweep |
-| **E** | `cicd-autopilot-claude.md` (+ mirror), `autopilot_SOP.md`, and the SOP §15 table row: a non-PASS verdict escalates; no fix child, no fresh reviewer; "never ships by itself" gone | `test_review_disposition.py` block E |
-| **F** | `work-consolidation.md` Rule 2 and `smh-plan-task.md` (+ mirror): parts are built AND reviewed in sequence, each review on its own commits; the enforcement suite is the integration check; a plan-time size warning when a part's declared set exceeds 40 files | `test_review_disposition.py` block F |
-| **G** | `workflows_testing_SOP.md` and its changelog updated in the same commits as the surfaces they describe; `workflow_lint.py --toolkit-only` 0 errors; `run_all.py` N/N through the receipt writer on a clean tree | pasted output + `gates/suite.json` |
-| **H** | Both self-audit twins: POST-DEV mode resolves its change set through `review_scope.py` (the same resolved set the review reads), and Lens 2 states the scope asymmetry — the parity lens reads the mirrors a review strips. `review_scope.py --audit` emits the parity-inclusive set. The twin-law fences stay byte-identical | `test_review_disposition.py` block H; `test_review_scope.py` audit-mode case; `test_twin_parity.py` green |
+| **A** | `code-standards.md` §6.5 and §7 (and the byte twin `.claude/rules/code-standards.md`) carry Gate 0 (reproduce or drop, receipt on disk, no `--result` flag), the action policy by severity, the deferred-row ruling, "CONCERNS ships on the operator's word", "one review per lane", and "the floor is computed at the stamp on what is still OPEN". `artifacts-always-first.md` §6's findings-table vocabulary and its "invalidates the verdict" sentence, and `jira.md`'s review-findings paragraph, say the same thing in the same words | `test_review_disposition.py` block A: relationship regexes with in-memory counter-examples; twin byte-equality |
+| **B** | Engine: step-01's lens table has exactly three rows and no levels; the hunter contract and the auditor rubric require `reproduce:` + `expected_wrong_output:` on every critical/important **and require the lens to run it in its own copy** before reporting; step-02 is a pass-through; step-03 carries the presence gate (the engine cannot execute), the four buckets `fix`/`escalate`/`defer`/`drop`, and the floor on open rows; step-04's record vocabulary matches; SKILL.md states the floor is provisional and names the two evidence-backed ways down; the `.claude/skills/code-review-engine/` cache is byte-identical; the negative-control fixture attributes its seeds to surviving lenses | `test_review_disposition.py` block B; `test_review_engine.py`, `test_lens_roster_contract.py`, `test_finding_record.py`, `test_review_fixture.py` updated and green |
+| **C** | Both review doors and their `.opencode/` byte mirrors: Step 1 runs `review_scope.py` and passes its output as `DIFF`; a `## Reproduce` step re-runs every surviving critical/important through `repro_receipt.py` on the real tree; the fix paragraph is the action policy; Step 3.5 nested runs the machine floor only; Step 4 resolves the provisional floor on open rows, carries the re-stamp block and the end-of-review message; NO door instructs a full re-review on a fix batch; no level derivation, no `lens_budget` row | `test_review_disposition.py` block C; `test_command_surfaces.py` green; `test_twin_parity.py` green |
+| **D** | Scripts, each seen red first: `review_scope.py` strips mirrors/records/generated launchers, groups commits by key, refuses a range spanning two keys, and `--audit` keeps every mirror; `repro_receipt.py` records command, exit and output per finding id; `walkthrough_roster.py` refuses a second full roster without the operator's line, a fixed suggestion/nitpick, a fixed row without a pin, a fixed/escalated critical/important without a receipt on disk, a PASS with an open critical, **and no longer refuses a mode-skipped lens under `fan-out`**; `task_preflight.py`'s FAIL message says "re-run the pins and the suite, re-stamp" | `test_review_scope.py`, `test_repro_receipt.py`, `test_walkthrough_roster_dispositions.py`, `test_walkthrough_roster.py` (one new NA case), `test_task_preflight.py` (one new case) — all with a mutation sweep |
+| **E** | `cicd-autopilot-claude.md`, `autopilot_SOP.md`, and the SOP §15 table row: a non-PASS verdict escalates; no fix child, no fresh reviewer; "never ships by itself" gone | `test_review_disposition.py` block E |
+| **F** | `work-consolidation.md` Rule 2 and `smh-plan-task.md` (+ mirror): parts are built AND reviewed in sequence, each review on its own commits; parts without rider keys are selected by `--range`; the enforcement suite is the integration check; a plan-time size warning when a part's declared set exceeds 40 master files | `test_review_disposition.py` block F |
+| **G** | `workflows_testing_SOP.md` (§③, §`/smh-code-review`, §10, §11, §15, **and the command-atlas appendix rows**), the `operator_workflows_quickref.md` diagrams, and the changelog updated in the same commits as the surfaces they describe; `workflow_lint.py --toolkit-only` 0 errors; `run_all.py` N/N through the receipt writer on a clean tree | pasted output + `gates/suite.json` |
+| **H** | Both self-audit twins: POST-DEV mode resolves its change set through `review_scope.py --audit`, and Lens 2 states the scope asymmetry — the parity lens reads the mirrors a review strips. The twin-law fences stay byte-identical | `test_review_disposition.py` block H; `test_review_scope.py` audit-mode case; `test_twin_parity.py` green |
 
 ## Design — the mechanisms, stated once
 
-### D1. The action policy (code-standards §6.5 + §7, engine step-03)
+### D1. WHO reproduces — the three-layer contract (the spine of this lane)
 
-| A lens reports | The assessor does | Disposition written |
+**Verified, not assumed (2026-09-11).** `code-review-engine/SKILL.md:4` grants `allowed-tools: Read, Write, Glob, Grep, Task` — **no Bash**. The engine cannot execute anything, and that is deliberate: a reviewer that can execute is one edit from being an editor, and SCC-295 measured three of five lenses writing to the builder's tree with one reporting a RED that no version of the real code could produce. Every lens skill (`bmad-review-edge-case-hunter`, the auditor rubrics) carries **no** `allowed-tools` line, so a lens subagent inherits full tools and holds its own worktree copy. The doors (`/smh-code-review`, `/cicd-code-review`) carry no grant line either — they have everything, on the real tree. So the reproduction splits by what each layer can do:
+
+| Layer | Can execute | What it does with a `critical`/`important` |
 |---|---|---|
-| `critical` or `important` **with** a reproduction command | runs it through `repro_receipt.py`; the receipt is the evidence | see the next two rows |
+| **the lens** — Edge Case · Acceptance · Test-Adequacy | yes, in its own disposable copy | writes `reproduce: <command>` and `expected_wrong_output: <text>`, **runs the command itself**, and **deletes the finding** if it does not fail the way it predicted. Reports `reproduced: yes` + the output it saw. A finding without all three is not sent |
+| **the engine** — step-01 → step-04 | **no** (no Bash, by design) | checks the three fields are THERE. Missing any → `drop`, counted, unread. Buckets on the lens's claim, returns a **provisional** floor and never runs a command |
+| **the door** — `/smh-code-review`, `/cicd-code-review` | yes, on the REAL tree | re-runs each surviving command through `repro_receipt.py`; **that receipt is what binds**. Drops what does not reproduce, fixes reproduced criticals with pins, escalates reproduced importants, resolves the floor at the stamp |
+
+**Why the lens's own run is the filter that matters.** A finding today costs the lens one paragraph, which is why thirty come back. A `critical` now costs a working command — and an agent forced to write the exact command usually discovers, part-way through writing it, that it has nothing. That discovery costs one command while the lens already has the file open and the reasoning in context; the assessor making the same discovery costs a read, a trace and a judgment call. The tax is **severity-gated**: a `suggestion` needs no reproduction and never blocks, so the one move that becomes uneconomical is inflating a nitpick to be heard — the exact behaviour that broke SCC-441. That is a better fix than telling agents to be less enthusiastic, because it does not depend on them obeying it.
+
+**Why the door's run is not optional.** A lens proves the bug exists *in the lens's copy* — which it may have edited (SCC-295). Only the door's run on the real tree proves it exists in the code that ships. Two runs, two different questions.
+
+**What "cannot reproduce" means, so nobody argues it later.** One of three things: the finding was imagined (a pattern that looks like a bug class, never traced); it is real but unreachable (an upstream guard, a type, a config we do not ship — true and inert, and fixing it is how working code gets changed to chase a state that cannot occur); or it is real, reachable, and the lens could not be bothered to prove it. The rule treats all three identically **on purpose**: telling them apart is the expensive judgment call that has been going wrong, and the measured price of having that debate was 17.9 fixes per review. A command that fails, or does not, is not a debate. The third case is the honest cost of the rule and is stated under Risks.
+
+### D2. The action policy, by severity (code-standards §6.5 + §7, engine step-03, both doors)
+
+| The door's receipt says | The assessor does | Disposition written |
+|---|---|---|
 | reproduced `critical` | fixes it, in this lane, with a pin, through `reproduce-before-you-fix` G1–G5 | `fixed @<sha> · pin <test>[:<case>] · repro <id>` |
-| reproduced `important` | does **not** fix it; it goes to the operator in the end-of-review message with the receipt and a one-line recommendation | `escalated · repro <id> · default: ships as recorded` |
-| `critical`/`important` that does not reproduce, or arrives with no command | dropped, counted, never written up individually | `dropped — no reproduction` (one count line) |
+| reproduced `important` | does **not** fix it — it goes to the operator in the end-of-review message with the receipt and a one-line recommendation | `escalated · repro <id> · default: ships as recorded` |
+| `critical`/`important` that did not reproduce on the real tree, or arrived without its three fields | dropped, counted, never written up individually | `dropped — no reproduction` (one count line) |
 | `suggestion` / `nitpick` | nothing; a count | `recorded` (one count line) |
-| a reproduced row this lane structurally cannot hold (other live lane · other repo · open decision) | the existing `defer` with its ONE named blocker | `deferred — <blocker>` |
+| reproduced, and this lane structurally cannot hold the fix (other live lane · other repo · a decision the operator has not taken) | the existing `defer` with its ONE named blocker | `deferred — <blocker>` |
 
-The verdict floor is computed at the stamp on what is **open**: an open reproduced `critical` → FAIL; an open reproduced `important` (escalated, or deferred) → CONCERNS; everything else → none. A row closed by a fix and a green pin no longer counts. CONCERNS is a shippable verdict; the go/no-go is the operator's word.
+**The deferred row, ruled (2026-09-11).** A `defer` gates at CONCERNS **at any severity, including `critical`**. A deferred `critical` is open and reproduced, so a literal read of the floor says FAIL — but a `defer` exists precisely because this lane cannot do the work, and failing a lane over work it cannot perform is what the 2026-08-15 ruling already rejected. It is safe to soften now for a reason that did not exist then: CONCERNS reaches the operator with a receipt instead of stopping the lane.
 
-### D2. One review per lane, and the re-stamp
+**`decision_needed` is retired.** An open decision row under `## Your Actions` holds the ticket forever at `jira_feed.py finish` (`jira_feed.py:1774`, `:2452` — `finish` decides `Done` from the open `- [ ]` rows), which is the loop wearing a different hat. A finding that needs the operator's judgment is an `escalate`: it reaches him in the end-of-review message with its receipt, the review still stamps, and his word moves it.
 
-The engine runs once. After the agent's fix batch (reproduced criticals only) the retest is: the pins named in the `fixed` rows, plus the enforcement suite once through the receipt writer. Then a new section:
+### D3. The floor — provisional at the engine, resolved at the stamp; exactly two ways down
+
+The engine returns `severity_floor` computed on the lens's claims: it is **provisional**. The door resolves it at the stamp on what is still **open**: an unfixed reproduced `critical` → FAIL; an escalated reproduced `important`, or anything deferred → CONCERNS; a still-dead lens → CONCERNS; everything else → none. **A row closed by a fix and a green pin does not appear.**
+
+**This is the stop condition the ticket exists to create.** The loop existed because the floor had no legal way DOWN: it was computed from what the lenses returned, fixing never lowered it, so the only road from CONCERNS to PASS was another full fan-out. Now there are exactly two ways down, both machine-checkable and neither a judgment call: a receipt showing the command does **not** fail on the real tree (the row is dropped), or a fix with a test seen red and then green (the row is closed). Any other downgrade is the caller overruling the review, which it may not do. More severe needs no permission — the door's own gates add their own reasons. `SKILL.md`'s severity-axis paragraph says this, and block B pins it.
+
+### D4. One review per lane, and the re-stamp
+
+The engine runs once. After the door's fix batch (reproduced criticals only) the retest is: the pins named in the `fixed` rows, plus the enforcement suite once through the receipt writer. Then a new section:
 
 ```
 ## Code Review (<date>, re-stamp after fixes)
@@ -59,134 +100,147 @@ review: carried from the one review @ <sha1> — no lens re-run
 
 No second `lenses_run:` roster. `walkthrough_roster.py` counts roster headers in the stripped text; a second one refuses the close-out unless a line `re-review: approved by the operator — "<his words>"` is present. The last `Verdict:` still governs (unchanged reader).
 
-### D3. The end-of-review message (the review never pauses)
+### D5. The end-of-review message (the review never pauses)
 
-The review runs lenses → reproduce → fix reproduced criticals → gates → stamp → **ends the turn** with one screen: the verdict and sha; the fixed rows (id, pin); the escalated rows (id, one-line evidence from the receipt, recommendation); the counts of dropped and recorded; the default ("ships as recorded"); and the two words that move it: `approved` (the operator runs the close-out door) or `fix <ids>` (the agent fixes those with pins, runs the scoped retest, re-stamps, in one turn). Nothing is written under `## Your Actions` for a finding — an open action row holds the ticket forever at `finish`, which is the loop.
+The door runs lenses → engine → reproduce on the real tree → fix reproduced criticals → gates → stamp → **ends the turn** with one screen: the verdict and sha; the fixed rows (id, pin); the escalated rows (id, one-line evidence from the receipt, recommendation); the counts of dropped and recorded; the default ("ships as recorded"); and the two words that move it: `approved` (the operator runs the close-out door) or `fix <ids>` (the door fixes those with pins, runs the scoped retest, re-stamps, in one turn). Nothing is written under `## Your Actions` for a finding (D2, the `finish` hold).
 
-### D4. `review_scope.py` — what a lens reads, with no cap
+### D6. `review_scope.py` — what a lens reads, with no cap
 
 ```
 python3 .agents/scripts/review_scope.py --repo <worktree> --base origin/main \
-        [--key <PART-KEY> | --range <sha>..<sha>] --out <artifacts>/review/diff.patch
+        [--key <PART-KEY> | --range <sha>..<sha>] [--audit] --out <artifacts>/review/diff.patch
 ```
 
-Reads `base..HEAD` commits, extracts every `[A-Z]+-\d+` in each subject, and groups commits by part key (a key other than the lane key in the subject is the part; otherwise the lane key). With more than one part in the range and no `--key`/`--range`: **exit 2, naming the keys**. Writes the diff restricted to the selected commits' files, minus the withheld classes: mirrors (`.opencode/`, `.roo/`, `.claude/`, `.agent/`), generated launchers (any file whose text carries `GENERATED by sync-agents`), and records (`_artifacts/`, `_bmad-output/`, `docs/_scc_sops_prds/`). Prints every withheld path with its class, the kept count and bytes. No byte cap exists; the size of a review is the size of a part. Measured on the SCC-441 diff: 155 files / 1.46 MB in, 81 files / 658 KB out.
+Reads `base..HEAD` commits, extracts every `[A-Z]+-\d+` in each subject, and groups commits by part key — a key other than the lane key in the subject is the part (Rule 2's rider convention, `SCC-<parent> rider SCC-<child>: …`); otherwise the lane key. With more than one part in the range and no selector: **exit 2, naming the keys**. A lane whose parts carry no rider keys (this one) selects by `--range`. Writes the diff restricted to the selected commits' files, minus the withheld classes: mirrors (`.opencode/`, `.roo/`, `.claude/`, `.agent/`), generated launchers (text carries `GENERATED by sync-agents`), and records (`_artifacts/`, `_bmad-output/`, `docs/_scc_sops_prds/`). Prints every withheld path with its class, the kept count and bytes. **No byte cap exists; the size of a review is the size of a part.** Measured on the SCC-441 diff: 155 files / 1.46 MB in, 81 files / 658 KB out. `--audit` applies the commit selection and the record stripping but **keeps every mirror** (D9).
 
-### D5. `repro_receipt.py` — a reproduction is a receipt, not a paste
+### D7. `repro_receipt.py` — the DOOR's tool; the engine never calls it
 
 ```
 python3 .agents/scripts/repro_receipt.py run --root <artifacts> --id <finding-id> --cwd <worktree> -- <command…>
 ```
 
-Writes `<root>/gates/repro/<id>.json`: `{id, command, cwd, exit_code, output_tail, sha, dirty_tree, recorded_at}`. There is no `--result` flag; a receipt implies execution. An existing id refuses (exit 2) unless `--replace`. The findings row cites `repro <id>`; `walkthrough_roster.py` resolves the file beside the walkthrough and refuses when it is absent. Same shape as `gate_receipt.py`, kept separate because a gate receipt is one per gate name and a reproduction is one per finding.
+Writes `<root>/gates/repro/<id>.json`: `{id, command, cwd, exit_code, output_tail, sha, dirty_tree, recorded_at}`. There is no `--result` flag; a receipt implies execution. An existing id refuses (exit 2) unless `--replace`. The findings row cites `repro <id>`; `walkthrough_roster.py` resolves the file beside the walkthrough and refuses when it is absent. Same shape as `gate_receipt.py`, kept separate because a gate receipt is one per gate name and a reproduction is one per finding. The lens's own run leaves no receipt — its evidence is the `reproduced: yes` line and the output it pasted, which the engine reads as text.
 
-### D6. The roster (engine step-01)
+### D8. The roster (engine step-01)
 
-| Lens | Gets | Tree | Runs | Reproduction field |
-|---|---|---|---|---|
-| Edge Case Hunter | `DIFF` + `REPO` | own worktree copy | always | required on every critical/important: `reproduce: <command>` + `expected_wrong_output: <text>` |
-| Acceptance Auditor | `DIFF` + `STORY_FILE` + context docs | own worktree copy | `review_mode: full` | required (a command or a grep that shows the missing behaviour) |
-| Test-Adequacy Auditor | `DIFF` + `REPO` | own worktree copy | always | required (the mutant or the input under which the test still passes) |
+| Lens | Gets | Tree | Runs | How | Reproduction |
+|---|---|---|---|---|---|
+| Edge Case Hunter | `DIFF` + `REPO` | own worktree copy | always | the `bmad-review-edge-case-hunter` skill + the hunter contract | required on every critical/important, **run by the lens** |
+| Acceptance Auditor | `DIFF` + `STORY_FILE` + context docs | own worktree copy | `review_mode: full` | the auditor rubric | required — a command or grep that shows the specified behaviour absent, run by the lens |
+| Test-Adequacy Auditor | `DIFF` + `REPO` | own worktree copy | always | the auditor rubric | required — the mutant or the input under which the test still passes, run by the lens |
 
-Blind Hunter, Literal-Correctness, the two levels, `lens_budget` (it governed only the Literal lens), the verify wave and the compound role are retired. `lenses_counted: 3/3`. The `dispositions:` line keeps its shape with three lenses.
+Blind Hunter, Literal-Correctness, the two levels, `lens_budget`, `EVIDENCE_PACK` priming, the verify wave and the compound role are retired with one paragraph naming SCC-447 and the measurement (7 historical criticals: this roster retains 5; Blind was sole source of 1, Literal of 1; Literal cost 1,082 s / 147,814 tokens per run and set the wall clock). `lenses_counted: 3/3`. The `dispositions:` line keeps its three-count shape, relabelled `<lens>=<reproduced>/<dropped>/<recorded>` (`_DISPO_RE` checks presence only, so the parser is untouched).
 
-### D6a. The self-audit — what shares, what must NOT, and why it is not the problem child
+### D9. The self-audit — what shares, what must NOT (unchanged from v1)
 
-**Assessed 2026-09-11, from the commands themselves:** neither self-audit twin carries a subagent, launch, fan-out, parallel or isolation instruction. Its three lenses are **sections one reader works through**, so there is exactly one read of the plan and one of the repo. The phase-2 fork saves nothing here because there is nothing duplicated to share, and **pre-work has no diff at all** — its input is the plan's `## Declared Change Set`, which is a path list.
+Neither self-audit twin fans out (no subagent, launch, parallel or isolation instruction in either); its three lenses are sections one reader works through, so the fork saving has nothing to share and pre-work has no diff. It already holds the stop condition the review lacked: anchor-or-delete, a roster fixed at three, caps rejected by name, a Lens 3 that cannot originate. Two shares land: POST-DEV mode resolves its change set through `review_scope.py --audit`, and Lens 2 states the scope asymmetry — a review strips byte-copy mirrors because a defect in a copy is a defect in its master; a **parity** audit's whole question is whether the copies agree, so `--audit` keeps every mirror. Both edits sit outside every `twin-law` fence (verified: fences end at smh:115 / cicd:108; the post-dev sections start at smh:220 / cicd:207).
 
-**It already holds the stop condition the review lacked**, and it has since 2026-08: *"No anchor, no finding — deleted, not demoted"* is the same shape as reproduce-or-drop one notch weaker (an anchor is literal text read from a real file); the roster is fixed at three with an amendment rule forbidding a fourth; caps and minute budgets were considered and rejected as unscalable, with the anchor rule named as what replaced them; and Lens 3 **cannot originate a finding**. That is why the audit never produced a SCC-441. It needs no new discipline — only the two shares below.
+### D10. Parts in sequence — and why THIS lane is reviewed at the tip
 
-**⛔ The scope asymmetry, stated because sharing naively would break it.** A review strips the byte-copy mirrors (`.opencode/`, `.roo/`, `.claude/`, generated launchers): a defect in a copy is a defect in its master, so reading both is paying twice for one finding. A **parity** audit is the exact opposite — the mirrors ARE its subject, because its question is *do the copies agree*. Pointing Lens 2 at a review-scoped diff would blind the one lens that exists to catch a drifted twin. So `review_scope.py` grows one flag, `--audit`, which applies the commit selection and the record stripping but **keeps every mirror**, and its docstring carries this paragraph.
+Rule 2 already sequences the BUILD by the overlap map. The added law: **each part is reviewed on its own commits before the next part starts**, the scope script selects the part (`--key` for rider parts, `--range` otherwise), and the enforcement suite at each part's close and at the tip is the integration check across parts — no lens is. `/smh-plan-task` Step 2.5 and `/smh-dev-task-tests` Step 1.5 warn when a part's declared set exceeds 40 master files: split it at plan time, when splitting is free.
 
-**What lands (row H):**
-1. **POST-DEV mode shares the resolved set.** Both twins' `## After the work is built` section — outside every `twin-law` fence, verified — gains: resolve the change set with `python3 .agents/scripts/review_scope.py --repo <tree> --base <ref> --audit [--key <PART-KEY>]`, so a retroactive audit and the review that follows measure the same commits and the same part rather than each deriving its own.
-2. **Lens 2 states the asymmetry**, in one sentence, in both twins, so the next agent cannot "helpfully" hand the parity lens a mirror-stripped diff.
-
-**What does NOT land, and why:** no declared-set cross-check inside `review_scope.py` — `/smh-code-review` Step 2 already diffs declared-vs-actual through `declared_change_set.py`, and a second reader of the same block is the two-callers-one-rule defect this house keeps paying for. Pre-work mode is untouched: it has no diff to share.
-
-### D7. Parts in sequence (work-consolidation Rule 2, completed)
-
-Rule 2 already sequences the BUILD by the overlap map. The added sentence: **each part is reviewed on its own commits before the next part starts**, the scope script selects the part by key, and the enforcement suite at each part's close and at the tip is the integration check across parts — no lens is. `/smh-plan-task` and `/smh-dev-task-tests` Step 1.5 warn when `declared_change_set.py parse` counts more than 40 paths for one part: split it at plan time, when splitting is free.
+**This lane is the one exception, and the plan says so rather than pretending.** The doors that would review each part are the lane's subject: until Part 4 lands, `/smh-code-review` passes `lens_budget`, expects `findings: <d> decision · <p> patch`, runs the judgment half of the clean-code audit inside the review, computes a floor that binds, and has no `## Reproduce` step. Reviewing Part 1 under that door reviews to the old law. So this lane is reviewed **at the tip, under the finished doors, as two scoped reviews by `--range`** — one over Parts 1–3's commits (doctrine, scope script, gates), one over Parts 4–6's (doors, lanes, records). The declared set holds 60 paths, of which 42 are masters after the nine `.opencode/` mirrors, six `.claude/` copies and three `docs/_scc_sops_prds/` records are stripped — two over the size-warning threshold, which is why it is two reviews and not one. Per-part review binds from the next lane.
 
 ## Step 1.6 — subtasks
 
-None proposed. Every piece below is the same lane class in the same repo and shares files (the SOP, the engine, the doors); by Rule 2 they are parts of one lane, not lanes. The parts below are the build-and-review order per D7.
+None. Every piece is the same lane class in the same repo and shares files (the SOP, the engine, the doors); by Rule 2 they are parts of one lane. Commit subjects carry `SCC-447 <part-word>:` — `doctrine`, `scope`, `gates`, `doors`, `lanes`, `records` — so the tip's two `--range` selections fall on part boundaries.
 
 ## Parts, in order — each: RED first, then the edit, then GREEN, then one commit
 
+⛔ **No test command runs without the operator's word (standing instruction, 2026-09-11).** Each part's RED and GREEN run are named below with what they should print; the agent stops before the first run of each part and asks. Part 6's full suite is asked for separately.
+
 ### Part 1 — the doctrine (rows A, B) — `SCC-447 doctrine: …`
 
-**RED:** `test_review_disposition.py` blocks A and B, every check with a counter-example the harness applies in memory and must reject (SCC-122 shape); run `--case A` and `--case B`, paste the red. `test_review_engine.py` step-02 checks and `test_lens_roster_contract.py` SCC-232/SCC-147/SCC-203 checks are updated **in the same commit** to pin the new text (their old pins go red on the edit, which is the proof they were live).
+**RED:** `test_review_disposition.py` blocks A and B (72 content checks, every one with a counter-example the harness applies in memory and must reject; 5 identifier bans over the five engine files with anti-vacuity; twin and cache byte-equality). Expected: all 72 content checks red, the byte-identity rows green. **In the same commit**, the sibling pins that go red on the edit — and the number is the honest size of this part: `test_review_engine.py` has 264 CHECKS rows, of which all 78 targeting step-02, ~36 step-01 rows naming the Blind Hunter / Literal lens / pack / levels, ~10 step-03 bucket rows and ~4 step-04 record rows retire or are rewritten (~130 rows, half the file), plus its §2a SCC-203 byte-comparison block (names the Blind Hunter) and the SKILL `lens_budget` input row; `test_lens_roster_contract.py`'s SCC-147, SCC-203, SCC-230, SCC-232 and SCC-301-B2b checks (`QUICK_TOKEN = "≤3 source files"`, the `| **Blind Hunter**` row read at :209); `test_finding_record.py`'s five pins on `[Review][Decision]`, `[Review][Patch]`, `blind+edge` and the `<survived>/<dismissed>/<relevance-killed>` line (**AUDIT FINDING 3** — undeclared in v1); `test_review_fixture.py:550`'s `| lens_budget | standard | standard |` pin (**AUDIT FINDING 6**). Their old pins going red on the edit is the proof they were live.
 
 **Edits:**
-- `.agents/rules/code-standards.md` §6.5: the three questions gain the gate above them — *"Is it REPRODUCED? A critical or important with no receipt does not exist."* — and "Fix what passes all three" becomes the D1 table: the agent fixes only a reproduced critical; a reproduced important is escalated with its receipt; suggestions and nitpicks are a count. §7: the FAIL row requires a reproduction receipt; a new paragraph states that CONCERNS ships on the operator's word, that the floor is computed on open rows at the stamp, and that a lane gets one review with pins-plus-suite as the retest. Twin: byte copy to `.claude/rules/`.
-- `.agents/skills/code-review-engine/steps/step-01-review.md`: the assessor section keeps its ruling and adds the reproduction gate; the lens table becomes D6; the hunter contract and the auditor rubric gain the required `reproduce:` / `expected_wrong_output:` fields (a finding without them is dropped unread); `## The two levels`, `### lens_budget`, the Literal-Correctness section, the Blind Hunter drop rule (SCC-203) and the evidence-pack section are retired with a one-paragraph retirement note naming SCC-447 and the measurement; the lens-roster contract keeps its invariant, the dead-lens ladder, `review_runtime`, and skipped-by-mode (Acceptance under `no-spec`).
-- `steps/step-02-verify.md`: becomes a pass-through — one paragraph: the wave is retired (SCC-447: 2 refutations in 18 reviews; reproduction in step 3 is the verification), findings travel to step 3 with `verification: none`, and the `notes` line records `verify wave: retired (SCC-447)`.
-- `steps/step-03-triage.md`: §1 gains `reproduce` and `expected_wrong_output` fields; §4's `patch` bucket becomes `fix` (reproduced critical) and a new `escalate` bucket (reproduced important); the relevance gate is replaced by the reproduction gate for critical/important and the "count only" rule for suggestion/nitpick; §5's table reads OPEN rows at the stamp; the "fixed in this lane… full stop" sentence becomes "fixed or escalated in this thread, never a ticket" (the 2026-08-15 rulings against residue tickets stand unchanged).
-- `steps/step-04-record.md`: the record boxes become `[Review][Fix]`, `[Review][Escalate]`, `[Review][Defer]`; `src=` keeps its three short names; the summary line becomes `findings: <f> fix · <e> escalate · <w> defer (<d> dropped — no reproduction · <r> recorded)`; `dispositions:` unchanged in shape.
-- `SKILL.md`: the return block matches step-04; the description drops "verifies findings".
+- `.agents/rules/code-standards.md` §6.5: the three questions gain **Gate 0** above them — *"A `critical` or `important` that did not reproduce does not exist"*, the receipt command, "no `--result` flag — a receipt implies execution", the measurement — and "Fix what passes all three" becomes the D2 table with the deferred-row ruling and *"The agent fixes a reproduced `critical` and nothing else."* §7: FAIL = an open reproduced `critical` with its receipt on disk; CONCERNS = an open reproduced `important`, escalated or deferred; PASS = no open reproduced finding; three paragraphs — the floor at the stamp on open rows, CONCERNS ships on the operator's word (no command, door or agent may treat it as a blocker on its own authority), one review per lane (a second roster needs the operator's written word and `walkthrough_roster.py` refuses one without it). Twin: byte copy to `.claude/rules/`.
+- `.agents/rules/artifacts-always-first.md:277–281` (**AUDIT FINDING 4** — undeclared in v1): the findings-table vocabulary becomes `fixed @sha · pin / escalated · repro / deferred — blocker / dropped — no reproduction (count) / recorded (count)`, and "any code/test diff between that SHA and HEAD invalidates the verdict" becomes "invalidates the **suite evidence** — re-run the pins and the suite and re-stamp; the lenses are not re-run". No twin exists.
+- `.agents/rules/jira.md:562–566` (**AUDIT FINDING 5** — undeclared in v1): "the relevance gate" → "the reproduction gate"; "Every survivor is fixed in the same lane" → "a reproduced `critical` is fixed in the same lane and a reproduced `important` is escalated, in the same thread". No twin exists.
+- `.agents/skills/code-review-engine/steps/step-01-review.md`: the assessor section keeps its ruling and adds Gate 0 with the three-layer split; the lens table becomes D8 (the `How` column stays — it is the wiring; the `EVIDENCE_PACK` column goes); the hunter contract gains three blockquoted bullets — the two required fields, **"RUN IT YOURSELF, in your own copy, before you report it"** with "if it does not fail the way you predicted, you have not found a defect — delete the finding", and the `reproduced: yes` + output line; the auditor rubric gains the same requirement adapted to an absence; the retirement paragraph names every retired piece and the measurement; `## The two levels`, `### lens_budget`, the Literal-Correctness section, the SCC-203 Blind Hunter drop rule and the evidence-pack section are removed; the lens-roster contract keeps its invariant, the dead-lens ladder, `review_runtime`, and skipped-by-mode (Acceptance under `no-spec`); every paste-ready `lenses_run:` example is rewritten with the three lenses, **unfenced** (`test_doc_examples_parse.py` extracts them and runs the real parser).
+- `steps/step-02-verify.md`: a pass-through — *"This step runs nothing."* The wave is retired (2 refutations in 18 reviews; step 3's reproduction gate replaces it); findings travel unchanged with `verification: none`; `notes` records `verify wave: retired (SCC-447)`.
+- `steps/step-03-triage.md`: §1 gains `reproduce`, `expected_wrong_output`, `reproduced` fields and the three surviving `source` values; §2 loses the revised-severity paragraphs; §4 becomes *"The reproduction gate, then the bucket"* — the presence gate (missing any field → drop; a lens that did not run its own command has not met the contract → drop), then **"This engine cannot run it, by design"** (no Bash), **"The CALLER runs the command again, on the REAL tree, through `repro_receipt.py`"** with SCC-295 as the named reason; the four buckets `fix` / `escalate` (the caller does NOT fix it; default *ships as recorded*) / `defer` / `drop`; `decision_needed` retired with the `finish` reason; "fixed or escalated in this thread, never a ticket"; §5 becomes *"on the rows that are still OPEN at the stamp"* with the D3 table (defer → CONCERNS at any severity), "A row closed by a fix and a green pin does not appear here", and **"CONCERNS is not a stop"** pointing at §7.
+- `steps/step-04-record.md`: record boxes `[Review][Fix] … · repro <id>`, `[Review][Escalate] … · repro <id> · recommend: <one line>`, `[Review][Defer] … · repro <id> — …`; `src=` short names `edge`, `acceptance`, `test-adequacy` (a joined src is `edge+test-adequacy`); "Every `escalate` box is carried to the OPERATOR"; summary line `findings: <f> fix · <e> escalate · <w> defer (<d> dropped — no reproduction · <r> recorded)`; `dispositions: per-lens: <lens>=<reproduced>/<dropped>/<recorded> · …`; the boundary keeps "never applies fixes" and gains "never runs a command".
+- `SKILL.md`: description — the lenses **reproduce** what they find; the input table drops `lens_budget` and `EVIDENCE_PACK`, `ARTIFACT_DIR` stays optional (the engine writes no receipts); the flow lists step 2 as *pass-through (the verify wave is retired, SCC-447)*; the return block matches step-04; the severity-axis paragraph becomes D3 — *"The floor this engine returns is **provisional**, and the caller resolves it at the stamp"*, exactly two ways down, both evidence; "What the engine does NOT do" loses `decision_needed` and gains "run a command".
 - `.claude/skills/code-review-engine/` — byte copy of the five files.
-- `.agents/skills/INDEX.md` engine row: description updated.
-- SOP: §③, §`/smh-code-review`, §11 and the engine paragraphs restated in present tense; one changelog row.
+- `.agents/skills/INDEX.md:29` engine cell: `lens fan-out → verify → triage → record … returning a severity floor` → `three lenses that reproduce what they find → triage → record, returning a provisional floor the caller resolves at the stamp`.
+- The negative-control fixture (**AUDIT FINDING 6**): `fixtures/nc_review_engine/README.md` rows 29/31 re-attribute `NC_BLIND` and `NC_LITERAL` to the Edge Case Hunter (it reads the diff and has uncapped repo access — the file cap that made `NC_LITERAL` Literal-only was the retired lens's), row 51's `lens_budget` row deleted, the top-up paragraph at :112 rewritten; `manifest.json` `"lens": "blind"` / `"literal"` → `"edge"`; `test_review_fixture.py:550` pin retired.
+- `test_review_engine.py`, `test_lens_roster_contract.py`, `test_finding_record.py`, `test_review_fixture.py`: as sized under RED.
+- DELETE `evidence_extract.py` + `test_evidence_extract.py` (the approval covers both DELETE rows; `test_command_surfaces.py:3932` keeps its comment, `run_all.py` discovers tests by glob so nothing is unwired); `.agents/scripts/INDEX.md` rows 33 and 47.
+- SOP §③ (:636–730) in present tense — the level paragraph, the relevance-gate aside, the dispositions sentence at :698, the verdict table; changelog row.
 
-**Decision at approval (Ask First — a deletion):** `evidence_extract.py` and `test_evidence_extract.py` serve only the retired wave. Recommendation: delete both in this part (the change makes them dead; `karpathy-guidelines` §3). Keeping them means a script nothing calls. Your word decides.
+**GREEN:** `test_review_disposition.py --case "A ·"`, `--case "B ·"`; `test_review_engine.py`; `test_lens_roster_contract.py`; `test_finding_record.py`; `test_review_fixture.py`; `test_doc_examples_parse.py`. Paste the totals.
 
 ### Part 2 — the scope script (row D) — `SCC-447 scope: …`
 
-**RED:** `test_review_scope.py` against a temp git repo built in the test: (1) mirrors, generated launchers and records withheld, masters kept, bytes reported; (2) commits grouped by key, rider key wins over lane key; (3) a two-key range with no selector exits 2 naming both keys; (4) `--key` selects one part's files only; (5) `--range` selects explicit commits; (6) `--out` writes the patch and prints kept/withheld counts; (7) an empty selection exits 2, never a clean patch; (8) **`--audit` keeps every mirror and still strips records** — the D6a asymmetry, proved by the same fixture returning a mirror path under `--audit` and not without it. Paste the red.
+**RED:** `test_review_scope.py` against a temp git repo built in the test: (1) mirrors, generated launchers and records withheld, masters kept, bytes reported; (2) commits grouped by key, rider key wins over lane key; (3) a two-key range with no selector exits 2 naming both keys; (4) `--key` selects one part's files only; (5) `--range` selects explicit commits; (6) `--out` writes the patch and prints kept/withheld counts; (7) an empty selection exits 2, never a clean patch; (8) `--audit` keeps every mirror and still strips records — proved by the same fixture returning a mirror path under `--audit` and not without it.
 
-**Edits:** `.agents/scripts/review_scope.py` (new, stdlib; the docstring carries the SCC-441 measurement AND the D6a asymmetry paragraph, because the flag is meaningless without the reason); `.agents/scripts/INDEX.md` row; SOP §11 paragraph + changelog row.
+**Edits:** `.agents/scripts/review_scope.py` (new, stdlib; the docstring carries the SCC-441 measurement, the rider-key convention, and the D9 asymmetry paragraph); `.agents/scripts/INDEX.md` row; SOP §11 paragraph + changelog row.
+
+**GREEN:** `test_review_scope.py` bare.
 
 ### Part 3 — receipts and the roster gate (row D) — `SCC-447 gates: …`
 
-**RED:** `test_repro_receipt.py`: writes the json with the true exit code and output tail; an existing id refuses without `--replace`; a dirty tree is recorded; no `--result` flag exists (argparse rejects it). `test_walkthrough_roster_dispositions.py` on synthetic walkthroughs dated after the new cutoff (`DISPOSITION_CUTOFF = 2026-09-12`): a fixed `nitpick` row refuses; a `fixed` row without `pin` refuses; a `fixed`/`escalated` critical/important whose `repro <id>` file is absent refuses and names the path; present → passes; PASS with an open critical refuses; PASS with an escalated important refuses (must be CONCERNS); two roster headers without the operator line refuse; with the line, pass; a re-stamp section with no roster reads the earlier roster and passes; a pre-cutoff walkthrough (SCC-441's own) is untouched. `test_task_preflight.py` gains one case: the FAIL refusal names "pins and the suite" and never "re-run the review".
+**RED:** `test_repro_receipt.py`: writes the json with the true exit code and output tail; an existing id refuses without `--replace`; a dirty tree is recorded; no `--result` flag exists (argparse rejects it). `test_walkthrough_roster_dispositions.py` on synthetic walkthroughs dated after `DISPOSITION_CUTOFF = "2026-09-12"` (a **literal** — E4c: a computed cutoff exempts its own lane): a fixed `nitpick` row refuses; a `fixed` row without `pin` refuses; a `fixed`/`escalated` critical/important whose `repro <id>` file is absent refuses and names the path; present → passes; PASS with an open critical refuses; PASS with an escalated important refuses (must be CONCERNS); two roster headers without the operator line refuse; with the line, pass; a re-stamp section with no roster reads the earlier roster and passes; a pre-cutoff walkthrough (SCC-441's own) is untouched. `test_walkthrough_roster.py` gains **NA4** (**AUDIT FINDING 7**): a `fan-out` lane whose only `n/a` row reads `acceptance · n/a — skipped-by-mode (no-spec)` PASSES; NA2 (a contaminated drop under fan-out BLOCKS) unchanged. `test_task_preflight.py` gains one case: the FAIL refusal names "pins and the suite" and never "re-run the review".
 
-**Edits:** `.agents/scripts/repro_receipt.py` (new); `.agents/scripts/walkthrough_roster.py` — a findings-table parser (header row must carry a `sev`/`severity` and a `disposition` column; other columns free) and the refusals above inside `judge()`, the second-roster count in `parse()`, gated by a **literal** `DISPOSITION_CUTOFF = "2026-09-12"` (E4c: a computed cutoff exempts its own lane); `.agents/scripts/task_preflight.py:1618` one string; `.agents/scripts/workflow_lint.py:114-119` — ⚠️ AUDIT FINDING 2: the `("code-standards", "producing findings", …)` trigger regex keys on `applied / deferred / dismissed`; add the new vocabulary as a third alternation so a door written only in the new words still owes the §6.5 pointer (one case in the lint's test); `.agents/scripts/INDEX.md` row; SOP §10/§11 paragraphs + changelog row.
+**Edits:** `.agents/scripts/repro_receipt.py` (new); `.agents/scripts/walkthrough_roster.py` — a findings-table parser (header row must carry a `sev`/`severity` and a `disposition` column; other columns free), the refusals above inside `judge()` after the `DISPO_CUTOFF` block, the second-roster count in `parse()`, the `:373–384` fan-out refusal exempting rows whose reason carries `skipped-by-mode` (today it refuses ANY `n/a` under fan-out, and once the Blind Hunter is gone the mode-skip is the only `n/a` left — every spec-less fan-out review would be refused at close-out), the `:443` message relabelled to the D8 shape; `.agents/scripts/task_preflight.py:1618` one string; `.agents/scripts/workflow_lint.py:114–122` (**AUDIT FINDING 2**): the `("code-standards", "producing findings", …)` trigger gains a fourth alternation `fixed\s*/\s*escalated\s*/\s*dropped` so a door written only in the new words still owes the §6.5 pointer (one case in the lint's test); `.agents/scripts/INDEX.md` row; SOP §10/§11 paragraphs + changelog row.
 
-**Mutation sweep** (Step 3) over `review_scope.py`, `repro_receipt.py`, `walkthrough_roster.py`: table declared in `sweep.json` before mutating, mutants drawn from the code (drop a withheld prefix; invert the two-key refusal; write the receipt before running the command; drop the `pin` requirement; drop the open-critical floor; count rosters from the raw text instead of the stripped text), each naming the case that must kill it; run through `mutation_sweep.py`.
+**Mutation sweep** over `review_scope.py`, `repro_receipt.py`, `walkthrough_roster.py`: the table declared in `sweep.json` (the `mutation_sweep.py` schema — `test`, `mutants[]` of `id/file/original/mutated/case/block`) before mutating; mutants drawn from the code, never from the cases: drop a withheld prefix; invert the two-key refusal; make `--audit` strip mirrors; write the receipt before running the command; drop the `pin` requirement; drop the open-critical floor; count rosters from the raw text instead of the stripped text; drop the `skipped-by-mode` exemption. Each names the case that must kill it; run through `mutation_sweep.py`, which restores and runs the closing full green itself.
+
+**GREEN:** the three new test files bare, `test_walkthrough_roster.py`, `test_task_preflight.py`, `test_workflow_lint.py`, then the sweep.
 
 ### Part 4 — the doors (row C) — `SCC-447 doors: …`
 
-**RED:** `test_review_disposition.py` block C: both doors carry the D2 re-stamp block, the D3 message contract, the scope-script call in Step 1, "machine floor only" in the nested Step 3.5, the D1 policy in the fix paragraph; no `lens_budget` row; no `twin-law: review-level` fence; no sentence matching `re-run the review|fresh review|fresh lens|invalidates the verdict`; the `.opencode/` copies byte-equal. `test_review_engine.py`'s "exactly ONE lens_budget row" checks are retired in the same commit.
+**RED:** `test_review_disposition.py` block C: both doors carry the `review_scope.py` call in Step 1 with `DIFF` as its output; a `## Reproduce` step naming `repro_receipt.py` and "on the real tree"; the D2 policy in the fix paragraph; "machine floor only" in the nested Step 3.5; Step 4 resolves the provisional floor on open rows; the D4 re-stamp block; the D5 message contract; no `lens_budget` row; no `twin-law: review-level` fence; no sentence matching `re-run the review|fresh review|fresh lens|invalidates the verdict`; the `.opencode/` copies byte-equal. `test_review_engine.py`'s 14 caller rows (SMH_CMD/CICD_CMD) that pin `lens_budget: standard` are retired in the same commit.
 
-**Edits:** `.agents/commands/smh-code-review.md` and `cicd-code-review.md`: Step 0.7 loses the level-derivation fence; Step 1's input table drops `lens_budget`, `DIFF` becomes the `review_scope.py` output (with the command shown), a `## Reproduce` sub-step follows the engine's return (run every critical/important's command through `repro_receipt.py`; drop the rest), the "Then fix in thread" paragraph becomes D1; Step 3.5 nested: "run the machine floor (Step 1 of the audit door) only — the judgment pass is not run inside a review"; Step 4: the findings table header is fixed to `| # | file:line | sev | lens | failure scenario | disposition |`, the disposition vocabulary from D1, the re-stamp block D2, the end-of-review message D3, the verdict rules (FAIL = an open reproduced critical or a red machine floor; CONCERNS = an open reproduced important or a dead lens; PASS = nothing open), and "any code/test diff between that sha and HEAD invalidates the **suite evidence** — re-run the pins and the suite and re-stamp; never the lenses". `smh-clean-code-audit.md` and `cicd-clean-code-audit.md`: one line under Step 2 — "nested inside a review, this pass does not run (SCC-447)". `smh-close-task-merge-tree.md` §2 tail: the severity-triage sentence narrowed to the D1 policy. All five `.opencode/` mirrors byte-copied. SOP §③ and §`/smh-code-review` rewritten in present tense; changelog row.
+**Edits:** `.agents/commands/smh-code-review.md` and `cicd-code-review.md`: Step 0.7 loses the level-derivation fence (the blast-radius section and its `origin/main` / `origin/$EPIC` pins stay — `test_command_surfaces.py:953–1001` reads them and is untouched); Step 1's input table drops `lens_budget`, `DIFF` becomes the `review_scope.py` output with the command shown; a **`## Reproduce`** step follows the engine's return — every surviving critical/important's command through `repro_receipt.py run` on this tree; not reproduced → `dropped`; the "Then fix in thread" paragraph becomes D2 (reproduced critical → fix with pin; reproduced important → escalate; nothing under `## Your Actions`); "The engine returns a `severity_floor`, and it BINDS Step 4" becomes D3 (provisional; resolved on open rows; two ways down); Step 3.5 nested: "run the machine floor (Step 1 of the audit door) only — the judgment pass is not run inside a review"; Step 4: the findings table header fixed to `| # | file:line | sev | lens | failure scenario | repro | disposition |`, the verdict rules (FAIL = an open reproduced critical or a red machine floor; CONCERNS = an open reproduced important, a defer, or a dead lens; PASS = nothing open), the re-stamp block, the end-of-review message, and "any code/test diff between that sha and HEAD invalidates the **suite evidence** — re-run the pins and the suite and re-stamp; never the lenses". `smh-clean-code-audit.md` and `cicd-clean-code-audit.md`: one line under Step 2 — "nested inside a review, this pass does not run (SCC-447)". `smh-close-task-merge-tree.md:301`: the severity-triage sentence narrowed to D2. All five `.opencode/` mirrors byte-copied. SOP §③ and §`/smh-code-review` (:2339) in present tense; changelog row.
+
+**GREEN:** `test_review_disposition.py --case "C ·"`, `test_review_engine.py`, `test_command_surfaces.py`, `test_twin_parity.py`, `workflow_lint.py --toolkit-only`.
 
 ### Part 5 — consolidation, planner, autopilot, self-audit (rows E, F, H) — `SCC-447 lanes: …`
 
-**RED:** `test_review_disposition.py` blocks E, F and H: the autopilot's step-3 row for CONCERNS/FAIL contains `escalate` and neither `fix child` nor `fresh`; `never ships by itself` absent from the door, `autopilot_SOP.md` and the SOP §15 row; Rule 2 carries "reviewed on its own commits" and "the enforcement suite is the integration check"; `smh-plan-task.md` and `smh-dev-task-tests.md` Step 1.5 carry the 40-path warning; **both self-audit twins' post-dev section names `review_scope.py … --audit` and Lens 2 carries the asymmetry sentence, stated identically in both** (a twin drift check of its own, since the sentence sits outside the fences and `test_twin_parity` therefore does not compare it).
+**RED:** `test_review_disposition.py` blocks E, F and H: the autopilot's step-3 row for CONCERNS/FAIL contains `escalate` and neither `fix child` nor `fresh`; `never ships by itself` absent from the door, `autopilot_SOP.md:192` and the SOP §15 row; Rule 2 carries "reviewed on its own commits", "`--range` for parts without rider keys" and "the enforcement suite is the integration check"; `smh-plan-task.md` Step 2.5 and `smh-dev-task-tests.md` Step 1.5 carry the 40-master warning; both self-audit twins' post-dev section names `review_scope.py … --audit` and Lens 2 carries the asymmetry sentence, byte-identical across the twins (a drift check of its own — the sentence sits outside the fences `test_twin_parity` compares).
 
-**Edits:** `.agents/commands/cicd-autopilot-claude.md:122` row → "**escalate** — post the D3 message on the ticket via `needs_human`; no fix child, no second reviewer; the operator's word moves it" (⚠️ AUDIT FINDING 1: `platforms: [claude]` — no `.opencode/` mirror exists for this door, so none is touched); `docs/_scc_sops_prds/autopilot_SOP.md:192` and the SOP §15 table row to match; `.agents/rules/work-consolidation.md` Rule 2 (D7 sentences); `.agents/commands/smh-plan-task.md` Step 2.5 and `smh-dev-task-tests.md` Step 1.5 (the size warning); the `.opencode/` mirrors of those two; changelog row.
+**Edits:** `.agents/commands/cicd-autopilot-claude.md:122` → "**escalate** — post the D5 message on the ticket via `needs_human`; no fix child, no second reviewer; the operator's word moves it" (**AUDIT FINDING 1**: `platforms: [claude]` — no `.opencode/` mirror exists); `docs/_scc_sops_prds/autopilot_SOP.md:192` and the SOP §15 row; `.agents/rules/work-consolidation.md` Rule 2 (D10 sentences; no twin exists); `.agents/commands/smh-plan-task.md` Step 2.5 and `smh-dev-task-tests.md` Step 1.5 (the size warning, after the mode table / after item 1); their `.opencode/` mirrors; both self-audit twins + mirrors (D9); changelog row.
+
+**GREEN:** `test_review_disposition.py --case "E ·"`, `"F ·"`, `"H ·"`; `test_twin_parity.py`; `test_command_surfaces.py`.
 
 ### Part 6 — the gate at the tip (row G) — `SCC-447 records: …`
 
-`workflow_lint.py --toolkit-only` (0 errors); `check_links.py --base origin/main`; `check_maps.py --depth3-only --strict`; `sop_currency.py` on the changed set; then **one** full `run_all.py` through `gate_receipt.py run --task SCC-447 --gate suite`, on a clean tree; the walkthrough with RED→GREEN evidence per row, the sweep record, `## Your Actions`; the Dev Record via `jira_feed.py devrecord`. Then STOP: `/smh-code-review` runs when you ask, under the doors this lane just changed.
+`operator_workflows_quickref.md` (**AUDIT FINDING 8** — v1 declared it conditionally): the three Mermaid diagrams at :717–763 and :958 redrawn — three lenses, no verify wave, `## Reproduce`, four buckets, no `lens_budget`; the SOP's hand-written appendix twins of those diagrams (:3441–3483, :3668–3669 — no generator exists, so both are edits); `workflow_lint.py --toolkit-only` (0 errors); `check_links.py --base origin/main`; `check_maps.py --depth3-only --strict`; `sop_currency.py` on the changed set; then — **on the operator's word, asked separately** — **one** full `run_all.py` through `gate_receipt.py run --task SCC-447 --gate suite`, on a clean tree; the walkthrough with RED→GREEN evidence per row, the sweep record, `## Your Actions`; the Dev Record via `jira_feed.py devrecord`. Then STOP: the two `--range` reviews of D10 run when the operator asks, under the doors this lane just changed.
 
 ## Declared Change Set
 
-- NEW `.agents/scripts/review_scope.py` — the diff a lens reads: one part, masters only, no cap → D
-- NEW `.agents/scripts/repro_receipt.py` — a reproduction is a receipt → D
-- NEW `.agents/scripts/tests/test_review_disposition.py` — the prose pins with counter-examples → A
+- NEW `.agents/scripts/review_scope.py` — the diff a lens reads: one part, masters only, no cap; `--audit` keeps mirrors → D
+- NEW `.agents/scripts/repro_receipt.py` — the door's receipt writer; a reproduction is a receipt → D
+- NEW `.agents/scripts/tests/test_review_disposition.py` — the prose pins with counter-examples (blocks A–H) → A
 - NEW `.agents/scripts/tests/test_review_scope.py` — the scope script seen red → D
 - NEW `.agents/scripts/tests/test_repro_receipt.py` — the receipt writer seen red → D
 - NEW `.agents/scripts/tests/test_walkthrough_roster_dispositions.py` — the new refusals seen red → D
-- EDIT `.agents/rules/code-standards.md` — §6.5 reproduce-or-drop + the action policy; §7 CONCERNS ships, floor on open rows, one review → A
+- EDIT `.agents/rules/code-standards.md` — §6.5 Gate 0 + the action policy; §7 open rows at the stamp, CONCERNS ships, one review → A
 - EDIT `.claude/rules/code-standards.md` — byte twin → A
-- EDIT `.agents/skills/code-review-engine/SKILL.md` — return block and description → B
-- EDIT `.agents/skills/code-review-engine/steps/step-01-review.md` — three lenses, reproduction fields, retirements → B
+- EDIT `.agents/rules/artifacts-always-first.md` — §6 findings-table vocabulary; "invalidates the suite evidence", never the verdict (AUDIT FINDING 4) → A
+- EDIT `.agents/rules/jira.md` — the review-findings paragraph: reproduction gate, fix or escalate (AUDIT FINDING 5) → A
+- EDIT `.agents/skills/code-review-engine/SKILL.md` — inputs, flow, return block, the provisional floor and its two ways down → B
+- EDIT `.agents/skills/code-review-engine/steps/step-01-review.md` — three lenses, the lens runs its own command, retirements → B
 - EDIT `.agents/skills/code-review-engine/steps/step-02-verify.md` — pass-through → B
-- EDIT `.agents/skills/code-review-engine/steps/step-03-triage.md` — action policy, floor on open rows → B
-- EDIT `.agents/skills/code-review-engine/steps/step-04-record.md` — record vocabulary → B
+- EDIT `.agents/skills/code-review-engine/steps/step-03-triage.md` — presence gate, the engine cannot execute, four buckets, floor on open rows → B
+- EDIT `.agents/skills/code-review-engine/steps/step-04-record.md` — record vocabulary, escalate carried to the operator → B
 - EDIT `.claude/skills/code-review-engine/SKILL.md` — cache copy → B
 - EDIT `.claude/skills/code-review-engine/steps/step-01-review.md` — cache copy → B
 - EDIT `.claude/skills/code-review-engine/steps/step-02-verify.md` — cache copy → B
 - EDIT `.claude/skills/code-review-engine/steps/step-03-triage.md` — cache copy → B
 - EDIT `.claude/skills/code-review-engine/steps/step-04-record.md` — cache copy → B
 - EDIT `.agents/skills/INDEX.md` — engine row description → B
-- EDIT `.agents/scripts/tests/test_review_engine.py` — step-02 and lens_budget pins retired, new pins → B
-- EDIT `.agents/scripts/tests/test_lens_roster_contract.py` — SCC-232/147/203 pins retired, roster pins → B
-- DELETE `.agents/scripts/evidence_extract.py` — served only the retired wave (your word at approval) → B
-- DELETE `.agents/scripts/tests/test_evidence_extract.py` — its test (your word at approval) → B
-- EDIT `.agents/commands/smh-code-review.md` — scope, reproduce, policy, re-stamp, message, verdict rules → C
+- EDIT `.agents/scripts/tests/test_review_engine.py` — ~130 of 264 rows retire or are rewritten (all step-02, the Blind/Literal/pack/level step-01 rows, old buckets and record, the SKILL and caller `lens_budget` rows) → B
+- EDIT `.agents/scripts/tests/test_lens_roster_contract.py` — SCC-147/203/230/232/301-B2b pins retired, roster pins → B
+- EDIT `.agents/scripts/tests/test_finding_record.py` — the record-box and dispositions pins follow step-04 (AUDIT FINDING 3) → B
+- EDIT `.agents/scripts/tests/fixtures/nc_review_engine/README.md` — seeds re-attributed to the Edge Case Hunter; `lens_budget` row and top-up paragraph gone (AUDIT FINDING 6) → B
+- EDIT `.agents/scripts/tests/fixtures/nc_review_engine/manifest.json` — `lens` fields follow the README (AUDIT FINDING 6) → B
+- EDIT `.agents/scripts/tests/test_review_fixture.py` — the `lens_budget` README pin retired (AUDIT FINDING 6) → B
+- DELETE `.agents/scripts/evidence_extract.py` — served only the retired wave (approved with the plan) → B
+- DELETE `.agents/scripts/tests/test_evidence_extract.py` — its test (approved with the plan) → B
+- EDIT `.agents/commands/smh-code-review.md` — scope, reproduce on the real tree, policy, provisional floor, re-stamp, message, verdict rules → C
 - EDIT `.opencode/commands/smh-code-review.md` — byte mirror → C
 - EDIT `.agents/commands/cicd-code-review.md` — the same, story-lane twin → C
 - EDIT `.opencode/commands/cicd-code-review.md` — byte mirror → C
@@ -196,93 +250,104 @@ None proposed. Every piece below is the same lane class in the same repo and sha
 - EDIT `.opencode/commands/cicd-clean-code-audit.md` — byte mirror → C
 - EDIT `.agents/commands/smh-close-task-merge-tree.md` — §2 tail narrowed to the policy → C
 - EDIT `.opencode/commands/smh-close-task-merge-tree.md` — byte mirror → C
-- EDIT `.agents/scripts/walkthrough_roster.py` — findings-table parser and the five refusals → D
+- EDIT `.agents/scripts/walkthrough_roster.py` — findings-table parser, the five refusals, the second-roster count, the mode-skip exemption under fan-out (AUDIT FINDING 7), the relabelled message → D
+- EDIT `.agents/scripts/tests/test_walkthrough_roster.py` — NA4: a mode-skip under fan-out passes (AUDIT FINDING 7) → D
 - EDIT `.agents/scripts/task_preflight.py` — the FAIL message string → D
 - EDIT `.agents/scripts/tests/test_task_preflight.py` — one case for the message → D
-- EDIT `.agents/scripts/INDEX.md` — two script rows → D
-- EDIT `.agents/commands/cicd-autopilot-claude.md` — step-3 row: escalate (⚠️ AUDIT FINDING 1: `platforms: [claude]`, so it has NO `.opencode/` mirror — none declared) → E
+- EDIT `.agents/scripts/workflow_lint.py` — the finding-producer trigger learns `fixed / escalated / dropped` (AUDIT FINDING 2) → C
+- EDIT `.agents/scripts/tests/test_workflow_lint.py` — one case for the new alternation (AUDIT FINDING 2) → C
+- EDIT `.agents/scripts/INDEX.md` — two new script rows; the two extractor rows removed → D
+- EDIT `.agents/commands/cicd-autopilot-claude.md` — step-3 row: escalate (AUDIT FINDING 1: `platforms: [claude]`, no `.opencode/` mirror exists — none declared) → E
 - EDIT `docs/_scc_sops_prds/autopilot_SOP.md` — the matching row → E
-- EDIT `.agents/scripts/workflow_lint.py` — ⚠️ AUDIT FINDING 2: the `code-standards` finding-producer trigger learns the new disposition vocabulary (`fixed` / `escalated` / `dropped` / `recorded`) beside the old, with one lint case → C
 - EDIT `.agents/commands/smh-self-audit.md` — post-dev resolves through `review_scope.py --audit`; Lens 2 states the scope asymmetry → H
 - EDIT `.opencode/commands/smh-self-audit.md` — byte mirror → H
-- EDIT `.agents/commands/cicd-self-audit.md` — the same, story-lane twin (both edits sit OUTSIDE every `twin-law` fence — verified) → H
+- EDIT `.agents/commands/cicd-self-audit.md` — the same, story-lane twin (outside every `twin-law` fence — verified) → H
 - EDIT `.opencode/commands/cicd-self-audit.md` — byte mirror → H
-- EDIT `.agents/rules/work-consolidation.md` — Rule 2: review per part, suite is the integration check → F
+- EDIT `.agents/rules/work-consolidation.md` — Rule 2: review per part, `--range` for parts without rider keys, suite is the integration check → F
 - EDIT `.agents/commands/smh-plan-task.md` — plan-time size warning → F
 - EDIT `.opencode/commands/smh-plan-task.md` — byte mirror → F
 - EDIT `.agents/commands/smh-dev-task-tests.md` — Step 1.5 size warning → F
 - EDIT `.opencode/commands/smh-dev-task-tests.md` — byte mirror → F
-- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — §③, §`/smh-code-review`, §10, §11, §15 in present tense → G
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — §③, §`/smh-code-review`, §10, §11, §15 and the command-atlas appendix rows, in present tense → G
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — one row per part → G
-- EDIT `docs/_scc_sops_prds/operator_workflows_quickref.md` — the extractor mention, if the deletion is approved → G
+- EDIT `docs/_scc_sops_prds/operator_workflows_quickref.md` — the three engine diagrams redrawn (AUDIT FINDING 8) → G
 
-Launcher skills (`.agents/skills/<cmd>/SKILL.md`, `.roo/commands/`) carry only each command's description, which this lane does not change, so they are not regenerated. `sync-agents.ps1` is available (`pwsh` is installed) if a description does move.
+Launcher skills (`.agents/skills/<cmd>/SKILL.md`, `.roo/commands/`) carry only each command's description, which this lane does not change, so they are not regenerated. Comments that credit a retired lens by name in unrelated files (`_harness.py:156`, `wf_common.py:282`, `task_preflight.py:944`, `jira_feed.py:2229`, `test_command_surfaces.py:2552/2665/3932`, and eight sibling tests) are history and are not touched.
 
 ## Risks, named
 
 - **A new gate refuses once before it settles.** Every roster-parser tier in this house produced one false refusal on its first lane (SCC-210: two round trips). The disposition vocabulary is five words, pinned by tests, and every refusal names the row and the fix. Expect one bump on the first review under it.
-- **Reproduction moves work into the assessor.** Each critical/important costs one command through the receipt writer. On a three-lens review of a part-sized diff that is a handful; it replaces a whole verifier wave. On a bad diff it is the slowest step, and it is the step that should be.
-- **Coverage lost, stated:** one of seven historical criticals was Blind-only, one Literal-only; the fence checker SCC-441 added covers the Literal class. Findings that are true but cannot be shown as wrong output are dropped by design.
-- **Per-part review has a seam.** Part N's review does not see part N-1's files. The suite at each part's close and at the tip is the integration check; D7 says so in the rule so nobody adds a lens for it.
+- **The lens's self-run is not free.** Each critical/important costs the lens one command in its own copy. On a part-sized diff that is a handful, and it replaces a whole verifier wave. It is the slowest step on a bad diff, and it is the step that should be.
+- **Coverage lost, stated.** One of seven historical criticals was Blind-only, one Literal-only; the fence checker SCC-441 added covers the Literal class. And the third "cannot reproduce" case — real, reachable, unproven — is dropped by design. That is the price of ending the debate.
+- **Half a test file retires in one commit.** ~130 of `test_review_engine.py`'s 264 rows go with the machinery they pinned. The rows that stay are the ones about the surviving contract (the assessor ruling, the tree half of isolation, the ladder, the roster block). The counter-example discipline is unchanged, so what stays is still self-proving.
+- **This lane reviews at the tip, not per part.** D10 says why and what replaces it (two `--range` reviews; 42 masters, two over the threshold). The next lane gets per-part review under the finished doors.
 - **The prose pins are one test file.** `test_review_disposition.py` guards the doctrine; the roster parser guards the behaviour. Both, deliberately.
 
 ## Not in this lane
 
-The phase-2 fork (lenses forked from a review parent that loaded only the diff — measured 92% saving in the SCC-430 spike; own ticket, measured first on the SCC-124 fixture). The three SCC-441 findings escalated in that lane's pass-3 note (own ticket). The labeller's SOP shared-ground rule (untouched). The two stale worktree stubs (a sandbox-off prune, one line).
+The phase-2 fork (lenses forked from a review parent that loaded only the diff — measured 92% saving in the SCC-430 spike; own ticket, measured first on the `nc_review_engine` fixture, which this lane keeps intact for exactly that reason). The three SCC-441 findings escalated in that lane's pass-3 note (own ticket). The labeller's SOP shared-ground rule (untouched).
 
-## Self-Audit (2026-09-11)
+## Self-Audit (2026-09-11, v2)
 
-**Level:** LEDGER+BLAST — the declared set touches rules, gate scripts, doors on every platform, the tests directory, and carries two `DELETE` rows. **Mode:** PRE-WORK. **Runtime:** the three lenses were run inline by the assessor with real commands (outputs quoted below); they were not fanned out.
+**Level:** LEDGER+BLAST — the declared set touches rules, gate scripts, doors on every platform, the tests directory, and carries two `DELETE` rows. **Mode:** PRE-WORK (nothing built; one RED file on disk, unrun). **Runtime:** the three lenses were run inline by the assessor with real commands (outputs quoted); they were not fanned out. **What v1's audit did not do and this one does:** grep the repo for every piece of machinery the lane retires, and classify each hit as law, test, fixture or history.
 
 ```
 lens:        1 Repo Reality + Scope Ledger
-checks_run:  declared block parses · every declared path exists in the state its op requires · every section/line anchor the plan names exists · commands run on both sides · lane fit (no deployable path) · Scope Ledger (NEW × acceptance row)
-read:        declared_change_set.py parse → entries=48 incomplete=[] ops={NEW:6, EDIT:40, DELETE:2}
-             audit_paths.py → mismatches: [('EDIT but missing', '.opencode/commands/cicd-autopilot-claude.md')]
-             .agents/commands/cicd-autopilot-claude.md:3 → `platforms: [claude]`; ls .opencode/commands | grep -c autopilot → 0
-             workflows_testing_SOP.md → `## 10. The safety net` :2391 · `## 11. Is this review still valid?` :2608 · `## 15. The autopilot lane` :2924
-             smh-plan-task.md → `## Step 2.5 — ⭐ Pick the MODE` :117 · task_preflight.py:1618 → `"the review verdict is FAIL - fix on the branch and re-run the "` · cicd-autopilot-claude.md:122 · autopilot_SOP.md:192
-             twin-law fences: smh-code-review.md:120 `review-level` · cicd-code-review.md:181 `review-level`
-             Scope Ledger — NEW × row: review_scope.py→D · repro_receipt.py→D · test_review_disposition.py→A(+B,C,E,F) · test_review_scope.py→D · test_repro_receipt.py→D · test_walkthrough_roster_dispositions.py→D — no empty cell. Caller count: review_scope.py 0 existing callers, 2 planned (both doors); repro_receipt.py 0 existing, 2 doors + walkthrough_roster reads its files.
-verdict:     findings below (1)
+checks_run:  declared block parses · NEW judged against origin/main, EDIT/DELETE against the tree AND origin/main · every section/line anchor the plan names re-read · twins and mirrors exist where declared · lane fit · Scope Ledger (NEW × acceptance row)
+read:        declared_change_set.py parse → entries=60 incomplete=[] ops={NEW:6, EDIT:52, DELETE:2} (the first draft of this block said 58 — the parser corrected the author's tally, which is what the check is for)
+             audit_paths2.py (NEW vs `git ls-tree origin/main`, EDIT/DELETE vs disk + base) → mismatches: none
+             SKILL.md:4 → `allowed-tools: Read, Write, Glob, Grep, Task` (no Bash) · step-02-verify.md:241 → "you have no Bash" · bmad-review-edge-case-hunter/SKILL.md, smh-code-review/SKILL.md, cicd-code-review/SKILL.md → no allowed-tools line (inherit)
+             task_preflight.py:1618 → `"the review verdict is FAIL - fix on the branch and re-run the "` · workflow_lint.py:114-122 → the `code-standards` trigger with `applied/deferred/dismissed`, `- **FAIL**`, `patch/defer/reject`, `NO-GO` arms · cicd-autopilot-claude.md:122 + autopilot_SOP.md:192 → "One fix child … fresh review child … never ships by itself"
+             SOP → `### ③` :636 · `≤3 source files` :662 · `### /smh-code-review` :2339 · `## 10.` :2391 · `## 11.` :2608 · `## 15.` :2924 · appendix rows :3441-3483, :3668-3669 · smh-plan-task.md → `## Step 2.5` :117 · smh-dev-task-tests.md → `## Step 1.5` :178
+             twin-law fences → smh-code-review.md:120, cicd-code-review.md:181 (`review-level`) · .claude/rules/ holds ONLY code-standards.md of the four rules edited (artifacts-always-first, jira, work-consolidation: no twin) · .opencode/commands/ holds all nine mirrors declared
+             jira_feed.py:1774 `open_actions` + :2452 → `finish` decides Done from the open `- [ ]` rows under `## Your Actions` (the D2 reason `decision_needed` retires)
+             Scope Ledger — NEW × row: review_scope.py→D · repro_receipt.py→D · test_review_disposition.py→A(+B,C,E,F,H) · test_review_scope.py→D · test_repro_receipt.py→D · test_walkthrough_roster_dispositions.py→D — no empty cell. Callers: review_scope.py 0 existing, 4 planned (both review doors, both self-audit twins); repro_receipt.py 0 existing, 2 doors + walkthrough_roster reads its files
+verdict:     findings below (F3, F4, F5, F6, F8)
 ```
 
 ```
 lens:        2 Parity + Blast
-checks_run:  command files → platform doors · rule → citing commands + workflow_lint _RULE_POINTERS · scripts → callers in hooks + tests + INDEX · gate/hook arming · DELETE → every reference repo-wide · SOP same commit · twins · file in >1 repo (port rule) · sibling worktrees · risk seam
-read:        workflow_lint.py:114-119 → `("code-standards", "producing findings", re.compile(r"`?applied`?\s*/\s*`?deferred`?\s*/\s*`?dismissed`?" | r"^\s*-\s*\*\*FAIL\*\*\s*[-—–=:]" …))`
-             roster.judge( callers → closeout_preflight.py:413, task_preflight.py:1579 (signature unchanged; new refusals behind a literal cutoff)
-             hooks naming changed scripts → git-hooks/merge-target-guard.sh:163 (a comment only)
-             evidence_extract references → step-02 (rewritten) · scripts/INDEX.md (row) · operator_workflows_quickref.md · changelog (history, kept) · test_review_engine.py:605-608 (check retired with step-02) · test_command_surfaces.py:3932 (comment)
-             test_twin_parity.py:189 → FENCED_TODAY comment names `review-level` (a comment; the check compares law maps, so removing the fence from BOTH doors keeps parity)
-             test_lens_roster_contract.py:142 → QUICK_TOKEN = "≤3 source files"; SOP:660-662 restates it (retired together, Part 1 + Part 6)
-             Projects/*/ → only `Projects/sudo-command-center/` carries the rule, the engine and the door; .gitmodules → a submodule of `sudomadhatter/sudo-command-center.git`, `ignore = all`; docs/workspace-standard.md:260 → "the published teaching edition of this lobby — a sanitized export, never edited in place" (export-teaching-edition.ps1); its copies already differ from the lobby's. NOT in SCOPE → the port rule does not fire.
-             git worktree list → SCC-439 stub (not a git repository), scc-386 stub on main, no diff → no landing-order dependency
-             risk_seam.py classify → {"status": "unclassified"} (markdown repo, SCC-289 — correct)
-             workflow_lint.py --toolkit-only on the untouched tree → 0 error(s), 0 warning(s), 8 info
-verdict:     findings below (1)
+checks_run:  repo-wide grep for every retired token (decision_needed · [Review][Patch] · relevance gate · verify wave · Evidence Verifier · Compound Synthesis · lens_budget · review_level · Blind Hunter · Literal-Correctness · EVIDENCE_PACK · evidence_extract · noise-dismissed · relevance kill) over rules, commands, engine, scripts, tests, SOP docs — 41 files, each hit classified · scripts that READ the review section · roster gate refusals vs the surviving roster · test_review_engine.py sized by target · twins · generators · sibling worktrees
+read:        41 files carry a retired token. LAW (undeclared in v1): artifacts-always-first.md:277-281 (`applied @ sha / deferred … / dismissed — a relevance kill`; "invalidates the verdict"), jira.md:563-565 ("the relevance gate"; "Every survivor is fixed"). TESTS that go red (undeclared in v1): test_finding_record.py:33-54 pins `[Review][Decision]`, `[Review][Patch]`, `blind+edge`, `<survived>/<dismissed>/<relevance-killed>`; test_review_fixture.py:550 pins `| lens_budget | standard | standard |` in the fixture README. FIXTURE: nc_review_engine/README.md:29,31,51,112 + manifest.json:19,40 attribute seeds to `blind`/`literal`. DOCS: quickref :247,397,717-763,958 (three Mermaid diagrams); SOP appendix :3441-3483, :3668-3669 (hand-written twins; `grep -rln "quickref|mermaid|appendix" .agents/scripts/*.py` → none). HISTORY (kept): 15 comment credits across _harness.py, wf_common.py, task_preflight.py:944, jira_feed.py:2229/2237, run_all.py:63, test_command_surfaces.py:2552/2665/3932, six sibling tests; changelog rows.
+             test_review_engine.py → 264 CHECKS rows: STEPS[0]=111, STEPS[1]=78, STEPS[2]=29, STEPS[3]=12, SKILL=18, SMH_CMD=7, CICD_CMD=7, DEV_STORY_CMD=2; rows naming retired machinery by keyword: 90 (STEPS[1] 37 by keyword, ALL 78 by subject)
+             test_lens_roster_contract.py → SCC-147 :45-56, SCC-203 :74-78, SCC-230 :91, SCC-232 :139-161 (`QUICK_TOKEN`), SCC-301-B2b :209-211 (reads the `| **Blind Hunter**` row)
+             walkthrough_roster.py judge() :373-384 → `if na and data["runtime"] == "fan-out": … return False` — refuses ANY `lenses_na` row under fan-out; parse() :209-235 builds `na` without distinguishing a mode-skip from a drop; test_walkthrough_roster.py:103 NA2 pins "a fan-out lane that drops a lens BLOCKS". Under the surviving roster the ONLY possible `n/a` is `acceptance · skipped-by-mode (no-spec)`.
+             walkthrough_roster.py → `_DISPO_RE` :111 checks presence only; :443 message text carries the old three labels. No script parses the `findings:` line or a bucket word (flight_recorder, closeout_preflight, task_preflight, jira_feed grepped).
+             test_command_surfaces.py → :953-1001 pins both doors' blast-radius sections (`origin/main` / `origin/$EPIC`), :2177 pins the empty-diff STOP — none touched by Part 4 · test_doc_examples_parse.py → extracts `lenses_run:` examples from the docs and runs the real parser; lens names are not validated (:268-269 are in-test controls)
+             test_twin_parity.py:185-189 → FENCED_TODAY comment names `review-level` (a comment; the check compares law maps, so removing the fence from BOTH doors keeps parity)
+             git worktree list → the lobby @ 03778605 [main] and this lane only · risk_seam classify → unclassified (markdown repo, SCC-289 — correct)
+verdict:     findings below (F2, F7, F9, F10)
 ```
 
 ```
 lens:        3 Pre-Mortem (attached to anchored findings only)
-checks_run:  the silent one · the fresh-clone one · the sibling-lands-first one · the own-lane-exempt one
-read:        F1 shipped as declared → /smh-code-review Step 2's declared-set drift reports `unimplemented=1` on every review of this lane for a file that cannot exist, capping at CONCERNS forever.
-             F2 shipped without → the next lane that rewrites a clean-code door in the new vocabulary loses the §6.5 pointer requirement silently — a check that cannot fail (tests-must-gate-for-real §5). The review doors still fire through the `- **FAIL**` arm.
-             cutoff (design, not a finding) → a computed "today" cutoff would exempt this lane's own walkthrough (E4c scar); the plan pins the literal `2026-09-12` and the test asserts the literal.
-             fresh clone → the two new scripts are stdlib; the new refusals ride a script the close-out already runs, so nothing needs arming.
-verdict:     clean — nothing to originate; two narratives attached above
+checks_run:  the silent one · the fresh-clone one · the own-lane-exempt one · the half-migrated one
+read:        F7 shipped without → the first `review_mode: no-spec` review after Part 1 records `acceptance · n/a — skipped-by-mode` under `fan-out` and the close-out refuses it as an SCC-203 drop; the agent's cheapest exit is to declare `inline` falsely or omit the row — both of which the roster gate exists to catch, now defeated by the gate itself.
+             F10 shipped as v1 wrote it → Part 1's per-part review runs under the OLD door: `lens_budget` passed to an engine that no longer lists it, `findings: <d> decision · <p> patch` expected from a step-04 that no longer emits it, the judgment audit run inside the review, a binding floor, no `## Reproduce` — a review of the new law under the old law, with every check green.
+             F3/F6 shipped without → Part 1's GREEN is red on two files the plan never named; the agent "fixes" them under time pressure at the end of the part, which is the unreviewed-edit shape this lane exists to end.
+             cutoff (design) → `DISPOSITION_CUTOFF = "2026-09-12"` literal; the test asserts the literal (E4c).
+             fresh clone → the two new scripts are stdlib; the new refusals ride a script the close-out already runs; nothing needs arming.
+verdict:     clean — nothing to originate; three narratives attached above
 ```
 
-| anchor | literal text read | consequence | severity |
-|---|---|---|---|
-| `.agents/commands/cicd-autopilot-claude.md:3` | `platforms: [claude]` | the declared `.opencode/commands/cicd-autopilot-claude.md` cannot exist; every review of this lane reports one unimplemented declared path | medium — **baked in: entry removed** |
-| `.agents/scripts/workflow_lint.py:114-119` | `("code-standards", "producing findings", re.compile(r"`?applied`?\s*/\s*`?deferred`?\s*/\s*`?dismissed`?" …` | the finding-producer trigger keys on the vocabulary this plan replaces; a door carrying only the new words would lose the §6.5 pointer requirement silently | medium — **baked in: Part 3 adds the alternation + one case** |
+| # | anchor | literal text read | consequence | severity | baked in as |
+|---|---|---|---|---|---|
+| F1 | `.agents/commands/cicd-autopilot-claude.md:3` | `platforms: [claude]` | a declared `.opencode/` mirror cannot exist | medium | no mirror declared (Part 5) |
+| F2 | `.agents/scripts/workflow_lint.py:114-122` | `r"`?applied`?\s*/\s*`?deferred`?\s*/\s*`?dismissed`?" … r"\|patch\s*/\s*defer\s*/\s*reject"` | a door carrying only the new words loses the §6.5 pointer requirement silently | medium | Part 3: fourth alternation + one lint case |
+| F3 | `.agents/scripts/tests/test_finding_record.py:33-54` | `"- [ ] [Review][Patch] <title> [<file>:<line>] src=<lens>" in t` … `"<lens>=<survived>/<dismissed>/<relevance-killed> · …"` | five of nine checks go red on Part 1's step-04 edit; file undeclared | high | Part 1: EDIT declared, pins follow step-04 |
+| F4 | `.agents/rules/artifacts-always-first.md:277,280-281` | `any code/test diff between that SHA and HEAD invalidates the verdict` · `disposition (applied @ sha / deferred — … / dismissed — a relevance kill` | the rule the doors quote keeps the old vocabulary and the re-review sentence; `workflow_lint`'s trigger keys on exactly this text | high | Part 1: EDIT declared |
+| F5 | `.agents/rules/jira.md:563-565` | `(`code-review-engine` step-03, the relevance gate)` · `Every survivor is fixed in the same lane` | law pointing at a retired gate and the retired fix-everything rule | medium | Part 1: EDIT declared |
+| F6 | `fixtures/nc_review_engine/README.md:29,31,51` · `manifest.json:19,40` · `test_review_fixture.py:550` | `NC_BLIND \| Blind Hunter` · `NC_LITERAL \| Literal-Correctness` · `\| lens_budget \| standard \| standard \|` · `"lens": "blind"` | the negative-control fixture attributes two seeds to retired lenses and its test pins a retired row | medium | Part 1: three EDITs declared; seeds re-attributed to Edge Case |
+| F7 | `.agents/scripts/walkthrough_roster.py:373-384` · `test_walkthrough_roster.py:103` | `if na and data["runtime"] == "fan-out":` … `return False, reasons` · `NA2 · a fan-out lane that drops a lens BLOCKS` | after the Blind Hunter retires, the only `n/a` is the Acceptance mode-skip; every spec-less fan-out review is refused at close-out | high | Part 3: exemption for `skipped-by-mode` + NA4 |
+| F8 | `docs/_scc_sops_prds/operator_workflows_quickref.md:717-763,958` · SOP `:3441-3483,3668-3669` | `L1["Blind Hunter …"]` · `V["Step 02 — the verify wave …"]` · `T["… decision_needed · patch · defer · dismiss"]` · `lens_budget: standard` | three operator-facing diagrams and their hand-written SOP twins draw the retired engine; v1 declared the quickref only "if the deletion is approved" | medium | Part 6: unconditional EDIT, both surfaces |
+| F9 | `.agents/scripts/tests/test_review_engine.py` (ast count) | `STEPS[1]: 78` rows · `STEPS[0]: 111` rows | "step-02 checks updated" under-states a rewrite of ~130 of 264 rows | low (sizing) | Part 1 sized honestly; Risks |
+| F10 | plan v1 D7 · `smh-code-review.md:213,229,241` | `\| lens_budget \| standard` · `Every \`patch\` the engine hands back` · `it BINDS Step 4` | per-part review of THIS lane runs the new engine under the old door | high | D10: reviewed at the tip, two `--range` reviews |
 
 ### Observations (uncounted)
 
-- `test_twin_parity.py:189`'s FENCED_TODAY comment names `review-level`; update the comment when the fence goes (cosmetic, a comment is not law).
-- The `lenses_na` machinery in `walkthrough_roster.py` stays: the Acceptance Auditor is still `n/a` under `review_mode: no-spec`, and `test_walkthrough_roster.py`'s NA fixtures use `blind-hunter` as a lens name, which the parser never validates — they keep passing.
-- `Projects/sudo-command-center/` will pick these files up on its next export, not by port.
+- `test_twin_parity.py:185-189`'s FENCED_TODAY comment names `review-level`; update the comment when the fence goes (a comment is not law).
+- `test_walkthrough_roster.py` uses `blind-hunter`/`blind`/`edge` as synthetic names in pre-cutoff fixtures; the parser never validates names and `DISPOSITION_CUTOFF` exempts them, so they keep passing untouched.
+- `Projects/sudo-command-center/` is the published teaching edition (export, never edited in place); it picks these files up on its next export, not by port.
 
 **Sibling landing-order dependency:** none.
 
