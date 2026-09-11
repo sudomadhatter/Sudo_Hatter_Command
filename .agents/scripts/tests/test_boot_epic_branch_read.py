@@ -50,15 +50,23 @@ REQUIRED: tuple[tuple[str, re.Pattern[str], str, str], ...] = (
     ("epic-read", ANCHOR, _SECTION,
      "a `git show <epic-ref>:…/sprint-status.yaml` — close-out writes the YAML INSIDE the "
      "story worktree, so the landed truth is on the epic branch, not in the checkout"),
-    ("ref-discovery", re.compile(r"""epic_mode\.py\s+--repo\s+["']\S"""), _SECTION,
-     "`python3 .agents/scripts/epic_mode.py --repo \"$PROJECT_ROOT\"` — the epic ref is "
+    ("ref-discovery", re.compile(r"""cd\s+["']\$L["']\s*&&\s*\S*python3?\s+[^\n]*?"""
+                                 r"""epic_mode\.py\s+--repo\s+["']\S"""), _SECTION,
+     "`cd \"$L\" && python3 .agents/scripts/epic_mode.py --repo \"$PROJECT_ROOT\"` — the epic ref is "
      "DISCOVERED by the one query every door shares (SCC-446), which reads ORIGIN only "
      "(a local epic head is only as fresh as the last pull) and prints the mode word first. "
      "A door that re-types its own `for-each-ref` glob is the drift this script retired. "
      "⛔ The QUOTES are load-bearing and pinned, exactly as the retired `for-each-ref` "
      "refspec's were: unquoted, a `PROJECT_ROOT` holding a space word-splits and argparse "
      "answers `unrecognized arguments` on stderr with exit 2, so the door's mode line "
-     "becomes a usage message and no mode is ever printed (SCC-446 review)"),
+     "becomes a usage message and no mode is ever printed (SCC-446 review). "
+     "⛔ AND THE `cd \"$L\"` PIN IS PART OF THE REQUIREMENT, not decoration. `epic_mode.py` "
+     "lives in the LOBBY and no project ships it, while the line above this one `cd`s into "
+     "`$PROJECT_ROOT` to fetch — so the bare `python3 .agents/scripts/epic_mode.py` this row "
+     "used to ask for resolves against the PROJECT and dies `No such file or directory` in "
+     "every repo. That is not hypothetical: it is what shipped, and this row is what told the "
+     "author to write it. `$L` is pinned at Step 0 with `L=$(pwd)` BEFORE any `cd` "
+     "(`command-shape.md` §Absolute fills)"),
     ("no-epic-fallback", re.compile(r"no epic branch|between epics", re.I), _AFTER,
      "the project that has NO epic branch — there the checkout copy is the authority, and a "
      "boot that errors out instead of saying so is a worse boot than the stale one"),
@@ -156,7 +164,7 @@ GOOD = """
 Read `_bmad-output/implementation-artifacts/sprint-status.yaml` — it is ~62 KB of bare rows.
 Read it off the EPIC BRANCH, not off the checkout:
 ```bash
-python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"
+cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"
 git show origin/epic/<KEY>-<slug>:_bmad-output/implementation-artifacts/sprint-status.yaml
 ```
 No epic branch (a project between epics) → the checkout copy IS the authority; say so and move on.
@@ -179,8 +187,17 @@ MUTANTS: tuple[tuple[str, str, str], ...] = (
     ("ref-discovery", 'epic_mode.py --repo "$PROJECT_ROOT"', "epic_mode.py"),
     # the QUOTES alone: a path with a space word-splits and argparse exits 2 on stderr
     ("ref-discovery", '--repo "$PROJECT_ROOT"', "--repo $PROJECT_ROOT"),
+    # ⛔ THE LOBBY PIN ALONE, AND THIS IS THE SHAPE THAT ACTUALLY SHIPPED (SCC-441 review).
+    # `epic_mode.py` lives in the lobby; the line above this one `cd`s into `$PROJECT_ROOT`,
+    # and no project carries the script. So the unpinned call resolves against the PROJECT and
+    # dies `No such file or directory` at the door's first step, in every repo. The regex used
+    # to accept it and the requirement text used to ASK for it.
+    ("ref-discovery", 'cd "$L" && python3 .agents/scripts/epic_mode.py',
+     "python3 .agents/scripts/epic_mode.py"),
+    # the pin present but aimed at the project: the same death, spelled the other way
+    ("ref-discovery", 'cd "$L" &&', 'cd "$PROJECT_ROOT" &&'),
     # the line dropped altogether: a boot that never asks which epic it is on
-    ("ref-discovery", 'python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"\n', ""),
+    ("ref-discovery", 'cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"\n', ""),
     ("no-epic-fallback", "No epic branch (a project between epics) → the checkout copy IS "
                          "the authority; say so and move on.", "Otherwise carry on."),
     ("disagreement", "When the two disagree, report both", "When the two differ, report both"),

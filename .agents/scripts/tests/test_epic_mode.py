@@ -194,6 +194,26 @@ def main() -> int:
                          if "epic_mode.py --repo" in p.read_text(encoding="utf-8"))
         c.check("twelve branch-touching cicd doors call it (the mode line at the top of Step 0)",
                 len(callers) == 12, f"{len(callers)}: {callers}")
+        # ⛔ COUNTING CALLERS IS NOT CHECKING THEY CAN RUN (SCC-441 review, reproduced).
+        # `epic_mode.py` lives in the LOBBY and no project ships it, while the line above the
+        # call `cd`s into `$PROJECT_ROOT` to fetch. The shipped doors all carried a BARE
+        # `python3 .agents/scripts/epic_mode.py` there, so every one of them died `No such
+        # file or directory` at its first step — and this block counted twelve happy callers
+        # while it was true. Each call must be reached through the lobby pin, and `$L` must be
+        # bound BEFORE any `cd` or the pin points wherever the last `cd` left the shell.
+        unpinned, late_pin = [], []
+        for name in callers:
+            body = (cmds / name).read_text(encoding="utf-8")
+            call = next((ln for ln in body.splitlines() if "epic_mode.py --repo" in ln), "")
+            if 'cd "$L" &&' not in call:
+                unpinned.append(f"{name}: {call.strip()[:70]}")
+                continue
+            if "L=$(pwd)" not in body or body.index("L=$(pwd)") > body.index(call):
+                late_pin.append(name)
+        c.check("⛔ every one of them reaches the LOBBY copy - `cd \"$L\" &&` on the call line",
+                not unpinned, f"{len(unpinned)} unpinned: {unpinned[:3]}")
+        c.check("⛔ ...and each pins `L=$(pwd)` BEFORE that line, never after a `cd`",
+                not late_pin, f"{len(late_pin)} pinned late or not at all: {late_pin[:3]}")
         own_query = sorted(p.name for p in cmds.glob("cicd-*.md")
                            if re.search(r"for-each-ref[^\n]*epic", p.read_text(encoding="utf-8")))
         c.check("⛔ no cicd door carries its own for-each-ref epic query any more",
