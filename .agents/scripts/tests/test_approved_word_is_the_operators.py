@@ -28,8 +28,20 @@ SURFACES = (
     ROOT / ".agents" / "rules",
     ROOT / "docs" / "_scc_sops_prds",
 )
-WHO = r"(?:lead|agent|child|seat|runner)['’]s"
-GRANT = re.compile(rf"`approved`[^|\n]{{0,60}}\b{WHO}\b|\b{WHO}\s+(?:own\s+)?`approved`")
+# The nouns: the five roles, the seat roster and its synonyms. Widened by SCC-441 review 2 (row
+# 33, reproduced): the shipped grant re-worded as a seat by name, a synonym, a verb form or the
+# passive was quiet. `never`/`not`/`cannot` immediately before the verb keeps a sentence quiet -
+# the verb form admits only an optional modal between noun and verb, so a negation never matches.
+NOUN = (r"(?:lead|agent|child|seat|runner|builder|orchestrator|cheshire cat|white rabbit|"
+        r"march hare|queen of hearts|caterpillar|gnat)")
+WHO = rf"{NOUN}['’]s"
+VERB = r"(?:supplies|supply|writes|write|gives|give|provides|provide|types|type)"
+GRANT = re.compile(
+    rf"`approved`[^|\n]{{0,60}}\b{WHO}\b"
+    rf"|\b{WHO}\s+(?:own\s+)?`approved`"
+    rf"|\b{NOUN}\s+(?:(?:may|can|will)\s+)?{VERB}\s+`approved`"
+    rf"|`approved`\s+is\s+(?:supplied|written|given|provided)\s+by\s+the\s+{NOUN}\b",
+    re.IGNORECASE)
 
 # The two sentences that shipped, verbatim — the mutant control.
 SHIPPED = (
@@ -69,6 +81,27 @@ def main() -> int:
         c.check("the record line itself does not fire",
                 not grants("Review: none - quick lane; walkthrough approved by the operator @ abc1234"),
                 "the writer names the operator, which is the point")
+        # ⛔ THE SCAN FIRED ONLY ON A POSSESSIVE OF FIVE NOUNS (SCC-441 review 2 row 33,
+        # reproduced): the same grant re-worded - a seat by name, a synonym for the agent, a verb
+        # ("supplies", "may write"), the passive ("is supplied by") - was quiet. None of these is
+        # prose ABOUT the rule; each is the grant itself. The negation ("never supplies") is the
+        # one control that must stay quiet, and it is distinguishable by its own word.
+        for sentence in (
+                "both `approved` stops are the Cheshire Cat's",
+                "the builder's `approved` is enough here",
+                "the lead supplies `approved` at both stops",
+                "the lead may write `approved` on the operator's behalf",
+                "`approved` is supplied by the child"):
+            c.check(f"SCC-441 review-2 row 33 · fires on the re-worded grant: {sentence!r}",
+                    bool(grants(sentence)), "a seat name, a synonym, a verb form or the passive")
+        c.check("SCC-441 review-2 row 33 · CONTROL: the negation stays quiet: "
+                "'the agent never supplies `approved`'",
+                not grants("the agent never supplies `approved`"),
+                "never/not/cannot before the verb is the rule stated, not a grant")
+        for sentence in ("the child cannot supply `approved`",
+                         "the runner does not write `approved`"):
+            c.check(f"SCC-441 review-2 row 33 · CONTROL: negated verb form stays quiet: {sentence!r}",
+                    not grants(sentence), "not / cannot immediately before the verb")
 
     return c.finish()
 

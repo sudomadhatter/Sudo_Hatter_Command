@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 from _harness import Cases, TempDir
+import _pf_fixtures as pf
 
 import closeout_preflight as cp   # noqa: E402
 import task_preflight as tp       # noqa: E402
@@ -1230,8 +1231,14 @@ def main() -> int:
                 (repo / WT).write_text(body, encoding="utf-8")
                 rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
                                  "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
-                errs = [m for m in rows(out, "artifacts", "ERROR") if NO_VERDICT in m]
-                c.check(label, bool(errs) == want_err,
+                # "The error stands" = the lane is REFUSED in `artifacts` and the line was not
+                # read as the record. Since SCC-441 review 2 a near-miss (QL4: the phrase with no
+                # sha) is refused as "present but unreadable" rather than "no `Verdict:`" - a
+                # different sentence, the same refusal, a better remedy.
+                errs = [m for m in rows(out, "artifacts", "ERROR")
+                        if NO_VERDICT in m or "present but unreadable" in m]
+                read = [m for m in rows(out, "artifacts", "INFO") if "quick lane" in m]
+                c.check(label, bool(errs) == want_err and not (want_err and read),
                         f"rc={rc} artifacts={rows(out, 'artifacts')}")
         with TempDir() as tmp:
             repo = lane_repo(tmp, verdict=None, gates_id=None)
@@ -1475,8 +1482,12 @@ def main() -> int:
                 (repo / WT).write_text("## Evidence\n\n" + line + "\n", encoding="utf-8")
                 rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
                                  "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+                # Refused either as "no `Verdict:`" or - when the phrase is there but does not
+                # parse (SCC-441 review 2 near-miss) - as "present but unreadable"; never READ.
                 c.check(f"QL16 CONTROL · {label} is NOT the record line - the error stands",
-                        bool([m for m in rows(out, "artifacts", "ERROR") if NO_VERDICT in m]),
+                        bool([m for m in rows(out, "artifacts", "ERROR")
+                              if NO_VERDICT in m or "present but unreadable" in m])
+                        and not [m for m in rows(out, "artifacts", "INFO") if "quick lane" in m],
                         f"artifacts={rows(out, 'artifacts')}")
 
     if c.block("SCC-441 row 14 · the record line's WRITER (the doors) and READER agree"):
@@ -1562,6 +1573,119 @@ def main() -> int:
                     "the pathspec fell back to the whole tree",
                     len(stale) == 1 and "tracked file" in stale[0],
                     f"rc={rc} artifacts={rows(out, 'artifacts')}")
+
+    RECORD = "Review: none - quick lane; walkthrough approved by the operator @ {sha}"
+    WT = "_artifacts/2026-08-01_epic_30/story-30-1-fresh/walkthrough.md"
+
+    if c.block("SCC-441 review-2 row 12 · the project caller: absorbing the integration branch "
+               "after the approval is not stale"):
+        # ⛔ Same two-endpoint measure as the lobby (`_stale_against_sha` is ONE helper), same
+        # false STALE: the integration branch moves under an approved story, the story absorbs
+        # it, and the close-out demands a re-approval for a sibling's file. This caller hands
+        # the helper `origin/<integration branch>` when that remote ref resolves.
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, verdict=None, gates_id=None)
+            seed = git(repo, "rev-parse", "HEAD").stdout.strip()
+            (repo / WT).write_text("## Evidence\n\n" + RECORD.format(sha=seed) + "\n",
+                                   encoding="utf-8")
+            git(repo, "add", WT)
+            git(repo, "commit", "-qm", "SCC-11 docs: the record line")
+            git(repo, "push", "-q", "origin", "main")
+            # a sibling story lands on origin/main while this one stands approved
+            git(repo, "checkout", "-q", "-b", "claude/SCC-22-sibling-lands")
+            (repo / "backend/other.py").write_text("y = 1\n", encoding="utf-8")
+            git(repo, "add", "backend/other.py")
+            git(repo, "commit", "-qm", "SCC-22 feat: a sibling's code")
+            git(repo, "push", "-q", "origin", "claude/SCC-22-sibling-lands:main")
+            git(repo, "checkout", "-q", "main")
+            git(repo, "fetch", "-q", "origin")
+            m = git(repo, "merge", "--no-ff", "--no-edit", "origin/main")
+            git(repo, "push", "-q", "origin", "main")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            c.check("SCC-441 review-2 row 12 · fixture: the absorb is a clean merge commit",
+                    m.returncode == 0, (m.stderr or m.stdout).strip()[-200:])
+            c.check("SCC-441 review-2 row 12 · the integration branch moved after the approval and "
+                    "was absorbed cleanly: no STALE - the sibling's code is the base's, not ours",
+                    not [x for x in rows(out, "artifacts", "ERROR") if "STALE" in x],
+                    f"rc={rc} artifacts={rows(out, 'artifacts')}")
+            (repo / "backend/real.py").write_text("x = 2\n", encoding="utf-8")
+            git(repo, "add", "backend/real.py")
+            git(repo, "commit", "-qm", "SCC-11 feat: code the operator never approved")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            stale = [x for x in rows(out, "artifacts", "ERROR") if "STALE" in x]
+            c.check("SCC-441 review-2 row 12 · ...and this lane's OWN post-approval commit is still "
+                    "STALE, naming the file",
+                    len(stale) == 1 and "backend/real.py" in stale[0],
+                    f"rc={rc} artifacts={rows(out, 'artifacts')}")
+
+    if c.block("SCC-441 review-2 rows 13/29 · the two readers AGREE on a fenced or placeholder "
+               "record line"):
+        # ⛔ Two readers: this script searched the RAW text, `task_preflight.check_gate` the
+        # `strip_fenced` text - and both doors display the record line inside a ``` fence. The
+        # same fenced walkthrough read STALE here and "no review Verdict line, the full gate
+        # runs" in the lobby (reproduced). One reader: both strip fences, and both err on a line
+        # that is present but unreadable (fenced, or `<sha>` left as the template wrote it).
+        for label, shape in (
+                ("inside a ``` fence, as the door displays it",
+                 lambda s: "```\n" + RECORD.format(sha=s) + "\n```\n"),
+                ("with the template's `<sha>` placeholder left unfilled",
+                 lambda s: RECORD.format(sha="<sha>") + "\n")):
+            with TempDir() as tmp:
+                repo = lane_repo(tmp, verdict=None, gates_id=None)
+                seed = git(repo, "rev-parse", "HEAD").stdout.strip()
+                (repo / WT).write_text("## Evidence\n\n" + shape(seed), encoding="utf-8")
+                rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                 "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+                c.check(f"SCC-441 review-2 row 29 · closeout: the record line {label} is an ERROR "
+                        f"'present but unreadable' with the remedy (a plain line, the full sha)",
+                        any("present but unreadable" in x and "full sha" in x
+                            for x in rows(out, "artifacts", "ERROR")),
+                        f"rc={rc} artifacts={rows(out, 'artifacts')}")
+                c.check("   ...and it is NOT dereferenced as if it were readable (no INFO naming "
+                        "the quick lane's sha)",
+                        not [x for x in rows(out, "artifacts", "INFO") if "quick lane" in x],
+                        f"artifacts={rows(out, 'artifacts')}")
+        # (a) the verdict search strips fences too: a fenced `Verdict:` paste is a quote.
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, verdict=None, gates_id=None)
+            seed = git(repo, "rev-parse", "HEAD").stdout.strip()
+            (repo / WT).write_text(f"## Code Review\n\n```\nVerdict: PASS @ {seed}\n```\n",
+                                   encoding="utf-8")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            c.check("SCC-441 review-2 row 29 · closeout: a `Verdict:` inside a fence is a PASTE, "
+                    "not a verdict - the `no Verdict` error stands (SCC-154, like the lobby)",
+                    bool([x for x in rows(out, "artifacts", "ERROR") if "no `Verdict:` line" in x])
+                    and not [x for x in rows(out, "artifacts", "INFO") if "Verdict PASS" in x],
+                    f"rc={rc} artifacts={rows(out, 'artifacts')}")
+        # Reader agreement: the SAME fenced text through both scripts, the same decision.
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, verdict=None, gates_id=None)
+            seed = git(repo, "rev-parse", "HEAD").stdout.strip()
+            fenced = "## Evidence\n\n```\n" + RECORD.format(sha=seed) + "\n```\n"
+            (repo / WT).write_text(fenced, encoding="utf-8")
+            rc_cp, out_cp = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                                   "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+        with TempDir() as t:
+            repo = pf.make_repo(t, walkthrough=False)
+            pf.branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+            pf.write(repo, f"{pf.ADIR}/walkthrough.md",
+                     pf.WALKTHROUGH + "\n## Evidence\n\n```\n" + RECORD.format(sha=sha) + "\n```\n")
+            pf.commit(repo, "SCC-11 docs: the record line, fenced")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            rc_tp, out_tp = pf.preflight(repo)
+        decided_cp = ("unreadable" if "present but unreadable" in out_cp else
+                      "stale" if "STALE" in out_cp else "benign")
+        decided_tp = ("unreadable" if "present but unreadable" in out_tp else
+                      "stale" if "STALE" in out_tp else "benign")
+        c.check("SCC-441 review-2 rows 13/29 · READER AGREEMENT: the same fenced record line "
+                "through closeout_preflight and task_preflight yields the same decision, and "
+                "that decision is 'unreadable', exit 2 in both",
+                decided_cp == decided_tp == "unreadable" and rc_cp == 2 and rc_tp == 2,
+                f"closeout={decided_cp} rc={rc_cp} · lobby={decided_tp} rc={rc_tp}")
 
     return c.finish()
 

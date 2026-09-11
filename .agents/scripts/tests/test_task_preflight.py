@@ -31,6 +31,9 @@ from _harness import Cases, TempDir
 from _pf_fixtures import (ADIR, MANIFEST, WALKTHROUGH, WALKTHROUGH_NO_ACTIONS, board, branch,
                           commit, git, make_repo, preflight, write)
 
+import task_preflight as tpf      # noqa: E402
+import wf_common as wf            # noqa: E402
+
 
 def main() -> int:
     c = Cases("task_preflight")
@@ -589,6 +592,175 @@ def main() -> int:
                     "warn), exit 2",
                     code == 2 and "[ERROR]" in out and "64098847" in out and "not in this repo" in out,
                     f"exit {code}: " + out.strip()[-300:])
+
+    RECORD = "Review: none - quick lane; walkthrough approved by the operator @ {sha}"
+    WT_REL = f"{ADIR}/walkthrough.md"
+
+    def main_lands(repo: Path, rel: str, text: str) -> None:
+        """A SIBLING lane lands `rel` on origin/main while ours stands approved, and ours
+        fetches it - the state `check_base` then tells the agent to absorb."""
+        receipt = repo / ADIR / "preflight-receipt.json"
+        if receipt.exists():
+            receipt.unlink()                  # the preflight's own untracked receipt
+        git(repo, "checkout", "-q", "main")
+        write(repo, rel, text)
+        git(repo, "add", rel)
+        git(repo, "commit", "-q", "--no-verify", "-m", "SCC-99 docs: a sibling lane lands")
+        git(repo, "push", "-q", "origin", "main")
+        git(repo, "checkout", "-q", "chore/SCC-11-thing")
+        git(repo, "fetch", "-q", "origin")
+
+    if c.block("SCC-441 review-2 row 12 · absorbing main after the approval is not a lane change"):
+        # ⛔ `_stale_against_sha` measured the two-endpoint diff `<sha>..HEAD`, so the ONE step this
+        # preflight's own `check_base` demands - merge origin/main into the lane - flipped the
+        # approval STALE on every close-out where main had moved (reproduced: exit 2 after a
+        # clean absorb). The remedy that reads right is wrong: `--first-parent --no-merges`
+        # names NOTHING in a conflict-resolution merge, and the hand-resolved file is exactly
+        # the edit the operator never saw. `git log --cc --name-only <sha>..HEAD ^<base>` lists
+        # the lane's own commits and a merge's resolved files, and is empty after a clean absorb.
+        with TempDir() as t:
+            repo = make_repo(t, walkthrough=False)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+            write(repo, WT_REL, WALKTHROUGH + "\n## Evidence\n\n" + RECORD.format(sha=sha) + "\n")
+            commit(repo, "SCC-11 docs: the record line")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            main_lands(repo, "docs/sibling.md", "landed by another lane\n")
+            m = git(repo, "merge", "--no-edit", "origin/main")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            code, out = preflight(repo)
+            c.check("SCC-441 review-2 row 12 · fixture: the absorb is a CLEAN merge commit",
+                    m.returncode == 0, (m.stderr or m.stdout).strip()[-200:])
+            c.check("SCC-441 review-2 row 12 · main moved AFTER the approval and the lane absorbed "
+                    "it cleanly: NOT stale, exit 0 - the absorbed file is main's, not the lane's",
+                    code == 0 and "STALE, re-approve" not in out,
+                    f"exit {code}: " + out.strip()[-400:])
+            c.check("   ...and the base reads fully absorbed (the absorb was the remedy asked for)",
+                    "fully absorbed" in out, out.strip()[-300:])
+            write(repo, "docs/after.md", "work the operator never saw\n")
+            commit(repo, "SCC-11 chore: a lane commit AFTER the absorb")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            code, out = preflight(repo)
+            c.check("SCC-441 review-2 row 12 · a LANE commit after the approval is still STALE, "
+                    "exit 2 - excluding the base's commits does not hide the lane's own",
+                    code == 2 and "STALE, re-approve" in out and "docs/after.md" in out,
+                    f"exit {code}: " + out.strip()[-300:])
+        with TempDir() as t:
+            repo = make_repo(t, walkthrough=False)
+            write(repo, "docs/shared.md", "a\nb\nc\n")
+            commit(repo, "SCC-11 chore: a shared file on main")
+            git(repo, "push", "-q", "origin", "main")
+            branch(repo, "chore/SCC-11-thing", {"docs/shared.md": "a\nB-lane\nc\n"})
+            sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+            write(repo, WT_REL, WALKTHROUGH + "\n## Evidence\n\n" + RECORD.format(sha=sha) + "\n")
+            commit(repo, "SCC-11 docs: the record line")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            main_lands(repo, "docs/shared.md", "a\nB-main\nc\n")
+            m = git(repo, "merge", "--no-edit", "origin/main")
+            write(repo, "docs/shared.md", "a\nB-resolved\nc\n")     # resolved BY HAND
+            git(repo, "add", "docs/shared.md")
+            git(repo, "commit", "-q", "--no-verify", "-m", "SCC-11 chore: absorb main (resolved)")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            code, out = preflight(repo)
+            c.check("SCC-441 review-2 row 12 · fixture: the absorb CONFLICTED (both sides edited "
+                    "docs/shared.md) and was resolved by hand in the merge commit",
+                    m.returncode != 0, (m.stderr or m.stdout).strip()[-200:])
+            c.check("SCC-441 review-2 row 12 · a conflict RESOLVED by hand inside the merge commit "
+                    "is a lane edit the operator never saw: STALE, exit 2, naming docs/shared.md",
+                    code == 2 and "STALE, re-approve" in out and "docs/shared.md" in out,
+                    f"exit {code}: " + out.strip()[-300:])
+        # The helper itself, on the three base states: given and resolvable, given and not,
+        # none. The fallback is the OLD two-endpoint measure, and it must SAY so.
+        with TempDir() as t:
+            repo = make_repo(t, walkthrough=False)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+            main_lands(repo, "docs/sibling.md", "landed by another lane\n")
+            git(repo, "merge", "--no-edit", "origin/main")
+
+            def stale(base: str | None) -> list[tuple[str, str]]:
+                rep = wf.Report()
+                try:
+                    tpf._stale_against_sha(rep, repo, Path(WT_REL), sha, "approved", base=base)
+                except TypeError as e:            # no `base` parameter yet: red, not a crash
+                    return [("CRASH", str(e))]
+                return [(i["sev"], i["msg"]) for i in rep.items]
+
+            rows = stale("origin/main")
+            c.check("SCC-441 review-2 row 12 · the helper given the base ref: no finding at all "
+                    "after a clean absorb", not rows, str(rows))
+            rows = stale("origin/no-such-ref")
+            c.check("SCC-441 review-2 row 12 · a base ref git cannot resolve: the fallback measures "
+                    "the WHOLE delta (STALE) and one INFO row names the base as unavailable",
+                    any(s == "ERROR" and "STALE, re-approve" in m for s, m in rows)
+                    and any(s == "INFO" and "origin/no-such-ref" in m and "whole delta" in m
+                            for s, m in rows), str(rows))
+            rows = stale(None)
+            c.check("SCC-441 review-2 row 12 · no base at all: the same fallback, and it still says "
+                    "the whole delta was measured",
+                    any(s == "ERROR" and "STALE, re-approve" in m for s, m in rows)
+                    and any(s == "INFO" and "whole delta" in m for s, m in rows), str(rows))
+
+    if c.block("SCC-441 review-2 row 13 · a record line PRESENT but unreadable is an ERROR, never "
+               "'no verdict'"):
+        # ⛔ Both doors display the record line inside a ``` fence and with a literal `<sha>`.
+        # Copied fenced, `strip_fenced` removed it before the search; copied unfilled, `<sha>`
+        # failed the hex class. Either way `quick` stayed empty, the gate printed "no review
+        # Verdict line - the full gate runs" and a post-approval commit closed CLEAR, exit 0
+        # (reproduced) - the likeliest copy mistake defeated the check row 13 exists for. Same
+        # shape as the verdict's NEAR_MISS_LINE: present-but-unparseable is an ERROR.
+        for label, shape in (
+                ("inside a ``` fence, as the door displays it",
+                 lambda s: "```\n" + RECORD.format(sha=s) + "\n```\n"),
+                ("with the template's `<sha>` placeholder left unfilled",
+                 lambda s: RECORD.format(sha="<sha>") + "\n")):
+            with TempDir() as t:
+                repo = make_repo(t, walkthrough=False)
+                branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+                sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+                write(repo, WT_REL, WALKTHROUGH + "\n## Evidence\n\n" + shape(sha))
+                commit(repo, "SCC-11 docs: the record line, unreadable")
+                git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+                write(repo, "docs/after.md", "work the operator never saw\n")
+                commit(repo, "SCC-11 chore: a tracked file AFTER the approval")
+                git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+                code, out = preflight(repo)
+                c.check(f"SCC-441 review-2 row 13 · the record line {label}: ERROR 'present but "
+                        f"unreadable', exit 2", code == 2 and "present but unreadable" in out,
+                        f"exit {code}: " + out.strip()[-300:])
+                c.check("   ...and NOT the benign 'no review Verdict line' info",
+                        "no review Verdict line" not in out, out.strip()[-300:])
+
+    if c.block("SCC-441 review-2 row 28 · a stamped SIBLING citing the key does not silence the "
+               "dereference"):
+        # ⛔ `if foreign_stamped: … elif quick:` - check_artifacts collects walkthroughs by
+        # substring AND content mention, so any reviewed sibling whose prose cites this key put a
+        # stamp in the pool, took the first branch, and the lane's own record line was never
+        # dereferenced: a post-approval commit closed exit 0 (reproduced; the control without the
+        # sibling exits 2). Foreign evidence must neither gate nor SHIELD this lane.
+        with TempDir() as t:
+            repo = make_repo(t, walkthrough=False)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+            write(repo, WT_REL, WALKTHROUGH + "\n## Evidence\n\n" + RECORD.format(sha=sha) + "\n")
+            write(repo, "_artifacts/_main/2026-01-01_other-lane/walkthrough.md",
+                  "# SCC-99 other lane\n\nFollow-on: SCC-11 will pick this up.\n\n"
+                  "## Code Review (2026-01-01)\n\nVerdict: PASS @ " + sha + "\n\n"
+                  "## Your Actions\n\n- none\n")
+            write(repo, "_artifacts/_main/2026-01-01_other-lane/task.yaml",
+                  "task_key: SCC-99\nprimary_repo: repo\nbranch: chore/SCC-99-other\n"
+                  "close_command: smh-close-task-merge-tree\nsecondary_repos: []\n")
+            commit(repo, "SCC-11 docs: the record line beside a stamped sibling")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            write(repo, "docs/after.md", "work the operator never saw\n")
+            commit(repo, "SCC-11 chore: a tracked file AFTER the approval")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            code, out = preflight(repo)
+            c.check("SCC-441 review-2 row 28 · fixture: the foreign stamp is in the pool (its info "
+                    "row prints)", "foreign evidence never gates" in out, out.strip()[-300:])
+            c.check("SCC-441 review-2 row 28 · the lane's own approval sha is STILL dereferenced "
+                    "beside it: STALE, exit 2",
+                    code == 2 and "STALE, re-approve" in out, f"exit {code}: " + out.strip()[-300:])
 
     # ── Regression: the MAIN checkout is not "a worktree holding your branch" ──
     if c.block("Regression: the MAIN checkout is not 'a worktree holding your br"):

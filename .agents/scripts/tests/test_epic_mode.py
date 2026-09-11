@@ -106,6 +106,21 @@ def main() -> int:
             rc, lines = run(notrepo)
             c.check("a path that is not a git repo exits 2 with ERROR on line 1",
                     rc == 2 and first(lines) == "ERROR", f"rc={rc} {lines}")
+            # ⛔ THE "git failed" HALF OF THE CONTRACT TABLE HAD NO CASE (SCC-441 review 2 row
+            # 30, reproduced): `.git` EXISTS as a pointer file naming a gitdir that is gone - the
+            # shape `git worktree prune` leaves behind - so the `.git` guard passes and only the
+            # `returncode != 0` branch stands between the fatal and the empty-list answer. With
+            # that branch removed the same tree printed `TRUNK`, exit 0: a broken linked
+            # worktree routed to the trunk arm, the direction this file calls the worst wrong.
+            dead = t / "dead-worktree"
+            dead.mkdir()
+            (dead / ".git").write_text("gitdir: /nonexistent/gitdir\n", encoding="utf-8")
+            rc, lines = run(dead)
+            c.check("SCC-441 review-2 row 30 · a `.git` FILE pointing at a missing gitdir: line 1 "
+                    "is ERROR, exit 2 - never TRUNK",
+                    rc == 2 and first(lines) == "ERROR", f"rc={rc} {lines}")
+            c.check("   ...and line 2 carries git's own reason (not a git repository)",
+                    "not a git repository" in second(lines), second(lines))
         # ⛔ `rc == 2` ALONE IS VACUOUS: a MISSING script also exits 2, and the first cut of the
         # sibling file's ERROR rows passed with nothing on disk (SCC-446 review). Pin the text.
         rc, out = run_script("epic_mode.py")
@@ -287,6 +302,23 @@ def main() -> int:
                 not unpinned, f"{len(unpinned)} unpinned: {unpinned[:3]}")
         c.check("⛔ ...and each pins `L=$(pwd)` BEFORE that line, never after a `cd`",
                 not late_pin, f"{len(late_pin)} pinned late or not at all: {late_pin[:3]}")
+        # ⛔ THE FETCH AND THE MODE QUERY WERE TWO LINES (SCC-441 review 2, reproduced): a failed
+        # `git fetch origin --prune` printed `fatal:` and the next line read the CACHED
+        # `origin/epic/*` refs — `FULL <an epic origin no longer has>`, exit 0. Chained with `&&`
+        # a failed fetch prints no mode at all, which the door names as a STOP.
+        unchained = []
+        for name in callers:
+            body = (cmds / name).read_text(encoding="utf-8")
+            call = next((ln for ln in body.splitlines() if "epic_mode.py --repo" in ln), "")
+            if "git fetch origin --prune && cd \"$L\" &&" not in call:
+                unchained.append(name)
+        c.check("⛔ SCC-441 review-2 row 18 · the fetch is CHAINED to the mode query on the same "
+                "line (`git fetch origin --prune && cd \"$L\" && …`) in every caller",
+                not unchained, f"{len(unchained)} unchained: {unchained[:4]}")
+        c.check("SCC-441 review-2 row 18 · CONTROL: the two-line shape that shipped is caught",
+                "git fetch origin --prune && cd \"$L\" &&" not in
+                'cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$PROJECT_ROOT"',
+                "the unchained call line must not satisfy the chain check")
         own_query = sorted(p.name for p in cmds.glob("cicd-*.md")
                            if re.search(r"for-each-ref[^\n]*epic", p.read_text(encoding="utf-8")))
         c.check("⛔ no cicd door carries its own for-each-ref epic query any more",

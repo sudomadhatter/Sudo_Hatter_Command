@@ -22,11 +22,13 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 from _harness import SCRIPTS, Cases, TempDir, run_script
 import _pf_fixtures as pf
+import scope_check as sc          # noqa: E402
 
 ROOT = SCRIPTS.parents[1]
 RULE = ROOT / ".agents" / "rules" / "critical-surfaces.md"
@@ -44,6 +46,13 @@ def write_map(repo: Path, surfaces: dict) -> None:
 def run(repo: Path, *args: str) -> tuple[int, list[str]]:
     rc, out = run_script("scope_check.py", "--repo", str(repo), *args)
     return rc, out.splitlines()
+
+
+def run_from(cwd: Path, repo: Path, *args: str) -> tuple[int, list[str]]:
+    """The same call, launched with a CHOSEN cwd - the doors run Step 1 from the lobby."""
+    r = subprocess.run([sys.executable, str(SCRIPT), "--repo", str(repo), *args],
+                       cwd=str(cwd), capture_output=True, text=True, errors="replace")
+    return r.returncode, ((r.stdout or "") + (r.stderr or "")).splitlines()
 
 
 def first(lines: list[str]) -> str:
@@ -99,6 +108,11 @@ def main() -> int:
     if c.block("B · the check reads a repo map: one RED per surface, then CLEAR"):
         with TempDir() as t:
             repo = t / "repo"
+            # The three exact-file rows below name REAL files: an exact row that names nothing
+            # is a dead row and an ERROR since review 2 (rows 7/15), so the fixture carries them.
+            for rel in ("app/login.py", "backend/billing.py", "firebase/firestore.rules"):
+                (repo / rel).parent.mkdir(parents=True, exist_ok=True)
+                (repo / rel).write_text("# fixture\n", encoding="utf-8")
             write_map(repo, {
                 "auth":    {"why": "every user's account", "paths": ["backend/auth/", "app/login.py"]},
                 "billing": {"why": "revenue", "paths": ["backend/billing.py"]},
@@ -387,6 +401,255 @@ def main() -> int:
             c.check("⛔ ONE declared path is a real map: the generic `auth` fragment is OFF again",
                     first(lines) == "CLEAR" and rc == 0 and not any(ln.startswith("MAP:") for ln in lines),
                     f"rc={rc} {lines}")
+
+    if c.block("SCC-441 review-2 row 14 · --diff judges against the BASE's map too"):
+        # ⛔ `--diff` read the map from the LANE's tree, so a lane that pruned the map's self
+        # rows (or wrote a repo's first one-row map) judged its real diff against a map it had
+        # just written and read CLEAR (reproduced C1/C3). The line's self-protection was a row
+        # the lane could delete. Now the map as it stood at the merge-base is read too and the
+        # diff is judged against the UNION: base rows ∪ HEAD rows, or - where the base had no
+        # map - the generic set ∪ HEAD rows. A `MAP:` line says which.
+        SELF = [".agents/critical-surfaces.json", ".agents/scripts/scope_check.py",
+                ".agents/rules/critical-surfaces.md"]
+        with TempDir() as t:
+            repo = pf.make_repo(t)
+            write_map(repo, {"ci": {"why": "the gates", "paths": [".github/", "gates/", *SELF]}})
+            pf.write(repo, "gates/x.sh", "exit 0\n")
+            pf.commit(repo, "SCC-11 chore: the map and a gate, on main")
+            pf.git(repo, "push", "-q", "origin", "main")
+            fork = pf.git(repo, "rev-parse", "HEAD").stdout.strip()
+            pf.branch(repo, "chore/SCC-11-prune", {
+                ".agents/critical-surfaces.json":
+                    json.dumps({"surfaces": {"ci": {"why": "the gates", "paths": [".github/"]}}}),
+                "gates/x.sh": "exit 1\n"})
+            rc, lines = run(repo, "--diff", "main")
+            c.check("SCC-441 review-2 row 14 · C1: the lane pruned the map's self rows and `gates/` "
+                    "and edited gates/x.sh - OVERLAP under `ci` on the BASE's rows, exit 3",
+                    first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith("gates/x.sh") and "ci:" in ln for ln in lines)
+                    and any(ln.startswith(".agents/critical-surfaces.json") and "ci:" in ln
+                            for ln in lines), f"rc={rc} {lines}")
+            c.check("   ...and the MAP: line names both maps used (base <fork-8> + HEAD)",
+                    any(ln.startswith("MAP:") and f"base {fork[:8]}" in ln and "HEAD" in ln
+                        for ln in lines), str(lines))
+            c.check("   ...one overlap line per path still (two paths, two lines)",
+                    sum(1 for ln in lines if "  ci:" in ln) == 2, str(lines))
+        with TempDir() as t:
+            repo = pf.make_repo(t)
+            fork = pf.git(repo, "rev-parse", "HEAD").stdout.strip()
+            pf.branch(repo, "chore/SCC-11-first-map", {
+                ".agents/critical-surfaces.json":
+                    json.dumps({"surfaces": {"ci": {"why": "the gates", "paths": [".github/"]}}})})
+            rc, lines = run(repo, "--diff", "main")
+            c.check("SCC-441 review-2 row 14 · an UNMAPPED base: the lane's first one-row map is "
+                    "judged against the generic set - the map file itself is OVERLAP under `ci`",
+                    first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith(".agents/critical-surfaces.json") and "ci:" in ln
+                            for ln in lines), f"rc={rc} {lines}")
+            c.check("   ...and the MAP: line says none at base <fork-8>, generic surfaces + HEAD map",
+                    any(ln.startswith("MAP:") and f"none at base {fork[:8]}" in ln
+                        and "generic" in ln and "HEAD" in ln for ln in lines), str(lines))
+        with TempDir() as t:
+            # CONTROL: a lane that only ADDS rows is still judged - on the base's rows AND its own.
+            repo = pf.make_repo(t)
+            write_map(repo, {"ci": {"why": "the gates", "paths": [".github/", "gates/"]}})
+            pf.write(repo, "gates/x.sh", "exit 0\n")
+            pf.commit(repo, "SCC-11 chore: the map and a gate, on main")
+            pf.git(repo, "push", "-q", "origin", "main")
+            pf.branch(repo, "chore/SCC-11-adds", {
+                ".agents/critical-surfaces.json":
+                    json.dumps({"surfaces": {"ci": {"why": "the gates", "paths": [".github/", "gates/"]},
+                                             "auth": {"why": "accounts", "paths": ["backend/auth/"]}}}),
+                "gates/x.sh": "exit 1\n",
+                "backend/auth/token.py": "x = 1\n"})
+            rc, lines = run(repo, "--diff", "main")
+            c.check("SCC-441 review-2 row 14 · CONTROL: a lane that only ADDS a row is judged on the "
+                    "base's row (gates/x.sh under ci) AND its own new row (backend/auth/ under auth)",
+                    first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith("gates/x.sh") and "ci:" in ln for ln in lines)
+                    and any(ln.startswith("backend/auth/token.py") and "auth:" in ln for ln in lines),
+                    f"rc={rc} {lines}")
+
+    if c.block("SCC-441 review-2 rows 7/15 · a row that can never match is an ERROR, not a guard"):
+        # ⛔ A directory declared without its `/`, a leading-`/` path and a typo'd exact file
+        # were all stored as exact patterns that no real path equals - silently dead rows the
+        # author believes are protecting something (reproduced A1-A3, all CLEAR). ONE rule for
+        # every non-prefix, non-`*.` pattern: it names a real file (a symlink counts), or it is
+        # gitignored (the lobby's own `.claude/settings.local.json` is absent in a fresh clone).
+        with TempDir() as t:
+            repo = t / "repo"
+            repo.mkdir()
+            pf.git(repo, "init", "-q", "-b", "main")
+            (repo / ".gitignore").write_text(".claude/settings.local.json\n", encoding="utf-8")
+            (repo / "backend" / "auth").mkdir(parents=True)
+            (repo / "backend" / "auth" / "token.py").write_text("x = 1\n", encoding="utf-8")
+            for label, pat, needle in (
+                    ("a DIRECTORY without its trailing slash", "backend/auth", "trailing `/`"),
+                    ("a LEADING slash", "/backend/auth/", "leading /"),
+                    ("a typo'd exact file", "backend/auth/tokn.py", "names no file")):
+                write_map(repo, {"auth": {"why": "accounts", "paths": [pat]}})
+                rc, lines = run(repo, "--paths", "backend/auth/token.py")
+                c.check(f"SCC-441 review-2 rows 7/15 · {label} (`{pat}`) is ERROR, exit 2 - never a "
+                        f"quiet CLEAR over `backend/auth/token.py`",
+                        rc == 2 and first(lines) == "ERROR", f"rc={rc} {lines}")
+                c.check(f"   ...and line 2 names the entry and the remedy ({needle})",
+                        len(lines) > 1 and f"`{pat}`" in lines[1] and needle in lines[1], str(lines))
+            write_map(repo, {"ci": {"why": "the fence", "paths": [".claude/settings.local.json"]}})
+            rc, lines = run(repo, "--paths", "docs/x.md")
+            c.check("SCC-441 review-2 rows 7/15 · a GITIGNORED file that is absent (the lobby's "
+                    "per-machine settings in a fresh clone) is accepted: CLEAR on an unrelated path",
+                    first(lines) == "CLEAR" and rc == 0, f"rc={rc} {lines}")
+            rc, lines = run(repo, "--paths", ".claude/settings.local.json")
+            c.check("   ...and it still MATCHES: the gitignored row is live, not skipped",
+                    first(lines) == "OVERLAP" and rc == 3, f"rc={rc} {lines}")
+            write_map(repo, {"auth": {"why": "accounts", "paths": ["backend/auth/token.py"]}})
+            rc, lines = run(repo, "--paths", "backend/auth/token.py")
+            c.check("SCC-441 review-2 rows 7/15 · an exact row naming an EXISTING file is accepted "
+                    "and matches",
+                    first(lines) == "OVERLAP" and rc == 3, f"rc={rc} {lines}")
+            (repo / "backend" / "auth" / "link.py").symlink_to("token.py")
+            write_map(repo, {"auth": {"why": "accounts", "paths": ["backend/auth/link.py"]}})
+            rc, lines = run(repo, "--paths", "docs/x.md")
+            c.check("SCC-441 review-2 rows 7/15 · a SYMLINK counts as a file (lexists, not exists)",
+                    first(lines) == "CLEAR" and rc == 0, f"rc={rc} {lines}")
+
+    if c.block("SCC-441 review-2 row 16 · a lobby-relative or ..-relative path is rebased, or "
+               "refused - never compared as a string"):
+        # ⛔ Only ABSOLUTE paths were rebased (row 3). The doors run Step 1 from the lobby with
+        # `--repo "$PROJECT_ROOT"`, and a lobby session spells the file the way `git status`
+        # there does: `Projects/X/backend/auth.py`. Compared as a string to the map's
+        # `backend/auth.py` it answered CLEAR (reproduced B1); so did `../../../backend/auth.py`
+        # from inside a worktree dir (B4). A path that exists under the cwd and resolves INSIDE
+        # the repo is rebased; outside is an ERROR; a `..` path nothing resolves cannot be judged.
+        with TempDir() as t:
+            lobby = t / "lobby"
+            proj = lobby / "Projects" / "X"
+            proj.mkdir(parents=True)
+            (lobby / "README.md").write_text("# the lobby\n", encoding="utf-8")
+            (proj / "backend").mkdir()
+            (proj / "backend" / "auth.py").write_text("x = 1\n", encoding="utf-8")
+            write_map(proj, {"auth": {"why": "accounts", "paths": ["backend/auth.py", "backend/auth/"]}})
+            rc, lines = run_from(lobby, proj, "--paths", "Projects/X/backend/auth.py")
+            c.check("SCC-441 review-2 row 16 · B1: from the lobby, `Projects/X/backend/auth.py` is "
+                    "rebased onto the repo and judged: OVERLAP on the repo-relative line",
+                    first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith("backend/auth.py") for ln in lines), f"rc={rc} {lines}")
+            rc, lines = run_from(lobby, proj, "--paths", "backend/auth.py")
+            c.check("SCC-441 review-2 row 16 · B2 CONTROL: a repo-relative path from the lobby cwd "
+                    "is still judged as repo-relative", first(lines) == "OVERLAP" and rc == 3,
+                    f"rc={rc} {lines}")
+            wtdir = proj / ".claude" / "worktrees" / "slug"
+            wtdir.mkdir(parents=True)
+            rc, lines = run_from(wtdir, proj, "--paths", "../../../backend/auth.py")
+            c.check("SCC-441 review-2 row 16 · B4: a `..`-relative path that resolves INSIDE the "
+                    "repo is rebased and judged: OVERLAP",
+                    first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith("backend/auth.py") for ln in lines), f"rc={rc} {lines}")
+            rc, lines = run_from(wtdir, proj, "--paths", "../../../../../README.md")
+            c.check("SCC-441 review-2 row 16 · a `..` path that resolves OUTSIDE the repo (the "
+                    "lobby's README from a worktree dir) is ERROR, exit 2, naming the repo",
+                    rc == 2 and first(lines) == "ERROR" and any("outside" in ln for ln in lines[1:]),
+                    f"rc={rc} {lines}")
+            rc, lines = run_from(lobby, proj, "--paths", "README.md")
+            c.check("SCC-441 review-2 row 16 · CONTROL: `README.md` from the lobby, absent in the "
+                    "project, is a planned NEW repo-relative file - judged, never an ERROR (the "
+                    "lobby's own README of that name is not it)",
+                    first(lines) == "CLEAR" and rc == 0, f"rc={rc} {lines}")
+            rc, lines = run_from(lobby, proj, "--paths", "../nowhere/auth.py")
+            c.check("SCC-441 review-2 row 16 · a `..` path nothing resolves cannot be judged: "
+                    "ERROR, exit 2",
+                    rc == 2 and first(lines) == "ERROR"
+                    and any("cannot be judged" in ln for ln in lines[1:]), f"rc={rc} {lines}")
+            rc, lines = run_from(lobby, proj, "--paths", "backend/auth/new_token.py", "docs/new.md")
+            c.check("SCC-441 review-2 row 16 · a planned NEW file typed repo-relative is still judged "
+                    "(nothing exists yet, so it stays repo-relative): OVERLAP under auth",
+                    first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith("backend/auth/new_token.py") for ln in lines),
+                    f"rc={rc} {lines}")
+
+    if c.block("SCC-441 review-2 row 17 · a planned DIRECTORY is a planned prefix"):
+        # ⛔ `backend/` and `.` were compared as strings: `"backend/".startswith("backend/auth/")`
+        # is False, so a plan declared at directory granularity was CLEAR over a critical child
+        # and the lane found out at Step 5, after the build (reproduced D1/D2). A directory
+        # overlaps a prefix row when either starts with the other, an exact row the row starts
+        # with, a generic fragment `segment_hit` fires on; `.` is the whole repo.
+        with TempDir() as t:
+            repo = t / "repo"
+            (repo / "backend" / "auth").mkdir(parents=True)
+            (repo / "backend" / "auth" / "t.py").write_text("x\n", encoding="utf-8")
+            (repo / "docs").mkdir()
+            (repo / "docs" / "readme.md").write_text("x\n", encoding="utf-8")
+            write_map(repo, {"auth": {"why": "accounts", "paths": ["backend/auth/", "app/login.py"]}})
+            (repo / "app").mkdir()
+            (repo / "app" / "login.py").write_text("x\n", encoding="utf-8")
+            rc, lines = run(repo, "--paths", "backend/")
+            c.check("SCC-441 review-2 row 17 · D1: `backend/` over the critical child `backend/auth/` "
+                    "is OVERLAP, exit 3, printed as `backend/  auth: ...`",
+                    first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith("backend/  auth:") for ln in lines), f"rc={rc} {lines}")
+            rc, lines = run(repo, "--paths", ".")
+            c.check("SCC-441 review-2 row 17 · D2: `.` is the whole repo and overlaps the first row",
+                    first(lines) == "OVERLAP" and rc == 3, f"rc={rc} {lines}")
+            rc, lines = run(repo, "--paths", "docs/")
+            c.check("SCC-441 review-2 row 17 · a directory with NO critical child (`docs/`) is CLEAR",
+                    first(lines) == "CLEAR" and rc == 0, f"rc={rc} {lines}")
+            rc, lines = run(repo, "--paths", "backend")
+            c.check("SCC-441 review-2 row 17 · an EXISTING directory named without its slash "
+                    "(`backend`) is normalised to a prefix: OVERLAP",
+                    first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith("backend/  auth:") for ln in lines), f"rc={rc} {lines}")
+            rc, lines = run(repo, "--paths", "app/")
+            c.check("SCC-441 review-2 row 17 · a directory over an EXACT row (`app/` over "
+                    "`app/login.py`) is OVERLAP",
+                    first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith("app/  auth:") for ln in lines), f"rc={rc} {lines}")
+        with TempDir() as t:
+            repo = t / "unmapped"
+            (repo / "src" / "auth").mkdir(parents=True)
+            rc, lines = run(repo, "--paths", "src/auth/")
+            c.check("SCC-441 review-2 row 17 · in an UNMAPPED repo a directory whose segment is a "
+                    "generic fragment (`src/auth/`) is OVERLAP",
+                    first(lines) == "OVERLAP" and rc == 3, f"rc={rc} {lines}")
+            rc, lines = run(repo, "--paths", "src/")
+            c.check("SCC-441 review-2 row 17 · ...and `src/` alone stays CLEAR (a prefix cannot see "
+                    "into the files it will hold)", first(lines) == "CLEAR" and rc == 0,
+                    f"rc={rc} {lines}")
+
+    if c.block("SCC-441 review-2 rows 31/32 · the empty string and the PC spellings"):
+        # Row 31: `--paths ""` is what a quoted, unset shell variable becomes. The guard existed
+        # (`if not p: continue`) and no case pinned it - `continue` → `pass` survived 106/106.
+        with TempDir() as t:
+            repo = t / "repo"
+            (repo / "backend" / "auth").mkdir(parents=True)
+            write_map(repo, {"auth": {"why": "accounts", "paths": ["backend/auth/"]},
+                             "ci": {"why": "the gates", "paths": [".github/"]}})
+            rc, lines = run(repo, "--paths", "")
+            c.check("SCC-441 review-2 row 31 · `--paths \"\"` (an unset variable) is ERROR, exit 2",
+                    rc == 2 and first(lines) == "ERROR", f"rc={rc} {lines}")
+            rc, lines = run(repo, "--paths", "", "backend/auth/x.py")
+            c.check("SCC-441 review-2 row 31 · `--paths \"\" backend/auth/x.py` drops the empty entry "
+                    "and judges the rest: OVERLAP",
+                    first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith("backend/auth/x.py") for ln in lines), f"rc={rc} {lines}")
+            # Row 32: the PC spelling and the `./` spelling both reach the `.github/` prefix.
+            rc, lines = run(repo, "--paths", ".github\\workflows\\x.yml")
+            c.check("SCC-441 review-2 row 32 · `.github\\workflows\\x.yml` (backslashes) is OVERLAP "
+                    "under `ci`", first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith(".github/workflows/x.yml") for ln in lines),
+                    f"rc={rc} {lines}")
+            rc, lines = run(repo, "--paths", "./.github/workflows/x.yml")
+            c.check("SCC-441 review-2 row 32 · `./.github/workflows/x.yml` is OVERLAP under `ci`",
+                    first(lines) == "OVERLAP" and rc == 3
+                    and any(ln.startswith(".github/workflows/x.yml") for ln in lines),
+                    f"rc={rc} {lines}")
+            # CONTROL: the RAW backslash string does not match on its own - the normalisation is
+            # what earns the OVERLAP above (wf_common.norm_path is outside this lane's diff).
+            rows = [("ci", ".github/", "the gates")]
+            c.check("SCC-441 review-2 row 32 · CONTROL: the raw `.github\\workflows\\x.yml` fed "
+                    "straight to pattern_hit/overlaps matches NOTHING",
+                    not sc.pattern_hit(".github\\workflows\\x.yml", ".github/", fragments=False)
+                    and not sc.overlaps([".github\\workflows\\x.yml"], rows, fragments=False),
+                    "so the OVERLAP above is the normalisation's work")
 
     if c.block("G · the doors actually call it - Step 1 on the plan, the tripwire on the diff"):
         # A checker nothing invokes is a checker that never fires. Both quick lanes must carry
