@@ -1,0 +1,55 @@
+{
+  "v": 1,
+  "task": "SCC-451",
+  "sha": "b01dbe2580d802c84e14b4890269d2784b535fa2",
+  "tip": "aed74496d513c02628b85e8df47215238c4e1f01",
+  "trigger": "close-out",
+  "when": "2026-09-12T11:50:45-04:00",
+  "changes": [
+    ".agents/commands/cicd-non-crit-pr-push.md",
+    ".agents/commands/cicd-quick-dev.md",
+    ".agents/commands/smh-non-crit-pr-push.md",
+    ".agents/commands/smh-quick-dev.md",
+    ".agents/critical-surfaces.json",
+    ".agents/inert-paths.json",
+    ".agents/rules/artifacts-always-first.md",
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/lane_qualify.py",
+    ".agents/scripts/ship_preflight.py",
+    ".agents/scripts/task_preflight.py",
+    ".agents/scripts/tests/test_epic_mode.py",
+    ".agents/scripts/tests/test_inert_paths.py",
+    ".agents/scripts/tests/test_lane_qualify.py",
+    ".agents/scripts/tests/test_ship_preflight.py",
+    ".opencode/commands/cicd-non-crit-pr-push.md",
+    ".opencode/commands/cicd-quick-dev.md",
+    ".opencode/commands/smh-non-crit-pr-push.md",
+    ".opencode/commands/smh-quick-dev.md",
+    "_artifacts/_main/2026-09-12_scc-451-inert-paths/implementation_plan.md",
+    "_artifacts/_main/2026-09-12_scc-451-inert-paths/task.yaml",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-12_scc-451-inert-paths/walkthrough.md",
+    "verdict": "CONCERNS @ b01dbe2",
+    "gates": {
+      "suite": "pass@0db9383"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "CONCERNS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/artifacts-always-first.md"
+  ]
+}
