@@ -172,6 +172,22 @@ with TempDir() as tmp:
                              "--paths", "frontend/app.tsx", "--lines", "1")
         c.check("C3 a one-line change under PRODUCT_DIRS is still HANDOFF - size never buys "
                 "an exception", verdict(out) == "HANDOFF", out.strip()[:200])
+        # ⛔ SCC-451: THE CARVE-OUT AT THIS CALLER, BOTH WAYS. `deployable_paths` runs the
+        # prefix test and then removes what nothing reads at runtime, so a markdown map under
+        # a product folder stops being "product code" here too - the whole point being that
+        # this script and `task_preflight.check_scope` read ONE predicate and cannot disagree.
+        # The control beside it is the load-bearing half: real product code must still HANDOFF,
+        # or the carve-out widened into a hole.
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", "frontend/scripts/INDEX.md", "--lines", "1")
+        c.check("C3a a markdown MAP under a product dir is no longer HANDOFF - check_maps.py "
+                "demands that file exist and this gate used to refuse it",
+                verdict(out) != "HANDOFF", out.strip()[:200])
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", "frontend/public/INDEX.md", "--lines", "1")
+        c.check("⛔ C3b CONTROL: the same basename under a SERVED folder is still HANDOFF - "
+                "frontend/public/INDEX.md answers 200 on production",
+                verdict(out) == "HANDOFF", out.strip()[:200])
         proj2 = tmp / "sized-project"
         (proj2 / "docs").mkdir(parents=True, exist_ok=True)
         rc, out = run_script("lane_qualify.py", "--repo", str(proj2),

@@ -51,7 +51,8 @@
         ".claude/settings.local.json",
         ".agents/critical-surfaces.json",
         ".agents/scripts/scope_check.py",
-        ".agents/rules/critical-surfaces.md"
+        ".agents/rules/critical-surfaces.md",
+        ".agents/inert-paths.json"
       ]
     }
   }

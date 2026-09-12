@@ -260,6 +260,44 @@ lightweight lobby lane. The answer to an overlap is the operator's word or the f
 handling; an ad-hoc fix mints **no story file and no epic key** (`artifacts-always-first` §2 quick-fix
 bucket) — hanging one off a finished epic silently reopens it.
 
+### Step 1.5 — Size the ceremony to what actually ships (SCC-451)
+
+The scope check above answers *is this a critical surface*. This answers *how much of the system
+depends on it*, and it is what stops six `INDEX.md` map files from making a one-file change look
+like a seven-file one:
+
+```bash
+L=<the lobby's absolute path>
+cd "$L" && python3 -c "import sys; sys.path.insert(0, '.agents/scripts'); \
+from pathlib import Path; from task_preflight import ceremony_tier, deployable_paths, inert_paths; \
+r=Path(sys.argv[1]); p=sys.argv[2:]; \
+print('ships:  ' + (', '.join(deployable_paths(r, p)) or '(nothing deployable)')); \
+print('inert:  ' + (', '.join(inert_paths(r, p)) or '(none)')); \
+print('tier:   ' + ceremony_tier(r, p))" "$PROJECT_ROOT" <the planned set>   # PC: `python`
+```
+
+| Tier | What this lane does |
+|---|---|
+| `full` | ⛔ **stop.** A critical surface, a dependency manifest, CI config or an **entry point** — that is ① `/cicd-write-story-tests` → ② `/cicd-dev-story-tests`, with the audit and the review |
+| `quick` | the five steps below, unchanged |
+| `tiny` | the plan is two sentences and the walkthrough is three; Step 3's RED/GREEN still runs |
+
+⛔ **An ALL-INERT diff — `ships:` empty — short-circuits Step 2 and Step 3 entirely.** There is no
+design to review and no assertion to write for a file nothing reads at runtime. Keep the lean
+walkthrough and keep the Step 5 tripwire; skip the plan, the literal `approved` and the TDD. The
+project's own `.agents/inert-paths.json` declares what qualifies, it cannot list itself, and nothing
+under a `public/` or `static/` folder is ever inert — that is served on production.
+
+⛔ **`tier` is read from the command, never judged.** At this step there is no diff yet, so
+`ceremony_tier` is called without line evidence and **`tiny` is unreachable** — a tier is never
+lowered on an assumption. Step 5 re-runs it on the real diff, where the line count exists.
+
+⛔ **AN ENTRY POINT IS NEVER `tiny`, whatever its size.** `app/**/page.tsx`, `app/**/layout.tsx`,
+route handlers and `main.py` are excluded by name, before any score is consulted. Measured over
+AviationChat's 146 frontend components: `app/layout.tsx` has a reverse-dependency reach of **0** and
+wraps every screen in the app. Nothing imports a page — the router loads it — so the naive "how many
+files import this" reading ranks the riskiest files as the safest.
+
 ## Step 2 — Plan, then the literal `approved`
 
 Write `implementation_plan.md` in the lane's artifact folder — the owning `_artifacts/` store per the

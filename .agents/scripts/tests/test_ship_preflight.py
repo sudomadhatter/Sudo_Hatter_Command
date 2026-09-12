@@ -256,8 +256,14 @@ def main() -> int:
             code, out = ship(repo, "chore/SCC-11-thing")
             c.check("SP-F a docs-only chore diff is REFUSED -> exit 2", code == 2,
                     out.strip()[-300:])
-            c.check("SP-F ...and handed to the Task door",
-                    "/smh-close-task-merge-tree" in out, out.strip()[-300:])
+            # ⛔ SCC-451: THE DOOR NAMED HERE MUST BE A PROJECT DOOR. This arm is only
+            # reachable when the repo HAS a deployable surface, and `/smh-close-task-merge-tree`
+            # is the lobby's close-out — it refuses a project and hands the work straight back,
+            # each door naming the other. That is the same dead end the inert predicate closed
+            # on the standing-push side, and it was live in this file until now.
+            c.check("SP-F ...and handed to the PROJECT's standing-push door, not the lobby's",
+                    "/cicd-non-crit-pr-push" in out
+                    and "/smh-close-task-merge-tree" not in out, out.strip()[-300:])
 
         # A repo with no deployable surface at all cannot produce a deployable diff, so the
         # chore lane can never be legitimate here. This is the command centre's own shape,

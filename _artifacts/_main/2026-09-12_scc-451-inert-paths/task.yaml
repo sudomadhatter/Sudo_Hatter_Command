@@ -1,0 +1,5 @@
+task_key: SCC-451
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-451-inert-paths
+close_command: smh-close-task-merge-tree
+secondary_repos: []

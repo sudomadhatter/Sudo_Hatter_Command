@@ -7,9 +7,9 @@
     "files": 381,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 795,
+    "edges": 797,
     "external": 35,
-    "ambiguous": 175,
+    "ambiguous": 182,
     "dangling": 263,
     "broken_paths": 59,
     "unresolved_names": 204,
@@ -38,7 +38,7 @@
     },
     {
       "path": ".agents/commands/INDEX.md",
-      "in": 9,
+      "in": 10,
       "out": 7
     },
     {
@@ -514,7 +514,7 @@
     {
       "path": ".agents/commands/smh-quick-dev.md",
       "in": 1,
-      "out": 15
+      "out": 16
     },
     {
       "path": ".agents/commands/smh-review.md",
@@ -1753,7 +1753,7 @@
     },
     {
       "path": "docs/_scc_sops_prds/INDEX.md",
-      "in": 3,
+      "in": 4,
       "out": 20
     },
     {
@@ -1829,7 +1829,7 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 22
+      "out": 23
     },
     {
       "path": "docs/code-review-graph.md",
@@ -3143,6 +3143,11 @@
     {
       "from": ".agents/commands/smh-quick-dev.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-quick-dev.md",
+      "to": ".agents/commands/INDEX.md",
       "kind": "ref"
     },
     {
@@ -5453,6 +5458,11 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": ".agents/templates/project_overview_guide.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": "docs/_scc_sops_prds/INDEX.md",
       "kind": "ref"
     },
     {
@@ -8577,6 +8587,54 @@
       ]
     },
     {
+      "from": ".agents/scripts/INDEX.md",
+      "target": "README.md",
+      "candidates": [
+        ".agents/bmad",
+        ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
+      ]
+    },
+    {
+      "from": ".agents/scripts/INDEX.md",
+      "target": "frontend/public/INDEX.md",
+      "candidates": [
+        ".agents/INDEX.md",
+        ".agents/bmad",
+        ".agents/commands/INDEX.md",
+        ".agents/hooks/INDEX.md",
+        ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
+        ".agents/rules/INDEX.md",
+        ".agents/scripts/INDEX.md",
+        ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
+        "docs/_scc_sops_prds/INDEX.md",
+        "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": ".agents/scripts/INDEX.md",
+      "target": "frontend/scripts/INDEX.md",
+      "candidates": [
+        ".agents/INDEX.md",
+        ".agents/bmad",
+        ".agents/commands/INDEX.md",
+        ".agents/hooks/INDEX.md",
+        ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
+        ".agents/rules/INDEX.md",
+        ".agents/scripts/INDEX.md",
+        ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
+        "docs/_scc_sops_prds/INDEX.md",
+        "docs/migrations/INDEX.md"
+      ]
+    },
+    {
       "from": ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
       "target": "SKILL.md",
       "candidates": [
@@ -10384,6 +10442,25 @@
       ]
     },
     {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "target": "frontend/public/INDEX.md",
+      "candidates": [
+        ".agents/INDEX.md",
+        ".agents/bmad",
+        ".agents/commands/INDEX.md",
+        ".agents/hooks/INDEX.md",
+        ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
+        ".agents/rules/INDEX.md",
+        ".agents/scripts/INDEX.md",
+        ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
+        "docs/_scc_sops_prds/INDEX.md",
+        "docs/migrations/INDEX.md"
+      ]
+    },
+    {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "target": "/.codex/AGENTS.md",
       "candidates": [
@@ -10419,12 +10496,60 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "README.md",
+      "candidates": [
+        ".agents/bmad",
+        ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "target": "_routing-canary/README.md",
       "candidates": [
         ".agents/bmad",
         ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
         ".agents/skills/react-best-practices/README.md",
         "docs/migrations/vscode_sync/README.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "frontend/public/INDEX.md",
+      "candidates": [
+        ".agents/INDEX.md",
+        ".agents/bmad",
+        ".agents/commands/INDEX.md",
+        ".agents/hooks/INDEX.md",
+        ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
+        ".agents/rules/INDEX.md",
+        ".agents/scripts/INDEX.md",
+        ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
+        "docs/_scc_sops_prds/INDEX.md",
+        "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "frontend/scripts/INDEX.md",
+      "candidates": [
+        ".agents/INDEX.md",
+        ".agents/bmad",
+        ".agents/commands/INDEX.md",
+        ".agents/hooks/INDEX.md",
+        ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
+        ".agents/rules/INDEX.md",
+        ".agents/scripts/INDEX.md",
+        ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
+        "docs/_scc_sops_prds/INDEX.md",
+        "docs/migrations/INDEX.md"
       ]
     },
     {

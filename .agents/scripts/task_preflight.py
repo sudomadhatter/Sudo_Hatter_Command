@@ -39,7 +39,8 @@ import re
 import shutil
 import subprocess
 import sys
-from pathlib import Path
+from collections.abc import Iterable
+from pathlib import Path, PurePosixPath
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import walkthrough_roster as roster
@@ -112,6 +113,170 @@ WRONG_LANE = {
 PRODUCT_DIRS = ("backend/", "frontend/", "firebase/", "functions/", "mobile/")
 CI_DIR = ".github/"
 DEPLOY_DIRS = PRODUCT_DIRS + (CI_DIR,)
+
+# ── THE INERT PREDICATE (SCC-451) ─────────────────────────────────────────────
+# The prefix test above answers "what folder is this in". That was the whole question until
+# 2026-09-12, and it dead-ended: `frontend/scripts/INDEX.md` is a markdown map that ships
+# nothing, `check_maps.py` check 2.5 DEMANDS it exist, and the standing-push door refused it
+# and handed it to `/cicd-push-e2e` - which refuses back in a TRUNK project ("there is no epic
+# for this door to ship"). 45 tracked `.md` sit under AviationChat's product dirs; 23 are the
+# INDEX/README files the maps gate manufactures. The routing graph had no exit node, so the
+# gate got skipped by hand, which is worse than any carve-out.
+#
+# The question is now: DOES ANYTHING READ THIS FILE WHEN THE SYSTEM RUNS, OR DOES A GATE READ
+# IT AS LAW? Markdown is not the test, and three counterexamples prove it - `.agents/rules/*.md`
+# IS the law; `backend/knowledge/aviationchat_pitch.md` is loaded by a runtime agent that raises
+# if it is missing; `frontend/public/INDEX.md` is served verbatim on production (measured:
+# `curl https://aviationchat.org/INDEX.md` -> 200).
+DEFAULT_INERT = ("INDEX.md", "README.md")
+# ⛔ BASENAMES, NEVER EXTENSIONS. `PurePosixPath.match` is right-anchored, so `INDEX.md`
+# matches at any depth while `*.md` would match the law and both runtime docs as well.
+SERVED_SEGMENTS = ("public", "static")      # a folder a web server hands out verbatim
+LAW_PREFIXES = (".agents/rules/", ".agents/commands/")
+INERT_REL = ".agents/inert-paths.json"
+
+
+def load_inert(repo: Path) -> tuple[str, ...]:
+    """The globs this repo declares as inert. Absent file -> `DEFAULT_INERT`.
+
+    ⛔ Malformed, unreadable, or carrying a bare-extension glob -> `()`, EMPTY - never the
+    defaults and never a wider list. The two directions are opposite on purpose: an ABSENT
+    declaration is a decision (this repo accepts the house defaults), while a CORRUPT one is
+    an unknown intent, and the safe reading of unknown intent is no carve-out at all. This
+    predicate fails toward ceremony.
+
+    A bare-extension glob (`*.md`, `**/*.py`, `*`) is refused rather than trimmed, because it
+    is not a mistake this function can repair: it would carve out the rules directory and the
+    runtime-loaded docs in one line, which is exactly the failure the basename defaults exist
+    to avoid. The refusal is silent to callers but the reason is here - the declaration is a
+    proposal, and this is the shape check on it.
+    """
+    f = repo / INERT_REL
+    if not f.is_file():
+        return DEFAULT_INERT
+    try:
+        data = json.loads(f.read_text(encoding="utf-8"))
+        rows = data["inert"]
+        globs = tuple(str(r["glob"]) for r in rows)
+    except (OSError, ValueError, KeyError, TypeError):
+        return ()
+    for g in globs:
+        stem = g.rsplit("/", 1)[-1]
+        if not stem or stem.lstrip("*").lstrip(".") == "" or stem.startswith("*."):
+            return ()
+    return globs
+
+
+def inert_paths(repo: Path, paths: Iterable[str]) -> list[str]:
+    """The subset of `paths` that ships nothing - what a door may carry on past.
+
+    A path qualifies only if it matches a declared glob AND survives every hard guard below.
+    ⛔ THE GUARDS RUN AFTER THE GLOB, NEVER INSIDE IT, so a declaration can only ever PROPOSE a
+    carve-out. That is the same self-protection `scope_check.py` gives `critical-surfaces.json`:
+    a line that can widen itself is not a line.
+
+      served  - any segment in SERVED_SEGMENTS. `frontend/public/INDEX.md` is tracked AND on
+                production; a bare basename glob without this guard carves out a live file.
+      law     - anything under LAW_PREFIXES. A rule or a command body is markdown and it is
+                what the gates read as law.
+      itself  - INERT_REL is never inert, so a lane cannot widen the list and route its own
+                gate off in the same diff.
+    """
+    globs = load_inert(repo)
+    if not globs:
+        return []
+    out: list[str] = []
+    for p in paths:
+        rel = p.replace("\\", "/").lstrip("./")
+        if rel == INERT_REL or rel.startswith(LAW_PREFIXES):
+            continue
+        if any(seg in SERVED_SEGMENTS for seg in PurePosixPath(rel).parts[:-1]):
+            continue
+        if any(PurePosixPath(rel).match(g) for g in globs):
+            out.append(p)
+    return out
+
+
+def deployable_paths(repo: Path, paths: Iterable[str]) -> list[str]:
+    """What genuinely ships: the `DEPLOY_DIRS` prefix test, minus the inert subset.
+
+    ⭐ THIS is the function every caller uses - `check_scope`, `lane_qualify`,
+    `ship_preflight.check_lane` and both standing-push doors. Four places used to re-type
+    `p.startswith(...)`, and a carve-out added to one of them would have been invisible to the
+    other three.
+    """
+    inert = set(inert_paths(repo, paths))
+    return [p for p in paths
+            if p.replace("\\", "/").startswith(DEPLOY_DIRS) and p not in inert]
+
+
+# ── HOW MUCH CEREMONY (SCC-451 step one; SCC-452 replaces the `tiny` arm) ──────
+# The predicate above answers "does this file do anything". This answers "how much of the
+# system depends on what you touched" - what the industry calls blast radius. Step one is a
+# line count behind a named interface: crude on purpose, honest about being a proxy, and it
+# gets the doors working today. SCC-452 swaps the `tiny` arm for a measured reverse-dependency
+# reach score and NOTHING else here moves.
+ENTRY_POINT_GLOBS = ("*/app/*/page.tsx", "*/app/*/*/page.tsx", "*/app/page.tsx",
+                     "*/app/*/layout.tsx", "*/app/layout.tsx", "*/app/*/route.ts",
+                     "*/main.py", "*/asgi.py", "*/wsgi.py", "*/__main__.py")
+MANIFEST_NAMES = ("package.json", "package-lock.json", "pyproject.toml", "poetry.lock",
+                  "requirements.txt", "firebase.json", "next.config.ts")
+TINY_MAX_LINES = 50
+TINY_MAX_FILES = 5
+
+
+def _is_entry_point(rel: str) -> bool:
+    """⛔ THE MOST IMPORTANT RULE IN THE TIER, AND IT IS A PATTERN, NOT A SCORE.
+
+    Reverse-dependency count is FLATLY WRONG for entry points, and a naive implementation ranks
+    the riskiest files as the safest. Measured 2026-09-12 over AviationChat's 146 frontend
+    components: `app/layout.tsx` has reach 0 and wraps every screen in the app;
+    `app/dashboard/page.tsx` has reach 0 and is an entire user journey. Nothing imports a page -
+    the router loads it.
+
+    So entry points are excluded from `tiny` BY NAME, before any score is consulted, and the
+    exclusion survives SCC-452 unchanged. A reach score that quietly re-admitted them would be
+    worse than the line count it replaces.
+    """
+    q = PurePosixPath("/" + rel)
+    return any(q.match(g) for g in ENTRY_POINT_GLOBS)
+
+
+def ceremony_tier(repo: Path, paths: Iterable[str], *,
+                  lines: int | None = None, structural: bool | None = None) -> str:
+    """`"tiny"` · `"quick"` · `"full"` - how much ceremony this change has earned.
+
+    ⛔ WITHOUT LINE EVIDENCE `tiny` IS UNREACHABLE. The doors call this at two different
+    moments: quick-dev Step 1 holds a PLANNED path list and no diff, while Step 5 and both
+    standing-push doors hold a real one. A tier is never lowered on an assumption, so `lines=None`
+    can only ever reach `quick`.
+
+    ⛔ It touches NO TESTS. Which suites run is the CI classifier's job (AVCH-153); this decides
+    REVIEW DEPTH only, and conflating the two is the failure mode to avoid.
+    """
+    import scope_check as sc
+    rels = [p.replace("\\", "/") for p in paths]
+
+    # ⛔ THE MAP IS READ THROUGH `scope_check`, NEVER RE-PARSED HERE. It already owns the schema,
+    # the prefix-vs-exact rule and the dead-row refusal; a second matcher is a second answer.
+    rows, err = sc.load_map(repo)
+    if err:
+        return "full"                        # an UNREADABLE map cannot clear anything
+    if rows and sc.overlaps(rels, rows, fragments=False):
+        return "full"                        # ABSOLUTE VETO - never overridden by a size
+
+    for rel in rels:
+        if rel.startswith(CI_DIR) or PurePosixPath(rel).name in MANIFEST_NAMES:
+            return "full"
+        if _is_entry_point(rel):
+            return "full"
+
+    ships = deployable_paths(repo, rels)
+    if lines is None or structural:
+        return "quick"
+    if lines <= TINY_MAX_LINES and len(ships) <= TINY_MAX_FILES:
+        return "tiny"
+    return "quick"
 
 # ── A live epic freezes main for its scope (SCC-416) ───────────────────────────
 # Measured 2026-09-05: a chore/ lane off main carried three files the live epic/AVCH-100
@@ -1289,7 +1454,16 @@ def check_scope(repo: Path, branch: str, rep: wf.Report) -> tuple[str, list[str]
                              if (repo / CI_DIR).is_dir() else ""))
         return "LOCAL", []
 
-    touched = sorted({d for d in surface for p in changed if p.startswith(d)})
+    # SCC-451: the question is no longer "what folder is this in" but "does anything read it".
+    # `deployable_paths` applies the prefix test and then removes the inert subset, so a diff
+    # of nothing but map files under `frontend/` is LOCAL - the state that used to dead-end.
+    ships = deployable_paths(repo, changed)
+    carved = [p for p in changed if p in set(inert_paths(repo, changed))]
+    if carved:
+        rep.info("scope", f"{len(carved)} inert path(s) carried on (nothing reads them at "
+                          f"runtime and no gate reads them as law): {', '.join(carved[:3])}"
+                          + (f" +{len(carved) - 3} more" if len(carved) > 3 else ""))
+    touched = sorted({d for d in surface for p in ships if p.startswith(d)})
     if touched:
         # NOT a judgment call, and deliberately not overridable by a flag. A task that
         # reaches deployable code is not a task; it is a change to the product, and the
