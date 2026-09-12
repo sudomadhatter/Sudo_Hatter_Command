@@ -196,9 +196,13 @@ so **the `How` cell is the wiring and is not optional.**
 > - **Prefer executing to reasoning.** A finding you reproduced outranks one you inferred, and
 >   saying which you did is part of the finding.
 > - **A `critical` or `important` MUST carry a runnable reproduction**, adapted to your
->   subject — which is usually an ABSENCE, so the command is one that shows the gap rather than
->   triggering a crash: the suite command that comes back green over a behaviour nothing exercises,
->   the acceptance item no test names. Two fields, in the finding: `reproduce: <command>` and
+>   subject — which is usually an ABSENCE, so the command is one that FAILS while the gap exists:
+>   `reproduce:` is a command that EXITS NON-ZERO while the gap exists and exits 0 once it is closed —
+>   a mutation you apply in your copy that the suite fails to kill (`…; test $rc -ne 0`), a negated
+>   grep (`! grep -q …`) for a sentence that must not be there, a check script that exits 1 over the
+>   missing case. A bare suite that comes back green exits 0, and the door's receipt writer reads
+>   exit 0 as NOT reproduced — a green suite is not a reproduction, it is the absence of one.
+>   Two fields, in the finding: `reproduce: <command>` and
 >   `expected_wrong_output: <what it shows, and why that is the gap>`. **Run it yourself, in your
 >   own copy, before you report it**, and add `reproduced: yes` + the output you actually saw.
 >   Anything arriving without both fields is dropped unread.
@@ -218,9 +222,9 @@ satisfy it (Acceptance), or the behavior and the test tier that does not cover i
 
 ⛔ **The reproduction requirement is NOT part of the exemption.** Gates 1 and 3 are waived because
 absence has no call path and no confidence score; reproduction is waived for nobody. An auditor's
-command shows the gap instead of triggering a failure — `python3 <suite>` coming back green over a
-behaviour nothing covers is a reproduction, and it is runnable by the caller on the real tree,
-which is the whole point.
+command shows the gap by FAILING while it exists — the mutant the suite does not kill, the negated
+grep — never by a suite coming back green: exit 0 is what the receipt writer reads as NOT
+reproduced. And it is runnable by the caller on the real tree, which is the whole point.
 
 The prompt text that carries all three of those to the lens:
 

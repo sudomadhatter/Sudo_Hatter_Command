@@ -169,7 +169,7 @@ makes the *rest of this lane* cheaper goes first.
 **Each part is REVIEWED on its own commits before the next part starts.** Build order sequences the
 build; this sequences the review, and the two run interleaved — build a part, review that part, then
 start the next. `.agents/scripts/review_scope.py` selects it: `--key <SUB-KEY>` when the parts carry
-rider keys, `--range <sha>..<sha>` for parts without rider keys, and the door passes the result as
+rider keys, `--range <the commit before the part>..<its last commit>` for parts without rider keys (git's `A..B` excludes A), and the door passes the result as
 the diff its lenses read. A lane that builds every part and reviews the pile at the end hands one
 review a diff nobody can hold — SCC-441 ran that review three times over 155 files and closed
 nothing, which is the measurement this sentence exists to prevent.

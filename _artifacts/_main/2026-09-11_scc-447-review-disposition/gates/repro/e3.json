@@ -1,0 +1,16 @@
+{
+  "id": "e3",
+  "result": "reproduced",
+  "command": [
+    "python3",
+    ".agents/scripts/tests/test_closeout_preflight.py",
+    "--case",
+    "RS \u00b7"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-447-review-disposition",
+  "exit_code": 1,
+  "sha": "3f482b30afa2c6174844b24e468a5a3bd6404410",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T02:50:11+00:00",
+  "output_tail": "== closeout_preflight ==\n-- tree: scc-447-review-disposition [chore/SCC-447-review-disposition] - worktree --\n[FAIL] RS1 the superseded FAIL does not block the flip: artifacts=['_artifacts/2026-08-01_epic_30/story-30-1-fresh/walkthrough.md: Verdict FAIL - blocks the done-flip']\n[FAIL] RS2 the re-stamp PASS is the verdict read: artifacts=['_artifacts/2026-08-01_epic_30/story-30-1-fresh/walkthrough.md: Verdict FAIL - blocks the done-flip']\n[FAIL] RS3 (control) a LATER FAIL still blocks - the last stamp governs in both directions: artifacts=['_artifacts/2026-08-01_epic_30/story-30-1-fresh/walkthrough.md: Verdict PASS @ 64098847', '_artifacts/2026-08-01_epic_30/story-30-1-fresh/walkthrough.md: legacy lane (2026-08-01 < 2026-08-15) - roster not required, not backfilled', '_artifacts/2026-08-01_epic_30/story-30-1-fresh/walkthrough.md: reviewed SHA 64098847 not in this repo']\n-- 0/3 passed --\nFAILED: RS1 the superseded FAIL does not block the flip, RS2 the re-stamp PASS is the verdict read, RS3 (control) a LATER FAIL still blocks - the last stamp governs in both directions\n-- filter 'RS \u00b7': matched 1/16 blocks --\n"
+}

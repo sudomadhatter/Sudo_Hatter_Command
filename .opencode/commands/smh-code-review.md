@@ -172,8 +172,8 @@ review-runtime: fan-out
 ```
 
 ⛔ **`inline` is a different review, not a slower one — which is why it is declared before the hunt
-rather than discovered during it.** Under `inline` the engine runs the ladder ONCE, blind lens first
-on the diff alone, and every lens comes back `recovered-inline`; a roster reporting `ok` under an
+rather than discovered during it.** Under `inline` the engine runs the ladder ONCE — every lens
+executes inline and sequentially in this context — and every lens comes back `recovered-inline`; a roster reporting `ok` under an
 `inline` header is a contradiction that `walkthrough_roster.py` blocks on. Declaring it afterwards,
 from the roster you already have, makes the check circular and buys nothing.
 
@@ -203,7 +203,8 @@ the description of the code instead of the code. Measured on SCC-441: 155 files 
 Rule 2) and PRINTS every path it withheld beside the class that withheld it — a filter nobody can
 see is a filter nobody can correct. More than one part in range with no selector is **exit 2 naming
 the keys**, never a guess: a review of the wrong thing looks exactly like a review of the right one.
-A lane whose parts carry no rider keys selects with `--range <sha>..<sha>`.
+A lane whose parts carry no rider keys selects with `--range <the commit before the part>..<its last
+commit>` — git's `A..B` excludes A, so the left bound is the commit BEFORE the part, never its first.
 
 ⛔ **There is NO byte cap, and that is a refusal rather than an omission.** A cap truncates at an
 arbitrary line and the lens never learns what it did not see — the one kind of gap a review cannot
@@ -286,7 +287,10 @@ unexamined claim, and an unknown is not a pass.
 cd "$REPO" && python3 .agents/scripts/repro_receipt.py run --root <task-artifacts> --id <finding-id> --cwd "$REPO" -- <the lens's reproduce command>   # PC: `python`
 ```
 
-⛔ **Every flag goes BEFORE `--`; everything after it is the command verbatim.** There is no
+⛔ **Every flag goes BEFORE `--`; everything after it is the command verbatim** — and a `reproduce:`
+line that carries a shell operator (`|`, `&&`, `||`, `;`, a redirect) is passed as ONE argument and
+run through a shell: `-- bash -c '<the lens command>'`, or the caller's shell splits it before the
+writer ever starts and the receipt attests to a command the lens never wrote. There is no
 `--result` flag — you cannot hand the writer a verdict, only a command to run. `--cwd` is required:
 without it the command runs wherever the shell happened to be standing and records a result about
 nothing (SCC-154). Receipts land at `<root>/gates/repro/<id>.json`, one per finding id, and an
@@ -381,8 +385,10 @@ answer would depend on the machine's git config.)
   or the item is one the diff does not deliver, which is this lane's own **FAIL** reason. It is not a
   soft note: §7 has two CONCERNS grounds and "nobody checked" is not one of them.
 - An item whose evidence is *"I read it and it looks right"* is not evidence. Run something.
-- No acceptance list recoverable anywhere → say so; that is the **coverage** ground for CONCERNS (§7)
-  — a review with no contract to review against is an opinion.
+- No acceptance list recoverable anywhere → say so in the record: that is `no-spec` mode, declared up
+  front rather than discovered here — the Acceptance Auditor is skipped by mode, the matrix is empty,
+  and neither is a verdict ground (§7 has exactly two, and a mode-skip is not a dead lens). A review
+  with no contract is reviewed on what it can prove: the hunt, the tests, the gates.
 
 ## Step 3 — The command-centre gate
 
@@ -392,7 +398,7 @@ exit code, which is how a red gate reads as green.
 | Gate | Command | When |
 |---|---|---|
 | **Enforcement suite** | `python3 .agents/scripts/tests/run_all.py` | **always** — N/N files, exit 0 |
-| **Toolkit lint** | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **always** — errors FAIL, warnings are CONCERNS |
+| **Toolkit lint** | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **always** — errors FAIL; a warning is recorded, never a verdict (§7) |
 | **Assertion evidence** | re-run the task's own Step 2 RED assertions — `--case "<label>"` where the suite declares blocks, so this row cites the NAMED cases rather than a whole file | **always** — they must be GREEN now |
 | **SOP currency** | `python3 .agents/scripts/sop_currency.py --paths <changed> --message "<subject>"` | a usage surface is in the diff |
 | **Link + anchor** | `python3 .agents/scripts/check_links.py --base origin/main` | any `.md` in the diff |
@@ -605,7 +611,10 @@ handoff to `/cicd-push-e2e`).
 > its merits — never used to stall work on a reviewer's preference, and never used to make a verdict.
 
 <!-- twin-law: one-review-per-lane -->
-⛔ **One review per lane — the lenses run ONCE.** When your fixes land, the retest is the pins named
+⛔ **One review per PART — the lenses run ONCE over each part.** A lane of one part is one review; a
+consolidated lane (`work-consolidation` Rule 2) carries one roster per part, each under a
+`## Code Review` heading that names its part (`part <KEY>`, or its `<sha>..<sha>` range). When
+your fixes land, the retest is the pins named
 in the `fixed` rows plus the enforcement suite once through the receipt writer. Never a second
 fan-out over the same diff: measured over 138 reviews on disk, a re-review converted a non-PASS to
 PASS one time in seven and cost a full roster every time. Append a NEW section rather than editing
@@ -619,9 +628,9 @@ retest: scoped — pins: <test:case>, … · suite: run_all N/N @ <sha> (gates/s
 review: carried from the one review @ <sha1> — no lens re-run
 ```
 
-No second `lenses_run:` roster. `walkthrough_roster.py` counts roster headers in the stripped text
-and refuses a walkthrough carrying two without the operator's written word on the section, his words
-quoted: `re-review: approved by the operator — "<his words>"`.
+No second `lenses_run:` roster over the same part. `walkthrough_roster.py` counts roster headers PER
+PART in the stripped text and refuses a walkthrough carrying two over one part without the operator's
+written word on the section, his words quoted: `re-review: approved by the operator — "<his words>"`.
 
 ⛔ **The stamp's sha is the sha the SUITE evidence was measured on.** Any code or test diff between
 that sha and HEAD invalidates the **suite evidence**, never the review: re-run the pins and the suite and

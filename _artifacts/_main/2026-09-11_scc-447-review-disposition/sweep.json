@@ -1,12 +1,18 @@
 {
- "test": ["python3", ".agents/scripts/tests/test_walkthrough_roster_dispositions.py"],
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_walkthrough_roster_dispositions.py"
+ ],
  "mutants": [
   {
    "id": "M1 review_scope · drop a withheld prefix - records under _bmad-output/ reach the lens",
    "file": ".agents/scripts/review_scope.py",
    "original": "RECORD_PREFIXES = (\"_artifacts/\", \"_bmad-output/\", \"docs/_scc_sops_prds/\")",
    "mutated": "RECORD_PREFIXES = (\"_artifacts/\", \"docs/_scc_sops_prds/\")",
-   "test": ["python3", ".agents/scripts/tests/test_review_scope.py"],
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_review_scope.py"
+   ],
    "case": "record withheld: _bmad-output/board.md",
    "block": "1 ·"
   },
@@ -15,7 +21,10 @@
    "file": ".agents/scripts/review_scope.py",
    "original": "        elif len(groups) > 1:",
    "mutated": "        elif len(groups) > 99:",
-   "test": ["python3", ".agents/scripts/tests/test_review_scope.py"],
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_review_scope.py"
+   ],
    "case": "exit 2",
    "block": "3 ·"
   },
@@ -24,7 +33,10 @@
    "file": ".agents/scripts/review_scope.py",
    "original": "        return None if audit else \"mirror\"",
    "mutated": "        return \"mirror\"",
-   "test": ["python3", ".agents/scripts/tests/test_review_scope.py"],
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_review_scope.py"
+   ],
    "case": "--audit keeps .claude/rules/house.md",
    "block": "8 ·"
   },
@@ -33,7 +45,10 @@
    "file": ".agents/scripts/repro_receipt.py",
    "original": "    if path.exists() and not replace:",
    "mutated": "    if False and not replace:",
-   "test": ["python3", ".agents/scripts/tests/test_repro_receipt.py"],
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_repro_receipt.py"
+   ],
    "case": "4a a second run on the same id is exit 2 and names --replace",
    "block": "4 ·"
   },
@@ -42,7 +57,10 @@
    "file": ".agents/scripts/repro_receipt.py",
    "original": "    if exit_code == 0:\n        return \"not-reproduced\"",
    "mutated": "    if exit_code == 0:\n        return \"reproduced\"",
-   "test": ["python3", ".agents/scripts/tests/test_repro_receipt.py"],
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_repro_receipt.py"
+   ],
    "case": "2a the receipt says `not-reproduced` with exit 0 recorded",
    "block": "2 ·"
   },
@@ -51,7 +69,10 @@
    "file": ".agents/scripts/repro_receipt.py",
    "original": "    if exit_code in (9009, 127) or any(s in tail for s in gr._UNRUNNABLE):",
    "mutated": "    if False:",
-   "test": ["python3", ".agents/scripts/tests/test_repro_receipt.py"],
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_repro_receipt.py"
+   ],
    "case": "3a a missing executable is `unrunnable`, exit 2",
    "block": "3 ·"
   },
@@ -60,7 +81,10 @@
    "file": ".agents/scripts/repro_receipt.py",
    "original": "        \"dirty_tree\": bool(dirty_paths),",
    "mutated": "        \"dirty_tree\": False,",
-   "test": ["python3", ".agents/scripts/tests/test_repro_receipt.py"],
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_repro_receipt.py"
+   ],
    "case": "5b a real untracked file IS recorded as dirty",
    "block": "5 ·"
   },
@@ -109,7 +133,10 @@
    "file": ".agents/scripts/walkthrough_roster.py",
    "original": "    na_hard = [l for l in na if \"skipped-by-mode\" not in l[\"reason\"].lower()]",
    "mutated": "    na_hard = list(na)",
-   "test": ["python3", ".agents/scripts/tests/test_walkthrough_roster.py"],
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_walkthrough_roster.py"
+   ],
    "case": "NA7 · a `fan-out` lane whose only n/a is `skipped-by-mode` PASSES",
    "block": "NA ·"
   },
@@ -158,9 +185,192 @@
    "file": ".agents/scripts/workflow_lint.py",
    "original": "        r\"|`?fixed`?\\s*/\\s*`?held`?\\s*/\\s*`?dropped`?\"",
    "mutated": "        r\"|`?fixed`?\\s*/\\s*`?held`?\\s*/\\s*`?droppedX`?\"",
-   "test": ["python3", ".agents/scripts/tests/test_command_surfaces.py"],
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_command_surfaces.py"
+   ],
    "case": "WIRING: a door classifying `fixed / held / dropped` owes the code-standards pointer",
    "block": "CS-12"
+  },
+  {
+   "id": "M20 review_scope · drop the all-withheld refusal - an empty kept list diffs EVERYTHING",
+   "file": ".agents/scripts/review_scope.py",
+   "original": "    if not kept:",
+   "mutated": "    if False:  # M20",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_review_scope.py"
+   ],
+   "case": "9 exit 2 with every file withheld",
+   "block": "9 ·"
+  },
+  {
+   "id": "M21 repro_receipt · drop the id validation - `--id ../../escape` writes outside gates/repro/",
+   "file": ".agents/scripts/repro_receipt.py",
+   "original": "    if not _ID_RE.match(fid):",
+   "mutated": "    if False:  # M21",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_repro_receipt.py"
+   ],
+   "case": "7 `--id '../../escape'` is refused",
+   "block": "7 ·"
+  },
+  {
+   "id": "M22 repro_receipt · drop the non-git --cwd refusal - a receipt with sha null and exit 1",
+   "file": ".agents/scripts/repro_receipt.py",
+   "original": "    if not sha:",
+   "mutated": "    if False:  # M22",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_repro_receipt.py"
+   ],
+   "case": "6d a `--cwd` outside any git tree is refused",
+   "block": "6 ·"
+  },
+  {
+   "id": "M23 review_scope · drop the keyless refusal - a detached tree guesses one part",
+   "file": ".agents/scripts/review_scope.py",
+   "original": "        if not lane:",
+   "mutated": "        if False:  # M23",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_review_scope.py"
+   ],
+   "case": "10 no selector on a keyless tree is exit 2",
+   "block": "10 ·"
+  },
+  {
+   "id": "M24 review_scope · revert the UTF-8 pin - one bad byte aborts the whole scope cut",
+   "file": ".agents/scripts/review_scope.py",
+   "original": "    out = subprocess.run((\"git\", *args), cwd=repo, capture_output=True, text=True,\n                         encoding=\"utf-8\", errors=\"replace\")\n    return out.returncode, out.stdout",
+   "mutated": "    out = subprocess.run((\"git\", *args), cwd=repo, capture_output=True, text=True)\n    return out.returncode, out.stdout",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_review_scope.py"
+   ],
+   "case": "master kept: .agents/rules/bytes.md",
+   "block": "1 ·"
+  },
+  {
+   "id": "M25 review_scope · any key-shaped token is a part again - UTF-8 becomes a phantom part",
+   "file": ".agents/scripts/review_scope.py",
+   "original": "    m = RIDER_RE.search(subject)\n    return m.group(1) if m else lane",
+   "mutated": "    keys = [k for k in KEY_RE.findall(subject) if k != lane]\n    return keys[0] if keys else lane",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_review_scope.py"
+   ],
+   "case": "a key-shaped token that is no ticket (UTF-8) is not a part",
+   "block": "2 ·"
+  },
+  {
+   "id": "M26 review_scope · a prefix is a mirror again - .claude/settings.json is withheld unread",
+   "file": ".agents/scripts/review_scope.py",
+   "original": "        if mcode == 0 and mtext == text:\n            return None if audit else \"mirror\"\n        return None",
+   "mutated": "        return None if audit else \"mirror\"",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_review_scope.py"
+   ],
+   "case": "an AUTHORED file under a mirror prefix, with no master, is kept",
+   "block": "1 ·"
+  },
+  {
+   "id": "M27 repro_receipt · NO CASES RAN reads as reproduced - a typo'd --case label certifies a defect",
+   "file": ".agents/scripts/repro_receipt.py",
+   "original": "    if \"NO CASES RAN\" in tail:",
+   "mutated": "    if False:  # M27",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_repro_receipt.py"
+   ],
+   "case": "3c the harness's NO_MATCH",
+   "block": "3 ·"
+  },
+  {
+   "id": "M28 repro_receipt · an operator-bearing command is not wrapped - the left stage is the receipt",
+   "file": ".agents/scripts/repro_receipt.py",
+   "original": "    if len(command) == 1 and _SHELL_OP_RE.search(command[0]):",
+   "mutated": "    if False:  # M28",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_repro_receipt.py"
+   ],
+   "case": "8a `... | grep -q NOPE` is one command",
+   "block": "8 ·"
+  },
+  {
+   "id": "M29 closeout_preflight · the FIRST stamp governs again - a re-stamped story lane cannot close",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "        m = found[-1] if found else None",
+   "mutated": "        m = found[0] if found else None",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_closeout_preflight.py"
+   ],
+   "case": "RS1 the superseded FAIL does not block the flip",
+   "block": "RS ·"
+  },
+  {
+   "id": "M30 roster · rosters counted per FILE again - the second part's first review is a re-review",
+   "file": ".agents/scripts/walkthrough_roster.py",
+   "original": "    roster_headers = max(per_part.values(), default=0)",
+   "mutated": "    roster_headers = sum(per_part.values())",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_walkthrough_roster_dispositions.py"
+   ],
+   "case": "R6 · two rosters under two PART headings",
+   "block": "R ·"
+  },
+  {
+   "id": "M31 door · the CLAIM sentence inverted - fix before Step 1.4",
+   "file": ".agents/commands/smh-code-review.md",
+   "original": "What comes back is a CLAIM, and you fix nothing yet",
+   "mutated": "act on what it hands back, here, now",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_review_disposition.py"
+   ],
+   "case": "C · what comes back is a CLAIM",
+   "block": "C ·"
+  },
+  {
+   "id": "M32 door · CONCERNS never ships by itself pasted into the story door",
+   "file": ".agents/commands/cicd-code-review.md",
+   "original": "**CONCERNS is shippable, and the go/no-go is the operator's word.**",
+   "mutated": "**CONCERNS never ships by itself — a fix batch and a second pass are owed.**",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_review_disposition.py"
+   ],
+   "case": "C · CONCERNS is shippable",
+   "block": "C ·"
+  },
+  {
+   "id": "M33 autopilot · a fifth stage re-grown under the story table",
+   "file": ".agents/commands/cicd-autopilot-claude.md",
+   "original": "| 4 | `/cicd-code-review <story>` | **`--review`, no seat** | Independence is the point. The LAST stage, whatever it returns |",
+   "mutated": "| 4 | `/cicd-code-review <story>` | **`--review`, no seat** | Independence is the point. The LAST stage, whatever it returns |\n| 5 | the fix, only on CONCERNS/FAIL | `cheshire-cat` | One cycle, in the lane |",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_review_disposition.py"
+   ],
+   "case": "E · the story route is FOUR stages",
+   "block": "E ·"
+  },
+  {
+   "id": "M34 door · an unrunnable gate caps the verdict at CONCERNS again",
+   "file": ".agents/commands/cicd-code-review.md",
+   "original": "report it and name the fix, never\n  stamp over it",
+   "mutated": "caps the verdict at CONCERNS, never\n  stamp over it",
+   "test": [
+    "python3",
+    ".agents/scripts/tests/test_review_disposition.py"
+   ],
+   "case": "C · an unrunnable gate is reported and named",
+   "block": "C ·"
   }
  ]
 }

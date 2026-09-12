@@ -218,10 +218,14 @@ doubt) — POST-DEV mode, Lens 2 + Lens 3's external rows, section labelled `ret
 **POST-DEV resolves "the actual change set" with the scope script, never by hand:**
 
 ```bash
-cd "$PROJECT_ROOT" && python3 .agents/scripts/review_scope.py --repo "$PROJECT_ROOT" --base "origin/<epic-branch>" --range <first>..<HEAD> --audit --out <artifacts>/audit/diff.patch   # PC: `python`
+L=<the LOBBY's absolute path — re-typed; a fence is its own shell, and earlier fences have cd'd into the project>
+cd "$L" && python3 .agents/scripts/review_scope.py --repo "<the story worktree>" --base "origin/<epic-branch>" --range <first>^..<HEAD> --audit --out <artifacts>/audit/diff.patch   # PC: `python`  ⛔ the script is the LOBBY's
 ```
 
-It is the same selection a review uses, with `--audit` so every mirror stays in. The script prints
+It is the same selection a review uses, with `--audit` so every mirror stays in. `<first>^` is
+deliberate: git's `A..B` excludes A, so the left bound is the commit BEFORE the part's first, never
+the first itself — only WITHHELD paths print, so a commit that never entered the selection would be
+invisible. The script prints
 what it withheld and why, so a change set assembled this way is checkable rather than remembered.
 ⛔ A thin project carries no `.agents/scripts/` — run the LOBBY's copy and point `--repo` at the
 worktree, the way every other cross-repo script in this command is called.

@@ -98,6 +98,16 @@ def main() -> int:
             r = receipt("f3b")
             c.check("3b a ModuleNotFoundError in the tail is `unrunnable` too (the SCC-441 shape)",
                     code == 2 and r.get("result") == "unrunnable", f"exit={code} result={r.get('result')!r}")
+            # ⛔ Found by SCC-447's own tip review (both Edge Hunters, receipt e2): a house test whose
+            # `--case` label matches no block exits 3 and prints `NO CASES RAN ... a filter error, not
+            # a result` - non-zero, none of the unrunnable signatures - and it read as `reproduced`.
+            # A command that ran zero checks is the very thing "never RAN" means.
+            code, out = run("--id", "f3c", "--", PY, "-c",
+                            "print('-- 0/0 passed --'); print('NO CASES RAN: no block matched - this is "
+                            "a filter error, not a result.'); import sys; sys.exit(3)")
+            r = receipt("f3c")
+            c.check("3c the harness's NO_MATCH (exit 3, `NO CASES RAN`) is `unrunnable`, never a reproduction",
+                    code == 2 and r.get("result") == "unrunnable", f"exit={code} result={r.get('result')!r}")
 
         if c.block("4 · an existing id refuses without --replace"):
             f1 = root / "gates" / "repro" / "f1.json"
@@ -141,6 +151,55 @@ def main() -> int:
                     "stood and record a result about nothing (SCC-154)",
                     code == 2 and "--cwd" in out and not (root / "gates/repro/f6c.json").exists(),
                     f"exit={code} {out[-200:]}")
+            # ⛔ Found by the SCC-447 tip review (Test-Adequacy lens, receipt t3): the guard existed
+            # and nothing pinned it. Without it the receipt lands with `sha: null` and the run dies
+            # exit 1 - which a door reads as NOT reproduced while a `reproduced` receipt sits on
+            # disk. Two evidence surfaces disagreeing is worse than either alone.
+            nogit = tmp / "not-a-repo"
+            nogit.mkdir()
+            code, out = run_script("repro_receipt.py", "run", "--root", str(root), "--id", "f6d",
+                                   "--cwd", str(nogit), "--", PY, "-c", "import sys; sys.exit(3)")
+            c.check("6d a `--cwd` outside any git tree is refused, exit 2, and no receipt is written",
+                    code == 2 and "git" in out.lower() and not (root / "gates/repro/f6d.json").exists(),
+                    f"exit={code} {out[-200:]}")
+
+        # ── 7. the id is a FILENAME segment, never a path ───────────────────────────────
+        # The id is copied off a walkthrough row (`repro <id>`) and joined verbatim onto
+        # `<root>/gates/repro/`, so it is the only thing keeping the receipt where the roster
+        # gate looks. Found by the SCC-447 tip review (receipt t2): the guard existed, unpinned.
+        if c.block("7 · a finding id is a filename segment, never a path"):
+            for bad in ("../../escape", "f 1", "a/b"):
+                code, out = run("--id", bad, "--", PY, "-c", "import sys; sys.exit(3)")
+                c.check(f"7 `--id {bad!r}` is refused, exit 2, nothing written",
+                        code == 2 and "finding id" in out
+                        and not (root / "escape.json").exists()
+                        and not (root / "gates/repro/escape.json").exists()
+                        and not (root / "gates/repro/f 1.json").exists()
+                        and not (root / "gates/repro/a/b.json").exists(),
+                        f"exit={code} {out[-200:]}")
+            code, out = run("--id", "ok-id_7.a", "--", PY, "-c", "import sys; sys.exit(3)")
+            c.check("7 (control) a legal id with `.`, `-` and `_` still runs and reproduces",
+                    code == 0 and receipt("ok-id_7.a").get("result") == "reproduced",
+                    f"exit={code} {out[-200:]}")
+
+        # ── 8. an operator-bearing command runs through a shell, and the WHOLE line's exit counts ──
+        # ⛔ Found by the SCC-447 tip review (Edge Hunter, receipt x3): the door's shell parses
+        # `-- python3 -c "..." | grep -q X` BEFORE this script starts, so only the left-hand stage
+        # reached the writer and the receipt attested to a command the lens never wrote. A lens
+        # command with an operator is passed as ONE argument and run through `bash -c`.
+        if c.block("8 · a single argument carrying a shell operator runs through a shell, whole"):
+            code, out = run("--id", "f8", "--", "python3 -c 'print(\"ERROR\")' | grep -q NOPE")
+            r = receipt("f8")
+            c.check("8a `... | grep -q NOPE` is one command, the pipeline's exit (1) is the result, reproduced",
+                    code == 0 and r.get("result") == "reproduced" and r.get("exit_code") == 1,
+                    f"exit={code} result={r.get('result')!r} exit_code={r.get('exit_code')!r}")
+            code, out = run("--id", "f8b", "--", "python3 -c 'print(\"ERROR\")' | grep -q ERROR")
+            r = receipt("f8b")
+            c.check("8b (control) the same pipeline whose right-hand stage passes is not-reproduced",
+                    code == 1 and r.get("result") == "not-reproduced", f"exit={code} result={r.get('result')!r}")
+            c.check("8c the receipt records the WHOLE line as the command",
+                    r.get("command") == ["bash", "-c", "python3 -c 'print(\"ERROR\")' | grep -q ERROR"],
+                    f"command={r.get('command')!r}")
 
     return c.finish()
 

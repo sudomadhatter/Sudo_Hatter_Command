@@ -1,0 +1,16 @@
+{
+  "id": "x4",
+  "result": "reproduced",
+  "command": [
+    "python3",
+    ".agents/scripts/tests/test_review_scope.py",
+    "--case",
+    "2 \u00b7"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-447-review-disposition",
+  "exit_code": 1,
+  "sha": "3f482b30afa2c6174844b24e468a5a3bd6404410",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T02:50:10+00:00",
+  "output_tail": "== review_scope ==\n-- tree: scc-447-review-disposition [chore/SCC-447-review-disposition] - worktree --\n[PASS] both part keys are named: a two-part range reported fewer than two keys\n[PASS] the rider commit files under the RIDER, not the lane: the rider's commit was counted under the lane key\n[FAIL] a key-shaped token that is no ticket (UTF-8) is not a part - the rider word is: parts printed: ['  part SCC-447  1 commit(s)', '  part SCC-448  1 commit(s)', '  part UTF-8  1 commit(s)']\n-- 2/3 passed --\nFAILED: a key-shaped token that is no ticket (UTF-8) is not a part - the rider word is\n-- filter '2 \u00b7': matched 1/10 blocks --\n"
+}

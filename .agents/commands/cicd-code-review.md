@@ -230,8 +230,8 @@ review-runtime: fan-out
 ```
 
 ⛔ **`inline` is a different review, not a slower one — which is why it is declared before the hunt
-rather than discovered during it.** Under `inline` the engine runs the ladder ONCE, blind lens first
-on the diff alone, and every lens comes back `recovered-inline`; a roster reporting `ok` under an
+rather than discovered during it.** Under `inline` the engine runs the ladder ONCE — every lens
+executes inline and sequentially in this context — and every lens comes back `recovered-inline`; a roster reporting `ok` under an
 `inline` header is a contradiction that `walkthrough_roster.py` blocks on. Declaring it afterwards,
 from the roster you already have, makes the check circular and buys nothing.
 
@@ -244,7 +244,11 @@ around it**: the inputs, the fixes, the gates and the verdict.
 **First, cut the review's scope — the lane is not the review:**
 
 ```bash
-L=<the LOBBY's absolute path — re-typed; earlier fences have cd'd the shell into the project>
+WORKTREE=<the same path Step 0.6 echoed>
+EPIC=<the same epic/JIRA-KEY-slug Step 0.6 echoed>
+ARTIFACT_DIR="$WORKTREE/_artifacts/epic_<E>/<story>"                  # ABSOLUTE — the scope script resolves --out against the shell's cwd, never against --repo
+L=<the LOBBY's absolute path — re-typed; a fence is its own shell, and earlier fences have cd'd into the project>
+test -n "$WORKTREE" && test -n "$EPIC" && test -d "$ARTIFACT_DIR" && test -n "$L" || { echo 'UNBOUND — STOP'; exit 1; }
 cd "$L" && python3 .agents/scripts/review_scope.py --repo "$WORKTREE" --base "origin/$EPIC" --key <PART-KEY> --out "$ARTIFACT_DIR/review/diff.patch"   # PC: `python`  ⛔ the script is the LOBBY's
 ```
 
@@ -257,7 +261,8 @@ the description of the code instead of the code. Measured on SCC-441: 155 files 
 Rule 2) and PRINTS every path it withheld beside the class that withheld it — a filter nobody can
 see is a filter nobody can correct. More than one part in range with no selector is **exit 2 naming
 the keys**, never a guess: a review of the wrong thing looks exactly like a review of the right one.
-A lane whose parts carry no rider keys selects with `--range <sha>..<sha>`.
+A lane whose parts carry no rider keys selects with `--range <the commit before the part>..<its last
+commit>` — git's `A..B` excludes A, so the left bound is the commit BEFORE the part, never its first.
 
 ⛔ **There is NO byte cap, and that is a refusal rather than an omission.** A cap truncates at an
 arbitrary line and the lens never learns what it did not see — the one kind of gap a review cannot
@@ -331,11 +336,17 @@ unexamined claim, and an unknown is not a pass.
 <!-- /twin-law -->
 
 ```bash
-L=<the LOBBY's absolute path — re-typed; earlier fences have cd'd the shell into the project>
+WORKTREE=<the same path Step 0.6 echoed>
+ARTIFACT_DIR="$WORKTREE/_artifacts/epic_<E>/<story>"                  # ABSOLUTE, inside the story tree — the receipt must land beside the walkthrough
+L=<the LOBBY's absolute path — re-typed; a fence is its own shell, and earlier fences have cd'd into the project>
+test -n "$WORKTREE" && test -d "$ARTIFACT_DIR" && test -n "$L" || { echo 'UNBOUND — STOP'; exit 1; }
 cd "$L" && python3 .agents/scripts/repro_receipt.py run --root "$ARTIFACT_DIR" --id <finding-id> --cwd "$WORKTREE" -- <the lens's reproduce command>   # PC: `python`
 ```
 
-⛔ **Every flag goes BEFORE `--`; everything after it is the command verbatim.** There is no
+⛔ **Every flag goes BEFORE `--`; everything after it is the command verbatim** — and a `reproduce:`
+line that carries a shell operator (`|`, `&&`, `||`, `;`, a redirect) is passed as ONE argument and
+run through a shell: `-- bash -c '<the lens command>'`, or the caller's shell splits it before the
+writer ever starts and the receipt attests to a command the lens never wrote. There is no
 `--result` flag — you cannot hand the writer a verdict, only a command to run. `--cwd` is required:
 without it the command runs wherever the shell happened to be standing and records a result about
 nothing (SCC-154) — and here that is the shared checkout rather than the story tree. Receipts land
@@ -432,11 +443,14 @@ answer would depend on the machine's git config.)
   side: cut it, or name why it stays.
 <!-- /twin-law -->
 
-- An item with **no evidence** is not satisfied, however obviously true it looks. **CONCERNS floor.**
+- An item with **no evidence** is not satisfied, however obviously true it looks — run the assertion,
+  or the item is one the diff does not deliver, which is this lane's own **FAIL** reason. It is not a
+  soft note: §7 has two CONCERNS grounds and "nobody checked" is not one of them.
 - An item whose evidence is *"I read it and it looks right"* is not evidence. Run something.
-- No acceptance list recoverable anywhere → say so and cap the verdict at **CONCERNS**; a review with
-  no contract to review against is an opinion. (`no-spec` mode is exactly this case, declared up
-  front rather than discovered here.)
+- No acceptance list recoverable anywhere → say so in the record: that is `no-spec` mode, declared up
+  front rather than discovered here — the Acceptance Auditor is skipped by mode, the matrix is empty,
+  and neither is a verdict ground (§7 has exactly two, and a mode-skip is not a dead lens). A review
+  with no contract is reviewed on what it can prove: the hunt, the tests, the gates.
 
 ## Step 2 — Gate: opt-in check
 Read `_bmad-output/sudo-tests.yaml`.
@@ -518,13 +532,15 @@ distinct from `fail`, because per Step 3.5 a missing tool is a **finding, not a 
    *soft* test steps (`continue-on-error`, `|| true`, blanket `.skip`/`xfail`, "report-only") — on the
    SAME change-trigger as guard (a), never per-story: each is a
    hole that reads as green. Per `tests-must-gate-for-real`, a soft gate is legitimate only as a one-run
-   window carrying a named owner + a tracked expiry task — flag any that lacks both (CONCERNS floor) and
-   name it in the verdict.
+   window carrying a named owner + a tracked expiry task — flag any that lacks both as a gate that
+   cannot fail, which is a **FAIL** reason under Step 4, and name it in the verdict.
 5. **Automate evidence** — feature stories only (numeric `E.S` ids; test-only MIN-FLOW stories like
    `tea-*` are exempt): confirm ②'s expansion pass left evidence — `automation-summary-<story>.md` under
    `_bmad-output/test-artifacts/`, or an explicit `## Automate: skipped — <rationale>` section in the
-   story walkthrough. Missing BOTH → cap the verdict at **CONCERNS** and name the gap in the verdict
-   section (never FAIL on this alone — stories gated before 2026-07-09 predate the check).
+   story walkthrough. Missing BOTH is an unexamined surface, and an unknown is not a pass: for a story
+   gated on or after 2026-07-09 it is this lane's own **FAIL** reason — name the gap in the verdict
+   section. A story gated before that date predates the check, so there the gap is recorded, never a
+   verdict (§7 has two CONCERNS grounds, and this is not one of them).
 
 ## Step 3.5 — Gate: clean code (ALWAYS runs — independent of Step 2's opt-in)
 Invoke the **`cicd-clean-code-audit`** skill on the story diff, bound to the same worktree Step 0.5 resolved
@@ -590,10 +606,10 @@ new one. The section carries:
   unwritten, so a full-gate run would refuse on a missing `dispositions:` line and send you to
   hunt a fence that is not there. Once the section is complete, `--gate` asks the fuller
   question — and before the stamp exists it needs `--verdict PASS|CONCERNS|FAIL|WAIVED`.
-  ⛔ **A re-reviewed STORY lane must pass `--verdict`**: `--gate` judges the LAST `Verdict:`
-  stamp (the re-review rule), while `closeout_preflight` reads the FIRST, so a FAIL-then-PASS
-  file resolves differently in the two. Task lanes go through `task_preflight`, which reads the
-  last and agrees.
+  `--gate` judges the LAST `Verdict:` stamp, and so do both close-out preflights — a re-stamp
+  after fixes is the designed second section, and a FAIL-then-PASS file resolves PASS in every
+  reader (SCC-447's tip review made the story close-out agree; before it, `closeout_preflight`
+  read the FIRST stamp and a re-stamped story lane could never close).
 
 <!-- twin-law: roster -->
   ⛔ **`lenses_na` and `lenses_counted` are part of the block, not optional trimmings (SCC-203).**
@@ -694,7 +710,10 @@ line · **a reference this story depends on that an epic-mate moved, renamed or 
 > make a verdict.
 
 <!-- twin-law: one-review-per-lane -->
-⛔ **One review per lane — the lenses run ONCE.** When your fixes land, the retest is the pins named
+⛔ **One review per PART — the lenses run ONCE over each part.** A lane of one part is one review; a
+consolidated lane (`work-consolidation` Rule 2) carries one roster per part, each under a
+`## Code Review` heading that names its part (`part <KEY>`, or its `<sha>..<sha>` range). When
+your fixes land, the retest is the pins named
 in the `fixed` rows plus the enforcement suite once through the receipt writer. Never a second
 fan-out over the same diff: measured over 138 reviews on disk, a re-review converted a non-PASS to
 PASS one time in seven and cost a full roster every time. Append a NEW section rather than editing
@@ -708,9 +727,9 @@ retest: scoped — pins: <test:case>, … · suite: run_all N/N @ <sha> (gates/s
 review: carried from the one review @ <sha1> — no lens re-run
 ```
 
-No second `lenses_run:` roster. `walkthrough_roster.py` counts roster headers in the stripped text
-and refuses a walkthrough carrying two without the operator's written word on the section, his words
-quoted: `re-review: approved by the operator — "<his words>"`.
+No second `lenses_run:` roster over the same part. `walkthrough_roster.py` counts roster headers PER
+PART in the stripped text and refuses a walkthrough carrying two over one part without the operator's
+written word on the section, his words quoted: `re-review: approved by the operator — "<his words>"`.
 
 ⛔ **The stamp's sha is the sha the SUITE evidence was measured on.** Any code or test diff between
 that sha and HEAD invalidates the **suite evidence**, never the review: re-run the pins and the suite and

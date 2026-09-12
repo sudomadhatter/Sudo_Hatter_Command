@@ -625,10 +625,12 @@ def main() -> int:
                            + "\nVerdict: FAIL @ def5678\n", encoding="utf-8")
             r = subprocess.run([sys.executable, str(MOD), str(two), "--gate"],
                                capture_output=True, text=True)
-            c.check("F1j · two stamps: `--gate` judges the LAST, and SAYS the story-lane "
-                    "gate reads the first",
+            # SCC-447 tip review (receipt e3): the story close-out now reads the LAST stamp too, so
+            # the note no longer warns of a reader that disagrees - it says every reader agrees.
+            c.check("F1j · two stamps: `--gate` judges the LAST, and SAYS every close-out reader "
+                    "does the same",
                     r.returncode == 1 and json.loads(r.stdout)["verdict"] == "FAIL"
-                    and "closeout_preflight" in r.stderr,
+                    and "every close-out reader" in r.stderr and "FIRST" not in r.stderr,
                     f"rc={r.returncode} verdict={json.loads(r.stdout).get('verdict')!r} "
                     f"err={r.stderr[:200]!r}")
             r = subprocess.run([sys.executable, str(MOD), str(two),

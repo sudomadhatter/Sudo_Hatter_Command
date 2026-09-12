@@ -1,0 +1,16 @@
+{
+  "id": "x6",
+  "result": "reproduced",
+  "command": [
+    "python3",
+    ".agents/scripts/tests/test_walkthrough_roster_dispositions.py",
+    "--case",
+    "R \u00b7"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-447-review-disposition",
+  "exit_code": 1,
+  "sha": "3f482b30afa2c6174844b24e468a5a3bd6404410",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T02:50:11+00:00",
+  "output_tail": "nses_run:` rosters. One review per lane: the lenses run ONCE, and after fixes the retest is the pins named in the `fixed` rows plus the suite through the receipt writer - a re-stamp section carries no roster (`code-standards.md` \u00a77). A second full roster needs the operator\\'s written word on the section: `re-review: approved by the operator \u2014 \"<his words>\"`.']\n[PASS] R7 \u00b7 two rosters under the SAME part heading still refuse: ['2 `lenses_run:` rosters. One review per lane: the lenses run ONCE, and after fixes the retest is the pins named in the `fixed` rows plus the suite through the receipt writer - a re-stamp section carries no roster (`code-standards.md` \u00a77). A second full roster needs the operator\\'s written word on the section: `re-review: approved by the operator \u2014 \"<his words>\"`.']\n[FAIL] R8 \u00b7 parts selected by --range name themselves by the range, and count the same way: ['2 `lenses_run:` rosters. One review per lane: the lenses run ONCE, and after fixes the retest is the pins named in the `fixed` rows plus the suite through the receipt writer - a re-stamp section carries no roster (`code-standards.md` \u00a77). A second full roster needs the operator\\'s written word on the section: `re-review: approved by the operator \u2014 \"<his words>\"`.']\n-- 8/10 passed --\nFAILED: R6 \u00b7 two rosters under two PART headings are two first reviews - no operator word needed, R8 \u00b7 parts selected by --range name themselves by the range, and count the same way\n-- filter 'R \u00b7': matched 1/8 blocks --\n"
+}

@@ -729,7 +729,7 @@ flowchart TD
     S3 --> INH{"②'s certification SHA\nequals HEAD, 0 failures?"}
     INH -- "yes" --> ADOPT["adopt it — cite the file"]
     INH -- "no" --> RUN["run the full suite yourself\nfail TOWARD running\nthis becomes the certifying run"]
-    ADOPT --> TEA["testarch-trace coverage floor\ntestarch-nfr when required · test-review\nautomate evidence, else CONCERNS"]
+    ADOPT --> TEA["testarch-trace coverage floor\ntestarch-nfr when required · test-review\nautomate evidence, else FAIL"]
     RUN --> TEA
     TEA --> S35["Step 3.5 — /cicd-clean-code-audit\nALWAYS, even on WAIVED"]
     WAIV --> S35

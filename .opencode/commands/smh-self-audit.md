@@ -238,10 +238,13 @@ plus the external rows of Lens 3, and the section labelled `retroactive`.
 **POST-DEV resolves "the actual change set" with the scope script, never by hand:**
 
 ```bash
-cd "$REPO" && python3 .agents/scripts/review_scope.py --repo "$REPO" --base origin/main --range <first>..<HEAD> --audit --out <artifacts>/audit/diff.patch   # PC: `python`
+cd "$REPO" && python3 .agents/scripts/review_scope.py --repo "$REPO" --base origin/main --range <first>^..<HEAD> --audit --out <artifacts>/audit/diff.patch   # PC: `python`
 ```
 
-It is the same selection a review uses, with `--audit` so every mirror stays in. The script prints
+It is the same selection a review uses, with `--audit` so every mirror stays in. `<first>^` is
+deliberate: git's `A..B` excludes A, so the left bound is the commit BEFORE the part's first, never
+the first itself — only WITHHELD paths print, so a commit that never entered the selection would be
+invisible. The script prints
 what it withheld and why, so a change set assembled this way is checkable rather than remembered.
 
 ## Stay in lane

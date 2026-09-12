@@ -50,6 +50,17 @@ from _harness import Cases
 
 ROOT = Path(__file__).resolve().parents[3]
 
+
+def one_line(text: str) -> str:
+    """A literal sentence, matched across whatever line breaks the file wraps it at.
+
+    ⛔ This exists because of a defect this lane shipped three times in Part 4. A check written as
+    a plain literal binds the PROSE and the WRAPPING together, so re-flowing a paragraph breaks a
+    law nobody changed — and the temptation at that point is to loosen the check, which is how a
+    guard stops guarding. Words are the law; where the line ends is not.
+    """
+    return r"\s+".join(re.escape(w) for w in text.split())
+
 RULE = ".agents/rules/code-standards.md"
 RULE_TWIN = ".claude/rules/code-standards.md"
 
@@ -174,23 +185,32 @@ CHECKS_A: tuple[tuple[str, str, str, int, str, str], ...] = (
      "no command, door or agent may treat it as a blocker on its own authority",
      "a door may hold the lane until it is cleared"),
     ("§7: ONE review per lane — the retest is pins plus the suite, not a fan-out", RULE,
-     r"\*\*One review per lane\.\*\* The lenses run ONCE\.", 0,
-     "**One review per lane.** The lenses run ONCE.",
+     r"\*\*One review per PART — one per lane when the lane is one part\.\*\* The lenses run ONCE over each part\.", 0,
+     "**One review per PART — one per lane when the lane is one part.** The lenses run ONCE over each part.",
      "**Re-review after every fix batch.** The lenses run again."),
     ("§7: the retest is the named pins plus ONE suite run, never a second fan-out", RULE,
      r"the pins\nnamed in the `fixed` rows plus the enforcement suite once through the receipt "
      r"writer — never a second\nfan-out", 0,
      "never a second\nfan-out",
      "then a second\nfan-out"),
-    ("§7: a second full roster needs the OPERATOR's written word", RULE,
-     r"A second full roster needs the operator's written word, and `walkthrough_roster\.py` refuses",
-     0,
-     "A second full roster needs the operator's written word",
+    ("§7: a second full roster over the SAME part needs the OPERATOR's written word", RULE,
+     one_line("A second full roster over the SAME part needs the operator's written word, and "
+              "`walkthrough_roster.py` refuses"), 0,
+     "A second full roster over the SAME part needs the operator's written word",
      "A second full roster is the agent's call"),
 )
 
 # ── BLOCK B — the engine's four steps carry the same doctrine ──────────────────────────────────
 CHECKS_B: tuple[tuple[str, str, str, int, str, str], ...] = (
+    # ⛔ Found by SCC-447's own tip review (Edge Hunter, receipt x1): the auditor rubric named "a
+    # suite that comes back green over the gap" as a reproduction — exit 0, which the receipt
+    # writer reads as NOT reproduced — so no auditor finding could ever survive to a fix.
+    ("step-01: an auditor's reproduction EXITS NON-ZERO while the gap exists — a green suite is not one", S1,
+     one_line("`reproduce:` is a command that EXITS NON-ZERO while the gap exists"), 0,
+     "EXITS NON-ZERO while the gap exists", "comes back green over the gap"),
+    ("step-01: the exemption paragraph says the same — the gap is shown by FAILING, never by a green suite", S1,
+     one_line("shows the gap by FAILING while it exists"), 0,
+     "shows the gap by FAILING while it exists", "shows the gap instead of triggering a failure"),
     # step-01: the roster, and the reproduction field every lens owes
     ("step-01: Edge Case Hunter runs ALWAYS and owes a reproduction field", S1,
      r"^\|\s*\*\*Edge Case Hunter\*\*\s*\|[^|]*\|[^|]*\|\s*always\s*\|[^|]*\|"
@@ -502,6 +522,48 @@ def both(name: str, pattern: str, flags: int, old: str, new: str, files=DOORS):
 
 
 CHECKS_C: tuple[tuple[str, str, str, int, str, str], ...] = (
+    # ── Found by SCC-447's own tip review. Every row below is a law sentence a lens INVERTED in
+    # its worktree with every pin green (receipts b1, b5, b6, b9, b10, e1, e4, x3).
+    *both("C · what comes back is a CLAIM — nothing is fixed before Step 1.4",
+          one_line("What comes back is a CLAIM, and you fix nothing yet"), 0,
+          "you fix nothing yet", "act on what it hands back, here, now"),
+    *both("C · CONCERNS is shippable and the go/no-go is the operator's word",
+          one_line("**CONCERNS is shippable, and the go/no-go is the operator's word.**"), 0,
+          "CONCERNS is shippable", "CONCERNS never ships by itself"),
+    *both("C · acceptance: an item with no evidence is this lane's own FAIL reason, not a soft note",
+          one_line("which is this lane's own **FAIL** reason. It is not a soft note: §7 has two CONCERNS "
+                   "grounds and \"nobody checked\" is not one of them."), 0,
+          "this lane's own **FAIL** reason", "**CONCERNS floor.**"),
+    *both("C · no acceptance list is no-spec mode, never a verdict ground",
+          one_line("the Acceptance Auditor is skipped by mode, the matrix is empty, and neither is a "
+                   "verdict ground"), 0,
+          "neither is a verdict ground", "that is the **coverage** ground for CONCERNS"),
+    ("C · an unrunnable gate is reported and named, never stamped over", CICD_DOOR,
+     one_line("the floor is unrunnable with it — report it and name the fix, never stamp over it"), 0,
+     "report it and name the fix, never", "caps the verdict at CONCERNS, never"),
+    *both("C · Step 1.4: a lens command carrying a shell operator goes through a shell as ONE argument",
+          one_line("line that carries a shell operator (`|`, `&&`, `||`, `;`, a redirect) is passed as "
+                   "ONE argument and run through a shell: `-- bash -c '<the lens command>'`"), 0,
+          "is passed as ONE argument", "is pasted after `--` as it came"),
+    *both("C · a lane without rider keys selects with --range, and git's A..B excludes A",
+          one_line("selects with `--range <the commit before the part>..<its last commit>` — git's "
+                   "`A..B` excludes A"), 0,
+          "the commit before the part", "<sha>"),
+    ("C · the story door's Step 1 fence binds WORKTREE, EPIC, ARTIFACT_DIR and L before the scope cut",
+     CICD_DOOR,
+     r'test -n "\$WORKTREE" && test -n "\$EPIC" && test -d "\$ARTIFACT_DIR" && test -n "\$L" \|\| '
+     r"\{ echo 'UNBOUND — STOP'; exit 1; \}\n"
+     r'cd "\$L" && python3 \.agents/scripts/review_scope\.py --repo "\$WORKTREE"', 0,
+     'test -n "$WORKTREE" && test -n "$EPIC" && test -d "$ARTIFACT_DIR" && test -n "$L"',
+     'test -n "$L"'),
+    ("C · the story door's Step 1.4 fence binds WORKTREE, ARTIFACT_DIR and L before the receipt writer",
+     CICD_DOOR,
+     r'test -n "\$WORKTREE" && test -d "\$ARTIFACT_DIR" && test -n "\$L" \|\| '
+     r"\{ echo 'UNBOUND — STOP'; exit 1; \}\n"
+     r'cd "\$L" && python3 \.agents/scripts/repro_receipt\.py run', 0,
+     'test -n "$WORKTREE" && test -d "$ARTIFACT_DIR" && test -n "$L" || { echo \'UNBOUND — STOP\'; exit 1; }\n'
+     'cd "$L" && python3 .agents/scripts/repro_receipt.py run',
+     'cd "$L" && python3 .agents/scripts/repro_receipt.py run'),
     # ── D6: what the lenses actually read. The DIFF row must be the SCRIPT's output, not the
     # raw `base..HEAD` diff — a relationship (row → script), never the word `review_scope`
     # appearing somewhere in the file.
@@ -610,7 +672,7 @@ CHECKS_C: tuple[tuple[str, str, str, int, str, str], ...] = (
 
     # ── D4: one review per lane. The re-stamp is a new section with no second roster.
     *both("C · D4: the retest is the pins plus the suite — the lenses run ONCE",
-          r"⛔ \*\*One review per lane — the lenses run ONCE\.\*\*[\s\S]{0,700}?"
+          r"⛔ \*\*One review per PART — the lenses run ONCE over each part\.\*\*[\s\S]{0,1200}?"
           r"review: carried from the one review @ <sha1> — no lens re-run", 0,
           "review: carried from the one review @ <sha1> — no lens re-run",
           "review: a second fan-out over the fixed tree"),
@@ -676,7 +738,19 @@ DOOR_BANS: tuple[tuple[str, str, int, tuple[str, ...]], ...] = (
     # the suite, so no door may say otherwise.
     ("an instruction to review again", r"re-run the review|fresh review|fresh lens|"
      r"invalidates the verdict", re.I, DOORS),
-    ("the retired caps-at-CONCERNS judgment verdict", r"caps at CONCERNS", 0, AUDITS),
+    ("the retired caps-at-CONCERNS judgment verdict", r"caps at CONCERNS", 0, AUDITS + DOORS),
+    # ⛔ Found by SCC-447's own tip review (receipts b1, b2, b3, b9). §7 has exactly two CONCERNS
+    # grounds; the doors' acceptance bullets and gate tables still minted more — no-spec, a lint
+    # warning, a soft CI step, missing automate evidence — none with a receipt or a patch behind
+    # it, which is the "file to read" the ruling struck. One "blind lens first" survived the
+    # six-site fix ten lines below the sentence saying the blind lens is gone, and "CONCERNS never
+    # ships by itself" could be pasted into a door with every pin green.
+    ("a door-side CONCERNS ground beyond §7's two",
+     r"CONCERNS floor|cap the verdict at \*\*CONCERNS\*\*|coverage\*\* ground for CONCERNS|"
+     r"warnings are CONCERNS", 0, DOORS),
+    ("the lint-warning CONCERNS legend", r"`workflow_lint` \*\*warnings\*\* only", 0, AUDITS),
+    ("a live blind-lens ordering", r"blind lens first", re.I, DOORS),
+    ("CONCERNS held as a blocker in a door", r"never ships by itself", 0, DOORS),
 )
 
 # ── §5's identifier bans: the SPELLINGS a live caller would have to write ──────────────────────
@@ -721,16 +795,6 @@ SMH_SELF_AUDIT = ".agents/commands/smh-self-audit.md"
 CICD_SELF_AUDIT = ".agents/commands/cicd-self-audit.md"
 SELF_AUDITS = (SMH_SELF_AUDIT, CICD_SELF_AUDIT)
 
-
-def one_line(text: str) -> str:
-    """A literal sentence, matched across whatever line breaks the file wraps it at.
-
-    ⛔ This exists because of a defect this lane shipped three times in Part 4. A check written as
-    a plain literal binds the PROSE and the WRAPPING together, so re-flowing a paragraph breaks a
-    law nobody changed — and the temptation at that point is to loosen the check, which is how a
-    guard stops guarding. Words are the law; where the line ends is not.
-    """
-    return r"\s+".join(re.escape(w) for w in text.split())
 
 
 # The one sentence both self-audit twins must carry in the SAME words (D9). It sits OUTSIDE every
@@ -808,9 +872,9 @@ CHECKS_F: tuple[tuple[str, str, str, int, str, str], ...] = (
      "REVIEWED on its own commits before the next part starts",
      "REVIEWED once, at the lane's tip, over every part together"),
     ("F · the part is selected by --key, or by --range when it carries no rider key", CONSOLIDATION,
-     one_line("`--key <SUB-KEY>` when the parts carry rider keys, `--range <sha>..<sha>` for "
-              "parts without rider keys"), 0,
-     "`--range <sha>..<sha>` for parts without rider keys",
+     one_line("`--key <SUB-KEY>` when the parts carry rider keys, `--range <the commit before the "
+              "part>..<its last commit>` for parts without rider keys"), 0,
+     "`--range <the commit before the part>..<its last commit>` for parts without rider keys",
      "the whole lane diff for parts without rider keys"),
     ("F · the enforcement suite is the integration check across parts — no lens is", CONSOLIDATION,
      one_line("the enforcement suite is the integration check across parts, at each part's close "
@@ -835,11 +899,29 @@ CHECKS_F: tuple[tuple[str, str, str, int, str, str], ...] = (
 
 CHECKS_H: tuple[tuple[str, str, str, int, str, str], ...] = (
     # ── D9. POST-DEV had no way to resolve "the actual change set" except by hand, which is the
-    # one input a review now gets from a script. Same selection, one flag different.
-    *both("H · POST-DEV resolves its change set through review_scope.py --audit",
-          r"review_scope\.py[^\n]*--range <first>\.\.<HEAD> --audit", 0,
-          "--range <first>..<HEAD> --audit", "--range <first>..<HEAD>",
+    # one input a review now gets from a script. Same selection, one flag different. The caret is
+    # the tip review's (receipt e4): git's `A..B` excludes A, so `<first>..<HEAD>` dropped the
+    # part's first commit and printed nothing about it — only WITHHELD paths print.
+    *both("H · POST-DEV resolves its change set through review_scope.py --audit, left bound BEFORE the part",
+          r"review_scope\.py[^\n]*--range <first>\^\.\.<HEAD> --audit", 0,
+          "--range <first>^..<HEAD> --audit", "--range <first>..<HEAD> --audit",
           files=SELF_AUDITS),
+    *both("H · both twins say why the caret is there",
+          one_line("git's `A..B` excludes A, so the left bound is the commit BEFORE the part's first"), 0,
+          "the commit BEFORE the part's first", "the part's first commit",
+          files=SELF_AUDITS),
+    # ⛔ Found by SCC-447's own tip review (receipt b4): the story twin's POST-DEV fence cd'd into the
+    # project and ran a project-relative `.agents/scripts/` path with `--repo` on the shared
+    # checkout, while its own footnote said "run the LOBBY's copy and point --repo at the worktree".
+    ("H · the story twin's POST-DEV fence binds the lobby in the fence and runs the LOBBY's script",
+     CICD_SELF_AUDIT,
+     r'L=<the LOBBY[^\n]*\ncd "\$L" && python3 \.agents/scripts/review_scope\.py --repo "<the story worktree>"',
+     0,
+     'cd "$L" && python3 .agents/scripts/review_scope.py --repo "<the story worktree>"',
+     'cd "$PROJECT_ROOT" && python3 .agents/scripts/review_scope.py --repo "$PROJECT_ROOT"'),
+    ("H · the story twin says the thin project runs the LOBBY's copy", CICD_SELF_AUDIT,
+     one_line("run the LOBBY's copy and point `--repo` at the worktree"), 0,
+     "run the LOBBY's copy", "run the project's copy"),
     *both("H · it is the same selection a review uses, and --audit is why it differs",
           one_line("the same selection a review uses, with `--audit` so every mirror stays in"), 0,
           "so every mirror stays in", "so the diff is smaller",
@@ -889,6 +971,9 @@ RECORD_BANS: tuple[tuple[str, str, int, tuple[str, ...]], ...] = (
      r"Blind Hunter is DROPPED|the other four are handed", 0, (LANE_SOP,)),
     ("the autopilot's fix cycle and second verdict (retired, Part 5)",
      r"fix cycle|new sha|second verdict", re.I, (QUICKREF,)),
+    # Receipt b2's third ground, drawn in the story door's picture: missing automate evidence is
+    # an unexamined surface — this lane's FAIL reason — never a CONCERNS of its own.
+    ("a CONCERNS from missing automate evidence", r"automate evidence, else CONCERNS", 0, RECORDS),
 )
 
 # The paragraph under `#### code-review-engine` — the SAME words in both files, like block H's
@@ -958,6 +1043,11 @@ def diagram_nodes(heading: str) -> list[tuple[str, str]]:
     for m in NODE_RX.finditer(txt[fence:end]):
         seen.setdefault(m.group(1), " ".join(m.group(2).replace("\\n", " ").split()))
     return list(seen.items())
+
+
+def drifted(nodes: list[tuple[str, str]], section: str) -> list[str]:
+    """The node ids whose `| `ID` | label |` row is NOT in the SOP twin — the parity predicate."""
+    return [nid for nid, label in nodes if f"| `{nid}` | {label} |" not in section]
 
 
 def appendix_section(heading: str) -> str:
@@ -1076,6 +1166,22 @@ def main() -> int:
         for name, ok, detail in check_rows(CHECKS_E):
             c.check(name, ok, detail)
 
+        # ⛔ Found by SCC-447's own tip review (Test-Adequacy lens, receipt b5): the seat TABLES are
+        # what the lead executes, one child per row, and a stage 5 re-grown under the story table
+        # is the loop — three lines above the paragraph that says no stage follows the review.
+        # Count the rows, per table.
+        ap = read(AUTOPILOT)
+        tables = re.findall(r"^\| Stage \| Door \| Seat \| Note \|\n\|[-| ]+\|\n((?:\|[^\n]*\|\n)+)",
+                            ap, re.M)
+        counts = [len(re.findall(r"^\| \d+ \|", t, re.M)) for t in tables]
+        c.check("E · the command carries two seat tables", len(tables) == 2, f"found {len(tables)}")
+        c.check("E · the story route is FOUR stages and the quick-fix route TWO — no stage follows the review",
+                counts == [4, 2], f"stage rows per table: {counts}")
+        grown = (tables[0] if tables else "") + "| 5 | the fix, only on CONCERNS/FAIL | `cheshire-cat` | One cycle |\n"
+        c.check("E · a re-grown fifth stage would be counted",
+                bool(tables) and len(re.findall(r"^\| \d+ \|", grown, re.M)) == 5,
+                "the counter cannot see a fifth row")
+
         for name, pattern, flags, files in LANE_BANS:
             rx = re.compile(pattern, flags | re.M)
             for rel in files:
@@ -1172,15 +1278,20 @@ def main() -> int:
             c.check(f"I · {short}: the SOP appendix has the twin table",
                     "| Stage / Step |" in section,
                     "" if "| Stage / Step |" in section else f"no table under {heading!r} in the SOP")
-            missing = [nid for nid, label in nodes if f"| `{nid}` | {label} |" not in section]
+            missing = drifted(nodes, section)
             c.check(f"I · {short}: every node is a row in the SOP twin, label for label",
                     bool(nodes) and not missing,
                     "" if nodes and not missing else f"drifted or missing rows: {missing}")
+            # Anti-vacuity through the SAME predicate (SCC-122): a label the quickref does not draw
+            # must come back as drift from `drifted()` itself. The first cut asserted a different,
+            # always-true predicate here, and the tip review neutered the comparison with it green
+            # (receipt b8).
             if nodes:
                 nid, label = nodes[0]
-                c.check(f"I · {short}: the parity check can fail",
-                        f"| `{nid}` | {label} (mutated) |" not in section,
-                        "a mutated label was found in the twin — the check cannot fail")
+                caught = drifted([(nid, label + " (mutated)")], section)
+                c.check(f"I · {short}: the parity check can fail", caught == [nid],
+                        "" if caught == [nid]
+                        else "a mutated label was not reported as drift — the check cannot fail")
 
     return c.finish()
 

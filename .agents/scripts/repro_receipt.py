@@ -5,7 +5,8 @@
 
 Runs the finding's `reproduce:` command on the tree at --cwd and writes
 `<root>/gates/repro/<id>.json` from the TRUE exit code. There is no `--result` flag: you cannot
-hand it a verdict. EVERY flag goes BEFORE `--`; everything after it is the command verbatim.
+hand it a verdict. EVERY flag goes BEFORE `--`; everything after it is the command verbatim - and
+a command that carries a shell operator is passed as ONE quoted argument and run through `bash -c`.
 
 WHY THE DOOR RUNS IT AGAIN. A lens proves a defect exists in ITS OWN worktree copy, which it
 may have edited - SCC-295 measured three of five lenses writing to the builder's tree, and one
@@ -53,6 +54,9 @@ import gate_receipt as gr   # noqa: E402  - the dirty-tree reader and the unrunn
 import wf_common as wf      # noqa: E402
 
 _ID_RE = re.compile(r"^[\w.\-]+$")
+# A shell operator inside a ONE-argument command: the door quotes such a `reproduce:` line whole and
+# this writer runs it through a shell, so `... | grep -q X` is the pipeline's exit (SCC-447, x3).
+_SHELL_OP_RE = re.compile(r"\s(\||&&|\|\||;|>|>>|2>&1)\s|;\s")
 RESULT_EXIT = {"reproduced": 0, "not-reproduced": 1, "unrunnable": 2}
 
 
@@ -63,12 +67,23 @@ def classify(exit_code: int, output: str) -> str:
     tail = output[-4000:]
     if exit_code in (9009, 127) or any(s in tail for s in gr._UNRUNNABLE):
         return "unrunnable"
+    if "NO CASES RAN" in tail:
+        # `_harness.NO_MATCH` (exit 3): a `--case` label that matched no block ran ZERO checks and
+        # says so. Non-zero, none of the signatures above - and it read as reproduced (SCC-447
+        # tip review, e2). A command that tested nothing is the very thing "never RAN" means.
+        return "unrunnable"
     return "reproduced"
 
 
 def cmd_run(root: Path, fid: str, cwd: Path, command: list[str], replace: bool) -> int:
     if not command:
         wf.die("no command given - put it after `--`")
+    if len(command) == 1 and _SHELL_OP_RE.search(command[0]):
+        # A lens command carrying an operator arrives as ONE argument (the door quotes it) and
+        # needs a shell to mean what it says - `python3 -c "..." | grep -q X` is the PIPELINE's
+        # exit, not the left stage's. Unquoted, the caller's shell had already split it and this
+        # writer attested to a command the lens never wrote (SCC-447 tip review, x3).
+        command = ["bash", "-c", command[0]]
     if not _ID_RE.match(fid):
         wf.die(f"--id {fid!r} is not a finding id: letters, digits, `.`, `-` and `_` only - "
                f"it names the receipt file")

@@ -292,12 +292,15 @@ written fix it is not allowed to apply — and he decides with the receipt and t
 him, never with a file to read. FAIL is the blocker; CONCERNS is information, and
 no command, door or agent may treat it as a blocker on its own authority.
 
-**One review per lane.** The lenses run ONCE. When the fixes land, the retest is the pins
+**One review per PART — one per lane when the lane is one part.** The lenses run ONCE over each part.
+When the fixes land, the retest is the pins
 named in the `fixed` rows plus the enforcement suite once through the receipt writer — never a second
 fan-out over the same diff. Measured over 138 reviews on disk, a re-review converted a non-PASS to
 PASS one time in seven and cost a full roster every time.
-A second full roster needs the operator's written word, and `walkthrough_roster.py` refuses a
-walkthrough carrying two roster headers without it. The word is written on the section, his words
+A second full roster over the SAME part needs the operator's written word, and
+`walkthrough_roster.py` refuses a walkthrough carrying two rosters over one part without it — a
+consolidated lane (`work-consolidation` Rule 2) carries one roster per part, each under a
+`## Code Review` heading that names its part. The word is written on the section, his words
 quoted: `re-review: approved by the operator — "<his words>"`.
 
 **The close-out reads the findings table, and refuses a stamp the rows do not support.** For a lane

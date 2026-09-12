@@ -372,7 +372,11 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> set[str]:
         # paste, not a record (SCC-154) - for the verdict AND for the record line.
         raw = wf.read_text(path)
         text = wf.strip_fenced(raw)
-        m = _VERDICT_RE.search(text)
+        # The LAST stamp governs: a fix after a FAIL appends a re-stamp section (both review doors,
+        # SCC-447), and `task_preflight` reads `found[-1]`. This read the FIRST match until the
+        # SCC-447 tip review, so a story lane re-stamped FAIL->PASS could never close.
+        found = list(_VERDICT_RE.finditer(text))
+        m = found[-1] if found else None
         rel = path.relative_to(project)
         if not m:
             legacy = legacy_verdict(project, key)

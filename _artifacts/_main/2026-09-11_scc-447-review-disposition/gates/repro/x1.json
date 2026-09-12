@@ -1,0 +1,15 @@
+{
+  "id": "x1",
+  "result": "reproduced",
+  "command": [
+    "bash",
+    "-c",
+    "! grep -qF \"coming back green over a\" .agents/skills/code-review-engine/steps/step-01-review.md"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-447-review-disposition",
+  "exit_code": 1,
+  "sha": "3f482b30afa2c6174844b24e468a5a3bd6404410",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T02:49:20+00:00",
+  "output_tail": ""
+}

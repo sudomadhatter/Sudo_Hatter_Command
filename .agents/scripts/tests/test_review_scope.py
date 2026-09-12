@@ -31,9 +31,19 @@ ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / ".agents" / "scripts" / "review_scope.py"
 
 # The withheld classes, one fixture file each, so a class that stops working names itself.
-MASTERS = (".agents/rules/house.md", ".agents/scripts/tool.py")
+MASTERS = (".agents/rules/house.md", ".agents/scripts/tool.py", ".agents/commands/door.md",
+           ".agents/notes.md", ".agents/rules/bytes.md")   # bytes.md carries a byte the default codec rejects
 MIRRORS = (".claude/rules/house.md", ".opencode/commands/door.md",
            ".roo/rules/house.md", ".agent/notes.md")
+# ⛔ A MIRROR is a BYTE COPY of its master, not a prefix (SCC-447 tip review, receipt x5): the fixture
+# writes each as its master's bytes. An AUTHORED file under a mirror prefix with no master at all is
+# not a mirror - `.claude/settings.json` holds the branch-delete guard hook and the deny rows, and
+# the prefix rule had withheld it from every review.
+MIRROR_MASTER = {".claude/rules/house.md": ".agents/rules/house.md",
+                 ".opencode/commands/door.md": ".agents/commands/door.md",
+                 ".roo/rules/house.md": ".agents/rules/house.md",
+                 ".agent/notes.md": ".agents/notes.md"}
+AUTHORED = (".claude/settings.json",)
 GENERATED = ("generated/launcher.md", "generated/seat.md")   # marker in the TEXT, not the path
 RECORDS = ("_artifacts/lane/walkthrough.md", "_bmad-output/board.md",
            "docs/_scc_sops_prds/manual.md")
@@ -102,14 +112,24 @@ def _build(tmp: Path) -> dict:
     _git(repo, "checkout", "-qb", "chore/SCC-447-review-disposition")
 
     # Part one, the lane key's own: one file of every class.
-    for rel in MASTERS + MIRRORS + RECORDS:
+    for rel in MASTERS + RECORDS:
         _write(repo, rel, f"part one: {rel}\n")
+    (repo / ".agents/rules/bytes.md").write_bytes(b"# rule\n\xff not utf-8\n")   # receipt b7
+    for rel in MIRRORS:
+        _write(repo, rel, f"part one: {MIRROR_MASTER[rel]}\n")   # the master's bytes, exactly
+    for rel in AUTHORED:
+        _write(repo, rel, '{"hooks": {"PreToolUse": []}}\n')
     for rel in GENERATED:
         _write(repo, rel, f"{GEN_TEXT[rel]}part one: {rel}\n")
     for rel in MENTIONS:
         _write(repo, rel, MENTION_TEXT[rel])
     _git(repo, "add", "-A")
     _git(repo, "commit", "-qm", "SCC-447 doctrine: the rule and its copies")
+    # A subject carrying a key-shaped token that is no ticket (receipt x4): measured in real history
+    # - UTF-8 x3, H-1 x4, CS-18, CR-3, AC-6 - and the old rule made each one a phantom PART.
+    _write(repo, ".agents/scripts/utf.py", "utf\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "SCC-447 fix(scripts): force UTF-8 stdout so the PC stops needing PYTHONIOENCODING")
     part_one = _git(repo, "rev-parse", "HEAD")
 
     # Part two, a rider: a master of its own, so selecting one part cannot return the other's.
@@ -155,6 +175,11 @@ def main() -> int:
                         rel in out and "withheld" not in _line_for(out, rel),
                         f"{rel} class={_withheld_as(out, rel)!r} — a substring rule withholds "
                         "every master that talks about launchers, including review_scope.py itself")
+            for rel in AUTHORED:
+                c.check(f"an AUTHORED file under a mirror prefix, with no master, is kept: {rel}",
+                        rel in out and "withheld" not in _line_for(out, rel),
+                        f"{rel} class={_withheld_as(out, rel)!r} - a prefix is not a mirror; a byte "
+                        "copy of a master is, and this one has no master")
             # ⛔ The COUNT and the BYTES are the only evidence the caller gets that the diff
             # it is about to hand a lens is the one this script chose. Prose is not enough.
             c.check("kept count and bytes are both reported",
@@ -172,6 +197,9 @@ def main() -> int:
             c.check("the rider commit files under the RIDER, not the lane",
                     _key_of(out, "SCC-448") == 1,
                     "the rider's commit was counted under the lane key")
+            c.check("a key-shaped token that is no ticket (UTF-8) is not a part - the rider word is",
+                    "part UTF-8" not in out and _key_of(out, "SCC-447") == 2,
+                    f"parts printed: {[l for l in out.splitlines() if l.strip().startswith('part')]}")
 
         # ── 3. ambiguity is a refusal, never a guess ────────────────────────────────────
         if c.block("3 · two parts and no selector is exit 2, naming both"):
@@ -245,6 +273,52 @@ def main() -> int:
                 c.check(f"--audit still withholds {rel}",
                         _withheld_as(audit.stdout, rel) == "record",
                         "a record reached the audit")
+
+        # ── 9. a selection whose every file is withheld is a REFUSAL, never a patch of nothing ──
+        # ⛔ Found by the SCC-447 tip review (Test-Adequacy lens, receipt t1): the guard existed and
+        # nothing pinned it. Without it the kept list is empty, `git diff A..B --` gets an EMPTY
+        # pathspec - which git reads as EVERYTHING - and the patch carries the record and the
+        # launcher the script just announced it withheld.
+        if c.block("9 · a selection whose every file is withheld exits 2 and writes no patch"):
+            _write(repo, "_artifacts/lane/notes.md", "records only\n")
+            _write(repo, "generated/launcher2.md",
+                   "# /launcher2 - launcher (GENERATED by sync-agents; do not edit)\nnothing\n")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "SCC-447 records: nothing a lens should read")
+            three = _git(repo, "rev-parse", "HEAD")
+            dest = Path(td) / "review" / "nothing.patch"
+            r = _run(repo, "--base", base, "--range", f"{two}..{three}", "--out", str(dest))
+            both = r.stdout + r.stderr
+            c.check("9 exit 2 with every file withheld", r.returncode == 2, f"exit={r.returncode}")
+            c.check("9 the refusal says every file was withheld",
+                    "withheld" in both and "empty" in both.lower(), both[-300:])
+            c.check("9 no patch is written", not dest.exists(), f"{dest} exists")
+
+        # ── 10. a tree whose branch carries no key REFUSES instead of guessing (D6) ─────
+        # ⛔ Found by the SCC-447 tip review (Acceptance lens, receipt a1): `lane_key()` reads the
+        # branch name; detached, on `main`, or in an `isolation: "worktree"` agent tree it is `""`,
+        # and `part_key_of` then filed every commit under the FIRST key in its subject - a
+        # two-part lane read as one part and the exit-2 refusal never fired. "Never a guess" is
+        # D6's whole sentence; a keyless tree was one more way to guess.
+        if c.block("10 · a keyless tree refuses to group, and --range still works there"):
+            _git(repo, "checkout", "-q", "--detach")
+            try:
+                r = _run(repo, "--base", base)
+                both = r.stdout + r.stderr
+                c.check("10 no selector on a keyless tree is exit 2", r.returncode == 2,
+                        f"exit={r.returncode}: {both[-300:]}")
+                c.check("10 the refusal names the missing key, not a phantom single part",
+                        "no ticket key" in both and "more than one part" not in both, both[-300:])
+                r = _run(repo, "--base", base, "--key", "SCC-448")
+                both = r.stdout + r.stderr
+                c.check("10 --key on a keyless tree is the same refusal",
+                        r.returncode == 2 and "no ticket key" in both, f"exit={r.returncode}")
+                r = _run(repo, "--base", base, "--range", f"{one}..{two}")
+                c.check("10 --range needs no lane key and still selects the rider's file",
+                        r.returncode == 0 and "rider.py" in r.stdout,
+                        f"exit={r.returncode}: {(r.stdout + r.stderr)[-300:]}")
+            finally:
+                _git(repo, "checkout", "-q", "chore/SCC-447-review-disposition")
 
     return c.finish()
 

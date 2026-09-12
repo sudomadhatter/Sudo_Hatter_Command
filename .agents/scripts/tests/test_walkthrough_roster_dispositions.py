@@ -296,6 +296,31 @@ def main() -> int:
                 roster.parse(wt(fenced_example=True)).get("roster_headers") == 1,
                 f"got {roster.parse(wt(fenced_example=True)).get('roster_headers')!r}")
 
+        # ⛔ Found by SCC-447's own tip review (Edge Hunter, receipt x6): Rule 2 reviews a consolidated
+        # lane one PART at a time, each with its own roster in the lane's one walkthrough - and this
+        # gate refused the second part's FIRST review as a re-review. Rosters are counted PER PART:
+        # a `## Code Review` heading that names a part (`part <KEY>`, `Parts 1-3`, or a
+        # `<sha>..<sha>` range) is its own count; a second roster over the SAME part still needs
+        # the operator's quoted word.
+        two_parts = (wt(second=ROSTER)
+                     .replace("## Code Review (2026-09-13)", "## Code Review (2026-09-13, part SCC-448)")
+                     .replace("## Code Review (2026-09-14, re-review)", "## Code Review (2026-09-14, part SCC-449)"))
+        ok, why = roster.judge(two_parts, POST, "PASS")
+        c.check("R6 · two rosters under two PART headings are two first reviews - no operator word needed",
+                ok, str(why))
+        same_part = (wt(second=ROSTER)
+                     .replace("## Code Review (2026-09-13)", "## Code Review (2026-09-13, part SCC-448)")
+                     .replace("## Code Review (2026-09-14, re-review)", "## Code Review (2026-09-14, part SCC-448)"))
+        ok, why = roster.judge(same_part, POST, "PASS")
+        c.check("R7 · two rosters under the SAME part heading still refuse",
+                not ok and "roster" in " ".join(why).lower(), str(why))
+        ranged = (wt(second=ROSTER)
+                  .replace("## Code Review (2026-09-13)", "## Code Review (2026-09-13, Parts 1-3: 114deb3a..3233f2e8)")
+                  .replace("## Code Review (2026-09-14, re-review)", "## Code Review (2026-09-14, Parts 4-6: 3233f2e8..c34edf5f)"))
+        ok, why = roster.judge(ranged, POST, "PASS")
+        c.check("R8 · parts selected by --range name themselves by the range, and count the same way",
+                ok, str(why))
+
     # ── L · SCC-441's own walkthrough is pre-cutoff and UNTOUCHED ───────────────────────
     if c.block("L · the lane that motivated this is legacy to it"):
         text = SCC441.read_text(encoding="utf-8") if SCC441.is_file() else ""

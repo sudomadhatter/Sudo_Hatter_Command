@@ -1,0 +1,15 @@
+{
+  "id": "t3",
+  "result": "reproduced",
+  "command": [
+    "bash",
+    "-c",
+    "sed -i \"s/^    if not sha:$/    if False:/\" .agents/scripts/repro_receipt.py; python3 .agents/scripts/tests/test_repro_receipt.py >/dev/null 2>&1; rc=$?; git checkout -- .agents/scripts/repro_receipt.py; test $rc -ne 0"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-447-review-disposition",
+  "exit_code": 1,
+  "sha": "3f482b30afa2c6174844b24e468a5a3bd6404410",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T02:27:32+00:00",
+  "output_tail": ""
+}

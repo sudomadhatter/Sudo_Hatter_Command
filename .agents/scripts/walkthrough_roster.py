@@ -48,6 +48,11 @@ STATES = ("ok", "recovered-inline", "dead")
 RUNTIMES = ("fan-out", "inline")
 
 _ROSTER_HEAD_RE = re.compile(r"^[>\-*#\s]*\**\s*lenses_run\s*:\**\s*$", re.I)
+# A `## Code Review` heading, and the PART it names - `part <KEY>`, `Parts 1-3`, or a `<sha>..<sha>`
+# range - so rosters are counted per part (SCC-447 tip review, x6): a consolidated lane is reviewed
+# one part at a time, each part's review carrying its own roster in the lane's one walkthrough.
+_REVIEW_HEAD_RE = re.compile(r"^##\s+Code Review\b(.*)$")
+_PART_LABEL_RE = re.compile(r"\b[Pp]arts?\s+[^)\n]*|[0-9a-f]{7,40}\.\.[0-9a-f]{7,40}")
 _ROSTER_ROW_RE = re.compile(r"^\s*[-*]\s*`?([A-Za-z0-9][\w \-/]*?)`?\s*[·:|]\s*"
                             r"`?(ok|recovered-inline|dead)`?\s*(?:[—\-]\s*(.*))?$", re.I)
 
@@ -277,7 +282,19 @@ def parse(text: str) -> dict:
     # SCC-447: roster headers are COUNTED (a second full roster needs the operator's word), his
     # line is looked for, and the findings table is read - all on the STRIPPED text, like every
     # other read here, so a fenced example roster is not a second roster.
-    roster_headers = sum(1 for ln in lines if _ROSTER_HEAD_RE.match(ln))
+    # Rosters are counted PER PART: two rosters under headings naming two different parts are two
+    # first reviews (work-consolidation rule 2); two over the SAME part - or two under headings
+    # naming no part - is the re-review that needs the operator's quoted word.
+    per_part: dict[str, int] = {}
+    label = "(lane)"
+    for ln in lines:
+        h = _REVIEW_HEAD_RE.match(ln)
+        if h:
+            m = _PART_LABEL_RE.search(h.group(1))
+            label = m.group(0).strip() if m else "(lane)"
+        if _ROSTER_HEAD_RE.match(ln):
+            per_part[label] = per_part.get(label, 0) + 1
+    roster_headers = max(per_part.values(), default=0)
     rereview = bool(_REREVIEW_RE.search(text))
     findings = _findings_tables(lines)
 
@@ -653,7 +670,7 @@ def judge(text: str, path: Path | str, verdict: str | None,
         # no verdict at all - the stamp is refused and the caller finishes the fix.
         if data["roster_headers"] > 1 and not data["rereview_approved"]:
             reasons.append(
-                f"{data['roster_headers']} `lenses_run:` rosters. One review per lane: the lenses "
+                f"{data['roster_headers']} `lenses_run:` rosters over ONE part. One review per part: the lenses "
                 f"run ONCE, and after fixes the retest is the pins named in the `fixed` rows plus "
                 f"the suite through the receipt writer - a re-stamp section carries no roster "
                 f"(`code-standards.md` §7). A second full roster needs the operator's written word "
@@ -777,15 +794,14 @@ def main(argv: list[str] | None = None) -> int:
     ok, why = judge(text, path, verdict)
     for line in why:
         print(("ok:  " if ok else "REFUSED: ") + line, file=sys.stderr)
-    # ⛔ SAME PARSER, DIFFERENT QUESTION - say so rather than imply agreement (SCC-240 review,
-    # Literal-Correctness). This reads the LAST stamp; `closeout_preflight` reads the FIRST
-    # (`_VERDICT_RE.search`), so on a re-reviewed STORY lane whose stamps run FAIL-then-PASS
-    # the two resolve different verdicts from one file. Task lanes go through
-    # `task_preflight`, which reads the last and agrees with this. Pass --verdict to pin it.
+    # SAME PARSER, SAME QUESTION since SCC-447's tip review: this reads the LAST stamp, and so do
+    # both close-out preflights (`task_preflight` with `found[-1]`, `closeout_preflight` with the
+    # last `_VERDICT_RE` match) - a re-stamp after fixes is the designed second section, and the
+    # last `Verdict:` governs in every reader. Pass --verdict to judge a section before its
+    # stamp exists.
     if len(stamps) > 1:
-        print(f"note: {len(stamps)} `Verdict:` stamps - judged the LAST ({verdict}). A story "
-              f"lane's `closeout_preflight` reads the FIRST ({stamps[0].upper()}); pass "
-              f"--verdict to remove the ambiguity.", file=sys.stderr)
+        print(f"note: {len(stamps)} `Verdict:` stamps - judged the LAST ({verdict}), as every "
+              f"close-out reader does.", file=sys.stderr)
     return 0 if ok else 1
 
 

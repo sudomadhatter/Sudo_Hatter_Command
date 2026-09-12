@@ -206,7 +206,7 @@ Emit findings in this exact shape so `/smh-code-review` can fold them into its v
   SOP-currency check refuses · a changed `.py` does not compile · a dead link or anchor the diff
   introduced · a door-parity break · a committed secret · a §2 banned pattern shipped · a new gate
   that cannot fail.
-- **CONCERNS** — `workflow_lint` **warnings** only; Step 2's judgment findings are **recorded, never a verdict**
+- **CONCERNS** — §7's two grounds only (a floor check that could not run; a fix held for the operator's word): a `workflow_lint` **warning** and Step 2's judgment findings are **recorded, never a verdict**
   (§7 as ruled 2026-09-11: taste is a count, and a CONCERNS made of taste is a file the operator has
   to open).
 - **PASS** — floor green on the changed set, nothing above noise.
