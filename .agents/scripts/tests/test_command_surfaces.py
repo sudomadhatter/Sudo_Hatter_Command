@@ -1201,6 +1201,21 @@ def main() -> int:
                 == [],
                 "NEGATIVE CONTROL - a row that warns after the citation lands can never reach 0/0")
 
+        # ── The `code-standards` row: a FOURTH arm for the SCC-447 vocabulary (AUDIT FINDING 2)
+        # The row keys on the triage vocabulary a door EMITS. Three arms were measured live in
+        # SCC-205; the disposition words are now `fixed / held / dropped`, and a door written
+        # only in those words matched NO arm - so it lost the §6.5 pointer requirement silently.
+        c.check("WIRING: a door classifying `fixed / held / dropped` owes the code-standards pointer",
+                any("code-standards" in m
+                    for m in pointer_warns("Triage every finding: `fixed` / `held` / `dropped`.\n")),
+                f"check_rule_pointers said "
+                f"{pointer_warns('Triage every finding: `fixed` / `held` / `dropped`.')} - the new "
+                f"vocabulary is the machinery now, and an arm that cannot see it is a dead row")
+        c.check("CONTROL: the same body citing `.agents/rules/code-standards.md` is silent",
+                pointer_warns("Triage every finding: `fixed` / `held` / `dropped` "
+                              "(`.agents/rules/code-standards.md` §6.5).\n") == [],
+                "NEGATIVE CONTROL - a row that warns after the citation lands can never reach 0/0")
+
         live = wf.Report()
         lint.check_rule_pointers(ROOT, live)
         c.check("the live toolkit has no un-cited porting command",

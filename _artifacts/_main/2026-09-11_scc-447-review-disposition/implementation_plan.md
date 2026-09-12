@@ -127,7 +127,7 @@ Reads `base..HEAD` commits, extracts every `[A-Z]+-\d+` in each subject, and gro
 python3 .agents/scripts/repro_receipt.py run --root <artifacts> --id <finding-id> --cwd <worktree> -- <command…>
 ```
 
-Writes `<root>/gates/repro/<id>.json`: `{id, command, cwd, exit_code, output_tail, sha, dirty_tree, recorded_at}`. There is no `--result` flag; a receipt implies execution. An existing id refuses (exit 2) unless `--replace`. The findings row cites `repro <id>`; `walkthrough_roster.py` resolves the file beside the walkthrough and refuses when it is absent. Same shape as `gate_receipt.py`, kept separate because a gate receipt is one per gate name and a reproduction is one per finding. The lens's own run leaves no receipt — its evidence is the `reproduced: yes` line and the output it pasted, which the engine reads as text.
+Writes `<root>/gates/repro/<id>.json`: `{id, result, command, cwd, exit_code, output_tail, sha, dirty_tree, recorded_at}`. There is no `--result` flag; a receipt implies execution. An existing id refuses (exit 2) unless `--replace`. **As built (Part 3):** `result` is one of three words and the script exits with it so a door can branch — `reproduced` (the command failed, exit 0), `not-reproduced` (exit 0 from the command, script exit 1, the finding is dropped), `unrunnable` (a missing executable, exit 127/9009, or `gate_receipt.py`'s unrunnable signatures in the tail — script exit 2). The third result exists because a typo'd command exits non-zero, and a naive "non-zero means reproduced" would stamp every finding whose command is broken. `--cwd` is required, for the SCC-154 reason. The roster gate refuses a `fixed`/`held` row whose receipt does not say `reproduced`. The findings row cites `repro <id>`; `walkthrough_roster.py` resolves the file beside the walkthrough and refuses when it is absent. Same shape as `gate_receipt.py`, kept separate because a gate receipt is one per gate name and a reproduction is one per finding. The lens's own run leaves no receipt — its evidence is the `reproduced: yes` line and the output it pasted, which the engine reads as text.
 
 ### D8. The roster (engine step-01)
 
@@ -198,6 +198,19 @@ None. Every piece is the same lane class in the same repo and shares files (the 
 **Mutation sweep** over `review_scope.py`, `repro_receipt.py`, `walkthrough_roster.py`: the table declared in `sweep.json` (the `mutation_sweep.py` schema — `test`, `mutants[]` of `id/file/original/mutated/case/block`) before mutating; mutants drawn from the code, never from the cases: drop a withheld prefix; invert the two-key refusal; make `--audit` strip mirrors; write the receipt before running the command; drop the `pin` requirement; drop the open-critical floor; drop the neither-fixed-nor-held refusal; drop the patch-presence check on a `held` row; count rosters from the raw text instead of the stripped text; drop the `skipped-by-mode` exemption. Each names the case that must kill it; run through `mutation_sweep.py`, which restores and runs the closing full green itself.
 
 **GREEN:** the three new test files bare, `test_walkthrough_roster.py`, `test_task_preflight.py`, `test_workflow_lint.py`, then the sweep.
+
+**As built (2026-09-11), where the plan's names were off:** the plan's `NA4` label already existed in
+`test_walkthrough_roster.py` (`NA4 · (control) lenses_na: none`), so the mode-skip case is **NA7**, with **NA8**
+as its control (a mode-skip beside a contaminated drop still blocks — the exemption is per row). The
+rule-pointer check is exercised in `test_command_surfaces.py` (block CS-12, which calls the real
+`check_rule_pointers`), not `test_workflow_lint.py`, so the fifth-arm case lives there. The rule's own
+command line in §6.5 lacked the `--cwd` the script requires; corrected, twin byte-copied. The sweep table
+declares **19** mutants rather than the ten named above: the ten, plus width mutants over the new code
+(the receipt-result check narrowed, the second-roster threshold moved, the quoted-words requirement
+dropped, the fixed-nitpick refusal, PASS over a held important, the receipt writer's three arms, the
+lint's fifth arm). RED first: `test_walkthrough_roster_dispositions.py` 14/48 → 48/48; `test_repro_receipt.py`
+2/19 → 19/19; `test_walkthrough_roster.py` NA block 7/8 → 85/85 bare; `test_task_preflight.py` new block 0/2 →
+141/141 bare; `test_command_surfaces.py` CS-12 28/29 → 345/345 bare; `workflow_lint --toolkit-only` 0 errors.
 
 ### Part 4 — the doors (row C) — `SCC-447 doors: …`
 

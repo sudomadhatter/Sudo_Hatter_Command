@@ -124,6 +124,21 @@ def main() -> int:
         c.check("NA6 · (control) no `lenses_na:` field means zero dropped lenses",
                 roster.parse(wt(roster_rows=ALL_OK))["lenses_na"] == [],
                 "an absent field must not fabricate a dropped lens")
+        # ⛔ AUDIT FINDING 7 (SCC-447). Once the Blind Hunter retires, the ONLY `n/a` left is
+        # the Acceptance Auditor's mode-skip - it runs under `review_mode: full` and is recorded
+        # `acceptance · n/a — skipped-by-mode (no-spec)` otherwise. NA2 refused ANY `n/a` under
+        # fan-out, so every spec-less fan-out review would have been refused at close-out, and
+        # the agent's cheapest exit is to declare `inline` falsely or omit the row - both of
+        # which this gate exists to catch, defeated by the gate itself.
+        SKIP = "acceptance · n/a — skipped-by-mode (no-spec)"
+        ok, why = roster.judge(wt(roster_rows=ALL_OK, runtime="fan-out", na=SKIP), POST, "PASS")
+        c.check("NA7 · a `fan-out` lane whose only n/a is `skipped-by-mode` PASSES",
+                ok, f"a mode-skip is not a contamination claim; the lens was never owed: {why}")
+        ok, why = roster.judge(wt(roster_rows=ALL_OK, runtime="fan-out",
+                                  na=f"{SKIP}\n- {DROP}"), POST, "PASS")
+        c.check("NA8 · (control) a mode-skip beside a contaminated drop still BLOCKS under fan-out",
+                not ok and "fan-out" in " ".join(why),
+                f"the exemption is per ROW, never per lane - NA2 must still fire: {why}")
 
     if c.block("E3 · FAIL blocks on its own account"):
         ok, why = roster.judge(wt(verdict="FAIL", roster_rows=ALL_OK), POST, "FAIL")

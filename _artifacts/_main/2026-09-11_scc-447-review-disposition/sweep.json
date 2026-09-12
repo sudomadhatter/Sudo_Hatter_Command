@@ -1,0 +1,166 @@
+{
+ "test": ["python3", ".agents/scripts/tests/test_walkthrough_roster_dispositions.py"],
+ "mutants": [
+  {
+   "id": "M1 review_scope · drop a withheld prefix - records under _bmad-output/ reach the lens",
+   "file": ".agents/scripts/review_scope.py",
+   "original": "RECORD_PREFIXES = (\"_artifacts/\", \"_bmad-output/\", \"docs/_scc_sops_prds/\")",
+   "mutated": "RECORD_PREFIXES = (\"_artifacts/\", \"docs/_scc_sops_prds/\")",
+   "test": ["python3", ".agents/scripts/tests/test_review_scope.py"],
+   "case": "record withheld: _bmad-output/board.md",
+   "block": "1 ·"
+  },
+  {
+   "id": "M2 review_scope · invert the two-key refusal - a two-part range silently picks one",
+   "file": ".agents/scripts/review_scope.py",
+   "original": "        elif len(groups) > 1:",
+   "mutated": "        elif len(groups) > 99:",
+   "test": ["python3", ".agents/scripts/tests/test_review_scope.py"],
+   "case": "exit 2",
+   "block": "3 ·"
+  },
+  {
+   "id": "M3 review_scope · --audit strips mirrors - the parity audit cannot see its own copies",
+   "file": ".agents/scripts/review_scope.py",
+   "original": "        return None if audit else \"mirror\"",
+   "mutated": "        return \"mirror\"",
+   "test": ["python3", ".agents/scripts/tests/test_review_scope.py"],
+   "case": "--audit keeps .claude/rules/house.md",
+   "block": "8 ·"
+  },
+  {
+   "id": "M4 repro_receipt · drop the existing-id refusal - a second run silently overwrites",
+   "file": ".agents/scripts/repro_receipt.py",
+   "original": "    if path.exists() and not replace:",
+   "mutated": "    if False and not replace:",
+   "test": ["python3", ".agents/scripts/tests/test_repro_receipt.py"],
+   "case": "4a a second run on the same id is exit 2 and names --replace",
+   "block": "4 ·"
+  },
+  {
+   "id": "M5 repro_receipt · exit 0 reads as reproduced - a passing command backs a fix",
+   "file": ".agents/scripts/repro_receipt.py",
+   "original": "    if exit_code == 0:\n        return \"not-reproduced\"",
+   "mutated": "    if exit_code == 0:\n        return \"reproduced\"",
+   "test": ["python3", ".agents/scripts/tests/test_repro_receipt.py"],
+   "case": "2a the receipt says `not-reproduced` with exit 0 recorded",
+   "block": "2 ·"
+  },
+  {
+   "id": "M6 repro_receipt · drop the unrunnable arm - a typo'd executable reproduces every finding",
+   "file": ".agents/scripts/repro_receipt.py",
+   "original": "    if exit_code in (9009, 127) or any(s in tail for s in gr._UNRUNNABLE):",
+   "mutated": "    if False:",
+   "test": ["python3", ".agents/scripts/tests/test_repro_receipt.py"],
+   "case": "3a a missing executable is `unrunnable`, exit 2",
+   "block": "3 ·"
+  },
+  {
+   "id": "M7 repro_receipt · dirty_tree hard-coded false - a receipt over uncommitted edits reads clean",
+   "file": ".agents/scripts/repro_receipt.py",
+   "original": "        \"dirty_tree\": bool(dirty_paths),",
+   "mutated": "        \"dirty_tree\": False,",
+   "test": ["python3", ".agents/scripts/tests/test_repro_receipt.py"],
+   "case": "5b a real untracked file IS recorded as dirty",
+   "block": "5 ·"
+  },
+  {
+   "id": "M8 roster · drop the pin requirement - a fix with no test seen red stamps green",
+   "file": ".agents/scripts/walkthrough_roster.py",
+   "original": "        if word == \"fixed\" and not r[\"pin\"]:",
+   "mutated": "        if False and not r[\"pin\"]:",
+   "case": "F1 · a `fixed` row with no `pin` REFUSES and names the pin",
+   "block": "F ·"
+  },
+  {
+   "id": "M9 roster · drop the open-critical floor - PASS with a held critical stamps",
+   "file": ".agents/scripts/walkthrough_roster.py",
+   "original": "    if held_crit and verdict in (\"PASS\", \"CONCERNS\"):",
+   "mutated": "    if False:",
+   "case": "V1 · PASS with a HELD critical refuses",
+   "block": "V ·"
+  },
+  {
+   "id": "M10 roster · drop the neither-fixed-nor-held refusal - the retired `applied` word stamps",
+   "file": ".agents/scripts/walkthrough_roster.py",
+   "original": "        if word not in KNOWN_WORDS:",
+   "mutated": "        if word == \"never\":",
+   "case": "V2 · PASS with an important `applied @abc1234`",
+   "block": "V ·"
+  },
+  {
+   "id": "M11 roster · drop the patch-presence check - a held row is a promise, not a written fix",
+   "file": ".agents/scripts/walkthrough_roster.py",
+   "original": "            if not any(p.is_file() for p in cands):",
+   "mutated": "            if False:",
+   "case": "H2 · a `held` row whose PATCH is absent refuses, naming the path",
+   "block": "H ·"
+  },
+  {
+   "id": "M12 roster · count rosters from the RAW text - a fenced example becomes a second roster",
+   "file": ".agents/scripts/walkthrough_roster.py",
+   "original": "    roster_headers = sum(1 for ln in lines if _ROSTER_HEAD_RE.match(ln))",
+   "mutated": "    roster_headers = sum(1 for ln in raw_lines if _ROSTER_HEAD_RE.match(ln))",
+   "case": "R5 · a FENCED example roster above the real one is not a second roster",
+   "block": "R ·"
+  },
+  {
+   "id": "M13 roster · drop the skipped-by-mode exemption - every spec-less fan-out review is refused",
+   "file": ".agents/scripts/walkthrough_roster.py",
+   "original": "    na_hard = [l for l in na if \"skipped-by-mode\" not in l[\"reason\"].lower()]",
+   "mutated": "    na_hard = list(na)",
+   "test": ["python3", ".agents/scripts/tests/test_walkthrough_roster.py"],
+   "case": "NA7 · a `fan-out` lane whose only n/a is `skipped-by-mode` PASSES",
+   "block": "NA ·"
+  },
+  {
+   "id": "M14 WIDTH roster · the receipt result check narrows to unreadable - a not-reproduced receipt backs a fix",
+   "file": ".agents/scripts/walkthrough_roster.py",
+   "original": "        if result != \"reproduced\":",
+   "mutated": "        if result == \"unreadable\":",
+   "case": "F5 · a receipt that says NOT reproduced cannot back a `fixed` row",
+   "block": "F ·"
+  },
+  {
+   "id": "M15 WIDTH roster · the second-roster threshold moves to three - two rosters pass",
+   "file": ".agents/scripts/walkthrough_roster.py",
+   "original": "        if data[\"roster_headers\"] > 1 and not data[\"rereview_approved\"]:",
+   "mutated": "        if data[\"roster_headers\"] > 2 and not data[\"rereview_approved\"]:",
+   "case": "R1 · two `lenses_run:` rosters with no operator line REFUSE",
+   "block": "R ·"
+  },
+  {
+   "id": "M16 WIDTH roster · the operator line no longer needs his QUOTED words",
+   "file": ".agents/scripts/walkthrough_roster.py",
+   "original": "                          r\"[^\\\"“]*[\\\"“].+[\\\"”]\", re.I | re.M)",
+   "mutated": "                          r\".*\", re.I | re.M)",
+   "case": "R3 · the line must QUOTE his words - a bare claim of approval is not the word",
+   "block": "R ·"
+  },
+  {
+   "id": "M17 roster · a fixed nitpick passes - twenty cheap fixes",
+   "file": ".agents/scripts/walkthrough_roster.py",
+   "original": "            if word == \"fixed\":",
+   "mutated": "            if word == \"never\":",
+   "case": "S1 · a `fixed` nitpick row REFUSES",
+   "block": "S ·"
+  },
+  {
+   "id": "M18 roster · PASS with a held important passes - the authority ground is never taken",
+   "file": ".agents/scripts/walkthrough_roster.py",
+   "original": "    if held_imp and verdict == \"PASS\":",
+   "mutated": "    if False:",
+   "case": "V3 · PASS with a held important refuses - CONCERNS is the consistent verdict",
+   "block": "V ·"
+  },
+  {
+   "id": "M19 lint · the fifth arm loses its last word - a door in the new vocabulary owes no pointer",
+   "file": ".agents/scripts/workflow_lint.py",
+   "original": "        r\"|`?fixed`?\\s*/\\s*`?held`?\\s*/\\s*`?dropped`?\"",
+   "mutated": "        r\"|`?fixed`?\\s*/\\s*`?held`?\\s*/\\s*`?droppedX`?\"",
+   "test": ["python3", ".agents/scripts/tests/test_command_surfaces.py"],
+   "case": "WIRING: a door classifying `fixed / held / dropped` owes the code-standards pointer",
+   "block": "CS-12"
+  }
+ ]
+}

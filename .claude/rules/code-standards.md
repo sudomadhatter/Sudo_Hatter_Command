@@ -208,12 +208,17 @@ in shipping code.
 The caller's receipt is written by one script, once per finding id:
 
 ```bash
-python3 .agents/scripts/repro_receipt.py run --root <artifacts> --id <finding-id> -- <command>
+python3 .agents/scripts/repro_receipt.py run --root <artifacts> --id <finding-id> --cwd <worktree> -- <command>
 ```
 
-There is no `--result` flag — a receipt implies execution. The script runs the command, records the
-true exit code and the tail of its output, and notes whether the tree was dirty. A finding whose
-command does not fail when it is run, is **dropped and counted**.
+There is no `--result` flag — a receipt implies execution. The script runs the command on the tree at
+`--cwd`, records the true exit code and the tail of its output, and notes whether the tree was dirty.
+A finding whose command does not fail when it is run, is **dropped and counted**. The receipt says
+which of three things happened, and the script exits with it so a door can branch: `reproduced` (the
+command failed — exit 0), `not-reproduced` (it passed — exit 1, the drop above), or `unrunnable` (it
+never ran: a missing tool, an import error — exit 2, and nobody has learned anything). A typo'd
+command exits non-zero too, which is why the third result exists. One receipt per finding id; an
+existing id refuses without `--replace`.
 
 ### The three questions, on what survives Gate 0
 
@@ -292,4 +297,14 @@ named in the `fixed` rows plus the enforcement suite once through the receipt wr
 fan-out over the same diff. Measured over 138 reviews on disk, a re-review converted a non-PASS to
 PASS one time in seven and cost a full roster every time.
 A second full roster needs the operator's written word, and `walkthrough_roster.py` refuses a
-walkthrough carrying two roster headers without it.
+walkthrough carrying two roster headers without it. The word is written on the section, his words
+quoted: `re-review: approved by the operator — "<his words>"`.
+
+**The close-out reads the findings table, and refuses a stamp the rows do not support.** For a lane
+dated 2026-09-12 or later, `walkthrough_roster.py` reads every row whose severity is one of the four
+lens words: a `fixed` row without its `pin`, a `fixed` or `held` row whose `repro <id>` receipt is
+absent or does not say `reproduced`, a `held` row whose `patch <path>` is not on disk, a `fixed`
+`nitpick` or `suggestion`, a PASS or CONCERNS over a held critical, a PASS over a held important, and
+an `important` that is neither `fixed` nor `held` — each refuses, naming the row and what would
+satisfy it. The last one is not a softer verdict; it is no verdict at all, and the caller finishes
+the fix.
