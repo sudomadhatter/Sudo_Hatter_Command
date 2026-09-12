@@ -1,0 +1,15 @@
+{
+  "id": "f1",
+  "result": "reproduced",
+  "command": [
+    "python3",
+    "-c",
+    "from pathlib import Path; p = Path(\".agents/commands/smh-memory-audit.md\").read_text(); sec5 = p.split(\"## Step 5\")[1]; assert \"promote to rule\" in sec5.lower()"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-448-memory-is-disposable",
+  "exit_code": 1,
+  "sha": "f8d171584a3ba5697b750343091b1b3ea07c53d5",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T22:14:16+00:00",
+  "output_tail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nAssertionError\n"
+}

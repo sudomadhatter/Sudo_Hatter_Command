@@ -256,12 +256,14 @@ in one line, with the remedy named** — never as a tail, never as *"want me to 
 > bound only code reviews; ordinary conversation was unbound, and two agents produced the identical
 > failure a day apart. The gap was in the law, not the agent.
 
-**Memory is long-term only — story facts live in the story.** Memory holds only what must be
-remembered for a long time: how you want to be worked with, recurring tooling/machine quirks, and
-standing rulings. Findings tied to a single story, bug mechanisms, measurements, or temporary gate
-mismatches go in that story's file or `_artifacts/` walkthrough and retire with the story.
-**Delete story-scoped memories on sight.** Whenever an agent writes or saves memory, it must state
-in chat in one line what was saved. (→ [`agent-memory-is-long-term-only`](../../.agents/rules/agent-memory-is-long-term-only.md))
+**Memory is disposable: the deletion test replaces long-term-only.** Memory is scratchpad context,
+never the only copy of anything. Run the **deletion test**: *delete it in your head, then look at the damage:
+slower means memory; wrong means a rule and a ticket.* Load-bearing facts, architectural constraints,
+and standing rulings belong in rules, code, commands, or hooks — backed by a ticket.
+Findings tied to a single story, bug mechanisms, measurements, or temporary gate mismatches go in
+that story's file or `_artifacts/` walkthrough and retire with the story. **Delete story-scoped
+memories on sight.** Whenever an agent writes or saves memory, it must state in chat in one line
+what was saved. (→ [`memory-is-disposable`](../../.agents/rules/memory-is-disposable.md))
 
 **A memory written during a lane goes ON the lane.** Claude's memory path —
 `~/.claude/projects/<slug>/memory` — is a per-machine symlink to `_artifacts/_memory` in the
@@ -4428,9 +4430,9 @@ the 25 KB index cap, or you.*
 | `S0` | Step 0 — standing in the lobby? | **yes** → Step 1 — run the floor: test_memory_store.py |
 | `X` | ⛔ say so and stop it binds the LOBBY store | (terminal / end) |
 | `S1` | Step 1 — run the floor: test_memory_store.py | → Step 2 — widen the candidate set |
-| `S2` | Step 2 — widen the candidate set | → Step 3 — ⭐ ground-truth each one against the live repo does the rule, script, flag it names still exist? |
-| `S3` | Step 3 — ⭐ ground-truth each one against the live repo does the rule, script, flag it names still exist? | → Step 4 — PROPOSE, one block 🔧 repair · 🗑️ retire · 🔀 merge · 🗜️ compress 📦 relocate · ✅ keep · 🚩 not mine (dirty in git) |
-| `S4` | Step 4 — PROPOSE, one block 🔧 repair · 🗑️ retire · 🔀 merge · 🗜️ compress 📦 relocate · ✅ keep · 🚩 not mine (dirty in git) | → STOP — your yes, PER ITEM 'approve the retirements but keep #3' is honored exactly |
+| `S2` | Step 2 — widen the candidate set | → Step 3 — ⭐ ground-truth each one against the live repo does the rule, script, flag it names still exist? Apply deletion test: slower means memory; wrong means a rule and a ticket |
+| `S3` | Step 3 — ⭐ ground-truth each one against the live repo does the rule, script, flag it names still exist? Apply deletion test: slower means memory; wrong means a rule and a ticket | → Step 4 — PROPOSE, one block 🔧 repair · 🗑️ retire · 🔀 merge · 🗜️ compress · 📜 promote to rule · 📦 relocate · ✅ keep · 🚩 not mine (dirty in git) |
+| `S4` | Step 4 — PROPOSE, one block 🔧 repair · 🗑️ retire · 🔀 merge · 🗜️ compress · 📜 promote to rule · 📦 relocate · ✅ keep · 🚩 not mine (dirty in git) | → STOP — your yes, PER ITEM 'approve the retirements but keep #3' is honored exactly |
 | `STOP` | STOP — your yes, PER ITEM 'approve the retirements but keep #3' is honored exactly | → Step 5 — apply only what was approved git rm so deletes are staged · repoint dangling links a relocation is TWO repos, TWO keys |
 | `S5` | Step 5 — apply only what was approved git rm so deletes are staged · repoint dangling links a relocation is TWO repos, TWO keys | → Step 6 — verify this machine's harness link |
 | `S6` | Step 6 — verify this machine's harness link | → Step 7 — re-run the gate, THEN report |
@@ -4543,7 +4545,7 @@ that repo after you commit: `code-review-graph update`.
 | Command | What it does for you |
 | --- | --- |
 | `/smh-update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. It **does not touch the memory store** — that is `/smh-memory-audit`'s job. ⚠ **If you ran it in Antigravity before 2026-08-12, re-check what it edited** — its door was then a full body that Antigravity truncated, so a run could reconcile partially, with no approval gate and no findings report. It is a normal thin launcher. |
-| `/smh-memory-audit` | Cleans up the shared memory store (`_artifacts/_memory/`) — the one document every model on every machine loads *before* doing any work, which is why letting it fill costs you on every session everywhere. It checks each memory's claim against the live repo, then shows you *retire · merge · compress · relocate* with the bytes each frees, and waits. **Nothing is deleted without your yes on that specific item**; git is the undo either way. See the box below. |
+| `/smh-memory-audit` | Cleans up the shared memory store (`_artifacts/_memory/`) — the one document every model on every machine loads *before* doing any work, which is why letting it fill costs you on every session everywhere. It checks each memory's claim against the live repo, then shows you *retire · merge · compress · relocate · promote to rule* with the bytes each frees, and waits. **Nothing is deleted without your yes on that specific item**; git is the undo either way. See the box below. |
 | `/smh-sync-agents` | Publishes the toolkit to all five platforms (Claude, Codex, opencode, Antigravity, Zoo Code) — one door each, and **Codex and Antigravity share the same one**: both read `.agents/skills/` natively and invoke any `SKILL.md` there as `/<name>`. **It SHORTENS the description it writes into `.roo/commands/`:** Zoo builds its menu from those descriptions and full-length ones blow its context budget, so the generator cuts each one to **135 characters** on a word boundary. ⛔ **Do not shorten one by hand** — those files are generated, so the next sync overwrites you, *and* the door-parity check demands a door match its brain, so a hand-edit turns `main-write-gate` red (`chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable). The COMMANDS keep their full descriptions; only a menu has a budget. It reaches **the lobby and this machine's caches only**; projects read from the center, so there is nothing to push. **Since SCC-378 it also RENDERS the three terminal-approval lists** — Zoo's, Claude's and Antigravity's — from the one source `.agents/permissions/families.json` (`python3 .agents/scripts/permission_render.py`), and `-Status` runs the renderer's `--check` so a hand-edited list shows as drift. **Since SCC-432 it also RENDERS universal tool & MCP configs** across Claude Code, OpenCode, Zoo Code, and Antigravity from `.agents/tools/connections.json` (`tool_sync.py`), and `-Status` runs `--check` to detect drift. It renders only: pushing a list into a live machine store stays the two explicit applies (`zoo_permissions_apply.py`, `antigravity_permissions_apply.py`). It *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and purges the two retired doors. Hand-written skills are never overwritten. What a command *declares* decides where it publishes — nothing is inferred from its filename. Hooks are executed directly from `.agents/hooks/` via `run-hook.sh` (the duplicate `.claude/hooks/` mirror is retired under SCC-300), and in-session sandboxed runs catch `.claude/skills` write restrictions gracefully. |
 | `/smh-review` | Reviews the working diff outside the story loop — the quick read when there's no story to hang ③ on. |
 | `/smh-new-project` | Scaffold a new workspace. |
