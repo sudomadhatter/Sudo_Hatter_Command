@@ -126,7 +126,7 @@ The next `/smh-sync-agents` run on either machine should print nothing to change
 ## Your Actions
 
 - [x] DECISION — lift the 2026-09-10 freeze on rules, gates and tests for this lane's fix batch (the 30 rows of § Code Review (2026-09-11)). Given 2026-09-11: *"approved to fix this"*, with the autopilot's lobby route explicitly deferred to another time. Applied at `fe5d7845` → `fb2639ac`; see § Changes applied.
-- [ ] On the other machine, after pulling: run `/smh-sync-agents` once — its global caches still hold the old `smh-quick-dev` body and the retired `smh-quick-fix` door until then (Part D's audit, pre-mortem).
+- [x] On the other machine, after pulling: run `/smh-sync-agents` once — its global caches still hold the old `smh-quick-dev` body and the retired `smh-quick-fix` door until then (Part D's audit, pre-mortem). -- verified 2026-09-12 (operator): Operator 2026-09-12, asked directly whether it had run: 'We will say yes I did it / Consider it complete' - his word, not a machine check; no lobby-side probe can see the other PC's global caches
 - AVCH-152 is next in the order (its plan carries its own `approved` stop and three ask-first stops on CI, rulesets and the skeleton); Part F's closure lane follows it.
 
 ## Code Review (2026-09-11)
