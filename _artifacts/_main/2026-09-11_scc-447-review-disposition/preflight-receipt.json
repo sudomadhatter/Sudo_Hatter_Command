@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-447-review-disposition",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-447",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "63399ba3fa4dd8bcd432500cb5524b73944d499d",
+  "warnings": 1,
+  "when": "2026-09-11T23:01:40-04:00"
+}

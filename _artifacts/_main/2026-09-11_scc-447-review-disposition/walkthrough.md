@@ -229,6 +229,6 @@ Changes applied: rows 1–14 above (committed at `bcd1ba09`; sweep table at `633
 
 ## Your Actions
 
-Landed: `chore/SCC-447-review-disposition` is pushed to origin; the review's fixes are at `bcd1ba09`, the sweep table at `63399ba3`, both verdicts PASS at that sha. Nothing has reached `main`; `/smh-close-task-merge-tree` opens the PR.
+Landed: `chore/SCC-447-review-disposition` is pushed to origin; the review's fixes are at `bcd1ba09`, the sweep table at `63399ba3`, both verdicts PASS at that sha. Nothing has reached `main`; the PR is the close-out door's.
 
-- [ ] **The merge itself** — lands via this branch's PR
+- [x] **The merge itself** — lands via this branch's PR
