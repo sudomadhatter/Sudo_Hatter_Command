@@ -1,0 +1,56 @@
+{
+  "v": 1,
+  "task": "SCC-448",
+  "sha": "ed8f3cf93d9a578d2754465ed960e43e73780826",
+  "tip": "9d5c5594d0284987baf0f38b83eea9fc944b17e1",
+  "trigger": "close-out",
+  "when": "2026-09-12T18:17:41-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/smh-memory-audit.md",
+    ".agents/rules/INDEX.md",
+    ".agents/rules/agent-memory-is-long-term-only.md",
+    ".agents/rules/constitution.md",
+    ".agents/rules/memory-is-disposable.md",
+    ".agents/scripts/tests/test_memory_long_term_rule.py",
+    ".agents/skills/smh-memory-audit/SKILL.md",
+    ".claude/skills/smh-memory-audit/SKILL.md",
+    ".opencode/commands/smh-memory-audit.md",
+    ".roo/rules/constitution.md",
+    "AGENTS.md",
+    "_artifacts/_main/2026-09-12_scc-448-memory-is-disposable/gates/repro/f1.json",
+    "_artifacts/_main/2026-09-12_scc-448-memory-is-disposable/gates/repro/f2.json",
+    "_artifacts/_main/2026-09-12_scc-448-memory-is-disposable/gates/suite.json",
+    "_artifacts/_main/2026-09-12_scc-448-memory-is-disposable/implementation_plan.md",
+    "_artifacts/_main/2026-09-12_scc-448-memory-is-disposable/review/diff.patch",
+    "_artifacts/_main/2026-09-12_scc-448-memory-is-disposable/sweep.json",
+    "_artifacts/_main/2026-09-12_scc-448-memory-is-disposable/task.yaml",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-12_scc-448-memory-is-disposable/walkthrough.md",
+    "verdict": "PASS @ ed8f3cf",
+    "gates": {
+      "suite": "pass@66ab163"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/INDEX.md",
+    "rule-edited:.agents/rules/agent-memory-is-long-term-only.md",
+    "rule-edited:.agents/rules/constitution.md",
+    "rule-edited:.agents/rules/memory-is-disposable.md"
+  ]
+}
