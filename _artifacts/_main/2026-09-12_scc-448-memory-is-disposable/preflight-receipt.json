@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-448-memory-is-disposable",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-448",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "ed8f3cf93d9a578d2754465ed960e43e73780826",
+  "warnings": 1,
+  "when": "2026-09-12T18:17:41-04:00"
+}
