@@ -888,7 +888,7 @@ deliberately do **not** call `/cicd-prune-worktree`, which owns `claude/*` story
 mechanical.** `git branch -d` checks merged-into-**upstream** when an upstream exists, and
 merged-into-**HEAD** when one does not. Deleting the remote first removes the upstream, which forces
 `-d` onto a real ancestry question instead of a vacuous one. **A refusal does not mean the merge
-failed:** lanes here push without `-u` (the sandbox cannot write the lobby's `.git/config`), so there
+failed:** lanes here push without `-u` (the sandbox cannot write the lobby's git config), so there
 is usually no upstream at all, `-d` falls back to the shared lobby's `main`, and that checkout can be
 many commits behind the merge you just made. Prove the landing with
 `git rev-list --count origin/main..<branch>` — `0` means every commit is on `main` — then point the
