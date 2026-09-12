@@ -761,9 +761,9 @@ python3 .agents/scripts/link-worktree-assets.py --unlink .claude/worktrees/<slug
 git worktree remove .claude/worktrees/<slug>
 git worktree list                                       # the tree must be gone
 
-# 3. Only then the branch.
-git branch -d chore/<JIRA-KEY>-<slug>
+# 3. Only then the branch — REMOTE FIRST, then local. The order is mechanical; see below.
 env -u GITHUB_TOKEN git push origin --delete chore/<JIRA-KEY>-<slug>
+git branch -d chore/<JIRA-KEY>-<slug>
 git rev-list --left-right --count main...origin/main    # must be 0 0
 git status --short                                      # must be empty
 ```
@@ -772,9 +772,37 @@ git status --short                                      # must be empty
 `.venv` / `node_modules` **targets**, not just the links — it walks into the real directory and deletes
 the contents. `git worktree remove` does a recursive delete. Unlink first, every time.
 
-`-d` (never `-D`): it refuses if the branch did not merge, which is the check working. A refusal here
-after a successful Step 3 means the merge did not land — go look, do not force. `-d` also fails while a
-worktree still holds the branch, which is why the tree goes first.
+⛔ **The order is REMOTE first, and it is mechanical rather than tidiness.**
+`git branch -d` checks merged-into-**upstream** when an upstream exists, and merged-into-**HEAD** when
+one does not. Deleting the remote FIRST removes the upstream, which forces `-d` onto a real ancestry
+question — the same mechanism `/cicd-prune-worktree` Step 5 measured on 2026-08-01. `-d` also fails
+while a worktree still holds the branch, which is why the tree goes first.
+
+⛔ **A refusal here does NOT mean the merge failed (SCC-449).** After a successful Step 3 the merge HAS
+landed; a refusal means the check is aimed at a stale reference. This lane pushed without `-u` — the
+sandbox cannot write the lobby's `.git/config` — so there is no upstream, `-d` falls back to HEAD - the
+shared lobby standing on `main` - and that checkout can be many commits behind the merge you just made.
+Measured 2026-09-11 closing SCC-447: the lobby was 20 commits stale, `-d` called a fully merged branch
+unmerged, and **seven local plus ten remote branches had already accumulated that way** while the suite
+ran 90/90 green. Prove the landing, then aim the check at the ref that has it:
+
+```bash
+git rev-list --count origin/main..chore/<JIRA-KEY>-<slug>          # 0 = every commit landed. NOT 0 -> it never landed; STOP
+git branch --set-upstream-to=origin/main chore/<JIRA-KEY>-<slug>   # sandbox-off: this writes .git/config
+git branch -d chore/<JIRA-KEY>-<slug>                              # -d now asks the right question, unbypassed
+```
+
+⛔ **Never `-D`, and never pull the shared lobby to fix this.** The ladder above keeps the merge check
+intact and points it at the right reference; `-D` bypasses the check altogether. The lobby carries
+other sessions' uncommitted work and is not this lane's to update.
+
+⛔ **The REMOTE delete has its own refusal, and it is not about your branch either** (measured
+2026-09-07 closing SCC-430). `git push origin --delete` comes back *PUSH REFUSED, generated maps are
+STALE* (`docs/doc-graph.json` / `.md`) when the pre-push hook compares those maps against a lobby that
+has not pulled — any lane that regenerated them leaves a stale-looking lobby behind. Run that one push
+from the LANE worktree, whose maps are current, before step 2 removes it; the ref is deleted on origin
+either way and nothing about your checkout changes. Never `--no-verify`, and never regenerate the maps
+onto `main` — that is a commit on `main`, which no agent may make.
 
 **PC:** a pruned worktree can leave an empty shell directory behind that blocks a later
 `git worktree add` at the same path; only a PowerShell delete clears it.
@@ -793,6 +821,13 @@ git branch --list 'chore/<JIRA-KEY>-*' # empty
 git ls-remote --heads origin 'chore/<JIRA-KEY>-*'  # empty
 ```
 
+⛔ **Both list commands must come back EMPTY. A branch proven merged and still present is a close-out
+that did not finish** — go back to Step 5's ladder; do not write it up as retained. A verify step that
+accepts its own failure as a reportable outcome can never go red, which is precisely how this one
+stayed broken across ten lanes (SCC-449). The one legal retention is a branch that did not land, and
+that is a different claim with its own proof: `git rev-list --count origin/main..<branch>` is not `0`.
+Report that one as `Retained: <branch> — NOT landed (<n> commit(s) off main)`.
+
 Print:
 
 `✅ Task <JIRA-KEY> closed:`
@@ -800,7 +835,7 @@ Print:
 - `Gate: <the commands run + their real totals>`
 - `Merged: <merge-sha> (--no-ff)` · `main 0 0, clean`
 - `Jira: Dev Record filed (one record) · ticket → Done · check exit 0`
-- `Pruned: chore/<JIRA-KEY>-<slug> local + remote` *(or why it was retained)*
+- `Pruned: chore/<JIRA-KEY>-<slug> local + remote` — both lists empty, proven above
 - `Still owed: <the --followon items, or "nothing">`
 
 Optional additional input (repo · branch): $ARGUMENTS
