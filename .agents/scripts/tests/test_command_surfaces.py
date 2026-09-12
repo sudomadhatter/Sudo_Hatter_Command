@@ -1201,6 +1201,21 @@ def main() -> int:
                 == [],
                 "NEGATIVE CONTROL - a row that warns after the citation lands can never reach 0/0")
 
+        # ── The `code-standards` row: a FOURTH arm for the SCC-447 vocabulary (AUDIT FINDING 2)
+        # The row keys on the triage vocabulary a door EMITS. Three arms were measured live in
+        # SCC-205; the disposition words are now `fixed / held / dropped`, and a door written
+        # only in those words matched NO arm - so it lost the §6.5 pointer requirement silently.
+        c.check("WIRING: a door classifying `fixed / held / dropped` owes the code-standards pointer",
+                any("code-standards" in m
+                    for m in pointer_warns("Triage every finding: `fixed` / `held` / `dropped`.\n")),
+                f"check_rule_pointers said "
+                f"{pointer_warns('Triage every finding: `fixed` / `held` / `dropped`.')} - the new "
+                f"vocabulary is the machinery now, and an arm that cannot see it is a dead row")
+        c.check("CONTROL: the same body citing `.agents/rules/code-standards.md` is silent",
+                pointer_warns("Triage every finding: `fixed` / `held` / `dropped` "
+                              "(`.agents/rules/code-standards.md` §6.5).\n") == [],
+                "NEGATIVE CONTROL - a row that warns after the citation lands can never reach 0/0")
+
         live = wf.Report()
         lint.check_rule_pointers(ROOT, live)
         c.check("the live toolkit has no un-cited porting command",
@@ -3928,9 +3943,9 @@ def main() -> int:
 
             ⓘ This is a RESULT filter, not a walk prune: `rglob` has already entered the
             directory by the time this rejects a path (measured from the lobby: 27,770 entries
-            enumerated, 10,185 of them inside `.claude/worktrees/` and discarded). Two siblings
-            prune instead — `evidence_extract.py`'s `_SKIP_DIR_PAIRS` with `dirnames[:] = …`,
-            and the note in `test_sops_prds_folder.py` recording that a result filter over
+            enumerated, 10,185 of them inside `.claude/worktrees/` and discarded). A sibling
+            prunes instead —
+            the note in `test_sops_prds_folder.py` recording that a result filter over
             `ROOT.rglob` once crashed that file on Windows with WinError 3 by descending into a
             lane. Left as a filter deliberately: the deepest path measured here is 187 chars
             (~221 on Windows against MAX_PATH 260), so that crash is not reachable today, and
@@ -4409,7 +4424,10 @@ def main() -> int:
             ("a schema change", "schema"),
             ("CI or environment config", "environment config"),
             ("deleting a file", "Deleting a file"),
-            ("a second non-PASS review", "second non-PASS"),
+            # SCC-447: the row used to escalate only the SECOND non-PASS, after a fix child and a
+            # fresh reviewer. The door now fixes what reproduced before it stamps, so the FIRST
+            # non-PASS is the operator's — and this needle is the half a re-added loop must delete.
+            ("a review verdict that is not PASS", "no fix child, no second reviewer"),
             ("a door's own PIPELINE_BLOCKER", "PIPELINE_BLOCKER"),
         ):
             c.check(f"AP1 the charter names {what}", needle in body, f"missing: {needle!r}")

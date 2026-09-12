@@ -1490,6 +1490,38 @@ def main() -> int:
                         and not [m for m in rows(out, "artifacts", "INFO") if "quick lane" in m],
                         f"artifacts={rows(out, 'artifacts')}")
 
+    # ── RS · SCC-447 · the re-stamp: the LAST `Verdict:` governs here too ─────────────────
+    # ⛔ Found by SCC-447's own tip review (Edge Hunter, receipt e3): both review doors say a fix
+    # after a FAIL stamp APPENDS a re-stamp section and "the last `Verdict:` governs";
+    # task_preflight reads `found[-1]` and the roster CLI reads the last - this reader took the
+    # FIRST match, so a story lane re-stamped FAIL->PASS could never close without rewriting the
+    # first stamp, which the door forbids.
+    if c.block("RS · SCC-447 · a FAIL stamp followed by a re-stamp PASS reads as PASS"):
+        WT = "_artifacts/2026-08-01_epic_30/story-30-1-fresh/walkthrough.md"
+        with TempDir() as tmp:
+            repo = lane_repo(tmp, verdict=None, gates_id=None)
+            (repo / WT).write_text(
+                "## Code Review (2026-09-12)\n\nVerdict: FAIL @ 64098847\n\n"
+                "## Code Review (2026-09-13, re-stamp after fixes)\n\nVerdict: PASS @ 64098847\n"
+                "retest: scoped - pins: test_x.py:B1 · suite: run_all 90/90 @ 64098847 (gates/suite.json)\n"
+                "review: carried from the one review @ 64098847 - no lens re-run\n", encoding="utf-8")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            fails = [m for m in rows(out, "artifacts", "ERROR") if "Verdict FAIL" in m]
+            passes = [m for m in rows(out, "artifacts", "INFO") if "Verdict PASS" in m]
+            c.check("RS1 the superseded FAIL does not block the flip", not fails,
+                    f"artifacts={rows(out, 'artifacts')}")
+            c.check("RS2 the re-stamp PASS is the verdict read", bool(passes),
+                    f"artifacts={rows(out, 'artifacts')}")
+            (repo / WT).write_text("## Code Review (2026-09-12)\n\nVerdict: PASS @ 64098847\n\n"
+                                   "## Code Review (2026-09-13, re-stamp)\n\nVerdict: FAIL @ 64098847\n",
+                                   encoding="utf-8")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11")
+            c.check("RS3 (control) a LATER FAIL still blocks - the last stamp governs in both directions",
+                    any("Verdict FAIL" in m for m in rows(out, "artifacts", "ERROR")),
+                    f"artifacts={rows(out, 'artifacts')}")
+
     if c.block("SCC-441 row 14 · the record line's WRITER (the doors) and READER agree"):
         # ⛔ Writer and reader were never checked against each other: changing the verb in every
         # writer left the suite 86/86, and the reader's own QL16 control shows the cost - a lane

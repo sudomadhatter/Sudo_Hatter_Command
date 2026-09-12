@@ -550,6 +550,29 @@ def main() -> int:
             c.check("a worktree/dir NAMED with the key does not make every walkthrough a hit",
                     code == 0 and "scc-99-other" not in out, out.strip()[-300:])
 
+    if c.block("SCC-447 · the FAIL refusal sends you to the pins and the suite, never a re-run of the review"):
+        # ⛔ ONE REVIEW PER LANE (`code-standards.md` §7). The refusal used to say "fix on the
+        # branch and re-run the review" - and a re-run is a second full fan-out over the same
+        # diff, the exact loop SCC-441 paid a week for. The remedy for a FAIL is the fix, its
+        # pin seen red then green, the suite once through the receipt writer, and a re-stamp.
+        with TempDir() as t:
+            lane = t / "lane" / "_artifacts" / "_main" / "2026-09-13_fail"
+            lane.mkdir(parents=True)
+            (lane / "task.yaml").write_text("task_key: SCC-999\nbranch: chore/SCC-999-x\n",
+                                            encoding="utf-8")
+            (lane / "walkthrough.md").write_text(
+                "# W\n\n## Code Review\n\nlenses_run:\n- edge · ok\n\nVerdict: FAIL @ abc1234\n",
+                encoding="utf-8")
+            rep = wf.Report()
+            tpf.check_gate(t / "lane", [lane / "walkthrough.md"], "LOCAL", "SCC-999",
+                           "chore/SCC-999-x", rep)
+            fails = [i["msg"] for i in rep.items if i["sev"] == "ERROR" and "FAIL" in i["msg"]]
+            blob = " ".join(fails)
+            c.check("the FAIL refusal is an ERROR that names the pins and the suite",
+                    bool(fails) and "pins and the suite" in blob, f"{fails}")
+            c.check("...and never says to re-run the review",
+                    "re-run the review" not in blob, f"{fails}")
+
     if c.block("SCC-441 row 13 · the quick lane's approval sha is dereferenced HERE too"):
         # ⛔ The project close-out reads `Review: none - quick lane; walkthrough approved by the
         # operator @ <sha>` and dereferences the sha; this gate read only `VERDICT_RE`, found no

@@ -193,6 +193,14 @@ done — verify the box's four conditions and go straight to Step 2.**
    ``- EDIT `scripts/thing.py` — why this file moves → A`` (path-first bullets parse to ZERO
    entries, SCC-311; prove it with `declared_change_set.py parse <plan>` before the audit) —
    `/smh-code-review` Step 2 diffs the real diff against exactly this list.
+
+   ⛔ **A part whose declared set exceeds 40 master files is too big to review — split it here.**
+   Each part is reviewed on its own commits before the next one starts (`work-consolidation` Rule 2),
+   and `review_scope.py` strips mirrors, generated launchers and records before a lens sees that diff —
+   so count the MASTERS in the part's `## Declared Change Set`, never its bullet total. Over 40, the
+   review that part earns is bigger than one sitting can hold, and the loop this house closed in
+   SCC-447 comes back as a size problem instead of a policy one. Splitting is free while the parts are
+   still lines in a plan; after the tree is cut it costs a re-cut.
 2. **Invoke `/smh-self-audit`** on that plan. It appends its `## Self-Audit (<date>)` section and a
    canonical `Audit verdict: GO | NO-GO`. A **NO-GO stops the lane** — fix the plan and re-audit; do not
    proceed on a NO-GO and do not re-run it hoping for a different answer.

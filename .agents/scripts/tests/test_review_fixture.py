@@ -84,7 +84,12 @@ REQUIRED = (MANIFEST, BAD, CLEAN, SPEC, CLEAN_SPEC, README, RUNS) + BASE_FILES
 
 # step-01's five lenses. One seeded defect each, so the live control also proves each lens is
 # ALIVE — a lens that silently stopped working is otherwise invisible.
-LENSES = frozenset({"blind", "edge", "literal", "acceptance", "test-adequacy"})
+LENSES = frozenset({"edge", "acceptance", "test-adequacy"})
+# ⛔ Five defects across THREE lenses since SCC-447 retired the Blind and Literal-Correctness
+# Hunters. Their two classes moved to the Edge Case Hunter, which reads the diff and holds an
+# uncapped worktree copy, so both stay reachable — but the 1:1 lens↔defect mapping the fixture
+# was born with is gone, and the count has to be pinned on its own or a deleted defect is silent.
+SEEDED_DEFECTS = 5
 
 # step-03 §2 normalizes every reviewer vocabulary into exactly these four. A manifest declaring
 # anything else makes the live control's pass criterion unreadable against step-03's floor table.
@@ -302,10 +307,15 @@ def main() -> int:
             f"fixture seeds {len(LENSES)} — seed the new lens or the control stops covering it")
 
     lenses = {d.get("lens") for d in defects}
-    c.check("the five engine lenses each carry exactly one seeded defect",
-            lenses == set(LENSES) and len(defects) == len(LENSES),
-            f"missing={sorted(LENSES - lenses)} unexpected={sorted(x for x in lenses - LENSES if x)} "
-            f"count={len(defects)}" if lenses != set(LENSES) or len(defects) != len(LENSES) else "")
+    c.check("every engine lens carries a seeded defect, and no defect names a retired lens",
+            lenses == set(LENSES),
+            f"missing={sorted(LENSES - lenses)} unexpected={sorted(x for x in lenses - LENSES if x)}"
+            if lenses != set(LENSES) else "")
+    c.check(f"the manifest still seeds all {SEEDED_DEFECTS} defects",
+            len(defects) == SEEDED_DEFECTS,
+            "" if len(defects) == SEEDED_DEFECTS else
+            f"{len(defects)} defect(s), expected {SEEDED_DEFECTS} — a deleted defect is otherwise "
+            f"silent now that lenses and defects are no longer 1:1")
 
     for d in defects:
         did, sev = d.get("id", "?"), d.get("expected_severity")
@@ -419,8 +429,11 @@ def main() -> int:
         c.check(f"{did}: the base-state line it contradicts is still in codebase/billing.py",
                 found, "" if found else f"{want!r} absent from the base module — {REMEDY}")
     based = [d for d in defects if d.get("base_must_contain")]
-    c.check("the blind defect pins the base-state line it contradicts",
-            any(d.get("lens") == "blind" and d.get("base_must_contain") for d in defects),
+    # ⛔ Keyed on the DEFECT id, not on its lens. NC_BLIND kept its id and its premise when
+    # SCC-447 moved it to the Edge Case Hunter, and a lens-keyed check would have gone red on a
+    # re-attribution that changed nothing about what the defect needs from the base module.
+    c.check("the diff-only defect pins the base-state line it contradicts",
+            any(d.get("id") == "NC_BLIND" and d.get("base_must_contain") for d in defects),
             "" if based else "no defect pins a base-state precondition; NC_BLIND needs one")
 
     # ⛔ `spec_must_contain` is optional, so the loop above `continue`s past a defect that lost
@@ -538,16 +551,15 @@ def main() -> int:
     for label, needle in (
         ("the answer-key prohibition", "Do not open `manifest.json`, `README.md`, `bad.diff` or `clean.diff`"),
         ("the both-halves rule", "A reviewer that flags everything is as broken as one that flags nothing"),
-        # SCC-147: the control's own budget. NC_LITERAL is catchable ONLY by opening
-        # `codebase/helpers.py`, which `bad.diff` does not touch — i.e. only via the ONE
-        # top-up `standard` allows and `capped` forbids. Flip this row to `capped` and the
-        # seeded literal defect becomes unreachable, so the control quietly stops
-        # discriminating between lenses — which is the whole point of SCC-129 — with every
-        # one of this file's cases still green. Proven by the review, which flipped it and
-        # watched 67/67 pass. It belongs in THIS list rather than in the existence-only
-        # majority for the same reason as the two above: the row IS the safeguard, not a
-        # description of one.
-        ("the interactive budget both arms run", "| `lens_budget` | `standard` | `standard` |"),
+        # SCC-147, rewritten by SCC-447: this row used to pin `lens_budget: standard`, because
+        # NC_LITERAL is catchable ONLY by opening `codebase/helpers.py` — which `bad.diff` does
+        # not touch — and `capped` forbade that one top-up. `lens_budget` is retired and the
+        # reachability now rests on `REPO`: the Edge Case Hunter reads the repo from its own
+        # worktree copy, uncapped. Blank that row and the seeded literal defect becomes
+        # unreachable exactly as `capped` made it, so the control quietly stops discriminating
+        # while every one of this file's cases stays green. Same reason as the two above: the
+        # row IS the safeguard, not a description of one.
+        ("the repo access NC_LITERAL depends on", "| `REPO` | repo root | repo root |"),
     ):
         present = flat(needle) in flat(readme)
         c.check(f"README still carries {label}", present,

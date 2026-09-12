@@ -105,12 +105,15 @@ _RULE_POINTERS = (
     # half the tree; what marks a finding-producer is the shape it EMITS - the triage
     # vocabulary it classifies into, or the verdict ladder it grades findings onto.
     #
-    # ⛔ FOUR ARMS, one per vocabulary actually in use, each measured against the tree before
+    # ⛔ FIVE ARMS, one per vocabulary actually in use, each measured against the tree before
     # it was added. The first cut shipped TWO arms and review measured one of them DEAD (zero
     # hits tree-wide) and the other keyed on an EM-DASH - so `cicd-code-review.md`, which
     # writes `- **FAIL** = ...`, was exempt on punctuation alone. That is the defect this very
     # row's comment cites from `work-consolidation`: a dead arm inside a live row is a check
     # that cannot fail, and on a ticket about twin PARITY it held one twin and freed the other.
+    # The fifth arm is SCC-447's: the review doors now classify `fixed / held / dropped`, and a
+    # door written only in those words matched no arm - the pointer requirement lapsed silently
+    # on exactly the surfaces the rewritten §6.5 governs (audit finding 2).
     ("code-standards", "producing findings", re.compile(
         # the clean-code audits' triage vocabulary (backticks optional)
         r"`?applied`?\s*/\s*`?deferred`?\s*/\s*`?dismissed`?"
@@ -118,6 +121,8 @@ _RULE_POINTERS = (
         r"|^\s*-\s*\*\*FAIL\*\*\s*[-—–=:]"
         # the fast lane's triage vocabulary
         r"|patch\s*/\s*defer\s*/\s*reject"
+        # the review doors' disposition vocabulary - reproduce or drop, fix or hold (SCC-447)
+        r"|`?fixed`?\s*/\s*`?held`?\s*/\s*`?dropped`?"
         # the pre-dev audits' verdict
         r"|\bNO-GO\b", re.M)),
 )

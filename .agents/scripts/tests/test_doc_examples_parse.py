@@ -320,13 +320,19 @@ def main() -> int:
                 "incomplete",
                 bad["incomplete"] and not bad["entries"], str(bad))
 
-    if c.block("G · the verify wave names ONE grouping owner, in ONE place"):
-        # SCC-210 sent 46 findings where there were 29 unique claims, because step-02 said
-        # both "serialize ... one object per finding" and "verify each CLAIM once - fan the
-        # query in", and read together the first sounds like "send everything, let the
-        # verifier group". Nothing here is machine-wired - the fix is a document saying who
-        # and when - so these are doc-truth pins, the weakest tier, and mutant M6 is what
-        # proves they can fail.
+    if c.block("G · step-02 passes findings through and changes nothing"):
+        # ⛔ WHAT THIS BLOCK USED TO HOLD, and why it still exists. SCC-210 sent 46 findings
+        # where there were 29 unique claims, because step-02 said both "serialize ... one
+        # object per finding" and "verify each CLAIM once - fan the query in"; read together,
+        # the first sounds like "send everything, let the verifier group". The fix was a
+        # document naming ONE grouping owner, and G1-G4 pinned that wording.
+        #
+        # SCC-447 retired the verify wave (it refuted 2 findings in 18 reviews), so there is
+        # no dossier, no serialise step and no grouping owner to name. The AMBIGUITY the block
+        # existed to prevent is not gone, though — it just moved: step-02 is now a pass-through,
+        # and the way to reintroduce SCC-210 is for something to start collapsing or re-grading
+        # findings here again. So the block is re-aimed at the pass-through itself, stated
+        # positively, with the same comment-literal control that caught G1-G4 being commented out.
         raw = (ROOT / ".agents/skills/code-review-engine/steps/step-02-verify.md"
                ).read_text(encoding="utf-8")
         # ⛔ WHITESPACE-NORMALISED, ON PURPOSE. These sentences are prose in a wrapped markdown
@@ -336,45 +342,41 @@ def main() -> int:
         # cure people reach for is deleting the check. What is pinned is the WORDS and their
         # ORDER; both survive a re-wrap, and neither survives the rule being removed.
         t = re.sub(r"\s+", " ", raw)
-        c.check("G1 · the dossier bullet says the caller groups BEFORE it serialises",
-                "Group first, then serialise" in t
-                and "AFTER the self-gate has read the raw count and BEFORE you serialise" in t,
-                "the ordering is unstated - an agent reads 'serialize the findings' first "
-                "and groups afterwards, or not at all")
-        c.check("G2 · the 1:1 JSON contract is stated where the grouping is, not only "
-                "three paragraphs later",
-                "one object per finding — grouping never collapses it" in t,
-                "grouping reads as permission to send fewer findings")
-        c.check("G3 · the SCC-156 paragraph DEFERS to that bullet instead of restating "
-                "a second rule",
-                "the roles receive groups and never form them" in t,
-                "the two paragraphs still read as competing instructions")
+        c.check("G1 · the step declares, first, that it runs nothing",
+                "This step runs nothing." in t
+                and "The Evidence Verifier and the Compound Synthesis role are retired." in t,
+                "a role can be reinstated here and nothing would say it was retired")
+        c.check("G2 · every finding travels to step 3 — none is collapsed or dropped here",
+                "Carry every finding from step 1 to step 3 unchanged" in t,
+                "without 'every' and 'unchanged', a pass-through reads as permission to filter")
+        c.check("G3 · nothing is re-graded here, and dedupe is named as step 3's",
+                "Do not re-grade, do not re-word, do not dedupe" in t
+                and "dedupe is step 3's" in t,
+                "re-grading here is how a severity became a second opinion nobody could audit")
         # The structural claim, and the one a mutant cannot dodge by keeping the words while
-        # moving them: the owner is named BEFORE the serialise instruction, inside the same
-        # bullet. Order is what made the old text ambiguous, so order is what is pinned.
-        i_group = t.find("Group first, then serialise")
-        i_ser = t.lower().find("serialize the step-1 findings")
-        c.check("G4 · ...and it is named BEFORE the serialise instruction it governs",
-                0 <= i_group < i_ser,
-                f"group@{i_group} serialise@{i_ser} - stated after, it is a correction "
+        # moving them: the retirement is stated BEFORE the instruction it governs, so an agent
+        # reading top-down cannot act on the old wave before reaching the notice.
+        i_retired = t.find("This step runs nothing.")
+        i_do = t.find("Carry every finding from step 1 to step 3 unchanged")
+        c.check("G4 · ...and the retirement is stated BEFORE the instruction it governs",
+                0 <= i_retired < i_do,
+                f"retired@{i_retired} carry@{i_do} - stated after, it is a correction "
                 f"nobody reads in time")
         # ⛔ G5 · THE TWO AXES G1-G4 WERE BLIND ON (SCC-240 review, Test-Adequacy - both
         # reproduced). (a) A comment satisfies a grep: wrapping the whole bullet in
         # `<!-- … -->` left all four green, which is the literal comment-literals-invert
-        # failure this repo bans. (b) The CLAIM was unpinned: "the grouping is YOURS" flipped
-        # to "THE VERIFIER'S" - the exact SCC-210 ambiguity - and all four stayed green.
+        # failure this repo bans. (b) The CLAIM was unpinned - the sentence flipped to its
+        # opposite while the words survived. Both axes still apply to the pass-through.
         # This is also the block's only negative control; D has D3, C has C2, F has F4.
-        raw = (ROOT / ".agents/skills/code-review-engine/steps/step-02-verify.md"
-               ).read_text(encoding="utf-8")
-        at = raw.find("Group first, then serialise")
+        at = raw.find("This step runs nothing.")
         before = raw[:at] if at >= 0 else ""
         in_comment = before.rfind("<!--") > before.rfind("-->")
-        owner_near = "YOURS" in raw[at: at + 160] if at >= 0 else False
-        c.check("G5 · (control) the owner line is NOT inside an HTML comment, and the "
-                "owner word sits beside it",
-                at >= 0 and not in_comment and owner_near,
-                f"at={at} in_comment={in_comment} owner_near={owner_near} - a commented-out "
-                f"instruction or a reassigned owner must go red here")
+        claim_near = "retired" in raw[at: at + 160] if at >= 0 else False
+        c.check("G5 · (control) the retirement line is NOT inside an HTML comment, and the "
+                "claim word sits beside it",
+                at >= 0 and not in_comment and claim_near,
+                f"at={at} in_comment={in_comment} claim_near={claim_near} - a commented-out "
+                f"notice or a reinstated role must go red here")
 
     if c.block("X · the extractors this file stands on can themselves fail"):
         # ⛔ These decide whether D1/C1 see anything at all, so a silent bug in them reads as

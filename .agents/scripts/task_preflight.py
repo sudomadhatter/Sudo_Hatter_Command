@@ -1615,8 +1615,14 @@ def check_gate(repo: Path, hits: list[Path], lane: str, expect: str, branch: str
                              "the full gate runs")
         return None
     if any(v[-1][0] == "FAIL" for _, v in stamped):
-        rep.err("gate", "the review verdict is FAIL - fix on the branch and re-run the "
-                        "review; a FAIL lane does not merge")
+        # ⛔ NOT "re-run the review" (SCC-447). The lenses run ONCE per lane; the remedy for a
+        # FAIL is the fix with its pin seen red then green, the suite once through the receipt
+        # writer, and a re-stamp. A re-run is a second full fan-out over the same diff - the
+        # loop SCC-441 paid a week for.
+        rep.err("gate", "the review verdict is FAIL - fix on the branch, run the pins and the "
+                        "suite through the receipt writer, and re-stamp; the lenses are not "
+                        "re-run (one review per lane, code-standards.md §7). A FAIL lane does "
+                        "not merge")
         return None
     if len(stamped) > 1:
         rep.info("gate", f"{len(stamped)} walkthroughs under {expect} carry verdict "

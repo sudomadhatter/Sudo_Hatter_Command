@@ -1,0 +1,1300 @@
+"""SCC-447 — the disposition doctrine: reproduce or drop, then fix, one review per lane.
+
+⛔ WHAT THIS FILE EXISTS FOR, measured. The review engine had no stop condition an agent could
+reach on its own. Its lenses are instructed to be exhaustive and are judged by what they return,
+the assessor was told to fix everything that survived triage, the verdict floor was computed
+BEFORE the fixes and never moved with them, and the preflight's remedy for FAIL said "re-run the
+review". Over every review on disk (138 with a verdict, 88 with per-lens ledgers): 17.9 fixes per
+review, 52% of them on severities that can never block, re-review converting a non-PASS to PASS 1
+time in 7, the verify wave refuting 2 findings in 18 reviews. SCC-441 ran that machine three times
+over a 155-file diff and burned a week of credit without closing.
+
+The doctrine that replaces it is four sentences, and this file is what holds each of them:
+
+  1. **Reproduce or drop.** A `critical` or `important` with no receipt on disk does not exist.
+  2. **Fix what reproduced.** A reproduced `critical` or `important` is fixed in the lane with a
+     pin. A fix the agent may not apply alone is written as a patch and `held`; nothing is
+     escalated and nothing is deferred (operator ruling 2026-09-11 — both buckets struck the day
+     the first cut of this doctrine landed, because each put a reproduced defect in front of him).
+  3. **The floor is computed AT THE STAMP, on rows still OPEN.** A row closed by a fix and a green
+     pin does not gate. CONCERNS has exactly two grounds — coverage (a dead lens) and authority (a
+     held fix) — and ships on the operator's word; FAIL is the blocker.
+  4. **One review per lane.** The retest is the pins plus the suite, never a second fan-out.
+
+  ── WHY THIS FILE IS SHAPED THE WAY IT IS (the SCC-122 pattern, inherited) ───────────────────
+A keyword grep is not a guard: five keyword-stuffed stubs instructing the exact OPPOSITE of the
+engine's rules once scored 80/80 on the first version of `test_review_engine.py`. So every content
+check here obeys the same three disciplines that repair proved:
+
+  1. **Checks bind a RELATIONSHIP, not a vocabulary.** `important` and `fixed` both appearing
+     somewhere proves nothing; a table row mapping the one to the other proves the mapping.
+  2. **Every check ships a COUNTER-EXAMPLE and is proven to reject it.** The harness applies the
+     mutation in memory and requires the check to go red. A check that survives its own
+     counter-example is reported as a failure here. The counter must also APPLY — a mutation whose
+     target string is absent would make the proof vacuous, so that is asserted too.
+  3. **Prohibitions are asserted POSITIVELY.** "The wave is retired" contains "the wave"; banning
+     a word in a file whose job is to name what it retired cannot work. The retired machinery is
+     held by requiring the retirement note that names it, plus identifier bans (§5) that scan for
+     the SPELLINGS a live caller would have to use — `lens_budget:`, `review_level:` — which a
+     retirement note never writes.
+
+Stdlib only, no pytest — same constraint as every sibling here.
+"""
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+from _harness import Cases
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def one_line(text: str) -> str:
+    """A literal sentence, matched across whatever line breaks the file wraps it at.
+
+    ⛔ This exists because of a defect this lane shipped three times in Part 4. A check written as
+    a plain literal binds the PROSE and the WRAPPING together, so re-flowing a paragraph breaks a
+    law nobody changed — and the temptation at that point is to loosen the check, which is how a
+    guard stops guarding. Words are the law; where the line ends is not.
+    """
+    return r"\s+".join(re.escape(w) for w in text.split())
+
+RULE = ".agents/rules/code-standards.md"
+RULE_TWIN = ".claude/rules/code-standards.md"
+
+ENGINE = ".agents/skills/code-review-engine"
+CACHE = ".claude/skills/code-review-engine"
+SKILL = f"{ENGINE}/SKILL.md"
+S1 = f"{ENGINE}/steps/step-01-review.md"
+S2 = f"{ENGINE}/steps/step-02-verify.md"
+S3 = f"{ENGINE}/steps/step-03-triage.md"
+S4 = f"{ENGINE}/steps/step-04-record.md"
+ENGINE_RELS = ("SKILL.md", "steps/step-01-review.md", "steps/step-02-verify.md",
+               "steps/step-03-triage.md", "steps/step-04-record.md")
+
+# (id, file, regex, flags, counter_old, counter_new)
+# counter_old MUST be present in the real file and counter_new MUST break the regex.
+
+# ── BLOCK A — the doctrine's home: code-standards.md §6.5 and §7 ───────────────────────────────
+#
+# ⛔ WHY THE RULE FILE AND NOT THE ENGINE. §6.5 governs every command that produces findings —
+# both code reviews, both clean-code audits, both self-audits — and §7 already owns the
+# FAIL-vs-CONCERNS split. An engine step file is law for one caller; this rule is law for all of
+# them, which is why SCC-205 hoisted the disposition ruling here in the first place.
+CHECKS_A: tuple[tuple[str, str, str, int, str, str], ...] = (
+    # Gate 0 — the reproduction gate, and its evidence shape
+    ("§6.5: a critical/important that did not reproduce DOES NOT EXIST", RULE,
+     r"`critical` or `important` that did not reproduce does not exist", 0,
+     "that did not reproduce does not exist",
+     "that did not reproduce is downgraded to `suggestion`"),
+    ("§6.5: the evidence is a receipt written by repro_receipt.py, per finding id", RULE,
+     r"repro_receipt\.py run --root <artifacts> --id <finding-id>", 0,
+     "repro_receipt.py run --root <artifacts> --id <finding-id>",
+     "repro_receipt.py record --root <artifacts>"),
+    ("§6.5: no --result flag — a receipt implies EXECUTION", RULE,
+     r"no `--result` flag — a receipt implies execution", 0,
+     "There is no `--result` flag — a receipt implies execution",
+     "Pass `--result reproduced` when you are confident"),
+    ("§6.5: a finding whose command does not fail is DROPPED and counted", RULE,
+     r"does not fail when it is run, is \*\*dropped and counted\*\*", 0,
+     "does not fail when it is run, is **dropped and counted**",
+     "does not fail when it is run, is still worth reporting"),
+    # The action policy — one row per severity, each binding severity to ACTION
+    ("§6.5 policy: a reproduced CRITICAL or IMPORTANT is FIXED in this lane, with a pin", RULE,
+     r"^\|\s*reproduced `critical` or `important`\s*\|[^|]*fixes it, in this lane, with a pin"
+     r"[^|]*\|[^|]*`fixed @<sha> · pin <test>\[:<case>\] · repro <id>`", re.M,
+     "| reproduced `critical` or `important` | fixes it, in this lane, with a pin",
+     "| reproduced `critical` or `important` | hands it to the operator"),
+    # ⛔ Operator ruling 2026-09-11: the ESCALATE row this replaces handed a reproduced `important`
+    # to him with a recommendation — a finding to read, which is the review he asked to be designed
+    # out of. The one row that reaches him now is a fix the agent may not APPLY alone, and it
+    # reaches him written, never as a question.
+    ("§6.5 policy: a fix the agent may not apply alone is HELD as a written patch, never asked", RULE,
+     r"^\|\s*reproduced, and the fix needs the operator's permission[^|]*\|[^|]*writes the fix "
+     r"and its pin as a patch[^|]*does \*\*not\*\* apply it[^|]*\|"
+     r"\s*`held — <reason> · repro <id> · patch <path>`", re.M,
+     "writes the fix and its pin as a patch",
+     "asks the operator what to do"),
+    ("§6.5 policy: no reproduction → dropped, counted, never written up individually", RULE,
+     r"^\|\s*`critical` or `important` that did not reproduce\s*\|[^|]*dropped, counted[^|]*\|"
+     r"\s*`dropped — no reproduction`", re.M,
+     "| `critical` or `important` that did not reproduce | dropped, counted",
+     "| `critical` or `important` that did not reproduce | investigated further"),
+    ("§6.5 policy: suggestion/nitpick is a COUNT and nothing else", RULE,
+     r"^\|\s*`suggestion` or `nitpick`\s*\|\s*nothing at all; a count\s*\|\s*`recorded`", re.M,
+     "| `suggestion` or `nitpick` | nothing at all; a count | `recorded` |",
+     "| `suggestion` or `nitpick` | fix the cheap ones | `fixed` |"),
+    # The DEFER row this replaces was a parking lot with a nicer name: "this lane structurally
+    # cannot hold the fix" was the excuse that filled it. A defect outside the lane's files was
+    # never a disposition of the review — it is out-of-lane work with the ladder it always had.
+    ("§6.5 policy: a defect outside this lane's files is OUT-OF-LANE, down the consolidation ladder", RULE,
+     r"^\|\s*reproduced, in a file this lane did not touch[^|]*\|[^|]*`work-consolidation` ladder "
+     r"with its receipt attached\s*\|\s*`out-of-lane — <where it went>`", re.M,
+     "`work-consolidation` ladder with its receipt attached",
+     "deferred ledger, against a named blocker"),
+    ("§6.5: a reproduced finding is FIXED — no third bucket, and both retired ones are named", RULE,
+     r"\*\*A reproduced finding is fixed\. There is no third bucket\.\*\*[\s\S]{0,400}?"
+     r"`escalate` bucket[\s\S]{0,300}?`defer` bucket", 0,
+     "There is no third bucket.",
+     "The agent chooses a bucket."),
+    ("§6.5: `held` is never a question — the patch is written and applies on the tip", RULE,
+     r"\*\*`held` is the one row the operator sees, and it is never a question\.\*\*"
+     r"[\s\S]{0,900}?`git apply --check` passes on the lane tip", 0,
+     "and it is never a question",
+     "and it is his question to answer"),
+    # §7 — the floor, the verdict meanings, and the one-review rule
+    ("§7: FAIL is an OPEN REPRODUCED critical at the stamp, whatever the reason", RULE,
+     r"^\|\s*\*\*FAIL\*\*\s*\|\s*An \*\*open reproduced\*\* `critical` at the stamp, "
+     r"whatever the reason[^|]*with its receipt on disk", re.M,
+     "| **FAIL** | An **open reproduced** `critical` at the stamp, whatever the reason",
+     "| **FAIL** | Anything a lens labelled `critical`"),
+    # ⛔ THE GROUNDS FOR CONCERNS, defined (operator, 2026-09-11: "What would be fair grounds
+    # based off previous evidence to flag the CONCERNS, instead of PASS ... we have to define that
+    # now"). Two, both evidence, and the row says "Nothing else" so a third cannot drift in.
+    ("§7: CONCERNS has exactly TWO grounds — coverage (a dead lens) and authority (a held fix)", RULE,
+     r"^\|\s*\*\*CONCERNS\*\*\s*\|\s*Exactly two grounds, both evidence\. \*\*Coverage:\*\* "
+     r"a lens still `dead`[^|]*\*\*Authority:\*\* an \*\*open reproduced\*\* `important` `held`"
+     r"[^|]*Nothing else\.", re.M,
+     "Nothing else.",
+     "Also any judgment call a lens raised."),
+    ("§7: taste never raises the floor — §1/§2 judgment calls are counts, not a verdict", RULE,
+     r"Taste does not — it is recorded, never a verdict: §1 comment-contract gaps and §2 judgment "
+     r"calls[\s\S]{0,200}?no longer raise the floor", 0,
+     "no longer raise the floor",
+     "raise the floor to CONCERNS"),
+    ("§7: PASS needs no OPEN reproduced finding (not zero findings)", RULE,
+     r"^\|\s*\*\*PASS\*\*\s*\|[^|]*no open reproduced finding", re.M,
+     "and no open reproduced finding.",
+     "and no findings at all."),
+    ("§7: the floor is computed AT THE STAMP on rows still OPEN", RULE,
+     r"The floor is computed AT THE STAMP, on the rows that are still OPEN \(SCC-447\)", 0,
+     "The floor is computed AT THE STAMP, on the rows that are still OPEN (SCC-447)",
+     "The floor is computed at triage, from what the lenses returned"),
+    ("§7: a row closed by a fix and a green pin does not hold the lane", RULE,
+     r"A row closed by a\nfix and a green pin is not a reason to hold a lane", 0,
+     "A row closed by a\nfix and a green pin is not a reason to hold a lane",
+     "Every row a lens returned holds the lane\nuntil a fresh review clears it"),
+    ("§7: CONCERNS SHIPS on the operator's word; FAIL is the blocker", RULE,
+     r"\*\*CONCERNS is a shippable verdict, and the go/no-go is the operator's word\.\*\*", 0,
+     "**CONCERNS is a shippable verdict, and the go/no-go is the operator's word.**",
+     "**CONCERNS does not ship by itself.**"),
+    ("§7: no command or agent may treat CONCERNS as a blocker on its own authority", RULE,
+     r"no command, door or agent may treat it as a blocker on its own authority", 0,
+     "no command, door or agent may treat it as a blocker on its own authority",
+     "a door may hold the lane until it is cleared"),
+    ("§7: ONE review per lane — the retest is pins plus the suite, not a fan-out", RULE,
+     r"\*\*One review per PART — one per lane when the lane is one part\.\*\* The lenses run ONCE over each part\.", 0,
+     "**One review per PART — one per lane when the lane is one part.** The lenses run ONCE over each part.",
+     "**Re-review after every fix batch.** The lenses run again."),
+    ("§7: the retest is the named pins plus ONE suite run, never a second fan-out", RULE,
+     r"the pins\nnamed in the `fixed` rows plus the enforcement suite once through the receipt "
+     r"writer — never a second\nfan-out", 0,
+     "never a second\nfan-out",
+     "then a second\nfan-out"),
+    ("§7: a second full roster over the SAME part needs the OPERATOR's written word", RULE,
+     one_line("A second full roster over the SAME part needs the operator's written word, and "
+              "`walkthrough_roster.py` refuses"), 0,
+     "A second full roster over the SAME part needs the operator's written word",
+     "A second full roster is the agent's call"),
+)
+
+# ── BLOCK B — the engine's four steps carry the same doctrine ──────────────────────────────────
+CHECKS_B: tuple[tuple[str, str, str, int, str, str], ...] = (
+    # ⛔ Found by SCC-447's own tip review (Edge Hunter, receipt x1): the auditor rubric named "a
+    # suite that comes back green over the gap" as a reproduction — exit 0, which the receipt
+    # writer reads as NOT reproduced — so no auditor finding could ever survive to a fix.
+    ("step-01: an auditor's reproduction EXITS NON-ZERO while the gap exists — a green suite is not one", S1,
+     one_line("`reproduce:` is a command that EXITS NON-ZERO while the gap exists"), 0,
+     "EXITS NON-ZERO while the gap exists", "comes back green over the gap"),
+    ("step-01: the exemption paragraph says the same — the gap is shown by FAILING, never by a green suite", S1,
+     one_line("shows the gap by FAILING while it exists"), 0,
+     "shows the gap by FAILING while it exists", "shows the gap instead of triggering a failure"),
+    # step-01: the roster, and the reproduction field every lens owes
+    ("step-01: Edge Case Hunter runs ALWAYS and owes a reproduction field", S1,
+     r"^\|\s*\*\*Edge Case Hunter\*\*\s*\|[^|]*\|[^|]*\|\s*always\s*\|[^|]*\|"
+     r"\s*required on every `critical`/`important`\s*\|", re.M,
+     "| **Edge Case Hunter** | `DIFF` + read access to `REPO` | own worktree copy "
+     "(`isolation: \"worktree\"`) | always |",
+     "| **Edge Case Hunter** | `DIFF` + read access to `REPO` | own worktree copy "
+     "(`isolation: \"worktree\"`) | standard level (quick skips it) |"),
+    ("step-01: Acceptance Auditor is full-mode only and owes a reproduction field", S1,
+     r"^\|\s*\*\*Acceptance Auditor\*\*\s*\|[^|]*\|[^|]*\|\s*`review_mode: full` only\s*\|[^|]*\|"
+     r"\s*required on every `critical`/`important`\s*\|", re.M,
+     "| **Acceptance Auditor** | `DIFF` + `STORY_FILE` + any context docs",
+     "| **Acceptance Auditor (optional)** | `DIFF` + `STORY_FILE` + any context docs"),
+    ("step-01: Test-Adequacy Auditor runs ALWAYS and owes a reproduction field", S1,
+     r"^\|\s*\*\*Test-Adequacy Auditor\*\*\s*\|[^|]*\|[^|]*\|\s*always\s*\|[^|]*\|"
+     r"\s*required on every `critical`/`important`\s*\|", re.M,
+     # ⛔ The mutation must hit a cell the regex READS. The first cut of this counter-example
+     # rewrote the `Gets` cell, which the regex spans with `[^|]*` — so the check survived it and
+     # the anti-vacuity row is what said so. The binding here is lens → `always`, so that is the
+     # cell the counter has to move.
+     "| **Test-Adequacy Auditor** | `DIFF` + read access to `REPO` | own worktree copy "
+     "(`isolation: \"worktree\"`) | always |",
+     "| **Test-Adequacy Auditor** | `DIFF` + read access to `REPO` | own worktree copy "
+     "(`isolation: \"worktree\"`) | `review_mode: full` only |"),
+    ("step-01: the roster is CLOSED at three, and the retirement is measured", S1,
+     r"\*\*Three lenses, and the roster is closed \(SCC-447\)\.\*\*", 0,
+     "**Three lenses, and the roster is closed (SCC-447).**",
+     "**Three lenses for now, and more may be added when useful.**"),
+    ("step-01: the retirement names every retired piece by name", S1,
+     r"The Blind Hunter, the Literal-Correctness\nHunter, the two `review_level` levels, "
+     r"`lens_budget`, the `EVIDENCE_PACK` priming and the step-2 verify\nwave are \*\*retired\*\*",
+     0,
+     "wave are **retired**",
+     "wave are **optional**"),
+    ("step-01: a lens comes back by MEASUREMENT, never by argument", S1,
+     r"A lens is added back by measurement, never by argument\.", 0,
+     "A lens is added back by measurement, never by argument.",
+     "A lens is added back whenever a reviewer asks for it."),
+    ("step-01 hunter contract: critical/important MUST carry a runnable reproduction", S1,
+     r"^> - \*\*A `critical` or `important` MUST carry a runnable reproduction\.\*\* Two fields",
+     re.M,
+     "> - **A `critical` or `important` MUST carry a runnable reproduction.** Two fields",
+     "> - **A `critical` or `important` SHOULD carry a reproduction where practical.** Two fields"),
+    ("step-01 hunter contract: both fields are named, in the finding", S1,
+     r"`reproduce: <command>` — run from the repo root — and\n"
+     r">\s*`expected_wrong_output: <what it prints or does that is wrong>`", 0,
+     "`expected_wrong_output: <what it prints or does that is wrong>`",
+     "`notes: <anything else worth saying>`"),
+    ("step-01 hunter contract: without both fields it is DROPPED UNREAD, not downgraded", S1,
+     r"without both fields is \*\*dropped unread\*\*; it is not downgraded", 0,
+     "without both fields is **dropped unread**; it is not downgraded",
+     "without both fields is **downgraded to `suggestion`**; it is not dropped"),
+    # ⭐ THE PART THAT KILLS A TRIVIAL FINDING BEFORE IT IS EVER WRITTEN (operator, 2026-09-11:
+    # "if the reporting agent had to actually have evidence and recreate the issue they are
+    # reporting … it would not lead to all the trivial findings"). The lens INHERITS full tools
+    # and holds its own worktree copy, so it can run the command it just wrote. Requiring it
+    # prices the finding at the moment the finding is cheapest to abandon: the lens already has
+    # the file open and the reasoning in context, and the assessor has neither.
+    ("step-01 hunter contract: the LENS runs its own command before reporting", S1,
+     r"^> - \*\*RUN IT YOURSELF, in your own copy, before you report it\.\*\*", re.M,
+     "> - **RUN IT YOURSELF, in your own copy, before you report it.**",
+     "> - **The assessor will run your command for you.**"),
+    ("step-01 hunter contract: a command that does not fail as predicted DELETES the finding", S1,
+     r"If it does not fail the way you\n> +predicted, you have not found a defect — delete the "
+     r"finding", 0,
+     "you have not found a defect — delete the finding",
+     "report it anyway and let the assessor decide"),
+    # ⛔ Anchored to the HUNTER's bullet, not to the bare phrase. The auditor rubric owes the same
+    # field, so `reproduced: yes` appears twice in this file — and a counter-example that replaces
+    # only the first occurrence left the second one satisfying a bare-phrase regex. The check could
+    # not fail on content until it bound the bullet it is actually about.
+    ("step-01 hunter contract: the lens reports what its own run showed", S1,
+     r"^> - \*\*Report what your own run showed\.\*\* Add `reproduced: yes` \+ the output you "
+     r"actually saw", re.M,
+     "**Report what your own run showed.** Add `reproduced: yes` + the output you actually saw",
+     "**Report your confidence.** Add `confidence: high` when you are sure"),
+    ("step-01 auditor rubric: the same requirement, adapted to an ABSENCE", S1,
+     r"^> - \*\*A `critical` or `important` MUST carry a runnable reproduction\*\*, adapted to "
+     r"your\n> +subject", re.M,
+     "> - **A `critical` or `important` MUST carry a runnable reproduction**, adapted to your",
+     "> - **An auditor is exempt from the reproduction requirement**, unlike your"),
+    ("step-01: the roster count is 3/3", S1,
+     r"`lenses_counted: 3/3`", 0,
+     "`lenses_counted: 3/3`",
+     "`lenses_counted: 5/5`"),
+    # step-02: the wave is retired and the step is a pass-through
+    ("step-02: the verify wave is RETIRED and the step runs nothing", S2,
+     r"^\*\*This step runs nothing\.\*\* The Evidence Verifier and the Compound Synthesis role "
+     r"are retired\.", re.M,
+     "**This step runs nothing.** The Evidence Verifier and the Compound Synthesis role are retired.",
+     "**This step runs two roles.** The Evidence Verifier and the Compound Synthesis role run here."),
+    ("step-02: the retirement is measured — 2 refutations in 18 reviews", S2,
+     r"refuted \*\*2\nfindings in 18 reviews\*\*", 0,
+     "refuted **2\nfindings in 18 reviews**",
+     "refuted **most of what the lenses claimed**"),
+    ("step-02: reproduction in step 3 is what replaces it", S2,
+     r"step 3's \*\*reproduction gate\*\*", 0,
+     "step 3's **reproduction gate**",
+     "a lighter second reading"),
+    ("step-02: findings travel unchanged with `verification: none`", S2,
+     r"Carry every finding from step 1 to step 3 unchanged, with\n`verification: none`", 0,
+     "Carry every finding from step 1 to step 3 unchanged, with\n`verification: none`",
+     "Re-grade each finding before step 3 and record a\n`revised_severity:`"),
+    ("step-02: the notes line records the retirement", S2,
+     r"add `verify wave: retired \(SCC-447\)` to the engine's returned `notes`", 0,
+     "add `verify wave: retired (SCC-447)` to the engine's returned `notes`",
+     "add `verify wave: ran` to the engine's returned `notes`"),
+    # step-03: the gate, the four buckets, the floor on open rows
+    ("step-03: the reproduction gate runs BEFORE the bucket", S3,
+     r"^## 4\. The reproduction gate, then the bucket — exactly one per finding$", re.M,
+     "## 4. The reproduction gate, then the bucket — exactly one per finding",
+     "## 4. Bucket — exactly one per finding"),
+    ("step-03: missing either field → DROP, counted", S3,
+     r"It must carry `reproduce:` and `expected_wrong_output:`\. Missing either → \*\*drop\*\*, "
+     r"counted\.", 0,
+     "Missing either → **drop**, counted.",
+     "Missing either → treat it as a `suggestion`."),
+    ("step-03: a lens that did not run its own command has not met the contract", S3,
+     r"A lens that did\nnot run its own command has not met the hunter contract → \*\*drop\*\*", 0,
+     "A lens that did\nnot run its own command has not met the hunter contract",
+     "A lens may leave the running to the assessor"),
+    # ⛔ THE ARCHITECTURAL FACT THIS TURNS ON, verified 2026-09-11: the engine's SKILL.md grants
+    # `Read, Write, Glob, Grep, Task` — NO Bash. The engine literally cannot execute a command,
+    # and that grant is deliberate (a reviewer that can execute is one edit from being an editor;
+    # SCC-295 measured three of five lenses writing to the builder's tree). So the reproduction
+    # splits: the LENS proves it in its own copy, the engine checks the claim is THERE, and the
+    # CALLER — which has Bash — re-runs it on the real tree and owns the receipt.
+    ("step-03: the ENGINE cannot execute, and says so — the caller runs the receipt", S3,
+     r"\*\*This engine cannot run it, by design\*\*[^\n]*\n[^\n]*no Bash", 0,
+     "**This engine cannot run it, by design**",
+     "**This engine runs it here**"),
+    ("step-03: the caller re-runs on the REAL tree, and that receipt is what binds", S3,
+     r"The CALLER runs the command again, on the REAL\ntree, through `repro_receipt\.py`", 0,
+     "The CALLER runs the command again, on the REAL\ntree, through `repro_receipt.py`",
+     "The lens's own result is taken as final"),
+    ("step-03: a lens's own tree may be a MUTANT — SCC-295 is the named reason", S3,
+     r"SCC-295[^\n]*\n?[^\n]*lens's own (copy|mutant)", 0,
+     "SCC-295",
+     "a hypothetical concern"),
+    ("step-03: a suggestion/nitpick is never reproduced and never bucketed", S3,
+     r"A `suggestion` or a `nitpick` is never reproduced and never bucketed", 0,
+     "A `suggestion` or a `nitpick` is never reproduced and never bucketed",
+     "A `suggestion` or a `nitpick` is bucketed like anything else"),
+    ("step-03 bucket: FIX is a reproduced critical OR important, pinned with a test seen red", S3,
+     r"^- \*\*fix\*\* — a reproduced `critical` or `important`\.[^\n]*\n[^\n]*"
+     r"reproduce-before-you-fix` G1–G5", re.M,
+     "- **fix** — a reproduced `critical` or `important`.",
+     "- **fix** — anything the assessor judges worth fixing."),
+    ("step-03: TWO buckets, and the two struck ones are named with the ruling", S3,
+     r"\*\*There are two buckets, and there is no third\.\*\*[\s\S]{0,900}?`escalate` bucket"
+     r"[\s\S]{0,300}?`defer` bucket[\s\S]{0,400}?2026-09-11", 0,
+     "There are two buckets, and there is no third.",
+     "There are two buckets, and a third may be added when a lane needs one."),
+    ("step-03: held and out-of-lane are the CALLER's dispositions, not engine buckets", S3,
+     r"dispositions of the CALLER, not\s+buckets of this engine[\s\S]{0,400}?`held`"
+     r"[\s\S]{0,300}?`out-of-lane`", 0,
+     "dispositions of the CALLER, not",
+     "two more buckets this engine assigns, not"),
+    ("step-03 bucket: DROP covers no-reproduction, no-command and noise, counted in one line", S3,
+     r"^- \*\*drop\*\* — did not reproduce, arrived without a command, or is noise", re.M,
+     "- **drop** — did not reproduce, arrived without a command, or is noise",
+     "- **dismiss** — noise, false positive, already handled elsewhere"),
+    ("step-03: decision_needed is GONE, because an open decision holds the ticket", S3,
+     r"\*\*There is no `decision_needed` bucket any more\.\*\* An open decision holds a ticket "
+     r"forever at\n`finish`, which is the loop\.", 0,
+     "**There is no `decision_needed` bucket any more.**",
+     "**The `decision_needed` bucket is unchanged.**"),
+    ("step-03: a survivor is fixed IN THIS THREAD, never a ticket", S3,
+     r"\*\*A finding that survives the\ngate is fixed in this thread, never a ticket\.\*\*", 0,
+     "gate is fixed in this thread, never a ticket.**",
+     "gate is owed to a follow-on ticket.**"),
+    ("step-03 §5: the floor is read at the STAMP, on rows still OPEN", S3,
+     r"^## 5\. Score the severity floor — on the rows that are still OPEN at the stamp$", re.M,
+     "## 5. Score the severity floor — on the rows that are still OPEN at the stamp",
+     "## 5. Score the severity floor — the one place severity becomes a verdict"),
+    ("step-03 §5: the old always-on floor is named as the loop it caused", S3,
+     r"the only road from CONCERNS to PASS was a second full fan-out", 0,
+     "the only road from CONCERNS to PASS was a second full fan-out",
+     "the floor was simply conservative"),
+    ("step-03 §5: an OPEN reproduced critical is FAIL — unfixed, or held", S3,
+     r"^\|\s*a reproduced `critical` in `fix` that is not yet fixed and pinned — or `held`[^|]*\|"
+     r"\s*\*\*FAIL\*\*", re.M,
+     "| a reproduced `critical` in `fix` that is not yet fixed and pinned — or `held`",
+     "| any `critical` a lens reported"),
+    ("step-03 §5: a HELD reproduced important is CONCERNS — authority", S3,
+     r"^\|\s*a reproduced `important` `held` for the operator's word[^|]*\|\s*\*\*CONCERNS\*\* "
+     r"— authority", re.M,
+     "**CONCERNS** — authority",
+     "**FAIL** — authority"),
+    # ⛔ An `important` that is neither fixed nor held is not a verdict of any kind: the stamp is
+    # refused and the caller finishes. This is what replaced "escalate → CONCERNS": the old row
+    # let an unfixed reproduced defect ship with a label; this one lets it ship only fixed.
+    ("step-03 §5: an important neither fixed nor held is NOT a verdict — the stamp is refused", S3,
+     r"^\|\s*a reproduced `important` in `fix` that is neither fixed nor held\s*\|[^|]*"
+     r"the stamp is refused", re.M,
+     "the stamp is refused",
+     "the lane ships as CONCERNS"),
+    ("step-03 §5: a fixed-and-pinned row does not appear in the table at all", S3,
+     r"A row closed by a fix and a green pin\ndoes not appear here\.", 0,
+     "A row closed by a fix and a green pin\ndoes not appear here.",
+     "Every row the lenses returned appears here\nuntil the next review."),
+    ("step-03 §5: CONCERNS is not a stop, and §7 is named as the law", S3,
+     r"\*\*CONCERNS is not a stop\.\*\*[^\n]*`code-standards\.md` §7", 0,
+     "**CONCERNS is not a stop.**",
+     "**CONCERNS holds the lane.**"),
+    # step-04: the record vocabulary
+    ("step-04: the FIX box carries its pin and its repro id", S4,
+     r"^- \[ \] \[Review\]\[Fix\] <title> \[<file>:<line>\] src=<lens> · repro <id>$", re.M,
+     "- [ ] [Review][Fix] <title> [<file>:<line>] src=<lens> · repro <id>",
+     "- [ ] [Review][Patch] <title> [<file>:<line>] src=<lens>"),
+    ("step-04: there is NO Escalate box and NO Defer box, and the ruling is named", S4,
+     r"\*\*There is no `Escalate` box and no `Defer` box \(SCC-447, operator ruling 2026-09-11\)"
+     r"\.\*\*", 0,
+     "There is no `Escalate` box and no `Defer` box",
+     "The `Escalate` box and the `Defer` box are written below"),
+    ("step-04: src= is one of the THREE surviving lens short names", S4,
+     r"One lens by its short name \(`edge`, `acceptance`, `test-adequacy`\)", 0,
+     "One lens by its short name (`edge`, `acceptance`, `test-adequacy`)",
+     "One lens by its short name (`blind`, `edge`, `literal`, `acceptance`, `test-adequacy`)"),
+    ("step-04: the summary counts fix, then dropped and recorded — nothing else", S4,
+     r"^findings: {8}<f> fix {3}\(<d> dropped — no reproduction · <r> recorded\)$", re.M,
+     "findings:        <f> fix   (<d> dropped — no reproduction · <r> recorded)",
+     "findings:        <f> fix · <e> escalate · <w> defer   "
+     "(<d> dropped — no reproduction · <r> recorded)"),
+    ("step-04: held and out-of-lane are written by the CALLER at fix time, never by the engine", S4,
+     r"both\s+are the CALLER's dispositions, written at fix time, and this engine never writes either",
+     0,
+     "this engine never writes either",
+     "this engine writes both"),
+    # SKILL.md: the caller contract matches
+    ("SKILL: the description says it reproduces, not that it verifies", SKILL,
+     r"^description:[^\n]*reproduces what they find", re.M,
+     "reproduces what they find",
+     "verifies findings"),
+    ("SKILL: the return block matches step-04's counts", SKILL,
+     r"^findings: {8}<f> fix {3}\(<d> dropped — no reproduction · <r> recorded\)$", re.M,
+     "findings:        <f> fix   (<d> dropped — no reproduction · <r> recorded)",
+     "findings:        <f> fix · <e> escalate · <w> defer   "
+     "(<d> dropped — no reproduction · <r> recorded)"),
+    ("SKILL: step 2 is declared a pass-through in the flow list", SKILL,
+     r"^2\. `steps/step-02-verify\.md` — pass-through \(the verify wave is retired, SCC-447\)$",
+     re.M,
+     "2. `steps/step-02-verify.md` — pass-through (the verify wave is retired, SCC-447)",
+     "2. `steps/step-02-verify.md` — verification pass over what the lenses found"),
+    # ⭐ THE STOP CONDITION, IN ONE PARAGRAPH. The loop existed because the floor had no legal way
+    # DOWN: it was computed from what the lenses returned, fixing never lowered it, so the only
+    # road from CONCERNS to PASS was another full fan-out. Two evidence-backed downgrades replace
+    # that dead end — and both are machine-checkable, which is why they cannot be argued into
+    # existence the way a judgment call can.
+    ("SKILL: the returned floor is PROVISIONAL — the caller resolves it at the stamp", SKILL,
+     r"The floor this\nengine returns is \*\*provisional\*\*, and the caller resolves it at the "
+     r"stamp\.", 0,
+     "The floor this\nengine returns is **provisional**, and the caller resolves it at the stamp.",
+     "The floor this\nengine returns is **final**, and the caller may never come back below it."),
+    ("SKILL: exactly TWO ways down, both evidence — a receipt, or a fix with a pin", SKILL,
+     r"exactly TWO\nways a caller may come back LESS severe[^\n]*\n[^\n]*both are evidence, never\n"
+     r"judgment", 0,
+     "both are evidence, never\njudgment",
+     "both are the caller's\njudgment"),
+    ("SKILL: any OTHER downgrade is the caller overruling the review, and is refused", SKILL,
+     r"Any other downgrade is the caller overruling the review, which it may not do\.", 0,
+     "Any other downgrade is the caller overruling the review, which it may not do.",
+     "Any other downgrade is the caller's call."),
+    # ⛔ The engine NEVER runs a command (D1), so it never writes a receipt and `ARTIFACT_DIR`
+    # stays optional. The boundary section says so positively — a stub that grants itself Bash
+    # cannot simultaneously carry this bullet.
+    ("SKILL: the engine never runs a command — the caller owns the receipt", SKILL,
+     r"^- \*\*It never runs a command\.\*\*", re.M,
+     "- **It never runs a command.**",
+     "- **It runs each reproduction command itself.**"),
+)
+
+# ── BLOCK C — the DOORS: /smh-code-review and /cicd-code-review ────────────────────────────────
+#
+# ⛔ WHY THE DOORS NEED A BLOCK OF THEIR OWN. The engine is a skill with no Bash: it hunts,
+# triages and records, and it cannot run a single command (block B pins that). So every sentence
+# of the doctrine that requires RUNNING something belongs to the caller — the reproduction on the
+# real tree (D1), the fix batch (D2), the floor resolved at the stamp on open rows (D3), the
+# re-stamp with no second roster (D4) and the end-of-review screen (D5). A green block A beside a
+# green block B with these two doors untouched is the doctrine written down and never executed,
+# which is precisely the state SCC-441 shipped: the rule said "reproduce or drop" while the door
+# it was written for still said "fix everything the engine hands back".
+SMH_DOOR = ".agents/commands/smh-code-review.md"
+CICD_DOOR = ".agents/commands/cicd-code-review.md"
+DOORS = (SMH_DOOR, CICD_DOOR)
+
+SMH_AUDIT = ".agents/commands/smh-clean-code-audit.md"
+CICD_AUDIT = ".agents/commands/cicd-clean-code-audit.md"
+AUDITS = (SMH_AUDIT, CICD_AUDIT)
+
+CLOSE_TASK = ".agents/commands/smh-close-task-merge-tree.md"
+
+# `.opencode/commands/` is a BYTE copy of the master and the only mirror that is one (`.roo/`
+# gets a generated thin launcher). A master edited without it ships the OLD door to the runtime
+# that reads the mirror — SCC-77's defect, and the reason this is asserted rather than assumed.
+MIRROR = ".opencode/commands"
+MIRRORED = (SMH_DOOR, CICD_DOOR, SMH_AUDIT, CICD_AUDIT, CLOSE_TASK)
+
+
+def both(name: str, pattern: str, flags: int, old: str, new: str, files=DOORS):
+    """One law, asserted in every file that must carry it — with the SAME counter-example.
+
+    Most of this text lives inside `<!-- twin-law: … -->` fences, which `test_twin_parity.py`
+    holds byte-identical between the pair; that is what lets one counter-example apply to both
+    doors. Running the check twice is also what catches the HALF-PORT — an edit that lands on the
+    Task door and never on the story door, which is how the two drifted before SCC-212.
+    """
+    return tuple((f"{name} [{Path(rel).name}]", rel, pattern, flags, old, new) for rel in files)
+
+
+CHECKS_C: tuple[tuple[str, str, str, int, str, str], ...] = (
+    # ── Found by SCC-447's own tip review. Every row below is a law sentence a lens INVERTED in
+    # its worktree with every pin green (receipts b1, b5, b6, b9, b10, e1, e4, x3).
+    *both("C · what comes back is a CLAIM — nothing is fixed before Step 1.4",
+          one_line("What comes back is a CLAIM, and you fix nothing yet"), 0,
+          "you fix nothing yet", "act on what it hands back, here, now"),
+    *both("C · CONCERNS is shippable and the go/no-go is the operator's word",
+          one_line("**CONCERNS is shippable, and the go/no-go is the operator's word.**"), 0,
+          "CONCERNS is shippable", "CONCERNS never ships by itself"),
+    *both("C · acceptance: an item with no evidence is this lane's own FAIL reason, not a soft note",
+          one_line("which is this lane's own **FAIL** reason. It is not a soft note: §7 has two CONCERNS "
+                   "grounds and \"nobody checked\" is not one of them."), 0,
+          "this lane's own **FAIL** reason", "**CONCERNS floor.**"),
+    *both("C · no acceptance list is no-spec mode, never a verdict ground",
+          one_line("the Acceptance Auditor is skipped by mode, the matrix is empty, and neither is a "
+                   "verdict ground"), 0,
+          "neither is a verdict ground", "that is the **coverage** ground for CONCERNS"),
+    ("C · an unrunnable gate is reported and named, never stamped over", CICD_DOOR,
+     one_line("the floor is unrunnable with it — report it and name the fix, never stamp over it"), 0,
+     "report it and name the fix, never", "caps the verdict at CONCERNS, never"),
+    *both("C · Step 1.4: a lens command carrying a shell operator goes through a shell as ONE argument",
+          one_line("line that carries a shell operator (`|`, `&&`, `||`, `;`, a redirect) is passed as "
+                   "ONE argument and run through a shell: `-- bash -c '<the lens command>'`"), 0,
+          "is passed as ONE argument", "is pasted after `--` as it came"),
+    *both("C · a lane without rider keys selects with --range, and git's A..B excludes A",
+          one_line("selects with `--range <the commit before the part>..<its last commit>` — git's "
+                   "`A..B` excludes A"), 0,
+          "the commit before the part", "<sha>"),
+    ("C · the story door's Step 1 fence binds WORKTREE, EPIC, ARTIFACT_DIR and L before the scope cut",
+     CICD_DOOR,
+     r'test -n "\$WORKTREE" && test -n "\$EPIC" && test -d "\$ARTIFACT_DIR" && test -n "\$L" \|\| '
+     r"\{ echo 'UNBOUND — STOP'; exit 1; \}\n"
+     r'cd "\$L" && python3 \.agents/scripts/review_scope\.py --repo "\$WORKTREE"', 0,
+     'test -n "$WORKTREE" && test -n "$EPIC" && test -d "$ARTIFACT_DIR" && test -n "$L"',
+     'test -n "$L"'),
+    ("C · the story door's Step 1.4 fence binds WORKTREE, ARTIFACT_DIR and L before the receipt writer",
+     CICD_DOOR,
+     r'test -n "\$WORKTREE" && test -d "\$ARTIFACT_DIR" && test -n "\$L" \|\| '
+     r"\{ echo 'UNBOUND — STOP'; exit 1; \}\n"
+     r'cd "\$L" && python3 \.agents/scripts/repro_receipt\.py run', 0,
+     'test -n "$WORKTREE" && test -d "$ARTIFACT_DIR" && test -n "$L" || { echo \'UNBOUND — STOP\'; exit 1; }\n'
+     'cd "$L" && python3 .agents/scripts/repro_receipt.py run',
+     'cd "$L" && python3 .agents/scripts/repro_receipt.py run'),
+    # ── D6: what the lenses actually read. The DIFF row must be the SCRIPT's output, not the
+    # raw `base..HEAD` diff — a relationship (row → script), never the word `review_scope`
+    # appearing somewhere in the file.
+    *both("C · Step 1 hands the engine review_scope.py's patch, one PART and masters only",
+          r"^\|\s*`DIFF`\s*\|\s*the patch `review_scope\.py` wrote — \*\*one PART, masters only\*\*",
+          re.M,
+          "the patch `review_scope.py` wrote — **one PART, masters only**",
+          "the `origin/main...HEAD` diff, every file in it"),
+    *both("C · the scope command is SHOWN, with a selector and an --out path",
+          r"review_scope\.py --repo [^\n]*--key <PART-KEY> --out ", 0,
+          "--key <PART-KEY> --out ", "--key <PART-KEY> "),
+
+    # ── D1: the door's own run. The heading must lead to the receipt writer — a `## Reproduce`
+    # step that names no command is the prose version of the gate that never ran.
+    *both("C · a Reproduce step runs the receipt writer on the real tree",
+          r"^## Step 1\.4 — Reproduce on the real tree\b[\s\S]{0,4000}?repro_receipt\.py run",
+          re.M,
+          "## Step 1.4 — Reproduce on the real tree",
+          "## Step 1.4 — Trust the lens's own reproduction"),
+    *both("C · a command that exits 0 did NOT reproduce — the row is dropped and counted",
+          r"exits 0 did not reproduce: the row is `dropped — no reproduction`", 0,
+          "exits 0 did not reproduce", "exits 0 is still worth a second look"),
+    # ⛔ The third result is the one a naive door gets wrong: a typo'd command exits non-zero, so
+    # "non-zero means reproduced" stamps every finding whose command is broken.
+    *both("C · unrunnable is NOT a result — repair the command, never the finding",
+          r"`unrunnable` is not a result\*\*[^\n]*\n?[^\n]*never fix or drop the finding on it", 0,
+          "never fix or drop the finding on it", "treat it as reproduced and fix it"),
+
+    # ── D2: the action policy, one row per receipt, each binding a RESULT to an ACTION and to
+    # the disposition string the close-out parses.
+    *both("C · D2: a reproduced critical/important is FIXED here, with a pin seen red then green",
+          r"^\|\s*reproduced `critical` or `important`\s*\|[^|]*pin seen RED then GREEN[^|]*\|"
+          r"\s*`fixed @<sha> · pin <test>\[:<case>\] · repro <id>`", re.M,
+          "| reproduced `critical` or `important` | fix it here, now, with a pin seen RED then GREEN",
+          "| reproduced `critical` or `important` | hand it to the operator with a recommendation"),
+    *both("C · D2: a fix you may not apply is WRITTEN as a patch, never asked as a question",
+          r"^\|\s*reproduced, and the fix needs the operator's permission[^|]*\|[^|]*write the fix "
+          r"and its pin as a patch beside the receipt[^|]*do \*\*not\*\* apply it[^|]*\|"
+          r"\s*`held — ask-first:", re.M,
+          "write the fix and its pin as a patch beside the receipt",
+          "ask the operator which way he would like to go"),
+    *both("C · D2: a defect in a file this lane did not touch is out-of-lane, not a bucket",
+          r"^\|\s*reproduced, in a file this lane did not touch\s*\|[^|]*`work-consolidation` "
+          r"ladder[^|]*\|\s*`out-of-lane — <where it went>`", re.M,
+          "| reproduced, in a file this lane did not touch",
+          "| reproduced, in any file the lens looked at"),
+    *both("C · D2: suggestion/nitpick is a COUNT and nothing else",
+          r"^\|\s*`suggestion` / `nitpick`\s*\|\s*nothing at all; a count\s*\|\s*`recorded`", re.M,
+          "| `suggestion` / `nitpick` | nothing at all; a count | `recorded`",
+          "| `suggestion` / `nitpick` | fix the cheap ones | `fixed`"),
+    # The `finish` hold, stated in the door that would otherwise write the row.
+    *both("C · D2: nothing a finding produced goes under `## Your Actions`",
+          r"Nothing a finding produced is written under `## Your Actions`", 0,
+          "Nothing a finding produced is written under",
+          "A finding the operator should weigh is written under"),
+
+    # ── D3: the floor. PROVISIONAL at the engine, resolved at the stamp, two evidence-backed
+    # ways down and no third. This is the sentence that ends the loop.
+    *both("C · D3: the engine's floor is PROVISIONAL and Step 4 resolves it on OPEN rows",
+          r"\*\*The engine's `severity_floor` is PROVISIONAL\.\*\* Step 4 resolves it at the stamp, "
+          r"on the rows still\n\*\*open\*\*", 0,
+          "**The engine's `severity_floor` is PROVISIONAL.**",
+          "**The engine's `severity_floor` BINDS Step 4.**"),
+    *both("C · D3: exactly two ways down, both evidence on disk, never judgment",
+          r"exactly \*\*two\*\* ways a row comes down, and both are\nevidence on disk, never "
+          r"judgment", 0,
+          "evidence on disk, never judgment", "yours to weigh as the assessor"),
+
+    # ── Step 3.5 nested: the machine floor only. §7 has two CONCERNS grounds and taste is not
+    # one of them, so a judgment pass nested inside a review can only manufacture a third.
+    *both("C · Step 3.5 nested runs the machine floor only — the judgment pass does not run",
+          r"\*\*Run the machine floor only\*\*[\s\S]{0,300}?judgment pass does \*\*not\*\* run",
+          0,
+          "**Run the machine floor only**", "**Run the full two-half pass**"),
+
+    # ── Step 4: the verdict rules, the table header the close-out parses, the re-stamp, and the
+    # message. Each is a relationship between a verdict word and the state that produces it.
+    *both("C · Step 4: FAIL is an OPEN reproduced critical at this stamp, held or not",
+          r"^- \*\*FAIL\*\* — an \*\*open reproduced `critical`\*\* at this stamp, held or not",
+          re.M,
+          "an **open reproduced `critical`** at this stamp, held or not",
+          "an **open reproduced `critical`** the operator has not yet waived"),
+    *both("C · Step 4: CONCERNS has exactly two grounds — authority and coverage",
+          r"^- \*\*CONCERNS\*\* — exactly two grounds and nothing else: \*\*authority\*\*"
+          r"[\s\S]{0,400}?\*\*coverage\*\*", re.M,
+          "exactly two grounds and nothing else",
+          "soft issues only, including bloat and duplication"),
+    *both("C · Step 4: PASS means nothing OPEN, not merely every gate green",
+          r"^- \*\*PASS\*\* — nothing open: every reproduced row closed by a fix with a green pin",
+          re.M,
+          "**PASS** — nothing open: every reproduced row closed by a fix with a green pin",
+          "**PASS** — every gate green on the changed set"),
+    *both("C · Step 4: an important neither fixed nor held is NO VERDICT, and the stamp is refused",
+          r"neither `fixed` nor `held` is \*\*no verdict at all\*\* —\n`walkthrough_roster\.py` "
+          r"refuses the stamp", 0,
+          "is **no verdict at all**", "is a CONCERNS"),
+    *both("C · Step 4: the findings-table header is the one walkthrough_roster.py reads",
+          r"^  \| # \| file:line \| sev \| lens \| failure scenario \| repro \| disposition \|$",
+          re.M,
+          "| # | file:line | sev | lens | failure scenario | repro | disposition |",
+          "| # | file:line | sev | lens | failure scenario | disposition |"),
+    *both("C · the dispositions: record line counts reproduced/dropped/recorded",
+          r"dispositions:\s+per-lens: <lens>=<reproduced>/<dropped>/<recorded>", 0,
+          "<lens>=<reproduced>/<dropped>/<recorded>",
+          "<lens>=<survived>/<dismissed>/<relevance-killed>"),
+
+    # ── D4: one review per lane. The re-stamp is a new section with no second roster.
+    *both("C · D4: the retest is the pins plus the suite — the lenses run ONCE",
+          r"⛔ \*\*One review per PART — the lenses run ONCE over each part\.\*\*[\s\S]{0,1200}?"
+          r"review: carried from the one review @ <sha1> — no lens re-run", 0,
+          "review: carried from the one review @ <sha1> — no lens re-run",
+          "review: a second fan-out over the fixed tree"),
+    *both("C · D4: a stale sha invalidates the SUITE EVIDENCE, never the review",
+          r"invalidates the \*\*suite evidence\*\*, never the review: re-run the pins and the suite "
+          r"and\nre-stamp — never the lenses", 0,
+          "invalidates the **suite evidence**, never the review",
+          "invalidates the verdict"),
+
+    # ── D5: the door ends the turn. "Nothing is a question" is the whole contract — the review
+    # that pauses to ask is the review that costs a week.
+    *both("C · D5: the turn ENDS with one screen and the two words that move it",
+          r"\*\*End the turn with one screen[\s\S]{0,900}?the two words that move it — `approved`"
+          r"[\s\S]{0,300}?`apply <ids>`", 0,
+          "**End the turn with one screen", "**Stop here and ask the operator"),
+    *both("C · D5: nothing is a question and nothing is a recommendation to weigh",
+          r"\*\*Nothing is a question and nothing is a recommendation to weigh\.\*\*", 0,
+          "**Nothing is a question and nothing is a recommendation to weigh.**",
+          "**Ask him which of these he would like pursued.**"),
+
+    # ── The two clean-code audit doors: nested, the judgment half does not run at all, and
+    # standalone it is RECORDED rather than a verdict (§7's two grounds, ruled 2026-09-11).
+    *both("C · the audit door says it does not run its judgment pass inside a review",
+          r"⛔ \*\*Nested inside a review, this pass does not run\*\* \(SCC-447\)", 0,
+          "⛔ **Nested inside a review, this pass does not run** (SCC-447)",
+          "⛔ **Nested inside a review, run it exactly as usual**", files=AUDITS),
+    *both("C · the audit door's description: the judgment pass is recorded, never a verdict",
+          r"^description:[^\n]*recorded, never a verdict", re.M,
+          "recorded, never a verdict. ", "caps at CONCERNS. ", files=AUDITS),
+    *both("C · the audit door's Step 2 heading: recorded, never a verdict",
+          r"^## Step 2 — The Judgment Pass\s+\*\(taste[^)\n]*— recorded, never a verdict\)\*",
+          re.M,
+          "— recorded, never a verdict)*", "— caps at CONCERNS)*", files=AUDITS),
+    *both("C · the audit door's gate legend: judgment findings never make the verdict",
+          r"^- \*\*CONCERNS\*\*[^\n]*Step 2's judgment findings are \*\*recorded, never a "
+          r"verdict\*\*", re.M,
+          "Step 2's judgment findings are **recorded, never a verdict**",
+          "Step 2's judgment findings CAP this gate at CONCERNS", files=AUDITS),
+
+    # ── The close-out door's severity triage. It used to name two retired engine buckets; what
+    # stops a merge now is an OPEN reproduced finding, and the remedy is the fix, not a re-review.
+    ("C · close-out: only an OPEN reproduced critical/important stops the merge, and it is fixed here",
+     CLOSE_TASK,
+     r"only a reproduced `critical` or `important` still OPEN stops the\nmerge — it is fixed in "
+     r"this lane, with a pin", 0,
+     "only a reproduced `critical` or `important` still OPEN stops the",
+     "only a `critical`/`important` in `decision_needed` or `patch` stops the"),
+)
+
+# ── The doors' identifier bans: the SPELLINGS a door that still runs the old flow would carry ──
+# Asserted the same way as §5's: anti-vacuity first (the file must have a body), then absence.
+# Every one of these is a live input or instruction, never a retirement note — the doors do not
+# explain what the engine retired, they simply stop passing it.
+DOOR_BANS: tuple[tuple[str, str, int, tuple[str, ...]], ...] = (
+    ("a live lens_budget input row", r"^\|\s*`lens_budget`\s*\|", re.M, DOORS),
+    ("a live DEFERRED_WORK input row", r"^\|\s*`DEFERRED_WORK`\s*\|", re.M, DOORS),
+    ("the retired review-level derivation fence", r"<!-- twin-law: review-level -->", 0, DOORS),
+    ("a live review_level hand-off", r"`review_level`", 0, DOORS),
+    ("the retired decision_needed bucket", r"decision_needed", 0, DOORS + (CLOSE_TASK,)),
+    ("the retired deferred-work ledger", r"deferred-work\.md", 0, DOORS),
+    # ⛔ THE LOOP ITSELF. "re-run the review" was the preflight's remedy for FAIL and the reflex
+    # a door can always reach for; SCC-441 reached for it three times. The retest is the pins and
+    # the suite, so no door may say otherwise.
+    ("an instruction to review again", r"re-run the review|fresh review|fresh lens|"
+     r"invalidates the verdict", re.I, DOORS),
+    ("the retired caps-at-CONCERNS judgment verdict", r"caps at CONCERNS", 0, AUDITS + DOORS),
+    # ⛔ Found by SCC-447's own tip review (receipts b1, b2, b3, b9). §7 has exactly two CONCERNS
+    # grounds; the doors' acceptance bullets and gate tables still minted more — no-spec, a lint
+    # warning, a soft CI step, missing automate evidence — none with a receipt or a patch behind
+    # it, which is the "file to read" the ruling struck. One "blind lens first" survived the
+    # six-site fix ten lines below the sentence saying the blind lens is gone, and "CONCERNS never
+    # ships by itself" could be pasted into a door with every pin green.
+    ("a door-side CONCERNS ground beyond §7's two",
+     r"CONCERNS floor|cap the verdict at \*\*CONCERNS\*\*|coverage\*\* ground for CONCERNS|"
+     r"warnings are CONCERNS", 0, DOORS),
+    ("the lint-warning CONCERNS legend", r"`workflow_lint` \*\*warnings\*\* only", 0, AUDITS),
+    ("a live blind-lens ordering", r"blind lens first", re.I, DOORS),
+    ("CONCERNS held as a blocker in a door", r"never ships by itself", 0, DOORS),
+)
+
+# ── §5's identifier bans: the SPELLINGS a live caller would have to write ──────────────────────
+# Asserted with anti-vacuity (the file must EXIST and be non-empty first), so a deleted step file
+# fails the control instead of satisfying it. These are the machine-readable forms — `lens_budget:`
+# with its colon is what a caller passes; a retirement note naming `lens_budget` never writes one.
+BANS: tuple[tuple[str, str], ...] = (
+    ("a live lens_budget input", r"`lens_budget: (standard|capped)`"),
+    ("a live review_level input", r"`review_level: (quick|standard)`"),
+    ("a live EVIDENCE_PACK priming instruction", r"prime the lenses[^\n]*with it"),
+    ("the retired decision_needed bucket as a live bucket", r"^- \*\*decision_needed\*\*"),
+    ("the retired patch bucket as a live bucket", r"^- \*\*patch\*\* —"),
+    # Struck 2026-09-11 (operator ruling) — the two buckets SCC-447's own first cut shipped.
+    ("the retired escalate bucket as a live bucket", r"^- \*\*escalate\*\* —"),
+    ("the retired defer bucket as a live bucket", r"^- \*\*defer\*\* —"),
+    ("a live DEFERRED_WORK input row", r"^\| `DEFERRED_WORK` \|"),
+    ("a live Escalate or Defer record box", r"^- \[ \] \[Review\]\[(Escalate|Defer)\]"),
+)
+
+
+# ══ BLOCKS E, F, H — the LANES that call the doors ════════════════════════════════════════════
+#
+# ⛔ WHY THESE THREE ARE ONE SECTION. Part 4 gave the doors the doctrine. A door is only ever as
+# binding as the lane that calls it: the autopilot decided what to do with a verdict, the
+# consolidation rule decided WHEN a review runs, and the self-audit resolves its own change set the
+# way a review resolves a diff. Each of those was written against the review the doors no longer
+# run, and a lane still running the old contract re-opens the loop from outside the door.
+
+AUTOPILOT = ".agents/commands/cicd-autopilot-claude.md"
+AUTOPILOT_SOP = "docs/_scc_sops_prds/autopilot_SOP.md"
+LANE_SOP = "docs/_scc_sops_prds/workflows_testing_SOP.md"
+# The command and its manual. AUDIT FINDING 1 (plan, v2): `cicd-autopilot-claude.md` declares
+# `platforms: [claude]`, so no `.opencode/` mirror exists and none is expected here.
+AUTOPILOT_SURFACES = (AUTOPILOT, AUTOPILOT_SOP)
+
+CONSOLIDATION = ".agents/rules/work-consolidation.md"
+PLAN_TASK = ".agents/commands/smh-plan-task.md"
+DEV_TASK = ".agents/commands/smh-dev-task-tests.md"
+PLANNERS = (PLAN_TASK, DEV_TASK)
+
+SMH_SELF_AUDIT = ".agents/commands/smh-self-audit.md"
+CICD_SELF_AUDIT = ".agents/commands/cicd-self-audit.md"
+SELF_AUDITS = (SMH_SELF_AUDIT, CICD_SELF_AUDIT)
+
+
+
+# The one sentence both self-audit twins must carry in the SAME words (D9). It sits OUTSIDE every
+# `twin-law` fence — the fences end at smh:115 / cicd:108 and Lens 2 starts well after — so
+# `test_twin_parity.py` does not compare it and this is the only thing that holds the two together.
+ASYMMETRY = (
+    "⛔ **`--audit` keeps the mirrors, and that asymmetry is the point.** A review strips the "
+    "byte-copy mirrors because a defect in a copy is a defect in its master; this lens's whole "
+    "question is whether the copies AGREE, so a stripped diff would hide the one failure it "
+    "exists to catch."
+)
+
+CHECKS_E: tuple[tuple[str, str, str, int, str, str], ...] = (
+    # ── The charter row. The relationship is verdict → channel → what does NOT happen; a row that
+    # says only "escalate" is the row that was already there in three other places.
+    *both("E · a non-PASS verdict goes to the operator via needs_human, with no fix child",
+          r"\|\s*③ verdict `CONCERNS` or `FAIL`\s*\|[^|\n]*\|[^|\n]*`needs_human`"
+          r"[^|\n]*no fix child, no second reviewer", 0,
+          "no fix child, no second reviewer",
+          "one fix child in the lane, then one fresh reviewer",
+          files=AUTOPILOT_SURFACES),
+
+    # The WHO column, per file — the command's charter answers "what you do", the SOP's answers
+    # "who decides", so the cell differs and each is pinned where it lives.
+    ("E · the command's charter hands the row to escalate, not to the lead", AUTOPILOT,
+     r"\|\s*③ verdict `CONCERNS` or `FAIL`\s*\|\s*\*\*escalate\*\*\s*\|", 0,
+     "`FAIL` | **escalate** |", "`FAIL` | **lead**, once |"),
+    ("E · the SOP's charter row is the operator's, not the lead's", AUTOPILOT_SOP,
+     r"\|\s*③ verdict `CONCERNS` or `FAIL`\s*\|\s*\*\*you\*\*\s*\|", 0,
+     "`FAIL` | **you** |", "`FAIL` | **the lead**, once |"),
+
+    # ── The reason, stated where the run is described. Without this the row reads as a policy
+    # choice; with it, it is a consequence of what the door now does before it stamps.
+    *both("E · no stage follows the review, because the door already fixed what reproduced",
+          one_line("so no stage follows the review. The lead posts the door's end-of-review "
+                   "message on the ticket and stops"), 0,
+          "no stage follows the review", "one fix stage follows the review",
+          files=AUTOPILOT_SURFACES),
+    *both("E · the two operator words are the only thing that moves it",
+          one_line("`approved` or `apply <ids>` is the only thing that moves it, and it is not "
+                   "the lead's to supply"), 0,
+          "is the only thing that moves it", "is the usual way to move it",
+          files=AUTOPILOT_SURFACES),
+
+    # ── The lane SOP: the short version in §15 and the atlas row in §18 must agree with the
+    # manual, or the operator reads the retired loop on the page he actually keeps open.
+    ("E · §15 escalates ANY non-PASS verdict", LANE_SOP,
+     one_line("any file deletion, and **any review verdict that is not `PASS`**"), 0,
+     "**any review verdict that is not `PASS`**", "a second failed review"),
+    ("E · the command-atlas review row goes straight to ESCALATE", LANE_SOP,
+     r"\|\s*`R`\s*\|\s*review verdict\s*\|[^|\n]*\*\*CONCERNS or FAIL\*\* -> ESCALATE", 0,
+     "**CONCERNS or FAIL** -> ESCALATE",
+     "**CONCERNS or FAIL** -> child 5, one fix cycle in the lane"),
+)
+
+# The autopilot's identifier bans — the SPELLINGS a lane still running the fix-then-re-review loop
+# has to write. None of these is a retirement note: the retirement is stated in the paragraph the
+# checks above pin, in words no live instruction uses.
+LANE_BANS: tuple[tuple[str, str, int, tuple[str, ...]], ...] = (
+    ("a live fix-cycle stage", r"fix cycle", re.I, AUTOPILOT_SURFACES + (LANE_SOP,)),
+    ("the retired second-verdict escalation", r"second non-PASS", re.I,
+     AUTOPILOT_SURFACES + (LANE_SOP,)),
+    ("a live fresh reviewer at the new sha", r"new sha", re.I,
+     AUTOPILOT_SURFACES + (LANE_SOP,)),
+    ("the retired CONCERNS-never-ships clause", r"never ships by itself", 0,
+     AUTOPILOT_SURFACES + (LANE_SOP,)),
+)
+
+CHECKS_F: tuple[tuple[str, str, str, int, str, str], ...] = (
+    # ── D10. Rule 2 already sequenced the BUILD by the overlap map. What it never said is when the
+    # review runs — so a consolidated lane built six parts and reviewed them as one diff at the end,
+    # which is the 155-file review SCC-441 could not close.
+    ("F · Rule 2 sequences the REVIEW, not only the build", CONSOLIDATION,
+     one_line("Each part is REVIEWED on its own commits before the next part starts"), 0,
+     "REVIEWED on its own commits before the next part starts",
+     "REVIEWED once, at the lane's tip, over every part together"),
+    ("F · the part is selected by --key, or by --range when it carries no rider key", CONSOLIDATION,
+     one_line("`--key <SUB-KEY>` when the parts carry rider keys, `--range <the commit before the "
+              "part>..<its last commit>` for parts without rider keys"), 0,
+     "`--range <the commit before the part>..<its last commit>` for parts without rider keys",
+     "the whole lane diff for parts without rider keys"),
+    ("F · the enforcement suite is the integration check across parts — no lens is", CONSOLIDATION,
+     one_line("the enforcement suite is the integration check across parts, at each part's close "
+              "and again at the lane's tip; no lens is"), 0,
+     "the enforcement suite is the integration check across parts",
+     "a final review over every part together is the integration check"),
+
+    # ── The size warning, at the two places a part is declared. Splitting is free at plan time and
+    # costs a re-cut afterwards, which is the whole reason the warning is HERE and not at review.
+    *both("F · a part over 40 masters is split at plan time",
+          one_line("A part whose declared set exceeds 40 master files is too big to review — "
+                   "split it here"), 0,
+          "exceeds 40 master files is too big to review",
+          "exceeds 40 master files is worth a second look",
+          files=PLANNERS),
+    *both("F · the warning counts MASTERS, because the scope script strips the rest",
+          one_line("count the MASTERS in the part's `## Declared Change Set`"), 0,
+          "count the MASTERS in the part's",
+          "count the paths in the part's",
+          files=PLANNERS),
+)
+
+CHECKS_H: tuple[tuple[str, str, str, int, str, str], ...] = (
+    # ── D9. POST-DEV had no way to resolve "the actual change set" except by hand, which is the
+    # one input a review now gets from a script. Same selection, one flag different. The caret is
+    # the tip review's (receipt e4): git's `A..B` excludes A, so `<first>..<HEAD>` dropped the
+    # part's first commit and printed nothing about it — only WITHHELD paths print.
+    *both("H · POST-DEV resolves its change set through review_scope.py --audit, left bound BEFORE the part",
+          r"review_scope\.py[^\n]*--range <first>\^\.\.<HEAD> --audit", 0,
+          "--range <first>^..<HEAD> --audit", "--range <first>..<HEAD> --audit",
+          files=SELF_AUDITS),
+    *both("H · both twins say why the caret is there",
+          one_line("git's `A..B` excludes A, so the left bound is the commit BEFORE the part's first"), 0,
+          "the commit BEFORE the part's first", "the part's first commit",
+          files=SELF_AUDITS),
+    # ⛔ Found by SCC-447's own tip review (receipt b4): the story twin's POST-DEV fence cd'd into the
+    # project and ran a project-relative `.agents/scripts/` path with `--repo` on the shared
+    # checkout, while its own footnote said "run the LOBBY's copy and point --repo at the worktree".
+    ("H · the story twin's POST-DEV fence binds the lobby in the fence and runs the LOBBY's script",
+     CICD_SELF_AUDIT,
+     r'L=<the LOBBY[^\n]*\ncd "\$L" && python3 \.agents/scripts/review_scope\.py --repo "<the story worktree>"',
+     0,
+     'cd "$L" && python3 .agents/scripts/review_scope.py --repo "<the story worktree>"',
+     'cd "$PROJECT_ROOT" && python3 .agents/scripts/review_scope.py --repo "$PROJECT_ROOT"'),
+    ("H · the story twin says the thin project runs the LOBBY's copy", CICD_SELF_AUDIT,
+     one_line("run the LOBBY's copy and point `--repo` at the worktree"), 0,
+     "run the LOBBY's copy", "run the project's copy"),
+    *both("H · it is the same selection a review uses, and --audit is why it differs",
+          one_line("the same selection a review uses, with `--audit` so every mirror stays in"), 0,
+          "so every mirror stays in", "so the diff is smaller",
+          files=SELF_AUDITS),
+
+    # ── The asymmetry itself, in Lens 2, in the same words in both twins. A review strips mirrors
+    # because a defect in a copy is a defect in its master; this lens's question IS the copies.
+    *both("H · Lens 2 states the scope asymmetry, verbatim",
+          one_line(ASYMMETRY), 0,
+          "would hide the one failure it exists to catch",
+          "is the right input here too",
+          files=SELF_AUDITS),
+)
+
+
+# ══ BLOCK I — the RECORDS (the quickref and the SOP's hand-drawn appendix) ════════════════════
+#
+# ⛔ WHY A PICTURE IS PINNED. The quickref is the page the operator reads INSTEAD of the doors, and
+# the SOP's appendix tables are its hand-written twins — no generator exists (`grep -rln
+# "quickref|mermaid|appendix" .agents/scripts/*.py` → none), so nothing but a check keeps either
+# drawn against the engine that runs. v1 of this lane declared the quickref conditionally (AUDIT
+# FINDING 8); at Part 6 every token banned below was still in it, five parts after the thing it
+# names was retired. A picture that draws a retired stage is that stage's last surviving copy.
+
+QUICKREF = "docs/_scc_sops_prds/operator_workflows_quickref.md"
+RECORDS = (QUICKREF, LANE_SOP)
+
+# The three diagrams this lane redraws, by the `####` heading each sits under in BOTH files. The
+# SOP's twin of each is a `| `ID` | label | next |` table whose label column is the mermaid label
+# with every `\n` folded to one space — that fold IS the generator, and it is done by hand.
+DIAGRAMS = ("#### /cicd-code-review", "#### code-review-engine (the shared reviewer)",
+            "#### /smh-code-review")
+
+# Tokens of the engine that no longer runs, banned where the operator reads. The SOP body keeps
+# historical mentions a ban must not catch — "with the Blind Hunter retired" (:2571), SCC-295's
+# "three of five lenses" (:2540) — so its bans are the appendix-shaped tokens, not the lens's name.
+RECORD_BANS: tuple[tuple[str, str, int, tuple[str, ...]], ...] = (
+    ("`Blind Hunter` (a retired lens)", r"Blind Hunter", 0, (QUICKREF,)),
+    ("`Literal-Correctness` (a retired lens)", r"Literal-Correctness", 0, RECORDS),
+    ("the verify wave (retired, SCC-447)", r"verify wave", re.I, RECORDS),
+    ("`Evidence Verifier` / `Compound Synthesis` (retired wave seats)",
+     r"Evidence Verifier|Compound Synthesis", 0, RECORDS),
+    ("`lens_budget` (an input the engine no longer reads)", r"lens_budget", 0, RECORDS),
+    ("`decision_needed` (a retired bucket)", r"decision_needed", 0, RECORDS),
+    ("a five-lens roster", r"5 lenses ·|five independent lenses", re.I, RECORDS),
+    ("the Blind Hunter DROPPED under inline (SCC-203, superseded by SCC-447)",
+     r"Blind Hunter is DROPPED|the other four are handed", 0, (LANE_SOP,)),
+    ("the autopilot's fix cycle and second verdict (retired, Part 5)",
+     r"fix cycle|new sha|second verdict", re.I, (QUICKREF,)),
+    # Receipt b2's third ground, drawn in the story door's picture: missing automate evidence is
+    # an unexamined surface — this lane's FAIL reason — never a CONCERNS of its own.
+    ("a CONCERNS from missing automate evidence", r"automate evidence, else CONCERNS", 0, RECORDS),
+)
+
+# The paragraph under `#### code-review-engine` — the SAME words in both files, like block H's
+# asymmetry sentence: nothing generates one from the other.
+ENGINE_BLURB = (
+    "three independent lenses in parallel, each running the command that proves its own finding "
+    "in its own copy of the tree; a triage that keeps what carries its proof and drops what does "
+    "not — two buckets, no third; and a record. The floor it hands back is PROVISIONAL: it holds "
+    "no Bash, so the door re-runs every survivor on the real tree and resolves the verdict at the "
+    "stamp. It never verdicts, never writes the board, never stops to ask."
+)
+
+CHECKS_I: tuple[tuple[str, str, str, int, str, str], ...] = (
+    ("I · the atlas node says three lenses that each reproduce", QUICKREF,
+     r"CRE\[\"code-review-engine skill\\n3 lenses · each reproduces · triage\"\]", 0,
+     "3 lenses · each reproduces · triage", "5 lenses · verify wave · triage"),
+    ("I · the engine diagram's hunter contract: the lens RUNS its own command first", QUICKREF,
+     r"the hunter contract — every critical and important\\ncarries reproduce: and "
+     r"expected_wrong_output:\\nand the lens RUNS it in its own copy first", 0,
+     "and the lens RUNS it in its own copy first", "and a verify wave checks it"),
+    ("I · the engine diagram's gate is a PRESENCE check — the engine holds no Bash", QUICKREF,
+     r"the engine holds no Bash — this is\\na PRESENCE check, never a run", 0,
+     "a PRESENCE check, never a run", "a run, in the engine's own copy"),
+    ("I · the engine diagram records two buckets and no third", QUICKREF,
+     r"two buckets, and there is no third", 0,
+     "two buckets, and there is no third", "one bucket each"),
+    ("I · the autopilot diagram stops at a non-PASS verdict", QUICKREF,
+     r"R -- \"CONCERNS or FAIL\" --> ESCR\[\"ESCALATE - the door's end-of-review message\\n"
+     r"on the ticket: no fix child, no second reviewer", 0,
+     "no fix child, no second reviewer", "ONE fix cycle, in the lane"),
+    ("I · the autopilot blurb counts the children", QUICKREF,
+     one_line("one fresh headless child per step — four for a story, two for a quick fix"), 0,
+     "four for a story, two for a quick fix", "six for a story, four for a quick fix"),
+    ("I · the SOP's engine row no longer drops a Blind Hunter under inline", LANE_SOP,
+     one_line("the Blind Hunter that SCC-203 let a contaminated inline context DROP is retired "
+              "(SCC-447), and with it the drop"), 0,
+     "is retired (SCC-447), and with it the drop", "is DROPPED rather than faked"),
+)
+
+# Sentences that must appear in BOTH the story door's and the task door's diagram, so a count of
+# two is the check — and a count of one is the half-port this lane keeps finding.
+PAIRED_NODES = (
+    ("review_scope.py cutting ONE PART", r"review_scope\.py cuts ONE PART, masters only"),
+    ("Step 1.4 reproducing on the REAL tree through repro_receipt.py",
+     r"Step 1\.4 — reproduce on the REAL tree\\nrepro_receipt\.py runs every critical and important"),
+    ("the verdict resolved at the STAMP on rows still OPEN",
+     r"resolved at the STAMP on rows still OPEN"),
+    ("Step 6 ending the turn with one screen", r"Step 6 — END THE TURN with one screen"),
+)
+
+# A mermaid node: `ID["label"]`, `ID{"label"}` or `ID(["label"])`, wherever it sits on the line.
+# Edge labels (`-- "text" -->`) are preceded by a space, not by an id and a bracket, so they miss.
+NODE_RX = re.compile(r'(\w+)(?:\(\[|\[|\{)"([^"]*)"(?:\]\)|\]|\})')
+
+
+def diagram_nodes(heading: str) -> list[tuple[str, str]]:
+    """(id, label with `\\n` folded to one space) for every node in the quickref diagram under `heading`."""
+    txt = read(QUICKREF)
+    start = txt.find("\n" + heading + "\n")
+    if start < 0:
+        return []
+    fence = txt.find("```mermaid", start)
+    end = txt.find("```", fence + 10) if fence >= 0 else -1
+    if fence < 0 or end < 0:
+        return []
+    seen: dict[str, str] = {}
+    for m in NODE_RX.finditer(txt[fence:end]):
+        seen.setdefault(m.group(1), " ".join(m.group(2).replace("\\n", " ").split()))
+    return list(seen.items())
+
+
+def drifted(nodes: list[tuple[str, str]], section: str) -> list[str]:
+    """The node ids whose `| `ID` | label |` row is NOT in the SOP twin — the parity predicate."""
+    return [nid for nid, label in nodes if f"| `{nid}` | {label} |" not in section]
+
+
+def appendix_section(heading: str) -> str:
+    """The SOP appendix text under `heading`, up to the next `####` heading."""
+    txt = read(LANE_SOP)
+    start = txt.find("\n" + heading + "\n")
+    if start < 0:
+        return ""
+    nxt = txt.find("\n#### ", start + 1)
+    return txt[start:nxt if nxt > 0 else len(txt)]
+
+
+def read(rel: str) -> str:
+    p = ROOT / rel
+    return p.read_text(encoding="utf-8") if p.is_file() else ""
+
+
+def check_rows(checks) -> list[tuple[str, bool, str]]:
+    """Every check's three rows — the check, its counter-example's applicability, its rejection.
+
+    ⛔ RETURNS them rather than calling `c.check` itself, and that is not a style choice.
+    `test_suite_runner.py`'s ORPHAN walker reads the AST and recognises exactly one guard idiom:
+    a `c.check` inside the BODY of an `if c.block(...)`. A `c.check` in a module-level helper is
+    outside every block however the helper is called — it runs under EVERY `--case` filter and
+    counts toward every filtered tally, so a mutant it kills is attributed to whichever case
+    happened to be named. This file shipped that defect in Part 1 and carried it through Part 3;
+    caught by the walker while wiring block C, and fixed here rather than left for the sweep to
+    misattribute.
+    """
+    rows: list[tuple[str, bool, str]] = []
+    for name, rel, pattern, flags, old, new in checks:
+        txt = read(rel)
+        rx = re.compile(pattern, flags)
+        rows.append((name, bool(txt) and rx.search(txt) is not None,
+                     "" if txt else f"{rel} missing or empty"))
+        applies = old in txt
+        rows.append(("  ^ counter-example applies", applies,
+                     "" if applies else f"{rel}: {old!r} not present, so the proof would be vacuous"))
+        mutated = txt.replace(old, new, 1) if applies else txt
+        rejected = applies and rx.search(mutated) is None
+        rows.append(("  ^ counter-example is rejected", rejected,
+                     "" if rejected
+                     else "check survives its own counter-example — it cannot fail on content"))
+    return rows
+
+
+def main() -> int:
+    c = Cases("review disposition doctrine (SCC-447)")
+
+    if c.block("A · doctrine (code-standards §6.5 + §7)"):
+        for name, ok, detail in check_rows(CHECKS_A):
+            c.check(name, ok, detail)
+
+        # The twin is a BYTE copy, and the copy is where three of the four readers actually look:
+        # Claude Code loads `.claude/rules/`, and a rule that drifted between the two is two
+        # different laws with every check green.
+        master, twin = read(RULE), read(RULE_TWIN)
+        c.check("A · the rule has a body", len(master) > 2000,
+                "" if len(master) > 2000 else f"{RULE} is {len(master)} chars — too short to be law")
+        c.check("A · the twin has a body", len(twin) > 2000,
+                "" if len(twin) > 2000 else f"{RULE_TWIN} is {len(twin)} chars")
+        c.check("A · .claude/rules twin is byte-identical", bool(master) and master == twin,
+                "" if master == twin else "the two copies of code-standards.md have drifted")
+
+    if c.block("B · engine (the four steps + SKILL)"):
+        for name, ok, detail in check_rows(CHECKS_B):
+            c.check(name, ok, detail)
+
+        for name, pattern in BANS:
+            rx = re.compile(pattern, re.M)
+            for rel in (SKILL, S1, S2, S3, S4):
+                txt = read(rel)
+                # Anti-vacuity FIRST: an absent file must fail, never satisfy, a ban.
+                c.check(f"B · {Path(rel).name} has a body for the ban scan", len(txt) > 200,
+                        "" if len(txt) > 200 else f"{rel} absent or under 200 chars")
+                c.check(f"B · {Path(rel).name}: no {name}",
+                        bool(txt) and rx.search(txt) is None,
+                        "" if rx.search(txt) is None else f"{rel} still carries {name}")
+
+        # The `.claude/skills/` cache is what Claude Code actually reads. A master edited without
+        # its cache copy ships the OLD engine to the one runtime that runs it most.
+        for rel in ENGINE_RELS:
+            m, k = read(f"{ENGINE}/{rel}"), read(f"{CACHE}/{rel}")
+            c.check(f"B · cache {rel} has a body", len(m) > 200 and len(k) > 200,
+                    "" if len(m) > 200 and len(k) > 200 else "master or cache absent/too short")
+            c.check(f"B · cache {rel} is byte-identical", bool(m) and m == k,
+                    "" if m == k else f"{CACHE}/{rel} has drifted from the master")
+
+    if c.block("C · the doors (both code reviews, both audits, the close-out)"):
+        for name, ok, detail in check_rows(CHECKS_C):
+            c.check(name, ok, detail)
+
+        for name, pattern, flags, files in DOOR_BANS:
+            rx = re.compile(pattern, flags | re.M)
+            for rel in files:
+                txt = read(rel)
+                # Anti-vacuity FIRST: a deleted door must FAIL its bans, never satisfy them.
+                c.check(f"C · {Path(rel).name} has a body for the ban scan", len(txt) > 2000,
+                        "" if len(txt) > 2000 else f"{rel} absent or under 2000 chars")
+                c.check(f"C · {Path(rel).name}: no {name}",
+                        bool(txt) and rx.search(txt) is None,
+                        "" if rx.search(txt) is None else f"{rel} still carries {name}")
+
+        # `.opencode/commands/` is what OpenCode reads. Byte equality is the whole contract — a
+        # door whose master says "reproduce, then fix" while its mirror says "fix everything the
+        # engine hands back" is two commands with the same name.
+        for rel in MIRRORED:
+            name = Path(rel).name
+            m, mir = read(rel), read(f"{MIRROR}/{name}")
+            c.check(f"C · mirror {name} has a body", len(m) > 2000 and len(mir) > 2000,
+                    "" if len(m) > 2000 and len(mir) > 2000 else "master or mirror absent/short")
+            c.check(f"C · mirror {name} is byte-identical", bool(m) and m == mir,
+                    "" if m == mir else f"{MIRROR}/{name} has drifted from the master")
+
+    if c.block("E · the autopilot lane (a verdict that is not PASS)"):
+        for name, ok, detail in check_rows(CHECKS_E):
+            c.check(name, ok, detail)
+
+        # ⛔ Found by SCC-447's own tip review (Test-Adequacy lens, receipt b5): the seat TABLES are
+        # what the lead executes, one child per row, and a stage 5 re-grown under the story table
+        # is the loop — three lines above the paragraph that says no stage follows the review.
+        # Count the rows, per table.
+        ap = read(AUTOPILOT)
+        tables = re.findall(r"^\| Stage \| Door \| Seat \| Note \|\n\|[-| ]+\|\n((?:\|[^\n]*\|\n)+)",
+                            ap, re.M)
+        counts = [len(re.findall(r"^\| \d+ \|", t, re.M)) for t in tables]
+        c.check("E · the command carries two seat tables", len(tables) == 2, f"found {len(tables)}")
+        c.check("E · the story route is FOUR stages and the quick-fix route TWO — no stage follows the review",
+                counts == [4, 2], f"stage rows per table: {counts}")
+        grown = (tables[0] if tables else "") + "| 5 | the fix, only on CONCERNS/FAIL | `cheshire-cat` | One cycle |\n"
+        c.check("E · a re-grown fifth stage would be counted",
+                bool(tables) and len(re.findall(r"^\| \d+ \|", grown, re.M)) == 5,
+                "the counter cannot see a fifth row")
+
+        for name, pattern, flags, files in LANE_BANS:
+            rx = re.compile(pattern, flags | re.M)
+            for rel in files:
+                txt = read(rel)
+                # Anti-vacuity FIRST: a deleted manual must FAIL its bans, never satisfy them.
+                c.check(f"E · {Path(rel).name} has a body for the ban scan", len(txt) > 2000,
+                        "" if len(txt) > 2000 else f"{rel} absent or under 2000 chars")
+                c.check(f"E · {Path(rel).name}: no {name}",
+                        bool(txt) and rx.search(txt) is None,
+                        "" if rx.search(txt) is None else f"{rel} still carries {name}")
+
+    if c.block("F · the consolidation rule and the two planners"):
+        for name, ok, detail in check_rows(CHECKS_F):
+            c.check(name, ok, detail)
+
+        # ⛔ The rule has no twin — `work-consolidation.md` is one file with no `cicd-` sibling and
+        # no mirror, so its only guard is the checks above. The planners DO have mirrors.
+        for rel in PLANNERS:
+            name = Path(rel).name
+            m, mir = read(rel), read(f"{MIRROR}/{name}")
+            c.check(f"F · mirror {name} has a body", len(m) > 2000 and len(mir) > 2000,
+                    "" if len(m) > 2000 and len(mir) > 2000 else "master or mirror absent/short")
+            c.check(f"F · mirror {name} is byte-identical", bool(m) and m == mir,
+                    "" if m == mir else f"{MIRROR}/{name} has drifted from the master")
+
+    if c.block("H · both self-audits (POST-DEV resolves through the scope script)"):
+        for name, ok, detail in check_rows(CHECKS_H):
+            c.check(name, ok, detail)
+
+        # The asymmetry sentence sits OUTSIDE every `twin-law` fence, so `test_twin_parity.py`
+        # never compares it. Without this row the two twins could carry two different readings of
+        # the one rule that tells this lens why its diff is shaped differently from a review's.
+        rx = re.compile(one_line(ASYMMETRY))
+        found = []
+        for rel in SELF_AUDITS:
+            m = rx.search(read(rel))
+            found.append(" ".join(m.group(0).split()) if m else "")
+        c.check("H · both twins carry the asymmetry sentence", all(found),
+                "" if all(found) else
+                f"missing from {[Path(r).name for r, f in zip(SELF_AUDITS, found) if not f]}")
+        c.check("H · the asymmetry sentence is the SAME sentence in both twins",
+                bool(found[0]) and found[0] == found[1],
+                "" if found[0] == found[1] else "the twins state the asymmetry differently")
+
+        for rel in SELF_AUDITS:
+            name = Path(rel).name
+            m, mir = read(rel), read(f"{MIRROR}/{name}")
+            c.check(f"H · mirror {name} has a body", len(m) > 2000 and len(mir) > 2000,
+                    "" if len(m) > 2000 and len(mir) > 2000 else "master or mirror absent/short")
+            c.check(f"H · mirror {name} is byte-identical", bool(m) and m == mir,
+                    "" if m == mir else f"{MIRROR}/{name} has drifted from the master")
+
+    if c.block("I · the records (the quickref and the SOP's hand-drawn appendix)"):
+        for name, ok, detail in check_rows(CHECKS_I):
+            c.check(name, ok, detail)
+
+        for name, pattern, flags, files in RECORD_BANS:
+            rx = re.compile(pattern, flags | re.M)
+            for rel in files:
+                txt = read(rel)
+                c.check(f"I · {Path(rel).name} has a body for the ban scan", len(txt) > 2000,
+                        "" if len(txt) > 2000 else f"{rel} absent or under 2000 chars")
+                c.check(f"I · {Path(rel).name}: no {name}",
+                        bool(txt) and rx.search(txt) is None,
+                        "" if rx.search(txt) is None else f"{rel} still carries {name}")
+
+        qr = read(QUICKREF)
+        for name, pattern in PAIRED_NODES:
+            n = len(re.findall(pattern, qr))
+            c.check(f"I · both door diagrams draw {name}", n == 2,
+                    "" if n == 2 else f"found {n}, expected 2 (③ and /smh-code-review)")
+
+        rx = re.compile(one_line(ENGINE_BLURB))
+        found = []
+        for rel in RECORDS:
+            m = rx.search(read(rel))
+            found.append(" ".join(m.group(0).split()) if m else "")
+        c.check("I · both records carry the engine blurb", all(found),
+                "" if all(found) else
+                f"missing from {[Path(r).name for r, f in zip(RECORDS, found) if not f]}")
+        c.check("I · the engine blurb is the SAME paragraph in both records",
+                bool(found[0]) and found[0] == found[1],
+                "" if found[0] == found[1] else "the records state the engine differently")
+
+        # ⭐ The parity check: every node the quickref draws is a row in the SOP's twin table,
+        # label for label. This is the generator that does not exist, run backwards — and it is
+        # what turns "the appendix is a hand-written twin" from a description into a law.
+        for heading in DIAGRAMS:
+            short = heading[5:].split(" (")[0]
+            nodes = diagram_nodes(heading)
+            section = appendix_section(heading)
+            c.check(f"I · {short}: the quickref diagram has its nodes", len(nodes) >= 12,
+                    "" if len(nodes) >= 12 else f"{len(nodes)} nodes parsed under {heading!r}")
+            c.check(f"I · {short}: the SOP appendix has the twin table",
+                    "| Stage / Step |" in section,
+                    "" if "| Stage / Step |" in section else f"no table under {heading!r} in the SOP")
+            missing = drifted(nodes, section)
+            c.check(f"I · {short}: every node is a row in the SOP twin, label for label",
+                    bool(nodes) and not missing,
+                    "" if nodes and not missing else f"drifted or missing rows: {missing}")
+            # Anti-vacuity through the SAME predicate (SCC-122): a label the quickref does not draw
+            # must come back as drift from `drifted()` itself. The first cut asserted a different,
+            # always-true predicate here, and the tip review neutered the comparison with it green
+            # (receipt b8).
+            if nodes:
+                nid, label = nodes[0]
+                caught = drifted([(nid, label + " (mutated)")], section)
+                c.check(f"I · {short}: the parity check can fail", caught == [nid],
+                        "" if caught == [nid]
+                        else "a mutated label was not reported as drift — the check cannot fail")
+
+    return c.finish()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

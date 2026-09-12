@@ -1,0 +1,16 @@
+{
+  "id": "a1",
+  "result": "reproduced",
+  "command": [
+    "python3",
+    ".agents/scripts/tests/test_review_scope.py",
+    "--case",
+    "10 \u00b7"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-447-review-disposition",
+  "exit_code": 1,
+  "sha": "3f482b30afa2c6174844b24e468a5a3bd6404410",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T02:50:10+00:00",
+  "output_tail": "== review_scope ==\n-- tree: scc-447-review-disposition [chore/SCC-447-review-disposition] - worktree --\n[FAIL] 10 no selector on a keyless tree is exit 2: exit=0: t                 .agents/rules/house.md\n  kept                 .agents/scripts/mentions.py\n  kept                 .agents/scripts/tool.py\n  kept                 .agents/scripts/utf.py\n  kept                 .agents/scripts/rider.py\n\nscope SCC-447: kept: 9 file(s), 1975 bytes \u00b7 withheld: 10 file(s)\n\n[FAIL] 10 the refusal names the missing key, not a phantom single part: t                 .agents/rules/house.md\n  kept                 .agents/scripts/mentions.py\n  kept                 .agents/scripts/tool.py\n  kept                 .agents/scripts/utf.py\n  kept                 .agents/scripts/rider.py\n\nscope SCC-447: kept: 9 file(s), 1975 bytes \u00b7 withheld: 10 file(s)\n\n[FAIL] 10 --key on a keyless tree is the same refusal: exit=2\n[PASS] 10 --range needs no lane key and still selects the rider's file: exit=0:   kept                 .agents/scripts/rider.py\n\nscope 72469f48404f3d7fa394d2ec8e35cf594d205342..ea4033c407c015670b1d6c76c3cc502c097117ae: kept: 1 file(s), 178 bytes \u00b7 withheld: 0 file(s)\n\n-- 1/4 passed --\nFAILED: 10 no selector on a keyless tree is exit 2, 10 the refusal names the missing key, not a phantom single part, 10 --key on a keyless tree is the same refusal\n-- filter '10 \u00b7': matched 1/10 blocks --\n"
+}

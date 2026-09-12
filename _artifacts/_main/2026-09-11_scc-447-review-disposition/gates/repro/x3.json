@@ -1,0 +1,16 @@
+{
+  "id": "x3",
+  "result": "reproduced",
+  "command": [
+    "python3",
+    ".agents/scripts/tests/test_repro_receipt.py",
+    "--case",
+    "8 \u00b7"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-447-review-disposition",
+  "exit_code": 1,
+  "sha": "3f482b30afa2c6174844b24e468a5a3bd6404410",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T02:50:11+00:00",
+  "output_tail": "== repro_receipt (SCC-447) ==\n-- tree: scc-447-review-disposition [chore/SCC-447-review-disposition] - worktree --\n[FAIL] 8a `... | grep -q NOPE` is one command, the pipeline's exit (1) is the result, reproduced: exit=2 result='unrunnable' exit_code=127\n[FAIL] 8b (control) the same pipeline whose right-hand stage passes is not-reproduced: exit=2 result='unrunnable'\n[FAIL] 8c the receipt records the WHOLE line as the command: command=['python3 -c \\'print(\"ERROR\")\\' | grep -q ERROR']\n-- 0/3 passed --\nFAILED: 8a `... | grep -q NOPE` is one command, the pipeline's exit (1) is the result, reproduced, 8b (control) the same pipeline whose right-hand stage passes is not-reproduced, 8c the receipt records the WHOLE line as the command\n-- filter '8 \u00b7': matched 1/8 blocks --\n"
+}

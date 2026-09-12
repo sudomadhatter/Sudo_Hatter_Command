@@ -1,0 +1,25 @@
+{
+  "id": "b5",
+  "result": "reproduced",
+  "command": [
+    "python3",
+    "/tmp/claude-1001/-home-dlohn-Sudo-Hatter-Command/6b458e1a-0121-41df-857c-fcdfa282b4f5/scratchpad/mut_repro.py",
+    "--file",
+    ".agents/commands/cicd-autopilot-claude.md",
+    "--old",
+    "| 4 | `/cicd-code-review <story>` | **`--review`, no seat** | Independence is the point. The LAST stage, whatever it returns |",
+    "--new",
+    "| 4 | `/cicd-code-review <story>` | **`--review`, no seat** | Independence is the point. The LAST stage, whatever it returns |\\n| 5 | the fix, only on CONCERNS/FAIL | `cheshire-cat` | One cycle, in the lane |",
+    "--",
+    "python3",
+    ".agents/scripts/tests/test_review_disposition.py",
+    "--case",
+    "E \u00b7"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-447-review-disposition",
+  "exit_code": 1,
+  "sha": "3f482b30afa2c6174844b24e468a5a3bd6404410",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T02:49:12+00:00",
+  "output_tail": "SURVIVED: the test stayed green with the mutant in place -> -- filter 'E \u00b7': matched 1/7 blocks --\n"
+}

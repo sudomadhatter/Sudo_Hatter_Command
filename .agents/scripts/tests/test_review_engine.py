@@ -38,6 +38,23 @@ The negative controls keep their original anti-vacuity design, which the review 
 each proves the file EXISTS and is non-empty BEFORE asserting a token is absent, so a missing step
 file fails the control instead of satisfying it.
 
+  ── WHAT SCC-447 REMOVED, and why the count halved ──────────────────────────────────────────
+This file carried **264 CHECKS rows and now carries 116.** The 148 that went were not weakened;
+their subjects were retired. All 78 step-02 rows went with the verify wave (it refuted 2 findings
+in 18 reviews), and 70 more with the Blind Hunter, the Literal-Correctness Hunter, the
+`EVIDENCE_PACK` priming, the `lens_budget` cost axis, the two `review_level` levels and the
+`decision_needed` / `patch` / `dismiss` buckets. A check whose subject no longer exists is not
+coverage — it is a row that can never fail, which is exactly what §2 above exists to catch.
+
+⛔ **Where that coverage went, so this is auditable rather than asserted.** The engine's NEW
+contract — the three-layer reproduction gate, the four buckets, the provisional floor — is pinned
+in `test_review_disposition.py`, which holds 51 engine rows under the same counter-example
+discipline. The roster's own invariants stayed in `test_lens_roster_contract.py`, and step-04's
+record vocabulary in `test_finding_record.py`. What is deliberately kept HERE is the part none of
+those own: vendor containment (the identifier bans), the caller wiring pinned in the callers' own
+files, the `.claude/skills/` cache parity, and the rubrics that outlived the roster change. Three
+rows were rewritten rather than dropped, each noted at its site, because no sibling covered them.
+
 Stdlib only, no pytest — same constraint as every sibling here.
 """
 from __future__ import annotations
@@ -143,20 +160,36 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("skill: severity axis is stated once, ascending", SKILL,
      r"severity order is `none` < `CONCERNS` < `FAIL`", 0,
      "`none` < `CONCERNS` < `FAIL`", "`FAIL` < `CONCERNS` < `none`"),
-    ("skill: caller may escalate, never soften", SKILL,
-     r"report the floor or anything MORE severe", 0,
-     "anything MORE severe", "anything LESS severe"),
-    ("skill: the never-do list is a prohibition", SKILL,
-     r"\*\*What the engine does NOT do, ever\*\*[^\n]*\n?[^\n]*issue the `Verdict:` line", 0,
-     "What the engine does NOT do, ever", "What the engine also does when convenient"),
     # ⛔ This row USED to be `^lenses_run:\s+<n>/<applicable>` — a prose pin asserting the file
     # contained a shape. It is replaced (SCC-177 step 9) by the round-trip in § 5 below, which feeds
     # the contract's own fixture through the real parser. What stays here is the COUNT, which moved
     # to its own line when the roster became a block: a count is a summary and the rows are the
     # evidence, and the two must not share a line again.
+    # ⛔ The RAISE half of the severity axis, re-pinned after SCC-447 made the floor
+    # provisional. `test_review_disposition.py` holds the SOFTEN half (exactly two evidence-backed
+    # ways down, and any other downgrade refused); this row holds the half that never changed —
+    # a caller's own gates may always add severity the lenses never saw. (Named "raise", not
+    # "escalate": the finding-level `escalate` bucket was struck 2026-09-11 and this is unrelated.)
+    ("skill: caller may raise severity, never soften", SKILL,
+     r"The caller may report\nanything MORE severe", 0,
+     "anything MORE severe", "anything LESS severe"),
+    # ⛔ POSITIVE assertion, per this file's own §3: a stub cannot simultaneously carry the
+    # boundary bullets and the behaviour they forbid. The heading's first bullet is the anchor,
+    # and SCC-447 made it the no-Bash one — the boundary the whole reproduction contract rests on.
+    ("skill: the never-do list is a prohibition, and it opens with the no-execution boundary", SKILL,
+     r"## What the engine does NOT do, ever\n[\s\S]{0,200}?"
+     r"^- \*\*It never runs a command\.\*\*[\s\S]{0,600}?It never issues the `Verdict:` line", re.M,
+     "## What the engine does NOT do, ever",
+     "## What the engine also does when convenient"),
     ("skill: the applicable count is its own line, beside the roster", SKILL,
      r"^lenses_counted:\s+<n>/<applicable>", re.M,
      "lenses_counted:  <n>/<applicable>", "lenses_counted:  <n>/<total>"),
+    # ⛔ The two files state the spec-less count independently, so they can drift apart; this row
+    # is what makes them disagree LOUDLY. SCC-447 moved it from 4/4 to 2/2 when the roster went
+    # from five lenses to three, and `test_lens_roster_contract.py` pins step-01's own half.
+    ("skill: the spec-less count agrees with step-01 (2/2)", SKILL,
+     r"reports `2/2`, never `2/3`", 0,
+     "reports `2/2`, never `2/3`", "reports `2/3`, never `2/2`"),
     ("skill: review_runtime is a caller-resolved input", SKILL,
      r"^\|\s*`review_runtime`\s*\|[^|]*`fan-out`[^|]*`inline`[^|]*\|", re.M,
      "| `review_runtime` | `fan-out` or `inline`", "| `review_runtime` | whatever the engine finds"),
@@ -195,20 +228,10 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     # is the ONLY lens that needs this - Edge-Case and Literal-Correctness get repo access on
     # purpose, the Acceptance Auditor needs the spec, Test-Adequacy needs the test files. Being
     # informed is their design, which is why isolating all five was always the slow way round.
-    ("step-01: under inline the blind lens is DROPPED, not run", STEPS[0],
-     r"^\|\s*`inline`\s*\|[^|]*\*\*the Blind Hunter is DROPPED\*\*", re.M,
-     "**the Blind Hunter is DROPPED**", "**the Blind Hunter runs first**"),
-    ("step-01: a dropped blind lens is recorded n/a, never `ok`", STEPS[0],
-     r"never as `ok`, never as\s+`recovered-inline`, and never inside the count", 0,
-     "never as `ok`, never as", "recorded however it turned out, and"),
     # ⛔ ANCHORED ON THE PROSE, NOT THE QUOTE. The first cut pinned the bare phrase "more
     # independent than it was", which now appears TWICE - in the operator's quoted ruling and in
     # the rule's own closing sentence. `replace(old, new, 1)` mutated only the first, the second
     # still matched, and the check survived its own counter-example. The harness caught it.
-    ("step-01: the reason a faked blind lens is worse than none is STATED", STEPS[0],
-     r"a roster carrying a lens\s+that ran without its defining property reports a review that "
-     r"was more independent", re.M,
-     "that ran without its defining property", "that ran in a warm context"),
     # ── SCC-203 · the caller distinguishes CAPABILITY from PERMISSION ───────────────────────
     ("smh: the runtime probe asks about capability, not permission", SMH_CMD,
      r"\*\*capability\*\*[^\n]*\n?[^\n]*never a \*\*policy\*\*", re.M | re.I,
@@ -246,9 +269,6 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("step-01: the blind lens may run concurrently with the receipt, at ONE sha", STEPS[0],
      r"the sha the lenses ran against and the sha on the receipt must be the same value", 0,
      "must be the same value", "may differ by a commit or two"),
-    ("skill: the spec-less count agrees with step-01 (4/4)", SKILL,
-     r"reports `4/4`, never `4/5`", 0,
-     "reports `4/4`, never `4/5`", "reports `4/5`, never `4/4`"),
 
     # ── step-01: the fan-out table, the failure contract, NA-vs-dead ────────────────────────
     # SCC-232 made the routing cells level-aware. Each cell is pinned to the CURRENT truth
@@ -258,14 +278,6 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     # allow exactly TWO cells there - one cell would miss every row now that the table
     # carries six columns, and an unbounded [^|]*-chain would stop anchoring WHICH cell
     # holds the routing text.
-    ("step-01: Blind Hunter routes standard-only (quick skips it)", STEPS[0],
-     r"^\|\s*\*\*Blind Hunter\*\*\s*\|(?:[^|]*\|){2}\s*standard level \(quick skips it\)\s*\|", re.M,
-     "| **Blind Hunter** | `DIFF` only — no spec, no repo access, no context docs | **no tree** — repo access is withheld by design | standard level (quick skips it) |",
-     "| **Blind Hunter** | `DIFF` only — no spec, no repo access, no context docs | **no tree** — repo access is withheld by design | always |"),
-    ("step-01: Edge Case Hunter routes standard-only (quick skips it)", STEPS[0],
-     r"^\|\s*\*\*Edge Case Hunter\*\*\s*\|(?:[^|]*\|){2}\s*standard level \(quick skips it\)\s*\|", re.M,
-     "| **Edge Case Hunter** | `DIFF` + read access to `REPO` | own worktree copy (`isolation: \"worktree\"`) | standard level (quick skips it) |",
-     "| **Edge Case Hunter** | `DIFF` + read access to `REPO` | own worktree copy (`isolation: \"worktree\"`) | always |"),
     ("step-01: Acceptance Auditor is a lens row gated to full mode", STEPS[0],
      r"^\|\s*\*\*Acceptance Auditor\*\*\s*\|(?:[^|]*\|){2}\s*`review_mode: full` only\s*\|", re.M,
      "| **Acceptance Auditor** | `DIFF` + `STORY_FILE`", "| ~~Acceptance Auditor~~ | dropped,"),
@@ -298,9 +310,6 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      "never raises `severity_floor`", "also raises `severity_floor`"),
     # Five lenses since SCC-126, and only the Acceptance Auditor is mode-skipped — so the
     # spec-less count is 4/4. The arithmetic is pinned in BOTH files that state it.
-    ("step-01: a spec-less review reports 4/4, not 4/5", STEPS[0],
-     r"reports `4/4`, never `4/5`", 0,
-     "reports `4/4`, never `4/5`", "reports `4/5`, never `4/4`"),
 
     # ── step-01 (SCC-125): the ROUTING that makes the asymmetry real ────────────────────────
     # These bind the `How` cells and the assembly convention, not the prose that describes them.
@@ -308,10 +317,6 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     # orchestrator to give every lens both blocks — including deleting the hunter contract from
     # the Edge Case Hunter's wiring — all scored a clean 323/323. A guard on the description of a
     # rule is not a guard on the rule.
-    ("step-01: the Blind Hunter's row wires in the hunter contract", STEPS[0],
-     r"^\|\s*\*\*Blind Hunter\*\*\s*\|(?:[^|]*\|){3}[^|]*\+ the hunter contract\s*\|", re.M,
-     "the `bmad-review-adversarial-general` skill + the hunter contract",
-     "the `bmad-review-adversarial-general` skill alone"),
     ("step-01: the Edge Case Hunter's row wires in the hunter contract", STEPS[0],
      r"^\|\s*\*\*Edge Case Hunter\*\*\s*\|(?:[^|]*\|){3}[^|]*\+ the hunter contract\s*\|", re.M,
      "the `bmad-review-edge-case-hunter` skill + the hunter contract",
@@ -383,10 +388,6 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"^Append to the prompt of every lens whose `How` cell names this contract", re.M,
      "Append to the prompt of every lens whose `How` cell names this contract",
      "Append to the prompt of EVERY lens, auditors included"),
-    ("step-01: a repo-less hunter runs the gates inside its diff", STEPS[0],
-     r"^> \*\*If you were given no repo access\*\*, run both traceable gates inside the diff", re.M,
-     "**If you were given no repo access**, run both traceable gates inside the diff",
-     "**If you were given no repo access**, skip Gate 1 and Gate 2"),
     ("step-01: the auditor rubric reaches the lens as prompt text, not commentary", STEPS[0],
      r"^> \*\*You are exempt from Gate 1 \(reachability proof\) and Gate 3", re.M,
      "> **You are exempt from Gate 1 (reachability proof) and Gate 3",
@@ -420,13 +421,6 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("step-01: doubt drops the finding", STEPS[0],
      r"\*\*When in doubt, DROP the finding\.\*\*", 0,
      "**When in doubt, DROP the finding.**", "**When in doubt, keep the finding.**"),
-    ("step-01: the Blind Hunter runs the gates inside the diff, at the same bar", STEPS[0],
-     r"\*\*The Blind Hunter passes these gates inside the diff\.\*\*", 0,
-     "**The Blind Hunter passes these gates inside the diff.**",
-     "**The Blind Hunter is exempt from these gates.**"),
-    ("step-01: the blind lens never lowers the bar to compensate", STEPS[0],
-     r"it never downgrades the bar to compensate", 0,
-     "it never downgrades the bar to compensate", "it lowers the bar to compensate"),
 
     # ── step-01 (SCC-125): severity rubric, the five moves, author intent ───────────────────
     ("step-01: the severity rubric demands the full range", STEPS[0],
@@ -474,30 +468,6 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      "**Gate 2 still binds, adapted:**", "**Gate 2 does not apply to them:**"),
 
     # ── step-01 (SCC-125): the pack is scoped, and never primes the blind lens ──────────────
-    ("step-01: the pack goes to repo-access lenses only", STEPS[0],
-     r"^## The evidence pack — repo-access lenses only$", re.M,
-     "## The evidence pack — repo-access lenses only",
-     "## The evidence pack — every lens is primed"),
-    ("step-01: the Blind Hunter's row is marked never-primed", STEPS[0],
-     r"^\|\s*\*\*Blind Hunter\*\*\s*\|(?:[^|]*\|){2}\s*standard level \(quick skips it\)\s*\|[^|]*\|\s*\*\*never\*\* — starved by design\s*\|$",
-     re.M, "| **never** — starved by design |", "| yes |"),
-    ("step-01: the Acceptance Auditor is not primed either", STEPS[0],
-     r"^\|\s*\*\*Acceptance Auditor\*\*\s*\|(?:[^|]*\|){4}\s*\*\*never\*\* — cannot verify it\s*\|$",
-     re.M, "| **never** — cannot verify it |", "| yes |"),
-    ("step-01: the reason it is excluded is that it cannot verify the pack", STEPS[0],
-     r"it cannot do the one thing the pack instruction demands", 0,
-     "it cannot do the one thing the pack instruction demands",
-     "it can verify the pack against live files"),
-    ("step-01: priming the Blind Hunter is forbidden outright", STEPS[0],
-     r"⛔ \*\*The Blind Hunter is never primed with the pack\.\*\*", 0,
-     "**The Blind Hunter is never primed with the pack.**",
-     "**The Blind Hunter is primed with the pack like the others.**"),
-    ("step-01: the SCC-124 measurement is cited for that ban", STEPS[0],
-     r"\+38\.6 s", 0, "+38.6 s", "no measurable cost"),
-    ("step-01: the pack is a starting point, not the search space", STEPS[0],
-     r"\*\*the pack is a starting point, not the search space\*\*", 0,
-     "**the pack is a starting point, not the search space**",
-     "the pack is the search space"),
 
     # ── step-01 (SCC-125): no worthiness filter, at this layer or any other ─────────────────
     ("step-01: no noise filter at this layer or any other", STEPS[0],
@@ -516,419 +486,67 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"cited with source and version", 0,
      "cited with source and version", "cited freely"),
 
-    # ── step-02 (SCC-127): the two roles run as ONE self-gating wave ────────────────────────
-    ("step-02: both roles run concurrently in one wave", STEPS[1],
-     r"\*\*concurrently, in ONE wave\*\*", 0,
-     "**concurrently, in ONE wave**", "one after the other, in two waves"),
-    # The gate table's COLUMN ORDER is wiring, not layout: with only the body rows pinned, swapping
-    # the two header cells turns "verifier runs alone at 1 finding" into its opposite and every
-    # case still passed. Same for the two `##` role headings — swapping them publishes the compound
-    # prompt as the verifier's, so nothing is ever verified. Both mutations are bound below by
-    # spanning a heading to the first line of the prompt it routes.
-    ("step-02: the gate table's columns are verifier then compound", STEPS[1],
-     r"^\| Findings from step 1 \| Evidence Verifier \| Compound Synthesis \|$", re.M,
-     "| Findings from step 1 | Evidence Verifier | Compound Synthesis |",
-     "| Findings from step 1 | Compound Synthesis | Evidence Verifier |"),
-    ("step-02: the Evidence Verifier heading routes the investigator prompt", STEPS[1],
-     r"## Evidence Verifier\n[^#]*?> You are not the original reviewer", re.S,
-     "## Evidence Verifier", "## Compound Synthesis"),
-    ("step-02: the Evidence Verifier heading routes the output fields", STEPS[1],
-     r"## Evidence Verifier\n[^#]*?> revised_severity:", re.S,
-     "> revised_severity:", "> severity_guess:"),
-    ("step-02: the Compound Synthesis heading routes the synthesis prompt", STEPS[1],
-     r"## Compound Synthesis\n[^#]*?> You are given every finding", re.S,
-     "> You are given every finding", "> You are given one finding"),
-    ("step-02: the Compound Synthesis heading routes the parents rule", STEPS[1],
-     r"## Compound Synthesis\n[^#]*?contributing_findings", re.S,
-     "## Compound Synthesis\n\nAssemble", "## Evidence Verifier\n\nAssemble"),
-    ("step-02: the verifier is assembled WITH the dossier block", STEPS[1],
-     r"## Evidence Verifier\n\nAssemble as: \*\*the prompt below, then the dossier block\*\*", 0,
-     "Assemble as: **the prompt below, then the dossier block**",
-     "Assemble as: **the prompt below** alone"),
-    ("step-02: compound is assembled WITH the dossier block too", STEPS[1],
-     r"## Compound Synthesis\n\nAssemble the same way — \*\*the prompt below, then the dossier block\*\*",
-     0, "Assemble the same way — **the prompt below, then the dossier block**",
-     "Assemble the same way — **the prompt below** alone"),
+    # ── step-02 (SCC-127) → RETIRED by SCC-447 ─────────────────────────────────────────────
+    # The wave refuted 2 findings in 18 reviews while costing a second full fan-out of tokens
+    # and wall-clock on every review that collected anything. Its 78 checks retire with it.
+    # They are REPLACED rather than deleted: a retirement nothing pins is a retirement the next
+    # agent can argue its way out of, and the instinct behind the wave ("something should turn
+    # an assertion into evidence") is a good one that will be proposed again. What binds now is
+    # the retirement itself — it runs nothing, it says what it was measured at, it passes
+    # findings through untouched, it records why the step produced nothing, and it names the
+    # bar for bringing a role back.
+    ("step-02: the step runs nothing, and says so in its own first line", STEPS[1],
+     r"^\*\*This step runs nothing\.\*\* The Evidence Verifier and the Compound Synthesis "
+     r"role are retired\.$", re.M,
+     "**This step runs nothing.** The Evidence Verifier and the Compound Synthesis role are retired.",
+     "**This step runs two roles.** The Evidence Verifier and the Compound Synthesis role run here."),
+    ("step-02: the retirement is MEASURED, never argued", STEPS[1],
+     r"refuted \*\*2\nfindings in 18 reviews\*\*", 0,
+     "refuted **2\nfindings in 18 reviews**",
+     "refuted **most of what the lenses claimed**"),
+    ("step-02: findings travel to step 3 unchanged, carrying `verification: none`", STEPS[1],
+     r"Carry every finding from step 1 to step 3 unchanged, with\n`verification: none`", 0,
+     "Carry every finding from step 1 to step 3 unchanged, with\n`verification: none`",
+     "Re-grade each finding before step 3 and record a\n`revised_severity:`"),
+    ("step-02: the returned notes record the retirement, so the record says why", STEPS[1],
+     r"add `verify wave: retired \(SCC-447\)` to the engine's returned `notes`", 0,
+     "add `verify wave: retired (SCC-447)` to the engine's returned `notes`",
+     "add `verify wave: ran` to the engine's returned `notes`"),
+    # ⛔ The one that stops this coming back by argument. The bar is the bar the wave FAILED:
+    # show, over reviews on disk, that a second reading refutes findings the reproduction gate
+    # does not already drop.
+    ("step-02: reinstating a verification role needs a measurement, and the bar is named", STEPS[1],
+     r"Do not reinstate a verification role here without a measurement[\s\S]{0,400}?"
+     r"the reproduction gate\ndoes not already drop", 0,
+     "Do not reinstate a verification role here without a measurement",
+     "Reinstate a verification role here whenever it seems useful"),
 
-    ("step-02: the gate table gives 0 findings neither role", STEPS[1],
-     r"^\|\s*0\s*\|\s*\*\*does not run\*\*\s*\|\s*\*\*does not run\*\*\s*\|", re.M,
-     "| 0 | **does not run** | **does not run** |", "| 0 | runs | runs |"),
-    ("step-02: the gate table gives 1 finding the verifier only", STEPS[1],
-     r"^\|\s*1\s*\|\s*runs\s*\|\s*\*\*does not run\*\*\s*\|", re.M,
-     "| 1 | runs | **does not run** |", "| 1 | runs | runs |"),
-    ("step-02: the gate table gives 2+ findings both roles", STEPS[1],
-     r"^\|\s*2 or more\s*\|\s*runs\s*\|\s*runs\s*\|", re.M,
-     "| 2 or more | runs | runs |", "| 2 or more | runs | **does not run** |"),
-    ("step-02: zero findings skips the entire step", STEPS[1],
-     r"\*\*0 findings → skip this entire step\.\*\*", 0,
-     "**0 findings → skip this entire step.**", "**0 findings → run the wave anyway.**"),
-    ("step-02: a clean diff costs no new wall-clock", STEPS[1],
-     r"no role launched, no tokens spent and\s*\n?\s*no wall-clock added", re.M,
-     "no role launched, no tokens spent and", "a role launched, tokens spent and"),
-    ("step-02: under two findings there is no compound pass", STEPS[1],
-     r"\*\*Fewer than 2 findings → no compound pass\.\*\*", 0,
-     "**Fewer than 2 findings → no compound pass.**",
-     "**Fewer than 2 findings → run the compound pass anyway.**"),
-    ("step-02: a skipped wave is recorded, never silent", STEPS[1],
-     r"⛔ \*\*A skipped wave is recorded, never silent\.\*\*", 0,
-     "**A skipped wave is recorded, never silent.**", "**A skipped wave needs no note.**"),
-    ("step-02: the skip note names the zero-finding gate", STEPS[1],
-     r"`verify wave: skipped \(0 findings\)`", 0,
-     "verify wave: skipped (0 findings)", "verify wave: complete"),
-    ("step-02: the skip note names the compound gate", STEPS[1],
-     r"`compound: skipped \(<2 findings\)`", 0,
-     "compound: skipped (<2 findings)", "compound: complete"),
-    ("step-02: verified-nothing and all-confirmed must read differently", STEPS[1],
-     r"are different evidence, and a reader who\s*\n?\s*cannot tell them apart", re.M,
-     "are different evidence, and a reader who", "are the same evidence, and a reader who"),
-
-    # ── step-02 (SCC-127): the dossier is code, and the join is by index ────────────────────
-    ("step-02: the orchestrator never runs the extractor itself", STEPS[1],
-     r"the orchestrator never runs the extractor\s*\n?\s*itself", re.M,
-     "the orchestrator never runs the extractor", "the orchestrator runs the extractor"),
-    ("step-02: each role runs the extractor as its own first action", STEPS[1],
-     r"\*\*Each role runs the extractor itself\*\*, as its own first action", 0,
-     "**Each role runs the extractor itself**, as its own first action",
-     "**The roles are handed whatever evidence is lying around**, as their first action"),
-    # The instruction to RUN the extractor has to reach the role, so it is pinned inside the
-    # blockquote that step-01's convention says is the only text sent verbatim. Pinned in the
-    # orchestrator's prose alone, it was a rule nobody was told — the wave ran cold every time.
-    ("step-02: the dossier block is prompt text appended to BOTH roles", STEPS[1],
-     r"^### The dossier block — appended to BOTH role prompts$", re.M,
-     "### The dossier block — appended to BOTH role prompts",
-     "### The dossier block — for the orchestrator's reference"),
-    ("step-02: the role is TOLD to build the dossier, in its own prompt", STEPS[1],
-     r"^> \*\*Before you review anything, build your evidence dossier\.\*\*", re.M,
-     "> **Before you review anything, build your evidence dossier.**",
-     "> **A dossier has already been built for you.**"),
-    ("step-02: the extractor invocation is pinned inside the prompt", STEPS[1],
-     r"^> python3 <WORKTREE>/\.agents/scripts/evidence_extract\.py --repo <WORKTREE> --findings findings\.json --diff diff\.patch$",
-     re.M,
-     "> python3 <WORKTREE>/.agents/scripts/evidence_extract.py --repo <WORKTREE> --findings findings.json --diff diff.patch",
-     "> python3 <WORKTREE>/.agents/scripts/evidence_extract.py --repo $REPO --pack changed.py"),
-    ("step-02: the invocation carries the two-machine interpreter note", STEPS[1],
-     r"On Windows that interpreter is `python`, not `python3`", 0,
-     "On Windows that interpreter is `python`, not `python3`",
-     "That interpreter is `python3` on every machine"),
-    ("step-02: placeholders are substituted, never sent as shell variables", STEPS[1],
-     r"⛔ \*\*Substitute every placeholder before you send a prompt\.\*\*", 0,
-     "**Substitute every placeholder before you send a prompt.**",
-     "**The role will resolve the placeholders itself.**"),
-    ("step-02: the extractor is pointed at WORKTREE, never REPO", STEPS[1],
-     r"⛔ \*\*The extractor reads `WORKTREE`, never `REPO`, wherever the two differ\.\*\*", 0,
-     "**The extractor reads `WORKTREE`, never `REPO`, wherever the two differ.**",
-     "**The extractor reads `REPO`.**"),
-    ("step-02: reading the wrong tree refutes correct findings", STEPS[1],
-     r"reads\s*\n?`main`'s copy of every file at the lane's line numbers", re.M,
-     "`main`'s copy of every file at the lane's line numbers",
-     "the same file the lane changed"),
-    ("step-02: a failed extractor leaves the role COLD, not stopped", STEPS[1],
-     r"^> \*\*If that command fails for any reason, carry on COLD:\*\*", re.M,
-     "> **If that command fails for any reason, carry on COLD:**",
-     "> **If that command fails for any reason, stop and report it:**"),
-    ("step-02: the cold rule covers BOTH roles, and names which", STEPS[1],
-     r"This applies to \*\*both\*\* roles, and\s*\n?naming the role in the note is what keeps one cold role distinguishable", re.M,
-     "This applies to **both** roles, and",
-     "This applies to the verifier only, and"),
-    ("step-02: the findings JSON carries the keys the extractor reads", STEPS[1],
-     r"carrying the keys the extractor reads: `title` · `file_path` ·\s*\n?\s*`line_start` · `body` · `evidence`",
-     re.M, "carrying the keys the extractor reads: `title` · `file_path` ·",
-     "carrying whichever keys you feel like sending:"),
-    ("step-02: the roles are handed the findings in step-1 order", STEPS[1],
-     r"as a JSON list, \*\*in step-1 order\*\*", 0,
-     "as a JSON list, **in step-1 order**", "as a JSON list, in any order"),
-    ("step-02: the join is by index, never by title", STEPS[1],
-     r"⭐ \*\*The join is BY INDEX, never by title\.\*\*", 0,
-     "**The join is BY INDEX, never by title.**", "**The join is BY TITLE.**"),
-    ("step-02: titles are not unique, so position is the join", STEPS[1],
-     r"titles are NOT unique", 0, "titles are NOT unique", "titles are unique"),
-    ("step-02: a failed extractor leaves that role running cold", STEPS[1],
-     r"\*\*If the extractor fails, that role runs COLD\*\*", 0,
-     "**If the extractor fails, that role runs COLD**",
-     "**If the extractor fails, skip that role**"),
-    ("step-02: the cold run is named in the record, per role", STEPS[1],
-     r"`evidence extractor unavailable: <role> ran cold`", 0,
-     "evidence extractor unavailable: <role> ran cold", "verification complete"),
-    ("step-02: a cold role does NOT cap the verdict", STEPS[1],
-     r"⛔ \*\*A cold role does NOT cap the verdict\.\*\*", 0,
-     "**A cold role does NOT cap the verdict.**",
-     "**A cold role caps the verdict at CONCERNS.**"),
-    ("step-02: an inline rerun is cold by construction and recorded so", STEPS[1],
-     r"⚠ \*\*A role you rerun inline is COLD by construction, and must be recorded that way\.\*\*",
-     0, "**A role you rerun inline is COLD by construction, and must be recorded that way.**",
-     "**A role you rerun inline has the same dossier as any other.**"),
-    ("step-02: the inline-cold note is pinned", STEPS[1],
-     r"`<role> rerun inline: cold \(no dossier\)`", 0,
-     "<role> rerun inline: cold (no dossier)", "<role> rerun inline"),
-    ("step-02: an inline rerun still costs coverage nothing", STEPS[1],
-     r"It is still `recovered-inline` and still does not raise\s*\n?the floor", re.M,
-     "It is still `recovered-inline` and still does not raise",
-     "It is a dead role and does raise"),
-    ("step-02: a dead script is not a dead role", STEPS[1],
-     r"a dead script is not a dead role", 0,
-     "a dead script is not a dead role", "a dead script is a dead role"),
-
-    # ── step-02 (SCC-127): the Evidence Verifier's role framing and output contract ─────────
-    ("step-02: the verifier is neither reviewer nor adversary", STEPS[1],
-     r"^> You are not the original reviewer, and you are not the adversary\.", re.M,
-     "You are not the original reviewer, and you are not the adversary.",
-     "You are the original reviewer, reading your own work again."),
-    ("step-02: the verifier is an independent investigator", STEPS[1],
-     r"You are an independent\s*\n?> investigator", re.M,
-     "You are an independent", "You are a second"),
-    ("step-02: the extracted code and the live repo are both authorities", STEPS[1],
-     r"Where the two disagree, open the file", 0,
-     "Where the two disagree, open the file", "Where the two disagree, trust the extraction"),
-    ("step-02: Q1 — does the code behave as claimed", STEPS[1],
-     r"\*\*Does the code actually behave as the reviewer claims\?\*\*", 0,
-     "**Does the code actually behave as the reviewer claims?**",
-     "**Assume the reviewer's claim is accurate.**"),
-    ("step-02: Q2 — is the scenario reachable", STEPS[1],
-     r"\*\*Is the described scenario actually reachable\?\*\*", 0,
-     "**Is the described scenario actually reachable?**",
-     "**Reachability is not your concern.**"),
-    ("step-02: Q3 — what the broader context reveals", STEPS[1],
-     r"\*\*What does the broader context reveal\?\*\*", 0,
-     "**What does the broader context reveal?**", "**Judge each finding in isolation.**"),
-    ("step-02: Q4 — is the severity proportionate", STEPS[1],
-     r"\*\*Is the severity proportionate\*\*", 0,
-     "**Is the severity proportionate**", "**Keep the severity you were given**"),
-    ("step-02: results come back in the order they were given", STEPS[1],
-     r"\*\*in the order you were given them\*\*", 0,
-     "**in the order you were given them**", "in whatever order suits you"),
-    ("step-02: the result carries a verified boolean", STEPS[1],
-     r"^> verified:\s+true \| false$", re.M, "true | false", "always true"),
-    ("step-02: the result carries what the code actually does", STEPS[1],
-     r"^> actual_behavior:\s+what the code actually does at that location$", re.M,
-     "what the code actually does at that location", "your impression of the code"),
-    ("step-02: the result carries a revised severity on the house scale", STEPS[1],
-     r"^> revised_severity:\s+critical \| important \| suggestion \| nitpick$", re.M,
-     "critical | important | suggestion | nitpick", "whatever word you prefer"),
-    ("step-02: the result carries a revised confidence", STEPS[1],
-     r"^> revised_confidence:\s+0\.0–1\.0$", re.M, "0.0–1.0", "any number"),
-    ("step-02: the result carries verification notes", STEPS[1],
-     r"^> verification_notes:\s+what you checked, and what settled it$", re.M,
-     "what you checked, and what settled it", "optional"),
-    ("step-02: a refuted finding is a full result, not a failure", STEPS[1],
-     r"`verified: false` is a full result, not a failure", 0,
-     "`verified: false` is a full result, not a failure",
-     "`verified: false` means you failed"),
-    ("step-02: an unsettled finding is returned, never dropped", STEPS[1],
-     r"never\s*\n?> drop a finding you could not settle", re.M,
-     "drop a finding you could not settle", "report a finding you could not settle"),
-
-    # ── step-02 (SCC-127): Compound Synthesis — new findings only, parents named ────────────
-    ("step-02: compound launches beside the verifier, not after it", STEPS[1],
-     r"launch it \*\*at the same\s*\n?time as the verifier, not after it\.\*\*", re.M,
-     "launch it **at the same", "launch it once the verifier returns **at the same"),
-    ("step-02: compound asks what the findings mean together", STEPS[1],
-     r"Your question is what these findings mean TOGETHER", 0,
-     "Your question is what these findings mean TOGETHER",
-     "Your question is whether each finding is correct"),
-    ("step-02: compound emits NEW findings only", STEPS[1],
-     r"\*\*Emit NEW findings only\. Never restate, re-rank or summarize the originals\*\*", 0,
-     "**Emit NEW findings only. Never restate, re-rank or summarize the originals**",
-     "**Restate and re-rank the originals**"),
-    ("step-02: every compound finding names its parents", STEPS[1],
-     r"MUST carry `contributing_findings`: the exact titles of the findings it is", 0,
-     "MUST carry `contributing_findings`: the exact titles of the findings it is",
-     "may carry `contributing_findings`: the rough gist of the findings it is"),
-    ("step-02: a parentless compound is not a synthesis", STEPS[1],
-     r"is not a synthesis, it is a fresh assertion", 0,
-     "is not a synthesis, it is a fresh assertion", "is a synthesis all the same"),
-    ("step-02: compound has a 0.6 confidence floor and evidence", STEPS[1],
-     r"\*\*Emit only at confidence 0\.6 or above, and only with concrete evidence\.", 0,
-     "**Emit only at confidence 0.6 or above, and only with concrete evidence.",
-     "**Emit at any confidence, with or without evidence.",),
-    ("step-02: an empty compound list is valid and expected", STEPS[1],
-     r"An EMPTY LIST is a\s*\n?> valid and expected answer\*\*", re.M,
-     "An EMPTY LIST is a", "An empty list means you did not try hard enough and is a"),
-
-    # ── step-02 (SCC-127): what reaches triage — nothing dropped, nothing invented ──────────
-    ("step-02: every step-1 finding is carried forward annotated", STEPS[1],
-     r"^1\. \*\*Every step-1 finding, carried forward\*\* — annotated with its verifier result",
-     re.M, "**Every step-1 finding, carried forward**",
-     "**Only the findings the verifier confirmed**"),
-    ("step-02: an unverified finding keeps the hunter's severity", STEPS[1],
-     r"is marked `verification: none` and\s*\n?\s*keeps its hunter-asserted severity", re.M,
-     "keeps its hunter-asserted severity", "is dropped from the record"),
-    ("step-02: compound findings reach triage tagged as their own source", STEPS[1],
-     r"appended as a new finding\*\* with `source: compound`", 0,
-     "appended as a new finding** with `source: compound`",
-     "merged into its parents** with `source: compound`"),
-    ("step-02: the compound gate counts RAW findings, before dedupe", STEPS[1],
-     r"\*\*The count is the RAW step-1 count, before dedupe\.\*\*", 0,
-     "**The count is the RAW step-1 count, before dedupe.**",
-     "**The count is taken after dedupe.**"),
-    ("step-02: zero findings from dead lenses reads differently", STEPS[1],
-     r"⚠ \*\*Zero findings has two causes and the note must say which\.\*\*", 0,
-     "**Zero findings has two causes and the note must say which.**",
-     "**Zero findings has one cause.**"),
-    ("step-02: the dead-lens variant of the skip note is pinned", STEPS[1],
-     r"`verify wave: skipped \(0 findings — but <n> lens\(es\) dead\)`", 0,
-     "verify wave: skipped (0 findings — but <n> lens(es) dead)",
-     "verify wave: skipped (0 findings)"),
-    ("step-02: an unverified compound gating a merge is a stated decision", STEPS[1],
-     r"⚠ \*\*A compound finding can FAIL a merge on less evidence than any other finding, and that is a\s*\n?decision, not an oversight\.\*\*",
-     re.M, "and that is a", "and that is an"),
-    ("step-02: the compound exemption is revisited when re-verify exists", STEPS[1],
-     r"\*\*Revisit this the moment a compound re-verify pass exists\*\*", 0,
-     "**Revisit this the moment a compound re-verify pass exists**",
-     "This needs no revisiting"),
-    ("step-02: this step drops nothing", STEPS[1],
-     r"⛔ \*\*This step drops NOTHING\.\*\*", 0,
-     "**This step drops NOTHING.**", "**This step drops what it refutes.**"),
-    ("step-02: a refuted finding still reaches triage", STEPS[1],
-     r"A refuted finding travels to triage annotated `verified: false`", 0,
-     "A refuted finding travels to triage annotated `verified: false`",
-     "A refuted finding is deleted here"),
-    ("step-02: the no-noise-filter law binds at this layer too", STEPS[1],
-     r"step 1's no-noise-filter law binds at this layer exactly as hard", 0,
-     "no-noise-filter law binds at this layer exactly as hard",
-     "no-noise-filter law stops at step 1"),
-    ("step-02: fabricating a verification is forbidden", STEPS[1],
-     r"⛔ \*\*Never mark a finding verified that no role verified\.\*\*", 0,
-     "**Never mark a finding verified that no role verified.**",
-     "**Mark the findings verified once the wave is over.**"),
-
-    # ── step-02 (SCC-127): the failure contract is step-01's, unchanged ─────────────────────
-    ("step-02: a failed role is retried once", STEPS[1],
-     r"^1\. \*\*Retry it once\.\*\*", re.M,
-     "1. **Retry it once.**", "1. **Do not retry it.**"),
-    ("step-02: a still-failing role is rerun inline", STEPS[1],
-     r"run that role INLINE yourself, here, in this context", 0,
-     "run that role INLINE yourself", "drop that role and carry on"),
-    ("step-02: only a still-dead role raises the floor", STEPS[1],
-     r"^4\. \*\*Only a role that is still dead after BOTH the retry and the inline rerun raises the floor\*\*",
-     re.M, "raises the floor** to\n   CONCERNS", "leaves the floor alone** and costs\n   nothing"),
-    ("step-02: a gate-skipped role is not a dead role", STEPS[1],
-     r"A role the self-gate skipped is \*\*not\*\* a dead role and never raises the floor", 0,
-     "is **not** a dead role and never raises the floor",
-     "is a dead role and raises the floor"),
     # ── step-01 (SCC-126): the literal-correctness lens, and the caps that make it affordable ─
     # This lens is the most instrumented one, so every check below binds either its WIRING
     # (the table cells that route it) or a cap that bounds it. Prose about the lens is not pinned;
     # a description cannot route a lens and cannot bound a cost.
-    ("step-01: Literal-Correctness Hunter routes standard-only (quick skips it)", STEPS[0],
-     r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|(?:[^|]*\|){2}\s*standard level \(quick skips it\)\s*\|",
-     re.M,
-     "| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | own worktree copy (`isolation: \"worktree\"`) | standard level (quick skips it) |",
-     "| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | own worktree copy (`isolation: \"worktree\"`) | always |"),
-    ("step-01: the quick level is EXACTLY Test-Adequacy + Acceptance (SCC-232's "
-     "pre-registered membership - an inversion re-seats the 1,082 s lens)", STEPS[0],
-     r"^\|\s*`quick`\s*\|\s*\*\*Test-Adequacy \+ Acceptance\*\* Auditor\s*\|", re.M,
-     "| `quick` | **Test-Adequacy + Acceptance** Auditor |",
-     "| `quick` | the full roster |"),
-    ("step-01: the literal lens's row wires in the hunter contract", STEPS[0],
-     r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|(?:[^|]*\|){3}[^|]*\+ the hunter contract\s*\|",
-     re.M,
-     "the literal-correctness discipline + the hunter contract",
-     "the literal-correctness discipline alone"),
     # The counter-example must name the DISCIPLINE, not just `+ the hunter contract | yes |` —
     # that substring hits the Edge Case Hunter's row first, so `.replace(old, new, 1)` would
     # mutate a different lens and leave this check green. The harness caught exactly that.
-    ("step-01: the literal lens is primed with the evidence pack", STEPS[0],
-     r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|(?:[^|]*\|){4}\s*yes\s*\|$", re.M,
-     "the literal-correctness discipline + the hunter contract | yes |",
-     "the literal-correctness discipline + the hunter contract | **never** |"),
 
     # The discipline itself — as prompt text (blockquoted), or it never reaches the lens.
-    ("step-01: the literal lens opens the real definition of what the code leans on", STEPS[0],
-     r"^> .*open the actual definition and verify the assumption holds", re.M,
-     "open the actual definition and verify the assumption holds",
-     "assume the definition matches what its name suggests"),
-    ("step-01: the literal lens is exhaustive, not selective", STEPS[0],
-     r"^> \*\*Be EXHAUSTIVE, not selective\.\*\*", re.M,
-     "> **Be EXHAUSTIVE, not selective.**", "> **Sample the most interesting ones.**"),
-    ("step-01: the literal lens is a discipline, not a bug checklist", STEPS[0],
-     r"^> This is a reasoning DISCIPLINE, not a bug checklist", re.M,
-     "This is a reasoning DISCIPLINE, not a bug checklist",
-     "This is a checklist of bug categories to pattern-match"),
 
     # The four caps. Each is the cost contract; an unbounded lens is what this epic cannot ship.
     # ⭐ Every regex here binds the OPERATIVE sentence — the number, the destination, the scoring
     # word — not the bolded headline above it. The review of this task is why: with only the
     # headlines pinned, editing "at most **20**" to "at most **200**" left all 440 cases green
     # while the cap was gone. A guard on the label of a cap is not a guard on the cap.
-    ("step-01: the literal lens is diff-scoped, never whole-repo", STEPS[0],
-     r"diff-scoped, never whole-repo\.\*\* Repo access\s*\n?> exists for exactly one purpose", re.M,
-     "Repo access\n> exists for exactly one purpose",
-     "Repo access\n> exists to survey whatever seems related"),
-    ("step-01: the diff-scope rule is BLOCKQUOTED, so it reaches the lens", STEPS[0],
-     r"^> \*\*Your subject is the diff, never the repository", re.M,
-     "> **Your subject is the diff, never the repository",
-     "**Your subject is the diff, never the repository"),
-    ("step-01: sweeping is forbidden in the lens's own prompt", STEPS[0],
-     r"^> specific symbol on a specific changed line\.$", re.M,
-     "> specific symbol on a specific changed line.",
-     "> whatever else looks worth a look."),
-    ("step-01: an empty patch set early-exits the literal lens", STEPS[0],
-     r"\*\*An empty patch set → the lens early-exits\.\*\* No changed patches means there is nothing to verify,\s*\nso do not launch it at all",
-     re.M,
-     "so do not launch it at all", "so launch it against the whole tree"),
     # F6: the early-exit must score `ok`. Scored `dead` it would raise the floor on every clean
     # diff; scored `n/a` it would read as degraded. Both are wrong and both look like a pass here.
-    ("step-01: the early-exit is recorded ok, never dead and never n/a", STEPS[0],
-     r"record \*\*`ok` with zero findings\*\*, never `dead` and never `n/a`", 0,
-     "record **`ok` with zero findings**, never `dead` and never `n/a`",
-     "record **`dead`**, like any lens that returned nothing"),
     # The NUMBER, not the headline.
-    ("step-01: the literal lens caps at 20 changed files", STEPS[0],
-     r"\*\*A 20-file cap\.\*\* Hand over at most \*\*20\*\* changed files", 0,
-     "Hand over at most **20** changed files", "Hand over at most **200** changed files"),
     # SCC-147 (rolled in on the operator's ruling): the disclosure names PATHS, never a count.
     # A count was useless twice over — the blockquote orders the lens to NAME what it did not
     # get, and the `standard` top-up is earned by naming a specific withheld file. Neither is
     # possible from a number.
-    ("step-01: withheld files are disclosed by NAME, never as a count", STEPS[0],
-     r"you MUST tell the lens WHICH files it did not receive — the paths,\s*\nnever just a count",
-     re.M,
-     "WHICH files it did not receive — the paths,", "how many files it did not receive —"),
-    ("step-01: the truncation still reaches the engine's notes", STEPS[0],
-     r"Carry the truncation into the engine's returned `notes` yourself", 0,
-     "Carry the truncation into the engine's returned `notes` yourself",
-     "The truncation needs no note of the engine's own"),
-    ("step-01: the lens is told to report truncation FIRST in its output", STEPS[0],
-     r"^> your output\*\*, naming what you got and what you did not", re.M,
-     "> your output**, naming what you got and what you did not",
-     "> your output**, if you consider it worth mentioning"),
     # The THRESHOLD and the DESTINATION, not the headline.
-    ("step-01: the literal lens spills above ~9,000 chars to a context file", STEPS[0],
-     r"\*\*Spill above ~9,000 chars\.\*\* Past that, write the patch material to a context file in\s*\n`ARTIFACT_DIR`",
-     re.M,
-     "Past that, write the patch material to a context file in",
-     "Past that, inline the patch material rather than writing it to"),
 
     # lens_budget: defined once, HERE, and NOT the same axis as review_mode. A caller that
     # re-defines a cap — or conflates the two axes — is how cost governance rots overnight.
-    ("step-01: the cost axis is named lens_budget and defined once", STEPS[0],
-     r"^### `lens_budget` — the literal-correctness lens's cost axis, defined here, once \(SCC-147\)$", re.M,
-     "### `lens_budget` — the literal-correctness lens's cost axis, defined here, once (SCC-147)",
-     "### `lens_budget` — each caller sets its own"),
-    ("step-01: lens_budget is explicitly NOT review_mode", STEPS[0],
-     r"⛔ \*\*`lens_budget` is NOT `review_mode`, and the two are independent\.\*\*", 0,
-     "**`lens_budget` is NOT `review_mode`, and the two are independent.**",
-     "**`lens_budget` is another name for `review_mode`.**"),
-    ("step-01: full review_mode plus capped budget is the normal state", STEPS[0],
-     r"routinely `review_mode: full`\s*\nand `lens_budget: capped` at the same time", re.M,
-     "routinely `review_mode: full`", "never `review_mode: full`"),
-    ("step-01: a caller names the budget and never re-defines the caps", STEPS[0],
-     r"A caller \*\*names\*\* its `lens_budget`; it never re-defines the caps", 0,
-     "A caller **names** its `lens_budget`; it never re-defines the caps",
-     "A caller may raise or lower the caps to suit its budget"),
-    ("step-01: an unnamed budget defaults to capped, the safe side", STEPS[0],
-     r"\*\*A caller that names none gets `capped`\*\*", 0,
-     "**A caller that names none gets `capped`**",
-     "**A caller that names none gets `standard`**"),
-    ("step-01: capped is the autopilot's, with the caps mandatory and no top-up", STEPS[0],
-     r"^\|\s*`capped`\s*\|\s*[^|]*names nothing[^|]*\|[^|]*MANDATORY[^|]*\*\*no top-up\*\*",
-     re.M,
-     "the same caps, MANDATORY, and **no top-up**", "the caps are advisory"),
-    ("step-01: standard budget still binds the caps, and its top-up is earned", STEPS[0],
-     r"^\|\s*`standard`\s*\|\s*interactive callers\s*\|\s*MANDATORY as written in that lens's Scope section;[^|]*\*\*earn\*\*",
-     re.M,
-     "| `standard` | interactive callers | MANDATORY as written in that lens's Scope section;",
-     "| `standard` | interactive callers | caps are optional;"),
 
     # SCC-147, second half (rolled in on the operator's ruling): the top-up ROW is definition
     # only — a table cell is unquoted, and this file pins twice that unquoted text never reaches
@@ -936,29 +554,8 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     # behaviourally identical: a lens never told a top-up exists cannot spend one. The clause is
     # now BLOCKQUOTED and routed by budget; these three pin the quote, the routing, and the
     # capped-side absence that IS the `no top-up` enforcement.
-    ("step-01: the top-up clause is blockquoted, so it reaches the lens", STEPS[0],
-     r"^> \*\*You may earn ONE top-up past the file cap\.\*\*", re.M,
-     "> **You may earn ONE top-up past the file cap.**",
-     "**You may earn ONE top-up past the file cap.**"),
-    ("step-01: the top-up quote is routed to standard runs only", STEPS[0],
-     r"you append\s*\nit \*\*only when the caller passed `lens_budget: standard`\*\*", re.M,
-     "it **only when the caller passed `lens_budget: standard`**",
-     "it **on every run, whatever the budget**"),
-    ("step-01: under capped, absence of the clause is the enforcement", STEPS[0],
-     r"a lens that was never handed\s*\nthe clause has no top-up to spend", re.M,
-     "a lens that was never handed", "a lens may assume a top-up even when it was never handed"),
 
     # Gate 1 adaptation — without it the lens must DROP the defect class it was added to catch.
-    ("step-01: Gate 1 is adapted for the literal lens, and only for it", STEPS[0],
-     r"^> \*\*Gate 1 is adapted for you, and only for you\.\*\*", re.M,
-     "> **Gate 1 is adapted for you, and only for you.**",
-     "> **Gate 1 binds you exactly as it binds every other hunter.**"),
-    ("step-01: for always-raised violations the changed line IS the proof", STEPS[0],
-     r"\*\*the changed line IS the reachability\s*\n> proof\*\* and you owe no further trace", re.M,
-     "**the changed line IS the reachability", "**a full production trace IS the reachability"),
-    ("step-01: state-dependent violations still owe the full Gate 1 trace", STEPS[0],
-     r"\*\*Gate 1 binds in full\*\* and\s*\n> you owe the ordinary trace\. Gates 2 and 3 bind unchanged", re.M,
-     "**Gate 1 binds in full** and", "**Gate 1 is waived** and"),
 
     # A lens that RAN and found nothing is not a dead lens. Conflating the two caps every clean
     # review at CONCERNS — the same failure F6 guards for the empty-diff case, at diff-wide scale.
@@ -979,21 +576,11 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"\*\*in a headless pipeline nobody is, and returning unrun prompts is a review\s*\nthat silently never ran\*\*",
      re.M,
      "that silently never ran**", "that is merely deferred**"),
-    ("step-01: inline execution must run the blind lens FIRST, on the diff alone", STEPS[0],
-     r"run the blind lens \*\*first — on the diff alone, before\s*\nany spec, plan, walkthrough or evidence pack is pulled into context\.\*\*",
-     re.M,
-     "**first — on the diff alone, before", "**last — after everything else, including"),
     # ⛔ RETIRED BY SCC-203, and the retirement is the point. This used to pin
     # `ok (not blind — context held <what>)` as the honest way to record a lens that ran without
     # its defining property. The operator ruled that state out entirely: a roster carrying it
     # reports a review that was more independent than it was, which is worse than a smaller
     # review. The state a contaminated blind lens reaches is now `n/a`, and it is not counted.
-    ("step-01: a contaminated blind lens is DROPPED and recorded n/a", STEPS[0],
-     r"`blind-hunter · n/a — context contaminated \(<what it held>\)`", 0,
-     "`blind-hunter · n/a — context contaminated (<what it held>)`", "`ok`"),
-    ("step-01: the retired `ok (not blind ...)` state is gone from the engine", STEPS[0],
-     r"that state is \*\*retired\*\*", 0,
-     "that state is **retired**", "that state is still available"),
 
     # ── step-01 (SCC-126 → SCC-209): the CALLER's wiring, pinned in the caller's own file ──
     # F7 from the SCC-126 review: a rule about a caller that lives only in step-01 is the engine's
@@ -1014,38 +601,15 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     # all still cover it. What is no longer asserted is the CONTENT of a frozen file. When the
     # rewrite lands, the new file earns its own rows here, the same as any other caller.
 
-    # ── SCC-147: the INTERACTIVE callers name their budget, in their own invocation tables ────
-    # The counter-example here is `capped` — not a nonsense string — because `capped` is the
-    # exact value these two silently inherited by naming nothing. A row that says `capped`
-    # reads as deliberate and is the defect; the check has to reject it, not just notice an
-    # absent word.
-    #
-    # ⛔ The pattern is anchored to the ENGINE-INVOCATION TABLE, and that shape is the whole
-    # point. This lane's review ran two mutants against the first version — a bare
-    # `^\|\s*`lens_budget`\s*\|\s*`standard`` — and BOTH survived with every case green:
-    #   A. move the row out of the invocation table into any other table in the file. The
-    #      caller then passes NO budget and silently takes `capped` — the exact defect this
-    #      ticket exists to fix — while a file-wide grep still sees a matching row somewhere.
-    #   B. leave the row where it is and append "— but pass `capped` when the diff is large"
-    #      INSIDE the same cell, which the old pattern never read: it stopped at the value
-    #      token and never closed the cell.
-    # `^\|\s*`HEAD_SHA`` + `(?:\|[^\n]*\n)*?` binds the row to the same CONTIGUOUS run of table
-    # rows as a required engine input — a blank line or any prose ends the run, so an appendix
-    # table cannot satisfy it. That kills A. The tempered `(?:(?!capped)[^|\n])*\|` reads to the
-    # cell's closing pipe and refuses `capped` anywhere inside it. That kills B — and it is why
-    # neither row's prose may name `capped`: they say "the autopilot's budget" instead.
-    # This is the `source-grep-guards-cannot-see-order` class caught inside a guard written to
-    # close SCC-126's F7, which is the same defect one layer up.
-    ("interactive caller /cicd-code-review: invocation table passes lens_budget standard",
-     CICD_CMD,
-     r"^\|\s*`HEAD_SHA`[^\n]*\n(?:\|[^\n]*\n)*?\|\s*`lens_budget`\s*\|\s*`standard`"
-     r"(?:(?!capped)[^|\n])*\|", re.M,
-     "| `lens_budget` | `standard`", "| `lens_budget` | `capped`"),
-    ("interactive caller /smh-code-review: invocation table passes lens_budget standard",
-     SMH_CMD,
-     r"^\|\s*`HEAD_SHA`[^\n]*\n(?:\|[^\n]*\n)*?\|\s*`lens_budget`\s*\|\s*`standard`"
-     r"(?:(?!capped)[^|\n])*\|", re.M,
-     "| `lens_budget` | `standard`", "| `lens_budget` | `capped`"),
+    # ── SCC-147's two caller rows — RETIRED by SCC-447, and the reason matters ──────────────
+    # They pinned `| `lens_budget` | `standard` |` in each interactive caller's invocation table,
+    # anchored to the contiguous run of rows under `HEAD_SHA` so an appendix table could not
+    # satisfy them (this lane's review killed two looser versions with live mutants). The axis
+    # itself is gone: the roster is three lenses, step-01 carries the retirement note instead of
+    # a definition, and a caller that still passed a budget would be passing an input the engine
+    # no longer reads. A retired input needs the INVERSE guard, and it is asserted over the
+    # discovered caller set in the block below — over every caller, not just these two, because
+    # the failure mode is one caller keeping the row after the definition left.
 
     # ── SCC-173 + SCC-177: the callers WRITE what the preflights read ───────────────────────
     # Bound the same contiguous-table way as `lens_budget` above, for the same reason: a
@@ -1080,18 +644,14 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
 
 
     # ── step-03: buckets, alias map, and the severity-to-verdict table ──────────────────────
-    ("step-03: decision_needed bucket is defined", STEPS[2],
-     r"^- \*\*decision_needed\*\* —", re.M,
-     "- **decision_needed** — an ambiguous choice", "- ~~decision_needed~~ — removed,"),
-    ("step-03: patch bucket is defined", STEPS[2],
-     r"^- \*\*patch\*\* —", re.M,
-     "- **patch** — a real issue", "- ~~patch~~ — removed,"),
-    ("step-03: defer bucket is defined", STEPS[2],
-     r"^- \*\*defer\*\* —", re.M,
-     "- **defer** — real, worth fixing, **and this lane", "- ~~defer~~ — removed,"),
-    ("step-03: dismiss bucket is defined", STEPS[2],
-     r"^- \*\*dismiss\*\* —", re.M,
-     "- **dismiss** — noise, false positive", "- ~~dismiss~~ — removed,"),
+    # ⛔ The `defer` bucket this row once bound is GONE (operator ruling 2026-09-11, together with
+    # `escalate`): a bucket for work "this lane cannot hold" was a parking lot with a nicer name,
+    # and every entry in it was a reproduced defect nobody fixed. What the row holds now is the
+    # closed set — two buckets, no third — stated positively so a stub cannot add one back quietly.
+    ("step-03: two buckets, and the sentence that closes the set", STEPS[2],
+     r"^\*\*There are two buckets, and there is no third\.\*\*", re.M,
+     "**There are two buckets, and there is no third.**",
+     "**There are two buckets, and a third may be added when a lane needs one.**"),
     ("step-03: critical accepts high and blocker", STEPS[2],
      r"^\|\s*`critical`\s*\|\s*critical, high, blocker\s*\|", re.M,
      "| `critical` | critical, high, blocker |", "| `critical` | trivial, info |"),
@@ -1104,46 +664,10 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("step-03: nitpick accepts info, trivia, trivial", STEPS[2],
      r"^\|\s*`nitpick`\s*\|\s*nitpick, info, trivia, trivial\s*\|", re.M,
      "| `nitpick` | nitpick, info, trivia, trivial |", "| `nitpick` | critical, blocker |"),
-    ("step-03: a revised severity outranks the hunter", STEPS[2],
-     r"\*\*A revised severity outranks the hunter's\.\*\*", 0,
-     "outranks the hunter's", "is ignored in favour of the hunter's"),
-    ("step-03: an unverified finding keeps the hunter's severity", STEPS[2],
-     r"⚠ \*\*A finding with no revised severity keeps the hunter's\*\*", 0,
-     "**A finding with no revised severity keeps the hunter's**",
-     "**A finding with no revised severity is dropped**"),
-    ("step-03: an unverified finding is not a softer finding", STEPS[2],
-     r"an\s*\n?unverified finding is not a softer finding", re.M,
-     "unverified finding is not a softer finding", "unverified finding is a softer finding"),
-    ("step-03: the engine gates as hard as the path it replaces", STEPS[2],
-     r"gates exactly as hard as the path it replaces", 0,
-     "exactly as hard as the path it replaces", "far softer than the path it replaces"),
-    ("step-03: compound is a first-class finding source", STEPS[2],
-     r"^\|\s*`source`\s*\|[^|]*`compound`[^|]*\|", re.M,
-     "· `compound`, or merged", ", or merged"),
-    ("step-03: no-spec keeps the decision instead of parking it as a blocker-less defer", STEPS[2],
-     r"becomes `patch` if the fix is\nunambiguous; otherwise it is STILL `decision_needed`", re.M,
-     "unambiguous; otherwise it is STILL `decision_needed`",
-     "unambiguous, otherwise `defer`"),
-    ("step-03: dismiss is counted and a relevance kill is named", STEPS[2],
-     r"\*\*`dismiss` is counted — and a relevance kill is counted AND named\.\*\*", 0,
-     "**`dismiss` is counted — and a relevance kill is counted AND named.**",
-     "**`dismiss` and `defer` are both discarded silently.**"),
     # ── step-03: the relevance gate (SCC-160, operator ruling 2026-08-15) ───────────────────
     # TRUE is necessary, not sufficient: hunters have finding-goals, so their volume is a
     # success metric, never a work queue. These three pins bind the ruling's load-bearing
     # sentences: the gate exists, severity cannot bypass it, and the residue class is dead.
-    ("step-03: the relevance gate exists — TRUE is not WORTH DOING", STEPS[2],
-     r"### The relevance gate — TRUE is not the same as WORTH DOING", 0,
-     "### The relevance gate — TRUE is not the same as WORTH DOING",
-     "### The relevance pass — everything TRUE is implemented"),
-    ("step-03: severity does not bypass the relevance gate", STEPS[2],
-     r"Severity does not\s+bypass the gate — an `important` with no realistic path is still dead", 0,
-     "Severity does not\nbypass the gate — an `important` with no realistic path is still dead",
-     "Severity bypasses the gate — an `important` is implemented on rank alone"),
-    ("step-03: the residue class is retired", STEPS[2],
-     r"⛔ \*\*The residue class is RETIRED\.\*\*", 0,
-     "⛔ **The residue class is RETIRED.**",
-     "The residue pile is owed to ONE follow-on ticket"),
     # ── step-03: fix in thread (SCC-160 follow-on, operator ruling 2026-08-15, second) ──────
     # The first cut kept a "rarely — proposed to the operator as a decided chore ticket" leg and
     # its own close-out ended in a ticket-ruling row: "we need the fixes made in thread not a
@@ -1154,43 +678,12 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"⛔ \*\*A review never produces a ticket\.\*\*", 0,
      "⛔ **A review never produces a ticket.**",
      "A finding that survives may be proposed to the operator as a decided chore ticket."),
-    ("step-03: survivors are fixed in this lane before the verdict", STEPS[2],
-     r"\*\*A finding that survives\s+this gate is fixed in this lane, in this thread, before the verdict — full stop\.\*\*", 0,
-     "**A finding that survives\nthis gate is fixed in this lane, in this thread, before the verdict — full stop.**",
-     "A finding that survives this gate is fixed in this lane, or ledgered, or — rarely — proposed as a decided chore ticket."),
-    ("step-03: defer is a structural blocker, not pre-existing", STEPS[2],
-     r"^- \*\*defer\*\* — real, worth fixing, \*\*and this lane structurally cannot hold the fix\*\*", re.M,
-     "- **defer** — real, worth fixing, **and this lane structurally cannot hold the fix**",
-     "- **defer** — real, worth fixing, but pre-existing and not caused by this change."),
-    ("step-03: critical maps to FAIL", STEPS[2],
-     r"^\|\s*`critical`, in `decision_needed` or `patch`\s*\|\s*\*\*FAIL\*\*\s*\|", re.M,
-     "| `critical`, in `decision_needed` or `patch` | **FAIL** |",
-     "| `critical`, in `decision_needed` or `patch` | **never gate** |"),
-    ("step-03: important maps to CONCERNS", STEPS[2],
-     r"^\|\s*`important`, in `decision_needed` or `patch`\s*\|\s*\*\*CONCERNS\*\*\s*\|", re.M,
-     "| `important`, in `decision_needed` or `patch` | **CONCERNS** |",
-     "| `important`, in `decision_needed` or `patch` | **FAIL** |"),
-    ("step-03: suggestion and nitpick never gate", STEPS[2],
-     r"^\|\s*`suggestion` or `nitpick`, any bucket\s*\|\s*\*\*never gate\*\*", re.M,
-     "| `suggestion` or `nitpick`, any bucket | **never gate**",
-     "| `suggestion` or `nitpick`, any bucket | **FAIL**"),
-    ("step-03: a deferred finding never gates", STEPS[2],
-     r"^\|\s*anything in `defer`\s*\|\s*\*\*never gate\*\*", re.M,
-     "| anything in `defer` | **never gate**", "| anything in `defer` | **FAIL**"),
     ("step-03: only a still-dead lens appears in the table", STEPS[2],
      r"^\|\s*a lens still `dead` after retry AND inline rerun\s*\|\s*\*\*CONCERNS\*\*\s*\|", re.M,
      "a lens still `dead` after retry AND inline rerun", "any lens that errored at all"),
     # step-03 §5 calls itself "the single definition; every caller reads it rather than inventing
     # its own". Step-02 promises CONCERNS for a dead ROLE, and with no row here that promise was
     # unreachable — the orchestrator would apply the single definition, find nothing, return none.
-    ("step-03: a dead step-2 role raises the floor too", STEPS[2],
-     r"^\|\s*a step-2 role still `dead` after retry AND inline rerun\s*\|\s*\*\*CONCERNS\*\*\s*\|",
-     re.M, "| a step-2 role still `dead` after retry AND inline rerun | **CONCERNS** |",
-     "| a step-2 role still `dead` after retry AND inline rerun | **never gate** |"),
-    ("step-03: a recovered or gate-skipped role never gates", STEPS[2],
-     r"neither does a\s*\n?step-2 role that recovered inline — including one recorded `cold \(no dossier\)`",
-     re.M, "step-2 role that recovered inline — including one recorded `cold (no dossier)`",
-     "step-2 role that died outright"),
     ("step-03: the floor is the most severe row", STEPS[2],
      r"The floor is the \*\*most severe\*\* applicable row", 0,
      "the **most severe** applicable row", "the **least severe** applicable row"),
@@ -1198,21 +691,18 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     # ── step-04: the record, and the boundary held positively ───────────────────────────────
     ("step-04: an absent sink is reported, never guessed", STEPS[3],
      r"do not pick a file", 0, "do not pick a file", "pick any file you like"),
-    ("step-04: decision findings are written unresolved", STEPS[3],
-     r"^- \[ \] \[Review\]\[Decision\]", re.M,
-     "- [ ] [Review][Decision]", "- [x] [Review][Decision]"),
-    ("step-04: patch findings are written unresolved", STEPS[3],
-     r"^- \[ \] \[Review\]\[Patch\]", re.M,
-     "- [ ] [Review][Patch]", "- [x] [Review][Patch]"),
-    ("step-04: deferred findings are written unresolved", STEPS[3],
-     r"^- \[ \] \[Review\]\[Defer\]", re.M,
-     "- [ ] [Review][Defer]", "- [x] [Review][Defer]"),
-    ("step-04: deferred work is routed out of the review", STEPS[3],
-     r"Every `defer` also gets a bullet in `DEFERRED_WORK`", 0,
-     "also gets a bullet in `DEFERRED_WORK`", "is dropped after the review"),
-    ("step-04: dismissed findings are counted, not written", STEPS[3],
-     r"Dismissed findings are \*\*not\*\* written here", 0,
-     "are **not** written here", "are written here"),
+    # The two rows this replaces pinned the `Defer` box and the `DEFERRED_WORK` bullet — both
+    # retired 2026-09-11 on the operator's ruling. Their coverage moved to the retirement itself:
+    # nothing is deferred anywhere, and the engine writes neither of the caller's two dispositions.
+    ("step-04: nothing is deferred anywhere — the ledger was the queue", STEPS[3],
+     r"Nothing is deferred anywhere: a ledger of reproduced defects\s+nobody is fixing is the queue"
+     r"\s+this ticket closed", 0,
+     "Nothing is deferred anywhere",
+     "Deferred work goes to the ledger"),
+    ("step-04: held and out-of-lane are the CALLER's, and the engine writes neither", STEPS[3],
+     r"this engine never writes either", 0,
+     "this engine never writes either",
+     "this engine writes both"),
     ("step-04: the summary carries a severity floor", STEPS[3],
      r"^severity_floor:\s+none \| CONCERNS \| FAIL$", re.M,
      "severity_floor:  none | CONCERNS | FAIL", "verdict:  PASS | CONCERNS | FAIL"),
@@ -1229,9 +719,6 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"^- \*\*It never merges, pushes, or transitions a ticket\.\*\*", re.M,
      "It never merges, pushes, or transitions a ticket",
      "It merges, pushes, and transitions the ticket"),
-    ("step-04 boundary: never pauses the caller for a decision", STEPS[3],
-     r"^- \*\*It never pauses the caller.s flow for a decision\.\*\*", re.M,
-     "It never pauses the caller's flow", "It pauses the caller's flow"),
 )
 
 
@@ -1293,17 +780,22 @@ def main() -> int:
     # and it protects the blind lens by ORDER instead (splitting its ingests so the lens runs
     # before any context lands). Holding it to "subagents are the default" would be law it cannot
     # obey - a rule nobody can follow is a rule that teaches everyone to ignore rules.
-    # ⭐ THREE paragraphs, not two. The `rather than faking it` clause — where an `inline` caller
-    # holding the plan DROPS the Blind Hunter — was carried by both callers and pinned by nothing:
-    # no CHECKS row named it, and this extractor did not match it, so either caller could have
-    # lost the consequence while every check stayed green. It is part of the same law (what a
-    # runtime answer OBLIGES), so it belongs in the same byte-identity comparison.
+    # ⭐ THREE paragraphs, not two. The third is what the runtime answer OBLIGES once given, and
+    # it was carried by both callers while pinned by nothing — no CHECKS row named it and this
+    # extractor did not match it, so either caller could have lost the consequence with every
+    # check green. It is part of the same law, so it belongs in the same byte-identity comparison.
+    # ⛔ SCC-447 REPLACED THAT CLAUSE RATHER THAN DROPPING IT. It used to be "an `inline` caller
+    # holding the plan DROPS the Blind Hunter rather than faking it" — a rule about a lens that no
+    # longer exists, which both doors still carried as live instruction three parts into the lane
+    # that retired it. The obligation that survives is the one the roster can still break: under
+    # `inline` every lens comes back `recovered-inline`, and the roster may not read as a more
+    # independent review than the one that ran.
     def _law_of(txt: str) -> str:
         out = []
         for para in txt.split("\n\n"):
             if ("**capability**" in para or "IS a user request" in para
                     or "may not record a bare" in para
-                    or "rather than faking it" in para):
+                    or "every lens comes back `recovered-inline`" in para):
                 out.append(" ".join(para.split()))
         return "\n".join(out)
 
@@ -1330,7 +822,8 @@ def main() -> int:
     for clause, why in (("**capability**", "capability-vs-policy"),
                         ("IS a user request", "a `/` command IS a user request"),
                         ("inline (blocked:", "a blocked inline must NAME what blocked it"),
-                        ("rather than faking it", "a contaminated Blind Hunter is DROPPED")):
+                        ("every lens comes back `recovered-inline`",
+                         "an inline run's roster says inline on every row")):
         c.check(f"  ^ the law includes the {why} clause",
                 clause in smh_law and clause in cicd_law,
                 f"missing from {'smh' if clause not in smh_law else 'cicd'} caller")
@@ -1376,23 +869,23 @@ def main() -> int:
     # that invoke the engine as a skill. Raised by this lane's review; recorded so the next
     # person does not have to re-derive it.
     #
-    # A SECOND, contradictory row elsewhere in the same file is invisible to `re.search`, which
-    # returns on first match. The review proved it: a later "## Step 3.9 — budget override"
-    # section carrying `| `lens_budget` | `capped` — overrides the Step 1 table |` left the
-    # Step 1 row untouched and the whole gate green, while an LLM reading the command
-    # top-to-bottom passes `capped`. So the rows are COUNTED, not just found.
-    for rel in (CICD_CMD, SMH_CMD):
-        txt = texts.get(rel) or read(ROOT / rel)
-        n = len(re.findall(r"^\|\s*`lens_budget`\s*\|", txt, re.M))
-        c.check(f"{Path(rel).name} carries exactly ONE lens_budget row", n == 1,
-                "" if n == 1 else f"found {n} — a second row can contradict the first")
-    # Every caller must NAME a budget. Which value is each caller's own business — the AP twin's
-    # `capped` is as correct as an interactive `standard` — but naming nothing is the defect.
+    # ⛔ SCC-447 INVERTED THIS PAIR. It used to COUNT the rows (exactly one per interactive
+    # caller) and require every discovered caller to NAME a budget, because a second,
+    # contradictory row elsewhere in the same file is invisible to `re.search` — the review
+    # proved it with a "## Step 3.9 — budget override" section that left the Step 1 row
+    # untouched and the whole gate green. The axis is retired now: step-01 defines no budget and
+    # the three-lens roster has no cost dial to turn, so the failure mode flipped from "a caller
+    # names none" to "a caller still passes one". Counting is still what reads it — a file-wide
+    # `re.search` for an absent row returns on the first match it does not find, which is exactly
+    # as blind in this direction — so the rows are COUNTED to zero, over EVERY discovered caller
+    # rather than the two that used to carry them.
     for rel in discovered:
         txt = texts.get(rel) or read(ROOT / rel)
-        named = re.search(r"lens_budget`?\s*[|:]\s*`?(standard|capped)\b", txt) is not None
-        c.check(f"{Path(rel).name} names a lens_budget explicitly", named,
-                "" if named else "names none, so it silently inherits `capped` (SCC-147)")
+        c.check(f"{Path(rel).name} has a body for the budget scan", len(txt) > 2000,
+                "" if len(txt) > 2000 else f"{rel} absent or under 2000 chars")
+        n = len(re.findall(r"^\|\s*`lens_budget`\s*\|", txt, re.M))
+        c.check(f"{Path(rel).name} passes NO lens_budget row (retired, SCC-447)", n == 0,
+                "" if n == 0 else f"found {n} — the engine no longer reads this input")
 
     # ── 3. Vendor identifiers: scanned across EVERY markdown file in the engine ────────────
     found = sorted(str(p.relative_to(MASTER)).replace("\\", "/")

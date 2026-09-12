@@ -124,6 +124,21 @@ def main() -> int:
         c.check("NA6 · (control) no `lenses_na:` field means zero dropped lenses",
                 roster.parse(wt(roster_rows=ALL_OK))["lenses_na"] == [],
                 "an absent field must not fabricate a dropped lens")
+        # ⛔ AUDIT FINDING 7 (SCC-447). Once the Blind Hunter retires, the ONLY `n/a` left is
+        # the Acceptance Auditor's mode-skip - it runs under `review_mode: full` and is recorded
+        # `acceptance · n/a — skipped-by-mode (no-spec)` otherwise. NA2 refused ANY `n/a` under
+        # fan-out, so every spec-less fan-out review would have been refused at close-out, and
+        # the agent's cheapest exit is to declare `inline` falsely or omit the row - both of
+        # which this gate exists to catch, defeated by the gate itself.
+        SKIP = "acceptance · n/a — skipped-by-mode (no-spec)"
+        ok, why = roster.judge(wt(roster_rows=ALL_OK, runtime="fan-out", na=SKIP), POST, "PASS")
+        c.check("NA7 · a `fan-out` lane whose only n/a is `skipped-by-mode` PASSES",
+                ok, f"a mode-skip is not a contamination claim; the lens was never owed: {why}")
+        ok, why = roster.judge(wt(roster_rows=ALL_OK, runtime="fan-out",
+                                  na=f"{SKIP}\n- {DROP}"), POST, "PASS")
+        c.check("NA8 · (control) a mode-skip beside a contaminated drop still BLOCKS under fan-out",
+                not ok and "fan-out" in " ".join(why),
+                f"the exemption is per ROW, never per lane - NA2 must still fire: {why}")
 
     if c.block("E3 · FAIL blocks on its own account"):
         ok, why = roster.judge(wt(verdict="FAIL", roster_rows=ALL_OK), POST, "FAIL")
@@ -610,10 +625,12 @@ def main() -> int:
                            + "\nVerdict: FAIL @ def5678\n", encoding="utf-8")
             r = subprocess.run([sys.executable, str(MOD), str(two), "--gate"],
                                capture_output=True, text=True)
-            c.check("F1j · two stamps: `--gate` judges the LAST, and SAYS the story-lane "
-                    "gate reads the first",
+            # SCC-447 tip review (receipt e3): the story close-out now reads the LAST stamp too, so
+            # the note no longer warns of a reader that disagrees - it says every reader agrees.
+            c.check("F1j · two stamps: `--gate` judges the LAST, and SAYS every close-out reader "
+                    "does the same",
                     r.returncode == 1 and json.loads(r.stdout)["verdict"] == "FAIL"
-                    and "closeout_preflight" in r.stderr,
+                    and "every close-out reader" in r.stderr and "FIRST" not in r.stderr,
                     f"rc={r.returncode} verdict={json.loads(r.stdout).get('verdict')!r} "
                     f"err={r.stderr[:200]!r}")
             r = subprocess.run([sys.executable, str(MOD), str(two),

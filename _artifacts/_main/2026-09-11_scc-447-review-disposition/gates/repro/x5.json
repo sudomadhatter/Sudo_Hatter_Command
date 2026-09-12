@@ -1,0 +1,16 @@
+{
+  "id": "x5",
+  "result": "reproduced",
+  "command": [
+    "python3",
+    ".agents/scripts/tests/test_review_scope.py",
+    "--case",
+    "1 \u00b7"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-447-review-disposition",
+  "exit_code": 1,
+  "sha": "3f482b30afa2c6174844b24e468a5a3bd6404410",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T02:50:10+00:00",
+  "output_tail": "irror'\n[PASS] generated withheld: generated/launcher.md: generated/launcher.md class='generated' \u2014 the MARKER is in the text, so a path-only rule cannot see it\n[PASS] generated withheld: generated/seat.md: generated/seat.md class='generated' \u2014 the MARKER is in the text, so a path-only rule cannot see it\n[PASS] record withheld: _artifacts/lane/walkthrough.md: _artifacts/lane/walkthrough.md class='record'\n[PASS] record withheld: _bmad-output/board.md: _bmad-output/board.md class='record'\n[PASS] record withheld: docs/_scc_sops_prds/manual.md: docs/_scc_sops_prds/manual.md class='record'\n[PASS] a master that MENTIONS the marker is kept: .agents/scripts/mentions.py: .agents/scripts/mentions.py class=None \u2014 a substring rule withholds every master that talks about launchers, including review_scope.py itself\n[PASS] a master that MENTIONS the marker is kept: .agents/commands/mentions.md: .agents/commands/mentions.md class=None \u2014 a substring rule withholds every master that talks about launchers, including review_scope.py itself\n[FAIL] an AUTHORED file under a mirror prefix, with no master, is kept: .claude/settings.json: .claude/settings.json class='mirror' - a prefix is not a mirror; a byte copy of a master is, and this one has no master\n[PASS] kept count and bytes are both reported: the summary names neither the count nor the size\n-- 18/19 passed --\nFAILED: an AUTHORED file under a mirror prefix, with no master, is kept: .claude/settings.json\n-- filter '1 \u00b7': matched 1/10 blocks --\n"
+}

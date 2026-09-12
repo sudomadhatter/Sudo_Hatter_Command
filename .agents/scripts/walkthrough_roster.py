@@ -29,6 +29,7 @@ escape hatch is not a bypass — it is the inline ladder: run the lenses inline,
 """
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -47,6 +48,11 @@ STATES = ("ok", "recovered-inline", "dead")
 RUNTIMES = ("fan-out", "inline")
 
 _ROSTER_HEAD_RE = re.compile(r"^[>\-*#\s]*\**\s*lenses_run\s*:\**\s*$", re.I)
+# A `## Code Review` heading, and the PART it names - `part <KEY>`, `Parts 1-3`, or a `<sha>..<sha>`
+# range - so rosters are counted per part (SCC-447 tip review, x6): a consolidated lane is reviewed
+# one part at a time, each part's review carrying its own roster in the lane's one walkthrough.
+_REVIEW_HEAD_RE = re.compile(r"^##\s+Code Review\b(.*)$")
+_PART_LABEL_RE = re.compile(r"\b[Pp]arts?\s+[^)\n]*|[0-9a-f]{7,40}\.\.[0-9a-f]{7,40}")
 _ROSTER_ROW_RE = re.compile(r"^\s*[-*]\s*`?([A-Za-z0-9][\w \-/]*?)`?\s*[·:|]\s*"
                             r"`?(ok|recovered-inline|dead)`?\s*(?:[—\-]\s*(.*))?$", re.I)
 
@@ -112,6 +118,30 @@ _DISPO_RE = re.compile(r"^[>\-*#\s]*\**\s*dispositions\s*:\**\s*(.+)$", re.I | r
 _DRIFT_RE = re.compile(r"^[>\-*#\s]*\**\s*drift\s*:\**\s*(.+)$", re.I | re.M)
 # Lanes dated before the lines became law are exempt, same mechanism as CUTOFF.
 DISPO_CUTOFF = "2026-08-20"
+
+# ⛔ SCC-447 (2026-09-11) — the findings table is READ, and the stamp is refused on an open row.
+# A LITERAL date, for the E4c reason CUTOFF gives: the lane that built this gate is dated
+# 2026-09-11, so "the day it lands" would exempt its own lane - and SCC-441's walkthrough
+# (2026-09-10), the lane this doctrine was written from, is legacy to it and stays untouched.
+DISPOSITION_CUTOFF = "2026-09-12"
+# The four severities a lens may write. A row carrying any other word (the clean-code audit's
+# FAIL/CONCERNS) is not a review finding and is not judged here.
+SEVERITIES = ("critical", "important", "suggestion", "nitpick")
+# The words a `critical`/`important` row may carry. `fixed` and `held` owe evidence on disk;
+# `dropped` never reproduced, `out-of-lane` took the work-consolidation ladder, and `ruled` is
+# the operator's word on a held row. Anything else - blank, `open`, the retired `applied` /
+# `deferred` / `escalate` - is a row with no verdict, and there is no third bucket for it
+# (operator ruling 2026-09-11: "a reproduced finding is fixed").
+KNOWN_WORDS = ("fixed", "held", "dropped", "out-of-lane", "ruled")
+_DISPO_WORD_RE = re.compile(r"^[`*\s]*([a-z][a-z\-]*)", re.I)
+_REPRO_TOKEN_RE = re.compile(r"\brepro\s+`?([\w.\-]+)`?", re.I)
+_PATCH_TOKEN_RE = re.compile(r"\bpatch\s+`?([^\s`|]+)`?", re.I)
+_PIN_TOKEN_RE = re.compile(r"\bpin\s+\S", re.I)
+# The operator's written word for a SECOND roster: his words, QUOTED. A bare "approved by the
+# operator" with nothing quoted is an agent's claim about him, which is what the quote is for.
+_REREVIEW_RE = re.compile(r"^[>\-*#\s]*\**\s*re-review\s*:\**\s*approved by the operator\b"
+                          r"[^\"“]*[\"“].+[\"”]", re.I | re.M)
+_CELL_SPLIT_RE = re.compile(r"(?<!\\)\|")
 
 # E7 — Step 0.7's re-derivation. The heading is matched loosely because it is prose written by
 # hand; what is COUNTED is the three numbered lines under it. "nothing moved" is a valid line.
@@ -249,6 +279,25 @@ def parse(text: str) -> dict:
     dispo = _DISPO_RE.findall(text)
     drift = _DRIFT_RE.findall(text)
 
+    # SCC-447: roster headers are COUNTED (a second full roster needs the operator's word), his
+    # line is looked for, and the findings table is read - all on the STRIPPED text, like every
+    # other read here, so a fenced example roster is not a second roster.
+    # Rosters are counted PER PART: two rosters under headings naming two different parts are two
+    # first reviews (work-consolidation rule 2); two over the SAME part - or two under headings
+    # naming no part - is the re-review that needs the operator's quoted word.
+    per_part: dict[str, int] = {}
+    label = "(lane)"
+    for ln in lines:
+        h = _REVIEW_HEAD_RE.match(ln)
+        if h:
+            m = _PART_LABEL_RE.search(h.group(1))
+            label = m.group(0).strip() if m else "(lane)"
+        if _ROSTER_HEAD_RE.match(ln):
+            per_part[label] = per_part.get(label, 0) + 1
+    roster_headers = max(per_part.values(), default=0)
+    rereview = bool(_REREVIEW_RE.search(text))
+    findings = _findings_tables(lines)
+
     # ⛔ THE TWO WAYS A ROSTER GOES MISSING WHILE BEING VISIBLY PRESENT (SCC-240).
     # They are mutually exclusive BY CONSTRUCTION, and the construction is the point: a header
     # that survives stripping is not a fenced one, so a document carrying both a fenced example
@@ -265,7 +314,159 @@ def parse(text: str) -> dict:
             "dispositions": dispo[-1].strip() if dispo else None,
             "drift": drift[-1].strip() if drift else None,
             "roster_header_fenced": head_raw and not head_kept,
-            "roster_header_empty": head_kept and not lenses}
+            "roster_header_empty": head_kept and not lenses,
+            "roster_headers": roster_headers,
+            "rereview_approved": rereview,
+            "findings": findings}
+
+
+def _cells(line: str) -> list[str]:
+    """The cells of one markdown table row, outer pipes dropped, `\\|` kept as a literal."""
+    inner = line.strip()
+    if inner.startswith("|"):
+        inner = inner[1:]
+    if inner.endswith("|"):
+        inner = inner[:-1]
+    return [c.strip() for c in _CELL_SPLIT_RE.split(inner)]
+
+
+def _findings_tables(lines: list[str]) -> list[dict]:
+    """Every row of every findings table: a table whose header carries a `sev`/`severity`
+    column AND a `disposition` column. Other columns are free; a `repro` column, when present,
+    supplies the receipt id if the disposition cell does not name one. (SCC-447)
+
+    Rows come back in document order across every such table. The ONE table is edited in place
+    as rows close, and a re-stamp section carries no table, so there is nothing to choose
+    between. `parse` stays total: this reads, `judge` decides.
+    """
+    rows: list[dict] = []
+    i = 0
+    while i < len(lines):
+        ln = lines[i]
+        if not ln.lstrip().startswith("|"):
+            i += 1
+            continue
+        head = [re.sub(r"[`*\s]", "", c).lower() for c in _cells(ln)]
+        sev_i = next((k for k, h in enumerate(head) if h in ("sev", "severity")), None)
+        dis_i = next((k for k, h in enumerate(head) if h == "disposition"), None)
+        if sev_i is None or dis_i is None:
+            i += 1
+            continue
+        rep_i = next((k for k, h in enumerate(head) if h == "repro"), None)
+        i += 1
+        n = 0
+        while i < len(lines) and lines[i].lstrip().startswith("|"):
+            cells = _cells(lines[i])
+            i += 1
+            if cells and all(re.fullmatch(r":?-+:?", c) for c in cells):
+                continue                                    # the |---| separator row
+            n += 1
+            sev = re.sub(r"[`*]", "", cells[sev_i]).strip().lower() if sev_i < len(cells) else ""
+            dispo = cells[dis_i] if dis_i < len(cells) else ""
+            word = _DISPO_WORD_RE.match(dispo)
+            repro = None
+            if rep_i is not None and rep_i < len(cells):
+                v = re.sub(r"[`*]", "", cells[rep_i]).strip()
+                if v and v.lower() not in ("—", "-", "–", "n/a", "none"):
+                    repro = v
+            if repro is None:
+                rm = _REPRO_TOKEN_RE.search(dispo)
+                repro = rm.group(1) if rm else None
+            pm = _PATCH_TOKEN_RE.search(dispo)
+            rows.append({"n": n, "sev": sev, "disposition": dispo,
+                         "word": word.group(1).lower() if word else "",
+                         "repro": repro, "patch": pm.group(1) if pm else None,
+                         "pin": bool(_PIN_TOKEN_RE.search(dispo))})
+    return rows
+
+
+def _patch_candidates(wt_dir: Path, rel: str) -> list[Path]:
+    """Where a `patch <path>` may live: beside the walkthrough, or repo-relative (the clickable
+    form the doors write). The FIRST candidate is the one a refusal names."""
+    p = Path(rel)
+    if p.is_absolute():
+        return [p]
+    out = [wt_dir / p]
+    for anc in wt_dir.parents:
+        if anc.name == "_artifacts":
+            out.append(anc.parent / p)
+            break
+    return out
+
+
+def findings_defect(rows: list[dict], wt_dir: Path, verdict: str) -> str | None:
+    """Why the findings table cannot support `verdict`, or None when it can. (SCC-447)
+
+    ⛔ THIS IS THE STOP CONDITION THE REVIEW LOOP NEVER HAD. The floor is read AT THE STAMP on
+    the rows still OPEN, and there are exactly two ways down, both evidence on disk: a receipt
+    showing the command does not fail (the row is dropped), or a fix with a pin seen red then
+    green (the row is closed). Every refusal names the row, the word it read, and what would
+    satisfy it - a gate that blocks without saying which row is a gate people route around.
+    """
+    held_crit = held_imp = 0
+    for r in rows:
+        sev, word, n = r["sev"], r["word"], r["n"]
+        if sev not in SEVERITIES:
+            continue
+        where = f"findings row {n} (`{sev}`, disposition `{r['disposition'][:40]}`)"
+        if sev in ("suggestion", "nitpick"):
+            if word == "fixed":
+                return (f"{where}: a `{sev}` is never fixed - the policy for it is nothing at all, "
+                        f"a count (`code-standards.md` §6.5). Record it `recorded`. Twenty cheap "
+                        f"fixes is the audit that never ends, each landing after the checks ran.")
+            continue
+        if word not in KNOWN_WORDS:
+            return (f"{where}: a reproduced `{sev}` that is neither `fixed` nor `held` has no "
+                    f"verdict - finish the fix. There is no third bucket (operator ruling "
+                    f"2026-09-11): write `fixed @<sha> · pin <test>[:<case>] · repro <id>`, or "
+                    f"`held — <reason> · repro <id> · patch <path>` where the constitution's Ask "
+                    f"First list or the spec forbids applying it alone. `dropped`, `out-of-lane` "
+                    f"and `ruled` are the only other ways a row closes.")
+        if word not in ("fixed", "held"):
+            continue                                        # dropped / out-of-lane / ruled
+        if word == "fixed" and not r["pin"]:
+            return (f"{where}: `fixed` with no `pin <test>[:<case>]`. A fix without a test seen "
+                    f"red then green is a new unreviewed edit - name the pin.")
+        if not r["repro"]:
+            return (f"{where}: `{word}` with no `repro <id>`. The door's receipt is what binds a "
+                    f"finding (`repro_receipt.py run --root <artifacts> --id <id> --cwd <tree> -- "
+                    f"<command>`); a row without one is a lens's claim about its own copy.")
+        receipt = wt_dir / "gates" / "repro" / f"{r['repro']}.json"
+        if not receipt.is_file():
+            return (f"{where}: receipt {receipt} is absent. The row cites `repro {r['repro']}`, "
+                    f"and the receipt is the only proof the command failed on the REAL tree - a "
+                    f"lens proves it in its own copy, which it may have edited (SCC-295).")
+        try:
+            result = json.loads(receipt.read_text(encoding="utf-8")).get("result")
+        except (OSError, ValueError):
+            result = "unreadable"
+        if result != "reproduced":
+            return (f"{where}: receipt {receipt} says `{result}`, not `reproduced`. A finding whose "
+                    f"command does not fail on the real tree is dropped and counted - it cannot be "
+                    f"`{word}` - and a command that never ran proved nothing.")
+        if word == "held":
+            if not r["patch"]:
+                return (f"{where}: `held` with no `patch <path>`. Held means the fix and its pin are "
+                        f"WRITTEN and only the operator's permission is missing - write the patch "
+                        f"beside the receipt and name it.")
+            cands = _patch_candidates(wt_dir, r["patch"])
+            if not any(p.is_file() for p in cands):
+                return (f"{where}: patch {cands[0]} is absent. A held row carries a written fix, "
+                        f"`git apply --check` clean on the lane tip; a promise of one is an open row.")
+            if sev == "critical":
+                held_crit += 1
+            else:
+                held_imp += 1
+    if held_crit and verdict in ("PASS", "CONCERNS"):
+        return (f"Verdict {verdict} with {held_crit} held critical(s) - `held` is still OPEN. An "
+                f"open reproduced critical at the stamp is FAIL, whatever the reason "
+                f"(`code-standards.md` §7); the operator's `apply <id>` or `approved` is what "
+                f"closes it, and the verdict is what carries it to him.")
+    if held_imp and verdict == "PASS":
+        return (f"Verdict PASS with {held_imp} held `important`(s). A held important is an open "
+                f"reproduced finding - the authority ground - so CONCERNS is the consistent "
+                f"verdict (`code-standards.md` §7): CONCERNS + held passes, and ships on his word.")
+    return None
 
 
 def roster_defect(data: dict, verdict: str | None = None) -> str | None:
@@ -367,15 +568,23 @@ def judge(text: str, path: Path | str, verdict: str | None,
         return False, reasons
 
     na = data["lenses_na"]
-    if na and data["runtime"] == "fan-out":
+    # ⛔ A MODE-SKIP IS NOT A DROP (SCC-447, audit finding 7). The Acceptance Auditor runs under
+    # `review_mode: full` and is recorded `acceptance · n/a — skipped-by-mode (no-spec)`
+    # otherwise: that is the caller declaring the lens was never owed, not a claim about its
+    # context. With the Blind Hunter retired it is the ONLY `n/a` left, so refusing it here would
+    # refuse every spec-less fan-out review at close-out - and the agent's cheapest exit from
+    # that is a false `inline` or an omitted row, both of which this gate exists to catch.
+    # Exempt per ROW, never per lane: a contaminated drop beside a mode-skip still blocks.
+    na_hard = [l for l in na if "skipped-by-mode" not in l["reason"].lower()]
+    if na_hard and data["runtime"] == "fan-out":
         # ⛔ SCC-203. A lens may be DROPPED only when the order cannot protect it, and under a
         # declared fan-out it always can: a subagent starts with a clean context by construction,
         # so "my context is contaminated" is not a statement this runtime can make. Dropping the
         # Blind Hunter here removes the only lens whose value comes from starvation and reports
         # the result as a full review - the exact claim the ruling forbids.
         reasons.append(
-            f"header says `review-runtime: fan-out` but {len(na)} lens/lenses are recorded "
-            f"`n/a` ({', '.join(l['lens'] for l in na)}). A dropped lens is legal only under "
+            f"header says `review-runtime: fan-out` but {len(na_hard)} lens/lenses are recorded "
+            f"`n/a` ({', '.join(l['lens'] for l in na_hard)}). A dropped lens is legal only under "
             f"`inline`, where the builder's own context is the reason; a fan-out gives every "
             f"lens a clean context, so run it or declare the runtime honestly.")
         return False, reasons
@@ -440,8 +649,8 @@ def judge(text: str, path: Path | str, verdict: str | None,
             reasons.append(
                 "the `## Code Review` section has no `dispositions:` line. Paste the engine "
                 "summary's line verbatim - `dispositions: per-lens: "
-                "<lens>=<survived>/<dismissed>/<relevance-killed> · ...` - the per-lens death "
-                "counts are the SCC-233 record and nothing else carries them.")
+                "<lens>=<reproduced>/<dropped>/<recorded> · ...` - the per-lens counts are "
+                "the SCC-233 record and nothing else carries them.")
             return False, reasons
         if data["drift"] is None:
             reasons.append(
@@ -449,6 +658,27 @@ def judge(text: str, path: Path | str, verdict: str | None,
                 "reconciliation in one line - `drift: undeclared=<n> · unimplemented=<n> · "
                 "incomplete=<n> - dispositions in the findings table` (or name why there was no "
                 "block to reconcile).")
+            return False, reasons
+
+    if date is None or date >= DISPOSITION_CUTOFF:
+        # ⛔ SCC-447 (2026-09-11) - the stop condition the review loop never had. The floor is
+        # read AT THE STAMP on the rows still open, with exactly two ways down: a receipt showing
+        # the command does not fail, or a fix with a pin seen red then green. This is the machine
+        # tier of that: a SECOND full roster needs the operator's quoted word, every `fixed`/`held`
+        # row must have its receipt (and a held row its written patch) on disk beside the
+        # walkthrough, an open critical is FAIL, and an `important` neither fixed nor held has
+        # no verdict at all - the stamp is refused and the caller finishes the fix.
+        if data["roster_headers"] > 1 and not data["rereview_approved"]:
+            reasons.append(
+                f"{data['roster_headers']} `lenses_run:` rosters over ONE part. One review per part: the lenses "
+                f"run ONCE, and after fixes the retest is the pins named in the `fixed` rows plus "
+                f"the suite through the receipt writer - a re-stamp section carries no roster "
+                f"(`code-standards.md` §7). A second full roster needs the operator's written word "
+                f"on the section: `re-review: approved by the operator — \"<his words>\"`.")
+            return False, reasons
+        defect = findings_defect(data["findings"], Path(path).parent, v)
+        if defect:
+            reasons.append(defect)
             return False, reasons
 
     if data["rederive_lines"] < 3:
@@ -564,15 +794,14 @@ def main(argv: list[str] | None = None) -> int:
     ok, why = judge(text, path, verdict)
     for line in why:
         print(("ok:  " if ok else "REFUSED: ") + line, file=sys.stderr)
-    # ⛔ SAME PARSER, DIFFERENT QUESTION - say so rather than imply agreement (SCC-240 review,
-    # Literal-Correctness). This reads the LAST stamp; `closeout_preflight` reads the FIRST
-    # (`_VERDICT_RE.search`), so on a re-reviewed STORY lane whose stamps run FAIL-then-PASS
-    # the two resolve different verdicts from one file. Task lanes go through
-    # `task_preflight`, which reads the last and agrees with this. Pass --verdict to pin it.
+    # SAME PARSER, SAME QUESTION since SCC-447's tip review: this reads the LAST stamp, and so do
+    # both close-out preflights (`task_preflight` with `found[-1]`, `closeout_preflight` with the
+    # last `_VERDICT_RE` match) - a re-stamp after fixes is the designed second section, and the
+    # last `Verdict:` governs in every reader. Pass --verdict to judge a section before its
+    # stamp exists.
     if len(stamps) > 1:
-        print(f"note: {len(stamps)} `Verdict:` stamps - judged the LAST ({verdict}). A story "
-              f"lane's `closeout_preflight` reads the FIRST ({stamps[0].upper()}); pass "
-              f"--verdict to remove the ambiguity.", file=sys.stderr)
+        print(f"note: {len(stamps)} `Verdict:` stamps - judged the LAST ({verdict}), as every "
+              f"close-out reader does.", file=sys.stderr)
     return 0 if ok else 1
 
 

@@ -1,5 +1,5 @@
 ---
-description: Audit a TASK diff against the command centre's own standard — the lobby machine floor (run_all, workflow_lint, sop_currency, py_compile, link+anchor) that can FAIL, plus a judgment pass over the toolkit conventions in the SOP and .agents/rules/ that caps at CONCERNS. The smh- counterpart of /cicd-clean-code-audit, for a repo that has no venv, no ruff and no tsc. Runs standalone, and is Step 3.5 of /smh-code-review.
+description: Audit a TASK diff against the command centre's own standard — the lobby machine floor (run_all, workflow_lint, sop_currency, py_compile, link+anchor) that can FAIL, plus a judgment pass over the toolkit conventions in the SOP and .agents/rules/ that is recorded, never a verdict. The smh- counterpart of /cicd-clean-code-audit, for a repo that has no venv, no ruff and no tsc. Runs standalone, and is Step 3.5 of /smh-code-review.
 platforms: [opencode, antigravity, claude, codex]
 ---
 
@@ -128,7 +128,13 @@ what fixes it.
 
 ---
 
-## Step 2 — The Judgment Pass  *(taste and convention — caps at CONCERNS)*
+## Step 2 — The Judgment Pass  *(taste and convention — recorded, never a verdict)*
+
+⛔ **Nested inside a review, this pass does not run** (SCC-447). `/smh-code-review` Step 3.5 takes the
+machine floor above and nothing else: §7 as ruled 2026-09-11 gives CONCERNS exactly two grounds —
+coverage and authority — and taste is not one of them, so a judgment pass run inside a review can
+only manufacture a third. Standalone, it runs in full and its findings are **recorded**: counts and
+rows in the record, argued and fixed on their merits, never a verdict.
 
 What no check can see. Read the changed hunks and answer each honestly.
 
@@ -200,8 +206,9 @@ Emit findings in this exact shape so `/smh-code-review` can fold them into its v
   SOP-currency check refuses · a changed `.py` does not compile · a dead link or anchor the diff
   introduced · a door-parity break · a committed secret · a §2 banned pattern shipped · a new gate
   that cannot fail.
-- **CONCERNS** — `workflow_lint` **warnings** · comment-contract gaps · every judgment finding in
-  Step 2B and 2C that is not listed above.
+- **CONCERNS** — §7's two grounds only (a floor check that could not run; a fix held for the operator's word): a `workflow_lint` **warning** and Step 2's judgment findings are **recorded, never a verdict**
+  (§7 as ruled 2026-09-11: taste is a count, and a CONCERNS made of taste is a file the operator has
+  to open).
 - **PASS** — floor green on the changed set, nothing above noise.
 
 <!-- twin-law: disposition -->

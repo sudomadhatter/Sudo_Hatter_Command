@@ -192,6 +192,10 @@ graph and the tiers mean something.
 ⚠ `untested` reads the CALL GRAPH: a script exercised by spawning it as a subprocess reads as a test
 gap even when it is thoroughly covered. Treat it as *where to look*, never as a finding on its own.
 
+⛔ **`--audit` keeps the mirrors, and that asymmetry is the point.** A review strips the byte-copy
+mirrors because a defect in a copy is a defect in its master; this lens's whole question is whether
+the copies AGREE, so a stripped diff would hide the one failure it exists to catch.
+
 ## Lens 3 — Pre-Mortem (LEDGER+BLAST) — bounded, and the bound is the point
 
 Assume the plan shipped and quietly broke the operator's next session — why? The only genuinely
@@ -230,6 +234,18 @@ Most of this audit does not go stale — one lens does:
 Invoke directly post-dev only when Step 0.7's questions are not enough (a lane resumed after
 days, `main` moved repeatedly, the acceptance list itself in doubt) — then POST-DEV mode, Lens 2
 plus the external rows of Lens 3, and the section labelled `retroactive`.
+
+**POST-DEV resolves "the actual change set" with the scope script, never by hand:**
+
+```bash
+cd "$REPO" && python3 .agents/scripts/review_scope.py --repo "$REPO" --base origin/main --range <first>^..<HEAD> --audit --out <artifacts>/audit/diff.patch   # PC: `python`
+```
+
+It is the same selection a review uses, with `--audit` so every mirror stays in. `<first>^` is
+deliberate: git's `A..B` excludes A, so the left bound is the commit BEFORE the part's first, never
+the first itself — only WITHHELD paths print, so a commit that never entered the selection would be
+invisible. The script prints
+what it withheld and why, so a change set assembled this way is checkable rather than remembered.
 
 ## Stay in lane
 

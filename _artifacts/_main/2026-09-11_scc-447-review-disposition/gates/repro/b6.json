@@ -1,0 +1,31 @@
+{
+  "id": "b6",
+  "result": "reproduced",
+  "command": [
+    "python3",
+    "/tmp/claude-1001/-home-dlohn-Sudo-Hatter-Command/6b458e1a-0121-41df-857c-fcdfa282b4f5/scratchpad/mut_repro.py",
+    "--file",
+    ".agents/commands/smh-code-review.md",
+    "--file",
+    ".agents/commands/cicd-code-review.md",
+    "--file",
+    ".opencode/commands/smh-code-review.md",
+    "--file",
+    ".opencode/commands/cicd-code-review.md",
+    "--old",
+    "What comes back is a CLAIM, and you fix nothing yet",
+    "--new",
+    "act on what it hands back, here, now",
+    "--",
+    "python3",
+    ".agents/scripts/tests/test_review_disposition.py",
+    "--case",
+    "C \u00b7"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-447-review-disposition",
+  "exit_code": 1,
+  "sha": "3f482b30afa2c6174844b24e468a5a3bd6404410",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T02:49:13+00:00",
+  "output_tail": "SURVIVED: the test stayed green with the mutant in place -> -- filter 'C \u00b7': matched 1/7 blocks --\n"
+}

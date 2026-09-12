@@ -1,11 +1,19 @@
-"""step-01's lens-roster contract — one section, five scars, one invariant. (SCC-229/230/232)
+"""step-01's lens-roster contract — one section, one invariant. (SCC-229/230/232, cut by SCC-447)
 
 Five sections accreted one ticket at a time all answered "which lenses actually ran, under
 what constraint": lens_budget (SCC-147), review_runtime (SCC-177), cannot-launch
 (SCC-173), the inline Blind-Hunter drop (SCC-203), skipped-by-mode. SCC-229 collapses
-them into ONE contract built on the invariant that subsumes them. One mutation per scar
-ticket pins that the consolidation lost nothing; the invariant may appear exactly once.
-SCC-230's doc-truth guards and SCC-232's level checks ride the same file. RED-first.
+them into ONE contract built on the invariant that subsumes them, and the checks below pin
+that the consolidation lost nothing; the invariant may appear exactly once.
+
+⛔ THREE OF THE FIVE SCARS ARE NOW RETIREMENTS, and the checks changed shape rather than
+disappearing. SCC-447 cut the roster to three lenses, which took `lens_budget` (SCC-147),
+the inline Blind-Hunter drop (SCC-203) and the two `review_level` levels (SCC-232) with it —
+each had exactly one lens to protect and that lens is gone. A deletion cannot be pinned by a
+keyword ban here, because the retirement note has to NAME what it retired; so each is held
+positively instead: the note names it, the defining section is absent, and the input spelling
+a live caller would have to write is absent. `review_runtime` (SCC-177) and the dead-lens
+ladder (SCC-173) survive unchanged — they were never about a particular lens. RED-first.
 """
 from __future__ import annotations
 
@@ -42,18 +50,21 @@ def main() -> int:
     # review wave): the whole lens_budget subsection moved ABOVE the contract and this check
     # stayed green, because 27774 > 13121. The consolidation guarantee is position, so the
     # position must be the section's, not a sentence's.
+    # ── SCC-147 → RETIRED by SCC-447. `lens_budget` was the Literal-Correctness Hunter's cost
+    # axis, and it retired with that lens. Asserted POSITIVELY — the retirement note names it —
+    # plus the absence of the heading a live definition would need. A bare "`lens_budget` not in
+    # t" is unwritable here: the retirement note has to say the word to retire it.
     buddefs = [m.start() for m in re.finditer(r"^### `lens_budget`", t, re.M)]
     contract_h2 = re.search(r"^## .*lens-roster contract.*$", t, re.M | re.I)
-    c.check("SCC-147: lens_budget defined exactly once, inside the contract (anchored "
-            "on the h2, not the first mention)",
-            contract_h2 is not None and len(buddefs) == 1
-            and buddefs[0] > contract_h2.start(),
+    c.check("SCC-447: the lens_budget axis is retired — no defining section remains",
+            contract_h2 is not None and not buddefs,
             f"defs={len(buddefs)} h2@{contract_h2.start() if contract_h2 else -1}")
-    c.check("SCC-147: the top-up clause still reaches only `standard`",
-            "You may earn ONE top-up" in t and "Under `capped` you append nothing" in t,
-            "top-up mechanics lost")
-    c.check("SCC-147: review_mode and lens_budget still declared independent",
-            "`lens_budget` is NOT `review_mode`" in t, "independence guard lost")
+    c.check("SCC-447: the retirement NAMES lens_budget, so the word cannot be banned outright",
+            "`lens_budget`, the `EVIDENCE_PACK` priming" in t,
+            "the retirement note stopped naming what it retired")
+    c.check("SCC-447: no live caller could pass a budget — the input spelling is gone",
+            not re.search(r"`lens_budget: (standard|capped)`", t),
+            "a live `lens_budget:` input spelling survives in step-01")
 
     # ── SCC-177: runtime declared by the caller + the measured expectations ───
     c.check("SCC-177: inline + `ok` is still a checked contradiction",
@@ -71,28 +82,40 @@ def main() -> int:
     c.check("SCC-173: recovered-inline never reads as a gap",
             "`recovered-inline`" in t and "cost time, not coverage" in t, "state lost")
 
-    # ── SCC-203: the Blind Hunter is dropped, never faked ─────────────────────
-    c.check("SCC-203: contamination drops the lens rather than faking it",
-            "DROPPED" in t and "context contaminated" in t, "drop rule lost")
-    c.check("SCC-203: the retired not-blind state cannot return",
-            "retired" in t and "ok (not blind" in t, "retirement record lost")
+    # ── SCC-203 → RETIRED by SCC-447 with the lens it protected ───────────────
+    # The drop rule existed because the Blind Hunter's value was its starvation, and an inline
+    # run in a contaminated context produced a roster claiming more independence than the review
+    # had. No lens on the roster now depends on starvation, so the rule has nothing to guard.
+    # Pinned by the retirement note plus the absence of the row.
+    c.check("SCC-447: the Blind Hunter is retired, by name, in the retirement note",
+            "The Blind Hunter, the Literal-Correctness" in t,
+            "the retirement stopped naming the lens it retired")
+    c.check("SCC-447: no Blind Hunter row survives in the fan-out table",
+            not re.search(r"^\|\s*\*\*Blind Hunter\*\*", t, re.M),
+            "a retired lens is still routed by the table")
 
     # ── skipped-by-mode ≠ dead ────────────────────────────────────────────────
     c.check("mode-skip is declared, uncounted, and never raises the floor",
             "lenses_na" in t and "never raises `severity_floor`" in t
-            and "`4/4`, never `4/5`" in t, "distinction lost")
+            and "`2/2`, never `2/3`" in t, "distinction lost")
 
     # ── SCC-230: doc-truth — no unfunded cost claim, the fence on :440 ────────
     c.check("SCC-230: the unfunded cost headline is struck",
             "the one lens with a real token cost" not in t, "claim survives")
-    c.check("SCC-230: per-lens cost speaks only from the measured table, cited",
-            "scoring.md" in t and "220.5" in t and "180.9" in t and "127.4" in t
-            and "75.3" in t, "measured table absent")
-    c.check("SCC-230: Literal-Correctness is labelled unmeasured",
-            "unmeasured" in t, "label absent")
-    c.check("SCC-230: the note for the record - most expensive AND the one unseeded "
-            "true positive",
-            "unseeded true" in t, "cost-is-not-the-whole-ledger note absent")
+    # SCC-230's per-lens cost table measured five lenses, three of which no longer exist; it
+    # retired with them. What the ticket actually bought was the DISCIPLINE — a cost or value
+    # claim about a lens speaks from data or not at all — and SCC-447's retirement is the same
+    # discipline applied to the roster itself. That is what is pinned now: the retirement cites
+    # its measurement, and the re-entry rule names measurement as the only road back.
+    c.check("SCC-447: the retirement cites its own measurement, not an argument",
+            "17.9 fixes per review" in t and "2 findings in 18 reviews" in t,
+            "the retirement lost the numbers that justify it — an unfunded claim again")
+    c.check("SCC-447: a lens returns by MEASUREMENT, and the bar is named",
+            "A lens is added back by measurement, never by argument." in t
+            and "per-lens ledger data" in t,
+            "the re-entry rule is missing or names no bar")
+    c.check("SCC-230: the surviving cost datum still cites scoring.md",
+            "scoring.md" in t and "220.5" in t, "the measured citation was dropped")
     c.check("SCC-230: the noise-filter ruling still binds diff-anchored review",
             'Never gate findings on "worthiness"' in t, "the ruling was repealed")
     c.check("SCC-230: the ruling is scope-fenced to diff-anchored review",
@@ -105,60 +128,29 @@ def main() -> int:
     c.check("SCC-230: the paragraph no longer forbids its own revision",
             "this paragraph is the answer" not in t, "self-sealing clause survives")
 
-    # ── SCC-232: two levels, derived from measured radius, membership data-gated ─
-    c.check("SCC-232: quick and standard are defined as lens SETS in the contract",
-            "### The two levels" in t and "quick" in t and "standard" in t,
-            "level section absent")
-    c.check("SCC-232: quick = Test-Adequacy + Acceptance (the measured split)",
-            "Test-Adequacy + Acceptance" in t, "membership not the measured one")
-    # Part G's data-gating promise, landed for real: the addendum FILE is opened and the
-    # cited number cross-checked against it - deleting the file or drifting the citation
-    # goes red, where the old substring check stayed green through both (executed).
-    addendum = ROOT / "_artifacts/_main/2026/08/2026-08-20_scc-225-review-surface/lc-cost-measurement.md"
-    if not addendum.is_file():
-        addendum = ROOT / "_artifacts/_main/2026-08-20_scc-225-review-surface/lc-cost-measurement.md"
-    c.check("SCC-232: the measurement addendum file EXISTS where step-01 cites it",
-            addendum.is_file(), str(addendum))
-    add_txt = addendum.read_text(encoding="utf-8") if addendum.is_file() else ""
-    c.check("SCC-232: step-01's cited number matches the addendum's measured datum",
-            "1,082" in t and "lc-cost-measurement.md" in t and "1,082.0" in add_txt,
-            "citation and source disagree, or the datum left the addendum")
-    c.check("SCC-232: the level is DERIVED from Step 0.7, never a caller flag",
-            "never a flag the caller" in t, "derivation rule absent")
-    c.check("SCC-232: no `--level` caller flag exists on any surface (the promised "
-            "absence check)",
+    # ── SCC-232 → RETIRED by SCC-447: there are no levels ─────────────────────
+    # `quick` and `standard` split the ROSTER by the caller's measured radius, so a small diff
+    # got two lenses and a large one got five. The roster is three lenses on every review now,
+    # and the thing that scales with radius is the SCOPE of the diff handed in (`review_scope.py`,
+    # Part 2) — not the number of readers. The level's own surfaces retire with it in Part 4;
+    # what is pinned here is that step-01, the one place it was DEFINED, no longer defines it.
+    c.check("SCC-447: no two-levels section survives",
+            not re.search(r"^### The two levels", t, re.M),
+            "the level section is still here")
+    c.check("SCC-447: the retirement names the levels it retired",
+            "the two `review_level` levels" in t, "the retirement stopped naming them")
+    c.check("SCC-447: no live review_level input spelling survives",
+            not re.search(r"`review_level: (quick|standard)`", t),
+            "a live `review_level:` input spelling survives in step-01")
+    c.check("SCC-447: no `--level` caller flag exists on this surface",
             "--level" not in t, "a caller flag grew back")
-    c.check("SCC-232: the two-levels section still declares no budgets and no caps",
-            "No minute budget and no finding cap exists on either level" in t,
-            "the no-budget law left the level section")
-    c.check("SCC-232: a lens excluded by level reports skipped-by-mode, never dead",
-            "level: quick" in t, "exclusion state absent")
-    # The quick rule is stated once in the contract and restated in three caller surfaces;
-    # the ≤3-file threshold is the load-bearing token, so every restatement is pinned to it -
-    # changing one site to ≤5 goes red HERE, not in nobody's diff review (executed mutant:
-    # token-presence alone survived the inversion "review_level is NOT derived").
-    # the SOP legitimately re-orders the sentence, so the pinned token is the THRESHOLD
-    # itself - the part whose silent drift (≤3 → ≤5) re-scopes which lenses run
-    QUICK_TOKEN = "≤3 source files"
-    c.check("SCC-232: the contract's own quick rule carries the threshold token",
-            QUICK_TOKEN in t, "the contract lost its own threshold")
-    for name, cmd_path in (("smh", ".agents/commands/smh-code-review.md"),
-                           ("cicd", ".agents/commands/cicd-code-review.md")):
-        cmd = (ROOT / cmd_path).read_text(encoding="utf-8")
-        c.check(f"SCC-232: {name} Step 0.7 derives the level from its own measured "
-                f"radius",
-                "review_level" in cmd and "derived" in cmd.lower(), "derivation absent")
-        c.check(f"SCC-232: {name}'s restated quick rule matches the contract's "
-                f"threshold verbatim",
-                QUICK_TOKEN in cmd, "restatement drifted from the contract")
-        c.check(f"SCC-232: {name}'s derivation paragraph sits inside a twin-law fence "
-                f"(parity guards the restatements against each other)",
-                "<!-- twin-law: review-level -->" in cmd, "fence removed")
-        c.check(f"SCC-232: {name} carries no `--level` caller flag either",
-                "--level" not in cmd, "a caller flag grew back")
-    sop = (ROOT / "docs/_scc_sops_prds/workflows_testing_SOP.md").read_text(encoding="utf-8")
-    c.check("SCC-232: the SOP's restated quick rule matches the contract's threshold",
-            QUICK_TOKEN in sop, "SOP restatement drifted")
+    # ⛔ The `Runs when` column is what the level used to drive, so it is the cell a level would
+    # grow back in. Bind it POSITIVELY to the only two values the roster now allows.
+    runs_when = {ln.split("|")[4].strip() for ln in t.splitlines()
+                 if ln.startswith("| **") and ln.count("|") >= 6}
+    c.check("SCC-447: every `Runs when` cell is `always` or the Acceptance mode-skip",
+            runs_when == {"always", "`review_mode: full` only"},
+            f"the fan-out table's Runs-when values are {sorted(runs_when)}")
 
     # ── the return shape ROUND-TRIPS through the parser that reads it ─────────
     # Presence ("lenses_run:" in STEP04) was the shipped check - a reshaped line passed it
@@ -206,18 +198,17 @@ def main() -> int:
             "lens inherits write access to the tree under review")
     c.check("SCC-301 B2: the lens table carries a Tree column",
             "| Tree |" in t, "per-lens isolation is table wiring, not prose")
-    blind = next((ln for ln in t.splitlines() if ln.startswith("| **Blind Hunter**")), "")
-    c.check("SCC-301 B2b: ...and the Blind Hunter's row says NO tree at all",
-            "no tree" in blind, f"DIFF-only lens must not get a repo copy: {blind[:160]}")
-    # Every lens row's Tree cell individually (review: B1's whole-file grep let one row's
-    # cell be rewritten while the string survived in the other rows).
+    # SCC-301 B2b retired with the Blind Hunter: it was the only DIFF-only lens, and the
+    # `no tree` cell existed for it alone. Every surviving lens reads the repo, so the
+    # invariant below is now unconditional — a worktree copy in EVERY row, with no exception
+    # left to hide behind.
     rows = [ln for ln in t.splitlines()
             if ln.startswith("| **") and "Hunter**" in ln or ln.startswith("| **") and "Auditor**" in ln]
     bad = [ln.split("|")[1].strip() for ln in rows
-           if 'isolation: "worktree"' not in ln.split("|")[3] and "no tree" not in ln.split("|")[3]]
-    c.check("SCC-301 B2c: EVERY lens row's Tree cell is a worktree copy or an explicit "
-            "no-tree - none may share the builder's tree",
-            len(rows) == 5 and not bad, f"rows={len(rows)} bad={bad}")
+           if 'isolation: "worktree"' not in ln.split("|")[3]]
+    c.check("SCC-301 B2c: EVERY lens row's Tree cell is its own worktree copy - none may "
+            "share the builder's tree, and no row is exempt any more",
+            len(rows) == 3 and not bad, f"rows={len(rows)} bad={bad}")
     c.check("SCC-301 B4: a lens that writes to its tree is a HARD FAILURE, not a warning",
             "A lens that WRITES is a hard failure" in t,
             "without this the roster records `ok` for a lens that rewrote its own subject")

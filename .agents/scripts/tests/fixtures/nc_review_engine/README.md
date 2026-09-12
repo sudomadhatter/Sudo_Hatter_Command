@@ -26,9 +26,9 @@ stopped working is invisible otherwise; "some findings came back" would not tell
 
 | id | Lens | Seeded defect | Catchable by |
 |---|---|---|---|
-| `NC_BLIND` | Blind Hunter | `invoice_total` subtracts the tax its own docstring says is included | the diff text alone |
+| `NC_BLIND` | Edge Case Hunter | `invoice_total` subtracts the tax its own docstring says is included | the diff text alone |
 | `NC_EDGE` | Edge Case Hunter | `unit_price` divides by an unguarded `quantity` | the diff + repo |
-| `NC_LITERAL` | Literal-Correctness | `helpers.parse(raw, strict=True)` — that argument does not exist | **only** by opening `codebase/helpers.py`, which `bad.diff` does not touch |
+| `NC_LITERAL` | Edge Case Hunter | `helpers.parse(raw, strict=True)` — that argument does not exist | **only** by opening `codebase/helpers.py`, which `bad.diff` does not touch |
 | `NC_ACCEPT` | Acceptance Auditor | `record_payment` clamps a negative amount | **only** against `spec.md` §2 |
 | `NC_TESTADQ` | Test-Adequacy | three new deterministic functions plus a rewritten `invoice_total`, no test at any tier | the diff's file list vs `spec.md` §4 |
 
@@ -48,7 +48,6 @@ caller**. Invoke the `code-review-engine` skill twice — once per diff:
 | `HEAD_SHA` | `git rev-parse HEAD` | same |
 | `review_mode` | `full` | `full` |
 | `STORY_FILE` | `…/spec.md` (line items + payments) | `…/spec-refunds.md` (refunds) |
-| `lens_budget` | `standard` | `standard` |
 
 ⛔ **ONE SPEC PER CHANGE, and the two are not interchangeable.** Each diff is audited against the
 spec for *that* change. Hand a reviewer the spec for the other one and it will correctly report

@@ -1,0 +1,15 @@
+{
+  "id": "e2",
+  "result": "reproduced",
+  "command": [
+    "bash",
+    "-c",
+    "python3 .agents/scripts/repro_receipt.py run --root $TMPDIR/rr3 --id typo-case --replace --cwd . -- python3 .agents/scripts/tests/test_review_scope.py --case \"no such block label\" >/dev/null 2>&1; test $? -ne 0"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-447-review-disposition",
+  "exit_code": 1,
+  "sha": "3f482b30afa2c6174844b24e468a5a3bd6404410",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T02:50:52+00:00",
+  "output_tail": ""
+}

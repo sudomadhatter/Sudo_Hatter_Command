@@ -1,5 +1,5 @@
 ---
-description: Audit a diff against the house code standard — machine checks (ruff/eslint/types) that can FAIL, plus a judgment pass for the comment contract and AI-drift bans that caps at CONCERNS. Runs standalone or as /cicd-code-review Step 3.5.
+description: Audit a diff against the house code standard — machine checks (ruff/eslint/types) that can FAIL, plus a judgment pass for the comment contract and AI-drift bans that is recorded, never a verdict. Runs standalone or as /cicd-code-review Step 3.5.
 platforms: [opencode, antigravity]
 ---
 
@@ -14,7 +14,7 @@ platforms: [opencode, antigravity]
 >   gates bare, because a pipe returns the pipe's exit code
 
 Checks a **diff** against `.agents/rules/code-standards.md` — the one house definition of clean. Two
-halves: the **machine floor** (objective, can FAIL) and the **judgment pass** (taste, caps at CONCERNS).
+halves: the **machine floor** (objective, can FAIL) and the **judgment pass** (taste, recorded and never a verdict).
 
 **Load `.agents/rules/code-standards.md` now.** This command is the auditor; that file is the standard.
 Never audit from memory — if the standard moved, the audit moves with it.
@@ -154,7 +154,13 @@ is skipped wholesale when this audit runs embedded as `/cicd-code-review` Step 3
 both-machines break or a vacuous gate is exactly as real on an embedded run as on a standalone one
 (SCC-212).
 
-## Step 2 — The Judgment Pass  *(taste — caps at CONCERNS)*
+## Step 2 — The Judgment Pass  *(taste — recorded, never a verdict)*
+
+⛔ **Nested inside a review, this pass does not run** (SCC-447). `/cicd-code-review` Step 3.5 takes the
+machine floor above and nothing else: §7 as ruled 2026-09-11 gives CONCERNS exactly two grounds —
+coverage and authority — and taste is not one of them, so a judgment pass run inside a review can
+only manufacture a third. Standalone, it runs in full and its findings are **recorded**: counts and
+rows in the record, argued and fixed on their merits, never a verdict.
 
 What no linter can see. Read the changed hunks and answer each honestly:
 
@@ -203,7 +209,9 @@ Emit findings in this exact shape so `/cicd-code-review` can fold them into its 
 - **FAIL** — a machine check errors on a changed line, or a §2 banned pattern shipped, or a secret, or
   **a new gate that cannot fail** shipped in this diff (`tests-must-gate-for-real` §5 — a green that
   verified nothing is worse than no gate, because it is read as evidence).
-- **CONCERNS** — comment-contract gaps and judgment findings only.
+- **CONCERNS** — not from this pass: Step 2's judgment findings are **recorded, never a verdict**
+  (§7 as ruled 2026-09-11: taste is a count, and a CONCERNS made of taste is a file the operator has
+  to open).
 - **PASS** — floor green on changed lines, nothing above noise.
 
 <!-- twin-law: disposition -->

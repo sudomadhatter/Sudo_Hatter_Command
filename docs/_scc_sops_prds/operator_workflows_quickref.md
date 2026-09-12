@@ -394,7 +394,7 @@ flowchart LR
         BDD["/cicd-bdd-tests"]
         SA["/cicd-self-audit"]
         SSA["/smh-self-audit"]
-        CRE["code-review-engine skill\n5 lenses · verify wave · triage"]
+        CRE["code-review-engine skill\n3 lenses · each reproduces · triage"]
         CCA["/cicd-clean-code-audit"]
         SCCA["/smh-clean-code-audit"]
         E2E["/cicd-e2e"]
@@ -714,59 +714,63 @@ to: the close-out (on your word).*
 flowchart TD
     S0["Step 0 — resolve project\nStep 0.5 — re-enter the story worktree\nthe built code often lives ONLY there"] --> EMPTY{"is the diff empty?"}
     EMPTY -- "yes" --> X["⛔ STOP — an empty diff\nis not a pass"]
-    EMPTY -- "no" --> S1["Step 1 — the engine, clean-room\npass REPO · WORKTREE · DIFF · HEAD_SHA\nreview_mode · lens_budget: standard"]
+    EMPTY -- "no" --> S1["Step 1 — review_scope.py cuts ONE PART, masters only\nthen the engine, clean-room: REPO · WORKTREE · DIFF\nHEAD_SHA · review_mode · review_runtime as PROBED"]
     S1 --> ORD["⭐ hunt the diff FIRST\nopen ②'s plan and walkthrough ONLY AFTER"]
-    ORD --> FLOOR["the engine returns lenses run,\nfindings by bucket, and a severity FLOOR\nthe verdict may be the floor or worse, never better"]
-    FLOOR --> FIX["⭐ fix IN THREAD, now — every patch applied here\nevery decision walked with you here\nnothing survives as future work; never a ticket"]
+    ORD --> CLAIM["the engine returns the roster, the findings —\neach critical and important with its reproduce: command —\nand a PROVISIONAL floor · nothing is fixed yet"]
+    CLAIM --> S14["Step 1.4 — reproduce on the REAL tree\nrepro_receipt.py runs every critical and important\nin the story worktree · the receipt is the proof"]
+    S14 -- "reproduced" --> FIX["⭐ FIX IT HERE, now — a pin seen RED then GREEN\nneeds your permission → the patch is written and HELD\nanother lane's file → out-of-lane, receipt attached"]
+    S14 -- "not reproduced" --> DROP["dropped — no reproduction\none count line, never written up · never a ticket"]
+    S14 -- "unrunnable" --> REPAIR["not a result — repair the command\nand run it again"]
+    REPAIR --> S14
     FIX --> S2{"Step 2 — a test baseline?\nsudo-tests.yaml"}
+    DROP --> S2
     S2 -- "absent" --> WAIV["verdict WAIVED\nStep 3.5 still runs"]
     S2 -- "present" --> S3["Step 3 — the checks\nEVERY gate through gate_receipt.py\nunrunnable is a finding, not a skip"]
     S3 --> INH{"②'s certification SHA\nequals HEAD, 0 failures?"}
     INH -- "yes" --> ADOPT["adopt it — cite the file"]
     INH -- "no" --> RUN["run the full suite yourself\nfail TOWARD running\nthis becomes the certifying run"]
-    ADOPT --> TEA["testarch-trace coverage floor\ntestarch-nfr when required · test-review\nautomate evidence, else CONCERNS"]
+    ADOPT --> TEA["testarch-trace coverage floor\ntestarch-nfr when required · test-review\nautomate evidence, else FAIL"]
     RUN --> TEA
     TEA --> S35["Step 3.5 — /cicd-clean-code-audit\nALWAYS, even on WAIVED"]
     WAIV --> S35
-    S35 --> V["Step 4 — the VERDICT\nPASS · CONCERNS · FAIL · WAIVED @ sha\nappended to walkthrough.md as ## Code Review"]
+    S35 --> V["Step 4 — the VERDICT, resolved at the STAMP on rows still OPEN\nopen critical → FAIL · a held important or a dead lens → CONCERNS\nnothing open → PASS · WAIVED @ sha · appended as ## Code Review"]
     V --> S5["Step 5 — refresh the walkthrough body\nand clear ## Your Actions of anything\nthe agent can do itself"]
-    S5 -.-> NO["never lands, never flips status\nthe close-out is yours"]
+    S5 --> S6["Step 6 — END THE TURN with one screen\nverdict @ sha · fixed · held (patch links) · out-of-lane · two counts\napproved, or apply with the ids — the two words that move it"]
+    S6 -.-> NO["never lands, never flips status\nthe close-out is yours"]
 ```
 
 #### code-review-engine (the shared reviewer)
 
 *A skill, not a command — you never type it. It is the one reviewer behind ③, `/smh-code-review`
-and the autopilot's review child: five independent lenses in parallel, a verify wave, a triage that
-decides what is actually worth doing, and a record. It never verdicts, never writes the board, never
-stops to ask; decisions come back as findings. Explained in [§6](#6-the-story-lane) (the
-"found ≠ owed" aside) and [§15](#15-the-autopilot-lane).*
+and the autopilot's review child: three independent lenses in parallel, each running the command
+that proves its own finding in its own copy of the tree; a triage that keeps what carries its proof
+and drops what does not — two buckets, no third; and a record. The floor it hands back is
+PROVISIONAL: it holds no Bash, so the door re-runs every survivor on the real tree and resolves the
+verdict at the stamp. It never verdicts, never writes the board, never stops to ask. Explained in
+[§6](#6-the-story-lane) and [§15](#15-the-autopilot-lane).*
 
 ```mermaid
 flowchart TD
-    IN["the caller passes\nREPO · WORKTREE · DIFF · HEAD_SHA · review_mode\nlens_budget · optional evidence pack"] --> CHK{"invoked from a menu,\nor an input missing?"}
+    IN["the caller passes\nREPO · WORKTREE · DIFF · HEAD_SHA · review_mode\nreview_runtime as PROBED · STORY_FILE in full mode"] --> CHK{"invoked from a menu,\nor an input missing?"}
     CHK -- "yes" --> X["⛔ refuse — print the contract\nnever re-derive what a caller resolved"]
-    CHK -- "no" --> L["Step 01 — the lens fan-out, in parallel"]
-    L --> L1["Blind Hunter\nsees the DIFF only, starved on purpose"]
-    L --> L2["Edge-Case Hunter"]
-    L --> L3["Literal-Correctness Hunter\nopens the real definition behind each line\nthe one lens with a budget: standard or capped"]
-    L --> L4["Acceptance Auditor\nreview_mode: full only"]
-    L --> L5["Test-Adequacy Auditor"]
-    L1 --> DEAD{"a lens could not run?"}
-    L2 --> DEAD
-    L3 --> DEAD
-    L4 --> DEAD
-    L5 --> DEAD
-    DEAD -- "retry → inline rerun → still dead" --> CAP["floor rises to CONCERNS"]
-    DEAD -- "all ran" --> V["Step 02 — the verify wave\nevidence dossier from the changed files and callers\nEvidence Verifier · Compound Synthesis"]
-    CAP --> V
-    V --> T["Step 03 — triage\nnormalize · dedupe · one bucket each\ndecision_needed · patch · defer · dismiss"]
-    T --> REL{"⭐ the relevance gate\nTRUE is not WORTH DOING"}
-    REL -- "a real path to damage today, or it\nundermines cited evidence, or you asked" --> KEEP["survives — FIXED IN THE LANE by the caller,\nbefore the verdict · a defer only against ONE named\nstructural blocker · a review NEVER produces a ticket"]
-    REL -- "fails all three legs" --> KILL["dismissed with a one-line reason\ncounted AND named in the table"]
-    KEEP --> F["score the severity floor\ncritical in decision/patch → FAIL\nimportant → CONCERNS · dead lens → CONCERNS"]
-    KILL --> F
-    F --> R["Step 04 — record the findings\nreturn lenses · counts · floor · notes"]
-    R -.-> OUT["the caller turns the floor into a Verdict"]
+    CHK -- "no" --> L["Step 01 — the lens fan-out, in parallel\neach lens in its OWN worktree copy"]
+    L --> L1["Edge-Case Hunter"]
+    L --> L2["Acceptance Auditor\nreview_mode: full only — else n/a, never dead"]
+    L --> L3["Test-Adequacy Auditor"]
+    L1 --> REP["⭐ the hunter contract — every critical and important\ncarries reproduce: and expected_wrong_output:\nand the lens RUNS it in its own copy first\nno failure as predicted → the lens deletes the finding"]
+    L2 --> REP
+    L3 --> REP
+    REP --> DEAD{"a lens could not run?"}
+    DEAD -- "retry → inline rerun → still dead" --> CAP["floor rises to CONCERNS\ncoverage — the review did not look everywhere"]
+    DEAD -- "all ran" --> T["Step 03 — triage (Step 02 is a pass-through now)\nnormalize · dedupe · then the reproduction gate"]
+    CAP --> T
+    T --> GATE{"the three fields are THERE?\nthe engine holds no Bash — this is\na PRESENCE check, never a run"}
+    GATE -- "missing any, or the lens never ran it" --> DROP["drop — counted in ONE line\nnever written up individually"]
+    GATE -- "present" --> FIXB["fix — the CALLER re-runs it on the REAL tree\nthrough repro_receipt.py and fixes it in the lane\nheld / out-of-lane are the caller's dispositions, not buckets"]
+    DROP --> F["score a PROVISIONAL floor\nthe caller resolves it at the stamp, on rows still OPEN\nsuggestion · nitpick never gate — a count"]
+    FIXB --> F
+    F --> R["Step 04 — record the findings\nreturn the roster · counts · floor · notes\ntwo buckets, and there is no third"]
+    R -.-> OUT["the caller reproduces, fixes,\nand turns the floor into a Verdict"]
 ```
 
 #### /cicd-clean-code-audit and /smh-clean-code-audit
@@ -955,8 +959,9 @@ flowchart TD
     Q1 --> ABS["absorb main NOW, before the verdict\nre-take DIFF and HEAD_SHA after"]
     Q2 --> ABS
     Q3 --> ABS
-    ABS --> S1["Step 1 — the engine, clean-room\nthe SAME engine ③ runs · lens_budget: standard\nhunt the diff first, open the plan ONLY AFTER"]
-    S1 --> FIX["⭐ fix IN THREAD before any gate\npatches applied now · decisions walked with you now\na defer names ONE structural blocker; never a ticket"]
+    ABS --> S1["Step 1 — review_scope.py cuts ONE PART, masters only\nthen the SAME engine ③ runs, clean-room\nhunt the diff first, open the plan ONLY AFTER"]
+    S1 --> S14["Step 1.4 — reproduce on the REAL tree\nrepro_receipt.py runs every critical and important here\nreproduced · not-reproduced · unrunnable"]
+    S14 --> FIX["⭐ FIX what reproduced, here, now — a pin seen RED then GREEN\nneeds your permission → written as a patch and HELD\nnot reproduced → dropped, one count line · never a ticket"]
     FIX --> S2["Step 2 — acceptance audit\nagainst the CHECKABLE LIST, not the code"]
     S2 --> EV{"each item names the\nassertion that proves it?"}
     EV -- "no" --> CONC["CONCERNS floor\n'I read it and it looks right' is not evidence"]
@@ -970,8 +975,9 @@ flowchart TD
     G2 --> S35
     G3 --> S35
     G4 --> S35
-    S35 --> S4["Step 4 — Verdict appended to walkthrough.md\nwith Step 0.7's three lines —\n'nothing moved' is a result, silence is not"]
+    S35 --> S4["Step 4 — Verdict appended to walkthrough.md\nresolved at the STAMP on rows still OPEN · with Step 0.7's\nthree lines — 'nothing moved' is a result, silence is not"]
     S4 --> S5["Step 5 — refresh the walkthrough body\nclear ## Your Actions of what the agent can do"]
+    S5 --> S6["Step 6 — END THE TURN with one screen\nverdict @ sha · fixed · held (patch links) · two counts\napproved, or apply with the ids — the two words that move it"]
 ```
 
 ### Landing and shipping
@@ -1297,7 +1303,7 @@ flowchart LR
 #### /cicd-autopilot-claude
 
 *The lead session that walks ONE story through the **existing** doors, one fresh headless child per
-step, each child wearing one Wonderland seat. It passes door NAMES, never door text, so it owns no
+step — four for a story, two for a quick fix — each child wearing one Wonderland seat. It passes door NAMES, never door text, so it owns no
 copy of your workflow. Every step lands on the ticket as a comment; escalations land on your phone.
 It parks at review-ready and cannot land anything. Explained in [§15](#15-the-autopilot-lane); the
 full manual, with the charter and the failure modes, is [the Autopilot SOP](autopilot_SOP.md).*
@@ -1321,11 +1327,7 @@ flowchart TD
     Q -- "no" --> C4["child 4 - THE REVIEWER\nNO seat, unused session id"]
     C4 --> R{"review verdict"}
     R -- "PASS" --> PARK["park: story to review, ticket to In Review,\none line to your phone"]
-    R -- "CONCERNS or FAIL" --> C5["child 5 - CHESHIRE CAT\nONE fix cycle, in the lane"]
-    C5 --> C6["child 6 - THE REVIEWER\nfresh session, new sha"]
-    C6 --> R2{"second verdict"}
-    R2 -- "PASS" --> PARK
-    R2 -- "anything else" --> ESC
+    R -- "CONCERNS or FAIL" --> ESCR["ESCALATE - the door's end-of-review message\non the ticket: no fix child, no second reviewer\nyour word moves it - approved, or apply with the ids"]
     PARK --> DONE(["you: read it, then\n/cicd-close-story-merge-tree"])
 ```
 

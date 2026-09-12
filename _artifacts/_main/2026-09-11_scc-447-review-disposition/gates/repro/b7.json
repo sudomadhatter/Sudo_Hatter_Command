@@ -1,0 +1,23 @@
+{
+  "id": "b7",
+  "result": "reproduced",
+  "command": [
+    "python3",
+    "/tmp/claude-1001/-home-dlohn-Sudo-Hatter-Command/6b458e1a-0121-41df-857c-fcdfa282b4f5/scratchpad/mut_repro.py",
+    "--file",
+    ".agents/scripts/review_scope.py",
+    "--old",
+    "                         encoding=\"utf-8\", errors=\"replace\")\\n    return out.returncode, out.stdout",
+    "--new",
+    "                         )\\n    return out.returncode, out.stdout",
+    "--",
+    "python3",
+    ".agents/scripts/tests/test_review_scope.py"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-447-review-disposition",
+  "exit_code": 1,
+  "sha": "3f482b30afa2c6174844b24e468a5a3bd6404410",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T02:49:41+00:00",
+  "output_tail": "SURVIVED: the test stayed green with the mutant in place -> -- 46/46 passed --\n"
+}

@@ -612,7 +612,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # 1.5 · the tier, BEFORE the ceiling - the ceiling is one of the things it sets. A tier
     # without its own budget would be a tier the cap silently overrules: `hard` is Opus at
-    # xhigh across six children, and an `easy` ceiling would halt it mid-run and report hitting
+    # xhigh across every child in a run, and an `easy` ceiling would halt it mid-run and report hitting
     # a limit, which reads as the work failing rather than as a number set too low.
     spec = TIERS[a.tier]
     budget_usd = a.budget_usd if a.budget_usd is not None else spec["budget_usd"]
