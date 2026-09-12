@@ -22,11 +22,7 @@
         "workbench.colorCustomizations",
         "window.title",
         "workbench.activityBar.location",
-        "terminal.integrated.gpuAcceleration",
-        "window.commandCenter",
-        "chat.agentsControl.enabled",
-        "chat.unifiedAgentsBar.enabled",
-        "antigravity.autoOpenFiles"
+        "terminal.integrated.gpuAcceleration"
     ],
     "window.commandCenter": false,
     "chat.agentsControl.enabled": "hidden",
