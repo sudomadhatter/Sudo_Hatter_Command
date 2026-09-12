@@ -82,7 +82,7 @@ FENCE = re.compile(r"^\s*(```|~~~)")
 # `backend/requirements.txt`, `_bmad-output/sudo-tests.yaml`. Those paths are correct and simply do
 # not exist in the lobby. Resolving them would need the target repo, which the audit does not bind.
 PROJECT_ROOTS = ("backend/", "frontend/", "firebase/", "functions/", "mobile/",
-                 "_bmad-output/", "_bmad/", "docs/stories/", "quick_fixes/")
+                 "_bmad-output/", "_bmad/", "docs/stories/", "quick_fixes/", "app/")
 
 # Convention 6, second form (SCC-357). Some project-tree paths sit under a directory the LOBBY
 # also has, so no prefix can carve them out: `docs/` is real here, and `docs/stories/` above only
