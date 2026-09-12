@@ -611,6 +611,49 @@ if (-not $WhatIf -and $generateDocGraph) {
     if ($LASTEXITCODE -ne 0) { throw "doc-graph generation failed (rc=$LASTEXITCODE)" }
 }
 
+# --- provenance stamp ---------------------------------------------------------------------
+# Eight days passed invisibly because the export recorded NOTHING about its source: staleness was
+# not merely unnoticed, it was unmeasurable. One file fixes that, and it carries a sha and two
+# dates and nothing else - no branch name, no author, no remote, no path - because this file ships
+# to a PUBLIC repo and the leak scan applies to it like any other byte.
+#
+# It is written here on purpose: AFTER substitutions (so nothing rewrites the sha) and BEFORE the
+# leak scan (so it is scanned like everything else). A stamp written after the scan would be the
+# one file in the export that never passed the guard.
+#
+# FAIL CLOSED. If the source sha cannot be read, the export STOPS rather than shipping an
+# unstamped tree - an unstamped export is the exact defect this stamp exists to end, and a tree
+# that silently loses its provenance is indistinguishable from one that never had it.
+
+if (-not $WhatIf) {
+    Push-Location -LiteralPath $sourceRoot
+    try {
+        $sourceCommit = (& git rev-parse HEAD 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or $sourceCommit -notmatch '^[0-9a-f]{40}$') {
+            throw ("Cannot read the source commit for the provenance stamp (rc=$LASTEXITCODE). " +
+                   "The export stops rather than ship an unstamped tree: readers would have no " +
+                   "way to tell what they have, which is the defect the stamp exists to end.")
+        }
+        $sourceDate = (& git show -s --format=%cI $sourceCommit 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or -not $sourceDate) {
+            throw "Cannot read the source commit date for the provenance stamp (rc=$LASTEXITCODE)"
+        }
+    } finally {
+        Pop-Location
+    }
+
+    $stampPath = Join-Path $Target '.teaching-edition-source'
+    $stampLines = @(
+        "source_commit: $sourceCommit",
+        "source_date:   $sourceDate",
+        "exported:      $((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'))"
+    )
+    [System.IO.File]::WriteAllLines($stampPath, $stampLines, (New-Object System.Text.UTF8Encoding($false)))
+    Write-Host "-- provenance --" -ForegroundColor Yellow
+    Write-Host "   .teaching-edition-source @ $($sourceCommit.Substring(0,8))"
+    Write-Host ""
+}
+
 # --- report -----------------------------------------------------------------------------
 
 Write-Host "copied      : $($copied.Count) files"

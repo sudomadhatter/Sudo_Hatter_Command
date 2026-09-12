@@ -50,6 +50,23 @@ if [ -n "$PY" ] && [ -f "$FR" ]; then
   [ -n "$FR_OUT" ] && printf '\n%s\n' "$FR_OUT"
 fi
 
+# Published-edition staleness (SCC-456): ONE line when the copy the team pulls has rotted, or
+# nothing. It reports and never blocks - a gate that fired every time `main` moved would be
+# switched off within a day, and a muted gate is the same as no gate. Resolved from $ROOT first
+# (so this works from EITHER copy of this hook) then beside it (so a test can point
+# CLAUDE_PROJECT_DIR at a seeded temp repo). Same shape as the flight-recorder block above.
+#
+# ⛔ THIS BLOCK IS WHAT ARMS THE SCRIPT. Its first draft was called from `.claude/settings.json`,
+# which is sandbox-denied to every agent, so the file would have landed INERT waiting on an
+# operator action. `.agents/hooks/` is registered and agent-writable, so arming is part of the
+# diff. test_teaching_edition_staleness.py case F pins it.
+TE="$ROOT/.agents/scripts/teaching_edition_staleness.py"
+[ -f "$TE" ] || TE="$HERE/../scripts/teaching_edition_staleness.py"
+if [ -n "$PY" ] && [ -f "$TE" ]; then
+  TE_OUT=$("$PY" "$TE" --repo "$ROOT" 2>/dev/null) || TE_OUT=""
+  [ -n "$TE_OUT" ] && printf '\n%s\n' "$TE_OUT"
+fi
+
 if [ -f docs/repo-map.md ]; then
   echo ""
   echo "# Repo map (navigation index):"

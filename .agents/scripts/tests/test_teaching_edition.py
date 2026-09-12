@@ -21,6 +21,45 @@ sys.path.insert(0, str(SCRIPTS))
 from validate_teaching_edition import validate
 
 
+def git_seed(root: Path) -> None:
+    """Make a synthetic export fixture a real git repo with one commit.
+
+    ⛔ THE EXPORTER FAILS CLOSED WITHOUT THIS, ON PURPOSE (SCC-456). It writes
+    `.teaching-edition-source` carrying the source sha, and it STOPS rather than ship an unstamped
+    tree - an export nobody can date is the exact defect the stamp exists to end, and a tree that
+    silently loses its provenance is indistinguishable from one that never had it. The real source
+    is always a git repo, so the fixtures are made to match the real thing rather than the
+    guarantee being weakened to match the fixtures.
+    """
+    env = {**os.environ, "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"}
+    for args in (
+        ["init", "-q", "-b", "main"],
+        ["config", "user.email", "fixture@example.invalid"],
+        ["config", "user.name", "Fixture"],
+        ["add", "-A"],
+        ["commit", "-q", "-m", "fixture"],
+    ):
+        subprocess.run(["git", *args], cwd=str(root), check=True, capture_output=True, text=True,
+                       env=env)
+
+
+def _uncommented_instructions(body: str) -> str:
+    """Only the fenced COMMAND lines of a door body.
+
+    The door warns about `rm -rf`, `--force` and `git init` by name, so a bare substring search
+    over the whole file would fail on the door's own safety notes - a guard that fires on the
+    warning rather than the act. Fences are what an agent actually runs.
+    """
+    out, inside = [], False
+    for line in body.splitlines():
+        if line.startswith("```"):
+            inside = not inside
+            continue
+        if inside:
+            out.append(line)
+    return "\n".join(out)
+
+
 def main() -> int:
     c = Cases("test_teaching_edition")
     manifest = SCRIPTS / "teaching-edition" / "lobby.manifest.json"
@@ -520,6 +559,7 @@ def main() -> int:
                 ),
                 encoding="utf-8",
             )
+            git_seed(fixture)
             redaction_proc = subprocess.run(
                 [
                     "pwsh",
@@ -567,6 +607,7 @@ def main() -> int:
                 ),
                 encoding="utf-8",
             )
+            git_seed(fixture)
             short_secret_proc = subprocess.run(
                 [
                     "pwsh", "-NoProfile", "-File", str(exporter),
@@ -608,6 +649,7 @@ def main() -> int:
                 ),
                 encoding="utf-8",
             )
+            git_seed(fixture)
             tiny_secret_proc = subprocess.run(
                 [
                     "pwsh", "-NoProfile", "-File", str(exporter),
@@ -648,6 +690,7 @@ def main() -> int:
                 ),
                 encoding="utf-8",
             )
+            git_seed(fixture)
             source_git_proc = subprocess.run(
                 [
                     "pwsh", "-NoProfile", "-File", str(exporter),
@@ -725,6 +768,7 @@ def main() -> int:
                 ),
                 encoding="utf-8",
             )
+            git_seed(fixture)
             traversal_proc = subprocess.run(
                 [
                     "pwsh",
@@ -765,6 +809,7 @@ def main() -> int:
                 }),
                 encoding="utf-8",
             )
+            git_seed(fixture)
             missing_proc = subprocess.run(
                 ["pwsh", "-NoProfile", "-File", str(exporter), "-Manifest",
                  str(missing_manifest), "-Target", str(temp / "public"), "-WhatIf"],
@@ -1061,6 +1106,134 @@ def main() -> int:
                 and "new-project: created" not in commit_failure_transcript,
                 commit_failure_transcript,
             )
+
+    if c.block("E · the export stamps its source, and fails closed when it cannot"):
+        with TempDir() as temp:
+            fixture = temp / "source"
+            fixture.mkdir()
+            (fixture / "payload.txt").write_text("hello\n", encoding="utf-8")
+            (fixture / "manifest.json").write_text(
+                json.dumps({"name": "stamp probe", "source": ".", "include": ["payload.txt"],
+                            "leakScan": {"literals": [], "wordLiterals": []}}),
+                encoding="utf-8",
+            )
+            git_seed(fixture)
+            head = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=str(fixture),
+                check=True, capture_output=True, text=True,
+            ).stdout.strip()
+
+            target = temp / "public"
+            stamp_proc = subprocess.run(
+                ["pwsh", "-NoProfile", "-File", str(exporter),
+                 "-Manifest", str(fixture / "manifest.json"), "-Target", str(target)],
+                cwd=REPO, capture_output=True, text=True, errors="replace",
+            )
+            stamp_transcript = (stamp_proc.stdout or "") + (stamp_proc.stderr or "")
+            stamp_file = target / ".teaching-edition-source"
+            # ⛔ rc IS NOT CHECKED HERE, and the reason is a fixture limit, not a soft assertion.
+            # The exporter's last pass shells `<source>/.agents/scripts/validate_teaching_edition.py`
+            # and throws when it is absent, so NO synthetic fixture can reach exit 0 - block A is
+            # where a real manifest proves the whole run. What this case owns is the stamp, and the
+            # stamp is proven by the file on disk plus the pass announcing itself.
+            c.check("E1 · a real export writes .teaching-edition-source",
+                    stamp_file.is_file() and "-- provenance --" in stamp_transcript,
+                    stamp_transcript)
+
+            body = stamp_file.read_text(encoding="utf-8") if stamp_file.is_file() else ""
+            c.check("E2 · it carries the SOURCE tree's own HEAD, not some other sha",
+                    f"source_commit: {head}" in body, f"head={head}\n{body}")
+
+            # ⛔ THE STAMP SHIPS TO A PUBLIC REPO, so what it does NOT carry is the point. A branch
+            # name, an author, a remote or an absolute path would each be a new leak surface on a
+            # file that exists to be read by strangers. Three lines, three keys, nothing else.
+            keys = sorted(ln.split(":", 1)[0] for ln in body.splitlines() if ln.strip())
+            c.check("E3 · it carries ONLY a sha and two dates - no branch, author, remote or path",
+                    keys == ["exported", "source_commit", "source_date"], f"keys={keys}\n{body}")
+
+            # E4 - the fail-closed arm. Every other fixture in this file is git-seeded precisely
+            # because the exporter refuses an unstampable tree; this is the case that proves the
+            # refusal is real rather than an assumption the seeding hides.
+            nogit = temp / "nogit"
+            nogit.mkdir()
+            (nogit / "payload.txt").write_text("hello\n", encoding="utf-8")
+            (nogit / "manifest.json").write_text(
+                json.dumps({"name": "unstampable probe", "source": ".",
+                            "include": ["payload.txt"],
+                            "leakScan": {"literals": [], "wordLiterals": []}}),
+                encoding="utf-8",
+            )
+            nogit_proc = subprocess.run(
+                ["pwsh", "-NoProfile", "-File", str(exporter),
+                 "-Manifest", str(nogit / "manifest.json"), "-Target", str(temp / "public2")],
+                cwd=REPO, capture_output=True, text=True, errors="replace",
+            )
+            nogit_transcript = (nogit_proc.stdout or "") + (nogit_proc.stderr or "")
+            c.check("E4 · an unstampable source FAILS the export rather than shipping undated",
+                    nogit_proc.returncode != 0
+                    and "provenance stamp" in nogit_transcript,
+                    nogit_transcript)
+
+    if c.block("F · the publish recipe DELETES, and only what git tracks"):
+        door = REPO / ".agents" / "commands" / "smh-publish-teaching-edition.md"
+        door_body = door.read_text(encoding="utf-8") if door.is_file() else ""
+        c.check("F0 · the publish door exists", bool(door_body), str(door))
+
+        # ⛔ THE RECIPE IS EXTRACTED FROM THE DOOR AND RUN, never re-typed here. A test that
+        # re-implements the clear proves only that the test can delete a file; it would stay green
+        # while the door said `rm -rf *`. This runs whatever the door actually tells an agent to
+        # run, so editing the door to something destructive changes what this case executes.
+        clear_line = next(
+            (ln.strip() for ln in door_body.splitlines()
+             if ln.strip().startswith("git ls-files") and "rm -f" in ln),
+            "",
+        )
+        c.check("F1 · the door carries a tracked-only clear command", bool(clear_line), door_body[:400])
+
+        if clear_line:
+            with TempDir() as temp:
+                pub = temp / "published"
+                pub.mkdir()
+                (pub / "retired-door.md").write_text("a command nobody still has\n", encoding="utf-8")
+                (pub / "kept.md").write_text("old\n", encoding="utf-8")
+                git_seed(pub)
+                # The reader's own state: untracked, and it must survive.
+                (pub / "my-notes.txt").write_text("mine\n", encoding="utf-8")
+
+                export_dir = temp / "fresh"
+                export_dir.mkdir()
+                (export_dir / "kept.md").write_text("new\n", encoding="utf-8")
+
+                subprocess.run(["bash", "-c", clear_line], cwd=str(pub), check=True,
+                               capture_output=True, text=True)
+                subprocess.run(["bash", "-c", f'cp -a "{export_dir}/." "{pub}/"'],
+                               cwd=str(pub), check=True, capture_output=True, text=True)
+
+                c.check("F2 · a tracked file the export no longer carries is GONE",
+                        not (pub / "retired-door.md").exists(),
+                        "this is the whole defect: a copy-over adds and overwrites but never "
+                        "removes, so 84 deleted files kept shipping to every team clone")
+                c.check("F3 · a file the export DOES carry is refreshed, not lost",
+                        (pub / "kept.md").is_file()
+                        and (pub / "kept.md").read_text(encoding="utf-8").strip() == "new",
+                        "the clear must not outlive the copy")
+                c.check("F4 · the reader's UNTRACKED file survives",
+                        (pub / "my-notes.txt").is_file(),
+                        "tracked-only is the guard: a glob delete would take the reader's own work")
+                c.check("F5 · the repository itself survives",
+                        (pub / ".git").is_dir(),
+                        "aimed one level wrong this eats .git and the history every clone depends on")
+
+        # The three shapes that would each be irreversible on a PUBLIC repo with live clones.
+        for banned, why in (
+            ("rm -rf", "a glob delete takes the reader's untracked files and can reach .git"),
+            ("--force", "a force-push breaks every team clone silently at their next pull"),
+            ("git init", "re-initialising discards the history every team clone is pinned to"),
+        ):
+            c.check(f"F6 · the door never says `{banned}` as an instruction",
+                    banned not in _uncommented_instructions(door_body),
+                    why)
+
 
     return c.finish()
 

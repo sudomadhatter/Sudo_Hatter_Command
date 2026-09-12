@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 387,
+    "files": 389,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 802,
+    "edges": 806,
     "external": 27,
     "ambiguous": 200,
     "dangling": 264,
@@ -512,6 +512,11 @@
       "out": 8
     },
     {
+      "path": ".agents/commands/smh-publish-teaching-edition.md",
+      "in": 1,
+      "out": 3
+    },
+    {
       "path": ".agents/commands/smh-quick-dev.md",
       "in": 1,
       "out": 15
@@ -748,7 +753,7 @@
     },
     {
       "path": ".agents/rules/constitution.md",
-      "in": 33,
+      "in": 34,
       "out": 1
     },
     {
@@ -763,7 +768,7 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 60,
+      "in": 61,
       "out": 5
     },
     {
@@ -778,7 +783,7 @@
     },
     {
       "path": ".agents/rules/living-template-sync.md",
-      "in": 2,
+      "in": 3,
       "out": 2
     },
     {
@@ -1618,6 +1623,11 @@
     },
     {
       "path": ".agents/skills/smh-plan-task/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": ".agents/skills/smh-publish-teaching-edition/SKILL.md",
       "in": 0,
       "out": 1
     },
@@ -3133,6 +3143,21 @@
     {
       "from": ".agents/commands/smh-plan-task.md",
       "to": ".agents/rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-publish-teaching-edition.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-publish-teaching-edition.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-publish-teaching-edition.md",
+      "to": ".agents/rules/living-template-sync.md",
       "kind": "ref"
     },
     {
@@ -4703,6 +4728,11 @@
     {
       "from": ".agents/skills/smh-plan-task/SKILL.md",
       "to": ".agents/commands/smh-plan-task.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/skills/smh-publish-teaching-edition/SKILL.md",
+      "to": ".agents/commands/smh-publish-teaching-edition.md",
       "kind": "ref"
     },
     {
@@ -7206,6 +7236,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -7300,6 +7331,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -7725,6 +7757,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -7809,6 +7842,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -8223,6 +8257,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -8809,6 +8844,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -8884,6 +8920,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -8959,6 +8996,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9034,6 +9072,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9109,6 +9148,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9184,6 +9224,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9259,6 +9300,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9334,6 +9376,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9409,6 +9452,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9484,6 +9528,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9559,6 +9604,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9634,6 +9680,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9709,6 +9756,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9784,6 +9832,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9867,6 +9916,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9950,6 +10000,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -10078,6 +10129,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -10344,6 +10396,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -10547,6 +10600,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -10924,6 +10978,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -11028,6 +11083,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
