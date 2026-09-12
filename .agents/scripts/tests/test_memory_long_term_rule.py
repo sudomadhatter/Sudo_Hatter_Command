@@ -179,7 +179,7 @@ def main() -> int:
              "deletion test" in audit_lower,
              "smh-memory-audit.md does not contain the deletion test pass")
         c.check("smh-memory-audit.md contains Promote to rule candidate classification",
-             "### 📜 promote to rule" in audit_lower,
+             "### 📜 promote to rule (load-bearing" in audit_lower,
              "smh-memory-audit.md missing Promote to rule candidate bucket")
         c.check("smh-memory-audit.md contains Step 5 Promote to rule handling",
              "### 📜 promote to rule" in audit_text.split("## Step 5")[1].lower() if "## Step 5" in audit_text else False,
