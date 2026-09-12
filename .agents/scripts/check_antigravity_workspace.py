@@ -34,7 +34,7 @@ import patch_agy_posix
 def detect_running_hub_port() -> int | None:
     """Detect port of running agy --hub process."""
     try:
-        out = subprocess.check_output(["ps", "aux"], text=True)
+        out = subprocess.check_output(["ps", "aux"], text=True, encoding="utf-8")
         for line in out.splitlines():
             if "agy --hub" in line or "--hub-port" in line:
                 m = re.search(r"--hub-port=(\d+)", line)

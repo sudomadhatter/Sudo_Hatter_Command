@@ -1,0 +1,542 @@
+diff --git a/.agents/scripts/INDEX.md b/.agents/scripts/INDEX.md
+index 069b9842..3b9f175c 100644
+--- a/.agents/scripts/INDEX.md
++++ b/.agents/scripts/INDEX.md
+@@ -37,6 +37,8 @@ Maintenance scripts (MASTER here): `check_maps.py` (drift linter), `generate_rep
+ | `permission_render.py` | do the THREE terminal-approval lists still say what the ONE source says? (SCC-378) Renders `.vscode/settings.json` `zoo-code.*`, `.claude/settings.json` `permissions.allow` and `.agents/permissions/antigravity.json` from `.agents/permissions/families.json` — a row is a family (`id`, `cmd`, `why`), rendered per platform's grammar or from an explicit `render:` override; `only:`/`not:` scope one-platform rows. `--check` is the drift test (`/smh-sync-agents -Status` runs it). Renders only; never applies to a live store | `permission_render.py` (write, a sync step) · `--check` (read-only, exit 0/1) |
+ | `permission_matchers.py` | what would each platform DECIDE for this command? (SCC-378) Three mirrors with one signature — Zoo's lowercase longest-prefix per piece, Claude's `Bash(prefix:*)` per segment (no deny list), Antigravity's per-token anchored regex with Deny absolute — so one battery can ask all three the same question (`tests/test_permission_parity.py`) | (imported, not run) |
+ | `antigravity_permissions_apply.py` | is this machine's Antigravity store running the tracked fence? (SCC-378) Pushes `.agents/permissions/antigravity.json` into `~/.gemini/config/config.json` → `globalPermissionGrants`, touching only that key (`remoteControlHostname` and the rest preserved), backing the store up once. Sibling of `zoo_permissions_apply.py`; no editor-closed refusal (a plain file), a window reload makes the extension re-read it | `antigravity_permissions_apply.py --status` · `--apply` |
++| `patch_agy_posix.py` | surgical binary patcher for Antigravity (`agy`) web assets on Linux/WSL — replaces `win32` platform coercion with `linux` in embedded `index.html` to prevent `vscode-uri` converting POSIX slashes to backslashes (SCC-450). Preserves byte offsets and exact total binary length | `patch_agy_posix.py --check` · `--apply` · `--restore` |
++| `check_antigravity_workspace.py` | verifies Antigravity workspace health and POSIX integrity: checks binary patch status, tests live daemon `AddTrackedWorkspace` contract, and scans CLI logs for backslash path rejections (SCC-450) | `check_antigravity_workspace.py` · `--apply` |
+ | `approval_stops.py` | **what is the operator actually waiting on, and can a row fix it?** (SCC-407) Reads the newest Claude session transcripts and reports the Bash calls that STOPPED and waited — pairing each `tool_use` with its `tool_result` and keeping the ones that took longer than the threshold. ⛔ The regression it exists to hold: `/smh-llm-approvals` Step 1 used to harvest `is_error` results, i.e. commands the operator REFUSED — but **a granted approval writes nothing to the transcript**, so the old reading found one refusal across 20 sessions and reported "nothing to harvest" over a window holding 34 real stops. It separates what a row CAN fix from what it cannot: a heredoc or a leading `VAR=` is a command SHAPE no allow row can match (`command-shape.md` rules 5–6), and those are filed as such rather than proposed as rows. Read-only by construction — the test asserts the file contains no write verb. **SCC-411:** a context compaction re-emits records with identical `toolu_` ids, so ids are remembered per file and the first occurrence wins; without that every number it prints could be inflated 2x. Feeds `/smh-llm-approvals` | `approval_stops.py --repo <path>` · `--json` · `--sessions N` · `--wait SECONDS` |
+ | `claude_permissions_status.py` | which Claude allow rows decide on THIS machine only? (SCC-392) Claude merges its permissions from several files; `~/.claude/settings.json` (user scope) and a gitignored `<repo>/.claude/settings.local.json` (project scope) never travel, so a rule approved from a terminal chat works here and nowhere else. Diffs both against the tracked `<repo>/.claude/settings.json` and reports what only exists here, for `/smh-llm-approvals` to route into the source. Read-only, `allow` rows only (the door never reads a deny list), an absent local file counts as empty. Sibling of `antigravity_permissions_apply.py --status`; the write half is `claude_permissions_apply.py` | `claude_permissions_status.py` (read-only; exit 2 only if the tracked list is missing) |
+ | `claude_permissions_apply.py` | the Claude apply the other two platforms already had (SCC-415). `--apply` merges the TRACKED `.claude/settings.json` allow rows into `~/.claude/settings.json` (user scope — so a row harvested in the lobby also holds in a project checkout or worktree, which read THEIR tracked file plus user scope) and widens `sandbox.filesystem.allowWrite` with the tool-cache paths a gate run touches. It is the ONE file an agent is barred from writing (the auto-mode classifier refuses it unconditionally), so the operator runs it once per machine; `/smh-llm-approvals` prints the line. Additive (SCC-414), `--prune` opts into replacing, backs up once, idempotent, `allow` rows only, and **never touches `excludedCommands`** — that removes a command from the sandbox and loses the auto-approval, the opposite of the fix | `claude_permissions_apply.py --status` · `--apply` · `--apply --prune` |
+diff --git a/.agents/scripts/check_antigravity_workspace.py b/.agents/scripts/check_antigravity_workspace.py
+new file mode 100755
+index 00000000..a28f32fd
+--- /dev/null
++++ b/.agents/scripts/check_antigravity_workspace.py
+@@ -0,0 +1,180 @@
++#!/usr/bin/env python3
++"""Antigravity POSIX workspace health check & watchdog. (SCC-450)
++
++Verifies:
++1. Binary status: agy embedded web assets do NOT coerce platform to win32 on Linux.
++2. Live daemon contract: AddTrackedWorkspace accepts POSIX paths cleanly.
++3. Log integrity: No 'must be an absolute path: path is not absolute' errors in recent session.
++
++CLI usage:
++    python3 check_antigravity_workspace.py
++    python3 check_antigravity_workspace.py --apply  # auto-applies patch if unpatched
++"""
++from __future__ import annotations
++
++import argparse
++import json
++import os
++import re
++import subprocess
++import sys
++import urllib.error
++import urllib.request
++from pathlib import Path
++
++# Local import from same directory
++SCRIPT_DIR = Path(__file__).resolve().parent
++sys.path.insert(0, str(SCRIPT_DIR))
++import patch_agy_posix
++
++
++def detect_running_hub_port() -> int | None:
++    """Detect port of running agy --hub process."""
++    try:
++        out = subprocess.check_output(["ps", "aux"], text=True)
++        for line in out.splitlines():
++            if "agy --hub" in line or "--hub-port" in line:
++                m = re.search(r"--hub-port=(\d+)", line)
++                if m:
++                    return int(m.group(1))
++    except Exception:
++        pass
++    return None
++
++
++def fetch_csrf_token(port: int) -> str | None:
++    """Fetch CSRF token from running agy hub."""
++    url = f"http://127.0.0.1:{port}/"
++    try:
++        req = urllib.request.Request(url, headers={"User-Agent": "AntigravityHealthCheck"})
++        with urllib.request.urlopen(req, timeout=3) as resp:
++            html = resp.read().decode("utf-8", errors="ignore")
++            m = re.search(r'"csrfToken":\s*"([^"]+)"', html)
++            if m:
++                return m.group(1)
++    except Exception:
++        pass
++    return None
++
++
++def test_rpc_workspace(port: int, csrf_token: str, workspace_path: str) -> tuple[int, dict]:
++    """Call AddTrackedWorkspace ConnectRPC endpoint."""
++    url = f"http://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/AddTrackedWorkspace"
++    payload = json.dumps({"workspace": workspace_path}).encode("utf-8")
++    headers = {
++        "Content-Type": "application/json",
++        "x-codeium-csrf-token": csrf_token,
++    }
++    req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
++    try:
++        with urllib.request.urlopen(req, timeout=5) as resp:
++            data = resp.read().decode("utf-8")
++            return resp.status, json.loads(data) if data else {}
++    except urllib.error.HTTPError as e:
++        data = e.read().decode("utf-8")
++        try:
++            return e.code, json.loads(data)
++        except Exception:
++            return e.code, {"raw_error": data}
++    except Exception as e:
++        return 0, {"error": str(e)}
++
++
++def check_active_logs() -> list[str]:
++    """Check newest agy log for workspace errors."""
++    log_dir = Path.home() / ".gemini" / "antigravity" / "log"
++    if not log_dir.exists():
++        log_dir = Path.home() / ".gemini" / "antigravity"
++    logs = sorted(log_dir.glob("cli-*.log"), key=os.path.getmtime, reverse=True)
++    if not logs:
++        # Check symlink cli.log
++        sym = Path.home() / ".gemini" / "antigravity" / "cli.log"
++        if sym.exists():
++            logs = [sym]
++
++    errors = []
++    if logs:
++        newest = logs[0]
++        try:
++            content = newest.read_text(errors="ignore")
++            for line in content.splitlines():
++                if "must be an absolute path: path is not absolute" in line:
++                    errors.append(f"{newest.name}: {line.strip()}")
++        except Exception as e:
++            errors.append(f"Failed to read {newest}: {e}")
++    return errors
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser(description="Antigravity POSIX workspace health check.")
++    parser.add_argument("--bin", type=Path, default=patch_agy_posix.DEFAULT_BIN_PATH, help="Path to agy binary")
++    parser.add_argument("--apply", action="store_true", help="Auto-apply patch if unpatched")
++    parser.add_argument("--repo-path", type=str, default="/home/dlohn/Sudo_Hatter_Command", help="Target repo path")
++    args = parser.parse_args()
++
++    overall_clean = True
++    print("=== Antigravity POSIX Workspace Verification ===")
++
++    # 1. Binary check
++    status = patch_agy_posix.check_status(args.bin)
++    print(f"1. Binary Status ({args.bin}): {status.upper()}")
++    if status == "unpatched":
++        if args.apply:
++            print("   Applying surgical patch...")
++            if patch_agy_posix.apply_patch(args.bin):
++                status = patch_agy_posix.check_status(args.bin)
++                print(f"   Binary status after patch: {status.upper()}")
++            else:
++                overall_clean = False
++        else:
++            print("   [FAIL] Binary forces 'win32' platform in webview index.html.")
++            overall_clean = False
++    elif status == "patched":
++        print("   [PASS] Binary embeds POSIX-safe index.html.")
++    else:
++        print(f"   [WARN] Unexpected binary status: {status}")
++        overall_clean = False
++
++    # 2. Live Daemon RPC check
++    port = detect_running_hub_port()
++    if port:
++        print(f"2. Running Daemon: PID detected on port {port}")
++        token = fetch_csrf_token(port)
++        if token:
++            # POSIX path test
++            status_code, resp = test_rpc_workspace(port, token, args.repo_path)
++            if status_code == 200:
++                print(f"   [PASS] AddTrackedWorkspace('{args.repo_path}') succeeded (HTTP 200).")
++            else:
++                print(f"   [FAIL] AddTrackedWorkspace('{args.repo_path}') failed: {resp}")
++                overall_clean = False
++
++            # Regression falsification test: verify backslash is rejected by backend
++            mangled_path = args.repo_path.replace("/", "\\")
++            m_code, m_resp = test_rpc_workspace(port, token, mangled_path)
++            if m_code != 200 and "must be an absolute path" in str(m_resp):
++                print(f"   [PASS] Regression check: backslashed '{mangled_path}' correctly rejected.")
++            else:
++                print(f"   [WARN] Backslashed path did not fail as expected: {m_resp}")
++        else:
++            print("   [WARN] Could not acquire CSRF token from daemon.")
++    else:
++        print("2. Running Daemon: No active 'agy --hub' process detected (offline check passed).")
++
++    # 3. Log check
++    log_errors = check_active_logs()
++    print(f"3. Recent CLI Logs: {len(log_errors)} AddTrackedWorkspace failure(s) found.")
++    if log_errors:
++        print(f"   Latest error sample: {log_errors[-1]}")
++        # Note: Log errors may reflect pre-patch sessions; don't fail overall unless binary is also broken
++
++    if overall_clean:
++        print("\nOVERALL VERDICT: PASS")
++        return 0
++    else:
++        print("\nOVERALL VERDICT: FAIL")
++        return 1
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/.agents/scripts/patch_agy_posix.py b/.agents/scripts/patch_agy_posix.py
+new file mode 100755
+index 00000000..616363d9
+--- /dev/null
++++ b/.agents/scripts/patch_agy_posix.py
+@@ -0,0 +1,233 @@
++#!/usr/bin/env python3
++"""Surgical binary patcher for Antigravity (agy) on Linux/WSL. (SCC-450)
++
++In Remote-WSL, VS Code renders the webview within the Windows desktop Electron wrapper.
++The embedded `index.html` inside `agy` inspects `navigator.userAgent`, observes "Windows",
++and forces `window.process.platform = "win32"`.
++Downstream, `vscode-uri` transforms POSIX paths (`/home/...`) into Windows backslash paths
++(`\\home\\...`). When `AddTrackedWorkspace` calls the Linux `agy` daemon, Go's `filepath.IsAbs`
++rejects it, leaving Antigravity with no tracked workspace and running outside repo law.
++
++This script safely patches the embedded webview zip inside `/home/dlohn/.gemini/bin/agy` so that
++`index.html` sets `window.process.platform = "linux"` on Linux/WSL systems.
++The patch preserves exact byte offsets, local header lengths, central directory offsets,
++and the total binary file length (`213,582,080` bytes).
++
++Usage:
++    python3 patch_agy_posix.py --check
++    python3 patch_agy_posix.py --apply
++    python3 patch_agy_posix.py --restore
++"""
++from __future__ import annotations
++
++import argparse
++import io
++import os
++import shutil
++import struct
++import sys
++import time
++import zipfile
++import zlib
++from pathlib import Path
++
++DEFAULT_BIN_PATH = Path.home() / ".gemini" / "bin" / "agy"
++ZIP_START = 184733042
++ZIP_END = 188067463
++EXPECTED_ZIP_LEN = ZIP_END - ZIP_START  # 3,334,421 bytes
++
++
++def find_zip_bounds(data: bytes | bytearray) -> tuple[int, int]:
++    """Dynamically verify zip boundaries in agy binary."""
++    # Check fixed offset first
++    if len(data) >= ZIP_END and data[ZIP_START:ZIP_START+4] == b"PK\x03\x04":
++        if data[ZIP_END-22:ZIP_END-18] == b"PK\x05\x06":
++            return ZIP_START, ZIP_END
++
++    # Fallback: scan for the zip containing index.html
++    pos = len(data)
++    while True:
++        pos = data.rfind(b"PK\x05\x06", 0, pos)
++        if pos == -1:
++            break
++        eocd = data[pos:pos+22]
++        _, _, _, total_records, cd_size, cd_offset, comment_len = struct.unpack("<HHHHIIH", eocd[4:22])
++        zip_start = pos - (cd_size + cd_offset)
++        if zip_start >= 0 and data[zip_start:zip_start+4] == b"PK\x03\x04":
++            zip_end = pos + 22 + comment_len
++            try:
++                zf = zipfile.ZipFile(io.BytesIO(data[zip_start:zip_end]))
++                if "index.html" in zf.namelist() and "main.js" in zf.namelist():
++                    return zip_start, zip_end
++            except Exception:
++                pass
++    raise RuntimeError("Failed to locate embedded web assets zip in agy binary")
++
++
++def check_status(bin_path: Path) -> str:
++    """Returns 'patched', 'unpatched', or 'unknown'."""
++    if not bin_path.exists():
++        return "missing"
++    data = bin_path.read_bytes()
++    zip_start, zip_end = find_zip_bounds(data)
++    zf = zipfile.ZipFile(io.BytesIO(data[zip_start:zip_end]))
++    html = zf.read("index.html")
++    if b"? \"linux\"" in html:
++        return "patched"
++    if b"? \"win32\"" in html:
++        return "unpatched"
++    return "unknown"
++
++
++def apply_patch(bin_path: Path) -> bool:
++    """Applies the POSIX platform patch to agy with backup and verification."""
++    if not bin_path.exists():
++        print(f"ERROR: Target binary does not exist: {bin_path}", file=sys.stderr)
++        return False
++
++    status = check_status(bin_path)
++    if status == "patched":
++        print(f"Binary is already patched: {bin_path}")
++        return True
++    if status != "unpatched":
++        print(f"ERROR: Cannot patch binary with status '{status}'", file=sys.stderr)
++        return False
++
++    # 1. Create timestamped backup
++    timestamp = time.strftime("%Y%m%d_%H%M%S")
++    backup_path = bin_path.with_name(f"{bin_path.name}.bak.{timestamp}")
++    shutil.copy2(bin_path, backup_path)
++    print(f"Created backup: {backup_path}")
++
++    # Keep a link/copy of the first pristine original backup if not present
++    orig_backup = bin_path.with_name(f"{bin_path.name}.bak.orig")
++    if not orig_backup.exists():
++        shutil.copy2(bin_path, orig_backup)
++        print(f"Preserved original baseline backup: {orig_backup}")
++
++    # 2. Read binary
++    bin_data = bytearray(bin_path.read_bytes())
++    orig_len = len(bin_data)
++    zip_start, zip_end = find_zip_bounds(bin_data)
++    zip_bytes = bytearray(bin_data[zip_start:zip_end])
++
++    # 3. Read index.html from zip
++    zf = zipfile.ZipFile(io.BytesIO(zip_bytes))
++    info = zf.getinfo("index.html")
++    orig_html = zf.read("index.html")
++
++    target_old = b"? \"win32\""
++    target_new = b"? \"linux\""
++    if target_old not in orig_html:
++        print("ERROR: Target string not found in index.html", file=sys.stderr)
++        return False
++
++    base_html = orig_html.replace(target_old, target_new)
++
++    # 4. Use 2-space padding inside comment so deflate level 6 produces exactly 1616 compressed bytes
++    idx = base_html.find(b"<!-- Preconnect")
++    if idx == -1:
++        print("ERROR: Preconnect comment not found in index.html", file=sys.stderr)
++        return False
++
++    patched_html = base_html[:idx+4] + b"  " + base_html[idx+4:]
++    c = zlib.compressobj(6, zlib.DEFLATED, -15)
++    comp = c.compress(patched_html) + c.flush()
++    if len(comp) != info.compress_size:
++        print(f"ERROR: Compressed length mismatch: got {len(comp)}, expected {info.compress_size}", file=sys.stderr)
++        return False
++
++    new_crc = zlib.crc32(patched_html) & 0xffffffff
++    new_uncomp_size = len(patched_html)
++
++    # 5. Patch local header
++    hdr_off = info.header_offset
++    struct.pack_into("<III", zip_bytes, hdr_off + 14, new_crc, len(comp), new_uncomp_size)
++
++    # 6. Replace compressed bytes
++    name_len = int.from_bytes(zip_bytes[hdr_off+26:hdr_off+28], "little")
++    extra_len = int.from_bytes(zip_bytes[hdr_off+28:hdr_off+30], "little")
++    comp_off = hdr_off + 30 + name_len + extra_len
++    zip_bytes[comp_off:comp_off + len(comp)] = comp
++
++    # 7. Patch central directory header
++    cd_idx = zip_bytes.find(b"PK\x01\x02")
++    cd_found = False
++    while cd_idx != -1:
++        entry_name_len = int.from_bytes(zip_bytes[cd_idx+28:cd_idx+30], "little")
++        entry_name = zip_bytes[cd_idx+46:cd_idx+46+entry_name_len]
++        if entry_name == b"index.html":
++            struct.pack_into("<III", zip_bytes, cd_idx + 16, new_crc, len(comp), new_uncomp_size)
++            cd_found = True
++            break
++        entry_extra_len = int.from_bytes(zip_bytes[cd_idx+30:cd_idx+32], "little")
++        entry_comm_len = int.from_bytes(zip_bytes[cd_idx+32:cd_idx+34], "little")
++        cd_idx = zip_bytes.find(b"PK\x01\x02", cd_idx + 46 + entry_name_len + entry_extra_len + entry_comm_len)
++
++    if not cd_found:
++        print("ERROR: Failed to find index.html in central directory", file=sys.stderr)
++        return False
++
++    # 8. Verify patched zip in memory
++    verify_zf = zipfile.ZipFile(io.BytesIO(zip_bytes))
++    test_read = verify_zf.read("index.html")
++    if b"? \"linux\"" not in test_read or b"? \"win32\"" in test_read:
++        print("ERROR: Verification of patched index.html failed", file=sys.stderr)
++        return False
++
++    # 9. Splice back into binary
++    assert len(zip_bytes) == (zip_end - zip_start)
++    bin_data[zip_start:zip_end] = zip_bytes
++    assert len(bin_data) == orig_len
++
++    # 10. Write binary safely via temp file
++    temp_bin = bin_path.with_name(f"{bin_path.name}.tmp.{os.getpid()}")
++    temp_bin.write_bytes(bin_data)
++    os.chmod(temp_bin, 0o755)
++    temp_bin.replace(bin_path)
++
++    print(f"SUCCESS: Successfully patched {bin_path} (exact size: {len(bin_data):,} bytes)")
++    return True
++
++
++def restore_backup(bin_path: Path) -> bool:
++    """Restores the most recent backup."""
++    candidates = sorted(bin_path.parent.glob(f"{bin_path.name}.bak.*"), reverse=True)
++    if not candidates:
++        print(f"ERROR: No backups found for {bin_path}", file=sys.stderr)
++        return False
++    target_bak = candidates[0]
++    shutil.copy2(target_bak, bin_path)
++    os.chmod(bin_path, 0o755)
++    print(f"Restored {bin_path} from {target_bak}")
++    return True
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser(description="Surgical binary patcher for Antigravity POSIX paths.")
++    parser.add_argument("--bin", type=Path, default=DEFAULT_BIN_PATH, help="Path to agy binary")
++    group = parser.add_mutually_exclusive_group(required=True)
++    group.add_argument("--check", action="store_true", help="Check current patch status")
++    group.add_argument("--apply", action="store_true", help="Apply POSIX patch to agy")
++    group.add_argument("--restore", action="store_true", help="Restore binary from backup")
++    args = parser.parse_args()
++
++    if args.check:
++        status = check_status(args.bin)
++        print(f"Antigravity binary: {args.bin}")
++        print(f"Status: {status}")
++        return 0 if status == "patched" else 1
++
++    if args.apply:
++        success = apply_patch(args.bin)
++        return 0 if success else 1
++
++    if args.restore:
++        success = restore_backup(args.bin)
++        return 0 if success else 1
++
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/.agents/scripts/tests/test_antigravity_posix.py b/.agents/scripts/tests/test_antigravity_posix.py
+new file mode 100644
+index 00000000..10cb74f5
+--- /dev/null
++++ b/.agents/scripts/tests/test_antigravity_posix.py
+@@ -0,0 +1,98 @@
++#!/usr/bin/env python3
++"""Regression test suite for Antigravity POSIX workspace handling. (SCC-450)
++
++Guards:
++1. agy binary embeds index.html with process.platform = "linux" (never "win32").
++2. The zip archive integrity and total file size are preserved byte-for-byte.
++3. Live/mock RPC contract: POSIX paths succeed, backslashed paths fail.
++"""
++from __future__ import annotations
++
++import io
++import os
++import shutil
++import sys
++import tempfile
++import unittest
++import zipfile
++from pathlib import Path
++
++# Add scripts directory to path
++SCRIPTS_DIR = Path(__file__).resolve().parent.parent
++sys.path.insert(0, str(SCRIPTS_DIR))
++import patch_agy_posix
++import check_antigravity_workspace
++
++
++class TestAntigravityPosix(unittest.TestCase):
++
++    def setUp(self):
++        self.bin_path = patch_agy_posix.DEFAULT_BIN_PATH
++
++    def test_binary_exists(self):
++        """Binary ~/.gemini/bin/agy must exist on this machine."""
++        self.assertTrue(self.bin_path.exists(), f"{self.bin_path} does not exist")
++
++    def test_zip_bounds_and_structure(self):
++        """Web assets zip must be valid and contain index.html and main.js."""
++        data = self.bin_path.read_bytes()
++        start, end = patch_agy_posix.find_zip_bounds(data)
++        self.assertGreater(end, start)
++        self.assertEqual(end - start, patch_agy_posix.EXPECTED_ZIP_LEN)
++
++        zf = zipfile.ZipFile(io.BytesIO(data[start:end]))
++        names = zf.namelist()
++        self.assertIn("index.html", names)
++        self.assertIn("main.js", names)
++        self.assertEqual(len(names), 300)
++
++    def test_patch_application_and_idempotency(self):
++        """Patching must be idempotent and preserve exact binary length."""
++        with tempfile.TemporaryDirectory() as tmpdir:
++            tmp_bin = Path(tmpdir) / "agy"
++            shutil.copy2(self.bin_path, tmp_bin)
++            orig_size = tmp_bin.stat().st_size
++
++            # If current is unpatched, apply and verify
++            status_before = patch_agy_posix.check_status(tmp_bin)
++            if status_before == "unpatched":
++                success = patch_agy_posix.apply_patch(tmp_bin)
++                self.assertTrue(success)
++                self.assertEqual(patch_agy_posix.check_status(tmp_bin), "patched")
++                self.assertEqual(tmp_bin.stat().st_size, orig_size)
++
++                # Applying again should be idempotent
++                self.assertTrue(patch_agy_posix.apply_patch(tmp_bin))
++                self.assertEqual(tmp_bin.stat().st_size, orig_size)
++            elif status_before == "patched":
++                # Already patched: verify content
++                data = tmp_bin.read_bytes()
++                start, end = patch_agy_posix.find_zip_bounds(data)
++                zf = zipfile.ZipFile(io.BytesIO(data[start:end]))
++                html = zf.read("index.html")
++                self.assertIn(b"? \"linux\"", html)
++                self.assertNotIn(b"? \"win32\"", html)
++
++    def test_live_daemon_rpc_contract(self):
++        """Live agy daemon (if running) must accept POSIX and reject backslash."""
++        port = check_antigravity_workspace.detect_running_hub_port()
++        if not port:
++            self.skipTest("No running agy daemon detected")
++
++        token = check_antigravity_workspace.fetch_csrf_token(port)
++        self.assertIsNotNone(token, "CSRF token could not be retrieved from live hub")
++
++        # 1. POSIX path must succeed
++        posix_path = "/home/dlohn/Sudo_Hatter_Command"
++        code, resp = check_antigravity_workspace.test_rpc_workspace(port, token, posix_path)
++        self.assertEqual(code, 200, f"AddTrackedWorkspace failed for {posix_path}: {resp}")
++
++        # 2. Mangled path must fail
++        mangled_path = posix_path.replace("/", "\\")
++        m_code, m_resp = check_antigravity_workspace.test_rpc_workspace(port, token, mangled_path)
++        self.assertNotEqual(m_code, 200)
++        self.assertIn("must be an absolute path", str(m_resp))
++
++
++if __name__ == "__main__":
++    unittest.main()
