@@ -180,12 +180,20 @@ def main() -> int:
         # operator action nobody was going to remember. A gate nobody armed is a file, not a
         # mechanism, and this house has the scar already. The hook is registered and agent-
         # writable, so arming is part of the diff, and this row is what keeps it armed.
+        # ⛔ COMMENTS ARE STRIPPED BEFORE THE SEARCH, and this is not tidiness.
+        # The block's own comment names `test_teaching_edition_staleness.py`, which CONTAINS
+        # `teaching_edition_staleness.py` as a substring - so a search over the whole file is
+        # satisfied by the comment explaining the guard and stays green with the arming line
+        # deleted. That is comment-literals-invert-source-grep-tests, and it was live in this
+        # very case until the mutation sweep aimed at it.
+        code = "\n".join(ln for ln in body.splitlines() if not ln.lstrip().startswith("#"))
+
         c.check("F1 · session-start-context.sh exists", bool(body), str(hook))
-        c.check("F2 · it calls teaching_edition_staleness.py",
-                "teaching_edition_staleness.py" in body,
+        c.check("F2 · an EXECUTABLE line calls teaching_edition_staleness.py",
+                "teaching_edition_staleness.py" in code,
                 "the reporter is not armed by the hook - it would ship inert")
         c.check("F3 · the call cannot block the hook",
-                "|| TE_OUT=\"\"" in body or "|| true" in body,
+                "|| TE_OUT=\"\"" in code or "|| true" in code,
                 "the hook must survive a failing reporter; it opens every session")
 
     return c.finish()
