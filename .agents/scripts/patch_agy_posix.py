@@ -51,7 +51,12 @@ def find_zip_bounds(data: bytes | bytearray) -> tuple[int, int]:
         if pos == -1:
             break
         eocd = data[pos:pos+22]
-        _, _, _, total_records, cd_size, cd_offset, comment_len = struct.unpack("<HHHHIIH", eocd[4:22])
+        if len(eocd) < 22:
+            continue
+        try:
+            _, _, _, total_records, cd_size, cd_offset, comment_len = struct.unpack("<HHHHIIH", eocd[4:22])
+        except struct.error:
+            continue
         zip_start = pos - (cd_size + cd_offset)
         if zip_start >= 0 and data[zip_start:zip_start+4] == b"PK\x03\x04":
             zip_end = pos + 22 + comment_len
@@ -68,14 +73,17 @@ def check_status(bin_path: Path) -> str:
     """Returns 'patched', 'unpatched', or 'unknown'."""
     if not bin_path.exists():
         return "missing"
-    data = bin_path.read_bytes()
-    zip_start, zip_end = find_zip_bounds(data)
-    zf = zipfile.ZipFile(io.BytesIO(data[zip_start:zip_end]))
-    html = zf.read("index.html")
-    if b"? \"linux\"" in html:
-        return "patched"
-    if b"? \"win32\"" in html:
-        return "unpatched"
+    try:
+        data = bin_path.read_bytes()
+        zip_start, zip_end = find_zip_bounds(data)
+        zf = zipfile.ZipFile(io.BytesIO(data[zip_start:zip_end]))
+        html = zf.read("index.html")
+        if b"? \"linux\"" in html:
+            return "patched"
+        if b"? \"win32\"" in html:
+            return "unpatched"
+    except Exception:
+        pass
     return "unknown"
 
 
@@ -190,17 +198,42 @@ def apply_patch(bin_path: Path) -> bool:
     return True
 
 
-def restore_backup(bin_path: Path) -> bool:
-    """Restores the most recent backup."""
-    candidates = sorted(bin_path.parent.glob(f"{bin_path.name}.bak.*"), reverse=True)
-    if not candidates:
-        print(f"ERROR: No backups found for {bin_path}", file=sys.stderr)
+def restore_backup(bin_path: Path, use_orig: bool = False) -> bool:
+    """Restores the most recent backup, or .orig if use_orig is True."""
+    if not bin_path.parent.exists():
+        print(f"ERROR: Parent directory does not exist: {bin_path.parent}", file=sys.stderr)
         return False
-    target_bak = candidates[0]
-    shutil.copy2(target_bak, bin_path)
-    os.chmod(bin_path, 0o755)
-    print(f"Restored {bin_path} from {target_bak}")
-    return True
+
+    orig_path = bin_path.with_name(f"{bin_path.name}.bak.orig")
+    if use_orig:
+        if not orig_path.exists():
+            print(f"ERROR: Original baseline backup not found: {orig_path}", file=sys.stderr)
+            return False
+        target_bak = orig_path
+    else:
+        # Filter for timestamped backups: <name>.bak.YYYYMMDD_HHMMSS
+        timestamped = [
+            p for p in bin_path.parent.glob(f"{bin_path.name}.bak.*")
+            if p.name != f"{bin_path.name}.bak.orig" and not p.name.endswith(".tmp")
+        ]
+        if timestamped:
+            # Sort by modification time descending, newest first
+            timestamped.sort(key=os.path.getmtime, reverse=True)
+            target_bak = timestamped[0]
+        elif orig_path.exists():
+            target_bak = orig_path
+        else:
+            print(f"ERROR: No backups found for {bin_path}", file=sys.stderr)
+            return False
+
+    try:
+        shutil.copy2(target_bak, bin_path)
+        os.chmod(bin_path, 0o755)
+        print(f"Restored {bin_path} from {target_bak}")
+        return True
+    except Exception as e:
+        print(f"ERROR: Failed to restore backup: {e}", file=sys.stderr)
+        return False
 
 
 def main() -> int:
@@ -209,7 +242,8 @@ def main() -> int:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--check", action="store_true", help="Check current patch status")
     group.add_argument("--apply", action="store_true", help="Apply POSIX patch to agy")
-    group.add_argument("--restore", action="store_true", help="Restore binary from backup")
+    group.add_argument("--restore", action="store_true", help="Restore binary from most recent backup")
+    group.add_argument("--restore-orig", action="store_true", help="Restore binary from pristine baseline (.bak.orig)")
     args = parser.parse_args()
 
     if args.check:
@@ -223,7 +257,11 @@ def main() -> int:
         return 0 if success else 1
 
     if args.restore:
-        success = restore_backup(args.bin)
+        success = restore_backup(args.bin, use_orig=False)
+        return 0 if success else 1
+
+    if args.restore_orig:
+        success = restore_backup(args.bin, use_orig=True)
         return 0 if success else 1
 
     return 0

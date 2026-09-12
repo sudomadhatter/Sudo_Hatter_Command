@@ -10,7 +10,7 @@ Downstream, `vscode-uri`'s `fsPath` getter checks `process.platform === "win32"`
 When the webview calls ConnectRPC `AddTrackedWorkspace` on the Linux `agy` daemon (`127.0.0.1:<port>`), Go's `filepath.IsAbs(workspace)` rejects `\home\dlohn\...` because on POSIX, absolute paths must start with `/`. The registration fails with:
 `AddTrackedWorkspace (unknown): \home\dlohn\Sudo_Hatter_Command must be an absolute path: path is not absolute`
 
-`agy` falls back to the nonexistent `/home/dlohn/.gemini/config/projects/outside-of-project.json`, leaving Gemini operating with zero registered workspace and completely blind to repository laws, skills, and gates.
+`agy` falls back to the nonexistent `<HOME>/.gemini/config/projects/outside-of-project.json`, leaving Gemini operating with zero registered workspace and completely blind to repository laws, skills, and gates.
 
 ---
 
