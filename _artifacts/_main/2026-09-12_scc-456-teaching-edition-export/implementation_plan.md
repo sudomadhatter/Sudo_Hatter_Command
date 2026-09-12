@@ -553,4 +553,4 @@ Audit verdict: GO
 
 **Batch approval (2026-09-12):** "approved" — covers this plan, the only one listed at
 `/smh-plan-task SCC-456` Step 5 (no subtasks were minted; one consolidated lane, proposed and
-accepted). — recorded at `<pending>`
+accepted). — recorded at `a52016e1`
