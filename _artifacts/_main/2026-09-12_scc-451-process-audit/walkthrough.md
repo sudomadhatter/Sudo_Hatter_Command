@@ -88,3 +88,24 @@ review on either lane, so you cannot change agents at the point where that choic
 - **`test_repo_template.py`** — the git-maintenance race. Remedy: `git config gc.auto 0
   maintenance.auto false` in the fixture's `git init`. Not fixed here; outside this lane's subject.
 - **`chore/SCC-451-inert-paths`** — merged, still on the remote, left undeleted.
+
+## Your Actions
+
+Nothing. Every item under "Open, with owners" above was settled on 2026-09-12 by the SCC-451
+close-out; this section records the disposition so `jira_feed.py finish` reads a decided answer
+rather than an absent one.
+
+- [x] **SCC-452 — the reach score.** Built, reviewed and merged at `efd79fa4` (PR #219). Done on the
+      board with its Dev Record. The saved mutant harness rode that lane: 8/8 killed, including one
+      of the lane's own pins caught vacuous and rewritten.
+- [x] **SCC-453 — the toolchain manifest.** Moved to **SCC-455** under Epic SCC-33, where CI/CD
+      plumbing belongs. Jira refuses a subtask-to-task conversion through any API and a subtask
+      cannot hang off an Epic, so the key changed; SCC-453 is closed as superseded, labelled
+      `descoped`, linked `Duplicate`, and its description carried across verbatim.
+- [x] **`test_repo_template.py` — the git-maintenance race.** Fixed, not deferred. `stat()` moved
+      inside the `OSError` guard in `leaks()`, and `build_repo` now sets `gc.auto=0` and
+      `maintenance.auto=false`. Pinned by T6 and T7; mutants restoring each half both killed;
+      53/53 green.
+- [x] **`chore/SCC-451-inert-paths` — the undeleted remote branch.** Deleted, local and remote,
+      alongside `chore/SCC-451-reach-score`. Both proven `0` commits off `origin/main` first, and
+      both the `git branch --list` and `git ls-remote` checks come back empty.

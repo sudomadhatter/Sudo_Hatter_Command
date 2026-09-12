@@ -74,6 +74,14 @@ def build_repo(root: Path) -> None:
     sh("git", "init", "-q", "-b", "main", cwd=d)
     sh("git", "config", "user.email", "t@t.t", cwd=d)
     sh("git", "config", "user.name", "t", cwd=d)
+    # ⛔ NO BACKGROUND MAINTENANCE IN A FIXTURE REPO. `git commit` below spawns
+    # `run_auto_maintenance()`, which creates and deletes `.git/objects/maintenance.lock` while the
+    # rest of this file is cloning, hard-linking and chmod-ing that same tree read-only. `leaks()`
+    # is now hardened against the vanishing file, but a fixture that races its own assertions is
+    # worth removing at the source as well: this repo exists for one commit, so it has nothing to
+    # maintain.
+    sh("git", "config", "gc.auto", "0", cwd=d)
+    sh("git", "config", "maintenance.auto", "false", cwd=d)
     (d / "README").write_text("base\n", encoding="utf-8")
     hook = d / "hook.sh"
     hook.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
@@ -96,12 +104,18 @@ def leaks(clone: Path) -> list[str]:
             if TEMPLATE_PREFIX in os.readlink(p):
                 hits.append(f"{p.relative_to(clone)} -> {os.readlink(p)}")
             continue
-        if p.is_file() and p.stat().st_size < 200_000:
-            try:
+        # ⛔ `stat()` IS INSIDE THE GUARD, AND THAT IS THE WHOLE FIX (SCC-451 close-out).
+        # This walks a LIVE tree. `stat()` sat outside the `try` that guarded only `read_text()`,
+        # so a file that vanished between `is_file()` and `stat()` escaped as an unhandled
+        # FileNotFoundError and reddened the whole suite. Measured on run 34703459646: one red in
+        # four runs of identical code. A path that disappeared mid-walk cannot be a leak, so the
+        # detector's honest answer is to skip it — never to crash the run that asked.
+        try:
+            if p.is_file() and p.stat().st_size < 200_000:
                 if TEMPLATE_PREFIX in p.read_text(errors="replace"):
                     hits.append(str(p.relative_to(clone)))
-            except OSError:
-                pass
+        except OSError:
+            pass
     return hits
 
 
@@ -615,6 +629,75 @@ def _run(c: Cases) -> None:
                 except Exception as exc:                           # noqa: BLE001
                     later, why = False, f"raised {exc!r}"
                 c.check("a key whose build failed can still be built later", later, why)
+
+    # ── T6 · the detector walks a LIVE tree (SCC-451 close-out) ───────────────────────────────
+    # A random red on run 34703459646 - one in four runs of identical code, on a diff that touched
+    # no template file. `git commit` in `build_repo` spawns run_auto_maintenance(), which creates
+    # and deletes `.git/objects/maintenance.lock` while `leaks()` is walking the same tree.
+    if c.block("T6 · leaks() survives a file that vanishes mid-walk"):
+        with TempDir() as t:
+            clone = t / "clone"
+            (clone / "sub").mkdir(parents=True)
+            (clone / "sub" / "keep.txt").write_text("harmless\n", encoding="utf-8")
+            doomed = clone / "sub" / "maintenance.lock"
+            doomed.write_text("x\n", encoding="utf-8")
+
+            # The race, made deterministic: the walk sees a file, and it is GONE by the time the
+            # size is read - exactly the window git's maintenance deletes its lock in. The file is
+            # really deleted, so `stat()` raises for the real reason rather than a mocked one.
+            #
+            # ⛔ DO NOT "SIMPLIFY" THIS INTO A PATCHED `stat()` THAT ALWAYS RAISES. That was the
+            # first version and it was VACUOUS - the mutant restoring the defect SURVIVED it.
+            # `is_symlink()` calls `lstat()`, which is `stat(follow_symlinks=False)`, so the walk's
+            # FIRST stat of any path comes from the symlink check; a blanket raise therefore fired
+            # inside `is_file()`, which swallows OSError and returns False, and the bare `p.stat()`
+            # under test was never reached at all.
+            real_is_file = Path.is_file
+
+            def vanishing(self):
+                if self.name == "maintenance.lock":
+                    self.unlink()        # git's maintenance removes it, right here
+                    return True          # ...but the walk had already seen a file
+                return real_is_file(self)
+
+            def walk_with_the_race() -> tuple[list[str] | None, str]:
+                """`leaks()` over a tree where the lock disappears mid-walk. None = it raised."""
+                doomed.write_text("x\n", encoding="utf-8")     # re-arm; the patch deletes it
+                Path.is_file = vanishing
+                try:
+                    return leaks(clone), ""
+                except OSError as exc:                         # the pre-fix behaviour, exactly
+                    return None, f"{type(exc).__name__}: {exc}"
+                finally:
+                    Path.is_file = real_is_file
+
+            got, err = walk_with_the_race()
+            c.check("⛔ T6 · a file that vanishes between rglob() and stat() does not crash the "
+                    "walk - it reddened the whole suite at random before this guard",
+                    got is not None, f"leaks() raised instead of skipping it: {err}")
+            c.check("...and the surviving files are still scanned, so the guard did not "
+                    "silently turn the detector off",
+                    got == [], f"expected no leaks from a clean tree, got {got!r}")
+
+            # The control: the guard must not swallow a REAL leak planted beside the vanishing
+            # file. A detector that cannot go red is worse than the crash it replaced.
+            (clone / "sub" / "leaky.txt").write_text(
+                f"/tmp/{TEMPLATE_PREFIX}abc123/repo\n", encoding="utf-8")
+            still, _ = walk_with_the_race()
+            c.check("CONTROL · a real template leak beside the vanishing file is STILL reported",
+                    bool(still) and any("leaky.txt" in h for h in still),
+                    f"the guard hid a real leak: {still!r}")
+
+    # ── T7 · the fixture does not race its own assertions (SCC-451 close-out) ─────────────────
+    if c.block("T7 · build_repo disables git's background maintenance"):
+        with TempDir() as t:
+            build_repo(t)
+            d = t / "repo"
+            got = {k: sh("git", "config", "--get", k, cwd=d).strip()
+                   for k in ("gc.auto", "maintenance.auto")}
+            c.check("⛔ T7 · the fixture repo disables gc.auto and maintenance.auto - it lives for "
+                    "one commit and has nothing to maintain, so it must spawn nothing",
+                    got == {"gc.auto": "0", "maintenance.auto": "false"}, f"got {got}")
 
 
 if __name__ == "__main__":

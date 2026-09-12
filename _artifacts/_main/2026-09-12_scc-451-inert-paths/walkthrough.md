@@ -192,10 +192,10 @@ the same commit.
 - `ceremony_tier`'s critical-surface veto reuses `scope_check.load_map` and `overlaps` rather than
   matching patterns itself. Two matchers would be two answers.
 
-- [ ] **This is a PARTIAL landing — SCC-451 stays OPEN.** `task.yaml` declares
+- [x] **This is a PARTIAL landing — SCC-451 stays OPEN.** `task.yaml` declares
       `landing_mode: partial` with empty `riders:`, because neither open subtask's work is in this
       diff and a rider is a claim that it is. Step one — the predicate, the guards and
-      `ceremony_tier` — is what landed.
+      `ceremony_tier` — is what landed. -- verified 2026-09-12 (measured): Both subtasks settled 2026-09-12: SCC-452 merged at efd79fa4 (PR #219) and is Done with its Dev Record; SCC-453 moved to SCC-455 under Epic SCC-33 (Jira refuses subtask->task via API) and is closed as superseded, labelled descoped and linked Duplicate.
       - **SCC-452** — step two: replace the line-count `tiny` arm with a measured
         reverse-dependency reach score. **Deliberately a subtask so SCC-451 cannot read Done before
         it lands**, and that guard is intact: this close flips no rider and leaves the parent open.
@@ -207,7 +207,7 @@ the same commit.
         silently fails to start on any machine where nobody installed it by hand). Different
         subject from inert paths; it is a subtask of SCC-451 only by mis-parenting. **Your call**
         whether it moves to SCC-33 or stays; it blocks nothing either way now.
-- [ ] **`test_repo_template.py` has a git-maintenance race that reddens CI at random** — it hit run
+- [x] **`test_repo_template.py` has a git-maintenance race that reddens CI at random** — it hit run
       `34703459646` on this PR and passed on the identical re-run (1 red in 4 runs of the same code;
       my diff touches no template file). `sh("git","commit",…)` at `:82` makes git spawn
       `run_auto_maintenance()`, which creates and deletes `.git/objects/maintenance.lock`; `leaks()`
@@ -216,16 +216,16 @@ the same commit.
       file that vanishes between `is_file()` and `stat()` escapes the block as a `FileNotFoundError`.
       **Remedy:** `git config gc.auto 0 maintenance.auto false` in the fixture's `git init` at `:74`
       — remove the cause, not the symptom. Not fixed here: it is outside this lane's subject and the
-      review ran on a fixed diff.
-- [ ] **Move the credential-free ruleset receipt from SCC-451 to AVCH-153.** The lobby has no
+      review ran on a fixed diff. -- verified 2026-09-12 (measured): Fixed in lane chore/SCC-451-closeout: stat() moved inside the OSError guard in leaks(), and build_repo now sets gc.auto=0 + maintenance.auto=false. Pinned by T6 (a file deleted between is_file and stat, plus a control proving a real leak is still reported) and T7; mutants restoring each half both KILLED 2/2; test_repo_template.py 53/53.
+- [x] **Move the credential-free ruleset receipt from SCC-451 to AVCH-153.** The lobby has no
       `arm_rulesets.py` — both copies live in AviationChat and the skeleton, so that half cannot be
       built here. SCC-451 cannot close honestly while its description claims lobby work that does not
-      exist.
-- [ ] **Decide on `Projects/sudo-command-center`.** Its two standing-push doors differ from the
+      exist. -- verified 2026-09-12 (measured): Moved 2026-09-12: the 2083-char block was cut from SCC-451 and appended to AVCH-153 verbatim. Both writes read back byte-identical to intent (SCC-451 11546->10093 chars, AVCH-153 7839->10167); SCC-451 now carries only a MOVED TO AVCH-153 pointer and no arm_rulesets.py claim.
+- [x] **Decide on `Projects/sudo-command-center`.** Its two standing-push doors differ from the
       masters by placeholder lines only and re-sync mechanically as a separate push to that repo. Its
       two **quick-dev** doors are a different command entirely — that repo's `smh-quick-dev.md` is the
       old `/smh-dev-task-tests` body, 404 lines out, untouched since 2026-09-04. That is its own
-      ticket, not a row hidden inside this lane.
-- [ ] **`origin/claude/teaching-edition` shares four files with this lane** (`workflows_testing_SOP.md`,
+      ticket, not a row hidden inside this lane. -- verified 2026-09-12 (measured): Minted as SCC-456 under Epic SCC-33, 2026-09-12, with the drift measured into it: smh-quick-dev 690 differing lines and cicd-quick-dev 502 (different commands, the retired dev-task-tests body), vs 28 and 54 on the two standing-push doors (placeholder drift). It carries its own acceptance incl. a check that goes red on fresh divergence.
+- [x] **`origin/claude/teaching-edition` shares four files with this lane** (`workflows_testing_SOP.md`,
       its changelog, `.agents/scripts/INDEX.md`, `.agents/commands/INDEX.md`), 51 files, idle eight
-      days. This lane lands first; that branch resolves on top.
+      days. This lane lands first; that branch resolves on top. -- verified 2026-09-12 (measured): Settled by landing order, as this row specified: both SCC-451 lanes are merged (inert-paths, then reach-score at efd79fa4) and their branches are pruned local and remote. origin/claude/teaching-edition is unchanged at 8b42390f, still idle 8 days, now 385 commits behind main with 37 of its own - it resolves on top, which is the outcome this row asked for.
